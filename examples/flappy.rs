@@ -9,17 +9,17 @@ struct MainState
 
 impl State for MainState
 {
-    fn init(&self) -> Result<(), GameError>
+    fn init(&mut self) -> Result<(), GameError>
     {
         println!("init");
         Ok(())
     }
-    fn update(&self, dt: Duration) -> Result<(), GameError>
+    fn update(&mut self, dt: Duration) -> Result<(), GameError>
     {
         println!("update");
         Ok(())
     }
-    fn draw(&self) -> Result<(), GameError>
+    fn draw(&mut self) -> Result<(), GameError>
     {
         println!("draw");
         Ok(())
@@ -28,6 +28,6 @@ impl State for MainState
 
 pub fn main() {
     let mut g: MainState = MainState {};
-    let mut e: Game = Game::new(&mut g);
+    let mut e: Game = Game::new(g);
     e.run();
 }
