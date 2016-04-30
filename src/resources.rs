@@ -9,8 +9,7 @@ pub struct ResourceManager {
     images: HashMap<String, Texture>,
     fonts: HashMap<(String, u16), Font>,
     font_type_faces: HashMap<String, PathBuf>,
-    ttf_context: Sdl2TtfContext,
-    //    sounds: HashMap<String, >,
+    ttf_context: Sdl2TtfContext, // sounds: HashMap<String, >,
 }
 
 impl ResourceManager {
@@ -21,45 +20,50 @@ impl ResourceManager {
             images: HashMap::new(),
             fonts: HashMap::new(),
             font_type_faces: HashMap::new(),
-            ttf_context: ttf_context
+            ttf_context: ttf_context,
         })
     }
 }
 
 pub trait TextureManager {
-    fn load_texture<T: LoadTexture>(&mut self, name: &str, filename: &Path, loader: &T) -> Result<(), GameError>;
+    fn load_texture<T: LoadTexture>(&mut self,
+                                    name: &str,
+                                    filename: &Path,
+                                    loader: &T)
+                                    -> Result<(), GameError>;
     fn get_texture(&self, name: &str) -> Result<&Texture, GameError>;
 }
 
 impl TextureManager for ResourceManager {
-    fn load_texture<T: LoadTexture>(&mut self, name: &str, filename: &Path, loader: &T) -> Result<(), GameError> {
+    fn load_texture<T: LoadTexture>(&mut self,
+                                    name: &str,
+                                    filename: &Path,
+                                    loader: &T)
+                                    -> Result<(), GameError> {
         let resource = loader.load_texture(filename);
         match resource {
             Ok(texture) => {
                 self.images.insert(name.to_string(), texture);
                 Ok(())
             }
-            Err(msg) => Err(GameError::ResourceLoadError(msg))
+            Err(msg) => Err(GameError::ResourceLoadError(msg)),
         }
     }
 
     fn get_texture(&self, name: &str) -> Result<&Texture, GameError> {
-        self.images.get(name)
-                   .ok_or(GameError::ResourceNotFound)
+        self.images
+            .get(name)
+            .ok_or(GameError::ResourceNotFound)
     }
 }
 
 pub trait FontManager {
-    fn load_font<P: AsRef<Path>>(&mut self,
-                                 name: &str,
-                                 filename: P) -> Result<(), GameError>;
+    fn load_font<P: AsRef<Path>>(&mut self, name: &str, filename: P) -> Result<(), GameError>;
     fn get_font(&mut self, name: &str, size: u16) -> Result<&Font, GameError>;
 }
 
 impl FontManager for ResourceManager {
-    fn load_font<P: AsRef<Path>>(&mut self,
-                                 name: &str,
-                                 filename: P) -> Result<(), GameError> {
+    fn load_font<P: AsRef<Path>>(&mut self, name: &str, filename: P) -> Result<(), GameError> {
         if filename.as_ref().is_file() {
             self.font_type_faces.insert(name.to_string(), filename.as_ref().into());
             Ok(())
@@ -70,15 +74,15 @@ impl FontManager for ResourceManager {
 
     fn get_font(&mut self, name: &str, size: u16) -> Result<&Font, GameError> {
         let key = (name.to_string(), size);
-        let font_path = try!(self.font_type_faces.get(name)
-                                                 .ok_or(GameError::ResourceNotFound));
+        let font_path = try!(self.font_type_faces
+                                 .get(name)
+                                 .ok_or(GameError::ResourceNotFound));
         let ttf_context = &mut self.ttf_context;
 
-        Ok(self.fonts.entry(key).or_insert_with(|| {
-            ttf_context.load_font(Path::new(font_path), size).unwrap()
-        }))
+        Ok(self.fonts
+               .entry(key)
+               .or_insert_with(|| ttf_context.load_font(Path::new(font_path), size).unwrap()))
     }
-
 }
 
 #[test]

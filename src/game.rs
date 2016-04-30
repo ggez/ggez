@@ -1,7 +1,5 @@
 use state::State;
-use resources::{ResourceManager,
-                TextureManager,
-                FontManager};
+use resources::{ResourceManager, TextureManager, FontManager};
 
 use std::path::Path;
 use std::thread;
@@ -17,16 +15,13 @@ use sdl2_ttf;
 use rand::{self, Rng, Rand};
 use rand::distributions::{IndependentSample, Range};
 
-pub struct Game<S: State>
-{
-    states: Vec<Box<S>>
+pub struct Game<S: State> {
+    states: Vec<Box<S>>,
 }
 
 impl<S: State> Game<S> {
     pub fn new(initial_state: S) -> Game<S> {
-        Game {
-            states: vec![Box::new(initial_state)]
-        }
+        Game { states: vec![Box::new(initial_state)] }
     }
 
     pub fn push_state(&mut self, state: S) {
