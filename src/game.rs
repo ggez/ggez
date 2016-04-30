@@ -5,26 +5,43 @@ use std::thread;
 use std::time::Duration;
 
 use sdl2;
+use sdl2::Sdl;
 use sdl2::pixels::Color;
 use sdl2::event::Event::*;
 use sdl2::rect::Rect;
 use sdl2::keyboard::Keycode::*;
 use sdl2::render::TextureQuery;
 use sdl2_ttf;
+use sdl2_mixer;
+use sdl2_mixer::Music;
+use sdl2_mixer::MusicType;
+use sdl2_mixer::{INIT_MP3, INIT_FLAC, INIT_MOD, INIT_FLUIDSYNTH, INIT_MODPLUG, INIT_OGG,
+                 AUDIO_S16LSB};
 use rand::{Rng, Rand, self};
 use rand::distributions::{IndependentSample, Range};
 
+use resources::ResourceManager;
+
 pub struct Game<'e>
 {
-    states: Vec<&'e mut State>
+    states: Vec<&'e mut State>,
+    sdl_context: Sdl,
+    // TODO add mixer and ttf systems to enginestate
+    resources: ResourceManager
 }
 
 impl<'e> Game<'e> {
     pub fn new(state: &'e mut State) -> Game<'e>
     {
+        let screen_width = 800;
+        let screen_height = 600;
+        let sdl_context = sdl2::init().unwrap();
+
         Game
         {
-            states: vec![state]
+            states: vec![state],
+            sdl_context: sdl_context,
+            resources: ResourceManager::new()
         }
     }
 
@@ -36,15 +53,65 @@ impl<'e> Game<'e> {
 
     }
 
-    pub fn run(&mut self) {
-        let screen_width = 800;
-        let screen_height = 600;
+    /// Remove verbose debug output
+    fn init_sound_system(&mut self)
+    {
+        let _audio = self.sdl_context.audio().unwrap();
+        let mut timer = self.sdl_context.timer().unwrap();
+        let _mixer_context = sdl2_mixer::init(INIT_MP3 | INIT_FLAC | INIT_MOD | INIT_FLUIDSYNTH |
+                                              INIT_MODPLUG |
+                                              INIT_OGG)
+                                .unwrap();
 
+        let frequency = 44100;
+        let format = AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
+        let channels = 2; // Stereo
+        let chunk_size = 1024;
+        let _ = sdl2_mixer::open_audio(frequency, format, channels, chunk_size).unwrap();
+        sdl2_mixer::allocate_channels(0);
+
+        {
+            let n = sdl2_mixer::get_chunk_decoders_number();
+            println!("available chunk(sample) decoders: {}", n);
+            for i in 0..n {
+                println!("  decoder {} => {}", i, sdl2_mixer::get_chunk_decoder(i));
+            }
+        }
+
+        {
+            let n = sdl2_mixer::get_music_decoders_number();
+            println!("available music decoders: {}", n);
+            for i in 0..n {
+                println!("  decoder {} => {}", i, sdl2_mixer::get_music_decoder(i));
+            }
+        }
+
+        println!("query spec => {:?}", sdl2_mixer::query_spec());
+    }
+
+    pub fn play_sound(&self, sound: &str)
+    {
+        let resource = self.resources.get_sound(sound);
+        match resource
+        {
+            Some(music) => {
+                println!("music => {:?}", music);
+                println!("music type => {:?}", music.get_type());
+                println!("music volume => {:?}", sdl2_mixer::Music::get_volume());
+                println!("play => {:?}", music.play(1));
+            }
+            None => {
+                println!("No such resource!");
+            }
+        }
+    }
+
+    pub fn run(&mut self) {
+        self.init_sound_system();
         let mut rng = rand::thread_rng();
-        let sdl_context = sdl2::init().unwrap();
-        let mut timer = sdl_context.timer().unwrap();
-        let mut event_pump = sdl_context.event_pump().unwrap();
-        let video = sdl_context.video().unwrap();
+        let mut timer = self.sdl_context.timer().unwrap();
+        let mut event_pump = self.sdl_context.event_pump().unwrap();
+        let video = self.sdl_context.video().unwrap();
         let ttf_context = sdl2_ttf::init().unwrap();
 
         let mut font = ttf_context.load_font(Path::new("resources/DejaVuSerif.ttf"), 128).unwrap();
