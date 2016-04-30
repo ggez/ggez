@@ -19,23 +19,23 @@ use rand::distributions::{IndependentSample, Range};
 
 pub struct Game<S: State>
 {
-    states: Vec<Box<S>>
+    states: Vec<S>
 }
 
 impl<S: State> Game<S> {
     pub fn new(initial_state: S) -> Game<S> {
         Game {
-            states: vec![Box::new(initial_state)]
+            states: vec![initial_state]
         }
     }
 
     pub fn push_state(&mut self, state: S) {
-        self.states.push(Box::new(state));
+        self.states.push(state);
     }
 
     pub fn pop_state() {}
 
-    fn get_active_state(&mut self) -> Option<&mut Box<S>> {
+    fn get_active_state(&mut self) -> Option<&mut S> {
         self.states.last_mut()
     }
 
