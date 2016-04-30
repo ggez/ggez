@@ -32,8 +32,7 @@ impl MainState {
     }
 }
 
-impl State for MainState{
-
+impl State for MainState {
     fn load(&mut self) -> Result<(), GameError> {
         println!("load");
         Ok(())
@@ -44,7 +43,7 @@ impl State for MainState{
         Ok(())
     }
 
-    fn draw(&self) -> Result<(), GameError> {
+    fn draw(&mut self) -> Result<(), GameError> {
         println!("draw");
         Ok(())
     }
