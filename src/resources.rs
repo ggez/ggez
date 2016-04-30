@@ -1,21 +1,38 @@
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use sdl2::render::Texture;
 use sdl2_image::LoadTexture;
+use sdl2_ttf::{self, Font, Sdl2TtfContext};
 use GameError;
-use std::path::Path;
 
 pub struct ResourceManager {
     images: HashMap<String, Texture>,
-//    fonts: HashMap<String, >,
-//    sounds: HashMap<String, >,
+    fonts: HashMap<(String, u16), Font>,
+    font_type_faces: HashMap<String, PathBuf>,
+    ttf_context: Sdl2TtfContext,
+    //    sounds: HashMap<String, >,
 }
 
 impl ResourceManager {
-    pub fn new() -> ResourceManager {
-        ResourceManager { images: HashMap::new() }
-    }
+    pub fn new() -> Result<ResourceManager, GameError> {
+        let ttf_context = try!(sdl2_ttf::init().map_err(|_| GameError::Lolwtf));
 
-    pub fn load_texture<T: LoadTexture>(&mut self, name: &str, filename: &Path, loader: &T) -> Result<(), GameError> {
+        Ok(ResourceManager {
+            images: HashMap::new(),
+            fonts: HashMap::new(),
+            font_type_faces: HashMap::new(),
+            ttf_context: ttf_context
+        })
+    }
+}
+
+pub trait TextureManager {
+    fn load_texture<T: LoadTexture>(&mut self, name: &str, filename: &Path, loader: &T) -> Result<(), GameError>;
+    fn get_texture(&self, name: &str) -> Result<&Texture, GameError>;
+}
+
+impl TextureManager for ResourceManager {
+    fn load_texture<T: LoadTexture>(&mut self, name: &str, filename: &Path, loader: &T) -> Result<(), GameError> {
         let resource = loader.load_texture(filename);
         match resource {
             Ok(texture) => {
@@ -26,7 +43,63 @@ impl ResourceManager {
         }
     }
 
-    pub fn get_texture(&self, name: &str) -> Option<&Texture> {
+    fn get_texture(&self, name: &str) -> Result<&Texture, GameError> {
         self.images.get(name)
+                   .ok_or(GameError::ResourceNotFound)
     }
+}
+
+pub trait FontManager {
+    fn load_font<T: LoadTexture>(&mut self,
+                                 name: &str,
+                                 filename: &Path,
+                                 loader: &T) -> Result<(), GameError>;
+    fn get_font(&mut self, name: &str, size: u16) -> Result<&Font, GameError>;
+}
+
+impl FontManager for ResourceManager {
+    fn load_font<T: LoadTexture>(&mut self,
+                                 name: &str,
+                                 filename: &Path,
+                                 loader: &T) -> Result<(), GameError> {
+        if filename.is_file() {
+            self.font_type_faces.insert(name.to_string(), filename.into());
+            Ok(())
+        } else {
+            Err(GameError::ResourceNotFound)
+        }
+    }
+
+    fn get_font(&mut self, name: &str, size: u16) -> Result<&Font, GameError> {
+        let key = (name.to_string(), size);
+        let font_path = try!(self.font_type_faces.get(name)
+                                                 .ok_or(GameError::ResourceNotFound));
+        let ttf_context = &mut self.ttf_context;
+
+        Ok(self.fonts.entry(key).or_insert_with(|| {
+            ttf_context.load_font(Path::new(font_path), size).unwrap()
+        }))
+    }
+
+}
+
+#[test]
+fn test_render_fonts() {
+    use sdl2_image::LoadTexture;
+    struct Renderer;
+    impl LoadTexture for Renderer {
+        fn load_texture(&self, filename: &Path) -> Result<Texture, String> {
+            Err(String::from(""))
+        }
+    }
+    let renderer = Renderer;
+
+    let mut resource_manager = ResourceManager::new().expect("Init ResourceManager failed");
+
+    resource_manager.load_font("Dejavu", Path::new("resources/DejaVuSerif.ttf"), &renderer).expect("File not found");
+    assert_eq!(1, resource_manager.font_type_faces.len());
+
+    resource_manager.get_font("Dejavu", 128).expect("Load font 128 failed");
+    resource_manager.get_font("Dejavu", 54).expect("Load font 54 failed");
+    assert_eq!(2, resource_manager.fonts.len());
 }

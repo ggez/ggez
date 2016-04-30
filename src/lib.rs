@@ -10,7 +10,9 @@ mod resources;
 pub use state::State;
 pub use game::Game;
 
+#[derive(Debug)]
 pub enum GameError {
     Lolwtf,
-    ResourceLoadError(String)
+    ResourceLoadError(String),
+    ResourceNotFound
 }
