@@ -39,7 +39,10 @@ impl State for MainState {
     }
 
     fn update(&mut self, dt: Duration) -> Result<(), GameError> {
-        println!("update");
+        self.planner.run1w0r(|t: &mut Transform| {
+            t.position.0 += 1;
+            t.position.1 += 1;
+        });
         Ok(())
     }
 
