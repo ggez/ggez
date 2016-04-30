@@ -14,28 +14,29 @@ pub enum GameError {
     Lolwtf
 }
 
-pub struct Engine<'e>
+pub struct Game<'e>
 {
     states: Vec<&'e mut State>
 }
 
-impl<'e> Engine<'e> {
-    pub fn new() -> Engine<'e>
+impl<'e> Game<'e> {
+    pub fn new(state: &'e mut State) -> Game<'e>
     {
-        Engine
+        Game
         {
-            states: Vec::new()
+            states: vec![state]
         }
     }
 
-    pub fn add_obj(&mut self, s: &'e mut State)
-    {
-        self.states.push(s)
+    pub fn push_state(&mut self, state: &'e mut State) {
+        self.states.push(state)
     }
 
-    pub fn ralf(&mut self)
-    {
-        println!("ralf");
+    pub fn pop_state() {
+
+    }
+
+    pub fn run(&mut self) {
         let sdl_context = sdl2::init().unwrap();
         let mut timer = sdl_context.timer().unwrap();
         let mut event_pump = sdl_context.event_pump().unwrap();
@@ -92,7 +93,6 @@ impl<'e> Engine<'e> {
             let end_time = timer.ticks();
             delta = Duration::from_millis((end_time - start_time) as u64);
             println!("{:?}", delta);
-
         }
     }
 }

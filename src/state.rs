@@ -4,6 +4,6 @@ use GameError;
 
 pub trait State {
     fn init(&self) -> Result<(), GameError>;
-    fn update(&self, d: Duration) -> Result<(), GameError>;
+    fn update(&self, dt: Duration) -> Result<(), GameError>;
     fn draw(&self) -> Result<(), GameError>;
 }

@@ -1,23 +1,20 @@
 extern crate ggez;
 
-//use ggez::Engine;
-//use ggez::State;
-use ggez::*;
+use ggez::{Game, State, GameError};
 use std::time::Duration;
 
-struct Game
+struct MainState
 {
-    i: i32
 }
 
-impl State for Game
+impl State for MainState
 {
     fn init(&self) -> Result<(), GameError>
     {
         println!("init");
         Ok(())
     }
-    fn update(&self, d: Duration) -> Result<(), GameError>
+    fn update(&self, dt: Duration) -> Result<(), GameError>
     {
         println!("update");
         Ok(())
@@ -30,8 +27,7 @@ impl State for Game
 }
 
 pub fn main() {
-    let mut g: Game = Game { i:5 };
-    let mut e: Engine = Engine::new();
-    e.add_obj(&mut g);
-    e.ralf();
+    let mut g: MainState = MainState {};
+    let mut e: Game = Game::new(&mut g);
+    e.run();
 }
