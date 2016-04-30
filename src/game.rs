@@ -17,26 +17,25 @@ use sdl2_ttf;
 use rand::{self, Rng, Rand};
 use rand::distributions::{IndependentSample, Range};
 
-pub struct Game<'e>
+pub struct Game<S: State>
 {
-    states: Vec<Box<State + 'e>>
+    states: Vec<Box<S>>
 }
 
-impl<'e> Game<'e> {
-    pub fn new<T: State + 'e>(initial_state: T) -> Game<'e>
-    {
+impl<S: State> Game<S> {
+    pub fn new(initial_state: S) -> Game<S> {
         Game {
             states: vec![Box::new(initial_state)]
         }
     }
 
-    pub fn push_state<T: State + 'e>(&mut self, state: T) {
+    pub fn push_state(&mut self, state: S) {
         self.states.push(Box::new(state));
     }
 
     pub fn pop_state() {}
 
-    fn get_active_state(&mut self) -> Option<&mut Box<State + 'e>> {
+    fn get_active_state(&mut self) -> Option<&mut Box<S>> {
         self.states.last_mut()
     }
 

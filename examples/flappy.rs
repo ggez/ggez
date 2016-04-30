@@ -15,19 +15,20 @@ impl specs::Component for Transform {
     type Storage = specs::VecStorage<Transform>;
 }
 
-struct MainState
-{
+struct MainState {
     planner: specs::Planner<()>,
 }
 
-impl State for MainState
-{
+impl MainState {
     fn new() -> MainState {
         let mut world = specs::World::new();
         world.register::<Transform>();
         world.create_now().with(Transform{position: (50, 50), rotation: 0f32}).build();
         MainState { planner: specs::Planner::new(world, 4)}
     }
+}
+
+impl State for MainState{
 
     fn load(&mut self) -> Result<(), GameError>
     {
@@ -38,7 +39,7 @@ impl State for MainState
         println!("update");
         Ok(())
     }
-    fn draw(&mut self) -> Result<(), GameError>
+    fn draw(&self) -> Result<(), GameError>
     {
         println!("draw");
         Ok(())
@@ -46,7 +47,7 @@ impl State for MainState
 }
 
 pub fn main() {
-    let mut g: MainState = MainState::new();
-    let mut e: Game = Game::new(&mut g);
+    let mut g = MainState::new();
+    let mut e: Game<MainState> = Game::new(g);
     e.run();
 }
