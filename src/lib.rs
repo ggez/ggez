@@ -10,6 +10,7 @@ mod resources;
 
 pub use state::State;
 pub use game::Game;
+pub use game::Context;
 
 pub enum GameError {
     Lolwtf,

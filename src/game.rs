@@ -2,6 +2,7 @@ use state::State;
 
 use std::path::Path;
 use std::thread;
+use std::option;
 use std::time::Duration;
 
 use sdl2;
@@ -14,36 +15,41 @@ use sdl2::render::TextureQuery;
 use sdl2_ttf;
 
 use sdl2_mixer;
-use sdl2_mixer::Music;
-use sdl2_mixer::MusicType;
 use sdl2_mixer::{INIT_MP3, INIT_FLAC, INIT_MOD, INIT_FLUIDSYNTH, INIT_MODPLUG, INIT_OGG,
                  AUDIO_S16LSB};
 
-use rand::{self, Rng, Rand};
+use rand::{self, Rand};
 use rand::distributions::{IndependentSample, Range};
 
 use resources::ResourceManager;
 
-pub struct Game<'e>
+
+pub struct Context
 {
-    states: Vec<Box<State + 'e>>,
     sdl_context: Sdl,
     // TODO add mixer and ttf systems to enginestate
-    resources: ResourceManager
+    pub resources: ResourceManager
+}
+
+pub struct Game<'e>
+{
+    window_title: String,
+    screen_width: u32,
+    screen_height: u32,
+    states: Vec<Box<State + 'e>>,
+    context: Option<Context>
 }
 
 impl<'e> Game<'e> {
     pub fn new<T: State + 'e>(initial_state: T) -> Game<'e>
     {
-        let screen_width = 800;
-        let screen_height = 600;
-        let sdl_context = sdl2::init().unwrap();
-
         Game
         {
+            window_title: String::from("Ruffel"),
+            screen_width: 800,
+            screen_height: 600,
             states: vec![Box::new(initial_state)],
-            sdl_context: sdl_context,
-            resources: ResourceManager::new()
+            context: None
         }
     }
 
@@ -60,8 +66,9 @@ impl<'e> Game<'e> {
     /// Remove verbose debug output
     fn init_sound_system(&mut self)
     {
-        let _audio = self.sdl_context.audio().unwrap();
-        let mut timer = self.sdl_context.timer().unwrap();
+        let mut ctx = self.context.take().unwrap();
+        let _audio = ctx.sdl_context.audio().unwrap();
+        let mut timer = ctx.sdl_context.timer().unwrap();
         let _mixer_context = sdl2_mixer::init(INIT_MP3 | INIT_FLAC | INIT_MOD | INIT_FLUIDSYNTH |
                                               INIT_MODPLUG |
                                               INIT_OGG)
@@ -91,31 +98,26 @@ impl<'e> Game<'e> {
         }
 
         println!("query spec => {:?}", sdl2_mixer::query_spec());
-    }
 
-    pub fn play_sound(&self, sound: &str)
-    {
-        let resource = self.resources.get_sound(sound);
-        match resource
-        {
-            Some(music) => {
-                println!("music => {:?}", music);
-                println!("music type => {:?}", music.get_type());
-                println!("music volume => {:?}", sdl2_mixer::Music::get_volume());
-                println!("play => {:?}", music.play(1));
-            }
-            None => {
-                println!("No such resource!");
-            }
-        }
+        self.context = Some(ctx);
     }
 
     pub fn run(&mut self) {
+
+        let sdl_context = sdl2::init().unwrap();
+        let resources = ResourceManager::new();
+        let mut ctx = Context {
+            sdl_context: sdl_context,
+            resources: resources
+        };
+
+        self.context = Some(ctx);
         self.init_sound_system();
+        let mut ctx = self.context.take().unwrap();
         let mut rng = rand::thread_rng();
-        let mut timer = self.sdl_context.timer().unwrap();
-        let mut event_pump = self.sdl_context.event_pump().unwrap();
-        let video = self.sdl_context.video().unwrap();
+        let mut timer = ctx.sdl_context.timer().unwrap();
+        let mut event_pump = ctx.sdl_context.event_pump().unwrap();
+        let video = ctx.sdl_context.video().unwrap();
         let ttf_context = sdl2_ttf::init().unwrap();
 
         let mut font = ttf_context.load_font(Path::new("resources/DejaVuSerif.ttf"), 128).unwrap();
@@ -123,7 +125,7 @@ impl<'e> Game<'e> {
                           .blended(Color::rand(&mut rng))
                           .unwrap();
 
-        let window = video.window("Ruffel", 800, 600)
+        let window = video.window(self.window_title.as_str(), self.screen_width, self.screen_height)
                           .position_centered()
                           .opengl()
                           .build()
@@ -136,6 +138,8 @@ impl<'e> Game<'e> {
 
         let mut font_texture = renderer.create_texture_from_surface(&surface).unwrap();
 
+        // TODO move the context into context option
+
         let TextureQuery { width, height, .. } = font_texture.query();
 
         // If the example text is too big for the screen, downscale it (and center irregardless)
@@ -143,11 +147,12 @@ impl<'e> Game<'e> {
 
         // Initialize State handlers
         for s in &mut self.states {
-            s.init();
+            s.init(&mut ctx);
         }
 
         let mut done = false;
         let mut delta = Duration::new(0, 0);
+
         while !done {
             let start_time = timer.ticks();
 
@@ -175,7 +180,7 @@ impl<'e> Game<'e> {
             renderer.present();
 
             if let Some(active_state) = self.get_active_state() {
-                active_state.update(delta);
+                active_state.update(&mut ctx, delta);
                 active_state.draw();
             } else {
                 done = true;
@@ -184,6 +189,25 @@ impl<'e> Game<'e> {
             let end_time = timer.ticks();
             delta = Duration::from_millis((end_time - start_time) as u64);
             thread::sleep_ms(1000 / 60);
+        }
+
+        self.context = Some(ctx);
+    }
+
+    pub fn play_sound(ctx: &mut Context, sound: &str)
+    {
+        let resource = ctx.resources.get_sound(sound);
+        match resource
+        {
+            Some(music) => {
+                println!("music => {:?}", music);
+                println!("music type => {:?}", music.get_type());
+                println!("music volume => {:?}", sdl2_mixer::Music::get_volume());
+                println!("play => {:?}", music.play(1));
+            }
+            None => {
+                println!("No such resource!");
+            }
         }
     }
 }
