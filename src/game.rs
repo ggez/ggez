@@ -1,5 +1,6 @@
 use state::State;
 use resources::{ResourceManager, TextureManager, FontManager};
+use GameError;
 
 use std::path::Path;
 use std::thread;
@@ -10,8 +11,9 @@ use sdl2::pixels::Color;
 use sdl2::event::Event::*;
 use sdl2::rect::Rect;
 use sdl2::keyboard::Keycode::*;
-use sdl2::render::TextureQuery;
-use sdl2_ttf;
+use sdl2::render::{Renderer, Texture, TextureQuery};
+use sdl2::surface::Surface;
+use sdl2_ttf::PartialRendering;
 use rand::{self, Rng, Rand};
 use rand::distributions::{IndependentSample, Range};
 
@@ -49,13 +51,6 @@ impl<S: State> Game<S> {
 
         let mut resource_manager = ResourceManager::new().unwrap();
 
-        resource_manager.load_font("DejaVuSerif", "resources/DejaVuSerif.ttf").unwrap();
-
-        let mut font = resource_manager.get_font("DejaVuSerif", 128).unwrap();
-        let surface = font.render("ruffel")
-                          .blended(Color::rand(&mut rng))
-                          .unwrap();
-
         let window = video.window("Ruffel", 800, 600)
                           .position_centered()
                           .opengl()
@@ -67,9 +62,23 @@ impl<S: State> Game<S> {
                                  .build()
                                  .unwrap();
 
-        let mut font_texture = renderer.create_texture_from_surface(&surface).unwrap();
+        resource_manager.load_font("DejaVuSerif", "resources/DejaVuSerif.ttf").unwrap();
 
-        let TextureQuery { width, height, .. } = font_texture.query();
+        let mut font_texture1 =
+            create_font_surface("roffl", "DejaVuSerif", 128, &mut resource_manager)
+                            .unwrap()
+                            .blended(Color::rand(&mut rng))
+                            .map_err(|_| GameError::Lolwtf)
+                            .and_then(|s| renderer.create_texture_from_surface(&s)
+                                                  .map_err(|_| GameError::Lolwtf)).unwrap();
+
+        let mut font_texture2 =
+            create_font_surface("fizzbazz", "DejaVuSerif", 72, &mut resource_manager)
+                            .unwrap()
+                            .blended(Color::rand(&mut rng))
+                            .map_err(|_| GameError::Lolwtf)
+                            .and_then(|s| renderer.create_texture_from_surface(&s)
+                                                  .map_err(|_| GameError::Lolwtf)).unwrap();
 
         // If the example text is too big for the screen, downscale it (and center irregardless)
         let padding = 64;
@@ -104,7 +113,8 @@ impl<S: State> Game<S> {
                                    500);
             renderer.set_draw_color(Color::rand(&mut rng));
             renderer.clear();
-            renderer.copy(&mut font_texture, None, Some(target));
+            renderer.copy(&mut font_texture1, None, Some(target));
+            renderer.copy(&mut font_texture2, None, Some(target));
             renderer.present();
 
             if let Some(active_state) = self.get_active_state() {
@@ -119,4 +129,12 @@ impl<S: State> Game<S> {
             thread::sleep_ms(1000 / 60);
         }
     }
+}
+
+fn create_font_surface<'a>(text: &'a str,
+                       font_name: &str,
+                       size: u16,
+                       resource_manager: &'a mut ResourceManager) -> Result<PartialRendering<'a>, GameError> {
+    let mut font = try!(resource_manager.get_font(font_name, size));
+    Ok(font.render(text))
 }
