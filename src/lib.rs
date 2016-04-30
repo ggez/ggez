@@ -14,5 +14,5 @@ pub use game::Game;
 pub enum GameError {
     Lolwtf,
     ResourceLoadError(String),
-    ResourceNotFound
+    ResourceNotFound,
 }

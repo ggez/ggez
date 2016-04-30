@@ -1,7 +1,5 @@
 use state::State;
-use resources::{ResourceManager,
-                TextureManager,
-                FontManager};
+use resources::{ResourceManager, TextureManager, FontManager};
 
 use std::path::Path;
 use std::thread;
@@ -17,8 +15,8 @@ use sdl2_ttf;
 use rand::{self, Rng, Rand};
 use rand::distributions::{IndependentSample, Range};
 
-pub struct Game<S: State>
-{
+
+pub struct Game<S: State> {
     states: Vec<S>
 }
 
