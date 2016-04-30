@@ -3,9 +3,7 @@ extern crate ggez;
 use ggez::{Game, State, GameError};
 use std::time::Duration;
 
-struct MainState
-{
-}
+struct MainState;
 
 impl State for MainState
 {
@@ -27,7 +25,7 @@ impl State for MainState
 }
 
 pub fn main() {
-    let mut g: MainState = MainState {};
+    let mut g: MainState = MainState;
     let mut e: Game = Game::new(g);
     e.run();
 }
