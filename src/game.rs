@@ -1,4 +1,5 @@
 use state::State;
+use resources::{ResourceManager, TextureManager, FontManager};
 
 use std::path::Path;
 use std::thread;
@@ -21,9 +22,6 @@ use sdl2_mixer::{INIT_MP3, INIT_FLAC, INIT_MOD, INIT_FLUIDSYNTH, INIT_MODPLUG, I
 use rand::{self, Rand};
 use rand::distributions::{IndependentSample, Range};
 
-use resources::ResourceManager;
-
-
 pub struct Context
 {
     sdl_context: Sdl,
@@ -31,18 +29,16 @@ pub struct Context
     pub resources: ResourceManager
 }
 
-pub struct Game<'e>
-{
+pub struct Game<S: State> {
     window_title: String,
     screen_width: u32,
     screen_height: u32,
-    states: Vec<Box<State + 'e>>,
+    states: Vec<Box<S>>,
     context: Option<Context>
 }
 
-impl<'e> Game<'e> {
-    pub fn new<T: State + 'e>(initial_state: T) -> Game<'e>
-    {
+impl<S: State> Game<S> {
+    pub fn new(initial_state: S) -> Game<S> {
         Game
         {
             window_title: String::from("Ruffel"),
@@ -53,13 +49,13 @@ impl<'e> Game<'e> {
         }
     }
 
-    pub fn push_state<T: State + 'e>(&mut self, state: T) {
+    pub fn push_state(&mut self, state: S) {
         self.states.push(Box::new(state));
     }
 
     pub fn pop_state() {}
 
-    fn get_active_state(&mut self) -> Option<&mut Box<State + 'e>> {
+    fn get_active_state(&mut self) -> Option<&mut Box<S>> {
         self.states.last_mut()
     }
 
@@ -108,7 +104,7 @@ impl<'e> Game<'e> {
         let resources = ResourceManager::new();
         let mut ctx = Context {
             sdl_context: sdl_context,
-            resources: resources
+            resources: resources.unwrap()
         };
 
         self.context = Some(ctx);
@@ -118,9 +114,8 @@ impl<'e> Game<'e> {
         let mut timer = ctx.sdl_context.timer().unwrap();
         let mut event_pump = ctx.sdl_context.event_pump().unwrap();
         let video = ctx.sdl_context.video().unwrap();
-        let ttf_context = sdl2_ttf::init().unwrap();
 
-        let mut font = ttf_context.load_font(Path::new("resources/DejaVuSerif.ttf"), 128).unwrap();
+        let mut font = resources.get_font("DejaVuSerif", 128).unwrap();
         let surface = font.render("ruffel")
                           .blended(Color::rand(&mut rng))
                           .unwrap();
@@ -147,7 +142,7 @@ impl<'e> Game<'e> {
 
         // Initialize State handlers
         for s in &mut self.states {
-            s.init(&mut ctx);
+            s.load(&mut ctx);
         }
 
         let mut done = false;
@@ -194,7 +189,7 @@ impl<'e> Game<'e> {
         self.context = Some(ctx);
     }
 
-    pub fn play_sound(ctx: &mut Context, sound: &str)
+    pub fn play_sound(ctx: &mut Context, sound: &str) -> ()
     {
         let resource = ctx.resources.get_sound(sound);
         match resource

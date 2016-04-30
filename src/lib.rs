@@ -12,7 +12,9 @@ pub use state::State;
 pub use game::Game;
 pub use game::Context;
 
+#[derive(Debug)]
 pub enum GameError {
     Lolwtf,
-    ResourceLoadError(String)
+    ResourceLoadError(String),
+    ResourceNotFound,
 }
