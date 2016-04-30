@@ -1,6 +1,8 @@
 extern crate sdl2;
 
 use sdl2::pixels::Color;
+use sdl2::event::Event::*;
+use sdl2::keyboard::Keycode::*;
 use std::thread;
 
 pub fn ralf() {
@@ -18,7 +20,7 @@ pub fn ralf() {
         .accelerated()
         .build().unwrap();
 
-    let done = false;
+    let mut done = false;
     while !done {
         renderer.set_draw_color(Color::RGB(0, 0, 0));
         renderer.clear();
@@ -26,6 +28,14 @@ pub fn ralf() {
 
         thread::sleep_ms(1/60);
         for event in event_pump.poll_iter() {
+            match event {
+                Quit { .. } => done = true,
+                KeyDown { keycode, .. } => match keycode {
+                    Some(Escape) => done = true,
+                    _ => {}
+                },
+                _ => {}
+            }
         }
     }
     println!("finish");
