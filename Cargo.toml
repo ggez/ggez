@@ -1,0 +1,21 @@
+[package]
+name = "ggez"
+description = "Rust library to create a Good Game Easily"
+version = "0.1.0"
+repository = "https://github.com/ggez-dev/ggez"
+keywords = ["ggez", "graphics", "2D"]
+authors = ["Rafael Epplee <raffomania@gmail.com>", "Sven-Hendrik Haase <svenstaro@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[lib]
+name = "ggez"
+path = "src/lib.rs"
+
+[dependencies]
+sdl2 = "0.18.0"
+sdl2_image = "0.18.0"
+sdl2_mixer = "0.17.0"
+
+[dev-dependencies]
+specs = "0.6.0"
