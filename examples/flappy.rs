@@ -1,7 +1,7 @@
 extern crate ggez;
 extern crate specs;
 
-use ggez::{Game, State, GameError, Context};
+use ggez::{game, Game, State, GameError, Context};
 use std::time::Duration;
 use std::path::Path;
 use specs::{Join, World};
@@ -40,12 +40,13 @@ impl MainState {
 impl State for MainState {
     fn load(&mut self, ctx: &mut Context) -> Result<(), GameError> {
         println!("load");
-        ctx.resources.load_sound("sound", Path::new("./resources/sound.mp3"));
+        ctx.resources.load_sound("sound", Path::new("./resources/sound.mp3")).unwrap();
         Ok(())
     }
 
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> Result<(), GameError> {
-        println!("update");
+        // println!("update");
+
         self.planner.run1w0r(|t: &mut Transform| {
             t.position.0 += 1;
             t.position.1 += 1;
@@ -53,13 +54,13 @@ impl State for MainState {
         self.a = self.a + 1;
         if self.a > 100 {
             self.a = 0;
-            // let _ : () = Game::play_sound(ctx, "sound");
+            game::play_sound(ctx, "sound");
         }
         Ok(())
     }
 
     fn draw(&mut self) -> Result<(), GameError> {
-        println!("draw");
+        // println!("draw");
         Ok(())
     }
 }

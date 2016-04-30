@@ -5,7 +5,7 @@ extern crate sdl2_ttf;
 extern crate rand;
 
 mod state;
-mod game;
+pub mod game;
 mod resources;
 
 pub use state::State;

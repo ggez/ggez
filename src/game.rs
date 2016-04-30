@@ -205,9 +205,9 @@ impl<S: State> Game<S> {
 
         self.context = Some(ctx);
     }
+}
 
-    pub fn play_sound(ctx: &mut Context, sound: &str) -> ()
-    {
+    pub fn play_sound(ctx: &mut Context, sound: &str) -> Result<(), GameError> {
         let resource = ctx.resources.get_sound(sound);
         match resource
         {
@@ -216,13 +216,14 @@ impl<S: State> Game<S> {
                 println!("music type => {:?}", music.get_type());
                 println!("music volume => {:?}", sdl2_mixer::Music::get_volume());
                 println!("play => {:?}", music.play(1));
+                println!("You've played well");
             }
             None => {
                 println!("No such resource!");
             }
         }
+        Ok(())
     }
-}
 
 fn create_font_surface<'a>(text: &'a str,
                        font_name: &str,
