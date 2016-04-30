@@ -43,14 +43,17 @@ impl State for MainState {
     }
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> Result<(), GameError>
     {
+        println!("update");
+        self.planner.run1w0r(|t: &mut Transform| {
+            t.position.0 += 1;
+            t.position.1 += 1;
+        });
         self.a = self.a + 1;
         if self.a > 100
         {
             self.a = 0;
             //let _ : () = Game::play_sound(ctx, "sound");
         }
-
-        println!("update");
         Ok(())
     }
 
