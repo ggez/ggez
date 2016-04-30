@@ -1,15 +1,36 @@
 extern crate ggez;
+extern crate specs;
 
 use ggez::{Game, State, GameError};
 use std::time::Duration;
+use specs::{Join, World};
 
-struct MainState;
+struct Transform
+{
+    position: (u32, u32),
+    rotation: f32,
+}
+
+impl specs::Component for Transform {
+    type Storage = specs::VecStorage<Transform>;
+}
+
+struct MainState
+{
+    planner: specs::Planner<()>,
+}
 
 impl State for MainState
 {
-    fn init(&mut self) -> Result<(), GameError>
+    fn new() -> MainState {
+        let mut world = specs::World::new();
+        world.register::<Transform>();
+        world.create_now().with(Transform{position: (50, 50), rotation: 0f32}).build();
+        MainState { planner: specs::Planner::new(world, 4)}
+    }
+
+    fn load(&mut self) -> Result<(), GameError>
     {
-        println!("init");
         Ok(())
     }
     fn update(&mut self, dt: Duration) -> Result<(), GameError>
@@ -25,7 +46,7 @@ impl State for MainState
 }
 
 pub fn main() {
-    let mut g: MainState = MainState;
-    let mut e: Game = Game::new(g);
+    let mut g: MainState = MainState::new();
+    let mut e: Game = Game::new(&mut g);
     e.run();
 }

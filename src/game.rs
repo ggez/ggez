@@ -73,7 +73,7 @@ impl<'e> Game<'e> {
 
         // Initialize State handlers
         for s in &mut self.states {
-            s.init();
+            s.load();
         }
 
         let mut done = false;
