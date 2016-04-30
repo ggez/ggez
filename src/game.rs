@@ -22,8 +22,7 @@ pub struct Game<'e>
 impl<'e> Game<'e> {
     pub fn new<T: State + 'e>(initial_state: T) -> Game<'e>
     {
-        Game
-        {
+        Game {
             states: vec![Box::new(initial_state)]
         }
     }
@@ -105,23 +104,11 @@ impl<'e> Game<'e> {
             renderer.copy(&mut font_texture, None, Some(target));
             renderer.present();
 
-<<<<<<< HEAD
             if let Some(active_state) = self.get_active_state() {
                 active_state.update(delta);
                 active_state.draw();
             } else {
                 done = true;
-=======
-
-            // Updating
-            for s in &mut self.states {
-                s.update(delta);
-            }
-
-            // Rendering
-            for s in &mut self.states {
-                s.draw();
->>>>>>> 90cb90e010b70665e148b68b9bd82a128ade5360
             }
 
             let end_time = timer.ticks();
