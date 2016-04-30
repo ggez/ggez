@@ -3,6 +3,7 @@ extern crate ggez;
 //use ggez::Engine;
 //use ggez::State;
 use ggez::*;
+use std::time::Duration;
 
 struct Game
 {
@@ -13,17 +14,17 @@ impl State for Game
 {
     fn init(&self) -> Result<(), GameError>
     {
-        print!("init");
+        println!("init");
         Ok(())
     }
-    fn update(&self) -> Result<(), GameError>
+    fn update(&self, d: Duration) -> Result<(), GameError>
     {
-        print!("update");
+        println!("update");
         Ok(())
     }
     fn draw(&self) -> Result<(), GameError>
     {
-        print!("draw");
+        println!("draw");
         Ok(())
     }
 }
