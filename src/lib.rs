@@ -1,5 +1,3 @@
-
-
 extern crate sdl2;
 
 use sdl2::pixels::Color;
@@ -8,17 +6,12 @@ use sdl2::keyboard::Keycode::*;
 use std::thread;
 use std::time::Duration;
 
+mod state;
 
+pub use state::State;
 
 pub enum GameError {
     Lolwtf
-}
-
-// TODO move to state.rs
-pub trait State {
-    fn init(&self) -> Result<(), GameError>;
-    fn update(&self, d: Duration) -> Result<(), GameError>;
-    fn draw(&self) -> Result<(), GameError>;
 }
 
 pub struct Engine<'e>
