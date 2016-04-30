@@ -1,4 +1,7 @@
 use state::State;
+use resources::{ResourceManager,
+                TextureManager,
+                FontManager};
 
 use std::path::Path;
 use std::thread;
@@ -46,9 +49,12 @@ impl<'e> Game<'e> {
         let mut timer = sdl_context.timer().unwrap();
         let mut event_pump = sdl_context.event_pump().unwrap();
         let video = sdl_context.video().unwrap();
-        let ttf_context = sdl2_ttf::init().unwrap();
 
-        let mut font = ttf_context.load_font(Path::new("resources/DejaVuSerif.ttf"), 128).unwrap();
+        let mut resource_manager = ResourceManager::new().unwrap();
+
+        resource_manager.load_font("DejaVuSerif", "resources/DejaVuSerif.ttf").unwrap();
+
+        let mut font = resource_manager.get_font("DejaVuSerif", 128).unwrap();
         let surface = font.render("ruffel")
                           .blended(Color::rand(&mut rng))
                           .unwrap();

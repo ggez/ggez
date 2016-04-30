@@ -50,20 +50,18 @@ impl TextureManager for ResourceManager {
 }
 
 pub trait FontManager {
-    fn load_font<T: LoadTexture>(&mut self,
+    fn load_font<P: AsRef<Path>>(&mut self,
                                  name: &str,
-                                 filename: &Path,
-                                 loader: &T) -> Result<(), GameError>;
+                                 filename: P) -> Result<(), GameError>;
     fn get_font(&mut self, name: &str, size: u16) -> Result<&Font, GameError>;
 }
 
 impl FontManager for ResourceManager {
-    fn load_font<T: LoadTexture>(&mut self,
+    fn load_font<P: AsRef<Path>>(&mut self,
                                  name: &str,
-                                 filename: &Path,
-                                 loader: &T) -> Result<(), GameError> {
-        if filename.is_file() {
-            self.font_type_faces.insert(name.to_string(), filename.into());
+                                 filename: P) -> Result<(), GameError> {
+        if filename.as_ref().is_file() {
+            self.font_type_faces.insert(name.to_string(), filename.as_ref().into());
             Ok(())
         } else {
             Err(GameError::ResourceNotFound)
@@ -85,18 +83,9 @@ impl FontManager for ResourceManager {
 
 #[test]
 fn test_render_fonts() {
-    use sdl2_image::LoadTexture;
-    struct Renderer;
-    impl LoadTexture for Renderer {
-        fn load_texture(&self, filename: &Path) -> Result<Texture, String> {
-            Err(String::from(""))
-        }
-    }
-    let renderer = Renderer;
-
     let mut resource_manager = ResourceManager::new().expect("Init ResourceManager failed");
 
-    resource_manager.load_font("Dejavu", Path::new("resources/DejaVuSerif.ttf"), &renderer).expect("File not found");
+    resource_manager.load_font("Dejavu", "resources/DejaVuSerif.ttf").expect("File not found");
     assert_eq!(1, resource_manager.font_type_faces.len());
 
     resource_manager.get_font("Dejavu", 128).expect("Load font 128 failed");
