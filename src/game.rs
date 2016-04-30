@@ -1,4 +1,5 @@
 use state::State;
+use context::Context;
 use resources::{ResourceManager, TextureManager, FontManager};
 use GameError;
 
@@ -7,47 +8,33 @@ use std::thread;
 use std::option;
 use std::time::Duration;
 
-use sdl2;
-use sdl2::Sdl;
 use sdl2::pixels::Color;
 use sdl2::event::Event::*;
-use sdl2::rect::Rect;
 use sdl2::keyboard::Keycode::*;
-use sdl2::render::{Renderer, Texture, TextureQuery};
 use sdl2::surface::Surface;
-use sdl2_ttf::{self, PartialRendering};
 
-use rand::{self, Rng, Rand};
-use rand::distributions::{IndependentSample, Range};
+use rand::{self, Rand};
 
 use sdl2_mixer;
 use sdl2_mixer::{INIT_MP3, INIT_FLAC, INIT_MOD, INIT_FLUIDSYNTH, INIT_MODPLUG, INIT_OGG,
                  AUDIO_S16LSB};
 
-
-pub struct Context {
-    sdl_context: Sdl,
-    // TODO add mixer and ttf systems to enginestate
-    pub resources: ResourceManager
-}
-
-pub struct Game<S: State> {
-    window_title: String,
+pub struct Game<'a, S: State> {
+    window_title: &'static str,
     screen_width: u32,
     screen_height: u32,
     states: Vec<S>,
-    context: Option<Context>
+    context: Option<Context<'a>>,
 }
 
-impl<S: State> Game<S> {
-    pub fn new(initial_state: S) -> Game<S> {
-        Game
-        {
-            window_title: String::from("Ruffel"),
+impl<'a, S: State> Game<'a, S> {
+    pub fn new(initial_state: S) -> Game<'a, S> {
+        Game {
+            window_title: "Ruffel",
             screen_width: 800,
             screen_height: 600,
             states: vec![initial_state],
-            context: None
+            context: None,
         }
     }
 
@@ -61,16 +48,15 @@ impl<S: State> Game<S> {
         self.states.last_mut()
     }
 
-    /// Remove verbose debug output
-    fn init_sound_system(&mut self)
-    {
+    // Remove verbose debug output
+    fn init_sound_system(&mut self) {
         let mut ctx = self.context.take().unwrap();
         let _audio = ctx.sdl_context.audio().unwrap();
         let mut timer = ctx.sdl_context.timer().unwrap();
         let _mixer_context = sdl2_mixer::init(INIT_MP3 | INIT_FLAC | INIT_MOD | INIT_FLUIDSYNTH |
                                               INIT_MODPLUG |
                                               INIT_OGG)
-                                .unwrap();
+                                 .unwrap();
 
         let frequency = 44100;
         let format = AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
@@ -101,13 +87,7 @@ impl<S: State> Game<S> {
     }
 
     pub fn run(&mut self) {
-
-        let sdl_context = sdl2::init().unwrap();
-        let resources = ResourceManager::new();
-        let mut ctx = Context {
-            sdl_context: sdl_context,
-            resources: resources.unwrap()
-        };
+        let mut ctx = Context::new(self.window_title, self.screen_width, self.screen_height);
 
         self.context = Some(ctx);
         self.init_sound_system();
@@ -115,43 +95,8 @@ impl<S: State> Game<S> {
         let mut rng = rand::thread_rng();
         let mut timer = ctx.sdl_context.timer().unwrap();
         let mut event_pump = ctx.sdl_context.event_pump().unwrap();
-        let video = ctx.sdl_context.video().unwrap();
 
-
-
-        let window = video.window(self.window_title.as_str(), self.screen_width, self.screen_height)
-                          .position_centered()
-                          .opengl()
-                          .build()
-                          .unwrap();
-
-        let mut renderer = window.renderer()
-                                 .accelerated()
-                                 .build()
-                                 .unwrap();
-
-
-        // let resource_manager = &mut ctx.resources;
         ctx.resources.load_font("DejaVuSerif", "resources/DejaVuSerif.ttf").unwrap();
-
-        let mut font_texture1 =
-            create_font_surface("roffl", "DejaVuSerif", 128, &mut ctx.resources)
-                            .unwrap()
-                            .blended(Color::rand(&mut rng))
-                            .map_err(|_| GameError::Lolwtf)
-                            .and_then(|s| renderer.create_texture_from_surface(&s)
-                                                  .map_err(|_| GameError::Lolwtf)).unwrap();
-
-        let mut font_texture2 =
-            create_font_surface("fizzbazz", "DejaVuSerif", 72, &mut ctx.resources)
-                            .unwrap()
-                            .blended(Color::rand(&mut rng))
-                            .map_err(|_| GameError::Lolwtf)
-                            .and_then(|s| renderer.create_texture_from_surface(&s)
-                                                  .map_err(|_| GameError::Lolwtf)).unwrap();
-
-        // TODO move the context into context option
-        // let TextureQuery { width, height, .. } = font_texture.query();
 
         // If the example text is too big for the screen, downscale it (and center irregardless)
         let padding = 64;
@@ -180,20 +125,13 @@ impl<S: State> Game<S> {
                 }
             }
 
-            let between = Range::new(0, 400);
-            let target = Rect::new(between.ind_sample(&mut rng),
-                                   50,
-                                   between.ind_sample(&mut rng) as u32,
-                                   500);
-            renderer.set_draw_color(Color::rand(&mut rng));
-            renderer.clear();
-            renderer.copy(&mut font_texture1, None, Some(target));
-            renderer.copy(&mut font_texture2, None, Some(target));
-            renderer.present();
-
             if let Some(active_state) = self.get_active_state() {
                 active_state.update(&mut ctx, delta);
-                active_state.draw();
+
+                ctx.renderer.set_draw_color(Color::rand(&mut rng));
+                ctx.renderer.clear();
+                active_state.draw(&mut ctx);
+                ctx.renderer.present();
             } else {
                 done = true;
             }
@@ -207,28 +145,19 @@ impl<S: State> Game<S> {
     }
 }
 
-    pub fn play_sound(ctx: &mut Context, sound: &str) -> Result<(), GameError> {
-        let resource = ctx.resources.get_sound(sound);
-        match resource
-        {
-            Some(music) => {
-                println!("music => {:?}", music);
-                println!("music type => {:?}", music.get_type());
-                println!("music volume => {:?}", sdl2_mixer::Music::get_volume());
-                println!("play => {:?}", music.play(1));
-                println!("You've played well");
-            }
-            None => {
-                println!("No such resource!");
-            }
+pub fn play_sound(ctx: &mut Context, sound: &str) -> Result<(), GameError> {
+    let resource = ctx.resources.get_sound(sound);
+    match resource {
+        Some(music) => {
+            println!("music => {:?}", music);
+            println!("music type => {:?}", music.get_type());
+            println!("music volume => {:?}", sdl2_mixer::Music::get_volume());
+            println!("play => {:?}", music.play(1));
+            println!("You've played well");
         }
-        Ok(())
+        None => {
+            println!("No such resource!");
+        }
     }
-
-fn create_font_surface<'a>(text: &'a str,
-                       font_name: &str,
-                       size: u16,
-                       resource_manager: &'a mut ResourceManager) -> Result<PartialRendering<'a>, GameError> {
-    let mut font = try!(resource_manager.get_font(font_name, size));
-    Ok(font.render(text))
+    Ok(())
 }

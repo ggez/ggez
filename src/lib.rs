@@ -7,10 +7,11 @@ extern crate rand;
 mod state;
 pub mod game;
 mod resources;
+mod context;
 
 pub use state::State;
 pub use game::Game;
-pub use game::Context;
+pub use context::Context;
 
 #[derive(Debug)]
 pub enum GameError {

@@ -16,7 +16,7 @@ pub struct ResourceManager {
     fonts: HashMap<(String, u16), Font>,
     font_type_faces: HashMap<String, PathBuf>,
     ttf_context: Sdl2TtfContext,
-    sounds: HashMap<String, Music>
+    sounds: HashMap<String, Music>,
 }
 
 impl ResourceManager {
@@ -28,7 +28,7 @@ impl ResourceManager {
             fonts: HashMap::new(),
             font_type_faces: HashMap::new(),
             ttf_context: ttf_context,
-            sounds: HashMap::new()
+            sounds: HashMap::new(),
         })
     }
 
@@ -39,7 +39,7 @@ impl ResourceManager {
                 self.sounds.insert(name.to_string(), texture);
                 Ok(())
             }
-            Err(msg) => Err(GameError::ResourceLoadError(msg))
+            Err(msg) => Err(GameError::ResourceLoadError(msg)),
         }
     }
 

@@ -59,8 +59,9 @@ impl State for MainState {
         Ok(())
     }
 
-    fn draw(&mut self) -> Result<(), GameError> {
+    fn draw(&mut self, ctx: &mut Context) -> Result<(), GameError> {
         // println!("draw");
+        ctx.print("roflcopter", 100, 100);
         Ok(())
     }
 }
