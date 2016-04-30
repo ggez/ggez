@@ -16,24 +16,28 @@ use rand::distributions::{IndependentSample, Range};
 
 pub struct Game<'e>
 {
-    states: Vec<&'e mut State>
+    states: Vec<Box<State + 'e>>
 }
 
 impl<'e> Game<'e> {
-    pub fn new(state: &'e mut State) -> Game<'e>
+    pub fn new<T: State + 'e>(initial_state: T) -> Game<'e>
     {
         Game
         {
-            states: vec![state]
+            states: vec![Box::new(initial_state)]
         }
     }
 
-    pub fn push_state(&mut self, state: &'e mut State) {
-        self.states.push(state)
+    pub fn push_state<T: State + 'e>(&mut self, state: T) {
+        self.states.push(Box::new(state));
     }
 
     pub fn pop_state() {
 
+    }
+
+    fn get_active_state(&mut self) -> Option<&mut Box<State + 'e>> {
+        self.states.last_mut()
     }
 
     pub fn run(&mut self) {
@@ -95,17 +99,11 @@ impl<'e> Game<'e> {
             renderer.copy(&mut font_texture, None, Some(target));
             renderer.present();
 
-
-            // Updating
-            for s in &mut self.states
-            {
-                s.update(delta);
-            }
-
-            // Rendering
-            for s in &mut self.states
-            {
-                s.draw();
+            if let Some(active_state) = self.get_active_state() {
+                active_state.update(delta);
+                active_state.draw();
+            } else {
+                done = true;
             }
 
             let end_time = timer.ticks();
