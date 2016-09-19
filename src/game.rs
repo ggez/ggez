@@ -1,7 +1,8 @@
 use state::State;
 use context::Context;
 use resources::{ResourceManager, TextureManager, FontManager};
-use GameError;
+use ::GameError;
+use ::warn;
 
 use std::path::Path;
 use std::thread;
@@ -15,10 +16,8 @@ use sdl2::surface::Surface;
 
 use rand::{self, Rand};
 
-use sdl2_mixer;
-use sdl2_mixer::{INIT_MP3, INIT_FLAC, INIT_MOD, INIT_FLUIDSYNTH, INIT_MODPLUG, INIT_OGG,
-                 AUDIO_S16LSB};
 
+#[derive(Debug)]
 pub struct Game<'a, S: State> {
     window_title: &'static str,
     screen_width: u32,
@@ -50,50 +49,12 @@ impl<'a, S: State> Game<'a, S> {
         self.states.last_mut()
     }
 
-    // Remove verbose debug output
-    fn init_sound_system(&mut self) -> Result<(), GameError> {
-        let mut ctx = self.context.take().unwrap();
-        let _audio = ctx.sdl_context.audio().unwrap();
-        let mut timer = ctx.sdl_context.timer().unwrap();
-        let _mixer_context = sdl2_mixer::init(INIT_MP3 | INIT_FLAC | INIT_MOD | INIT_FLUIDSYNTH |
-                                              INIT_MODPLUG |
-                                              INIT_OGG)
-                                 .unwrap();
-
-        let frequency = 44100;
-        let format = AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
-        let channels = 2; // Stereo
-        let chunk_size = 1024;
-        let _ = sdl2_mixer::open_audio(frequency, format, channels, chunk_size).unwrap();
-        sdl2_mixer::allocate_channels(0);
-
-        {
-            let n = sdl2_mixer::get_chunk_decoders_number();
-            println!("available chunk(sample) decoders: {}", n);
-            for i in 0..n {
-                println!("  decoder {} => {}", i, sdl2_mixer::get_chunk_decoder(i));
-            }
-        }
-
-        {
-            let n = sdl2_mixer::get_music_decoders_number();
-            println!("available music decoders: {}", n);
-            for i in 0..n {
-                println!("  decoder {} => {}", i, sdl2_mixer::get_music_decoder(i));
-            }
-        }
-
-        println!("query spec => {:?}", sdl2_mixer::query_spec());
-
-        self.context = Some(ctx);
-        Ok(())
-    }
 
     pub fn run(&mut self) -> Result<(), GameError> {
-        let mut ctx = Context::new(self.window_title, self.screen_width, self.screen_height).unwrap();
+        let mut ctx = try!(Context::new(self.window_title, self.screen_width, self.screen_height));
 
         self.context = Some(ctx);
-        //try!(self.init_sound_system());
+        //self.init_sound_system().or_else(warn);
         let mut ctx = self.context.take().unwrap();
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
@@ -152,11 +113,12 @@ pub fn play_sound(ctx: &mut Context, sound: &str) -> Result<(), GameError> {
     let resource = ctx.resources.get_sound(sound);
     match resource {
         Some(music) => {
-            println!("music => {:?}", music);
-            println!("music type => {:?}", music.get_type());
-            println!("music volume => {:?}", sdl2_mixer::Music::get_volume());
-            println!("play => {:?}", music.play(1));
-            println!("You've played well");
+            // println!("music => {:?}", music);
+            // println!("music type => {:?}", music.get_type());
+            // println!("music volume => {:?}", sdl2_mixer::Music::get_volume());
+            // println!("play => {:?}", music.play(1));
+            // println!("You've played well");
+            ()
         }
         None => {
             println!("No such resource!");

@@ -22,6 +22,11 @@ pub enum GameError {
     WindowError(sdl2::video::WindowBuildError),
 }
 
+fn warn(err: GameError) -> Result<(), GameError> {
+    println!("WARNING: Encountered error: {:?}", err);
+    Ok(())
+}
+
 impl From<String> for GameError {
     fn from(s: String) -> GameError {
         GameError::ArbitraryError(s)
