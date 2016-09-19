@@ -76,7 +76,7 @@ impl TextureManager for ResourceManager {
     fn get_texture(&self, name: &str) -> Result<&Texture, GameError> {
         self.textures
             .get(name)
-            .ok_or(GameError::ResourceNotFound)
+            .ok_or(GameError::ResourceNotFound(String::from(name)))
     }
 }
 
@@ -91,7 +91,7 @@ impl FontManager for ResourceManager {
             self.font_type_faces.insert(name.to_string(), filename.as_ref().into());
             Ok(())
         } else {
-            Err(GameError::ResourceNotFound)
+            Err(GameError::ResourceNotFound(String::from(name)))
         }
     }
 
@@ -99,7 +99,7 @@ impl FontManager for ResourceManager {
         let key = (name.to_string(), size);
         let font_path = try!(self.font_type_faces
             .get(name)
-            .ok_or(GameError::ResourceNotFound));
+            .ok_or(GameError::ResourceNotFound(String::from(name))));
         let ttf_context = &mut self.ttf_context;
 
         Ok(self.fonts

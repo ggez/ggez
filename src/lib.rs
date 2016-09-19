@@ -6,6 +6,7 @@ extern crate rand;
 
 mod state;
 pub mod game;
+mod filesystem;
 mod resources;
 mod context;
 
@@ -18,7 +19,7 @@ pub enum GameError {
     Lolwtf,
     ArbitraryError(String),
     ResourceLoadError(String),
-    ResourceNotFound,
+    ResourceNotFound(String),
     WindowError(sdl2::video::WindowBuildError),
 }
 
