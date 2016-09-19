@@ -19,25 +19,28 @@ pub struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
-    pub fn new(window_title: &str, screen_width: u32, screen_height: u32) -> Context<'a> {
-        let sdl_context = sdl2::init().unwrap();
-        let video = sdl_context.video().unwrap();
-        let window = video.window(window_title, screen_width, screen_height)
+    pub fn new(window_title: &str, screen_width: u32, screen_height: u32) -> Result<Context<'a>, GameError> {
+        let sdl_context = try!(sdl2::init());
+        let video = try!(sdl_context.video());
+        let window = try!(video.window(window_title, screen_width, screen_height)
                           .position_centered()
                           .opengl()
-                          .build()
-                          .unwrap();
-        let mut renderer = window.renderer()
+                          .build());
+
+        let mut renderer = try!(window.renderer()
                                  .accelerated()
-                                 .build()
-                                 .unwrap();
+                                .build());
+
+        // Can creating a ResourceManager actually fail?
+        // Only if it finds no resource files, perhaps...
+        // But even then.
         let resources = ResourceManager::new().unwrap();
 
-        Context {
+        Ok(Context {
             sdl_context: sdl_context,
             resources: resources,
             renderer: renderer,
-        }
+        })
     }
 
     pub fn print(&mut self, text: &str, x: u32, y: u32) {

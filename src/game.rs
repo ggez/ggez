@@ -42,7 +42,9 @@ impl<'a, S: State> Game<'a, S> {
         self.states.push(state);
     }
 
-    pub fn pop_state() {}
+    pub fn pop_state(&mut self) {
+        self.states.pop();
+    }
 
     fn get_active_state(&mut self) -> Option<&mut S> {
         self.states.last_mut()
@@ -87,7 +89,7 @@ impl<'a, S: State> Game<'a, S> {
     }
 
     pub fn run(&mut self) {
-        let mut ctx = Context::new(self.window_title, self.screen_width, self.screen_height);
+        let mut ctx = Context::new(self.window_title, self.screen_width, self.screen_height).unwrap();
 
         self.context = Some(ctx);
         self.init_sound_system();
