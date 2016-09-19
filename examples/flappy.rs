@@ -1,5 +1,10 @@
 extern crate ggez;
 extern crate specs;
+extern crate rand;
+extern crate sdl2;
+
+use rand::Rand;
+use sdl2::pixels::Color;
 
 use ggez::{game, Game, State, GameError, Context};
 use std::time::Duration;
@@ -61,7 +66,12 @@ impl State for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> Result<(), GameError> {
         // println!("draw");
-        ctx.print("roflcopter", 100, 100);
+        let mut rng = rand::thread_rng();
+        ctx.renderer.set_draw_color(Color::rand(&mut rng));
+        ctx.renderer.clear();
+        //ctx.print("roflcopter", 100, 100);
+        ctx.renderer.present();
+
         Ok(())
     }
 }

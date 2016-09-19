@@ -92,7 +92,7 @@ impl<'a, S: State> Game<'a, S> {
         self.context = Some(ctx);
         self.init_sound_system();
         let mut ctx = self.context.take().unwrap();
-        let mut rng = rand::thread_rng();
+        //let mut rng = rand::thread_rng();
         let mut timer = ctx.sdl_context.timer().unwrap();
         let mut event_pump = ctx.sdl_context.event_pump().unwrap();
 
@@ -128,10 +128,10 @@ impl<'a, S: State> Game<'a, S> {
             if let Some(active_state) = self.get_active_state() {
                 active_state.update(&mut ctx, delta);
 
-                ctx.renderer.set_draw_color(Color::rand(&mut rng));
-                ctx.renderer.clear();
+                //ctx.renderer.set_draw_color(Color::rand(&mut rng));
+                //ctx.renderer.clear();
                 active_state.draw(&mut ctx);
-                ctx.renderer.present();
+                //ctx.renderer.present();
             } else {
                 done = true;
             }
