@@ -51,7 +51,7 @@ impl<'a, S: State> Game<'a, S> {
     }
 
     // Remove verbose debug output
-    fn init_sound_system(&mut self) {
+    fn init_sound_system(&mut self) -> Result<(), GameError> {
         let mut ctx = self.context.take().unwrap();
         let _audio = ctx.sdl_context.audio().unwrap();
         let mut timer = ctx.sdl_context.timer().unwrap();
@@ -86,17 +86,17 @@ impl<'a, S: State> Game<'a, S> {
         println!("query spec => {:?}", sdl2_mixer::query_spec());
 
         self.context = Some(ctx);
+        Ok(())
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), GameError> {
         let mut ctx = Context::new(self.window_title, self.screen_width, self.screen_height).unwrap();
 
         self.context = Some(ctx);
-        self.init_sound_system();
+        //try!(self.init_sound_system());
         let mut ctx = self.context.take().unwrap();
-        //let mut rng = rand::thread_rng();
-        let mut timer = ctx.sdl_context.timer().unwrap();
-        let mut event_pump = ctx.sdl_context.event_pump().unwrap();
+        let mut timer = try!(ctx.sdl_context.timer());
+        let mut event_pump = try!(ctx.sdl_context.event_pump());
 
         ctx.resources.load_font("DejaVuSerif", "resources/DejaVuSerif.ttf").unwrap();
 
@@ -144,6 +144,7 @@ impl<'a, S: State> Game<'a, S> {
         }
 
         self.context = Some(ctx);
+        Ok(())
     }
 }
 

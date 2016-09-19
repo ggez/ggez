@@ -69,7 +69,7 @@ impl State for MainState {
         let mut rng = rand::thread_rng();
         ctx.renderer.set_draw_color(Color::rand(&mut rng));
         ctx.renderer.clear();
-        //ctx.print("roflcopter", 100, 100);
+        ctx.print("roflcopter", 100, 100);
         ctx.renderer.present();
 
         Ok(())
@@ -79,5 +79,10 @@ impl State for MainState {
 pub fn main() {
     let mut g = MainState::new();
     let mut e: Game<MainState> = Game::new(g);
-    e.run();
+    let result = e.run();
+    if let Err(e) = result {
+        println!("Error encountered: {:?}", e);
+    } else {
+        println!("Game exited cleanly.");
+    }
 }
