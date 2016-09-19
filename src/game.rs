@@ -54,7 +54,7 @@ impl<'a, S: State> Game<'a, S> {
         let mut ctx = try!(Context::new(self.window_title, self.screen_width, self.screen_height));
 
         self.context = Some(ctx);
-        //self.init_sound_system().or_else(warn);
+        // self.init_sound_system().or_else(warn);
         let mut ctx = self.context.take().unwrap();
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
@@ -91,10 +91,10 @@ impl<'a, S: State> Game<'a, S> {
             if let Some(active_state) = self.get_active_state() {
                 active_state.update(&mut ctx, delta);
 
-                //ctx.renderer.set_draw_color(Color::rand(&mut rng));
-                //ctx.renderer.clear();
+                // ctx.renderer.set_draw_color(Color::rand(&mut rng));
+                // ctx.renderer.clear();
                 active_state.draw(&mut ctx);
-                //ctx.renderer.present();
+                // ctx.renderer.present();
             } else {
                 done = true;
             }

@@ -45,8 +45,8 @@ impl From<sdl2::IntegerOrSdlError> for GameError {
             sdl2::IntegerOrSdlError::IntegerOverflows(s, i) => {
                 let message = format!("Integer overflow: {}, str {}", i, s);
                 GameError::ArbitraryError(message)
-                },
-            sdl2::IntegerOrSdlError::SdlError(s) => GameError::ArbitraryError(s)
+            }
+            sdl2::IntegerOrSdlError::SdlError(s) => GameError::ArbitraryError(s),
         }
     }
 }

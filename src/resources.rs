@@ -12,7 +12,7 @@ use sdl2_ttf::{self, Font, Sdl2TtfContext};
 use GameError;
 
 pub struct ResourceManager {
-    images: HashMap<String, Texture>,
+    textures: HashMap<String, Texture>,
     fonts: HashMap<(String, u16), Font>,
     font_type_faces: HashMap<String, PathBuf>,
     ttf_context: Sdl2TtfContext,
@@ -24,7 +24,7 @@ impl ResourceManager {
         let ttf_context = try!(sdl2_ttf::init().map_err(|_| GameError::Lolwtf));
 
         Ok(ResourceManager {
-            images: HashMap::new(),
+            textures: HashMap::new(),
             fonts: HashMap::new(),
             font_type_faces: HashMap::new(),
             ttf_context: ttf_context,
@@ -66,7 +66,7 @@ impl TextureManager for ResourceManager {
         let resource = loader.load_texture(filename);
         match resource {
             Ok(texture) => {
-                self.images.insert(name.to_string(), texture);
+                self.textures.insert(name.to_string(), texture);
                 Ok(())
             }
             Err(msg) => Err(GameError::ResourceLoadError(msg)),
@@ -74,7 +74,7 @@ impl TextureManager for ResourceManager {
     }
 
     fn get_texture(&self, name: &str) -> Result<&Texture, GameError> {
-        self.images
+        self.textures
             .get(name)
             .ok_or(GameError::ResourceNotFound)
     }
@@ -98,13 +98,13 @@ impl FontManager for ResourceManager {
     fn get_font(&mut self, name: &str, size: u16) -> Result<&Font, GameError> {
         let key = (name.to_string(), size);
         let font_path = try!(self.font_type_faces
-                                 .get(name)
-                                 .ok_or(GameError::ResourceNotFound));
+            .get(name)
+            .ok_or(GameError::ResourceNotFound));
         let ttf_context = &mut self.ttf_context;
 
         Ok(self.fonts
-               .entry(key)
-               .or_insert_with(|| ttf_context.load_font(Path::new(font_path), size).unwrap()))
+            .entry(key)
+            .or_insert_with(|| ttf_context.load_font(Path::new(font_path), size).unwrap()))
     }
 }
 
