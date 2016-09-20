@@ -4,6 +4,7 @@ use std::io;
 use std::path;
 
 use ::GameError;
+use ::warn;
 
 /// Provides an interface to the user's filesystem.
 ///
@@ -22,22 +23,6 @@ struct Filesystem {
     resource_path: path::PathBuf,
 }
 
-impl Filesystem {
-    fn new() -> Filesystem {
-        // BUGGO: We should resolve errors here instead of unwrap.
-        let mut root_path = env::current_exe().unwrap();
-        // Ditch the filename (if any)
-        if let Some(_) = root_path.file_name() {
-            root_path.pop();
-        }
-
-        // BUGGO: Check for existence of resources path
-        root_path.push("resources");
-
-        Filesystem { resource_path: root_path }
-    }
-}
-
 /// Represents a file on the filesystem.
 #[derive(Debug)]
 enum File {
@@ -53,15 +38,31 @@ impl io::Read for File {
 }
 
 impl Filesystem {
-    fn open(&self, path: &path::Path) -> Result<File, GameError> {
-        // All paths are relative.
-        if !path.is_relative() {
-            let err = GameError::ResourceNotFound(String::from(path.to_str().unwrap()));
-            return Err(err);
+
+    fn new() -> Filesystem {
+        // BUGGO: We should resolve errors here instead of unwrap.
+        let mut root_path = env::current_exe().unwrap();
+        // Ditch the filename (if any)
+        if let Some(_) = root_path.file_name() {
+            root_path.pop();
         }
 
+        // BUGGO: Check for existence of resources path
+        root_path.push("resources");
+
+        if !root_path.exists() ||
+           !root_path.is_dir() {
+            let message = String::from("'resources' directory not found!");
+            let _ = warn(GameError::ResourceLoadError(message));
+        }
+
+        Filesystem { resource_path: root_path }
+    }
+
+    fn open(&self, path: &path::Path) -> Result<File, GameError> {
+
         // Look in resource directory
-        let pathbuf = self.resource_path.join(path);
+        let pathbuf = try!(self.mongle_path(path));
         if pathbuf.is_file() {
             // BUGGO: Unwrap
             let f = fs::File::open(pathbuf).unwrap();
@@ -77,28 +78,70 @@ impl Filesystem {
         Err(GameError::ResourceNotFound(errmessage))
     }
 
+    /// Takes a relative path and returns an absolute PathBuf
+    /// based in the Filesystem's root path.
+    /// Sorry, can't think of a better name for this.
+    fn mongle_path(&self, path: &path::Path) -> Result<path::PathBuf, GameError> {
+        if !path.is_relative() {
+            let err = GameError::ResourceNotFound(String::from(path.to_str().unwrap()));
+            Err(err)
+        } else {
+            let pathbuf = self.resource_path.join(path);
+            Ok(pathbuf)
+        }
+    }
+
     /// Check whether a file or directory exists.
     fn exists(&self, path: &path::Path) -> bool {
-        false
+        match self.mongle_path(path) {
+            Ok(p) => p.exists(),
+            Err(_) => false,
+        }
+        // TODO: Look in resources.zip, save directory.
     }
 
     /// Check whether a path points at a file.
     fn is_file(&self, path: &path::Path) -> bool {
-        false
+        match self.mongle_path(path) {
+            Ok(p) => p.is_file(),
+            Err(_) => false,
+        }
+        // TODO: Look in resources.zip, save directory.
     }
 
     /// Check wehther a path points at a directory.
     fn is_dir(&self, path: &path::Path) -> bool {
-        false
+        match self.mongle_path(path) {
+            Ok(p) => p.is_dir(),
+            Err(_) => false,
+        }
+        // TODO: Look in resources.zip, save directory.
     }
 
     /// Return the full path to the directory containing the exe
-    fn get_source(&self) {}
+    fn get_source(&self) -> &path::Path {
+        &self.resource_path
+    }
 
     /// Return the full path to the user directory
-    fn get_user_dir(&self) {}
+    /// TODO: Make this work
+    fn get_user_dir(&self) -> &path::Path {
+        &self.resource_path
+    }
 
     /// Returns an iterator over all files and directories in the directory.
     /// Lists the base directory if an empty path is given.
-    fn read_dir(&self, path: &path::Path) {}
+    fn read_dir(&self, path: &path::Path) -> io::Result<fs::ReadDir> {
+        self.get_source().read_dir()
+    }
+}
+
+#[test]
+fn test_filesystem() {
+    let f = Filesystem::new();
+    let mut root_path = env::current_exe().unwrap();
+    root_path.push("resources");
+
+    // I guess it's hard to write tests that rely on external data...
+    //assert_eq!(root_path, f.get_user_dir())
 }
