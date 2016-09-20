@@ -52,7 +52,7 @@ impl State for MainState {
     fn load(&mut self, ctx: &mut Context) -> Result<(), GameError> {
         println!("load");
         ctx.resources.load_sound("sound", Path::new("./resources/sound.mp3")).unwrap();
-        let imagepath = path::Path::new("dragon1.bmp");
+        let imagepath = path::Path::new("dragon1.png");
         self.image = Some(graphics::Image::new(ctx, imagepath));
         Ok(())
     }

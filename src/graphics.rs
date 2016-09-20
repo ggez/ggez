@@ -14,6 +14,7 @@ use sdl2::rect;
 use sdl2::render;
 use sdl2::rwops;
 use sdl2::surface;
+use sdl2_image::ImageRWops;
 
 use context::Context;
 use GameError;
@@ -99,7 +100,8 @@ impl Image {
         }
 
         let mut rwops = rw.unwrap();
-        let surf = surface::Surface::load_bmp_rw(&mut rwops).unwrap();
+        // SDL2_image SNEAKILY adds this method to RWops.
+        let surf = rwops.load().unwrap();
         let tex = renderer.create_texture_from_surface(surf).unwrap();
         Image {
             texture: tex,
