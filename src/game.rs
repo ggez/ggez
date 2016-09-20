@@ -1,12 +1,15 @@
 use state::State;
 use context::Context;
 use resources::{ResourceManager, TextureManager, FontManager};
-use ::GameError;
-use ::warn;
+use GameError;
+use warn;
+use conf;
+use filesystem as fs;
 
 use std::path::Path;
 use std::thread;
 use std::option;
+use std::io::Read;
 use std::time::Duration;
 
 use sdl2::pixels::Color;
@@ -17,23 +20,39 @@ use sdl2::surface::Surface;
 use rand::{self, Rand};
 
 
+
 #[derive(Debug)]
 pub struct Game<'a, S: State> {
-    window_title: &'static str,
-    screen_width: u32,
-    screen_height: u32,
+    conf: conf::Conf,
     states: Vec<S>,
     context: Option<Context<'a>>,
 }
 
 impl<'a, S: State> Game<'a, S> {
-    pub fn new(initial_state: S) -> Game<'a, S> {
+    pub fn new(config: conf::Conf, initial_state: S) -> Game<'a, S> {
+        // TODO: Verify config version == this version
         Game {
-            window_title: "Ruffel",
-            screen_width: 800,
-            screen_height: 600,
+            conf: config,
             states: vec![initial_state],
             context: None,
+        }
+    }
+
+    /// Looks for a file named "conf.toml" in the resources directory
+    /// loads it if it finds it.
+    /// If it can't read it for some reason, returns an error.
+    pub fn from_config_file(initial_state: S) -> Result<Game<'a, S>, GameError> {
+        let fs = fs::Filesystem::new();
+        let conf_path = Path::new("conf.toml");
+        if fs.is_file(conf_path) {
+            let mut file = try!(fs.open(conf_path));
+            let c = try!(conf::Conf::from_toml_file(&mut file));
+            Ok(Game::new(c, initial_state))
+
+        } else {
+            let msg = String::from("Config file 'conf.toml' not found");
+            let err = GameError::ResourceNotFound(msg);
+            Err(err)
         }
     }
 
@@ -51,7 +70,11 @@ impl<'a, S: State> Game<'a, S> {
 
 
     pub fn run(&mut self) -> Result<(), GameError> {
-        let mut ctx = try!(Context::new(self.window_title, self.screen_width, self.screen_height));
+        // TODO: Window icon
+        // TODO: Module init should all happen in the Context
+        let mut ctx = try!(Context::new(&self.conf.window_title,
+                                        self.conf.window_width,
+                                        self.conf.window_height));
 
         self.context = Some(ctx);
         // self.init_sound_system().or_else(warn);

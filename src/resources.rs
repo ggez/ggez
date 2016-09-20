@@ -98,13 +98,13 @@ impl FontManager for ResourceManager {
     fn get_font(&mut self, name: &str, size: u16) -> Result<&Font, GameError> {
         let key = (name.to_string(), size);
         let font_path = try!(self.font_type_faces
-            .get(name)
-            .ok_or(GameError::ResourceNotFound(String::from(name))));
+                                 .get(name)
+                                 .ok_or(GameError::ResourceNotFound(String::from(name))));
         let ttf_context = &mut self.ttf_context;
 
         Ok(self.fonts
-            .entry(key)
-            .or_insert_with(|| ttf_context.load_font(Path::new(font_path), size).unwrap()))
+               .entry(key)
+               .or_insert_with(|| ttf_context.load_font(Path::new(font_path), size).unwrap()))
     }
 }
 
