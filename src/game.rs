@@ -42,6 +42,7 @@ impl<'a, S: State> Game<'a, S> {
     /// Looks for a file named "conf.toml" in the resources directory
     /// loads it if it finds it.
     /// If it can't read it for some reason, returns an error.
+    /// (Probably best used with `.or(some_default)`)
     pub fn from_config_file(initial_state: S) -> Result<Game<'a, S>, GameError> {
         let fs = fs::Filesystem::new();
         let conf_path = Path::new("conf.toml");

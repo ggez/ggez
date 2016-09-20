@@ -3,8 +3,11 @@ use std::fs;
 use std::io;
 use std::path;
 
+use sdl2;
+
 use GameError;
 use warn;
+use conf;
 
 /// Provides an interface to the user's filesystem.
 ///
@@ -21,12 +24,15 @@ use warn;
 /// TODO: See SDL_GetBasePath and SDL_GetPrefPath!
 #[derive(Debug)]
 pub struct Filesystem {
+    base_path: path::PathBuf,
+    user_path: path::PathBuf,
     resource_path: path::PathBuf,
 }
 
-/// Represents a file on the filesystem.
+/// Represents a file, either in the filesystem, or in the resources zip file,
+/// or whatever.
 #[derive(Debug)]
-enum File {
+pub enum File {
     FSFile(fs::File),
 }
 
@@ -41,22 +47,37 @@ impl io::Read for File {
 impl Filesystem {
     pub fn new() -> Filesystem {
         // BUGGO: We should resolve errors here instead of unwrap.
-        let mut root_path = env::current_exe().unwrap();
+        let root_path_string = sdl2::filesystem::base_path().unwrap();
+        // BUGGO: We need to have the application ID in this path somehow,
+        // except the best place to put it would be in the Conf object...
+        // which is loaded using the Filesystem.  Hmmmm.
+        // We probably need a Filesystem::config_file_path() function to
+        // bootstrap the process.
+        let pref_path_string = sdl2::filesystem::pref_path("ggez", "").ok().unwrap();
+
+        let mut root_path = path::PathBuf::from(root_path_string);
         // Ditch the filename (if any)
         if let Some(_) = root_path.file_name() {
             root_path.pop();
         }
 
-        // BUGGO: Check for existence of resources path
-        root_path.push("resources");
-
-        if !root_path.exists() || !root_path.is_dir() {
+        let mut resource_path = root_path.clone();
+        resource_path.push("resources");
+        // TODO: This should also check for resources.zip
+        if !resource_path.exists() || !resource_path.is_dir() {
             let message = String::from("'resources' directory not found!");
             let _ = warn(GameError::ResourceLoadError(message));
         }
 
-        Filesystem { resource_path: root_path }
+        let user_path = path::PathBuf::from(pref_path_string);
+
+        Filesystem {
+            resource_path: resource_path,
+            base_path: root_path,
+            user_path: user_path
+        }
     }
+
 
     pub fn open(&self, path: &path::Path) -> Result<File, GameError> {
 
@@ -118,37 +139,55 @@ impl Filesystem {
     }
 
     /// Return the full path to the directory containing the exe
-    pub fn get_source(&self) -> &path::Path {
-        &self.resource_path
+    pub fn get_source_dir(&self) -> &path::Path {
+        &self.base_path
     }
 
     /// Return the full path to the user directory
-    /// TODO: Make this work
     pub fn get_user_dir(&self) -> &path::Path {
+        &self.user_path
+    }
+
+    /// Returns the full path to the resource directory
+    /// (even if it doesn't exist)
+    pub fn get_resource_dir(&self) -> &path::Path {
         &self.resource_path
     }
 
     /// Returns an iterator over all files and directories in the directory.
     /// Lists the base directory if an empty path is given.
     pub fn read_dir(&self, path: &path::Path) -> io::Result<fs::ReadDir> {
-        self.get_source().read_dir()
+        let dest = self.resource_path.join(path);
+        dest.read_dir()
     }
 }
 
-#[test]
-fn test_filesystem() {
-    //let f = Filesystem::new();
+fn get_dummy_fs_for_tests() -> Filesystem {
     let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("resources");
-    let f = Filesystem { resource_path: path};
+    let f = Filesystem {
+        resource_path: path.clone(),
+        user_path: path.clone(),
+        base_path: path.clone(),
+    };
+    f
+
+}
+
+#[test]
+fn test_file_exists() {
+    let f = get_dummy_fs_for_tests();
 
     let tile_file = path::Path::new("tile.png");
     assert!(f.exists(tile_file));
     assert!(f.is_file(tile_file));
-    //let mut root_path = env::current_exe().unwrap();
-    //root_path.push("resources");
+}
 
-    // I guess it's hard to write tests that rely on external data...
-    // assert_eq!(root_path, f.get_user_dir())
-    //assert_eq!(f.resource_path.to_str().unwrap(), "foobaz");
+#[test]
+fn test_read_dir() {
+    let f = get_dummy_fs_for_tests();
+
+    let dir_contents_size = f.read_dir(path::Path::new("")).unwrap().count();
+    assert!(dir_contents_size > 0);
+    
 }

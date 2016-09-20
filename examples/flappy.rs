@@ -79,7 +79,7 @@ impl State for MainState {
 
 pub fn main() {
     let g = MainState::new();
-    let c = conf::Conf::new();
+    let c = conf::Conf::new("flappy");
     println!("Default config: {:#?}", c);
     let mut e: Game<MainState> = Game::new(c, g);
     let result = e.run();

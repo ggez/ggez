@@ -12,7 +12,7 @@ use GameError;
 #[derive(RustcDecodable, Debug)]
 pub struct Conf {
     /// The name of the save directory
-    // id: String,
+    pub id: String,
     /// Version of ggez your game is designed to work with.
     pub version: String,
 
@@ -46,8 +46,9 @@ pub struct Conf {
 }
 
 impl Conf {
-    pub fn new() -> Conf {
+    pub fn new(id: &str) -> Conf {
         Conf {
+            id: String::from(id),
             version: String::from("0.0.0"),
             window_title: String::from("An easy, good game"),
             window_icon: String::from(""),
