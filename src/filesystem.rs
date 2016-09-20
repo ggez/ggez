@@ -80,7 +80,7 @@ impl Filesystem {
     /// Takes a relative path and returns an absolute PathBuf
     /// based in the Filesystem's root path.
     /// Sorry, can't think of a better name for this.
-    pub fn mongle_path(&self, path: &path::Path) -> Result<path::PathBuf, GameError> {
+    fn mongle_path(&self, path: &path::Path) -> Result<path::PathBuf, GameError> {
         if !path.is_relative() {
             let err = GameError::ResourceNotFound(String::from(path.to_str().unwrap()));
             Err(err)
@@ -137,10 +137,18 @@ impl Filesystem {
 
 #[test]
 fn test_filesystem() {
-    let f = Filesystem::new();
-    let mut root_path = env::current_exe().unwrap();
-    root_path.push("resources");
+    //let f = Filesystem::new();
+    let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("resources");
+    let f = Filesystem { resource_path: path};
+
+    let tile_file = path::Path::new("tile.png");
+    assert!(f.exists(tile_file));
+    assert!(f.is_file(tile_file));
+    //let mut root_path = env::current_exe().unwrap();
+    //root_path.push("resources");
 
     // I guess it's hard to write tests that rely on external data...
     // assert_eq!(root_path, f.get_user_dir())
+    //assert_eq!(f.resource_path.to_str().unwrap(), "foobaz");
 }
