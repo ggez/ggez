@@ -8,6 +8,7 @@ extern crate toml;
 
 mod state;
 pub mod game;
+mod graphics;
 mod filesystem;
 mod resources;
 mod context;
