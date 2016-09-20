@@ -6,6 +6,7 @@ extern crate sdl2;
 use rand::Rand;
 use sdl2::pixels::Color;
 
+use ggez::conf;
 use ggez::{game, Game, State, GameError, Context};
 use std::time::Duration;
 use std::path::Path;
@@ -78,7 +79,9 @@ impl State for MainState {
 
 pub fn main() {
     let g = MainState::new();
-    let mut e: Game<MainState> = Game::new(g);
+    let c = conf::Conf::new();
+    println!("Default config: {:#?}", c);
+    let mut e: Game<MainState> = Game::new(c, g);
     let result = e.run();
     if let Err(e) = result {
         println!("Error encountered: {:?}", e);

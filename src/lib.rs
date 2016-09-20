@@ -11,7 +11,7 @@ pub mod game;
 mod filesystem;
 mod resources;
 mod context;
-mod conf;
+pub mod conf;
 
 pub use state::State;
 pub use game::Game;
