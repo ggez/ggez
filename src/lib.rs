@@ -8,8 +8,8 @@ extern crate toml;
 
 mod state;
 pub mod game;
-mod graphics;
-mod filesystem;
+pub mod graphics;
+pub mod filesystem;
 mod resources;
 mod context;
 pub mod conf;
@@ -25,6 +25,7 @@ pub enum GameError {
     ConfigError(String),
     ResourceLoadError(String),
     ResourceNotFound(String),
+    RenderError(String),
     WindowError(sdl2::video::WindowBuildError),
     IOError(std::io::Error),
 }

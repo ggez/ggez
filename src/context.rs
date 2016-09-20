@@ -14,6 +14,7 @@ use rand::distributions::{IndependentSample, Range};
 use rand::{self, Rng, Rand};
 use std::fmt;
 
+use filesystem::Filesystem;
 use resources::{ResourceManager, TextureManager, FontManager};
 use GameError;
 
@@ -23,6 +24,7 @@ pub struct Context<'a> {
     // TODO add mixer and ttf systems to enginestate
     pub resources: ResourceManager,
     pub renderer: Renderer<'a>,
+    pub filesystem: Filesystem,
 }
 
 impl<'a> fmt::Debug for Context<'a> {
@@ -37,6 +39,8 @@ impl<'a> Context<'a> {
                screen_width: u32,
                screen_height: u32)
                -> Result<Context<'a>, GameError> {
+
+        let fs = Filesystem::new();
         let sdl_context = try!(sdl2::init());
         let video = try!(sdl_context.video());
         let window = try!(video.window(window_title, screen_width, screen_height)
@@ -57,6 +61,7 @@ impl<'a> Context<'a> {
             sdl_context: sdl_context,
             resources: resources,
             renderer: renderer,
+            filesystem: fs,
         };
 
         // By default, unable to init sound is not a fatal error.

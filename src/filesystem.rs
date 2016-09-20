@@ -65,7 +65,8 @@ impl Filesystem {
         resource_path.push("resources");
         // TODO: This should also check for resources.zip
         if !resource_path.exists() || !resource_path.is_dir() {
-            let message = String::from("'resources' directory not found!");
+            let msg_str = format!("'resources' directory not found!  Should be in {:?}", resource_path);
+            let message = String::from(msg_str);
             let _ = warn(GameError::ResourceLoadError(message));
         }
 
@@ -129,7 +130,7 @@ impl Filesystem {
         // TODO: Look in resources.zip, save directory.
     }
 
-    /// Check wehther a path points at a directory.
+    /// Check whether a path points at a directory.
     pub fn is_dir(&self, path: &path::Path) -> bool {
         match self.mongle_path(path) {
             Ok(p) => p.is_dir(),
