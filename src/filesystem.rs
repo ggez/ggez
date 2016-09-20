@@ -18,6 +18,7 @@ use warn;
 /// Right now files are read-only.  When we can write files, they will be written
 /// to the game's save directory.
 ///
+/// TODO: See SDL_GetBasePath and SDL_GetPrefPath!
 #[derive(Debug)]
 pub struct Filesystem {
     resource_path: path::PathBuf,

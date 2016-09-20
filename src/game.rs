@@ -14,6 +14,7 @@ use std::time::Duration;
 
 use sdl2::pixels::Color;
 use sdl2::event::Event::*;
+use sdl2::event::*;
 use sdl2::keyboard::Keycode::*;
 use sdl2::surface::Surface;
 
@@ -56,6 +57,10 @@ impl<'a, S: State> Game<'a, S> {
         }
     }
 
+    // TODO: If we're going to have a real stack of states here,
+    // (I really prefer the name scenes though,)
+    // we should give them enter() and leave() events as well
+    // as load()
     pub fn push_state(&mut self, state: S) {
         self.states.push(state);
     }
@@ -92,26 +97,42 @@ impl<'a, S: State> Game<'a, S> {
             s.load(&mut ctx);
         }
 
-        let mut done = false;
         let mut delta = Duration::new(0, 0);
-
+        let mut done = false;
         while !done {
             let start_time = timer.ticks();
 
-            for event in event_pump.poll_iter() {
-                match event {
-                    Quit { .. } => done = true,
-                    KeyDown { keycode, .. } => {
-                        match keycode {
-                            Some(Escape) => done = true,
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
             if let Some(active_state) = self.get_active_state() {
+                for event in event_pump.poll_iter() {
+                    match event {
+                        Quit { .. } => done = true,
+                        // TODO: We need a good way to have
+                        // a default like this, while still allowing
+                        // it to be overridden.
+                        // But the State can't access the Game,
+                        // so we can't modify the Game's done property...
+                        // Hmmmm.
+                        KeyDown { keycode, .. } => {
+                            match keycode {
+                                Some(Escape) => done = true,
+                                _ => active_state.key_down_event(event),
+                            }
+                        }
+                        KeyUp { .. } => active_state.key_up_event(event),
+                        MouseButtonDown { .. } => active_state.mouse_button_down_event(event),
+                        MouseButtonUp { .. } => active_state.mouse_button_up_event(event),
+                        MouseMotion { .. } => active_state.mouse_motion_event(event),
+                        MouseWheel { .. } => active_state.mouse_wheel_event(event),
+                        Window { win_event_id: WindowEventId::FocusGained, .. } => {
+                            active_state.focus(true)
+                        }
+                        Window { win_event_id: WindowEventId::FocusLost, .. } => {
+                            active_state.focus(false)
+                        }
+                        _ => {}
+                    }
+                }
+
                 active_state.update(&mut ctx, delta);
 
                 // ctx.renderer.set_draw_color(Color::rand(&mut rng));
@@ -128,6 +149,9 @@ impl<'a, S: State> Game<'a, S> {
         }
 
         self.context = Some(ctx);
+        if let Some(active_state) = self.get_active_state() {
+            active_state.quit();
+        }
         Ok(())
     }
 }
