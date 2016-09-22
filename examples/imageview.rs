@@ -43,7 +43,7 @@ impl State for MainState {
         let image = graphics::Image::new(ctx, imagepath);
 
         let fontpath = path::Path::new("DejaVuSerif.ttf");
-        let font = graphics::Font::new(ctx, fontpath, 24, &mut self.buffer);
+        let font = graphics::Font::new(ctx, fontpath, 24);
         let text = graphics::Text::new(ctx, "Hello world!", &font);
         self.image = Some(image);
         self.font = Some(font);

@@ -138,9 +138,9 @@ pub struct Font {
 
 impl Font {
     /// Load a new TTF font from the given file.
-    pub fn new(context: &Context, path: &path::Path, size: u16, buffer: &mut Vec<u8>) -> Font {
-//        let mut buffer: Vec<u8> = Vec::new();
-        let mut rwops = rwops_from_path(context, path, buffer);
+    pub fn new(context: &Context, path: &path::Path, size: u16) -> Font {
+        let mut buffer: Vec<u8> = Vec::new();
+        let mut rwops = rwops_from_path(context, path, &mut buffer);
 
         let ttf_context = &context.ttf_context;
         let ttf_font = ttf_context.load_font_from_rwops(rwops, size).unwrap();
@@ -162,6 +162,8 @@ impl Font {
 }
 
 
+
+
 /// Drawable text.
 /// SO FAR this doesn't need to be a separate type from Image, really.
 /// But looking at various API's its functionality will probably diverge
@@ -177,7 +179,8 @@ impl Text {
             .blended(Color::RGB(255,255,255))
             .unwrap();
         // BUGGO: SEGFAULTS HERE!  But only when using solid(), not blended()!
-        // Does it have anything to do with the font lifetime thing???
+        // Loading the font from a file rather than a RWops makes it work fine.
+        // See https://github.com/andelf/rust-sdl2_ttf/issues/43
         let texture = renderer.create_texture_from_surface(surf).unwrap();
         Text {
             texture: texture,
@@ -193,5 +196,12 @@ impl Drawable for Text {
                -> Result<(), GameError> {
         renderer.copy_ex(&self.texture, src, dst, angle, center, flip_horizontal, flip_vertical)
                     .map_err(|s| GameError::RenderError(s))
+    }
+}
+
+use std::fmt;
+impl fmt::Debug for Text {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Text")
     }
 }
