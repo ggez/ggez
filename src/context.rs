@@ -8,19 +8,20 @@ use sdl2_ttf::{self, PartialRendering};
 use sdl2_mixer;
 use sdl2_mixer::{INIT_MP3, INIT_FLAC, INIT_MOD, INIT_FLUIDSYNTH, INIT_MODPLUG, INIT_OGG,
                  AUDIO_S16LSB};
-
+use sdl2_ttf::Sdl2TtfContext;
 
 use rand::distributions::{IndependentSample, Range};
 use rand::{self, Rng, Rand};
 use std::fmt;
 
 use filesystem::Filesystem;
-use resources::{ResourceManager, TextureManager, FontManager};
+use resources::{ResourceManager, TextureManager};
 use GameError;
 
 
 pub struct Context<'a> {
     pub sdl_context: Sdl,
+    pub ttf_context: Sdl2TtfContext,
     // TODO add mixer and ttf systems to enginestate
     pub resources: ResourceManager,
     pub renderer: Renderer<'a>,
@@ -31,6 +32,15 @@ impl<'a> fmt::Debug for Context<'a> {
     // TODO: Make this more useful.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Context")
+    }
+}
+
+// For some reason I can't just implement From<Sdl2_ttf::context::InitError>
+// for GameError, sooooo...
+fn init_ttf() -> Result<Sdl2TtfContext, GameError> {
+    match sdl2_ttf::init() {
+        Ok(x) => Ok(x),
+        Err(e) => Err(GameError::TTFError(format!("{}", e)))
     }
 }
 
@@ -52,6 +62,7 @@ impl<'a> Context<'a> {
                                       .accelerated()
                                       .build());
 
+        let ttf_context = try!(init_ttf());
         // Can creating a ResourceManager actually fail?
         // Only if it finds no resource files, perhaps...
         // But even then.
@@ -59,6 +70,7 @@ impl<'a> Context<'a> {
 
         let mut ctx = Context {
             sdl_context: sdl_context,
+            ttf_context: ttf_context,
             resources: resources,
             renderer: renderer,
             filesystem: fs,
@@ -110,34 +122,6 @@ impl<'a> Context<'a> {
     }
 
 
-    pub fn print(&mut self, text: &str, x: u32, y: u32) {
-        let mut rng = rand::thread_rng();
-        let between = Range::new(0, 400);
-        let target = Rect::new(between.ind_sample(&mut rng),
-                               50,
-                               between.ind_sample(&mut rng) as u32,
-                               500);
-
-        let mut font_texture = create_font_surface(text, "DejaVuSerif", 72, &mut self.resources)
-                                   .unwrap()
-                                   .blended(Color::rand(&mut rng))
-                                   .map_err(|_| GameError::Lolwtf)
-                                   .and_then(|s| {
-                                       self.renderer
-                                           .create_texture_from_surface(&s)
-                                           .map_err(|_| GameError::Lolwtf)
-                                   })
-                                   .unwrap();
-
-        self.renderer.copy(&mut font_texture, None, Some(target));
-    }
 }
 
-fn create_font_surface<'a>(text: &'a str,
-                           font_name: &str,
-                           size: u16,
-                           resource_manager: &'a mut ResourceManager)
-                           -> Result<PartialRendering<'a>, GameError> {
-    let mut font = try!(resource_manager.get_font(font_name, size));
-    Ok(font.render(text))
-}
+

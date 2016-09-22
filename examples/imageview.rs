@@ -13,37 +13,21 @@ use ggez::graphics;
 use ggez::graphics::Drawable;
 use std::time::Duration;
 use std::path::Path;
-//use specs::{Join, World};
-
-struct Transform {
-    position: (u32, u32),
-    //rotation: f32,
-}
-
-impl specs::Component for Transform {
-    type Storage = specs::VecStorage<Transform>;
-}
 
 struct MainState {
-    planner: specs::Planner<()>,
     a: i32,
     image: Option<graphics::Image>,
+    font: Option<graphics::Font>,
+    text: Option<graphics::Text>,
 }
 
 impl MainState {
     fn new() -> MainState {
-        let mut world = specs::World::new();
-        world.register::<Transform>();
-        world.create_now()
-             .with(Transform {
-                 position: (50, 50),
-                 //rotation: 0f32,
-             })
-             .build();
         MainState {
-            planner: specs::Planner::new(world, 4),
             a: 0,
             image: None,
+            font: None,
+            text: None,
         }
     }
 }
@@ -51,23 +35,26 @@ impl MainState {
 impl State for MainState {
     fn load(&mut self, ctx: &mut Context) -> Result<(), GameError> {
         println!("load");
-        ctx.resources.load_sound("sound", Path::new("./resources/sound.mp3")).unwrap();
+
         let imagepath = path::Path::new("dragon1.png");
-        self.image = Some(graphics::Image::new(ctx, imagepath));
+        let image = graphics::Image::new(ctx, imagepath);
+
+        let fontpath = path::Path::new("DejaVuSerif.ttf");
+        let font = graphics::Font::new(ctx, fontpath, 24);
+        //let text = graphics::Text::new(ctx, "Hello world!", &font);
+        self.image = Some(image);
+        self.font = Some(font);
+        //self.text = Some(text);
+
         Ok(())
     }
 
     fn update(&mut self, ctx: &mut Context, _dt: Duration) -> Result<(), GameError> {
         // println!("update");
 
-        self.planner.run1w0r(|t: &mut Transform| {
-            t.position.0 += 1;
-            t.position.1 += 1;
-        });
         self.a = self.a + 1;
         if self.a > 100 {
             self.a = 0;
-            try!(game::play_sound(ctx, "sound"));
         }
         Ok(())
     }
@@ -78,7 +65,8 @@ impl State for MainState {
         ctx.renderer.set_draw_color(Color::rand(&mut rng));
         ctx.renderer.clear();
 
-        let img: &ggez::graphics::Image = self.image.as_ref().unwrap();
+        //let img: &ggez::graphics::Image = self.image.as_ref().unwrap();
+        let img = self.image.as_ref().unwrap();
         img.draw(ctx, None, None);
         ctx.renderer.present();
 
