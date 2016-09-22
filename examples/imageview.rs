@@ -16,6 +16,7 @@ use std::path::Path;
 
 struct MainState {
     a: i32,
+    buffer: Vec<u8>,
     image: Option<graphics::Image>,
     font: Option<graphics::Font>,
     text: Option<graphics::Text>,
@@ -28,6 +29,8 @@ impl MainState {
             image: None,
             font: None,
             text: None,
+
+            buffer: Vec::new(),
         }
     }
 }
@@ -40,11 +43,11 @@ impl State for MainState {
         let image = graphics::Image::new(ctx, imagepath);
 
         let fontpath = path::Path::new("DejaVuSerif.ttf");
-        let font = graphics::Font::new(ctx, fontpath, 24);
-        //let text = graphics::Text::new(ctx, "Hello world!", &font);
+        let font = graphics::Font::new(ctx, fontpath, 24, &mut self.buffer);
+        let text = graphics::Text::new(ctx, "Hello world!", &font);
         self.image = Some(image);
         self.font = Some(font);
-        //self.text = Some(text);
+        self.text = Some(text);
 
         Ok(())
     }
@@ -68,6 +71,8 @@ impl State for MainState {
         //let img: &ggez::graphics::Image = self.image.as_ref().unwrap();
         let img = self.image.as_ref().unwrap();
         img.draw(ctx, None, None);
+        let text = self.text.as_ref().unwrap();
+        text.draw(ctx, None, None);
         ctx.renderer.present();
 
         Ok(())

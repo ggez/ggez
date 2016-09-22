@@ -132,19 +132,23 @@ impl Drawable for Image {
 /// Can be created from a .ttf file or from an image.
 pub struct Font {
     font: sdl2_ttf::Font,
+//    _rwops: &'a rwops::RWops<'a>,
+//    _buffer: &'a Vec<u8>,
 }
 
 impl Font {
     /// Load a new TTF font from the given file.
-    pub fn new(context: &Context, path: &path::Path, size: u16) -> Font {
-        let mut buffer: Vec<u8> = Vec::new();
-        let mut rwops = rwops_from_path(context, path, &mut buffer);
+    pub fn new(context: &Context, path: &path::Path, size: u16, buffer: &mut Vec<u8>) -> Font {
+//        let mut buffer: Vec<u8> = Vec::new();
+        let mut rwops = rwops_from_path(context, path, buffer);
 
         let ttf_context = &context.ttf_context;
         let ttf_font = ttf_context.load_font_from_rwops(rwops, size).unwrap();
         //ttf_context.load_font(path, size).unwrap();
         Font {
             font: ttf_font,
+//            _rwops: &rwops,
+//            _buffer: &buffer,
         }
         
     }
@@ -170,8 +174,10 @@ impl Text {
     pub fn new(context: &Context, text: &str, font: &Font) -> Text {
         let renderer = &context.renderer;
         let surf = font.font.render(text)
-            .solid(Color::RGB(255,255,255))
+            .blended(Color::RGB(255,255,255))
             .unwrap();
+        // BUGGO: SEGFAULTS HERE!  But only when using solid(), not blended()!
+        // Does it have anything to do with the font lifetime thing???
         let texture = renderer.create_texture_from_surface(surf).unwrap();
         Text {
             texture: texture,
@@ -186,6 +192,6 @@ impl Drawable for Text {
                angle: f64, center: Option<Point>, flip_horizontal: bool, flip_vertical: bool)
                -> Result<(), GameError> {
         renderer.copy_ex(&self.texture, src, dst, angle, center, flip_horizontal, flip_vertical)
-            .map_err(|s| GameError::RenderError(s))
+                    .map_err(|s| GameError::RenderError(s))
     }
 }
