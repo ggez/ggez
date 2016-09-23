@@ -44,6 +44,8 @@ fn init_ttf() -> Result<Sdl2TtfContext, GameError> {
     }
 }
 
+// So it has to go sdl2::init() -> load config file
+// -> init subsystems and create contexts -> pass to gamestate creation function
 impl<'a> Context<'a> {
     pub fn new(window_title: &str,
                screen_width: u32,
@@ -120,8 +122,6 @@ impl<'a> Context<'a> {
         println!("query spec => {:?}", sdl2_mixer::query_spec());
         Ok(())
     }
-
-
 }
 
 

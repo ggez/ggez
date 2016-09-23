@@ -5,6 +5,8 @@ use GameError;
 use context::Context;
 
 // I feel like this might be better named a Scene than a State...?
+// No, because scene management is more fine-grained and should
+// happen at a higher level.
 pub trait State {
     fn load(&mut self, ctx: &mut Context) -> Result<(), GameError>;
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> Result<(), GameError>;

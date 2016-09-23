@@ -1,4 +1,3 @@
-use std::env;
 use std::fs;
 use std::io;
 use std::path;
@@ -7,7 +6,6 @@ use sdl2;
 
 use GameError;
 use warn;
-use conf;
 
 /// Provides an interface to the user's filesystem.
 ///

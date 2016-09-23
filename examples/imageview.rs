@@ -79,6 +79,10 @@ impl State for MainState {
     }
 }
 
+// Creating a gamestate depends on having an SDL context to load resources.
+// Creating a context depends on loading a config file.
+// Loading a config file depends on having FS (or we can just fake our way around it
+// by creating an FS and then throwing it away; the costs are not huge.)
 pub fn main() {
     let g = MainState::new();
     let c = conf::Conf::new("flappy");

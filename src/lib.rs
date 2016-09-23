@@ -6,6 +6,7 @@ extern crate rand;
 extern crate rustc_serialize;
 extern crate toml;
 
+pub mod audio;
 mod state;
 pub mod game;
 pub mod graphics;
@@ -13,6 +14,7 @@ pub mod filesystem;
 mod resources;
 mod context;
 pub mod conf;
+mod util;
 
 pub use state::State;
 pub use game::Game;
