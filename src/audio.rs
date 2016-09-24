@@ -40,7 +40,7 @@ pub struct Sound {
 
 impl Sound {
     /// Load a new Sound
-    pub fn new(context: &Context, path: &path::Path) -> Sound {
+    pub fn new(context: &mut Context, path: &path::Path) -> Sound {
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = rwops_from_path(context, path, &mut buffer);
         // SDL2_image SNEAKILY adds this method to RWops.
@@ -106,7 +106,7 @@ use util::load_music;
 
 impl Music {
     /// Load the given Music.
-    pub fn new(context: &Context, path: &path::Path) -> Music {
+    pub fn new(context: &mut Context, path: &path::Path) -> Music {
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = rwops_from_path(context, path, &mut buffer);
         // SDL2_image SNEAKILY adds this method to RWops.

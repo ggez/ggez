@@ -7,6 +7,7 @@ extern crate rustc_serialize;
 extern crate toml;
 #[macro_use]
 extern crate lazy_static;
+extern crate zip;
 
 
 pub mod audio;

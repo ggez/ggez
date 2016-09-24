@@ -40,7 +40,7 @@ impl<'a, S: State> Game<'a, S> {
     /// If it can't read it for some reason, returns an error.
     /// (Probably best used with `.or(some_default)`)
     pub fn from_config_file(initial_state: S) -> Result<Game<'a, S>, GameError> {
-        let fs = fs::Filesystem::new();
+        let mut fs = fs::Filesystem::new();
         let conf_path = Path::new("conf.toml");
         if fs.is_file(conf_path) {
             let mut file = try!(fs.open(conf_path));

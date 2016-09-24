@@ -22,9 +22,9 @@ pub fn rwops_from_read<'a, T>(r: &mut T, buffer: &'a mut Vec<u8>) -> Result<rwop
     rwops::RWops::from_bytes(buffer)
 }
 
-pub fn rwops_from_path<'a>(context: &Context, path: &path::Path, buffer: &'a mut Vec<u8>) -> rwops::RWops<'a> {
-    let fs = &context.filesystem;
-    let mut stream = fs.open(path).unwrap();
+pub fn rwops_from_path<'a>(context: &mut Context, path: &path::Path, buffer: &'a mut Vec<u8>) -> rwops::RWops<'a> {
+    //let mut fs = &context.filesystem;
+    let mut stream = context.filesystem.open(path).unwrap();
     let rw = rwops_from_read(&mut stream, buffer).unwrap();
     rw
 }

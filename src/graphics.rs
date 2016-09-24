@@ -80,13 +80,13 @@ impl Image {
     // Suffice to say for now, Images are bound to the Context in which
     // they are created.
     // TODO: Make it use sdl2_gfx to load all image types.
-    pub fn new(context: &Context, path: &path::Path) -> Image {
-        let renderer = &context.renderer;
+    pub fn new(context: &mut Context, path: &path::Path) -> Image {
 
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = rwops_from_path(context, path, &mut buffer);
         // SDL2_image SNEAKILY adds this method to RWops.
         let surf = rwops.load().unwrap();
+        let renderer = &context.renderer;
         let tex = renderer.create_texture_from_surface(surf).unwrap();
         Image {
             texture: tex,
@@ -114,7 +114,7 @@ pub struct Font {
 
 impl Font {
     /// Load a new TTF font from the given file.
-    pub fn new(context: &Context, path: &path::Path, size: u16) -> Font {
+    pub fn new(context: &mut Context, path: &path::Path, size: u16) -> Font {
         let mut buffer: Vec<u8> = Vec::new();
         let mut rwops = rwops_from_path(context, path, &mut buffer);
 
