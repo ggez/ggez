@@ -29,3 +29,29 @@ pub fn rwops_from_path<'a>(context: &Context, path: &path::Path, buffer: &'a mut
     rw
 }
 
+
+
+// Patch submitted to rust-sdl2_mixer, see:
+// https://github.com/andelf/rust-sdl2_mixer/pull/58
+// Until it's accepted though, we gotta hack it ourselves.
+extern crate sdl2_sys as sys;
+use self::sys::rwops::SDL_RWops;
+use std::os::raw::{c_uint, c_int, c_char, c_double, c_void};
+use sdl2;
+use sdl2_mixer;
+extern "C" {
+    fn Mix_LoadMUS_RW(src: *mut SDL_RWops, freesrc: c_int) -> *mut Mix_Music;
+}
+type Struct__Mix_Music = c_void;
+type Mix_Music = Struct__Mix_Music;
+pub fn load_music(rwops: rwops::RWops) -> Result<sdl2_mixer::Music, String> {
+    let raw = unsafe { Mix_LoadMUS_RW(rwops.raw(), 0) };
+    if raw.is_null() {
+        Err(sdl2::get_error())
+    } else {
+        Ok(sdl2_mixer::Music {
+            raw: raw,
+            owned: true,
+        })
+    }
+}

@@ -116,10 +116,10 @@ impl Font {
     /// Load a new TTF font from the given file.
     pub fn new(context: &Context, path: &path::Path, size: u16) -> Font {
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = rwops_from_path(context, path, &mut buffer);
+        let mut rwops = rwops_from_path(context, path, &mut buffer);
 
         let ttf_context = &context.ttf_context;
-        let ttf_font = ttf_context.load_font_from_rwops(rwops, size).unwrap();
+        let ttf_font = ttf_context.load_font_from_rwops(&mut rwops, size).unwrap();
         //ttf_context.load_font(path, size).unwrap();
         Font {
             font: ttf_font,

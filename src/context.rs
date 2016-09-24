@@ -6,9 +6,8 @@ use sdl2::rect::Rect;
 use sdl2_ttf::{self, PartialRendering};
 
 use sdl2_mixer;
-use sdl2_mixer::{INIT_MP3, INIT_FLAC, INIT_MOD, INIT_FLUIDSYNTH, INIT_MODPLUG, INIT_OGG,
-                 AUDIO_S16LSB};
 use sdl2_ttf::Sdl2TtfContext;
+use sdl2_mixer::Sdl2MixerContext;
 
 use rand::distributions::{IndependentSample, Range};
 use rand::{self, Rng, Rand};
@@ -22,6 +21,8 @@ use GameError;
 pub struct Context<'a> {
     pub sdl_context: Sdl,
     pub ttf_context: Sdl2TtfContext,
+    _audio_context: sdl2::AudioSubsystem,
+    pub mixer_context: Sdl2MixerContext,
     // TODO add mixer and ttf systems to enginestate
     pub resources: ResourceManager,
     pub renderer: Renderer<'a>,
@@ -41,6 +42,30 @@ fn init_ttf() -> Result<Sdl2TtfContext, GameError> {
     match sdl2_ttf::init() {
         Ok(x) => Ok(x),
         Err(e) => Err(GameError::TTFError(format!("{}", e)))
+    }
+}
+
+
+fn init_audio(sdl_context: &Sdl) -> Result<sdl2::AudioSubsystem, GameError> {
+    match sdl_context.audio() {
+        Ok(x) => Ok(x),
+        Err(e) => Err(GameError::AudioError(format!("{}", e)))
+    }
+}
+
+fn init_mixer() -> Result<Sdl2MixerContext, GameError> {
+    let frequency = 44100;
+    let format = sdl2_mixer::AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
+    let channels = 2; // Stereo
+    let chunk_size = 1024;
+    try!(sdl2_mixer::open_audio(frequency, format, channels, chunk_size));
+
+    let flags = sdl2_mixer::InitFlag::all();
+    match sdl2_mixer::init(flags) {
+        Ok(x) => {
+            Ok(x)
+        },
+        Err(e) => Err(GameError::AudioError(format!("{}", e)))
     }
 }
 
@@ -65,6 +90,8 @@ impl<'a> Context<'a> {
                                       .build());
 
         let ttf_context = try!(init_ttf());
+        let audio_context = try!(init_audio(&sdl_context));
+        let mixer_context = try!(init_mixer());
         // Can creating a ResourceManager actually fail?
         // Only if it finds no resource files, perhaps...
         // But even then.
@@ -73,54 +100,35 @@ impl<'a> Context<'a> {
         let mut ctx = Context {
             sdl_context: sdl_context,
             ttf_context: ttf_context,
+            _audio_context: audio_context,
+            mixer_context: mixer_context,
             resources: resources,
             renderer: renderer,
             filesystem: fs,
         };
 
-        // By default, unable to init sound is not a fatal error.
-        // (Because I'm testing this on a device with no working sound.)
-        // We probably want to be able to pass a list of REQUIRED modules
-        // to Context::new, and warn if there are ones we can't init unless
-        // they're required.
-        ctx.init_sound_system().or_else(::warn);
+        ctx.print_sound_stats();
         Ok(ctx)
     }
 
-    // Remove verbose debug output
-    fn init_sound_system(&mut self) -> Result<(), GameError> {
-        let _audio = try!(self.sdl_context.audio());
-        let mut timer = try!(self.sdl_context.timer());
-        let _mixer_context = try!(sdl2_mixer::init(INIT_MP3 | INIT_FLAC | INIT_MOD |
-                                                   INIT_FLUIDSYNTH |
-                                                   INIT_MODPLUG |
-                                                   INIT_OGG));
 
-        let frequency = 44100;
-        let format = AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
-        let channels = 2; // Stereo
-        let chunk_size = 1024;
-        let _ = try!(sdl2_mixer::open_audio(frequency, format, channels, chunk_size));
-        sdl2_mixer::allocate_channels(0);
 
-        {
-            let n = sdl2_mixer::get_chunk_decoders_number();
-            println!("available chunk(sample) decoders: {}", n);
-            for i in 0..n {
-                println!("  decoder {} => {}", i, sdl2_mixer::get_chunk_decoder(i));
-            }
+    fn print_sound_stats(&self) {
+        println!("Allocated {} sound channels", 
+            sdl2_mixer::allocate_channels(-1));
+        let n = sdl2_mixer::get_chunk_decoders_number();
+        println!("available chunk(sample) decoders: {}", n);
+
+        for i in 0..n {
+            println!("  decoder {} => {}", i, sdl2_mixer::get_chunk_decoder(i));
         }
 
-        {
-            let n = sdl2_mixer::get_music_decoders_number();
-            println!("available music decoders: {}", n);
-            for i in 0..n {
-                println!("  decoder {} => {}", i, sdl2_mixer::get_music_decoder(i));
-            }
+        let n = sdl2_mixer::get_music_decoders_number();
+        println!("available music decoders: {}", n);
+        for i in 0..n {
+            println!("  decoder {} => {}", i, sdl2_mixer::get_music_decoder(i));
         }
-
         println!("query spec => {:?}", sdl2_mixer::query_spec());
-        Ok(())
     }
 }
 

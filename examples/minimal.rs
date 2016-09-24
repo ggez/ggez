@@ -15,11 +15,11 @@ pub fn make_text() -> sdl2::render::Texture {
     let video = sdl_context.video().unwrap();
     let window = video.window("kerblammo", 800, 600)
                                .position_centered()
-                               .opengl()
+                               //.opengl()
                                .build().unwrap();
 
     let renderer = window.renderer()
-        .accelerated()
+        //.accelerated()
         .build().unwrap();
 
     // Load font
@@ -31,11 +31,12 @@ pub fn make_text() -> sdl2::render::Texture {
     let rwops = rwops::RWops::from_bytes(&buffer).unwrap();
 
     // Explodes when I uncomment this line.
-    let ttf_font = ttf_context.load_font_from_rwops(rwops, size).unwrap();
+    //let ttf_font = ttf_context.load_font_from_rwops(rwops, size).unwrap();
 
     // Works fine when I create the font with this instead
-    //let ttf_font = ttf_context.load_font(path, 24).unwrap();
+    let ttf_font = ttf_context.load_font(path, 24).unwrap();
 
+    println!("Make sure we still have this vec: {:?}", buffer.len());
     let surf = ttf_font.render("Hello world")
         // If I change .solid() to .blended() it works fine.
         .solid(Color::RGB(255,255,255))
@@ -45,6 +46,7 @@ pub fn make_text() -> sdl2::render::Texture {
     // Does it have anything to do with the font lifetime thing???
     // It shouldn't, 'cause we still have the buffer we read into here!
     let texture = renderer.create_texture_from_surface(surf).unwrap();
+    //println!("Make sure we still have this vec: {:?}", buffer);
     texture
 
 }

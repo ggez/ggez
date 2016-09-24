@@ -7,10 +7,12 @@ use std::path;
 use rand::Rand;
 use sdl2::pixels::Color;
 
+use ggez::audio;
 use ggez::conf;
 use ggez::{game, Game, State, GameError, Context};
 use ggez::graphics;
 use ggez::graphics::Drawable;
+use ggez::audio::Audio;
 use std::time::Duration;
 use std::path::Path;
 
@@ -20,6 +22,7 @@ struct MainState {
     image: Option<graphics::Image>,
     font: Option<graphics::Font>,
     text: Option<graphics::Text>,
+    sound: Option<audio::Sound>,
 }
 
 impl MainState {
@@ -29,6 +32,7 @@ impl MainState {
             image: None,
             font: None,
             text: None,
+            sound: None,
 
             buffer: Vec::new(),
         }
@@ -43,11 +47,18 @@ impl State for MainState {
         let image = graphics::Image::new(ctx, imagepath);
 
         let fontpath = path::Path::new("DejaVuSerif.ttf");
+        let soundpath = path::Path::new("sound.ogg");
         let font = graphics::Font::new(ctx, fontpath, 24);
         let text = graphics::Text::new(ctx, "Hello world!", &font);
+        let sound = audio::Sound::new(ctx, soundpath);
         self.image = Some(image);
         self.font = Some(font);
         self.text = Some(text);
+        self.sound = Some(sound);
+
+
+        let sound = self.sound.as_ref().unwrap();
+        sound.play();
 
         Ok(())
     }
@@ -74,6 +85,7 @@ impl State for MainState {
         let text = self.text.as_ref().unwrap();
         text.draw(ctx, None, None);
         ctx.renderer.present();
+
 
         Ok(())
     }

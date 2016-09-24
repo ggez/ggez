@@ -28,6 +28,7 @@ pub enum GameError {
     ResourceLoadError(String),
     ResourceNotFound(String),
     RenderError(String),
+    AudioError(String),
     WindowError(sdl2::video::WindowBuildError),
     IOError(std::io::Error),
     TTFError(String),
