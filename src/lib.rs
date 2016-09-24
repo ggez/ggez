@@ -14,7 +14,7 @@ mod state;
 pub mod game;
 pub mod graphics;
 pub mod filesystem;
-mod resources;
+//mod resources;
 mod context;
 pub mod conf;
 mod util;

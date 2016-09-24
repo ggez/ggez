@@ -16,7 +16,6 @@ use rand::{self, Rng, Rand};
 use std::fmt;
 
 use filesystem::Filesystem;
-use resources::{ResourceManager, TextureManager};
 use GameError;
 
 
@@ -25,8 +24,6 @@ pub struct Context<'a> {
     pub ttf_context: Sdl2TtfContext,
     _audio_context: sdl2::AudioSubsystem,
     pub mixer_context: Sdl2MixerContext,
-    // TODO add mixer and ttf systems to enginestate
-    pub resources: ResourceManager,
     pub renderer: Renderer<'a>,
     pub filesystem: Filesystem,
 }
@@ -94,17 +91,12 @@ impl<'a> Context<'a> {
         let ttf_context = try!(init_ttf());
         let audio_context = try!(init_audio(&sdl_context));
         let mixer_context = try!(init_mixer());
-        // Can creating a ResourceManager actually fail?
-        // Only if it finds no resource files, perhaps...
-        // But even then.
-        let resources = ResourceManager::new().unwrap();
 
         let mut ctx = Context {
             sdl_context: sdl_context,
             ttf_context: ttf_context,
             _audio_context: audio_context,
             mixer_context: mixer_context,
-            resources: resources,
             renderer: renderer,
             filesystem: fs,
         };

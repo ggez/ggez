@@ -2,7 +2,6 @@
 
 use state::State;
 use context::Context;
-use resources::{ResourceManager, TextureManager};
 use GameError;
 use warn;
 use conf;
