@@ -26,11 +26,12 @@ See example/imageview.rs
 
 # Status
 
-* Still implementing sound
-* Need to make the example's resource paths work properly
+* Need to streamline game init and loading, figure out pipeline for creating contexts and
+gamestates, as well as exiting cleanly.
 * Need to unify Context type better
+* Need to remove a lot of unwrap's
+* Need to make the example's resource paths work properly with `cargo run --example`
 * Need to implement the ability to replace the game state with the same context
-* Need to figure out pipeline for creating contexts and gamestates
 * Need to implement draw_rect and stuff
 * Need more documentation
 * Need to implement bitmap fonts and zip file loading
@@ -38,7 +39,6 @@ See example/imageview.rs
 
 # Useful goodies
 
-* cgmath for math operations
 * specs for entity-component system
 * cgmath or vecmath for math operations?
 * physics/collision???

@@ -26,7 +26,7 @@ use rand::{self, Rand};
 #[derive(Debug)]
 pub struct Game<'a, S: State> {
     conf: conf::Conf,
-    states: Vec<S>,
+    state: S,
     context: Option<Context<'a>>,
 }
 
@@ -35,7 +35,7 @@ impl<'a, S: State> Game<'a, S> {
         // TODO: Verify config version == this version
         Game {
             conf: config,
-            states: vec![initial_state],
+            state: initial_state,
             context: None,
         }
     }
@@ -59,23 +59,6 @@ impl<'a, S: State> Game<'a, S> {
         }
     }
 
-    // TODO: If we're going to have a real stack of states here,
-    // (I really prefer the name scenes though,)
-    // we should give them enter() and leave() events as well
-    // as load()
-    pub fn push_state(&mut self, state: S) {
-        self.states.push(state);
-    }
-
-    pub fn pop_state(&mut self) {
-        self.states.pop();
-    }
-
-    fn get_active_state(&mut self) -> Option<&mut S> {
-        self.states.last_mut()
-    }
-
-
     pub fn run(&mut self) -> Result<(), GameError> {
         // TODO: Window icon
         // TODO: Module init should all happen in the Context
@@ -84,7 +67,6 @@ impl<'a, S: State> Game<'a, S> {
                                         self.conf.window_height));
 
         self.context = Some(ctx);
-        // self.init_sound_system().or_else(warn);
         let mut ctx = self.context.take().unwrap();
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
@@ -93,65 +75,52 @@ impl<'a, S: State> Game<'a, S> {
         let padding = 64;
 
         // Initialize State handlers
-        for s in &mut self.states {
-            s.load(&mut ctx);
-        }
+        self.state.load(&mut ctx);
 
         let mut delta = Duration::new(0, 0);
         let mut done = false;
         while !done {
             let start_time = timer.ticks();
 
-            if let Some(active_state) = self.get_active_state() {
-                for event in event_pump.poll_iter() {
-                    match event {
-                        Quit { .. } => done = true,
-                        // TODO: We need a good way to have
-                        // a default like this, while still allowing
-                        // it to be overridden.
-                        // But the State can't access the Game,
-                        // so we can't modify the Game's done property...
-                        // Hmmmm.
-                        KeyDown { keycode, .. } => {
-                            match keycode {
-                                Some(Escape) => done = true,
-                                _ => active_state.key_down_event(event),
-                            }
+            for event in event_pump.poll_iter() {
+                match event {
+                    Quit { .. } => done = true,
+                    // TODO: We need a good way to have
+                    // a default like this, while still allowing
+                    // it to be overridden.
+                    // But the State can't access the Game,
+                    // so we can't modify the Game's done property...
+                    // Hmmmm.
+                    KeyDown { keycode, .. } => {
+                        match keycode {
+                            Some(Escape) => done = true,
+                            _ => self.state.key_down_event(event),
                         }
-                        KeyUp { .. } => active_state.key_up_event(event),
-                        MouseButtonDown { .. } => active_state.mouse_button_down_event(event),
-                        MouseButtonUp { .. } => active_state.mouse_button_up_event(event),
-                        MouseMotion { .. } => active_state.mouse_motion_event(event),
-                        MouseWheel { .. } => active_state.mouse_wheel_event(event),
-                        Window { win_event_id: WindowEventId::FocusGained, .. } => {
-                            active_state.focus(true)
-                        }
-                        Window { win_event_id: WindowEventId::FocusLost, .. } => {
-                            active_state.focus(false)
-                        }
-                        _ => {}
                     }
+                    KeyUp { .. } => self.state.key_up_event(event),
+                    MouseButtonDown { .. } => self.state.mouse_button_down_event(event),
+                    MouseButtonUp { .. } => self.state.mouse_button_up_event(event),
+                    MouseMotion { .. } => self.state.mouse_motion_event(event),
+                    MouseWheel { .. } => self.state.mouse_wheel_event(event),
+                    Window { win_event_id: WindowEventId::FocusGained, .. } => {
+                        self.state.focus(true)
+                    }
+                    Window { win_event_id: WindowEventId::FocusLost, .. } => {
+                        self.state.focus(false)
+                    }
+                    _ => {}
                 }
-
-                active_state.update(&mut ctx, delta);
-
-                // ctx.renderer.set_draw_color(Color::rand(&mut rng));
-                // ctx.renderer.clear();
-                active_state.draw(&mut ctx);
-                // ctx.renderer.present();
-            } else {
-                done = true;
             }
+            self.state.update(&mut ctx, delta);
+            self.state.draw(&mut ctx);
 
             let end_time = timer.ticks();
             delta = Duration::from_millis((end_time - start_time) as u64);
             thread::sleep_ms(1000 / 60);
         }
 
-        self.context = Some(ctx);
-        if let Some(active_state) = self.get_active_state() {
-            active_state.quit();
-        }
+        //self.context = Some(ctx);
+        self.state.quit();
         Ok(())
     }
 }
