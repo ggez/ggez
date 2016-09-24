@@ -1,10 +1,10 @@
-/// The `graphics` module performs the actual drawing of images, text, and other
-/// objects with the `Drawable` trait.  It also handles basic loading of images
-/// and text, apparently.
-///
-/// Also manages graphics state, coordinate systems, etc.  The default coordinate system
-/// has the origin in the upper-left corner of the screen, unless it should be
-/// something else, then we should change it.  
+//! The `graphics` module performs the actual drawing of images, text, and other
+//! objects with the `Drawable` trait.  It also handles basic loading of images
+//! and text, apparently.
+//!
+//! Also manages graphics state, coordinate systems, etc.  The default coordinate system
+//! has the origin in the upper-left corner of the screen, unless it should be
+//! something else, then we should change it.  
 
 use std::path;
 

@@ -5,6 +5,9 @@ extern crate sdl2_ttf;
 extern crate rand;
 extern crate rustc_serialize;
 extern crate toml;
+#[macro_use]
+extern crate lazy_static;
+
 
 pub mod audio;
 mod state;

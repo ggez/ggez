@@ -1,3 +1,5 @@
+//! A `Context` is an object that holds on to global resources.
+
 use sdl2::{self, Sdl};
 use sdl2::video::Window;
 use sdl2::render::{Renderer, Texture, TextureQuery};

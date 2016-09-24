@@ -1,3 +1,5 @@
+//! The Game struct starts up the game and runs the mainloop and such.
+
 use state::State;
 use context::Context;
 use resources::{ResourceManager, TextureManager};
