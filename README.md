@@ -26,16 +26,23 @@ See example/imageview.rs
 
 # Status
 
+* Drawing API needs to be fleshed out, add shape drawing (or at least draw_rect)
 * Need to streamline game init and loading, figure out pipeline for creating contexts and
 gamestates, as well as exiting cleanly.
 * Need to unify Context type better
 * Need to remove a lot of unwrap's
 * Need to make the example's resource paths work properly with `cargo run --example`
 * Need to implement the ability to replace the game state with the same context
-* Need to implement draw_rect and stuff
 * Need more documentation
 * Need to implement bitmap fonts and zip file loading
 * Need to add more tests, somehow
+
+# Things to add atop it
+
+* Resource loader/cache
+* Scene stack
+* GUI
+* particle system (or put that in with it like LOVE?)
 
 # Useful goodies
 

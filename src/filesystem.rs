@@ -85,6 +85,7 @@ impl Filesystem {
     }
 
 
+    /// Opens the given path and returns the resulting `File`
     pub fn open(&self, path: &path::Path) -> Result<File, GameError> {
 
         // Look in resource directory

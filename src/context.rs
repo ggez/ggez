@@ -1,18 +1,13 @@
 //! A `Context` is an object that holds on to global resources.
 
 use sdl2::{self, Sdl};
-use sdl2::video::Window;
-use sdl2::render::{Renderer, Texture, TextureQuery};
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2_ttf::{self, PartialRendering};
+use sdl2::render::Renderer;
+use sdl2_ttf;
 
 use sdl2_mixer;
 use sdl2_ttf::Sdl2TtfContext;
 use sdl2_mixer::Sdl2MixerContext;
 
-use rand::distributions::{IndependentSample, Range};
-use rand::{self, Rng, Rand};
 use std::fmt;
 
 use filesystem::Filesystem;
@@ -84,7 +79,7 @@ impl<'a> Context<'a> {
                                .opengl()
                                .build());
 
-        let mut renderer = try!(window.renderer()
+        let renderer = try!(window.renderer()
                                       .accelerated()
                                       .build());
 
@@ -92,7 +87,7 @@ impl<'a> Context<'a> {
         let audio_context = try!(init_audio(&sdl_context));
         let mixer_context = try!(init_mixer());
 
-        let mut ctx = Context {
+        let ctx = Context {
             sdl_context: sdl_context,
             ttf_context: ttf_context,
             _audio_context: audio_context,

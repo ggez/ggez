@@ -3,23 +3,18 @@
 use state::State;
 use context::Context;
 use GameError;
-use warn;
 use conf;
 use filesystem as fs;
 
 use std::path::Path;
 use std::thread;
-use std::option;
-use std::io::Read;
 use std::time::Duration;
 
 use sdl2::pixels::Color;
 use sdl2::event::Event::*;
 use sdl2::event::*;
 use sdl2::keyboard::Keycode::*;
-use sdl2::surface::Surface;
 
-use rand::{self, Rand};
 
 
 
@@ -71,9 +66,6 @@ impl<'a, S: State> Game<'a, S> {
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
 
-        // If the example text is too big for the screen, downscale it (and center irregardless)
-        let padding = 64;
-
         // Initialize State handlers
         self.state.load(&mut ctx);
 
@@ -119,7 +111,6 @@ impl<'a, S: State> Game<'a, S> {
             thread::sleep_ms(1000 / 60);
         }
 
-        //self.context = Some(ctx);
         self.state.quit();
         Ok(())
     }

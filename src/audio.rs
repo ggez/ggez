@@ -7,7 +7,6 @@
 
 use std::path;
 
-use sdl2;
 use sdl2_mixer;
 use sdl2_mixer::LoaderRWops;
 
@@ -42,8 +41,6 @@ pub struct Sound {
 impl Sound {
     /// Load a new Sound
     pub fn new(context: &Context, path: &path::Path) -> Sound {
-        let mixer = &context.mixer_context;
-
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = rwops_from_path(context, path, &mut buffer);
         // SDL2_image SNEAKILY adds this method to RWops.
@@ -78,7 +75,7 @@ impl AudioOps for Channel {
     }
 
     fn pause(&self) {
-        self.pause()
+        Channel::pause(*self)
     }
       
     fn stop(&self) {
@@ -86,7 +83,7 @@ impl AudioOps for Channel {
     }
     
     fn resume(&self) {
-        self.resume()
+        Channel::resume(*self)
     }
     
     /// Restarts playing a sound if this channel is currently
@@ -110,8 +107,6 @@ use util::load_music;
 impl Music {
     /// Load the given Music.
     pub fn new(context: &Context, path: &path::Path) -> Music {
-        let mixer = &context.mixer_context;
-
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = rwops_from_path(context, path, &mut buffer);
         // SDL2_image SNEAKILY adds this method to RWops.
