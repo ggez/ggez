@@ -9,7 +9,7 @@ use sdl2::pixels::Color;
 
 use ggez::audio;
 use ggez::conf;
-use ggez::{game, Game, State, GameError, Context};
+use ggez::{game, Game, State, GameError, GameResult, Context};
 use ggez::graphics;
 use ggez::graphics::Drawable;
 use std::time::Duration;
@@ -39,17 +39,17 @@ impl MainState {
 }
 
 impl State for MainState {
-    fn load(&mut self, ctx: &mut Context) -> Result<(), GameError> {
+    fn load(&mut self, ctx: &mut Context) -> GameResult<()> {
         println!("load");
 
         let imagepath = path::Path::new("dragon1.png");
-        let image = graphics::Image::new(ctx, imagepath);
+        let image = graphics::Image::new(ctx, imagepath).unwrap();
 
         let fontpath = path::Path::new("DejaVuSerif.ttf");
         let soundpath = path::Path::new("sound.ogg");
-        let font = graphics::Font::new(ctx, fontpath, 24);
-        let text = graphics::Text::new(ctx, "Hello world!", &font);
-        let sound = audio::Sound::new(ctx, soundpath);
+        let font = graphics::Font::new(ctx, fontpath, 24).unwrap();
+        let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
+        let sound = audio::Sound::new(ctx, soundpath).unwrap();
         self.image = Some(image);
         self.font = Some(font);
         self.text = Some(text);
@@ -62,7 +62,7 @@ impl State for MainState {
         Ok(())
     }
 
-    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> Result<(), GameError> {
+    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         // println!("update");
 
         self.a = self.a + 1;
@@ -72,7 +72,7 @@ impl State for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> Result<(), GameError> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         // println!("draw");
         let mut rng = rand::thread_rng();
         ctx.renderer.set_draw_color(Color::rand(&mut rng));

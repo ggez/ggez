@@ -3,6 +3,8 @@
 use state::State;
 use context::Context;
 use GameError;
+use GameResult;
+use warn;
 use conf;
 use filesystem as fs;
 
@@ -39,8 +41,8 @@ impl<'a, S: State> Game<'a, S> {
     /// loads it if it finds it.
     /// If it can't read it for some reason, returns an error.
     /// (Probably best used with `.or(some_default)`)
-    pub fn from_config_file(initial_state: S) -> Result<Game<'a, S>, GameError> {
-        let mut fs = fs::Filesystem::new();
+    pub fn from_config_file(initial_state: S) -> GameResult<Game<'a, S>> {
+        let mut fs = try!(fs::Filesystem::new());
         let conf_path = Path::new("conf.toml");
         if fs.is_file(conf_path) {
             let mut file = try!(fs.open(conf_path));
@@ -54,7 +56,7 @@ impl<'a, S: State> Game<'a, S> {
         }
     }
 
-    pub fn run(&mut self) -> Result<(), GameError> {
+    pub fn run(&mut self) -> GameResult<()> {
         // TODO: Window icon
         // TODO: Module init should all happen in the Context
         let mut ctx = try!(Context::new(&self.conf.window_title,
@@ -62,6 +64,8 @@ impl<'a, S: State> Game<'a, S> {
                                         self.conf.window_height));
 
         self.context = Some(ctx);
+        // This unwrap should never fail, but having to take() the
+        // context out of self is a little wonky.
         let mut ctx = self.context.take().unwrap();
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());

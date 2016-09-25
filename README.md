@@ -13,7 +13,7 @@ etc.
 
 # Features
 
-* Filesystem abstraction that lets you load resources from folders or (eventually) zip files
+* Filesystem abstraction that lets you load resources from folders or zip files
 * Hardware-accelerated rendering of bitmaps
 * Playing and loading sounds through SDL2_mixer
 * TTF font rendering through SDL2_ttf, as well as (eventually) bitmap fonts.
@@ -34,7 +34,7 @@ gamestates, as well as exiting cleanly.
 * Need to make the example's resource paths work properly with `cargo run --example`
 * Need to implement the ability to replace the game state with the same context
 * Need more documentation
-* Need to implement bitmap fonts and zip file loading
+* Need to implement bitmap fonts
 * Need to add more tests, somehow
 
 # Things to add atop it

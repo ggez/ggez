@@ -7,7 +7,7 @@ use std::io;
 use toml;
 use rustc_serialize::Decodable;
 
-use GameError;
+use {GameError, GameResult};
 
 #[derive(RustcDecodable, Debug)]
 pub struct Conf {
@@ -57,13 +57,14 @@ impl Conf {
         }
     }
 
-    pub fn from_toml_file<R: io::Read>(file: &mut R) -> Result<Conf, GameError> {
-        // TODO: Fix these unwraps when it's not midnight.
+    pub fn from_toml_file<R: io::Read>(file: &mut R) -> GameResult<Conf> {
         let mut s = String::new();
-        file.read_to_string(&mut s).unwrap();
+        try!(file.read_to_string(&mut s));
         let mut parser = toml::Parser::new(&s);
-        let toml = parser.parse().unwrap();
-        let config = toml.get("conf").unwrap();
+        let toml = try!(parser.parse()
+            .ok_or(String::from("Could not parse config file?")));
+        let config = try!(toml.get("conf")
+            .ok_or(String::from("Section [conf] not in config file")));
         let mut decoder = toml::Decoder::new(config.clone());
         Conf::decode(&mut decoder).map_err(|e| GameError::from(e))
     }

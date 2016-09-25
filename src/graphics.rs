@@ -16,6 +16,7 @@ use sdl2_ttf;
 
 use context::Context;
 use GameError;
+use GameResult;
 use util::rwops_from_path;
 
 pub type Rect = rect::Rect;
@@ -56,7 +57,7 @@ pub trait Drawable {
     /// wrap the types up a bit more nicely someday.)
     fn draw_ex(&self, renderer: &mut render::Renderer, src: Option<Rect>, dst: Option<Rect>,
                angle: f64, center: Option<Point>, flip_horizontal: bool, flip_vertical: bool)
-               -> Result<(), GameError>;
+               -> GameResult<()>;
 
     /// Draws the drawable onto the rendering target.
     fn draw(&self, context: &mut Context, src: Option<Rect>, dst: Option<Rect>) {
@@ -80,24 +81,24 @@ impl Image {
     // Suffice to say for now, Images are bound to the Context in which
     // they are created.
     // TODO: Make it use sdl2_gfx to load all image types.
-    pub fn new(context: &mut Context, path: &path::Path) -> Image {
+    pub fn new(context: &mut Context, path: &path::Path) -> GameResult<Image> {
 
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = rwops_from_path(context, path, &mut buffer);
+        let rwops = try!(rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds this method to RWops.
-        let surf = rwops.load().unwrap();
+        let surf = try!(rwops.load());
         let renderer = &context.renderer;
-        let tex = renderer.create_texture_from_surface(surf).unwrap();
-        Image {
+        let tex = try!(renderer.create_texture_from_surface(surf));
+        Ok(Image {
             texture: tex,
-        }
+        })
     }
 }
 
 impl Drawable for Image {
     fn draw_ex(&self, renderer: &mut render::Renderer, src: Option<Rect>, dst: Option<Rect>,
                angle: f64, center: Option<Point>, flip_horizontal: bool, flip_vertical: bool)
-               -> Result<(), GameError> {
+               -> GameResult<()> {
         renderer.copy_ex(&self.texture, src, dst, angle, center, flip_horizontal, flip_vertical)
             .map_err(|s| GameError::RenderError(s))
     }
@@ -114,18 +115,17 @@ pub struct Font {
 
 impl Font {
     /// Load a new TTF font from the given file.
-    pub fn new(context: &mut Context, path: &path::Path, size: u16) -> Font {
+    pub fn new(context: &mut Context, path: &path::Path, size: u16) -> GameResult<Font> {
         let mut buffer: Vec<u8> = Vec::new();
-        let mut rwops = rwops_from_path(context, path, &mut buffer);
+        let mut rwops = try!(rwops_from_path(context, path, &mut buffer));
 
         let ttf_context = &context.ttf_context;
-        let ttf_font = ttf_context.load_font_from_rwops(&mut rwops, size).unwrap();
-        //ttf_context.load_font(path, size).unwrap();
-        Font {
+        let ttf_font = try!(ttf_context.load_font_from_rwops(&mut rwops, size));
+        Ok(Font {
             font: ttf_font,
 //            _rwops: &rwops,
 //            _buffer: &buffer,
-        }
+        })
         
     }
 
@@ -150,18 +150,17 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn new(context: &Context, text: &str, font: &Font) -> Text {
+    pub fn new(context: &Context, text: &str, font: &Font) -> GameResult<Text> {
         let renderer = &context.renderer;
-        let surf = font.font.render(text)
-            .blended(Color::RGB(255,255,255))
-            .unwrap();
+        let surf = try!(font.font.render(text)
+            .blended(Color::RGB(255,255,255)));
         // BUGGO: SEGFAULTS HERE!  But only when using solid(), not blended()!
         // Loading the font from a file rather than a RWops makes it work fine.
         // See https://github.com/andelf/rust-sdl2_ttf/issues/43
-        let texture = renderer.create_texture_from_surface(surf).unwrap();
-        Text {
+        let texture = try!(renderer.create_texture_from_surface(surf));
+        Ok(Text {
             texture: texture,
-        }
+        })
             
     }
 }
@@ -170,7 +169,7 @@ impl Text {
 impl Drawable for Text {
     fn draw_ex(&self, renderer: &mut render::Renderer, src: Option<Rect>, dst: Option<Rect>,
                angle: f64, center: Option<Point>, flip_horizontal: bool, flip_vertical: bool)
-               -> Result<(), GameError> {
+               -> GameResult<()> {
         renderer.copy_ex(&self.texture, src, dst, angle, center, flip_horizontal, flip_vertical)
                     .map_err(|s| GameError::RenderError(s))
     }

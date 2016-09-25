@@ -12,6 +12,7 @@ use std::fmt;
 
 use filesystem::Filesystem;
 use GameError;
+use GameResult;
 
 
 pub struct Context<'a> {
@@ -32,22 +33,18 @@ impl<'a> fmt::Debug for Context<'a> {
 
 // For some reason I can't just implement From<Sdl2_ttf::context::InitError>
 // for GameError, sooooo...
-fn init_ttf() -> Result<Sdl2TtfContext, GameError> {
-    match sdl2_ttf::init() {
-        Ok(x) => Ok(x),
-        Err(e) => Err(GameError::TTFError(format!("{}", e)))
-    }
+fn init_ttf() -> GameResult<Sdl2TtfContext> {
+    sdl2_ttf::init()
+        .map_err(|e| GameError::TTFError(format!("{}", e)))
 }
 
 
-fn init_audio(sdl_context: &Sdl) -> Result<sdl2::AudioSubsystem, GameError> {
-    match sdl_context.audio() {
-        Ok(x) => Ok(x),
-        Err(e) => Err(GameError::AudioError(format!("{}", e)))
-    }
+fn init_audio(sdl_context: &Sdl) -> GameResult<sdl2::AudioSubsystem> {
+    sdl_context.audio()
+        .map_err(|e| GameError::AudioError(format!("{}", e)))
 }
 
-fn init_mixer() -> Result<Sdl2MixerContext, GameError> {
+fn init_mixer() -> GameResult<Sdl2MixerContext> {
     let frequency = 44100;
     let format = sdl2_mixer::AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
     let channels = 2; // Stereo
@@ -55,12 +52,8 @@ fn init_mixer() -> Result<Sdl2MixerContext, GameError> {
     try!(sdl2_mixer::open_audio(frequency, format, channels, chunk_size));
 
     let flags = sdl2_mixer::InitFlag::all();
-    match sdl2_mixer::init(flags) {
-        Ok(x) => {
-            Ok(x)
-        },
-        Err(e) => Err(GameError::AudioError(format!("{}", e)))
-    }
+    sdl2_mixer::init(flags)
+        .map_err(|e| GameError::AudioError(format!("{}", e)))
 }
 
 // So it has to go sdl2::init() -> load config file
@@ -69,9 +62,9 @@ impl<'a> Context<'a> {
     pub fn new(window_title: &str,
                screen_width: u32,
                screen_height: u32)
-               -> Result<Context<'a>, GameError> {
+               -> GameResult<Context<'a>> {
 
-        let fs = Filesystem::new();
+        let fs = try!(Filesystem::new());
         let sdl_context = try!(sdl2::init());
         let video = try!(sdl_context.video());
         let window = try!(video.window(window_title, screen_width, screen_height)

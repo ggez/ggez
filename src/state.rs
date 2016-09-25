@@ -13,16 +13,16 @@
 use std::time::Duration;
 use sdl2::event::Event;
 
-use GameError;
+use {GameError, GameResult};
 use context::Context;
 
 // I feel like this might be better named a Scene than a State...?
 // No, because scene management is more fine-grained and should
 // happen at a higher level.
 pub trait State {
-    fn load(&mut self, ctx: &mut Context) -> Result<(), GameError>;
-    fn update(&mut self, ctx: &mut Context, dt: Duration) -> Result<(), GameError>;
-    fn draw(&mut self, ctx: &mut Context) -> Result<(), GameError>;
+    fn load(&mut self, ctx: &mut Context) -> GameResult<()>;
+    fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()>;
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
 
     // You don't have to override these if you don't want to; the defaults
     // do nothing.

@@ -19,6 +19,7 @@ use std::cell::RefCell;
 use sdl2;
 
 use GameError;
+use GameResult;
 use warn;
 
 use zip;
@@ -67,16 +68,22 @@ impl<'a> io::Read for File<'a> {
     }
 }
 
+fn convenient_path_to_str<'a>(path: &'a path::Path) -> GameResult<&'a str> {
+    let errmessage = String::from("Invalid path format");
+    let error = GameError::ArbitraryError(errmessage);
+    path.to_str()
+        .ok_or(error)
+}
+
 impl Filesystem {
-    pub fn new() -> Filesystem {
-        // BUGGO: We should resolve errors here instead of unwrap.
-        let root_path_string = sdl2::filesystem::base_path().unwrap();
+    pub fn new() -> GameResult<Filesystem> {
+        let root_path_string = try!(sdl2::filesystem::base_path());
         // BUGGO: We need to have the application ID in this path somehow,
         // except the best place to put it would be in the Conf object...
         // which is loaded using the Filesystem.  Hmmmm.
         // We probably need a Filesystem::config_file_path() function to
         // bootstrap the process.
-        let pref_path_string = sdl2::filesystem::pref_path("ggez", "").ok().unwrap();
+        let pref_path_string = try!(sdl2::filesystem::pref_path("ggez", ""));
 
         let mut root_path = path::PathBuf::from(root_path_string);
         // Ditch the filename (if any)
@@ -119,18 +126,17 @@ impl Filesystem {
 
         fs.listall();
 
-        fs
+        Ok(fs)
     }
 
 
     /// Opens the given path and returns the resulting `File`
-    pub fn open<'a>(&'a mut self, path: &path::Path) -> Result<File<'a>, GameError> {
+    pub fn open(&mut self, path: &path::Path) -> GameResult<File> {
 
         // Look in resource directory
         let pathbuf = try!(self.mongle_path(path));
         if pathbuf.is_file() {
-            // BUGGO: Unwrap
-            let f = fs::File::open(pathbuf).unwrap();
+            let f = try!(fs::File::open(pathbuf));
             return Ok(File::FSFile(f));
         }
 
@@ -146,16 +152,18 @@ impl Filesystem {
         // TODO: Look in save directory
 
         // Welp, can't find it.
-        let errmessage = String::from(path.to_str().unwrap());
-        Err(GameError::ResourceNotFound(errmessage))
+        let errmessage = try!(
+            convenient_path_to_str(path));
+        Err(GameError::ResourceNotFound(String::from(errmessage)))
     }
 
     /// Takes a relative path and returns an absolute PathBuf
     /// based in the Filesystem's root path.
     /// Sorry, can't think of a better name for this.
-    fn mongle_path(&self, path: &path::Path) -> Result<path::PathBuf, GameError> {
+    fn mongle_path(&self, path: &path::Path) -> GameResult<path::PathBuf> {
         if !path.is_relative() {
-            let err = GameError::ResourceNotFound(String::from(path.to_str().unwrap()));
+            let pathstr = try!(convenient_path_to_str(path));
+            let err = GameError::ResourceNotFound(String::from(pathstr));
             Err(err)
         } else {
             let pathbuf = self.resource_path.join(path);
