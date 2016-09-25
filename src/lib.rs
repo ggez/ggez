@@ -39,7 +39,7 @@ pub enum GameError {
 
 pub type GameResult<T> = Result<T, GameError>;
 
-fn warn(err: GameError) -> Result<(), GameError> {
+fn warn(err: GameError) -> GameResult<()> {
     println!("WARNING: Encountered error: {:?}", err);
     Ok(())
 }
