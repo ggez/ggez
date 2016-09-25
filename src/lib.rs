@@ -37,6 +37,8 @@ pub enum GameError {
     TTFError(String),
 }
 
+pub type GameResult<T> = Result<T, GameError>;
+
 fn warn(err: GameError) -> Result<(), GameError> {
     println!("WARNING: Encountered error: {:?}", err);
     Ok(())
@@ -65,6 +67,21 @@ impl From<sdl2::IntegerOrSdlError> for GameError {
         }
     }
 }
+
+impl From<sdl2::render::TextureValueError> for GameError {
+    fn from(e: sdl2::render::TextureValueError) -> GameError {
+        let msg = format!("{}", e);
+        GameError::ResourceLoadError(msg)
+    }
+}
+
+impl From<sdl2_ttf::FontError> for GameError {
+    fn from(e: sdl2_ttf::FontError) -> GameError {
+        let msg = format!("{}", e);
+        GameError::ResourceLoadError(msg)
+    }
+}
+
 
 impl From<std::io::Error> for GameError {
     fn from(e: std::io::Error) -> GameError {

@@ -43,12 +43,12 @@ impl State for MainState {
         println!("load");
 
         let imagepath = path::Path::new("dragon1.png");
-        let image = graphics::Image::new(ctx, imagepath);
+        let image = graphics::Image::new(ctx, imagepath).unwrap();
 
         let fontpath = path::Path::new("DejaVuSerif.ttf");
         let soundpath = path::Path::new("sound.ogg");
-        let font = graphics::Font::new(ctx, fontpath, 24);
-        let text = graphics::Text::new(ctx, "Hello world!", &font);
+        let font = graphics::Font::new(ctx, fontpath, 24).unwrap();
+        let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
         let sound = audio::Sound::new(ctx, soundpath);
         self.image = Some(image);
         self.font = Some(font);
