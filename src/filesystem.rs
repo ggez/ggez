@@ -124,8 +124,6 @@ impl Filesystem {
             resource_zip: resource_zip,
         };
 
-        fs.listall();
-
         Ok(fs)
     }
 
@@ -143,8 +141,6 @@ impl Filesystem {
         // Look in resources.zip
         if let Some(ref mut zipfile) = self.resource_zip {
             let name = path.to_str().unwrap();
-
-            println!("Trying to read file {} from zipfile", name);
             let f = zipfile.by_name(name).unwrap();
             return Ok(File::ZipFile(f));
         }
@@ -242,7 +238,7 @@ impl Filesystem {
     }
 
     // TODO: This should return an iterator, and be called iter()
-    fn listall(&mut self) {
+    pub fn print_all(&mut self) {
         let p = self.resource_path.clone();
         if p.is_dir() {
             let paths = fs::read_dir(p).unwrap();
@@ -255,8 +251,6 @@ impl Filesystem {
             for i in 0..zipfile.len() {
                 let mut file = zipfile.by_index(i).unwrap();
                 println!("Zip, filename: {}", file.name());
-                //let first_byte = try!(file.bytes().next().unwrap());
-                //println!("{}", first_byte);
             }
         }
     }

@@ -36,6 +36,7 @@ pub enum GameError {
     WindowError(sdl2::video::WindowBuildError),
     IOError(std::io::Error),
     TTFError(String),
+    VideoError(String),
 }
 
 pub type GameResult<T> = Result<T, GameError>;

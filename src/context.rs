@@ -2,6 +2,7 @@
 
 use sdl2::{self, Sdl};
 use sdl2::render::Renderer;
+use sdl2::video::Window;
 use sdl2_ttf;
 
 use sdl2_mixer;
@@ -10,6 +11,7 @@ use sdl2_mixer::Sdl2MixerContext;
 
 use std::fmt;
 
+use conf;
 use filesystem::Filesystem;
 use GameError;
 use GameResult;
@@ -31,8 +33,6 @@ impl<'a> fmt::Debug for Context<'a> {
     }
 }
 
-// For some reason I can't just implement From<Sdl2_ttf::context::InitError>
-// for GameError, sooooo...
 fn init_ttf() -> GameResult<Sdl2TtfContext> {
     sdl2_ttf::init()
         .map_err(|e| GameError::TTFError(format!("{}", e)))
@@ -56,21 +56,23 @@ fn init_mixer() -> GameResult<Sdl2MixerContext> {
         .map_err(|e| GameError::AudioError(format!("{}", e)))
 }
 
+fn init_window(video: sdl2::VideoSubsystem, window_title: &str, screen_width: u32, screen_height: u32) -> GameResult<Window> {
+    video.window(window_title, screen_width, screen_height)
+       .position_centered()
+       .opengl()
+       .build()
+       .map_err(|e| GameError::VideoError(format!("{}", e)))
+}
 // So it has to go sdl2::init() -> load config file
 // -> init subsystems and create contexts -> pass to gamestate creation function
 impl<'a> Context<'a> {
-    pub fn new(window_title: &str,
-               screen_width: u32,
-               screen_height: u32)
-               -> GameResult<Context<'a>> {
+    pub fn from_conf(conf: &conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context<'a>> {
+        let window_title =  &conf.window_title;
+        let screen_width = conf.window_width;
+        let screen_height = conf.window_height;
 
-        let fs = try!(Filesystem::new());
-        let sdl_context = try!(sdl2::init());
         let video = try!(sdl_context.video());
-        let window = try!(video.window(window_title, screen_width, screen_height)
-                               .position_centered()
-                               .opengl()
-                               .build());
+        let window = try!(init_window(video, &window_title, screen_width, screen_height));
 
         let renderer = try!(window.renderer()
                                       .accelerated()
@@ -80,7 +82,7 @@ impl<'a> Context<'a> {
         let audio_context = try!(init_audio(&sdl_context));
         let mixer_context = try!(init_mixer());
 
-        let ctx = Context {
+        let mut ctx = Context {
             sdl_context: sdl_context,
             ttf_context: ttf_context,
             _audio_context: audio_context,
@@ -90,8 +92,41 @@ impl<'a> Context<'a> {
         };
 
         ctx.print_sound_stats();
+        ctx.print_resource_stats();
         Ok(ctx)
     }
+
+    // pub fn new(window_title: &str,
+    //            screen_width: u32,
+    //            screen_height: u32)
+    //            -> GameResult<Context<'a>> {
+
+    //     let fs = try!(Filesystem::new());
+    //     let sdl_context = try!(sdl2::init());
+    //     let video = try!(sdl_context.video());
+    //     let window = try!(init_window(video, window_title, screen_width, screen_height));
+
+    //     let renderer = try!(window.renderer()
+    //                                   .accelerated()
+    //                                   .build());
+
+    //     let ttf_context = try!(init_ttf());
+    //     let audio_context = try!(init_audio(&sdl_context));
+    //     let mixer_context = try!(init_mixer());
+
+    //     let mut ctx = Context {
+    //         sdl_context: sdl_context,
+    //         ttf_context: ttf_context,
+    //         _audio_context: audio_context,
+    //         mixer_context: mixer_context,
+    //         renderer: renderer,
+    //         filesystem: fs,
+    //     };
+
+    //     ctx.print_sound_stats();
+    //     ctx.print_resource_stats();
+    //     Ok(ctx)
+    // }
 
 
 
@@ -111,6 +146,10 @@ impl<'a> Context<'a> {
             println!("  decoder {} => {}", i, sdl2_mixer::get_music_decoder(i));
         }
         println!("query spec => {:?}", sdl2_mixer::query_spec());
+    }
+
+    fn print_resource_stats(&mut self) {
+        self.filesystem.print_all();
     }
 }
 

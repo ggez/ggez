@@ -17,7 +17,7 @@ etc.
 * Hardware-accelerated rendering of bitmaps
 * Playing and loading sounds through SDL2_mixer
 * TTF font rendering through SDL2_ttf, as well as (eventually) bitmap fonts.
-* Interface for handling keyboard and mouse events
+* Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
 
 # Examples
@@ -27,10 +27,7 @@ See example/imageview.rs
 # Status
 
 * Drawing API needs to be fleshed out, add shape drawing (or at least draw_rect)
-* Need to streamline game init and loading, figure out pipeline for creating contexts and
-gamestates, as well as exiting cleanly.
-* Need to unify Context type better
-* Need to remove a lot of unwrap's
+* Need to figure out exiting cleanly.
 * Need to make the example's resource paths work properly with `cargo run --example`
 * Need to implement the ability to replace the game state with the same context
 * Need more documentation

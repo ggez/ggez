@@ -12,6 +12,7 @@ use std::path::Path;
 use std::thread;
 use std::time::Duration;
 
+use sdl2;
 use sdl2::pixels::Color;
 use sdl2::event::Event::*;
 use sdl2::event::*;
@@ -24,54 +25,61 @@ use sdl2::keyboard::Keycode::*;
 pub struct Game<'a, S: State> {
     conf: conf::Conf,
     state: S,
-    context: Option<Context<'a>>,
+    context: Context<'a>,
+}
+
+
+/// Looks for a file named "conf.toml" in the resources directory
+/// loads it if it finds it.
+/// If it can't read it for some reason, returns None
+fn get_default_config(fs: &mut fs::Filesystem) -> GameResult<conf::Conf> {
+    let conf_path = Path::new("conf.toml");
+    if fs.is_file(conf_path) {
+        let mut file = try!(fs.open(conf_path));
+        let c = try!(conf::Conf::from_toml_file(&mut file));
+        Ok(c)
+
+    } else {
+        Err(GameError::ConfigError(String::from("Config file not found")))
+    }
 }
 
 impl<'a, S: State> Game<'a, S> {
-    pub fn new(config: conf::Conf, initial_state: S) -> Game<'a, S> {
+    pub fn new(initial_state: S, default_config: conf::Conf) -> GameResult<Game<'a, S>> {
+        let sdl_context = try!(sdl2::init());
+        let mut fs = try!(fs::Filesystem::new());
+
         // TODO: Verify config version == this version
-        Game {
+        let config = get_default_config(&mut fs)
+            .unwrap_or(default_config);
+
+        let context = try!(Context::from_conf(&config, fs, sdl_context));
+
+        Ok(Game {
             conf: config,
             state: initial_state,
-            context: None,
-        }
+            context: context,
+        })
     }
 
-    /// Looks for a file named "conf.toml" in the resources directory
-    /// loads it if it finds it.
-    /// If it can't read it for some reason, returns an error.
-    /// (Probably best used with `.or(some_default)`)
-    pub fn from_config_file(initial_state: S) -> GameResult<Game<'a, S>> {
-        let mut fs = try!(fs::Filesystem::new());
-        let conf_path = Path::new("conf.toml");
-        if fs.is_file(conf_path) {
-            let mut file = try!(fs.open(conf_path));
-            let c = try!(conf::Conf::from_toml_file(&mut file));
-            Ok(Game::new(c, initial_state))
-
-        } else {
-            let msg = String::from("Config file 'conf.toml' not found");
-            let err = GameError::ResourceNotFound(msg);
-            Err(err)
-        }
-    }
 
     pub fn run(&mut self) -> GameResult<()> {
         // TODO: Window icon
         // TODO: Module init should all happen in the Context
-        let mut ctx = try!(Context::new(&self.conf.window_title,
-                                        self.conf.window_width,
-                                        self.conf.window_height));
+        let ref mut ctx = self.context;
+        // try!(Context::new(&self.conf.window_title,
+        //                                 self.conf.window_width,
+        //                                 self.conf.window_height));
 
-        self.context = Some(ctx);
+        // self.context = Some(ctx);
         // This unwrap should never fail, but having to take() the
         // context out of self is a little wonky.
-        let mut ctx = self.context.take().unwrap();
+        //let mut ctx = self.context.take().unwrap();
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
 
         // Initialize State handlers
-        self.state.load(&mut ctx);
+        self.state.load(ctx);
 
         let mut delta = Duration::new(0, 0);
         let mut done = false;
@@ -107,8 +115,8 @@ impl<'a, S: State> Game<'a, S> {
                     _ => {}
                 }
             }
-            self.state.update(&mut ctx, delta);
-            self.state.draw(&mut ctx);
+            self.state.update(ctx, delta);
+            self.state.draw(ctx);
 
             let end_time = timer.ticks();
             delta = Duration::from_millis((end_time - start_time) as u64);

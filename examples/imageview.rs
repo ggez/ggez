@@ -98,7 +98,7 @@ pub fn main() {
     let g = MainState::new();
     let c = conf::Conf::new("flappy");
     println!("Default config: {:#?}", c);
-    let mut e: Game<MainState> = Game::new(c, g);
+    let mut e: Game<MainState> = Game::new(g, c).unwrap();
     let result = e.run();
     if let Err(e) = result {
         println!("Error encountered: {:?}", e);
