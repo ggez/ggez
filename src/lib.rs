@@ -68,6 +68,21 @@ impl From<sdl2::IntegerOrSdlError> for GameError {
     }
 }
 
+// Annoyingly, PrefPathError doesn't implement Debug or Display in
+// version 0.23
+// It at least has Debug in the latest tip.
+impl From<sdl2::filesystem::PrefPathError> for GameError {
+    fn from(e: sdl2::filesystem::PrefPathError) -> GameError {
+        let msg = match e {
+            sdl2::filesystem::PrefPathError::InvalidOrganizationName(e) => format!("Invalid organization name, {}", e),
+            sdl2::filesystem::PrefPathError::InvalidApplicationName(e) => format!("Invalid application name, {}", e),
+            sdl2::filesystem::PrefPathError::SdlError(e) =>
+            e
+        };
+        GameError::ConfigError(msg)
+    }
+}
+
 impl From<sdl2::render::TextureValueError> for GameError {
     fn from(e: sdl2::render::TextureValueError) -> GameError {
         let msg = format!("{}", e);

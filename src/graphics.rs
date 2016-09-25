@@ -85,7 +85,7 @@ impl Image {
         let renderer = &context.renderer;
 
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = rwops_from_path(context, path, &mut buffer);
+        let rwops = try!(rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds this method to RWops.
         let surf = try!(rwops.load());
         let tex = try!(renderer.create_texture_from_surface(surf));
@@ -117,11 +117,10 @@ impl Font {
     /// Load a new TTF font from the given file.
     pub fn new(context: &Context, path: &path::Path, size: u16) -> GameResult<Font> {
         let mut buffer: Vec<u8> = Vec::new();
-        let mut rwops = rwops_from_path(context, path, &mut buffer);
+        let mut rwops = try!(rwops_from_path(context, path, &mut buffer));
 
         let ttf_context = &context.ttf_context;
         let ttf_font = try!(ttf_context.load_font_from_rwops(&mut rwops, size));
-        //ttf_context.load_font(path, size).unwrap();
         Ok(Font {
             font: ttf_font,
 //            _rwops: &rwops,

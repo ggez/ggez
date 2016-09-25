@@ -14,6 +14,7 @@ use sdl2_mixer::LoaderRWops;
 use context::Context;
 use util::rwops_from_path;
 use GameError;
+use GameResult;
 
 /// An object representing a channel that may be playing a particular Sound.
 pub type Channel = sdl2_mixer::Channel;
@@ -41,17 +42,17 @@ pub struct Sound {
 
 impl Sound {
     /// Load a new Sound
-    pub fn new(context: &Context, path: &path::Path) -> Sound {
+    pub fn new(context: &Context, path: &path::Path) -> GameResult<Sound> {
         let mixer = &context.mixer_context;
 
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = rwops_from_path(context, path, &mut buffer);
+        let rwops = try!(rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds this method to RWops.
         let chunk = rwops.load_wav().unwrap();
 
-        Sound {
+        Ok(Sound {
             chunk: chunk,
-        }
+        })
     }
 
     /// Play a sound.
@@ -109,17 +110,17 @@ use util::load_music;
 
 impl Music {
     /// Load the given Music.
-    pub fn new(context: &Context, path: &path::Path) -> Music {
+    pub fn new(context: &Context, path: &path::Path) -> GameResult<Music> {
         let mixer = &context.mixer_context;
 
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = rwops_from_path(context, path, &mut buffer);
+        let rwops = try!(rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds this method to RWops.
         let music = load_music(rwops).unwrap();
 
-        Music {
+        Ok(Music {
             music: music,
-        }
+        })
     }
 }
 

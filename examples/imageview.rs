@@ -49,7 +49,7 @@ impl State for MainState {
         let soundpath = path::Path::new("sound.ogg");
         let font = graphics::Font::new(ctx, fontpath, 24).unwrap();
         let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
-        let sound = audio::Sound::new(ctx, soundpath);
+        let sound = audio::Sound::new(ctx, soundpath).unwrap();
         self.image = Some(image);
         self.font = Some(font);
         self.text = Some(text);
