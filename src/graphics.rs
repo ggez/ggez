@@ -67,7 +67,7 @@ pub trait Drawable {
     }
 }
 
-/// In-memory image data available to be drawn on the screen.
+/// In-graphics-memory image data available to be drawn on the screen.
 pub struct Image {
     texture: render::Texture,
 }
@@ -80,7 +80,7 @@ impl Image {
     // renderer, such as changing windows or something.
     // Suffice to say for now, Images are bound to the Context in which
     // they are created.
-    // TODO: Make it use sdl2_gfx to load all image types.
+    /// Load a new image from the file at the given path.
     pub fn new(context: &mut Context, path: &path::Path) -> GameResult<Image> {
 
         let mut buffer: Vec<u8> = Vec::new();

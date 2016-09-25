@@ -96,7 +96,7 @@ impl AudioOps for Channel {
     fn rewind(&self) {
         if let Some(chunk) = self.get_chunk() {
             self.stop();
-            self.play(&chunk, 0);
+            let _ = self.play(&chunk, 0);
         }
     }
 }

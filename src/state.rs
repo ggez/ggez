@@ -13,7 +13,7 @@
 use std::time::Duration;
 use sdl2::event::Event;
 
-use {GameError, GameResult};
+use {GameResult};
 use context::Context;
 
 // I feel like this might be better named a Scene than a State...?

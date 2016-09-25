@@ -24,10 +24,10 @@ pub use state::State;
 pub use game::Game;
 pub use context::Context;
 
+/// An enum containing all kinds of game engine error.
 #[derive(Debug)]
 pub enum GameError {
-    Lolwtf,
-    ArbitraryError(String),
+    FilesystemError(String),
     ConfigError(String),
     ResourceLoadError(String),
     ResourceNotFound(String),
@@ -37,6 +37,7 @@ pub enum GameError {
     IOError(std::io::Error),
     TTFError(String),
     VideoError(String),
+    UnknownError(String),
 }
 
 pub type GameResult<T> = Result<T, GameError>;
@@ -48,7 +49,7 @@ fn warn(err: GameError) -> GameResult<()> {
 
 impl From<String> for GameError {
     fn from(s: String) -> GameError {
-        GameError::ArbitraryError(s)
+        GameError::UnknownError(s)
     }
 }
 
@@ -63,9 +64,9 @@ impl From<sdl2::IntegerOrSdlError> for GameError {
         match e {
             sdl2::IntegerOrSdlError::IntegerOverflows(s, i) => {
                 let message = format!("Integer overflow: {}, str {}", i, s);
-                GameError::ArbitraryError(message)
+                GameError::UnknownError(message)
             }
-            sdl2::IntegerOrSdlError::SdlError(s) => GameError::ArbitraryError(s),
+            sdl2::IntegerOrSdlError::SdlError(s) => GameError::UnknownError(s),
         }
     }
 }

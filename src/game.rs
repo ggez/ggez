@@ -4,16 +4,14 @@ use state::State;
 use context::Context;
 use GameError;
 use GameResult;
-use warn;
 use conf;
 use filesystem as fs;
 
 use std::path::Path;
-use std::thread;
 use std::time::Duration;
+use std::thread::sleep;
 
 use sdl2;
-use sdl2::pixels::Color;
 use sdl2::event::Event::*;
 use sdl2::event::*;
 use sdl2::keyboard::Keycode::*;
@@ -45,6 +43,8 @@ fn get_default_config(fs: &mut fs::Filesystem) -> GameResult<conf::Conf> {
 }
 
 impl<'a, S: State> Game<'a, S> {
+    /// Creates a new `Game` with the given initial gamestate and
+    /// default config (which will be used if there is no config file)
     pub fn new(initial_state: S, default_config: conf::Conf) -> GameResult<Game<'a, S>> {
         let sdl_context = try!(sdl2::init());
         let mut fs = try!(fs::Filesystem::new());
@@ -68,19 +68,19 @@ impl<'a, S: State> Game<'a, S> {
         self.state = state;
     }
 
-
+    /// Runs the game's mainloop.
     pub fn run(&mut self) -> GameResult<()> {
         // TODO: Window icon
         let ref mut ctx = self.context;
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
 
-        self.state.load(ctx);
+        try!(self.state.load(ctx));
 
-        let mut delta = Duration::new(0, 0);
+        let mut delta = 0u64;
         let mut done = false;
         while !done {
-            let start_time = timer.ticks();
+            let start_time = timer.ticks() as u64;
 
             for event in event_pump.poll_iter() {
                 match event {
@@ -111,12 +111,16 @@ impl<'a, S: State> Game<'a, S> {
                     _ => {}
                 }
             }
-            self.state.update(ctx, delta);
-            self.state.draw(ctx);
+            try!(self.state.update(ctx, Duration::from_millis(delta)));
+            try!(self.state.draw(ctx));
 
-            let end_time = timer.ticks();
-            delta = Duration::from_millis((end_time - start_time) as u64);
-            thread::sleep_ms(1000 / 60);
+            // TODO: For now this is locked at 60 FPS, should fix that.
+            // Better FPS stats would also be nice.
+            let end_time = timer.ticks() as u64;
+            delta = end_time - start_time;
+            let desired_frame_time = 1000 / 60;
+            let sleep_time = Duration::from_millis(desired_frame_time - delta);
+            sleep(sleep_time);
         }
 
         self.state.quit();

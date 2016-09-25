@@ -16,7 +16,9 @@ use filesystem::Filesystem;
 use GameError;
 use GameResult;
 
-
+/// A `Context` holds all the state needed to interface
+/// with the hardware.  Only one `Context` can exist at a
+/// time.
 pub struct Context<'a> {
     pub sdl_context: Sdl,
     pub ttf_context: Sdl2TtfContext,
@@ -63,9 +65,10 @@ fn init_window(video: sdl2::VideoSubsystem, window_title: &str, screen_width: u3
        .build()
        .map_err(|e| GameError::VideoError(format!("{}", e)))
 }
-// So it has to go sdl2::init() -> load config file
-// -> init subsystems and create contexts -> pass to gamestate creation function
+
 impl<'a> Context<'a> {
+
+    /// Tries to create a new Context from the given config file.
     pub fn from_conf(conf: &conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context<'a>> {
         let window_title =  &conf.window_title;
         let screen_width = conf.window_width;
@@ -82,7 +85,7 @@ impl<'a> Context<'a> {
         let audio_context = try!(init_audio(&sdl_context));
         let mixer_context = try!(init_mixer());
 
-        let mut ctx = Context {
+        let ctx = Context {
             sdl_context: sdl_context,
             ttf_context: ttf_context,
             _audio_context: audio_context,
@@ -91,46 +94,12 @@ impl<'a> Context<'a> {
             filesystem: fs,
         };
 
-        ctx.print_sound_stats();
-        ctx.print_resource_stats();
         Ok(ctx)
     }
 
-    // pub fn new(window_title: &str,
-    //            screen_width: u32,
-    //            screen_height: u32)
-    //            -> GameResult<Context<'a>> {
 
-    //     let fs = try!(Filesystem::new());
-    //     let sdl_context = try!(sdl2::init());
-    //     let video = try!(sdl_context.video());
-    //     let window = try!(init_window(video, window_title, screen_width, screen_height));
-
-    //     let renderer = try!(window.renderer()
-    //                                   .accelerated()
-    //                                   .build());
-
-    //     let ttf_context = try!(init_ttf());
-    //     let audio_context = try!(init_audio(&sdl_context));
-    //     let mixer_context = try!(init_mixer());
-
-    //     let mut ctx = Context {
-    //         sdl_context: sdl_context,
-    //         ttf_context: ttf_context,
-    //         _audio_context: audio_context,
-    //         mixer_context: mixer_context,
-    //         renderer: renderer,
-    //         filesystem: fs,
-    //     };
-
-    //     ctx.print_sound_stats();
-    //     ctx.print_resource_stats();
-    //     Ok(ctx)
-    // }
-
-
-
-    fn print_sound_stats(&self) {
+    /// Prints out information on the sound subsystem initialization.
+    pub fn print_sound_stats(&self) {
         println!("Allocated {} sound channels", 
             sdl2_mixer::allocate_channels(-1));
         let n = sdl2_mixer::get_chunk_decoders_number();
@@ -148,7 +117,8 @@ impl<'a> Context<'a> {
         println!("query spec => {:?}", sdl2_mixer::query_spec());
     }
 
-    fn print_resource_stats(&mut self) {
+    /// Prints out information on the resources subsystem initialization.
+    pub fn print_resource_stats(&mut self) {
         self.filesystem.print_all();
     }
 }

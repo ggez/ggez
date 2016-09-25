@@ -38,7 +38,8 @@ impl MainState {
 
 impl State for MainState {
     fn load(&mut self, ctx: &mut Context) -> GameResult<()> {
-        println!("load");
+        ctx.print_sound_stats();
+        ctx.print_resource_stats();
 
         let imagepath = path::Path::new("dragon1.png");
         let image = graphics::Image::new(ctx, imagepath).unwrap();
@@ -93,7 +94,7 @@ impl State for MainState {
 pub fn main() {
     let g = MainState::new();
     let c = conf::Conf::new("flappy");
-    println!("Default config: {:#?}", c);
+    println!("Starting with default config: {:#?}", c);
     let mut e: Game<MainState> = Game::new(g, c).unwrap();
     let result = e.run();
     if let Err(e) = result {

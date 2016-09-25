@@ -2,7 +2,7 @@
 //!
 //! This module provides access to files in specific places:
 //! * The `resources/` subdirectory in the same directory as the program executable,
-//! * The `resources.zip` file in the same directory as the program executable (eventually),
+//! * The `resources.zip` file in the same directory as the program executable,
 //! * The root folder of the game's `save` directory (eventually)
 //!
 //! Files will be looked for in these places in order.
@@ -14,7 +14,6 @@ use std::fmt;
 use std::fs;
 use std::io;
 use std::path;
-use std::cell::RefCell;
 
 use sdl2;
 
@@ -24,14 +23,7 @@ use warn;
 
 use zip;
 
-
-// TODO: We might be able to make this global and just use it as a cache,
-// since it doesn't appear to rely on SDL_Init() being called first?
-// Or maybe it does but SDL_Init() does it no matter what.
-// Worst case scenario we have a global init function here maybe, with lazy_static.
-// This woudl be convenient 'cause there's a lot of things that need to be passed
-// a Context just to access the Filesystem, such as every load function ever.
-// However, for now we'll keep things simple and consistent.
+/// A structure that contains the filesystem state and cache.
 #[derive(Debug)]
 pub struct Filesystem {
     base_path: path::PathBuf,
@@ -53,8 +45,8 @@ impl<'a> fmt::Debug for File<'a> {
     // TODO: Make this more useful.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            File::FSFile(ref file) => write!(f, "File"),
-            File::ZipFile(ref file) => write!(f, "Zipfile"),
+            File::FSFile(ref _file) => write!(f, "File"),
+            File::ZipFile(ref _file) => write!(f, "Zipfile"),
         }
     }
 }
@@ -70,12 +62,13 @@ impl<'a> io::Read for File<'a> {
 
 fn convenient_path_to_str<'a>(path: &'a path::Path) -> GameResult<&'a str> {
     let errmessage = String::from("Invalid path format");
-    let error = GameError::ArbitraryError(errmessage);
+    let error = GameError::FilesystemError(errmessage);
     path.to_str()
         .ok_or(error)
 }
 
 impl Filesystem {
+    /// Create a new Filesystem instance.
     pub fn new() -> GameResult<Filesystem> {
         let root_path_string = try!(sdl2::filesystem::base_path());
         // BUGGO: We need to have the application ID in this path somehow,
@@ -96,7 +89,7 @@ impl Filesystem {
         if !resource_path.exists() || !resource_path.is_dir() {
             let msg_str = format!("'resources' directory not found!  Should be in {:?}", resource_path);
             let message = String::from(msg_str);
-            let _ = warn(GameError::ResourceLoadError(message));
+            let _ = warn(GameError::ResourceNotFound(message));
         }
 
         // Check for resources zip file.
@@ -106,7 +99,7 @@ impl Filesystem {
         if !resource_zip_path.exists() || !resource_zip_path.is_file() {
             let msg_str = format!("'resources.zip' file not found!  Should be in {:?}", resource_zip_path);
             let message = String::from(msg_str);
-            let _ = warn(GameError::ResourceLoadError(message));
+            let _ = warn(GameError::ResourceNotFound(message));
         } else {
             // We keep this file open so we don't have to re-parse
             // the zip file every time we load something out of it.
@@ -117,7 +110,7 @@ impl Filesystem {
 
         let user_path = path::PathBuf::from(pref_path_string);
 
-        let mut fs = Filesystem {
+        let fs = Filesystem {
             resource_path: resource_path,
             base_path: root_path,
             user_path: user_path,
@@ -189,7 +182,6 @@ impl Filesystem {
         } else {
             let name = path.to_str().unwrap();
             if let Some(ref mut zipfile) = self.resource_zip {
-                // BUGGO: This doesn't actually do what you want...
                 zipfile.by_name(name).is_ok()
             } else {
                 false
@@ -205,7 +197,12 @@ impl Filesystem {
         } else {
             let name = path.to_str().unwrap();
             if let Some(ref mut zipfile) = self.resource_zip {
-                // BUGGO: This doesn't actually do what you want...
+                // BUGGO: This doesn't actually do what we want...
+                // Zip files don't actually store directories,
+                // they just fake it.
+                // What we COULD do is iterate through all files
+                // in the zip file looking for one with the same
+                // name prefix as the directory path?
                 zipfile.by_name(name).is_ok()
             } else {
                 false
@@ -249,7 +246,7 @@ impl Filesystem {
 
         if let Some(ref mut zipfile) = self.resource_zip {
             for i in 0..zipfile.len() {
-                let mut file = zipfile.by_index(i).unwrap();
+                let file = zipfile.by_index(i).unwrap();
                 println!("Zip, filename: {}", file.name());
             }
         }

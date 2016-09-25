@@ -9,6 +9,8 @@ use rustc_serialize::Decodable;
 
 use {GameError, GameResult};
 
+/// A structure containing configuration data
+/// for the game engine.
 #[derive(RustcDecodable, Debug)]
 pub struct Conf {
     /// The name of the save directory
@@ -46,6 +48,8 @@ pub struct Conf {
 }
 
 impl Conf {
+    /// Create a new Conf with some vague defaults and the given
+    /// game ID.
     pub fn new(id: &str) -> Conf {
         Conf {
             id: String::from(id),
@@ -57,6 +61,8 @@ impl Conf {
         }
     }
 
+    /// Load a TOML file from the given `Read` and attempts to parse
+    /// a `Conf` from it.
     pub fn from_toml_file<R: io::Read>(file: &mut R) -> GameResult<Conf> {
         let mut s = String::new();
         try!(file.read_to_string(&mut s));

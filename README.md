@@ -28,8 +28,8 @@ See example/imageview.rs
 
 * Drawing API needs to be fleshed out, add shape drawing (or at least draw_rect)
 * Need to figure out exiting cleanly.
+* Frame timing is kinda primitive and narsty, make it better.
 * Need to make the example's resource paths work properly with `cargo run --example`
-* Need to implement the ability to replace the game state with the same context
 * Need more documentation
 * Need to implement bitmap fonts
 * Need to add more tests, somehow
