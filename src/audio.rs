@@ -24,7 +24,7 @@ pub type Channel = sdl2_mixer::Channel;
 pub trait AudioOps {
     fn new_channel() -> Channel;
 
-    fn play_sound(&self, sound: &Sound) -> Channel;
+    fn play_sound(&self, sound: &Sound) -> GameResult<Channel>;
 
     fn pause(&self);
       
@@ -48,7 +48,7 @@ impl Sound {
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = try!(rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds this method to RWops.
-        let chunk = rwops.load_wav().unwrap();
+        let chunk = try!(rwops.load_wav());
 
         Ok(Sound {
             chunk: chunk,
@@ -59,9 +59,12 @@ impl Sound {
     ///
     /// Returns a `Channel`, which can be used to manipulate the 
     /// playback, eg pause, stop, restart, etc.
-    pub fn play(&self) -> Channel {
+    pub fn play(&self) -> GameResult<Channel> {
         let channel = sdl2_mixer::channel(-1);
-        channel.play(&self.chunk, 0).unwrap()
+        // This try! is a little redundant but make the
+        // GameResult type conversion work right.
+        channel.play(&self.chunk, 0)
+            .map_err(|e| GameError::from(e))
     }
 }
 
@@ -73,9 +76,10 @@ impl AudioOps for Channel {
         sdl2_mixer::channel(-1)
     }
     /// Plays the given Sound on the Channel
-    fn play_sound(&self, sound: &Sound) -> Channel {
+    fn play_sound(&self, sound: &Sound) -> GameResult<Channel> {
         let channel = self;
-        channel.play(&sound.chunk, 0).unwrap()
+        channel.play(&sound.chunk, 0)
+            .map_err(|e| GameError::from(e))
     }
 
     fn pause(&self) {
@@ -116,7 +120,7 @@ impl Music {
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = try!(rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds this method to RWops.
-        let music = load_music(rwops).unwrap();
+        let music = try!(load_music(rwops));
 
         Ok(Music {
             music: music,
@@ -124,8 +128,9 @@ impl Music {
     }
 }
 
-pub fn play_music(music: &Music) {
-    music.music.play(-1).unwrap()
+pub fn play_music(music: &Music) -> GameResult<()> {
+    music.music.play(-1)
+        .map_err(|e| GameError::from(e))
 }
 
 pub fn pause_music() {

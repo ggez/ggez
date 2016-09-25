@@ -39,18 +39,14 @@ impl<'a> fmt::Debug for Context<'a> {
 // For some reason I can't just implement From<Sdl2_ttf::context::InitError>
 // for GameError, sooooo...
 fn init_ttf() -> GameResult<Sdl2TtfContext> {
-    match sdl2_ttf::init() {
-        Ok(x) => Ok(x),
-        Err(e) => Err(GameError::TTFError(format!("{}", e)))
-    }
+    sdl2_ttf::init()
+        .map_err(|e| GameError::TTFError(format!("{}", e)))
 }
 
 
 fn init_audio(sdl_context: &Sdl) -> GameResult<sdl2::AudioSubsystem> {
-    match sdl_context.audio() {
-        Ok(x) => Ok(x),
-        Err(e) => Err(GameError::AudioError(format!("{}", e)))
-    }
+    sdl_context.audio()
+        .map_err(|e| GameError::AudioError(format!("{}", e)))
 }
 
 fn init_mixer() -> GameResult<Sdl2MixerContext> {
@@ -61,12 +57,8 @@ fn init_mixer() -> GameResult<Sdl2MixerContext> {
     try!(sdl2_mixer::open_audio(frequency, format, channels, chunk_size));
 
     let flags = sdl2_mixer::InitFlag::all();
-    match sdl2_mixer::init(flags) {
-        Ok(x) => {
-            Ok(x)
-        },
-        Err(e) => Err(GameError::AudioError(format!("{}", e)))
-    }
+    sdl2_mixer::init(flags)
+        .map_err(|e| GameError::AudioError(format!("{}", e)))
 }
 
 // So it has to go sdl2::init() -> load config file
