@@ -4,20 +4,18 @@ extern crate rand;
 extern crate sdl2;
 
 use std::path;
-use rand::Rand;
 use sdl2::pixels::Color;
 
 use ggez::audio;
 use ggez::conf;
-use ggez::{game, Game, State, GameError, GameResult, Context};
+use ggez::{Game, State, GameResult, Context};
 use ggez::graphics;
 use ggez::graphics::Drawable;
 use std::time::Duration;
-use std::path::Path;
 
 struct MainState {
     a: i32,
-    buffer: Vec<u8>,
+    direction: i32,
     image: Option<graphics::Image>,
     font: Option<graphics::Font>,
     text: Option<graphics::Text>,
@@ -28,12 +26,12 @@ impl MainState {
     fn new() -> MainState {
         MainState {
             a: 0,
+            direction: 1,
             image: None,
             font: None,
             text: None,
             sound: None,
 
-            buffer: Vec::new(),
         }
     }
 }
@@ -47,7 +45,7 @@ impl State for MainState {
 
         let fontpath = path::Path::new("DejaVuSerif.ttf");
         let soundpath = path::Path::new("sound.ogg");
-        let font = graphics::Font::new(ctx, fontpath, 24).unwrap();
+        let font = graphics::Font::new(ctx, fontpath, 48).unwrap();
         let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
         let sound = audio::Sound::new(ctx, soundpath).unwrap();
         self.image = Some(image);
@@ -57,28 +55,26 @@ impl State for MainState {
 
 
         let sound = self.sound.as_ref().unwrap();
-        sound.play();
+        let _ = sound.play();
 
         Ok(())
     }
 
-    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         // println!("update");
 
-        self.a = self.a + 1;
-        if self.a > 100 {
-            self.a = 0;
+        self.a = self.a + self.direction;
+        if self.a > 250 || self.a <= 0 {
+            self.direction *= -1;
         }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        // println!("draw");
-        let mut rng = rand::thread_rng();
-        ctx.renderer.set_draw_color(Color::rand(&mut rng));
+        let c = self.a as u8;
+        ctx.renderer.set_draw_color(Color::RGB(c, c, c));
         ctx.renderer.clear();
 
-        //let img: &ggez::graphics::Image = self.image.as_ref().unwrap();
         let img = self.image.as_ref().unwrap();
         img.draw(ctx, None, None);
         let text = self.text.as_ref().unwrap();

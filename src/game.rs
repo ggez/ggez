@@ -62,23 +62,19 @@ impl<'a, S: State> Game<'a, S> {
         })
     }
 
+    /// Replaces the gamestate with the given one without
+    /// having to re-initialize everything in the Context.
+    pub fn replace_state(&mut self, state: S) -> () {
+        self.state = state;
+    }
+
 
     pub fn run(&mut self) -> GameResult<()> {
         // TODO: Window icon
-        // TODO: Module init should all happen in the Context
         let ref mut ctx = self.context;
-        // try!(Context::new(&self.conf.window_title,
-        //                                 self.conf.window_width,
-        //                                 self.conf.window_height));
-
-        // self.context = Some(ctx);
-        // This unwrap should never fail, but having to take() the
-        // context out of self is a little wonky.
-        //let mut ctx = self.context.take().unwrap();
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
 
-        // Initialize State handlers
         self.state.load(ctx);
 
         let mut delta = Duration::new(0, 0);
