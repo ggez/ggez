@@ -93,7 +93,7 @@ impl State for MainState {
 // by creating an FS and then throwing it away; the costs are not huge.)
 pub fn main() {
     let g = MainState::new();
-    let c = conf::Conf::new("flappy");
+    let c = conf::Conf::new("imageview");
     println!("Starting with default config: {:#?}", c);
     let mut e: Game<MainState> = Game::new(g, c).unwrap();
     let result = e.run();
