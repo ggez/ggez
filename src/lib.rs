@@ -11,7 +11,6 @@ extern crate zip;
 
 
 pub mod audio;
-mod state;
 pub mod game;
 pub mod graphics;
 pub mod filesystem;
@@ -20,7 +19,6 @@ mod context;
 pub mod conf;
 mod util;
 
-pub use state::State;
 pub use game::Game;
 pub use context::Context;
 

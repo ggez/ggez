@@ -7,7 +7,8 @@ use sdl2::pixels::Color;
 
 use ggez::audio;
 use ggez::conf;
-use ggez::{Game, State, GameResult, Context};
+use ggez::game::{Game, GameState};
+use ggez::{GameResult, Context};
 use ggez::graphics;
 use std::time::Duration;
 
@@ -45,7 +46,7 @@ impl MainState {
     }
 }
 
-impl State for MainState {
+impl GameState for MainState {
     fn load(ctx: &mut Context, _conf: &conf::Conf) -> GameResult<MainState> {
         ctx.print_sound_stats();
         ctx.print_resource_stats();

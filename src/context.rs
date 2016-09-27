@@ -29,6 +29,7 @@ pub struct Context<'a> {
     pub renderer: Renderer<'a>,
     pub filesystem: Filesystem,
     pub gfx_context: graphics::GraphicsContext,
+    pub event_context: sdl2::EventSubsystem,
 }
 
 impl<'a> fmt::Debug for Context<'a> {
@@ -87,6 +88,7 @@ impl<'a> Context<'a> {
         let ttf_context = try!(init_ttf());
         let audio_context = try!(init_audio(&sdl_context));
         let mixer_context = try!(init_mixer());
+        let event_context = try!(sdl_context.event());
 
         let ctx = Context {
             sdl_context: sdl_context,
@@ -96,6 +98,8 @@ impl<'a> Context<'a> {
             renderer: renderer,
             filesystem: fs,
             gfx_context: graphics::GraphicsContext::new(),
+
+            event_context: event_context,
         };
 
         Ok(ctx)
@@ -124,6 +128,13 @@ impl<'a> Context<'a> {
     /// Prints out information on the resources subsystem initialization.
     pub fn print_resource_stats(&mut self) {
         self.filesystem.print_all();
+    }
+
+    /// Triggers a Quit event.
+    pub fn quit(&mut self) -> GameResult<()> {
+        let e = sdl2::event::Event::Quit{timestamp: 0};
+        self.event_context.push_event(e)
+            .map_err(|e| GameError::from(e))
     }
 }
 

@@ -6,6 +6,8 @@ use GameResult;
 use conf;
 use filesystem as fs;
 
+use std::cmp;
+use std::sync::atomic;
 use std::path::Path;
 use std::time::Duration;
 use std::thread::sleep;
@@ -50,9 +52,7 @@ pub trait GameState {
     // but I'm not sure how to do it yet.
     // They should be SdlEvent::KeyDow or something similar,
     // but those are enum fields, not actual types.
-    fn key_down_event(&mut self, _evt: Event) {
-        //done = true,
-    }
+    fn key_down_event(&mut self, _evt: Event) {}
 
     fn key_up_event(&mut self, _evt: Event) {}
 
@@ -70,7 +70,6 @@ pub struct Game<'a, S: GameState> {
     state: S,
     context: Context<'a>,
 }
-
 
 /// Looks for a file named "conf.toml" in the resources directory
 /// loads it if it finds it.
@@ -156,7 +155,9 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                     // Hmmmm.
                     KeyDown { keycode, .. } => {
                         match keycode {
-                            Some(Escape) => done = true,
+                            Some(Escape) => {
+                                ctx.quit();
+                        },
                             _ => self.state.key_down_event(event),
                         }
                     }
@@ -181,7 +182,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
             // Better FPS stats would also be nice.
             let end_time = timer.ticks() as u64;
             delta = end_time - start_time;
-            let desired_frame_time = 1000 / 60;
+            let desired_frame_time = cmp::max(1000 / 60, delta);
             let sleep_time = Duration::from_millis(desired_frame_time - delta);
             sleep(sleep_time);
         }

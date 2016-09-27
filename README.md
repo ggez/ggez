@@ -39,6 +39,8 @@ See example/imageview.rs
 * Scene stack
 * GUI
 * particle system (or put that in with it like LOVE?)
+* Input indirection layer and input state tracking
+* Sprites with ordering, animation, atlasing, tile mapping, etc.
 
 # Useful goodies
 
