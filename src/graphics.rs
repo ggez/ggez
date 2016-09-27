@@ -8,7 +8,7 @@
 
 use std::path;
 
-use sdl2::pixels::Color;
+use sdl2::pixels;
 use sdl2::rect;
 use sdl2::render;
 use sdl2_image::ImageRWops;
@@ -21,31 +21,136 @@ use util::rwops_from_path;
 
 pub type Rect = rect::Rect;
 pub type Point = rect::Point;
+pub type Color = pixels::Color;
 
+#[derive(Debug)]
+pub enum DrawMode {
+    Line,
+    Fill
+}
 
-// Not yet sure exactly how we should split this up;
-// do we want to define our own GraphicsContext struct
-// that a Context is a part of, or what?
-impl<'a> Context<'a> {
-    fn clear() {
-        unimplemented!();
+/// A structure that contains graphics state.
+/// For instance, background and foreground colors.
+/// 
+/// It doesn't actually hold any of the SDL graphics stuff,
+/// just info we need that SDL doesn't keep track of.
+///
+/// As an end-user you shouldn't ever have to touch this, but it goes
+/// into part of the `Context` and so has to be public, at least
+/// until the `pub(restricted)` feature is stable.
+pub struct GraphicsContext {
+    background: pixels::Color,
+    foreground: pixels::Color,
+}
+
+impl GraphicsContext {
+    pub fn new() -> GraphicsContext {
+        GraphicsContext {
+            background: pixels::Color::RGB(0u8, 0u8, 255u8),
+            foreground: pixels::Color::RGB(255, 255, 255),
+        }
     }
+}
 
-    fn draw() {
-        unimplemented!();
-    }
 
-    fn present() {
-        unimplemented!();
-    }
+pub fn set_background_color(ctx: &mut Context, color: Color) {
+    ctx.gfx_context.background = color;
+}
 
-    fn print() {
-        unimplemented!();
-    }
+pub fn set_color(ctx: &mut Context, color: Color) {
+    let ref mut r = ctx.renderer;
+    ctx.gfx_context.foreground = color;
+    r.set_draw_color(ctx.gfx_context.foreground);
+}
 
-    fn printf() {
-        unimplemented!();
+pub fn clear(ctx: &mut Context) {
+    let ref mut r = ctx.renderer;
+    r.set_draw_color(ctx.gfx_context.background);
+    r.clear();
+
+    // We assume we are usually going to be wanting to draw the foreground color.
+    // While clear() is a relatively rare operation (probably once per frame).
+    // So we keep SDL's render state set to the foreground color by default.
+    r.set_draw_color(ctx.gfx_context.foreground);
+}
+
+pub fn draw(ctx: &mut Context, drawable: &Drawable, src: Option<Rect>, dst: Option<Rect>) -> GameResult<()> {
+    drawable.draw(ctx, src, dst)
+}
+
+pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, src: Option<Rect>, dst: Option<Rect>,
+           angle: f64, center: Option<Point>, flip_horizontal: bool, flip_vertical: bool)
+           -> GameResult<()> {
+    drawable.draw_ex(ctx, src, dst, angle, center, flip_horizontal, flip_vertical)
+}
+
+pub fn present(ctx: &mut Context) {
+    let ref mut r = ctx.renderer;
+    r.present()
+}
+
+pub fn print(ctx: &mut Context) {
+    unimplemented!();
+}
+
+pub fn printf(ctx: &mut Context) {
+    unimplemented!();
+}
+
+pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
+    let ref mut r = ctx.renderer;
+    match mode {
+        DrawMode::Line => {
+            let res = r.draw_rect(rect);
+            res.map_err(GameError::from)                
+        },
+        DrawMode::Fill => {
+            let res = r.fill_rect(rect);
+            res.map_err(GameError::from)
+
+        }
     }
+}
+
+/// Not part of the Love2D API but no reason not to include it.
+pub fn rectangles(ctx: &mut Context, mode: DrawMode, rect: &[Rect]) -> GameResult<()> {
+    let ref mut r = ctx.renderer;
+    match mode {
+        DrawMode::Line => {
+            let res = r.draw_rects(rect);
+            res.map_err(GameError::from)
+        },
+        DrawMode::Fill => {
+            let res = r.fill_rects(rect);
+            res.map_err(GameError::from)
+
+        }
+    }
+}
+
+
+pub fn line(ctx: &mut Context, start: Point, end: Point) -> GameResult<()> {
+    let ref mut r = ctx.renderer;
+    let res = r.draw_line(start, end);
+    res.map_err(GameError::from)
+}
+
+pub fn lines(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
+    let ref mut r = ctx.renderer;
+    let res = r.draw_lines(points);
+    res.map_err(GameError::from)
+}
+
+pub fn point(ctx: &mut Context, point: Point) -> GameResult<()> {
+    let ref mut r = ctx.renderer;
+    let res = r.draw_point(point);
+    res.map_err(GameError::from)
+}
+
+pub fn points(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
+    let ref mut r = ctx.renderer;
+    let res = r.draw_points(points);
+    res.map_err(GameError::from)
 }
 
 /// All types that can be drawn on the screen implement the `Drawable` trait.
@@ -55,15 +160,14 @@ pub trait Drawable {
     /// is required for implementing this trait.
     /// (It also maps nicely onto SDL2's Renderer::copy_ex(), we might want to
     /// wrap the types up a bit more nicely someday.)
-    fn draw_ex(&self, renderer: &mut render::Renderer, src: Option<Rect>, dst: Option<Rect>,
+    fn draw_ex(&self, context: &mut Context, src: Option<Rect>, dst: Option<Rect>,
                angle: f64, center: Option<Point>, flip_horizontal: bool, flip_vertical: bool)
                -> GameResult<()>;
 
     /// Draws the drawable onto the rendering target.
-    fn draw(&self, context: &mut Context, src: Option<Rect>, dst: Option<Rect>) {
-        let renderer = &mut context.renderer;
-        let res = self.draw_ex(renderer, src, dst, 0.0, None, false, false);
-        res.expect("Rendering error in Drawable.draw()");
+    fn draw(&self, context: &mut Context, src: Option<Rect>, dst: Option<Rect>) -> GameResult<()> {
+        let res = self.draw_ex(context, src, dst, 0.0, None, false, false);
+        res
     }
 }
 
@@ -96,9 +200,10 @@ impl Image {
 }
 
 impl Drawable for Image {
-    fn draw_ex(&self, renderer: &mut render::Renderer, src: Option<Rect>, dst: Option<Rect>,
+    fn draw_ex(&self, context: &mut Context, src: Option<Rect>, dst: Option<Rect>,
                angle: f64, center: Option<Point>, flip_horizontal: bool, flip_vertical: bool)
                -> GameResult<()> {
+        let ref mut renderer = context.renderer;
         renderer.copy_ex(&self.texture, src, dst, angle, center, flip_horizontal, flip_vertical)
             .map_err(|s| GameError::RenderError(s))
     }
@@ -109,8 +214,6 @@ impl Drawable for Image {
 /// Can be created from a .ttf file or from an image.
 pub struct Font {
     font: sdl2_ttf::Font,
-//    _rwops: &'a rwops::RWops<'a>,
-//    _buffer: &'a Vec<u8>,
 }
 
 impl Font {
@@ -123,17 +226,14 @@ impl Font {
         let ttf_font = try!(ttf_context.load_font_from_rwops(&mut rwops, size));
         Ok(Font {
             font: ttf_font,
-//            _rwops: &rwops,
-//            _buffer: &buffer,
         })
-        
     }
 
     /// Create a new bitmap font from an image file.
     /// The `glyphs` string is the characters in the image from left to right.
     /// TODO: Implement this!  Love2D just uses a 1D image for glyphs, which is
-    /// probably not ideal but is fine.
-    fn from_image(name: &str, glyphs: &str) {
+    /// maybe not ideal but is fine.
+    pub fn from_image(name: &str, glyphs: &str) {
         unimplemented!()
     }
 }
@@ -153,7 +253,7 @@ impl Text {
     pub fn new(context: &Context, text: &str, font: &Font) -> GameResult<Text> {
         let renderer = &context.renderer;
         let surf = try!(font.font.render(text)
-            .blended(Color::RGB(255,255,255)));
+            .blended(pixels::Color::RGB(255,255,255)));
         // BUGGO: SEGFAULTS HERE!  But only when using solid(), not blended()!
         // Loading the font from a file rather than a RWops makes it work fine.
         // See https://github.com/andelf/rust-sdl2_ttf/issues/43
@@ -167,9 +267,10 @@ impl Text {
 
 
 impl Drawable for Text {
-    fn draw_ex(&self, renderer: &mut render::Renderer, src: Option<Rect>, dst: Option<Rect>,
+    fn draw_ex(&self, context: &mut Context, src: Option<Rect>, dst: Option<Rect>,
                angle: f64, center: Option<Point>, flip_horizontal: bool, flip_vertical: bool)
                -> GameResult<()> {
+        let ref mut renderer = context.renderer;
         renderer.copy_ex(&self.texture, src, dst, angle, center, flip_horizontal, flip_vertical)
                     .map_err(|s| GameError::RenderError(s))
     }

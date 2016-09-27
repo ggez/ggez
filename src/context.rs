@@ -13,8 +13,10 @@ use std::fmt;
 
 use conf;
 use filesystem::Filesystem;
+use graphics;
 use GameError;
 use GameResult;
+
 
 /// A `Context` holds all the state needed to interface
 /// with the hardware.  Only one `Context` can exist at a
@@ -26,6 +28,7 @@ pub struct Context<'a> {
     pub mixer_context: Sdl2MixerContext,
     pub renderer: Renderer<'a>,
     pub filesystem: Filesystem,
+    pub gfx_context: graphics::GraphicsContext,
 }
 
 impl<'a> fmt::Debug for Context<'a> {
@@ -92,6 +95,7 @@ impl<'a> Context<'a> {
             mixer_context: mixer_context,
             renderer: renderer,
             filesystem: fs,
+            gfx_context: graphics::GraphicsContext::new(),
         };
 
         Ok(ctx)
