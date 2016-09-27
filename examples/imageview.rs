@@ -9,34 +9,44 @@ use ggez::audio;
 use ggez::conf;
 use ggez::{Game, State, GameResult, Context};
 use ggez::graphics;
-use ggez::graphics::Drawable;
 use std::time::Duration;
 
 struct MainState {
     a: i32,
     direction: i32,
-    image: Option<graphics::Image>,
-    font: Option<graphics::Font>,
-    text: Option<graphics::Text>,
-    sound: Option<audio::Sound>,
+    image: graphics::Image,
+    //font: graphics::Font,
+    text: graphics::Text,
+    sound: audio::Sound,
 }
 
 impl MainState {
-    fn new() -> MainState {
-        MainState {
-            a: 0,
-            direction: 1,
-            image: None,
-            font: None,
-            text: None,
-            sound: None,
-
+    fn draw_crazy_lines(&self, ctx: &mut Context) -> GameResult<()> {
+        let num_lines = 100;
+        let mut colors = Vec::new();
+        for _ in 0..num_lines {
+            let r: u8 = rand::random();
+            let g: u8 = rand::random();
+            let b: u8 = rand::random();
+            colors.push(Color::RGB(r, g, b));
         }
+
+        let mut last_point = graphics::Point::new(400,300);
+        for color in colors {
+            let x = rand::random::<i32>() % 50;
+            let y = rand::random::<i32>() % 50;
+            let point = graphics::Point::new(last_point.x()+x, last_point.y()+y);
+            graphics::set_color(ctx, color);
+            try!(graphics::line(ctx, last_point, point));
+            last_point = point;
+        }
+
+        Ok(())
     }
 }
 
 impl State for MainState {
-    fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<MainState> {
+    fn load(ctx: &mut Context, _conf: &conf::Conf) -> GameResult<MainState> {
         ctx.print_sound_stats();
         ctx.print_resource_stats();
 
@@ -49,17 +59,19 @@ impl State for MainState {
         let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
         let sound = audio::Sound::new(ctx, soundpath).unwrap();
 
-        //let _ = sound.play()
-
-        
+        let _ = sound.play();
 
         let s = MainState {
             a: 0,
             direction: 1,
-            image: Some(image),
-            font: Some(font),
-            text: Some(text),
-            sound: Some(sound),
+            image: image,
+            //font: font,
+            text: text,
+            // BUGGO: We never use sound again,
+            // but we have to hang on to it, Or Else!
+            // The optimizer will decide we don't need it
+            // since play() has "no side effects" and free it.
+            sound: sound,
         };
 
 
@@ -82,10 +94,10 @@ impl State for MainState {
         ctx.renderer.set_draw_color(Color::RGB(c, c, c));
         ctx.renderer.clear();
 
-        let img = self.image.as_ref().unwrap();
-        img.draw(ctx, None, None);
-        let text = self.text.as_ref().unwrap();
-        text.draw(ctx, None, None);
+        try!(graphics::draw(ctx, &self.image, None, None));
+        try!(graphics::draw(ctx, &self.text, None, None));
+
+        try!(self.draw_crazy_lines(ctx));
         ctx.renderer.present();
 
 
