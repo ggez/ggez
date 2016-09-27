@@ -26,7 +26,6 @@ See example/imageview.rs
 
 # Status
 
-* Drawing API needs to be fleshed out, add shape drawing (or at least draw_rect)
 * Need to figure out exiting cleanly.
 * Frame timing is kinda primitive and narsty, make it better.
 * Need to make the example's resource paths work properly with `cargo run --example`
@@ -43,7 +42,7 @@ See example/imageview.rs
 
 # Useful goodies
 
-* specs for entity-component system
+* specs for entity-component system (alternatives: ecs or recs crates)
 * cgmath or vecmath for math operations?
 * physics/collision???
 

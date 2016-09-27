@@ -1,6 +1,5 @@
 //! The Game struct starts up the game and runs the mainloop and such.
 
-use state::State;
 use context::Context;
 use GameError;
 use GameResult;
@@ -17,10 +16,56 @@ use sdl2::event::*;
 use sdl2::keyboard::Keycode::*;
 
 
+/// A trait for defining a game state.
+/// Implement `load()`, `update()` and `draw()` callbacks on this trait
+/// and hand it to a `Game` object to be run.
+/// You may also implement the `*_event` traits if you wish to handle
+/// those events.
+///
+/// The default event handlers do nothing, apart from `key_down_event()`,
+/// which *should* by default exit the game if escape is pressed, but which
+/// doesn't do such a thing yet...
+pub trait GameState {
+
+    // Tricksy trait and lifetime magic!
+    // Much thanks to aatch on #rust-beginners for helping make this work.
+    fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<Self>
+        where Self: Sized;
+    fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()>;
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
+
+    // You don't have to override these if you don't want to; the defaults
+    // do nothing.
+    // It might be nice to be able to have custom event types and a map or
+    // such of handlers?  Hmm, maybe later.
+    fn mouse_button_down_event(&mut self, _evt: Event) {}
+
+    fn mouse_button_up_event(&mut self, _evt: Event) {}
+
+    fn mouse_motion_event(&mut self, _evt: Event) {}
+
+    fn mouse_wheel_event(&mut self, _evt: Event) {}
+
+    // TODO: These event types need to be better,
+    // but I'm not sure how to do it yet.
+    // They should be SdlEvent::KeyDow or something similar,
+    // but those are enum fields, not actual types.
+    fn key_down_event(&mut self, _evt: Event) {
+        //done = true,
+    }
+
+    fn key_up_event(&mut self, _evt: Event) {}
+
+    fn focus(&mut self, _gained: bool) {}
+
+    fn quit(&mut self) {
+        println!("Quitting game");
+    }
+}
 
 
 #[derive(Debug)]
-pub struct Game<'a, S: State> {
+pub struct Game<'a, S: GameState> {
     conf: conf::Conf,
     state: S,
     context: Context<'a>,
@@ -42,7 +87,7 @@ fn get_default_config(fs: &mut fs::Filesystem) -> GameResult<conf::Conf> {
     }
 }
 
-impl<'a, S: State + 'static> Game<'a, S> {
+impl<'a, S: GameState + 'static> Game<'a, S> {
     /// Creates a new `Game` with the given initial gamestate and
     /// default config (which will be used if there is no config file)
     pub fn new(default_config: conf::Conf) -> GameResult<Game<'a, S>>
@@ -106,7 +151,7 @@ impl<'a, S: State + 'static> Game<'a, S> {
                     // TODO: We need a good way to have
                     // a default like this, while still allowing
                     // it to be overridden.
-                    // But the State can't access the Game,
+                    // But the GameState can't access the Game,
                     // so we can't modify the Game's done property...
                     // Hmmmm.
                     KeyDown { keycode, .. } => {
