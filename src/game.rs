@@ -1,163 +1,148 @@
+//! The Game struct starts up the game and runs the mainloop and such.
+
 use state::State;
 use context::Context;
-use resources::{ResourceManager, TextureManager, FontManager};
 use GameError;
+use GameResult;
+use conf;
+use filesystem as fs;
 
 use std::path::Path;
-use std::thread;
-use std::option;
 use std::time::Duration;
+use std::thread::sleep;
 
-use sdl2::pixels::Color;
+use sdl2;
 use sdl2::event::Event::*;
+use sdl2::event::*;
 use sdl2::keyboard::Keycode::*;
-use sdl2::surface::Surface;
 
-use rand::{self, Rand};
 
-use sdl2_mixer;
-use sdl2_mixer::{INIT_MP3, INIT_FLAC, INIT_MOD, INIT_FLUIDSYNTH, INIT_MODPLUG, INIT_OGG,
-                 AUDIO_S16LSB};
 
+
+#[derive(Debug)]
 pub struct Game<'a, S: State> {
-    window_title: &'static str,
-    screen_width: u32,
-    screen_height: u32,
-    states: Vec<S>,
-    context: Option<Context<'a>>,
+    conf: conf::Conf,
+    state: S,
+    context: Context<'a>,
 }
 
-impl<'a, S: State> Game<'a, S> {
-    pub fn new(initial_state: S) -> Game<'a, S> {
-        Game {
-            window_title: "Ruffel",
-            screen_width: 800,
-            screen_height: 600,
-            states: vec![initial_state],
-            context: None,
-        }
+
+/// Looks for a file named "conf.toml" in the resources directory
+/// loads it if it finds it.
+/// If it can't read it for some reason, returns None
+fn get_default_config(fs: &mut fs::Filesystem) -> GameResult<conf::Conf> {
+    let conf_path = Path::new("conf.toml");
+    if fs.is_file(conf_path) {
+        let mut file = try!(fs.open(conf_path));
+        let c = try!(conf::Conf::from_toml_file(&mut file));
+        Ok(c)
+
+    } else {
+        Err(GameError::ConfigError(String::from("Config file not found")))
+    }
+}
+
+impl<'a, S: State + 'static> Game<'a, S> {
+    /// Creates a new `Game` with the given initial gamestate and
+    /// default config (which will be used if there is no config file)
+    pub fn new(default_config: conf::Conf) -> GameResult<Game<'a, S>>
+        //where T: Fn(&Context, &conf::Conf) -> S
+    {
+        let sdl_context = try!(sdl2::init());
+        let mut fs = try!(fs::Filesystem::new());
+
+        // TODO: Verify config version == this version
+        let config = get_default_config(&mut fs)
+            .unwrap_or(default_config);
+
+        let mut context = try!(Context::from_conf(&config, fs, sdl_context));
+
+        let init_state = try!(S::load(&mut context, &config));
+
+        Ok(Game {
+            conf: config,
+            state: init_state,
+            context: context,
+        })
     }
 
-    pub fn push_state(&mut self, state: S) {
-        self.states.push(state);
+    /// Re-initializes the game state using the type's `::load()` method.
+    pub fn reload_state(&mut self) -> GameResult<()> {
+        let newstate = try!(S::load(&mut self.context, &self.conf));
+        self.state = newstate;
+        Ok(())
     }
 
-    pub fn pop_state() {}
-
-    fn get_active_state(&mut self) -> Option<&mut S> {
-        self.states.last_mut()
+    /// Calls the given function to create a new gamestate, and replaces
+    /// the current one with it.
+    pub fn replace_state_with<F>(&mut self, f: &F) -> GameResult<()>
+        where F: Fn(&mut Context, &conf::Conf) -> GameResult<S> {
+        let newstate = try!(f(&mut self.context, &self.conf));
+        self.state = newstate;
+        Ok(())
     }
 
-    // Remove verbose debug output
-    fn init_sound_system(&mut self) {
-        let mut ctx = self.context.take().unwrap();
-        let _audio = ctx.sdl_context.audio().unwrap();
-        let mut timer = ctx.sdl_context.timer().unwrap();
-        let _mixer_context = sdl2_mixer::init(INIT_MP3 | INIT_FLAC | INIT_MOD | INIT_FLUIDSYNTH |
-                                              INIT_MODPLUG |
-                                              INIT_OGG)
-                                 .unwrap();
-
-        let frequency = 44100;
-        let format = AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
-        let channels = 2; // Stereo
-        let chunk_size = 1024;
-        let _ = sdl2_mixer::open_audio(frequency, format, channels, chunk_size).unwrap();
-        sdl2_mixer::allocate_channels(0);
-
-        {
-            let n = sdl2_mixer::get_chunk_decoders_number();
-            println!("available chunk(sample) decoders: {}", n);
-            for i in 0..n {
-                println!("  decoder {} => {}", i, sdl2_mixer::get_chunk_decoder(i));
-            }
-        }
-
-        {
-            let n = sdl2_mixer::get_music_decoders_number();
-            println!("available music decoders: {}", n);
-            for i in 0..n {
-                println!("  decoder {} => {}", i, sdl2_mixer::get_music_decoder(i));
-            }
-        }
-
-        println!("query spec => {:?}", sdl2_mixer::query_spec());
-
-        self.context = Some(ctx);
+    /// Replaces the gamestate with the given one without
+    /// having to re-initialize everything in the Context.
+    pub fn replace_state(&mut self, state: S){
+        self.state = state;
     }
 
-    pub fn run(&mut self) {
-        let mut ctx = Context::new(self.window_title, self.screen_width, self.screen_height);
+    /// Runs the game's mainloop.
+    pub fn run(&mut self) -> GameResult<()> {
+        // TODO: Window icon
+        let ref mut ctx = self.context;
+        let mut timer = try!(ctx.sdl_context.timer());
+        let mut event_pump = try!(ctx.sdl_context.event_pump());
 
-        self.context = Some(ctx);
-        self.init_sound_system();
-        let mut ctx = self.context.take().unwrap();
-        let mut rng = rand::thread_rng();
-        let mut timer = ctx.sdl_context.timer().unwrap();
-        let mut event_pump = ctx.sdl_context.event_pump().unwrap();
-
-        ctx.resources.load_font("DejaVuSerif", "resources/DejaVuSerif.ttf").unwrap();
-
-        // If the example text is too big for the screen, downscale it (and center irregardless)
-        let padding = 64;
-
-        // Initialize State handlers
-        for s in &mut self.states {
-            s.load(&mut ctx);
-        }
-
+        let mut delta = 0u64;
         let mut done = false;
-        let mut delta = Duration::new(0, 0);
-
         while !done {
-            let start_time = timer.ticks();
+            let start_time = timer.ticks() as u64;
 
             for event in event_pump.poll_iter() {
                 match event {
                     Quit { .. } => done = true,
+                    // TODO: We need a good way to have
+                    // a default like this, while still allowing
+                    // it to be overridden.
+                    // But the State can't access the Game,
+                    // so we can't modify the Game's done property...
+                    // Hmmmm.
                     KeyDown { keycode, .. } => {
                         match keycode {
                             Some(Escape) => done = true,
-                            _ => {}
+                            _ => self.state.key_down_event(event),
                         }
+                    }
+                    KeyUp { .. } => self.state.key_up_event(event),
+                    MouseButtonDown { .. } => self.state.mouse_button_down_event(event),
+                    MouseButtonUp { .. } => self.state.mouse_button_up_event(event),
+                    MouseMotion { .. } => self.state.mouse_motion_event(event),
+                    MouseWheel { .. } => self.state.mouse_wheel_event(event),
+                    Window { win_event_id: WindowEventId::FocusGained, .. } => {
+                        self.state.focus(true)
+                    }
+                    Window { win_event_id: WindowEventId::FocusLost, .. } => {
+                        self.state.focus(false)
                     }
                     _ => {}
                 }
             }
+            try!(self.state.update(ctx, Duration::from_millis(delta)));
+            try!(self.state.draw(ctx));
 
-            if let Some(active_state) = self.get_active_state() {
-                active_state.update(&mut ctx, delta);
-
-                ctx.renderer.set_draw_color(Color::rand(&mut rng));
-                ctx.renderer.clear();
-                active_state.draw(&mut ctx);
-                ctx.renderer.present();
-            } else {
-                done = true;
-            }
-
-            let end_time = timer.ticks();
-            delta = Duration::from_millis((end_time - start_time) as u64);
-            thread::sleep_ms(1000 / 60);
+            // TODO: For now this is locked at 60 FPS, should fix that.
+            // Better FPS stats would also be nice.
+            let end_time = timer.ticks() as u64;
+            delta = end_time - start_time;
+            let desired_frame_time = 1000 / 60;
+            let sleep_time = Duration::from_millis(desired_frame_time - delta);
+            sleep(sleep_time);
         }
 
-        self.context = Some(ctx);
+        self.state.quit();
+        Ok(())
     }
 }
 
-pub fn play_sound(ctx: &mut Context, sound: &str) -> Result<(), GameError> {
-    let resource = ctx.resources.get_sound(sound);
-    match resource {
-        Some(music) => {
-            println!("music => {:?}", music);
-            println!("music type => {:?}", music.get_type());
-            println!("music volume => {:?}", sdl2_mixer::Music::get_volume());
-            println!("play => {:?}", music.play(1));
-            println!("You've played well");
-        }
-        None => {
-            println!("No such resource!");
-        }
-    }
-    Ok(())
-}
