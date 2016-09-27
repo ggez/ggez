@@ -1,5 +1,4 @@
 extern crate ggez;
-extern crate specs;
 extern crate rand;
 extern crate sdl2;
 
@@ -37,7 +36,7 @@ impl MainState {
 }
 
 impl State for MainState {
-    fn load(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<MainState> {
         ctx.print_sound_stats();
         ctx.print_resource_stats();
 
@@ -49,16 +48,23 @@ impl State for MainState {
         let font = graphics::Font::new(ctx, fontpath, 48).unwrap();
         let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
         let sound = audio::Sound::new(ctx, soundpath).unwrap();
-        self.image = Some(image);
-        self.font = Some(font);
-        self.text = Some(text);
-        self.sound = Some(sound);
+
+        //let _ = sound.play()
+
+        
+
+        let s = MainState {
+            a: 0,
+            direction: 1,
+            image: Some(image),
+            font: Some(font),
+            text: Some(text),
+            sound: Some(sound),
+        };
 
 
-        let sound = self.sound.as_ref().unwrap();
-        let _ = sound.play();
 
-        Ok(())
+        Ok(s)
     }
 
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
@@ -92,10 +98,10 @@ impl State for MainState {
 // Loading a config file depends on having FS (or we can just fake our way around it
 // by creating an FS and then throwing it away; the costs are not huge.)
 pub fn main() {
-    let g = MainState::new();
+    //let g = MainState::new();
     let c = conf::Conf::new("imageview");
     println!("Starting with default config: {:#?}", c);
-    let mut e: Game<MainState> = Game::new(g, c).unwrap();
+    let mut e: Game<MainState> = Game::new(c).unwrap();
     let result = e.run();
     if let Err(e) = result {
         println!("Error encountered: {:?}", e);

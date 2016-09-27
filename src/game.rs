@@ -42,10 +42,12 @@ fn get_default_config(fs: &mut fs::Filesystem) -> GameResult<conf::Conf> {
     }
 }
 
-impl<'a, S: State> Game<'a, S> {
+impl<'a, S: State + 'static> Game<'a, S> {
     /// Creates a new `Game` with the given initial gamestate and
     /// default config (which will be used if there is no config file)
-    pub fn new(initial_state: S, default_config: conf::Conf) -> GameResult<Game<'a, S>> {
+    pub fn new(default_config: conf::Conf) -> GameResult<Game<'a, S>>
+        //where T: Fn(&Context, &conf::Conf) -> S
+    {
         let sdl_context = try!(sdl2::init());
         let mut fs = try!(fs::Filesystem::new());
 
@@ -53,18 +55,36 @@ impl<'a, S: State> Game<'a, S> {
         let config = get_default_config(&mut fs)
             .unwrap_or(default_config);
 
-        let context = try!(Context::from_conf(&config, fs, sdl_context));
+        let mut context = try!(Context::from_conf(&config, fs, sdl_context));
+
+        let init_state = try!(S::load(&mut context, &config));
 
         Ok(Game {
             conf: config,
-            state: initial_state,
+            state: init_state,
             context: context,
         })
     }
 
+    /// Re-initializes the game state using the type's `::load()` method.
+    pub fn reload_state(&mut self) -> GameResult<()> {
+        let newstate = try!(S::load(&mut self.context, &self.conf));
+        self.state = newstate;
+        Ok(())
+    }
+
+    /// Calls the given function to create a new gamestate, and replaces
+    /// the current one with it.
+    pub fn replace_state_with<F>(&mut self, f: &F) -> GameResult<()>
+        where F: Fn(&mut Context, &conf::Conf) -> GameResult<S> {
+        let newstate = try!(f(&mut self.context, &self.conf));
+        self.state = newstate;
+        Ok(())
+    }
+
     /// Replaces the gamestate with the given one without
     /// having to re-initialize everything in the Context.
-    pub fn replace_state(&mut self, state: S) -> () {
+    pub fn replace_state(&mut self, state: S){
         self.state = state;
     }
 
@@ -74,8 +94,6 @@ impl<'a, S: State> Game<'a, S> {
         let ref mut ctx = self.context;
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
-
-        try!(self.state.load(ctx));
 
         let mut delta = 0u64;
         let mut done = false;

@@ -15,12 +15,17 @@ use sdl2::event::Event;
 
 use {GameResult};
 use context::Context;
+use conf::Conf;
 
 // I feel like this might be better named a Scene than a State...?
 // No, because scene management is more fine-grained and should
 // happen at a higher level.
 pub trait State {
-    fn load(&mut self, ctx: &mut Context) -> GameResult<()>;
+
+    // Tricksy trait and lifetime magic!
+    // Much thanks to aatch on #rust-beginners for helping make this work.
+    fn load(ctx: &mut Context, conf: &Conf) -> GameResult<Self>
+        where Self: Sized;
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()>;
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
 
