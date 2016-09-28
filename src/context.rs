@@ -131,10 +131,15 @@ impl<'a> Context<'a> {
     }
 
     /// Triggers a Quit event.
+    /// BUGGO: This actually doesn't work 'cause
+    /// we can't push non-user event types for some reason!
+    /// See https://github.com/AngryLawyer/rust-sdl2/issues/530
+    /// :-(
     pub fn quit(&mut self) -> GameResult<()> {
-        let e = sdl2::event::Event::Quit{timestamp: 0};
+        let e = sdl2::event::Event::Quit{timestamp: 10000};
+        println!("Pushing event {:?}", e);
         self.event_context.push_event(e)
-            .map_err(|e| GameError::from(e))
+            .map_err(|err| GameError::from(err))
     }
 }
 

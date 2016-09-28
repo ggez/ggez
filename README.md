@@ -26,12 +26,12 @@ See example/imageview.rs
 
 # Status
 
-* Need to figure out exiting cleanly.
-* Frame timing is kinda primitive and narsty, make it better.
+* Make timing module; frame timing is kinda primitive and narsty, make it better.
 * Need to make the example's resource paths work properly with `cargo run --example`
 * Need more documentation
 * Need to implement bitmap fonts
 * Need to add more tests, somehow
+* Need to figure out exiting cleanly.  THIS IS SOLVED, but blocked by a bug in rust-sdl!  Issue #530.
 
 # Things to add atop it
 

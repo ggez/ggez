@@ -145,8 +145,12 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
             let start_time = timer.ticks() as u64;
 
             for event in event_pump.poll_iter() {
+                //println!("Got event {:?}", event);
                 match event {
-                    Quit { .. } => done = true,
+                    Quit { timestamp: t } => {
+                        //println!("Quit event: {:?}", t);
+                        done = true
+                    }
                     // TODO: We need a good way to have
                     // a default like this, while still allowing
                     // it to be overridden.
