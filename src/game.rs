@@ -142,6 +142,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
         let mut delta = 0u64;
         let mut done = false;
         while !done {
+            ctx.timer_context.tick();
             let start_time = timer.ticks() as u64;
 
             for event in event_pump.poll_iter() {

@@ -11,12 +11,12 @@ extern crate zip;
 
 
 pub mod audio;
+pub mod conf;
+mod context;
+pub mod filesystem;
 pub mod game;
 pub mod graphics;
-pub mod filesystem;
-//mod resources;
-mod context;
-pub mod conf;
+pub mod timer;
 mod util;
 
 pub use game::Game;

@@ -14,6 +14,7 @@ use std::fmt;
 use conf;
 use filesystem::Filesystem;
 use graphics;
+use timer;
 use GameError;
 use GameResult;
 
@@ -30,6 +31,7 @@ pub struct Context<'a> {
     pub filesystem: Filesystem,
     pub gfx_context: graphics::GraphicsContext,
     pub event_context: sdl2::EventSubsystem,
+    pub timer_context: timer::TimeContext,
 }
 
 impl<'a> fmt::Debug for Context<'a> {
@@ -89,6 +91,7 @@ impl<'a> Context<'a> {
         let audio_context = try!(init_audio(&sdl_context));
         let mixer_context = try!(init_mixer());
         let event_context = try!(sdl_context.event());
+        let timer_context = timer::TimeContext::new();
 
         let ctx = Context {
             sdl_context: sdl_context,
@@ -100,6 +103,7 @@ impl<'a> Context<'a> {
             gfx_context: graphics::GraphicsContext::new(),
 
             event_context: event_context,
+            timer_context: timer_context,
         };
 
         Ok(ctx)

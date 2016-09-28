@@ -86,6 +86,10 @@ impl GameState for MainState {
         self.a = self.a + self.direction;
         if self.a > 250 || self.a <= 0 {
             self.direction *= -1;
+
+            let delta = _ctx.timer_context.get_delta();
+            println!("Delta frame time: {:?}", delta);
+            println!("Average FPS: {}", _ctx.timer_context.get_fps());
         }
         Ok(())
     }
@@ -101,7 +105,8 @@ impl GameState for MainState {
         try!(self.draw_crazy_lines(ctx));
         ctx.renderer.present();
 
-
+        // ctx.quit() is broken :-(
+        //ctx.quit();
         Ok(())
     }
 }

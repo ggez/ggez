@@ -28,6 +28,7 @@ See example/imageview.rs
 
 * Make timing module; frame timing is kinda primitive and narsty, make it better.
 * Need to make the example's resource paths work properly with `cargo run --example`
+* Do we want to include Love2D's graphics transform functions?
 * Need more documentation
 * Need to implement bitmap fonts
 * Need to add more tests, somehow
@@ -38,9 +39,16 @@ See example/imageview.rs
 * Resource loader/cache
 * Scene stack
 * GUI
-* particle system (or put that in with it like LOVE?)
+* particle system (or put that in with it like LOVE?)  (No, in LOVE it's part of the main engine 'cause you
+can't efficiently implement it as a module)
 * Input indirection layer and input state tracking
 * Sprites with ordering, animation, atlasing, tile mapping, etc.
+
+# Future work
+
+It *would* be nice to have a full OpenGL-y backend like Love2D does, with things like shaders, render targets,
+etc.  Right now the API is mostly limited to Love2D 0.7 or so.  Using OpenAL (through the `ears` crate perhaps?)
+for sound would get us positional audio too.  
 
 # Useful goodies
 
