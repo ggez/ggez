@@ -19,6 +19,7 @@ etc.
 * TTF font rendering through SDL2_ttf, as well as (eventually) bitmap fonts.
 * Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
+* Easy timing and time-tracking functions.
 
 # Examples
 
@@ -26,7 +27,6 @@ See example/imageview.rs
 
 # Status
 
-* Make timing module; frame timing is kinda primitive and narsty, make it better.
 * Need to make the example's resource paths work properly with `cargo run --example`
 * Do we want to include Love2D's graphics transform functions?
 * Need more documentation

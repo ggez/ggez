@@ -1,4 +1,15 @@
 //! Timing and measurement functions.
+//!
+//! I don't know where to note this but it should be noted;
+//! we do not try to do any framerate limitation by default.
+//! If you want to run at anything other than full-bore max speed all the time,
+//! you should use one of `sleep()` or `sleep_until_next_frame()` functions in
+//! this module at the end of your `GameState.draw()` callback.
+//! `sleep()` with a duration of 0 will just yield to the OS so it has a chance
+//! to breathe before continuing with your game,  while
+//! `sleep_until_next_frame()` will attempt to calculate how long it should
+//! wait to hit the desired FPS and sleep that long.
+
 
 use std::time;
 use std::thread;
@@ -68,6 +79,7 @@ pub struct TimeContext {
 const time_log_frames: u32 = 60;
 
 impl TimeContext {
+    /// Creates a new `TimeContext` and initializes the start to this instant.
     pub fn new() -> TimeContext {
         TimeContext {
             init_instant: time::Instant::now(),
@@ -78,6 +90,9 @@ impl TimeContext {
 
     /// Update the state of the TimeContext to record that
     /// another frame has taken place.
+    ///
+    /// It's usually not necessary to call this function yourself,
+    /// the `Game` runner will do it for you.
     pub fn tick(&mut self) {
         let now = time::Instant::now();
         let time_since_last = now - self.last_instant;
@@ -135,34 +150,14 @@ impl TimeContext {
         let now = time::Instant::now();
         let time_spent_this_frame = now - self.last_instant;
         let duration_to_sleep = duration_per_frame - time_spent_this_frame;
+        //println!("Sleeping for {:?}", duration_to_sleep);
         thread::sleep(duration_to_sleep);
     }
 
-    pub fn sleep() {
+    /// Pauses the current thread for the target duration.
+    /// Just calls `std::thread::sleep()` so it's as accurate
+    /// as that is.
+    pub fn sleep(&self, duration: time::Duration) {
+        thread::sleep(duration);
     }
 }
-
-
-
-
-// function love.load()
-//     min_dt = 1/30
-//     next_time = love.timer.getTime()
-//     end
-
-//     function love.update(dt)
-//     next_time = next_time + min_dt
-
-//     --rest of function here
-//     end
-
-//     function love.draw()
-//     --rest of function here
-
-//     local cur_time = love.timer.getTime()
-//     if next_time <= cur_time then
-//                   next_time = cur_time
-//                   return
-//                   end
-//     love.timer.sleep(next_time - cur_time)
-//     end

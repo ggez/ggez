@@ -139,11 +139,9 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
 
-        let mut delta = 0u64;
         let mut done = false;
         while !done {
             ctx.timer_context.tick();
-            let start_time = timer.ticks() as u64;
 
             for event in event_pump.poll_iter() {
                 //println!("Got event {:?}", event);
@@ -180,21 +178,10 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                     _ => {}
                 }
             }
-            //try!(self.state.update(ctx, Duration::from_millis(delta)));
             let dt = ctx.timer_context.get_delta();
             try!(self.state.update(ctx, dt));
             try!(self.state.draw(ctx));
-
             //ctx.timer_context.sleep_until_next_frame(60);
-
-            // TODO: For now this is locked at 60 FPS, should fix that.
-            // Better FPS stats would also be nice.
-            // let end_time = timer.ticks() as u64;
-            // delta = end_time - start_time;
-            // let desired_frame_time = cmp::max(1000 / 60, delta);
-            // let sleep_time = Duration::from_millis(desired_frame_time - delta);
-            // sleep(sleep_time);
-            sleep(Duration::new(0, 0));
         }
 
         self.state.quit();
