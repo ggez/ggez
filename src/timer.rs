@@ -85,7 +85,8 @@ impl TimeContext {
         self.last_instant = now;
     }
 
-    /// Get the time it took to calculate the last frame.
+    /// Get the time between the start of the last frame and the current one;
+    /// in other words, the length of the last frame.
     pub fn get_delta(&self) -> time::Duration {
         self.frame_durations.latest()
     }
@@ -129,7 +130,7 @@ impl TimeContext {
         // Using an integer FPS target helps enforce this.
         assert!(desired_fps > 0);
         let fps_delay = 1.0 / (desired_fps as f64);
-        let nanos_per_frame = fps_delay * 10e9;
+        let nanos_per_frame = fps_delay * 1e9;
         let duration_per_frame = time::Duration::new(0, nanos_per_frame as u32);
         let now = time::Instant::now();
         let time_spent_this_frame = now - self.last_instant;

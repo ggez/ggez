@@ -180,16 +180,21 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                     _ => {}
                 }
             }
-            try!(self.state.update(ctx, Duration::from_millis(delta)));
+            //try!(self.state.update(ctx, Duration::from_millis(delta)));
+            let dt = ctx.timer_context.get_delta();
+            try!(self.state.update(ctx, dt));
             try!(self.state.draw(ctx));
+
+            //ctx.timer_context.sleep_until_next_frame(60);
 
             // TODO: For now this is locked at 60 FPS, should fix that.
             // Better FPS stats would also be nice.
-            let end_time = timer.ticks() as u64;
-            delta = end_time - start_time;
-            let desired_frame_time = cmp::max(1000 / 60, delta);
-            let sleep_time = Duration::from_millis(desired_frame_time - delta);
-            sleep(sleep_time);
+            // let end_time = timer.ticks() as u64;
+            // delta = end_time - start_time;
+            // let desired_frame_time = cmp::max(1000 / 60, delta);
+            // let sleep_time = Duration::from_millis(desired_frame_time - delta);
+            // sleep(sleep_time);
+            sleep(Duration::new(0, 0));
         }
 
         self.state.quit();

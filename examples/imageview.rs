@@ -88,7 +88,7 @@ impl GameState for MainState {
             self.direction *= -1;
 
             let delta = _ctx.timer_context.get_delta();
-            println!("Delta frame time: {:?}", delta);
+            println!("Delta frame time: {:?} (calculated) {:?} (received)", delta, _dt);
             println!("Average FPS: {}", _ctx.timer_context.get_fps());
         }
         Ok(())
