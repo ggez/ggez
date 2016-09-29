@@ -1,15 +1,14 @@
 //! Timing and measurement functions.
 //!
-//! I don't know where to note this but it should be noted;
-//! we do not try to do any framerate limitation by default.
+//! ggez does not try to do any framerate limitation by default.
 //! If you want to run at anything other than full-bore max speed all the time,
 //! you should use one of `sleep()` or `sleep_until_next_frame()` functions in
 //! this module at the end of your `GameState.draw()` callback.
+//!
 //! `sleep()` with a duration of 0 will just yield to the OS so it has a chance
 //! to breathe before continuing with your game,  while
 //! `sleep_until_next_frame()` will attempt to calculate how long it should
 //! wait to hit the desired FPS and sleep that long.
-
 
 use std::time;
 use std::thread;
@@ -41,6 +40,8 @@ impl<T> LogBuffer<T>
         }
     }
 
+    /// Pushes a new item into the logbuffer, overwriting
+    /// the oldest item in it.
     fn push(&mut self, item: T) {
         self.head = (self.head + 1) % self.size;
         self.contents[self.head] = item;
@@ -49,7 +50,7 @@ impl<T> LogBuffer<T>
     /// Returns a slice pointing at the contents of the buffer.
     /// They are in *no particular order*, and if not all the
     /// slots are filled, the empty slots will be present but
-    /// contain T::default().
+    /// contain the initial value given to `new()`
     ///
     /// We're only using this to log FPS for a short time,
     /// so we don't care for the second or so when it's inaccurate.
@@ -65,8 +66,9 @@ impl<T> LogBuffer<T>
 
 /// A structure that contains our time-tracking state
 /// independent of SDL.
-/// Since according to the rust-sdl2 maintainers,
-/// SDL's time functions are of dubious safety.
+/// According to the rust-sdl2 maintainers,
+/// SDL's time functions are of dubious thread-safety,
+/// while Rust's are pretty solid.
 pub struct TimeContext {
     init_instant: time::Instant,
     last_instant: time::Instant,
@@ -139,7 +141,8 @@ impl TimeContext {
     /// it may not work reliably cross-platform, and it may
     /// not be a good idea in the first place.
     /// It depends on how accurate Rust's `std::thread::sleep()`
-    /// is.
+    /// is, which is to some extent at the mercy of what the
+    /// OS decides to do.
     pub fn sleep_until_next_frame(&self, desired_fps: u32) {
         // We assume we'll never sleep more than a second!
         // Using an integer FPS target helps enforce this.

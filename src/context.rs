@@ -1,4 +1,13 @@
 //! A `Context` is an object that holds on to global resources.
+//! It basically tracks hardware state such as the screen, audio
+//! system, timers, and so on.  Generally this type is **not** thread-
+//! safe and only one `Context` can exist at a time.  Trying to create
+//! another one will fail.
+//!
+//! Most functions that interact with the hardware, for instance
+//! drawing things, playing sounds, or loading resources (which then
+//! need to be transformed into a format the hardware likes) will need
+//! to access the `Context`.
 
 use sdl2::{self, Sdl};
 use sdl2::render::Renderer;
@@ -74,7 +83,7 @@ fn init_window(video: sdl2::VideoSubsystem, window_title: &str, screen_width: u3
 
 impl<'a> Context<'a> {
 
-    /// Tries to create a new Context from the given config file.
+    /// Tries to create a new Context using settings from the given config file.
     pub fn from_conf(conf: &conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context<'a>> {
         let window_title =  &conf.window_title;
         let screen_width = conf.window_width;
@@ -110,7 +119,7 @@ impl<'a> Context<'a> {
     }
 
 
-    /// Prints out information on the sound subsystem initialization.
+    /// Prints out information on the sound subsystem.
     pub fn print_sound_stats(&self) {
         println!("Allocated {} sound channels", 
             sdl2_mixer::allocate_channels(-1));
@@ -129,7 +138,7 @@ impl<'a> Context<'a> {
         println!("query spec => {:?}", sdl2_mixer::query_spec());
     }
 
-    /// Prints out information on the resources subsystem initialization.
+    /// Prints out information on the resources subsystem.
     pub fn print_resource_stats(&mut self) {
         self.filesystem.print_all();
     }

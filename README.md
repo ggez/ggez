@@ -28,11 +28,11 @@ See example/imageview.rs
 # Status
 
 * Need to make the example's resource paths work properly with `cargo run --example`
-* Do we want to include Love2D's graphics transform functions?
 * Need more documentation
 * Need to implement bitmap fonts
 * Need to add more tests, somehow
 * Need to figure out exiting cleanly.  THIS IS SOLVED, but blocked by a bug in rust-sdl!  Issue #530.
+* Do we want to include Love2D's graphics transform functions?  ...probably not, honestly.
 
 # Things to add atop it
 

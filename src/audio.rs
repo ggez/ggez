@@ -2,7 +2,7 @@
 //!
 //! This departs from the Love2D API a bit because SDL2_mixer is opinionated
 //! about the difference between samples and music files, and also makes channel
-//! management and such explicit.
+//! management and such more explicit.
 //! This seems a bit awkward but we'll roll with it for now.
 
 use std::path;
@@ -52,7 +52,7 @@ impl Sound {
         })
     }
 
-    /// Play a sound.
+    /// Play a sound on the first available `Channel`.
     ///
     /// Returns a `Channel`, which can be used to manipulate the 
     /// playback, eg pause, stop, restart, etc.
@@ -72,21 +72,25 @@ impl AudioOps for Channel {
     fn new_channel() -> Channel {
         sdl2_mixer::channel(-1)
     }
-    /// Plays the given Sound on the Channel
+
+    /// Plays the given Sound on this `Channel`
     fn play_sound(&self, sound: &Sound) -> GameResult<Channel> {
         let channel = self;
         channel.play(&sound.chunk, 0)
             .map_err(|e| GameError::from(e))
     }
 
+    /// Pauses playback of the `Channel`
     fn pause(&self) {
         Channel::pause(*self)
     }
-      
+
+    /// Stops whatever the `Channel` is playing.
     fn stop(&self) {
         self.halt()
     }
-    
+
+    /// Resumes playback where it left off (if any).
     fn resume(&self) {
         Channel::resume(*self)
     }
@@ -103,6 +107,11 @@ impl AudioOps for Channel {
 
 
 /// A source of music data.
+/// Music is played on a separate dedicated channel from sounds,
+/// and also has a separate corpus of decoders than sounds do;
+/// see the SDL_mixer documentation for details or use
+/// `Context::print_sound_stats()` to print out which decoders
+/// are supported for your build.
 pub struct Music {
     music: sdl2_mixer::Music,
 }

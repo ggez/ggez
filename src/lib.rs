@@ -38,8 +38,10 @@ pub enum GameError {
     UnknownError(String),
 }
 
+/// A convenient result type consisting of a return type and a GameError
 pub type GameResult<T> = Result<T, GameError>;
 
+/// Emit a non-fatal warning message
 fn warn(err: GameError) -> GameResult<()> {
     println!("WARNING: Encountered error: {:?}", err);
     Ok(())

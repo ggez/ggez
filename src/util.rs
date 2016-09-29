@@ -1,5 +1,6 @@
-// Utility functions.
-// Probably shouldn't be part of the public API.
+//! Utility functions.
+//!
+//! Generally not things end-users have to worry about.
 
 use std::path;
 use std::io;

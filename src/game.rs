@@ -1,4 +1,5 @@
-//! The Game struct starts up the game and runs the mainloop and such.
+//! This module contains traits and structs to actually run your game mainloop
+//! and handle top-level state.
 
 use context::Context;
 use GameError;
@@ -21,12 +22,12 @@ use sdl2::keyboard::Keycode::*;
 /// A trait for defining a game state.
 /// Implement `load()`, `update()` and `draw()` callbacks on this trait
 /// and hand it to a `Game` object to be run.
-/// You may also implement the `*_event` traits if you wish to handle
+/// You may also implement the `*_event` callbacks if you wish to handle
 /// those events.
 ///
 /// The default event handlers do nothing, apart from `key_down_event()`,
-/// which *should* by default exit the game if escape is pressed, but which
-/// doesn't do such a thing yet...
+/// which *should* by default exit the game if escape is pressed.
+/// (Once we work around some event bugs in rust-sdl2.)
 pub trait GameState {
 
     // Tricksy trait and lifetime magic!
@@ -64,6 +65,9 @@ pub trait GameState {
 }
 
 
+/// The `Game` struct takes a `GameState` you define
+/// and does the actual work of running a gameloop,
+/// passing events to your handlers, and all that stuff.
 #[derive(Debug)]
 pub struct Game<'a, S: GameState> {
     conf: conf::Conf,
@@ -73,7 +77,7 @@ pub struct Game<'a, S: GameState> {
 
 /// Looks for a file named "conf.toml" in the resources directory
 /// loads it if it finds it.
-/// If it can't read it for some reason, returns None
+/// If it can't read it for some reason, returns an error.
 fn get_default_config(fs: &mut fs::Filesystem) -> GameResult<conf::Conf> {
     let conf_path = Path::new("conf.toml");
     if fs.is_file(conf_path) {
@@ -87,8 +91,10 @@ fn get_default_config(fs: &mut fs::Filesystem) -> GameResult<conf::Conf> {
 }
 
 impl<'a, S: GameState + 'static> Game<'a, S> {
-    /// Creates a new `Game` with the given initial gamestate and
-    /// default config (which will be used if there is no config file)
+    /// Creates a new `Game` with the given  default config
+    /// (which will be used if there is no config file).
+    /// It will initialize a hardware context and call the `load()` method of
+    /// the given `GameState` type to create a new `GameState`.
     pub fn new(default_config: conf::Conf) -> GameResult<Game<'a, S>>
         //where T: Fn(&Context, &conf::Conf) -> S
     {
@@ -110,7 +116,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
         })
     }
 
-    /// Re-initializes the game state using the type's `::load()` method.
+    /// Re-creates a fresh `GameState` using the type's `::load()` method.
     pub fn reload_state(&mut self) -> GameResult<()> {
         let newstate = try!(S::load(&mut self.context, &self.conf));
         self.state = newstate;
@@ -127,8 +133,8 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     }
 
     /// Replaces the gamestate with the given one without
-    /// having to re-initialize everything in the Context.
-    pub fn replace_state(&mut self, state: S){
+    /// having to re-initialize the hardware context.
+    pub fn replace_state(&mut self, state: S) {
         self.state = state;
     }
 
@@ -136,7 +142,6 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     pub fn run(&mut self) -> GameResult<()> {
         // TODO: Window icon
         let ref mut ctx = self.context;
-        let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
 
         let mut done = false;
@@ -181,7 +186,6 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
             let dt = ctx.timer_context.get_delta();
             try!(self.state.update(ctx, dt));
             try!(self.state.draw(ctx));
-            //ctx.timer_context.sleep_until_next_frame(60);
         }
 
         self.state.quit();
