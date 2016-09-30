@@ -7,10 +7,12 @@
 //! something else, then we should change it.  
 
 use std::path;
+use std::collections::BTreeMap;
 
 use sdl2::pixels;
 use sdl2::rect;
 use sdl2::render;
+use sdl2::surface;
 use sdl2_image::ImageRWops;
 use sdl2_ttf;
 
@@ -171,13 +173,26 @@ pub trait Drawable {
     }
 }
 
-/// In-graphics-memory image data available to be drawn on the screen.
+/// In-memory image data available to be drawn on the screen.
 pub struct Image {
+    // Keeping a hold of both a surface and texture is a pain in the butt
+    // but I can't see of a good way to manage both if we ever want to generate
+    // or modify an image... such as creating bitmap fonts.
+    // Hmmm.
+    // For now, bitmap fonts is the only time we need to do that, so we'll special
+    // case that rather than trying to create textures on-demand or something...
     texture: render::Texture,
 }
 
+// Helper function
+// fn load_surface<'a>(context: &mut Context, path: &path::Path) -> GameResult<surface::Surface<'a>> {
+//     let mut buffer: Vec<u8> = Vec::new();
+//     let rwops = try!(rwops_from_path(context, path, &mut buffer));
+//     // SDL2_image SNEAKILY adds the load() method to RWops.
+//     rwops.load().map_err(|e| GameError::ResourceLoadError(e))
+// }
+
 impl Image {
-    
     // An Image is implemented as an sdl2 Texture which has to be associated
     // with a particular Renderer.
     // This may eventually cause problems if there's ever ways to change
@@ -186,13 +201,22 @@ impl Image {
     // they are created.
     /// Load a new image from the file at the given path.
     pub fn new(context: &mut Context, path: &path::Path) -> GameResult<Image> {
-
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = try!(rwops_from_path(context, path, &mut buffer));
-        // SDL2_image SNEAKILY adds this method to RWops.
+        // SDL2_image SNEAKILY adds the load() method to RWops.
         let surf = try!(rwops.load());
         let renderer = &context.renderer;
+
         let tex = try!(renderer.create_texture_from_surface(surf));
+        Ok(Image {
+            texture: tex,
+        })
+
+    }
+
+    fn from_surface(context: &Context, surface: surface::Surface) -> GameResult<Image> {
+        let renderer = &context.renderer;
+        let tex = try!(renderer.create_texture_from_surface(surface));
         Ok(Image {
             texture: tex,
         })
@@ -210,10 +234,19 @@ impl Drawable for Image {
 
 }
 
+use sdl2::rwops;
+
 /// A font that defines the shape of characters drawn on the screen.
 /// Can be created from a .ttf file or from an image.
-pub struct Font {
-    font: sdl2_ttf::Font,
+pub enum Font {
+    TTFFont {
+        font: sdl2_ttf::Font,
+    },
+    BitmapFont {
+        //surface: surface::Surface<'a>,
+        glyphs: BTreeMap<char, u32>,
+        glyph_width: u32,
+    }
 }
 
 impl Font {
@@ -224,24 +257,54 @@ impl Font {
 
         let ttf_context = &context.ttf_context;
         let ttf_font = try!(ttf_context.load_font_from_rwops(&mut rwops, size));
-        Ok(Font {
+        Ok(Font::TTFFont {
             font: ttf_font,
         })
     }
 
-    /// Create a new bitmap font from an image file.
+    /// Create a new bitmap font from a loaded `Image`
+    /// The `Image` is a 1D list of glyphs, which maybe isn't
+    /// super ideal but should be fine.
     /// The `glyphs` string is the characters in the image from left to right.
-    /// TODO: Implement this!  Love2D just uses a 1D image for glyphs, which is
-    /// maybe not ideal but is fine.
-    pub fn from_image(name: &str, glyphs: &str) {
-        unimplemented!()
+    /// Takes ownership of the `Image` in question.
+    pub fn new_bitmap(context: &mut Context, path: &path::Path, glyphs: &str) -> GameResult<Font> {
+        /*
+        let mut buffer: Vec<u8> = Vec::new();
+        let rwops = try!(rwops_from_path(context, path, &mut buffer));
+        // SDL2_image SNEAKILY adds the load() method to RWops.
+        let surface = try!(rwops.load().map_err(|e| GameError::ResourceLoadError(e)));
+
+        //let surface = try!(load_surface(context, path));
+
+        
+        let mut glyphs_map: BTreeMap<char, u32> = BTreeMap::new();
+        for (i, c) in glyphs.chars().enumerate()  {
+            glyphs_map.insert(c, i as u32);
+        }
+        let image_width = surface.width();
+        let glyph_width = image_width / (glyphs.len() as u32);
+        Ok(Font::BitmapFont {
+            surface: surface,
+            glyphs: glyphs_map,
+            glyph_width: glyph_width,
+        })
+            */
+            Err(GameError::UnknownError(String::from("Foo")))
     }
 }
 
 
+fn render_bitmap(text: &str, surface: &surface::Surface, glyphs_map: &BTreeMap<char, u32>, glyph_width: u32)
+                 -> GameResult<Text> {
+    for (i, c) in text.chars().enumerate() {
+        let offset = glyph_width * (i as u32);
+        let source_rect = ();
+        let dest_rect = ();
+    }
+    Err(GameError::UnknownError(String::from("Foo")))
+}
 
-
-/// Drawable text.
+/// Drawable text created from a `Font`.
 /// SO FAR this doesn't need to be a separate type from Image, really.
 /// But looking at various API's its functionality will probably diverge
 /// eventually, so.
@@ -252,16 +315,28 @@ pub struct Text {
 impl Text {
     pub fn new(context: &Context, text: &str, font: &Font) -> GameResult<Text> {
         let renderer = &context.renderer;
-        let surf = try!(font.font.render(text)
-            .blended(pixels::Color::RGB(255,255,255)));
-        // BUGGO: SEGFAULTS HERE!  But only when using solid(), not blended()!
-        // Loading the font from a file rather than a RWops makes it work fine.
-        // See https://github.com/andelf/rust-sdl2_ttf/issues/43
-        let texture = try!(renderer.create_texture_from_surface(surf));
-        Ok(Text {
-            texture: texture,
-        })
-            
+        match font {
+            &Font::TTFFont{font:ref f} => {
+                let surf = try!(f.render(text)
+                                .blended(pixels::Color::RGB(255,255,255)));
+                // BUGGO: SEGFAULTS HERE!  But only when using solid(), not blended()!
+                // Loading the font from a file rather than a RWops makes it work fine.
+                // See https://github.com/andelf/rust-sdl2_ttf/issues/43
+                let texture = try!(renderer.create_texture_from_surface(surf));
+                Ok(Text {
+                    texture: texture,
+                })
+            },
+            &Font::BitmapFont{
+                //surface: ref surface,
+                glyphs: ref glyphs_map,
+                glyph_width: glyph_width,
+                ..
+            } => {
+                //render_bitmap(text, &surface, &glyphs_map, glyph_width)
+                Err(GameError::UnknownError(String::from("Foo")))
+            }
+        }
     }
 }
 
