@@ -33,7 +33,7 @@ pub enum GameError {
     AudioError(String),
     WindowError(sdl2::video::WindowBuildError),
     IOError(std::io::Error),
-    TTFError(String),
+    FontError(String),
     VideoError(String),
     UnknownError(String),
 }

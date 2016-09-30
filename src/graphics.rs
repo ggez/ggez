@@ -91,10 +91,14 @@ pub fn present(ctx: &mut Context) {
     r.present()
 }
 
-pub fn print(ctx: &mut Context) {
+/// Not implemented
+/// since we don't have anything resembling a default font.
+fn print(ctx: &mut Context) {
     unimplemented!();
 }
 
+/// Not implemented
+/// since we don't have anything resembling a default font.
 pub fn printf(ctx: &mut Context) {
     unimplemented!();
 }
@@ -243,10 +247,23 @@ pub enum Font {
         font: sdl2_ttf::Font,
     },
     BitmapFont {
-        //surface: surface::Surface<'a>,
+        surface: surface::Surface<'static>,
         glyphs: BTreeMap<char, u32>,
         glyph_width: u32,
     }
+}
+
+// Here you should just imagine me frothing at the mouth as I
+// fight the lifetime checker in circles.
+fn clone_surface<'a>(s: surface::Surface<'a>) -> GameResult<surface::Surface<'static>> {
+    //let format = pixels::PixelFormatEnum::RGBA8888;
+    let format = s.pixel_format();
+    // convert() copies the surface anyway, so.
+    let res = try!(s.convert(&format));
+    Ok(res)
+    //let mut newsurf = try!(surface::Surface::new(s.width(), s.height(), format));
+    //try!(s.blit(None, &mut newsurf, None));
+    //Ok(newsurf)
 }
 
 impl Font {
@@ -268,40 +285,49 @@ impl Font {
     /// The `glyphs` string is the characters in the image from left to right.
     /// Takes ownership of the `Image` in question.
     pub fn new_bitmap(context: &mut Context, path: &path::Path, glyphs: &str) -> GameResult<Font> {
-        /*
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = try!(rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds the load() method to RWops.
         let surface = try!(rwops.load().map_err(|e| GameError::ResourceLoadError(e)));
+        // We *really really* need to clone this surface here because
+        // otherwise lifetime interactions between rwops, buffer and surface become
+        // intensely painful.
+        let s2 = try!(clone_surface(surface));
 
-        //let surface = try!(load_surface(context, path));
-
-        
+        let image_width = s2.width();
+        let glyph_width = image_width / (glyphs.len() as u32);
         let mut glyphs_map: BTreeMap<char, u32> = BTreeMap::new();
         for (i, c) in glyphs.chars().enumerate()  {
-            glyphs_map.insert(c, i as u32);
+            let small_i = i as u32;
+            glyphs_map.insert(c, small_i * glyph_width);
         }
-        let image_width = surface.width();
-        let glyph_width = image_width / (glyphs.len() as u32);
         Ok(Font::BitmapFont {
-            surface: surface,
+            surface: s2,
             glyphs: glyphs_map,
             glyph_width: glyph_width,
         })
-            */
-            Err(GameError::UnknownError(String::from("Foo")))
     }
 }
 
 
-fn render_bitmap(text: &str, surface: &surface::Surface, glyphs_map: &BTreeMap<char, u32>, glyph_width: u32)
+fn render_bitmap(context: &Context, text: &str, surface: &surface::Surface, glyphs_map: &BTreeMap<char, u32>, glyph_width: u32)
                  -> GameResult<Text> {
+    let text_length = text.len() as u32;
+    let glyph_height = surface.height();
+    let format = pixels::PixelFormatEnum::RGBA8888;
+    let mut dest_surface = try!(surface::Surface::new(text_length*glyph_width, glyph_height, format));
     for (i, c) in text.chars().enumerate() {
-        let offset = glyph_width * (i as u32);
-        let source_rect = ();
-        let dest_rect = ();
+        let small_i = i as u32;
+        let error_message = format!("Character '{}' not in bitmap font!", c);
+        let source_offset = try!(glyphs_map.get(&c)
+            .ok_or(GameError::FontError(String::from(error_message))));
+        let dest_offset = glyph_width * small_i;
+        let source_rect = Rect::new(*source_offset as i32, 0, glyph_width, glyph_height);
+        let dest_rect = Rect::new(dest_offset as i32, 0, glyph_width, glyph_height);
+        try!(surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect)));
     }
-    Err(GameError::UnknownError(String::from("Foo")))
+    let image = try!(Image::from_surface(context, dest_surface));
+    Ok(Text{texture:image.texture})
 }
 
 /// Drawable text created from a `Font`.
@@ -328,13 +354,13 @@ impl Text {
                 })
             },
             &Font::BitmapFont{
-                //surface: ref surface,
+                surface: ref surface,
                 glyphs: ref glyphs_map,
                 glyph_width: glyph_width,
                 ..
             } => {
-                //render_bitmap(text, &surface, &glyphs_map, glyph_width)
-                Err(GameError::UnknownError(String::from("Foo")))
+                render_bitmap(context, text, &surface, &glyphs_map, glyph_width)
+                //Err(GameError::UnknownError(String::from("Foo")))
             }
         }
     }
