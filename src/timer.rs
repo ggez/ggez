@@ -10,6 +10,8 @@
 //! `sleep_until_next_frame()` will attempt to calculate how long it should
 //! wait to hit the desired FPS and sleep that long.
 
+use context::Context;
+
 use std::time;
 use std::thread;
 
@@ -78,7 +80,7 @@ pub struct TimeContext {
 
 // How many frames we log update times for.
 // Nominally, one second, give or take.
-const time_log_frames: u32 = 60;
+const TIME_LOG_FRAMES: u32 = 60;
 
 impl TimeContext {
     /// Creates a new `TimeContext` and initializes the start to this instant.
@@ -86,7 +88,7 @@ impl TimeContext {
         TimeContext {
             init_instant: time::Instant::now(),
             last_instant: time::Instant::now(),
-            frame_durations: LogBuffer::new(time_log_frames as usize, time::Duration::new(0,0)),
+            frame_durations: LogBuffer::new(TIME_LOG_FRAMES as usize, time::Duration::new(0,0)),
         }
     }
 
@@ -101,66 +103,70 @@ impl TimeContext {
         self.frame_durations.push(time_since_last);
         self.last_instant = now;
     }
+}
 
-    /// Get the time between the start of the last frame and the current one;
-    /// in other words, the length of the last frame.
-    pub fn get_delta(&self) -> time::Duration {
-        self.frame_durations.latest()
-    }
+/// Get the time between the start of the last frame and the current one;
+/// in other words, the length of the last frame.
+pub fn get_delta(ctx: &Context) -> time::Duration {
+    let tc = &ctx.timer_context;
+    tc.frame_durations.latest()
+}
 
 
-    /// Gets the average time of a frame, averaged
-    /// over the last 60 frames.
-    pub fn get_average_delta(&self) -> time::Duration {
-        let init = time::Duration::new(0, 0);
-        let sum = self.frame_durations.contents().iter().fold(init, |d1,d2| d1 + *d2);
-        let avg = sum / time_log_frames;
-        avg
-    }
+/// Gets the average time of a frame, averaged
+/// over the last 60 frames.
+pub fn get_average_delta(ctx: &Context) -> time::Duration {
+    let tc = &ctx.timer_context;
+    let init = time::Duration::new(0, 0);
+    let sum = tc.frame_durations.contents().iter().fold(init, |d1,d2| d1 + *d2);
+    let avg = sum / TIME_LOG_FRAMES;
+    avg
+}
 
-    /// Gets the FPS of the game, averaged over the last
-    /// 60 frames.
-    pub fn get_fps(&self) -> f64 {
-        let seconds_per_frame = self.get_average_delta();
-        let seconds = seconds_per_frame.as_secs() as f64;
-        let nanos = seconds_per_frame.subsec_nanos() as f64;
-        let fractional_seconds_per_frame = seconds + (nanos * 1e-9);
-        1.0/fractional_seconds_per_frame
-    }
+/// Gets the FPS of the game, averaged over the last
+/// 60 frames.
+pub fn get_fps(ctx: &Context) -> f64 {
+    let seconds_per_frame = get_average_delta(ctx);
+    let seconds = seconds_per_frame.as_secs() as f64;
+    let nanos = seconds_per_frame.subsec_nanos() as f64;
+    let fractional_seconds_per_frame = seconds + (nanos * 1e-9);
+    1.0/fractional_seconds_per_frame
+}
 
-    /// Returns the time since the game was initialized.
-    pub fn get_time_since_start(&self) -> time::Duration {
-        time::Instant::now() - self.init_instant
-    }
+/// Returns the time since the game was initialized.
+pub fn get_time_since_start(ctx: &Context) -> time::Duration {
+    let tc = &ctx.timer_context;
+    time::Instant::now() - tc.init_instant
+}
 
-    /// This function will *attempt* to sleep the current
-    /// thread until the beginning of the next frame should
-    /// occur, to reach the desired FPS.
-    ///
-    /// This is a bit of a prototype; it may not work well,
-    /// it may not work reliably cross-platform, and it may
-    /// not be a good idea in the first place.
-    /// It depends on how accurate Rust's `std::thread::sleep()`
-    /// is, which is to some extent at the mercy of what the
-    /// OS decides to do.
-    pub fn sleep_until_next_frame(&self, desired_fps: u32) {
-        // We assume we'll never sleep more than a second!
-        // Using an integer FPS target helps enforce this.
-        assert!(desired_fps > 0);
-        let fps_delay = 1.0 / (desired_fps as f64);
-        let nanos_per_frame = fps_delay * 1e9;
-        let duration_per_frame = time::Duration::new(0, nanos_per_frame as u32);
-        let now = time::Instant::now();
-        let time_spent_this_frame = now - self.last_instant;
-        let duration_to_sleep = duration_per_frame - time_spent_this_frame;
-        //println!("Sleeping for {:?}", duration_to_sleep);
-        thread::sleep(duration_to_sleep);
-    }
+/// This function will *attempt* to sleep the current
+/// thread until the beginning of the next frame should
+/// occur, to reach the desired FPS.
+///
+/// This is a bit of a prototype; it may not work well,
+/// it may not work reliably cross-platform, and it may
+/// not be a good idea in the first place.
+/// It depends on how accurate Rust's `std::thread::sleep()`
+/// is, which is to some extent at the mercy of what the
+/// OS decides to do.
+pub fn sleep_until_next_frame(ctx: &Context, desired_fps: u32) {
+    // We assume we'll never sleep more than a second!
+    // Using an integer FPS target helps enforce this.
+    assert!(desired_fps > 0);
+    let tc = &ctx.timer_context;
+    let fps_delay = 1.0 / (desired_fps as f64);
+    let nanos_per_frame = fps_delay * 1e9;
+    let duration_per_frame = time::Duration::new(0, nanos_per_frame as u32);
+    let now = time::Instant::now();
+    let time_spent_this_frame = now - tc.last_instant;
+    let duration_to_sleep = duration_per_frame - time_spent_this_frame;
+    //println!("Sleeping for {:?}", duration_to_sleep);
+    thread::sleep(duration_to_sleep);
+}
 
-    /// Pauses the current thread for the target duration.
-    /// Just calls `std::thread::sleep()` so it's as accurate
-    /// as that is.
-    pub fn sleep(&self, duration: time::Duration) {
-        thread::sleep(duration);
-    }
+/// Pauses the current thread for the target duration.
+/// Just calls `std::thread::sleep()` so it's as accurate
+/// as that is.
+pub fn sleep(duration: time::Duration) {
+    thread::sleep(duration);
 }

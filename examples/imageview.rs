@@ -10,6 +10,7 @@ use ggez::conf;
 use ggez::game::{Game, GameState};
 use ggez::{GameResult, Context};
 use ggez::graphics;
+use ggez::timer;
 use std::time::Duration;
 
 struct MainState {
@@ -88,7 +89,7 @@ impl GameState for MainState {
             self.direction *= -1;
 
             println!("Delta frame time: {:?} ", _dt);
-            println!("Average FPS: {}", _ctx.timer_context.get_fps());
+            println!("Average FPS: {}", timer::get_fps(_ctx));
         }
         Ok(())
     }
@@ -104,7 +105,7 @@ impl GameState for MainState {
         try!(self.draw_crazy_lines(ctx));
         ctx.renderer.present();
 
-        ctx.timer_context.sleep_until_next_frame(60);
+        timer::sleep_until_next_frame(ctx, 60);
         // ctx.quit() is broken :-(
         //ctx.quit();
         Ok(())

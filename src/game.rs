@@ -6,6 +6,7 @@ use GameError;
 use GameResult;
 use conf;
 use filesystem as fs;
+use timer;
 
 use std::cmp;
 use std::sync::atomic;
@@ -183,7 +184,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                     _ => {}
                 }
             }
-            let dt = ctx.timer_context.get_delta();
+            let dt = timer::get_delta(ctx);
             try!(self.state.update(ctx, dt));
             try!(self.state.draw(ctx));
         }

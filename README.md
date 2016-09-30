@@ -23,7 +23,23 @@ etc.
 
 # Examples
 
-See example/imageview.rs
+See `example/imageview.rs`
+
+To run, you have to copy (or symlink) the `resources` directory to a
+place the running game can find it.  Cargo does not have an easy way
+of doing this itself at the moment, so the procedure is (on Linux):
+
+```
+cargo build --example imageview
+cp -R resources target/debug/
+cargo run --example imageview
+```
+
+Either way, if it can't find the resources it will give you an error
+along the lines of `ResourceNotFound("'resources' directory not
+found!  Should be in "/home/foo/src/ggez/target/debug/resources")`.
+Just copy the `resources` directory to where the error says it's
+looking.
 
 # Status
 
