@@ -2,7 +2,7 @@
 name = "ggez"
 description = "Rust library to create a Good Game Easily"
 version = "0.1.0"
-repository = "https://github.com/ggez-dev/ggez"
+repository = "https://github.com/ggez/ggez"
 documentation = "https://docs.rs/ggez"
 keywords = ["ggez", "graphics", "2D", "game", "engine"]
 authors = [
