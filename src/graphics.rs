@@ -238,8 +238,6 @@ impl Drawable for Image {
 
 }
 
-use sdl2::rwops;
-
 /// A font that defines the shape of characters drawn on the screen.
 /// Can be created from a .ttf file or from an image.
 pub enum Font {
@@ -296,6 +294,7 @@ impl Font {
 
         let image_width = s2.width();
         let glyph_width = image_width / (glyphs.len() as u32);
+        //println!("Number of glyphs: {}, Glyph width: {}, image width: {}", glyphs.len(), glyph_width, image_width);
         let mut glyphs_map: BTreeMap<char, u32> = BTreeMap::new();
         for (i, c) in glyphs.chars().enumerate()  {
             let small_i = i as u32;
@@ -303,6 +302,7 @@ impl Font {
         }
         Ok(Font::BitmapFont {
             surface: s2,
+
             glyphs: glyphs_map,
             glyph_width: glyph_width,
         })
@@ -324,6 +324,7 @@ fn render_bitmap(context: &Context, text: &str, surface: &surface::Surface, glyp
         let dest_offset = glyph_width * small_i;
         let source_rect = Rect::new(*source_offset as i32, 0, glyph_width, glyph_height);
         let dest_rect = Rect::new(dest_offset as i32, 0, glyph_width, glyph_height);
+        //println!("Blitting letter {} to {:?}", c, dest_rect);
         try!(surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect)));
     }
     let image = try!(Image::from_surface(context, dest_surface));
@@ -357,7 +358,6 @@ impl Text {
                 surface: ref surface,
                 glyphs: ref glyphs_map,
                 glyph_width: glyph_width,
-                ..
             } => {
                 render_bitmap(context, text, &surface, &glyphs_map, glyph_width)
                 //Err(GameError::UnknownError(String::from("Foo")))
