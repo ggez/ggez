@@ -1,4 +1,5 @@
 # ggez
+[![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez) [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez) [![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/svenstaro/ggez/blob/master/LICENSE) [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez) [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
 
 A Rust library to create a Good Game Easily.
 
@@ -11,7 +12,7 @@ basic GUI/debugger, scene manager, and more sophisticated drawing tools such as 
 etc.
 
 
-# Features
+## Features
 
 * Filesystem abstraction that lets you load resources from folders or zip files
 * Hardware-accelerated rendering of bitmaps
@@ -20,11 +21,11 @@ etc.
 * Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
 
-# Examples
+## Examples
 
 See example/imageview.rs
 
-# Status
+## Status
 
 * Need to figure out exiting cleanly.
 * Frame timing is kinda primitive and narsty, make it better.
@@ -33,20 +34,20 @@ See example/imageview.rs
 * Need to implement bitmap fonts
 * Need to add more tests, somehow
 
-# Things to add atop it
+## Things to add atop it
 
 * Resource loader/cache
 * Scene stack
 * GUI
 * particle system (or put that in with it like LOVE?)
 
-# Useful goodies
+## Useful goodies
 
 * specs for entity-component system (alternatives: ecs or recs crates)
 * cgmath or vecmath for math operations?
 * physics/collision???
 
-# Credits
+## Credits
 
 * http://opengameart.org/content/flappy-dragon-sprite-sheets
 * http://opengameart.org/content/cozy-endless-game-background
