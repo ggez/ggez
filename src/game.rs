@@ -1,157 +1,192 @@
 //! The Game struct starts up the game and runs the mainloop and such.
 
-use state::State;
 use context::Context;
 use GameError;
-use warn;
+use GameResult;
 use conf;
 use filesystem as fs;
 
 use std::path::Path;
-use std::thread;
-use std::option;
-use std::io::Read;
 use std::time::Duration;
+use std::thread::sleep;
 
-use sdl2::pixels::Color;
+use sdl2;
 use sdl2::event::Event::*;
 use sdl2::event::*;
 use sdl2::keyboard::Keycode::*;
-use sdl2::surface::Surface;
 
-use rand::{self, Rand};
 
+/// A trait for defining a game state.
+/// Implement `load()`, `update()` and `draw()` callbacks on this trait
+/// and hand it to a `Game` object to be run.
+/// You may also implement the `*_event` traits if you wish to handle
+/// those events.
+///
+/// The default event handlers do nothing, apart from `key_down_event()`,
+/// which *should* by default exit the game if escape is pressed, but which
+/// doesn't do such a thing yet...
+pub trait GameState {
+
+    // Tricksy trait and lifetime magic!
+    // Much thanks to aatch on #rust-beginners for helping make this work.
+    fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<Self>
+        where Self: Sized;
+    fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()>;
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
+
+    // You don't have to override these if you don't want to; the defaults
+    // do nothing.
+    // It might be nice to be able to have custom event types and a map or
+    // such of handlers?  Hmm, maybe later.
+    fn mouse_button_down_event(&mut self, _evt: Event) {}
+
+    fn mouse_button_up_event(&mut self, _evt: Event) {}
+
+    fn mouse_motion_event(&mut self, _evt: Event) {}
+
+    fn mouse_wheel_event(&mut self, _evt: Event) {}
+
+    // TODO: These event types need to be better,
+    // but I'm not sure how to do it yet.
+    // They should be SdlEvent::KeyDow or something similar,
+    // but those are enum fields, not actual types.
+    fn key_down_event(&mut self, _evt: Event) {
+        //done = true,
+    }
+
+    fn key_up_event(&mut self, _evt: Event) {}
+
+    fn focus(&mut self, _gained: bool) {}
+
+    fn quit(&mut self) {
+        println!("Quitting game");
+    }
+}
 
 
 #[derive(Debug)]
-pub struct Game<'a, S: State> {
+pub struct Game<'a, S: GameState> {
     conf: conf::Conf,
-    states: Vec<S>,
-    context: Option<Context<'a>>,
+    state: S,
+    context: Context<'a>,
 }
 
-impl<'a, S: State> Game<'a, S> {
-    pub fn new(config: conf::Conf, initial_state: S) -> Game<'a, S> {
+
+/// Looks for a file named "conf.toml" in the resources directory
+/// loads it if it finds it.
+/// If it can't read it for some reason, returns None
+fn get_default_config(fs: &mut fs::Filesystem) -> GameResult<conf::Conf> {
+    let conf_path = Path::new("conf.toml");
+    if fs.is_file(conf_path) {
+        let mut file = try!(fs.open(conf_path));
+        let c = try!(conf::Conf::from_toml_file(&mut file));
+        Ok(c)
+
+    } else {
+        Err(GameError::ConfigError(String::from("Config file not found")))
+    }
+}
+
+impl<'a, S: GameState + 'static> Game<'a, S> {
+    /// Creates a new `Game` with the given initial gamestate and
+    /// default config (which will be used if there is no config file)
+    pub fn new(default_config: conf::Conf) -> GameResult<Game<'a, S>>
+        //where T: Fn(&Context, &conf::Conf) -> S
+    {
+        let sdl_context = try!(sdl2::init());
+        let mut fs = try!(fs::Filesystem::new());
+
         // TODO: Verify config version == this version
-        Game {
+        let config = get_default_config(&mut fs)
+            .unwrap_or(default_config);
+
+        let mut context = try!(Context::from_conf(&config, fs, sdl_context));
+
+        let init_state = try!(S::load(&mut context, &config));
+
+        Ok(Game {
             conf: config,
-            states: vec![initial_state],
-            context: None,
-        }
+            state: init_state,
+            context: context,
+        })
     }
 
-    /// Looks for a file named "conf.toml" in the resources directory
-    /// loads it if it finds it.
-    /// If it can't read it for some reason, returns an error.
-    /// (Probably best used with `.or(some_default)`)
-    pub fn from_config_file(initial_state: S) -> Result<Game<'a, S>, GameError> {
-        let fs = fs::Filesystem::new();
-        let conf_path = Path::new("conf.toml");
-        if fs.is_file(conf_path) {
-            let mut file = try!(fs.open(conf_path));
-            let c = try!(conf::Conf::from_toml_file(&mut file));
-            Ok(Game::new(c, initial_state))
-
-        } else {
-            let msg = String::from("Config file 'conf.toml' not found");
-            let err = GameError::ResourceNotFound(msg);
-            Err(err)
-        }
+    /// Re-initializes the game state using the type's `::load()` method.
+    pub fn reload_state(&mut self) -> GameResult<()> {
+        let newstate = try!(S::load(&mut self.context, &self.conf));
+        self.state = newstate;
+        Ok(())
     }
 
-    // TODO: If we're going to have a real stack of states here,
-    // (I really prefer the name scenes though,)
-    // we should give them enter() and leave() events as well
-    // as load()
-    pub fn push_state(&mut self, state: S) {
-        self.states.push(state);
+    /// Calls the given function to create a new gamestate, and replaces
+    /// the current one with it.
+    pub fn replace_state_with<F>(&mut self, f: &F) -> GameResult<()>
+        where F: Fn(&mut Context, &conf::Conf) -> GameResult<S> {
+        let newstate = try!(f(&mut self.context, &self.conf));
+        self.state = newstate;
+        Ok(())
     }
 
-    pub fn pop_state(&mut self) {
-        self.states.pop();
+    /// Replaces the gamestate with the given one without
+    /// having to re-initialize everything in the Context.
+    pub fn replace_state(&mut self, state: S){
+        self.state = state;
     }
 
-    fn get_active_state(&mut self) -> Option<&mut S> {
-        self.states.last_mut()
-    }
-
-
-    pub fn run(&mut self) -> Result<(), GameError> {
+    /// Runs the game's mainloop.
+    pub fn run(&mut self) -> GameResult<()> {
         // TODO: Window icon
-        // TODO: Module init should all happen in the Context
-        let mut ctx = try!(Context::new(&self.conf.window_title,
-                                        self.conf.window_width,
-                                        self.conf.window_height));
-
-        self.context = Some(ctx);
-        // self.init_sound_system().or_else(warn);
-        let mut ctx = self.context.take().unwrap();
+        let ref mut ctx = self.context;
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
 
-        // If the example text is too big for the screen, downscale it (and center irregardless)
-        let padding = 64;
-
-        // Initialize State handlers
-        for s in &mut self.states {
-            s.load(&mut ctx);
-        }
-
-        let mut delta = Duration::new(0, 0);
+        let mut delta = 0u64;
         let mut done = false;
         while !done {
-            let start_time = timer.ticks();
+            let start_time = timer.ticks() as u64;
 
-            if let Some(active_state) = self.get_active_state() {
-                for event in event_pump.poll_iter() {
-                    match event {
-                        Quit { .. } => done = true,
-                        // TODO: We need a good way to have
-                        // a default like this, while still allowing
-                        // it to be overridden.
-                        // But the State can't access the Game,
-                        // so we can't modify the Game's done property...
-                        // Hmmmm.
-                        KeyDown { keycode, .. } => {
-                            match keycode {
-                                Some(Escape) => done = true,
-                                _ => active_state.key_down_event(event),
-                            }
+            for event in event_pump.poll_iter() {
+                match event {
+                    Quit { .. } => done = true,
+                    // TODO: We need a good way to have
+                    // a default like this, while still allowing
+                    // it to be overridden.
+                    // But the GameState can't access the Game,
+                    // so we can't modify the Game's done property...
+                    // Hmmmm.
+                    KeyDown { keycode, .. } => {
+                        match keycode {
+                            Some(Escape) => done = true,
+                            _ => self.state.key_down_event(event),
                         }
-                        KeyUp { .. } => active_state.key_up_event(event),
-                        MouseButtonDown { .. } => active_state.mouse_button_down_event(event),
-                        MouseButtonUp { .. } => active_state.mouse_button_up_event(event),
-                        MouseMotion { .. } => active_state.mouse_motion_event(event),
-                        MouseWheel { .. } => active_state.mouse_wheel_event(event),
-                        Window { win_event_id: WindowEventId::FocusGained, .. } => {
-                            active_state.focus(true)
-                        }
-                        Window { win_event_id: WindowEventId::FocusLost, .. } => {
-                            active_state.focus(false)
-                        }
-                        _ => {}
                     }
+                    KeyUp { .. } => self.state.key_up_event(event),
+                    MouseButtonDown { .. } => self.state.mouse_button_down_event(event),
+                    MouseButtonUp { .. } => self.state.mouse_button_up_event(event),
+                    MouseMotion { .. } => self.state.mouse_motion_event(event),
+                    MouseWheel { .. } => self.state.mouse_wheel_event(event),
+                    Window { win_event_id: WindowEventId::FocusGained, .. } => {
+                        self.state.focus(true)
+                    }
+                    Window { win_event_id: WindowEventId::FocusLost, .. } => {
+                        self.state.focus(false)
+                    }
+                    _ => {}
                 }
-
-                active_state.update(&mut ctx, delta);
-
-                // ctx.renderer.set_draw_color(Color::rand(&mut rng));
-                // ctx.renderer.clear();
-                active_state.draw(&mut ctx);
-                // ctx.renderer.present();
-            } else {
-                done = true;
             }
+            try!(self.state.update(ctx, Duration::from_millis(delta)));
+            try!(self.state.draw(ctx));
 
-            let end_time = timer.ticks();
-            delta = Duration::from_millis((end_time - start_time) as u64);
-            thread::sleep_ms(1000 / 60);
+            // TODO: For now this is locked at 60 FPS, should fix that.
+            // Better FPS stats would also be nice.
+            let end_time = timer.ticks() as u64;
+            delta = end_time - start_time;
+            let desired_frame_time = 1000 / 60;
+            let sleep_time = Duration::from_millis(desired_frame_time - delta);
+            sleep(sleep_time);
         }
 
-        self.context = Some(ctx);
-        if let Some(active_state) = self.get_active_state() {
-            active_state.quit();
-        }
+        self.state.quit();
         Ok(())
     }
 }

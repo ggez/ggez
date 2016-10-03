@@ -2,7 +2,7 @@
 //!
 //! This module provides access to files in specific places:
 //! * The `resources/` subdirectory in the same directory as the program executable,
-//! * The `resources.zip` file in the same directory as the program executable (eventually),
+//! * The `resources.zip` file in the same directory as the program executable,
 //! * The root folder of the game's `save` directory (eventually)
 //!
 //! Files will be looked for in these places in order.
@@ -10,6 +10,7 @@
 //! Right now files are read-only.  When we can write files, they will be written
 //! to the game's save directory.
 
+use std::fmt;
 use std::fs;
 use std::io;
 use std::path;
@@ -17,48 +18,65 @@ use std::path;
 use sdl2;
 
 use GameError;
+use GameResult;
 use warn;
 
+use zip;
 
-// TODO: We might be able to make this global and just use it as a cache,
-// since it doesn't appear to rely on SDL_Init() being called first?
-// Or maybe it does but SDL_Init() does it no matter what.
-// Worst case scenario we have a global init function here maybe, with lazy_static.
-// This woudl be convenient 'cause there's a lot of things that need to be passed
-// a Context just to access the Filesystem, such as every load function ever.
-// However, for now we'll keep things simple and consistent.
+/// A structure that contains the filesystem state and cache.
 #[derive(Debug)]
 pub struct Filesystem {
     base_path: path::PathBuf,
     user_path: path::PathBuf,
     resource_path: path::PathBuf,
+    resource_zip: Option<zip::ZipArchive<fs::File>>
 }
+
+
 
 /// Represents a file, either in the filesystem, or in the resources zip file,
 /// or whatever.
-#[derive(Debug)]
-pub enum File {
+pub enum File<'a> {
     FSFile(fs::File),
+    ZipFile(zip::read::ZipFile<'a>),
 }
 
-impl io::Read for File {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+impl<'a> fmt::Debug for File<'a> {
+    // TODO: Make this more useful.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            File::FSFile(ref mut f) => f.read(buf),
+            File::FSFile(ref _file) => write!(f, "File"),
+            File::ZipFile(ref _file) => write!(f, "Zipfile"),
         }
     }
 }
 
+impl<'a> io::Read for File<'a> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        match *self {
+            File::FSFile(ref mut f) => f.read(buf),
+            File::ZipFile(ref mut f) => f.read(buf),
+        }
+    }
+}
+
+fn convenient_path_to_str<'a>(path: &'a path::Path) -> GameResult<&'a str> {
+    let errmessage = String::from("Invalid path format");
+    let error = GameError::FilesystemError(errmessage);
+    path.to_str()
+        .ok_or(error)
+}
+
 impl Filesystem {
-    pub fn new() -> Filesystem {
-        // BUGGO: We should resolve errors here instead of unwrap.
-        let root_path_string = sdl2::filesystem::base_path().unwrap();
+    /// Create a new Filesystem instance.
+    pub fn new() -> GameResult<Filesystem> {
+        let root_path_string = try!(sdl2::filesystem::base_path());
         // BUGGO: We need to have the application ID in this path somehow,
         // except the best place to put it would be in the Conf object...
         // which is loaded using the Filesystem.  Hmmmm.
         // We probably need a Filesystem::config_file_path() function to
         // bootstrap the process.
-        let pref_path_string = sdl2::filesystem::pref_path("ggez", "").ok().unwrap();
+        let pref_path_string = try!(sdl2::filesystem::pref_path("ggez", ""));
 
         let mut root_path = path::PathBuf::from(root_path_string);
         // Ditch the filename (if any)
@@ -68,48 +86,73 @@ impl Filesystem {
 
         let mut resource_path = root_path.clone();
         resource_path.push("resources");
-        // TODO: This should also check for resources.zip
         if !resource_path.exists() || !resource_path.is_dir() {
             let msg_str = format!("'resources' directory not found!  Should be in {:?}", resource_path);
             let message = String::from(msg_str);
-            let _ = warn(GameError::ResourceLoadError(message));
+            let _ = warn(GameError::ResourceNotFound(message));
+        }
+
+        // Check for resources zip file.
+        let mut resource_zip = None;
+        let mut resource_zip_path = root_path.clone();
+        resource_zip_path.push("resources.zip");
+        if !resource_zip_path.exists() || !resource_zip_path.is_file() {
+            let msg_str = format!("'resources.zip' file not found!  Should be in {:?}", resource_zip_path);
+            let message = String::from(msg_str);
+            let _ = warn(GameError::ResourceNotFound(message));
+        } else {
+            // We keep this file open so we don't have to re-parse
+            // the zip file every time we load something out of it.
+            let f = fs::File::open(resource_zip_path).unwrap();
+            let z = zip::ZipArchive::new(f).unwrap();
+            resource_zip = Some(z);
         }
 
         let user_path = path::PathBuf::from(pref_path_string);
 
-        Filesystem {
+        let fs = Filesystem {
             resource_path: resource_path,
             base_path: root_path,
-            user_path: user_path
-        }
+            user_path: user_path,
+            resource_zip: resource_zip,
+        };
+
+        Ok(fs)
     }
 
 
-    pub fn open(&self, path: &path::Path) -> Result<File, GameError> {
+    /// Opens the given path and returns the resulting `File`
+    pub fn open(&mut self, path: &path::Path) -> GameResult<File> {
 
         // Look in resource directory
         let pathbuf = try!(self.mongle_path(path));
         if pathbuf.is_file() {
-            // BUGGO: Unwrap
-            let f = fs::File::open(pathbuf).unwrap();
+            let f = try!(fs::File::open(pathbuf));
             return Ok(File::FSFile(f));
         }
 
-        // TODO: Look in resources.zip
+        // Look in resources.zip
+        if let Some(ref mut zipfile) = self.resource_zip {
+            let name = path.to_str().unwrap();
+            let f = zipfile.by_name(name).unwrap();
+            return Ok(File::ZipFile(f));
+        }
 
         // TODO: Look in save directory
 
         // Welp, can't find it.
-        let errmessage = String::from(path.to_str().unwrap());
-        Err(GameError::ResourceNotFound(errmessage))
+        let errmessage = try!(
+            convenient_path_to_str(path));
+        Err(GameError::ResourceNotFound(String::from(errmessage)))
     }
 
     /// Takes a relative path and returns an absolute PathBuf
     /// based in the Filesystem's root path.
     /// Sorry, can't think of a better name for this.
-    fn mongle_path(&self, path: &path::Path) -> Result<path::PathBuf, GameError> {
+    fn mongle_path(&self, path: &path::Path) -> GameResult<path::PathBuf> {
         if !path.is_relative() {
-            let err = GameError::ResourceNotFound(String::from(path.to_str().unwrap()));
+            let pathstr = try!(convenient_path_to_str(path));
+            let err = GameError::ResourceNotFound(String::from(pathstr));
             Err(err)
         } else {
             let pathbuf = self.resource_path.join(path);
@@ -118,30 +161,54 @@ impl Filesystem {
     }
 
     /// Check whether a file or directory exists.
-    pub fn exists(&self, path: &path::Path) -> bool {
-        match self.mongle_path(path) {
-            Ok(p) => p.exists(),
-            Err(_) => false,
+    pub fn exists(&mut self, path: &path::Path) -> bool {
+        if let Ok(p) = self.mongle_path(path) {
+            p.exists()
+        } else {
+            let name = path.to_str().unwrap();
+            if let Some(ref mut zipfile) = self.resource_zip {
+                zipfile.by_name(name).is_ok()
+            } else {
+                false
+            }
         }
-        // TODO: Look in resources.zip, save directory.
+        // TODO: Look in save directory.
     }
 
     /// Check whether a path points at a file.
-    pub fn is_file(&self, path: &path::Path) -> bool {
-        match self.mongle_path(path) {
-            Ok(p) => p.is_file(),
-            Err(_) => false,
+    pub fn is_file(&mut self, path: &path::Path) -> bool {
+        if let Ok(p) = self.mongle_path(path) {
+            p.is_file()
+        } else {
+            let name = path.to_str().unwrap();
+            if let Some(ref mut zipfile) = self.resource_zip {
+                zipfile.by_name(name).is_ok()
+            } else {
+                false
+            }
         }
-        // TODO: Look in resources.zip, save directory.
+        // TODO: Look in save directory.
     }
 
     /// Check whether a path points at a directory.
-    pub fn is_dir(&self, path: &path::Path) -> bool {
-        match self.mongle_path(path) {
-            Ok(p) => p.is_dir(),
-            Err(_) => false,
+    pub fn is_dir(&mut self, path: &path::Path) -> bool {
+        if let Ok(p) = self.mongle_path(path) {
+            p.is_dir()
+        } else {
+            let name = path.to_str().unwrap();
+            if let Some(ref mut zipfile) = self.resource_zip {
+                // BUGGO: This doesn't actually do what we want...
+                // Zip files don't actually store directories,
+                // they just fake it.
+                // What we COULD do is iterate through all files
+                // in the zip file looking for one with the same
+                // name prefix as the directory path?
+                zipfile.by_name(name).is_ok()
+            } else {
+                false
+            }
         }
-        // TODO: Look in resources.zip, save directory.
+        // TODO: Look in save directory.
     }
 
     /// Return the full path to the directory containing the exe
@@ -166,7 +233,25 @@ impl Filesystem {
         let dest = self.resource_path.join(path);
         dest.read_dir()
     }
-}
+
+    // TODO: This should return an iterator, and be called iter()
+    pub fn print_all(&mut self) {
+        let p = self.resource_path.clone();
+        if p.is_dir() {
+            let paths = fs::read_dir(p).unwrap();
+            for path in paths {
+                println!("Resources dir, filename {}", path.unwrap().path().display());
+            }
+        }
+
+        if let Some(ref mut zipfile) = self.resource_zip {
+            for i in 0..zipfile.len() {
+                let file = zipfile.by_index(i).unwrap();
+                println!("Zip, filename: {}", file.name());
+            }
+        }
+    }
+ }
 
 mod tests {
     use filesystem::*;
@@ -179,6 +264,7 @@ mod tests {
             resource_path: path.clone(),
             user_path: path.clone(),
             base_path: path.clone(),
+            resource_zip: None,
         };
         f
 

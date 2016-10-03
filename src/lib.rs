@@ -7,6 +7,7 @@ extern crate rustc_serialize;
 extern crate toml;
 #[macro_use]
 extern crate lazy_static;
+extern crate zip;
 
 
 pub mod audio;
@@ -23,10 +24,10 @@ pub use state::State;
 pub use game::Game;
 pub use context::Context;
 
+/// An enum containing all kinds of game engine error.
 #[derive(Debug)]
 pub enum GameError {
-    Lolwtf,
-    ArbitraryError(String),
+    FilesystemError(String),
     ConfigError(String),
     ResourceLoadError(String),
     ResourceNotFound(String),
@@ -35,16 +36,20 @@ pub enum GameError {
     WindowError(sdl2::video::WindowBuildError),
     IOError(std::io::Error),
     TTFError(String),
+    VideoError(String),
+    UnknownError(String),
 }
 
-fn warn(err: GameError) -> Result<(), GameError> {
+pub type GameResult<T> = Result<T, GameError>;
+
+fn warn(err: GameError) -> GameResult<()> {
     println!("WARNING: Encountered error: {:?}", err);
     Ok(())
 }
 
 impl From<String> for GameError {
     fn from(s: String) -> GameError {
-        GameError::ArbitraryError(s)
+        GameError::UnknownError(s)
     }
 }
 
@@ -59,12 +64,42 @@ impl From<sdl2::IntegerOrSdlError> for GameError {
         match e {
             sdl2::IntegerOrSdlError::IntegerOverflows(s, i) => {
                 let message = format!("Integer overflow: {}, str {}", i, s);
-                GameError::ArbitraryError(message)
+                GameError::UnknownError(message)
             }
-            sdl2::IntegerOrSdlError::SdlError(s) => GameError::ArbitraryError(s),
+            sdl2::IntegerOrSdlError::SdlError(s) => GameError::UnknownError(s),
         }
     }
 }
+
+// Annoyingly, PrefPathError doesn't implement Debug or Display in
+// version 0.23
+// It at least has Debug in the latest tip.
+impl From<sdl2::filesystem::PrefPathError> for GameError {
+    fn from(e: sdl2::filesystem::PrefPathError) -> GameError {
+        let msg = match e {
+            sdl2::filesystem::PrefPathError::InvalidOrganizationName(e) => format!("Invalid organization name, {}", e),
+            sdl2::filesystem::PrefPathError::InvalidApplicationName(e) => format!("Invalid application name, {}", e),
+            sdl2::filesystem::PrefPathError::SdlError(e) =>
+            e
+        };
+        GameError::ConfigError(msg)
+    }
+}
+
+impl From<sdl2::render::TextureValueError> for GameError {
+    fn from(e: sdl2::render::TextureValueError) -> GameError {
+        let msg = format!("{}", e);
+        GameError::ResourceLoadError(msg)
+    }
+}
+
+impl From<sdl2_ttf::FontError> for GameError {
+    fn from(e: sdl2_ttf::FontError) -> GameError {
+        let msg = format!("{}", e);
+        GameError::ResourceLoadError(msg)
+    }
+}
+
 
 impl From<std::io::Error> for GameError {
     fn from(e: std::io::Error) -> GameError {

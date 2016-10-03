@@ -14,11 +14,11 @@ etc.
 
 ## Features
 
-* Filesystem abstraction that lets you load resources from folders or (eventually) zip files
+* Filesystem abstraction that lets you load resources from folders or zip files
 * Hardware-accelerated rendering of bitmaps
 * Playing and loading sounds through SDL2_mixer
 * TTF font rendering through SDL2_ttf, as well as (eventually) bitmap fonts.
-* Interface for handling keyboard and mouse events
+* Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
 
 ## Examples
@@ -27,20 +27,23 @@ See example/imageview.rs
 
 ## Status
 
-* Still implementing sound
-* Need to make the example's resource paths work properly
-* Need to unify Context type better
-* Need to implement the ability to replace the game state with the same context
-* Need to figure out pipeline for creating contexts and gamestates
-* Need to implement draw_rect and stuff
+* Need to figure out exiting cleanly.
+* Frame timing is kinda primitive and narsty, make it better.
+* Need to make the example's resource paths work properly with `cargo run --example`
 * Need more documentation
-* Need to implement bitmap fonts and zip file loading
+* Need to implement bitmap fonts
 * Need to add more tests, somehow
+
+## Things to add atop it
+
+* Resource loader/cache
+* Scene stack
+* GUI
+* particle system (or put that in with it like LOVE?)
 
 ## Useful goodies
 
-* cgmath for math operations
-* specs for entity-component system
+* specs for entity-component system (alternatives: ecs or recs crates)
 * cgmath or vecmath for math operations?
 * physics/collision???
 

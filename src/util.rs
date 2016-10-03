@@ -8,6 +8,7 @@ use std::marker::Sized;
 use sdl2::rwops;
 
 use context::Context;
+use GameResult;
 
 
 // This is actually very inconvenient 'cause sdl2::rwops
@@ -18,15 +19,16 @@ pub fn rwops_from_read<'a, T>(r: &mut T, buffer: &'a mut Vec<u8>) -> Result<rwop
     where T: io::Read + Sized {
     // For now, we just rather messily slurp the whole thing into memory,
     // then hand that to from_bytes.
-    r.read_to_end(buffer).unwrap();
-    rwops::RWops::from_bytes(buffer)
+    match r.read_to_end(buffer) {
+        Ok(_) => rwops::RWops::from_bytes(buffer),
+        Err(ioerror) => Err(format!("{}", ioerror))
+    }
 }
 
-pub fn rwops_from_path<'a>(context: &Context, path: &path::Path, buffer: &'a mut Vec<u8>) -> rwops::RWops<'a> {
-    let fs = &context.filesystem;
-    let mut stream = fs.open(path).unwrap();
-    let rw = rwops_from_read(&mut stream, buffer).unwrap();
-    rw
+pub fn rwops_from_path<'a>(context: &mut Context, path: &path::Path, buffer: &'a mut Vec<u8>) -> GameResult<rwops::RWops<'a>> {
+    let mut stream = try!(context.filesystem.open(path));
+    let rw = try!(rwops_from_read(&mut stream, buffer));
+    Ok(rw)
 }
 
 

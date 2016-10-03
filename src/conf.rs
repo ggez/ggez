@@ -7,8 +7,10 @@ use std::io;
 use toml;
 use rustc_serialize::Decodable;
 
-use GameError;
+use {GameError, GameResult};
 
+/// A structure containing configuration data
+/// for the game engine.
 #[derive(RustcDecodable, Debug)]
 pub struct Conf {
     /// The name of the save directory
@@ -46,6 +48,8 @@ pub struct Conf {
 }
 
 impl Conf {
+    /// Create a new Conf with some vague defaults and the given
+    /// game ID.
     pub fn new(id: &str) -> Conf {
         Conf {
             id: String::from(id),
@@ -57,13 +61,16 @@ impl Conf {
         }
     }
 
-    pub fn from_toml_file<R: io::Read>(file: &mut R) -> Result<Conf, GameError> {
-        // TODO: Fix these unwraps when it's not midnight.
+    /// Load a TOML file from the given `Read` and attempts to parse
+    /// a `Conf` from it.
+    pub fn from_toml_file<R: io::Read>(file: &mut R) -> GameResult<Conf> {
         let mut s = String::new();
-        file.read_to_string(&mut s).unwrap();
+        try!(file.read_to_string(&mut s));
         let mut parser = toml::Parser::new(&s);
-        let toml = parser.parse().unwrap();
-        let config = toml.get("conf").unwrap();
+        let toml = try!(parser.parse()
+            .ok_or(String::from("Could not parse config file?")));
+        let config = try!(toml.get("conf")
+            .ok_or(String::from("Section [conf] not in config file")));
         let mut decoder = toml::Decoder::new(config.clone());
         Conf::decode(&mut decoder).map_err(|e| GameError::from(e))
     }
