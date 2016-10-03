@@ -17,8 +17,8 @@ struct MainState {
     a: i32,
     direction: i32,
     image: graphics::Image,
-    //font: graphics::Font,
     text: graphics::Text,
+    bmptext: graphics::Text,
     sound: audio::Sound,
 }
 
@@ -56,9 +56,12 @@ impl GameState for MainState {
         let image = graphics::Image::new(ctx, imagepath).unwrap();
 
         let fontpath = path::Path::new("DejaVuSerif.ttf");
+        let bmpfontpath = path::Path::new("arial.png");
         let soundpath = path::Path::new("sound.ogg");
         let font = graphics::Font::new(ctx, fontpath, 48).unwrap();
         let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
+        let bmpfont = graphics::Font::new_bitmap(ctx, bmpfontpath, "ABCDEFGHIJKLMNOPQRSTUVWXYZ").unwrap();
+        let bmptext =graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
         let sound = audio::Sound::new(ctx, soundpath).unwrap();
 
         let _ = sound.play();
@@ -69,10 +72,12 @@ impl GameState for MainState {
             image: image,
             //font: font,
             text: text,
+            bmptext: bmptext,
             // BUGGO: We never use sound again,
             // but we have to hang on to it, Or Else!
             // The optimizer will decide we don't need it
             // since play() has "no side effects" and free it.
+            // Or something.
             sound: sound,
         };
 
@@ -82,8 +87,6 @@ impl GameState for MainState {
     }
 
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        // println!("update");
-
         self.a = self.a + self.direction;
         if self.a > 250 || self.a <= 0 {
             self.direction *= -1;
@@ -101,6 +104,8 @@ impl GameState for MainState {
 
         try!(graphics::draw(ctx, &self.image, None, None));
         try!(graphics::draw(ctx, &self.text, None, None));
+        let destrect = graphics::Rect::new(100, 50, 403, 50);
+        try!(graphics::draw(ctx, &self.bmptext, None, Some(destrect)));
 
         try!(self.draw_crazy_lines(ctx));
         ctx.renderer.present();

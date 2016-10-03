@@ -44,9 +44,6 @@ looking.
 
 ## Status
 
-* Need to make the example's resource paths work properly with `cargo run --example`
-* Need more documentation
-* Need to implement bitmap fonts
 * Need to add more tests, somehow
 * Need to figure out exiting cleanly.  THIS IS SOLVED, but blocked by a bug in rust-sdl!  Issue #530.
 * Do we want to include Love2D's graphics transform functions?  ...probably not, honestly.
@@ -61,10 +58,10 @@ can't efficiently implement it as a module)
 * Input indirection layer and input state tracking
 * Sprites with ordering, animation, atlasing, tile mapping, etc.
 
-# Future work
+## Future work
 
 It *would* be nice to have a full OpenGL-y backend like Love2D does, with things like shaders, render targets,
-etc.  Right now the API is mostly limited to Love2D 0.7 or so.  Using OpenAL (through the `ears` crate perhaps?)
+etc.  `gfx` might be the best option there, maaaaaaybe.  Right now the API is mostly limited to Love2D 0.7 or so.  Using OpenAL (through the `ears` crate perhaps?)
 for sound would get us positional audio too.  
 
 ## Useful goodies

@@ -52,7 +52,7 @@ impl<'a> fmt::Debug for Context<'a> {
 
 fn init_ttf() -> GameResult<Sdl2TtfContext> {
     sdl2_ttf::init()
-        .map_err(|e| GameError::TTFError(format!("{}", e)))
+        .map_err(|e| GameError::FontError(format!("{}", e)))
 }
 
 
