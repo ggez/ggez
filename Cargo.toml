@@ -16,11 +16,15 @@ name = "ggez"
 path = "src/lib.rs"
 
 [dependencies]
-sdl2 = "0.18"
-sdl2_image = "0.18"
-sdl2_mixer = "0.17"
-sdl2_ttf = "0.16"
-rand = "0.3"
+sdl2 = "^0.18"
+sdl2_image = "^0.18"
+sdl2_mixer = "^0.17"
+sdl2_ttf = "^0.16"
+rand = "^0.3"
+
+rustc-serialize = "^0.3"
+toml = "^0.2"
+
 
 [dev-dependencies]
 specs = "0.6"

@@ -3,11 +3,15 @@ extern crate sdl2_image;
 extern crate sdl2_mixer;
 extern crate sdl2_ttf;
 extern crate rand;
+extern crate rustc_serialize;
+extern crate toml;
 
 mod state;
 pub mod game;
+mod filesystem;
 mod resources;
 mod context;
+pub mod conf;
 
 pub use state::State;
 pub use game::Game;
@@ -17,9 +21,11 @@ pub use context::Context;
 pub enum GameError {
     Lolwtf,
     ArbitraryError(String),
+    ConfigError(String),
     ResourceLoadError(String),
-    ResourceNotFound,
+    ResourceNotFound(String),
     WindowError(sdl2::video::WindowBuildError),
+    IOError(std::io::Error),
 }
 
 fn warn(err: GameError) -> Result<(), GameError> {
@@ -48,5 +54,18 @@ impl From<sdl2::IntegerOrSdlError> for GameError {
             }
             sdl2::IntegerOrSdlError::SdlError(s) => GameError::ArbitraryError(s),
         }
+    }
+}
+
+impl From<std::io::Error> for GameError {
+    fn from(e: std::io::Error) -> GameError {
+        GameError::IOError(e)
+    }
+}
+
+impl From<toml::DecodeError> for GameError {
+    fn from(e: toml::DecodeError) -> GameError {
+        let errstr = format!("{}", e);
+        GameError::ConfigError(errstr)
     }
 }
