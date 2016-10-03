@@ -14,3 +14,4 @@ addons:
     - libsdl2-ttf-dev
     - libibus-1.0-dev
     - libpulse-dev
+    - libglib2.0-dev
