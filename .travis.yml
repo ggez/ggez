@@ -1,17 +1,9 @@
+sudo: required
+dist: trusty
 language: rust
 rust:
   - stable
   - beta
   - nightly
-addons:
-  apt:
-    sources:
-    - debian-sid
-    packages:
-    - libsdl2-dev
-    - libsdl2-image-dev
-    - libsdl2-mixer-dev
-    - libsdl2-ttf-dev
-    - libibus-1.0-dev
-    - libpulse-dev
-    - libglib2.0-dev
+before_script:
+  - sudo apt-get install -qq libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-mixer-dev
