@@ -1,14 +1,19 @@
 extern crate ggez;
 extern crate specs;
+extern crate rand;
+extern crate sdl2;
+
+use rand::Rand;
+use sdl2::pixels::Color;
 
 use ggez::{game, Game, State, GameError, Context};
 use std::time::Duration;
 use std::path::Path;
-use specs::{Join, World};
+//use specs::{Join, World};
 
 struct Transform {
     position: (u32, u32),
-    rotation: f32,
+    //rotation: f32,
 }
 
 impl specs::Component for Transform {
@@ -27,7 +32,7 @@ impl MainState {
         world.create_now()
              .with(Transform {
                  position: (50, 50),
-                 rotation: 0f32,
+                 //rotation: 0f32,
              })
              .build();
         MainState {
@@ -44,7 +49,7 @@ impl State for MainState {
         Ok(())
     }
 
-    fn update(&mut self, ctx: &mut Context, dt: Duration) -> Result<(), GameError> {
+    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> Result<(), GameError> {
         // println!("update");
 
         self.planner.run1w0r(|t: &mut Transform| {
@@ -54,20 +59,30 @@ impl State for MainState {
         self.a = self.a + 1;
         if self.a > 100 {
             self.a = 0;
-            game::play_sound(ctx, "sound");
+            try!(game::play_sound(ctx, "sound"));
         }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> Result<(), GameError> {
         // println!("draw");
+        let mut rng = rand::thread_rng();
+        ctx.renderer.set_draw_color(Color::rand(&mut rng));
+        ctx.renderer.clear();
         ctx.print("roflcopter", 100, 100);
+        ctx.renderer.present();
+
         Ok(())
     }
 }
 
 pub fn main() {
-    let mut g = MainState::new();
+    let g = MainState::new();
     let mut e: Game<MainState> = Game::new(g);
-    e.run();
+    let result = e.run();
+    if let Err(e) = result {
+        println!("Error encountered: {:?}", e);
+    } else {
+        println!("Game exited cleanly.");
+    }
 }
