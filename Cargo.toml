@@ -4,7 +4,10 @@ description = "Rust library to create a Good Game Easily"
 version = "0.1.0"
 repository = "https://github.com/ggez-dev/ggez"
 keywords = ["ggez", "graphics", "2D"]
-authors = ["Rafael Epplee <raffomania@gmail.com>", "Sven-Hendrik Haase <svenstaro@gmail.com>"]
+authors = [
+    "Rafael Epplee <raffomania@gmail.com>",
+    "Sven-Hendrik Haase <svenstaro@gmail.com>"
+]
 license = "MIT"
 readme = "README.md"
 
