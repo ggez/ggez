@@ -1,4 +1,6 @@
 # ggez
+[![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez)
+
 Rust library to create a Good Game Easily
 
 ## Credits
