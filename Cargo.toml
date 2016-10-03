@@ -8,7 +8,7 @@ keywords = ["ggez", "graphics", "2D", "game", "engine"]
 authors = [
    "Rafael Epplee <raffomania@gmail.com>",
    "Sven-Hendrik Haase <svenstaro@gmail.com>",
-   "Simon Heath <icefoxen@gmail.com"
+   "Simon Heath <icefoxen@gmail.com>",
 ]
 license = "MIT"
 readme = "README.md"
