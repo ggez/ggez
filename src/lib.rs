@@ -11,16 +11,14 @@ extern crate zip;
 
 
 pub mod audio;
-mod state;
+pub mod conf;
+mod context;
+pub mod filesystem;
 pub mod game;
 pub mod graphics;
-pub mod filesystem;
-//mod resources;
-mod context;
-pub mod conf;
+pub mod timer;
 mod util;
 
-pub use state::State;
 pub use game::Game;
 pub use context::Context;
 
@@ -40,8 +38,10 @@ pub enum GameError {
     UnknownError(String),
 }
 
+/// A convenient result type consisting of a return type and a GameError
 pub type GameResult<T> = Result<T, GameError>;
 
+/// Emit a non-fatal warning message
 fn warn(err: GameError) -> GameResult<()> {
     println!("WARNING: Encountered error: {:?}", err);
     Ok(())

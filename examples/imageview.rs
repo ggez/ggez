@@ -7,8 +7,10 @@ use sdl2::pixels::Color;
 
 use ggez::audio;
 use ggez::conf;
-use ggez::{Game, State, GameResult, Context};
+use ggez::game::{Game, GameState};
+use ggez::{GameResult, Context};
 use ggez::graphics;
+use ggez::timer;
 use std::time::Duration;
 
 struct MainState {
@@ -45,7 +47,7 @@ impl MainState {
     }
 }
 
-impl State for MainState {
+impl GameState for MainState {
     fn load(ctx: &mut Context, _conf: &conf::Conf) -> GameResult<MainState> {
         ctx.print_sound_stats();
         ctx.print_resource_stats();
@@ -85,6 +87,9 @@ impl State for MainState {
         self.a = self.a + self.direction;
         if self.a > 250 || self.a <= 0 {
             self.direction *= -1;
+
+            println!("Delta frame time: {:?} ", _dt);
+            println!("Average FPS: {}", timer::get_fps(_ctx));
         }
         Ok(())
     }
@@ -100,7 +105,9 @@ impl State for MainState {
         try!(self.draw_crazy_lines(ctx));
         ctx.renderer.present();
 
-
+        timer::sleep_until_next_frame(ctx, 60);
+        // ctx.quit() is broken :-(
+        //ctx.quit();
         Ok(())
     }
 }
