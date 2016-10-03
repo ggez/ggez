@@ -273,7 +273,7 @@ mod tests {
 
     #[test]
     fn test_file_exists() {
-        let f = get_dummy_fs_for_tests();
+        let mut f = get_dummy_fs_for_tests();
 
         let tile_file = path::Path::new("tile.png");
         assert!(f.exists(tile_file));
