@@ -5,14 +5,19 @@ extern crate sdl2_ttf;
 extern crate rand;
 extern crate rustc_serialize;
 extern crate toml;
+#[macro_use]
+extern crate lazy_static;
 
+
+pub mod audio;
 mod state;
 pub mod game;
 pub mod graphics;
 pub mod filesystem;
-mod resources;
+//mod resources;
 mod context;
 pub mod conf;
+mod util;
 
 pub use state::State;
 pub use game::Game;
@@ -26,6 +31,7 @@ pub enum GameError {
     ResourceLoadError(String),
     ResourceNotFound(String),
     RenderError(String),
+    AudioError(String),
     WindowError(sdl2::video::WindowBuildError),
     IOError(std::io::Error),
     TTFError(String),

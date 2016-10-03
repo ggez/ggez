@@ -7,6 +7,7 @@ use std::path;
 use rand::Rand;
 use sdl2::pixels::Color;
 
+use ggez::audio;
 use ggez::conf;
 use ggez::{game, Game, State, GameError, Context};
 use ggez::graphics;
@@ -20,6 +21,7 @@ struct MainState {
     image: Option<graphics::Image>,
     font: Option<graphics::Font>,
     text: Option<graphics::Text>,
+    sound: Option<audio::Sound>,
 }
 
 impl MainState {
@@ -29,6 +31,7 @@ impl MainState {
             image: None,
             font: None,
             text: None,
+            sound: None,
 
             buffer: Vec::new(),
         }
@@ -43,11 +46,18 @@ impl State for MainState {
         let image = graphics::Image::new(ctx, imagepath);
 
         let fontpath = path::Path::new("DejaVuSerif.ttf");
+        let soundpath = path::Path::new("sound.ogg");
         let font = graphics::Font::new(ctx, fontpath, 24);
         let text = graphics::Text::new(ctx, "Hello world!", &font);
+        let sound = audio::Sound::new(ctx, soundpath);
         self.image = Some(image);
         self.font = Some(font);
         self.text = Some(text);
+        self.sound = Some(sound);
+
+
+        let sound = self.sound.as_ref().unwrap();
+        sound.play();
 
         Ok(())
     }
@@ -75,10 +85,15 @@ impl State for MainState {
         text.draw(ctx, None, None);
         ctx.renderer.present();
 
+
         Ok(())
     }
 }
 
+// Creating a gamestate depends on having an SDL context to load resources.
+// Creating a context depends on loading a config file.
+// Loading a config file depends on having FS (or we can just fake our way around it
+// by creating an FS and then throwing it away; the costs are not huge.)
 pub fn main() {
     let g = MainState::new();
     let c = conf::Conf::new("flappy");

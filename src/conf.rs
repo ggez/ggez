@@ -1,3 +1,7 @@
+//! The `conf` module contains functions for loading and saving game
+//! configurations.
+//! A lot of this is lifted whole-hog from LÖVE because it's stuff
+//! we need anyway.
 
 use std::io;
 use toml;
@@ -5,10 +9,6 @@ use rustc_serialize::Decodable;
 
 use GameError;
 
-/// The `conf` module contains functions for loading and saving game
-/// configurations.
-/// A lot of this is lifted whole-hog from LÖVE because it's stuff
-/// we need anyway.
 #[derive(RustcDecodable, Debug)]
 pub struct Conf {
     /// The name of the save directory

@@ -1,4 +1,15 @@
-use std::env;
+//! Provides an interface to the user's filesystem.
+//!
+//! This module provides access to files in specific places:
+//! * The `resources/` subdirectory in the same directory as the program executable,
+//! * The `resources.zip` file in the same directory as the program executable (eventually),
+//! * The root folder of the game's `save` directory (eventually)
+//!
+//! Files will be looked for in these places in order.
+//!
+//! Right now files are read-only.  When we can write files, they will be written
+//! to the game's save directory.
+
 use std::fs;
 use std::io;
 use std::path;
@@ -7,21 +18,15 @@ use sdl2;
 
 use GameError;
 use warn;
-use conf;
 
-/// Provides an interface to the user's filesystem.
-///
-/// This module provides access to files in specific places:
-/// * The `resources/` subdirectory in the same directory as the program executable,
-/// * The `resources.zip` file in the same directory as the program executable (eventually),
-/// * The root folder of the game's `save` directory (eventually)
-///
-/// Files will be looked for in these places in order.
-///
-/// Right now files are read-only.  When we can write files, they will be written
-/// to the game's save directory.
-///
-/// TODO: See SDL_GetBasePath and SDL_GetPrefPath!
+
+// TODO: We might be able to make this global and just use it as a cache,
+// since it doesn't appear to rely on SDL_Init() being called first?
+// Or maybe it does but SDL_Init() does it no matter what.
+// Worst case scenario we have a global init function here maybe, with lazy_static.
+// This woudl be convenient 'cause there's a lot of things that need to be passed
+// a Context just to access the Filesystem, such as every load function ever.
+// However, for now we'll keep things simple and consistent.
 #[derive(Debug)]
 pub struct Filesystem {
     base_path: path::PathBuf,

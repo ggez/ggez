@@ -1,3 +1,15 @@
+//! A trait for defining a game state.
+//! Implement `load()`, `update()` and `draw()` callbacks on this trait
+//! and hand it to a `Game` object to be run.
+//! You may also implement the `*_event` traits if you wish to handle
+//! those events.
+//!
+//! The default event handlers do nothing, apart from `key_down_event()`,
+//! which *should* by default exit the game if escape is pressed, but which
+//! doesn't do such a thing yet...
+// 
+// TODO: We need an is_done callback or something...
+
 use std::time::Duration;
 use sdl2::event::Event;
 
@@ -5,6 +17,8 @@ use GameError;
 use context::Context;
 
 // I feel like this might be better named a Scene than a State...?
+// No, because scene management is more fine-grained and should
+// happen at a higher level.
 pub trait State {
     fn load(&mut self, ctx: &mut Context) -> Result<(), GameError>;
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> Result<(), GameError>;
@@ -26,7 +40,9 @@ pub trait State {
     // but I'm not sure how to do it yet.
     // They should be SdlEvent::KeyDow or something similar,
     // but those are enum fields, not actual types.
-    fn key_down_event(&mut self, _evt: Event) {}
+    fn key_down_event(&mut self, _evt: Event) {
+        //done = true,
+    }
 
     fn key_up_event(&mut self, _evt: Event) {}
 

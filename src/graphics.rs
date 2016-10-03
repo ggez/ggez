@@ -1,54 +1,25 @@
-/// The `graphics` module performs the actual drawing of images, text, and other
-/// objects with the `Drawable` trait.  It also handles basic loading of images
-/// and text, apparently.
-///
-/// Also manages graphics state, coordinate systems, etc.  The default coordinate system
-/// has the origin in the upper-left corner of the screen, unless it should be
-/// something else, then we should change it.  
+//! The `graphics` module performs the actual drawing of images, text, and other
+//! objects with the `Drawable` trait.  It also handles basic loading of images
+//! and text, apparently.
+//!
+//! Also manages graphics state, coordinate systems, etc.  The default coordinate system
+//! has the origin in the upper-left corner of the screen, unless it should be
+//! something else, then we should change it.  
 
 use std::path;
-use std::io;
-use std::marker::Sized;
 
 use sdl2::pixels::Color;
 use sdl2::rect;
 use sdl2::render;
-use sdl2::rwops;
-use sdl2::surface;
 use sdl2_image::ImageRWops;
 use sdl2_ttf;
 
 use context::Context;
 use GameError;
+use util::rwops_from_path;
 
 pub type Rect = rect::Rect;
 pub type Point = rect::Point;
-
-// This is actually very inconvenient 'cause sdl2::rwops
-// can be created from bytes, or from a file path, but not
-// from a std::io::Read
-// Which is what we need to read from streams.
-fn rwops_from_read<'a, T>(r: &mut T, buffer: &'a mut Vec<u8>) -> Result<rwops::RWops<'a>, String>
-    where T: io::Read + Sized {
-    // For now, we just rather messily slurp the whole thing into memory,
-    // then hand that to from_bytes.
-    //let bytes: Vec<Result<u8, io::Error>> =
-    r.read_to_end(buffer).unwrap();
-    rwops::RWops::from_bytes(buffer)
-}
-
-fn rwops_from_path<'a>(context: &Context, path: &path::Path, buffer: &'a mut Vec<u8>) -> rwops::RWops<'a> {
-    let fs = &context.filesystem;
-    let mut stream = fs.open(path).unwrap();
-    let mut rw = rwops_from_read(&mut stream, buffer);
-    match &rw {
-        &Ok(_) => (),
-        &Err(ref msg) => println!("rwops_from_read error: {}", msg),
-    }
-    
-    let mut rwops = rw.unwrap();
-    rwops
-}
 
 
 // Not yet sure exactly how we should split this up;
@@ -56,18 +27,23 @@ fn rwops_from_path<'a>(context: &Context, path: &path::Path, buffer: &'a mut Vec
 // that a Context is a part of, or what?
 impl<'a> Context<'a> {
     fn clear() {
+        unimplemented!();
     }
 
     fn draw() {
+        unimplemented!();
     }
 
     fn present() {
+        unimplemented!();
     }
 
     fn print() {
+        unimplemented!();
     }
 
     fn printf() {
+        unimplemented!();
     }
 }
 
@@ -108,7 +84,7 @@ impl Image {
         let renderer = &context.renderer;
 
         let mut buffer: Vec<u8> = Vec::new();
-        let mut rwops = rwops_from_path(context, path, &mut buffer);
+        let rwops = rwops_from_path(context, path, &mut buffer);
         // SDL2_image SNEAKILY adds this method to RWops.
         let surf = rwops.load().unwrap();
         let tex = renderer.create_texture_from_surface(surf).unwrap();
@@ -143,7 +119,7 @@ impl Font {
         let mut rwops = rwops_from_path(context, path, &mut buffer);
 
         let ttf_context = &context.ttf_context;
-        let ttf_font = ttf_context.load_font_from_rwops(rwops, size).unwrap();
+        let ttf_font = ttf_context.load_font_from_rwops(&mut rwops, size).unwrap();
         //ttf_context.load_font(path, size).unwrap();
         Font {
             font: ttf_font,
@@ -158,6 +134,7 @@ impl Font {
     /// TODO: Implement this!  Love2D just uses a 1D image for glyphs, which is
     /// probably not ideal but is fine.
     fn from_image(name: &str, glyphs: &str) {
+        unimplemented!()
     }
 }
 

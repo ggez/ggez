@@ -46,7 +46,7 @@ impl MainState {
 impl State for MainState {
     fn load(&mut self, ctx: &mut Context) -> Result<(), GameError> {
         println!("load");
-        ctx.resources.load_sound("sound", Path::new("./resources/sound.mp3")).unwrap();
+        ctx.resources.load_sound("sound", Path::new("./resources/sound.ogg")).unwrap();
         Ok(())
     }
 
