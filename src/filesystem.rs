@@ -65,7 +65,8 @@ impl Filesystem {
         resource_path.push("resources");
         // TODO: This should also check for resources.zip
         if !resource_path.exists() || !resource_path.is_dir() {
-            let message = String::from("'resources' directory not found!");
+            let msg_str = format!("'resources' directory not found!  Should be in {:?}", resource_path);
+            let message = String::from(msg_str);
             let _ = warn(GameError::ResourceLoadError(message));
         }
 
@@ -129,7 +130,7 @@ impl Filesystem {
         // TODO: Look in resources.zip, save directory.
     }
 
-    /// Check wehther a path points at a directory.
+    /// Check whether a path points at a directory.
     pub fn is_dir(&self, path: &path::Path) -> bool {
         match self.mongle_path(path) {
             Ok(p) => p.is_dir(),
@@ -162,32 +163,38 @@ impl Filesystem {
     }
 }
 
-fn get_dummy_fs_for_tests() -> Filesystem {
-    let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("resources");
-    let f = Filesystem {
-        resource_path: path.clone(),
-        user_path: path.clone(),
-        base_path: path.clone(),
-    };
-    f
+mod tests {
+    use filesystem::*;
+    use std::path;
 
+    fn get_dummy_fs_for_tests() -> Filesystem {
+        let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("resources");
+        let f = Filesystem {
+            resource_path: path.clone(),
+            user_path: path.clone(),
+            base_path: path.clone(),
+        };
+        f
+
+    }
+
+    #[test]
+    fn test_file_exists() {
+        let f = get_dummy_fs_for_tests();
+
+        let tile_file = path::Path::new("tile.png");
+        assert!(f.exists(tile_file));
+        assert!(f.is_file(tile_file));
+    }
+
+    #[test]
+    fn test_read_dir() {
+        let f = get_dummy_fs_for_tests();
+
+        let dir_contents_size = f.read_dir(path::Path::new("")).unwrap().count();
+        assert!(dir_contents_size > 0);
+
+    }
 }
 
-#[test]
-fn test_file_exists() {
-    let f = get_dummy_fs_for_tests();
-
-    let tile_file = path::Path::new("tile.png");
-    assert!(f.exists(tile_file));
-    assert!(f.is_file(tile_file));
-}
-
-#[test]
-fn test_read_dir() {
-    let f = get_dummy_fs_for_tests();
-
-    let dir_contents_size = f.read_dir(path::Path::new("")).unwrap().count();
-    assert!(dir_contents_size > 0);
-    
-}

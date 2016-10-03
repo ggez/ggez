@@ -8,7 +8,8 @@ extern crate toml;
 
 mod state;
 pub mod game;
-mod filesystem;
+pub mod graphics;
+pub mod filesystem;
 mod resources;
 mod context;
 pub mod conf;
@@ -24,8 +25,10 @@ pub enum GameError {
     ConfigError(String),
     ResourceLoadError(String),
     ResourceNotFound(String),
+    RenderError(String),
     WindowError(sdl2::video::WindowBuildError),
     IOError(std::io::Error),
+    TTFError(String),
 }
 
 fn warn(err: GameError) -> Result<(), GameError> {
@@ -69,3 +72,33 @@ impl From<toml::DecodeError> for GameError {
         GameError::ConfigError(errstr)
     }
 }
+
+/*
+use sdl2_ttf;
+
+impl From<sdl2_ttf::InitError> for GameError {
+    fn from(e: sdl2_ttf::context::InitError) -> GameError {
+        let s = format!("{}", e);
+        GameError::TTFError(String::from(s))
+            /*
+        match e {
+            sdl2_ttf::context::InitError::AlreadyInitializedError =>
+                GameError::TTFError(String::from("TTF has already been initialized")),
+            sdl2_ttf::context::InitError::InitializationError(ref error) =>
+                GameError::TTFError(String::from(error.description()))
+        }
+*/
+    }
+}
+*/
+
+
+/*
+impl From<T> for GameError {
+    where T: std::error::Error + std::marker::Sized;
+    fn from(e: T) -> GameError {
+        GameError::ArbitraryError(e.description())
+    }
+}
+*/
+

@@ -1,6 +1,6 @@
 use state::State;
 use context::Context;
-use resources::{ResourceManager, TextureManager, FontManager};
+use resources::{ResourceManager, TextureManager};
 use GameError;
 use warn;
 use conf;
@@ -88,8 +88,6 @@ impl<'a, S: State> Game<'a, S> {
         let mut timer = try!(ctx.sdl_context.timer());
         let mut event_pump = try!(ctx.sdl_context.event_pump());
 
-        ctx.resources.load_font("DejaVuSerif", "resources/DejaVuSerif.ttf").unwrap();
-
         // If the example text is too big for the screen, downscale it (and center irregardless)
         let padding = 64;
 
@@ -157,20 +155,3 @@ impl<'a, S: State> Game<'a, S> {
     }
 }
 
-pub fn play_sound(ctx: &mut Context, sound: &str) -> Result<(), GameError> {
-    let resource = ctx.resources.get_sound(sound);
-    match resource {
-        Some(music) => {
-            // println!("music => {:?}", music);
-            // println!("music type => {:?}", music.get_type());
-            // println!("music volume => {:?}", sdl2_mixer::Music::get_volume());
-            // println!("play => {:?}", music.play(1));
-            // println!("You've played well");
-            ()
-        }
-        None => {
-            println!("No such resource!");
-        }
-    }
-    Ok(())
-}
