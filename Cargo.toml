@@ -24,7 +24,6 @@ sdl2_image = "0.23"
 sdl2_mixer = "0.23"
 sdl2_ttf = "0.23"
 rand = "0.3"
-lazy_static = "0.2"
 zip = "0.1"
 
 rustc-serialize = "0.3"

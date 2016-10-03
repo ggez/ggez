@@ -251,9 +251,6 @@ fn clone_surface<'a>(s: surface::Surface<'a>) -> GameResult<surface::Surface<'st
     // convert() copies the surface anyway, so.
     let res = try!(s.convert(&format));
     Ok(res)
-    //let mut newsurf = try!(surface::Surface::new(s.width(), s.height(), format));
-    //try!(s.blit(None, &mut newsurf, None));
-    //Ok(newsurf)
 }
 
 impl Font {
@@ -353,7 +350,6 @@ impl Text {
                 ..
             } => {
                 render_bitmap(context, text, &surface, &glyphs_map, glyph_width)
-                //Err(GameError::UnknownError(String::from("Foo")))
             }
         }
     }

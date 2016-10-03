@@ -94,7 +94,6 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// It will initialize a hardware context and call the `load()` method of
     /// the given `GameState` type to create a new `GameState`.
     pub fn new(default_config: conf::Conf) -> GameResult<Game<'a, S>>
-        //where T: Fn(&Context, &conf::Conf) -> S
     {
         let sdl_context = try!(sdl2::init());
         let mut fs = try!(fs::Filesystem::new());
@@ -147,7 +146,6 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
             ctx.timer_context.tick();
 
             for event in event_pump.poll_iter() {
-                //println!("Got event {:?}", event);
                 match event {
                     Quit { timestamp: _ } => {
                         //println!("Quit event: {:?}", t);
@@ -163,7 +161,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                         match keycode {
                             Some(Escape) => {
                                 try!(ctx.quit());
-                        },
+                            },
                             _ => self.state.key_down_event(event),
                         }
                     }
@@ -174,10 +172,10 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                     MouseWheel { .. } => self.state.mouse_wheel_event(event),
                     Window { win_event_id: WindowEventId::FocusGained, .. } => {
                         self.state.focus(true)
-                    }
+                    },
                     Window { win_event_id: WindowEventId::FocusLost, .. } => {
                         self.state.focus(false)
-                    }
+                    },
                     _ => {}
                 }
             }
@@ -185,7 +183,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
             try!(self.state.update(ctx, dt));
             try!(self.state.draw(ctx));
         }
-
+        
         self.state.quit();
         Ok(())
     }
