@@ -93,13 +93,13 @@ pub fn present(ctx: &mut Context) {
 
 /// Not implemented
 /// since we don't have anything resembling a default font.
-fn print(ctx: &mut Context) {
+pub fn print(_ctx: &mut Context) {
     unimplemented!();
 }
 
 /// Not implemented
 /// since we don't have anything resembling a default font.
-pub fn printf(ctx: &mut Context) {
+pub fn printf(_ctx: &mut Context) {
     unimplemented!();
 }
 
@@ -188,14 +188,6 @@ pub struct Image {
     texture: render::Texture,
 }
 
-// Helper function
-// fn load_surface<'a>(context: &mut Context, path: &path::Path) -> GameResult<surface::Surface<'a>> {
-//     let mut buffer: Vec<u8> = Vec::new();
-//     let rwops = try!(rwops_from_path(context, path, &mut buffer));
-//     // SDL2_image SNEAKILY adds the load() method to RWops.
-//     rwops.load().map_err(|e| GameError::ResourceLoadError(e))
-// }
-
 impl Image {
     // An Image is implemented as an sdl2 Texture which has to be associated
     // with a particular Renderer.
@@ -237,8 +229,6 @@ impl Drawable for Image {
     }
 
 }
-
-use sdl2::rwops;
 
 /// A font that defines the shape of characters drawn on the screen.
 /// Can be created from a .ttf file or from an image.
@@ -354,9 +344,9 @@ impl Text {
                 })
             },
             &Font::BitmapFont{
-                surface: ref surface,
+                ref surface,
+                glyph_width,
                 glyphs: ref glyphs_map,
-                glyph_width: glyph_width,
                 ..
             } => {
                 render_bitmap(context, text, &surface, &glyphs_map, glyph_width)

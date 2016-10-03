@@ -8,11 +8,8 @@ use conf;
 use filesystem as fs;
 use timer;
 
-use std::cmp;
-use std::sync::atomic;
 use std::path::Path;
 use std::time::Duration;
-use std::thread::sleep;
 
 use sdl2;
 use sdl2::event::Event::*;
@@ -152,7 +149,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
             for event in event_pump.poll_iter() {
                 //println!("Got event {:?}", event);
                 match event {
-                    Quit { timestamp: t } => {
+                    Quit { timestamp: _ } => {
                         //println!("Quit event: {:?}", t);
                         done = true
                     }
@@ -165,7 +162,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                     KeyDown { keycode, .. } => {
                         match keycode {
                             Some(Escape) => {
-                                ctx.quit();
+                                try!(ctx.quit());
                         },
                             _ => self.state.key_down_event(event),
                         }

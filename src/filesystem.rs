@@ -257,6 +257,7 @@ mod tests {
     use filesystem::*;
     use std::path;
 
+    #[allow(dead_code)]
     fn get_dummy_fs_for_tests() -> Filesystem {
         let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources");
