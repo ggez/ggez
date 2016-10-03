@@ -89,7 +89,7 @@ impl GameState for MainState {
     }
 
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        self.a = self.a + self.direction;
+        self.a += self.direction;
         if self.a > 250 || self.a <= 0 {
             self.direction *= -1;
 

@@ -1,6 +1,6 @@
 //! Provides an interface to output sound to the user's speakers.
 //!
-//! This departs from the Love2D API a bit because SDL2_mixer is opinionated
+//! This departs from the LÖVE API a bit because `SDL2_mixer` is opinionated
 //! about the difference between samples and music files, and also makes channel
 //! management and such more explicit.
 //! This seems a bit awkward but we'll roll with it for now.
@@ -26,11 +26,11 @@ pub trait AudioOps {
     fn play_sound(&self, sound: &Sound) -> GameResult<Channel>;
 
     fn pause(&self);
-      
+
     fn stop(&self);
-    
+
     fn resume(&self);
-    
+
     fn rewind(&self);
 }
 
@@ -47,21 +47,19 @@ impl Sound {
         // SDL2_image SNEAKILY adds this method to RWops.
         let chunk = try!(rwops.load_wav());
 
-        Ok(Sound {
-            chunk: chunk,
-        })
+        Ok(Sound { chunk: chunk })
     }
 
     /// Play a sound on the first available `Channel`.
     ///
-    /// Returns a `Channel`, which can be used to manipulate the 
+    /// Returns a `Channel`, which can be used to manipulate the
     /// playback, eg pause, stop, restart, etc.
     pub fn play(&self) -> GameResult<Channel> {
         let channel = sdl2_mixer::channel(-1);
         // This try! is a little redundant but make the
         // GameResult type conversion work right.
         channel.play(&self.chunk, 0)
-            .map_err(|e| GameError::from(e))
+            .map_err(GameError::from)
     }
 }
 
@@ -77,7 +75,7 @@ impl AudioOps for Channel {
     fn play_sound(&self, sound: &Sound) -> GameResult<Channel> {
         let channel = self;
         channel.play(&sound.chunk, 0)
-            .map_err(|e| GameError::from(e))
+            .map_err(GameError::from)
     }
 
     /// Pauses playback of the `Channel`
@@ -94,7 +92,7 @@ impl AudioOps for Channel {
     fn resume(&self) {
         Channel::resume(*self)
     }
-    
+
     /// Restarts playing a sound if this channel is currently
     /// playing it.
     fn rewind(&self) {
@@ -109,7 +107,7 @@ impl AudioOps for Channel {
 /// A source of music data.
 /// Music is played on a separate dedicated channel from sounds,
 /// and also has a separate corpus of decoders than sounds do;
-/// see the SDL_mixer documentation for details or use
+/// see the `SDL2_mixer` documentation for details or use
 /// `Context::print_sound_stats()` to print out which decoders
 /// are supported for your build.
 pub struct Music {
@@ -126,15 +124,14 @@ impl Music {
         // SDL2_image SNEAKILY adds this method to RWops.
         let music = try!(load_music(rwops));
 
-        Ok(Music {
-            music: music,
-        })
+        Ok(Music { music: music })
     }
 }
 
 pub fn play_music(music: &Music) -> GameResult<()> {
-    music.music.play(-1)
-        .map_err(|e| GameError::from(e))
+    music.music
+        .play(-1)
+        .map_err(GameError::from)
 }
 
 pub fn pause_music() {

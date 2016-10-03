@@ -27,11 +27,9 @@ use sdl2::keyboard::Keycode::*;
 /// which *should* by default exit the game if escape is pressed.
 /// (Once we work around some event bugs in rust-sdl2.)
 pub trait GameState {
-
     // Tricksy trait and lifetime magic!
     // Much thanks to aatch on #rust-beginners for helping make this work.
-    fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<Self>
-        where Self: Sized;
+    fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<Self> where Self: Sized;
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()>;
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
 
@@ -93,14 +91,12 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// (which will be used if there is no config file).
     /// It will initialize a hardware context and call the `load()` method of
     /// the given `GameState` type to create a new `GameState`.
-    pub fn new(default_config: conf::Conf) -> GameResult<Game<'a, S>>
-    {
+    pub fn new(default_config: conf::Conf) -> GameResult<Game<'a, S>> {
         let sdl_context = try!(sdl2::init());
         let mut fs = try!(fs::Filesystem::new());
 
         // TODO: Verify config version == this version
-        let config = get_default_config(&mut fs)
-            .unwrap_or(default_config);
+        let config = get_default_config(&mut fs).unwrap_or(default_config);
 
         let mut context = try!(Context::from_conf(&config, fs, sdl_context));
 
@@ -123,7 +119,8 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// Calls the given function to create a new gamestate, and replaces
     /// the current one with it.
     pub fn replace_state_with<F>(&mut self, f: &F) -> GameResult<()>
-        where F: Fn(&mut Context, &conf::Conf) -> GameResult<S> {
+        where F: Fn(&mut Context, &conf::Conf) -> GameResult<S>
+    {
         let newstate = try!(f(&mut self.context, &self.conf));
         self.state = newstate;
         Ok(())
@@ -138,7 +135,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// Runs the game's mainloop.
     pub fn run(&mut self) -> GameResult<()> {
         // TODO: Window icon
-        let ref mut ctx = self.context;
+        let ctx = &mut self.context;
         let mut event_pump = try!(ctx.sdl_context.event_pump());
 
         let mut done = false;
@@ -147,8 +144,8 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
 
             for event in event_pump.poll_iter() {
                 match event {
-                    Quit { timestamp: _ } => {
-                        //println!("Quit event: {:?}", t);
+                    Quit { .. } => {
+                        // println!("Quit event: {:?}", t);
                         done = true
                     }
                     // TODO: We need a good way to have
@@ -161,7 +158,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                         match keycode {
                             Some(Escape) => {
                                 try!(ctx.quit());
-                            },
+                            }
                             _ => self.state.key_down_event(event),
                         }
                     }
@@ -172,10 +169,10 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                     MouseWheel { .. } => self.state.mouse_wheel_event(event),
                     Window { win_event_id: WindowEventId::FocusGained, .. } => {
                         self.state.focus(true)
-                    },
+                    }
                     Window { win_event_id: WindowEventId::FocusLost, .. } => {
                         self.state.focus(false)
-                    },
+                    }
                     _ => {}
                 }
             }
@@ -183,9 +180,8 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
             try!(self.state.update(ctx, dt));
             try!(self.state.draw(ctx));
         }
-        
+
         self.state.quit();
         Ok(())
     }
 }
-

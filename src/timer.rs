@@ -30,7 +30,8 @@ struct LogBuffer<T> {
 }
 
 impl<T> LogBuffer<T>
-    where T: Clone + Copy {
+    where T: Clone + Copy
+{
     fn new(size: usize, init_val: T) -> LogBuffer<T> {
         let mut v = Vec::with_capacity(size);
         v.resize(size, init_val);
@@ -88,7 +89,7 @@ impl TimeContext {
         TimeContext {
             init_instant: time::Instant::now(),
             last_instant: time::Instant::now(),
-            frame_durations: LogBuffer::new(TIME_LOG_FRAMES as usize, time::Duration::new(0,0)),
+            frame_durations: LogBuffer::new(TIME_LOG_FRAMES as usize, time::Duration::new(0, 0)),
         }
     }
 
@@ -105,6 +106,13 @@ impl TimeContext {
     }
 }
 
+impl Default for TimeContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+
 /// Get the time between the start of the last frame and the current one;
 /// in other words, the length of the last frame.
 pub fn get_delta(ctx: &Context) -> time::Duration {
@@ -118,9 +126,8 @@ pub fn get_delta(ctx: &Context) -> time::Duration {
 pub fn get_average_delta(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     let init = time::Duration::new(0, 0);
-    let sum = tc.frame_durations.contents().iter().fold(init, |d1,d2| d1 + *d2);
-    let avg = sum / TIME_LOG_FRAMES;
-    avg
+    let sum = tc.frame_durations.contents().iter().fold(init, |d1, d2| d1 + *d2);
+    sum / TIME_LOG_FRAMES
 }
 
 /// Gets the FPS of the game, averaged over the last
@@ -130,7 +137,7 @@ pub fn get_fps(ctx: &Context) -> f64 {
     let seconds = seconds_per_frame.as_secs() as f64;
     let nanos = seconds_per_frame.subsec_nanos() as f64;
     let fractional_seconds_per_frame = seconds + (nanos * 1e-9);
-    1.0/fractional_seconds_per_frame
+    1.0 / fractional_seconds_per_frame
 }
 
 /// Returns the time since the game was initialized.
@@ -160,7 +167,7 @@ pub fn sleep_until_next_frame(ctx: &Context, desired_fps: u32) {
     let now = time::Instant::now();
     let time_spent_this_frame = now - tc.last_instant;
     let duration_to_sleep = duration_per_frame - time_spent_this_frame;
-    //println!("Sleeping for {:?}", duration_to_sleep);
+    // println!("Sleeping for {:?}", duration_to_sleep);
     thread::sleep(duration_to_sleep);
 }
 

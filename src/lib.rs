@@ -17,6 +17,7 @@ pub mod graphics;
 pub mod timer;
 mod util;
 
+use std::error::Error;
 pub use game::Game;
 pub use context::Context;
 
@@ -36,7 +37,7 @@ pub enum GameError {
     UnknownError(String),
 }
 
-/// A convenient result type consisting of a return type and a GameError
+/// A convenient result type consisting of a return type and a `GameError`
 pub type GameResult<T> = Result<T, GameError>;
 
 /// Emit a non-fatal warning message
@@ -75,10 +76,13 @@ impl From<sdl2::IntegerOrSdlError> for GameError {
 impl From<sdl2::filesystem::PrefPathError> for GameError {
     fn from(e: sdl2::filesystem::PrefPathError) -> GameError {
         let msg = match e {
-            sdl2::filesystem::PrefPathError::InvalidOrganizationName(e) => format!("Invalid organization name, {}", e),
-            sdl2::filesystem::PrefPathError::InvalidApplicationName(e) => format!("Invalid application name, {}", e),
-            sdl2::filesystem::PrefPathError::SdlError(e) =>
-            e
+            sdl2::filesystem::PrefPathError::InvalidOrganizationName(e) => {
+                format!("Invalid organization name, {}", e)
+            }
+            sdl2::filesystem::PrefPathError::InvalidApplicationName(e) => {
+                format!("Invalid application name, {}", e)
+            }
+            sdl2::filesystem::PrefPathError::SdlError(e) => e,
         };
         GameError::ConfigError(msg)
     }
@@ -86,17 +90,31 @@ impl From<sdl2::filesystem::PrefPathError> for GameError {
 
 impl From<sdl2::render::TextureValueError> for GameError {
     fn from(e: sdl2::render::TextureValueError) -> GameError {
-        let msg = format!("{}", e);
-        GameError::ResourceLoadError(msg)
+        let msg = e.description();
+        GameError::ResourceLoadError(msg.to_owned())
     }
 }
 
 impl From<sdl2_ttf::FontError> for GameError {
     fn from(e: sdl2_ttf::FontError) -> GameError {
-        let msg = format!("{}", e);
-        GameError::ResourceLoadError(msg)
+        let msg = e.description();
+        GameError::ResourceLoadError(msg.to_owned())
     }
 }
+
+
+// SDL_ttf bug: SDL_ttf doesn't export the InitError type,
+// so there's no way you can specify this function.
+//
+// use sdl2_ttf::context::InitError;
+// impl From<sdl2_ttf::context::InitError> for GameError {
+// fn from(e: sdl2_ttf::context::InitError) -> GameError {
+// let msg = e.description();
+// GameError::ResourceLoadError(msg)
+// }
+// }
+//
+
 
 
 impl From<std::io::Error> for GameError {
@@ -107,8 +125,7 @@ impl From<std::io::Error> for GameError {
 
 impl From<toml::DecodeError> for GameError {
     fn from(e: toml::DecodeError) -> GameError {
-        let errstr = format!("{}", e);
-        GameError::ConfigError(errstr)
+        let errstr = e.description();
+        GameError::ConfigError(errstr.to_owned())
     }
 }
-
