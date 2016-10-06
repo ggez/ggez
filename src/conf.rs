@@ -64,14 +64,18 @@ impl Conf {
 
     /// Load a TOML file from the given `Read` and attempts to parse
     /// a `Conf` from it.
+    ///
+    /// It only looks for things under the `[ggez]` section heading,
+    /// so you can put your own sections in the file and use them for
+    /// your own purposes and they will get ignored here.
     pub fn from_toml_file<R: io::Read>(file: &mut R) -> GameResult<Conf> {
         let mut s = String::new();
         try!(file.read_to_string(&mut s));
         let mut parser = toml::Parser::new(&s);
         let toml = try!(parser.parse()
             .ok_or(String::from("Could not parse config file?")));
-        let config = try!(toml.get("conf")
-            .ok_or(String::from("Section [conf] not in config file")));
+        let config = try!(toml.get("ggez")
+            .ok_or(String::from("Section [ggez] not in config file")));
         let mut decoder = toml::Decoder::new(config.clone());
         Conf::decode(&mut decoder).map_err(|e| GameError::from(e))
     }
