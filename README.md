@@ -1,4 +1,5 @@
 # ggez
+[![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez) [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez) [![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/svenstaro/ggez/blob/master/LICENSE) [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez) [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
 
 A Rust library to create a Good Game Easily.
 
@@ -11,7 +12,7 @@ basic GUI/debugger, scene manager, and more sophisticated drawing tools such as 
 etc.
 
 
-# Features
+## Features
 
 * Filesystem abstraction that lets you load resources from folders or zip files
 * Hardware-accelerated rendering of bitmaps
@@ -21,7 +22,7 @@ etc.
 * Config file for defining engine and game settings
 * Easy timing and time-tracking functions.
 
-# Examples
+## Examples
 
 See `example/imageview.rs`
 
@@ -41,24 +42,35 @@ found!  Should be in "/home/foo/src/ggez/target/debug/resources")`.
 Just copy the `resources` directory to where the error says it's
 looking.
 
-# Status
+## Status
 
 * Need to add more tests, somehow
 * Need to figure out exiting cleanly.  THIS IS SOLVED, but blocked by a bug in rust-sdl!  Issue #530.
+* Do we want to include Love2D's graphics transform functions?  ...probably not, honestly.
 
-# Future work
+## Things to add atop it
+
+* Resource loader/cache
+* Scene stack
+* GUI
+* particle system (or put that in with it like LOVE?)  (No, in LOVE it's part of the main engine 'cause you
+can't efficiently implement it as a module)
+* Input indirection layer and input state tracking
+* Sprites with ordering, animation, atlasing, tile mapping, etc.
+
+## Future work
 
 It *would* be nice to have a full OpenGL-y backend like Love2D does, with things like shaders, render targets,
 etc.  `gfx` might be the best option there, maaaaaaybe.  Right now the API is mostly limited to Love2D 0.7 or so.  Using OpenAL (through the `ears` crate perhaps?)
 for sound would get us positional audio too.  
 
-# Useful goodies
+## Useful goodies
 
 * specs for entity-component system (alternatives: ecs or recs crates)
 * cgmath or vecmath for math operations?
 * physics/collision???
 
-# Credits
+## Credits
 
 * http://opengameart.org/content/flappy-dragon-sprite-sheets
 * http://opengameart.org/content/cozy-endless-game-background

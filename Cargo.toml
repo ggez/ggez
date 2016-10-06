@@ -6,9 +6,9 @@ repository = "https://github.com/ggez/ggez"
 documentation = "https://docs.rs/ggez"
 keywords = ["ggez", "graphics", "2D", "game", "engine"]
 authors = [
-   "Rafael Epplee <raffomania@gmail.com>", 
+   "Rafael Epplee <raffomania@gmail.com>",
    "Sven-Hendrik Haase <svenstaro@gmail.com>",
-   "Simon Heath <icefoxen@gmail.com"
+   "Simon Heath <icefoxen@gmail.com>",
 ]
 license = "MIT"
 readme = "README.md"
@@ -24,9 +24,7 @@ sdl2_image = "0.23"
 sdl2_mixer = "0.23"
 sdl2_ttf = "0.23"
 rand = "0.3"
-lazy_static = "0.2"
 zip = "0.1"
 
 rustc-serialize = "0.3"
 toml = "0.2"
-

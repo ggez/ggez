@@ -1,10 +1,11 @@
 //! Provides an interface to the user's filesystem.
 //!
 //! This module provides access to files in specific places:
-//! 
+//!
 //! * The `resources/` subdirectory in the same directory as the program executable,
 //! * The `resources.zip` file in the same directory as the program executable,
-//! * The root folder of the game's `save` directory (eventually) which is in a platform-dependent location
+//! * The root folder of the game's `save` directory (eventually) which is in a
+//! platform-dependent location
 //!
 //! Files will be looked for in these places that order.
 //!
@@ -30,7 +31,7 @@ pub struct Filesystem {
     base_path: path::PathBuf,
     user_path: path::PathBuf,
     resource_path: path::PathBuf,
-    resource_zip: Option<zip::ZipArchive<fs::File>>
+    resource_zip: Option<zip::ZipArchive<fs::File>>,
 }
 
 
@@ -61,7 +62,7 @@ impl<'a> io::Read for File<'a> {
     }
 }
 
-fn convenient_path_to_str<'a>(path: &'a path::Path) -> GameResult<&'a str> {
+fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     let errmessage = String::from("Invalid path format");
     let error = GameError::FilesystemError(errmessage);
     path.to_str()
@@ -88,7 +89,8 @@ impl Filesystem {
         let mut resource_path = root_path.clone();
         resource_path.push("resources");
         if !resource_path.exists() || !resource_path.is_dir() {
-            let msg_str = format!("'resources' directory not found!  Should be in {:?}", resource_path);
+            let msg_str = format!("'resources' directory not found!  Should be in {:?}",
+                                  resource_path);
             let message = String::from(msg_str);
             let _ = warn(GameError::ResourceNotFound(message));
         }
@@ -98,7 +100,8 @@ impl Filesystem {
         let mut resource_zip_path = root_path.clone();
         resource_zip_path.push("resources.zip");
         if !resource_zip_path.exists() || !resource_zip_path.is_file() {
-            let msg_str = format!("'resources.zip' file not found!  Should be in {:?}", resource_zip_path);
+            let msg_str = format!("'resources.zip' file not found!  Should be in {:?}",
+                                  resource_zip_path);
             let message = String::from(msg_str);
             let _ = warn(GameError::ResourceNotFound(message));
         } else {
@@ -142,8 +145,7 @@ impl Filesystem {
         // TODO: Look in save directory
 
         // Welp, can't find it.
-        let errmessage = try!(
-            convenient_path_to_str(path));
+        let errmessage = try!(convenient_path_to_str(path));
         Err(GameError::ResourceNotFound(String::from(errmessage)))
     }
 
@@ -256,22 +258,22 @@ impl Filesystem {
             }
         }
     }
- }
+}
 
 mod tests {
     use filesystem::*;
     use std::path;
 
+    #[allow(dead_code)]
     fn get_dummy_fs_for_tests() -> Filesystem {
         let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources");
-        let f = Filesystem {
+        Filesystem {
             resource_path: path.clone(),
             user_path: path.clone(),
             base_path: path.clone(),
             resource_zip: None,
-        };
-        f
+        }
 
     }
 
@@ -293,4 +295,3 @@ mod tests {
 
     }
 }
-

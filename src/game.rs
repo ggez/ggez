@@ -8,11 +8,8 @@ use conf;
 use filesystem as fs;
 use timer;
 
-use std::cmp;
-use std::sync::atomic;
 use std::path::Path;
 use std::time::Duration;
-use std::thread::sleep;
 
 use sdl2;
 use sdl2::event::Event::*;
@@ -30,12 +27,10 @@ use sdl2::keyboard::Keycode::*;
 /// which *should* by default exit the game if escape is pressed.
 /// (Once we work around some event bugs in rust-sdl2.)
 pub trait GameState {
-
     // Tricksy trait and lifetime magic!
     // Much thanks to aatch on #rust-beginners for helping make this work.
     // TODO: Document these functions!
-    fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<Self>
-        where Self: Sized;
+    fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<Self> where Self: Sized;
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()>;
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
 
@@ -69,7 +64,7 @@ pub trait GameState {
 
 
 /// The `Game` struct takes an object you define that
-/// implements the `GameState` trait 
+/// implements the `GameState` trait
 /// and does the actual work of running a gameloop,
 /// passing events to your handlers, and all that stuff.
 #[derive(Debug)]
@@ -99,15 +94,12 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// (which will be used if there is no config file).
     /// It will initialize a hardware context and call the `load()` method of
     /// the given `GameState` type to create a new `GameState`.
-    pub fn new(default_config: conf::Conf) -> GameResult<Game<'a, S>>
-        //where T: Fn(&Context, &conf::Conf) -> S
-    {
+    pub fn new(default_config: conf::Conf) -> GameResult<Game<'a, S>> {
         let sdl_context = try!(sdl2::init());
         let mut fs = try!(fs::Filesystem::new());
 
         // TODO: Verify config version == this version
-        let config = get_default_config(&mut fs)
-            .unwrap_or(default_config);
+        let config = get_default_config(&mut fs).unwrap_or(default_config);
 
         let mut context = try!(Context::from_conf(&config, fs, sdl_context));
 
@@ -136,7 +128,8 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// Calls the given function to create a new gamestate, and replaces
     /// the current one with it.
     pub fn replace_state_with<F>(&mut self, f: &F) -> GameResult<()>
-        where F: Fn(&mut Context, &conf::Conf) -> GameResult<S> {
+        where F: Fn(&mut Context, &conf::Conf) -> GameResult<S>
+    {
         let newstate = try!(f(&mut self.context, &self.conf));
         self.state = newstate;
         Ok(())
@@ -147,7 +140,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// via `Context::quit()`
     pub fn run(&mut self) -> GameResult<()> {
         // TODO: Window icon
-        let ref mut ctx = self.context;
+        let ctx = &mut self.context;
         let mut event_pump = try!(ctx.sdl_context.event_pump());
 
         let mut done = false;
@@ -155,12 +148,12 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
             ctx.timer_context.tick();
 
             for event in event_pump.poll_iter() {
-                //println!("Got event {:?}", event);
                 match event {
-                    Quit { timestamp: t } => {
-		    	self.state.quit_event();
-                        //println!("Quit event: {:?}", t);
+                    Quit { timestamp: _ } => {
+                        self.state.quit_event();
+                        // println!("Quit event: {:?}", t);
                         done = true
+
                     }
                     // TODO: We need a good way to have
                     // a default like this, while still allowing
@@ -172,7 +165,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                         match keycode {
                             Some(Escape) => {
                                 try!(ctx.quit());
-                        },
+                            }
                             _ => self.state.key_down_event(event),
                         }
                     }
@@ -198,4 +191,3 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
         Ok(())
     }
 }
-

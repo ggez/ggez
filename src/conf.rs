@@ -25,27 +25,26 @@ pub struct Conf {
     /// The window's default height
     pub window_height: u32,
     /// The window's default width
-    pub window_width: u32,
-    /* To implement still.
-     * window_borderless: bool,
-     * window_resizable: bool,
-     * window_fullscreen: bool,
-     * window_vsync: bool,
-     *
-     * Modules to enable
-     * modules_audio: bool,
-     * modules_event: bool,
-     * modules_graphics: bool,
-     * modules_image: bool,
-     * modules_joystic: bool,
-     * modules_keyboard: bool,
-     * modules_mouse: bool,
-     * modules_sound: bool,
-     * modules_system: bool,
-     * modules_timer: bool,
-     * modules_video: bool,
-     * modules_window: bool,
-     * modules_thread: bool, */
+    pub window_width: u32, /* To implement still.
+                            * window_borderless: bool,
+                            * window_resizable: bool,
+                            * window_fullscreen: bool,
+                            * window_vsync: bool,
+                            *
+                            * Modules to enable
+                            * modules_audio: bool,
+                            * modules_event: bool,
+                            * modules_graphics: bool,
+                            * modules_image: bool,
+                            * modules_joystic: bool,
+                            * modules_keyboard: bool,
+                            * modules_mouse: bool,
+                            * modules_sound: bool,
+                            * modules_system: bool,
+                            * modules_timer: bool,
+                            * modules_video: bool,
+                            * modules_window: bool,
+                            * modules_thread: bool, */
 }
 
 impl Conf {
@@ -77,6 +76,6 @@ impl Conf {
         let config = try!(toml.get("ggez")
             .ok_or(String::from("Section [ggez] not in config file")));
         let mut decoder = toml::Decoder::new(config.clone());
-        Conf::decode(&mut decoder).map_err(|e| GameError::from(e))
+        Conf::decode(&mut decoder).map_err(GameError::from)
     }
 }

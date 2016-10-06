@@ -9,6 +9,7 @@ use sdl2_mixer;
 use sdl2_ttf::Sdl2TtfContext;
 use sdl2_mixer::Sdl2MixerContext;
 
+use std::error::Error;
 use std::fmt;
 
 use conf;
@@ -51,14 +52,13 @@ impl<'a> fmt::Debug for Context<'a> {
 }
 
 fn init_ttf() -> GameResult<Sdl2TtfContext> {
-    sdl2_ttf::init()
-        .map_err(|e| GameError::FontError(format!("{}", e)))
+    sdl2_ttf::init().map_err(|e| GameError::FontError(e.description().to_owned()))
 }
 
 
 fn init_audio(sdl_context: &Sdl) -> GameResult<sdl2::AudioSubsystem> {
     sdl_context.audio()
-        .map_err(|e| GameError::AudioError(format!("{}", e)))
+        .map_err(GameError::AudioError)
 }
 
 fn init_mixer() -> GameResult<Sdl2MixerContext> {
@@ -69,23 +69,28 @@ fn init_mixer() -> GameResult<Sdl2MixerContext> {
     try!(sdl2_mixer::open_audio(frequency, format, channels, chunk_size));
 
     let flags = sdl2_mixer::InitFlag::all();
-    sdl2_mixer::init(flags)
-        .map_err(|e| GameError::AudioError(format!("{}", e)))
+    sdl2_mixer::init(flags).map_err(GameError::AudioError)
 }
 
-fn init_window(video: sdl2::VideoSubsystem, window_title: &str, screen_width: u32, screen_height: u32) -> GameResult<Window> {
+fn init_window(video: sdl2::VideoSubsystem,
+               window_title: &str,
+               screen_width: u32,
+               screen_height: u32)
+               -> GameResult<Window> {
     video.window(window_title, screen_width, screen_height)
-       .position_centered()
-       .opengl()
-       .build()
-       .map_err(|e| GameError::VideoError(format!("{}", e)))
+        .position_centered()
+        .opengl()
+        .build()
+        .map_err(|e| GameError::VideoError(format!("{}", e)))
 }
 
 impl<'a> Context<'a> {
-
     /// Tries to create a new Context using settings from the given config file.
-    pub fn from_conf(conf: &conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context<'a>> {
-        let window_title =  &conf.window_title;
+    pub fn from_conf(conf: &conf::Conf,
+                     fs: Filesystem,
+                     sdl_context: Sdl)
+                     -> GameResult<Context<'a>> {
+        let window_title = &conf.window_title;
         let screen_width = conf.window_width;
         let screen_height = conf.window_height;
 
@@ -93,8 +98,8 @@ impl<'a> Context<'a> {
         let window = try!(init_window(video, &window_title, screen_width, screen_height));
 
         let renderer = try!(window.renderer()
-                                      .accelerated()
-                                      .build());
+            .accelerated()
+            .build());
 
         let ttf_context = try!(init_ttf());
         let audio_context = try!(init_audio(&sdl_context));
@@ -121,8 +126,8 @@ impl<'a> Context<'a> {
 
     /// Prints out information on the sound subsystem.
     pub fn print_sound_stats(&self) {
-        println!("Allocated {} sound channels", 
-            sdl2_mixer::allocate_channels(-1));
+        println!("Allocated {} sound channels",
+                 sdl2_mixer::allocate_channels(-1));
         let n = sdl2_mixer::get_chunk_decoders_number();
         println!("available chunk(sample) decoders: {}", n);
 
@@ -151,11 +156,10 @@ impl<'a> Context<'a> {
     // TODO: Either fix this bug in sdl2 or work around it with
     // a bool in the Context.
     pub fn quit(&mut self) -> GameResult<()> {
-        let e = sdl2::event::Event::Quit{timestamp: 10000};
+        let e = sdl2::event::Event::Quit { timestamp: 10000 };
         println!("Pushing event {:?}", e);
-        self.event_context.push_event(e)
-            .map_err(|err| GameError::from(err))
+        self.event_context
+            .push_event(e)
+            .map_err(GameError::from)
     }
 }
-
-

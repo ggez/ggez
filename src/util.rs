@@ -17,17 +17,23 @@ use GameResult;
 // can be created from bytes, or from a file path, but not
 // from a std::io::Read
 // Which is what we need to read from streams.
-pub fn rwops_from_read<'a, T>(r: &mut T, buffer: &'a mut Vec<u8>) -> Result<rwops::RWops<'a>, String>
-    where T: io::Read + Sized {
+pub fn rwops_from_read<'a, T>(r: &mut T,
+                              buffer: &'a mut Vec<u8>)
+                              -> Result<rwops::RWops<'a>, String>
+    where T: io::Read + Sized
+{
     // For now, we just rather messily slurp the whole thing into memory,
     // then hand that to from_bytes.
     match r.read_to_end(buffer) {
         Ok(_) => rwops::RWops::from_bytes(buffer),
-        Err(ioerror) => Err(format!("{}", ioerror))
+        Err(ioerror) => Err(format!("{}", ioerror)),
     }
 }
 
-pub fn rwops_from_path<'a>(context: &mut Context, path: &path::Path, buffer: &'a mut Vec<u8>) -> GameResult<rwops::RWops<'a>> {
+pub fn rwops_from_path<'a>(context: &mut Context,
+                           path: &path::Path,
+                           buffer: &'a mut Vec<u8>)
+                           -> GameResult<rwops::RWops<'a>> {
     let mut stream = try!(context.filesystem.open(path));
     let rw = try!(rwops_from_read(&mut stream, buffer));
     Ok(rw)

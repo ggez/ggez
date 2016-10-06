@@ -17,9 +17,10 @@ struct MainState {
     a: i32,
     direction: i32,
     image: graphics::Image,
-    //font: graphics::Font,
     text: graphics::Text,
     bmptext: graphics::Text,
+    // Not actually dead, see BUGGO below
+    #[allow(dead_code)]
     sound: audio::Sound,
 }
 
@@ -88,9 +89,7 @@ impl GameState for MainState {
     }
 
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        // println!("update");
-
-        self.a = self.a + self.direction;
+        self.a += self.direction;
         if self.a > 250 || self.a <= 0 {
             self.direction *= -1;
 
