@@ -72,7 +72,6 @@ impl GameState for MainState {
             a: 0,
             direction: 1,
             image: image,
-            //font: font,
             text: text,
             bmptext: bmptext,
             // BUGGO: We never use sound again,
@@ -124,7 +123,6 @@ impl GameState for MainState {
 // Loading a config file depends on having FS (or we can just fake our way around it
 // by creating an FS and then throwing it away; the costs are not huge.)
 pub fn main() {
-    //let g = MainState::new();
     let c = conf::Conf::new("imageview");
     println!("Starting with default config: {:#?}", c);
     let mut e: Game<MainState> = Game::new(c).unwrap();
