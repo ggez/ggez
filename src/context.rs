@@ -1,13 +1,4 @@
-//! A `Context` is an object that holds on to global resources.
-//! It basically tracks hardware state such as the screen, audio
-//! system, timers, and so on.  Generally this type is **not** thread-
-//! safe and only one `Context` can exist at a time.  Trying to create
-//! another one will fail.
-//!
-//! Most functions that interact with the hardware, for instance
-//! drawing things, playing sounds, or loading resources (which then
-//! need to be transformed into a format the hardware likes) will need
-//! to access the `Context`.
+
 
 use sdl2::{self, Sdl};
 use sdl2::render::Renderer;
@@ -29,9 +20,18 @@ use GameError;
 use GameResult;
 
 
-/// A `Context` holds all the state needed to interface
-/// with the hardware.  Only one `Context` can exist at a
-/// time.
+/// A `Context` is an object that holds on to global resources.
+/// It basically tracks hardware state such as the screen, audio
+/// system, timers, and so on.  Generally this type is **not** thread-
+/// safe and only one `Context` can exist at a time.  Trying to create
+/// another one will fail.  In normal usage you don't have to worry
+/// about this because it gets created and managed by the `Game` object,
+/// and is handed to your `GameState` for use in drawing and such.
+///
+/// Most functions that interact with the hardware, for instance
+/// drawing things, playing sounds, or loading resources (which then
+/// need to be transformed into a format the hardware likes) will need
+/// to access the `Context`.
 pub struct Context<'a> {
     pub sdl_context: Sdl,
     pub ttf_context: Sdl2TtfContext,
@@ -153,6 +153,8 @@ impl<'a> Context<'a> {
     /// we can't push non-user event types for some reason!
     /// See https://github.com/AngryLawyer/rust-sdl2/issues/530
     /// :-(
+    // TODO: Either fix this bug in sdl2 or work around it with
+    // a bool in the Context.
     pub fn quit(&mut self) -> GameResult<()> {
         let e = sdl2::event::Event::Quit { timestamp: 10000 };
         println!("Pushing event {:?}", e);

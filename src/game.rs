@@ -19,7 +19,7 @@ use sdl2::keyboard::Keycode::*;
 
 /// A trait for defining a game state.
 /// Implement `load()`, `update()` and `draw()` callbacks on this trait
-/// and hand it to a `Game` object to be run.
+/// and create a `Game` object using your gamestate type.
 /// You may also implement the `*_event` callbacks if you wish to handle
 /// those events.
 ///
@@ -29,6 +29,7 @@ use sdl2::keyboard::Keycode::*;
 pub trait GameState {
     // Tricksy trait and lifetime magic!
     // Much thanks to aatch on #rust-beginners for helping make this work.
+    // TODO: Document these functions!
     fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<Self> where Self: Sized;
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()>;
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
@@ -53,15 +54,17 @@ pub trait GameState {
 
     fn key_up_event(&mut self, _evt: Event) {}
 
-    fn focus(&mut self, _gained: bool) {}
+    fn focus_event(&mut self, _gained: bool) {}
 
-    fn quit(&mut self) {
+    // TODO: This should return bool whether or not to actually quit
+    fn quit_event(&mut self) {
         println!("Quitting game");
     }
 }
 
 
-/// The `Game` struct takes a `GameState` you define
+/// The `Game` struct takes an object you define that
+/// implements the `GameState` trait
 /// and does the actual work of running a gameloop,
 /// passing events to your handlers, and all that stuff.
 #[derive(Debug)]
@@ -109,7 +112,13 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
         })
     }
 
-    /// Re-creates a fresh `GameState` using the type's `::load()` method.
+    /// Replaces the gamestate with the given one without
+    /// having to re-initialize the hardware context.
+    pub fn replace_state(&mut self, state: S) {
+        self.state = state;
+    }
+
+    /// Re-creates a fresh `GameState` using the existing one's `::load()` method.
     pub fn reload_state(&mut self) -> GameResult<()> {
         let newstate = try!(S::load(&mut self.context, &self.conf));
         self.state = newstate;
@@ -126,13 +135,9 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
         Ok(())
     }
 
-    /// Replaces the gamestate with the given one without
-    /// having to re-initialize the hardware context.
-    pub fn replace_state(&mut self, state: S) {
-        self.state = state;
-    }
-
     /// Runs the game's mainloop.
+    /// Continues until a `Quit` event is created, for instance
+    /// via `Context::quit()`
     pub fn run(&mut self) -> GameResult<()> {
         // TODO: Window icon
         let ctx = &mut self.context;
@@ -144,9 +149,11 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
 
             for event in event_pump.poll_iter() {
                 match event {
-                    Quit { .. } => {
+                    Quit { timestamp: _ } => {
+                        self.state.quit_event();
                         // println!("Quit event: {:?}", t);
                         done = true
+
                     }
                     // TODO: We need a good way to have
                     // a default like this, while still allowing
@@ -168,10 +175,10 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                     MouseMotion { .. } => self.state.mouse_motion_event(event),
                     MouseWheel { .. } => self.state.mouse_wheel_event(event),
                     Window { win_event_id: WindowEventId::FocusGained, .. } => {
-                        self.state.focus(true)
+                        self.state.focus_event(true)
                     }
                     Window { win_event_id: WindowEventId::FocusLost, .. } => {
-                        self.state.focus(false)
+                        self.state.focus_event(false)
                     }
                     _ => {}
                 }
@@ -181,7 +188,6 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
             try!(self.state.draw(ctx));
         }
 
-        self.state.quit();
         Ok(())
     }
 }

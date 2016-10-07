@@ -2,7 +2,7 @@
 //!
 //! ggez does not try to do any framerate limitation by default.
 //! If you want to run at anything other than full-bore max speed all the time,
-//! you should use one of `sleep()` or `sleep_until_next_frame()` functions in
+//! you should use either the `sleep()` or `sleep_until_next_frame()` function in
 //! this module at the end of your `GameState.draw()` callback.
 //!
 //! `sleep()` with a duration of 0 will just yield to the OS so it has a chance
@@ -67,11 +67,11 @@ impl<T> LogBuffer<T>
     }
 }
 
-/// A structure that contains our time-tracking state
-/// independent of SDL.
-/// According to the rust-sdl2 maintainers,
-/// SDL's time functions are of dubious thread-safety,
-/// while Rust's are pretty solid.
+/// A structure that contains our time-tracking state.
+// This is independent of SDL.
+// According to the rust-sdl2 maintainers,
+// SDL's time functions are of dubious thread-safety,
+// while Rust's are pretty solid.
 pub struct TimeContext {
     init_instant: time::Instant,
     last_instant: time::Instant,
@@ -97,7 +97,7 @@ impl TimeContext {
     /// another frame has taken place.
     ///
     /// It's usually not necessary to call this function yourself,
-    /// the `Game` runner will do it for you.
+    /// the `Game` will do it for you.
     pub fn tick(&mut self) {
         let now = time::Instant::now();
         let time_since_last = now - self.last_instant;
@@ -123,6 +123,8 @@ pub fn get_delta(ctx: &Context) -> time::Duration {
 
 /// Gets the average time of a frame, averaged
 /// over the last 60 frames.
+// TODO: We COULD make it so that a TimeContext has a set_average_window
+// function.  Do we care?
 pub fn get_average_delta(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     let init = time::Duration::new(0, 0);

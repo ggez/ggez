@@ -1,11 +1,13 @@
 //! Provides an interface to the user's filesystem.
 //!
 //! This module provides access to files in specific places:
+//!
 //! * The `resources/` subdirectory in the same directory as the program executable,
 //! * The `resources.zip` file in the same directory as the program executable,
-//! * The root folder of the game's `save` directory (eventually)
+//! * The root folder of the game's `save` directory (eventually) which is in a
+//! platform-dependent location
 //!
-//! Files will be looked for in these places in order.
+//! Files will be looked for in these places that order.
 //!
 //! Right now files are read-only.  When we can write files, they will be written
 //! to the game's save directory.
@@ -213,7 +215,7 @@ impl Filesystem {
     }
 
     /// Return the full path to the directory containing the exe
-    pub fn get_source_dir(&self) -> &path::Path {
+    pub fn get_root_dir(&self) -> &path::Path {
         &self.base_path
     }
 
@@ -228,14 +230,18 @@ impl Filesystem {
         &self.resource_path
     }
 
-    /// Returns an iterator over all files and directories in the directory.
+    /// Returns an iterator over all files and directories in the resource directory,
+    /// in no particular order.
+    ///
     /// Lists the base directory if an empty path is given.
+    ///
+    /// TODO: Make it iterate over the zip file as well!
     pub fn read_dir(&self, path: &path::Path) -> io::Result<fs::ReadDir> {
         let dest = self.resource_path.join(path);
         dest.read_dir()
     }
 
-    // TODO: This should return an iterator, and be called iter()
+    /// TODO: This should return an iterator, and be called iter()
     pub fn print_all(&mut self) {
         let p = self.resource_path.clone();
         if p.is_dir() {

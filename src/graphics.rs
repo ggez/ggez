@@ -21,10 +21,15 @@ use GameError;
 use GameResult;
 use util::rwops_from_path;
 
+/// The same as an `sdl2::rect::Rect`
 pub type Rect = rect::Rect;
+/// The same as an `sdl2::rect::Point`
 pub type Point = rect::Point;
+/// The same as an `sdl2::pixels::Color`
 pub type Color = pixels::Color;
 
+/// Specifies whether a shape should be drawn
+/// filled or as an outline.
 #[derive(Debug)]
 pub enum DrawMode {
     Line,
@@ -61,16 +66,20 @@ impl Default for GraphicsContext {
 }
 
 
+/// Sets the background color.  Default: blue.
 pub fn set_background_color(ctx: &mut Context, color: Color) {
     ctx.gfx_context.background = color;
 }
 
+/// Sets the foreground color, which will be used for drawing
+/// rectangles, lines, etc.  Default: white.
 pub fn set_color(ctx: &mut Context, color: Color) {
     let r = &mut ctx.renderer;
     ctx.gfx_context.foreground = color;
     r.set_draw_color(ctx.gfx_context.foreground);
 }
 
+/// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
     let r = &mut ctx.renderer;
     r.set_draw_color(ctx.gfx_context.background);
@@ -103,6 +112,8 @@ pub fn draw_ex(ctx: &mut Context,
     drawable.draw_ex(ctx, src, dst, angle, center, flip_horizontal, flip_vertical)
 }
 
+/// Tells the graphics system to actually put everything on the screen.
+/// Call this at the end of your `GameState`'s `draw()` method.
 pub fn present(ctx: &mut Context) {
     let r = &mut ctx.renderer;
     r.present()
@@ -120,6 +131,7 @@ pub fn printf(_ctx: &mut Context) {
     unimplemented!();
 }
 
+/// Draws a rectangle.
 pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
     let r = &mut ctx.renderer;
     match mode {
@@ -135,7 +147,8 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     }
 }
 
-/// Not part of the LÖVE API but no reason not to include it.
+/// Draws many rectangles.
+/// Not part of the Love2D API but no reason not to include it.
 pub fn rectangles(ctx: &mut Context, mode: DrawMode, rect: &[Rect]) -> GameResult<()> {
     let r = &mut ctx.renderer;
     match mode {
@@ -152,24 +165,29 @@ pub fn rectangles(ctx: &mut Context, mode: DrawMode, rect: &[Rect]) -> GameResul
 }
 
 
+/// Draws a line.
+/// Currently lines are 1 pixel wide and generally ugly.
 pub fn line(ctx: &mut Context, start: Point, end: Point) -> GameResult<()> {
     let r = &mut ctx.renderer;
     let res = r.draw_line(start, end);
     res.map_err(GameError::from)
 }
 
+/// Draws a series of connected lines.
 pub fn lines(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
     let r = &mut ctx.renderer;
     let res = r.draw_lines(points);
     res.map_err(GameError::from)
 }
 
+/// Draws a 1-pixel point.
 pub fn point(ctx: &mut Context, point: Point) -> GameResult<()> {
     let r = &mut ctx.renderer;
     let res = r.draw_point(point);
     res.map_err(GameError::from)
 }
 
+/// Draws a set of points.
 pub fn points(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
     let r = &mut ctx.renderer;
     let res = r.draw_points(points);
@@ -201,6 +219,7 @@ pub trait Drawable {
 }
 
 /// In-memory image data available to be drawn on the screen.
+/// TODO: Implement width, height, etc!
 pub struct Image {
     // Keeping a hold of both a surface and texture is a pain in the butt
     // but I can't see of a good way to manage both if we ever want to generate
@@ -293,11 +312,10 @@ impl Font {
         Ok(Font::TTFFont { font: ttf_font })
     }
 
-    /// Create a new bitmap font from a loaded `Image`
+    /// Loads an `Image` and uses it to create a new bitmap font
     /// The `Image` is a 1D list of glyphs, which maybe isn't
     /// super ideal but should be fine.
     /// The `glyphs` string is the characters in the image from left to right.
-    /// Takes ownership of the `Image` in question.
     pub fn new_bitmap(context: &mut Context, path: &path::Path, glyphs: &str) -> GameResult<Font> {
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = try!(rwops_from_path(context, path, &mut buffer));
@@ -362,6 +380,7 @@ pub struct Text {
 }
 
 impl Text {
+    /// Renders a new `Text` from the given `Font`
     pub fn new(context: &Context, text: &str, font: &Font) -> GameResult<Text> {
         let renderer = &context.renderer;
         match *font {
