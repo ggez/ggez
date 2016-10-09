@@ -132,14 +132,20 @@ pub fn get_average_delta(ctx: &Context) -> time::Duration {
     sum / TIME_LOG_FRAMES
 }
 
+/// A convenience function to convert a Rust `Duration` type
+/// to a (less precise but more useful) f64.
+pub fn duration_to_f64(d: time::Duration) -> f64 {
+    let seconds = d.as_secs() as f64;
+    let nanos = d.subsec_nanos() as f64;
+    seconds + (nanos * 1e-9)
+}
+
 /// Gets the FPS of the game, averaged over the last
 /// 60 frames.
 pub fn get_fps(ctx: &Context) -> f64 {
-    let seconds_per_frame = get_average_delta(ctx);
-    let seconds = seconds_per_frame.as_secs() as f64;
-    let nanos = seconds_per_frame.subsec_nanos() as f64;
-    let fractional_seconds_per_frame = seconds + (nanos * 1e-9);
-    1.0 / fractional_seconds_per_frame
+    let duration_per_frame = get_average_delta(ctx);
+    let seconds_per_frame = duration_to_f64(duration_per_frame);
+    1.0 / seconds_per_frame
 }
 
 /// Returns the time since the game was initialized.
