@@ -64,6 +64,7 @@ struct Actor {
     pos: Vec2,
     facing: f64,
     velocity: Vec2,
+    rvel: f64,
 }
 
 struct Assets {
@@ -80,6 +81,7 @@ fn create_player() -> Actor {
         pos: Vec2::default(),
         facing: 0.,
         velocity: Vec2::default(),
+        rvel: 0.,
     }
 }
 
@@ -89,6 +91,7 @@ fn create_rock() -> Actor {
         pos: Vec2::default(),
         facing: 0.,
         velocity: Vec2::default(),
+        rvel: 0.,
     }
 }
 
@@ -98,18 +101,12 @@ fn create_shot() -> Actor {
         pos: Vec2::default(),
         facing: 0.,
         velocity: Vec2::default(),
+        rvel: SHOT_RVEL,
     }
 }
 
-fn update_position(actor: &mut Actor, dt: f64) {
-    let dx = dt * actor.velocity.x;
-    let dy = dt * actor.velocity.y;
-    actor.pos.x += dx;
-    actor.pos.y += dy;
-}
-
-
 const SHOT_SPEED: f64 = 200.0;
+const SHOT_RVEL: f64 = 5.0;
 
 
 // Acceleration in pixels per second, more or less. 
@@ -136,6 +133,31 @@ fn player_thrust(actor: &mut Actor, dt: f64) {
     actor.velocity.y += dt * vy;
 }
 
+
+fn update_actor(actor: &mut Actor, dt: f64) {
+    let dx = dt * actor.velocity.x;
+    let dy = dt * actor.velocity.y;
+    actor.pos.x += dx;
+    actor.pos.y += dy;
+    actor.facing += actor.rvel;
+}
+
+fn wrap_actor_position(actor: &mut Actor, sx: f64, sy: f64) {
+
+    // Wrap screen
+    let screen_x_bounds = sx / 2.0;
+    let screen_y_bounds = sy / 2.0;
+    if actor.pos.x > screen_x_bounds {
+        actor.pos.x -= sx;
+    } else if actor.pos.x < -screen_x_bounds {
+        actor.pos.x += sx;
+    };
+    if actor.pos.y > screen_y_bounds {
+        actor.pos.y -= sy;
+    } else if actor.pos.y < -screen_y_bounds {
+        actor.pos.y += sy;
+    }
+}
 
 
 // Translates the world coordinate system, which
@@ -271,11 +293,19 @@ impl<'a> GameState for MainState {
         self.player_shot_timeout -= seconds;
         if self.input.fire && self.player_shot_timeout < 0.0 {
             self.fire_player_shot();
-            println!("Bang!");
         }
-        update_position(&mut self.player, seconds);
-        for s in &mut self.shots {
-            update_position(s, seconds);
+
+        update_actor(&mut self.player, seconds);
+        wrap_actor_position(
+            &mut self.player, 
+            self.screen_width as f64, 
+            self.screen_height as f64);
+        for act in &mut self.shots {
+            update_actor(act, seconds);
+            wrap_actor_position(
+                act, 
+                self.screen_width as f64, 
+                self.screen_height as f64);
         }
         
         Ok(())
@@ -302,7 +332,6 @@ impl<'a> GameState for MainState {
             Event::KeyDown { keycode, .. } => {
                 match keycode {
                     Some(Keycode::Up) => {
-                        println!("Thrusting");
                         self.input.yaxis = 1.0;
                     },
                     Some(Keycode::Left) => {
@@ -327,7 +356,6 @@ impl<'a> GameState for MainState {
             Event::KeyUp { keycode, .. } => {
                 match keycode {
                     Some(Keycode::Up) => {
-                        println!("Thrusting stopped");
                         self.input.yaxis = 0.0;
                     },
                     Some(Keycode::Left) => {
