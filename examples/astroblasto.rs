@@ -19,7 +19,7 @@ use ggez::graphics;
 use ggez::timer;
 use std::time::Duration;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 struct Vec2 {
     x: f64,
     y: f64,
@@ -30,6 +30,17 @@ impl Vec2 {
         Vec2 {
             x: x,
             y: y,
+        }
+    }
+
+    /// Create a unit vector representing the
+    /// given angle (in radians)
+    fn from_angle(angle: f64) -> Self {
+        let vx = angle.sin();
+        let vy = angle.cos();
+        Vec2 {
+            x: vx,
+            y: vy
         }
     }
 }
@@ -60,6 +71,7 @@ struct Assets {
     shot_image: graphics::Image,
     rock_image: graphics::Image,
 }
+
 
 
 fn create_player() -> Actor {
@@ -96,9 +108,17 @@ fn update_position(actor: &mut Actor, dt: f64) {
     actor.pos.y += dy;
 }
 
+
+const SHOT_SPEED: f64 = 200.0;
+
+
+// Acceleration in pixels per second, more or less. 
 const PLAYER_THRUST: f64 = 100.0;
-// In radians per second.
+// Rotation in radians per second.
 const PLAYER_TURN_RATE: f64 = 3.05;
+// Seconds between shots
+const PLAYER_SHOT_TIME: f64 = 0.5;
+
 
 fn player_handle_input(actor: &mut Actor, input: &InputState, dt: f64) {
     actor.facing += dt * PLAYER_TURN_RATE * input.xaxis;
@@ -109,8 +129,9 @@ fn player_handle_input(actor: &mut Actor, input: &InputState, dt: f64) {
 }
 
 fn player_thrust(actor: &mut Actor, dt: f64) {
-    let vx = PLAYER_THRUST * actor.facing.sin();
-    let vy = PLAYER_THRUST * actor.facing.cos();
+    let direction_vector = Vec2::from_angle(actor.facing);
+    let vx = PLAYER_THRUST * direction_vector.x;
+    let vy = PLAYER_THRUST * direction_vector.y;
     actor.velocity.x += dt * vx;
     actor.velocity.y += dt * vy;
 }
@@ -173,10 +194,52 @@ struct MainState {
     screen_width: u32,
     screen_height: u32,
     input: InputState,
+    player_shot_timeout: f64,
 }
 
-//impl MainState {
-//}
+
+
+impl MainState {
+
+    fn fire_player_shot(&mut self) {
+        self.player_shot_timeout = PLAYER_SHOT_TIME;
+
+        let player = &self.player;
+        let mut shot = create_shot();
+        shot.pos = player.pos;
+        shot.facing = player.facing;
+        let direction = Vec2::from_angle(shot.facing);
+        shot.velocity.x = SHOT_SPEED * direction.x;
+        shot.velocity.y = SHOT_SPEED * direction.y;
+
+        self.shots.push(shot);
+    }
+
+
+    fn draw_actor(&self, ctx: &mut Context, actor: &Actor) -> GameResult<()>  {
+        
+        let pos = world_to_screen_coords(self, &actor.pos);
+        let px = pos.x as i32;
+        let py = pos.y as i32;
+        let destrect = graphics::Rect::new(px, py, 32, 32);
+        let actor_center = graphics::Point::new(16, 16);
+        let image = self.actor_image(actor);
+        graphics::draw_ex(
+            ctx,
+            image, None, Some(destrect),
+            actor.facing.to_degrees(), Some(actor_center),
+            false, false)
+
+    }
+
+    fn actor_image(&self, actor: &Actor) -> &graphics::Image {
+        match actor.tag {
+            ActorType::Player => &self.assets.player_image,
+            ActorType::Rock   => &self.assets.rock_image,
+            ActorType::Shot   => &self.assets.shot_image,
+        }
+    }
+}
 
 impl<'a> GameState for MainState {
     fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<MainState> {
@@ -195,6 +258,7 @@ impl<'a> GameState for MainState {
             screen_width: conf.window_width,
             screen_height: conf.window_height,
             input: InputState::default(),
+            player_shot_timeout: 0.0,
         };
 
         Ok(s)
@@ -204,7 +268,15 @@ impl<'a> GameState for MainState {
         //println!("Player: {:?}", self.player);
         let seconds = timer::duration_to_f64(dt);
         player_handle_input(&mut self.player, &mut self.input, seconds);
+        self.player_shot_timeout -= seconds;
+        if self.input.fire && self.player_shot_timeout < 0.0 {
+            self.fire_player_shot();
+            println!("Bang!");
+        }
         update_position(&mut self.player, seconds);
+        for s in &mut self.shots {
+            update_position(s, seconds);
+        }
         
         Ok(())
     }
@@ -212,16 +284,11 @@ impl<'a> GameState for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        let pos = world_to_screen_coords(self, &self.player.pos);
-        let px = pos.x as i32;
-        let py = pos.y as i32;
-        let destrect = graphics::Rect::new(px, py, 32, 32);
-        let player_center = graphics::Point::new(16, 16);
-        try!(graphics::draw_ex(
-            ctx,
-            &self.assets.player_image, None, Some(destrect),
-            self.player.facing.to_degrees(), Some(player_center),
-            false, false));
+        let p = &self.player;
+        self.draw_actor(ctx, p);
+        for s in &self.shots {
+            self.draw_actor(ctx, &s);
+        }
 
         graphics::present(ctx);
         timer::sleep_until_next_frame(ctx, 60);
@@ -244,6 +311,9 @@ impl<'a> GameState for MainState {
                     Some(Keycode::Right) => {
                         self.input.xaxis = 1.0;
                     },
+                    Some(Keycode::Space) => {
+                        self.input.fire = true;
+                    }
                     _ => () // Do nothing
                 }
             },
@@ -266,6 +336,9 @@ impl<'a> GameState for MainState {
                     Some(Keycode::Right) => {
                         self.input.xaxis = 0.0;
                     },
+                    Some(Keycode::Space) => {
+                        self.input.fire = false;
+                    }
                     _ => () // Do nothing
                 }
             },

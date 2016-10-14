@@ -51,6 +51,7 @@ looking.
 * Window icon
 * Cleaner event handling might be nice
 * Make quit callback able to stop the game from quitting
+* Better timers?  Want to be able to just create a timer, have it get updated automatically, reset it, etc.  Check the love2d docs.
 * Default font and print functions?
 * Start integrating ncollide at least?
 * Need to add more tests, somehow
