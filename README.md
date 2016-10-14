@@ -42,8 +42,11 @@ found!  Should be in "/home/foo/src/ggez/target/debug/resources")`.
 Just copy the `resources` directory to where the error says it's
 looking.
 
-## Status
+## TO DO for 0.2
 
+* Impl Debug for all types
+* Make a cooler example program -- asteroids game
+* Start integrating ncollide at least?
 * Need to add more tests, somehow
 * Need to figure out exiting cleanly.  THIS IS SOLVED, but blocked by a bug in rust-sdl!  Issue #530.
 * Do we want to include Love2D's graphics transform functions?  ...probably not, honestly.

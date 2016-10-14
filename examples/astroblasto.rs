@@ -61,6 +61,7 @@ struct Assets {
     rock_image: graphics::Image,
 }
 
+
 fn create_player() -> Actor {
     Actor {
         tag: ActorType::Player,
@@ -95,9 +96,17 @@ fn update_position(actor: &mut Actor, dt: f64) {
     actor.pos.y += dy;
 }
 
-const PLAYER_THRUST: f64 = 1.0;
+const PLAYER_THRUST: f64 = 100.0;
 // In radians per second.
-const PLAYER_TURN: f64 = 0.05;
+const PLAYER_TURN_RATE: f64 = 3.05;
+
+fn player_handle_input(actor: &mut Actor, input: &InputState, dt: f64) {
+    actor.facing += dt * PLAYER_TURN_RATE * input.xaxis;
+
+    if input.yaxis > 0.0 {
+        player_thrust(actor, dt);
+    }
+}
 
 fn player_thrust(actor: &mut Actor, dt: f64) {
     let vx = PLAYER_THRUST * actor.facing.sin();
@@ -106,13 +115,7 @@ fn player_thrust(actor: &mut Actor, dt: f64) {
     actor.velocity.y += dt * vy;
 }
 
-fn player_turn_right(actor: &mut Actor, dt: f64) {
-    actor.facing += dt * PLAYER_TURN;
-}
 
-fn player_turn_left(actor: &mut Actor, dt: f64) {
-    actor.facing -= dt * PLAYER_TURN;
-}
 
 // Translates the world coordinate system, which
 // has Y pointing up and the origin at the center,
@@ -144,6 +147,22 @@ impl Assets {
     }
 }
 
+#[derive(Debug)]
+struct InputState {
+    xaxis: f64,
+    yaxis: f64,
+    fire: bool,
+}
+
+impl Default for InputState {
+    fn default() -> Self {
+        InputState {
+            xaxis: 0.0,
+            yaxis: 0.0,
+            fire: false,
+        }
+    }
+}
 
 struct MainState {
     player: Actor,
@@ -153,6 +172,7 @@ struct MainState {
     assets: Assets,
     screen_width: u32,
     screen_height: u32,
+    input: InputState,
 }
 
 //impl MainState {
@@ -174,6 +194,7 @@ impl<'a> GameState for MainState {
             assets: assets,
             screen_width: conf.window_width,
             screen_height: conf.window_height,
+            input: InputState::default(),
         };
 
         Ok(s)
@@ -182,6 +203,7 @@ impl<'a> GameState for MainState {
     fn update(&mut self, _ctx: &mut Context, dt: Duration) -> GameResult<()> {
         //println!("Player: {:?}", self.player);
         let seconds = timer::duration_to_f64(dt);
+        player_handle_input(&mut self.player, &mut self.input, seconds);
         update_position(&mut self.player, seconds);
         
         Ok(())
@@ -213,20 +235,40 @@ impl<'a> GameState for MainState {
             Event::KeyDown { keycode, .. } => {
                 match keycode {
                     Some(Keycode::Up) => {
-                        player_thrust(&mut self.player, 1.0);
+                        println!("Thrusting");
+                        self.input.yaxis = 1.0;
                     },
                     Some(Keycode::Left) => {
-                        player_turn_left(&mut self.player, 1.0);
+                        self.input.xaxis = -1.0;
                     },
                     Some(Keycode::Right) => {
-                        player_turn_right(&mut self.player, 1.0);
+                        self.input.xaxis = 1.0;
                     },
-                    _ => {
-                        // Do nothing
-                        ()
-                    }
+                    _ => () // Do nothing
                 }
-            }
+            },
+            _ => panic!("Should never happen"),
+        }
+    }
+
+
+    fn key_up_event(&mut self, evt: Event) {
+        match evt {
+            Event::KeyUp { keycode, .. } => {
+                match keycode {
+                    Some(Keycode::Up) => {
+                        println!("Thrusting stopped");
+                        self.input.yaxis = 0.0;
+                    },
+                    Some(Keycode::Left) => {
+                        self.input.xaxis = 0.0;
+                    },
+                    Some(Keycode::Right) => {
+                        self.input.xaxis = 0.0;
+                    },
+                    _ => () // Do nothing
+                }
+            },
             _ => panic!("Should never happen"),
         }
     }

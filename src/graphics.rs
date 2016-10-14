@@ -220,6 +220,7 @@ pub trait Drawable {
 
 /// In-memory image data available to be drawn on the screen.
 /// TODO: Implement width, height, etc!
+/// TODO: Impl debug!
 pub struct Image {
     // Keeping a hold of both a surface and texture is a pain in the butt
     // but I can't see of a good way to manage both if we ever want to generate
@@ -270,20 +271,23 @@ impl Drawable for Image {
                -> GameResult<()> {
         let renderer = &mut context.renderer;
         renderer.copy_ex(&self.texture,
-                     src,
-                     dst,
-                     angle,
-                     center,
-                     flip_horizontal,
-                     flip_vertical)
-            .map_err(GameError::RenderError)
+                         src,
+                         dst,
+                         angle,
+                         center,
+                         flip_horizontal,
+                         flip_vertical)
+                .map_err(GameError::RenderError)
     }
 }
 
 /// A font that defines the shape of characters drawn on the screen.
 /// Can be created from a .ttf file or from an image.
+/// TODO: Impl debug!
 pub enum Font {
-    TTFFont { font: sdl2_ttf::Font },
+    TTFFont {
+        font: sdl2_ttf::Font,
+    },
     BitmapFont {
         surface: surface::Surface<'static>,
         glyphs: BTreeMap<char, u32>,
@@ -354,8 +358,9 @@ fn render_bitmap(context: &Context,
     let text_length = text.len() as u32;
     let glyph_height = surface.height();
     let format = pixels::PixelFormatEnum::RGBA8888;
-    let mut dest_surface =
-        try!(surface::Surface::new(text_length * glyph_width, glyph_height, format));
+    let mut dest_surface = try!(surface::Surface::new(text_length * glyph_width,
+                                                      glyph_height,
+                                                      format));
     for (i, c) in text.chars().enumerate() {
         let small_i = i as u32;
         let error_message = format!("Character '{}' not in bitmap font!", c);
@@ -386,7 +391,7 @@ impl Text {
         match *font {
             Font::TTFFont { font: ref f } => {
                 let surf = try!(f.render(text)
-                    .blended(pixels::Color::RGB(255, 255, 255)));
+                                 .blended(pixels::Color::RGB(255, 255, 255)));
                 // BUGGO: SEGFAULTS HERE!  But only when using solid(), not blended()!
                 // Loading the font from a file rather than a RWops makes it work fine.
                 // See https://github.com/andelf/rust-sdl2_ttf/issues/43
@@ -414,13 +419,13 @@ impl Drawable for Text {
                -> GameResult<()> {
         let renderer = &mut context.renderer;
         renderer.copy_ex(&self.texture,
-                     src,
-                     dst,
-                     angle,
-                     center,
-                     flip_horizontal,
-                     flip_vertical)
-            .map_err(GameError::RenderError)
+                         src,
+                         dst,
+                         angle,
+                         center,
+                         flip_horizontal,
+                         flip_vertical)
+                .map_err(GameError::RenderError)
     }
 }
 

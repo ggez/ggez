@@ -59,7 +59,7 @@ impl Sound {
         // This try! is a little redundant but make the
         // GameResult type conversion work right.
         channel.play(&self.chunk, 0)
-            .map_err(GameError::from)
+               .map_err(GameError::from)
     }
 }
 
@@ -75,7 +75,7 @@ impl AudioOps for Channel {
     fn play_sound(&self, sound: &Sound) -> GameResult<Channel> {
         let channel = self;
         channel.play(&sound.chunk, 0)
-            .map_err(GameError::from)
+               .map_err(GameError::from)
     }
 
     /// Pauses playback of the `Channel`
@@ -130,8 +130,8 @@ impl Music {
 
 pub fn play_music(music: &Music) -> GameResult<()> {
     music.music
-        .play(-1)
-        .map_err(GameError::from)
+         .play(-1)
+         .map_err(GameError::from)
 }
 
 pub fn pause_music() {

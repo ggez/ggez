@@ -58,7 +58,7 @@ fn init_ttf() -> GameResult<Sdl2TtfContext> {
 
 fn init_audio(sdl_context: &Sdl) -> GameResult<sdl2::AudioSubsystem> {
     sdl_context.audio()
-        .map_err(GameError::AudioError)
+               .map_err(GameError::AudioError)
 }
 
 fn init_mixer() -> GameResult<Sdl2MixerContext> {
@@ -77,12 +77,33 @@ fn init_window(video: sdl2::VideoSubsystem,
                screen_width: u32,
                screen_height: u32)
                -> GameResult<Window> {
+
+
+    // Does not appear to work on my laptop's graphics card,
+    // needs more experimentation.
+    // let gl_attr = video.gl_attr();
+    // //gl_attr.set_context_flags().debug().set();
+    // gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
+    // gl_attr.set_multisample_buffers(1);
+    // gl_attr.set_multisample_samples(4);
+
+    // let msaa_buffers = gl_attr.multisample_buffers();
+    // let msaa_samples = gl_attr.multisample_samples();
+
+    // println!("buffers: {}, samples {}", msaa_buffers, msaa_samples);
+
+    // Can't hurt
+    let _ = sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "best");
+    // let render_quality_hint = sdl2::hint::get("SDL_HINT_RENDER_SCALE_QUALITY");
+    // println!("Render quality hint: {:?}", render_quality_hint);
+
     video.window(window_title, screen_width, screen_height)
-        .position_centered()
-        .opengl()
-        .build()
-        .map_err(|e| GameError::VideoError(format!("{}", e)))
+         .position_centered()
+         .opengl()
+         .build()
+         .map_err(|e| GameError::VideoError(format!("{}", e)))
 }
+
 
 impl<'a> Context<'a> {
     /// Tries to create a new Context using settings from the given config file.
@@ -98,8 +119,8 @@ impl<'a> Context<'a> {
         let window = try!(init_window(video, &window_title, screen_width, screen_height));
 
         let renderer = try!(window.renderer()
-            .accelerated()
-            .build());
+                                  .accelerated()
+                                  .build());
 
         let ttf_context = try!(init_ttf());
         let audio_context = try!(init_audio(&sdl_context));
