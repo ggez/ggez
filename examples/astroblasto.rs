@@ -65,6 +65,12 @@ struct Actor {
     facing: f64,
     velocity: Vec2,
     rvel: f64,
+
+    // I am going to lazily overload "life" with a
+    // double meaning rather than making a proper ECS;
+    // for shots, it is the time left to live,
+    // for players and such, it is the actual hit points.
+    life: f64,
 }
 
 struct Assets {
@@ -74,6 +80,9 @@ struct Assets {
 }
 
 
+const PLAYER_LIFE: f64 = 1.0;
+const SHOT_LIFE: f64 = 2.0;
+const ROCK_LIFE: f64 = 1.0;
 
 fn create_player() -> Actor {
     Actor {
@@ -82,6 +91,7 @@ fn create_player() -> Actor {
         facing: 0.,
         velocity: Vec2::default(),
         rvel: 0.,
+        life: PLAYER_LIFE,
     }
 }
 
@@ -92,6 +102,7 @@ fn create_rock() -> Actor {
         facing: 0.,
         velocity: Vec2::default(),
         rvel: 0.,
+        life: ROCK_LIFE,
     }
 }
 
@@ -102,6 +113,7 @@ fn create_shot() -> Actor {
         facing: 0.,
         velocity: Vec2::default(),
         rvel: SHOT_RVEL,
+        life: SHOT_LIFE,
     }
 }
 
@@ -134,7 +146,7 @@ fn player_thrust(actor: &mut Actor, dt: f64) {
 }
 
 
-fn update_actor(actor: &mut Actor, dt: f64) {
+fn update_actor_position(actor: &mut Actor, dt: f64) {
     let dx = dt * actor.velocity.x;
     let dy = dt * actor.velocity.y;
     actor.pos.x += dx;
@@ -157,6 +169,10 @@ fn wrap_actor_position(actor: &mut Actor, sx: f64, sy: f64) {
     } else if actor.pos.y < -screen_y_bounds {
         actor.pos.y += sy;
     }
+}
+
+fn handle_timed_life(actor: &mut Actor, dt: f64) {
+    actor.life -= dt;
 }
 
 
@@ -261,6 +277,10 @@ impl MainState {
             ActorType::Shot   => &self.assets.shot_image,
         }
     }
+
+    fn clear_dead_stuff(&mut self) {
+        self.shots.retain(|s| s.life >= 0.0);
+    }
 }
 
 impl<'a> GameState for MainState {
@@ -295,18 +315,27 @@ impl<'a> GameState for MainState {
             self.fire_player_shot();
         }
 
-        update_actor(&mut self.player, seconds);
+        update_actor_position(&mut self.player, seconds);
         wrap_actor_position(
             &mut self.player, 
             self.screen_width as f64, 
             self.screen_height as f64);
+
+        //let mut dead_shots = Vec::new();
         for act in &mut self.shots {
-            update_actor(act, seconds);
+            update_actor_position(act, seconds);
             wrap_actor_position(
                 act, 
                 self.screen_width as f64, 
                 self.screen_height as f64);
+            handle_timed_life(act, seconds);
+            // if act.life <= 0.0 {
+            //     dead_shots.push(act);
+            // }
         }
+
+        self.clear_dead_stuff();
+
         
         Ok(())
     }
