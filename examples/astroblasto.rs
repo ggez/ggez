@@ -9,11 +9,15 @@ extern crate sdl2;
 use std::path;
 use sdl2::pixels::Color;
 use sdl2::event::*;
+
+// TODO: Can we re-export these types from game.rs
+// instead of requring this use?
 use sdl2::keyboard::Keycode;
 
 use ggez::audio;
 use ggez::conf;
-use ggez::game::{Game, GameState};
+use ggez::game::{Game, GameState, Mod};
+//use ggez::game::Keycode;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
@@ -217,19 +221,11 @@ fn player_thrust(actor: &mut Actor, dt: f64) {
     let direction_vector = Vec2::from_angle(actor.facing);
     let thrust_vector = direction_vector.scaled(PLAYER_THRUST);
     actor.velocity += thrust_vector.scaled(dt);
-    // let vx = PLAYER_THRUST * direction_vector.x;
-    // let vy = PLAYER_THRUST * direction_vector.y;
-    // actor.velocity.x += dt * vx;
-    // actor.velocity.y += dt * vy;
 }
 
 const MAX_PHYSICS_VEL: f64 = 250.0;
 
 fn update_actor_position(actor: &mut Actor, dt: f64) {
-    //let dx = dt * actor.velocity.x;
-    //let dy = dt * actor.velocity.y;
-    //actor.pos.x += dx;
-    //actor.pos.y += dy;
     actor.velocity = actor.velocity.clamped(MAX_PHYSICS_VEL);
     let dv = actor.velocity.scaled(dt);
     actor.pos += dv;
@@ -449,50 +445,40 @@ impl<'a> GameState for MainState {
         Ok(())
     }
 
-    fn key_down_event(&mut self, evt: Event) {
-        match evt {
-            Event::KeyDown { keycode, .. } => {
-                match keycode {
-                    Some(Keycode::Up) => {
-                        self.input.yaxis = 1.0;
-                    },
-                    Some(Keycode::Left) => {
-                        self.input.xaxis = -1.0;
-                    },
-                    Some(Keycode::Right) => {
-                        self.input.xaxis = 1.0;
-                    },
-                    Some(Keycode::Space) => {
-                        self.input.fire = true;
-                    }
-                    _ => () // Do nothing
-                }
+    fn key_down_event(&mut self, keycode: Option<Keycode>, keymod: Mod, repeat: bool) {
+        match keycode {
+            Some(Keycode::Up) => {
+                self.input.yaxis = 1.0;
             },
-            _ => panic!("Should never happen"),
+            Some(Keycode::Left) => {
+                self.input.xaxis = -1.0;
+            },
+            Some(Keycode::Right) => {
+                self.input.xaxis = 1.0;
+            },
+            Some(Keycode::Space) => {
+                self.input.fire = true;
+            }
+            _ => () // Do nothing
         }
     }
 
 
-    fn key_up_event(&mut self, evt: Event) {
-        match evt {
-            Event::KeyUp { keycode, .. } => {
-                match keycode {
-                    Some(Keycode::Up) => {
-                        self.input.yaxis = 0.0;
-                    },
-                    Some(Keycode::Left) => {
-                        self.input.xaxis = 0.0;
-                    },
-                    Some(Keycode::Right) => {
-                        self.input.xaxis = 0.0;
-                    },
-                    Some(Keycode::Space) => {
-                        self.input.fire = false;
-                    }
-                    _ => () // Do nothing
-                }
+    fn key_up_event(&mut self, keycode: Option<Keycode>, keymod: Mod, repeat: bool) {
+        match keycode {
+            Some(Keycode::Up) => {
+                self.input.yaxis = 0.0;
             },
-            _ => panic!("Should never happen"),
+            Some(Keycode::Left) => {
+                self.input.xaxis = 0.0;
+            },
+            Some(Keycode::Right) => {
+                self.input.xaxis = 0.0;
+            },
+            Some(Keycode::Space) => {
+                self.input.fire = false;
+            }
+            _ => () // Do nothing
         }
     }
 }

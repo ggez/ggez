@@ -103,8 +103,11 @@ impl From<sdl2_ttf::FontError> for GameError {
 }
 
 
+
 // SDL_ttf bug: SDL_ttf doesn't export the InitError type,
 // so there's no way you can specify this function.
+// TODO: This has been fixed, implement this and update
+// the SDL_ttf version in the Cargo.toml
 //
 // use sdl2_ttf::context::InitError;
 // impl From<sdl2_ttf::context::InitError> for GameError {

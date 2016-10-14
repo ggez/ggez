@@ -14,8 +14,10 @@ use std::time::Duration;
 use sdl2;
 use sdl2::event::Event::*;
 use sdl2::event::*;
-use sdl2::keyboard::Keycode::*;
+use sdl2::keyboard;
 
+pub type Keycode = sdl2::keyboard::Keycode;
+pub type Mod = sdl2::keyboard::Mod;
 
 /// A trait for defining a game state.
 /// Implement `load()`, `update()` and `draw()` callbacks on this trait
@@ -27,11 +29,28 @@ use sdl2::keyboard::Keycode::*;
 /// which *should* by default exit the game if escape is pressed.
 /// (Once we work around some event bugs in rust-sdl2.)
 pub trait GameState {
-    // Tricksy trait and lifetime magic!
+    // Tricksy trait and lifetime magic happens in load()'s
+    // signature.
+    // It doesn't look complicated but is easy to get wrong.
     // Much thanks to aatch on #rust-beginners for helping make this work.
-    // TODO: Document these functions!
+
+    /// Called to initially create your `GameState` object 
+    /// after all hardware initialization has been done.
+    /// It is handed a `Context` to load resources from,
+    /// and the `Conf` object that has either been loaded
+    /// from your `resources/conf.toml` file or the default
+    /// that has been provided to `Game::new()` if no conf
+    /// file exists.
     fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<Self> where Self: Sized;
+
+    /// Called upon each physics update to the game.
+    /// This should be where the game's logic takes place.
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()>;
+
+    /// Called to do the drawing of your game.
+    /// You probably want to start this with 
+    /// `graphics::clear()` and end it with
+    /// `graphics::present()` and `timer::sleep_until_next_frame()`
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
 
     // You don't have to override these if you don't want to; the defaults
@@ -48,11 +67,14 @@ pub trait GameState {
 
     // TODO: These event types need to be better,
     // but I'm not sure how to do it yet.
-    // They should be SdlEvent::KeyDow or something similar,
+    // They should be SdlEvent::KeyDown or something similar,
     // but those are enum fields, not actual types.
-    fn key_down_event(&mut self, _evt: Event) {}
+    // Okay, the right way is to just take apart the Event
+    // into its fields and pass them as arguments.
+    //fn key_down_event(&mut self, _evt: Event) {}
+    fn key_down_event(&mut self, keycode: Option<Keycode>, keymod: Mod, repeat: bool) {}
 
-    fn key_up_event(&mut self, _evt: Event) {}
+    fn key_up_event(&mut self, keycode: Option<Keycode>, keymod: Mod, repeat: bool) {}
 
     fn focus_event(&mut self, _gained: bool) {}
 
@@ -88,6 +110,12 @@ fn get_default_config(fs: &mut fs::Filesystem) -> GameResult<conf::Conf> {
         Err(GameError::ConfigError(String::from("Config file not found")))
     }
 }
+
+
+// TODO:
+// Submit rust-sdl2 bug for keyboard::scancode::KpOoctal,
+// keyboard::keycode::KpCear,
+
 
 impl<'a, S: GameState + 'static> Game<'a, S> {
     /// Creates a new `Game` with the given  default config
@@ -158,18 +186,19 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                     // TODO: We need a good way to have
                     // a default like this, while still allowing
                     // it to be overridden.
-                    // But the GameState can't access the Game,
-                    // so we can't modify the Game's done property...
-                    // Hmmmm.
-                    KeyDown { keycode, .. } => {
+                    // Bah, just put it in the GameState trait
+                    // as the default function.
+                    // But it doesn't have access to the context
+                    // to call quit!  Bah.
+                    KeyDown { keycode, keymod, repeat, .. } => {
                         match keycode {
-                            Some(Escape) => {
+                            Some(keyboard::Keycode::Escape) => {
                                 try!(ctx.quit());
-                            }
-                            _ => self.state.key_down_event(event),
+                            },
+                            _ => self.state.key_down_event(keycode, keymod, repeat),
                         }
                     }
-                    KeyUp { .. } => self.state.key_up_event(event),
+                    KeyUp { keycode, keymod, repeat, .. } => self.state.key_up_event(keycode, keymod, repeat),
                     MouseButtonDown { .. } => self.state.mouse_button_down_event(event),
                     MouseButtonUp { .. } => self.state.mouse_button_up_event(event),
                     MouseMotion { .. } => self.state.mouse_motion_event(event),
@@ -183,6 +212,12 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                     _ => {}
                 }
             }
+
+
+            // TODO: Currently, logic and display are locked
+            // together to the same framerate; we should probably
+            // change that.
+            // How does Love2D do it though?
             let dt = timer::get_delta(ctx);
             try!(self.state.update(ctx, dt));
             try!(self.state.draw(ctx));
