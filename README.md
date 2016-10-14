@@ -46,6 +46,12 @@ looking.
 
 * Impl Debug for all types
 * Make a cooler example program -- asteroids game
+* Implement file saving and loading in the save directory, sigh
+* More and better docs
+* Window icon
+* Cleaner event handling might be nice
+* Make quit callback able to stop the game from quitting
+* Default font and print functions?
 * Start integrating ncollide at least?
 * Need to add more tests, somehow
 * Need to figure out exiting cleanly.  THIS IS SOLVED, but blocked by a bug in rust-sdl!  Issue #530.
