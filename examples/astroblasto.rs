@@ -18,6 +18,8 @@ use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
 use std::time::Duration;
+use std::ops::{Add, AddAssign};
+
 
 #[derive(Debug, Copy, Clone)]
 struct Vec2 {
@@ -42,6 +44,57 @@ impl Vec2 {
             x: vx,
             y: vy
         }
+    }
+
+    fn random(max_magnitude: f64) -> Self {
+        let angle = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
+        let mag = rand::random::<f64>() * max_magnitude;
+        Vec2::from_angle(angle).scaled(mag)
+    }
+
+    fn magnitude(&self) -> f64 {
+        ((self.x * self.x) + (self.y * self.y)).sqrt()
+    }
+
+    fn normalized(&self) -> Self {
+        let mag = self.magnitude();
+        self.scaled(1.0/mag)
+    }
+
+    fn scaled(&self, rhs: f64) -> Self {
+        Vec2 {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
+    }
+
+    /// Returns a vector whose magnitude is between
+    /// 0 and max.
+    fn clamped(&self, max: f64) -> Self {
+        let mag = self.magnitude();
+        if mag > max {
+            self.normalized().scaled(max)
+        } else {
+            *self
+        }
+    }
+}
+
+impl Add for Vec2 {
+    type Output = Self;
+    fn add(self, rhs: Vec2) -> Self {
+        Vec2 {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
+
+impl AddAssign for Vec2 {
+    fn add_assign(&mut self, rhs: Vec2) {
+        self.x += rhs.x;
+        self.y += rhs.y;
     }
 }
 
@@ -117,8 +170,31 @@ fn create_shot() -> Actor {
     }
 }
 
+const MAX_ROCK_VEL: f64 = 50.0;
+
+/// Create the given number of rocks.
+/// Makes sure that none of them are within the
+/// given exclusion zone (nominally the player)
+/// Note that this *could* create rocks outside the
+/// bounds of the playing field, so it should be 
+/// called before `wrap_actor_position()` happens.
+fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f64, max_radius: f64) -> Vec<Actor> {
+    assert!(max_radius > min_radius);
+    let new_rock = |_| {
+        let mut rock = create_rock();
+        let r_angle = rand::random::<f64>() * 
+            2.0 * std::f64::consts::PI;
+        let r_distance = rand::random::<f64>() * 
+            (max_radius - min_radius) + min_radius;
+        rock.pos = Vec2::from_angle(r_angle).scaled(r_distance);
+        rock.velocity = Vec2::random(MAX_ROCK_VEL);
+        rock
+    };
+    (0..num).map(new_rock).collect()
+}
+
 const SHOT_SPEED: f64 = 200.0;
-const SHOT_RVEL: f64 = 5.0;
+const SHOT_RVEL: f64 = 0.1;
 
 
 // Acceleration in pixels per second, more or less. 
@@ -139,18 +215,24 @@ fn player_handle_input(actor: &mut Actor, input: &InputState, dt: f64) {
 
 fn player_thrust(actor: &mut Actor, dt: f64) {
     let direction_vector = Vec2::from_angle(actor.facing);
-    let vx = PLAYER_THRUST * direction_vector.x;
-    let vy = PLAYER_THRUST * direction_vector.y;
-    actor.velocity.x += dt * vx;
-    actor.velocity.y += dt * vy;
+    let thrust_vector = direction_vector.scaled(PLAYER_THRUST);
+    actor.velocity += thrust_vector.scaled(dt);
+    // let vx = PLAYER_THRUST * direction_vector.x;
+    // let vy = PLAYER_THRUST * direction_vector.y;
+    // actor.velocity.x += dt * vx;
+    // actor.velocity.y += dt * vy;
 }
 
+const MAX_PHYSICS_VEL: f64 = 250.0;
 
 fn update_actor_position(actor: &mut Actor, dt: f64) {
-    let dx = dt * actor.velocity.x;
-    let dy = dt * actor.velocity.y;
-    actor.pos.x += dx;
-    actor.pos.y += dy;
+    //let dx = dt * actor.velocity.x;
+    //let dy = dt * actor.velocity.y;
+    //actor.pos.x += dx;
+    //actor.pos.y += dy;
+    actor.velocity = actor.velocity.clamped(MAX_PHYSICS_VEL);
+    let dv = actor.velocity.scaled(dt);
+    actor.pos += dv;
     actor.facing += actor.rvel;
 }
 
@@ -290,11 +372,14 @@ impl<'a> GameState for MainState {
         graphics::set_background_color(ctx, Color::RGB(0, 0, 0));
 
         let assets = try!(Assets::new(ctx));
+
+        let player = create_player();
+        let rocks = create_rocks(5, &player.pos, 50.0, 150.0);
         
         let s = MainState {
-            player: create_player(),
+            player: player,
             shots: Vec::new(),
-            rocks: Vec::new(),
+            rocks: rocks,
             score: 0,
             assets: assets,
             screen_width: conf.window_width,
@@ -329,9 +414,14 @@ impl<'a> GameState for MainState {
                 self.screen_width as f64, 
                 self.screen_height as f64);
             handle_timed_life(act, seconds);
-            // if act.life <= 0.0 {
-            //     dead_shots.push(act);
-            // }
+        }
+
+        for act in &mut self.rocks {
+            update_actor_position(act, seconds);
+            wrap_actor_position(
+                act, 
+                self.screen_width as f64, 
+                self.screen_height as f64);
         }
 
         self.clear_dead_stuff();
@@ -347,6 +437,9 @@ impl<'a> GameState for MainState {
         self.draw_actor(ctx, p);
         for s in &self.shots {
             self.draw_actor(ctx, &s);
+        }
+        for r in &self.rocks {
+            self.draw_actor(ctx, &r);
         }
 
         graphics::present(ctx);
