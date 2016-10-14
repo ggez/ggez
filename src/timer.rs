@@ -174,9 +174,14 @@ pub fn sleep_until_next_frame(ctx: &Context, desired_fps: u32) {
     let duration_per_frame = time::Duration::new(0, nanos_per_frame as u32);
     let now = time::Instant::now();
     let time_spent_this_frame = now - tc.last_instant;
-    let duration_to_sleep = duration_per_frame - time_spent_this_frame;
-    // println!("Sleeping for {:?}", duration_to_sleep);
-    thread::sleep(duration_to_sleep);
+    if time_spent_this_frame >= duration_per_frame {
+        // We don't even yield to the OS in this case
+        ()
+    } else {
+        let duration_to_sleep = duration_per_frame - time_spent_this_frame;
+        // println!("Sleeping for {:?}", duration_to_sleep);
+        thread::sleep(duration_to_sleep);
+    }
 }
 
 /// Pauses the current thread for the target duration.
