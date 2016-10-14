@@ -14,6 +14,7 @@ use std::time::Duration;
 use sdl2;
 use sdl2::event::Event::*;
 use sdl2::event::*;
+use sdl2::mouse;
 use sdl2::keyboard;
 
 pub type Keycode = sdl2::keyboard::Keycode;
@@ -57,13 +58,13 @@ pub trait GameState {
     // do nothing.
     // It might be nice to be able to have custom event types and a map or
     // such of handlers?  Hmm, maybe later.
-    fn mouse_button_down_event(&mut self, _evt: Event) {}
+    fn mouse_button_down_event(&mut self, button: mouse::Mouse, x: i32, y: i32) {}
 
-    fn mouse_button_up_event(&mut self, _evt: Event) {}
+    fn mouse_button_up_event(&mut self, button: mouse::Mouse, x: i32, y: i32) {}
 
-    fn mouse_motion_event(&mut self, _evt: Event) {}
+    fn mouse_motion_event(&mut self, state: mouse::MouseState, x: i32, y: i32, xrel: i32, yrel: i32) {}
 
-    fn mouse_wheel_event(&mut self, _evt: Event) {}
+    fn mouse_wheel_event(&mut self, x: i32, y: i32) {}
 
     // TODO: These event types need to be better,
     // but I'm not sure how to do it yet.
@@ -115,6 +116,8 @@ fn get_default_config(fs: &mut fs::Filesystem) -> GameResult<conf::Conf> {
 // TODO:
 // Submit rust-sdl2 bug for keyboard::scancode::KpOoctal,
 // keyboard::keycode::KpCear,
+// MouseWheel event not having the mousewheel direction,
+// or x and y(???)
 
 
 impl<'a, S: GameState + 'static> Game<'a, S> {
@@ -199,10 +202,10 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                         }
                     }
                     KeyUp { keycode, keymod, repeat, .. } => self.state.key_up_event(keycode, keymod, repeat),
-                    MouseButtonDown { .. } => self.state.mouse_button_down_event(event),
-                    MouseButtonUp { .. } => self.state.mouse_button_up_event(event),
-                    MouseMotion { .. } => self.state.mouse_motion_event(event),
-                    MouseWheel { .. } => self.state.mouse_wheel_event(event),
+                    MouseButtonDown { mouse_btn, x, y, .. } => self.state.mouse_button_down_event(mouse_btn, x, y),
+                    MouseButtonUp { mouse_btn, x, y, .. } => self.state.mouse_button_up_event(mouse_btn, x, y),
+                    MouseMotion { mousestate, x, y, xrel, yrel, .. } => self.state.mouse_motion_event(mousestate, x, y, xrel, yrel),
+                    MouseWheel { x, y, .. } => self.state.mouse_wheel_event(x, y),
                     Window { win_event_id: WindowEventId::FocusGained, .. } => {
                         self.state.focus_event(true)
                     }

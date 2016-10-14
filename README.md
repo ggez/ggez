@@ -49,7 +49,7 @@ looking.
 * Implement file saving and loading in the save directory, sigh
 * More and better docs
 * Window icon
-* Cleaner event handling might be nice
+* Cleaner event type re-exports from SDL
 * Make quit callback able to stop the game from quitting
 * Better timers?  Want to be able to just create a timer, have it get updated automatically, reset it, etc.  Check the love2d docs.
 * Default font and print functions?
