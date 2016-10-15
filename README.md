@@ -51,7 +51,7 @@ looking.
 * Window icon
 * Cleaner event type re-exports from SDL
 * Make quit callback able to stop the game from quitting
-* Better timers?  Want to be able to just create a timer, have it get updated automatically, reset it, etc.  Check the love2d docs.
+* Better timers?  Want to be able to just create a timer, have it get updated automatically, reset it, etc.  Love2D doesn't have such a thing; maybe it's better as a goodie?  Could easily be implemented as a component, so that's probably the better way to do it.
 * Default font and print functions?
 * Start integrating ncollide at least?
 * Need to add more tests, somehow

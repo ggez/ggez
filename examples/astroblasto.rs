@@ -17,7 +17,7 @@ use sdl2::keyboard::Keycode;
 use ggez::audio;
 use ggez::conf;
 use ggez::game::{Game, GameState, Mod};
-//use ggez::game::Keycode;
+// use ggez::game::Keycode;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
@@ -33,10 +33,7 @@ struct Vec2 {
 
 impl Vec2 {
     fn new(x: f64, y: f64) -> Self {
-        Vec2 {
-            x: x,
-            y: y,
-        }
+        Vec2 { x: x, y: y }
     }
 
     /// Create a unit vector representing the
@@ -44,10 +41,7 @@ impl Vec2 {
     fn from_angle(angle: f64) -> Self {
         let vx = angle.sin();
         let vy = angle.cos();
-        Vec2 {
-            x: vx,
-            y: vy
-        }
+        Vec2 { x: vx, y: vy }
     }
 
     fn random(max_magnitude: f64) -> Self {
@@ -62,7 +56,7 @@ impl Vec2 {
 
     fn normalized(&self) -> Self {
         let mag = self.magnitude();
-        self.scaled(1.0/mag)
+        self.scaled(1.0 / mag)
     }
 
     fn scaled(&self, rhs: f64) -> Self {
@@ -186,11 +180,9 @@ fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f64, max_radius: f64) ->
     assert!(max_radius > min_radius);
     let new_rock = |_| {
         let mut rock = create_rock();
-        let r_angle = rand::random::<f64>() * 
-            2.0 * std::f64::consts::PI;
-        let r_distance = rand::random::<f64>() * 
-            (max_radius - min_radius) + min_radius;
-        rock.pos = Vec2::from_angle(r_angle).scaled(r_distance);
+        let r_angle = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
+        let r_distance = rand::random::<f64>() * (max_radius - min_radius) + min_radius;
+        rock.pos = Vec2::from_angle(r_angle).scaled(r_distance) + *exclusion;
         rock.velocity = Vec2::random(MAX_ROCK_VEL);
         rock
     };
@@ -201,7 +193,7 @@ const SHOT_SPEED: f64 = 200.0;
 const SHOT_RVEL: f64 = 0.1;
 
 
-// Acceleration in pixels per second, more or less. 
+// Acceleration in pixels per second, more or less.
 const PLAYER_THRUST: f64 = 100.0;
 // Rotation in radians per second.
 const PLAYER_TURN_RATE: f64 = 3.05;
@@ -262,9 +254,9 @@ fn handle_timed_life(actor: &mut Actor, dt: f64) {
 fn world_to_screen_coords(state: &MainState, point: &Vec2) -> Vec2 {
     let width = state.screen_width as f64;
     let height = state.screen_height as f64;
-    let x = point.x + width/2.0;
-    let y = height - (point.y + height/2.0);
-    Vec2{ x: x, y: y }
+    let x = point.x + width / 2.0;
+    let y = height - (point.y + height / 2.0);
+    Vec2 { x: x, y: y }
 }
 
 
@@ -316,7 +308,6 @@ struct MainState {
 
 
 impl MainState {
-
     fn fire_player_shot(&mut self) {
         self.player_shot_timeout = PLAYER_SHOT_TIME;
 
@@ -332,27 +323,30 @@ impl MainState {
     }
 
 
-    fn draw_actor(&self, ctx: &mut Context, actor: &Actor) -> GameResult<()>  {
-        
+    fn draw_actor(&self, ctx: &mut Context, actor: &Actor) -> GameResult<()> {
+
         let pos = world_to_screen_coords(self, &actor.pos);
         let px = pos.x as i32;
         let py = pos.y as i32;
         let destrect = graphics::Rect::new(px, py, 32, 32);
         let actor_center = graphics::Point::new(16, 16);
         let image = self.actor_image(actor);
-        graphics::draw_ex(
-            ctx,
-            image, None, Some(destrect),
-            actor.facing.to_degrees(), Some(actor_center),
-            false, false)
+        graphics::draw_ex(ctx,
+                          image,
+                          None,
+                          Some(destrect),
+                          actor.facing.to_degrees(),
+                          Some(actor_center),
+                          false,
+                          false)
 
     }
 
     fn actor_image(&self, actor: &Actor) -> &graphics::Image {
         match actor.tag {
             ActorType::Player => &self.assets.player_image,
-            ActorType::Rock   => &self.assets.rock_image,
-            ActorType::Shot   => &self.assets.shot_image,
+            ActorType::Rock => &self.assets.rock_image,
+            ActorType::Shot => &self.assets.shot_image,
         }
     }
 
@@ -371,7 +365,7 @@ impl<'a> GameState for MainState {
 
         let player = create_player();
         let rocks = create_rocks(5, &player.pos, 50.0, 150.0);
-        
+
         let s = MainState {
             player: player,
             shots: Vec::new(),
@@ -388,7 +382,7 @@ impl<'a> GameState for MainState {
     }
 
     fn update(&mut self, _ctx: &mut Context, dt: Duration) -> GameResult<()> {
-        //println!("Player: {:?}", self.player);
+        // println!("Player: {:?}", self.player);
         let seconds = timer::duration_to_f64(dt);
         player_handle_input(&mut self.player, &mut self.input, seconds);
         self.player_shot_timeout -= seconds;
@@ -397,32 +391,25 @@ impl<'a> GameState for MainState {
         }
 
         update_actor_position(&mut self.player, seconds);
-        wrap_actor_position(
-            &mut self.player, 
-            self.screen_width as f64, 
-            self.screen_height as f64);
+        wrap_actor_position(&mut self.player,
+                            self.screen_width as f64,
+                            self.screen_height as f64);
 
-        //let mut dead_shots = Vec::new();
+        // let mut dead_shots = Vec::new();
         for act in &mut self.shots {
             update_actor_position(act, seconds);
-            wrap_actor_position(
-                act, 
-                self.screen_width as f64, 
-                self.screen_height as f64);
+            wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
             handle_timed_life(act, seconds);
         }
 
         for act in &mut self.rocks {
             update_actor_position(act, seconds);
-            wrap_actor_position(
-                act, 
-                self.screen_width as f64, 
-                self.screen_height as f64);
+            wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
         }
 
         self.clear_dead_stuff();
 
-        
+
         Ok(())
     }
 
@@ -430,55 +417,55 @@ impl<'a> GameState for MainState {
         graphics::clear(ctx);
 
         let p = &self.player;
-        self.draw_actor(ctx, p);
+        try!(self.draw_actor(ctx, p));
         for s in &self.shots {
-            self.draw_actor(ctx, &s);
+            try!(self.draw_actor(ctx, &s));
         }
         for r in &self.rocks {
-            self.draw_actor(ctx, &r);
+            try!(self.draw_actor(ctx, &r));
         }
 
         graphics::present(ctx);
         timer::sleep_until_next_frame(ctx, 60);
         // ctx.quit() is broken :-(
-        //ctx.quit();
+        // ctx.quit();
         Ok(())
     }
 
-    fn key_down_event(&mut self, keycode: Option<Keycode>, keymod: Mod, repeat: bool) {
+    fn key_down_event(&mut self, keycode: Option<Keycode>, _keymod: Mod, _repeat: bool) {
         match keycode {
             Some(Keycode::Up) => {
                 self.input.yaxis = 1.0;
-            },
+            }
             Some(Keycode::Left) => {
                 self.input.xaxis = -1.0;
-            },
+            }
             Some(Keycode::Right) => {
                 self.input.xaxis = 1.0;
-            },
+            }
             Some(Keycode::Space) => {
                 self.input.fire = true;
             }
-            _ => () // Do nothing
+            _ => (), // Do nothing
         }
     }
 
 
-    fn key_up_event(&mut self, keycode: Option<Keycode>, keymod: Mod, repeat: bool) {
+    fn key_up_event(&mut self, keycode: Option<Keycode>, _keymod: Mod, _repeat: bool) {
         match keycode {
             Some(Keycode::Up) => {
                 self.input.yaxis = 0.0;
-            },
+            }
             Some(Keycode::Left) => {
                 self.input.xaxis = 0.0;
-            },
+            }
             Some(Keycode::Right) => {
                 self.input.xaxis = 0.0;
-            },
+            }
             Some(Keycode::Space) => {
                 self.input.fire = false;
             }
-            _ => () // Do nothing
+            _ => (), // Do nothing
         }
     }
 }
@@ -504,4 +491,3 @@ pub fn main() {
         }
     }
 }
-

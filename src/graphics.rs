@@ -6,6 +6,7 @@
 //! has the origin in the upper-left corner of the screen, unless it should be
 //! something else, then we should change it.
 
+use std::fmt;
 use std::path;
 use std::collections::BTreeMap;
 
@@ -220,7 +221,6 @@ pub trait Drawable {
 
 /// In-memory image data available to be drawn on the screen.
 /// TODO: Implement width, height, etc!
-/// TODO: Impl debug!
 pub struct Image {
     // Keeping a hold of both a surface and texture is a pain in the butt
     // but I can't see of a good way to manage both if we ever want to generate
@@ -229,6 +229,7 @@ pub struct Image {
     // For now, bitmap fonts is the only time we need to do that, so we'll special
     // case that rather than trying to create textures on-demand or something...
     texture: render::Texture,
+    texture_query: render::TextureQuery,
 }
 
 impl Image {
@@ -247,16 +248,48 @@ impl Image {
         let renderer = &context.renderer;
 
         let tex = try!(renderer.create_texture_from_surface(surf));
-        Ok(Image { texture: tex })
+        let tq = tex.query();
+        Ok(Image {
+            texture: tex,
+            texture_query: tq,
+        })
 
     }
 
     fn from_surface(context: &Context, surface: surface::Surface) -> GameResult<Image> {
         let renderer = &context.renderer;
         let tex = try!(renderer.create_texture_from_surface(surface));
-        Ok(Image { texture: tex })
+        let tq = tex.query();
+        Ok(Image {
+            texture: tex,
+            texture_query: tq,
+        })
+    }
+
+    pub fn width(&self) -> u32 {
+        self.texture_query.width
+    }
+    pub fn height(&self) -> u32 {
+        self.texture_query.height
+    }
+
+    pub fn rect(&self) -> Rect {
+        Rect::new(0, 0, self.width(), self.height())
     }
 }
+
+
+impl fmt::Debug for Image {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+               "<Image: {}x{}, {:p}, texture address {:p}>",
+               self.width(),
+               self.height(),
+               &self,
+               &self.texture)
+    }
+}
+
 
 impl Drawable for Image {
     // #[allow(too_many_arguments)]
@@ -283,7 +316,6 @@ impl Drawable for Image {
 
 /// A font that defines the shape of characters drawn on the screen.
 /// Can be created from a .ttf file or from an image.
-/// TODO: Impl debug!
 pub enum Font {
     TTFFont {
         font: sdl2_ttf::Font,
@@ -345,6 +377,15 @@ impl Font {
             glyphs: glyphs_map,
             glyph_width: glyph_width,
         })
+    }
+}
+
+impl fmt::Debug for Font {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Font::TTFFont { .. } => write!(f, "<TTFFont: {:p}>", &self),
+            Font::BitmapFont { .. } => write!(f, "<BitmapFont: {:p}>", &self),
+        }
     }
 }
 
@@ -429,9 +470,15 @@ impl Drawable for Text {
     }
 }
 
-use std::fmt;
 impl fmt::Debug for Text {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Text")
+        let tq = self.texture.query();
+        write!(f,
+               "<Text: {}x{}, {:p}, texture address {:p}>",
+               tq.width,
+               tq.height,
+               &self,
+               &self.texture)
+
     }
 }

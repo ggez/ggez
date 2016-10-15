@@ -58,13 +58,19 @@ pub trait GameState {
     // do nothing.
     // It might be nice to be able to have custom event types and a map or
     // such of handlers?  Hmm, maybe later.
-    fn mouse_button_down_event(&mut self, button: mouse::Mouse, x: i32, y: i32) {}
+    fn mouse_button_down_event(&mut self, _button: mouse::Mouse, _x: i32, _y: i32) {}
 
-    fn mouse_button_up_event(&mut self, button: mouse::Mouse, x: i32, y: i32) {}
+    fn mouse_button_up_event(&mut self, _button: mouse::Mouse, _x: i32, _y: i32) {}
 
-    fn mouse_motion_event(&mut self, state: mouse::MouseState, x: i32, y: i32, xrel: i32, yrel: i32) {}
+    fn mouse_motion_event(&mut self,
+                          _state: mouse::MouseState,
+                          _x: i32,
+                          _y: i32,
+                          _xrel: i32,
+                          _yrel: i32) {
+    }
 
-    fn mouse_wheel_event(&mut self, x: i32, y: i32) {}
+    fn mouse_wheel_event(&mut self, _x: i32, _y: i32) {}
 
     // TODO: These event types need to be better,
     // but I'm not sure how to do it yet.
@@ -72,10 +78,10 @@ pub trait GameState {
     // but those are enum fields, not actual types.
     // Okay, the right way is to just take apart the Event
     // into its fields and pass them as arguments.
-    //fn key_down_event(&mut self, _evt: Event) {}
-    fn key_down_event(&mut self, keycode: Option<Keycode>, keymod: Mod, repeat: bool) {}
+    // fn key_down_event(&mut self, _evt: Event) {}
+    fn key_down_event(&mut self, _keycode: Option<Keycode>, _keymod: Mod, _repeat: bool) {}
 
-    fn key_up_event(&mut self, keycode: Option<Keycode>, keymod: Mod, repeat: bool) {}
+    fn key_up_event(&mut self, _keycode: Option<Keycode>, _keymod: Mod, _repeat: bool) {}
 
     fn focus_event(&mut self, _gained: bool) {}
 
@@ -197,14 +203,22 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                         match keycode {
                             Some(keyboard::Keycode::Escape) => {
                                 try!(ctx.quit());
-                            },
+                            }
                             _ => self.state.key_down_event(keycode, keymod, repeat),
                         }
                     }
-                    KeyUp { keycode, keymod, repeat, .. } => self.state.key_up_event(keycode, keymod, repeat),
-                    MouseButtonDown { mouse_btn, x, y, .. } => self.state.mouse_button_down_event(mouse_btn, x, y),
-                    MouseButtonUp { mouse_btn, x, y, .. } => self.state.mouse_button_up_event(mouse_btn, x, y),
-                    MouseMotion { mousestate, x, y, xrel, yrel, .. } => self.state.mouse_motion_event(mousestate, x, y, xrel, yrel),
+                    KeyUp { keycode, keymod, repeat, .. } => {
+                        self.state.key_up_event(keycode, keymod, repeat)
+                    }
+                    MouseButtonDown { mouse_btn, x, y, .. } => {
+                        self.state.mouse_button_down_event(mouse_btn, x, y)
+                    }
+                    MouseButtonUp { mouse_btn, x, y, .. } => {
+                        self.state.mouse_button_up_event(mouse_btn, x, y)
+                    }
+                    MouseMotion { mousestate, x, y, xrel, yrel, .. } => {
+                        self.state.mouse_motion_event(mousestate, x, y, xrel, yrel)
+                    }
                     MouseWheel { x, y, .. } => self.state.mouse_wheel_event(x, y),
                     Window { win_event_id: WindowEventId::FocusGained, .. } => {
                         self.state.focus_event(true)
