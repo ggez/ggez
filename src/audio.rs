@@ -5,13 +5,14 @@
 //! management and such more explicit.
 //! This seems a bit awkward but we'll roll with it for now.
 
+use std::fmt;
 use std::path;
 
 use sdl2_mixer;
 use sdl2_mixer::LoaderRWops;
 
 use context::Context;
-use util::rwops_from_path;
+use util;
 use GameError;
 use GameResult;
 
@@ -43,7 +44,7 @@ impl Sound {
     /// Load a new Sound
     pub fn new(context: &mut Context, path: &path::Path) -> GameResult<Sound> {
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = try!(rwops_from_path(context, path, &mut buffer));
+        let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds this method to RWops.
         let chunk = try!(rwops.load_wav());
 
@@ -60,6 +61,13 @@ impl Sound {
         // GameResult type conversion work right.
         channel.play(&self.chunk, 0)
                .map_err(GameError::from)
+    }
+}
+
+
+impl fmt::Debug for Sound {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<Sound: {:p}>", self)
     }
 }
 
@@ -114,19 +122,26 @@ pub struct Music {
     music: sdl2_mixer::Music,
 }
 
-use util::load_music;
 
 impl Music {
     /// Load the given Music.
     pub fn new(context: &mut Context, path: &path::Path) -> GameResult<Music> {
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = try!(rwops_from_path(context, path, &mut buffer));
+        let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds this method to RWops.
-        let music = try!(load_music(rwops));
+        let music = try!(rwops.load_music());
 
         Ok(Music { music: music })
     }
 }
+
+
+impl fmt::Debug for Music {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<Music: {:p}>", self)
+    }
+}
+
 
 pub fn play_music(music: &Music) -> GameResult<()> {
     music.music

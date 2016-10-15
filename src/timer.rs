@@ -23,6 +23,7 @@ use std::thread;
 /// It's not quite a ring buffer 'cause you can't
 /// remove items from it, it just holds the last N
 /// things.
+#[derive(Debug)]
 struct LogBuffer<T> {
     head: usize,
     size: usize,
@@ -70,6 +71,7 @@ impl<T> LogBuffer<T> where T: Clone + Copy
 // According to the rust-sdl2 maintainers,
 // SDL's time functions are of dubious thread-safety,
 // while Rust's are pretty solid.
+#[derive(Debug)]
 pub struct TimeContext {
     init_instant: time::Instant,
     last_instant: time::Instant,

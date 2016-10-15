@@ -151,7 +151,7 @@ impl Filesystem {
 
     /// Takes a relative path and returns an absolute PathBuf
     /// based in the Filesystem's root path.
-    /// Sorry, can't think of a better name for this.
+    /// TODO: Sorry, can't think of a better name for this.
     fn mongle_path(&self, path: &path::Path) -> GameResult<path::PathBuf> {
         if !path.is_relative() {
             let pathstr = try!(convenient_path_to_str(path));

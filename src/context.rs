@@ -46,7 +46,7 @@ pub struct Context<'a> {
 impl<'a> fmt::Debug for Context<'a> {
     // TODO: Make this more useful.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Context")
+        write!(f, "<Context: {:p}>", self)
     }
 }
 

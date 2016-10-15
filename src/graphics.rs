@@ -20,7 +20,7 @@ use sdl2_ttf;
 use context::Context;
 use GameError;
 use GameResult;
-use util::rwops_from_path;
+use util;
 
 /// The same as an `sdl2::rect::Rect`
 pub type Rect = rect::Rect;
@@ -46,6 +46,7 @@ pub enum DrawMode {
 /// As an end-user you shouldn't ever have to touch this, but it goes
 /// into part of the `Context` and so has to be public, at least
 /// until the `pub(restricted)` feature is stable.
+#[derive(Debug)]
 pub struct GraphicsContext {
     background: pixels::Color,
     foreground: pixels::Color,
@@ -241,7 +242,7 @@ impl Image {
     /// Load a new image from the file at the given path.
     pub fn new(context: &mut Context, path: &path::Path) -> GameResult<Image> {
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = try!(rwops_from_path(context, path, &mut buffer));
+        let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds the load() method to RWops.
         let surf = try!(rwops.load());
         let renderer = &context.renderer;
@@ -284,7 +285,7 @@ impl fmt::Debug for Image {
                "<Image: {}x{}, {:p}, texture address {:p}>",
                self.width(),
                self.height(),
-               &self,
+               self,
                &self.texture)
     }
 }
@@ -340,7 +341,7 @@ impl Font {
     /// Load a new TTF font from the given file.
     pub fn new(context: &mut Context, path: &path::Path, size: u16) -> GameResult<Font> {
         let mut buffer: Vec<u8> = Vec::new();
-        let mut rwops = try!(rwops_from_path(context, path, &mut buffer));
+        let mut rwops = try!(util::rwops_from_path(context, path, &mut buffer));
 
         let ttf_context = &context.ttf_context;
         let ttf_font = try!(ttf_context.load_font_from_rwops(&mut rwops, size));
@@ -353,7 +354,7 @@ impl Font {
     /// The `glyphs` string is the characters in the image from left to right.
     pub fn new_bitmap(context: &mut Context, path: &path::Path, glyphs: &str) -> GameResult<Font> {
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = try!(rwops_from_path(context, path, &mut buffer));
+        let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds the load() method to RWops.
         let surface = try!(rwops.load().map_err(GameError::ResourceLoadError));
         // We *really really* need to clone this surface here because
