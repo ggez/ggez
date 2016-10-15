@@ -24,16 +24,16 @@ etc.
 
 ## Examples
 
-See `example/imageview.rs`
+See `example/astroblasto.rs`
 
 To run, you have to copy (or symlink) the `resources` directory to a
 place the running game can find it.  Cargo does not have an easy way
 of doing this itself at the moment, so the procedure is (on Linux):
 
 ```
-cargo build --example imageview
+cargo build --example astroblasto
 cp -R resources target/debug/
-cargo run --example imageview
+cargo run --example astroblasto
 ```
 
 Either way, if it can't find the resources it will give you an error
@@ -44,29 +44,16 @@ looking.
 
 ## TO DO for 0.2
 
-* Impl Debug for all types
 * Make a cooler example program -- asteroids game
-* Implement file saving and loading in the save directory, sigh
+* Implement file saving and loading in the save directory, including Conf objects
 * More and better docs
-* Window icon
-* Cleaner event type re-exports from SDL
 * Make quit callback able to stop the game from quitting
-* Better timers?  Want to be able to just create a timer, have it get updated automatically, reset it, etc.  Love2D doesn't have such a thing; maybe it's better as a goodie?  Could easily be implemented as a component, so that's probably the better way to do it.
 * Default font and print functions?
 * Start integrating ncollide at least?
 * Need to add more tests, somehow
 * Need to figure out exiting cleanly.  THIS IS SOLVED, but blocked by a bug in rust-sdl!  Issue #530.
 * Do we want to include Love2D's graphics transform functions?  ...probably not, honestly.
 
-## Things to add atop it
-
-* Resource loader/cache
-* Scene stack
-* GUI
-* particle system (or put that in with it like LOVE?)  (No, in LOVE it's part of the main engine 'cause you
-can't efficiently implement it as a module)
-* Input indirection layer and input state tracking
-* Sprites with ordering, animation, atlasing, tile mapping, etc.
 
 ## Future work
 
@@ -76,6 +63,7 @@ for sound would get us positional audio too.
 
 ## Useful goodies
 
+* ggez-goodies for things that are useful but not fundamental and generally don't depend on each other
 * specs for entity-component system (alternatives: ecs or recs crates)
 * cgmath or vecmath for math operations?
 * physics/collision???

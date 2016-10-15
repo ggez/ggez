@@ -475,6 +475,7 @@ pub fn main() {
     c.window_title = "Astroblasto!".to_string();
     c.window_width = 640;
     c.window_height = 480;
+    c.window_icon = "player.png".to_string();
     let game: GameResult<Game<MainState>> = Game::new(c);
     match game {
         Err(e) => {

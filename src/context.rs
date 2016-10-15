@@ -10,11 +10,13 @@ use sdl2_ttf::Sdl2TtfContext;
 use sdl2_mixer::Sdl2MixerContext;
 
 use std::fmt;
+use std::path;
 
 use conf;
 use filesystem::Filesystem;
 use graphics;
 use timer;
+use util;
 use GameError;
 use GameResult;
 
@@ -103,6 +105,17 @@ fn init_window(video: sdl2::VideoSubsystem,
          .map_err(|e| GameError::VideoError(format!("{}", e)))
 }
 
+fn set_window_icon(context: &mut Context, conf: &conf::Conf) -> GameResult<()> {
+    if conf.window_icon.len() > 0 {
+        let path = path::Path::new(&conf.window_icon);
+        let icon_surface = try!(util::load_surface(context, path));
+
+        if let Some(window) = context.renderer.window_mut() {
+            window.set_icon(icon_surface);
+        }
+    };
+    Ok(())
+}
 
 impl<'a> Context<'a> {
     /// Tries to create a new Context using settings from the given config file.
@@ -117,6 +130,7 @@ impl<'a> Context<'a> {
         let video = try!(sdl_context.video());
         let window = try!(init_window(video, &window_title, screen_width, screen_height));
 
+
         let renderer = try!(window.renderer()
                                   .accelerated()
                                   .build());
@@ -127,7 +141,7 @@ impl<'a> Context<'a> {
         let event_context = try!(sdl_context.event());
         let timer_context = timer::TimeContext::new();
 
-        let ctx = Context {
+        let mut ctx = Context {
             sdl_context: sdl_context,
             ttf_context: ttf_context,
             _audio_context: audio_context,
@@ -139,6 +153,9 @@ impl<'a> Context<'a> {
             event_context: event_context,
             timer_context: timer_context,
         };
+
+
+        try!(set_window_icon(&mut ctx, conf));
 
         Ok(ctx)
     }

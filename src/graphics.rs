@@ -327,16 +327,6 @@ pub enum Font {
     },
 }
 
-// Here you should just imagine me frothing at the mouth as I
-// fight the lifetime checker in circles.
-fn clone_surface<'a>(s: surface::Surface<'a>) -> GameResult<surface::Surface<'static>> {
-    // let format = pixels::PixelFormatEnum::RGBA8888;
-    let format = s.pixel_format();
-    // convert() copies the surface anyway, so.
-    let res = try!(s.convert(&format));
-    Ok(res)
-}
-
 impl Font {
     /// Load a new TTF font from the given file.
     pub fn new(context: &mut Context, path: &path::Path, size: u16) -> GameResult<Font> {
@@ -353,14 +343,7 @@ impl Font {
     /// super ideal but should be fine.
     /// The `glyphs` string is the characters in the image from left to right.
     pub fn new_bitmap(context: &mut Context, path: &path::Path, glyphs: &str) -> GameResult<Font> {
-        let mut buffer: Vec<u8> = Vec::new();
-        let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
-        // SDL2_image SNEAKILY adds the load() method to RWops.
-        let surface = try!(rwops.load().map_err(GameError::ResourceLoadError));
-        // We *really really* need to clone this surface here because
-        // otherwise lifetime interactions between rwops, buffer and surface become
-        // intensely painful.
-        let s2 = try!(clone_surface(surface));
+        let s2 = try!(util::load_surface(context, path));
 
         let image_width = s2.width();
         let glyph_width = image_width / (glyphs.len() as u32);
