@@ -9,7 +9,6 @@ use sdl2_mixer;
 use sdl2_ttf::Sdl2TtfContext;
 use sdl2_mixer::Sdl2MixerContext;
 
-use std::error::Error;
 use std::fmt;
 
 use conf;
@@ -52,7 +51,7 @@ impl<'a> fmt::Debug for Context<'a> {
 }
 
 fn init_ttf() -> GameResult<Sdl2TtfContext> {
-    sdl2_ttf::init().map_err(|e| GameError::FontError(e.description().to_owned()))
+    sdl2_ttf::init().map_err(GameError::from)
 }
 
 

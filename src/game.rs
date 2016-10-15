@@ -72,13 +72,6 @@ pub trait GameState {
 
     fn mouse_wheel_event(&mut self, _x: i32, _y: i32) {}
 
-    // TODO: These event types need to be better,
-    // but I'm not sure how to do it yet.
-    // They should be SdlEvent::KeyDown or something similar,
-    // but those are enum fields, not actual types.
-    // Okay, the right way is to just take apart the Event
-    // into its fields and pass them as arguments.
-    // fn key_down_event(&mut self, _evt: Event) {}
     fn key_down_event(&mut self, _keycode: Option<Keycode>, _keymod: Mod, _repeat: bool) {}
 
     fn key_up_event(&mut self, _keycode: Option<Keycode>, _keymod: Mod, _repeat: bool) {}

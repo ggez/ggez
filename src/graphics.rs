@@ -220,7 +220,6 @@ pub trait Drawable {
 }
 
 /// In-memory image data available to be drawn on the screen.
-/// TODO: Implement width, height, etc!
 pub struct Image {
     // Keeping a hold of both a surface and texture is a pain in the butt
     // but I can't see of a good way to manage both if we ever want to generate
