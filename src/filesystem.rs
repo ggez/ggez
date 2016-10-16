@@ -4,13 +4,17 @@
 //!
 //! * The `resources/` subdirectory in the same directory as the program executable,
 //! * The `resources.zip` file in the same directory as the program executable,
-//! * The root folder of the game's `save` directory (eventually) which is in a
-//! platform-dependent location
+//! * The root folder of the game's "user" directory which is in a
+//! platform-dependent location, such as `~/.local/share/ggez/gameid/` on Linux.
 //!
-//! Files will be looked for in these places that order.
+//! Files will be looked for in these locations in order, and the first one
+//! found used.  That allows game assets to be easily distributed as an archive
+//! file, but locally overridden for testing or modding simply by putting
+//! altered copies of them in the game's `resources/` directory.
 //!
-//! Right now files are read-only.  When we can write files, they will be written
-//! to the game's save directory.
+//! The `resources/` subdirectory and resources.zip files are read-only.
+//! Files that are opened for writing using `Filesyste::open_options()`
+//! will be created in the `user` directory.
 
 use std::fmt;
 use std::fs;
@@ -21,9 +25,14 @@ use sdl2;
 
 use GameError;
 use GameResult;
+use conf;
 use warn;
 
 use zip;
+
+
+const CONFIG_NAME: &'static str = "conf.toml";
+
 
 /// A structure that contains the filesystem state and cache.
 #[derive(Debug)]
@@ -45,6 +54,8 @@ pub enum File<'a> {
 
 impl<'a> fmt::Debug for File<'a> {
     // TODO: Make this more useful.
+    // But we can't seem to get a filename out of a file,
+    // soooooo.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             File::FSFile(ref _file) => write!(f, "File"),
@@ -62,6 +73,23 @@ impl<'a> io::Read for File<'a> {
     }
 }
 
+
+impl<'a> io::Write for File<'a> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        match *self {
+            File::FSFile(ref mut f) => f.write(buf),
+            File::ZipFile(_) => panic!("Cannot write to a zip file!"),
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        match *self {
+            File::FSFile(ref mut f) => f.flush(),
+            File::ZipFile(_) => Ok(()),
+        }
+    }
+}
+
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     let errmessage = String::from("Invalid path format");
     let error = GameError::FilesystemError(errmessage);
@@ -70,15 +98,13 @@ fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
 }
 
 impl Filesystem {
-    /// Create a new Filesystem instance.
-    pub fn new() -> GameResult<Filesystem> {
+    /// Create a new Filesystem instance, using
+    /// the given `id` as a portion of the user directory path.
+    /// This function is called automatically by ggez, the end user
+    /// should never need to call it.
+    pub fn new(id: &str) -> GameResult<Filesystem> {
         let root_path_string = try!(sdl2::filesystem::base_path());
-        // BUGGO: We need to have the application ID in this path somehow,
-        // except the best place to put it would be in the Conf object...
-        // which is loaded using the Filesystem.  Hmmmm.
-        // We probably need a Filesystem::config_file_path() function to
-        // bootstrap the process.
-        let pref_path_string = try!(sdl2::filesystem::pref_path("ggez", ""));
+        let pref_path_string = try!(sdl2::filesystem::pref_path("ggez", id));
 
         let mut root_path = path::PathBuf::from(root_path_string);
         // Ditch the filename (if any)
@@ -112,6 +138,8 @@ impl Filesystem {
             resource_zip = Some(z);
         }
 
+        // Get user path, but it doesn't really matter if it
+        // doesn't exist for us so there's no real setup.
         let user_path = path::PathBuf::from(pref_path_string);
 
         let fs = Filesystem {
@@ -126,10 +154,11 @@ impl Filesystem {
 
 
     /// Opens the given path and returns the resulting `File`
+    /// in read-only mode.
     pub fn open(&mut self, path: &path::Path) -> GameResult<File> {
 
         // Look in resource directory
-        let pathbuf = try!(self.mongle_path(path));
+        let pathbuf = try!(self.rel_to_resource_path(path));
         if pathbuf.is_file() {
             let f = try!(fs::File::open(pathbuf));
             return Ok(File::FSFile(f));
@@ -142,17 +171,50 @@ impl Filesystem {
             return Ok(File::ZipFile(f));
         }
 
-        // TODO: Look in save directory
+        // Look in user directory
+        let pathbuf = try!(self.rel_to_user_path(path));
+        if pathbuf.is_file() {
+            let f = try!(fs::File::open(pathbuf));
+            return Ok(File::FSFile(f));
+        }
 
         // Welp, can't find it.
         let errmessage = try!(convenient_path_to_str(path));
         Err(GameError::ResourceNotFound(String::from(errmessage)))
     }
 
+    /// Opens a file in the user directory with the given `std::fs::OpenOptions`.
+    /// Note that even if you open a file read-only, it can only access
+    /// files in the user directory.
+    pub fn open_options(&mut self,
+                        path: &path::Path,
+                        options: fs::OpenOptions)
+                        -> GameResult<File> {
+        let pathbuf = try!(self.rel_to_user_path(path));
+
+        let f = try!(options.open(pathbuf));
+        Ok(File::FSFile(f))
+    }
+
+    /// Creates a new file in the user directory and opens it
+    /// to be written to, truncating it if it already exists.
+    pub fn create(&mut self, path: &path::Path) -> GameResult<File> {
+        let pathbuf = try!(self.rel_to_user_path(path));
+        let f = try!(fs::File::create(pathbuf));
+        Ok(File::FSFile(f))
+    }
+
+    /// Create an empty directory in the user dir 
+    /// with the given name.  Any parents to that directory
+    /// that do not exist will be created.
+    pub fn create_dir(&mut self, path: &path::Path) -> GameResult<()> {
+        let pathbuf = try!(self.rel_to_user_path(path));
+        fs::create_dir_all(pathbuf).map_err(GameError::from)
+    }
+
     /// Takes a relative path and returns an absolute PathBuf
     /// based in the Filesystem's root path.
-    /// TODO: Sorry, can't think of a better name for this.
-    fn mongle_path(&self, path: &path::Path) -> GameResult<path::PathBuf> {
+    fn rel_to_resource_path(&self, path: &path::Path) -> GameResult<path::PathBuf> {
         if !path.is_relative() {
             let pathstr = try!(convenient_path_to_str(path));
             let err = GameError::ResourceNotFound(String::from(pathstr));
@@ -163,9 +225,24 @@ impl Filesystem {
         }
     }
 
+    /// Takes a relative path and returns an absolute PathBuf
+    /// based in the Filesystem's user directory.
+    fn rel_to_user_path(&self, path: &path::Path) -> GameResult<path::PathBuf> {
+        if !path.is_relative() {
+            let pathstr = try!(convenient_path_to_str(path));
+            let err = GameError::ResourceNotFound(String::from(pathstr));
+            Err(err)
+        } else {
+            let pathbuf = self.user_path.join(path);
+            Ok(pathbuf)
+        }
+    }
+
     /// Check whether a file or directory exists.
     pub fn exists(&mut self, path: &path::Path) -> bool {
-        if let Ok(p) = self.mongle_path(path) {
+        if let Ok(p) = self.rel_to_resource_path(path) {
+            p.exists()
+        } else if let Ok(p) = self.rel_to_user_path(path) {
             p.exists()
         } else {
             let name = path.to_str().unwrap();
@@ -175,12 +252,13 @@ impl Filesystem {
                 false
             }
         }
-        // TODO: Look in save directory.
     }
 
     /// Check whether a path points at a file.
     pub fn is_file(&mut self, path: &path::Path) -> bool {
-        if let Ok(p) = self.mongle_path(path) {
+        if let Ok(p) = self.rel_to_resource_path(path) {
+            p.is_file()
+        } else if let Ok(p) = self.rel_to_user_path(path) {
             p.is_file()
         } else {
             let name = path.to_str().unwrap();
@@ -190,12 +268,13 @@ impl Filesystem {
                 false
             }
         }
-        // TODO: Look in save directory.
     }
 
     /// Check whether a path points at a directory.
     pub fn is_dir(&mut self, path: &path::Path) -> bool {
-        if let Ok(p) = self.mongle_path(path) {
+        if let Ok(p) = self.rel_to_resource_path(path) {
+            p.is_dir()
+        } else if let Ok(p) = self.rel_to_user_path(path) {
             p.is_dir()
         } else {
             let name = path.to_str().unwrap();
@@ -211,7 +290,6 @@ impl Filesystem {
                 false
             }
         }
-        // TODO: Look in save directory.
     }
 
     /// Return the full path to the directory containing the exe
@@ -236,26 +314,77 @@ impl Filesystem {
     /// Lists the base directory if an empty path is given.
     ///
     /// TODO: Make it iterate over the zip file as well!
+    /// And the user dir.  This probably won't happen until
+    /// returning `impl Trait` hits stable, honestly.
     pub fn read_dir(&self, path: &path::Path) -> io::Result<fs::ReadDir> {
-        let dest = self.resource_path.join(path);
-        dest.read_dir()
+        let resource_dest = self.resource_path.join(path);
+        // let user_dest = self.user_path.join(path);
+        resource_dest.read_dir()
+        // .map(|iter| iter.chain(user_dest.read_dir()))
     }
 
+    /// Prints the contents of all data directories.
+    /// Useful for debugging.
     /// TODO: This should return an iterator, and be called iter()
     pub fn print_all(&mut self) {
-        let p = self.resource_path.clone();
-        if p.is_dir() {
-            let paths = fs::read_dir(p).unwrap();
-            for path in paths {
-                println!("Resources dir, filename {}", path.unwrap().path().display());
+        // Print resource files
+        {
+            let p = self.resource_path.clone();
+            if p.is_dir() {
+                let paths = fs::read_dir(p).unwrap();
+                for path in paths {
+                    println!("Resources dir, filename {}", path.unwrap().path().display());
+                }
             }
         }
+
+        // User dir files
+        {
+            let p = self.user_path.clone();
+            if p.is_dir() {
+                let paths = fs::read_dir(p).unwrap();
+                for path in paths {
+                    println!("User dir, filename {}", path.unwrap().path().display());
+                }
+            }
+        }
+
 
         if let Some(ref mut zipfile) = self.resource_zip {
             for i in 0..zipfile.len() {
                 let file = zipfile.by_index(i).unwrap();
                 println!("Zip, filename: {}", file.name());
             }
+        }
+    }
+
+
+    /// Looks for a file named "conf.toml" in the resources directory
+    /// loads it if it finds it.
+    /// If it can't read it for some reason, returns an error.
+    pub fn read_config(&mut self) -> GameResult<conf::Conf> {
+        let conf_path = path::Path::new(CONFIG_NAME);
+        if self.is_file(conf_path) {
+            let mut file = try!(self.open(conf_path));
+            let c = try!(conf::Conf::from_toml_file(&mut file));
+            Ok(c)
+
+        } else {
+            Err(GameError::ConfigError(String::from("Config file not found")))
+        }
+    }
+
+    /// Takes a `conf::Conf` object and saves it to the user directory,
+    /// overwriting any file already there.
+    pub fn write_config(&mut self, conf: &conf::Conf) -> GameResult<()> {
+        let conf_path = path::Path::new(CONFIG_NAME);
+        if self.is_file(conf_path) {
+            let mut file = try!(self.create(conf_path));
+            let c = try!(conf.to_toml_file(&mut file));
+            Ok(c)
+
+        } else {
+            Err(GameError::ConfigError(String::from("Config file not found")))
         }
     }
 }

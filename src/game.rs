@@ -2,13 +2,11 @@
 //! and handle top-level state.
 
 use context::Context;
-use GameError;
 use GameResult;
 use conf;
 use filesystem as fs;
 use timer;
 
-use std::path::Path;
 use std::time::Duration;
 
 use super::event as gevent;
@@ -103,22 +101,6 @@ pub struct Game<'a, S: GameState> {
     context: Context<'a>,
 }
 
-/// Looks for a file named "conf.toml" in the resources directory
-/// loads it if it finds it.
-/// If it can't read it for some reason, returns an error.
-fn get_default_config(fs: &mut fs::Filesystem) -> GameResult<conf::Conf> {
-    let conf_path = Path::new("conf.toml");
-    if fs.is_file(conf_path) {
-        let mut file = try!(fs.open(conf_path));
-        let c = try!(conf::Conf::from_toml_file(&mut file));
-        Ok(c)
-
-    } else {
-        Err(GameError::ConfigError(String::from("Config file not found")))
-    }
-}
-
-
 // TODO:
 // Submit rust-sdl2 bug for keyboard::scancode::KpOoctal,
 // keyboard::keycode::KpCear,
@@ -131,12 +113,15 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// (which will be used if there is no config file).
     /// It will initialize a hardware context and call the `load()` method of
     /// the given `GameState` type to create a new `GameState`.
-    pub fn new(default_config: conf::Conf) -> GameResult<Game<'a, S>> {
+    ///
+    /// The `id` field is a unique identifier for your game that will
+    /// be used to create a save directory to write files to.
+    pub fn new(id: &str, default_config: conf::Conf) -> GameResult<Game<'a, S>> {
         let sdl_context = try!(sdl2::init());
-        let mut fs = try!(fs::Filesystem::new());
+        let mut fs = try!(fs::Filesystem::new(id));
 
         // TODO: Verify config version == this version
-        let config = get_default_config(&mut fs).unwrap_or(default_config);
+        let config = fs.read_config().unwrap_or(default_config);
 
         let mut context = try!(Context::from_conf(&config, fs, sdl_context));
 

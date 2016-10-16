@@ -359,6 +359,8 @@ impl<'a> GameState for MainState {
         ctx.print_resource_stats();
         graphics::set_background_color(ctx, graphics::Color::RGB(0, 0, 0));
 
+        println!("Game resource path: {:?}", ctx.filesystem);
+
         let assets = try!(Assets::new(ctx));
 
         let player = create_player();
@@ -469,12 +471,12 @@ impl<'a> GameState for MainState {
 }
 
 pub fn main() {
-    let mut c = conf::Conf::new("Astroblasto!");
+    let mut c = conf::Conf::new();
     c.window_title = "Astroblasto!".to_string();
     c.window_width = 640;
     c.window_height = 480;
     c.window_icon = "player.png".to_string();
-    let game: GameResult<Game<MainState>> = Game::new(c);
+    let game: GameResult<Game<MainState>> = Game::new("astroblasto", c);
     match game {
         Err(e) => {
             println!("Could not load game!");

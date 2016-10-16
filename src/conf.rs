@@ -11,10 +11,8 @@ use {GameError, GameResult};
 
 /// A structure containing configuration data
 /// for the game engine.
-#[derive(RustcDecodable, Debug)]
+#[derive(RustcDecodable, RustcEncodable, Debug)]
 pub struct Conf {
-    /// The name of the save directory
-    pub id: String,
     /// Version of ggez your game is designed to work with.
     pub version: String,
 
@@ -48,11 +46,9 @@ pub struct Conf {
 }
 
 impl Conf {
-    /// Create a new Conf with some vague defaults and the given
-    /// game ID.
-    pub fn new(id: &str) -> Conf {
+    /// Create a new Conf with some vague defaults.
+    pub fn new() -> Conf {
         Conf {
-            id: String::from(id),
             version: String::from("0.0.0"),
             window_title: String::from("An easy, good game"),
             window_icon: String::from(""),
@@ -77,5 +73,13 @@ impl Conf {
                               .ok_or(String::from("Section [ggez] not in config file")));
         let mut decoder = toml::Decoder::new(config.clone());
         Conf::decode(&mut decoder).map_err(GameError::from)
+    }
+
+    /// Saves the `Conf` to the given `Write` object,
+    /// formatted as TOML.
+    pub fn to_toml_file<W: io::Write>(&self, file: &mut W) -> GameResult<()> {
+        let toml_str = toml::encode_str(self);
+        let toml_bytes = toml_str.as_bytes();
+        file.write_all(toml_bytes).map_err(GameError::from)
     }
 }

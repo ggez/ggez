@@ -44,7 +44,7 @@ looking.
 
 ## TO DO for 0.2
 
-* Implement file saving and loading in the save directory, including Conf objects
+* Submit an update to the zip crate to check whether a directory exists.
 * Make a cooler example program -- asteroids game (needs sounds)
 * More and better docs
 * Make quit callback able to stop the game from quitting
