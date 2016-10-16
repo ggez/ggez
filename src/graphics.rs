@@ -28,6 +28,7 @@ pub type Rect = rect::Rect;
 pub type Point = rect::Point;
 /// The same as an `sdl2::pixels::Color`
 pub type Color = pixels::Color;
+pub type BlendMode = render::BlendMode;
 
 /// Specifies whether a shape should be drawn
 /// filled or as an outline.
@@ -275,6 +276,46 @@ impl Image {
 
     pub fn rect(&self) -> Rect {
         Rect::new(0, 0, self.width(), self.height())
+    }
+
+    /// Returns the `BlendMode` of the image.
+    pub fn blend_mode(&self) -> BlendMode {
+        self.texture.blend_mode()
+    }
+
+    /// Sets the `BlendMode` of the image.
+    /// See <https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode>
+    /// for detailed description of blend modes.
+    pub fn set_blend_mode(&mut self, blend: BlendMode) {
+        self.texture.set_blend_mode(blend)
+    }
+
+    /// Get the color mod of the image.
+    pub fn color_mod(&self) -> Color {
+        let (r, g, b) = self.texture.color_mod();
+        pixels::Color::RGB(r, g, b)
+    }
+
+    /// Set the color mod of the image.
+    /// Each pixel of the image is multiplied by this color
+    /// when drawn.
+    pub fn set_color_mod(&mut self, color: Color) {
+        match color {
+            pixels::Color::RGB(r, g, b) |
+            pixels::Color::RGBA(r, g, b, _) => self.texture.set_color_mod(r, g, b),
+        }
+    }
+
+    /// Get the alpha mod of the image.
+    pub fn alpha_mod(&self) -> u8 {
+        self.texture.alpha_mod()
+    }
+
+    /// Set the alpha mod of the image.
+    /// Each pixel's alpha will be multiplied by this value
+    /// when drawn.
+    pub fn set_alpha_mod(&mut self, alpha: u8) {
+        self.texture.set_alpha_mod(alpha)
     }
 }
 

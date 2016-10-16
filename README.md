@@ -44,15 +44,14 @@ looking.
 
 ## TO DO for 0.2
 
-* Make a cooler example program -- asteroids game
 * Implement file saving and loading in the save directory, including Conf objects
+* Make a cooler example program -- asteroids game (needs sounds)
 * More and better docs
 * Make quit callback able to stop the game from quitting
 * Default font and print functions?
 * Start integrating ncollide at least?
 * Need to add more tests, somehow
 * Need to figure out exiting cleanly.  THIS IS SOLVED, but blocked by a bug in rust-sdl!  Issue #530.
-* Do we want to include Love2D's graphics transform functions?  ...probably not, honestly.
 
 
 ## Future work
