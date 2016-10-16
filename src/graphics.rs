@@ -11,7 +11,6 @@ use std::path;
 use std::collections::BTreeMap;
 
 use sdl2::pixels;
-use sdl2::rect;
 use sdl2::render;
 use sdl2::surface;
 use sdl2_image::ImageRWops;
@@ -22,13 +21,10 @@ use GameError;
 use GameResult;
 use util;
 
-/// The same as an `sdl2::rect::Rect`
-pub type Rect = rect::Rect;
-/// The same as an `sdl2::rect::Point`
-pub type Point = rect::Point;
-/// The same as an `sdl2::pixels::Color`
-pub type Color = pixels::Color;
-pub type BlendMode = render::BlendMode;
+pub use sdl2::rect::Rect;
+pub use sdl2::rect::Point;
+pub use sdl2::pixels::Color;
+pub use sdl2::render::BlendMode;
 
 /// Specifies whether a shape should be drawn
 /// filled or as an outline.

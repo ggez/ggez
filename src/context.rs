@@ -95,8 +95,6 @@ fn init_window(video: sdl2::VideoSubsystem,
 
     // Can't hurt
     let _ = sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "best");
-    // let render_quality_hint = sdl2::hint::get("SDL_HINT_RENDER_SCALE_QUALITY");
-    // println!("Render quality hint: {:?}", render_quality_hint);
 
     video.window(window_title, screen_width, screen_height)
          .position_centered()

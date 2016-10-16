@@ -4,19 +4,17 @@
 
 extern crate ggez;
 extern crate rand;
-extern crate sdl2;
 
 use std::path;
-use sdl2::pixels::Color;
-use sdl2::event::*;
 
 // TODO: Can we re-export these types from game.rs
 // instead of requring this use?
-use sdl2::keyboard::Keycode;
+// use sdl2::keyboard::Keycode;
 
 use ggez::audio;
 use ggez::conf;
-use ggez::game::{Game, GameState, Mod};
+use ggez::event::*;
+use ggez::game::{Game, GameState};
 // use ggez::game::Keycode;
 use ggez::{GameResult, Context};
 use ggez::graphics;
@@ -359,7 +357,7 @@ impl<'a> GameState for MainState {
     fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<MainState> {
         ctx.print_sound_stats();
         ctx.print_resource_stats();
-        graphics::set_background_color(ctx, Color::RGB(0, 0, 0));
+        graphics::set_background_color(ctx, graphics::Color::RGB(0, 0, 0));
 
         let assets = try!(Assets::new(ctx));
 

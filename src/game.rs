@@ -11,14 +11,13 @@ use timer;
 use std::path::Path;
 use std::time::Duration;
 
+use super::event as gevent;
+
 use sdl2;
 use sdl2::event::Event::*;
-use sdl2::event::*;
+use sdl2::event;
 use sdl2::mouse;
 use sdl2::keyboard;
-
-pub type Keycode = sdl2::keyboard::Keycode;
-pub type Mod = sdl2::keyboard::Mod;
 
 /// A trait for defining a game state.
 /// Implement `load()`, `update()` and `draw()` callbacks on this trait
@@ -72,9 +71,17 @@ pub trait GameState {
 
     fn mouse_wheel_event(&mut self, _x: i32, _y: i32) {}
 
-    fn key_down_event(&mut self, _keycode: Option<Keycode>, _keymod: Mod, _repeat: bool) {}
+    fn key_down_event(&mut self,
+                      _keycode: Option<gevent::Keycode>,
+                      _keymod: gevent::Mod,
+                      _repeat: bool) {
+    }
 
-    fn key_up_event(&mut self, _keycode: Option<Keycode>, _keymod: Mod, _repeat: bool) {}
+    fn key_up_event(&mut self,
+                    _keycode: Option<gevent::Keycode>,
+                    _keymod: gevent::Mod,
+                    _repeat: bool) {
+    }
 
     fn focus_event(&mut self, _gained: bool) {}
 
@@ -213,10 +220,10 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                         self.state.mouse_motion_event(mousestate, x, y, xrel, yrel)
                     }
                     MouseWheel { x, y, .. } => self.state.mouse_wheel_event(x, y),
-                    Window { win_event_id: WindowEventId::FocusGained, .. } => {
+                    Window { win_event_id: event::WindowEventId::FocusGained, .. } => {
                         self.state.focus_event(true)
                     }
-                    Window { win_event_id: WindowEventId::FocusLost, .. } => {
+                    Window { win_event_id: event::WindowEventId::FocusLost, .. } => {
                         self.state.focus_event(false)
                     }
                     _ => {}

@@ -11,6 +11,7 @@ extern crate zip;
 pub mod audio;
 pub mod conf;
 mod context;
+pub mod event;
 pub mod filesystem;
 pub mod game;
 pub mod graphics;
