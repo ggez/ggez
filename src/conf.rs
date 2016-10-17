@@ -5,13 +5,14 @@
 
 use std::io;
 use toml;
-use rustc_serialize::Decodable;
+use rustc_serialize::{Decodable, Encodable};
+use std::collections::BTreeMap;
 
 use {GameError, GameResult};
 
 /// A structure containing configuration data
 /// for the game engine.
-#[derive(RustcDecodable, RustcEncodable, Debug)]
+#[derive(RustcDecodable, RustcEncodable, Debug, PartialEq)]
 pub struct Conf {
     /// Version of ggez your game is designed to work with.
     pub version: String,
@@ -78,8 +79,42 @@ impl Conf {
     /// Saves the `Conf` to the given `Write` object,
     /// formatted as TOML.
     pub fn to_toml_file<W: io::Write>(&self, file: &mut W) -> GameResult<()> {
-        let toml_str = toml::encode_str(self);
+        // This gets a little elaborate because we have to
+        // add another level to the TOML object to create
+        // the [ggez] section.
+        //
+        // So we encode the Conf into a toml::Value...
+        let mut e = toml::Encoder::new();
+        self.encode(&mut e).unwrap();
+
+        // Create another node that is a Table containing it...
+        let mut t = BTreeMap::new();
+        t.insert("ggez".to_owned(), toml::Value::Table(e.toml));
+        let toml_t = toml::Value::Table(t);
+
+        // Then serialize that to a string.
+        let toml_str = toml::encode_str(&toml_t);
         let toml_bytes = toml_str.as_bytes();
         file.write_all(toml_bytes).map_err(GameError::from)
+    }
+}
+
+
+mod tests {
+    #[allow(unused_imports)]
+    use conf;
+    #[allow(unused_imports)]
+    use std::io::{Read, Write};
+
+    /// Tries to encode and decode a `Conf` object
+    /// and makes sure it gets the same result it had.
+    #[test]
+    fn encode_round_trip() {
+        let c1 = conf::Conf::new();
+        let mut writer = Vec::new();
+        c1.to_toml_file(&mut writer).unwrap();
+        let mut reader = writer.as_slice();
+        let c2 = conf::Conf::from_toml_file(&mut reader).unwrap();
+        assert_eq!(c1, c2);
     }
 }

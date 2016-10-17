@@ -20,7 +20,7 @@ etc.
 * TTF font rendering through SDL2_ttf, as well as (eventually) bitmap fonts.
 * Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
-* Easy timing and time-tracking functions.
+* Easy timing and FPS measurement functions.
 
 ## Examples
 

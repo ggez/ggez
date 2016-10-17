@@ -35,11 +35,11 @@ impl MainState {
             colors.push(Color::RGB(r, g, b));
         }
 
-        let mut last_point = graphics::Point::new(400,300);
+        let mut last_point = graphics::Point::new(400, 300);
         for color in colors {
             let x = rand::random::<i32>() % 50;
             let y = rand::random::<i32>() % 50;
-            let point = graphics::Point::new(last_point.x()+x, last_point.y()+y);
+            let point = graphics::Point::new(last_point.x() + x, last_point.y() + y);
             graphics::set_color(ctx, color);
             try!(graphics::line(ctx, last_point, point));
             last_point = point;
@@ -62,8 +62,9 @@ impl GameState for MainState {
         let soundpath = path::Path::new("sound.ogg");
         let font = graphics::Font::new(ctx, fontpath, 48).unwrap();
         let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
-        let bmpfont = graphics::Font::new_bitmap(ctx, bmpfontpath, "ABCDEFGHIJKLMNOPQRSTUVWXYZ").unwrap();
-        let bmptext =graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
+        let bmpfont = graphics::Font::new_bitmap(ctx, bmpfontpath, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+                          .unwrap();
+        let bmptext = graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
         let sound = audio::Sound::new(ctx, soundpath).unwrap();
 
         let _ = sound.play();
@@ -113,7 +114,7 @@ impl GameState for MainState {
 
         timer::sleep_until_next_frame(ctx, 60);
         // ctx.quit() is broken :-(
-        //ctx.quit();
+        // ctx.quit();
         Ok(())
     }
 }
@@ -123,9 +124,9 @@ impl GameState for MainState {
 // Loading a config file depends on having FS (or we can just fake our way around it
 // by creating an FS and then throwing it away; the costs are not huge.)
 pub fn main() {
-    let c = conf::Conf::new("imageview");
+    let c = conf::Conf::new();
     println!("Starting with default config: {:#?}", c);
-    let mut e: Game<MainState> = Game::new(c).unwrap();
+    let mut e: Game<MainState> = Game::new("imageview", c).unwrap();
     let result = e.run();
     if let Err(e) = result {
         println!("Error encountered: {:?}", e);

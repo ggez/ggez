@@ -212,6 +212,19 @@ impl Filesystem {
         fs::create_dir_all(pathbuf).map_err(GameError::from)
     }
 
+    /// Deletes the specified file in the user dir.
+    pub fn delete(&mut self, path: &path::Path) -> GameResult<()> {
+        let pathbuf = try!(self.rel_to_user_path(path));
+        fs::remove_file(pathbuf).map_err(GameError::from)
+    }
+
+    /// Deletes the specified directory in the user dir,
+    /// and all its contents!
+    pub fn delete_dir(&mut self, path: &path::Path) -> GameResult<()> {
+        let pathbuf = try!(self.rel_to_user_path(path));
+        fs::remove_dir_all(pathbuf).map_err(GameError::from)
+    }
+
     /// Takes a relative path and returns an absolute PathBuf
     /// based in the Filesystem's root path.
     fn rel_to_resource_path(&self, path: &path::Path) -> GameResult<path::PathBuf> {
@@ -392,6 +405,8 @@ impl Filesystem {
 mod tests {
     use filesystem::*;
     use std::path;
+    #[allow(unused_imports)]
+    use std::io::{Read, Write};
 
     #[allow(dead_code)]
     fn get_dummy_fs_for_tests() -> Filesystem {
@@ -421,6 +436,25 @@ mod tests {
 
         let dir_contents_size = f.read_dir(path::Path::new("")).unwrap().count();
         assert!(dir_contents_size > 0);
+    }
 
+    #[test]
+    fn test_create_delete_file() {
+        let mut fs = get_dummy_fs_for_tests();
+        let test_file = path::Path::new("testfile.txt");
+        let bytes = "test".as_bytes();
+
+        {
+            let mut file = fs.create(test_file).unwrap();
+            file.write(bytes).unwrap();
+        }
+        {
+            let mut buffer = Vec::new();
+            let mut file = fs.open(test_file).unwrap();
+            file.read_to_end(&mut buffer).unwrap();
+            assert_eq!(bytes, buffer.as_slice());
+        }
+
+        fs.delete(test_file).unwrap();
     }
 }
