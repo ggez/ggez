@@ -3,13 +3,14 @@
 
 A Rust library to create a Good Game Easily.
 
-It is built on SDL2, and aims to implement an API quite similar to (a simplified version of) the Love2D game
-engine.  This means it will contain basic and portable drawing and sound, resource loading and event handling.
+More specifically, ggez is a lightweight game framework for making 2D games.  It is built on SDL2, and aims to
+implement an API quite similar to (a Rustified version of) the Love2D game engine.  This means it will contain
+basic and portable 2D drawing, sound, resource loading and event handling.
 
 It's not meant to be everything to everyone, but rather a good base upon which to build.  However, eventually
-there should be a ggez-goodies crate that implements higher-level systems atop this, such as a resource cache,
-basic GUI/debugger, scene manager, and more sophisticated drawing tools such as sprites, layered and tiled maps,
-etc.
+there is also a [ggez-goodies](https://github.com/ggez/ggez-goodies) crate that aims to implement higher-level 
+tools atop this, such as a resource cache, basic GUI/debugger, scene manager, and more sophisticated drawing 
+systems such as sprites, layer, tiled maps, etc.
 
 
 ## Features

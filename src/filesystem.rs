@@ -402,13 +402,12 @@ impl Filesystem {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use filesystem::*;
     use std::path;
-    #[allow(unused_imports)]
     use std::io::{Read, Write};
 
-    #[allow(dead_code)]
     fn get_dummy_fs_for_tests() -> Filesystem {
         let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources");

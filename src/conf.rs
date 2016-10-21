@@ -100,11 +100,9 @@ impl Conf {
 }
 
 
+#[cfg(test)]
 mod tests {
-    #[allow(unused_imports)]
     use conf;
-    #[allow(unused_imports)]
-    use std::io::{Read, Write};
 
     /// Tries to encode and decode a `Conf` object
     /// and makes sure it gets the same result it had.
