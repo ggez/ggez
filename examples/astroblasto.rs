@@ -20,7 +20,7 @@ use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
 use std::time::Duration;
-use std::ops::{Add, AddAssign};
+use std::ops::{Add, AddAssign, Sub};
 
 
 #[derive(Debug, Copy, Clone)]
@@ -94,6 +94,17 @@ impl AddAssign for Vec2 {
     }
 }
 
+
+impl Sub for Vec2 {
+    type Output = Self;
+    fn sub(self, rhs: Vec2) -> Self {
+        Vec2 {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
+    }
+}
+
 impl Default for Vec2 {
     fn default() -> Self {
         Self::new(0., 0.)
@@ -114,6 +125,7 @@ struct Actor {
     facing: f64,
     velocity: Vec2,
     rvel: f64,
+    bbox_size: f64,
 
     // I am going to lazily overload "life" with a
     // double meaning rather than making a proper ECS;
@@ -133,6 +145,10 @@ const PLAYER_LIFE: f64 = 1.0;
 const SHOT_LIFE: f64 = 2.0;
 const ROCK_LIFE: f64 = 1.0;
 
+const PLAYER_BBOX: f64 = 12.0;
+const ROCK_BBOX: f64 = 12.0;
+const SHOT_BBOX: f64 = 6.0;
+
 fn create_player() -> Actor {
     Actor {
         tag: ActorType::Player,
@@ -140,6 +156,7 @@ fn create_player() -> Actor {
         facing: 0.,
         velocity: Vec2::default(),
         rvel: 0.,
+        bbox_size: PLAYER_BBOX,
         life: PLAYER_LIFE,
     }
 }
@@ -151,6 +168,7 @@ fn create_rock() -> Actor {
         facing: 0.,
         velocity: Vec2::default(),
         rvel: 0.,
+        bbox_size: ROCK_BBOX,
         life: ROCK_LIFE,
     }
 }
@@ -162,6 +180,7 @@ fn create_shot() -> Actor {
         facing: 0.,
         velocity: Vec2::default(),
         rvel: SHOT_RVEL,
+        bbox_size: SHOT_BBOX,
         life: SHOT_LIFE,
     }
 }
@@ -189,7 +208,7 @@ fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f64, max_radius: f64) ->
 
 const SHOT_SPEED: f64 = 200.0;
 const SHOT_RVEL: f64 = 0.1;
-
+const SPRITE_SIZE: u32 = 32;
 
 // Acceleration in pixels per second, more or less.
 const PLAYER_THRUST: f64 = 100.0;
@@ -223,18 +242,19 @@ fn update_actor_position(actor: &mut Actor, dt: f64) {
 }
 
 fn wrap_actor_position(actor: &mut Actor, sx: f64, sy: f64) {
-
     // Wrap screen
     let screen_x_bounds = sx / 2.0;
     let screen_y_bounds = sy / 2.0;
-    if actor.pos.x > screen_x_bounds {
+    let sprite_half_size = (SPRITE_SIZE / 2) as f64;
+    let actor_center = actor.pos - Vec2::new(-sprite_half_size, sprite_half_size);
+    if actor_center.x > screen_x_bounds {
         actor.pos.x -= sx;
-    } else if actor.pos.x < -screen_x_bounds {
+    } else if actor_center.x < -screen_x_bounds {
         actor.pos.x += sx;
     };
-    if actor.pos.y > screen_y_bounds {
+    if actor_center.y > screen_y_bounds {
         actor.pos.y -= sy;
-    } else if actor.pos.y < -screen_y_bounds {
+    } else if actor_center.y < -screen_y_bounds {
         actor.pos.y += sy;
     }
 }
@@ -326,7 +346,7 @@ impl MainState {
         let pos = world_to_screen_coords(self, &actor.pos);
         let px = pos.x as i32;
         let py = pos.y as i32;
-        let destrect = graphics::Rect::new(px, py, 32, 32);
+        let destrect = graphics::Rect::new(px, py, SPRITE_SIZE, SPRITE_SIZE);
         let actor_center = graphics::Point::new(16, 16);
         let image = self.actor_image(actor);
         graphics::draw_ex(ctx,
@@ -349,7 +369,20 @@ impl MainState {
     }
 
     fn clear_dead_stuff(&mut self) {
-        self.shots.retain(|s| s.life >= 0.0);
+        self.shots.retain(|s| s.life > 0.0);
+        self.rocks.retain(|r| r.life > 0.0);
+    }
+
+    fn handle_collisions(&mut self) {
+        for shot in &mut self.shots {
+            for rock in &mut self.rocks {
+                let distance = shot.pos - rock.pos;
+                if distance.magnitude() < (shot.bbox_size + rock.bbox_size) {
+                    shot.life = 0.0;
+                    rock.life = 0.0;
+                }
+            }
+        }
     }
 }
 
@@ -406,6 +439,8 @@ impl<'a> GameState for MainState {
             update_actor_position(act, seconds);
             wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
         }
+
+        self.handle_collisions();
 
         self.clear_dead_stuff();
 
