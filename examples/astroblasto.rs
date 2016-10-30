@@ -134,13 +134,6 @@ struct Actor {
     life: f64,
 }
 
-struct Assets {
-    player_image: graphics::Image,
-    shot_image: graphics::Image,
-    rock_image: graphics::Image,
-}
-
-
 const PLAYER_LIFE: f64 = 1.0;
 const SHOT_LIFE: f64 = 2.0;
 const ROCK_LIFE: f64 = 1.0;
@@ -278,6 +271,13 @@ fn world_to_screen_coords(state: &MainState, point: &Vec2) -> Vec2 {
 }
 
 
+struct Assets {
+    player_image: graphics::Image,
+    shot_image: graphics::Image,
+    rock_image: graphics::Image,
+    font: graphics::Font,
+}
+
 impl Assets {
     fn new(ctx: &mut Context) -> GameResult<Assets> {
         let player_image_path = path::Path::new("player.png");
@@ -286,10 +286,13 @@ impl Assets {
         let shot_image = try!(graphics::Image::new(ctx, shot_image_path));
         let rock_image_path = path::Path::new("rock.png");
         let rock_image = try!(graphics::Image::new(ctx, rock_image_path));
+        let font_path = path::Path::new("DejaVuSerif.ttf");
+        let font = try!(graphics::Font::new(ctx, font_path, 16));
         Ok(Assets {
             player_image: player_image,
             shot_image: shot_image,
             rock_image: rock_image,
+            font: font,
         })
     }
 }
@@ -315,12 +318,14 @@ struct MainState {
     player: Actor,
     shots: Vec<Actor>,
     rocks: Vec<Actor>,
-    score: u32,
+    level: i32,
+    score: i32,
     assets: Assets,
     screen_width: u32,
     screen_height: u32,
     input: InputState,
-    player_shot_timeout: f64,
+    player_shot_timeout: f64, /* score_display: graphics::Text,
+                               * level_display: graphics::Text, */
 }
 
 
@@ -374,8 +379,12 @@ impl MainState {
     }
 
     fn handle_collisions(&mut self) {
-        for shot in &mut self.shots {
-            for rock in &mut self.rocks {
+        for rock in &mut self.rocks {
+            let pdistance = rock.pos - self.player.pos;
+            if pdistance.magnitude() < (self.player.bbox_size + rock.bbox_size) {
+                self.player.life = 0.0;
+            }
+            for shot in &mut self.shots {
                 let distance = shot.pos - rock.pos;
                 if distance.magnitude() < (shot.bbox_size + rock.bbox_size) {
                     shot.life = 0.0;
@@ -384,6 +393,24 @@ impl MainState {
             }
         }
     }
+
+    fn check_for_level_respawn(&mut self) {
+        if self.rocks.len() == 0 {
+            self.level += 1;
+            let r = create_rocks(self.level + 5, &self.player.pos, 50.0, 150.0);
+            self.rocks.extend(r);
+        }
+    }
+
+    // fn update_ui(&mut self, ctx: &Context) {
+    //     let score_str = format!("SCORE: {}", self.score);
+    //     let level_str = format!("LEVEL: {}", self.level);
+    //     let score_text = graphics::Text::new(ctx, &score_str, &self.assets.font).unwrap();
+    //     let level_text = graphics::Text::new(ctx, &level_str, &self.assets.font).unwrap();
+
+    //     self.score_display = score_text;
+    //     self.level_display = level_text;
+    // }
 }
 
 impl<'a> GameState for MainState {
@@ -395,6 +422,8 @@ impl<'a> GameState for MainState {
         println!("Game resource path: {:?}", ctx.filesystem);
 
         let assets = try!(Assets::new(ctx));
+        let score_disp = try!(graphics::Text::new(ctx, "score", &assets.font));
+        // let level_disp = try!(graphics::Text::new(ctx, "level", &assets.font));
 
         let player = create_player();
         let rocks = create_rocks(5, &player.pos, 50.0, 150.0);
@@ -403,18 +432,20 @@ impl<'a> GameState for MainState {
             player: player,
             shots: Vec::new(),
             rocks: rocks,
+            level: 0,
             score: 0,
             assets: assets,
             screen_width: conf.window_width,
             screen_height: conf.window_height,
             input: InputState::default(),
-            player_shot_timeout: 0.0,
+            player_shot_timeout: 0.0, /* score_display: score_disp,
+                                       * level_display: level_disp, */
         };
 
         Ok(s)
     }
 
-    fn update(&mut self, _ctx: &mut Context, dt: Duration) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
         // println!("Player: {:?}", self.player);
         let seconds = timer::duration_to_f64(dt);
         player_handle_input(&mut self.player, &mut self.input, seconds);
@@ -444,6 +475,13 @@ impl<'a> GameState for MainState {
 
         self.clear_dead_stuff();
 
+        self.check_for_level_respawn();
+
+        if self.player.life == 0.0 {
+            println!("Game over!");
+            // ctx.quit() is broken.  ;_;
+            ctx.quit();
+        }
 
         Ok(())
     }
@@ -462,8 +500,6 @@ impl<'a> GameState for MainState {
 
         graphics::present(ctx);
         timer::sleep_until_next_frame(ctx, 60);
-        // ctx.quit() is broken :-(
-        // ctx.quit();
         Ok(())
     }
 
