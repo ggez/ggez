@@ -286,8 +286,9 @@ impl Assets {
         let shot_image = try!(graphics::Image::new(ctx, shot_image_path));
         let rock_image_path = path::Path::new("rock.png");
         let rock_image = try!(graphics::Image::new(ctx, rock_image_path));
-        let font_path = path::Path::new("DejaVuSerif.ttf");
-        let font = try!(graphics::Font::new(ctx, font_path, 16));
+        let font_path = path::Path::new("consolefont.png");
+        let font_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!,.?;'\"";
+        let font = try!(graphics::Font::new_bitmap(ctx, font_path, font_chars));
         Ok(Assets {
             player_image: player_image,
             shot_image: shot_image,
@@ -324,8 +325,10 @@ struct MainState {
     screen_width: u32,
     screen_height: u32,
     input: InputState,
-    player_shot_timeout: f64, /* score_display: graphics::Text,
-                               * level_display: graphics::Text, */
+    player_shot_timeout: f64, 
+    gui_dirty: bool,
+    score_display: graphics::Text,
+    level_display: graphics::Text,
 }
 
 
@@ -389,6 +392,8 @@ impl MainState {
                 if distance.magnitude() < (shot.bbox_size + rock.bbox_size) {
                     shot.life = 0.0;
                     rock.life = 0.0;
+                    self.score += 1;
+                    self.gui_dirty = true;
                 }
             }
         }
@@ -397,20 +402,21 @@ impl MainState {
     fn check_for_level_respawn(&mut self) {
         if self.rocks.len() == 0 {
             self.level += 1;
-            let r = create_rocks(self.level + 5, &self.player.pos, 50.0, 150.0);
+            self.gui_dirty = true;
+            let r = create_rocks(self.level + 5, &self.player.pos, 100.0, 250.0);
             self.rocks.extend(r);
         }
     }
 
-    // fn update_ui(&mut self, ctx: &Context) {
-    //     let score_str = format!("SCORE: {}", self.score);
-    //     let level_str = format!("LEVEL: {}", self.level);
-    //     let score_text = graphics::Text::new(ctx, &score_str, &self.assets.font).unwrap();
-    //     let level_text = graphics::Text::new(ctx, &level_str, &self.assets.font).unwrap();
+    fn update_ui(&mut self, ctx: &Context) {
+        let score_str = format!("SCORE{}", self.score);
+        let level_str = format!("LEVEL{}", self.level);
+        let score_text = graphics::Text::new(ctx, &score_str, &self.assets.font).unwrap();
+        let level_text = graphics::Text::new(ctx, &level_str, &self.assets.font).unwrap();
 
-    //     self.score_display = score_text;
-    //     self.level_display = level_text;
-    // }
+        self.score_display = score_text;
+        self.level_display = level_text;
+    }
 }
 
 impl<'a> GameState for MainState {
@@ -423,10 +429,10 @@ impl<'a> GameState for MainState {
 
         let assets = try!(Assets::new(ctx));
         let score_disp = try!(graphics::Text::new(ctx, "score", &assets.font));
-        // let level_disp = try!(graphics::Text::new(ctx, "level", &assets.font));
+        let level_disp = try!(graphics::Text::new(ctx, "level", &assets.font));
 
         let player = create_player();
-        let rocks = create_rocks(5, &player.pos, 50.0, 150.0);
+        let rocks = create_rocks(5, &player.pos, 100.0, 250.0);
 
         let s = MainState {
             player: player,
@@ -438,8 +444,10 @@ impl<'a> GameState for MainState {
             screen_width: conf.window_width,
             screen_height: conf.window_height,
             input: InputState::default(),
-            player_shot_timeout: 0.0, /* score_display: score_disp,
-                                       * level_display: level_disp, */
+            player_shot_timeout: 0.0, 
+            gui_dirty: true,
+            score_display: score_disp,
+            level_display: level_disp, 
         };
 
         Ok(s)
@@ -477,6 +485,11 @@ impl<'a> GameState for MainState {
 
         self.check_for_level_respawn();
 
+        if self.gui_dirty {
+            self.update_ui(ctx);
+            self.gui_dirty = false;
+        }
+
         if self.player.life == 0.0 {
             println!("Game over!");
             // ctx.quit() is broken.  ;_;
@@ -497,6 +510,12 @@ impl<'a> GameState for MainState {
         for r in &self.rocks {
             try!(self.draw_actor(ctx, &r));
         }
+
+
+        let level_rect = graphics::Rect::new(0, 0, self.level_display.width(), self.level_display.height());
+        let score_rect = graphics::Rect::new(200, 0, self.score_display.width(), self.score_display.height());
+        graphics::draw(ctx, &self.level_display, None, Some(level_rect));
+        graphics::draw(ctx, &self.score_display, None, Some(score_rect));
 
         graphics::present(ctx);
         timer::sleep_until_next_frame(ctx, 60);

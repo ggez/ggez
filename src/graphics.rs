@@ -263,12 +263,6 @@ impl Image {
         })
     }
 
-    pub fn width(&self) -> u32 {
-        self.texture_query.width
-    }
-    pub fn height(&self) -> u32 {
-        self.texture_query.height
-    }
 
     pub fn rect(&self) -> Rect {
         Rect::new(0, 0, self.width(), self.height())
@@ -313,6 +307,13 @@ impl Image {
     pub fn set_alpha_mod(&mut self, alpha: u8) {
         self.texture.set_alpha_mod(alpha)
     }
+
+    pub fn width(&self) -> u32 {
+        self.texture_query.width
+    }
+    pub fn height(&self) -> u32 {
+        self.texture_query.height
+    }
 }
 
 
@@ -349,6 +350,7 @@ impl Drawable for Image {
                          flip_vertical)
                 .map_err(GameError::RenderError)
     }
+
 }
 
 /// A font that defines the shape of characters drawn on the screen.
@@ -409,6 +411,15 @@ impl fmt::Debug for Font {
     }
 }
 
+/// Drawable text created from a `Font`.
+/// SO FAR this doesn't need to be a separate type from Image, really.
+/// But looking at various API's its functionality will probably diverge
+/// eventually, so.
+pub struct Text {
+    texture: render::Texture,
+    texture_query: render::TextureQuery,
+    contents: String,
+}
 
 fn render_bitmap(context: &Context,
                  text: &str,
@@ -434,35 +445,42 @@ fn render_bitmap(context: &Context,
         try!(surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect)));
     }
     let image = try!(Image::from_surface(context, dest_surface));
-    Ok(Text { texture: image.texture })
+    let text_string = text.to_string();
+    let tq = image.texture.query();
+    Ok(Text { texture: image.texture, texture_query: tq, contents: text_string })
 }
 
-/// Drawable text created from a `Font`.
-/// SO FAR this doesn't need to be a separate type from Image, really.
-/// But looking at various API's its functionality will probably diverge
-/// eventually, so.
-pub struct Text {
-    texture: render::Texture,
-}
 
 impl Text {
     /// Renders a new `Text` from the given `Font`
     pub fn new(context: &Context, text: &str, font: &Font) -> GameResult<Text> {
         let renderer = &context.renderer;
         match *font {
-            Font::TTFFont { font: ref f } => {
-                let surf = try!(f.render(text)
-                                 .blended(pixels::Color::RGB(255, 255, 255)));
+            Font::TTFFont { font: ref f, .. } => {
                 // BUGGO: SEGFAULTS HERE!  But only when using solid(), not blended()!
                 // Loading the font from a file rather than a RWops makes it work fine.
                 // See https://github.com/andelf/rust-sdl2_ttf/issues/43
+                let surf = try!(f.render(text)
+                                 .solid(pixels::Color::RGB(255, 255, 255)));
                 let texture = try!(renderer.create_texture_from_surface(surf));
-                Ok(Text { texture: texture })
+                let tq = texture.query();
+                let text_string = text.to_string();
+                Ok(Text { texture: texture, texture_query: tq, contents: text_string })
             }
             Font::BitmapFont { ref surface, glyph_width, glyphs: ref glyphs_map, .. } => {
                 render_bitmap(context, text, surface, glyphs_map, glyph_width)
             }
         }
+    }
+    pub fn width(&self) -> u32 {
+        self.texture_query.width
+    }
+    pub fn height(&self) -> u32 {
+        self.texture_query.height
+    }
+
+    pub fn contents(&self) -> &str {
+        &self.contents
     }
 }
 
@@ -488,6 +506,7 @@ impl Drawable for Text {
                          flip_vertical)
                 .map_err(GameError::RenderError)
     }
+
 }
 
 impl fmt::Debug for Text {
