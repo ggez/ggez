@@ -276,6 +276,8 @@ struct Assets {
     shot_image: graphics::Image,
     rock_image: graphics::Image,
     font: graphics::Font,
+    shot_sound: audio::Sound,
+    hit_sound: audio::Sound,
 }
 
 impl Assets {
@@ -289,11 +291,18 @@ impl Assets {
         let font_path = path::Path::new("consolefont.png");
         let font_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!,.?;'\"";
         let font = try!(graphics::Font::new_bitmap(ctx, font_path, font_chars));
+
+        let shot_sound_path = path::Path::new("pew.ogg");
+        let shot_sound = try!(audio::Sound::new(ctx, shot_sound_path));
+        let hit_sound_path = path::Path::new("boom.ogg");
+        let hit_sound = try!(audio::Sound::new(ctx, hit_sound_path));
         Ok(Assets {
             player_image: player_image,
             shot_image: shot_image,
             rock_image: rock_image,
             font: font,
+            shot_sound: shot_sound,
+            hit_sound: hit_sound,
         })
     }
 }
@@ -325,7 +334,7 @@ struct MainState {
     screen_width: u32,
     screen_height: u32,
     input: InputState,
-    player_shot_timeout: f64, 
+    player_shot_timeout: f64,
     gui_dirty: bool,
     score_display: graphics::Text,
     level_display: graphics::Text,
@@ -346,6 +355,7 @@ impl MainState {
         shot.velocity.y = SHOT_SPEED * direction.y;
 
         self.shots.push(shot);
+        let _ = self.assets.shot_sound.play();
     }
 
 
@@ -394,6 +404,7 @@ impl MainState {
                     rock.life = 0.0;
                     self.score += 1;
                     self.gui_dirty = true;
+                    let _ = self.assets.hit_sound.play();
                 }
             }
         }
@@ -444,10 +455,10 @@ impl<'a> GameState for MainState {
             screen_width: conf.window_width,
             screen_height: conf.window_height,
             input: InputState::default(),
-            player_shot_timeout: 0.0, 
+            player_shot_timeout: 0.0,
             gui_dirty: true,
             score_display: score_disp,
-            level_display: level_disp, 
+            level_display: level_disp,
         };
 
         Ok(s)
@@ -493,7 +504,7 @@ impl<'a> GameState for MainState {
         if self.player.life == 0.0 {
             println!("Game over!");
             // ctx.quit() is broken.  ;_;
-            ctx.quit();
+            let _ = ctx.quit();
         }
 
         Ok(())
@@ -512,10 +523,16 @@ impl<'a> GameState for MainState {
         }
 
 
-        let level_rect = graphics::Rect::new(0, 0, self.level_display.width(), self.level_display.height());
-        let score_rect = graphics::Rect::new(200, 0, self.score_display.width(), self.score_display.height());
-        graphics::draw(ctx, &self.level_display, None, Some(level_rect));
-        graphics::draw(ctx, &self.score_display, None, Some(score_rect));
+        let level_rect = graphics::Rect::new(0,
+                                             0,
+                                             self.level_display.width(),
+                                             self.level_display.height());
+        let score_rect = graphics::Rect::new(200,
+                                             0,
+                                             self.score_display.width(),
+                                             self.score_display.height());
+        try!(graphics::draw(ctx, &self.level_display, None, Some(level_rect)));
+        try!(graphics::draw(ctx, &self.score_display, None, Some(score_rect)));
 
         graphics::present(ctx);
         timer::sleep_until_next_frame(ctx, 60);

@@ -43,19 +43,20 @@ found!  Should be in "/home/foo/src/ggez/target/debug/resources")`.
 Just copy the `resources` directory to where the error says it's
 looking.
 
-## TO DO for 0.2
+## TO DO for 0.2.1
 
 * Submit an update to the zip crate to check whether a directory exists.
-* Make a cooler example program -- asteroids game (needs sounds)
 * More and better docs
 * Make quit callback able to stop the game from quitting
-* Default font and print functions?
-* Start integrating ncollide at least?
-* Need to add more tests, somehow
 * Need to figure out exiting cleanly.  THIS IS SOLVED, but blocked by a bug in rust-sdl!  Issue #530.
+* Figure out sdl2_ttf bug (or switch to rusttype)
 
 
 ## Future work
+
+* Default font and print functions?
+* Start integrating ncollide at least?
+* Need to add more tests, somehow
 
 It *would* be nice to have a full OpenGL-y backend like Love2D does, with things like shaders, render targets,
 etc.  `gfx` might be the best option there, maaaaaaybe.  Right now the API is mostly limited to Love2D 0.7 or so.  Using OpenAL (through the `ears` crate perhaps?)
