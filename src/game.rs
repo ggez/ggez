@@ -83,9 +83,11 @@ pub trait GameState {
 
     fn focus_event(&mut self, _gained: bool) {}
 
-    // TODO: This should return bool whether or not to actually quit
-    fn quit_event(&mut self) {
+    /// Called upon a quit event.  If it returns true,
+    /// the game does not exit.
+    fn quit_event(&mut self) -> bool {
         println!("Quitting game");
+        false
     }
 }
 
@@ -100,13 +102,6 @@ pub struct Game<'a, S: GameState> {
     state: S,
     context: Context<'a>,
 }
-
-// TODO:
-// Submit rust-sdl2 bug for keyboard::scancode::KpOoctal,
-// keyboard::keycode::KpCear,
-// MouseWheel event not having the mousewheel direction,
-// or x and y(???)
-
 
 impl<'a, S: GameState + 'static> Game<'a, S> {
     /// Creates a new `Game` with the given  default config
@@ -161,21 +156,18 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// Continues until a `Quit` event is created, for instance
     /// via `Context::quit()`
     pub fn run(&mut self) -> GameResult<()> {
-        // TODO: Window icon
         let ctx = &mut self.context;
         let mut event_pump = try!(ctx.sdl_context.event_pump());
 
-        let mut done = false;
-        while !done {
+        let mut continuing = true;
+        while continuing {
             ctx.timer_context.tick();
 
             for event in event_pump.poll_iter() {
                 match event {
                     Quit { .. } => {
-                        self.state.quit_event();
+                        continuing = self.state.quit_event();
                         // println!("Quit event: {:?}", t);
-                        done = true
-
                     }
                     // TODO: We need a good way to have
                     // a default like this, while still allowing
@@ -220,6 +212,9 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
             // together to the same framerate; we should probably
             // change that.
             // How does Love2D do it though?
+            // Love2D does it the simple and dumb way and just does
+            // sleep(0.001) after each draw; see
+            // http://www.love2d.org/wiki/love.run
             let dt = timer::get_delta(ctx);
             try!(self.state.update(ctx, dt));
             try!(self.state.draw(ctx));

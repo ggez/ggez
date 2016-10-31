@@ -1,10 +1,10 @@
 //! The `graphics` module performs the actual drawing of images, text, and other
 //! objects with the `Drawable` trait.  It also handles basic loading of images
-//! and text, apparently.
+//! and text.
 //!
-//! Also manages graphics state, coordinate systems, etc.  The default coordinate system
-//! has the origin in the upper-left corner of the screen, unless it should be
-//! something else, then we should change it.
+//! This module also manages graphics state, coordinate systems, etc.
+//! The default coordinate system has the origin in the upper-left
+//! corner of the screen.
 
 use std::fmt;
 use std::path;
@@ -90,6 +90,7 @@ pub fn clear(ctx: &mut Context) {
     r.set_draw_color(ctx.gfx_context.foreground);
 }
 
+/// Draws the given `Drawable` object to the screen.
 pub fn draw(ctx: &mut Context,
             drawable: &Drawable,
             src: Option<Rect>,
@@ -98,6 +99,8 @@ pub fn draw(ctx: &mut Context,
     drawable.draw(ctx, src, dst)
 }
 
+/// Draws the given `Drawable` object to the screen,
+/// applying a rotation and mirroring if desired.
 // #[allow(too_many_arguments)]
 pub fn draw_ex(ctx: &mut Context,
                drawable: &Drawable,
@@ -264,6 +267,7 @@ impl Image {
     }
 
 
+    /// Returns the dimensions of the image.
     pub fn rect(&self) -> Rect {
         Rect::new(0, 0, self.width(), self.height())
     }
@@ -308,9 +312,12 @@ impl Image {
         self.texture.set_alpha_mod(alpha)
     }
 
+    /// Return the width of the image.
     pub fn width(&self) -> u32 {
         self.texture_query.width
     }
+
+    /// Return the height of the image.
     pub fn height(&self) -> u32 {
         self.texture_query.height
     }
@@ -353,7 +360,7 @@ impl Drawable for Image {
 }
 
 /// A font that defines the shape of characters drawn on the screen.
-/// Can be created from a .ttf file or from an image.
+/// Can be created from a .ttf file or from an image (bitmap fonts).
 pub enum Font {
     TTFFont {
         font: sdl2_ttf::Font,
@@ -411,9 +418,6 @@ impl fmt::Debug for Font {
 }
 
 /// Drawable text created from a `Font`.
-/// SO FAR this doesn't need to be a separate type from Image, really.
-/// But looking at various API's its functionality will probably diverge
-/// eventually, so.
 pub struct Text {
     texture: render::Texture,
     texture_query: render::TextureQuery,
@@ -479,13 +483,18 @@ impl Text {
             }
         }
     }
+
+    /// Returns the width of the rendered text, in pixels.
     pub fn width(&self) -> u32 {
         self.texture_query.width
     }
+
+    /// Returns the height of the rendered text, in pixels.
     pub fn height(&self) -> u32 {
         self.texture_query.height
     }
 
+    /// Returns the string that the text represents.
     pub fn contents(&self) -> &str {
         &self.contents
     }
