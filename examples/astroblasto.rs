@@ -7,21 +7,22 @@ extern crate rand;
 
 use std::path;
 
-// TODO: Can we re-export these types from game.rs
-// instead of requring this use?
-// use sdl2::keyboard::Keycode;
-
 use ggez::audio;
 use ggez::conf;
 use ggez::event::*;
 use ggez::game::{Game, GameState};
-// use ggez::game::Keycode;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
 use std::time::Duration;
 use std::ops::{Add, AddAssign, Sub};
 
+/***********************************************************************
+ * Basic stuff.
+ * First, we create a vector type.
+ * You're probably better off using a real vector math lib but I
+ * didn't want to add more dependencies and such.
+ **********************************************************************/
 
 #[derive(Debug, Copy, Clone)]
 struct Vec2 {
@@ -111,6 +112,15 @@ impl Default for Vec2 {
     }
 }
 
+/***********************************************************************
+ * Now we define our Actor's.
+ * An Actor is anything in the game world.
+ * We're not *quite* making a real entity-component system but it's
+ * pretty close.  For a more complicated game you would want a
+ * real ECS, but for this it's enough to say that all our game objects
+ * contain pretty much the same data.
+ **********************************************************************/
+
 #[derive(Debug)]
 enum ActorType {
     Player,
@@ -141,6 +151,10 @@ const ROCK_LIFE: f64 = 1.0;
 const PLAYER_BBOX: f64 = 12.0;
 const ROCK_BBOX: f64 = 12.0;
 const SHOT_BBOX: f64 = 6.0;
+
+/***********************************************************************
+ * Now we have some initializer functions for different game objects.
+ **********************************************************************/
 
 fn create_player() -> Actor {
     Actor {
@@ -199,6 +213,16 @@ fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f64, max_radius: f64) ->
     (0..num).map(new_rock).collect()
 }
 
+/***********************************************************************
+ * Now we have functions to handle physics.  We do simple Newtonian
+ * physics (so we do have inertia), and cap the max speed so that we
+ * don't have to worry too much about small objects clipping through
+ * each other.
+ *
+ * Our unit of world space is simply pixels, though we do transform
+ * the coordinate system so that +y is up and -y is down.
+ ***********************************************************************/
+
 const SHOT_SPEED: f64 = 200.0;
 const SHOT_RVEL: f64 = 0.1;
 const SPRITE_SIZE: u32 = 32;
@@ -234,6 +258,9 @@ fn update_actor_position(actor: &mut Actor, dt: f64) {
     actor.facing += actor.rvel;
 }
 
+/// Takes an actor and wraps its position to the bounds of the
+/// screen, so if it goes off the left side of the screen it
+/// will re-enter on the right side and so on.
 fn wrap_actor_position(actor: &mut Actor, sx: f64, sy: f64) {
     // Wrap screen
     let screen_x_bounds = sx / 2.0;
@@ -257,11 +284,10 @@ fn handle_timed_life(actor: &mut Actor, dt: f64) {
 }
 
 
-// Translates the world coordinate system, which
-// has Y pointing up and the origin at the center,
-// to the screen coordinate system, which has Y
-// pointing downward and the origin at the top-left,
-
+/// Translates the world coordinate system, which
+/// has Y pointing up and the origin at the center,
+/// to the screen coordinate system, which has Y
+/// pointing downward and the origin at the top-left,
 fn world_to_screen_coords(state: &MainState, point: &Vec2) -> Vec2 {
     let width = state.screen_width as f64;
     let height = state.screen_height as f64;
@@ -270,6 +296,12 @@ fn world_to_screen_coords(state: &MainState, point: &Vec2) -> Vec2 {
     Vec2 { x: x, y: y }
 }
 
+/************************************************************************
+ * So that was the real meat of our game.  Now we just need a structure
+ * to contain the images, sounds, etc. that we need to hang on to; this
+ * is our "asset management system".  All the file names and such are
+ * just hard-coded.
+ ***********************************************************************/
 
 struct Assets {
     player_image: graphics::Image,
@@ -307,6 +339,12 @@ impl Assets {
     }
 }
 
+/************************************************************************
+ * The InputState is exactly what it sounds like, it just keeps track of
+ * the user's input state so that we turn keyboard events into something
+ * state-based and device-independent.
+ ***********************************************************************/
+
 #[derive(Debug)]
 struct InputState {
     xaxis: f64,
@@ -323,6 +361,17 @@ impl Default for InputState {
         }
     }
 }
+
+/************************************************************************
+ * Now we're getting into the actual game loop.  The MainState is our
+ * game's "global" state, it keeps track of everything we need for
+ * actually running the game.
+ * 
+ * Our game objects are simply a vector for each actor type, and we
+ * probably mingle gameplay-state (like score) and hardware-state
+ * (like gui_dirty) a little mroe than we should, but for something
+ * this small it hardly matters.
+ *************************************************************************/
 
 struct MainState {
     player: Actor,
@@ -360,7 +409,6 @@ impl MainState {
 
 
     fn draw_actor(&self, ctx: &mut Context, actor: &Actor) -> GameResult<()> {
-
         let pos = world_to_screen_coords(self, &actor.pos);
         let px = pos.x as i32;
         let py = pos.y as i32;
@@ -430,6 +478,12 @@ impl MainState {
     }
 }
 
+/************************************************************************
+ * Now we implement the GameState trait from ggez::game, which provides
+ * ggez with callbacks for loading, updating and drawing our game, as
+ * well as handling events.
+ ***********************************************************************/
+
 impl<'a> GameState for MainState {
     fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<MainState> {
         ctx.print_sound_stats();
@@ -465,45 +519,58 @@ impl<'a> GameState for MainState {
     }
 
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
-        // println!("Player: {:?}", self.player);
         let seconds = timer::duration_to_f64(dt);
+
+        // Update the player state based on the user input.
         player_handle_input(&mut self.player, &self.input, seconds);
         self.player_shot_timeout -= seconds;
         if self.input.fire && self.player_shot_timeout < 0.0 {
             self.fire_player_shot();
         }
 
+        // Update the physics for all actors.
+        // First the player...
         update_actor_position(&mut self.player, seconds);
         wrap_actor_position(&mut self.player,
                             self.screen_width as f64,
                             self.screen_height as f64);
 
-        // let mut dead_shots = Vec::new();
+        // Then the shots...
         for act in &mut self.shots {
             update_actor_position(act, seconds);
             wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
             handle_timed_life(act, seconds);
         }
 
+        // And finally the rocks.
         for act in &mut self.rocks {
             update_actor_position(act, seconds);
             wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
         }
 
+        // Handle the results of things moving:
+        // collision detection, object death, and if
+        // we have killed all the rocks in the level,
+        // spawn more of them.
         self.handle_collisions();
 
         self.clear_dead_stuff();
 
         self.check_for_level_respawn();
 
+        // Using a gui_dirty flag here is a little
+        // messy but fine here.
         if self.gui_dirty {
             self.update_ui(ctx);
             self.gui_dirty = false;
         }
 
-        if self.player.life == 0.0 {
+        // Finally we check for our end state.
+        // I want to have a nice death screen eventually,
+        // but for now we just quit.
+        if self.player.life <= 0.0 {
             println!("Game over!");
-            // ctx.quit() is broken.  ;_;
+            // ctx.quit() is broken at the moment.  ;_;
             let _ = ctx.quit();
         }
 
@@ -511,8 +578,11 @@ impl<'a> GameState for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        // Our drawing is quite simple.
+        // Just clear the screen...
         graphics::clear(ctx);
 
+        // Loop over all objects drawing them...
         let p = &self.player;
         try!(self.draw_actor(ctx, p));
         for s in &self.shots {
@@ -523,22 +593,28 @@ impl<'a> GameState for MainState {
         }
 
 
-        let level_rect = graphics::Rect::new(0,
-                                             0,
-                                             self.level_display.width(),
-                                             self.level_display.height());
-        let score_rect = graphics::Rect::new(200,
-                                             0,
-                                             self.score_display.width(),
-                                             self.score_display.height());
+        // And draw the GUI elements in the right places.
+        let level_rect = graphics::Rect::new(
+            0,
+            0,
+            self.level_display.width(),
+            self.level_display.height());
+        let score_rect = graphics::Rect::new(
+            200,
+            0,
+            self.score_display.width(),
+            self.score_display.height());
         try!(graphics::draw(ctx, &self.level_display, None, Some(level_rect)));
         try!(graphics::draw(ctx, &self.score_display, None, Some(score_rect)));
 
+        // Then we flip the screen and wait for the next frame.
         graphics::present(ctx);
         timer::sleep_until_next_frame(ctx, 60);
         Ok(())
     }
 
+    // Handle key events.  These just map keyboard events
+    // and alter our input state appropriately.
     fn key_down_event(&mut self, keycode: Option<Keycode>, _keymod: Mod, _repeat: bool) {
         match keycode {
             Some(Keycode::Up) => {
@@ -576,6 +652,11 @@ impl<'a> GameState for MainState {
         }
     }
 }
+
+/************************************************************************
+ * Finally our main function!  Which merely sets up a config and calls
+ * ggez::game::Game::new() with our MainState type.
+ ***********************************************************************/
 
 pub fn main() {
     let mut c = conf::Conf::new();

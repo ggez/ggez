@@ -48,11 +48,13 @@ looking.
 * Submit an update to the zip crate to make it possible to check whether a directory exists.
 * Need to figure out exiting cleanly.  Blocked by a bug in rust-sdl2, issue #530.  Pull request merged, just need a release.
 * Once that's done, make quit callback able to stop the game from quitting
-* Figure out sdl2_ttf bug (or switch to rusttype)
+* Figure out sdl2_ttf issue #43 (or switch to rusttype)
 
 
 ## Future work
 
+* Make better mainloop handling; separate timesteps for physics and
+  graphics.  Interpolation???
 * More and better docs
 * Default font and print functions?
 * Start integrating ncollide at least?
