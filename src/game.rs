@@ -171,7 +171,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
 
             for event in event_pump.poll_iter() {
                 match event {
-                    Quit { timestamp: _ } => {
+                    Quit { .. } => {
                         self.state.quit_event();
                         // println!("Quit event: {:?}", t);
                         done = true

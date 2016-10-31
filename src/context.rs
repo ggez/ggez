@@ -104,7 +104,7 @@ fn init_window(video: sdl2::VideoSubsystem,
 }
 
 fn set_window_icon(context: &mut Context, conf: &conf::Conf) -> GameResult<()> {
-    if conf.window_icon.len() > 0 {
+    if conf.window_icon.is_empty() {
         let path = path::Path::new(&conf.window_icon);
         let icon_surface = try!(util::load_surface(context, path));
 

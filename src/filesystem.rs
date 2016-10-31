@@ -393,8 +393,7 @@ impl Filesystem {
         let conf_path = path::Path::new(CONFIG_NAME);
         if self.is_file(conf_path) {
             let mut file = try!(self.create(conf_path));
-            let c = try!(conf.to_toml_file(&mut file));
-            Ok(c)
+            conf.to_toml_file(&mut file)
 
         } else {
             Err(GameError::ConfigError(String::from("Config file not found")))

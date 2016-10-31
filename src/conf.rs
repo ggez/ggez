@@ -12,7 +12,7 @@ use {GameError, GameResult};
 
 /// A structure containing configuration data
 /// for the game engine.
-#[derive(RustcDecodable, RustcEncodable, Debug, PartialEq)]
+#[derive(RustcDecodable, RustcEncodable, Debug, PartialEq, Default)]
 pub struct Conf {
     /// Version of ggez your game is designed to work with.
     pub version: String,
@@ -45,6 +45,7 @@ pub struct Conf {
                             * modules_window: bool,
                             * modules_thread: bool, */
 }
+
 
 impl Conf {
     /// Create a new Conf with some vague defaults.

@@ -147,7 +147,7 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
 }
 
 /// Draws many rectangles.
-/// Not part of the Love2D API but no reason not to include it.
+/// Not part of the LOVE API but no reason not to include it.
 pub fn rectangles(ctx: &mut Context, mode: DrawMode, rect: &[Rect]) -> GameResult<()> {
     let r = &mut ctx.renderer;
     match mode {
@@ -350,7 +350,6 @@ impl Drawable for Image {
                          flip_vertical)
                 .map_err(GameError::RenderError)
     }
-
 }
 
 /// A font that defines the shape of characters drawn on the screen.
@@ -447,7 +446,11 @@ fn render_bitmap(context: &Context,
     let image = try!(Image::from_surface(context, dest_surface));
     let text_string = text.to_string();
     let tq = image.texture.query();
-    Ok(Text { texture: image.texture, texture_query: tq, contents: text_string })
+    Ok(Text {
+        texture: image.texture,
+        texture_query: tq,
+        contents: text_string,
+    })
 }
 
 
@@ -465,7 +468,11 @@ impl Text {
                 let texture = try!(renderer.create_texture_from_surface(surf));
                 let tq = texture.query();
                 let text_string = text.to_string();
-                Ok(Text { texture: texture, texture_query: tq, contents: text_string })
+                Ok(Text {
+                    texture: texture,
+                    texture_query: tq,
+                    contents: text_string,
+                })
             }
             Font::BitmapFont { ref surface, glyph_width, glyphs: ref glyphs_map, .. } => {
                 render_bitmap(context, text, surface, glyphs_map, glyph_width)
@@ -506,7 +513,6 @@ impl Drawable for Text {
                          flip_vertical)
                 .map_err(GameError::RenderError)
     }
-
 }
 
 impl fmt::Debug for Text {

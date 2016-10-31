@@ -18,7 +18,7 @@ systems such as sprites, layer, tiled maps, etc.
 * Filesystem abstraction that lets you load resources from folders or zip files
 * Hardware-accelerated rendering of bitmaps
 * Playing and loading sounds through SDL2_mixer
-* TTF font rendering through SDL2_ttf, as well as (eventually) bitmap fonts.
+* TTF font rendering through SDL2_ttf, as well as bitmap fonts.
 * Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
 * Easy timing and FPS measurement functions.
@@ -43,17 +43,17 @@ found!  Should be in "/home/foo/src/ggez/target/debug/resources")`.
 Just copy the `resources` directory to where the error says it's
 looking.
 
-## TO DO for 0.2.1
+## Extant bugs
 
-* Submit an update to the zip crate to check whether a directory exists.
-* More and better docs
-* Make quit callback able to stop the game from quitting
-* Need to figure out exiting cleanly.  THIS IS SOLVED, but blocked by a bug in rust-sdl!  Issue #530.
+* Submit an update to the zip crate to make it possible to check whether a directory exists.
+* Need to figure out exiting cleanly.  Blocked by a bug in rust-sdl2, issue #530.  Pull request merged, just need a release.
+* Once that's done, make quit callback able to stop the game from quitting
 * Figure out sdl2_ttf bug (or switch to rusttype)
 
 
 ## Future work
 
+* More and better docs
 * Default font and print functions?
 * Start integrating ncollide at least?
 * Need to add more tests, somehow

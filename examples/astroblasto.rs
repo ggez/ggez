@@ -411,7 +411,7 @@ impl MainState {
     }
 
     fn check_for_level_respawn(&mut self) {
-        if self.rocks.len() == 0 {
+        if self.rocks.is_empty() {
             self.level += 1;
             self.gui_dirty = true;
             let r = create_rocks(self.level + 5, &self.player.pos, 100.0, 250.0);
@@ -467,7 +467,7 @@ impl<'a> GameState for MainState {
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
         // println!("Player: {:?}", self.player);
         let seconds = timer::duration_to_f64(dt);
-        player_handle_input(&mut self.player, &mut self.input, seconds);
+        player_handle_input(&mut self.player, &self.input, seconds);
         self.player_shot_timeout -= seconds;
         if self.input.fire && self.player_shot_timeout < 0.0 {
             self.fire_player_shot();
