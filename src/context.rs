@@ -79,20 +79,6 @@ fn init_window(video: sdl2::VideoSubsystem,
                screen_height: u32)
                -> GameResult<Window> {
 
-
-    // Does not appear to work on my laptop's graphics card,
-    // needs more experimentation.
-    // let gl_attr = video.gl_attr();
-    // //gl_attr.set_context_flags().debug().set();
-    // gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
-    // gl_attr.set_multisample_buffers(1);
-    // gl_attr.set_multisample_samples(4);
-
-    // let msaa_buffers = gl_attr.multisample_buffers();
-    // let msaa_samples = gl_attr.multisample_samples();
-
-    // println!("buffers: {}, samples {}", msaa_buffers, msaa_samples);
-
     // Can't hurt
     let _ = sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "best");
 
@@ -117,6 +103,7 @@ fn set_window_icon(context: &mut Context, conf: &conf::Conf) -> GameResult<()> {
 
 impl<'a> Context<'a> {
     /// Tries to create a new Context using settings from the given config file.
+    /// Usually called by the engine as part of the set-up code.
     pub fn from_conf(conf: &conf::Conf,
                      fs: Filesystem,
                      sdl_context: Sdl)
@@ -184,15 +171,15 @@ impl<'a> Context<'a> {
     }
 
     /// Triggers a Quit event.
-    /// BUGGO: This actually doesn't work 'cause
-    /// we can't push non-user event types for some reason!
+    /// Currently doesn't work but a patch has been merged,
+    /// just need to wait for it to be released.
     /// See https://github.com/AngryLawyer/rust-sdl2/issues/530
     /// :-(
-    // TODO: Either fix this bug in sdl2 or work around it with
-    // a bool in the Context.
     pub fn quit(&mut self) -> GameResult<()> {
-        let e = sdl2::event::Event::Quit { timestamp: 10000 };
-        println!("Pushing event {:?}", e);
+        let now_dur = timer::get_time_since_start(self);
+        let now = timer::duration_to_f64(now_dur);
+        let e = sdl2::event::Event::Quit { timestamp: now as u32 };
+        // println!("Pushing event {:?}", e);
         self.event_context
             .push_event(e)
             .map_err(GameError::from)

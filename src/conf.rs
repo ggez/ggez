@@ -1,7 +1,5 @@
 //! The `conf` module contains functions for loading and saving game
 //! configurations.
-//! A lot of this is lifted whole-hog from LÖVE because it's stuff
-//! we need anyway.
 
 use std::io;
 use toml;
@@ -64,7 +62,7 @@ impl Conf {
     ///
     /// It only looks for things under the `[ggez]` section heading,
     /// so you can put your own sections in the file and use them for
-    /// your own purposes and they will get ignored here.
+    /// your own purposes and they will not interfere here.
     pub fn from_toml_file<R: io::Read>(file: &mut R) -> GameResult<Conf> {
         let mut s = String::new();
         try!(file.read_to_string(&mut s));

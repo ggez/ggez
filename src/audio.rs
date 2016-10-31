@@ -142,26 +142,35 @@ impl fmt::Debug for Music {
     }
 }
 
-
-pub fn play_music(music: &Music) -> GameResult<()> {
+/// Play the given music n times.  -1 loops forever.
+pub fn play_music_times(music: &Music, n: isize) -> GameResult<()> {
     music.music
-         .play(-1)
+         .play(n)
          .map_err(GameError::from)
 }
 
+/// Start playing the given music (looping forever)
+pub fn play_music(music: &Music) -> GameResult<()> {
+    play_music_times(music, -1)
+}
+
+/// Pause currently playing music
 pub fn pause_music() {
     sdl2_mixer::Music::pause()
 }
 
+/// Resume currently playing music, if any
 pub fn resume_music() {
     sdl2_mixer::Music::resume()
 
 }
 
+/// Stop currently playing music
 pub fn stop_music() {
     sdl2_mixer::Music::halt()
 }
 
+/// Rewind the currently playing music to the beginning.
 pub fn rewind_music() {
     sdl2_mixer::Music::rewind()
 }

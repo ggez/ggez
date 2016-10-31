@@ -6,6 +6,7 @@
 //! * The `resources.zip` file in the same directory as the program executable,
 //! * The root folder of the game's "user" directory which is in a
 //! platform-dependent location, such as `~/.local/share/ggez/gameid/` on Linux.
+//! The `gameid` part is the ID passed to `Game::new()`.
 //!
 //! Files will be looked for in these locations in order, and the first one
 //! found used.  That allows game assets to be easily distributed as an archive
