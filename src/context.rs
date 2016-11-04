@@ -89,8 +89,11 @@ fn init_window(video: sdl2::VideoSubsystem,
          .map_err(|e| GameError::VideoError(format!("{}", e)))
 }
 
+/// Sets the window icon from the Conf window_icon field.
+/// Assumes an empty string in the conf's window_icon
+/// means to do nothing.
 fn set_window_icon(context: &mut Context, conf: &conf::Conf) -> GameResult<()> {
-    if conf.window_icon.is_empty() {
+    if !conf.window_icon.is_empty() {
         let path = path::Path::new(&conf.window_icon);
         let icon_surface = try!(util::load_surface(context, path));
 
@@ -138,7 +141,6 @@ impl<'a> Context<'a> {
             event_context: event_context,
             timer_context: timer_context,
         };
-
 
         try!(set_window_icon(&mut ctx, conf));
 

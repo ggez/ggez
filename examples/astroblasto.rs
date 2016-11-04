@@ -17,13 +17,12 @@ use ggez::timer;
 use std::time::Duration;
 use std::ops::{Add, AddAssign, Sub};
 
-/***********************************************************************
- * Basic stuff.
- * First, we create a vector type.
- * You're probably better off using a real vector math lib but I
- * didn't want to add more dependencies and such.
- **********************************************************************/
-
+/// *********************************************************************
+/// Basic stuff.
+/// First, we create a vector type.
+/// You're probably better off using a real vector math lib but I
+/// didn't want to add more dependencies and such.
+/// *******************************************************************
 #[derive(Debug, Copy, Clone)]
 struct Vec2 {
     x: f64,
@@ -112,15 +111,14 @@ impl Default for Vec2 {
     }
 }
 
-/***********************************************************************
- * Now we define our Actor's.
- * An Actor is anything in the game world.
- * We're not *quite* making a real entity-component system but it's
- * pretty close.  For a more complicated game you would want a
- * real ECS, but for this it's enough to say that all our game objects
- * contain pretty much the same data.
- **********************************************************************/
-
+/// *********************************************************************
+/// Now we define our Actor's.
+/// An Actor is anything in the game world.
+/// We're not *quite* making a real entity-component system but it's
+/// pretty close.  For a more complicated game you would want a
+/// real ECS, but for this it's enough to say that all our game objects
+/// contain pretty much the same data.
+/// *******************************************************************
 #[derive(Debug)]
 enum ActorType {
     Player,
@@ -152,9 +150,9 @@ const PLAYER_BBOX: f64 = 12.0;
 const ROCK_BBOX: f64 = 12.0;
 const SHOT_BBOX: f64 = 6.0;
 
-/***********************************************************************
- * Now we have some initializer functions for different game objects.
- **********************************************************************/
+/// *********************************************************************
+/// Now we have some initializer functions for different game objects.
+/// *******************************************************************
 
 fn create_player() -> Actor {
     Actor {
@@ -213,15 +211,15 @@ fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f64, max_radius: f64) ->
     (0..num).map(new_rock).collect()
 }
 
-/***********************************************************************
- * Now we have functions to handle physics.  We do simple Newtonian
- * physics (so we do have inertia), and cap the max speed so that we
- * don't have to worry too much about small objects clipping through
- * each other.
- *
- * Our unit of world space is simply pixels, though we do transform
- * the coordinate system so that +y is up and -y is down.
- ***********************************************************************/
+/// *********************************************************************
+/// Now we have functions to handle physics.  We do simple Newtonian
+/// physics (so we do have inertia), and cap the max speed so that we
+/// don't have to worry too much about small objects clipping through
+/// each other.
+///
+/// Our unit of world space is simply pixels, though we do transform
+/// the coordinate system so that +y is up and -y is down.
+/// ********************************************************************
 
 const SHOT_SPEED: f64 = 200.0;
 const SHOT_RVEL: f64 = 0.1;
@@ -296,12 +294,12 @@ fn world_to_screen_coords(state: &MainState, point: &Vec2) -> Vec2 {
     Vec2 { x: x, y: y }
 }
 
-/************************************************************************
- * So that was the real meat of our game.  Now we just need a structure
- * to contain the images, sounds, etc. that we need to hang on to; this
- * is our "asset management system".  All the file names and such are
- * just hard-coded.
- ***********************************************************************/
+/// **********************************************************************
+/// So that was the real meat of our game.  Now we just need a structure
+/// to contain the images, sounds, etc. that we need to hang on to; this
+/// is our "asset management system".  All the file names and such are
+/// just hard-coded.
+/// ********************************************************************
 
 struct Assets {
     player_image: graphics::Image,
@@ -320,9 +318,11 @@ impl Assets {
         let shot_image = try!(graphics::Image::new(ctx, shot_image_path));
         let rock_image_path = path::Path::new("rock.png");
         let rock_image = try!(graphics::Image::new(ctx, rock_image_path));
-        let font_path = path::Path::new("consolefont.png");
-        let font_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!,.?;'\"";
-        let font = try!(graphics::Font::new_bitmap(ctx, font_path, font_chars));
+        // let font_path = path::Path::new("consolefont.png");
+        // let font_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!,.?;'\"";
+        // let font = try!(graphics::Font::new_bitmap(ctx, font_path, font_chars));
+        let font_path = path::Path::new("DejaVuSans.ttf");
+        let font = try!(graphics::Font::new(ctx, font_path, 16));
 
         let shot_sound_path = path::Path::new("pew.ogg");
         let shot_sound = try!(audio::Sound::new(ctx, shot_sound_path));
@@ -339,12 +339,11 @@ impl Assets {
     }
 }
 
-/************************************************************************
- * The InputState is exactly what it sounds like, it just keeps track of
- * the user's input state so that we turn keyboard events into something
- * state-based and device-independent.
- ***********************************************************************/
-
+/// **********************************************************************
+/// The InputState is exactly what it sounds like, it just keeps track of
+/// the user's input state so that we turn keyboard events into something
+/// state-based and device-independent.
+/// ********************************************************************
 #[derive(Debug)]
 struct InputState {
     xaxis: f64,
@@ -362,16 +361,16 @@ impl Default for InputState {
     }
 }
 
-/************************************************************************
- * Now we're getting into the actual game loop.  The MainState is our
- * game's "global" state, it keeps track of everything we need for
- * actually running the game.
- * 
- * Our game objects are simply a vector for each actor type, and we
- * probably mingle gameplay-state (like score) and hardware-state
- * (like gui_dirty) a little mroe than we should, but for something
- * this small it hardly matters.
- *************************************************************************/
+/// **********************************************************************
+/// Now we're getting into the actual game loop.  The MainState is our
+/// game's "global" state, it keeps track of everything we need for
+/// actually running the game.
+///
+/// Our game objects are simply a vector for each actor type, and we
+/// probably mingle gameplay-state (like score) and hardware-state
+/// (like gui_dirty) a little mroe than we should, but for something
+/// this small it hardly matters.
+/// **********************************************************************
 
 struct MainState {
     player: Actor,
@@ -478,11 +477,11 @@ impl MainState {
     }
 }
 
-/************************************************************************
- * Now we implement the GameState trait from ggez::game, which provides
- * ggez with callbacks for loading, updating and drawing our game, as
- * well as handling events.
- ***********************************************************************/
+/// **********************************************************************
+/// Now we implement the GameState trait from ggez::game, which provides
+/// ggez with callbacks for loading, updating and drawing our game, as
+/// well as handling events.
+/// ********************************************************************
 
 impl<'a> GameState for MainState {
     fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<MainState> {
@@ -594,16 +593,14 @@ impl<'a> GameState for MainState {
 
 
         // And draw the GUI elements in the right places.
-        let level_rect = graphics::Rect::new(
-            0,
-            0,
-            self.level_display.width(),
-            self.level_display.height());
-        let score_rect = graphics::Rect::new(
-            200,
-            0,
-            self.score_display.width(),
-            self.score_display.height());
+        let level_rect = graphics::Rect::new(0,
+                                             0,
+                                             self.level_display.width(),
+                                             self.level_display.height());
+        let score_rect = graphics::Rect::new(200,
+                                             0,
+                                             self.score_display.width(),
+                                             self.score_display.height());
         try!(graphics::draw(ctx, &self.level_display, None, Some(level_rect)));
         try!(graphics::draw(ctx, &self.score_display, None, Some(score_rect)));
 
@@ -653,10 +650,10 @@ impl<'a> GameState for MainState {
     }
 }
 
-/************************************************************************
- * Finally our main function!  Which merely sets up a config and calls
- * ggez::game::Game::new() with our MainState type.
- ***********************************************************************/
+/// **********************************************************************
+/// Finally our main function!  Which merely sets up a config and calls
+/// ggez::game::Game::new() with our MainState type.
+/// ********************************************************************
 
 pub fn main() {
     let mut c = conf::Conf::new();
