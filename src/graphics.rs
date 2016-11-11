@@ -383,7 +383,6 @@ impl Font {
         stream.read_to_end(&mut buf);
         let collection = rusttype::FontCollection::from_bytes(buf);
         let font = collection.into_font().unwrap();
-        let height = size as f32;
 
 
         // let ttf_context = &context.ttf_context;
