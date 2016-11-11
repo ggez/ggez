@@ -321,7 +321,7 @@ impl Assets {
         // let font_path = path::Path::new("consolefont.png");
         // let font_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!,.?;'\"";
         // let font = try!(graphics::Font::new_bitmap(ctx, font_path, font_chars));
-        let font_path = path::Path::new("DejaVuSans.ttf");
+        let font_path = path::Path::new("DejaVuSerif.ttf");
         let font = try!(graphics::Font::new(ctx, font_path, 16));
 
         let shot_sound_path = path::Path::new("pew.ogg");

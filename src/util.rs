@@ -6,11 +6,14 @@ use std::path;
 use sdl2::rwops;
 use sdl2::surface;
 use sdl2_image::ImageRWops;
+use std::io::Read;
+use std::borrow::Borrow;
 
 use context::Context;
 use GameError;
 use GameResult;
 
+extern crate owning_ref;
 
 pub fn rwops_from_path<'a>(context: &mut Context,
                            path: &path::Path,
@@ -21,6 +24,32 @@ pub fn rwops_from_path<'a>(context: &mut Context,
     Ok(rw)
 }
 
+
+pub struct OwningRWops {
+    pub rwops: rwops::RWops<'static>,
+    buffer: Vec<u8>,
+}
+
+
+impl OwningRWops {
+    pub fn new<T: Read+Sized>(stream: &mut T) -> GameResult<OwningRWops> {
+        let mut buffer = Vec::new();
+        let _ = stream.read_to_end(&mut buffer);
+        let rw2;
+        {
+            let rw = try!(rwops::RWops::from_bytes(&buffer));
+            unsafe {
+                let rw_ptr = rw.raw();
+                rw2 = rwops::RWops::from_ll(rw_ptr);
+            }
+        }
+
+        Ok(OwningRWops {
+            rwops: rw2,
+            buffer: buffer,
+        })
+    }
+}
 
 // Here you should just imagine me frothing at the mouth as I
 // fight the lifetime checker in circles.

@@ -28,3 +28,4 @@ zip = "0.1"
 
 rustc-serialize = "0.3"
 toml = "0.2"
+owning_ref = { git = "https://github.com/Kimundi/owning-ref-rs" }

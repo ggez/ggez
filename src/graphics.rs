@@ -364,6 +364,7 @@ impl Drawable for Image {
 pub enum Font {
     TTFFont {
         font: sdl2_ttf::Font,
+        rwops: util::OwningRWops,
     },
     BitmapFont {
         surface: surface::Surface<'static>,
@@ -375,12 +376,14 @@ pub enum Font {
 impl Font {
     /// Load a new TTF font from the given file.
     pub fn new(context: &mut Context, path: &path::Path, size: u16) -> GameResult<Font> {
-        let mut buffer: Vec<u8> = Vec::new();
-        let mut rwops = try!(util::rwops_from_path(context, path, &mut buffer));
+        // let mut buffer: Vec<u8> = Vec::new();
+        //let mut rwops = try!(util::rwops_from_path(context, path, &mut buffer));
+        let mut stream = try!(context.filesystem.open(path));
+        let mut rwops = try!(util::OwningRWops::new(&mut stream));
 
         let ttf_context = &context.ttf_context;
-        let ttf_font = try!(ttf_context.load_font_from_rwops(&mut rwops, size));
-        Ok(Font::TTFFont { font: ttf_font })
+        let ttf_font = try!(ttf_context.load_font_from_rwops(&mut rwops.rwops, size));
+        Ok(Font::TTFFont { font: ttf_font, rwops: rwops })
     }
 
     /// Loads an `Image` and uses it to create a new bitmap font
