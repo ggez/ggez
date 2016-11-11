@@ -11,8 +11,6 @@ use context::Context;
 use GameError;
 use GameResult;
 
-extern crate owning_ref;
-
 pub fn rwops_from_path<'a>(context: &mut Context,
                            path: &path::Path,
                            buffer: &'a mut Vec<u8>)

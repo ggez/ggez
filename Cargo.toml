@@ -18,14 +18,16 @@ name = "ggez"
 path = "src/lib.rs"
 
 [dependencies]
-sdl2 = "0.24"
-sdl2-sys = "0.24"
-sdl2_image = "0.24"
-sdl2_mixer = "0.24"
+sdl2 = "0.25"
+sdl2-sys = "0.25"
+sdl2_image = "0.25"
+# Because sdl2_mixer accepted a pull request which bumped the version number,
+# but didn't take it as a hint to actually release a new crate with that version
+# number...  :/
+sdl2_mixer = {git = "https://github.com/andelf/rust-sdl2_mixer", rev = "317d9e1e759f3b7c82aa348e693065efa2ab6fea" }
 rusttype = "0.2"
 rand = "0.3"
 zip = "0.1"
 
 rustc-serialize = "0.3"
 toml = "0.2"
-owning_ref = { git = "https://github.com/Kimundi/owning-ref-rs" }
