@@ -451,6 +451,7 @@ fn render_ttf(context: &Context, text: &str, font: &rusttype::Font<'static>) -> 
     let mut pixel_data = vec![0; width * pixel_height * bytes_per_pixel];
     let mapping = [0, 64, 128, 192, 255];
     let mapping_scale = (mapping.len()-1) as f32;
+    let pitch = width * bytes_per_pixel;
 
     for g in glyphs {
         if let Some(bb) = g.pixel_bounding_box() {
@@ -463,17 +464,16 @@ fn render_ttf(context: &Context, text: &str, font: &rusttype::Font<'static>) -> 
                 let y = y as i32 + bb.min.y;
                 // There's still a possibility that the glyph clips the boundaries of the bitmap
                 if x >= 0 && x < width as i32 && y >= 0 && y < pixel_height as i32 {
-                    let x = x as usize;
-                    let y = y as usize;
-                    pixel_data[(x + y * width + 0)] = c;
-                    pixel_data[(x + y * width + 1)] = c;
-                    pixel_data[(x + y * width + 2)] = c;
+                    let x = x as usize * bytes_per_pixel;
+                    let y = y as usize ;
+                    pixel_data[(x + y * pitch + 0)] = c;
+                    pixel_data[(x + y * pitch + 1)] = c;
+                    pixel_data[(x + y * pitch + 2)] = c;
                 }
             })
         }
     }
 
-    let pitch = width * bytes_per_pixel;
     let format = pixels::PixelFormatEnum::RGB888;
     let surface = try!(surface::Surface::from_data(
         &mut pixel_data, 
