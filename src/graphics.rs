@@ -9,12 +9,13 @@
 use std::fmt;
 use std::path;
 use std::collections::BTreeMap;
+use std::io::Read;
 
 use sdl2::pixels;
 use sdl2::render;
 use sdl2::surface;
 use sdl2_image::ImageRWops;
-use sdl2_ttf;
+use rusttype;
 
 use context::Context;
 use GameError;
@@ -363,8 +364,7 @@ impl Drawable for Image {
 /// Can be created from a .ttf file or from an image (bitmap fonts).
 pub enum Font {
     TTFFont {
-        font: sdl2_ttf::Font,
-        rwops: util::OwningRWops,
+        font: rusttype::Font<'static>,
     },
     BitmapFont {
         surface: surface::Surface<'static>,
@@ -379,11 +379,16 @@ impl Font {
         // let mut buffer: Vec<u8> = Vec::new();
         //let mut rwops = try!(util::rwops_from_path(context, path, &mut buffer));
         let mut stream = try!(context.filesystem.open(path));
-        let mut rwops = try!(util::OwningRWops::new(&mut stream));
+        let mut buf = Vec::new();
+        stream.read_to_end(&mut buf);
+        let collection = rusttype::FontCollection::from_bytes(buf);
+        let font = collection.into_font().unwrap();
+        let height = size as f32;
 
-        let ttf_context = &context.ttf_context;
-        let ttf_font = try!(ttf_context.load_font_from_rwops(&mut rwops.rwops, size));
-        Ok(Font::TTFFont { font: ttf_font, rwops: rwops })
+
+        // let ttf_context = &context.ttf_context;
+        // let ttf_font = try!(ttf_context.load_font_from_rwops(&mut rwops.rwops, size));
+        Ok(Font::TTFFont { font: font })
     }
 
     /// Loads an `Image` and uses it to create a new bitmap font
@@ -427,6 +432,68 @@ pub struct Text {
     contents: String,
 }
 
+fn render_ttf(context: &Context, text: &str, font: &rusttype::Font<'static>) -> GameResult<Text> {
+    // Ripped wholesale from
+    // https://github.com/dylanede/rusttype/blob/master/examples/simple.rs
+    // I should probably understand the Right Way of doing 
+    // this and do it that way sometime.
+    let size:f32 = 24.0;
+    let pixel_height = size.ceil() as usize;
+    let scale = rusttype::Scale::uniform(size);
+    let v_metrics = font.v_metrics(scale);
+    let offset = rusttype::point(0.0, v_metrics.ascent);
+    let glyphs:Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
+    let width = glyphs.iter().rev()
+        .filter_map(|g| g.pixel_bounding_box()
+                    .map(|b| b.min.x as f32 + g.unpositioned().h_metrics().advance_width))
+        .next().unwrap_or(0.0).ceil() as usize;
+
+    let bytes_per_pixel = 3;
+    let mut pixel_data = vec![0; width * pixel_height * bytes_per_pixel];
+    let mapping = [0, 64, 128, 192, 255];
+    let mapping_scale = (mapping.len()-1) as f32;
+
+    for g in glyphs {
+        if let Some(bb) = g.pixel_bounding_box() {
+            g.draw(|x, y, v| {
+                // v should be in the range 0.0 to 1.0
+                let i = (v*mapping_scale + 0.5) as usize;
+                // so something's wrong if you get $ in the output.
+                let c = mapping.get(i).cloned().unwrap_or(b'$');
+                let x = x as i32 + bb.min.x;
+                let y = y as i32 + bb.min.y;
+                // There's still a possibility that the glyph clips the boundaries of the bitmap
+                if x >= 0 && x < width as i32 && y >= 0 && y < pixel_height as i32 {
+                    let x = x as usize;
+                    let y = y as usize;
+                    pixel_data[(x + y * width + 0)] = c;
+                    pixel_data[(x + y * width + 1)] = c;
+                    pixel_data[(x + y * width + 2)] = c;
+                }
+            })
+        }
+    }
+
+    let pitch = width * bytes_per_pixel;
+    let format = pixels::PixelFormatEnum::RGB888;
+    let surface = try!(surface::Surface::from_data(
+        &mut pixel_data, 
+        width as u32, 
+        pixel_height as u32, 
+        pitch as u32, 
+        format));
+
+    let image = try!(Image::from_surface(context, surface));
+    let text_string = text.to_string();
+    let tq = image.texture.query();
+    Ok(Text {
+        texture: image.texture,
+        texture_query: tq,
+        contents: text_string,
+    })
+
+}
+
 fn render_bitmap(context: &Context,
                  text: &str,
                  surface: &surface::Surface,
@@ -464,22 +531,9 @@ fn render_bitmap(context: &Context,
 impl Text {
     /// Renders a new `Text` from the given `Font`
     pub fn new(context: &Context, text: &str, font: &Font) -> GameResult<Text> {
-        let renderer = &context.renderer;
         match *font {
             Font::TTFFont { font: ref f, .. } => {
-                // BUGGO: SEGFAULTS HERE!  But only when using solid(), not blended()!
-                // Loading the font from a file rather than a RWops makes it work fine.
-                // See https://github.com/andelf/rust-sdl2_ttf/issues/43
-                let surf = try!(f.render(text)
-                                 .solid(pixels::Color::RGB(255, 255, 255)));
-                let texture = try!(renderer.create_texture_from_surface(surf));
-                let tq = texture.query();
-                let text_string = text.to_string();
-                Ok(Text {
-                    texture: texture,
-                    texture_query: tq,
-                    contents: text_string,
-                })
+                render_ttf(context, text, f)
             }
             Font::BitmapFont { ref surface, glyph_width, glyphs: ref glyphs_map, .. } => {
                 render_bitmap(context, text, surface, glyphs_map, glyph_width)

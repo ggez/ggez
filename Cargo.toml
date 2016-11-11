@@ -22,7 +22,7 @@ sdl2 = "0.24"
 sdl2-sys = "0.24"
 sdl2_image = "0.24"
 sdl2_mixer = "0.24"
-sdl2_ttf = "0.24"
+rusttype = "0.2"
 rand = "0.3"
 zip = "0.1"
 

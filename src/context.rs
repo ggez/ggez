@@ -3,10 +3,8 @@
 use sdl2::{self, Sdl};
 use sdl2::render::Renderer;
 use sdl2::video::Window;
-use sdl2_ttf;
 
 use sdl2_mixer;
-use sdl2_ttf::Sdl2TtfContext;
 use sdl2_mixer::Sdl2MixerContext;
 
 use std::fmt;
@@ -35,7 +33,6 @@ use GameResult;
 /// to access the `Context`.
 pub struct Context<'a> {
     pub sdl_context: Sdl,
-    pub ttf_context: Sdl2TtfContext,
     _audio_context: sdl2::AudioSubsystem,
     pub mixer_context: Sdl2MixerContext,
     pub renderer: Renderer<'a>,
@@ -52,9 +49,6 @@ impl<'a> fmt::Debug for Context<'a> {
     }
 }
 
-fn init_ttf() -> GameResult<Sdl2TtfContext> {
-    sdl2_ttf::init().map_err(GameError::from)
-}
 
 
 fn init_audio(sdl_context: &Sdl) -> GameResult<sdl2::AudioSubsystem> {
@@ -123,7 +117,6 @@ impl<'a> Context<'a> {
                                   .accelerated()
                                   .build());
 
-        let ttf_context = try!(init_ttf());
         let audio_context = try!(init_audio(&sdl_context));
         let mixer_context = try!(init_mixer());
         let event_context = try!(sdl_context.event());
@@ -131,7 +124,6 @@ impl<'a> Context<'a> {
 
         let mut ctx = Context {
             sdl_context: sdl_context,
-            ttf_context: ttf_context,
             _audio_context: audio_context,
             mixer_context: mixer_context,
             renderer: renderer,

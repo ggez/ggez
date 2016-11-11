@@ -1,9 +1,9 @@
 extern crate sdl2;
 extern crate sdl2_image;
 extern crate sdl2_mixer;
-extern crate sdl2_ttf;
 extern crate rand;
 extern crate rustc_serialize;
+extern crate rusttype;
 extern crate toml;
 extern crate zip;
 
@@ -96,19 +96,19 @@ impl From<sdl2::render::TextureValueError> for GameError {
     }
 }
 
-impl From<sdl2_ttf::FontError> for GameError {
-    fn from(e: sdl2_ttf::FontError) -> GameError {
-        let msg = e.description();
-        GameError::ResourceLoadError(msg.to_owned())
-    }
-}
+// impl From<sdl2_ttf::FontError> for GameError {
+//     fn from(e: sdl2_ttf::FontError) -> GameError {
+//         let msg = e.description();
+//         GameError::ResourceLoadError(msg.to_owned())
+//     }
+// }
 
-impl From<sdl2_ttf::InitError> for GameError {
-    fn from(e: sdl2_ttf::InitError) -> GameError {
-        let msg = e.description();
-        GameError::ResourceLoadError(msg.to_owned())
-    }
-}
+// impl From<sdl2_ttf::InitError> for GameError {
+//     fn from(e: sdl2_ttf::InitError) -> GameError {
+//         let msg = e.description();
+//         GameError::ResourceLoadError(msg.to_owned())
+//     }
+// }
 
 
 impl From<std::io::Error> for GameError {
