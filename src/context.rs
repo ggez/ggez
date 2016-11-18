@@ -33,13 +33,14 @@ use GameResult;
 /// to access the `Context`.
 pub struct Context<'a> {
     pub sdl_context: Sdl,
-    _audio_context: sdl2::AudioSubsystem,
     pub mixer_context: Sdl2MixerContext,
     pub renderer: Renderer<'a>,
     pub filesystem: Filesystem,
     pub gfx_context: graphics::GraphicsContext,
     pub event_context: sdl2::EventSubsystem,
     pub timer_context: timer::TimeContext,
+    pub dpi: (f32, f32, f32),
+    _audio_context: sdl2::AudioSubsystem,
 }
 
 impl<'a> fmt::Debug for Context<'a> {
@@ -111,7 +112,8 @@ impl<'a> Context<'a> {
 
         let video = try!(sdl_context.video());
         let window = try!(init_window(video, &window_title, screen_width, screen_height));
-
+        let display_index = try!(window.display_index());
+        let dpi = try!(window.subsystem().display_dpi(display_index));
 
         let renderer = try!(window.renderer()
                                   .accelerated()
@@ -124,14 +126,16 @@ impl<'a> Context<'a> {
 
         let mut ctx = Context {
             sdl_context: sdl_context,
-            _audio_context: audio_context,
             mixer_context: mixer_context,
             renderer: renderer,
             filesystem: fs,
             gfx_context: graphics::GraphicsContext::new(),
+            dpi: dpi,
 
             event_context: event_context,
             timer_context: timer_context,
+
+            _audio_context: audio_context,
         };
 
         try!(set_window_icon(&mut ctx, conf));

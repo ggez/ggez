@@ -18,7 +18,7 @@ systems such as sprites, layer, tiled maps, etc.
 * Filesystem abstraction that lets you load resources from folders or zip files
 * Hardware-accelerated rendering of bitmaps
 * Playing and loading sounds through SDL2_mixer
-* TTF font rendering through SDL2_ttf, as well as bitmap fonts.
+* TTF font rendering with rusttype, as well as bitmap fonts.
 * Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
 * Easy timing and FPS measurement functions.
@@ -40,15 +40,12 @@ cargo run --example astroblasto
 Either way, if it can't find the resources it will give you an error
 along the lines of `ResourceNotFound("'resources' directory not
 found!  Should be in "/home/foo/src/ggez/target/debug/resources")`.
-Just copy the `resources` directory to where the error says it's
+Just copy or symlink the `resources` directory to where the error says it's
 looking.
 
-## Extant bugs
+## Extant things to do
 
 * Submit an update to the zip crate to make it possible to check whether a directory exists.
-* Need to figure out exiting cleanly.  Blocked by a bug in rust-sdl2, issue #530.  Pull request merged, just need a release.
-* Once that's done, make quit callback able to stop the game from quitting
-* Figure out sdl2_ttf issue #43 (or switch to rusttype)
 
 
 ## Future work
@@ -68,7 +65,7 @@ for sound would get us positional audio too.
 
 * ggez-goodies for things that are useful but not fundamental and generally don't depend on each other
 * specs for entity-component system (alternatives: ecs or recs crates)
-* cgmath or vecmath for math operations?
+* cgmath or vecmath for math operations?  nalgebra does great too.
 * physics/collision???
 
 ## Credits

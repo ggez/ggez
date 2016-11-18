@@ -365,6 +365,7 @@ impl Drawable for Image {
 pub enum Font {
     TTFFont {
         font: rusttype::Font<'static>,
+        points: u32,
     },
     BitmapFont {
         surface: surface::Surface<'static>,
@@ -375,7 +376,7 @@ pub enum Font {
 
 impl Font {
     /// Load a new TTF font from the given file.
-    pub fn new(context: &mut Context, path: &path::Path, size: u16) -> GameResult<Font> {
+    pub fn new(context: &mut Context, path: &path::Path, size: u32) -> GameResult<Font> {
         // let mut buffer: Vec<u8> = Vec::new();
         // let mut rwops = try!(util::rwops_from_path(context, path, &mut buffer));
         let mut stream = try!(context.filesystem.open(path));
@@ -384,7 +385,10 @@ impl Font {
         let collection = rusttype::FontCollection::from_bytes(buf);
         let font = collection.into_font().unwrap();
 
-        Ok(Font::TTFFont { font: font })
+        Ok(Font::TTFFont {
+            font: font,
+            points: size,
+        })
     }
 
     /// Loads an `Image` and uses it to create a new bitmap font
@@ -428,7 +432,29 @@ pub struct Text {
     contents: String,
 }
 
-fn render_ttf(context: &Context, text: &str, font: &rusttype::Font<'static>) -> GameResult<Text> {
+/// Compute a scale for a font of a given size.
+// This basically does the points->pixels unit conversion,
+// taking the display DPI into account.
+fn display_independent_scale(points: u32, dpi_w: f32, dpi_h: f32) -> rusttype::Scale {
+    // Calculate pixels per point
+    let points = points as f32;
+    let points_per_inch = 72.0;
+    let pixels_per_point_w = dpi_w * (1.0 / points_per_inch);
+    let pixels_per_point_h = dpi_h * (1.0 / points_per_inch);
+
+    // rusttype::Scale is in units of pixels, so.
+    let scale = rusttype::Scale {
+        x: pixels_per_point_w * points,
+        y: pixels_per_point_h * points,
+    };
+    scale
+}
+
+fn render_ttf(context: &Context,
+              text: &str,
+              font: &rusttype::Font<'static>,
+              size: u32)
+              -> GameResult<Text> {
     // Ripped almost wholesale from
     // https://github.com/dylanede/rusttype/blob/master/examples/simple.rs
 
@@ -436,10 +462,11 @@ fn render_ttf(context: &Context, text: &str, font: &rusttype::Font<'static>) -> 
     // Also, 72 DPI is default but might not always be valid; 4K screens etc
     // SDL has a way to get the proper DPI.
 
-    // Basically, we go figure out what size we want our glyphs to be...
-    let size: f32 = 24.0;
-    let pixel_height = size.ceil() as usize;
-    let scale = rusttype::Scale::uniform(size);
+    // let size: f32 = 24.0;
+    // let pixel_height = size.ceil() as usize;
+    let (_diag_dpi, x_dpi, y_dpi) = context.dpi;
+    let scale = display_independent_scale(size, x_dpi, y_dpi);
+    let pixel_height = scale.y.ceil() as usize;
     let v_metrics = font.v_metrics(scale);
     let offset = rusttype::point(0.0, v_metrics.ascent);
     // Then turn them into an array of positioned glyphs...
@@ -539,7 +566,7 @@ impl Text {
     /// Renders a new `Text` from the given `Font`
     pub fn new(context: &Context, text: &str, font: &Font) -> GameResult<Text> {
         match *font {
-            Font::TTFFont { font: ref f, .. } => render_ttf(context, text, f),
+            Font::TTFFont { font: ref f, points } => render_ttf(context, text, f, points),
             Font::BitmapFont { ref surface, glyph_width, glyphs: ref glyphs_map, .. } => {
                 render_bitmap(context, text, surface, glyphs_map, glyph_width)
             }
