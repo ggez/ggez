@@ -377,16 +377,13 @@ impl Font {
     /// Load a new TTF font from the given file.
     pub fn new(context: &mut Context, path: &path::Path, size: u16) -> GameResult<Font> {
         // let mut buffer: Vec<u8> = Vec::new();
-        //let mut rwops = try!(util::rwops_from_path(context, path, &mut buffer));
+        // let mut rwops = try!(util::rwops_from_path(context, path, &mut buffer));
         let mut stream = try!(context.filesystem.open(path));
         let mut buf = Vec::new();
-        stream.read_to_end(&mut buf);
+        try!(stream.read_to_end(&mut buf));
         let collection = rusttype::FontCollection::from_bytes(buf);
         let font = collection.into_font().unwrap();
 
-
-        // let ttf_context = &context.ttf_context;
-        // let ttf_font = try!(ttf_context.load_font_from_rwops(&mut rwops.rwops, size));
         Ok(Font::TTFFont { font: font })
     }
 
@@ -432,55 +429,66 @@ pub struct Text {
 }
 
 fn render_ttf(context: &Context, text: &str, font: &rusttype::Font<'static>) -> GameResult<Text> {
-    // Ripped wholesale from
+    // Ripped almost wholesale from
     // https://github.com/dylanede/rusttype/blob/master/examples/simple.rs
-    // I should probably understand the Right Way of doing 
-    // this and do it that way sometime.
-    let size:f32 = 24.0;
+
+    // TODO: Figure out
+    // Also, 72 DPI is default but might not always be valid; 4K screens etc
+    // SDL has a way to get the proper DPI.
+
+    // Basically, we go figure out what size we want our glyphs to be...
+    let size: f32 = 24.0;
     let pixel_height = size.ceil() as usize;
     let scale = rusttype::Scale::uniform(size);
     let v_metrics = font.v_metrics(scale);
     let offset = rusttype::point(0.0, v_metrics.ascent);
-    let glyphs:Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
-    let width = glyphs.iter().rev()
-        .filter_map(|g| g.pixel_bounding_box()
-                    .map(|b| b.min.x as f32 + g.unpositioned().h_metrics().advance_width))
-        .next().unwrap_or(0.0).ceil() as usize;
-
-    let bytes_per_pixel = 3;
+    // Then turn them into an array of positioned glyphs...
+    // `layout()` turns an abstract glyph, which contains no concrete
+    // size or position information, into a PositionedGlyph, which does.
+    let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
+    let width = glyphs.iter()
+                      .rev()
+                      .filter_map(|g| {
+                          g.pixel_bounding_box()
+                           .map(|b| b.min.x as f32 + g.unpositioned().h_metrics().advance_width)
+                      })
+                      .next()
+                      .unwrap_or(0.0)
+                      .ceil() as usize;
+    // Make an array for our rendered bitmap
+    let bytes_per_pixel = 4;
     let mut pixel_data = vec![0; width * pixel_height * bytes_per_pixel];
-    let mapping = [0, 64, 128, 192, 255];
-    let mapping_scale = (mapping.len()-1) as f32;
     let pitch = width * bytes_per_pixel;
 
+    // Now we actually render the glyphs to a bitmap...
     for g in glyphs {
         if let Some(bb) = g.pixel_bounding_box() {
+            // v is the amount of the pixel covered
+            // by the glyph, in the range 0.0 to 1.0
             g.draw(|x, y, v| {
-                // v should be in the range 0.0 to 1.0
-                let i = (v*mapping_scale + 0.5) as usize;
-                // so something's wrong if you get $ in the output.
-                let c = mapping.get(i).cloned().unwrap_or(b'$');
+                let c = (v * 255.0) as u8;
                 let x = x as i32 + bb.min.x;
                 let y = y as i32 + bb.min.y;
                 // There's still a possibility that the glyph clips the boundaries of the bitmap
                 if x >= 0 && x < width as i32 && y >= 0 && y < pixel_height as i32 {
                     let x = x as usize * bytes_per_pixel;
-                    let y = y as usize ;
+                    let y = y as usize;
                     pixel_data[(x + y * pitch + 0)] = c;
                     pixel_data[(x + y * pitch + 1)] = c;
                     pixel_data[(x + y * pitch + 2)] = c;
+                    pixel_data[(x + y * pitch + 3)] = c;
                 }
             })
         }
     }
 
-    let format = pixels::PixelFormatEnum::RGB888;
-    let surface = try!(surface::Surface::from_data(
-        &mut pixel_data, 
-        width as u32, 
-        pixel_height as u32, 
-        pitch as u32, 
-        format));
+    // Copy the bitmap onto a surface, and we're basically done!
+    let format = pixels::PixelFormatEnum::RGBA8888;
+    let surface = try!(surface::Surface::from_data(&mut pixel_data,
+                                                   width as u32,
+                                                   pixel_height as u32,
+                                                   pitch as u32,
+                                                   format));
 
     let image = try!(Image::from_surface(context, surface));
     let text_string = text.to_string();
@@ -531,9 +539,7 @@ impl Text {
     /// Renders a new `Text` from the given `Font`
     pub fn new(context: &Context, text: &str, font: &Font) -> GameResult<Text> {
         match *font {
-            Font::TTFFont { font: ref f, .. } => {
-                render_ttf(context, text, f)
-            }
+            Font::TTFFont { font: ref f, .. } => render_ttf(context, text, f),
             Font::BitmapFont { ref surface, glyph_width, glyphs: ref glyphs_map, .. } => {
                 render_bitmap(context, text, surface, glyphs_map, glyph_width)
             }

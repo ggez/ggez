@@ -467,8 +467,8 @@ impl MainState {
     }
 
     fn update_ui(&mut self, ctx: &Context) {
-        let score_str = format!("SCORE{}", self.score);
-        let level_str = format!("LEVEL{}", self.level);
+        let score_str = format!("Score: {}", self.score);
+        let level_str = format!("Level: {}", self.level);
         let score_text = graphics::Text::new(ctx, &score_str, &self.assets.font).unwrap();
         let level_text = graphics::Text::new(ctx, &level_str, &self.assets.font).unwrap();
 

@@ -165,10 +165,6 @@ impl<'a> Context<'a> {
     }
 
     /// Triggers a Quit event.
-    /// Currently doesn't work but a patch has been merged,
-    /// just need to wait for it to be released.
-    /// See https://github.com/AngryLawyer/rust-sdl2/issues/530
-    /// :-(
     pub fn quit(&mut self) -> GameResult<()> {
         let now_dur = timer::get_time_since_start(self);
         let now = timer::duration_to_f64(now_dur);
