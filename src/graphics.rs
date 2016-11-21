@@ -257,6 +257,15 @@ impl Image {
 
     }
 
+    /// A little helper function that creates a new Image that is just
+    /// a solid square of the given size and color.  Mainly useful for
+    /// debugging.
+    pub fn solid(context: &mut Context, size: u32, color: Color) -> GameResult<Image> {
+        let mut surf = try!(surface::Surface::new(size, size, pixels::PixelFormatEnum::RGBA8888));
+        try!(surf.fill_rect(None, color));
+        Image::from_surface(context, surf)
+    }
+
     fn from_surface(context: &Context, surface: surface::Surface) -> GameResult<Image> {
         let renderer = &context.renderer;
         let tex = try!(renderer.create_texture_from_surface(surface));
