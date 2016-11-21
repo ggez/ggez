@@ -23,11 +23,22 @@ systems such as sprites, layer, tiled maps, etc.
 * Config file for defining engine and game settings
 * Easy timing and FPS measurement functions.
 
+## Usage
+
+ggez is built on the latest stable Rust compiler and distributed on crates.io.  To include it in your project, just
+add the dependency line to your `Cargo.toml` file:
+
+```
+ggez = "0.2.0"
+```
+
+
 ## Examples
 
-See `example/astroblasto.rs`
+See the examples.  `imageview` is a simple hello-world-y program that shows off a number of things, badly.
+`astroblasto` is a small Asteroids-like game.
 
-To run, you have to copy (or symlink) the `resources` directory to a
+To run the examples, you have to copy or symlink the `resources` directory to a
 place the running game can find it.  Cargo does not have an easy way
 of doing this itself at the moment, so the procedure is (on Linux):
 
