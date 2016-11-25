@@ -25,7 +25,7 @@ struct MainState {
 }
 
 impl MainState {
-    fn draw_crazy_lines(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw_crazy_lines(&mut self, ctx: &mut Context) -> GameResult<()> {
         let num_lines = 100;
         let mut colors = Vec::new();
         for _ in 0..num_lines {

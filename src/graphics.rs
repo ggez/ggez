@@ -93,7 +93,7 @@ pub fn clear(ctx: &mut Context) {
 
 /// Draws the given `Drawable` object to the screen.
 pub fn draw(ctx: &mut Context,
-            drawable: &Drawable,
+            drawable: &mut Drawable,
             src: Option<Rect>,
             dst: Option<Rect>)
             -> GameResult<()> {
@@ -104,7 +104,7 @@ pub fn draw(ctx: &mut Context,
 /// applying a rotation and mirroring if desired.
 // #[allow(too_many_arguments)]
 pub fn draw_ex(ctx: &mut Context,
-               drawable: &Drawable,
+               drawable: &mut Drawable,
                src: Option<Rect>,
                dst: Option<Rect>,
                angle: f64,
@@ -205,7 +205,7 @@ pub trait Drawable {
     /// (It also maps nicely onto SDL2's Renderer::copy_ex(), we might want to
     /// wrap the types up a bit more nicely someday.)
     // #[allow(too_many_arguments)]
-    fn draw_ex(&self,
+    fn draw_ex(&mut self,
                context: &mut Context,
                src: Option<Rect>,
                dst: Option<Rect>,
@@ -216,7 +216,7 @@ pub trait Drawable {
                -> GameResult<()>;
 
     /// Draws the drawable onto the rendering target.
-    fn draw(&self, context: &mut Context, src: Option<Rect>, dst: Option<Rect>) -> GameResult<()> {
+    fn draw(&mut self, context: &mut Context, src: Option<Rect>, dst: Option<Rect>) -> GameResult<()> {
         self.draw_ex(context, src, dst, 0.0, None, false, false)
     }
 }
@@ -348,7 +348,7 @@ impl fmt::Debug for Image {
 
 impl Drawable for Image {
     // #[allow(too_many_arguments)]
-    fn draw_ex(&self,
+    fn draw_ex(&mut self,
                context: &mut Context,
                src: Option<Rect>,
                dst: Option<Rect>,
@@ -601,7 +601,7 @@ impl Text {
 
 impl Drawable for Text {
     // #[allow(too_many_arguments)]
-    fn draw_ex(&self,
+    fn draw_ex(&mut self,
                context: &mut Context,
                src: Option<Rect>,
                dst: Option<Rect>,

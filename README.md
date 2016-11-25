@@ -56,11 +56,15 @@ looking.
 
 ## Extant things to do
 
+* Make it always possible to load resources from raw data instead of files.
+* The Drawable trait needs to take `&mut self`
 * Submit an update to the zip crate to make it possible to check whether a directory exists.
 
 
 ## Future work
 
+* Make subsystems modular, so we don't *have* to initialize sound if we don't need to and it's not a hard error if we
+can't use it.  See https://www.idolagames.com/piston-sdl-window-with-sound/ perhaps.
 * Make better mainloop handling; separate timesteps for physics and
   graphics.  Interpolation???
 * More and better docs
