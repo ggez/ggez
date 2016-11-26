@@ -156,10 +156,11 @@ impl Filesystem {
 
     /// Opens the given path and returns the resulting `File`
     /// in read-only mode.
-    pub fn open(&mut self, path: &path::Path) -> GameResult<File> {
+    pub fn open<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
 
         // Look in resource directory
-        let pathbuf = try!(self.rel_to_resource_path(path));
+        let pathref: &path::Path = path.as_ref();
+        let pathbuf = try!(self.rel_to_resource_path(pathref));
         if pathbuf.is_file() {
             let f = try!(fs::File::open(pathbuf));
             return Ok(File::FSFile(f));
@@ -167,31 +168,31 @@ impl Filesystem {
 
         // Look in resources.zip
         if let Some(ref mut zipfile) = self.resource_zip {
-            let name = path.to_str().unwrap();
+            let name = pathref.to_str().unwrap();
             let f = zipfile.by_name(name).unwrap();
             return Ok(File::ZipFile(f));
         }
 
         // Look in user directory
-        let pathbuf = try!(self.rel_to_user_path(path));
+        let pathbuf = try!(self.rel_to_user_path(pathref));
         if pathbuf.is_file() {
             let f = try!(fs::File::open(pathbuf));
             return Ok(File::FSFile(f));
         }
 
         // Welp, can't find it.
-        let errmessage = try!(convenient_path_to_str(path));
+        let errmessage = try!(convenient_path_to_str(pathref));
         Err(GameError::ResourceNotFound(String::from(errmessage)))
     }
 
     /// Opens a file in the user directory with the given `std::fs::OpenOptions`.
     /// Note that even if you open a file read-only, it can only access
     /// files in the user directory.
-    pub fn open_options(&mut self,
-                        path: &path::Path,
-                        options: fs::OpenOptions)
-                        -> GameResult<File> {
-        let pathbuf = try!(self.rel_to_user_path(path));
+    pub fn open_options<P: AsRef<path::Path>>(&mut self,
+                                              path: P,
+                                              options: fs::OpenOptions)
+                                              -> GameResult<File> {
+        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
 
         let f = try!(options.open(pathbuf));
         Ok(File::FSFile(f))
@@ -199,8 +200,8 @@ impl Filesystem {
 
     /// Creates a new file in the user directory and opens it
     /// to be written to, truncating it if it already exists.
-    pub fn create(&mut self, path: &path::Path) -> GameResult<File> {
-        let pathbuf = try!(self.rel_to_user_path(path));
+    pub fn create<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
+        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
         let f = try!(fs::File::create(pathbuf));
         Ok(File::FSFile(f))
     }
@@ -208,52 +209,55 @@ impl Filesystem {
     /// Create an empty directory in the user dir 
     /// with the given name.  Any parents to that directory
     /// that do not exist will be created.
-    pub fn create_dir(&mut self, path: &path::Path) -> GameResult<()> {
-        let pathbuf = try!(self.rel_to_user_path(path));
+    pub fn create_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
+        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
         fs::create_dir_all(pathbuf).map_err(GameError::from)
     }
 
     /// Deletes the specified file in the user dir.
-    pub fn delete(&mut self, path: &path::Path) -> GameResult<()> {
-        let pathbuf = try!(self.rel_to_user_path(path));
+    pub fn delete<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
+        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
         fs::remove_file(pathbuf).map_err(GameError::from)
     }
 
     /// Deletes the specified directory in the user dir,
     /// and all its contents!
-    pub fn delete_dir(&mut self, path: &path::Path) -> GameResult<()> {
-        let pathbuf = try!(self.rel_to_user_path(path));
+    pub fn delete_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
+        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
         fs::remove_dir_all(pathbuf).map_err(GameError::from)
     }
 
     /// Takes a relative path and returns an absolute PathBuf
     /// based in the Filesystem's root path.
-    fn rel_to_resource_path(&self, path: &path::Path) -> GameResult<path::PathBuf> {
-        if !path.is_relative() {
-            let pathstr = try!(convenient_path_to_str(path));
+    fn rel_to_resource_path<P: AsRef<path::Path>>(&self, path: P) -> GameResult<path::PathBuf> {
+        let pathref = path.as_ref();
+        if !pathref.is_relative() {
+            let pathstr = try!(convenient_path_to_str(pathref));
             let err = GameError::ResourceNotFound(String::from(pathstr));
             Err(err)
         } else {
-            let pathbuf = self.resource_path.join(path);
+            let pathbuf = self.resource_path.join(pathref);
             Ok(pathbuf)
         }
     }
 
     /// Takes a relative path and returns an absolute PathBuf
     /// based in the Filesystem's user directory.
-    fn rel_to_user_path(&self, path: &path::Path) -> GameResult<path::PathBuf> {
-        if !path.is_relative() {
-            let pathstr = try!(convenient_path_to_str(path));
+    fn rel_to_user_path<P: AsRef<path::Path>>(&self, path: P) -> GameResult<path::PathBuf> {
+        let pathref = path.as_ref();
+        if !pathref.is_relative() {
+            let pathstr = try!(convenient_path_to_str(pathref));
             let err = GameError::ResourceNotFound(String::from(pathstr));
             Err(err)
         } else {
-            let pathbuf = self.user_path.join(path);
+            let pathbuf = self.user_path.join(pathref);
             Ok(pathbuf)
         }
     }
 
     /// Check whether a file or directory exists.
-    pub fn exists(&mut self, path: &path::Path) -> bool {
+    pub fn exists<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
+        let path = path.as_ref();
         if let Ok(p) = self.rel_to_resource_path(path) {
             p.exists()
         } else if let Ok(p) = self.rel_to_user_path(path) {
@@ -269,7 +273,8 @@ impl Filesystem {
     }
 
     /// Check whether a path points at a file.
-    pub fn is_file(&mut self, path: &path::Path) -> bool {
+    pub fn is_file<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
+        let path = path.as_ref();
         if let Ok(p) = self.rel_to_resource_path(path) {
             p.is_file()
         } else if let Ok(p) = self.rel_to_user_path(path) {
@@ -285,7 +290,8 @@ impl Filesystem {
     }
 
     /// Check whether a path points at a directory.
-    pub fn is_dir(&mut self, path: &path::Path) -> bool {
+    pub fn is_dir<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
+        let path = path.as_ref();
         if let Ok(p) = self.rel_to_resource_path(path) {
             p.is_dir()
         } else if let Ok(p) = self.rel_to_user_path(path) {
@@ -330,8 +336,8 @@ impl Filesystem {
     /// TODO: Make it iterate over the zip file as well!
     /// And the user dir.  This probably won't happen until
     /// returning `impl Trait` hits stable, honestly.
-    pub fn read_dir(&self, path: &path::Path) -> io::Result<fs::ReadDir> {
-        let resource_dest = self.resource_path.join(path);
+    pub fn read_dir<P: AsRef<path::Path>>(&self, path: P) -> io::Result<fs::ReadDir> {
+        let resource_dest = self.resource_path.join(path.as_ref());
         // let user_dest = self.user_path.join(path);
         resource_dest.read_dir()
         // .map(|iter| iter.chain(user_dest.read_dir()))
