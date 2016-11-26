@@ -104,10 +104,10 @@ impl GameState for MainState {
         ctx.renderer.set_draw_color(Color::RGB(c, c, c));
         ctx.renderer.clear();
 
-        try!(graphics::draw(ctx, &self.image, None, None));
-        try!(graphics::draw(ctx, &self.text, None, None));
+        try!(graphics::draw(ctx, &mut self.image, None, None));
+        try!(graphics::draw(ctx, &mut self.text, None, None));
         let destrect = graphics::Rect::new(100, 50, 403, 50);
-        try!(graphics::draw(ctx, &self.bmptext, None, Some(destrect)));
+        try!(graphics::draw(ctx, &mut self.bmptext, None, Some(destrect)));
 
         try!(self.draw_crazy_lines(ctx));
         ctx.renderer.present();

@@ -56,6 +56,7 @@ looking.
 
 ## Extant things to do
 
+* Everything that takes a Path should take an `Into<Path>` or something.
 * Make it always possible to load resources from raw data instead of files.
 * The Drawable trait needs to take `&mut self`
 * Submit an update to the zip crate to make it possible to check whether a directory exists.
