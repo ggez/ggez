@@ -5,8 +5,6 @@
 extern crate ggez;
 extern crate rand;
 
-use std::path;
-
 use ggez::audio;
 use ggez::conf;
 use ggez::event::*;
@@ -312,22 +310,16 @@ struct Assets {
 
 impl Assets {
     fn new(ctx: &mut Context) -> GameResult<Assets> {
-        let player_image_path = path::Path::new("player.png");
-        let player_image = try!(graphics::Image::new(ctx, player_image_path));
-        let shot_image_path = path::Path::new("shot.png");
-        let shot_image = try!(graphics::Image::new(ctx, shot_image_path));
-        let rock_image_path = path::Path::new("rock.png");
-        let rock_image = try!(graphics::Image::new(ctx, rock_image_path));
+        let player_image = try!(graphics::Image::new(ctx, "player.png"));
+        let shot_image = try!(graphics::Image::new(ctx, "shot.png"));
+        let rock_image = try!(graphics::Image::new(ctx, "rock.png"));
         // let font_path = path::Path::new("consolefont.png");
         // let font_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!,.?;'\"";
         // let font = try!(graphics::Font::new_bitmap(ctx, font_path, font_chars));
-        let font_path = path::Path::new("DejaVuSerif.ttf");
-        let font = try!(graphics::Font::new(ctx, font_path, 16));
+        let font = try!(graphics::Font::new(ctx, "DejaVuSerif.ttf", 16));
 
-        let shot_sound_path = path::Path::new("pew.ogg");
-        let shot_sound = try!(audio::Sound::new(ctx, shot_sound_path));
-        let hit_sound_path = path::Path::new("boom.ogg");
-        let hit_sound = try!(audio::Sound::new(ctx, hit_sound_path));
+        let shot_sound = try!(audio::Sound::new(ctx, "pew.ogg"));
+        let hit_sound = try!(audio::Sound::new(ctx, "boom.ogg"));
         Ok(Assets {
             player_image: player_image,
             shot_image: shot_image,
@@ -345,8 +337,6 @@ impl Assets {
             ActorType::Shot => &mut self.shot_image,
         }
     }
-
-
 }
 
 /// **********************************************************************
@@ -398,10 +388,14 @@ struct MainState {
     level_display: graphics::Text,
 }
 
-fn draw_actor(assets: &mut Assets, ctx: &mut Context, actor: &Actor, world_coords: (u32, u32)) -> GameResult<()> {
+fn draw_actor(assets: &mut Assets,
+              ctx: &mut Context,
+              actor: &Actor,
+              world_coords: (u32, u32))
+              -> GameResult<()> {
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, &actor.pos);
-    //let pos = Vec2::new(1.0, 1.0);
+    // let pos = Vec2::new(1.0, 1.0);
     let px = pos.x as i32;
     let py = pos.y as i32;
     let destrect = graphics::Rect::new(px, py, SPRITE_SIZE, SPRITE_SIZE);
@@ -415,7 +409,7 @@ fn draw_actor(assets: &mut Assets, ctx: &mut Context, actor: &Actor, world_coord
                       Some(actor_center),
                       false,
                       false)
-        
+
 }
 
 
@@ -436,7 +430,7 @@ impl MainState {
     }
 
 
-    
+
     fn clear_dead_stuff(&mut self) {
         self.shots.retain(|s| s.life > 0.0);
         self.rocks.retain(|r| r.life > 0.0);

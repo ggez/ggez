@@ -2,14 +2,13 @@ extern crate ggez;
 extern crate rand;
 extern crate sdl2;
 
-use std::path;
-use sdl2::pixels::Color;
 
 use ggez::audio;
 use ggez::conf;
 use ggez::game::{Game, GameState};
 use ggez::{GameResult, Context};
 use ggez::graphics;
+use ggez::graphics::Color;
 use ggez::timer;
 use std::time::Duration;
 
@@ -54,18 +53,14 @@ impl GameState for MainState {
         ctx.print_sound_stats();
         ctx.print_resource_stats();
 
-        let imagepath = path::Path::new("dragon1.png");
-        let image = graphics::Image::new(ctx, imagepath).unwrap();
+        let image = graphics::Image::new(ctx, "dragon1.png").unwrap();
 
-        let fontpath = path::Path::new("DejaVuSerif.ttf");
-        let bmpfontpath = path::Path::new("arial.png");
-        let soundpath = path::Path::new("sound.ogg");
-        let font = graphics::Font::new(ctx, fontpath, 48).unwrap();
+        let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 48).unwrap();
         let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
-        let bmpfont = graphics::Font::new_bitmap(ctx, bmpfontpath, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        let bmpfont = graphics::Font::new_bitmap(ctx, "arial.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
                           .unwrap();
         let bmptext = graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
-        let sound = audio::Sound::new(ctx, soundpath).unwrap();
+        let sound = audio::Sound::new(ctx, "sound.ogg").unwrap();
 
         let _ = sound.play();
 
