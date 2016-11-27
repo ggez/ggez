@@ -1,19 +1,24 @@
 extern crate ggez;
-
 use std::path;
-
 use ggez::conf;
 use ggez::game::{Game, GameState};
 use ggez::{GameResult, Context};
 use ggez::graphics;
-use ggez::graphics::Drawable;
 use ggez::timer;
 use std::time::Duration;
 
+// First we make a structure to contain the game's state
 struct MainState {
     text: graphics::Text,
 }
 
+
+// Then we implement the `ggez::game::GameState` trait on it, which
+// requires callbacks for creating the game state, updating it each
+// frame, and drawing it.
+//
+// The `GameState` trait also contains callbacks for event handling
+// that you can override if you wish, but the defaults are fine.
 impl GameState for MainState {
     fn load(ctx: &mut Context, _conf: &conf::Conf) -> GameResult<MainState> {
         let fontpath = path::Path::new("DejaVuSerif.ttf");
@@ -37,11 +42,18 @@ impl GameState for MainState {
     }
 }
 
+// Now our main function, which does three things:
+//
+// * First, create a new `ggez::conf::Conf`
+// object which contains configuration info on things such
+// as screen resolution and window title,
+// * Second, create a `ggez::game::Game` object which will
+// do the work of creating our MainState and running our game,
+// * then just call `game.run()` which runs the `Game` mainloop.
 pub fn main() {
     let c = conf::Conf::new();
-    let mut e: Game<MainState> = Game::new("helloworld", c).unwrap();
-    let result = e.run();
-    if let Err(e) = result {
+    let mut game: Game<MainState> = Game::new("helloworld", c).unwrap();
+    if let Err(e) = game.run() {
         println!("Error encountered: {:?}", e);
     } else {
         println!("Game exited cleanly.");
