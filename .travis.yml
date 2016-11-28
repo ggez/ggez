@@ -14,3 +14,5 @@ addons:
     - libsdl2-image-dev
     - libsdl2-ttf-dev
     - libsdl2-mixer-dev
+    sources:
+    - debian-sid
