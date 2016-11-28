@@ -1,9 +1,19 @@
-sudo: required
-dist: trusty
+sudo: false
 language: rust
 rust:
   - stable
   - beta
   - nightly
-before_script:
-  - sudo apt-get install -qq libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-mixer-dev
+
+addons:
+  apt:
+    sources:
+    - debian-sid
+
+addons:
+  apt:
+    packages:
+    - libsdl2-dev
+    - libsdl2-image-dev
+    - libsdl2-ttf-dev
+    - libsdl2-mixer-dev
