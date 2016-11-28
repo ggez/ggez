@@ -8,6 +8,7 @@ rust:
 addons:
   apt:
     packages:
+    - libglib2.0-dev
     - libibus-1.0-dev
     - libpulse-dev
     - libsdl2-dev
