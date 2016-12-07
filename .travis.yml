@@ -4,9 +4,9 @@ rust:
   - stable
   - beta
   - nightly
-matrix:
-  allow_failures:
-    - rust: nightly
+# matrix:
+#   allow_failures:
+#     - rust: nightly
 
 install:
   - wget http://libsdl.org/release/SDL2-2.0.5.tar.gz
