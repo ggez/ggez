@@ -42,7 +42,8 @@ pub struct Sound {
 
 impl Sound {
     /// Load a new Sound
-    pub fn new(context: &mut Context, path: &path::Path) -> GameResult<Sound> {
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Sound> {
+        let path = path.as_ref();
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds this method to RWops.
@@ -125,7 +126,8 @@ pub struct Music {
 
 impl Music {
     /// Load the given Music.
-    pub fn new(context: &mut Context, path: &path::Path) -> GameResult<Music> {
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Music> {
+        let path = path.as_ref();
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
         // SDL2_image SNEAKILY adds this method to RWops.

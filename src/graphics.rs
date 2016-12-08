@@ -216,7 +216,11 @@ pub trait Drawable {
                -> GameResult<()>;
 
     /// Draws the drawable onto the rendering target.
-    fn draw(&mut self, context: &mut Context, src: Option<Rect>, dst: Option<Rect>) -> GameResult<()> {
+    fn draw(&mut self,
+            context: &mut Context,
+            src: Option<Rect>,
+            dst: Option<Rect>)
+            -> GameResult<()> {
         self.draw_ex(context, src, dst, 0.0, None, false, false)
     }
 }
@@ -241,9 +245,9 @@ impl Image {
     // Suffice to say for now, Images are bound to the Context in which
     // they are created.
     /// Load a new image from the file at the given path.
-    pub fn new(context: &mut Context, path: &path::Path) -> GameResult<Image> {
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Image> {
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
+        let rwops = try!(util::rwops_from_path(context, path.as_ref(), &mut buffer));
         // SDL2_image SNEAKILY adds the load() method to RWops.
         let surf = try!(rwops.load());
         let renderer = &context.renderer;
@@ -385,10 +389,13 @@ pub enum Font {
 
 impl Font {
     /// Load a new TTF font from the given file.
-    pub fn new(context: &mut Context, path: &path::Path, size: u32) -> GameResult<Font> {
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context,
+                                     path: P,
+                                     size: u32)
+                                     -> GameResult<Font> {
         // let mut buffer: Vec<u8> = Vec::new();
         // let mut rwops = try!(util::rwops_from_path(context, path, &mut buffer));
-        let mut stream = try!(context.filesystem.open(path));
+        let mut stream = try!(context.filesystem.open(path.as_ref()));
         let mut buf = Vec::new();
         try!(stream.read_to_end(&mut buf));
         let collection = rusttype::FontCollection::from_bytes(buf);
@@ -404,8 +411,11 @@ impl Font {
     /// The `Image` is a 1D list of glyphs, which maybe isn't
     /// super ideal but should be fine.
     /// The `glyphs` string is the characters in the image from left to right.
-    pub fn new_bitmap(context: &mut Context, path: &path::Path, glyphs: &str) -> GameResult<Font> {
-        let s2 = try!(util::load_surface(context, path));
+    pub fn new_bitmap<P: AsRef<path::Path>>(context: &mut Context,
+                                            path: P,
+                                            glyphs: &str)
+                                            -> GameResult<Font> {
+        let s2 = try!(util::load_surface(context, path.as_ref()));
 
         let image_width = s2.width();
         let glyph_width = image_width / (glyphs.len() as u32);

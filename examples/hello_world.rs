@@ -1,5 +1,4 @@
 extern crate ggez;
-use std::path;
 use ggez::conf;
 use ggez::game::{Game, GameState};
 use ggez::{GameResult, Context};
@@ -21,8 +20,7 @@ struct MainState {
 // that you can override if you wish, but the defaults are fine.
 impl GameState for MainState {
     fn load(ctx: &mut Context, _conf: &conf::Conf) -> GameResult<MainState> {
-        let fontpath = path::Path::new("DejaVuSerif.ttf");
-        let font = graphics::Font::new(ctx, fontpath, 48).unwrap();
+        let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 48).unwrap();
         let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
 
         let s = MainState { text: text };
