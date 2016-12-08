@@ -32,6 +32,10 @@ add the dependency line to your `Cargo.toml` file:
 ggez = "0.2.0"
 ```
 
+However you also need to have SDL2, SDL2_mixer and SDL2_image installed on
+your system.  The best way to do this is documented
+[by the SDL2 crate](https://github.com/AngryLawyer/rust-sdl2#user-content-requirements).
+
 
 ## Examples
 
