@@ -56,21 +56,40 @@ looking.
 
 ## Extant things to do
 
-* Everything that takes a Path should take an `Into<Path>` or something.
-* Make it always possible to load resources from raw data instead of files.
-* The Drawable trait needs to take `&mut self`
+### 0.2.x
+
+Enhancements that don't actually change the API or compatibility
+
+* Crate-level docs (so you get an intro instead of just a list of modules on the root page)
+* Document SDL's thread constraints!  It's mentioned in Context struct docs but maybe should be in other places.  The
+Game trait would be a good place to do it perhaps?  Or just a mention in the docs for each resource type?
+* Put website link in Cargo.toml
+* The Drawable trait needs to take `&mut self` (if it doesn't already)
+* Default font and print functions
 * Submit an update to the zip crate to make it possible to check whether a directory exists.
+
+### 0.3.0
+
+API-breaking or altering changes
+
+* Better timing for update and draw in the mainloop would be nice so you don't have to delay manually
+* Replace `try!()` with `?` everywhere (so we stop working on older versions of rustc)
+* Make it always possible to load resources from raw data instead of files. (which might make testing easier)
+* Clean up and consistentify GameError a bit, rename it to GgezError perhaps?  I think there might be an unused case
+or two in there.
+* Start integrating ncollide?
+* Remove unused example assets
 
 
 ## Future work
 
 * Make subsystems modular, so we don't *have* to initialize sound if we don't need to and it's not a hard error if we
 can't use it.  See https://www.idolagames.com/piston-sdl-window-with-sound/ perhaps.
-* Make better mainloop handling; separate timesteps for physics and
-  graphics.  Interpolation???
-* More and better docs
-* Default font and print functions?
-* Start integrating ncollide at least?
+* Interpolation for the mainloop timing stuff?  Or at least be able to support the user doing it.
+* Include vector math?
+* Play with GFX more
+* Play with audio more: the ears crate looks rather good, rust-portaudio might be an option???, perhaps alto.  Love2D
+apparently directly wraps OpenAL.
 * Need to add more tests, somehow
 
 It *would* be nice to have a full OpenGL-y backend like Love2D does, with things like shaders, render targets,
@@ -82,7 +101,7 @@ for sound would get us positional audio too.
 * ggez-goodies for things that are useful but not fundamental and generally don't depend on each other
 * specs for entity-component system (alternatives: ecs or recs crates)
 * cgmath or vecmath for math operations?  nalgebra does great too.
-* physics/collision???
+* physics/collision???  ncollide and nphysics; there's ports/wrappers of box2d and chipmunk physics engines but they're young.
 
 ## Credits
 
