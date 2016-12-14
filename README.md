@@ -32,8 +32,7 @@ add the dependency line to your `Cargo.toml` file:
 ggez = "0.2.0"
 ```
 
-However you also need to have SDL2, SDL2_mixer and SDL2_image installed on
-your system.  The best way to do this is documented
+However you also need to have the SDL2, SDL2_mixer and SDL2_image libraries installed on your system.  The best way to do this is documented
 [by the SDL2 crate](https://github.com/AngryLawyer/rust-sdl2#user-content-requirements).
 
 
@@ -93,7 +92,7 @@ can't use it.  See https://www.idolagames.com/piston-sdl-window-with-sound/ perh
 * Include vector math?
 * Play with GFX more
 * Play with audio more: the ears crate looks rather good, rust-portaudio might be an option???, perhaps alto.  Love2D
-apparently directly wraps OpenAL.
+apparently directly wraps OpenAL.  Or tomaka has a library, `rodio`.  Or rsoundio?
 * Need to add more tests, somehow
 
 It *would* be nice to have a full OpenGL-y backend like Love2D does, with things like shaders, render targets,
