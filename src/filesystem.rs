@@ -14,7 +14,7 @@
 //! altered copies of them in the game's `resources/` directory.
 //!
 //! The `resources/` subdirectory and resources.zip files are read-only.
-//! Files that are opened for writing using `Filesyste::open_options()`
+//! Files that are opened for writing using `Filesystem::open_options()`
 //! will be created in the `user` directory.
 
 use std::fmt;
