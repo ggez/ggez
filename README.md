@@ -75,6 +75,7 @@ Game trait would be a good place to do it perhaps?  Or just a mention in the doc
 
 API-breaking or altering changes
 
+* Get rid of the Option in the event callback function signatures... why does SDL2 even have that there anyway?
 * Better timing for update and draw in the mainloop would be nice so you don't have to delay manually
 * Replace `try!()` with `?` everywhere (so we stop working on older versions of rustc)
 * Make it always possible to load resources from raw data instead of files. (which might make testing easier)
