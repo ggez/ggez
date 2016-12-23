@@ -66,9 +66,6 @@ Enhancements that don't actually change the API or compatibility
 * Crate-level docs (so you get an intro instead of just a list of modules on the root page)
 * Document SDL's thread constraints!  It's mentioned in Context struct docs but maybe should be in other places.  The
 Game trait would be a good place to do it perhaps?  Or just a mention in the docs for each resource type?
-* Put website link in Cargo.toml
-* The Drawable trait needs to take `&mut self` (if it doesn't already)
-* Default font and print functions
 * Submit an update to the zip crate to make it possible to check whether a directory exists.
 
 ### 0.3.0
@@ -87,8 +84,8 @@ or two in there.
 
 ## Future work
 
-* Make subsystems modular, so we don't *have* to initialize sound if we don't need to and it's not a hard error if we
-can't use it.  See https://www.idolagames.com/piston-sdl-window-with-sound/ perhaps.
+* Make subsystems modular, so we don't *have* to initialize sound if we don't need to and it's not a hard error if we can't use it.  See https://www.idolagames.com/piston-sdl-window-with-sound/ perhaps.
+* Possibly related, see if it's possible to make the GameState trait optional; provide tools with which to roll your own game loop.
 * Interpolation for the mainloop timing stuff?  Or at least be able to support the user doing it.
 * Include vector math?
 * Play with GFX more

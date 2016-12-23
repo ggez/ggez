@@ -123,13 +123,11 @@ pub fn present(ctx: &mut Context) {
 }
 
 /// Not implemented
-/// since we don't have anything resembling a default font.
 pub fn print(_ctx: &mut Context) {
     unimplemented!();
 }
 
 /// Not implemented
-/// since we don't have anything resembling a default font.
 pub fn printf(_ctx: &mut Context) {
     unimplemented!();
 }
@@ -363,13 +361,13 @@ impl Drawable for Image {
                -> GameResult<()> {
         let renderer = &mut context.renderer;
         renderer.copy_ex(&self.texture,
-                         src,
-                         dst,
-                         angle,
-                         center,
-                         flip_horizontal,
-                         flip_vertical)
-                .map_err(GameError::RenderError)
+                     src,
+                     dst,
+                     angle,
+                     center,
+                     flip_horizontal,
+                     flip_vertical)
+            .map_err(GameError::RenderError)
     }
 }
 
@@ -435,6 +433,20 @@ impl Font {
     }
 }
 
+impl Default for Font {
+    fn default() -> Self {
+        let size = 16;
+        let buf = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSerif.ttf"));
+        let collection = rusttype::FontCollection::from_bytes(&buf[..]);
+        let font = collection.into_font().unwrap();
+
+        Font::TTFFont {
+            font: font,
+            points: size,
+        }
+    }
+}
+
 impl fmt::Debug for Font {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -493,14 +505,14 @@ fn render_ttf(context: &Context,
     // size or position information, into a PositionedGlyph, which does.
     let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
     let width = glyphs.iter()
-                      .rev()
-                      .filter_map(|g| {
-                          g.pixel_bounding_box()
-                           .map(|b| b.min.x as f32 + g.unpositioned().h_metrics().advance_width)
-                      })
-                      .next()
-                      .unwrap_or(0.0)
-                      .ceil() as usize;
+        .rev()
+        .filter_map(|g| {
+            g.pixel_bounding_box()
+                .map(|b| b.min.x as f32 + g.unpositioned().h_metrics().advance_width)
+        })
+        .next()
+        .unwrap_or(0.0)
+        .ceil() as usize;
     // Make an array for our rendered bitmap
     let bytes_per_pixel = 4;
     let mut pixel_data = vec![0; width * pixel_height * bytes_per_pixel];
@@ -556,9 +568,8 @@ fn render_bitmap(context: &Context,
     let text_length = text.len() as u32;
     let glyph_height = surface.height();
     let format = pixels::PixelFormatEnum::RGBA8888;
-    let mut dest_surface = try!(surface::Surface::new(text_length * glyph_width,
-                                                      glyph_height,
-                                                      format));
+    let mut dest_surface =
+        try!(surface::Surface::new(text_length * glyph_width, glyph_height, format));
     for (i, c) in text.chars().enumerate() {
         let small_i = i as u32;
         let error_message = format!("Character '{}' not in bitmap font!", c);
@@ -622,13 +633,13 @@ impl Drawable for Text {
                -> GameResult<()> {
         let renderer = &mut context.renderer;
         renderer.copy_ex(&self.texture,
-                         src,
-                         dst,
-                         angle,
-                         center,
-                         flip_horizontal,
-                         flip_vertical)
-                .map_err(GameError::RenderError)
+                     src,
+                     dst,
+                     angle,
+                     center,
+                     flip_horizontal,
+                     flip_vertical)
+            .map_err(GameError::RenderError)
     }
 }
 
