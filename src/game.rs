@@ -32,7 +32,7 @@ pub trait GameState {
     // It doesn't look complicated but is easy to get wrong.
     // Much thanks to aatch on #rust-beginners for helping make this work.
 
-    /// Called to initially create your `GameState` object 
+    /// Called to initially create your `GameState` object
     /// after all hardware initialization has been done.
     /// It is handed a `Context` to load resources from,
     /// and the `Conf` object that has either been loaded
@@ -46,7 +46,7 @@ pub trait GameState {
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()>;
 
     /// Called to do the drawing of your game.
-    /// You probably want to start this with 
+    /// You probably want to start this with
     /// `graphics::clear()` and end it with
     /// `graphics::present()` and `timer::sleep_until_next_frame()`
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;

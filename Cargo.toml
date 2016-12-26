@@ -1,7 +1,7 @@
 [package]
 name = "ggez"
 description = "Rust library to create a Good Game Easily"
-version = "0.2.0"
+version = "0.2.1"
 homepage = "http://ggez.rs"
 repository = "https://github.com/ggez/ggez"
 documentation = "https://docs.rs/ggez"

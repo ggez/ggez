@@ -30,7 +30,8 @@ struct LogBuffer<T> {
     contents: Vec<T>,
 }
 
-impl<T> LogBuffer<T> where T: Clone + Copy
+impl<T> LogBuffer<T>
+    where T: Clone + Copy
 {
     fn new(size: usize, init_val: T) -> LogBuffer<T> {
         let mut v = Vec::with_capacity(size);

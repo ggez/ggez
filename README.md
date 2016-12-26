@@ -63,6 +63,7 @@ looking.
 
 Enhancements that don't actually change the API or compatibility
 
+* Get rid of unwraps
 * Crate-level docs (so you get an intro instead of just a list of modules on the root page)
 * Document SDL's thread constraints!  It's mentioned in Context struct docs but maybe should be in other places.  The
 Game trait would be a good place to do it perhaps?  Or just a mention in the docs for each resource type?

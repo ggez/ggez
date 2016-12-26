@@ -54,7 +54,7 @@ impl<'a> fmt::Debug for Context<'a> {
 
 fn init_audio(sdl_context: &Sdl) -> GameResult<sdl2::AudioSubsystem> {
     sdl_context.audio()
-               .map_err(GameError::AudioError)
+        .map_err(GameError::AudioError)
 }
 
 fn init_mixer() -> GameResult<Sdl2MixerContext> {
@@ -78,10 +78,10 @@ fn init_window(video: sdl2::VideoSubsystem,
     let _ = sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "best");
 
     video.window(window_title, screen_width, screen_height)
-         .position_centered()
-         .opengl()
-         .build()
-         .map_err(|e| GameError::VideoError(format!("{}", e)))
+        .position_centered()
+        .opengl()
+        .build()
+        .map_err(|e| GameError::VideoError(format!("{}", e)))
 }
 
 /// Sets the window icon from the Conf window_icon field.
@@ -116,8 +116,8 @@ impl<'a> Context<'a> {
         let dpi = try!(window.subsystem().display_dpi(display_index));
 
         let renderer = try!(window.renderer()
-                                  .accelerated()
-                                  .build());
+            .accelerated()
+            .build());
 
         let audio_context = try!(init_audio(&sdl_context));
         let mixer_context = try!(init_mixer());

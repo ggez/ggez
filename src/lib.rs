@@ -42,10 +42,11 @@ pub enum GameError {
 pub type GameResult<T> = Result<T, GameError>;
 
 /// Emit a non-fatal warning message
-fn warn(err: GameError) -> GameResult<()> {
-    println!("WARNING: Encountered error: {:?}", err);
-    Ok(())
-}
+/// Ideally we probably want some sort of real logging interface here...
+// fn warn(err: GameError) -> GameResult<()> {
+//     println!("WARNING: Encountered error: {:?}", err);
+//     Ok(())
+// }
 
 impl From<String> for GameError {
     fn from(s: String) -> GameError {

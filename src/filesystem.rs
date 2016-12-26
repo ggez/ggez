@@ -27,7 +27,7 @@ use sdl2;
 use GameError;
 use GameResult;
 use conf;
-use warn;
+// use warn;
 
 use zip;
 
@@ -116,10 +116,10 @@ impl Filesystem {
         let mut resource_path = root_path.clone();
         resource_path.push("resources");
         if !resource_path.exists() || !resource_path.is_dir() {
-            let msg_str = format!("'resources' directory not found!  Should be in {:?}",
-                                  resource_path);
-            let message = String::from(msg_str);
-            let _ = warn(GameError::ResourceNotFound(message));
+            // let msg_str = format!("'resources' directory not found!  Should be in {:?}",
+            //                       resource_path);
+            // let message = String::from(msg_str);
+            // let _ = warn(GameError::ResourceNotFound(message));
         }
 
         // Check for resources zip file.
@@ -127,10 +127,10 @@ impl Filesystem {
         let mut resource_zip_path = root_path.clone();
         resource_zip_path.push("resources.zip");
         if !resource_zip_path.exists() || !resource_zip_path.is_file() {
-            let msg_str = format!("'resources.zip' file not found!  Should be in {:?}",
-                                  resource_zip_path);
-            let message = String::from(msg_str);
-            let _ = warn(GameError::ResourceNotFound(message));
+            // let msg_str = format!("'resources.zip' file not found!  Should be in {:?}",
+            //                       resource_zip_path);
+            // let message = String::from(msg_str);
+            // let _ = warn(GameError::ResourceNotFound(message));
         } else {
             // We keep this file open so we don't have to re-parse
             // the zip file every time we load something out of it.
@@ -206,7 +206,7 @@ impl Filesystem {
         Ok(File::FSFile(f))
     }
 
-    /// Create an empty directory in the user dir 
+    /// Create an empty directory in the user dir
     /// with the given name.  Any parents to that directory
     /// that do not exist will be created.
     pub fn create_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
