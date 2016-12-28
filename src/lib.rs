@@ -132,3 +132,10 @@ impl From<toml::Error> for GameError {
         GameError::ConfigError(errstr)
     }
 }
+
+impl From<zip::result::ZipError> for GameError {
+    fn from(e: zip::result::ZipError) -> GameError {
+        let errstr = format!("Zip error: {}", e.description());
+        GameError::ResourceLoadError(errstr)
+    }
+}

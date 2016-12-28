@@ -33,6 +33,10 @@ use zip;
 
 
 const CONFIG_NAME: &'static str = "conf.toml";
+const INVALID_FILENAME: &'static str = "This invalid filename will never exist (hopefully) and if \
+                                        you manage to create a file that does have this name and \
+                                        it causes mysterious trouble, well, congratulations!";
+
 
 
 /// A structure that contains the filesystem state and cache.
@@ -134,8 +138,8 @@ impl Filesystem {
         } else {
             // We keep this file open so we don't have to re-parse
             // the zip file every time we load something out of it.
-            let f = fs::File::open(resource_zip_path).unwrap();
-            let z = zip::ZipArchive::new(f).unwrap();
+            let f = fs::File::open(resource_zip_path)?;
+            let z = zip::ZipArchive::new(f)?;
             resource_zip = Some(z);
         }
 
@@ -168,8 +172,10 @@ impl Filesystem {
 
         // Look in resources.zip
         if let Some(ref mut zipfile) = self.resource_zip {
-            let name = pathref.to_str().unwrap();
-            let f = zipfile.by_name(name).unwrap();
+            let errmsg = format!("Asked for invalid path inside resources.zip; should never \
+                                  happen?");
+            let name = pathref.to_str().ok_or(GameError::UnknownError(errmsg))?;
+            let f = zipfile.by_name(name)?;
             return Ok(File::ZipFile(f));
         }
 
@@ -263,7 +269,9 @@ impl Filesystem {
         } else if let Ok(p) = self.rel_to_user_path(path) {
             p.exists()
         } else {
-            let name = path.to_str().unwrap();
+            let name = path.to_str().unwrap_or(INVALID_FILENAME);
+            // If we have a valid filename,
+            // find the thing.
             if let Some(ref mut zipfile) = self.resource_zip {
                 zipfile.by_name(name).is_ok()
             } else {
@@ -280,7 +288,7 @@ impl Filesystem {
         } else if let Ok(p) = self.rel_to_user_path(path) {
             p.is_file()
         } else {
-            let name = path.to_str().unwrap();
+            let name = path.to_str().unwrap_or(INVALID_FILENAME);
             if let Some(ref mut zipfile) = self.resource_zip {
                 zipfile.by_name(name).is_ok()
             } else {
@@ -297,7 +305,7 @@ impl Filesystem {
         } else if let Ok(p) = self.rel_to_user_path(path) {
             p.is_dir()
         } else {
-            let name = path.to_str().unwrap();
+            let name = path.to_str().unwrap_or(INVALID_FILENAME);
             if let Some(ref mut zipfile) = self.resource_zip {
                 // BUGGO: This doesn't actually do what we want...
                 // Zip files don't actually store directories,
@@ -346,14 +354,14 @@ impl Filesystem {
     /// Prints the contents of all data directories.
     /// Useful for debugging.
     /// TODO: This should return an iterator, and be called iter()
-    pub fn print_all(&mut self) {
+    pub fn print_all(&mut self) -> GameResult<()> {
         // Print resource files
         {
             let p = self.resource_path.clone();
             if p.is_dir() {
-                let paths = fs::read_dir(p).unwrap();
+                let paths = fs::read_dir(p)?;
                 for path in paths {
-                    println!("Resources dir, filename {}", path.unwrap().path().display());
+                    println!("Resources dir, filename {}", path?.path().display());
                 }
             }
         }
@@ -362,9 +370,9 @@ impl Filesystem {
         {
             let p = self.user_path.clone();
             if p.is_dir() {
-                let paths = fs::read_dir(p).unwrap();
+                let paths = fs::read_dir(p)?;
                 for path in paths {
-                    println!("User dir, filename {}", path.unwrap().path().display());
+                    println!("User dir, filename {}", path?.path().display());
                 }
             }
         }
@@ -372,10 +380,11 @@ impl Filesystem {
 
         if let Some(ref mut zipfile) = self.resource_zip {
             for i in 0..zipfile.len() {
-                let file = zipfile.by_index(i).unwrap();
+                let file = zipfile.by_index(i)?;
                 println!("Zip, filename: {}", file.name());
             }
         }
+        Ok(())
     }
 
 
