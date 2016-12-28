@@ -165,7 +165,10 @@ impl<'a> Context<'a> {
 
     /// Prints out information on the resources subsystem.
     pub fn print_resource_stats(&mut self) {
-        self.filesystem.print_all();
+        match self.filesystem.print_all() {
+            Err(e) => println!("Error printing out filesystem info: {:?}", e),
+            _ => (),
+        }
     }
 
     /// Triggers a Quit event.
