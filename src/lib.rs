@@ -120,7 +120,15 @@ impl From<std::io::Error> for GameError {
 
 impl From<toml::DecodeError> for GameError {
     fn from(e: toml::DecodeError) -> GameError {
-        let errstr = e.description();
-        GameError::ConfigError(errstr.to_owned())
+        let errstr = format!("TOML decode error: {}", e.description());
+
+        GameError::ConfigError(errstr)
+    }
+}
+
+impl From<toml::Error> for GameError {
+    fn from(e: toml::Error) -> GameError {
+        let errstr = format!("TOML error (possibly encoding?): {}", e.description());
+        GameError::ConfigError(errstr)
     }
 }

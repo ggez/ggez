@@ -84,7 +84,7 @@ impl Conf {
         //
         // So we encode the Conf into a toml::Value...
         let mut e = toml::Encoder::new();
-        self.encode(&mut e).unwrap();
+        self.encode(&mut e)?;
 
         // Create another node that is a Table containing it...
         let mut t = BTreeMap::new();
