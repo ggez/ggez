@@ -194,7 +194,7 @@ const MAX_ROCK_VEL: f64 = 50.0;
 /// Makes sure that none of them are within the
 /// given exclusion zone (nominally the player)
 /// Note that this *could* create rocks outside the
-/// bounds of the playing field, so it should be 
+/// bounds of the playing field, so it should be
 /// called before `wrap_actor_position()` happens.
 fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f64, max_radius: f64) -> Vec<Actor> {
     assert!(max_radius > min_radius);
@@ -475,6 +475,15 @@ impl MainState {
     }
 }
 
+fn print_instructions() {
+    println!();
+    println!("Welcome to ASTROBLASTO!");
+    println!();
+    println!("How to play:");
+    println!("L/R arrow keys rotate your ship, up thrusts, space bar fires");
+    println!();
+}
+
 /// **********************************************************************
 /// Now we implement the GameState trait from ggez::game, which provides
 /// ggez with callbacks for loading, updating and drawing our game, as
@@ -488,6 +497,8 @@ impl<'a> GameState for MainState {
         graphics::set_background_color(ctx, graphics::Color::RGB(0, 0, 0));
 
         println!("Game resource path: {:?}", ctx.filesystem);
+
+        print_instructions();
 
         let assets = try!(Assets::new(ctx));
         let score_disp = try!(graphics::Text::new(ctx, "score", &assets.font));

@@ -166,7 +166,7 @@ impl<'a> Context<'a> {
     /// Prints out information on the resources subsystem.
     pub fn print_resource_stats(&mut self) {
         match self.filesystem.print_all() {
-            Err(e) => println!("Error printing out filesystem info: {:?}", e),
+            Err(e) => println!("Error printing out filesystem info: {}", e),
             _ => (),
         }
     }
