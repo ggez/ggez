@@ -387,17 +387,27 @@ pub enum Font {
 
 impl Font {
     /// Load a new TTF font from the given file.
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context,
-                                     path: P,
-                                     size: u32)
-                                     -> GameResult<Font> {
+    pub fn new<P>(context: &mut Context, path: P, size: u32) -> GameResult<Font>
+        where P: AsRef<path::Path> + fmt::Debug
+    {
         // let mut buffer: Vec<u8> = Vec::new();
         // let mut rwops = try!(util::rwops_from_path(context, path, &mut buffer));
         let mut stream = try!(context.filesystem.open(path.as_ref()));
         let mut buf = Vec::new();
         try!(stream.read_to_end(&mut buf));
-        let collection = rusttype::FontCollection::from_bytes(buf);
-        let font = collection.into_font().unwrap();
+
+        let name = format!("{:?}", path);
+        Font::font_from_bytes(&name, buf, size)
+    }
+
+    fn font_from_bytes<B>(name: &str, bytes: B, size: u32) -> GameResult<Font>
+        where B: Into<rusttype::SharedBytes<'static>>
+    {
+        let collection = rusttype::FontCollection::from_bytes(bytes);
+        let font_err = GameError::ResourceLoadError(format!("Could not load font collection for \
+                                                             font {:?}",
+                                                            name));
+        let font = collection.into_font().ok_or(font_err)?;
 
         Ok(Font::TTFFont {
             font: font,
@@ -431,19 +441,11 @@ impl Font {
             glyph_width: glyph_width,
         })
     }
-}
 
-impl Default for Font {
-    fn default() -> Self {
+    pub fn default_font() -> GameResult<Self> {
         let size = 16;
         let buf = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSerif.ttf"));
-        let collection = rusttype::FontCollection::from_bytes(&buf[..]);
-        let font = collection.into_font().unwrap();
-
-        Font::TTFFont {
-            font: font,
-            points: size,
-        }
+        Font::font_from_bytes("default", &buf[..], size)
     }
 }
 
