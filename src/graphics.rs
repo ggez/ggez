@@ -14,7 +14,7 @@ use std::io::Read;
 use sdl2::pixels;
 use sdl2::render;
 use sdl2::surface;
-use sdl2_image::ImageRWops;
+use sdl2::image::ImageRWops;
 use rusttype;
 
 use context::Context;

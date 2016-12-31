@@ -4,5 +4,5 @@
 
 pub use sdl2::keyboard::Keycode;
 pub use sdl2::keyboard::Mod;
-pub use sdl2::mouse::Mouse;
+pub use sdl2::mouse::MouseButton;
 pub use sdl2::mouse::MouseState;

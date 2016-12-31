@@ -1,6 +1,4 @@
 extern crate sdl2;
-extern crate sdl2_image;
-extern crate sdl2_mixer;
 extern crate rand;
 extern crate rustc_serialize;
 extern crate rusttype;
