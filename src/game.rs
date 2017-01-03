@@ -1,4 +1,4 @@
-//! This module contains traits and structs to actually run your game mainloop
+//! The `game` module contains traits and structs to actually run your game mainloop
 //! and handle top-level state.
 
 use context::Context;
