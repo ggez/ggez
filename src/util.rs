@@ -5,7 +5,7 @@
 use std::path;
 use sdl2::rwops;
 use sdl2::surface;
-use sdl2_image::ImageRWops;
+use sdl2::image::ImageRWops;
 
 use context::Context;
 use GameError;

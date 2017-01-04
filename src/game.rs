@@ -55,9 +55,9 @@ pub trait GameState {
     // do nothing.
     // It might be nice to be able to have custom event types and a map or
     // such of handlers?  Hmm, maybe later.
-    fn mouse_button_down_event(&mut self, _button: mouse::Mouse, _x: i32, _y: i32) {}
+    fn mouse_button_down_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
 
-    fn mouse_button_up_event(&mut self, _button: mouse::Mouse, _x: i32, _y: i32) {}
+    fn mouse_button_up_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
 
     fn mouse_motion_event(&mut self,
                           _state: mouse::MouseState,
@@ -197,10 +197,10 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                         self.state.mouse_motion_event(mousestate, x, y, xrel, yrel)
                     }
                     MouseWheel { x, y, .. } => self.state.mouse_wheel_event(x, y),
-                    Window { win_event_id: event::WindowEventId::FocusGained, .. } => {
+                    Window { win_event: event::WindowEvent::FocusGained, .. } => {
                         self.state.focus_event(true)
                     }
-                    Window { win_event_id: event::WindowEventId::FocusLost, .. } => {
+                    Window { win_event: event::WindowEvent::FocusLost, .. } => {
                         self.state.focus_event(false)
                     }
                     _ => {}

@@ -8,8 +8,8 @@
 use std::fmt;
 use std::path;
 
-use sdl2_mixer;
-use sdl2_mixer::LoaderRWops;
+use sdl2;
+use sdl2::mixer::LoaderRWops;
 
 use context::Context;
 use util;
@@ -17,7 +17,7 @@ use GameError;
 use GameResult;
 
 /// An object representing a channel that may be playing a particular Sound.
-pub type Channel = sdl2_mixer::Channel;
+pub type Channel = sdl2::mixer::Channel;
 
 
 /// A trait for general operations on sound objects.
@@ -37,7 +37,7 @@ pub trait AudioOps {
 
 /// A source of audio data.
 pub struct Sound {
-    chunk: sdl2_mixer::Chunk,
+    chunk: sdl2::mixer::Chunk,
 }
 
 impl Sound {
@@ -46,7 +46,7 @@ impl Sound {
         let path = path.as_ref();
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
-        // SDL2_image SNEAKILY adds this method to RWops.
+        // SDL2_mixer SNEAKILY adds this method to RWops.
         let chunk = try!(rwops.load_wav());
 
         Ok(Sound { chunk: chunk })
@@ -57,7 +57,7 @@ impl Sound {
     /// Returns a `Channel`, which can be used to manipulate the
     /// playback, eg pause, stop, restart, etc.
     pub fn play(&self) -> GameResult<Channel> {
-        let channel = sdl2_mixer::channel(-1);
+        let channel = sdl2::mixer::channel(-1);
         // This try! is a little redundant but make the
         // GameResult type conversion work right.
         channel.play(&self.chunk, 0)
@@ -77,7 +77,7 @@ impl fmt::Debug for Sound {
 impl AudioOps for Channel {
     /// Return a new channel that is not playing anything.
     fn new_channel() -> Channel {
-        sdl2_mixer::channel(-1)
+        sdl2::mixer::channel(-1)
     }
 
     /// Plays the given Sound on this `Channel`
@@ -120,7 +120,7 @@ impl AudioOps for Channel {
 /// `Context::print_sound_stats()` to print out which decoders
 /// are supported for your build.
 pub struct Music {
-    music: sdl2_mixer::Music,
+    music: sdl2::mixer::Music,
 }
 
 
@@ -130,7 +130,7 @@ impl Music {
         let path = path.as_ref();
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
-        // SDL2_image SNEAKILY adds this method to RWops.
+        // SDL2_mixer SNEAKILY adds this method to RWops.
         let music = try!(rwops.load_music());
 
         Ok(Music { music: music })
@@ -145,7 +145,7 @@ impl fmt::Debug for Music {
 }
 
 /// Play the given music n times.  -1 loops forever.
-pub fn play_music_times(music: &Music, n: isize) -> GameResult<()> {
+pub fn play_music_times(music: &Music, n: i32) -> GameResult<()> {
     music.music
         .play(n)
         .map_err(GameError::from)
@@ -158,21 +158,21 @@ pub fn play_music(music: &Music) -> GameResult<()> {
 
 /// Pause currently playing music
 pub fn pause_music() {
-    sdl2_mixer::Music::pause()
+    sdl2::mixer::Music::pause()
 }
 
 /// Resume currently playing music, if any
 pub fn resume_music() {
-    sdl2_mixer::Music::resume()
+    sdl2::mixer::Music::resume()
 
 }
 
 /// Stop currently playing music
 pub fn stop_music() {
-    sdl2_mixer::Music::halt()
+    sdl2::mixer::Music::halt()
 }
 
 /// Rewind the currently playing music to the beginning.
 pub fn rewind_music() {
-    sdl2_mixer::Music::rewind()
+    sdl2::mixer::Music::rewind()
 }
