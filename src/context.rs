@@ -30,6 +30,7 @@ use GameResult;
 /// need to be transformed into a format the hardware likes) will need
 /// to access the `Context`.
 pub struct Context<'a> {
+    pub conf: conf::Conf,
     pub sdl_context: Sdl,
     pub mixer_context: Sdl2MixerContext,
     pub renderer: Renderer<'a>,
@@ -85,10 +86,12 @@ fn init_window(video: sdl2::VideoSubsystem,
 /// Sets the window icon from the Conf window_icon field.
 /// Assumes an empty string in the conf's window_icon
 /// means to do nothing.
-fn set_window_icon(context: &mut Context, conf: &conf::Conf) -> GameResult<()> {
-    if !conf.window_icon.is_empty() {
-        let path = path::Path::new(&conf.window_icon);
-        let icon_surface = try!(util::load_surface(context, path));
+fn set_window_icon(context: &mut Context) -> GameResult<()> {
+    if !context.conf.window_icon.is_empty() {
+        // Grrr, hackhackhack here with the icon path clone.
+        let icon_path = context.conf.window_icon.clone();
+        let path = path::Path::new(&icon_path);
+        let icon_surface = util::load_surface(context, path)?;
 
         if let Some(window) = context.renderer.window_mut() {
             window.set_icon(icon_surface);
@@ -100,16 +103,19 @@ fn set_window_icon(context: &mut Context, conf: &conf::Conf) -> GameResult<()> {
 impl<'a> Context<'a> {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by the engine as part of the set-up code.
-    pub fn from_conf(conf: &conf::Conf,
+    pub fn from_conf(conf: conf::Conf,
                      fs: Filesystem,
                      sdl_context: Sdl)
                      -> GameResult<Context<'a>> {
-        let window_title = &conf.window_title;
         let screen_width = conf.window_width;
         let screen_height = conf.window_height;
 
         let video = try!(sdl_context.video());
-        let window = try!(init_window(video, &window_title, screen_width, screen_height));
+        let window = {
+
+            let window_title = &conf.window_title;
+            init_window(video, &window_title, screen_width, screen_height)?
+        };
         let display_index = try!(window.display_index());
         let dpi = try!(window.subsystem().display_dpi(display_index));
 
@@ -123,6 +129,7 @@ impl<'a> Context<'a> {
         let timer_context = timer::TimeContext::new();
 
         let mut ctx = Context {
+            conf: conf,
             sdl_context: sdl_context,
             mixer_context: mixer_context,
             renderer: renderer,
@@ -136,9 +143,24 @@ impl<'a> Context<'a> {
             _audio_context: audio_context,
         };
 
-        try!(set_window_icon(&mut ctx, conf));
+        set_window_icon(&mut ctx)?;
 
         Ok(ctx)
+    }
+
+    /// Tries to create a new Context loading a config
+    /// file from its default path, using the given Conf
+    /// object as a default if none is found.
+    pub fn load_from_conf(id: &str, default_config: conf::Conf) -> GameResult<Context<'a>> {
+
+        let sdl_context = sdl2::init()?;
+        let mut fs = Filesystem::new(id)?;
+
+        // TODO: Verify config version == this version
+        let config = fs.read_config().unwrap_or(default_config);
+
+        Context::from_conf(config, fs, sdl_context)
+
     }
 
 

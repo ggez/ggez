@@ -4,14 +4,12 @@
 use context::Context;
 use GameResult;
 use conf;
-use filesystem as fs;
 use timer;
 
 use std::time::Duration;
 
 use super::event as gevent;
 
-use sdl2;
 use sdl2::event::Event::*;
 use sdl2::event;
 use sdl2::mouse;
@@ -39,7 +37,7 @@ pub trait GameState {
     /// from your `resources/conf.toml` file or the default
     /// that has been provided to `Game::new()` if no conf
     /// file exists.
-    fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<Self> where Self: Sized;
+    fn load(ctx: &mut Context) -> GameResult<Self> where Self: Sized;
 
     /// Called upon each physics update to the game.
     /// This should be where the game's logic takes place.
@@ -98,7 +96,6 @@ pub trait GameState {
 /// passing events to your handlers, and all that stuff.
 #[derive(Debug)]
 pub struct Game<'a, S: GameState> {
-    conf: conf::Conf,
     state: S,
     context: Context<'a>,
 }
@@ -112,18 +109,11 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// The `id` field is a unique identifier for your game that will
     /// be used to create a save directory to write files to.
     pub fn new(id: &str, default_config: conf::Conf) -> GameResult<Game<'a, S>> {
-        let sdl_context = try!(sdl2::init());
-        let mut fs = try!(fs::Filesystem::new(id));
+        let mut context = Context::load_from_conf(id, default_config)?;
 
-        // TODO: Verify config version == this version
-        let config = fs.read_config().unwrap_or(default_config);
-
-        let mut context = try!(Context::from_conf(&config, fs, sdl_context));
-
-        let init_state = try!(S::load(&mut context, &config));
+        let init_state = S::load(&mut context)?;
 
         Ok(Game {
-            conf: config,
             state: init_state,
             context: context,
         })
@@ -137,7 +127,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
 
     /// Re-creates a fresh `GameState` using the existing one's `::load()` method.
     pub fn reload_state(&mut self) -> GameResult<()> {
-        let newstate = try!(S::load(&mut self.context, &self.conf));
+        let newstate = S::load(&mut self.context)?;
         self.state = newstate;
         Ok(())
     }
@@ -145,9 +135,9 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// Calls the given function to create a new gamestate, and replaces
     /// the current one with it.
     pub fn replace_state_with<F>(&mut self, f: &F) -> GameResult<()>
-        where F: Fn(&mut Context, &conf::Conf) -> GameResult<S>
+        where F: Fn(&mut Context) -> GameResult<S>
     {
-        let newstate = try!(f(&mut self.context, &self.conf));
+        let newstate = f(&mut self.context)?;
         self.state = newstate;
         Ok(())
     }

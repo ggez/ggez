@@ -19,7 +19,7 @@ struct MainState {
 // The `GameState` trait also contains callbacks for event handling
 // that you can override if you wish, but the defaults are fine.
 impl GameState for MainState {
-    fn load(ctx: &mut Context, _conf: &conf::Conf) -> GameResult<MainState> {
+    fn load(ctx: &mut Context) -> GameResult<MainState> {
         let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 48).unwrap();
         let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
 

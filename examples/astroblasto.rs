@@ -491,7 +491,7 @@ fn print_instructions() {
 /// ********************************************************************
 
 impl<'a> GameState for MainState {
-    fn load(ctx: &mut Context, conf: &conf::Conf) -> GameResult<MainState> {
+    fn load(ctx: &mut Context) -> GameResult<MainState> {
         ctx.print_sound_stats();
         ctx.print_resource_stats();
         graphics::set_background_color(ctx, graphics::Color::RGB(0, 0, 0));
@@ -514,8 +514,8 @@ impl<'a> GameState for MainState {
             level: 0,
             score: 0,
             assets: assets,
-            screen_width: conf.window_width,
-            screen_height: conf.window_height,
+            screen_width: ctx.conf.window_width,
+            screen_height: ctx.conf.window_height,
             input: InputState::default(),
             player_shot_timeout: 0.0,
             gui_dirty: true,
