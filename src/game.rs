@@ -24,7 +24,7 @@ use sdl2::keyboard;
 /// The default event handlers do nothing, apart from `key_down_event()`,
 /// which *should* by default exit the game if escape is pressed.
 /// (Once we work around some event bugs in rust-sdl2.)
-pub trait GameState {
+pub trait GameState: EventHandler {
     // Tricksy trait and lifetime magic happens in load()'s
     // signature.
     // It doesn't look complicated but is easy to get wrong.
@@ -38,7 +38,10 @@ pub trait GameState {
     /// that has been provided to `Game::new()` if no conf
     /// file exists.
     fn load(ctx: &mut Context) -> GameResult<Self> where Self: Sized;
+}
 
+
+pub trait EventHandler {
     /// Called upon each physics update to the game.
     /// This should be where the game's logic takes place.
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()>;
@@ -90,14 +93,42 @@ pub trait GameState {
 }
 
 
+
 /// The `Game` struct takes an object you define that
 /// implements the `GameState` trait
 /// and does the actual work of running a gameloop,
 /// passing events to your handlers, and all that stuff.
 #[derive(Debug)]
-pub struct Game<'a, S: GameState> {
+pub struct Game<'a, S> {
     state: S,
     context: Context<'a>,
+}
+
+
+
+impl<'a, S> Game<'a, S> {
+    pub fn from_state(ctx: Context<'a>, state: S) -> Game<S> {
+        Game {
+            state: state,
+            context: ctx,
+        }
+    }
+
+    /// Replaces the gamestate with the given one without
+    /// having to re-initialize the hardware context.
+    pub fn replace_state(&mut self, state: S) {
+        self.state = state;
+    }
+
+    /// Calls the given function to create a new gamestate, and replaces
+    /// the current one with it.
+    pub fn replace_state_with<F>(&mut self, f: &F) -> GameResult<()>
+        where F: Fn(&mut Context) -> GameResult<S>
+    {
+        let newstate = f(&mut self.context)?;
+        self.state = newstate;
+        Ok(())
+    }
 }
 
 impl<'a, S: GameState + 'static> Game<'a, S> {
@@ -119,11 +150,6 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
         })
     }
 
-    /// Replaces the gamestate with the given one without
-    /// having to re-initialize the hardware context.
-    pub fn replace_state(&mut self, state: S) {
-        self.state = state;
-    }
 
     /// Re-creates a fresh `GameState` using the existing one's `::load()` method.
     pub fn reload_state(&mut self) -> GameResult<()> {
@@ -131,17 +157,9 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
         self.state = newstate;
         Ok(())
     }
+}
 
-    /// Calls the given function to create a new gamestate, and replaces
-    /// the current one with it.
-    pub fn replace_state_with<F>(&mut self, f: &F) -> GameResult<()>
-        where F: Fn(&mut Context) -> GameResult<S>
-    {
-        let newstate = f(&mut self.context)?;
-        self.state = newstate;
-        Ok(())
-    }
-
+impl<'a, S: EventHandler + 'static> Game<'a, S> {
     /// Runs the game's mainloop.
     /// Continues until a `Quit` event is created, for instance
     /// via `Context::quit()`

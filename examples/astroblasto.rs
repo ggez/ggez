@@ -8,7 +8,7 @@ extern crate rand;
 use ggez::audio;
 use ggez::conf;
 use ggez::event::*;
-use ggez::game::{Game, GameState};
+use ggez::game::{Game, GameState, EventHandler};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
@@ -525,7 +525,9 @@ impl<'a> GameState for MainState {
 
         Ok(s)
     }
+}
 
+impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
         let seconds = timer::duration_to_f64(dt);
 

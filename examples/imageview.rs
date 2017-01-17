@@ -5,7 +5,7 @@ extern crate sdl2;
 
 use ggez::audio;
 use ggez::conf;
-use ggez::game::{Game, GameState};
+use ggez::game::{Game, GameState, EventHandler};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::graphics::Color;
@@ -82,7 +82,9 @@ impl GameState for MainState {
 
         Ok(s)
     }
+}
 
+impl EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         self.a += self.direction;
         if self.a > 250 || self.a <= 0 {

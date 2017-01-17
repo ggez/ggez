@@ -1,6 +1,6 @@
 extern crate ggez;
 use ggez::conf;
-use ggez::game::{Game, GameState};
+use ggez::game::{Game, GameState, EventHandler};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
@@ -26,7 +26,9 @@ impl GameState for MainState {
         let s = MainState { text: text };
         Ok(s)
     }
+}
 
+impl EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         Ok(())
     }
