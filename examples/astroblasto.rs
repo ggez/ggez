@@ -681,12 +681,12 @@ pub fn main() {
     match game {
         Err(e) => {
             println!("Could not load game!");
-            println!("Error: {:?}", e);
+            println!("Error: {}", e);
         }
         Ok(mut game) => {
             let result = game.run();
             if let Err(e) = result {
-                println!("Error encountered running game: {:?}", e);
+                println!("Error encountered running game: {}", e);
             } else {
                 println!("Game exited cleanly.");
             }

@@ -124,7 +124,7 @@ pub fn main() {
     let mut e: Game<MainState> = Game::new("imageview", c).unwrap();
     let result = e.run();
     if let Err(e) = result {
-        println!("Error encountered: {:?}", e);
+        println!("Error encountered: {}", e);
     } else {
         println!("Game exited cleanly.");
     }

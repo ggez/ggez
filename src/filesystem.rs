@@ -161,7 +161,6 @@ impl Filesystem {
     /// Opens the given path and returns the resulting `File`
     /// in read-only mode.
     pub fn open<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
-        let mut tried: Vec<path::PathBuf> = vec![];
 
         // Look in resource directory
         let pathref: &path::Path = path.as_ref();
@@ -170,7 +169,6 @@ impl Filesystem {
             let f = fs::File::open(pathbuf)?;
             return Ok(File::FSFile(f));
         }
-        tried.push(pathbuf.clone());
 
         // Look in resources.zip
         if let Some(ref mut zipfile) = self.resource_zip {
@@ -179,7 +177,7 @@ impl Filesystem {
             let name = pathref.to_str().ok_or(GameError::UnknownError(errmsg))?;
             let f = zipfile.by_name(name)?;
             return Ok(File::ZipFile(f));
-            //TODO: add path to zip + path within zip to `tried`
+            // TODO: add path to zip + path within zip to `tried`
         }
 
         // Look in user directory
@@ -188,10 +186,16 @@ impl Filesystem {
             let f = fs::File::open(pathbuf)?;
             return Ok(File::FSFile(f));
         }
-        tried.push(pathbuf.clone());
 
         // Welp, can't find it.
-        let errmessage = format!("{:?}; checked in {:?}", convenient_path_to_str(pathref)?, tried);
+        let resource_path = self.rel_to_resource_path(pathref)?;
+        let user_path = self.rel_to_user_path(pathref)?;
+        let mut zip_path = self.zip_path();
+        zip_path.push(pathref);
+        let tried = vec![resource_path, user_path, zip_path];
+        let errmessage = format!("{:?}; checked in {:?}",
+                                 convenient_path_to_str(pathref)?,
+                                 tried);
         Err(GameError::ResourceNotFound(errmessage))
     }
 
@@ -263,6 +267,13 @@ impl Filesystem {
             let pathbuf = self.user_path.join(pathref);
             Ok(pathbuf)
         }
+    }
+
+    /// Constructs a path to the resource zip file.
+    fn zip_path(&self) -> path::PathBuf {
+        let mut resource_zip_path = self.base_path.clone();
+        resource_zip_path.push("resources.zip");
+        resource_zip_path
     }
 
     /// Check whether a file or directory exists.

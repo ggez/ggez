@@ -25,7 +25,12 @@ pub enum GameError {
 
 impl fmt::Display for GameError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "GameError {:?}", self)
+        match *self {
+            GameError::ResourceNotFound(ref s) => write!(f, "Resource not found: {}", s),
+            GameError::ConfigError(ref s) => write!(f, "Config error: {}", s),
+            GameError::ResourceLoadError(ref s) => write!(f, "Error loading resource: {}", s),
+            _ => write!(f, "GameError {:?}", self),
+        }
     }
 }
 
