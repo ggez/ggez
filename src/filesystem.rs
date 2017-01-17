@@ -96,7 +96,7 @@ impl<'a> io::Write for File<'a> {
 }
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
-    let errmessage = String::from("Invalid path format");
+    let errmessage = format!("Invalid path format for resource: {:?}", path);
     let error = GameError::FilesystemError(errmessage);
     path.to_str()
         .ok_or(error)
@@ -120,10 +120,7 @@ impl Filesystem {
         let mut resource_path = root_path.clone();
         resource_path.push("resources");
         if !resource_path.exists() || !resource_path.is_dir() {
-            // let msg_str = format!("'resources' directory not found!  Should be in {:?}",
-            //                       resource_path);
-            // let message = String::from(msg_str);
-            // let _ = warn(GameError::ResourceNotFound(message));
+            // Do we want to warn here?  ...maybe not.
         }
 
         // Check for resources zip file.
@@ -131,10 +128,7 @@ impl Filesystem {
         let mut resource_zip_path = root_path.clone();
         resource_zip_path.push("resources.zip");
         if !resource_zip_path.exists() || !resource_zip_path.is_file() {
-            // let msg_str = format!("'resources.zip' file not found!  Should be in {:?}",
-            //                       resource_zip_path);
-            // let message = String::from(msg_str);
-            // let _ = warn(GameError::ResourceNotFound(message));
+            // Do we want to warn here?  ...maybe not.
         } else {
             // We keep this file open so we don't have to re-parse
             // the zip file every time we load something out of it.
@@ -193,10 +187,8 @@ impl Filesystem {
         let mut zip_path = self.zip_path();
         zip_path.push(pathref);
         let tried = vec![resource_path, user_path, zip_path];
-        let errmessage = format!("{:?}; checked in {:?}",
-                                 convenient_path_to_str(pathref)?,
-                                 tried);
-        Err(GameError::ResourceNotFound(errmessage))
+        let errmessage = String::from(convenient_path_to_str(pathref)?);
+        Err(GameError::ResourceNotFound(errmessage, tried))
     }
 
     /// Opens a file in the user directory with the given `std::fs::OpenOptions`.
@@ -247,7 +239,9 @@ impl Filesystem {
         let pathref = path.as_ref();
         if !pathref.is_relative() {
             let pathstr = convenient_path_to_str(pathref)?;
-            let err = GameError::ResourceNotFound(String::from(pathstr));
+            let errmsg = format!("Could not load resource from path {}, path is not relative.",
+                                 pathstr);
+            let err = GameError::ResourceLoadError(errmsg);
             Err(err)
         } else {
             let pathbuf = self.resource_path.join(pathref);
@@ -261,7 +255,9 @@ impl Filesystem {
         let pathref = path.as_ref();
         if !pathref.is_relative() {
             let pathstr = convenient_path_to_str(pathref)?;
-            let err = GameError::ResourceNotFound(String::from(pathstr));
+            let errmsg = format!("Could not load resource from path {}, path is not relative.",
+                                 pathstr);
+            let err = GameError::ResourceLoadError(errmsg);
             Err(err)
         } else {
             let pathbuf = self.user_path.join(pathref);
@@ -434,6 +430,7 @@ impl Filesystem {
 
 #[cfg(test)]
 mod tests {
+    use error::*;
     use filesystem::*;
     use std::path;
     use std::io::{Read, Write};
@@ -485,5 +482,31 @@ mod tests {
         }
 
         fs.delete(test_file).unwrap();
+    }
+
+    #[test]
+    fn test_file_not_found() {
+        let mut fs = get_dummy_fs_for_tests();
+        {
+            if let Err(e) = fs.open("/testfile.txt") {
+                match e {
+                    GameError::ResourceLoadError(_) => (),
+                    _ => panic!("Invalid error for opening file with absolute path"),
+                }
+            } else {
+                panic!("Should have gotten an error but didn't!");
+            }
+        }
+
+        {
+            if let Err(e) = fs.open("testfile.txt") {
+                match e {
+                    GameError::ResourceNotFound(_, _) => (),
+                    _ => panic!("Invalid error for opening nonexistent file"),
+                }
+            } else {
+                panic!("Should have gotten an error but didn't!");
+            }
+        }
     }
 }
