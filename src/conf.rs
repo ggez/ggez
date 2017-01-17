@@ -65,12 +65,12 @@ impl Conf {
     /// your own purposes and they will not interfere here.
     pub fn from_toml_file<R: io::Read>(file: &mut R) -> GameResult<Conf> {
         let mut s = String::new();
-        try!(file.read_to_string(&mut s));
+        file.read_to_string(&mut s)?;
         let mut parser = toml::Parser::new(&s);
-        let toml = try!(parser.parse()
-            .ok_or(String::from("Could not parse config file?")));
-        let config = try!(toml.get("ggez")
-            .ok_or(String::from("Section [ggez] not in config file")));
+        let toml = parser.parse()
+            .ok_or(String::from("Could not parse config file?"))?;
+        let config = toml.get("ggez")
+            .ok_or(String::from("Section [ggez] not in config file"))?;
         let mut decoder = toml::Decoder::new(config.clone());
         Conf::decode(&mut decoder).map_err(GameError::from)
     }

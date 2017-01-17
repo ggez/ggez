@@ -96,7 +96,7 @@ impl<'a> io::Write for File<'a> {
 }
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
-    let errmessage = String::from("Invalid path format");
+    let errmessage = format!("Invalid path format for resource: {:?}", path);
     let error = GameError::FilesystemError(errmessage);
     path.to_str()
         .ok_or(error)
@@ -108,8 +108,8 @@ impl Filesystem {
     /// This function is called automatically by ggez, the end user
     /// should never need to call it.
     pub fn new(id: &str) -> GameResult<Filesystem> {
-        let root_path_string = try!(sdl2::filesystem::base_path());
-        let pref_path_string = try!(sdl2::filesystem::pref_path("ggez", id));
+        let root_path_string = sdl2::filesystem::base_path()?;
+        let pref_path_string = sdl2::filesystem::pref_path("ggez", id)?;
 
         let mut root_path = path::PathBuf::from(root_path_string);
         // Ditch the filename (if any)
@@ -120,10 +120,7 @@ impl Filesystem {
         let mut resource_path = root_path.clone();
         resource_path.push("resources");
         if !resource_path.exists() || !resource_path.is_dir() {
-            // let msg_str = format!("'resources' directory not found!  Should be in {:?}",
-            //                       resource_path);
-            // let message = String::from(msg_str);
-            // let _ = warn(GameError::ResourceNotFound(message));
+            // Do we want to warn here?  ...maybe not.
         }
 
         // Check for resources zip file.
@@ -131,10 +128,7 @@ impl Filesystem {
         let mut resource_zip_path = root_path.clone();
         resource_zip_path.push("resources.zip");
         if !resource_zip_path.exists() || !resource_zip_path.is_file() {
-            // let msg_str = format!("'resources.zip' file not found!  Should be in {:?}",
-            //                       resource_zip_path);
-            // let message = String::from(msg_str);
-            // let _ = warn(GameError::ResourceNotFound(message));
+            // Do we want to warn here?  ...maybe not.
         } else {
             // We keep this file open so we don't have to re-parse
             // the zip file every time we load something out of it.
@@ -164,9 +158,9 @@ impl Filesystem {
 
         // Look in resource directory
         let pathref: &path::Path = path.as_ref();
-        let pathbuf = try!(self.rel_to_resource_path(pathref));
+        let pathbuf = self.rel_to_resource_path(pathref)?;
         if pathbuf.is_file() {
-            let f = try!(fs::File::open(pathbuf));
+            let f = fs::File::open(pathbuf)?;
             return Ok(File::FSFile(f));
         }
 
@@ -177,18 +171,24 @@ impl Filesystem {
             let name = pathref.to_str().ok_or(GameError::UnknownError(errmsg))?;
             let f = zipfile.by_name(name)?;
             return Ok(File::ZipFile(f));
+            // TODO: add path to zip + path within zip to `tried`
         }
 
         // Look in user directory
-        let pathbuf = try!(self.rel_to_user_path(pathref));
+        let pathbuf = self.rel_to_user_path(pathref)?;
         if pathbuf.is_file() {
-            let f = try!(fs::File::open(pathbuf));
+            let f = fs::File::open(pathbuf)?;
             return Ok(File::FSFile(f));
         }
 
         // Welp, can't find it.
-        let errmessage = try!(convenient_path_to_str(pathref));
-        Err(GameError::ResourceNotFound(String::from(errmessage)))
+        let resource_path = self.rel_to_resource_path(pathref)?;
+        let user_path = self.rel_to_user_path(pathref)?;
+        let mut zip_path = self.zip_path();
+        zip_path.push(pathref);
+        let tried = vec![resource_path, user_path, zip_path];
+        let errmessage = String::from(convenient_path_to_str(pathref)?);
+        Err(GameError::ResourceNotFound(errmessage, tried))
     }
 
     /// Opens a file in the user directory with the given `std::fs::OpenOptions`.
@@ -198,17 +198,17 @@ impl Filesystem {
                                               path: P,
                                               options: fs::OpenOptions)
                                               -> GameResult<File> {
-        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
+        let pathbuf = self.rel_to_user_path(path.as_ref())?;
 
-        let f = try!(options.open(pathbuf));
+        let f = options.open(pathbuf)?;
         Ok(File::FSFile(f))
     }
 
     /// Creates a new file in the user directory and opens it
     /// to be written to, truncating it if it already exists.
     pub fn create<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
-        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
-        let f = try!(fs::File::create(pathbuf));
+        let pathbuf = self.rel_to_user_path(path.as_ref())?;
+        let f = fs::File::create(pathbuf)?;
         Ok(File::FSFile(f))
     }
 
@@ -216,20 +216,20 @@ impl Filesystem {
     /// with the given name.  Any parents to that directory
     /// that do not exist will be created.
     pub fn create_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
+        let pathbuf = self.rel_to_user_path(path.as_ref())?;
         fs::create_dir_all(pathbuf).map_err(GameError::from)
     }
 
     /// Deletes the specified file in the user dir.
     pub fn delete<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
+        let pathbuf = self.rel_to_user_path(path.as_ref())?;
         fs::remove_file(pathbuf).map_err(GameError::from)
     }
 
     /// Deletes the specified directory in the user dir,
     /// and all its contents!
     pub fn delete_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
+        let pathbuf = self.rel_to_user_path(path.as_ref())?;
         fs::remove_dir_all(pathbuf).map_err(GameError::from)
     }
 
@@ -238,8 +238,10 @@ impl Filesystem {
     fn rel_to_resource_path<P: AsRef<path::Path>>(&self, path: P) -> GameResult<path::PathBuf> {
         let pathref = path.as_ref();
         if !pathref.is_relative() {
-            let pathstr = try!(convenient_path_to_str(pathref));
-            let err = GameError::ResourceNotFound(String::from(pathstr));
+            let pathstr = convenient_path_to_str(pathref)?;
+            let errmsg = format!("Could not load resource from path {}, path is not relative.",
+                                 pathstr);
+            let err = GameError::ResourceLoadError(errmsg);
             Err(err)
         } else {
             let pathbuf = self.resource_path.join(pathref);
@@ -252,13 +254,22 @@ impl Filesystem {
     fn rel_to_user_path<P: AsRef<path::Path>>(&self, path: P) -> GameResult<path::PathBuf> {
         let pathref = path.as_ref();
         if !pathref.is_relative() {
-            let pathstr = try!(convenient_path_to_str(pathref));
-            let err = GameError::ResourceNotFound(String::from(pathstr));
+            let pathstr = convenient_path_to_str(pathref)?;
+            let errmsg = format!("Could not load resource from path {}, path is not relative.",
+                                 pathstr);
+            let err = GameError::ResourceLoadError(errmsg);
             Err(err)
         } else {
             let pathbuf = self.user_path.join(pathref);
             Ok(pathbuf)
         }
+    }
+
+    /// Constructs a path to the resource zip file.
+    fn zip_path(&self) -> path::PathBuf {
+        let mut resource_zip_path = self.base_path.clone();
+        resource_zip_path.push("resources.zip");
+        resource_zip_path
     }
 
     /// Check whether a file or directory exists.
@@ -394,8 +405,8 @@ impl Filesystem {
     pub fn read_config(&mut self) -> GameResult<conf::Conf> {
         let conf_path = path::Path::new(CONFIG_NAME);
         if self.is_file(conf_path) {
-            let mut file = try!(self.open(conf_path));
-            let c = try!(conf::Conf::from_toml_file(&mut file));
+            let mut file = self.open(conf_path)?;
+            let c = conf::Conf::from_toml_file(&mut file)?;
             Ok(c)
 
         } else {
@@ -408,7 +419,7 @@ impl Filesystem {
     pub fn write_config(&mut self, conf: &conf::Conf) -> GameResult<()> {
         let conf_path = path::Path::new(CONFIG_NAME);
         if self.is_file(conf_path) {
-            let mut file = try!(self.create(conf_path));
+            let mut file = self.create(conf_path)?;
             conf.to_toml_file(&mut file)
 
         } else {
@@ -419,6 +430,7 @@ impl Filesystem {
 
 #[cfg(test)]
 mod tests {
+    use error::*;
     use filesystem::*;
     use std::path;
     use std::io::{Read, Write};
@@ -470,5 +482,31 @@ mod tests {
         }
 
         fs.delete(test_file).unwrap();
+    }
+
+    #[test]
+    fn test_file_not_found() {
+        let mut fs = get_dummy_fs_for_tests();
+        {
+            if let Err(e) = fs.open("/testfile.txt") {
+                match e {
+                    GameError::ResourceLoadError(_) => (),
+                    _ => panic!("Invalid error for opening file with absolute path"),
+                }
+            } else {
+                panic!("Should have gotten an error but didn't!");
+            }
+        }
+
+        {
+            if let Err(e) = fs.open("testfile.txt") {
+                match e {
+                    GameError::ResourceNotFound(_, _) => (),
+                    _ => panic!("Invalid error for opening nonexistent file"),
+                }
+            } else {
+                panic!("Should have gotten an error but didn't!");
+            }
+        }
     }
 }

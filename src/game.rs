@@ -70,17 +70,9 @@ pub trait EventHandler {
 
     fn mouse_wheel_event(&mut self, _x: i32, _y: i32) {}
 
-    fn key_down_event(&mut self,
-                      _keycode: Option<gevent::Keycode>,
-                      _keymod: gevent::Mod,
-                      _repeat: bool) {
-    }
+    fn key_down_event(&mut self, _keycode: gevent::Keycode, _keymod: gevent::Mod, _repeat: bool) {}
 
-    fn key_up_event(&mut self,
-                    _keycode: Option<gevent::Keycode>,
-                    _keymod: gevent::Mod,
-                    _repeat: bool) {
-    }
+    fn key_up_event(&mut self, _keycode: gevent::Keycode, _keymod: gevent::Mod, _repeat: bool) {}
 
     fn focus_event(&mut self, _gained: bool) {}
 
@@ -187,15 +179,18 @@ impl<'a, S: EventHandler + 'static> Game<'a, S> {
                     // But it doesn't have access to the context
                     // to call quit!  Bah.
                     KeyDown { keycode, keymod, repeat, .. } => {
-                        match keycode {
-                            Some(keyboard::Keycode::Escape) => {
+                        if let Some(key) = keycode {
+                            if key == keyboard::Keycode::Escape {
                                 ctx.quit()?;
+                            } else {
+                                self.state.key_down_event(key, keymod, repeat)
                             }
-                            _ => self.state.key_down_event(keycode, keymod, repeat),
                         }
                     }
                     KeyUp { keycode, keymod, repeat, .. } => {
-                        self.state.key_up_event(keycode, keymod, repeat)
+                        if let Some(key) = keycode {
+                            self.state.key_up_event(key, keymod, repeat)
+                        }
                     }
                     MouseButtonDown { mouse_btn, x, y, .. } => {
                         self.state.mouse_button_down_event(mouse_btn, x, y)

@@ -40,7 +40,7 @@ impl MainState {
             let y = rand::random::<i32>() % 50;
             let point = graphics::Point::new(last_point.x() + x, last_point.y() + y);
             graphics::set_color(ctx, color);
-            try!(graphics::line(ctx, last_point, point));
+            graphics::line(ctx, last_point, point)?;
             last_point = point;
         }
 
@@ -101,12 +101,12 @@ impl EventHandler for MainState {
         ctx.renderer.set_draw_color(Color::RGB(c, c, c));
         ctx.renderer.clear();
 
-        try!(graphics::draw(ctx, &mut self.image, None, None));
-        try!(graphics::draw(ctx, &mut self.text, None, None));
+        graphics::draw(ctx, &mut self.image, None, None)?;
+        graphics::draw(ctx, &mut self.text, None, None)?;
         let destrect = graphics::Rect::new(100, 50, 403, 50);
-        try!(graphics::draw(ctx, &mut self.bmptext, None, Some(destrect)));
+        graphics::draw(ctx, &mut self.bmptext, None, Some(destrect))?;
 
-        try!(self.draw_crazy_lines(ctx));
+        self.draw_crazy_lines(ctx)?;
         ctx.renderer.present();
 
         timer::sleep_until_next_frame(ctx, 60);
@@ -126,7 +126,7 @@ pub fn main() {
     let mut e: Game<MainState> = Game::new("imageview", c).unwrap();
     let result = e.run();
     if let Err(e) = result {
-        println!("Error encountered: {:?}", e);
+        println!("Error encountered: {}", e);
     } else {
         println!("Game exited cleanly.");
     }

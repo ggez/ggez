@@ -245,12 +245,12 @@ impl Image {
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Image> {
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = try!(util::rwops_from_path(context, path.as_ref(), &mut buffer));
+        let rwops = util::rwops_from_path(context, path.as_ref(), &mut buffer)?;
         // SDL2_image SNEAKILY adds the load() method to RWops.
-        let surf = try!(rwops.load());
+        let surf = rwops.load()?;
         let renderer = &context.renderer;
 
-        let tex = try!(renderer.create_texture_from_surface(surf));
+        let tex = renderer.create_texture_from_surface(surf)?;
         let tq = tex.query();
         Ok(Image {
             texture: tex,
@@ -263,14 +263,14 @@ impl Image {
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
     pub fn solid(context: &mut Context, size: u32, color: Color) -> GameResult<Image> {
-        let mut surf = try!(surface::Surface::new(size, size, pixels::PixelFormatEnum::RGBA8888));
-        try!(surf.fill_rect(None, color));
+        let mut surf = surface::Surface::new(size, size, pixels::PixelFormatEnum::RGBA8888)?;
+        surf.fill_rect(None, color)?;
         Image::from_surface(context, surf)
     }
 
     fn from_surface(context: &Context, surface: surface::Surface) -> GameResult<Image> {
         let renderer = &context.renderer;
-        let tex = try!(renderer.create_texture_from_surface(surface));
+        let tex = renderer.create_texture_from_surface(surface)?;
         let tq = tex.query();
         Ok(Image {
             texture: tex,
@@ -391,10 +391,10 @@ impl Font {
         where P: AsRef<path::Path> + fmt::Debug
     {
         // let mut buffer: Vec<u8> = Vec::new();
-        // let mut rwops = try!(util::rwops_from_path(context, path, &mut buffer));
-        let mut stream = try!(context.filesystem.open(path.as_ref()));
+        // let mut rwops = util::rwops_from_path(context, path, &mut buffer)?;
+        let mut stream = context.filesystem.open(path.as_ref())?;
         let mut buf = Vec::new();
-        try!(stream.read_to_end(&mut buf));
+        stream.read_to_end(&mut buf)?;
 
         let name = format!("{:?}", path);
         Font::font_from_bytes(&name, buf, size)
@@ -423,7 +423,7 @@ impl Font {
                                             path: P,
                                             glyphs: &str)
                                             -> GameResult<Font> {
-        let s2 = try!(util::load_surface(context, path.as_ref()));
+        let s2 = util::load_surface(context, path.as_ref())?;
 
         let image_width = s2.width();
         let glyph_width = image_width / (glyphs.len() as u32);
@@ -550,7 +550,7 @@ fn render_ttf(context: &Context,
                                                    pitch as u32,
                                                    format));
 
-    let image = try!(Image::from_surface(context, surface));
+    let image = Image::from_surface(context, surface)?;
     let text_string = text.to_string();
     let tq = image.texture.query();
     Ok(Text {
@@ -570,20 +570,19 @@ fn render_bitmap(context: &Context,
     let text_length = text.len() as u32;
     let glyph_height = surface.height();
     let format = pixels::PixelFormatEnum::RGBA8888;
-    let mut dest_surface =
-        try!(surface::Surface::new(text_length * glyph_width, glyph_height, format));
+    let mut dest_surface = surface::Surface::new(text_length * glyph_width, glyph_height, format)?;
     for (i, c) in text.chars().enumerate() {
         let small_i = i as u32;
         let error_message = format!("Character '{}' not in bitmap font!", c);
-        let source_offset = try!(glyphs_map.get(&c)
-            .ok_or(GameError::FontError(String::from(error_message))));
+        let source_offset = glyphs_map.get(&c)
+            .ok_or(GameError::FontError(String::from(error_message)))?;
         let dest_offset = glyph_width * small_i;
         let source_rect = Rect::new(*source_offset as i32, 0, glyph_width, glyph_height);
         let dest_rect = Rect::new(dest_offset as i32, 0, glyph_width, glyph_height);
         // println!("Blitting letter {} to {:?}", c, dest_rect);
-        try!(surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect)));
+        surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect))?;
     }
-    let image = try!(Image::from_surface(context, dest_surface));
+    let image = Image::from_surface(context, dest_surface)?;
     let text_string = text.to_string();
     let tq = image.texture.query();
     Ok(Text {
