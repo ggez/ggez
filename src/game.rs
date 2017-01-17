@@ -67,17 +67,9 @@ pub trait GameState {
 
     fn mouse_wheel_event(&mut self, _x: i32, _y: i32) {}
 
-    fn key_down_event(&mut self,
-                      _keycode: Option<gevent::Keycode>,
-                      _keymod: gevent::Mod,
-                      _repeat: bool) {
-    }
+    fn key_down_event(&mut self, _keycode: gevent::Keycode, _keymod: gevent::Mod, _repeat: bool) {}
 
-    fn key_up_event(&mut self,
-                    _keycode: Option<gevent::Keycode>,
-                    _keymod: gevent::Mod,
-                    _repeat: bool) {
-    }
+    fn key_up_event(&mut self, _keycode: gevent::Keycode, _keymod: gevent::Mod, _repeat: bool) {}
 
     fn focus_event(&mut self, _gained: bool) {}
 
@@ -90,14 +82,42 @@ pub trait GameState {
 }
 
 
+
 /// The `Game` struct takes an object you define that
 /// implements the `GameState` trait
 /// and does the actual work of running a gameloop,
 /// passing events to your handlers, and all that stuff.
 #[derive(Debug)]
-pub struct Game<'a, S: GameState> {
+pub struct Game<'a, S> {
     state: S,
     context: Context<'a>,
+}
+
+
+
+impl<'a, S> Game<'a, S> {
+    pub fn from_state(ctx: Context<'a>, state: S) -> Game<S> {
+        Game {
+            state: state,
+            context: ctx,
+        }
+    }
+
+    /// Replaces the gamestate with the given one without
+    /// having to re-initialize the hardware context.
+    pub fn replace_state(&mut self, state: S) {
+        self.state = state;
+    }
+
+    /// Calls the given function to create a new gamestate, and replaces
+    /// the current one with it.
+    pub fn replace_state_with<F>(&mut self, f: &F) -> GameResult<()>
+        where F: Fn(&mut Context) -> GameResult<S>
+    {
+        let newstate = f(&mut self.context)?;
+        self.state = newstate;
+        Ok(())
+    }
 }
 
 impl<'a, S: GameState + 'static> Game<'a, S> {
@@ -119,25 +139,10 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
         })
     }
 
-    /// Replaces the gamestate with the given one without
-    /// having to re-initialize the hardware context.
-    pub fn replace_state(&mut self, state: S) {
-        self.state = state;
-    }
 
     /// Re-creates a fresh `GameState` using the existing one's `::load()` method.
     pub fn reload_state(&mut self) -> GameResult<()> {
         let newstate = S::load(&mut self.context)?;
-        self.state = newstate;
-        Ok(())
-    }
-
-    /// Calls the given function to create a new gamestate, and replaces
-    /// the current one with it.
-    pub fn replace_state_with<F>(&mut self, f: &F) -> GameResult<()>
-        where F: Fn(&mut Context) -> GameResult<S>
-    {
-        let newstate = f(&mut self.context)?;
         self.state = newstate;
         Ok(())
     }
@@ -147,7 +152,7 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
     /// via `Context::quit()`
     pub fn run(&mut self) -> GameResult<()> {
         let ctx = &mut self.context;
-        let mut event_pump = try!(ctx.sdl_context.event_pump());
+        let mut event_pump = ctx.sdl_context.event_pump()?;
 
         let mut continuing = true;
         while continuing {
@@ -167,15 +172,18 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
                     // But it doesn't have access to the context
                     // to call quit!  Bah.
                     KeyDown { keycode, keymod, repeat, .. } => {
-                        match keycode {
-                            Some(keyboard::Keycode::Escape) => {
-                                try!(ctx.quit());
+                        if let Some(key) = keycode {
+                            if key == keyboard::Keycode::Escape {
+                                ctx.quit()?;
+                            } else {
+                                self.state.key_down_event(key, keymod, repeat)
                             }
-                            _ => self.state.key_down_event(keycode, keymod, repeat),
                         }
                     }
                     KeyUp { keycode, keymod, repeat, .. } => {
-                        self.state.key_up_event(keycode, keymod, repeat)
+                        if let Some(key) = keycode {
+                            self.state.key_up_event(key, keymod, repeat)
+                        }
                     }
                     MouseButtonDown { mouse_btn, x, y, .. } => {
                         self.state.mouse_button_down_event(mouse_btn, x, y)
@@ -206,8 +214,8 @@ impl<'a, S: GameState + 'static> Game<'a, S> {
             // sleep(0.001) after each draw; see
             // http://www.love2d.org/wiki/love.run
             let dt = timer::get_delta(ctx);
-            try!(self.state.update(ctx, dt));
-            try!(self.state.draw(ctx));
+            self.state.update(ctx, dt)?;
+            self.state.draw(ctx)?;
         }
 
         Ok(())

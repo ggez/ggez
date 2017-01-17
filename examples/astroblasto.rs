@@ -628,18 +628,18 @@ impl<'a> GameState for MainState {
 
     // Handle key events.  These just map keyboard events
     // and alter our input state appropriately.
-    fn key_down_event(&mut self, keycode: Option<Keycode>, _keymod: Mod, _repeat: bool) {
+    fn key_down_event(&mut self, keycode: Keycode, _keymod: Mod, _repeat: bool) {
         match keycode {
-            Some(Keycode::Up) => {
+            Keycode::Up => {
                 self.input.yaxis = 1.0;
             }
-            Some(Keycode::Left) => {
+            Keycode::Left => {
                 self.input.xaxis = -1.0;
             }
-            Some(Keycode::Right) => {
+            Keycode::Right => {
                 self.input.xaxis = 1.0;
             }
-            Some(Keycode::Space) => {
+            Keycode::Space => {
                 self.input.fire = true;
             }
             _ => (), // Do nothing
@@ -647,18 +647,18 @@ impl<'a> GameState for MainState {
     }
 
 
-    fn key_up_event(&mut self, keycode: Option<Keycode>, _keymod: Mod, _repeat: bool) {
+    fn key_up_event(&mut self, keycode: Keycode, _keymod: Mod, _repeat: bool) {
         match keycode {
-            Some(Keycode::Up) => {
+            Keycode::Up => {
                 self.input.yaxis = 0.0;
             }
-            Some(Keycode::Left) => {
+            Keycode::Left => {
                 self.input.xaxis = 0.0;
             }
-            Some(Keycode::Right) => {
+            Keycode::Right => {
                 self.input.xaxis = 0.0;
             }
-            Some(Keycode::Space) => {
+            Keycode::Space => {
                 self.input.fire = false;
             }
             _ => (), // Do nothing
