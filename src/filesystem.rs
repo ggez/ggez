@@ -108,8 +108,8 @@ impl Filesystem {
     /// This function is called automatically by ggez, the end user
     /// should never need to call it.
     pub fn new(id: &str) -> GameResult<Filesystem> {
-        let root_path_string = try!(sdl2::filesystem::base_path());
-        let pref_path_string = try!(sdl2::filesystem::pref_path("ggez", id));
+        let root_path_string = sdl2::filesystem::base_path()?;
+        let pref_path_string = sdl2::filesystem::pref_path("ggez", id)?;
 
         let mut root_path = path::PathBuf::from(root_path_string);
         // Ditch the filename (if any)
@@ -164,9 +164,9 @@ impl Filesystem {
 
         // Look in resource directory
         let pathref: &path::Path = path.as_ref();
-        let pathbuf = try!(self.rel_to_resource_path(pathref));
+        let pathbuf = self.rel_to_resource_path(pathref)?;
         if pathbuf.is_file() {
-            let f = try!(fs::File::open(pathbuf));
+            let f = fs::File::open(pathbuf)?;
             return Ok(File::FSFile(f));
         }
 
@@ -180,14 +180,14 @@ impl Filesystem {
         }
 
         // Look in user directory
-        let pathbuf = try!(self.rel_to_user_path(pathref));
+        let pathbuf = self.rel_to_user_path(pathref)?;
         if pathbuf.is_file() {
-            let f = try!(fs::File::open(pathbuf));
+            let f = fs::File::open(pathbuf)?;
             return Ok(File::FSFile(f));
         }
 
         // Welp, can't find it.
-        let errmessage = try!(convenient_path_to_str(pathref));
+        let errmessage = convenient_path_to_str(pathref)?;
         Err(GameError::ResourceNotFound(String::from(errmessage)))
     }
 
@@ -198,17 +198,17 @@ impl Filesystem {
                                               path: P,
                                               options: fs::OpenOptions)
                                               -> GameResult<File> {
-        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
+        let pathbuf = self.rel_to_user_path(path.as_ref())?;
 
-        let f = try!(options.open(pathbuf));
+        let f = options.open(pathbuf)?;
         Ok(File::FSFile(f))
     }
 
     /// Creates a new file in the user directory and opens it
     /// to be written to, truncating it if it already exists.
     pub fn create<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
-        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
-        let f = try!(fs::File::create(pathbuf));
+        let pathbuf = self.rel_to_user_path(path.as_ref())?;
+        let f = fs::File::create(pathbuf)?;
         Ok(File::FSFile(f))
     }
 
@@ -216,20 +216,20 @@ impl Filesystem {
     /// with the given name.  Any parents to that directory
     /// that do not exist will be created.
     pub fn create_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
+        let pathbuf = self.rel_to_user_path(path.as_ref())?;
         fs::create_dir_all(pathbuf).map_err(GameError::from)
     }
 
     /// Deletes the specified file in the user dir.
     pub fn delete<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
+        let pathbuf = self.rel_to_user_path(path.as_ref())?;
         fs::remove_file(pathbuf).map_err(GameError::from)
     }
 
     /// Deletes the specified directory in the user dir,
     /// and all its contents!
     pub fn delete_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let pathbuf = try!(self.rel_to_user_path(path.as_ref()));
+        let pathbuf = self.rel_to_user_path(path.as_ref())?;
         fs::remove_dir_all(pathbuf).map_err(GameError::from)
     }
 
@@ -238,7 +238,7 @@ impl Filesystem {
     fn rel_to_resource_path<P: AsRef<path::Path>>(&self, path: P) -> GameResult<path::PathBuf> {
         let pathref = path.as_ref();
         if !pathref.is_relative() {
-            let pathstr = try!(convenient_path_to_str(pathref));
+            let pathstr = convenient_path_to_str(pathref)?;
             let err = GameError::ResourceNotFound(String::from(pathstr));
             Err(err)
         } else {
@@ -252,7 +252,7 @@ impl Filesystem {
     fn rel_to_user_path<P: AsRef<path::Path>>(&self, path: P) -> GameResult<path::PathBuf> {
         let pathref = path.as_ref();
         if !pathref.is_relative() {
-            let pathstr = try!(convenient_path_to_str(pathref));
+            let pathstr = convenient_path_to_str(pathref)?;
             let err = GameError::ResourceNotFound(String::from(pathstr));
             Err(err)
         } else {
@@ -394,8 +394,8 @@ impl Filesystem {
     pub fn read_config(&mut self) -> GameResult<conf::Conf> {
         let conf_path = path::Path::new(CONFIG_NAME);
         if self.is_file(conf_path) {
-            let mut file = try!(self.open(conf_path));
-            let c = try!(conf::Conf::from_toml_file(&mut file));
+            let mut file = self.open(conf_path)?;
+            let c = conf::Conf::from_toml_file(&mut file)?;
             Ok(c)
 
         } else {
@@ -408,7 +408,7 @@ impl Filesystem {
     pub fn write_config(&mut self, conf: &conf::Conf) -> GameResult<()> {
         let conf_path = path::Path::new(CONFIG_NAME);
         if self.is_file(conf_path) {
-            let mut file = try!(self.create(conf_path));
+            let mut file = self.create(conf_path)?;
             conf.to_toml_file(&mut file)
 
         } else {

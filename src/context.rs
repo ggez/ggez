@@ -61,7 +61,7 @@ fn init_mixer() -> GameResult<Sdl2MixerContext> {
     let format = sdl2::mixer::AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
     let channels = 2; // Stereo
     let chunk_size = 1024;
-    try!(sdl2::mixer::open_audio(frequency, format, channels, chunk_size));
+    sdl2::mixer::open_audio(frequency, format, channels, chunk_size)?;
 
     let flags = sdl2::mixer::InitFlag::all();
     sdl2::mixer::init(flags).map_err(GameError::AudioError)
@@ -110,22 +110,22 @@ impl<'a> Context<'a> {
         let screen_width = conf.window_width;
         let screen_height = conf.window_height;
 
-        let video = try!(sdl_context.video());
+        let video = sdl_context.video()?;
         let window = {
 
             let window_title = &conf.window_title;
             init_window(video, &window_title, screen_width, screen_height)?
         };
-        let display_index = try!(window.display_index());
-        let dpi = try!(window.subsystem().display_dpi(display_index));
+        let display_index = window.display_index()?;
+        let dpi = window.subsystem().display_dpi(display_index)?;
 
-        let renderer = try!(window.renderer()
+        let renderer = window.renderer()
             .accelerated()
-            .build());
+            .build()?;
 
-        let audio_context = try!(init_audio(&sdl_context));
-        let mixer_context = try!(init_mixer());
-        let event_context = try!(sdl_context.event());
+        let audio_context = init_audio(&sdl_context)?;
+        let mixer_context = init_mixer()?;
+        let event_context = sdl_context.event()?;
         let timer_context = timer::TimeContext::new();
 
         let mut ctx = Context {

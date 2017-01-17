@@ -45,9 +45,9 @@ impl Sound {
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Sound> {
         let path = path.as_ref();
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
+        let rwops = util::rwops_from_path(context, path, &mut buffer)?;
         // SDL2_mixer SNEAKILY adds this method to RWops.
-        let chunk = try!(rwops.load_wav());
+        let chunk = rwops.load_wav()?;
 
         Ok(Sound { chunk: chunk })
     }
@@ -129,9 +129,9 @@ impl Music {
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Music> {
         let path = path.as_ref();
         let mut buffer: Vec<u8> = Vec::new();
-        let rwops = try!(util::rwops_from_path(context, path, &mut buffer));
+        let rwops = util::rwops_from_path(context, path, &mut buffer)?;
         // SDL2_mixer SNEAKILY adds this method to RWops.
-        let music = try!(rwops.load_music());
+        let music = rwops.load_music()?;
 
         Ok(Music { music: music })
     }

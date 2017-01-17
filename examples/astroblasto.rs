@@ -310,16 +310,16 @@ struct Assets {
 
 impl Assets {
     fn new(ctx: &mut Context) -> GameResult<Assets> {
-        let player_image = try!(graphics::Image::new(ctx, "player.png"));
-        let shot_image = try!(graphics::Image::new(ctx, "shot.png"));
-        let rock_image = try!(graphics::Image::new(ctx, "rock.png"));
+        let player_image = graphics::Image::new(ctx, "player.png")?;
+        let shot_image = graphics::Image::new(ctx, "shot.png")?;
+        let rock_image = graphics::Image::new(ctx, "rock.png")?;
         // let font_path = path::Path::new("consolefont.png");
         // let font_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!,.?;'\"";
-        // let font = try!(graphics::Font::new_bitmap(ctx, font_path, font_chars));
-        let font = try!(graphics::Font::new(ctx, "DejaVuSerif.ttf", 16));
+        // let font = graphics::Font::new_bitmap(ctx, font_path, font_chars)?;
+        let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 16)?;
 
-        let shot_sound = try!(audio::Sound::new(ctx, "pew.ogg"));
-        let hit_sound = try!(audio::Sound::new(ctx, "boom.ogg"));
+        let shot_sound = audio::Sound::new(ctx, "pew.ogg")?;
+        let hit_sound = audio::Sound::new(ctx, "boom.ogg")?;
         Ok(Assets {
             player_image: player_image,
             shot_image: shot_image,
@@ -500,9 +500,9 @@ impl<'a> GameState for MainState {
 
         print_instructions();
 
-        let assets = try!(Assets::new(ctx));
-        let score_disp = try!(graphics::Text::new(ctx, "score", &assets.font));
-        let level_disp = try!(graphics::Text::new(ctx, "level", &assets.font));
+        let assets = Assets::new(ctx)?;
+        let score_disp = graphics::Text::new(ctx, "score", &assets.font)?;
+        let level_disp = graphics::Text::new(ctx, "level", &assets.font)?;
 
         let player = create_player();
         let rocks = create_rocks(5, &player.pos, 100.0, 250.0);
@@ -596,14 +596,14 @@ impl<'a> GameState for MainState {
             let coords = (self.screen_width, self.screen_height);
 
             let p = &self.player;
-            try!(draw_actor(assets, ctx, p, coords));
+            draw_actor(assets, ctx, p, coords)?;
 
             for s in &self.shots {
-                try!(draw_actor(assets, ctx, s, coords));
+                draw_actor(assets, ctx, s, coords)?;
             }
 
             for r in &self.rocks {
-                try!(draw_actor(assets, ctx, r, coords));
+                draw_actor(assets, ctx, r, coords)?;
             }
         }
 
@@ -617,8 +617,8 @@ impl<'a> GameState for MainState {
                                              0,
                                              self.score_display.width(),
                                              self.score_display.height());
-        try!(graphics::draw(ctx, &mut self.level_display, None, Some(level_rect)));
-        try!(graphics::draw(ctx, &mut self.score_display, None, Some(score_rect)));
+        graphics::draw(ctx, &mut self.level_display, None, Some(level_rect))?;
+        graphics::draw(ctx, &mut self.score_display, None, Some(score_rect))?;
 
         // Then we flip the screen and wait for the next frame.
         graphics::present(ctx);

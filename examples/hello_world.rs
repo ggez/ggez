@@ -33,7 +33,7 @@ impl GameState for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         ctx.renderer.clear();
-        try!(graphics::draw(ctx, &mut self.text, None, None));
+        graphics::draw(ctx, &mut self.text, None, None)?;
         ctx.renderer.present();
         timer::sleep_until_next_frame(ctx, 60);
         Ok(())
