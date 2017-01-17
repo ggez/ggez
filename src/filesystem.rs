@@ -161,6 +161,7 @@ impl Filesystem {
     /// Opens the given path and returns the resulting `File`
     /// in read-only mode.
     pub fn open<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
+        let mut tried: Vec<path::PathBuf> = vec![];
 
         // Look in resource directory
         let pathref: &path::Path = path.as_ref();
@@ -169,6 +170,7 @@ impl Filesystem {
             let f = fs::File::open(pathbuf)?;
             return Ok(File::FSFile(f));
         }
+        tried.push(pathbuf.clone());
 
         // Look in resources.zip
         if let Some(ref mut zipfile) = self.resource_zip {
@@ -177,6 +179,7 @@ impl Filesystem {
             let name = pathref.to_str().ok_or(GameError::UnknownError(errmsg))?;
             let f = zipfile.by_name(name)?;
             return Ok(File::ZipFile(f));
+            //TODO: add path to zip + path within zip to `tried`
         }
 
         // Look in user directory
@@ -185,10 +188,11 @@ impl Filesystem {
             let f = fs::File::open(pathbuf)?;
             return Ok(File::FSFile(f));
         }
+        tried.push(pathbuf.clone());
 
         // Welp, can't find it.
-        let errmessage = convenient_path_to_str(pathref)?;
-        Err(GameError::ResourceNotFound(String::from(errmessage)))
+        let errmessage = format!("{:?}; checked in {:?}", convenient_path_to_str(pathref)?, tried);
+        Err(GameError::ResourceNotFound(errmessage))
     }
 
     /// Opens a file in the user directory with the given `std::fs::OpenOptions`.
