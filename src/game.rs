@@ -165,9 +165,11 @@ impl<'a, S: EventHandler + 'static> Game<'a, S> {
     /// via `Context::quit()`
     pub fn run(&mut self) -> GameResult<()> {
         let ctx = &mut self.context;
-        let mut event_pump = try!(ctx.sdl_context.event_pump());
+        let mut event_pump = ctx.sdl_context.event_pump()?;
 
         let mut continuing = true;
+        let mut residual_update_dt = Duration::new(0, 0);
+        let mut residual_draw_dt = Duration::new(0, 0);
         while continuing {
             ctx.timer_context.tick();
 
@@ -187,7 +189,7 @@ impl<'a, S: EventHandler + 'static> Game<'a, S> {
                     KeyDown { keycode, keymod, repeat, .. } => {
                         match keycode {
                             Some(keyboard::Keycode::Escape) => {
-                                try!(ctx.quit());
+                                ctx.quit()?;
                             }
                             _ => self.state.key_down_event(keycode, keymod, repeat),
                         }
@@ -216,16 +218,28 @@ impl<'a, S: EventHandler + 'static> Game<'a, S> {
             }
 
 
-            // TODO: Currently, logic and display are locked
-            // together to the same framerate; we should probably
-            // change that.
-            // How does Love2D do it though?
-            // Love2D does it the simple and dumb way and just does
-            // sleep(0.001) after each draw; see
-            // http://www.love2d.org/wiki/love.run
+            let update_dt = Duration::from_millis(10);
+            let draw_dt = Duration::new(0, 16_666_666);
             let dt = timer::get_delta(ctx);
-            try!(self.state.update(ctx, dt));
-            try!(self.state.draw(ctx));
+            {
+                let mut current_dt = dt + residual_update_dt;
+                while current_dt > update_dt {
+                    self.state.update(ctx, update_dt)?;
+                    current_dt -= update_dt;
+                }
+                residual_update_dt = current_dt;
+            }
+
+
+            {
+                let mut current_dt = dt + residual_draw_dt;
+                while current_dt > draw_dt {
+                    self.state.draw(ctx)?;
+                    current_dt -= draw_dt;
+                }
+                residual_draw_dt = draw_dt;
+            }
+            timer::sleep(Duration::new(0, 0));
         }
 
         Ok(())
