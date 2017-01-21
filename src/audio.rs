@@ -145,17 +145,14 @@ impl fmt::Debug for Music {
 }
 
 /// Play the given music n times.  -1 loops forever.
-// pub fn play_music_times(music: &Music, n: i32) -> GameResult<()> {
-//     music.music
-//         .play(n)
-//         .map_err(GameError::from)
-// }
+pub fn play_music_times(ctx: &Context, music: &Music, n: i32) -> GameResult<()> {
+    // HACK HACK HACK
+    let _ = ctx.music_channel.play(&music.music, n);
+    Ok(())
+}
 /// Start playing the given music (looping forever)
 pub fn play_music(ctx: &Context, music: &Music) -> GameResult<()> {
-    // HACK HACK HACK
-    ctx.music_channel.play(&music.music, 0);
-    Ok(())
-    // play_music_times(music, -1)
+    play_music_times(ctx, music, -1)
 }
 
 /// Pause currently playing music
