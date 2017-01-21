@@ -120,7 +120,7 @@ impl AudioOps for Channel {
 /// `Context::print_sound_stats()` to print out which decoders
 /// are supported for your build.
 pub struct Music {
-    music: sdl2::mixer::Music,
+    music: sdl2::mixer::Chunk,
 }
 
 
@@ -131,7 +131,7 @@ impl Music {
         let mut buffer: Vec<u8> = Vec::new();
         let rwops = util::rwops_from_path(context, path, &mut buffer)?;
         // SDL2_mixer SNEAKILY adds this method to RWops.
-        let music = rwops.load_music()?;
+        let music = rwops.load_wav()?;
 
         Ok(Music { music: music })
     }
@@ -145,34 +145,36 @@ impl fmt::Debug for Music {
 }
 
 /// Play the given music n times.  -1 loops forever.
-pub fn play_music_times(music: &Music, n: i32) -> GameResult<()> {
-    music.music
-        .play(n)
-        .map_err(GameError::from)
-}
-
+// pub fn play_music_times(music: &Music, n: i32) -> GameResult<()> {
+//     music.music
+//         .play(n)
+//         .map_err(GameError::from)
+// }
 /// Start playing the given music (looping forever)
-pub fn play_music(music: &Music) -> GameResult<()> {
-    play_music_times(music, -1)
+pub fn play_music(ctx: &Context, music: &Music) -> GameResult<()> {
+    // HACK HACK HACK
+    ctx.music_channel.play(&music.music, 0);
+    Ok(())
+    // play_music_times(music, -1)
 }
 
 /// Pause currently playing music
-pub fn pause_music() {
-    sdl2::mixer::Music::pause()
+pub fn pause_music(ctx: &Context) {
+    ctx.music_channel.pause();
 }
 
 /// Resume currently playing music, if any
-pub fn resume_music() {
-    sdl2::mixer::Music::resume()
+pub fn resume_music(ctx: &Context) {
+    ctx.music_channel.resume();
 
 }
 
 /// Stop currently playing music
-pub fn stop_music() {
-    sdl2::mixer::Music::halt()
+pub fn stop_music(ctx: &Context) {
+    ctx.music_channel.stop();
 }
 
 /// Rewind the currently playing music to the beginning.
-pub fn rewind_music() {
-    sdl2::mixer::Music::rewind()
+pub fn rewind_music(ctx: &Context) {
+    ctx.music_channel.rewind();
 }

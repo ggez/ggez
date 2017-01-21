@@ -8,6 +8,7 @@ use sdl2::video::Window;
 use std::fmt;
 use std::path;
 
+use audio;
 use conf;
 use filesystem::Filesystem;
 use graphics;
@@ -40,6 +41,7 @@ pub struct Context<'a> {
     pub timer_context: timer::TimeContext,
     pub dpi: (f32, f32, f32),
     _audio_context: sdl2::AudioSubsystem,
+    pub music_channel: audio::Channel,
 }
 
 impl<'a> fmt::Debug for Context<'a> {
@@ -100,6 +102,8 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
     Ok(())
 }
 
+use audio::AudioOps;
+
 impl<'a> Context<'a> {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by the engine as part of the set-up code.
@@ -141,6 +145,7 @@ impl<'a> Context<'a> {
             timer_context: timer_context,
 
             _audio_context: audio_context,
+            music_channel: audio::Channel::new_channel(),
         };
 
         set_window_icon(&mut ctx)?;
