@@ -159,7 +159,7 @@ impl<'a, S: EventHandler + 'static> Game<'a, S> {
     /// Runs the game's mainloop.
     /// Continues until a `Quit` event is created, for instance
     /// via `Context::quit()`
-    pub fn run(&mut self) -> GameResult<()> {
+    pub fn run(&mut self) -> GameResult<Context<'a>> {
         let ctx = &mut self.context;
         let mut event_pump = ctx.sdl_context.event_pump()?;
 
@@ -170,6 +170,7 @@ impl<'a, S: EventHandler + 'static> Game<'a, S> {
             ctx.timer_context.tick();
 
             for event in event_pump.poll_iter() {
+                println!("Event: {:?}", event);
                 match event {
                     Quit { .. } => {
                         continuing = self.state.quit_event();
