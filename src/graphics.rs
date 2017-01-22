@@ -143,7 +143,6 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
         DrawMode::Fill => {
             let res = r.fill_rect(rect);
             res.map_err(GameError::from)
-
         }
     }
 }
