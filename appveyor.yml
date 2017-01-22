@@ -1,0 +1,46 @@
+os: Visual Studio 2015
+environment:
+    global:
+        PROJECT_NAME: ggez
+        RUSTUP_INIT_SKIP_MSVC_CHECK: 1
+    matrix:
+        - TARGET: x86_64-pc-windows-msvc
+          CHANNEL: stable
+        - TARGET: x86_64-pc-windows-msvc
+          CHANNEL: beta
+        - TARGET: x86_64-pc-windows-msvc
+          CHANNEL: nightly
+
+install:
+    - curl -sSf -o rustup-init.exe https://win.rustup.rs
+    - rustup-init.exe --default-host %TARGET% --default-toolchain %CHANNEL% -y
+    - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
+    - rustc -Vv
+    - cargo -V
+
+before_test:
+    - cd %TEMP%
+    - appveyor DownloadFile https://www.libsdl.org/release/SDL2-devel-2.0.5-VC.zip
+    - 7z x SDL2-devel-2.0.5-VC.zip > nul
+    - xcopy SDL2-2.0.5\lib\x64\* %APPVEYOR_BUILD_FOLDER% > nul
+    - appveyor DownloadFile https://www.libsdl.org/projects/SDL_image/release/SDL2_image-devel-2.0.1-VC.zip
+    - 7z x SDL2_image-devel-2.0.1-VC.zip > nul
+    - xcopy SDL2_image-2.0.1\lib\x64\* %APPVEYOR_BUILD_FOLDER% > nul
+    - appveyor DownloadFile https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-2.0.1-VC.zip
+    - 7z x SDL2_mixer-devel-2.0.1-VC.zip > nul
+    - xcopy SDL2_mixer-2.0.1\lib\x64\* %APPVEYOR_BUILD_FOLDER% > nul
+    - cd %APPVEYOR_BUILD_FOLDER%
+
+test_script:
+    - cargo build --verbose
+    - cargo test --verbose
+
+# 'cargo test' takes care of building for us, so disable Appveyor's build stage. This prevents
+# the "directory does not contain a project or solution file" error.
+# source: https://github.com/starkat99/appveyor-rust/blob/master/appveyor.yml#L113
+build: false
+
+cache:
+    - target
+    - C:\Users\appveyor\.cargo\registry
+
