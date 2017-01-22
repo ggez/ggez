@@ -74,6 +74,10 @@ pub trait EventHandler {
 
     fn key_up_event(&mut self, _keycode: gevent::Keycode, _keymod: gevent::Mod, _repeat: bool) {}
 
+    fn controller_button_down_event(&mut self, _btn: gevent::Button) {}
+    fn controller_button_up_event(&mut self, _btn: gevent::Button) {}
+    fn controller_axis_event(&mut self, _axis: gevent::Axis, _value: i16) {}
+
     fn focus_event(&mut self, _gained: bool) {}
 
     /// Called upon a quit event.  If it returns true,
@@ -202,6 +206,15 @@ impl<'a, S: EventHandler + 'static> Game<'a, S> {
                         self.state.mouse_motion_event(mousestate, x, y, xrel, yrel)
                     }
                     MouseWheel { x, y, .. } => self.state.mouse_wheel_event(x, y),
+                    ControllerButtonDown { button, .. } => {
+                        self.state.controller_button_down_event(button)
+                    }
+                    ControllerButtonUp { button, .. } => {
+                        self.state.controller_button_up_event(button)
+                    }
+                    ControllerAxisMotion { axis, value, .. } => {
+                        self.state.controller_axis_event(axis, value)
+                    }
                     Window { win_event: event::WindowEvent::FocusGained, .. } => {
                         self.state.focus_event(true)
                     }
