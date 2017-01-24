@@ -91,20 +91,11 @@ but for now, them's the breaks.
 
 ## Extant things to do
 
-### 0.2.x
-
-Enhancements that don't actually change the API or compatibility
-
-* Crate-level docs (so you get an intro instead of just a list of modules on the root page)
-* Document SDL's thread constraints!  It's mentioned in Context struct docs but maybe should be in other places.  The
-Game trait would be a good place to do it perhaps?  Or just a mention in the docs for each resource type?
-* Submit an update to the zip crate to make it possible to check whether a directory exists.
-
 ### 0.3.0
 
-API-breaking or altering changes
-
-* Better timing for update and draw in the mainloop would be nice so you don't have to delay manually
+* Document the new EventHandler stuff
+* Better timing for update and draw in the mainloop would be nice so you don't have to delay manually -- make it load them
+from config files
 * Make it always possible to load resources from raw data instead of files. (which might make testing easier) (but might make life hard with bloody SDL RWops)
 * Clean up and consistentify GameError a bit, rename it to GgezError perhaps?  I think there might be an unused case
 or two in there.

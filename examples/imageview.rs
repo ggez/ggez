@@ -5,7 +5,7 @@ extern crate sdl2;
 
 use ggez::audio;
 use ggez::conf;
-use ggez::game::{Game, GameState, EventHandler};
+use ggez::game;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::graphics::Color;
@@ -46,10 +46,8 @@ impl MainState {
 
         Ok(())
     }
-}
 
-impl GameState for MainState {
-    fn load(ctx: &mut Context) -> GameResult<MainState> {
+    fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.print_sound_stats();
         ctx.print_resource_stats();
 
@@ -84,7 +82,7 @@ impl GameState for MainState {
     }
 }
 
-impl EventHandler for MainState {
+impl game::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         self.a += self.direction;
         if self.a > 250 || self.a <= 0 {
@@ -123,9 +121,9 @@ impl EventHandler for MainState {
 pub fn main() {
     let c = conf::Conf::new();
     println!("Starting with default config: {:#?}", c);
-    let mut e: Game<MainState> = Game::new("imageview", c).unwrap();
-    let result = e.run();
-    if let Err(e) = result {
+    let ctx = &mut Context::load_from_conf("imageview", c).unwrap();
+    let state = &mut MainState::new(ctx).unwrap();
+    if let Err(e) = game::run(ctx, state) {
         println!("Error encountered: {}", e);
     } else {
         println!("Game exited cleanly.");

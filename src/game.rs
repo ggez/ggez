@@ -3,7 +3,6 @@
 
 use context::Context;
 use GameResult;
-use conf;
 use timer;
 
 use std::time::Duration;
@@ -89,170 +88,99 @@ pub trait EventHandler {
 }
 
 
-
-/// The `Game` struct takes an object you define that
-/// implements the `GameState` trait
-/// and does the actual work of running a gameloop,
-/// passing events to your handlers, and all that stuff.
-#[derive(Debug)]
-pub struct Game<'a, S> {
-    state: S,
-    context: Context<'a>,
-}
-
-
-
-impl<'a, S> Game<'a, S> {
-    pub fn from_state(ctx: Context<'a>, state: S) -> Game<S> {
-        Game {
-            state: state,
-            context: ctx,
-        }
-    }
-
-    /// Replaces the gamestate with the given one without
-    /// having to re-initialize the hardware context.
-    pub fn replace_state(&mut self, state: S) {
-        self.state = state;
-    }
-
-    /// Calls the given function to create a new gamestate, and replaces
-    /// the current one with it.
-    pub fn replace_state_with<F>(&mut self, f: &F) -> GameResult<()>
-        where F: Fn(&mut Context) -> GameResult<S>
+pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
+    where S: EventHandler
+{
     {
-        let newstate = f(&mut self.context)?;
-        self.state = newstate;
-        Ok(())
-    }
-}
+        let mut event_pump = ctx.sdl_context.event_pump()?;
 
-impl<'a, S: GameState + 'static> Game<'a, S> {
-    /// Creates a new `Game` with the given  default config
-    /// (which will be used if there is no config file).
-    /// It will initialize a hardware context and call the `load()` method of
-    /// the given `GameState` type to create a new `GameState`.
-    ///
-    /// The `id` field is a unique identifier for your game that will
-    /// be used to create a save directory to write files to.
-    pub fn new(id: &str, default_config: conf::Conf) -> GameResult<Game<'a, S>> {
-        let mut context = Context::load_from_conf(id, default_config)?;
+        let mut continuing = true;
+        let mut residual_update_dt = Duration::new(0, 0);
+        let mut residual_draw_dt = Duration::new(0, 0);
+        while continuing {
+            ctx.timer_context.tick();
 
-        let init_state = S::load(&mut context)?;
-
-        Ok(Game {
-            state: init_state,
-            context: context,
-        })
-    }
-
-
-    /// Re-creates a fresh `GameState` using the existing one's `::load()` method.
-    pub fn reload_state(&mut self) -> GameResult<()> {
-        let newstate = S::load(&mut self.context)?;
-        self.state = newstate;
-        Ok(())
-    }
-}
-
-impl<'a, S: EventHandler + 'static> Game<'a, S> {
-    /// Runs the game's mainloop.
-    /// Continues until a `Quit` event is created, for instance
-    /// via `Context::quit()`
-    pub fn run(mut self) -> GameResult<Context<'a>> {
-        {
-            let ctx = &mut self.context;
-            let mut event_pump = ctx.sdl_context.event_pump()?;
-
-            let mut continuing = true;
-            let mut residual_update_dt = Duration::new(0, 0);
-            let mut residual_draw_dt = Duration::new(0, 0);
-            while continuing {
-                ctx.timer_context.tick();
-
-                for event in event_pump.poll_iter() {
-                    println!("Event: {:?}", event);
-                    match event {
-                        Quit { .. } => {
-                            continuing = self.state.quit_event();
-                            // println!("Quit event: {:?}", t);
-                        }
-                        // TODO: We need a good way to have
-                        // a default like this, while still allowing
-                        // it to be overridden.
-                        // Bah, just put it in the GameState trait
-                        // as the default function.
-                        // But it doesn't have access to the context
-                        // to call quit!  Bah.
-                        KeyDown { keycode, keymod, repeat, .. } => {
-                            if let Some(key) = keycode {
-                                if key == keyboard::Keycode::Escape {
-                                    ctx.quit()?;
-                                } else {
-                                    self.state.key_down_event(key, keymod, repeat)
-                                }
+            for event in event_pump.poll_iter() {
+                match event {
+                    Quit { .. } => {
+                        continuing = state.quit_event();
+                        // println!("Quit event: {:?}", t);
+                    }
+                    // TODO: We need a good way to have
+                    // a default like this, while still allowing
+                    // it to be overridden.
+                    // Bah, just put it in the GameState trait
+                    // as the default function.
+                    // But it doesn't have access to the context
+                    // to call quit!  Bah.
+                    KeyDown { keycode, keymod, repeat, .. } => {
+                        if let Some(key) = keycode {
+                            if key == keyboard::Keycode::Escape {
+                                ctx.quit()?;
+                            } else {
+                                state.key_down_event(key, keymod, repeat)
                             }
                         }
-                        KeyUp { keycode, keymod, repeat, .. } => {
-                            if let Some(key) = keycode {
-                                self.state.key_up_event(key, keymod, repeat)
-                            }
-                        }
-                        MouseButtonDown { mouse_btn, x, y, .. } => {
-                            self.state.mouse_button_down_event(mouse_btn, x, y)
-                        }
-                        MouseButtonUp { mouse_btn, x, y, .. } => {
-                            self.state.mouse_button_up_event(mouse_btn, x, y)
-                        }
-                        MouseMotion { mousestate, x, y, xrel, yrel, .. } => {
-                            self.state.mouse_motion_event(mousestate, x, y, xrel, yrel)
-                        }
-                        MouseWheel { x, y, .. } => self.state.mouse_wheel_event(x, y),
-                        ControllerButtonDown { button, .. } => {
-                            self.state.controller_button_down_event(button)
-                        }
-                        ControllerButtonUp { button, .. } => {
-                            self.state.controller_button_up_event(button)
-                        }
-                        ControllerAxisMotion { axis, value, .. } => {
-                            self.state.controller_axis_event(axis, value)
-                        }
-                        Window { win_event: event::WindowEvent::FocusGained, .. } => {
-                            self.state.focus_event(true)
-                        }
-                        Window { win_event: event::WindowEvent::FocusLost, .. } => {
-                            self.state.focus_event(false)
-                        }
-                        _ => {}
                     }
-                }
-
-
-                let update_dt = Duration::from_millis(10);
-                let draw_dt = Duration::new(0, 16_666_666);
-                let dt = timer::get_delta(ctx);
-                {
-                    let mut current_dt = dt + residual_update_dt;
-                    while current_dt > update_dt {
-                        self.state.update(ctx, update_dt)?;
-                        current_dt -= update_dt;
+                    KeyUp { keycode, keymod, repeat, .. } => {
+                        if let Some(key) = keycode {
+                            state.key_up_event(key, keymod, repeat)
+                        }
                     }
-                    residual_update_dt = current_dt;
-                }
-
-
-                {
-                    let mut current_dt = dt + residual_draw_dt;
-                    while current_dt > draw_dt {
-                        self.state.draw(ctx)?;
-                        current_dt -= draw_dt;
+                    MouseButtonDown { mouse_btn, x, y, .. } => {
+                        state.mouse_button_down_event(mouse_btn, x, y)
                     }
-                    residual_draw_dt = draw_dt;
+                    MouseButtonUp { mouse_btn, x, y, .. } => {
+                        state.mouse_button_up_event(mouse_btn, x, y)
+                    }
+                    MouseMotion { mousestate, x, y, xrel, yrel, .. } => {
+                        state.mouse_motion_event(mousestate, x, y, xrel, yrel)
+                    }
+                    MouseWheel { x, y, .. } => state.mouse_wheel_event(x, y),
+                    ControllerButtonDown { button, .. } => {
+                        state.controller_button_down_event(button)
+                    }
+                    ControllerButtonUp { button, .. } => state.controller_button_up_event(button),
+                    ControllerAxisMotion { axis, value, .. } => {
+                        state.controller_axis_event(axis, value)
+                    }
+                    Window { win_event: event::WindowEvent::FocusGained, .. } => {
+                        state.focus_event(true)
+                    }
+                    Window { win_event: event::WindowEvent::FocusLost, .. } => {
+                        state.focus_event(false)
+                    }
+                    _ => {}
                 }
-                timer::sleep(Duration::new(0, 0));
             }
-        }
 
-        Ok(self.context)
+            // BUGGO: These should be gotten from
+            // the config file!
+            // Draw should be as-fast-as-possible tho
+            let update_dt = Duration::from_millis(10);
+            let draw_dt = Duration::new(0, 16_666_666);
+            let dt = timer::get_delta(ctx);
+            {
+                let mut current_dt = dt + residual_update_dt;
+                while current_dt > update_dt {
+                    state.update(ctx, update_dt)?;
+                    current_dt -= update_dt;
+                }
+                residual_update_dt = current_dt;
+            }
+
+
+            {
+                let mut current_dt = dt + residual_draw_dt;
+                while current_dt > draw_dt {
+                    state.draw(ctx)?;
+                    current_dt -= draw_dt;
+                }
+                residual_draw_dt = draw_dt;
+            }
+            timer::sleep(Duration::new(0, 0));
+        }
     }
+
+    Ok(())
 }

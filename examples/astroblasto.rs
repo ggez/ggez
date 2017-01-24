@@ -8,7 +8,7 @@ extern crate rand;
 use ggez::audio;
 use ggez::conf;
 use ggez::event::*;
-use ggez::game::{Game, GameState, EventHandler};
+use ggez::game;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
@@ -414,6 +414,41 @@ fn draw_actor(assets: &mut Assets,
 
 
 impl MainState {
+    fn new(ctx: &mut Context) -> GameResult<MainState> {
+        ctx.print_sound_stats();
+        ctx.print_resource_stats();
+        graphics::set_background_color(ctx, graphics::Color::RGB(0, 0, 0));
+
+        println!("Game resource path: {:?}", ctx.filesystem);
+
+        print_instructions();
+
+        let assets = Assets::new(ctx)?;
+        let score_disp = graphics::Text::new(ctx, "score", &assets.font)?;
+        let level_disp = graphics::Text::new(ctx, "level", &assets.font)?;
+
+        let player = create_player();
+        let rocks = create_rocks(5, &player.pos, 100.0, 250.0);
+
+        let s = MainState {
+            player: player,
+            shots: Vec::new(),
+            rocks: rocks,
+            level: 0,
+            score: 0,
+            assets: assets,
+            screen_width: ctx.conf.window_width,
+            screen_height: ctx.conf.window_height,
+            input: InputState::default(),
+            player_shot_timeout: 0.0,
+            gui_dirty: true,
+            score_display: score_disp,
+            level_display: level_disp,
+        };
+
+        Ok(s)
+    }
+
     fn fire_player_shot(&mut self) {
         self.player_shot_timeout = PLAYER_SHOT_TIME;
 
@@ -489,45 +524,7 @@ fn print_instructions() {
 /// ggez with callbacks for loading, updating and drawing our game, as
 /// well as handling events.
 /// ********************************************************************
-
-impl<'a> GameState for MainState {
-    fn load(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.print_sound_stats();
-        ctx.print_resource_stats();
-        graphics::set_background_color(ctx, graphics::Color::RGB(0, 0, 0));
-
-        println!("Game resource path: {:?}", ctx.filesystem);
-
-        print_instructions();
-
-        let assets = Assets::new(ctx)?;
-        let score_disp = graphics::Text::new(ctx, "score", &assets.font)?;
-        let level_disp = graphics::Text::new(ctx, "level", &assets.font)?;
-
-        let player = create_player();
-        let rocks = create_rocks(5, &player.pos, 100.0, 250.0);
-
-        let s = MainState {
-            player: player,
-            shots: Vec::new(),
-            rocks: rocks,
-            level: 0,
-            score: 0,
-            assets: assets,
-            screen_width: ctx.conf.window_width,
-            screen_height: ctx.conf.window_height,
-            input: InputState::default(),
-            player_shot_timeout: 0.0,
-            gui_dirty: true,
-            score_display: score_disp,
-            level_display: level_disp,
-        };
-
-        Ok(s)
-    }
-}
-
-impl EventHandler for MainState {
+impl game::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
         let seconds = timer::duration_to_f64(dt);
 
@@ -679,14 +676,16 @@ pub fn main() {
     c.window_width = 640;
     c.window_height = 480;
     c.window_icon = "player.png".to_string();
-    let game: GameResult<Game<MainState>> = Game::new("astroblasto", c);
-    match game {
+
+    let ctx = &mut Context::load_from_conf("helloworld", c).unwrap();
+
+    match MainState::new(ctx) {
         Err(e) => {
             println!("Could not load game!");
             println!("Error: {}", e);
         }
-        Ok(mut game) => {
-            let result = game.run();
+        Ok(ref mut game) => {
+            let result = game::run(ctx, game);
             if let Err(e) = result {
                 println!("Error encountered running game: {}", e);
             } else {
