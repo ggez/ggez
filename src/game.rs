@@ -14,32 +14,12 @@ use sdl2::event;
 use sdl2::mouse;
 use sdl2::keyboard;
 
-/// A trait for defining a game state.
-/// Implement `load()`, `update()` and `draw()` callbacks on this trait
-/// and create a `Game` object using your gamestate type.
-/// You may also implement the `*_event` callbacks if you wish to handle
-/// those events.
+
+/// A trait defining event callbacks.
 ///
 /// The default event handlers do nothing, apart from `key_down_event()`,
 /// which *should* by default exit the game if escape is pressed.
 /// (Once we work around some event bugs in rust-sdl2.)
-pub trait GameState: EventHandler {
-    // Tricksy trait and lifetime magic happens in load()'s
-    // signature.
-    // It doesn't look complicated but is easy to get wrong.
-    // Much thanks to aatch on #rust-beginners for helping make this work.
-
-    /// Called to initially create your `GameState` object
-    /// after all hardware initialization has been done.
-    /// It is handed a `Context` to load resources from,
-    /// and the `Conf` object that has either been loaded
-    /// from your `resources/conf.toml` file or the default
-    /// that has been provided to `Game::new()` if no conf
-    /// file exists.
-    fn load(ctx: &mut Context) -> GameResult<Self> where Self: Sized;
-}
-
-
 pub trait EventHandler {
     /// Called upon each physics update to the game.
     /// This should be where the game's logic takes place.
@@ -87,7 +67,9 @@ pub trait EventHandler {
     }
 }
 
-
+/// Runs the game's main loop, calling event
+/// callbacks on the given state object as events
+/// occur.
 pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
     where S: EventHandler
 {
