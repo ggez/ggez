@@ -6,19 +6,20 @@
 //! This seems a bit awkward but we'll roll with it for now.
 
 use std::fmt;
+use std::io;
+use std::io::Read;
 use std::path;
 
-use sdl2;
-use sdl2::mixer::LoaderRWops;
+use rodio;
 
 use context::Context;
+use filesystem;
 use util;
 use GameError;
 use GameResult;
 
 /// An object representing a channel that may be playing a particular Sound.
-pub type Channel = sdl2::mixer::Channel;
-
+pub type Channel = rodio::Sink;
 
 /// A trait for general operations on sound objects.
 pub trait AudioOps {
@@ -35,21 +36,40 @@ pub trait AudioOps {
     fn rewind(&self);
 }
 
+/// A struct that contains all information for tracking sound info.
+struct SoundContext {
+    endpoint: rodio::Endpoint,
+}
+
+impl SoundContext {
+    fn new() -> GameResult<SoundContext> {
+        let error = GameError::AudioError(String::from("Could not initialize sound system (for some reason)"));
+        let e = rodio::get_default_endpoint().ok_or(error)?;
+        Ok(SoundContext {
+            endpoint: e,
+        })
+    }
+}
+
 /// A source of audio data.
 pub struct Sound {
-    chunk: sdl2::mixer::Chunk,
+    chunk: rodio::decoder::Decoder<io::Cursor<Vec<u8>>>,
 }
 
 impl Sound {
     /// Load a new Sound
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Sound> {
         let path = path.as_ref();
-        let mut buffer: Vec<u8> = Vec::new();
-        let rwops = util::rwops_from_path(context, path, &mut buffer)?;
-        // SDL2_mixer SNEAKILY adds this method to RWops.
-        let chunk = rwops.load_wav()?;
+        let file = &mut context.filesystem.open(path)?;
+        // The source of a rodio decoder must be Send, which something
+        // that contains a reference to a ZipFile is not, so we are going
+        // to just slurp all the data into memory for now.
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer);
+        let cursor = io::Cursor::new(buffer);
+        let source = rodio::Decoder::new(cursor).unwrap();
 
-        Ok(Sound { chunk: chunk })
+        Ok(Sound { chunk: source })
     }
 
     /// Play a sound on the first available `Channel`.
@@ -57,11 +77,12 @@ impl Sound {
     /// Returns a `Channel`, which can be used to manipulate the
     /// playback, eg pause, stop, restart, etc.
     pub fn play(&self) -> GameResult<Channel> {
-        let channel = sdl2::mixer::channel(-1);
-        // This try! is a little redundant but make the
-        // GameResult type conversion work right.
-        channel.play(&self.chunk, 0)
-            .map_err(GameError::from)
+        // For now we just 
+        // let channel = sdl2::mixer::channel(-1);
+
+        // channel.play(&self.chunk, 0)
+        // .map_err(GameError::from)
+        unimplemented!()
     }
 }
 
@@ -77,42 +98,49 @@ impl fmt::Debug for Sound {
 impl AudioOps for Channel {
     /// Return a new channel that is not playing anything.
     fn new_channel() -> Channel {
-        sdl2::mixer::channel(-1)
+        //sdl2::mixer::channel(-1);
+        unimplemented!()
     }
 
     /// Plays the given Sound on this `Channel`
     fn play_sound(&self, sound: &Sound) -> GameResult<Channel> {
-        let channel = self;
-        channel.play(&sound.chunk, 0)
-            .map_err(GameError::from)
+        //let channel = self;
+        // channel.play(&sound.chunk, 0)
+        //.map_err(GameError::from)
+        unimplemented!()
     }
 
     /// Pauses playback of the `Channel`
     fn pause(&self) {
-        Channel::pause(*self)
+        //Channel::pause(*self)
+        unimplemented!()
     }
 
     /// Stops whatever the `Channel` is playing.
     fn stop(&self) {
-        self.halt()
+        //self.halt()
+        unimplemented!()
     }
 
     /// Resumes playback where it left off (if any).
     fn resume(&self) {
-        Channel::resume(*self)
+        //Channel::resume(*self)
+        unimplemented!()
     }
 
     /// Restarts playing a sound if this channel is currently
     /// playing it.
     fn rewind(&self) {
-        if let Some(chunk) = self.get_chunk() {
-            self.stop();
-            let _ = self.play(&chunk, 0);
-        }
+
+        //if let Some(chunk) = self.get_chunk() {
+        //    self.stop();
+        //    let _ = self.play(&chunk, 0);
+        //}
+        unimplemented!()
     }
 }
 
-
+/*
 /// A source of music data.
 /// Music is played on a separate dedicated channel from sounds,
 /// and also has a separate corpus of decoders than sounds do;
@@ -175,3 +203,4 @@ pub fn stop_music(ctx: &Context) {
 pub fn rewind_music(ctx: &Context) {
     ctx.music_channel.rewind();
 }
+*/

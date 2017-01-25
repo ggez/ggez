@@ -93,6 +93,7 @@
 extern crate sdl2;
 extern crate app_dirs;
 extern crate rand;
+extern crate rodio;
 extern crate rustc_serialize;
 extern crate rusttype;
 extern crate toml;

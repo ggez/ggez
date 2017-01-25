@@ -95,6 +95,12 @@ impl<'a> io::Write for File<'a> {
     }
 }
 
+impl<'a> io::Seek for File<'a> {
+    fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
+        Ok(0)
+    }
+}
+
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     let errmessage = format!("Invalid path format for resource: {:?}", path);
     let error = GameError::FilesystemError(errmessage);

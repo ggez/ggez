@@ -29,6 +29,7 @@ rusttype = "0.2"
 rand = "0.3"
 zip = "0.1"
 app_dirs = "1.1"
+rodio = "0.4"
 
 rustc-serialize = "0.3"
 toml = "0.2"
