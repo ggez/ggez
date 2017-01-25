@@ -23,7 +23,7 @@ pub type Channel = rodio::Sink;
 
 /// A trait for general operations on sound objects.
 pub trait AudioOps {
-    fn new_channel() -> Channel;
+    fn new_channel<'a>(ctx: &Context<'a>) -> Channel;
 
     fn play_sound(&self, sound: &Sound) -> GameResult<Channel>;
 
@@ -37,15 +37,15 @@ pub trait AudioOps {
 }
 
 /// A struct that contains all information for tracking sound info.
-struct SoundContext {
+pub struct AudioContext {
     endpoint: rodio::Endpoint,
 }
 
-impl SoundContext {
-    fn new() -> GameResult<SoundContext> {
+impl AudioContext {
+    pub fn new() -> GameResult<AudioContext> {
         let error = GameError::AudioError(String::from("Could not initialize sound system (for some reason)"));
         let e = rodio::get_default_endpoint().ok_or(error)?;
-        Ok(SoundContext {
+        Ok(AudioContext {
             endpoint: e,
         })
     }
@@ -97,9 +97,9 @@ impl fmt::Debug for Sound {
 
 impl AudioOps for Channel {
     /// Return a new channel that is not playing anything.
-    fn new_channel() -> Channel {
+    fn new_channel<'a>(ctx: &Context<'a>) -> Channel {
         //sdl2::mixer::channel(-1);
-        unimplemented!()
+        rodio::Sink::new(&ctx.audio_context.endpoint)
     }
 
     /// Plays the given Sound on this `Channel`

@@ -40,8 +40,7 @@ pub struct Context<'a> {
     pub event_context: sdl2::EventSubsystem,
     pub timer_context: timer::TimeContext,
     pub dpi: (f32, f32, f32),
-    _audio_context: sdl2::AudioSubsystem,
-    pub music_channel: audio::Channel,
+    pub audio_context: audio::AudioContext,
 }
 
 impl<'a> fmt::Debug for Context<'a> {
@@ -102,8 +101,6 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
     Ok(())
 }
 
-use audio::AudioOps;
-
 impl<'a> Context<'a> {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by the engine as part of the set-up code.
@@ -127,7 +124,7 @@ impl<'a> Context<'a> {
             .accelerated()
             .build()?;
 
-        let audio_context = init_audio(&sdl_context)?;
+        let audio_context = audio::AudioContext::new()?;
         let mixer_context = init_mixer()?;
         let event_context = sdl_context.event()?;
         let timer_context = timer::TimeContext::new();
@@ -144,8 +141,7 @@ impl<'a> Context<'a> {
             event_context: event_context,
             timer_context: timer_context,
 
-            _audio_context: audio_context,
-            music_channel: audio::Channel::new_channel(),
+            audio_context: audio_context,
         };
 
         set_window_icon(&mut ctx)?;
