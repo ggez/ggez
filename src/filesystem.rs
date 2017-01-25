@@ -17,12 +17,13 @@
 //! Files that are opened for writing using `Filesystem::open_options()`
 //! will be created in the `user` directory.
 
+use std::env;
 use std::fmt;
 use std::fs;
 use std::io;
 use std::path;
 
-use sdl2;
+use app_dirs::*;
 
 use GameError;
 use GameResult;
@@ -97,7 +98,14 @@ impl<'a> io::Write for File<'a> {
 
 impl<'a> io::Seek for File<'a> {
     fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
-        Ok(0)
+        match *self {
+            File::FSFile(ref mut f) => f.seek(pos),
+            // BUGGO: Zip files don't implement Seek?
+            File::ZipFile(ref mut _f) => {
+                let err = io::Error::new(io::ErrorKind::Other, "can't seek in zip files apparently");
+                Err(err)
+            },
+        }
     }
 }
 
@@ -113,11 +121,12 @@ impl Filesystem {
     /// the given `id` as a portion of the user directory path.
     /// This function is called automatically by ggez, the end user
     /// should never need to call it.
-    pub fn new(id: &str) -> GameResult<Filesystem> {
-        let root_path_string = sdl2::filesystem::base_path()?;
-        let pref_path_string = sdl2::filesystem::pref_path("ggez", id)?;
-
-        let mut root_path = path::PathBuf::from(root_path_string);
+    pub fn new(_id: &str) -> GameResult<Filesystem> {
+        // BUGGO: AppInfo.id needs to be a &'static str which is bogus!
+        // See https://github.com/AndyBarron/app-dirs-rs/issues/19
+        let app_info = AppInfo{name:"placeholder id", author:"ggez"};
+        let mut root_path = env::current_exe()?;
+        let pref_path = get_app_root(AppDataType::UserData, &app_info)?;
         // Ditch the filename (if any)
         if let Some(_) = root_path.file_name() {
             root_path.pop();
@@ -145,12 +154,10 @@ impl Filesystem {
 
         // Get user path, but it doesn't really matter if it
         // doesn't exist for us so there's no real setup.
-        let user_path = path::PathBuf::from(pref_path_string);
-
         let fs = Filesystem {
             resource_path: resource_path,
             base_path: root_path,
-            user_path: user_path,
+            user_path: pref_path,
             resource_zip: resource_zip,
         };
 
@@ -516,17 +523,21 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_app_dirs() {
-        use app_dirs::*;
+    //#[test]
+    // fn test_app_dirs() {
+    //     use app_dirs::*;
+    //     use sdl2;
         
-        let app_info = AppInfo{name:"test", author:"ggez"};
-        println!("user config: {:?}", get_app_root(AppDataType::UserConfig, &app_info));
-        println!("user cache: {:?}", get_app_root(AppDataType::UserCache, &app_info));
-        println!("user data: {:?}", get_app_root(AppDataType::UserData, &app_info));
+    //     let app_info = AppInfo{name:"test", author:"ggez"};
+    //     println!("user config: {:?}", get_app_root(AppDataType::UserConfig, &app_info));
+    //     println!("user cache: {:?}", get_app_root(AppDataType::UserCache, &app_info));
+    //     println!("user data: {:?}", get_app_root(AppDataType::UserData, &app_info));
 
-        println!("shared config: {:?}", get_app_root(AppDataType::SharedConfig, &app_info));
-        println!("shared data: {:?}", get_app_root(AppDataType::SharedData, &app_info));
+    //     println!("shared config: {:?}", get_app_root(AppDataType::SharedConfig, &app_info));
+    //     println!("shared data: {:?}", get_app_root(AppDataType::SharedData, &app_info));
+
+    //     println!("SDL base path: {}", sdl2::filesystem::base_path().unwrap());
+    //     println!("SDL pref path: {}", sdl2::filesystem::pref_path("ggez", "id").unwrap());
 
         // Okay, we want user data for data, user config for config,
         // On Linux these map to:
@@ -548,5 +559,5 @@ mod tests {
         // This is getting complex.
         // We're starting to really need a full VFS layer to properly overlay
         // these things.  Look more at how physfs implements it?
-    }
+    //}
 }

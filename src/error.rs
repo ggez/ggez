@@ -4,6 +4,7 @@ use std::error::Error;
 use std::fmt;
 
 use sdl2;
+use app_dirs::AppDirsError;
 use toml;
 use zip;
 
@@ -109,7 +110,12 @@ impl From<sdl2::render::TextureValueError> for GameError {
 //     }
 // }
 
-
+impl From<AppDirsError> for GameError {
+    fn from(e: AppDirsError) -> GameError {
+        let errmessage = format!("{}", e);
+        GameError::FilesystemError(errmessage)
+    }
+}
 impl From<std::io::Error> for GameError {
     fn from(e: std::io::Error) -> GameError {
         GameError::IOError(e)
