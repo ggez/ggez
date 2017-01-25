@@ -106,7 +106,7 @@ or two in there.
 ## Future work
 
 * Make subsystems modular, so we don't *have* to initialize sound if we don't need to and it's not a hard error if we can't use it.  See https://www.idolagames.com/piston-sdl-window-with-sound/ perhaps.
-* Possibly related, see if it's possible to make the GameState trait optional; provide tools with which to roll your own game loop.
+* Possibly related, see if it's possible to make the game::run() function optional; provide tools with which to roll your own game loop.
 * Interpolation for the mainloop timing stuff?  Or at least be able to support the user doing it.
 * Include vector math?
 * Play with GFX more

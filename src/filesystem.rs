@@ -509,4 +509,38 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_app_dirs() {
+        use app_dirs::*;
+        
+        let app_info = AppInfo{name:"test", author:"ggez"};
+        println!("user config: {:?}", get_app_root(AppDataType::UserConfig, &app_info));
+        println!("user cache: {:?}", get_app_root(AppDataType::UserCache, &app_info));
+        println!("user data: {:?}", get_app_root(AppDataType::UserData, &app_info));
+
+        println!("shared config: {:?}", get_app_root(AppDataType::SharedConfig, &app_info));
+        println!("shared data: {:?}", get_app_root(AppDataType::SharedData, &app_info));
+
+        // Okay, we want user data for data, user config for config,
+        // On Linux these map to:
+        // ~/.local/share/test
+        // ~/.config/test
+        //
+        // Plus we should search next to the exe path,
+        // AND we should search in env!(CARGO_MANIFEST_DIR) if it exists.
+        // (which is a bit hacky since we'll then end up distributing binaries
+        // that check in that dir as defined at compile time...  But hmm.)
+        //
+        // So what we really need is to search in all these places:
+        // next-to-executable
+        // CARGO_MANIFEST_DIR
+        // AppDataType::UserData for read-only data
+        // AppDataType::UserConfig for read-write data (saved games, config files)
+        // Last, zip file in ANY of the read-only data locations.
+        //
+        // This is getting complex.
+        // We're starting to really need a full VFS layer to properly overlay
+        // these things.  Look more at how physfs implements it?
+    }
 }

@@ -91,6 +91,7 @@
 
 
 extern crate sdl2;
+extern crate app_dirs;
 extern crate rand;
 extern crate rustc_serialize;
 extern crate rusttype;
