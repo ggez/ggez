@@ -60,7 +60,7 @@ impl MainState {
         let bmptext = graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
         let sound = audio::Sound::new(ctx, "sound.ogg").unwrap();
 
-        let _ = sound.play();
+        let _ = sound.play(ctx);
 
         let s = MainState {
             a: 0,

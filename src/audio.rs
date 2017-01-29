@@ -10,6 +10,8 @@ use std::io;
 use std::io::Read;
 use std::path;
 
+use std::sync::Arc;
+
 use rodio;
 
 use context::Context;
@@ -52,21 +54,33 @@ impl AudioContext {
 
 /// A source of audio data.
 pub struct Sound {
-    chunk: Vec<u8>,
+    chunk: Arc<Vec<u8>>,
+}
+
+impl Clone for Sound {
+    fn clone(&self) -> Self {
+        Sound { chunk: self.chunk.clone() }
+    }
+}
+
+impl AsRef<[u8]> for Sound {
+    fn as_ref(&self) -> &[u8] {
+        self.chunk.as_ref().as_ref()
+    }
 }
 
 impl Sound {
     /// Load a new Sound
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Sound> {
         let path = path.as_ref();
-        let file = &mut context.filesystem.open(path)?;
+        let mut file = context.filesystem.open(path)?;
         // The source of a rodio decoder must be Send, which something
         // that contains a reference to a ZipFile is not, so we are going
         // to just slurp all the data into memory for now.
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
 
-        Ok(Sound { chunk: buffer })
+        Ok(Sound { chunk: Arc::new(buffer) })
     }
 
     /// Play a sound on the first available `Channel`.
@@ -80,8 +94,9 @@ impl Sound {
         // handling this, since a Decoder
         // and Sink take ownership of what is
         // passed to them!
-        let cursor = io::Cursor::new(self.chunk.clone());
+        let cursor = io::Cursor::new(self.clone());
         let source = rodio::Decoder::new(cursor).unwrap();
+        // let source = rodio::Decoder::new(self.chunk).unwrap();
         sink.append(source);
         sink.detach();
 

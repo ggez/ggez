@@ -58,6 +58,8 @@ pub enum File<'a> {
     ZipFile(zip::read::ZipFile<'a>),
 }
 
+unsafe impl<'a> Send for File<'a> {}
+
 impl<'a> fmt::Debug for File<'a> {
     // TODO: Make this more useful.
     // But we can't seem to get a filename out of a file,
@@ -102,9 +104,10 @@ impl<'a> io::Seek for File<'a> {
             File::FSFile(ref mut f) => f.seek(pos),
             // BUGGO: Zip files don't implement Seek?
             File::ZipFile(ref mut _f) => {
-                let err = io::Error::new(io::ErrorKind::Other, "can't seek in zip files apparently");
+                let err = io::Error::new(io::ErrorKind::Other,
+                                         "can't seek in zip files apparently");
                 Err(err)
-            },
+            }
         }
     }
 }
@@ -124,7 +127,10 @@ impl Filesystem {
     pub fn new(_id: &str) -> GameResult<Filesystem> {
         // BUGGO: AppInfo.id needs to be a &'static str which is bogus!
         // See https://github.com/AndyBarron/app-dirs-rs/issues/19
-        let app_info = AppInfo{name:"placeholder id", author:"ggez"};
+        let app_info = AppInfo {
+            name: "placeholder id",
+            author: "ggez",
+        };
         let mut root_path = env::current_exe()?;
         let pref_path = get_app_root(AppDataType::UserData, &app_info)?;
         // Ditch the filename (if any)
@@ -524,10 +530,10 @@ mod tests {
     }
 
     //#[test]
-    // fn test_app_dirs() {
-    //     use app_dirs::*;
-    //     use sdl2;
-        
+    //#fn test_app_dirs() {
+    //#   use app_dirs::*;
+    //#   use sdl2;
+
     //     let app_info = AppInfo{name:"test", author:"ggez"};
     //     println!("user config: {:?}", get_app_root(AppDataType::UserConfig, &app_info));
     //     println!("user cache: {:?}", get_app_root(AppDataType::UserCache, &app_info));
@@ -539,25 +545,25 @@ mod tests {
     //     println!("SDL base path: {}", sdl2::filesystem::base_path().unwrap());
     //     println!("SDL pref path: {}", sdl2::filesystem::pref_path("ggez", "id").unwrap());
 
-        // Okay, we want user data for data, user config for config,
-        // On Linux these map to:
-        // ~/.local/share/test
-        // ~/.config/test
-        //
-        // Plus we should search next to the exe path,
-        // AND we should search in env!(CARGO_MANIFEST_DIR) if it exists.
-        // (which is a bit hacky since we'll then end up distributing binaries
-        // that check in that dir as defined at compile time...  But hmm.)
-        //
-        // So what we really need is to search in all these places:
-        // next-to-executable
-        // CARGO_MANIFEST_DIR
-        // AppDataType::UserData for read-only data
-        // AppDataType::UserConfig for read-write data (saved games, config files)
-        // Last, zip file in ANY of the read-only data locations.
-        //
-        // This is getting complex.
-        // We're starting to really need a full VFS layer to properly overlay
-        // these things.  Look more at how physfs implements it?
-    //}
+    // Okay, we want user data for data, user config for config,
+    // On Linux these map to:
+    // ~/.local/share/test
+    // ~/.config/test
+    //
+    // Plus we should search next to the exe path,
+    // AND we should search in env!(CARGO_MANIFEST_DIR) if it exists.
+    // (which is a bit hacky since we'll then end up distributing binaries
+    // that check in that dir as defined at compile time...  But hmm.)
+    //
+    // So what we really need is to search in all these places:
+    // next-to-executable
+    // CARGO_MANIFEST_DIR
+    // AppDataType::UserData for read-only data
+    // AppDataType::UserConfig for read-write data (saved games, config files)
+    // Last, zip file in ANY of the read-only data locations.
+    //
+    // This is getting complex.
+    // We're starting to really need a full VFS layer to properly overlay
+    // these things.  Look more at how physfs implements it?
+    //
 }
