@@ -52,11 +52,6 @@ impl<'a> fmt::Debug for Context<'a> {
 
 
 
-fn init_audio(sdl_context: &Sdl) -> GameResult<sdl2::AudioSubsystem> {
-    sdl_context.audio()
-        .map_err(GameError::AudioError)
-}
-
 fn init_mixer() -> GameResult<Sdl2MixerContext> {
     let frequency = 44100;
     let format = sdl2::mixer::AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order

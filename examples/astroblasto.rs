@@ -449,7 +449,7 @@ impl MainState {
         Ok(s)
     }
 
-    fn fire_player_shot(&mut self) {
+    fn fire_player_shot(&mut self, ctx: &Context) {
         self.player_shot_timeout = PLAYER_SHOT_TIME;
 
         let player = &self.player;
@@ -461,7 +461,7 @@ impl MainState {
         shot.velocity.y = SHOT_SPEED * direction.y;
 
         self.shots.push(shot);
-        let _ = self.assets.shot_sound.play();
+        let _ = self.assets.shot_sound.play(ctx);
     }
 
 
@@ -471,7 +471,7 @@ impl MainState {
         self.rocks.retain(|r| r.life > 0.0);
     }
 
-    fn handle_collisions(&mut self) {
+    fn handle_collisions(&mut self, ctx: &Context) {
         for rock in &mut self.rocks {
             let pdistance = rock.pos - self.player.pos;
             if pdistance.magnitude() < (self.player.bbox_size + rock.bbox_size) {
@@ -484,7 +484,7 @@ impl MainState {
                     rock.life = 0.0;
                     self.score += 1;
                     self.gui_dirty = true;
-                    let _ = self.assets.hit_sound.play();
+                    let _ = self.assets.hit_sound.play(ctx);
                 }
             }
         }
@@ -532,7 +532,7 @@ impl game::EventHandler for MainState {
         player_handle_input(&mut self.player, &self.input, seconds);
         self.player_shot_timeout -= seconds;
         if self.input.fire && self.player_shot_timeout < 0.0 {
-            self.fire_player_shot();
+            self.fire_player_shot(ctx);
         }
 
         // Update the physics for all actors.
@@ -559,7 +559,7 @@ impl game::EventHandler for MainState {
         // collision detection, object death, and if
         // we have killed all the rocks in the level,
         // spawn more of them.
-        self.handle_collisions();
+        self.handle_collisions(ctx);
 
         self.clear_dead_stuff();
 
