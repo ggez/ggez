@@ -13,6 +13,7 @@ authors = [
 ]
 license = "MIT"
 readme = "README.md"
+categories = ["game-engines"]
 
 [lib]
 name = "ggez"
