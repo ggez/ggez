@@ -11,11 +11,19 @@ use std::path;
 use std::collections::BTreeMap;
 use std::io::Read;
 
+use sdl2;
 use sdl2::pixels;
 use sdl2::render;
 use sdl2::surface;
 use sdl2::image::ImageRWops;
 use rusttype;
+use gfx;
+use gfx::Device;
+use gfx_core;
+use gfx_window_sdl;
+use gfx_device_gl;
+
+
 
 use context::Context;
 use GameError;
@@ -35,6 +43,43 @@ pub enum DrawMode {
     Fill,
 }
 
+// This is all placeholder for now just to get us going.
+const QUAD_VERTICES: [Vertex; 4] = [Vertex { position: [-0.5, 0.5] },
+                                    Vertex { position: [-0.5, -0.5] },
+                                    Vertex { position: [0.5, -0.5] },
+                                    Vertex { position: [0.5, 0.5] }];
+
+const QUAD_INDICES: [u16; 6] = [0, 1, 2, 2, 3, 0];
+
+pub type ColorFormat = gfx::format::Rgba8;
+pub type DepthFormat = gfx::format::DepthStencil;
+
+gfx_defines!{
+    vertex Vertex {
+        position: [f32; 2] = "a_Position",
+    }
+
+    // color format: 0xRRGGBBAA
+    vertex Instance {
+        translate: [f32; 2] = "a_Translate",
+        color: u32 = "a_Color",
+    }
+
+    constant Locals {
+        scale: f32 = "u_Scale",
+    }
+
+    pipeline pipe {
+        vertex: gfx::VertexBuffer<Vertex> = (),
+        instance: gfx::InstanceBuffer<Instance> = (),
+        scale: gfx::Global<f32> = "u_Scale",
+        locals: gfx::ConstantBuffer<Locals> = "Locals",
+        out: gfx::RenderTarget<ColorFormat> = "Target0",
+    }
+}
+
+// BUGGO: TODO: Impl Debug for GraphicsContext
+
 /// A structure that contains graphics state.
 /// For instance, background and foreground colors.
 ///
@@ -44,24 +89,50 @@ pub enum DrawMode {
 /// As an end-user you shouldn't ever have to touch this, but it goes
 /// into part of the `Context` and so has to be public, at least
 /// until the `pub(restricted)` feature is stable.
-#[derive(Debug)]
 pub struct GraphicsContext {
     background: pixels::Color,
     foreground: pixels::Color,
+    window: sdl2::video::Window,
+    gl_context: sdl2::video::GLContext,
+    device: gfx_device_gl::Device,
+    factory: gfx_device_gl::Factory,
+    //color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
+    //depth_view: gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil>,
 }
+
+//pub type GraphicsContext = GraphicsContextR<gfx_device_gl::Resources>;
+
+pub struct GraphicsContextGeneric<R, F, C, D> where R: gfx::Resources, F: gfx::Factory<R>, C: gfx::CommandBuffer<R>, D: gfx::Device<Resources=R, CommandBuffer=C> {
+    background: pixels::Color,
+    foreground: pixels::Color,
+    window: sdl2::video::Window,
+    gl_context: sdl2::video::GLContext,
+    device: Box<D>,
+    factory: Box<F>,
+    color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
+    depth_view: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
+}
+
+// GL only
+pub type GraphicsContext2 = GraphicsContextGeneric<gfx_device_gl::Resources, gfx_device_gl::Factory, gfx_device_gl::CommandBuffer, gfx_device_gl::Device>;
+
 
 impl GraphicsContext {
-    pub fn new() -> GraphicsContext {
-        GraphicsContext {
+    pub fn new(video: sdl2::VideoSubsystem, window_title: &str, screen_width: u32, screen_height: u32) -> GameResult<GraphicsContext> {
+        let window_builder = &mut video.window(window_title, screen_width, screen_height);
+        let (mut window, mut gl_context, mut device, mut factory, color_view, depth_view) =
+            gfx_window_sdl::init(window_builder);
+            
+        Ok(GraphicsContext {
             background: pixels::Color::RGB(0u8, 0u8, 255u8),
             foreground: pixels::Color::RGB(255, 255, 255),
-        }
-    }
-}
-
-impl Default for GraphicsContext {
-    fn default() -> Self {
-        Self::new()
+            window: window,
+            gl_context: gl_context,
+            device: device,
+            factory: factory,
+            //color_view: color_view,
+            //depth_view: depth_view,
+        })
     }
 }
 
@@ -74,21 +145,23 @@ pub fn set_background_color(ctx: &mut Context, color: Color) {
 /// Sets the foreground color, which will be used for drawing
 /// rectangles, lines, etc.  Default: white.
 pub fn set_color(ctx: &mut Context, color: Color) {
-    let r = &mut ctx.renderer;
-    ctx.gfx_context.foreground = color;
-    r.set_draw_color(ctx.gfx_context.foreground);
+    unimplemented!();
+    // let r = &mut ctx.renderer;
+    // ctx.gfx_context.foreground = color;
+    // r.set_draw_color(ctx.gfx_context.foreground);
 }
 
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
-    let r = &mut ctx.renderer;
-    r.set_draw_color(ctx.gfx_context.background);
-    r.clear();
+    unimplemented!();
+    //let r = &mut ctx.// renderer;
+    // r.set_draw_color(ctx.gfx_context.background);
+    // r.clear();
 
-    // We assume we are usually going to be wanting to draw the foreground color.
-    // While clear() is a relatively rare operation (probably once per frame).
-    // So we keep SDL's render state set to the foreground color by default.
-    r.set_draw_color(ctx.gfx_context.foreground);
+    // // We assume we are usually going to be wanting to draw the foreground color.
+    // // While clear() is a relatively rare operation (probably once per frame).
+    // // So we keep SDL's render state set to the foreground color by default.
+    // r.set_draw_color(ctx.gfx_context.foreground);
 }
 
 /// Draws the given `Drawable` object to the screen.
@@ -118,8 +191,9 @@ pub fn draw_ex(ctx: &mut Context,
 /// Tells the graphics system to actually put everything on the screen.
 /// Call this at the end of your `GameState`'s `draw()` method.
 pub fn present(ctx: &mut Context) {
-    let r = &mut ctx.renderer;
-    r.present()
+    unimplemented!();
+    //let r = &mut ctx.renderer;
+    //r.present()
 }
 
 /// Not implemented
@@ -134,64 +208,70 @@ pub fn printf(_ctx: &mut Context) {
 
 /// Draws a rectangle.
 pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
-    let r = &mut ctx.renderer;
-    match mode {
-        DrawMode::Line => {
-            let res = r.draw_rect(rect);
-            res.map_err(GameError::from)
-        }
-        DrawMode::Fill => {
-            let res = r.fill_rect(rect);
-            res.map_err(GameError::from)
-        }
-    }
+    unimplemented!();
+    // let r = &mut ctx.renderer;
+    // match mode {
+    //     DrawMode::Line => {
+    //         let res = r.draw_rect(rect);
+    //         res.map_err(GameError::from)
+    //     }
+    //     DrawMode::Fill => {
+    //         let res = r.fill_rect(rect);
+    //         res.map_err(GameError::from)
+    //     }
+    // }
 }
 
 /// Draws many rectangles.
 /// Not part of the LOVE API but no reason not to include it.
 pub fn rectangles(ctx: &mut Context, mode: DrawMode, rect: &[Rect]) -> GameResult<()> {
-    let r = &mut ctx.renderer;
-    match mode {
-        DrawMode::Line => {
-            let res = r.draw_rects(rect);
-            res.map_err(GameError::from)
-        }
-        DrawMode::Fill => {
-            let res = r.fill_rects(rect);
-            res.map_err(GameError::from)
+    unimplemented!();
+    // let r = &mut ctx.renderer;
+    // match mode {
+    //     DrawMode::Line => {
+    //         let res = r.draw_rects(rect);
+    //         res.map_err(GameError::from)
+    //     }
+    //     DrawMode::Fill => {
+    //         let res = r.fill_rects(rect);
+    //         res.map_err(GameError::from)
 
-        }
-    }
+    //     }
+    // }
 }
 
 
 /// Draws a line.
 /// Currently lines are 1 pixel wide and generally ugly.
 pub fn line(ctx: &mut Context, start: Point, end: Point) -> GameResult<()> {
-    let r = &mut ctx.renderer;
-    let res = r.draw_line(start, end);
-    res.map_err(GameError::from)
+    unimplemented!();
+    // let r = &mut ctx.renderer;
+    // let res = r.draw_line(start, end);
+    // res.map_err(GameError::from)
 }
 
 /// Draws a series of connected lines.
 pub fn lines(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
-    let r = &mut ctx.renderer;
-    let res = r.draw_lines(points);
-    res.map_err(GameError::from)
+    unimplemented!();
+    // let r = &mut ctx.renderer;
+    // let res = r.draw_lines(points);
+    // res.map_err(GameError::from)
 }
 
 /// Draws a 1-pixel point.
 pub fn point(ctx: &mut Context, point: Point) -> GameResult<()> {
-    let r = &mut ctx.renderer;
-    let res = r.draw_point(point);
-    res.map_err(GameError::from)
+    unimplemented!();
+    // let r = &mut ctx.renderer;
+    // let res = r.draw_point(point);
+    // res.map_err(GameError::from)
 }
 
 /// Draws a set of points.
 pub fn points(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
-    let r = &mut ctx.renderer;
-    let res = r.draw_points(points);
-    res.map_err(GameError::from)
+    unimplemented!();
+    // let r = &mut ctx.renderer;
+    // let res = r.draw_points(points);
+    // res.map_err(GameError::from)
 }
 
 /// All types that can be drawn on the screen implement the `Drawable` trait.
@@ -243,18 +323,19 @@ impl Image {
     // they are created.
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Image> {
-        let mut buffer: Vec<u8> = Vec::new();
-        let rwops = util::rwops_from_path(context, path.as_ref(), &mut buffer)?;
-        // SDL2_image SNEAKILY adds the load() method to RWops.
-        let surf = rwops.load()?;
-        let renderer = &context.renderer;
+        unimplemented!();
+        // let mut buffer: Vec<u8> = Vec::new();
+        // let rwops = util::rwops_from_path(context, path.as_ref(), &mut buffer)?;
+        // // SDL2_image SNEAKILY adds the load() method to RWops.
+        // let surf = rwops.load()?;
+        // let renderer = &context.renderer;
 
-        let tex = renderer.create_texture_from_surface(surf)?;
-        let tq = tex.query();
-        Ok(Image {
-            texture: tex,
-            texture_query: tq,
-        })
+        // let tex = renderer.create_texture_from_surface(surf)?;
+        // let tq = tex.query();
+        // Ok(Image {
+        //     texture: tex,
+        //     texture_query: tq,
+        // })
 
     }
 
@@ -262,19 +343,21 @@ impl Image {
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
     pub fn solid(context: &mut Context, size: u32, color: Color) -> GameResult<Image> {
-        let mut surf = surface::Surface::new(size, size, pixels::PixelFormatEnum::RGBA8888)?;
-        surf.fill_rect(None, color)?;
-        Image::from_surface(context, surf)
+        unimplemented!();
+        // let mut surf = surface::Surface::new(size, size, pixels::PixelFormatEnum::RGBA8888)?;
+        // surf.fill_rect(None, color)?;
+        // Image::from_surface(context, surf)
     }
 
     fn from_surface(context: &Context, surface: surface::Surface) -> GameResult<Image> {
-        let renderer = &context.renderer;
-        let tex = renderer.create_texture_from_surface(surface)?;
-        let tq = tex.query();
-        Ok(Image {
-            texture: tex,
-            texture_query: tq,
-        })
+        unimplemented!();
+        // let renderer = &context.renderer;
+        // let tex = renderer.create_texture_from_surface(surface)?;
+        // let tq = tex.query();
+        // Ok(Image {
+        //     texture: tex,
+        //     texture_query: tq,
+        // })
     }
 
 
@@ -358,15 +441,16 @@ impl Drawable for Image {
                flip_horizontal: bool,
                flip_vertical: bool)
                -> GameResult<()> {
-        let renderer = &mut context.renderer;
-        renderer.copy_ex(&self.texture,
-                     src,
-                     dst,
-                     angle,
-                     center,
-                     flip_horizontal,
-                     flip_vertical)
-            .map_err(GameError::RenderError)
+        unimplemented!();
+        // let renderer = &mut context.renderer;
+        // renderer.copy_ex(&self.texture,
+        //              src,
+        //              dst,
+        //              angle,
+        //              center,
+        //              flip_horizontal,
+        //              flip_vertical)
+        //     .map_err(GameError::RenderError)
     }
 }
 
@@ -631,15 +715,16 @@ impl Drawable for Text {
                flip_horizontal: bool,
                flip_vertical: bool)
                -> GameResult<()> {
-        let renderer = &mut context.renderer;
-        renderer.copy_ex(&self.texture,
-                     src,
-                     dst,
-                     angle,
-                     center,
-                     flip_horizontal,
-                     flip_vertical)
-            .map_err(GameError::RenderError)
+        unimplemented!();
+        // let renderer = &mut context.renderer;
+        // renderer.copy_ex(&self.texture,
+        //              src,
+        //              dst,
+        //              angle,
+        //              center,
+        //              flip_horizontal,
+        //              flip_vertical)
+        //     .map_err(GameError::RenderError)
     }
 }
 

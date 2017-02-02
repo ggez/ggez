@@ -92,6 +92,11 @@
 
 extern crate sdl2;
 extern crate app_dirs;
+#[macro_use]
+extern crate gfx;
+extern crate gfx_core;
+extern crate gfx_window_sdl;
+extern crate gfx_device_gl;
 extern crate rand;
 extern crate rodio;
 extern crate rustc_serialize;

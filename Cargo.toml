@@ -20,7 +20,7 @@ name = "ggez"
 path = "src/lib.rs"
 
 [dependencies.sdl2]
-version = "0.28"
+version = "0.27"
 default-features = false
 features = ["image", "mixer"]
 
@@ -31,6 +31,10 @@ rand = "0.3"
 zip = "0.1"
 app_dirs = "1.1"
 rodio = "0.4"
+gfx = "0.14"
+gfx_core = "*"
+gfx_device_gl = "0.12"
+gfx_window_sdl = "0.4"
 
 rustc-serialize = "0.3"
 toml = "0.2"

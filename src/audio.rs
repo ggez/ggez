@@ -23,7 +23,7 @@ pub type Channel = rodio::Sink;
 
 /// A trait for general operations on sound objects.
 pub trait AudioOps {
-    fn new_channel<'a>(ctx: &Context<'a>) -> Channel;
+    fn new_channel<'a>(ctx: &Context) -> Channel;
 
     fn play_sound(&self, sound: &Sound) -> GameResult<Channel>;
 
@@ -99,7 +99,7 @@ impl fmt::Debug for Sound {
 
 impl AudioOps for Channel {
     /// Return a new channel that is not playing anything.
-    fn new_channel<'a>(ctx: &Context<'a>) -> Channel {
+    fn new_channel<'a>(ctx: &Context) -> Channel {
         // sdl2::mixer::channel(-1);
         rodio::Sink::new(&ctx.audio_context.endpoint)
     }
