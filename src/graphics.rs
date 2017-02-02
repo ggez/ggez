@@ -18,8 +18,7 @@ use sdl2::surface;
 use sdl2::image::ImageRWops;
 use rusttype;
 use gfx;
-use gfx::Device;
-use gfx::Resources;
+use gfx::traits::FactoryExt;
 use gfx_core;
 use gfx_window_sdl;
 use gfx_device_gl;
@@ -45,36 +44,23 @@ pub enum DrawMode {
 }
 
 // This is all placeholder for now just to get us going.
-const QUAD_VERTICES: [Vertex; 4] = [Vertex { position: [-0.5, 0.5] },
-                                    Vertex { position: [-0.5, -0.5] },
-                                    Vertex { position: [0.5, -0.5] },
-                                    Vertex { position: [0.5, 0.5] }];
+const TRIANGLE: [Vertex; 3] =[
+    Vertex { pos: [ -0.5, -0.5 ], color: [1.0, 0.0, 0.0] },
+    Vertex { pos: [  0.5, -0.5 ], color: [0.0, 1.0, 0.0] },
+    Vertex { pos: [  0.0,  0.5 ], color: [0.0, 0.0, 1.0] }
+];
 
-const QUAD_INDICES: [u16; 6] = [0, 1, 2, 2, 3, 0];
-
-pub type ColorFormat = gfx::format::Rgba8;
+pub type ColorFormat = gfx::format::Srgba8;
 pub type DepthFormat = gfx::format::DepthStencil;
 
 gfx_defines!{
     vertex Vertex {
-        position: [f32; 2] = "a_Position",
-    }
-
-    // color format: 0xRRGGBBAA
-    vertex Instance {
-        translate: [f32; 2] = "a_Translate",
-        color: u32 = "a_Color",
-    }
-
-    constant Locals {
-        scale: f32 = "u_Scale",
+        pos: [f32; 2] = "a_Position",
+        color: [f32; 3] = "a_Color",
     }
 
     pipeline pipe {
-        vertex: gfx::VertexBuffer<Vertex> = (),
-        instance: gfx::InstanceBuffer<Instance> = (),
-        scale: gfx::Global<f32> = "u_Scale",
-        locals: gfx::ConstantBuffer<Locals> = "Locals",
+        vbuf: gfx::VertexBuffer<Vertex> = (),
         out: gfx::RenderTarget<ColorFormat> = "Target0",
     }
 }
@@ -96,8 +82,12 @@ pub struct GraphicsContextGeneric<R, F, C, D> where R: gfx::Resources, F: gfx::F
     device: Box<D>,
     factory: Box<F>,
     encoder: gfx::Encoder<R, C>,
-    color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
+    //color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
     depth_view: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
+
+    pso: gfx::PipelineState<R, pipe::Meta>,
+    data: pipe::Data<R>,
+    slice: gfx::Slice<R>,
 }
 
 // GL only
@@ -111,15 +101,30 @@ impl GraphicsContext {
             gfx_window_sdl::init(window_builder);
 
         let encoder = factory.create_command_buffer().into();
-            
+
+        let pso = factory.create_pipeline_simple(include_bytes!("shader/triangle_150.glslv"),
+                                                 include_bytes!("shader/triangle_150.glslf"),
+                                                 pipe::new())
+            .unwrap();
+
+        let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(&TRIANGLE, ());
+        let data = pipe::Data {
+            vbuf: vertex_buffer,
+            out: color_view,
+        };
+        
         Ok(GraphicsContext {
             window: window,
             gl_context: gl_context,
             device: Box::new(device),
             factory: Box::new(factory),
             encoder: encoder,
-            color_view: color_view,
+            //color_view: color_view,
             depth_view: depth_view,
+
+            pso: pso,
+            data: data,
+            slice: slice,
         })
     }
 }
@@ -127,7 +132,7 @@ impl GraphicsContext {
 
 /// Sets the background color.  Default: blue.
 pub fn set_background_color(ctx: &mut Context, color: Color) {
-    ctx.gfx_context.background = color;
+    unimplemented!();
 }
 
 /// Sets the foreground color, which will be used for drawing
@@ -141,7 +146,8 @@ pub fn set_color(ctx: &mut Context, color: Color) {
 
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
-    unimplemented!();
+    let gfx = &mut ctx.gfx_context;
+    gfx.encoder.clear(&gfx.data.out, [0.1, 0.2, 0.3, 1.0]);
     //let r = &mut ctx.// renderer;
     // r.set_draw_color(ctx.gfx_context.background);
     // r.clear();
@@ -158,7 +164,10 @@ pub fn draw(ctx: &mut Context,
             src: Option<Rect>,
             dst: Option<Rect>)
             -> GameResult<()> {
-    drawable.draw(ctx, src, dst)
+    let gfx = &mut ctx.gfx_context;
+    gfx.encoder.draw(&gfx.slice, &gfx.pso, &gfx.data);
+    Ok(())
+    //drawable.draw(ctx, src, dst)
 }
 
 /// Draws the given `Drawable` object to the screen,
@@ -180,6 +189,11 @@ pub fn draw_ex(ctx: &mut Context,
 /// Call this at the end of your `GameState`'s `draw()` method.
 pub fn present(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
+    // We might want to give the user more control over when the
+    // encoder gets flushed eventually, if we want them to be able
+    // to do their own gfx drawing.  HOWEVER, the whole pipeline type
+    // thing is a bigger hurdle, so this is fine for now.
+    gfx.encoder.flush(&mut *gfx.device);
     gfx.window.gl_swap_window();
 }
 
