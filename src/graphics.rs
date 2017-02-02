@@ -19,6 +19,7 @@ use sdl2::image::ImageRWops;
 use rusttype;
 use gfx;
 use gfx::Device;
+use gfx::Resources;
 use gfx_core;
 use gfx_window_sdl;
 use gfx_device_gl;
@@ -89,32 +90,18 @@ gfx_defines!{
 /// As an end-user you shouldn't ever have to touch this, but it goes
 /// into part of the `Context` and so has to be public, at least
 /// until the `pub(restricted)` feature is stable.
-pub struct GraphicsContext {
-    background: pixels::Color,
-    foreground: pixels::Color,
-    window: sdl2::video::Window,
-    gl_context: sdl2::video::GLContext,
-    device: gfx_device_gl::Device,
-    factory: gfx_device_gl::Factory,
-    //color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
-    //depth_view: gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil>,
-}
-
-//pub type GraphicsContext = GraphicsContextR<gfx_device_gl::Resources>;
-
 pub struct GraphicsContextGeneric<R, F, C, D> where R: gfx::Resources, F: gfx::Factory<R>, C: gfx::CommandBuffer<R>, D: gfx::Device<Resources=R, CommandBuffer=C> {
-    background: pixels::Color,
-    foreground: pixels::Color,
     window: sdl2::video::Window,
     gl_context: sdl2::video::GLContext,
     device: Box<D>,
     factory: Box<F>,
+    encoder: gfx::Encoder<R, C>,
     color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
     depth_view: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
 }
 
 // GL only
-pub type GraphicsContext2 = GraphicsContextGeneric<gfx_device_gl::Resources, gfx_device_gl::Factory, gfx_device_gl::CommandBuffer, gfx_device_gl::Device>;
+pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources, gfx_device_gl::Factory, gfx_device_gl::CommandBuffer, gfx_device_gl::Device>;
 
 
 impl GraphicsContext {
@@ -122,16 +109,17 @@ impl GraphicsContext {
         let window_builder = &mut video.window(window_title, screen_width, screen_height);
         let (mut window, mut gl_context, mut device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder);
+
+        let encoder = factory.create_command_buffer().into();
             
         Ok(GraphicsContext {
-            background: pixels::Color::RGB(0u8, 0u8, 255u8),
-            foreground: pixels::Color::RGB(255, 255, 255),
             window: window,
             gl_context: gl_context,
-            device: device,
-            factory: factory,
-            //color_view: color_view,
-            //depth_view: depth_view,
+            device: Box::new(device),
+            factory: Box::new(factory),
+            encoder: encoder,
+            color_view: color_view,
+            depth_view: depth_view,
         })
     }
 }
@@ -191,9 +179,8 @@ pub fn draw_ex(ctx: &mut Context,
 /// Tells the graphics system to actually put everything on the screen.
 /// Call this at the end of your `GameState`'s `draw()` method.
 pub fn present(ctx: &mut Context) {
-    unimplemented!();
-    //let r = &mut ctx.renderer;
-    //r.present()
+    let gfx = &mut ctx.gfx_context;
+    gfx.window.gl_swap_window();
 }
 
 /// Not implemented
