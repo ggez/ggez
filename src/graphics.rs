@@ -19,9 +19,8 @@ use sdl2::image::ImageRWops;
 use rusttype;
 use gfx;
 use gfx::traits::FactoryExt;
-use gfx_core;
-use gfx_window_sdl;
 use gfx_device_gl;
+use gfx_window_sdl;
 
 
 
