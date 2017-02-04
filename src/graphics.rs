@@ -114,9 +114,31 @@ impl GraphicsContext {
                screen_width: u32,
                screen_height: u32)
                -> GameResult<GraphicsContext> {
+
+        let gl = video.gl_attr();
+        println!("Default to GL {}.{}",
+                 gl.context_major_version(),
+                 gl.context_minor_version());
+
+        gl.set_context_version(4, 3);
+        gl.set_context_profile(sdl2::video::GLProfile::Core);
+
+        println!("Asking for GL {}.{} {:?}",
+                 gl.context_major_version(),
+                 gl.context_minor_version(),
+                 gl.context_profile());
+
+
         let window_builder = video.window(window_title, screen_width, screen_height);
         let (mut window, mut gl_context, mut device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder).unwrap();
+
+
+        let gl = video.gl_attr();
+        println!("Actually got GL {}.{}, profile {:?}",
+                 gl.context_major_version(),
+                 gl.context_minor_version(),
+                 gl.context_profile());
 
         let encoder = factory.create_command_buffer().into();
 
