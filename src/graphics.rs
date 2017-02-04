@@ -61,7 +61,7 @@ pub type DepthFormat = gfx::format::DepthStencil;
 
 gfx_defines!{
     vertex Vertex {
-        pos: [f32; 2] = "a_Position",
+        pos: [f32; 2] = "a_Pos",
         color: [f32; 3] = "a_Color",
     }
 
