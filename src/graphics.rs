@@ -43,11 +43,18 @@ pub enum DrawMode {
 }
 
 // This is all placeholder for now just to get us going.
-const TRIANGLE: [Vertex; 3] =[
-    Vertex { pos: [ -0.5, -0.5 ], color: [1.0, 0.0, 0.0] },
-    Vertex { pos: [  0.5, -0.5 ], color: [0.0, 1.0, 0.0] },
-    Vertex { pos: [  0.0,  0.5 ], color: [0.0, 0.0, 1.0] }
-];
+const TRIANGLE: [Vertex; 3] = [Vertex {
+                                   pos: [-0.5, -0.5],
+                                   color: [1.0, 0.0, 0.0],
+                               },
+                               Vertex {
+                                   pos: [0.5, -0.5],
+                                   color: [0.0, 1.0, 0.0],
+                               },
+                               Vertex {
+                                   pos: [0.0, 0.5],
+                                   color: [0.0, 0.0, 1.0],
+                               }];
 
 pub type ColorFormat = gfx::format::Srgba8;
 pub type DepthFormat = gfx::format::DepthStencil;
@@ -75,13 +82,18 @@ gfx_defines!{
 /// As an end-user you shouldn't ever have to touch this, but it goes
 /// into part of the `Context` and so has to be public, at least
 /// until the `pub(restricted)` feature is stable.
-pub struct GraphicsContextGeneric<R, F, C, D> where R: gfx::Resources, F: gfx::Factory<R>, C: gfx::CommandBuffer<R>, D: gfx::Device<Resources=R, CommandBuffer=C> {
+pub struct GraphicsContextGeneric<R, F, C, D>
+    where R: gfx::Resources,
+          F: gfx::Factory<R>,
+          C: gfx::CommandBuffer<R>,
+          D: gfx::Device<Resources = R, CommandBuffer = C>
+{
     window: sdl2::video::Window,
     gl_context: sdl2::video::GLContext,
     device: Box<D>,
     factory: Box<F>,
     encoder: gfx::Encoder<R, C>,
-    //color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
+    // color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
     depth_view: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
 
     pso: gfx::PipelineState<R, pipe::Meta>,
@@ -90,20 +102,27 @@ pub struct GraphicsContextGeneric<R, F, C, D> where R: gfx::Resources, F: gfx::F
 }
 
 // GL only
-pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources, gfx_device_gl::Factory, gfx_device_gl::CommandBuffer, gfx_device_gl::Device>;
+pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources,
+                                                  gfx_device_gl::Factory,
+                                                  gfx_device_gl::CommandBuffer,
+                                                  gfx_device_gl::Device>;
 
 
 impl GraphicsContext {
-    pub fn new(video: sdl2::VideoSubsystem, window_title: &str, screen_width: u32, screen_height: u32) -> GameResult<GraphicsContext> {
-        let window_builder = &mut video.window(window_title, screen_width, screen_height);
+    pub fn new(video: sdl2::VideoSubsystem,
+               window_title: &str,
+               screen_width: u32,
+               screen_height: u32)
+               -> GameResult<GraphicsContext> {
+        let window_builder = video.window(window_title, screen_width, screen_height);
         let (mut window, mut gl_context, mut device, mut factory, color_view, depth_view) =
-            gfx_window_sdl::init(window_builder);
+            gfx_window_sdl::init(window_builder).unwrap();
 
         let encoder = factory.create_command_buffer().into();
 
         let pso = factory.create_pipeline_simple(include_bytes!("shader/triangle_150.glslv"),
-                                                 include_bytes!("shader/triangle_150.glslf"),
-                                                 pipe::new())
+                                    include_bytes!("shader/triangle_150.glslf"),
+                                    pipe::new())
             .unwrap();
 
         let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(&TRIANGLE, ());
@@ -111,14 +130,14 @@ impl GraphicsContext {
             vbuf: vertex_buffer,
             out: color_view,
         };
-        
+
         Ok(GraphicsContext {
             window: window,
             gl_context: gl_context,
             device: Box::new(device),
             factory: Box::new(factory),
             encoder: encoder,
-            //color_view: color_view,
+            // color_view: color_view,
             depth_view: depth_view,
 
             pso: pso,
@@ -147,7 +166,7 @@ pub fn set_color(ctx: &mut Context, color: Color) {
 pub fn clear(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
     gfx.encoder.clear(&gfx.data.out, [0.1, 0.2, 0.3, 1.0]);
-    //let r = &mut ctx.// renderer;
+    // let r = &mut ctx.// renderer;
     // r.set_draw_color(ctx.gfx_context.background);
     // r.clear();
 
@@ -166,7 +185,12 @@ pub fn draw(ctx: &mut Context,
     let gfx = &mut ctx.gfx_context;
     gfx.encoder.draw(&gfx.slice, &gfx.pso, &gfx.data);
     Ok(())
-    //drawable.draw(ctx, src, dst)
+    // drawable.draw(ctx, src, dst)
+}
+
+pub fn draw_test(ctx: &mut Context) {
+    let gfx = &mut ctx.gfx_context;
+    gfx.encoder.draw(&gfx.slice, &gfx.pso, &gfx.data);
 }
 
 /// Draws the given `Drawable` object to the screen,
