@@ -34,6 +34,9 @@ pub use sdl2::rect::Point;
 pub use sdl2::pixels::Color;
 pub use sdl2::render::BlendMode;
 
+const GL_MAJOR_VERSION: u8 = 3;
+const GL_MINOR_VERSION: u8 = 2;
+
 /// Specifies whether a shape should be drawn
 /// filled or as an outline.
 #[derive(Debug)]
@@ -43,26 +46,22 @@ pub enum DrawMode {
 }
 
 // This is all placeholder for now just to get us going.
-const TRIANGLE: [Vertex; 3] = [Vertex {
-                                   pos: [-0.5, -0.5],
-                                   color: [1.0, 0.0, 0.0],
-                               },
-                               Vertex {
-                                   pos: [0.5, -0.5],
-                                   color: [0.0, 1.0, 0.0],
-                               },
-                               Vertex {
-                                   pos: [0.0, 0.5],
-                                   color: [0.0, 0.0, 1.0],
-                               }];
+const TRIANGLE: [Vertex; 3] =
+    [Vertex { pos: [-0.5, -0.5] }, Vertex { pos: [0.5, -0.5] }, Vertex { pos: [0.0, 0.5] }];
+
+const QUAD_VERTS: [Vertex; 4] = [Vertex { pos: [-0.5, -0.5] },
+                                 Vertex { pos: [0.5, -0.5] },
+                                 Vertex { pos: [0.5, 0.5] },
+                                 Vertex { pos: [-0.5, 0.5] }];
+
+const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
 pub type ColorFormat = gfx::format::Srgba8;
 pub type DepthFormat = gfx::format::DepthStencil;
 
 gfx_defines!{
     vertex Vertex {
-        pos: [f32; 2] = "a_Position",
-        color: [f32; 3] = "a_Color",
+        pos: [f32; 2] = "a_Pos",
     }
 
     pipeline pipe {
@@ -99,6 +98,7 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     pso: gfx::PipelineState<R, pipe::Meta>,
     data: pipe::Data<R>,
     slice: gfx::Slice<R>,
+    quad_slice: gfx::Slice<R>,
 }
 
 // GL only
@@ -114,9 +114,23 @@ impl GraphicsContext {
                screen_width: u32,
                screen_height: u32)
                -> GameResult<GraphicsContext> {
+
+
         let window_builder = video.window(window_title, screen_width, screen_height);
         let (mut window, mut gl_context, mut device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder).unwrap();
+
+
+        let gl = video.gl_attr();
+        gl.set_context_version(GL_MAJOR_VERSION, GL_MINOR_VERSION);
+        gl.set_context_profile(sdl2::video::GLProfile::Core);
+        println!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
+                 GL_MAJOR_VERSION,
+                 GL_MINOR_VERSION,
+                 gl.context_major_version(),
+                 gl.context_minor_version(),
+                 gl.context_profile());
+
 
         let encoder = factory.create_command_buffer().into();
 
@@ -126,8 +140,11 @@ impl GraphicsContext {
             .unwrap();
 
         let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(&TRIANGLE, ());
+
+        let (quad_vertex_buffer, quad_slice) =
+            factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
         let data = pipe::Data {
-            vbuf: vertex_buffer,
+            vbuf: quad_vertex_buffer,
             out: color_view,
         };
 
@@ -143,6 +160,7 @@ impl GraphicsContext {
             pso: pso,
             data: data,
             slice: slice,
+            quad_slice: quad_slice,
         })
     }
 }
@@ -166,14 +184,6 @@ pub fn set_color(ctx: &mut Context, color: Color) {
 pub fn clear(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
     gfx.encoder.clear(&gfx.data.out, [0.1, 0.2, 0.3, 1.0]);
-    // let r = &mut ctx.// renderer;
-    // r.set_draw_color(ctx.gfx_context.background);
-    // r.clear();
-
-    // // We assume we are usually going to be wanting to draw the foreground color.
-    // // While clear() is a relatively rare operation (probably once per frame).
-    // // So we keep SDL's render state set to the foreground color by default.
-    // r.set_draw_color(ctx.gfx_context.foreground);
 }
 
 /// Draws the given `Drawable` object to the screen.
@@ -182,15 +192,16 @@ pub fn draw(ctx: &mut Context,
             src: Option<Rect>,
             dst: Option<Rect>)
             -> GameResult<()> {
-    let gfx = &mut ctx.gfx_context;
-    gfx.encoder.draw(&gfx.slice, &gfx.pso, &gfx.data);
-    Ok(())
+    unimplemented!()
+    // let gfx = &mut ctx.gfx_context;
+    // gfx.encoder.draw(&gfx.slice, &gfx.pso, &gfx.data);
+    // Ok(())
     // drawable.draw(ctx, src, dst)
 }
 
 pub fn draw_test(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
-    gfx.encoder.draw(&gfx.slice, &gfx.pso, &gfx.data);
+    gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
 }
 
 /// Draws the given `Drawable` object to the screen,
