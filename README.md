@@ -91,6 +91,38 @@ but for now, them's the breaks.
 
 ## Extant things to do
 
+### Great GFX Rework:
+
+* Make our own rect/color/etc types that default to float values but have functions to convert to/from integer/pixel values
+* Expose transform-creating functions (no matrix stack though) and have it set up to pixel-perfect by default
+* Make image loading more consistent, create load-blank-image function, use it to implement rectangle drawing
+* Fill out image properties: flip x/y UV's, rotate, color, src/dst UV's, rotation centers (ugh), blend modes
+* Make fonts work (should be easy)
+* Make loading better; ditch SDL RWops totally.
+* Make loading images from bytes a thing
+* Make shaders better (or at least rename them something more sensible; hardcoding them with include_bytes! is actually pretty sensible)
+* Make line and point drawing work.  Might still be useful for debug mode!
+* Document alllll the things
+
+To not worry about until later:
+
+* Sprite batching
+* Exposing GFX
+* Making the API nicer.
+* Make draw() not take &mut if possible
+* Make it work with non-GL backends
+
+### Great Rodio Rework:
+
+* Ditch SDL loading
+* Make music work sensibly
+* Add better buffering to rodio
+
+To not worry about until later:
+
+* Add more sound formats to load.
+* Improve cpal
+
 ### 0.3.0
 
 * Document the new EventHandler stuff

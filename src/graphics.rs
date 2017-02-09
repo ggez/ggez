@@ -441,18 +441,6 @@ impl Image {
             gfx::texture::Kind::D2(width as u16, height as u16, gfx::texture::AaMode::Single);
         let (_, view) = gfx.factory.create_texture_immutable_u8::<Rgba8>(kind, &[&img]).unwrap();
         Ok(Image { texture: view })
-        // let mut buffer: Vec<u8> = Vec::new();
-        // let rwops = util::rwops_from_path(context, path.as_ref(), &mut buffer)?;
-        // // SDL2_image SNEAKILY adds the load() method to RWops.
-        // let surf = rwops.load()?;
-        // let renderer = &context.renderer;
-
-        // let tex = renderer.create_texture_from_surface(surf)?;
-        // let tq = tex.query();
-        // Ok(Image {
-        //     texture: tex,
-        //     texture_query: tq,
-        // })
 
     }
 
