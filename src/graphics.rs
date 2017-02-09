@@ -232,7 +232,7 @@ fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [
     let c3r2 = -(far + near) / (far - near);
     let c3r3 = 1.0;
 
-    [[c0r0, c0r1, c0r2, cr03],
+    [[c0r0, c0r1, c0r2, c0r3],
      [c1r0, c1r1, c1r2, c1r3],
      [c2r0, c2r1, c2r2, c2r3],
      [c3r0, c3r1, c3r2, c3r3]]
@@ -270,6 +270,20 @@ pub fn draw(ctx: &mut Context,
     // gfx.encoder.draw(&gfx.slice, &gfx.pso, &gfx.data);
     // Ok(())
     // drawable.draw(ctx, src, dst)
+}
+
+
+pub fn draw_image(ctx: &mut Context, offset: f32, image: &Image) {
+    let gfx = &mut ctx.gfx_context;
+    let thing = RectProperties { offset: [offset, offset] };
+    gfx.encoder.update_buffer(&gfx.data.rect_properties, &[thing], 0);
+
+    let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
+    gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
+    // TODO: BUGGO: Make sure these clones are cheap; they should be.
+    let (_, sampler) = gfx.data.tex.clone();
+    gfx.data.tex = (image.texture.clone(), sampler);
+    gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
 }
 
 pub fn draw_test(ctx: &mut Context, offset: f32) {
@@ -416,16 +430,15 @@ pub trait Drawable {
 }
 
 /// In-memory image data available to be drawn on the screen.
-pub struct Image {
-    // Keeping a hold of both a surface and texture is a pain in the butt
-    // but I can't see of a good way to manage both if we ever want to generate
-    // or modify an image... such as creating bitmap fonts.
-    // Hmmm.
-    // For now, bitmap fonts is the only time we need to do that, so we'll special
-    // case that rather than trying to create textures on-demand or something...
-    texture: render::Texture,
-    texture_query: render::TextureQuery,
+pub struct ImageGeneric<R>
+    where R: gfx::Resources
+{
+    // We should probably keep both the raw image data around,
+    // and an Option containing the texture handle if necessary.
+    texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
 }
+
+pub type Image = ImageGeneric<gfx_device_gl::Resources>;
 
 impl Image {
     // An Image is implemented as an sdl2 Texture which has to be associated
@@ -436,7 +449,16 @@ impl Image {
     // they are created.
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Image> {
-        unimplemented!();
+        use gfx::format::Rgba8;
+        use gfx::Factory;
+
+        let gfx = &mut context.gfx_context;
+        let img = image::open(path).unwrap().to_rgba();
+        let (width, height) = img.dimensions();
+        let kind =
+            gfx::texture::Kind::D2(width as u16, height as u16, gfx::texture::AaMode::Single);
+        let (_, view) = gfx.factory.create_texture_immutable_u8::<Rgba8>(kind, &[&img]).unwrap();
+        Ok(Image { texture: view })
         // let mut buffer: Vec<u8> = Vec::new();
         // let rwops = util::rwops_from_path(context, path.as_ref(), &mut buffer)?;
         // // SDL2_image SNEAKILY adds the load() method to RWops.
@@ -481,52 +503,48 @@ impl Image {
 
     /// Returns the `BlendMode` of the image.
     pub fn blend_mode(&self) -> BlendMode {
-        self.texture.blend_mode()
+        unimplemented!();
     }
 
     /// Sets the `BlendMode` of the image.
     /// See <https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode>
     /// for detailed description of blend modes.
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
-        self.texture.set_blend_mode(blend)
+        unimplemented!();
     }
 
     /// Get the color mod of the image.
     pub fn color_mod(&self) -> Color {
-        let (r, g, b) = self.texture.color_mod();
-        pixels::Color::RGB(r, g, b)
+        unimplemented!();
     }
 
     /// Set the color mod of the image.
     /// Each pixel of the image is multiplied by this color
     /// when drawn.
     pub fn set_color_mod(&mut self, color: Color) {
-        match color {
-            pixels::Color::RGB(r, g, b) |
-            pixels::Color::RGBA(r, g, b, _) => self.texture.set_color_mod(r, g, b),
-        }
+        unimplemented!();
     }
 
     /// Get the alpha mod of the image.
     pub fn alpha_mod(&self) -> u8 {
-        self.texture.alpha_mod()
+        unimplemented!();
     }
 
     /// Set the alpha mod of the image.
     /// Each pixel's alpha will be multiplied by this value
     /// when drawn.
     pub fn set_alpha_mod(&mut self, alpha: u8) {
-        self.texture.set_alpha_mod(alpha)
+        unimplemented!();
     }
 
     /// Return the width of the image.
     pub fn width(&self) -> u32 {
-        self.texture_query.width
+        unimplemented!();
     }
 
     /// Return the height of the image.
     pub fn height(&self) -> u32 {
-        self.texture_query.height
+        unimplemented!();
     }
 }
 
@@ -748,12 +766,14 @@ fn render_ttf(context: &Context,
 
     let image = Image::from_surface(context, surface)?;
     let text_string = text.to_string();
-    let tq = image.texture.query();
-    Ok(Text {
-        texture: image.texture,
-        texture_query: tq,
-        contents: text_string,
-    })
+
+    unimplemented!();
+    // let tq = image.texture.query();
+    // Ok(Text {
+    //     texture: image.texture,
+    //     texture_query: tq,
+    //     contents: text_string,
+    // })
 
 }
 
@@ -780,12 +800,14 @@ fn render_bitmap(context: &Context,
     }
     let image = Image::from_surface(context, dest_surface)?;
     let text_string = text.to_string();
-    let tq = image.texture.query();
-    Ok(Text {
-        texture: image.texture,
-        texture_query: tq,
-        contents: text_string,
-    })
+
+    unimplemented!();
+    // let tq = image.texture.query();
+    // Ok(Text {
+    //     texture: image.texture,
+    //     texture_query: tq,
+    //     contents: text_string,
+    // })
 }
 
 

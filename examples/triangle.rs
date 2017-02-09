@@ -8,6 +8,8 @@ use std::time::Duration;
 
 // First we make a structure to contain the game's state
 struct MainState {
+    image1: graphics::Image,
+    image2: graphics::Image,
 }
 
 // Then we implement the `ggez::game::GameState` trait on it, which
@@ -19,7 +21,12 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
 
-        let s = MainState {};
+        let image1 = graphics::Image::new(ctx, "resources/rock.png")?;
+        let image2 = graphics::Image::new(ctx, "resources/player.png")?;
+        let s = MainState {
+            image1: image1,
+            image2: image2,
+        };
         Ok(s)
     }
 }
@@ -32,8 +39,8 @@ impl game::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        graphics::draw_test(ctx, 0.1);
-        graphics::draw_test(ctx, -0.1);
+        graphics::draw_image(ctx, 0.5, &self.image1);
+        graphics::draw_image(ctx, -0.5, &self.image2);
         graphics::present(ctx);
         timer::sleep_until_next_frame(ctx, 60);
         Ok(())
