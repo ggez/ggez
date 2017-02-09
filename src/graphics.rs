@@ -79,6 +79,10 @@ gfx_defines!{
         uv: [f32; 2] = "a_Uv",
     }
 
+    constant Transform {
+        transform: [[f32; 4];4] = "u_Transform",
+    }
+
     // Values that are different for each rect.
     constant RectProperties {
         offset: [f32; 2] = "u_Offset",
@@ -87,6 +91,7 @@ gfx_defines!{
     pipeline pipe {
         vbuf: gfx::VertexBuffer<Vertex> = (),
         tex: gfx::TextureSampler<[f32; 4]> = "t_Texture",
+        transform: gfx::ConstantBuffer<Transform> = "Transform",
         rect_properties: gfx::ConstantBuffer<RectProperties> = "RectProperties",
         out: gfx::RenderTarget<ColorFormat> = "Target0",
     }
@@ -164,12 +169,14 @@ impl GraphicsContext {
             factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
 
         let rect_props = factory.create_constant_buffer(1);
+        let transform = factory.create_constant_buffer(1);
         let sampler = factory.create_sampler_linear();
         let texture = gfx_load_texture(&mut factory);
         let data = pipe::Data {
             vbuf: quad_vertex_buffer,
             tex: (texture, sampler),
             rect_properties: rect_props,
+            transform: transform,
             out: color_view,
         };
 
@@ -200,6 +207,35 @@ fn gfx_load_texture<F, R>(factory: &mut F) -> gfx::handle::ShaderResourceView<R,
     let kind = gfx::texture::Kind::D2(width as u16, height as u16, gfx::texture::AaMode::Single);
     let (_, view) = factory.create_texture_immutable_u8::<Rgba8>(kind, &[&img]).unwrap();
     view
+}
+
+/// Rather than create a dependency on cgmath or nalgebra for this one function,
+/// we're just going to define it ourselves.
+fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [[f32; 4]; 4] {
+    let c0r0 = 2.0 / (right - left);
+    let c0r1 = 0.0;
+    let c0r2 = 0.0;
+    let c0r3 = 0.0;
+
+    let c1r0 = 0.0;
+    let c1r1 = 2.0 / (top - bottom);
+    let c1r2 = 0.0;
+    let c1r3 = 0.0;
+
+    let c2r0 = 0.0;
+    let c2r1 = 0.0;
+    let c2r2 = -2.0 / (far - near);
+    let c2r3 = 0.0;
+
+    let c3r0 = -(right + left) / (right - left);
+    let c3r1 = -(top + bottom) / (top - bottom);
+    let c3r2 = -(far + near) / (far - near);
+    let c3r3 = 1.0;
+
+    [[c0r0, c0r1, c0r2, cr03],
+     [c1r0, c1r1, c1r2, c1r3],
+     [c2r0, c2r1, c2r2, c2r3],
+     [c3r0, c3r1, c3r2, c3r3]]
 }
 
 
@@ -240,6 +276,9 @@ pub fn draw_test(ctx: &mut Context, offset: f32) {
     let gfx = &mut ctx.gfx_context;
     let thing = RectProperties { offset: [offset, offset] };
     gfx.encoder.update_buffer(&gfx.data.rect_properties, &[thing], 0);
+
+    let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
+    gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
     gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
 }
 
