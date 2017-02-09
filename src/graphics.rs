@@ -22,6 +22,8 @@ use gfx::traits::FactoryExt;
 use gfx_device_gl;
 use gfx_window_sdl;
 
+use image;
+
 
 
 use context::Context;
@@ -46,13 +48,25 @@ pub enum DrawMode {
 }
 
 // This is all placeholder for now just to get us going.
-const TRIANGLE: [Vertex; 3] =
-    [Vertex { pos: [-0.5, -0.5] }, Vertex { pos: [0.5, -0.5] }, Vertex { pos: [0.0, 0.5] }];
+// const TRIANGLE: [Vertex; 3] =
+//     [Vertex { pos: [-0.5, -0.5] }, Vertex { pos: [0.5, -0.5] }, Vertex { pos: [0.0, 0.5] }];
 
-const QUAD_VERTS: [Vertex; 4] = [Vertex { pos: [-0.5, -0.5] },
-                                 Vertex { pos: [0.5, -0.5] },
-                                 Vertex { pos: [0.5, 0.5] },
-                                 Vertex { pos: [-0.5, 0.5] }];
+const QUAD_VERTS: [Vertex; 4] = [Vertex {
+                                     pos: [-0.5, -0.5],
+                                     uv: [0.0, 1.0],
+                                 },
+                                 Vertex {
+                                     pos: [0.5, -0.5],
+                                     uv: [1.0, 1.0],
+                                 },
+                                 Vertex {
+                                     pos: [0.5, 0.5],
+                                     uv: [1.0, 0.0],
+                                 },
+                                 Vertex {
+                                     pos: [-0.5, 0.5],
+                                     uv: [0.0, 0.0],
+                                 }];
 
 const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
@@ -62,10 +76,18 @@ pub type DepthFormat = gfx::format::DepthStencil;
 gfx_defines!{
     vertex Vertex {
         pos: [f32; 2] = "a_Pos",
+        uv: [f32; 2] = "a_Uv",
+    }
+
+    // Values that are different for each rect.
+    constant RectProperties {
+        offset: [f32; 2] = "u_Offset",
     }
 
     pipeline pipe {
         vbuf: gfx::VertexBuffer<Vertex> = (),
+        tex: gfx::TextureSampler<[f32; 4]> = "t_Texture",
+        rect_properties: gfx::ConstantBuffer<RectProperties> = "RectProperties",
         out: gfx::RenderTarget<ColorFormat> = "Target0",
     }
 }
@@ -97,7 +119,7 @@ pub struct GraphicsContextGeneric<R, F, C, D>
 
     pso: gfx::PipelineState<R, pipe::Meta>,
     data: pipe::Data<R>,
-    slice: gfx::Slice<R>,
+    // slice: gfx::Slice<R>,
     quad_slice: gfx::Slice<R>,
 }
 
@@ -107,14 +129,12 @@ pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources,
                                                   gfx_device_gl::CommandBuffer,
                                                   gfx_device_gl::Device>;
 
-
 impl GraphicsContext {
     pub fn new(video: sdl2::VideoSubsystem,
                window_title: &str,
                screen_width: u32,
                screen_height: u32)
                -> GameResult<GraphicsContext> {
-
 
         let window_builder = video.window(window_title, screen_width, screen_height);
         let (mut window, mut gl_context, mut device, mut factory, color_view, depth_view) =
@@ -131,7 +151,6 @@ impl GraphicsContext {
                  gl.context_minor_version(),
                  gl.context_profile());
 
-
         let encoder = factory.create_command_buffer().into();
 
         let pso = factory.create_pipeline_simple(include_bytes!("shader/triangle_150.glslv"),
@@ -139,12 +158,18 @@ impl GraphicsContext {
                                     pipe::new())
             .unwrap();
 
-        let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(&TRIANGLE, ());
+        // let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(&TRIANGLE, ());
 
         let (quad_vertex_buffer, quad_slice) =
             factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
+
+        let rect_props = factory.create_constant_buffer(1);
+        let sampler = factory.create_sampler_linear();
+        let texture = gfx_load_texture(&mut factory);
         let data = pipe::Data {
             vbuf: quad_vertex_buffer,
+            tex: (texture, sampler),
+            rect_properties: rect_props,
             out: color_view,
         };
 
@@ -159,10 +184,22 @@ impl GraphicsContext {
 
             pso: pso,
             data: data,
-            slice: slice,
+            // slice: slice,
             quad_slice: quad_slice,
         })
     }
+}
+
+fn gfx_load_texture<F, R>(factory: &mut F) -> gfx::handle::ShaderResourceView<R, [f32; 4]>
+    where F: gfx::Factory<R>,
+          R: gfx::Resources
+{
+    use gfx::format::Rgba8;
+    let img = image::open("resources/player.png").unwrap().to_rgba();
+    let (width, height) = img.dimensions();
+    let kind = gfx::texture::Kind::D2(width as u16, height as u16, gfx::texture::AaMode::Single);
+    let (_, view) = factory.create_texture_immutable_u8::<Rgba8>(kind, &[&img]).unwrap();
+    view
 }
 
 
@@ -199,8 +236,10 @@ pub fn draw(ctx: &mut Context,
     // drawable.draw(ctx, src, dst)
 }
 
-pub fn draw_test(ctx: &mut Context) {
+pub fn draw_test(ctx: &mut Context, offset: f32) {
     let gfx = &mut ctx.gfx_context;
+    let thing = RectProperties { offset: [offset, offset] };
+    gfx.encoder.update_buffer(&gfx.data.rect_properties, &[thing], 0);
     gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
 }
 

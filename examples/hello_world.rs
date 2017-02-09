@@ -8,7 +8,7 @@ use std::time::Duration;
 
 // First we make a structure to contain the game's state
 struct MainState {
-    text: graphics::Text,
+    // text: graphics::Text,
 }
 
 // Then we implement the `ggez::game::GameState` trait on it, which
@@ -19,10 +19,11 @@ struct MainState {
 // that you can override if you wish, but the defaults are fine.
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 48)?;
-        let text = graphics::Text::new(ctx, "Hello world!", &font)?;
+        // let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 48)?;
+        // let text = graphics::Text::new(ctx, "Hello world!", &font)?;
 
-        let s = MainState { text: text };
+        // let s = MainState { text: text };
+        let s = MainState { };
         Ok(s)
     }
 }
@@ -37,7 +38,6 @@ impl game::EventHandler for MainState {
         graphics::clear(ctx);
         graphics::draw_test(ctx);
         graphics::present(ctx);
-        timer::sleep_until_next_frame(ctx, 60);
         Ok(())
     }
 }

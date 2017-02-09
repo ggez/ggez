@@ -33,6 +33,7 @@ rodio = "0.4"
 gfx = "0.14"
 gfx_device_gl = "0.13"
 gfx_window_sdl = "0.5"
+image = "0.12"
 
 rustc-serialize = "0.3"
 toml = "0.2"

@@ -32,7 +32,8 @@ impl game::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        graphics::draw_test(ctx);
+        graphics::draw_test(ctx, 0.1);
+        graphics::draw_test(ctx, -0.1);
         graphics::present(ctx);
         timer::sleep_until_next_frame(ctx, 60);
         Ok(())

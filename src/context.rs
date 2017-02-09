@@ -99,10 +99,7 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
 impl Context {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by the engine as part of the set-up code.
-    pub fn from_conf(conf: conf::Conf,
-                     fs: Filesystem,
-                     sdl_context: Sdl)
-                     -> GameResult<Context> {
+    pub fn from_conf(conf: conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context> {
 
         // let window = {
 
@@ -111,8 +108,8 @@ impl Context {
         // };
 
         // BUGGO: TODO: Make this part of the GraphicsContext
-        //let display_index = window.display_index()?;
-        //let dpi = window.subsystem().display_dpi(display_index)?;
+        // let display_index = window.display_index()?;
+        // let dpi = window.subsystem().display_dpi(display_index)?;
         let dpi = (75.0, 75.0, 75.0);
         let video = sdl_context.video()?;
 
@@ -120,12 +117,10 @@ impl Context {
         let mixer_context = init_mixer()?;
         let event_context = sdl_context.event()?;
         let timer_context = timer::TimeContext::new();
-        let graphics_context = graphics::GraphicsContext::new(
-            video,
-            &conf.window_title,
-            conf.window_width,
-            conf.window_height
-        )?;
+        let graphics_context = graphics::GraphicsContext::new(video,
+                                                              &conf.window_title,
+                                                              conf.window_width,
+                                                              conf.window_height)?;
 
         let mut ctx = Context {
             conf: conf,
