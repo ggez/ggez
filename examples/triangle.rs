@@ -21,8 +21,8 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
 
-        let image1 = graphics::Image::new(ctx, "resources/rock.png")?;
-        let image2 = graphics::Image::new(ctx, "resources/player.png")?;
+        let image1 = graphics::Image::new(ctx, "resources/dragon1.png")?;
+        let image2 = graphics::Image::new(ctx, "resources/dragon2.png")?;
         let s = MainState {
             image1: image1,
             image2: image2,
@@ -39,8 +39,9 @@ impl game::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        graphics::draw_image(ctx, 0.5, &self.image1);
-        graphics::draw_image(ctx, -0.5, &self.image2);
+        graphics::draw(ctx, &mut self.image1, None, None);
+        let dst = graphics::Rect::new(1, 1, 0, 0);
+        graphics::draw(ctx, &mut self.image2, None, Some(dst));
         graphics::present(ctx);
         timer::sleep_until_next_frame(ctx, 60);
         Ok(())

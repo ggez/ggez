@@ -265,25 +265,7 @@ pub fn draw(ctx: &mut Context,
             src: Option<Rect>,
             dst: Option<Rect>)
             -> GameResult<()> {
-    unimplemented!()
-    // let gfx = &mut ctx.gfx_context;
-    // gfx.encoder.draw(&gfx.slice, &gfx.pso, &gfx.data);
-    // Ok(())
-    // drawable.draw(ctx, src, dst)
-}
-
-
-pub fn draw_image(ctx: &mut Context, offset: f32, image: &Image) {
-    let gfx = &mut ctx.gfx_context;
-    let thing = RectProperties { offset: [offset, offset] };
-    gfx.encoder.update_buffer(&gfx.data.rect_properties, &[thing], 0);
-
-    let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
-    gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
-    // TODO: BUGGO: Make sure these clones are cheap; they should be.
-    let (_, sampler) = gfx.data.tex.clone();
-    gfx.data.tex = (image.texture.clone(), sampler);
-    gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
+    drawable.draw(ctx, src, dst)
 }
 
 pub fn draw_test(ctx: &mut Context, offset: f32) {
@@ -572,16 +554,19 @@ impl Drawable for Image {
                flip_horizontal: bool,
                flip_vertical: bool)
                -> GameResult<()> {
-        unimplemented!();
-        // let renderer = &mut context.renderer;
-        // renderer.copy_ex(&self.texture,
-        //              src,
-        //              dst,
-        //              angle,
-        //              center,
-        //              flip_horizontal,
-        //              flip_vertical)
-        //     .map_err(GameError::RenderError)
+
+        let gfx = &mut context.gfx_context;
+        let dst = dst.unwrap_or(Rect::new(0, 0, 1, 1));
+        let thing = RectProperties { offset: [dst.x() as f32, dst.y() as f32] };
+        gfx.encoder.update_buffer(&gfx.data.rect_properties, &[thing], 0);
+
+        let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
+        gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
+        // TODO: BUGGO: Make sure these clones are cheap; they should be.
+        let (_, sampler) = gfx.data.tex.clone();
+        gfx.data.tex = (self.texture.clone(), sampler);
+        gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
+        Ok(())
     }
 }
 
