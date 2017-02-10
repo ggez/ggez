@@ -18,62 +18,19 @@ use sdl2::render;
 use sdl2::surface;
 use sdl2::image::ImageRWops;
 use rusttype;
+use image;
 use gfx;
 use gfx::traits::FactoryExt;
 use gfx_device_gl;
 use gfx_window_sdl;
-
-use image;
-
-
 
 use context::Context;
 use GameError;
 use GameResult;
 use util;
 
-pub struct Point {
-    x: f32,
-    y: f32
-}
-
-pub struct Rect {
-    x: f32,
-    y: f32,
-    w: f32,
-    h: f32,
-}
-
-impl Rect {
-    fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
-        Rect { x:x, y:y, w:w, h:h }
-    }
-
-    fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
-        Rect { x:x as f32, y:y as f32, w:w as f32, h:h as f32 }
-    }
-}
-
-pub struct Color(f32, f32, f32, f32);
-
-impl Color {
-    fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
-        Color(r, g, b, a)
-    }
-}
-
-impl From<(u8, u8, u8, u8)> for Color {
-    fn from(val: (u8, u8, u8, u8)) -> Self {
-        let (r, g, b, a) = val;
-        let rf = (r as f32) / 255.0;
-        let gf = (g as f32) / 255.0;
-        let bf = (b as f32) / 255.0;
-        let af = (a as f32) / 255.0;
-        Color(rf, gf, bf, af)
-    }
-}
-
-pub use sdl2::render::BlendMode;
+mod types;
+pub use self::types::{Rect, Point, Color, BlendMode};
 
 const GL_MAJOR_VERSION: u8 = 3;
 const GL_MINOR_VERSION: u8 = 2;
