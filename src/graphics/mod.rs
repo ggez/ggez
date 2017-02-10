@@ -85,6 +85,8 @@ gfx_defines!{
     // Values that are different for each rect.
     constant RectProperties {
         offset: [f32; 2] = "u_Offset",
+        size: [f32; 2] = "u_Size",
+        color_mod: [f32; 4] = "u_ColorMod",
     }
 
     pipeline pipe {
@@ -272,7 +274,11 @@ pub fn draw(ctx: &mut Context,
 
 pub fn draw_test(ctx: &mut Context, offset: f32) {
     let gfx = &mut ctx.gfx_context;
-    let thing = RectProperties { offset: [offset, offset] };
+    let thing = RectProperties {
+        offset: [offset, offset],
+        size: [1.0, 1.0],
+        color_mod: [1.0, 1.0, 1.0, 1.0],
+    };
     gfx.encoder.update_buffer(&gfx.data.rect_properties, &[thing], 0);
 
     let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
@@ -420,6 +426,7 @@ pub struct ImageGeneric<R>
     // We should probably keep both the raw image data around,
     // and an Option containing the texture handle if necessary.
     texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
+    properties: RectProperties,
     width: u32,
     height: u32,
 }
