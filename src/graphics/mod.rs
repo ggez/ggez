@@ -23,6 +23,9 @@ use gfx;
 use gfx::traits::FactoryExt;
 use gfx_device_gl;
 use gfx_window_sdl;
+use gfx::format::Rgba8;
+use gfx::Factory;
+
 
 use context::Context;
 use GameError;
@@ -110,6 +113,9 @@ pub struct GraphicsContextGeneric<R, F, C, D>
           C: gfx::CommandBuffer<R>,
           D: gfx::Device<Resources = R, CommandBuffer = C>
 {
+    background_color: Color,
+    foreground_color: Color,
+    
     window: sdl2::video::Window,
     gl_context: sdl2::video::GLContext,
     device: Box<D>,
@@ -177,6 +183,9 @@ impl GraphicsContext {
         };
 
         Ok(GraphicsContext {
+            background_color: Color::new(0.1, 0.2, 0.3, 1.0),
+            foreground_color: Color::new(1.0, 1.0, 1.0, 1.0),
+           
             window: window,
             gl_context: gl_context,
             device: Box::new(device),
@@ -237,22 +246,19 @@ fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [
 
 /// Sets the background color.  Default: blue.
 pub fn set_background_color(ctx: &mut Context, color: Color) {
-    unimplemented!();
+    ctx.gfx_context.background_color = color;
 }
 
 /// Sets the foreground color, which will be used for drawing
 /// rectangles, lines, etc.  Default: white.
 pub fn set_color(ctx: &mut Context, color: Color) {
-    unimplemented!();
-    // let r = &mut ctx.renderer;
-    // ctx.gfx_context.foreground = color;
-    // r.set_draw_color(ctx.gfx_context.foreground);
+    ctx.gfx_context.foreground_color = color;
 }
 
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
-    gfx.encoder.clear(&gfx.data.out, [0.1, 0.2, 0.3, 1.0]);
+    gfx.encoder.clear(&gfx.data.out, gfx.background_color.into());
 }
 
 /// Draws the given `Drawable` object to the screen.
@@ -414,53 +420,41 @@ pub struct ImageGeneric<R>
     // We should probably keep both the raw image data around,
     // and an Option containing the texture handle if necessary.
     texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
+    width: u32,
+    height: u32,
 }
 
 pub type Image = ImageGeneric<gfx_device_gl::Resources>;
 
 impl Image {
-    // An Image is implemented as an sdl2 Texture which has to be associated
-    // with a particular Renderer.
-    // This may eventually cause problems if there's ever ways to change
-    // renderer, such as changing windows or something.
-    // Suffice to say for now, Images are bound to the Context in which
-    // they are created.
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Image> {
-        use gfx::format::Rgba8;
-        use gfx::Factory;
-
-        let gfx = &mut context.gfx_context;
         let img = image::open(path).unwrap().to_rgba();
         let (width, height) = img.dimensions();
-        let kind =
-            gfx::texture::Kind::D2(width as u16, height as u16, gfx::texture::AaMode::Single);
-        let (_, view) = gfx.factory.create_texture_immutable_u8::<Rgba8>(kind, &[&img]).unwrap();
-        Ok(Image { texture: view })
+        Image::from_rgba8(context, width as u16, height as u16, &[&img])
+    }
 
+    /// Creates an Image from an array of u8's arranged in RGBA order.
+    pub fn from_rgba8(context: &mut Context, width: u16, height: u16, rgba: &[&[u8]]) -> GameResult<Image> {
+        let gfx = &mut context.gfx_context;
+        let kind =
+            gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
+        let (_, view) = gfx.factory.create_texture_immutable_u8::<Rgba8>(kind, &rgba).unwrap();
+        Ok(Image { texture: view, width: width as u32, height: height as u32 })
     }
 
     /// A little helper function that creates a new Image that is just
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
-    pub fn solid(context: &mut Context, size: u32, color: Color) -> GameResult<Image> {
-        unimplemented!();
-        // let mut surf = surface::Surface::new(size, size, pixels::PixelFormatEnum::RGBA8888)?;
-        // surf.fill_rect(None, color)?;
-        // Image::from_surface(context, surf)
+    pub fn solid(context: &mut Context, size: u16, color: Color) -> GameResult<Image> {
+        let pixel_array: [u8;4] = color.into();
+        let size_squared = size as usize * size as usize;
+        let mut buffer = Vec::with_capacity(size_squared);
+        for i in 0..size_squared {
+            buffer.push(&pixel_array[..]);
+        }
+        Image::from_rgba8(context, size, size, &buffer[..])
     }
-
-    fn from_surface(context: &Context, surface: surface::Surface) -> GameResult<Image> {
-        unimplemented!();
-        // let renderer = &context.renderer;
-        // let tex = renderer.create_texture_from_surface(surface)?;
-        // let tq = tex.query();
-        // Ok(Image {
-        //     texture: tex,
-        //     texture_query: tq,
-        // })
-    }
-
 
     /// Returns the dimensions of the image.
     pub fn rect(&self) -> Rect {
@@ -505,12 +499,12 @@ impl Image {
 
     /// Return the width of the image.
     pub fn width(&self) -> u32 {
-        unimplemented!();
+        self.width
     }
 
     /// Return the height of the image.
     pub fn height(&self) -> u32 {
-        unimplemented!();
+        self.height
     }
 }
 
@@ -733,8 +727,8 @@ fn render_ttf(context: &Context,
                                                    pitch as u32,
                                                    format));
 
-    let image = Image::from_surface(context, surface)?;
-    let text_string = text.to_string();
+    //let image = Image::from_surface(context, surface)?;
+    //let text_string = text.to_string();
 
     unimplemented!();
     // let tq = image.texture.query();
@@ -767,7 +761,7 @@ fn render_bitmap(context: &Context,
         // println!("Blitting letter {} to {:?}", c, dest_rect);
         //surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect))?;
     }
-    let image = Image::from_surface(context, dest_surface)?;
+    //let image = Image::from_surface(context, dest_surface)?;
     let text_string = text.to_string();
 
     unimplemented!();

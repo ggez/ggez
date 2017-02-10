@@ -64,6 +64,20 @@ impl From<Color> for (u8, u8, u8, u8) {
     }
 }
 
+impl From<Color> for [u8;4] {
+    fn from(color: Color) -> Self {
+        let (r, g, b, a) = color.into();
+        [r, g, b, a]
+    }
+}
+
+impl From<Color> for [f32; 4] {
+    fn from(color: Color) -> Self {
+        [color.r, color.g, color.b, color.a]
+    }
+}
+
+
 impl From<Color> for (u8, u8, u8) {
     fn from(color: Color) -> Self {
         let (r, g, b, _) = color.into();
