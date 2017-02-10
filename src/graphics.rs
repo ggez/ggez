@@ -9,6 +9,7 @@
 use std::fmt;
 use std::path;
 use std::collections::BTreeMap;
+use std::convert::From;
 use std::io::Read;
 
 use sdl2;
@@ -31,9 +32,47 @@ use GameError;
 use GameResult;
 use util;
 
-pub use sdl2::rect::Rect;
-pub use sdl2::rect::Point;
-pub use sdl2::pixels::Color;
+pub struct Point {
+    x: f32,
+    y: f32
+}
+
+pub struct Rect {
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+}
+
+impl Rect {
+    fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
+        Rect { x:x, y:y, w:w, h:h }
+    }
+
+    fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
+        Rect { x:x as f32, y:y as f32, w:w as f32, h:h as f32 }
+    }
+}
+
+pub struct Color(f32, f32, f32, f32);
+
+impl Color {
+    fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
+        Color(r, g, b, a)
+    }
+}
+
+impl From<(u8, u8, u8, u8)> for Color {
+    fn from(val: (u8, u8, u8, u8)) -> Self {
+        let (r, g, b, a) = val;
+        let rf = (r as f32) / 255.0;
+        let gf = (g as f32) / 255.0;
+        let bf = (b as f32) / 255.0;
+        let af = (a as f32) / 255.0;
+        Color(rf, gf, bf, af)
+    }
+}
+
 pub use sdl2::render::BlendMode;
 
 const GL_MAJOR_VERSION: u8 = 3;
@@ -468,7 +507,7 @@ impl Image {
 
     /// Returns the dimensions of the image.
     pub fn rect(&self) -> Rect {
-        Rect::new(0, 0, self.width(), self.height())
+        Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
     }
 
     /// Returns the `BlendMode` of the image.
@@ -544,8 +583,8 @@ impl Drawable for Image {
                -> GameResult<()> {
 
         let gfx = &mut context.gfx_context;
-        let dst = dst.unwrap_or(Rect::new(0, 0, 1, 1));
-        let thing = RectProperties { offset: [dst.x() as f32, dst.y() as f32] };
+        let dst = dst.unwrap_or(Rect::new(0.0, 0.0, 1.0, 1.0));
+        let thing = RectProperties { offset: [dst.x, dst.y] };
         gfx.encoder.update_buffer(&gfx.data.rect_properties, &[thing], 0);
 
         let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
@@ -766,10 +805,10 @@ fn render_bitmap(context: &Context,
         let source_offset = glyphs_map.get(&c)
             .ok_or(GameError::FontError(String::from(error_message)))?;
         let dest_offset = glyph_width * small_i;
-        let source_rect = Rect::new(*source_offset as i32, 0, glyph_width, glyph_height);
-        let dest_rect = Rect::new(dest_offset as i32, 0, glyph_width, glyph_height);
+        let source_rect = Rect::new(*source_offset as f32, 0.0, glyph_width as f32, glyph_height as f32);
+        let dest_rect = Rect::new(dest_offset as f32, 0.0, glyph_width as f32, glyph_height as f32);
         // println!("Blitting letter {} to {:?}", c, dest_rect);
-        surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect))?;
+        //surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect))?;
     }
     let image = Image::from_surface(context, dest_surface)?;
     let text_string = text.to_string();
