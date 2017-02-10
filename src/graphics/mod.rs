@@ -443,6 +443,17 @@ impl Image {
         Ok(Image { texture: view, width: width as u32, height: height as u32 })
     }
 
+    pub fn from_rgba8_flat(context: &mut Context, width: u16, height: u16, rgba: &[u8]) -> GameResult<Image> {
+        let uheight = height as usize;
+        let uwidth = width as usize;
+        let mut buffer = Vec::with_capacity(uheight);
+        for i in 0..uheight {
+            buffer.push(&rgba[i..i*uwidth]);
+        }
+        Image::from_rgba8(context, width, height, &buffer)
+    }
+
+    
     /// A little helper function that creates a new Image that is just
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
@@ -637,8 +648,8 @@ impl fmt::Debug for Font {
 
 /// Drawable text created from a `Font`.
 pub struct Text {
-    texture: render::Texture,
-    texture_query: render::TextureQuery,
+    texture: Image,
+    //texture_query: render::TextureQuery,
     contents: String,
 }
 
@@ -660,7 +671,7 @@ fn display_independent_scale(points: u32, dpi_w: f32, dpi_h: f32) -> rusttype::S
     scale
 }
 
-fn render_ttf(context: &Context,
+fn render_ttf(context: &mut Context,
               text: &str,
               font: &rusttype::Font<'static>,
               size: u32)
@@ -720,23 +731,23 @@ fn render_ttf(context: &Context,
     }
 
     // Copy the bitmap onto a surface, and we're basically done!
-    let format = pixels::PixelFormatEnum::RGBA8888;
-    let surface = try!(surface::Surface::from_data(&mut pixel_data,
-                                                   width as u32,
-                                                   pixel_height as u32,
-                                                   pitch as u32,
-                                                   format));
+    // BUGGO: TODO: Make sure conversions will not fail
+    let image = Image::from_rgba8_flat(context, width as u16, pixel_height as u16, &pixel_data)?;
+    //let format = pixels::PixelFormatEnum::RGBA8888;
+    //let surface = try!(surface::Surface::from_data(&mut pixel_data,
+    //                                               width as u32,
+    //                                               pixel_height as u32,
+    //                                               pitch as u32,
+    //                                               format));
 
-    //let image = Image::from_surface(context, surface)?;
-    //let text_string = text.to_string();
-
-    unimplemented!();
+    //let image = Image::from_surface(context, surface)?;    
     // let tq = image.texture.query();
-    // Ok(Text {
-    //     texture: image.texture,
-    //     texture_query: tq,
-    //     contents: text_string,
-    // })
+
+    let text_string = text.to_string();
+    Ok(Text {
+         texture: image,
+         contents: text_string,
+    })
 
 }
 
@@ -776,7 +787,7 @@ fn render_bitmap(context: &Context,
 
 impl Text {
     /// Renders a new `Text` from the given `Font`
-    pub fn new(context: &Context, text: &str, font: &Font) -> GameResult<Text> {
+    pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<Text> {
         match *font {
             Font::TTFFont { font: ref f, points } => render_ttf(context, text, f, points),
             Font::BitmapFont { ref surface, glyph_width, glyphs: ref glyphs_map, .. } => {
@@ -787,12 +798,12 @@ impl Text {
 
     /// Returns the width of the rendered text, in pixels.
     pub fn width(&self) -> u32 {
-        self.texture_query.width
+        self.texture.width
     }
 
     /// Returns the height of the rendered text, in pixels.
     pub fn height(&self) -> u32 {
-        self.texture_query.height
+        self.texture.height
     }
 
     /// Returns the string that the text represents.
@@ -828,13 +839,12 @@ impl Drawable for Text {
 
 impl fmt::Debug for Text {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let tq = self.texture.query();
         write!(f,
-               "<Text: {}x{}, {:p}, texture address {:p}>",
-               tq.width,
-               tq.height,
-               &self,
-               &self.texture)
+               "<Text: {}x{}, {:p}>",
+               self.texture.width,
+               self.texture.height,
+               &self
+               )
 
     }
 }
