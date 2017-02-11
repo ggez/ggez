@@ -98,6 +98,16 @@ gfx_defines!{
     }
 }
 
+impl Default for RectProperties {
+    fn default() -> Self {
+        RectProperties {
+            offset: [0.0, 0.0],
+            size: [1.0, 1.0],
+            color_mod: types::WHITE.into(),
+        }
+    }
+}
+
 // BUGGO: TODO: Impl Debug for GraphicsContext
 
 /// A structure that contains graphics state.
@@ -117,7 +127,7 @@ pub struct GraphicsContextGeneric<R, F, C, D>
 {
     background_color: Color,
     foreground_color: Color,
-    
+
     window: sdl2::video::Window,
     gl_context: sdl2::video::GLContext,
     device: Box<D>,
@@ -187,7 +197,7 @@ impl GraphicsContext {
         Ok(GraphicsContext {
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             foreground_color: Color::new(1.0, 1.0, 1.0, 1.0),
-           
+
             window: window,
             gl_context: gl_context,
             device: Box::new(device),
@@ -442,30 +452,42 @@ impl Image {
     }
 
     /// Creates an Image from an array of u8's arranged in RGBA order.
-    pub fn from_rgba8(context: &mut Context, width: u16, height: u16, rgba: &[&[u8]]) -> GameResult<Image> {
+    pub fn from_rgba8(context: &mut Context,
+                      width: u16,
+                      height: u16,
+                      rgba: &[&[u8]])
+                      -> GameResult<Image> {
         let gfx = &mut context.gfx_context;
-        let kind =
-            gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
+        let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
         let (_, view) = gfx.factory.create_texture_immutable_u8::<Rgba8>(kind, &rgba).unwrap();
-        Ok(Image { texture: view, width: width as u32, height: height as u32 })
+        Ok(Image {
+            texture: view,
+            width: width as u32,
+            height: height as u32,
+            properties: RectProperties::default(),
+        })
     }
 
-    pub fn from_rgba8_flat(context: &mut Context, width: u16, height: u16, rgba: &[u8]) -> GameResult<Image> {
+    pub fn from_rgba8_flat(context: &mut Context,
+                           width: u16,
+                           height: u16,
+                           rgba: &[u8])
+                           -> GameResult<Image> {
         let uheight = height as usize;
         let uwidth = width as usize;
         let mut buffer = Vec::with_capacity(uheight);
         for i in 0..uheight {
-            buffer.push(&rgba[i..i*uwidth]);
+            buffer.push(&rgba[i..i * uwidth]);
         }
         Image::from_rgba8(context, width, height, &buffer)
     }
 
-    
+
     /// A little helper function that creates a new Image that is just
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
     pub fn solid(context: &mut Context, size: u16, color: Color) -> GameResult<Image> {
-        let pixel_array: [u8;4] = color.into();
+        let pixel_array: [u8; 4] = color.into();
         let size_squared = size as usize * size as usize;
         let mut buffer = Vec::with_capacity(size_squared);
         for i in 0..size_squared {
@@ -553,8 +575,9 @@ impl Drawable for Image {
 
         let gfx = &mut context.gfx_context;
         let dst = dst.unwrap_or(Rect::new(0.0, 0.0, 1.0, 1.0));
-        let thing = RectProperties { offset: [dst.x, dst.y] };
-        gfx.encoder.update_buffer(&gfx.data.rect_properties, &[thing], 0);
+        // let thing = RectProperties { offset: [dst.x, dst.y] };
+        self.properties.offset = [dst.x, dst.y];
+        gfx.encoder.update_buffer(&gfx.data.rect_properties, &[self.properties], 0);
 
         let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
         gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
@@ -656,7 +679,7 @@ impl fmt::Debug for Font {
 /// Drawable text created from a `Font`.
 pub struct Text {
     texture: Image,
-    //texture_query: render::TextureQuery,
+    // texture_query: render::TextureQuery,
     contents: String,
 }
 
@@ -740,20 +763,20 @@ fn render_ttf(context: &mut Context,
     // Copy the bitmap onto a surface, and we're basically done!
     // BUGGO: TODO: Make sure conversions will not fail
     let image = Image::from_rgba8_flat(context, width as u16, pixel_height as u16, &pixel_data)?;
-    //let format = pixels::PixelFormatEnum::RGBA8888;
-    //let surface = try!(surface::Surface::from_data(&mut pixel_data,
+    // let format = pixels::PixelFormatEnum::RGBA8888;
+    // let surface = try!(surface::Surface::from_data(&mut pixel_data,
     //                                               width as u32,
     //                                               pixel_height as u32,
     //                                               pitch as u32,
     //                                               format));
 
-    //let image = Image::from_surface(context, surface)?;    
+    // let image = Image::from_surface(context, surface)?;
     // let tq = image.texture.query();
 
     let text_string = text.to_string();
     Ok(Text {
-         texture: image,
-         contents: text_string,
+        texture: image,
+        contents: text_string,
     })
 
 }
@@ -774,12 +797,18 @@ fn render_bitmap(context: &Context,
         let source_offset = glyphs_map.get(&c)
             .ok_or(GameError::FontError(String::from(error_message)))?;
         let dest_offset = glyph_width * small_i;
-        let source_rect = Rect::new(*source_offset as f32, 0.0, glyph_width as f32, glyph_height as f32);
-        let dest_rect = Rect::new(dest_offset as f32, 0.0, glyph_width as f32, glyph_height as f32);
+        let source_rect = Rect::new(*source_offset as f32,
+                                    0.0,
+                                    glyph_width as f32,
+                                    glyph_height as f32);
+        let dest_rect = Rect::new(dest_offset as f32,
+                                  0.0,
+                                  glyph_width as f32,
+                                  glyph_height as f32);
         // println!("Blitting letter {} to {:?}", c, dest_rect);
-        //surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect))?;
+        // surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect))?;
     }
-    //let image = Image::from_surface(context, dest_surface)?;
+    // let image = Image::from_surface(context, dest_surface)?;
     let text_string = text.to_string();
 
     unimplemented!();
@@ -850,8 +879,7 @@ impl fmt::Debug for Text {
                "<Text: {}x{}, {:p}>",
                self.texture.width,
                self.texture.height,
-               &self
-               )
+               &self)
 
     }
 }

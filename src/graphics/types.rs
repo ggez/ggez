@@ -1,7 +1,7 @@
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Point {
     pub x: f32,
-    pub y: f32
+    pub y: f32,
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -14,11 +14,21 @@ pub struct Rect {
 
 impl Rect {
     pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
-        Rect { x:x, y:y, w:w, h:h }
+        Rect {
+            x: x,
+            y: y,
+            w: w,
+            h: h,
+        }
     }
 
     pub fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
-        Rect { x:x as f32, y:y as f32, w:w as f32, h:h as f32 }
+        Rect {
+            x: x as f32,
+            y: y as f32,
+            w: w as f32,
+            h: h as f32,
+        }
     }
 }
 
@@ -30,9 +40,21 @@ pub struct Color {
     pub a: f32,
 }
 
+pub const WHITE: Color = Color {
+    r: 1.0,
+    g: 1.0,
+    b: 1.0,
+    a: 1.0,
+};
+
 impl Color {
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
-        Color{r:r, g:g, b:b, a:a}
+        Color {
+            r: r,
+            g: g,
+            b: b,
+            a: a,
+        }
     }
 }
 
@@ -64,7 +86,7 @@ impl From<Color> for (u8, u8, u8, u8) {
     }
 }
 
-impl From<Color> for [u8;4] {
+impl From<Color> for [u8; 4] {
     fn from(color: Color) -> Self {
         let (r, g, b, a) = color.into();
         [r, g, b, a]
@@ -98,7 +120,7 @@ impl From<Color> for u32 {
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum BlendMode {
-    Dummy
+    Dummy,
 }
 
 #[cfg(test)]
