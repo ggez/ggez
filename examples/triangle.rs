@@ -40,7 +40,7 @@ impl game::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
         graphics::draw(ctx, &mut self.image1, None, None);
-        let dst = graphics::Rect::new(1.0, 1.0, 0.0, 0.0);
+        let dst = graphics::Rect::new(100.0, 100.0, 0.0, 0.0);
         graphics::draw(ctx, &mut self.image2, None, Some(dst));
         graphics::present(ctx);
         timer::sleep_until_next_frame(ctx, 60);

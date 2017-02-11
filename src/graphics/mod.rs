@@ -170,7 +170,9 @@ impl GraphicsContext {
                  gl.context_minor_version(),
                  gl.context_profile());
 
-        let encoder = factory.create_command_buffer().into();
+        let mut encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
+            factory.create_command_buffer()
+                .into();
 
         let pso = factory.create_pipeline_simple(include_bytes!("shader/triangle_150.glslv"),
                                     include_bytes!("shader/triangle_150.glslf"),
@@ -183,16 +185,30 @@ impl GraphicsContext {
             factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
 
         let rect_props = factory.create_constant_buffer(1);
-        let transform = factory.create_constant_buffer(1);
+        let transform_buffer = factory.create_constant_buffer(1);
         let sampler = factory.create_sampler_linear();
         let texture = gfx_load_texture(&mut factory);
         let data = pipe::Data {
             vbuf: quad_vertex_buffer,
             tex: (texture, sampler),
             rect_properties: rect_props,
-            transform: transform,
+            transform: transform_buffer,
             out: color_view,
         };
+
+
+        // Set initial uniform values
+        let transform = Transform {
+            transform: ortho(0.0,
+                             screen_width as f32,
+                             0.0,
+                             screen_height as f32,
+                             1.0,
+                             -1.0),
+        };
+        let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
+        // let transform = Transform { transform: ortho(1.5, -1.5, -1.0, -1.0, -1.0, 1.0) };
+        encoder.update_buffer(&data.transform, &[transform], 0);
 
         Ok(GraphicsContext {
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
@@ -212,6 +228,17 @@ impl GraphicsContext {
             quad_slice: quad_slice,
         })
     }
+}
+
+
+pub fn set_screen_coordinates(context: &mut Context,
+                              left: f32,
+                              right: f32,
+                              top: f32,
+                              bottom: f32) {
+    let gfx = &mut context.gfx_context;
+    let transform = Transform { transform: ortho(left, right, top, bottom, 1.0, -1.0) };
+    gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
 }
 
 fn gfx_load_texture<F, R>(factory: &mut F) -> gfx::handle::ShaderResourceView<R, [f32; 4]>
@@ -282,19 +309,6 @@ pub fn draw(ctx: &mut Context,
     drawable.draw(ctx, src, dst)
 }
 
-pub fn draw_test(ctx: &mut Context, offset: f32) {
-    let gfx = &mut ctx.gfx_context;
-    let thing = RectProperties {
-        offset: [offset, offset],
-        size: [1.0, 1.0],
-        color_mod: [1.0, 1.0, 1.0, 1.0],
-    };
-    gfx.encoder.update_buffer(&gfx.data.rect_properties, &[thing], 0);
-
-    let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
-    gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
-    gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
-}
 
 /// Draws the given `Drawable` object to the screen,
 /// applying a rotation and mirroring if desired.
@@ -579,8 +593,8 @@ impl Drawable for Image {
         self.properties.offset = [dst.x, dst.y];
         gfx.encoder.update_buffer(&gfx.data.rect_properties, &[self.properties], 0);
 
-        let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
-        gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
+        // let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
+        // gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
         // TODO: BUGGO: Make sure these clones are cheap; they should be.
         let (_, sampler) = gfx.data.tex.clone();
         gfx.data.tex = (self.texture.clone(), sampler);
