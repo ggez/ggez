@@ -139,14 +139,22 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
             // BUGGO: These should be gotten from
             // the config file!
             // Draw should be as-fast-as-possible tho
+            // TODO: The catchup_frames is a bit hacky too;
+            // this whole section is sound in principle but
+            // just needs cleanup.
             let update_dt = Duration::from_millis(10);
             let draw_dt = Duration::new(0, 16_666_666);
             let dt = timer::get_delta(ctx);
+            let mut catchup_frames = 10;
             {
                 let mut current_dt = dt + residual_update_dt;
                 while current_dt > update_dt {
                     state.update(ctx, update_dt)?;
                     current_dt -= update_dt;
+                    catchup_frames -= 1;
+                    if catchup_frames <= 0 {
+                        break;
+                    }
                 }
                 residual_update_dt = current_dt;
             }
