@@ -91,18 +91,32 @@ impl Sound {
         Ok(Sound { chunk: SoundData::from(buffer) })
     }
 
+    /// Copies the given data into a new Sound
+    fn new_from_u8(_context: &mut Context, data: &[u8]) -> GameResult<Sound> {
+        let mut buffer = Vec::with_capacity(data.len());
+        buffer.extend(data);
+        Ok(Sound { chunk: SoundData::from(buffer) })
+    }
+
     /// Play a sound on the first available `Channel`.
     ///
     /// Returns a `Channel`, which can be used to manipulate the
     /// playback, eg pause, stop, restart, etc.
-    pub fn play(&self, ctx: &Context) {
+    pub fn play(&self, ctx: &Context) -> GameResult<()> {
+        // BUGGO:
+        // This is a little awkward because it creates a new Decoder
+        // every time you play a sound, which seems like it might
+        // involve rather redundant error-checking.
+        // However, it is not possible to clone a Decoder which we
+        // would otherwise have to do, so this is as good as it
+        // gets for now.
         let sink = rodio::Sink::new(&ctx.audio_context.endpoint);
         let cursor = io::Cursor::new(self.chunk.clone());
-        let source = rodio::Decoder::new(cursor).unwrap();
+        let source = rodio::Decoder::new(cursor)?;
         // let source = rodio::Decoder::new(self.chunk).unwrap();
         sink.append(source);
         sink.detach();
-
+        Ok(())
     }
 }
 
