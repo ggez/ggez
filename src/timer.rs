@@ -159,12 +159,9 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
 /// thread until the beginning of the next frame should
 /// occur, to reach the desired FPS.
 ///
-/// This is a bit of a prototype; it may not work well,
-/// it may not work reliably cross-platform, and it may
-/// not be a good idea in the first place.
-/// It depends on how accurate Rust's `std::thread::sleep()`
-/// is, which is to some extent at the mercy of what the
-/// OS decides to do.
+/// This is not an especially precise way to do timing;
+/// see the `astroblasto` example for how to do it better.
+/// However, this is very convenient, so I'm leaving it in.
 pub fn sleep_until_next_frame(ctx: &Context, desired_fps: u32) {
     // We assume we'll never sleep more than a second!
     // Using an integer FPS target helps enforce this.

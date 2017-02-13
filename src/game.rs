@@ -67,9 +67,8 @@ pub trait EventHandler {
     }
 }
 
-/// Runs the game's main loop, calling event
-/// callbacks on the given state object as events
-/// occur.
+/// Runs the game's main loop, calling event callbacks on the given state
+/// object as events occur.
 pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
     where S: EventHandler
 {
@@ -134,27 +133,6 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                 }
             }
 
-            // TODO: The catchup_frames is a bit hacky; it might make the
-            // problem better but doesn't really fix it, which is basically
-            // that this will smooth out hiccups but if your system just can't
-            // update fast enough this will only make things worse. Making the
-            // number of catchup_frames smaller each time the limit is hit
-            // would kinda fix the problem, but also feels like it's starting
-            // to  get overly clever.  Might be okay though; need to think
-            // about it more.
-            // let dt = timer::get_delta(ctx);
-            // let mut catchup_frames = 8;
-            // {
-            //     let mut current_dt = dt + residual_update_dt;
-            //     while current_dt > update_dt {
-            //         current_dt -= update_dt;
-            //         catchup_frames -= 1;
-            //         if catchup_frames <= 0 {
-            //             break;
-            //         }
-            //     }
-            //     residual_update_dt = current_dt;
-            // }
             let dt = timer::get_delta(ctx);
             state.update(ctx, dt)?;
             state.draw(ctx)?;
