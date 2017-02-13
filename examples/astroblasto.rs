@@ -361,6 +361,36 @@ impl Default for InputState {
     }
 }
 
+struct UpdateTimer {
+    update_dt: Duration,
+    residual_update_dt: Duration,
+}
+
+impl UpdateTimer {
+    fn new(target_fps: f64) -> Self {
+        let target_fps = target_fps;
+        let target_nanos = (1.0 / target_fps) * 1e9;
+        let update_dt = Duration::new(0, target_nanos as u32);
+        UpdateTimer {
+            update_dt: update_dt,
+            residual_update_dt: Duration::new(0, 0),
+        }
+    }
+
+    fn tick_update(&mut self, dt: Duration) {
+        self.residual_update_dt += dt;
+    }
+
+    fn time_to_update(&mut self) -> bool {
+        if self.residual_update_dt > self.update_dt {
+            self.residual_update_dt -= self.update_dt;
+            true
+        } else {
+            false
+        }
+    }
+}
+
 /// **********************************************************************
 /// Now we're getting into the actual game loop.  The MainState is our
 /// game's "global" state, it keeps track of everything we need for
@@ -386,6 +416,7 @@ struct MainState {
     gui_dirty: bool,
     score_display: graphics::Text,
     level_display: graphics::Text,
+    update_timer: UpdateTimer,
 }
 
 fn draw_actor(assets: &mut Assets,
@@ -443,6 +474,7 @@ impl MainState {
             gui_dirty: true,
             score_display: score_disp,
             level_display: level_disp,
+            update_timer: UpdateTimer::new(60.0),
         };
 
         Ok(s)
@@ -525,61 +557,64 @@ fn print_instructions() {
 /// ********************************************************************
 impl game::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
-        let seconds = timer::duration_to_f64(dt);
+        self.update_timer.tick_update(dt);
+        while self.update_timer.time_to_update() {
+            // let seconds = timer::duration_to_f64(dt);
+            let seconds = timer::duration_to_f64(self.update_timer.update_dt);
 
-        // Update the player state based on the user input.
-        player_handle_input(&mut self.player, &self.input, seconds);
-        self.player_shot_timeout -= seconds;
-        if self.input.fire && self.player_shot_timeout < 0.0 {
-            self.fire_player_shot(ctx);
+            // Update the player state based on the user input.
+            player_handle_input(&mut self.player, &self.input, seconds);
+            self.player_shot_timeout -= seconds;
+            if self.input.fire && self.player_shot_timeout < 0.0 {
+                self.fire_player_shot(ctx);
+            }
+
+            // Update the physics for all actors.
+            // First the player...
+            update_actor_position(&mut self.player, seconds);
+            wrap_actor_position(&mut self.player,
+                                self.screen_width as f64,
+                                self.screen_height as f64);
+
+            // Then the shots...
+            for act in &mut self.shots {
+                update_actor_position(act, seconds);
+                wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
+                handle_timed_life(act, seconds);
+            }
+
+            // And finally the rocks.
+            for act in &mut self.rocks {
+                update_actor_position(act, seconds);
+                wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
+            }
+
+            // Handle the results of things moving:
+            // collision detection, object death, and if
+            // we have killed all the rocks in the level,
+            // spawn more of them.
+            self.handle_collisions(ctx);
+
+            self.clear_dead_stuff();
+
+            self.check_for_level_respawn();
+
+            // Using a gui_dirty flag here is a little
+            // messy but fine here.
+            if self.gui_dirty {
+                self.update_ui(ctx);
+                self.gui_dirty = false;
+            }
+
+            // Finally we check for our end state.
+            // I want to have a nice death screen eventually,
+            // but for now we just quit.
+            if self.player.life <= 0.0 {
+                println!("Game over!");
+                // ctx.quit() is broken at the moment.  ;_;
+                let _ = ctx.quit();
+            }
         }
-
-        // Update the physics for all actors.
-        // First the player...
-        update_actor_position(&mut self.player, seconds);
-        wrap_actor_position(&mut self.player,
-                            self.screen_width as f64,
-                            self.screen_height as f64);
-
-        // Then the shots...
-        for act in &mut self.shots {
-            update_actor_position(act, seconds);
-            wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
-            handle_timed_life(act, seconds);
-        }
-
-        // And finally the rocks.
-        for act in &mut self.rocks {
-            update_actor_position(act, seconds);
-            wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
-        }
-
-        // Handle the results of things moving:
-        // collision detection, object death, and if
-        // we have killed all the rocks in the level,
-        // spawn more of them.
-        self.handle_collisions(ctx);
-
-        self.clear_dead_stuff();
-
-        self.check_for_level_respawn();
-
-        // Using a gui_dirty flag here is a little
-        // messy but fine here.
-        if self.gui_dirty {
-            self.update_ui(ctx);
-            self.gui_dirty = false;
-        }
-
-        // Finally we check for our end state.
-        // I want to have a nice death screen eventually,
-        // but for now we just quit.
-        if self.player.life <= 0.0 {
-            println!("Game over!");
-            // ctx.quit() is broken at the moment.  ;_;
-            let _ = ctx.quit();
-        }
-
         Ok(())
     }
 
@@ -620,7 +655,8 @@ impl game::EventHandler for MainState {
 
         // Then we flip the screen and wait for the next frame.
         graphics::present(ctx);
-        timer::sleep_until_next_frame(ctx, 60);
+        // timer::sleep_until_next_frame(ctx, 60);
+        timer::sleep(Duration::new(0, 0));
         Ok(())
     }
 

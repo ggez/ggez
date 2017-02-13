@@ -77,10 +77,6 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
         let mut event_pump = ctx.sdl_context.event_pump()?;
 
         let mut continuing = true;
-        let mut residual_update_dt = Duration::new(0, 0);
-        let target_fps = ctx.conf.update_fps as f64;
-        let target_nanos = (1.0 / target_fps) * 1e9;
-        let update_dt = Duration::new(0, target_nanos as u32);
         while continuing {
             ctx.timer_context.tick();
 
@@ -146,21 +142,21 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
             // would kinda fix the problem, but also feels like it's starting
             // to  get overly clever.  Might be okay though; need to think
             // about it more.
+            // let dt = timer::get_delta(ctx);
+            // let mut catchup_frames = 8;
+            // {
+            //     let mut current_dt = dt + residual_update_dt;
+            //     while current_dt > update_dt {
+            //         current_dt -= update_dt;
+            //         catchup_frames -= 1;
+            //         if catchup_frames <= 0 {
+            //             break;
+            //         }
+            //     }
+            //     residual_update_dt = current_dt;
+            // }
             let dt = timer::get_delta(ctx);
-            let mut catchup_frames = 8;
-            {
-                let mut current_dt = dt + residual_update_dt;
-                while current_dt > update_dt {
-                    state.update(ctx, update_dt)?;
-                    current_dt -= update_dt;
-                    catchup_frames -= 1;
-                    if catchup_frames <= 0 {
-                        break;
-                    }
-                }
-                residual_update_dt = current_dt;
-            }
-
+            state.update(ctx, dt)?;
             state.draw(ctx)?;
             timer::sleep(Duration::new(0, 0));
         }
