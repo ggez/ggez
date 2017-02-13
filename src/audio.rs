@@ -52,9 +52,24 @@ impl AudioContext {
     }
 }
 
+#[derive(Clone)]
+struct SoundData(Arc<Vec<u8>>);
+
+impl SoundData {
+    fn new() -> Self {
+        SoundData(Arc::new(Vec::new()))
+    }
+}
+
+impl From<Vec<u8>> for SoundData {
+    fn from(v: Vec<u8>) -> Self {
+        SoundData(Arc::new(v))
+    }
+}
+
 /// A source of audio data.
 pub struct Sound {
-    chunk: Arc<Vec<u8>>,
+    chunk: SoundData,
 }
 
 impl Clone for Sound {
@@ -63,9 +78,9 @@ impl Clone for Sound {
     }
 }
 
-impl AsRef<[u8]> for Sound {
+impl AsRef<[u8]> for SoundData {
     fn as_ref(&self) -> &[u8] {
-        self.chunk.as_ref().as_ref()
+        self.0.as_ref().as_ref()
     }
 }
 
@@ -80,7 +95,7 @@ impl Sound {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
 
-        Ok(Sound { chunk: Arc::new(buffer) })
+        Ok(Sound { chunk: SoundData::from(buffer) })
     }
 
     /// Play a sound on the first available `Channel`.
@@ -94,7 +109,7 @@ impl Sound {
         // handling this, since a Decoder
         // and Sink take ownership of what is
         // passed to them!
-        let cursor = io::Cursor::new(self.clone());
+        let cursor = io::Cursor::new(self.chunk.clone());
         let source = rodio::Decoder::new(cursor).unwrap();
         // let source = rodio::Decoder::new(self.chunk).unwrap();
         sink.append(source);
