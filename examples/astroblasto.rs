@@ -20,7 +20,7 @@ use std::ops::{Add, AddAssign, Sub};
 /// First, we create a vector type.
 /// You're probably better off using a real vector math lib but I
 /// didn't want to add more dependencies and such.
-/// *******************************************************************
+/// **********************************************************************
 #[derive(Debug, Copy, Clone)]
 struct Vec2 {
     x: f64,
@@ -116,7 +116,7 @@ impl Default for Vec2 {
 /// pretty close.  For a more complicated game you would want a
 /// real ECS, but for this it's enough to say that all our game objects
 /// contain pretty much the same data.
-/// *******************************************************************
+/// **********************************************************************
 #[derive(Debug)]
 enum ActorType {
     Player,
@@ -150,7 +150,7 @@ const SHOT_BBOX: f64 = 6.0;
 
 /// *********************************************************************
 /// Now we have some initializer functions for different game objects.
-/// *******************************************************************
+/// **********************************************************************
 
 fn create_player() -> Actor {
     Actor {
@@ -217,7 +217,7 @@ fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f64, max_radius: f64) ->
 ///
 /// Our unit of world space is simply pixels, though we do transform
 /// the coordinate system so that +y is up and -y is down.
-/// ********************************************************************
+/// **********************************************************************
 
 const SHOT_SPEED: f64 = 200.0;
 const SHOT_RVEL: f64 = 0.1;
@@ -297,7 +297,7 @@ fn world_to_screen_coords(screen_width: u32, screen_height: u32, point: &Vec2) -
 /// to contain the images, sounds, etc. that we need to hang on to; this
 /// is our "asset management system".  All the file names and such are
 /// just hard-coded.
-/// ********************************************************************
+/// **********************************************************************
 
 struct Assets {
     player_image: graphics::Image,
@@ -343,7 +343,7 @@ impl Assets {
 /// The InputState is exactly what it sounds like, it just keeps track of
 /// the user's input state so that we turn keyboard events into something
 /// state-based and device-independent.
-/// ********************************************************************
+/// **********************************************************************
 #[derive(Debug)]
 struct InputState {
     xaxis: f64,
@@ -361,6 +361,15 @@ impl Default for InputState {
     }
 }
 
+/// **********************************************************************
+/// The UpdateTimer is a simple structure to track timing information.
+/// The idea is that you have a desired update rate, in this case 60 fps,
+/// and every update() event you call tick_update() and then run your update
+/// code in a while loop as long as time_to_update() is true.
+/// This gives you fixed-size timesteps, which are nice for physics, while
+/// also handling fractions of a frame that can occur when your fixed update
+/// rate differs from the real update rate.
+/// **********************************************************************
 struct UpdateTimer {
     update_dt: Duration,
     residual_update_dt: Duration,
@@ -551,16 +560,16 @@ fn print_instructions() {
 }
 
 /// **********************************************************************
-/// Now we implement the GameState trait from ggez::game, which provides
-/// ggez with callbacks for loading, updating and drawing our game, as
-/// well as handling events.
-/// ********************************************************************
+/// Now we implement the EventHandler trait from ggez::game, which provides
+/// ggez with callbacks for updating and drawing our game, as well as
+/// handling input events.
+/// **********************************************************************
 impl game::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
         self.update_timer.tick_update(dt);
+        let seconds = timer::duration_to_f64(self.update_timer.update_dt);
         while self.update_timer.time_to_update() {
             // let seconds = timer::duration_to_f64(dt);
-            let seconds = timer::duration_to_f64(self.update_timer.update_dt);
 
             // Update the player state based on the user input.
             player_handle_input(&mut self.player, &self.input, seconds);
@@ -653,9 +662,10 @@ impl game::EventHandler for MainState {
         graphics::draw(ctx, &mut self.level_display, None, Some(level_rect))?;
         graphics::draw(ctx, &mut self.score_display, None, Some(score_rect))?;
 
-        // Then we flip the screen and wait for the next frame.
+        // Then we flip the screen...
         graphics::present(ctx);
-        // timer::sleep_until_next_frame(ctx, 60);
+        // and yield to the OS so that we don't consume 100% CPU if
+        // we don't have to.
         timer::sleep(Duration::new(0, 0));
         Ok(())
     }
@@ -703,7 +713,7 @@ impl game::EventHandler for MainState {
 /// **********************************************************************
 /// Finally our main function!  Which merely sets up a config and calls
 /// ggez::game::Game::new() with our MainState type.
-/// ********************************************************************
+/// **********************************************************************
 
 pub fn main() {
     let mut c = conf::Conf::new();
