@@ -48,7 +48,6 @@ impl MainState {
     }
 
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.print_sound_stats();
         ctx.print_resource_stats();
 
         let image = graphics::Image::new(ctx, "dragon1.png").unwrap();

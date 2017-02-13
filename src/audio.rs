@@ -92,12 +92,11 @@ impl Sound {
     }
 
     /// Copies the given data into a new Sound
-    fn new_from_u8(_context: &mut Context, data: &[u8]) -> GameResult<Sound> {
-        let mut buffer = Vec::with_capacity(data.len());
-        buffer.extend(data);
-        Ok(Sound { chunk: SoundData::from(buffer) })
-    }
-
+    // fn new_from_u8(_context: &mut Context, data: &[u8]) -> GameResult<Sound> {
+    //     let mut buffer = Vec::with_capacity(data.len());
+    //     buffer.extend(data);
+    //     Ok(Sound { chunk: SoundData::from(buffer) })
+    // }
     /// Play a sound on the first available `Channel`.
     ///
     /// Returns a `Channel`, which can be used to manipulate the

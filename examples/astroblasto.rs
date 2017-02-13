@@ -415,7 +415,6 @@ fn draw_actor(assets: &mut Assets,
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.print_sound_stats();
         ctx.print_resource_stats();
         graphics::set_background_color(ctx, graphics::Color::RGB(0, 0, 0));
 

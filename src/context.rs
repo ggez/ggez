@@ -1,7 +1,6 @@
 
 
 use sdl2::{self, Sdl};
-use sdl2::mixer::Sdl2MixerContext;
 use sdl2::render::Renderer;
 use sdl2::video::Window;
 
@@ -33,7 +32,6 @@ use GameResult;
 pub struct Context<'a> {
     pub conf: conf::Conf,
     pub sdl_context: Sdl,
-    pub mixer_context: Sdl2MixerContext,
     pub renderer: Renderer<'a>,
     pub filesystem: Filesystem,
     pub gfx_context: graphics::GraphicsContext,
@@ -51,17 +49,6 @@ impl<'a> fmt::Debug for Context<'a> {
 }
 
 
-
-fn init_mixer() -> GameResult<Sdl2MixerContext> {
-    let frequency = 44100;
-    let format = sdl2::mixer::AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
-    let channels = 2; // Stereo
-    let chunk_size = 1024;
-    sdl2::mixer::open_audio(frequency, format, channels, chunk_size)?;
-
-    let flags = sdl2::mixer::InitFlag::all();
-    sdl2::mixer::init(flags).map_err(GameError::AudioError)
-}
 
 fn init_window(video: sdl2::VideoSubsystem,
                window_title: &str,
@@ -120,14 +107,12 @@ impl<'a> Context<'a> {
             .build()?;
 
         let audio_context = audio::AudioContext::new()?;
-        let mixer_context = init_mixer()?;
         let event_context = sdl_context.event()?;
         let timer_context = timer::TimeContext::new();
 
         let mut ctx = Context {
             conf: conf,
             sdl_context: sdl_context,
-            mixer_context: mixer_context,
             renderer: renderer,
             filesystem: fs,
             gfx_context: graphics::GraphicsContext::new(),
@@ -157,26 +142,6 @@ impl<'a> Context<'a> {
 
         Context::from_conf(config, fs, sdl_context)
 
-    }
-
-
-    /// Prints out information on the sound subsystem.
-    pub fn print_sound_stats(&self) {
-        println!("Allocated {} sound channels",
-                 sdl2::mixer::allocate_channels(-1));
-        let n = sdl2::mixer::get_chunk_decoders_number();
-        println!("available chunk(sample) decoders: {}", n);
-
-        for i in 0..n {
-            println!("  decoder {} => {}", i, sdl2::mixer::get_chunk_decoder(i));
-        }
-
-        let n = sdl2::mixer::get_music_decoders_number();
-        println!("available music decoders: {}", n);
-        for i in 0..n {
-            println!("  decoder {} => {}", i, sdl2::mixer::get_music_decoder(i));
-        }
-        println!("query spec => {:?}", sdl2::mixer::query_spec());
     }
 
     /// Prints out information on the resources subsystem.
