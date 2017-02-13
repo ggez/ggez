@@ -8,7 +8,6 @@ extern crate rand;
 use ggez::audio;
 use ggez::conf;
 use ggez::event::*;
-use ggez::game;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
@@ -564,7 +563,7 @@ fn print_instructions() {
 /// ggez with callbacks for updating and drawing our game, as well as
 /// handling input events.
 /// **********************************************************************
-impl game::EventHandler for MainState {
+impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
         self.update_timer.tick_update(dt);
         let seconds = timer::duration_to_f64(self.update_timer.update_dt);
@@ -712,7 +711,7 @@ impl game::EventHandler for MainState {
 
 /// **********************************************************************
 /// Finally our main function!  Which merely sets up a config and calls
-/// ggez::game::Game::new() with our MainState type.
+/// ggez::event::run() with our EventHandler type.
 /// **********************************************************************
 
 pub fn main() {
@@ -730,7 +729,7 @@ pub fn main() {
             println!("Error: {}", e);
         }
         Ok(ref mut game) => {
-            let result = game::run(ctx, game);
+            let result = run(ctx, game);
             if let Err(e) = result {
                 println!("Error encountered running game: {}", e);
             } else {

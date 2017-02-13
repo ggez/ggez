@@ -1,6 +1,6 @@
 extern crate ggez;
 use ggez::conf;
-use ggez::game;
+use ggez::event;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
@@ -28,7 +28,7 @@ impl MainState {
 }
 
 
-impl game::EventHandler for MainState {
+impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         Ok(())
     }
@@ -54,7 +54,7 @@ pub fn main() {
     let c = conf::Conf::new();
     let ctx = &mut Context::load_from_conf("helloworld", c).unwrap();
     let state = &mut MainState::new(ctx).unwrap();
-    if let Err(e) = game::run(ctx, state) {
+    if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);
     } else {
         println!("Game exited cleanly.");

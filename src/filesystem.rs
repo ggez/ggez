@@ -531,8 +531,8 @@ mod tests {
 
     //#[test]
     //#fn test_app_dirs() {
-    //# use app_dirs::*;
-    //# use sdl2;
+    //#use app_dirs::*;
+    //#use sdl2;
 
     //     let app_info = AppInfo{name:"test", author:"ggez"};
     //     println!("user config: {:?}", get_app_root(AppDataType::UserConfig, &app_info));
