@@ -39,9 +39,6 @@ pub struct Conf {
                             * modules_video: bool,
                             * modules_window: bool,
                             * modules_thread: bool, */
-
-    /// How many update() calls per second the gameloop will try to make.
-    pub update_fps: u32,
 }
 
 
@@ -53,7 +50,6 @@ impl Conf {
             window_icon: String::from(""),
             window_height: 600,
             window_width: 800,
-            update_fps: 60,
         }
     }
 

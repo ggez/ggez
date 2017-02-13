@@ -25,7 +25,9 @@ use std::time::Duration;
 
 
 
-/// A trait defining event callbacks.
+/// A trait defining event callbacks.  Have a type implement this trait
+/// and override at least the update() and draw() methods, then pass it
+/// to `event::run()` to run the game's mainloop.
 ///
 /// The default event handlers do nothing, apart from `key_down_event()`,
 /// which *should* by default exit the game if escape is pressed.
@@ -78,6 +80,9 @@ pub trait EventHandler {
 
 /// Runs the game's main loop, calling event callbacks on the given state
 /// object as events occur.
+///
+/// It does not try to do any type of rate limiting, apart from calling
+/// `timer::sleep(0)` at the end of each frame.
 pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
     where S: EventHandler
 {

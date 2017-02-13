@@ -663,9 +663,6 @@ impl EventHandler for MainState {
 
         // Then we flip the screen...
         graphics::present(ctx);
-        // and yield to the OS so that we don't consume 100% CPU if
-        // we don't have to.
-        timer::sleep(Duration::new(0, 0));
         Ok(())
     }
 

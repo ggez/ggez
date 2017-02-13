@@ -98,10 +98,7 @@ but for now, them's the breaks.
 
 ### 0.3.0
 
-* Document the new EventHandler stuff
-* Better timing for update and draw in the mainloop would be nice so you don't have to delay manually -- make it load them
-from config files
-* Make it always possible to load resources from raw data instead of files. (which might make testing easier) (but might make life hard with bloody SDL RWops)
+* Make it always possible to load resources from raw data instead of files. (which might make testing easier)
 * Clean up and consistentify GameError a bit, rename it to GgezError perhaps?  I think there might be an unused case
 or two in there.
 * Start integrating ncollide?
