@@ -78,7 +78,9 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
 
         let mut continuing = true;
         let mut residual_update_dt = Duration::new(0, 0);
-        let mut residual_draw_dt = Duration::new(0, 0);
+        let target_fps = ctx.conf.update_fps as f64;
+        let target_nanos = (1.0 / target_fps) * 1e9;
+        let update_dt = Duration::new(0, target_nanos as u32);
         while continuing {
             ctx.timer_context.tick();
 
@@ -136,16 +138,16 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                 }
             }
 
-            // BUGGO: These should be gotten from
-            // the config file!
-            // Draw should be as-fast-as-possible tho
-            // TODO: The catchup_frames is a bit hacky too;
-            // this whole section is sound in principle but
-            // just needs cleanup.
-            let update_dt = Duration::from_millis(10);
-            let draw_dt = Duration::new(0, 16_666_666);
+            // TODO: The catchup_frames is a bit hacky; it might make the
+            // problem better but doesn't really fix it, which is basically
+            // that this will smooth out hiccups but if your system just can't
+            // update fast enough this will only make things worse. Making the
+            // number of catchup_frames smaller each time the limit is hit
+            // would kinda fix the problem, but also feels like it's starting
+            // to  get overly clever.  Might be okay though; need to think
+            // about it more.
             let dt = timer::get_delta(ctx);
-            let mut catchup_frames = 10;
+            let mut catchup_frames = 8;
             {
                 let mut current_dt = dt + residual_update_dt;
                 while current_dt > update_dt {
@@ -159,15 +161,7 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                 residual_update_dt = current_dt;
             }
 
-
-            {
-                let mut current_dt = dt + residual_draw_dt;
-                while current_dt > draw_dt {
-                    state.draw(ctx)?;
-                    current_dt -= draw_dt;
-                }
-                residual_draw_dt = draw_dt;
-            }
+            state.draw(ctx)?;
             timer::sleep(Duration::new(0, 0));
         }
     }
