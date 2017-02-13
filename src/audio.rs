@@ -16,7 +16,6 @@ use rodio;
 
 use context::Context;
 use filesystem;
-use util;
 use GameError;
 use GameResult;
 
@@ -55,11 +54,11 @@ impl AudioContext {
 #[derive(Clone)]
 struct SoundData(Arc<Vec<u8>>);
 
-impl SoundData {
-    fn new() -> Self {
-        SoundData(Arc::new(Vec::new()))
-    }
-}
+// impl SoundData {
+//     fn new() -> Self {
+//         SoundData(Arc::new(Vec::new()))
+//     }
+// }
 
 impl From<Vec<u8>> for SoundData {
     fn from(v: Vec<u8>) -> Self {
@@ -67,21 +66,15 @@ impl From<Vec<u8>> for SoundData {
     }
 }
 
-/// A source of audio data.
-pub struct Sound {
-    chunk: SoundData,
-}
-
-impl Clone for Sound {
-    fn clone(&self) -> Self {
-        Sound { chunk: self.chunk.clone() }
-    }
-}
-
 impl AsRef<[u8]> for SoundData {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref().as_ref()
     }
+}
+
+/// A source of audio data.
+pub struct Sound {
+    chunk: SoundData,
 }
 
 impl Sound {
@@ -104,11 +97,6 @@ impl Sound {
     /// playback, eg pause, stop, restart, etc.
     pub fn play(&self, ctx: &Context) {
         let sink = rodio::Sink::new(&ctx.audio_context.endpoint);
-        // This clone is wiiiiiiggy.
-        // Not sure how I'm SUPPOSED to be
-        // handling this, since a Decoder
-        // and Sink take ownership of what is
-        // passed to them!
         let cursor = io::Cursor::new(self.chunk.clone());
         let source = rodio::Decoder::new(cursor).unwrap();
         // let source = rodio::Decoder::new(self.chunk).unwrap();
