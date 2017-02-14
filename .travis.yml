@@ -8,6 +8,10 @@ rust:
 #   allow_failures:
 #     - rust: nightly
 
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libasound2-dev
+
 install:
   - wget http://libsdl.org/release/SDL2-2.0.5.tar.gz
   - tar -xzvf SDL2-2.0.5.tar.gz
