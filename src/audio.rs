@@ -15,27 +15,12 @@ use std::sync::Arc;
 use rodio;
 
 use context::Context;
-use filesystem;
 use GameError;
 use GameResult;
 
 /// An object representing a channel that may be playing a particular Sound.
 pub type Channel = rodio::Sink;
 
-/// A trait for general operations on sound objects.
-pub trait AudioOps {
-    fn new_channel<'a>(ctx: &Context<'a>) -> Channel;
-
-    fn play_sound(&self, sound: &Sound) -> GameResult<Channel>;
-
-    fn pause(&self);
-
-    fn stop(&self);
-
-    fn resume(&self);
-
-    fn rewind(&self);
-}
 
 /// A struct that contains all information for tracking sound info.
 pub struct AudioContext {
@@ -51,14 +36,28 @@ impl AudioContext {
     }
 }
 
+/// Static sound data stored in memory.
+/// It is Arc'ed, so cheap to clone.
 #[derive(Clone)]
-struct SoundData(Arc<Vec<u8>>);
+pub struct SoundData(Arc<Vec<u8>>);
 
-// impl SoundData {
-//     fn new() -> Self {
-//         SoundData(Arc::new(Vec::new()))
-//     }
-// }
+impl SoundData {
+    /// Copies the data in the given slice into a new SoundData object.
+    pub fn from_bytes(data: &[u8]) -> Self {
+        let mut buffer = Vec::with_capacity(data.len());
+        buffer.extend(data);
+        SoundData::from(buffer)
+
+    }
+
+    pub fn from_read<R>(reader: &mut R) -> GameResult<Self> where R: Read {
+        let mut buffer = Vec::new();
+        reader.read_to_end(&mut buffer)?;
+
+        Ok(SoundData::from(buffer))
+
+    }
+}
 
 impl From<Vec<u8>> for SoundData {
     fn from(v: Vec<u8>) -> Self {
@@ -73,166 +72,90 @@ impl AsRef<[u8]> for SoundData {
 }
 
 /// A source of audio data.
-pub struct Sound {
-    chunk: SoundData,
+//
+// TODO: Will stop when dropped.  Check and see if this matches Love2d's semantics!
+// Eventually it might read from a streaming decoder of some kind,
+// but for now it is just an in-memory SoundData structure.
+// The source of a rodio decoder must be Send, which something
+// that contains a reference to a ZipFile is not, so we are going
+// to just slurp all the data into memory for now.
+pub struct Source {
+    data: SoundData,
+    sink: rodio::Sink,
 }
 
-impl Sound {
-    /// Load a new Sound
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Sound> {
+impl Source {
+    /// Create a new Source from the given file.
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
-        let mut file = context.filesystem.open(path)?;
-        // The source of a rodio decoder must be Send, which something
-        // that contains a reference to a ZipFile is not, so we are going
-        // to just slurp all the data into memory for now.
-        let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer)?;
-
-        Ok(Sound { chunk: SoundData::from(buffer) })
+        let data = {
+        let file = &mut context.filesystem.open(path)?;
+            let data = SoundData::from_read(file)?;
+            data
+        };
+        Source::from_data(context, data)
     }
 
-    /// Copies the given data into a new Sound
-    // fn new_from_u8(_context: &mut Context, data: &[u8]) -> GameResult<Sound> {
-    //     let mut buffer = Vec::with_capacity(data.len());
-    //     buffer.extend(data);
-    //     Ok(Sound { chunk: SoundData::from(buffer) })
-    // }
-    /// Play a sound on the first available `Channel`.
-    ///
-    /// Returns a `Channel`, which can be used to manipulate the
-    /// playback, eg pause, stop, restart, etc.
-    pub fn play(&self, ctx: &Context) -> GameResult<()> {
-        // BUGGO:
-        // This is a little awkward because it creates a new Decoder
-        // every time you play a sound, which seems like it might
-        // involve rather redundant error-checking.
-        // However, it is not possible to clone a Decoder which we
-        // would otherwise have to do, so this is as good as it
-        // gets for now.
-        let sink = rodio::Sink::new(&ctx.audio_context.endpoint);
-        let cursor = io::Cursor::new(self.chunk.clone());
-        let source = rodio::Decoder::new(cursor)?;
-        // let source = rodio::Decoder::new(self.chunk).unwrap();
-        sink.append(source);
-        sink.detach();
+    /// Creates a new Source using the given SoundData object.
+    pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
+        let sink = rodio::Sink::new(&context.audio_context.endpoint);
+        Ok(Source {
+            data: data,
+            sink: sink,
+        })
+    }
+
+    /// Plays the Source.
+    pub fn play(&self) -> GameResult<()> {
+        // Creating a new Decoder each time seems a little messy,
+        // since it may do checking and data-type detection that is
+        // redundant, but it's fine for now.
+        let cursor = io::Cursor::new(self.data.clone());
+        let decoder = rodio::Decoder::new(cursor)?;
+        self.sink.append(decoder);
         Ok(())
     }
+
+    pub fn pause(&self) {
+        self.sink.pause()
+    }
+    pub fn resume(&self) {
+        self.sink.play()
+    }
+    
+
+    pub fn stop(&self) {
+    }
+    pub fn set_looping() {}
+    pub fn set_volume(&mut self, value: f32) {
+        self.sink.set_volume(value)
+    }
+
+    pub fn volume(&self) -> f32 {
+        self.sink.volume()
+    }
+    pub fn stopped(&self) -> bool {
+        false
+    }
+    pub fn paused(&self) -> bool {
+        self.sink.is_paused()
+    }
+    pub fn playing(&self) -> bool {
+        !self.paused() && !self.stopped()
+    }
+    pub fn looping(&self) -> bool {
+        false
+    }
+    
+    // TODO: maybe seek(), tell(), rewind()?
 }
 
 
-impl fmt::Debug for Sound {
+impl fmt::Debug for Source {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<Sound: {:p}>", self)
+        write!(f, "<Audio source: {:p}>", self)
     }
 }
 
 
-
-impl AudioOps for Channel {
-    /// Return a new channel that is not playing anything.
-    fn new_channel<'a>(ctx: &Context<'a>) -> Channel {
-        // sdl2::mixer::channel(-1);
-        rodio::Sink::new(&ctx.audio_context.endpoint)
-    }
-
-    /// Plays the given Sound on this `Channel`
-    fn play_sound(&self, sound: &Sound) -> GameResult<Channel> {
-        // let channel = self;
-        // channel.play(&sound.chunk, 0)
-        // map_err(GameError::from)
-        unimplemented!()
-    }
-
-    /// Pauses playback of the `Channel`
-    fn pause(&self) {
-        // Channel::pause(*self)
-        unimplemented!()
-    }
-
-    /// Stops whatever the `Channel` is playing.
-    fn stop(&self) {
-        // self.halt()
-        unimplemented!()
-    }
-
-    /// Resumes playback where it left off (if any).
-    fn resume(&self) {
-        // Channel::resume(*self)
-        unimplemented!()
-    }
-
-    /// Restarts playing a sound if this channel is currently
-    /// playing it.
-    fn rewind(&self) {
-
-        // if let Some(chunk) = self.get_chunk() {
-        //    self.stop();
-        //    let _ = self.play(&chunk, 0);
-        //
-        unimplemented!()
-    }
-}
-
-// A source of music data.
-// Music is played on a separate dedicated channel from sounds,
-// and also has a separate corpus of decoders than sounds do;
-// see the `SDL2_mixer` documentation for details or use
-// `Context::print_sound_stats()` to print out which decoders
-// are supported for your build.
-// pub struct Music {
-// music: sdl2::mixer::Chunk,
-// }
-//
-//
-// impl Music {
-// Load the given Music.
-// pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Music> {
-// let path = path.as_ref();
-// let mut buffer: Vec<u8> = Vec::new();
-// let rwops = util::rwops_from_path(context, path, &mut buffer)?;
-// SDL2_mixer SNEAKILY adds this method to RWops.
-// let music = rwops.load_wav()?;
-//
-// Ok(Music { music: music })
-// }
-// }
-//
-//
-// impl fmt::Debug for Music {
-// fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-// write!(f, "<Music: {:p}>", self)
-// }
-// }
-//
-// Play the given music n times.  -1 loops forever.
-// pub fn play_music_times(ctx: &Context, music: &Music, n: i32) -> GameResult<()> {
-// HACK HACK HACK
-// let _ = ctx.music_channel.play(&music.music, n);
-// Ok(())
-// }
-// Start playing the given music (looping forever)
-// pub fn play_music(ctx: &Context, music: &Music) -> GameResult<()> {
-// play_music_times(ctx, music, -1)
-// }
-//
-// Pause currently playing music
-// pub fn pause_music(ctx: &Context) {
-// ctx.music_channel.pause();
-// }
-//
-// Resume currently playing music, if any
-// pub fn resume_music(ctx: &Context) {
-// ctx.music_channel.resume();
-//
-// }
-//
-// Stop currently playing music
-// pub fn stop_music(ctx: &Context) {
-// ctx.music_channel.stop();
-// }
-//
-// Rewind the currently playing music to the beginning.
-// pub fn rewind_music(ctx: &Context) {
-// ctx.music_channel.rewind();
-// }
-//
+// TODO: global start, stop, volume?
