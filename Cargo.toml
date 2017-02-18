@@ -30,7 +30,7 @@ rusttype = "0.2"
 rand = "0.3"
 zip = "0.1"
 app_dirs = "1.1"
-rodio = {git="https://github.com/tomaka/rodio.git", branch="master", commit="b1a560eb4131d16b04ac687fe9d2f03ac3abcdab"}
+rodio = {git="https://github.com/tomaka/rodio.git", branch="master"}
 
 rustc-serialize = "0.3"
 toml = "0.2"
