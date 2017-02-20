@@ -567,7 +567,7 @@ impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
         self.update_timer.tick_update(dt);
         let seconds = timer::duration_to_f64(self.update_timer.update_dt);
-        while self.update_timer.time_to_update() {
+        if timer::check_update_time(ctx, 60) {
             // let seconds = timer::duration_to_f64(dt);
 
             // Update the player state based on the user input.
