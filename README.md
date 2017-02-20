@@ -40,7 +40,7 @@ crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```text
-ggez = "0.2.0"
+ggez = "0.2.1"
 ```
 
 However you also need to have the SDL2, SDL2_mixer and SDL2_image
@@ -136,6 +136,7 @@ To not worry about until later:
 or two in there.
 * Start integrating ncollide?
 * Remove unused example assets
+* Go through `timer` and clean things up a little; it should provide nice functions to do everything you want as accurately as you want using only `Duration`s.  Deprecate the rest.
 
 
 ## Future work

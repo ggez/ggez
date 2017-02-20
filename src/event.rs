@@ -150,7 +150,6 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
             let dt = timer::get_delta(ctx);
             state.update(ctx, dt)?;
             state.draw(ctx)?;
-            timer::sleep(Duration::new(0, 0));
         }
     }
 

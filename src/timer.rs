@@ -77,6 +77,7 @@ pub struct TimeContext {
     init_instant: time::Instant,
     last_instant: time::Instant,
     frame_durations: LogBuffer<time::Duration>,
+    residual_update_dt: time::Duration,
 }
 
 
@@ -91,6 +92,7 @@ impl TimeContext {
             init_instant: time::Instant::now(),
             last_instant: time::Instant::now(),
             frame_durations: LogBuffer::new(TIME_LOG_FRAMES as usize, time::Duration::new(0, 0)),
+            residual_update_dt: time::Duration::from_secs(0),
         }
     }
 
@@ -135,10 +137,35 @@ pub fn get_average_delta(ctx: &Context) -> time::Duration {
 
 /// A convenience function to convert a Rust `Duration` type
 /// to a (less precise but more useful) f64.
+///
+/// Does not make sure that the `Duration` is within the bounds
+/// of the `f64`.
 pub fn duration_to_f64(d: time::Duration) -> f64 {
     let seconds = d.as_secs() as f64;
     let nanos = d.subsec_nanos() as f64;
     seconds + (nanos * 1e-9)
+}
+
+/// A convenience function to create a Rust `Duration` type
+/// from a (less precise but more useful) f64.
+///
+/// Only handles positive numbers correctly.
+pub fn f64_to_duration(t: f64) -> time::Duration {
+    debug_assert!(t >= 0.0, "f64_to_duration passed a negative number!");
+    let seconds = t.trunc();
+    let nanos = t.fract() * 1e9;
+    time::Duration::new(seconds as u64, nanos as u32)
+}
+
+/// Returns a `Duration` representing how long each
+/// frame should be to match the given fps.
+///
+/// Approximately.
+fn fps_as_duration(fps: u64) -> time::Duration {
+    // TODO: Make this better!
+    let target_dt_seconds = 1.0 / (fps as f64);
+    let target_dt = f64_to_duration(target_dt_seconds);
+    target_dt
 }
 
 /// Gets the FPS of the game, averaged over the last
@@ -153,6 +180,30 @@ pub fn get_fps(ctx: &Context) -> f64 {
 pub fn get_time_since_start(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     time::Instant::now() - tc.init_instant
+}
+
+/// This function will return true if the time since the
+/// last `update()` call has been equal to or greater to
+/// the update FPS indicated by the `desired_update_rate`.
+/// It keeps track of fractional frames, and does not
+/// do any sleeping.
+///
+/// For the most accurate frame timings, it is recommended
+/// to call this in your `update()` method and only update
+/// if it returns true, and then call `sleep(0)` at the end
+/// of your `draw()` method to ensure your game does not consume
+/// 100% CPU when it does not need to.
+pub fn check_update_time(ctx: &mut Context, desired_update_rate: u64) -> bool {
+    let dt = get_delta(ctx);
+    let timedata = &mut ctx.timer_context;
+    let target_dt = fps_as_duration(desired_update_rate);
+    timedata.residual_update_dt += dt;
+    if timedata.residual_update_dt > target_dt {
+        timedata.residual_update_dt -= target_dt;
+        true
+    } else {
+        false
+    }
 }
 
 /// This function will *attempt* to sleep the current
