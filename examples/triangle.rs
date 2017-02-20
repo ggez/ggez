@@ -10,6 +10,7 @@ use std::time::Duration;
 struct MainState {
     image1: graphics::Image,
     image2: graphics::Image,
+    zoomlevel: f32,
 }
 
 // Then we implement the `ggez::game::GameState` trait on it, which
@@ -26,24 +27,32 @@ impl MainState {
         let s = MainState {
             image1: image1,
             image2: image2,
+            zoomlevel: 1.0,
         };
+
+        graphics::set_screen_coordinates(ctx, -s.zoomlevel, s.zoomlevel, s.zoomlevel, -s.zoomlevel);
         Ok(s)
     }
 }
 
 
 impl game::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+        graphics::set_screen_coordinates(ctx, -self.zoomlevel, self.zoomlevel, self.zoomlevel, -self.zoomlevel);
+        self.zoomlevel += 1.0;
+        println!("Updating");
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx);
-        graphics::draw(ctx, &mut self.image1, None, None);
-        let dst = graphics::Rect::new(100.0, 100.0, 0.0, 0.0);
-        graphics::draw(ctx, &mut self.image2, None, Some(dst));
+        println!("Starting draw");
+        // graphics::clear(ctx);
+        // graphics::draw(ctx, &mut self.image1, None, None);
+        // let dst = graphics::Rect::new(1.0, 1.0, 0.0, 0.0);
+        // graphics::draw(ctx, &mut self.image2, None, Some(dst));
         graphics::present(ctx);
-        timer::sleep_until_next_frame(ctx, 60);
+        println!("Approx FPS: {}", timer::get_fps(ctx));
+        // timer::sleep_until_next_frame(ctx, 60);
         Ok(())
     }
 }
