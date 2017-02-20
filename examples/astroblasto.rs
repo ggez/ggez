@@ -303,8 +303,8 @@ struct Assets {
     shot_image: graphics::Image,
     rock_image: graphics::Image,
     font: graphics::Font,
-    shot_sound: audio::Sound,
-    hit_sound: audio::Sound,
+    shot_sound: audio::Source,
+    hit_sound: audio::Source,
 }
 
 impl Assets {
@@ -317,8 +317,8 @@ impl Assets {
         // let font = graphics::Font::new_bitmap(ctx, font_path, font_chars)?;
         let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 16)?;
 
-        let shot_sound = audio::Sound::new(ctx, "pew.ogg")?;
-        let hit_sound = audio::Sound::new(ctx, "boom.ogg")?;
+        let shot_sound = audio::Source::new(ctx, "pew.ogg")?;
+        let hit_sound = audio::Source::new(ctx, "boom.ogg")?;
         Ok(Assets {
             player_image: player_image,
             shot_image: shot_image,
@@ -500,7 +500,7 @@ impl MainState {
         shot.velocity.y = SHOT_SPEED * direction.y;
 
         self.shots.push(shot);
-        let _ = self.assets.shot_sound.play(ctx);
+        let _ = self.assets.shot_sound.play();
     }
 
 
@@ -523,7 +523,7 @@ impl MainState {
                     rock.life = 0.0;
                     self.score += 1;
                     self.gui_dirty = true;
-                    let _ = self.assets.hit_sound.play(ctx);
+                    let _ = self.assets.hit_sound.play();
                 }
             }
         }

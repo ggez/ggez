@@ -20,7 +20,7 @@ struct MainState {
     bmptext: graphics::Text,
     // Not actually dead, see BUGGO below
     #[allow(dead_code)]
-    sound: audio::Sound,
+    sound: audio::Source,
 }
 
 impl MainState {
@@ -57,9 +57,9 @@ impl MainState {
         let bmpfont = graphics::Font::new_bitmap(ctx, "arial.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
             .unwrap();
         let bmptext = graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
-        let sound = audio::Sound::new(ctx, "sound.ogg").unwrap();
+        let sound = audio::Source::new(ctx, "sound.ogg").unwrap();
 
-        let _ = sound.play(ctx);
+        let _ = sound.play();
 
         let s = MainState {
             a: 0,
