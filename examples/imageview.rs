@@ -5,7 +5,7 @@ extern crate sdl2;
 
 use ggez::audio;
 use ggez::conf;
-use ggez::game;
+use ggez::event;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::graphics::Color;
@@ -20,7 +20,7 @@ struct MainState {
     bmptext: graphics::Text,
     // Not actually dead, see BUGGO below
     #[allow(dead_code)]
-    sound: audio::Sound,
+    sound: audio::Source,
 }
 
 impl MainState {
@@ -48,7 +48,6 @@ impl MainState {
     }
 
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.print_sound_stats();
         ctx.print_resource_stats();
 
         let image = graphics::Image::new(ctx, "dragon1.png").unwrap();
@@ -58,7 +57,7 @@ impl MainState {
         let bmpfont = graphics::Font::new_bitmap(ctx, "arial.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
             .unwrap();
         let bmptext = graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
-        let sound = audio::Sound::new(ctx, "sound.ogg").unwrap();
+        let sound = audio::Source::new(ctx, "sound.ogg").unwrap();
 
         let _ = sound.play();
 
@@ -82,7 +81,7 @@ impl MainState {
     }
 }
 
-impl game::EventHandler for MainState {
+impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         self.a += self.direction;
         if self.a > 250 || self.a <= 0 {
@@ -123,7 +122,7 @@ pub fn main() {
     println!("Starting with default config: {:#?}", c);
     let ctx = &mut Context::load_from_conf("imageview", c).unwrap();
     let state = &mut MainState::new(ctx).unwrap();
-    if let Err(e) = game::run(ctx, state) {
+    if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);
     } else {
         println!("Game exited cleanly.");

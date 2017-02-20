@@ -1,5 +1,10 @@
 # What is this?
-[![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez) [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez) [![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/svenstaro/ggez/blob/master/LICENSE) [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez) [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
+[![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez)
+[![Build status](https://ci.appveyor.com/api/projects/status/3v9lsq6n9li7kxim/branch/master?svg=true)](https://ci.appveyor.com/project/svenstaro/ggez/branch/master)
+[![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez)
+[![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/svenstaro/ggez/blob/master/LICENSE)
+[![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
+[![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
 
 ggez is a Rust library to create a Good Game Easily.
 
@@ -125,10 +130,8 @@ To not worry about until later:
 
 ### 0.3.0
 
-* Document the new EventHandler stuff
-* Better timing for update and draw in the mainloop would be nice so you don't have to delay manually -- make it load them
-from config files
-* Make it always possible to load resources from raw data instead of files. (which might make testing easier) (but might make life hard with bloody SDL RWops)
+* Making Rodio's Decoder implement Clone when its Read does would be nice.  That way you can have many Decoder's share a single Arc'd in-memory buffer, without it having to re-parse the buffer each time (hopefully?)  -- ...no, no I think it totally would.  Hmmm.  Not sure if it matters.
+* Make it always possible to load resources from raw data instead of files. (which might make testing easier)
 * Clean up and consistentify GameError a bit, rename it to GgezError perhaps?  I think there might be an unused case
 or two in there.
 * Start integrating ncollide?
@@ -138,13 +141,9 @@ or two in there.
 ## Future work
 
 * Make subsystems modular, so we don't *have* to initialize sound if we don't need to and it's not a hard error if we can't use it.  See https://www.idolagames.com/piston-sdl-window-with-sound/ perhaps.
-* Possibly related, see if it's possible to make the game::run() function optional; provide tools with which to roll your own game loop.
+* Possibly related, see if it's possible to make the event::run() function optional; provide tools with which to roll your own game loop.
 * Interpolation for the mainloop timing stuff?  Or at least be able to support the user doing it.
-* Include vector math?
-* Play with GFX more
-* Play with audio more: the ears crate looks rather good, rust-portaudio might be an option???, perhaps alto.  Love2D
-apparently directly wraps OpenAL.  Or tomaka has a library, `rodio`.  Or rsoundio?
-* Need to add more tests, somehow
+* Need to add more tests
 
 It *would* be nice to have a full OpenGL-y backend like Love2D does, with things like shaders, render targets,
 etc.  `gfx` might be the best option there, maaaaaaybe.  Right now the API is mostly limited to Love2D 0.7 or so.  Using OpenAL (through the `ears` crate perhaps?)

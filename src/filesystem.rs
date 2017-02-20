@@ -58,6 +58,8 @@ pub enum File<'a> {
     ZipFile(zip::read::ZipFile<'a>),
 }
 
+unsafe impl<'a> Send for File<'a> {}
+
 impl<'a> fmt::Debug for File<'a> {
     // TODO: Make this more useful.
     // But we can't seem to get a filename out of a file,
@@ -389,7 +391,7 @@ impl Filesystem {
             if p.is_dir() {
                 let paths = fs::read_dir(p)?;
                 for path in paths {
-                    println!("Resources dir, filename {}", path?.path().display());
+                    println!("Resources dir: {}", path?.path().display());
                 }
             }
         }
@@ -400,7 +402,7 @@ impl Filesystem {
             if p.is_dir() {
                 let paths = fs::read_dir(p)?;
                 for path in paths {
-                    println!("User dir, filename {}", path?.path().display());
+                    println!("User dir: {}", path?.path().display());
                 }
             }
         }
@@ -409,7 +411,7 @@ impl Filesystem {
         if let Some(ref mut zipfile) = self.resource_zip {
             for i in 0..zipfile.len() {
                 let file = zipfile.by_index(i)?;
-                println!("Zip, filename: {}", file.name());
+                println!("resources.zip: {}", file.name());
             }
         }
         Ok(())
@@ -529,8 +531,8 @@ mod tests {
 
     //#[test]
     //#fn test_app_dirs() {
-    //#   use app_dirs::*;
-    //#   use sdl2;
+    //#  use app_dirs::*;
+    //#  use sdl2;
 
     //     let app_info = AppInfo{name:"test", author:"ggez"};
     //     println!("user config: {:?}", get_app_root(AppDataType::UserConfig, &app_info));

@@ -12,9 +12,6 @@ use {GameError, GameResult};
 /// for the game engine.
 #[derive(RustcDecodable, RustcEncodable, Debug, PartialEq, Default)]
 pub struct Conf {
-    /// Version of ggez your game is designed to work with.
-    pub version: String,
-
     /// The window title.
     pub window_title: String,
     /// A file path to the window's icon.
@@ -49,7 +46,6 @@ impl Conf {
     /// Create a new Conf with some vague defaults.
     pub fn new() -> Conf {
         Conf {
-            version: String::from("0.0.0"),
             window_title: String::from("An easy, good game"),
             window_icon: String::from(""),
             window_height: 600,

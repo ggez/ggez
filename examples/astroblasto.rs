@@ -8,7 +8,6 @@ extern crate rand;
 use ggez::audio;
 use ggez::conf;
 use ggez::event::*;
-use ggez::game;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
@@ -20,7 +19,7 @@ use std::ops::{Add, AddAssign, Sub};
 /// First, we create a vector type.
 /// You're probably better off using a real vector math lib but I
 /// didn't want to add more dependencies and such.
-/// *******************************************************************
+/// **********************************************************************
 #[derive(Debug, Copy, Clone)]
 struct Vec2 {
     x: f64,
@@ -116,7 +115,7 @@ impl Default for Vec2 {
 /// pretty close.  For a more complicated game you would want a
 /// real ECS, but for this it's enough to say that all our game objects
 /// contain pretty much the same data.
-/// *******************************************************************
+/// **********************************************************************
 #[derive(Debug)]
 enum ActorType {
     Player,
@@ -150,7 +149,7 @@ const SHOT_BBOX: f64 = 6.0;
 
 /// *********************************************************************
 /// Now we have some initializer functions for different game objects.
-/// *******************************************************************
+/// **********************************************************************
 
 fn create_player() -> Actor {
     Actor {
@@ -217,7 +216,7 @@ fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f64, max_radius: f64) ->
 ///
 /// Our unit of world space is simply pixels, though we do transform
 /// the coordinate system so that +y is up and -y is down.
-/// ********************************************************************
+/// **********************************************************************
 
 const SHOT_SPEED: f64 = 200.0;
 const SHOT_RVEL: f64 = 0.1;
@@ -297,15 +296,15 @@ fn world_to_screen_coords(screen_width: u32, screen_height: u32, point: &Vec2) -
 /// to contain the images, sounds, etc. that we need to hang on to; this
 /// is our "asset management system".  All the file names and such are
 /// just hard-coded.
-/// ********************************************************************
+/// **********************************************************************
 
 struct Assets {
     player_image: graphics::Image,
     shot_image: graphics::Image,
     rock_image: graphics::Image,
     font: graphics::Font,
-    shot_sound: audio::Sound,
-    hit_sound: audio::Sound,
+    shot_sound: audio::Source,
+    hit_sound: audio::Source,
 }
 
 impl Assets {
@@ -318,8 +317,8 @@ impl Assets {
         // let font = graphics::Font::new_bitmap(ctx, font_path, font_chars)?;
         let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 16)?;
 
-        let shot_sound = audio::Sound::new(ctx, "pew.ogg")?;
-        let hit_sound = audio::Sound::new(ctx, "boom.ogg")?;
+        let shot_sound = audio::Source::new(ctx, "pew.ogg")?;
+        let hit_sound = audio::Source::new(ctx, "boom.ogg")?;
         Ok(Assets {
             player_image: player_image,
             shot_image: shot_image,
@@ -343,7 +342,7 @@ impl Assets {
 /// The InputState is exactly what it sounds like, it just keeps track of
 /// the user's input state so that we turn keyboard events into something
 /// state-based and device-independent.
-/// ********************************************************************
+/// **********************************************************************
 #[derive(Debug)]
 struct InputState {
     xaxis: f64,
@@ -357,6 +356,45 @@ impl Default for InputState {
             xaxis: 0.0,
             yaxis: 0.0,
             fire: false,
+        }
+    }
+}
+
+/// **********************************************************************
+/// The UpdateTimer is a simple structure to track timing information.
+/// The idea is that you have a desired update rate, in this case 60 fps,
+/// and every update() event you call tick_update() and then run your update
+/// code in a while loop as long as time_to_update() is true.
+/// This gives you fixed-size timesteps, which are nice for physics, while
+/// also handling fractions of a frame that can occur when your fixed update
+/// rate differs from the real update rate.
+/// **********************************************************************
+struct UpdateTimer {
+    update_dt: Duration,
+    residual_update_dt: Duration,
+}
+
+impl UpdateTimer {
+    fn new(target_fps: f64) -> Self {
+        let target_fps = target_fps;
+        let target_nanos = (1.0 / target_fps) * 1e9;
+        let update_dt = Duration::new(0, target_nanos as u32);
+        UpdateTimer {
+            update_dt: update_dt,
+            residual_update_dt: Duration::new(0, 0),
+        }
+    }
+
+    fn tick_update(&mut self, dt: Duration) {
+        self.residual_update_dt += dt;
+    }
+
+    fn time_to_update(&mut self) -> bool {
+        if self.residual_update_dt > self.update_dt {
+            self.residual_update_dt -= self.update_dt;
+            true
+        } else {
+            false
         }
     }
 }
@@ -386,6 +424,7 @@ struct MainState {
     gui_dirty: bool,
     score_display: graphics::Text,
     level_display: graphics::Text,
+    update_timer: UpdateTimer,
 }
 
 fn draw_actor(assets: &mut Assets,
@@ -415,7 +454,6 @@ fn draw_actor(assets: &mut Assets,
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.print_sound_stats();
         ctx.print_resource_stats();
         graphics::set_background_color(ctx, graphics::Color::RGB(0, 0, 0));
 
@@ -444,6 +482,7 @@ impl MainState {
             gui_dirty: true,
             score_display: score_disp,
             level_display: level_disp,
+            update_timer: UpdateTimer::new(60.0),
         };
 
         Ok(s)
@@ -461,7 +500,7 @@ impl MainState {
         shot.velocity.y = SHOT_SPEED * direction.y;
 
         self.shots.push(shot);
-        let _ = self.assets.shot_sound.play(ctx);
+        let _ = self.assets.shot_sound.play();
     }
 
 
@@ -484,7 +523,7 @@ impl MainState {
                     rock.life = 0.0;
                     self.score += 1;
                     self.gui_dirty = true;
-                    let _ = self.assets.hit_sound.play(ctx);
+                    let _ = self.assets.hit_sound.play();
                 }
             }
         }
@@ -520,67 +559,70 @@ fn print_instructions() {
 }
 
 /// **********************************************************************
-/// Now we implement the GameState trait from ggez::game, which provides
-/// ggez with callbacks for loading, updating and drawing our game, as
-/// well as handling events.
-/// ********************************************************************
-impl game::EventHandler for MainState {
+/// Now we implement the EventHandler trait from ggez::game, which provides
+/// ggez with callbacks for updating and drawing our game, as well as
+/// handling input events.
+/// **********************************************************************
+impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
-        let seconds = timer::duration_to_f64(dt);
+        self.update_timer.tick_update(dt);
+        let seconds = timer::duration_to_f64(self.update_timer.update_dt);
+        while self.update_timer.time_to_update() {
+            // let seconds = timer::duration_to_f64(dt);
 
-        // Update the player state based on the user input.
-        player_handle_input(&mut self.player, &self.input, seconds);
-        self.player_shot_timeout -= seconds;
-        if self.input.fire && self.player_shot_timeout < 0.0 {
-            self.fire_player_shot(ctx);
+            // Update the player state based on the user input.
+            player_handle_input(&mut self.player, &self.input, seconds);
+            self.player_shot_timeout -= seconds;
+            if self.input.fire && self.player_shot_timeout < 0.0 {
+                self.fire_player_shot(ctx);
+            }
+
+            // Update the physics for all actors.
+            // First the player...
+            update_actor_position(&mut self.player, seconds);
+            wrap_actor_position(&mut self.player,
+                                self.screen_width as f64,
+                                self.screen_height as f64);
+
+            // Then the shots...
+            for act in &mut self.shots {
+                update_actor_position(act, seconds);
+                wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
+                handle_timed_life(act, seconds);
+            }
+
+            // And finally the rocks.
+            for act in &mut self.rocks {
+                update_actor_position(act, seconds);
+                wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
+            }
+
+            // Handle the results of things moving:
+            // collision detection, object death, and if
+            // we have killed all the rocks in the level,
+            // spawn more of them.
+            self.handle_collisions(ctx);
+
+            self.clear_dead_stuff();
+
+            self.check_for_level_respawn();
+
+            // Using a gui_dirty flag here is a little
+            // messy but fine here.
+            if self.gui_dirty {
+                self.update_ui(ctx);
+                self.gui_dirty = false;
+            }
+
+            // Finally we check for our end state.
+            // I want to have a nice death screen eventually,
+            // but for now we just quit.
+            if self.player.life <= 0.0 {
+                println!("Game over!");
+                // ctx.quit() is broken at the moment.  ;_;
+                let _ = ctx.quit();
+            }
         }
-
-        // Update the physics for all actors.
-        // First the player...
-        update_actor_position(&mut self.player, seconds);
-        wrap_actor_position(&mut self.player,
-                            self.screen_width as f64,
-                            self.screen_height as f64);
-
-        // Then the shots...
-        for act in &mut self.shots {
-            update_actor_position(act, seconds);
-            wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
-            handle_timed_life(act, seconds);
-        }
-
-        // And finally the rocks.
-        for act in &mut self.rocks {
-            update_actor_position(act, seconds);
-            wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
-        }
-
-        // Handle the results of things moving:
-        // collision detection, object death, and if
-        // we have killed all the rocks in the level,
-        // spawn more of them.
-        self.handle_collisions(ctx);
-
-        self.clear_dead_stuff();
-
-        self.check_for_level_respawn();
-
-        // Using a gui_dirty flag here is a little
-        // messy but fine here.
-        if self.gui_dirty {
-            self.update_ui(ctx);
-            self.gui_dirty = false;
-        }
-
-        // Finally we check for our end state.
-        // I want to have a nice death screen eventually,
-        // but for now we just quit.
-        if self.player.life <= 0.0 {
-            println!("Game over!");
-            // ctx.quit() is broken at the moment.  ;_;
-            let _ = ctx.quit();
-        }
-
         Ok(())
     }
 
@@ -619,9 +661,8 @@ impl game::EventHandler for MainState {
         graphics::draw(ctx, &mut self.level_display, None, Some(level_rect))?;
         graphics::draw(ctx, &mut self.score_display, None, Some(score_rect))?;
 
-        // Then we flip the screen and wait for the next frame.
+        // Then we flip the screen...
         graphics::present(ctx);
-        timer::sleep_until_next_frame(ctx, 60);
         Ok(())
     }
 
@@ -667,8 +708,8 @@ impl game::EventHandler for MainState {
 
 /// **********************************************************************
 /// Finally our main function!  Which merely sets up a config and calls
-/// ggez::game::Game::new() with our MainState type.
-/// ********************************************************************
+/// ggez::event::run() with our EventHandler type.
+/// **********************************************************************
 
 pub fn main() {
     let mut c = conf::Conf::new();
@@ -685,7 +726,7 @@ pub fn main() {
             println!("Error: {}", e);
         }
         Ok(ref mut game) => {
-            let result = game::run(ctx, game);
+            let result = run(ctx, game);
             if let Err(e) = result {
                 println!("Error encountered running game: {}", e);
             } else {

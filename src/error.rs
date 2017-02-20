@@ -3,6 +3,7 @@ use std;
 use std::error::Error;
 use std::fmt;
 
+use rodio::decoder::DecoderError;
 use sdl2;
 use app_dirs::AppDirsError;
 use toml;
@@ -141,5 +142,12 @@ impl From<zip::result::ZipError> for GameError {
     fn from(e: zip::result::ZipError) -> GameError {
         let errstr = format!("Zip error: {}", e.description());
         GameError::ResourceLoadError(errstr)
+    }
+}
+
+impl From<DecoderError> for GameError {
+    fn from(e: DecoderError) -> GameError {
+        let errstr = format!("Audio decoder error: {:?}", e);
+        GameError::AudioError(errstr)
     }
 }
