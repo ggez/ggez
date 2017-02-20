@@ -24,7 +24,7 @@ impl MainState {
             zoomlevel: 1.0,
         };
 
-        graphics::set_screen_coordinates(ctx, -s.zoomlevel, s.zoomlevel, s.zoomlevel, -s.zoomlevel);
+        graphics::set_screen_coordinates(ctx, 0.0, s.zoomlevel, s.zoomlevel, 0.0);
         Ok(s)
     }
 }
@@ -32,22 +32,16 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        graphics::set_screen_coordinates(ctx,
-                                         -self.zoomlevel,
-                                         self.zoomlevel,
-                                         self.zoomlevel,
-                                         -self.zoomlevel);
-        self.zoomlevel += 1.0;
-        println!("Updating");
+        graphics::set_screen_coordinates(ctx, 0.0, self.zoomlevel, self.zoomlevel, 0.0);
+        self.zoomlevel += 0.01;
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        println!("Starting draw");
-        // graphics::clear(ctx);
-        // graphics::draw(ctx, &mut self.image1, None, None);
-        // let dst = graphics::Rect::new(1.0, 1.0, 0.0, 0.0);
-        // graphics::draw(ctx, &mut self.image2, None, Some(dst));
+        graphics::clear(ctx);
+        graphics::draw(ctx, &mut self.image1, None, None);
+        let dst = graphics::Rect::new(1.0, 1.0, 0.0, 0.0);
+        graphics::draw(ctx, &mut self.image1, None, Some(dst));
         graphics::present(ctx);
         println!("Approx FPS: {}", timer::get_fps(ctx));
         // timer::sleep_until_next_frame(ctx, 60);
