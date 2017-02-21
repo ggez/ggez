@@ -211,7 +211,6 @@ impl GraphicsContext {
                              1.0,
                              -1.0),
         };
-        // let transform = Transform { transform: ortho(1.5, -1.5, -1.0, -1.0, -1.0, 1.0) };
         encoder.update_buffer(&data.transform, &[transform], 0);
 
         let white_texture = Image::make_raw(&mut factory, 1, 1, &[&[1, 1, 1, 1]]).unwrap();
@@ -235,16 +234,6 @@ impl GraphicsContext {
     }
 }
 
-
-pub fn set_screen_coordinates(context: &mut Context,
-                              left: f32,
-                              right: f32,
-                              top: f32,
-                              bottom: f32) {
-    let gfx = &mut context.gfx_context;
-    let transform = Transform { transform: ortho(left, right, top, bottom, 1.0, -1.0) };
-    gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
-}
 
 fn gfx_load_texture<F, R>(factory: &mut F) -> gfx::handle::ShaderResourceView<R, [f32; 4]>
     where F: gfx::Factory<R>,
@@ -288,16 +277,10 @@ fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [
 }
 
 
-/// Sets the background color.  Default: blue.
-pub fn set_background_color(ctx: &mut Context, color: Color) {
-    ctx.gfx_context.background_color = color;
-}
+// **********************************************************************
+// DRAWING
+// **********************************************************************
 
-/// Sets the foreground color, which will be used for drawing
-/// rectangles, lines, etc.  Default: white.
-pub fn set_color(ctx: &mut Context, color: Color) {
-    ctx.gfx_context.foreground_color = color;
-}
 
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
@@ -343,6 +326,62 @@ pub fn present(ctx: &mut Context) {
     gfx.window.gl_swap_window();
 }
 
+pub fn arc(ctx: &mut Context,
+           mode: DrawMode,
+           point: Point,
+           radius: f32,
+           angle1: f32,
+           angle2: f32,
+           segments: u32)
+           -> GameResult<()> {
+    unimplemented!();
+}
+
+pub fn circle(ctx: &mut Context,
+              mode: DrawMode,
+              point: Point,
+              radius: f32,
+              segments: u32)
+              -> GameResult<()> {
+    unimplemented!();
+}
+
+pub fn ellipse(ctx: &mut Context,
+               mode: DrawMode,
+               point: Point,
+               radius1: f32,
+               radius2: f32,
+               segments: u32)
+               -> GameResult<()> {
+    unimplemented!();
+}
+
+/// Draws a line.
+/// Currently lines are 1 pixel wide and generally ugly.
+pub fn line(ctx: &mut Context, start: Point, end: Point) -> GameResult<()> {
+    unimplemented!();
+    // let r = &mut ctx.renderer;
+    // let res = r.draw_line(start, end);
+    // res.map_err(GameError::from)
+}
+
+/// Draws a line with many connected segments.
+pub fn polyline(ctx: &mut Context, lines: &[Point]) -> GameResult<()> {
+    unimplemented!();
+}
+
+/// Draws points.
+pub fn points(ctx: &mut Context, point: &[Point]) -> GameResult<()> {
+    unimplemented!();
+    // let r = &mut ctx.renderer;
+    // let res = r.draw_point(point);
+    // res.map_err(GameError::from)
+}
+
+pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point]) -> GameResult<()> {
+    unimplemented!();
+}
+
 /// Not implemented
 pub fn print(_ctx: &mut Context) {
     unimplemented!();
@@ -352,6 +391,7 @@ pub fn print(_ctx: &mut Context) {
 pub fn printf(_ctx: &mut Context) {
     unimplemented!();
 }
+
 
 /// Draws a rectangle.
 pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
@@ -373,57 +413,96 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     // }
 }
 
-/// Draws many rectangles.
-/// Not part of the LOVE API but no reason not to include it.
-pub fn rectangles(ctx: &mut Context, mode: DrawMode, rect: &[Rect]) -> GameResult<()> {
-    unimplemented!();
-    // let r = &mut ctx.renderer;
-    // match mode {
-    //     DrawMode::Line => {
-    //         let res = r.draw_rects(rect);
-    //         res.map_err(GameError::from)
-    //     }
-    //     DrawMode::Fill => {
-    //         let res = r.fill_rects(rect);
-    //         res.map_err(GameError::from)
+// **********************************************************************
+// GRAPHICS STATE
+// **********************************************************************
 
-    //     }
-    // }
+pub fn get_background_color(ctx: &Context) {
+    unimplemented!()
+}
+
+pub fn get_blend_mode(ctx: &Context) {
+    unimplemented!()
+}
+
+pub fn get_color(ctx: &Context) {
+    unimplemented!()
+}
+
+pub fn get_default_filter(ctx: &Context) {
+    unimplemented!()
+}
+
+pub fn get_font(ctx: &Context) {
+    unimplemented!()
+}
+
+pub fn get_line_width(ctx: &Context) {
+    unimplemented!()
+}
+
+pub fn get_point_size(ctx: &Context) {
+    unimplemented!()
+}
+
+pub fn get_renderer_info(ctx: &Context) {
+    unimplemented!()
+}
+
+// TODO: Better name.  screen_bounds?  Viewport?
+pub fn get_screen_coordinates(ctx: &Context) {
+    unimplemented!()
+}
+
+pub fn is_gamma_correct(ctx: &Context) {
+    unimplemented!()
+}
+
+/// Sets the background color.  Default: blue.
+pub fn set_background_color(ctx: &mut Context, color: Color) {
+    ctx.gfx_context.background_color = color;
+}
+
+pub fn set_blend_mode(ctx: &mut Context) {
+    unimplemented!()
+}
+
+/// Sets the foreground color, which will be used for drawing
+/// rectangles, lines, etc.  Default: white.
+pub fn set_color(ctx: &mut Context, color: Color) {
+    ctx.gfx_context.foreground_color = color;
+}
+
+pub fn set_default_filter(ctx: &mut Context) {
+    unimplemented!()
 }
 
 
-/// Draws a line.
-/// Currently lines are 1 pixel wide and generally ugly.
-pub fn line(ctx: &mut Context, start: Point, end: Point) -> GameResult<()> {
-    unimplemented!();
-    // let r = &mut ctx.renderer;
-    // let res = r.draw_line(start, end);
-    // res.map_err(GameError::from)
+pub fn set_font(ctx: &mut Context) {
+    unimplemented!()
 }
 
-/// Draws a series of connected lines.
-pub fn lines(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
-    unimplemented!();
-    // let r = &mut ctx.renderer;
-    // let res = r.draw_lines(points);
-    // res.map_err(GameError::from)
+pub fn set_line_width(ctx: &mut Context) {
+    unimplemented!()
 }
 
-/// Draws a 1-pixel point.
-pub fn point(ctx: &mut Context, point: Point) -> GameResult<()> {
-    unimplemented!();
-    // let r = &mut ctx.renderer;
-    // let res = r.draw_point(point);
-    // res.map_err(GameError::from)
+pub fn set_point_size(ctx: &mut Context) {
+    unimplemented!()
 }
 
-/// Draws a set of points.
-pub fn points(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
-    unimplemented!();
-    // let r = &mut ctx.renderer;
-    // let res = r.draw_points(points);
-    // res.map_err(GameError::from)
+pub fn set_screen_coordinates(context: &mut Context,
+                              left: f32,
+                              right: f32,
+                              top: f32,
+                              bottom: f32) {
+    let gfx = &mut context.gfx_context;
+    let transform = Transform { transform: ortho(left, right, top, bottom, 1.0, -1.0) };
+    gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
 }
+
+// **********************************************************************
+// TYPES
+// **********************************************************************
 
 /// All types that can be drawn on the screen implement the `Drawable` trait.
 pub trait Drawable {
@@ -501,6 +580,8 @@ impl Image {
     }
 
     /// Creates an Image from an array of u8's arranged in RGBA order.
+    /// TODO: Refactor the from_* functions, make_raw, and new() to
+    /// be a little more orthogonal.  Also see Love2D's ImageData type.
     pub fn from_rgba8(context: &mut Context,
                       width: u16,
                       height: u16,
@@ -542,42 +623,6 @@ impl Image {
         Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
     }
 
-    /// Returns the `BlendMode` of the image.
-    pub fn blend_mode(&self) -> BlendMode {
-        unimplemented!();
-    }
-
-    /// Sets the `BlendMode` of the image.
-    /// See <https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode>
-    /// for detailed description of blend modes.
-    pub fn set_blend_mode(&mut self, blend: BlendMode) {
-        unimplemented!();
-    }
-
-    /// Get the color mod of the image.
-    pub fn color_mod(&self) -> Color {
-        unimplemented!();
-    }
-
-    /// Set the color mod of the image.
-    /// Each pixel of the image is multiplied by this color
-    /// when drawn.
-    pub fn set_color_mod(&mut self, color: Color) {
-        unimplemented!();
-    }
-
-    /// Get the alpha mod of the image.
-    pub fn alpha_mod(&self) -> u8 {
-        unimplemented!();
-    }
-
-    /// Set the alpha mod of the image.
-    /// Each pixel's alpha will be multiplied by this value
-    /// when drawn.
-    pub fn set_alpha_mod(&mut self, alpha: u8) {
-        unimplemented!();
-    }
-
     /// Return the width of the image.
     pub fn width(&self) -> u32 {
         self.width
@@ -586,6 +631,26 @@ impl Image {
     /// Return the height of the image.
     pub fn height(&self) -> u32 {
         self.height
+    }
+
+    pub fn get_filter(&self) {
+        unimplemented!()
+    }
+
+    pub fn set_filter(&self) {
+        unimplemented!()
+    }
+
+    pub fn get_dimensions(&self) {
+        unimplemented!()
+    }
+
+    pub fn get_wrap(&self) {
+        unimplemented!()
+    }
+
+    pub fn set_wrap(&self) {
+        unimplemented!()
     }
 }
 

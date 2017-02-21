@@ -31,7 +31,7 @@ impl MainState {
 
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         // graphics::set_screen_coordinates(ctx, 0.0, self.zoomlevel, self.zoomlevel, 0.0);
         // graphics::set_screen_coordinates(ctx, 0.0, self.zoomlevel, 0.0, self.zoomlevel);
         self.zoomlevel += 0.01;
@@ -44,9 +44,9 @@ impl event::EventHandler for MainState {
                        &mut self.image1,
                        graphics::Rect::zero(),
                        graphics::Point::zero(),
-                       0.0);
+                       0.0)?;
         let dst = graphics::Point::new(1.0, 1.0);
-        graphics::draw(ctx, &mut self.image2, graphics::Rect::zero(), dst, 0.0);
+        graphics::draw(ctx, &mut self.image2, graphics::Rect::zero(), dst, 0.0)?;
         graphics::present(ctx);
         println!("Approx FPS: {}", timer::get_fps(ctx));
         // timer::sleep_until_next_frame(ctx, 60);
