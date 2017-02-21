@@ -13,10 +13,6 @@ use std::convert::From;
 use std::io::Read;
 
 use sdl2;
-use sdl2::pixels;
-use sdl2::render;
-use sdl2::surface;
-use sdl2::image::ImageRWops;
 use rusttype;
 use image;
 use gfx;
@@ -30,7 +26,6 @@ use gfx::Factory;
 use context::Context;
 use GameError;
 use GameResult;
-use util;
 
 mod types;
 pub use self::types::{Rect, Point, Color, BlendMode};
@@ -620,7 +615,7 @@ pub enum Font {
         points: u32,
     },
     BitmapFont {
-        surface: surface::Surface<'static>,
+        surface: Image,
         glyphs: BTreeMap<char, u32>,
         glyph_width: u32,
     },
@@ -664,7 +659,7 @@ impl Font {
                                             path: P,
                                             glyphs: &str)
                                             -> GameResult<Font> {
-        let s2 = util::load_surface(context, path.as_ref())?;
+        let s2 = Image::new(context, path.as_ref())?;
 
         let image_width = s2.width();
         let glyph_width = image_width / (glyphs.len() as u32);
@@ -806,32 +801,32 @@ fn render_ttf(context: &mut Context,
 
 fn render_bitmap(context: &Context,
                  text: &str,
-                 surface: &surface::Surface,
+                 image: &Image,
                  glyphs_map: &BTreeMap<char, u32>,
                  glyph_width: u32)
                  -> GameResult<Text> {
     let text_length = text.len() as u32;
-    let glyph_height = surface.height();
-    let format = pixels::PixelFormatEnum::RGBA8888;
-    let mut dest_surface = surface::Surface::new(text_length * glyph_width, glyph_height, format)?;
-    for (i, c) in text.chars().enumerate() {
-        let small_i = i as u32;
-        let error_message = format!("Character '{}' not in bitmap font!", c);
-        let source_offset = glyphs_map.get(&c)
-            .ok_or(GameError::FontError(String::from(error_message)))?;
-        let dest_offset = glyph_width * small_i;
-        let source_rect = Rect::new(*source_offset as f32,
-                                    0.0,
-                                    glyph_width as f32,
-                                    glyph_height as f32);
-        let dest_rect = Rect::new(dest_offset as f32,
-                                  0.0,
-                                  glyph_width as f32,
-                                  glyph_height as f32);
-        // println!("Blitting letter {} to {:?}", c, dest_rect);
-        // surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect))?;
-    }
-    // let image = Image::from_surface(context, dest_surface)?;
+    let glyph_height = image.height;
+    // let format = pixels::PixelFormatEnum::RGBA8888;
+    // let mut dest_surface = surface::Surface::new(text_length * glyph_width, glyph_height, format)?;
+    // for (i, c) in text.chars().enumerate() {
+    //     let small_i = i as u32;
+    //     let error_message = format!("Character '{}' not in bitmap font!", c);
+    //     let source_offset = glyphs_map.get(&c)
+    //         .ok_or(GameError::FontError(String::from(error_message)))?;
+    //     let dest_offset = glyph_width * small_i;
+    //     let source_rect = Rect::new(*source_offset as f32,
+    //                                 0.0,
+    //                                 glyph_width as f32,
+    //                                 glyph_height as f32);
+    //     let dest_rect = Rect::new(dest_offset as f32,
+    //                               0.0,
+    //                               glyph_width as f32,
+    //                               glyph_height as f32);
+    //     // println!("Blitting letter {} to {:?}", c, dest_rect);
+    //     // surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect))?;
+    // }
+    // // let image = Image::from_surface(context, dest_surface)?;
     let text_string = text.to_string();
 
     unimplemented!();

@@ -113,7 +113,6 @@ pub mod event;
 pub mod filesystem;
 pub mod graphics;
 pub mod timer;
-mod util;
 
 pub use context::Context;
 pub use error::*;

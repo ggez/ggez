@@ -12,7 +12,6 @@ use conf;
 use filesystem::Filesystem;
 use graphics;
 use timer;
-use util;
 use GameError;
 use GameResult;
 
@@ -71,9 +70,10 @@ fn init_window(video: sdl2::VideoSubsystem,
 fn set_window_icon(context: &mut Context) -> GameResult<()> {
     if !context.conf.window_icon.is_empty() {
         // Grrr, hackhackhack here with the icon path clone.
-        let icon_path = context.conf.window_icon.clone();
-        let path = path::Path::new(&icon_path);
-        let icon_surface = util::load_surface(context, path)?;
+        // BUGGO: TODO: Fix this too since we no longer use SDL_image
+        // let icon_path = context.conf.window_icon.clone();
+        // let path = path::Path::new(&icon_path);
+        // let icon_surface = util::load_surface(context, path)?;
 
         // BUGGO: TODO: Fix this
         // if let Some(window) = context.renderer.window_mut() {
