@@ -13,7 +13,7 @@ uniform RectProperties {
     vec2 u_ColorMod;
 
     vec4 u_Src;
-    vec4 u_Dest;
+    vec2 u_Dest;
     vec2 u_Center;
     float u_Angle;
     float u_FlipHorizontal;
@@ -24,5 +24,5 @@ out vec2 v_Uv;
 
 void main() {
     v_Uv = a_Uv;
-    gl_Position = vec4((a_Pos * u_Dest.zw) + u_Dest.xy, 0.0, 1.0) * u_Transform;
+    gl_Position = vec4((a_Pos * 100) + u_Dest.xy, 0.0, 1.0) * u_Transform;
 }

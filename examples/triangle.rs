@@ -40,9 +40,13 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        graphics::draw(ctx, &mut self.image1, None, None);
-        let dst = graphics::Rect::new(1.0, 1.0, 100.0, 100.0);
-        graphics::draw(ctx, &mut self.image2, None, Some(dst));
+        graphics::draw(ctx,
+                       &mut self.image1,
+                       graphics::Rect::zero(),
+                       graphics::Point::zero(),
+                       0.0);
+        let dst = graphics::Point::new(1.0, 1.0);
+        graphics::draw(ctx, &mut self.image2, graphics::Rect::zero(), dst, 0.0);
         graphics::present(ctx);
         println!("Approx FPS: {}", timer::get_fps(ctx));
         // timer::sleep_until_next_frame(ctx, 60);

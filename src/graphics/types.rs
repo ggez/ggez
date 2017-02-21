@@ -4,6 +4,16 @@ pub struct Point {
     pub y: f32,
 }
 
+impl Point {
+    pub fn new(x: f32, y: f32) -> Self {
+        Point { x: x, y: y }
+    }
+
+    pub fn zero() -> Self {
+        Self::new(0.0, 0.0)
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Rect {
     pub x: f32,
@@ -29,6 +39,10 @@ impl Rect {
             w: w as f32,
             h: h as f32,
         }
+    }
+
+    pub fn zero() -> Self {
+        Self::new(0.0, 0.0, 0.0, 0.0)
     }
 }
 

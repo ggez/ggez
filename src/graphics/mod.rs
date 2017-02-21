@@ -81,7 +81,7 @@ gfx_defines!{
         color_mod: [f32; 4] = "u_ColorMod",
 
         src_rect: [f32; 4] = "u_Src",
-        dst_rect: [f32; 4] = "u_Dest",
+        dst: [f32; 2] = "u_Dest",
         center: [f32;2] = "u_Center",
         angle: f32 = "u_Angle",
         flip_horizontal: f32 = "u_FlipHorizontal",
@@ -105,7 +105,7 @@ impl Default for RectProperties {
             color_mod: types::WHITE.into(),
 
             src_rect: [0.0, 0.0, 0.0, 0.0],
-            dst_rect: [0.0, 0.0, 0.0, 0.0],
+            dst: [0.0, 0.0],
             center: [0.0, 0.0],
             angle: 0.0,
             flip_horizontal: 0.0,
@@ -203,14 +203,6 @@ impl GraphicsContext {
 
 
         // Set initial uniform values
-        let transform = Transform {
-            transform: ortho(0.0,
-                             screen_width as f32,
-                             0.0,
-                             screen_height as f32,
-                             1.0,
-                             -1.0),
-        };
         let transform = Transform {
             transform: ortho(0.0,
                              screen_width as f32,
@@ -316,10 +308,11 @@ pub fn clear(ctx: &mut Context) {
 /// Draws the given `Drawable` object to the screen.
 pub fn draw(ctx: &mut Context,
             drawable: &mut Drawable,
-            src: Option<Rect>,
-            dst: Option<Rect>)
+            quad: Rect,
+            dest: Point,
+            rotation: f32)
             -> GameResult<()> {
-    drawable.draw(ctx, src, dst)
+    drawable.draw(ctx, quad, dest, rotation)
 }
 
 
@@ -328,14 +321,14 @@ pub fn draw(ctx: &mut Context,
 // #[allow(too_many_arguments)]
 pub fn draw_ex(ctx: &mut Context,
                drawable: &mut Drawable,
-               src: Option<Rect>,
-               dst: Option<Rect>,
-               angle: f64,
-               center: Option<Point>,
-               flip_horizontal: bool,
-               flip_vertical: bool)
+               quad: Rect,
+               dest: Point,
+               rotation: f32,
+               scale: Point,
+               offset: Point,
+               shear: Point)
                -> GameResult<()> {
-    drawable.draw_ex(ctx, src, dst, angle, center, flip_horizontal, flip_vertical)
+    drawable.draw_ex(ctx, quad, dest, rotation, scale, offset, shear)
 }
 
 /// Tells the graphics system to actually put everything on the screen.
@@ -365,7 +358,7 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     let img = &mut ctx.gfx_context.white_texture;
     // TODO: Draw mode is unimplemented.
     // BUGGO: Argh double-borrow
-    //img.draw(ctx, None, Some(rect))
+    // img.draw(ctx, None, Some(rect))
     unimplemented!();
     // let r = &mut ctx.renderer;
     // match mode {
@@ -442,21 +435,28 @@ pub trait Drawable {
     // #[allow(too_many_arguments)]
     fn draw_ex(&mut self,
                context: &mut Context,
-               src: Option<Rect>,
-               dst: Option<Rect>,
-               angle: f64,
-               center: Option<Point>,
-               flip_horizontal: bool,
-               flip_vertical: bool)
+               quad: Rect,
+               dest: Point,
+               rotation: f32,
+               scale: Point,
+               offset: Point,
+               shear: Point)
                -> GameResult<()>;
 
     /// Draws the drawable onto the rendering target.
     fn draw(&mut self,
-            context: &mut Context,
-            src: Option<Rect>,
-            dst: Option<Rect>)
+            ctx: &mut Context,
+            quad: Rect,
+            dest: Point,
+            rotation: f32)
             -> GameResult<()> {
-        self.draw_ex(context, src, dst, 0.0, None, false, false)
+        self.draw_ex(ctx,
+                     quad,
+                     dest,
+                     rotation,
+                     Point::new(1.0, 1.0),
+                     Point::new(0.0, 0.0),
+                     Point::new(0.0, 0.0))
     }
 }
 
@@ -485,7 +485,11 @@ impl Image {
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create one inside the context
     /// object
-    fn make_raw(factory: &mut gfx_device_gl::Factory, width: u16, height: u16, rgba: &[&[u8]]) -> GameResult<Image>  {
+    fn make_raw(factory: &mut gfx_device_gl::Factory,
+                width: u16,
+                height: u16,
+                rgba: &[&[u8]])
+                -> GameResult<Image> {
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
         let (_, view) = factory.create_texture_immutable_u8::<Rgba8>(kind, &rgba).unwrap();
         Ok(Image {
@@ -501,7 +505,7 @@ impl Image {
                       width: u16,
                       height: u16,
                       rgba: &[&[u8]])
-                     -> GameResult<Image> {
+                      -> GameResult<Image> {
         Image::make_raw(&mut context.gfx_context.factory, width, height, rgba)
     }
 
@@ -602,18 +606,17 @@ impl Drawable for Image {
     // #[allow(too_many_arguments)]
     fn draw_ex(&mut self,
                context: &mut Context,
-               src: Option<Rect>,
-               dst: Option<Rect>,
-               angle: f64,
-               center: Option<Point>,
-               flip_horizontal: bool,
-               flip_vertical: bool)
+               quad: Rect,
+               dest: Point,
+               rotation: f32,
+               scale: Point,
+               offset: Point,
+               shear: Point)
                -> GameResult<()> {
 
         let gfx = &mut context.gfx_context;
-        let dst = dst.unwrap_or(Rect::new(0.0, 0.0, self.width as f32, self.height as f32));
-        // let thing = RectProperties { offset: [dst.x, dst.y] };
-        self.properties.dst_rect = [dst.x, dst.y, dst.w, dst.h];
+        let dst = dest;
+        self.properties.dst = [dst.x, dst.y];
         gfx.encoder.update_buffer(&gfx.data.rect_properties, &[self.properties], 0);
 
         // let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
@@ -890,12 +893,12 @@ impl Drawable for Text {
     // #[allow(too_many_arguments)]
     fn draw_ex(&mut self,
                context: &mut Context,
-               src: Option<Rect>,
-               dst: Option<Rect>,
-               angle: f64,
-               center: Option<Point>,
-               flip_horizontal: bool,
-               flip_vertical: bool)
+               quad: Rect,
+               dest: Point,
+               rotation: f32,
+               scale: Point,
+               offset: Point,
+               shear: Point)
                -> GameResult<()> {
         unimplemented!();
         // let renderer = &mut context.renderer;
