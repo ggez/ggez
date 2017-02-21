@@ -46,25 +46,22 @@ pub enum DrawMode {
     Fill,
 }
 
-// This is all placeholder for now just to get us going.
-// const TRIANGLE: [Vertex; 3] =
-//     [Vertex { pos: [-0.5, -0.5] }, Vertex { pos: [0.5, -0.5] }, Vertex { pos: [0.0, 0.5] }];
 
 const QUAD_VERTS: [Vertex; 4] = [Vertex {
                                      pos: [-0.5, -0.5],
-                                     uv: [0.0, 1.0],
+                                     uv: [0.0, 0.0],
                                  },
                                  Vertex {
                                      pos: [0.5, -0.5],
-                                     uv: [1.0, 1.0],
-                                 },
-                                 Vertex {
-                                     pos: [0.5, 0.5],
                                      uv: [1.0, 0.0],
                                  },
                                  Vertex {
+                                     pos: [0.5, 0.5],
+                                     uv: [1.0, 1.0],
+                                 },
+                                 Vertex {
                                      pos: [-0.5, 0.5],
-                                     uv: [0.0, 0.0],
+                                     uv: [0.0, 1.0],
                                  }];
 
 const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];

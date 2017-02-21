@@ -193,6 +193,8 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
 /// if it returns true, and then call `sleep(0)` at the end
 /// of your `draw()` method to ensure your game does not consume
 /// 100% CPU when it does not need to.
+///
+/// Or just see http://gafferongames.com/game-physics/fix-your-timestep/
 pub fn check_update_time(ctx: &mut Context, desired_update_rate: u64) -> bool {
     let dt = get_delta(ctx);
     let timedata = &mut ctx.timer_context;

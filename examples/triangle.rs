@@ -32,7 +32,8 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        graphics::set_screen_coordinates(ctx, 0.0, self.zoomlevel, self.zoomlevel, 0.0);
+        // graphics::set_screen_coordinates(ctx, 0.0, self.zoomlevel, self.zoomlevel, 0.0);
+        graphics::set_screen_coordinates(ctx, 0.0, self.zoomlevel, 0.0, self.zoomlevel);
         self.zoomlevel += 0.01;
         Ok(())
     }
