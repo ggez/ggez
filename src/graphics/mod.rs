@@ -76,16 +76,12 @@ gfx_defines!{
 
     // Values that are different for each rect.
     constant RectProperties {
-        offset: [f32; 2] = "u_Offset",
-        size: [f32; 2] = "u_Size",
-        color_mod: [f32; 4] = "u_ColorMod",
-
-        src_rect: [f32; 4] = "u_Src",
-        dst: [f32; 2] = "u_Dest",
-        center: [f32;2] = "u_Center",
-        angle: f32 = "u_Angle",
-        flip_horizontal: f32 = "u_FlipHorizontal",
-        flip_vertical: f32 = "u_FlipVertical",
+        src: [f32; 4] = "u_Src",
+        dest: [f32; 2] = "u_Dest",
+        scale: [f32;2] = "u_Scale",
+        offset: [f32;2] = "u_Offset",
+        shear: [f32;2] = "u_Shear",
+        rotation: f32 = "u_Rotation",
     }
 
     pipeline pipe {
@@ -100,19 +96,16 @@ gfx_defines!{
 impl Default for RectProperties {
     fn default() -> Self {
         RectProperties {
+            src: [0.0, 0.0, 0.0, 0.0],
+            dest: [0.0, 0.0],
+            scale: [1.0, 1.0],
             offset: [0.0, 0.0],
-            size: [1.0, 1.0],
-            color_mod: types::WHITE.into(),
-
-            src_rect: [0.0, 0.0, 0.0, 0.0],
-            dst: [0.0, 0.0],
-            center: [0.0, 0.0],
-            angle: 0.0,
-            flip_horizontal: 0.0,
-            flip_vertical: 0.0,
+            shear: [0.0, 0.0],
+            rotation: 0.0,
         }
     }
 }
+
 
 // BUGGO: TODO: Impl Debug for GraphicsContext
 
@@ -146,7 +139,7 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     data: pipe::Data<R>,
     // slice: gfx::Slice<R>,
     quad_slice: gfx::Slice<R>,
-    white_texture: Image,
+    white_image: Image,
 }
 
 // GL only
@@ -181,8 +174,8 @@ impl GraphicsContext {
             factory.create_command_buffer()
                 .into();
 
-        let pso = factory.create_pipeline_simple(include_bytes!("shader/triangle_150.glslv"),
-                                    include_bytes!("shader/triangle_150.glslf"),
+        let pso = factory.create_pipeline_simple(include_bytes!("shader/basic_150.glslv"),
+                                    include_bytes!("shader/basic_150.glslf"),
                                     pipe::new())
             .unwrap();
 
@@ -192,7 +185,8 @@ impl GraphicsContext {
         let rect_props = factory.create_constant_buffer(1);
         let transform_buffer = factory.create_constant_buffer(1);
         let sampler = factory.create_sampler_linear();
-        let texture = gfx_load_texture(&mut factory);
+        let white_image = Image::make_raw(&mut factory, 1, 1, &[&[1, 1, 1, 1]]).unwrap();
+        let texture = white_image.texture.clone();
         let data = pipe::Data {
             vbuf: quad_vertex_buffer,
             tex: (texture, sampler),
@@ -206,14 +200,12 @@ impl GraphicsContext {
         let transform = Transform {
             transform: ortho(0.0,
                              screen_width as f32,
-                             screen_height as f32,
                              0.0,
+                             screen_height as f32,
                              1.0,
                              -1.0),
         };
         encoder.update_buffer(&data.transform, &[transform], 0);
-
-        let white_texture = Image::make_raw(&mut factory, 1, 1, &[&[1, 1, 1, 1]]).unwrap();
 
         Ok(GraphicsContext {
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
@@ -229,7 +221,7 @@ impl GraphicsContext {
             pso: pso,
             data: data,
             quad_slice: quad_slice,
-            white_texture: white_texture,
+            white_image: white_image,
         })
     }
 }
@@ -356,17 +348,8 @@ pub fn ellipse(ctx: &mut Context,
     unimplemented!();
 }
 
-/// Draws a line.
-/// Currently lines are 1 pixel wide and generally ugly.
-pub fn line(ctx: &mut Context, start: Point, end: Point) -> GameResult<()> {
-    unimplemented!();
-    // let r = &mut ctx.renderer;
-    // let res = r.draw_line(start, end);
-    // res.map_err(GameError::from)
-}
-
-/// Draws a line with many connected segments.
-pub fn polyline(ctx: &mut Context, lines: &[Point]) -> GameResult<()> {
+/// Draws a line of one or more connected segments.
+pub fn line(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
     unimplemented!();
 }
 
@@ -395,7 +378,7 @@ pub fn printf(_ctx: &mut Context) {
 
 /// Draws a rectangle.
 pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
-    let img = &mut ctx.gfx_context.white_texture;
+    let img = &mut ctx.gfx_context.white_image;
     // TODO: Draw mode is unimplemented.
     // BUGGO: Argh double-borrow
     // img.draw(ctx, None, Some(rect))
@@ -680,8 +663,8 @@ impl Drawable for Image {
                -> GameResult<()> {
 
         let gfx = &mut context.gfx_context;
-        let dst = dest;
-        self.properties.dst = [dst.x, dst.y];
+        self.properties.dest = dest.into();
+        self.properties.scale = [scale.x * self.width as f32, scale.y * self.height as f32];
         gfx.encoder.update_buffer(&gfx.data.rect_properties, &[self.properties], 0);
 
         // let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };

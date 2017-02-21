@@ -17,7 +17,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
 
         let image1 = graphics::Image::new(ctx, "resources/dragon1.png")?;
-        let image2 = graphics::Image::new(ctx, "resources/dragon2.png")?;
+        let image2 = graphics::Image::new(ctx, "resources/player.png")?;
         let s = MainState {
             image1: image1,
             image2: image2,
@@ -45,8 +45,16 @@ impl event::EventHandler for MainState {
                        graphics::Rect::zero(),
                        graphics::Point::zero(),
                        0.0)?;
-        let dst = graphics::Point::new(1.0, 1.0);
-        graphics::draw(ctx, &mut self.image2, graphics::Rect::zero(), dst, 0.0)?;
+        let dst = graphics::Point::new(100.0, 100.0);
+        let scale = graphics::Point::new(2.0, 2.0);
+        graphics::draw_ex(ctx,
+                          &mut self.image2,
+                          graphics::Rect::zero(),
+                          dst,
+                          0.0,
+                          scale,
+                          graphics::Point::zero(),
+                          graphics::Point::zero())?;
         graphics::present(ctx);
         println!("Approx FPS: {}", timer::get_fps(ctx));
         // timer::sleep_until_next_frame(ctx, 60);

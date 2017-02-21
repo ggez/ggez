@@ -14,6 +14,13 @@ impl Point {
     }
 }
 
+
+impl From<Point> for [f32; 2] {
+    fn from(p: Point) -> [f32; 2] {
+        [p.x, p.y]
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Rect {
     pub x: f32,
