@@ -84,6 +84,13 @@ gfx_defines!{
         offset: [f32; 2] = "u_Offset",
         size: [f32; 2] = "u_Size",
         color_mod: [f32; 4] = "u_ColorMod",
+
+        src_rect: [f32; 4] = "u_Src",
+        dst_rect: [f32; 4] = "u_Dest",
+        center: [f32;2] = "u_Center",
+        angle: f32 = "u_Angle",
+        flip_horizontal: f32 = "u_FlipHorizontal",
+        flip_vertical: f32 = "u_FlipVertical",
     }
 
     pipeline pipe {
@@ -101,6 +108,13 @@ impl Default for RectProperties {
             offset: [0.0, 0.0],
             size: [1.0, 1.0],
             color_mod: types::WHITE.into(),
+
+            src_rect: [0.0, 0.0, 0.0, 0.0],
+            dst_rect: [0.0, 0.0, 0.0, 0.0],
+            center: [0.0, 0.0],
+            angle: 0.0,
+            flip_horizontal: 0.0,
+            flip_vertical: 0.0,
         }
     }
 }
@@ -176,8 +190,6 @@ impl GraphicsContext {
                                     pipe::new())
             .unwrap();
 
-        // let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(&TRIANGLE, ());
-
         let (quad_vertex_buffer, quad_slice) =
             factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
 
@@ -203,7 +215,14 @@ impl GraphicsContext {
                              1.0,
                              -1.0),
         };
-        let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
+        let transform = Transform {
+            transform: ortho(0.0,
+                             screen_width as f32,
+                             screen_height as f32,
+                             0.0,
+                             1.0,
+                             -1.0),
+        };
         // let transform = Transform { transform: ortho(1.5, -1.5, -1.0, -1.0, -1.0, 1.0) };
         encoder.update_buffer(&data.transform, &[transform], 0);
 
@@ -585,9 +604,9 @@ impl Drawable for Image {
                -> GameResult<()> {
 
         let gfx = &mut context.gfx_context;
-        let dst = dst.unwrap_or(Rect::new(0.0, 0.0, 1.0, 1.0));
+        let dst = dst.unwrap_or(Rect::new(0.0, 0.0, self.width as f32, self.height as f32));
         // let thing = RectProperties { offset: [dst.x, dst.y] };
-        self.properties.offset = [dst.x, dst.y];
+        self.properties.dst_rect = [dst.x, dst.y, dst.w, dst.h];
         gfx.encoder.update_buffer(&gfx.data.rect_properties, &[self.properties], 0);
 
         // let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
