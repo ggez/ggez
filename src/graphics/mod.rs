@@ -155,14 +155,14 @@ impl GraphicsContext {
                screen_height: u32)
                -> GameResult<GraphicsContext> {
 
+        let gl = video.gl_attr();
+        gl.set_context_version(GL_MAJOR_VERSION, GL_MINOR_VERSION);
+        gl.set_context_profile(sdl2::video::GLProfile::Core);
+
         let window_builder = video.window(window_title, screen_width, screen_height);
         let (mut window, mut gl_context, mut device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder).unwrap();
 
-
-        let gl = video.gl_attr();
-        gl.set_context_version(GL_MAJOR_VERSION, GL_MINOR_VERSION);
-        gl.set_context_profile(sdl2::video::GLProfile::Core);
         println!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
                  GL_MAJOR_VERSION,
                  GL_MINOR_VERSION,
