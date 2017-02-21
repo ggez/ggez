@@ -137,6 +137,7 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     data: pipe::Data<R>,
     // slice: gfx::Slice<R>,
     quad_slice: gfx::Slice<R>,
+    white_texture: Image,
 }
 
 // GL only
@@ -207,6 +208,8 @@ impl GraphicsContext {
         // let transform = Transform { transform: ortho(1.5, -1.5, -1.0, -1.0, -1.0, 1.0) };
         encoder.update_buffer(&data.transform, &[transform], 0);
 
+        let white_texture = Image::make_raw(&mut factory, 1, 1, &[&[1, 1, 1, 1]]).unwrap();
+
         Ok(GraphicsContext {
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             foreground_color: Color::new(1.0, 1.0, 1.0, 1.0),
@@ -216,13 +219,12 @@ impl GraphicsContext {
             device: Box::new(device),
             factory: Box::new(factory),
             encoder: encoder,
-            // color_view: color_view,
             depth_view: depth_view,
 
             pso: pso,
             data: data,
-            // slice: slice,
             quad_slice: quad_slice,
+            white_texture: white_texture,
         })
     }
 }
@@ -346,6 +348,10 @@ pub fn printf(_ctx: &mut Context) {
 
 /// Draws a rectangle.
 pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
+    let img = &mut ctx.gfx_context.white_texture;
+    // TODO: Draw mode is unimplemented.
+    // BUGGO: Argh double-borrow
+    //img.draw(ctx, None, Some(rect))
     unimplemented!();
     // let r = &mut ctx.renderer;
     // match mode {
@@ -462,21 +468,27 @@ impl Image {
         Image::from_rgba8(context, width as u16, height as u16, &[&img])
     }
 
-    /// Creates an Image from an array of u8's arranged in RGBA order.
-    pub fn from_rgba8(context: &mut Context,
-                      width: u16,
-                      height: u16,
-                      rgba: &[&[u8]])
-                      -> GameResult<Image> {
-        let gfx = &mut context.gfx_context;
+    /// A helper function that just takes a factory directly so we can make an image
+    /// without needing the full context object, so we can create one inside the context
+    /// object
+    fn make_raw(factory: &mut gfx_device_gl::Factory, width: u16, height: u16, rgba: &[&[u8]]) -> GameResult<Image>  {
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        let (_, view) = gfx.factory.create_texture_immutable_u8::<Rgba8>(kind, &rgba).unwrap();
+        let (_, view) = factory.create_texture_immutable_u8::<Rgba8>(kind, &rgba).unwrap();
         Ok(Image {
             texture: view,
             width: width as u32,
             height: height as u32,
             properties: RectProperties::default(),
         })
+    }
+
+    /// Creates an Image from an array of u8's arranged in RGBA order.
+    pub fn from_rgba8(context: &mut Context,
+                      width: u16,
+                      height: u16,
+                      rgba: &[&[u8]])
+                     -> GameResult<Image> {
+        Image::make_raw(&mut context.gfx_context.factory, width, height, rgba)
     }
 
     pub fn from_rgba8_flat(context: &mut Context,
