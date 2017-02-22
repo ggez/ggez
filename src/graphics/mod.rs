@@ -28,6 +28,8 @@ use GameError;
 use GameResult;
 
 mod types;
+mod tessellation;
+
 pub use self::types::{Rect, Point, Color, BlendMode};
 
 const GL_MAJOR_VERSION: u8 = 3;
@@ -143,6 +145,7 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     pso: gfx::PipelineState<R, pipe::Meta>,
     data: pipe::Data<R>,
     quad_slice: gfx::Slice<R>,
+    quad_vertex_buffer: gfx::handle::Buffer<R, Vertex>,
 }
 
 // GL only
@@ -225,14 +228,14 @@ impl GraphicsContext {
         let sampler = factory.create_sampler_linear();
         let white_image = Image::make_raw(&mut factory, 1, 1, &[&[255, 255, 255, 255]]).unwrap();
         let texture = white_image.texture.clone();
+
         let data = pipe::Data {
-            vbuf: quad_vertex_buffer,
+            vbuf: quad_vertex_buffer.clone(),
             tex: (texture, sampler),
             rect_properties: rect_props,
             globals: globals_buffer,
             out: color_view,
         };
-
 
         // Set initial uniform values
         let globals = Globals {
@@ -264,6 +267,7 @@ impl GraphicsContext {
             pso: pso,
             data: data,
             quad_slice: quad_slice,
+            quad_vertex_buffer: quad_vertex_buffer,
         };
         gfx.update_globals();
         Ok(gfx)
@@ -415,7 +419,22 @@ pub fn ellipse(ctx: &mut Context,
 
 /// Draws a line of one or more connected segments.
 pub fn line(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
-    unimplemented!();
+    let gfx = &mut ctx.gfx_context;
+
+    let buffers = tessellation::build_line(points, tessellation::ScreenUV).unwrap();
+
+    let (buf, slice) = gfx.factory.create_vertex_buffer_with_slice(
+        &buffers.vertices[..],
+        &buffers.indices[..],
+    );
+
+    gfx.encoder.update_buffer(&gfx.data.rect_properties, &[RectProperties::default()], 0);
+
+    gfx.data.vbuf = buf;
+    gfx.data.tex.0 = gfx.white_image.texture.clone();
+
+    gfx.encoder.draw(&slice, &gfx.pso, &gfx.data);
+    Ok(())
 }
 
 /// Draws points.
@@ -758,6 +777,7 @@ impl Drawable for Image {
         // gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
         // TODO: BUGGO: Make sure these clones are cheap; they should be.
         let (_, sampler) = gfx.data.tex.clone();
+        gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.texture.clone(), sampler);
         gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
         Ok(())
