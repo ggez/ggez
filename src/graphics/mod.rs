@@ -148,16 +148,49 @@ pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources,
                                                   gfx_device_gl::CommandBuffer,
                                                   gfx_device_gl::Device>;
 
+fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
+    let mut major_versions = [4u8, 3u8, 2u8, 1u8];
+    let minor_versions = [5u8, 4u8, 3u8, 2u8, 1u8, 0u8];
+    major_versions.reverse();
+    for major in &major_versions {
+        for minor in &minor_versions {
+            let gl = video.gl_attr();
+            gl.set_context_version(*major, *minor);
+            gl.set_context_profile(sdl2::video::GLProfile::Core);
+            gl.set_red_size(5);
+            gl.set_green_size(5);
+            gl.set_blue_size(5);
+            gl.set_alpha_size(8);
+
+            print!("Requesting GL {}.{}... ", major, minor);
+            let window_builder = video.window("so full of hate", 640, 480);
+            let result = gfx_window_sdl::init::<ColorFormat, DepthFormat>(window_builder);
+            match result {
+                Ok(_) => {
+                    println!("Ok, got GL {}.{}.",
+                             gl.context_major_version(),
+                             gl.context_minor_version())
+                }
+                Err(res) => println!("Request failed: {:?}", res),
+            }
+        }
+    }
+}
+
 impl GraphicsContext {
     pub fn new(video: sdl2::VideoSubsystem,
                window_title: &str,
                screen_width: u32,
                screen_height: u32)
                -> GameResult<GraphicsContext> {
-
+// test_opengl_versions(&video);
         let gl = video.gl_attr();
         gl.set_context_version(GL_MAJOR_VERSION, GL_MINOR_VERSION);
         gl.set_context_profile(sdl2::video::GLProfile::Core);
+            gl.set_red_size(5);
+            gl.set_green_size(5);
+            gl.set_blue_size(5);
+            gl.set_alpha_size(8);
 
         let window_builder = video.window(window_title, screen_width, screen_height);
         let (mut window, mut gl_context, mut device, mut factory, color_view, depth_view) =

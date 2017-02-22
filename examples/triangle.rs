@@ -56,7 +56,7 @@ impl event::EventHandler for MainState {
                           graphics::Point::zero(),
                           graphics::Point::zero())?;
         graphics::present(ctx);
-        println!("Approx FPS: {}", timer::get_fps(ctx));
+        // println!("Approx FPS: {}", timer::get_fps(ctx));
         // timer::sleep_until_next_frame(ctx, 60);
         Ok(())
     }
