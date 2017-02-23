@@ -55,6 +55,9 @@ impl event::EventHandler for MainState {
                           scale,
                           graphics::Point::zero(),
                           graphics::Point::zero())?;
+
+        let rect = graphics::Rect::new(5.0, 5.0, 5.0, 5.0);
+        graphics::rectangle(ctx,graphics::DrawMode::Fill, rect)?;
         graphics::present(ctx);
         // println!("Approx FPS: {}", timer::get_fps(ctx));
         // timer::sleep_until_next_frame(ctx, 60);

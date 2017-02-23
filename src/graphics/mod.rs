@@ -137,7 +137,6 @@ pub struct GraphicsContextGeneric<R, F, C, D>
 
     pso: gfx::PipelineState<R, pipe::Meta>,
     data: pipe::Data<R>,
-    // slice: gfx::Slice<R>,
     quad_slice: gfx::Slice<R>,
     white_image: Image,
 }
@@ -148,6 +147,9 @@ pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources,
                                                   gfx_device_gl::CommandBuffer,
                                                   gfx_device_gl::Device>;
 
+/// TODO: This can probably be removed before release but might be
+/// handy to keep around until then.  Just in case something else
+/// crazy happens.
 fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
     let mut major_versions = [4u8, 3u8, 2u8, 1u8];
     let minor_versions = [5u8, 4u8, 3u8, 2u8, 1u8, 0u8];
@@ -183,7 +185,6 @@ impl GraphicsContext {
                screen_width: u32,
                screen_height: u32)
                -> GameResult<GraphicsContext> {
-// test_opengl_versions(&video);
         let gl = video.gl_attr();
         gl.set_context_version(GL_MAJOR_VERSION, GL_MINOR_VERSION);
         gl.set_context_profile(sdl2::video::GLProfile::Core);
@@ -411,22 +412,15 @@ pub fn printf(_ctx: &mut Context) {
 
 /// Draws a rectangle.
 pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
-    let img = &mut ctx.gfx_context.white_image;
+    // TODO: See if we can evade this clone() without a double-borrow being involved?
+    // That might actually be invalid considering that drawing an Image involves altering
+    // its state.
     // TODO: Draw mode is unimplemented.
-    // BUGGO: Argh double-borrow
-    // img.draw(ctx, None, Some(rect))
-    unimplemented!();
-    // let r = &mut ctx.renderer;
-    // match mode {
-    //     DrawMode::Line => {
-    //         let res = r.draw_rect(rect);
-    //         res.map_err(GameError::from)
-    //     }
-    //     DrawMode::Fill => {
-    //         let res = r.fill_rect(rect);
-    //         res.map_err(GameError::from)
-    //     }
-    // }
+    let img = &mut ctx.gfx_context.white_image.clone();
+    let source = Rect::new(0.0, 0.0, 1.0, 1.0);
+    let dest = Point::new(rect.x, rect.y);
+    let scale = Point::new(rect.w, rect.h);
+    draw_ex(ctx, img, source, dest, 0.0, scale, Point::zero(), Point::zero())
 }
 
 // **********************************************************************
@@ -556,6 +550,7 @@ pub trait Drawable {
 }
 
 /// In-memory image data available to be drawn on the screen.
+#[derive(Clone)]
 pub struct ImageGeneric<R>
     where R: gfx::Resources
 {
