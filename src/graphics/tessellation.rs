@@ -8,6 +8,8 @@ use lyon::tessellation::path_stroke;
 use lyon::tessellation::geometry_builder;
 
 use super::{ Point, Vertex };
+use GameError;
+use GameResult;
 
 pub type Buffer = geometry_builder::VertexBuffers<Vertex>;
 
@@ -46,19 +48,40 @@ fn build_path(points: &[Point]) -> path::Path {
     path_builder.build()
 }
 
-pub fn build_line<T>(points: &[Point], line_width: f32, ctor: T) -> Result<Buffer, ()>
-    where T: geometry_builder::VertexConstructor<math::Point, Vertex>
-{
-    let path = build_path(points);
+type BuffersBuilder<'a> = geometry_builder::BuffersBuilder<'a, Vertex, math::Point, ScreenUV>;
 
+fn build_geometry<F>(f: F) -> GameResult<Buffer>
+    where F: for<'a> FnOnce(&mut BuffersBuilder<'a>) -> Result<tessellation::geometry_builder::Count, ()>
+{
     let mut buffers = geometry_builder::VertexBuffers::new();
     {
-        let mut buf_builder = geometry_builder::BuffersBuilder::new(&mut buffers, ctor);
-
-        let opts = path_stroke::StrokeOptions::stroke_width(line_width);
-        let mut tesselator = path_stroke::StrokeTessellator::new();
-        tesselator.tessellate(path.path_iter().flattened(0.5), &opts, &mut buf_builder)?;
+        let mut builder = geometry_builder::BuffersBuilder::new(&mut buffers, ScreenUV);
+        if let Err(()) = f(&mut builder) {
+            return Err(GameError::RenderError(String::from("geometry tessellation failed")));
+        }
     }
-
     Ok(buffers)
+}
+
+pub fn build_line(points: &[Point], line_width: f32) -> GameResult<Buffer>
+{
+    let path = build_path(points);
+    let opts = path_stroke::StrokeOptions::stroke_width(line_width);
+    let mut tessellator = path_stroke::StrokeTessellator::new();
+    build_geometry(|builder|
+        tessellator.tessellate(path.path_iter().flattened(0.5), &opts, builder)
+    )
+}
+
+pub fn build_ellipse_fill(point: Point, r1: f32, r2: f32, segments: u32, line_width: f32) -> GameResult<Buffer>
+{
+    let opts = path_stroke::StrokeOptions::stroke_width(line_width);
+    build_geometry(|builder|
+        Ok(tessellation::basic_shapes::tessellate_ellipsis(
+            math::point(point.x, point.y),
+            math::point(r1, r2),
+            segments,
+            builder,
+        ))
+    )
 }

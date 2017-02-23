@@ -320,6 +320,21 @@ fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [
      [c0r3, c1r3, c2r3, c3r3]]
 }
 
+fn draw_tessellated(gfx: &mut GraphicsContext, buffers: tessellation::Buffer) -> GameResult<()> {
+    let (buf, slice) = gfx.factory.create_vertex_buffer_with_slice(
+        &buffers.vertices[..],
+        &buffers.indices[..],
+    );
+
+    gfx.encoder.update_buffer(&gfx.data.rect_properties, &[RectProperties::default()], 0);
+
+    gfx.data.vbuf = buf;
+    gfx.data.tex.0 = gfx.white_image.texture.clone();
+
+    gfx.encoder.draw(&slice, &gfx.pso, &gfx.data);
+
+    Ok(())
+}
 
 // **********************************************************************
 // DRAWING
@@ -404,7 +419,16 @@ pub fn circle(ctx: &mut Context,
               radius: f32,
               segments: u32)
               -> GameResult<()> {
-    unimplemented!();
+    let gfx = &mut ctx.gfx_context;
+    let buffers = match mode {
+        DrawMode::Fill => tessellation::build_ellipse_fill(point,
+                                                           radius,
+                                                           radius,
+                                                           segments,
+                                                           gfx.line_width),
+        DrawMode::Line => unimplemented!(),
+    }?;
+    draw_tessellated(gfx, buffers)
 }
 
 pub fn ellipse(ctx: &mut Context,
@@ -414,27 +438,24 @@ pub fn ellipse(ctx: &mut Context,
                radius2: f32,
                segments: u32)
                -> GameResult<()> {
-    unimplemented!();
+    let gfx = &mut ctx.gfx_context;
+    let buffers = match mode {
+        DrawMode::Fill => tessellation::build_ellipse_fill(point,
+                                                           radius1,
+                                                           radius2,
+                                                           segments,
+                                                           gfx.line_width),
+        DrawMode::Line => unimplemented!(),
+    }?;
+
+    draw_tessellated(gfx, buffers)
 }
 
 /// Draws a line of one or more connected segments.
 pub fn line(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
     let gfx = &mut ctx.gfx_context;
-
-    let buffers = tessellation::build_line(points, gfx.line_width, tessellation::ScreenUV).unwrap();
-
-    let (buf, slice) = gfx.factory.create_vertex_buffer_with_slice(
-        &buffers.vertices[..],
-        &buffers.indices[..],
-    );
-
-    gfx.encoder.update_buffer(&gfx.data.rect_properties, &[RectProperties::default()], 0);
-
-    gfx.data.vbuf = buf;
-    gfx.data.tex.0 = gfx.white_image.texture.clone();
-
-    gfx.encoder.draw(&slice, &gfx.pso, &gfx.data);
-    Ok(())
+    let buffers = tessellation::build_line(points, gfx.line_width)?;
+    draw_tessellated(gfx, buffers)
 }
 
 /// Draws points.

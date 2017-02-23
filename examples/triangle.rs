@@ -4,7 +4,7 @@ use ggez::event;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
-use ggez::graphics::Point;
+use ggez::graphics::{ DrawMode, Point };
 use std::time::Duration;
 
 // First we make a structure to contain the game's state
@@ -69,6 +69,15 @@ impl event::EventHandler for MainState {
             Point { x: 200.0, y: 400.0 },
             Point { x: 200.0, y: 200.0 },
         ])?;
+
+        graphics::ellipse(ctx,
+                          DrawMode::Fill,
+                          Point { x: 600.0, y: 200.0 },
+                          50.0,
+                          120.0,
+                          32)?;
+
+        graphics::circle(ctx, DrawMode::Fill, Point {x : 600.0, y: 380.0 }, 40.0, 32)?;
 
         graphics::present(ctx);
         // println!("Approx FPS: {}", timer::get_fps(ctx));
