@@ -46,7 +46,7 @@ fn build_path(points: &[Point]) -> path::Path {
     path_builder.build()
 }
 
-pub fn build_line<T>(points: &[Point], ctor: T) -> Result<Buffer, ()>
+pub fn build_line<T>(points: &[Point], line_width: f32, ctor: T) -> Result<Buffer, ()>
     where T: geometry_builder::VertexConstructor<math::Point, Vertex>
 {
     let path = build_path(points);
@@ -55,7 +55,7 @@ pub fn build_line<T>(points: &[Point], ctor: T) -> Result<Buffer, ()>
     {
         let mut buf_builder = geometry_builder::BuffersBuilder::new(&mut buffers, ctor);
 
-        let opts = path_stroke::StrokeOptions::default();
+        let opts = path_stroke::StrokeOptions::stroke_width(line_width);
         let mut tesselator = path_stroke::StrokeTessellator::new();
         tesselator.tessellate(path.path_iter().flattened(0.5), &opts, &mut buf_builder)?;
     }

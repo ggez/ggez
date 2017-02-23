@@ -421,7 +421,7 @@ pub fn ellipse(ctx: &mut Context,
 pub fn line(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
     let gfx = &mut ctx.gfx_context;
 
-    let buffers = tessellation::build_line(points, tessellation::ScreenUV).unwrap();
+    let buffers = tessellation::build_line(points, gfx.line_width, tessellation::ScreenUV).unwrap();
 
     let (buf, slice) = gfx.factory.create_vertex_buffer_with_slice(
         &buffers.vertices[..],

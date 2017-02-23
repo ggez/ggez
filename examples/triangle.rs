@@ -61,6 +61,7 @@ impl event::EventHandler for MainState {
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         graphics::rectangle(ctx, graphics::DrawMode::Fill, rect)?;
 
+        graphics::set_line_width(ctx, 4.0);
         graphics::line(ctx, &[
             Point { x: 200.0, y: 200.0 },
             Point { x: 400.0, y: 200.0 },
