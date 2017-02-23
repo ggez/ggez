@@ -126,7 +126,11 @@ pub struct GraphicsContextGeneric<R, F, C, D>
 {
     background_color: Color,
     foreground_color: Color,
-
+    white_image: Image,
+    blend_mode: (),
+    line_width: f32,
+    point_size: f32,
+    
     window: sdl2::video::Window,
     gl_context: sdl2::video::GLContext,
     device: Box<D>,
@@ -138,7 +142,6 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     pso: gfx::PipelineState<R, pipe::Meta>,
     data: pipe::Data<R>,
     quad_slice: gfx::Slice<R>,
-    white_image: Image,
 }
 
 // GL only
@@ -188,10 +191,10 @@ impl GraphicsContext {
         let gl = video.gl_attr();
         gl.set_context_version(GL_MAJOR_VERSION, GL_MINOR_VERSION);
         gl.set_context_profile(sdl2::video::GLProfile::Core);
-            gl.set_red_size(5);
-            gl.set_green_size(5);
-            gl.set_blue_size(5);
-            gl.set_alpha_size(8);
+        gl.set_red_size(5);
+        gl.set_green_size(5);
+        gl.set_blue_size(5);
+        gl.set_alpha_size(8);
 
         let window_builder = video.window(window_title, screen_width, screen_height);
         let (mut window, mut gl_context, mut device, mut factory, color_view, depth_view) =
@@ -244,6 +247,10 @@ impl GraphicsContext {
         Ok(GraphicsContext {
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             foreground_color: Color::new(1.0, 1.0, 1.0, 1.0),
+            line_width: 1.0,
+            point_size: 1.0,
+            blend_mode: (),
+            white_image: white_image,
 
             window: window,
             gl_context: gl_context,
@@ -255,7 +262,6 @@ impl GraphicsContext {
             pso: pso,
             data: data,
             quad_slice: quad_slice,
-            white_image: white_image,
         })
     }
 }
@@ -427,31 +433,31 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
 // GRAPHICS STATE
 // **********************************************************************
 
-pub fn get_background_color(ctx: &Context) {
-    unimplemented!()
+pub fn get_background_color(ctx: &Context) -> Color {
+    ctx.gfx_context.background_color
 }
 
 pub fn get_blend_mode(ctx: &Context) {
     unimplemented!()
 }
 
-pub fn get_color(ctx: &Context) {
-    unimplemented!()
+pub fn get_color(ctx: &Context) -> Color {
+    ctx.gfx_context.foreground_color
 }
 
 pub fn get_default_filter(ctx: &Context) {
     unimplemented!()
 }
 
-pub fn get_font(ctx: &Context) {
+pub fn get_font(ctx: &Context) -> Font {
     unimplemented!()
 }
 
-pub fn get_line_width(ctx: &Context) {
+pub fn get_line_width(ctx: &Context) -> f32 {
     unimplemented!()
 }
 
-pub fn get_point_size(ctx: &Context) {
+pub fn get_point_size(ctx: &Context) -> f32 {
     unimplemented!()
 }
 
@@ -464,7 +470,7 @@ pub fn get_screen_coordinates(ctx: &Context) {
     unimplemented!()
 }
 
-pub fn is_gamma_correct(ctx: &Context) {
+pub fn is_gamma_correct(ctx: &Context) -> bool {
     unimplemented!()
 }
 
@@ -488,16 +494,16 @@ pub fn set_default_filter(ctx: &mut Context) {
 }
 
 
-pub fn set_font(ctx: &mut Context) {
+pub fn set_font(ctx: &mut Context, font: Font) {
     unimplemented!()
 }
 
-pub fn set_line_width(ctx: &mut Context) {
-    unimplemented!()
+pub fn set_line_width(ctx: &mut Context, width: f32) {
+    ctx.gfx_context.line_width = width;
 }
 
-pub fn set_point_size(ctx: &mut Context) {
-    unimplemented!()
+pub fn set_point_size(ctx: &mut Context, size: f32) {
+    ctx.gfx_context.point_size = size;
 }
 
 pub fn set_screen_coordinates(context: &mut Context,
