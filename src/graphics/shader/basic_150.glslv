@@ -3,8 +3,9 @@
 in vec2 a_Pos;
 in vec2 a_Uv;
 
-uniform Transform {
+uniform Globals {
     mat4 u_Transform;
+    vec4 u_Color;
 };
 
 uniform RectProperties {

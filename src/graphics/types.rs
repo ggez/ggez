@@ -97,6 +97,12 @@ impl From<(u8, u8, u8)> for Color {
     }
 }
 
+impl From<[f32; 4]> for Color {
+    fn from(val: [f32; 4]) -> Self {
+        Color::new(val[0], val[1], val[2], val[3])
+    }
+}
+
 impl From<Color> for (u8, u8, u8, u8) {
     fn from(color: Color) -> Self {
         let r = (color.r * 255.0) as u8;

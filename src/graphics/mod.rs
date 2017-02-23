@@ -70,8 +70,9 @@ gfx_defines!{
         uv: [f32; 2] = "a_Uv",
     }
 
-    constant Transform {
+    constant Globals {
         transform: [[f32; 4];4] = "u_Transform",
+        color: [f32; 4] = "u_Color",
     }
 
     // Values that are different for each rect.
@@ -87,7 +88,7 @@ gfx_defines!{
     pipeline pipe {
         vbuf: gfx::VertexBuffer<Vertex> = (),
         tex: gfx::TextureSampler<[f32; 4]> = "t_Texture",
-        transform: gfx::ConstantBuffer<Transform> = "Transform",
+        globals: gfx::ConstantBuffer<Globals> = "Globals",
         rect_properties: gfx::ConstantBuffer<RectProperties> = "RectProperties",
         out: gfx::RenderTarget<ColorFormat> = "Target0",
     }
@@ -125,12 +126,12 @@ pub struct GraphicsContextGeneric<R, F, C, D>
           D: gfx::Device<Resources = R, CommandBuffer = C>
 {
     background_color: Color,
-    foreground_color: Color,
+    shader_globals: Globals,
     white_image: Image,
     blend_mode: (),
     line_width: f32,
     point_size: f32,
-    
+
     window: sdl2::video::Window,
     gl_context: sdl2::video::GLContext,
     device: Box<D>,
@@ -220,33 +221,33 @@ impl GraphicsContext {
             factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
 
         let rect_props = factory.create_constant_buffer(1);
-        let transform_buffer = factory.create_constant_buffer(1);
+        let globals_buffer = factory.create_constant_buffer(1);
         let sampler = factory.create_sampler_linear();
-        let white_image = Image::make_raw(&mut factory, 1, 1, &[&[1, 1, 1, 1]]).unwrap();
+        let white_image = Image::make_raw(&mut factory, 1, 1, &[&[255, 255, 255, 255]]).unwrap();
         let texture = white_image.texture.clone();
         let data = pipe::Data {
             vbuf: quad_vertex_buffer,
             tex: (texture, sampler),
             rect_properties: rect_props,
-            transform: transform_buffer,
+            globals: globals_buffer,
             out: color_view,
         };
 
 
         // Set initial uniform values
-        let transform = Transform {
+        let globals = Globals {
             transform: ortho(0.0,
                              screen_width as f32,
                              0.0,
                              screen_height as f32,
                              1.0,
                              -1.0),
+            color: types::WHITE.into(),
         };
-        encoder.update_buffer(&data.transform, &[transform], 0);
 
-        Ok(GraphicsContext {
+        let mut gfx = GraphicsContext {
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
-            foreground_color: Color::new(1.0, 1.0, 1.0, 1.0),
+            shader_globals: globals,
             line_width: 1.0,
             point_size: 1.0,
             blend_mode: (),
@@ -262,7 +263,13 @@ impl GraphicsContext {
             pso: pso,
             data: data,
             quad_slice: quad_slice,
-        })
+        };
+        gfx.update_globals();
+        Ok(gfx)
+    }
+
+    fn update_globals(&mut self) {
+        self.encoder.update_buffer(&self.data.globals, &[self.shader_globals], 0);
     }
 }
 
@@ -426,7 +433,14 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     let source = Rect::new(0.0, 0.0, 1.0, 1.0);
     let dest = Point::new(rect.x, rect.y);
     let scale = Point::new(rect.w, rect.h);
-    draw_ex(ctx, img, source, dest, 0.0, scale, Point::zero(), Point::zero())
+    draw_ex(ctx,
+            img,
+            source,
+            dest,
+            0.0,
+            scale,
+            Point::zero(),
+            Point::zero())
 }
 
 // **********************************************************************
@@ -442,7 +456,7 @@ pub fn get_blend_mode(ctx: &Context) {
 }
 
 pub fn get_color(ctx: &Context) -> Color {
-    ctx.gfx_context.foreground_color
+    ctx.gfx_context.shader_globals.color.into()
 }
 
 pub fn get_default_filter(ctx: &Context) {
@@ -486,7 +500,11 @@ pub fn set_blend_mode(ctx: &mut Context) {
 /// Sets the foreground color, which will be used for drawing
 /// rectangles, lines, etc.  Default: white.
 pub fn set_color(ctx: &mut Context, color: Color) {
-    ctx.gfx_context.foreground_color = color;
+    // TODO: Update buffer!
+    let gfx = &mut ctx.gfx_context;
+    gfx.shader_globals.color = color.into();
+    gfx.update_globals();
+    // gfx.encoder.update_buffer(&gfx.data.globals, &[gfx.shader_globals], 0);
 }
 
 pub fn set_default_filter(ctx: &mut Context) {
@@ -512,8 +530,9 @@ pub fn set_screen_coordinates(context: &mut Context,
                               top: f32,
                               bottom: f32) {
     let gfx = &mut context.gfx_context;
-    let transform = Transform { transform: ortho(left, right, top, bottom, 1.0, -1.0) };
-    gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
+    gfx.shader_globals.transform = ortho(left, right, top, bottom, 1.0, -1.0);
+    gfx.update_globals();
+    // gfx.encoder.update_buffer(&gfx.data.globals, &[gfx.shader_globals], 0);
 }
 
 // **********************************************************************

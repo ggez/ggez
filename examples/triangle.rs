@@ -47,6 +47,7 @@ impl event::EventHandler for MainState {
                        0.0)?;
         let dst = graphics::Point::new(100.0, 100.0);
         let scale = graphics::Point::new(2.0, 2.0);
+        graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0));
         graphics::draw_ex(ctx,
                           &mut self.image2,
                           graphics::Rect::zero(),
@@ -56,8 +57,8 @@ impl event::EventHandler for MainState {
                           graphics::Point::zero(),
                           graphics::Point::zero())?;
 
-        let rect = graphics::Rect::new(5.0, 5.0, 5.0, 5.0);
-        graphics::rectangle(ctx,graphics::DrawMode::Fill, rect)?;
+        let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
+        graphics::rectangle(ctx, graphics::DrawMode::Fill, rect)?;
         graphics::present(ctx);
         // println!("Approx FPS: {}", timer::get_fps(ctx));
         // timer::sleep_until_next_frame(ctx, 60);
