@@ -90,7 +90,7 @@ gfx_defines!{
         tex: gfx::TextureSampler<[f32; 4]> = "t_Texture",
         globals: gfx::ConstantBuffer<Globals> = "Globals",
         rect_properties: gfx::ConstantBuffer<RectProperties> = "RectProperties",
-        out: gfx::RenderTarget<ColorFormat> = "Target0",
+        out: gfx::BlendTarget<ColorFormat> = ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
     }
 }
 
@@ -242,7 +242,8 @@ impl GraphicsContext {
                              screen_height as f32,
                              1.0,
                              -1.0),
-            color: types::WHITE.into(),
+            // color: types::WHITE.into(),
+            color: [1.0, 1.0, 1.0, 0.5],
         };
 
         let mut gfx = GraphicsContext {

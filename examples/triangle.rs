@@ -47,7 +47,7 @@ impl event::EventHandler for MainState {
                        0.0)?;
         let dst = graphics::Point::new(100.0, 100.0);
         let scale = graphics::Point::new(2.0, 2.0);
-        graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0));
+        // graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0));
         graphics::draw_ex(ctx,
                           &mut self.image2,
                           graphics::Rect::zero(),
