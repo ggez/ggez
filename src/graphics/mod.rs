@@ -329,6 +329,13 @@ pub fn clear(ctx: &mut Context) {
 }
 
 /// Draws the given `Drawable` object to the screen.
+///
+/// * `ctx` - The `Context` this graphic will be rendered to.
+/// * `drawable` - The `Drawable` to render.
+/// * `quad` - a portion of the drawable to clip.
+/// * `dest` - the position to draw the graphic expressed as a `Point`.
+/// * `rotation` - orientation of the graphic in radians.
+///
 pub fn draw(ctx: &mut Context,
             drawable: &mut Drawable,
             quad: Rect,
@@ -341,6 +348,16 @@ pub fn draw(ctx: &mut Context,
 
 /// Draws the given `Drawable` object to the screen,
 /// applying a rotation and mirroring if desired.
+///
+/// * `ctx` - The `Context` this graphic will be rendered to.
+/// * `drawable` - The `Drawable` to render.
+/// * `quad` - a portion of the drawable to clip.
+/// * `dest` - the position to draw the graphic expressed as a `Point`.
+/// * `rotation` - orientation of the graphic in radians.
+/// * `scale` - x/y scale factors expressed as a `Point`.
+/// * `offset` - used to move the pivot point for transform operations like scale/rotation.
+/// * `shear` - x/y shear factors expressed as a `Point`.
+///
 // #[allow(too_many_arguments)]
 pub fn draw_ex(ctx: &mut Context,
                drawable: &mut Drawable,
@@ -543,13 +560,23 @@ pub fn set_screen_coordinates(context: &mut Context,
 /// All types that can be drawn on the screen implement the `Drawable` trait.
 pub trait Drawable {
     /// Actually draws the object to the screen.
+    ///
     /// This is the most general version of the operation, which is all that
     /// is required for implementing this trait.
     /// (It also maps nicely onto SDL2's Renderer::copy_ex(), we might want to
     /// wrap the types up a bit more nicely someday.)
+    ///
+    /// * `ctx` - The `Context` this graphic will be rendered to.
+    /// * `quad` - a portion of the drawable to clip.
+    /// * `dest` - the position to draw the graphic expressed as a `Point`.
+    /// * `rotation` - orientation of the graphic in radians.
+    /// * `scale` - x/y scale factors expressed as a `Point`.
+    /// * `offset` - used to move the pivot point for transform operations like scale/rotation.
+    /// * `shear` - x/y shear factors expressed as a `Point`.
+    ///
     // #[allow(too_many_arguments)]
     fn draw_ex(&mut self,
-               context: &mut Context,
+               ctx: &mut Context,
                quad: Rect,
                dest: Point,
                rotation: f32,
@@ -559,6 +586,12 @@ pub trait Drawable {
                -> GameResult<()>;
 
     /// Draws the drawable onto the rendering target.
+    ///
+    /// * `ctx` - The `Context` this graphic will be rendered to.
+    /// * `quad` - a portion of the drawable to clip.
+    /// * `dest` - the position to draw the graphic expressed as a `Point`.
+    /// * `rotation` - orientation of the graphic in radians.
+    ///
     fn draw(&mut self,
             ctx: &mut Context,
             quad: Rect,
