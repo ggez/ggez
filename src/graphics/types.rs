@@ -51,6 +51,10 @@ impl Rect {
     pub fn zero() -> Self {
         Self::new(0.0, 0.0, 0.0, 0.0)
     }
+
+    pub fn one() -> Self {
+        Self::new(0.0, 0.0, 1.0, 1.0)
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]

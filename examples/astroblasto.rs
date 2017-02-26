@@ -391,7 +391,7 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.print_resource_stats();
-        graphics::set_background_color(ctx, graphics::Color::RGB(0, 0, 0));
+        graphics::set_background_color(ctx, (0, 0, 0, 255).into());
 
         println!("Game resource path: {:?}", ctx.filesystem);
 
@@ -473,7 +473,7 @@ impl MainState {
         }
     }
 
-    fn update_ui(&mut self, ctx: &Context) {
+    fn update_ui(&mut self, ctx: &mut Context) {
         let score_str = format!("Score: {}", self.score);
         let level_str = format!("Level: {}", self.level);
         let score_text = graphics::Text::new(ctx, &score_str, &self.assets.font).unwrap();
@@ -507,19 +507,17 @@ fn draw_actor(assets: &mut Assets,
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, &actor.pos);
     // let pos = Vec2::new(1.0, 1.0);
-    let px = pos.x as i32;
-    let py = pos.y as i32;
-    let destrect = graphics::Rect::new(px, py, SPRITE_SIZE, SPRITE_SIZE);
-    let actor_center = graphics::Point::new(16, 16);
+    let px = pos.x as f32;
+    let py = pos.y as f32;
+    let source_rect = graphics::Rect::new(0.0, 0.0, 1.0, 1.0);
+    let dest_point = graphics::Point::new(px, py);
+    let _actor_center = graphics::Point::new(16.0, 16.0);
     let image = assets.actor_image(actor);
-    graphics::draw_ex(ctx,
-                      image,
-                      None,
-                      Some(destrect),
-                      actor.facing.to_degrees(),
-                      Some(actor_center),
-                      false,
-                      false)
+    graphics::draw(ctx,
+                   image,
+                   source_rect,
+                   dest_point,
+                   actor.facing.to_degrees() as f32)
 
 }
 
@@ -615,16 +613,11 @@ impl EventHandler for MainState {
 
 
         // And draw the GUI elements in the right places.
-        let level_rect = graphics::Rect::new(0,
-                                             0,
-                                             self.level_display.width(),
-                                             self.level_display.height());
-        let score_rect = graphics::Rect::new(200,
-                                             0,
-                                             self.score_display.width(),
-                                             self.score_display.height());
-        graphics::draw(ctx, &mut self.level_display, None, Some(level_rect))?;
-        graphics::draw(ctx, &mut self.score_display, None, Some(score_rect))?;
+        let level_dest = graphics::Point::new(0.0, 0.0);
+        let score_dest = graphics::Point::new(200.0, 0.0);
+        let source_rect = graphics::Rect::one();
+        graphics::draw(ctx, &mut self.level_display, source_rect, level_dest, 0.0)?;
+        graphics::draw(ctx, &mut self.score_display, source_rect, score_dest, 0.0)?;
 
         // Then we flip the screen...
         graphics::present(ctx);
