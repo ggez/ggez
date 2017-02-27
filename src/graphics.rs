@@ -619,6 +619,25 @@ impl Text {
     pub fn contents(&self) -> &str {
         &self.contents
     }
+
+
+    /// Set the color mod of the image.
+    /// Each pixel of the image is multiplied by this color
+    /// when drawn.
+    pub fn set_color_mod(&mut self, color: Color) {
+        match color {
+            pixels::Color::RGB(r, g, b) |
+            pixels::Color::RGBA(r, g, b, _) => self.texture.set_color_mod(r, g, b),
+        }
+    }
+
+
+    /// Set the alpha mod of the image.
+    /// Each pixel's alpha will be multiplied by this value
+    /// when drawn.
+    pub fn set_alpha_mod(&mut self, alpha: u8) {
+        self.texture.set_alpha_mod(alpha)
+    }
 }
 
 
