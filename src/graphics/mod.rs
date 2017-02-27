@@ -16,6 +16,7 @@ use sdl2;
 use rusttype;
 use image;
 use gfx;
+use gfx::traits::Device;
 use gfx::traits::FactoryExt;
 use gfx_device_gl;
 use gfx_window_sdl;
@@ -349,6 +350,7 @@ pub fn present(ctx: &mut Context) {
     // thing is a bigger hurdle, so this is fine for now.
     gfx.encoder.flush(&mut *gfx.device);
     gfx.window.gl_swap_window();
+    gfx.device.cleanup();
 }
 
 pub fn arc(ctx: &mut Context,
