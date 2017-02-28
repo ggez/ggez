@@ -48,6 +48,7 @@ impl event::EventHandler for MainState {
                        0.0)?;
         let dst = graphics::Point::new(100.0, 100.0);
         let scale = graphics::Point::new(2.0, 2.0);
+        let shear = graphics::Point::new(self.zoomlevel, self.zoomlevel);
         // graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0));
         graphics::draw_ex(ctx,
                           &mut self.image2,
@@ -56,7 +57,7 @@ impl event::EventHandler for MainState {
                           self.zoomlevel,
                           scale,
                           graphics::Point::zero(),
-                          graphics::Point::zero())?;
+                          shear)?;
 
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         graphics::rectangle(ctx, graphics::DrawMode::Fill, rect)?;
