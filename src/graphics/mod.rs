@@ -437,14 +437,8 @@ pub fn circle(ctx: &mut Context,
               radius: f32,
               segments: u32)
               -> GameResult<()> {
-    let gfx = &mut ctx.gfx_context;
-    let buffers = match mode {
-        DrawMode::Fill => {
-            tessellation::build_ellipse_fill(point, radius, radius, segments, gfx.line_width)
-        }
-        DrawMode::Line => unimplemented!(),
-    }?;
-    draw_tessellated(gfx, buffers)
+    let m = Mesh::new_circle(ctx, mode, point, radius, segments)?;
+    m.draw(ctx, Rect::default(), Point::default(), 0.0)
 }
 
 pub fn ellipse(ctx: &mut Context,
@@ -454,22 +448,15 @@ pub fn ellipse(ctx: &mut Context,
                radius2: f32,
                segments: u32)
                -> GameResult<()> {
-    let gfx = &mut ctx.gfx_context;
-    let buffers = match mode {
-        DrawMode::Fill => {
-            tessellation::build_ellipse_fill(point, radius1, radius2, segments, gfx.line_width)
-        }
-        DrawMode::Line => unimplemented!(),
-    }?;
-
-    draw_tessellated(gfx, buffers)
+    let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, segments)?;
+    m.draw(ctx, Rect::default(), Point::default(), 0.0)
 }
 
 /// Draws a line of one or more connected segments.
 pub fn line(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
-    let gfx = &mut ctx.gfx_context;
-    let buffers = tessellation::build_line(points, gfx.line_width)?;
-    draw_tessellated(gfx, buffers)
+    let w = ctx.gfx_context.line_width;
+    let m = Mesh::new_line(ctx, points, w)?;
+    m.draw(ctx, Rect::default(), Point::default(), 0.0)
 }
 
 /// Draws points.
@@ -1098,5 +1085,83 @@ impl fmt::Debug for Text {
                self.texture.height,
                &self)
 
+    }
+}
+
+
+/// 2D polygon mesh
+pub struct Mesh {
+    buffer: gfx::handle::Buffer<gfx_device_gl::Resources, Vertex>,
+    slice: gfx::Slice<gfx_device_gl::Resources>,
+}
+
+impl Mesh {
+    fn from_tessellation(ctx: &mut Context, buffer: tessellation::Buffer) -> GameResult<Mesh> {
+        let (vbuf, slice) = ctx.gfx_context
+            .factory
+            .create_vertex_buffer_with_slice(&buffer.vertices[..], &buffer.indices[..]);
+
+        Ok(Mesh {
+            buffer: vbuf,
+            slice: slice,
+        })
+    }
+
+    /// Create a new mesh for a line of one or more connected segments.
+    pub fn new_line(ctx: &mut Context, points: &[Point], width: f32) -> GameResult<Mesh> {
+        Mesh::from_tessellation(ctx, tessellation::build_line(points, width)?)
+    }
+
+    /// Create a new mesh for a circle.
+    pub fn new_circle(ctx: &mut Context,
+                      mode: DrawMode,
+                      point: Point,
+                      radius: f32,
+                      segments: u32)
+                      -> GameResult<Mesh> {
+        let buf = match mode {
+            DrawMode::Fill => tessellation::build_ellipse_fill(point, radius, radius, segments),
+            DrawMode::Line => unimplemented!(),
+        }?;
+
+        Mesh::from_tessellation(ctx, buf)
+    }
+
+    /// Create a new mesh for an ellipse.
+    pub fn new_ellipse(ctx: &mut Context,
+                       mode: DrawMode,
+                       point: Point,
+                       radius1: f32,
+                       radius2: f32,
+                       segments: u32)
+                       -> GameResult<Mesh> {
+        let buf = match mode {
+            DrawMode::Fill => tessellation::build_ellipse_fill(point, radius1, radius2, segments),
+            DrawMode::Line => unimplemented!(),
+        }?;
+
+        Mesh::from_tessellation(ctx, buf)
+    }
+}
+
+impl Drawable for Mesh {
+    fn draw_ex(&self,
+               ctx: &mut Context,
+               quad: Rect,
+               dest: Point,
+               rotation: f32,
+               scale: Point,
+               offset: Point,
+               shear: Point)
+               -> GameResult<()> {
+        let gfx = &mut ctx.gfx_context;
+        gfx.update_rect_properties(quad, dest, rotation, scale, offset, shear);
+
+        gfx.data.vbuf = self.buffer.clone();
+        gfx.data.tex.0 = gfx.white_image.texture.clone();
+
+        gfx.encoder.draw(&self.slice, &gfx.pso, &gfx.data);
+
+        Ok(())
     }
 }
