@@ -792,6 +792,7 @@ impl Drawable for Image {
         let gfx = &mut context.gfx_context;
         self.properties.dest = dest.into();
         self.properties.scale = [scale.x * self.width as f32, scale.y * self.height as f32];
+        self.properties.rotation = rotation;
         gfx.encoder.update_buffer(&gfx.data.rect_properties, &[self.properties], 0);
 
         // let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
