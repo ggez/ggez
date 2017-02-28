@@ -321,10 +321,8 @@ fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [
 }
 
 fn draw_tessellated(gfx: &mut GraphicsContext, buffers: tessellation::Buffer) -> GameResult<()> {
-    let (buf, slice) = gfx.factory.create_vertex_buffer_with_slice(
-        &buffers.vertices[..],
-        &buffers.indices[..],
-    );
+    let (buf, slice) = gfx.factory
+        .create_vertex_buffer_with_slice(&buffers.vertices[..], &buffers.indices[..]);
 
     gfx.encoder.update_buffer(&gfx.data.rect_properties, &[RectProperties::default()], 0);
 
@@ -421,11 +419,9 @@ pub fn circle(ctx: &mut Context,
               -> GameResult<()> {
     let gfx = &mut ctx.gfx_context;
     let buffers = match mode {
-        DrawMode::Fill => tessellation::build_ellipse_fill(point,
-                                                           radius,
-                                                           radius,
-                                                           segments,
-                                                           gfx.line_width),
+        DrawMode::Fill => {
+            tessellation::build_ellipse_fill(point, radius, radius, segments, gfx.line_width)
+        }
         DrawMode::Line => unimplemented!(),
     }?;
     draw_tessellated(gfx, buffers)
@@ -440,11 +436,9 @@ pub fn ellipse(ctx: &mut Context,
                -> GameResult<()> {
     let gfx = &mut ctx.gfx_context;
     let buffers = match mode {
-        DrawMode::Fill => tessellation::build_ellipse_fill(point,
-                                                           radius1,
-                                                           radius2,
-                                                           segments,
-                                                           gfx.line_width),
+        DrawMode::Fill => {
+            tessellation::build_ellipse_fill(point, radius1, radius2, segments, gfx.line_width)
+        }
         DrawMode::Line => unimplemented!(),
     }?;
 
@@ -509,10 +503,6 @@ pub fn get_background_color(ctx: &Context) -> Color {
     ctx.gfx_context.background_color
 }
 
-pub fn get_blend_mode(ctx: &Context) {
-    unimplemented!()
-}
-
 pub fn get_color(ctx: &Context) -> Color {
     ctx.gfx_context.shader_globals.color.into()
 }
@@ -549,10 +539,6 @@ pub fn is_gamma_correct(ctx: &Context) -> bool {
 /// Sets the background color.  Default: blue.
 pub fn set_background_color(ctx: &mut Context, color: Color) {
     ctx.gfx_context.background_color = color;
-}
-
-pub fn set_blend_mode(ctx: &mut Context) {
-    unimplemented!()
 }
 
 /// Sets the foreground color, which will be used for drawing
@@ -656,7 +642,6 @@ pub struct ImageGeneric<R>
     // We should probably keep both the raw image data around,
     // and an Option containing the texture handle if necessary.
     texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
-    properties: RectProperties,
     width: u32,
     height: u32,
 }
@@ -685,7 +670,6 @@ impl Image {
             texture: view,
             width: width as u32,
             height: height as u32,
-            properties: RectProperties::default(),
         })
     }
 
@@ -788,11 +772,17 @@ impl Drawable for Image {
                offset: Point,
                shear: Point)
                -> GameResult<()> {
-
         let gfx = &mut context.gfx_context;
-        self.properties.dest = dest.into();
-        self.properties.scale = [scale.x * self.width as f32, scale.y * self.height as f32];
-        gfx.encoder.update_buffer(&gfx.data.rect_properties, &[self.properties], 0);
+
+        let properties = RectProperties {
+            src: [0.0, 0.0, 0.0, 0.0],
+            dest: dest.into(),
+            scale: [scale.x * self.width as f32, scale.y * self.height as f32],
+            offset: offset.into(),
+            shear: shear.into(),
+            rotation: rotation,
+        };
+        gfx.encoder.update_buffer(&gfx.data.rect_properties, &[properties], 0);
 
         // let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
         // gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
