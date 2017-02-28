@@ -19,7 +19,14 @@ uniform RectProperties {
 
 out vec2 v_Uv;
 
+vec2 rotate(vec2 v, float rad) {
+	float s = sin(rad);
+	float c = cos(rad);
+	mat2 rot = mat2(c, -s, s, c);
+	return rot * v;
+}
+
 void main() {
     v_Uv = a_Uv;
-    gl_Position = vec4((a_Pos * u_Scale) + u_Dest, 0.0, 1.0) * u_Transform;
+    gl_Position = vec4((rotate(a_Pos, u_Rotation) * u_Scale) + u_Dest, 0.0, 1.0) * u_Transform;
 }
