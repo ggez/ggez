@@ -245,8 +245,7 @@ impl GraphicsContext {
                              screen_height as f32,
                              1.0,
                              -1.0),
-            // color: types::WHITE.into(),
-            color: [1.0, 1.0, 1.0, 0.5],
+            color: types::WHITE.into(),
         };
 
         let mut gfx = GraphicsContext {
@@ -354,7 +353,7 @@ pub fn clear(ctx: &mut Context) {
 /// * `rotation` - orientation of the graphic in radians.
 ///
 pub fn draw(ctx: &mut Context,
-            drawable: &mut Drawable,
+            drawable: &Drawable,
             quad: Rect,
             dest: Point,
             rotation: f32)
@@ -377,7 +376,7 @@ pub fn draw(ctx: &mut Context,
 ///
 // #[allow(too_many_arguments)]
 pub fn draw_ex(ctx: &mut Context,
-               drawable: &mut Drawable,
+               drawable: &Drawable,
                quad: Rect,
                dest: Point,
                rotation: f32,
@@ -601,7 +600,7 @@ pub trait Drawable {
     /// * `shear` - x/y shear factors expressed as a `Point`.
     ///
     // #[allow(too_many_arguments)]
-    fn draw_ex(&mut self,
+    fn draw_ex(&self,
                ctx: &mut Context,
                quad: Rect,
                dest: Point,
@@ -618,12 +617,7 @@ pub trait Drawable {
     /// * `dest` - the position to draw the graphic expressed as a `Point`.
     /// * `rotation` - orientation of the graphic in radians.
     ///
-    fn draw(&mut self,
-            ctx: &mut Context,
-            quad: Rect,
-            dest: Point,
-            rotation: f32)
-            -> GameResult<()> {
+    fn draw(&self, ctx: &mut Context, quad: Rect, dest: Point, rotation: f32) -> GameResult<()> {
         self.draw_ex(ctx,
                      quad,
                      dest,
@@ -763,7 +757,7 @@ impl fmt::Debug for Image {
 
 impl Drawable for Image {
     // #[allow(too_many_arguments)]
-    fn draw_ex(&mut self,
+    fn draw_ex(&self,
                context: &mut Context,
                quad: Rect,
                dest: Point,
@@ -1057,7 +1051,7 @@ impl Text {
 
 impl Drawable for Text {
     // #[allow(too_many_arguments)]
-    fn draw_ex(&mut self,
+    fn draw_ex(&self,
                context: &mut Context,
                quad: Rect,
                dest: Point,
