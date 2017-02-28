@@ -103,7 +103,7 @@ extern crate rustc_serialize;
 extern crate rusttype;
 extern crate toml;
 extern crate zip;
-
+extern crate lyon;
 
 pub mod audio;
 pub mod conf;
