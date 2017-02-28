@@ -276,6 +276,25 @@ impl GraphicsContext {
     fn update_globals(&mut self) {
         self.encoder.update_buffer(&self.data.globals, &[self.shader_globals], 0);
     }
+
+    fn update_rect_properties(&mut self,
+                              quad: Rect,
+                              dest: Point,
+                              rotation: f32,
+                              scale: Point,
+                              offset: Point,
+                              shear: Point) {
+        let properties = RectProperties {
+            src: [0.0, 0.0, 0.0, 0.0],
+            dest: dest.into(),
+            scale: [scale.x, scale.y],
+            offset: offset.into(),
+            shear: shear.into(),
+            rotation: rotation,
+        };
+
+        self.encoder.update_buffer(&self.data.rect_properties, &[properties], 0);
+    }
 }
 
 
@@ -770,15 +789,11 @@ impl Drawable for Image {
                -> GameResult<()> {
         let gfx = &mut context.gfx_context;
 
-        let properties = RectProperties {
-            src: [0.0, 0.0, 0.0, 0.0],
-            dest: dest.into(),
-            scale: [scale.x * self.width as f32, scale.y * self.height as f32],
-            offset: offset.into(),
-            shear: shear.into(),
-            rotation: rotation,
+        let real_scale = Point {
+            x: scale.x * self.width as f32,
+            y: scale.y * self.height as f32,
         };
-        gfx.encoder.update_buffer(&gfx.data.rect_properties, &[properties], 0);
+        gfx.update_rect_properties(quad, dest, rotation, real_scale, offset, shear);
 
         // let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
         // gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
