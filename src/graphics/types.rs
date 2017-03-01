@@ -1,4 +1,4 @@
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Point {
     pub x: f32,
     pub y: f32,
@@ -21,7 +21,7 @@ impl From<Point> for [f32; 2] {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Rect {
     pub x: f32,
     pub y: f32,
