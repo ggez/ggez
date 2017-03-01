@@ -41,18 +41,17 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        graphics::draw(ctx,
-                       &mut self.image1,
-                       graphics::Rect::zero(),
-                       graphics::Point::zero(),
-                       0.0)?;
+        let src = graphics::Rect::new(0.25, 0.25, 0.5, 0.5);
+        // let src = graphics::Rect::one();
+        let dst = graphics::Point::new(200.0, 200.0);
+        graphics::draw(ctx, &mut self.image1, src, dst, 0.0)?;
         let dst = graphics::Point::new(100.0, 100.0);
         let scale = graphics::Point::new(2.0, 2.0);
         let shear = graphics::Point::new(self.zoomlevel, self.zoomlevel);
         // graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0));
         graphics::draw_ex(ctx,
                           &mut self.image2,
-                          graphics::Rect::zero(),
+                          graphics::Rect::one(),
                           dst,
                           self.zoomlevel,
                           scale,

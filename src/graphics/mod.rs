@@ -100,7 +100,7 @@ gfx_defines!{
 impl Default for RectProperties {
     fn default() -> Self {
         RectProperties {
-            src: [0.0, 0.0, 0.0, 0.0],
+            src: [0.0, 0.0, 1.0, 1.0],
             dest: [0.0, 0.0],
             scale: [1.0, 1.0],
             offset: [0.0, 0.0],
@@ -285,7 +285,7 @@ impl GraphicsContext {
                               offset: Point,
                               shear: Point) {
         let properties = RectProperties {
-            src: [0.0, 0.0, 0.0, 0.0],
+            src: quad.into(),
             dest: dest.into(),
             scale: [scale.x, scale.y],
             offset: offset.into(),

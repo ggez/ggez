@@ -20,7 +20,7 @@ uniform RectProperties {
 out vec2 v_Uv;
 
 void main() {
-    v_Uv = a_Uv;
+    v_Uv = a_Uv * u_Src.zw + u_Src.xy;
     mat2 rotation = mat2(cos(u_Rotation), -sin(u_Rotation), sin(u_Rotation), cos(u_Rotation));
     mat2 shear = mat2(1, u_Shear.x, u_Shear.y, 1);
     vec2 position = (a_Pos * u_Scale) * shear * rotation + u_Dest;

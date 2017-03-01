@@ -57,6 +57,20 @@ impl Rect {
     }
 }
 
+
+impl From<[f32; 4]> for Rect {
+    fn from(val: [f32; 4]) -> Self {
+        Rect::new(val[0], val[1], val[2], val[3])
+    }
+}
+
+
+impl From<Rect> for [f32; 4] {
+    fn from(val: Rect) -> Self {
+        [val.x, val.y, val.w, val.h]
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Color {
     pub r: f32,
