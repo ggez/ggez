@@ -46,18 +46,19 @@ impl event::EventHandler for MainState {
         let dst = graphics::Point::new(200.0, 200.0);
         graphics::draw(ctx, &mut self.image1, dst, 0.0)?;
         let dst = graphics::Point::new(100.0, 100.0);
-        let scale = graphics::Point::new(2.0, 2.0);
+        let scale = graphics::Point::new(4.0, 4.0);
         let shear = graphics::Point::new(self.zoomlevel, self.zoomlevel);
         // graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0));
         graphics::draw_ex(ctx,
                           &mut self.image2,
                           graphics::DrawParam {
-                              src: src,
+                              // src: src,
                               dest: dst,
                               rotation: self.zoomlevel,
+                              offset: Point::new(-16.0, 0.0),
                               scale: scale,
-                              shear: shear,
-                              .. Default::default()
+                              // shear: shear,
+                              ..Default::default()
                           })?;
 
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);

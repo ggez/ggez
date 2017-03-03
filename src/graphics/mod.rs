@@ -372,11 +372,7 @@ pub fn clear(ctx: &mut Context) {
 /// * `dest` - the position to draw the graphic expressed as a `Point`.
 /// * `rotation` - orientation of the graphic in radians.
 ///
-pub fn draw(ctx: &mut Context,
-            drawable: &Drawable,
-            dest: Point,
-            rotation: f32)
-            -> GameResult<()> {
+pub fn draw(ctx: &mut Context, drawable: &Drawable, dest: Point, rotation: f32) -> GameResult<()> {
     drawable.draw(ctx, dest, rotation)
 }
 
@@ -394,9 +390,7 @@ pub fn draw(ctx: &mut Context,
 /// * `shear` - x/y shear factors expressed as a `Point`.
 ///
 // #[allow(too_many_arguments)]
-pub fn draw_ex(ctx: &mut Context,
-               drawable: &Drawable,
-               params: DrawParam) -> GameResult<()> {
+pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> GameResult<()> {
     drawable.draw_ex(ctx, params)
 }
 
@@ -484,9 +478,14 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     let source = Rect::new(0.0, 0.0, 1.0, 1.0);
     let dest = Point::new(rect.x, rect.y);
     let scale = Point::new(rect.w, rect.h);
-    draw_ex(ctx, 
+    draw_ex(ctx,
             img,
-            DrawParam { src: source, dest: dest, scale: scale, .. Default::default()} )
+            DrawParam {
+                src: source,
+                dest: dest,
+                scale: scale,
+                ..Default::default()
+            })
 }
 
 // **********************************************************************
@@ -591,7 +590,7 @@ pub struct DrawParam {
     pub rotation: f32,
     pub scale: Point,
     pub offset: Point,
-    pub shear: Point
+    pub shear: Point,
 }
 
 impl Default for DrawParam {
@@ -614,10 +613,7 @@ pub trait Drawable {
     ///
     /// This is the most general version of the operation, which is all that
     /// is required for implementing this trait.
-    fn draw_ex(&self,
-               ctx: &mut Context,
-               param: DrawParam)
-               -> GameResult<()>;
+    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()>;
 
     /// Draws the drawable onto the rendering target.
     ///
@@ -626,7 +622,12 @@ pub trait Drawable {
     /// * `rotation` - orientation of the graphic in radians.
     ///
     fn draw(&self, ctx: &mut Context, dest: Point, rotation: f32) -> GameResult<()> {
-        self.draw_ex(ctx, DrawParam { dest: dest, rotation: rotation, .. Default::default()})
+        self.draw_ex(ctx,
+                     DrawParam {
+                         dest: dest,
+                         rotation: rotation,
+                         ..Default::default()
+                     })
     }
 }
 
@@ -754,20 +755,20 @@ impl fmt::Debug for Image {
 
 
 impl Drawable for Image {
-    fn draw_ex(&self,
-               ctx: &mut Context,
-               param: DrawParam)
-               -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
         let gfx = &mut ctx.gfx_context;
-        let src_width = param.src.w - param.src.x;
-        let src_height = param.src.h - param.src.y;
+        let src_width = param.src.w;
+        let src_height = param.src.h;
         let real_scale = Point {
             x: src_width * param.scale.x * self.width as f32,
             y: src_height * param.scale.y * self.height as f32,
         };
-        let mut param = param;
-        param.scale = real_scale;
-        gfx.update_rect_properties(param);
+        let mut new_param = param;
+        new_param.scale = real_scale;
+        // Not entirely sure why the inversion is necessary, but oh well.
+        new_param.offset.x *= -1.0 * param.scale.x;
+        new_param.offset.y *= param.scale.y;
+        gfx.update_rect_properties(new_param);
         // TODO: BUGGO: Make sure these clones are cheap; they should be.
         let (_, sampler) = gfx.data.tex.clone();
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
@@ -833,9 +834,7 @@ impl Mesh {
 }
 
 impl Drawable for Mesh {
-    fn draw_ex(&self,
-               ctx: &mut Context,
-               param: DrawParam) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
         let gfx = &mut ctx.gfx_context;
         gfx.update_rect_properties(param);
 

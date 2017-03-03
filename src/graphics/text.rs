@@ -279,9 +279,7 @@ impl Text {
 
 impl Drawable for Text {
     // #[allow(too_many_arguments)]
-    fn draw_ex(&self,
-               ctx: &mut Context,
-               param: DrawParam) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
         unimplemented!();
     }
 }
@@ -296,4 +294,3 @@ impl fmt::Debug for Text {
 
     }
 }
-
