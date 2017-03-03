@@ -110,6 +110,19 @@ impl Default for RectProperties {
     }
 }
 
+impl From<DrawParam> for RectProperties {
+    fn from(p: DrawParam) -> Self {
+        RectProperties {
+            src: p.src.into(),
+            dest: p.dest.into(),
+            scale: [p.scale.x, p.scale.y],
+            offset: p.offset.into(),
+            shear: p.shear.into(),
+            rotation: p.rotation,
+        }
+    }
+}
+
 
 // BUGGO: TODO: Impl Debug for GraphicsContext
 
@@ -277,38 +290,24 @@ impl GraphicsContext {
         self.encoder.update_buffer(&self.data.globals, &[self.shader_globals], 0);
     }
 
-    fn update_rect_properties(&mut self,
-                              quad: Rect,
-                              dest: Point,
-                              rotation: f32,
-                              scale: Point,
-                              offset: Point,
-                              shear: Point) {
-        let properties = RectProperties {
-            src: quad.into(),
-            dest: dest.into(),
-            scale: [scale.x, scale.y],
-            offset: offset.into(),
-            shear: shear.into(),
-            rotation: rotation,
-        };
-
+    fn update_rect_properties(&mut self, draw_params: DrawParam) {
+        let properties = draw_params.into();
         self.encoder.update_buffer(&self.data.rect_properties, &[properties], 0);
     }
 }
 
 
-fn gfx_load_texture<F, R>(factory: &mut F) -> gfx::handle::ShaderResourceView<R, [f32; 4]>
-    where F: gfx::Factory<R>,
-          R: gfx::Resources
-{
-    use gfx::format::Rgba8;
-    let img = image::open("resources/player.png").unwrap().to_rgba();
-    let (width, height) = img.dimensions();
-    let kind = gfx::texture::Kind::D2(width as u16, height as u16, gfx::texture::AaMode::Single);
-    let (_, view) = factory.create_texture_immutable_u8::<Rgba8>(kind, &[&img]).unwrap();
-    view
-}
+// fn gfx_load_texture<F, R>(factory: &mut F) -> gfx::handle::ShaderResourceView<R, [f32; 4]>
+//     where F: gfx::Factory<R>,
+//           R: gfx::Resources
+// {
+//     use gfx::format::Rgba8;
+//     let img = image::open("resources/player.png").unwrap().to_rgba();
+//     let (width, height) = img.dimensions();
+//     let kind = gfx::texture::Kind::D2(width as u16, height as u16, gfx::texture::AaMode::Single);
+//     let (_, view) = factory.create_texture_immutable_u8::<Rgba8>(kind, &[&img]).unwrap();
+//     view
+// }
 
 /// Rather than create a dependency on cgmath or nalgebra for this one function,
 /// we're just going to define it ourselves.
@@ -368,17 +367,15 @@ pub fn clear(ctx: &mut Context) {
 ///
 /// * `ctx` - The `Context` this graphic will be rendered to.
 /// * `drawable` - The `Drawable` to render.
-/// * `quad` - a portion of the drawable to clip.
 /// * `dest` - the position to draw the graphic expressed as a `Point`.
 /// * `rotation` - orientation of the graphic in radians.
 ///
 pub fn draw(ctx: &mut Context,
             drawable: &Drawable,
-            quad: Rect,
             dest: Point,
             rotation: f32)
             -> GameResult<()> {
-    drawable.draw(ctx, quad, dest, rotation)
+    drawable.draw(ctx, dest, rotation)
 }
 
 
@@ -397,14 +394,8 @@ pub fn draw(ctx: &mut Context,
 // #[allow(too_many_arguments)]
 pub fn draw_ex(ctx: &mut Context,
                drawable: &Drawable,
-               quad: Rect,
-               dest: Point,
-               rotation: f32,
-               scale: Point,
-               offset: Point,
-               shear: Point)
-               -> GameResult<()> {
-    drawable.draw_ex(ctx, quad, dest, rotation, scale, offset, shear)
+               params: DrawParam) -> GameResult<()> {
+    drawable.draw_ex(ctx, params)
 }
 
 /// Tells the graphics system to actually put everything on the screen.
@@ -440,7 +431,7 @@ pub fn circle(ctx: &mut Context,
               segments: u32)
               -> GameResult<()> {
     let m = Mesh::new_circle(ctx, mode, point, radius, segments)?;
-    m.draw(ctx, Rect::default(), Point::default(), 0.0)
+    m.draw(ctx, Point::default(), 0.0)
 }
 
 /// Draw an ellipse.
@@ -452,14 +443,14 @@ pub fn ellipse(ctx: &mut Context,
                segments: u32)
                -> GameResult<()> {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, segments)?;
-    m.draw(ctx, Rect::default(), Point::default(), 0.0)
+    m.draw(ctx, Point::default(), 0.0)
 }
 
 /// Draws a line of one or more connected segments.
 pub fn line(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
     let w = ctx.gfx_context.line_width;
     let m = Mesh::new_line(ctx, points, w)?;
-    m.draw(ctx, Rect::default(), Point::default(), 0.0)
+    m.draw(ctx, Point::default(), 0.0)
 }
 
 /// Draws points.
@@ -491,14 +482,9 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     let source = Rect::new(0.0, 0.0, 1.0, 1.0);
     let dest = Point::new(rect.x, rect.y);
     let scale = Point::new(rect.w, rect.h);
-    draw_ex(ctx,
+    draw_ex(ctx, 
             img,
-            source,
-            dest,
-            0.0,
-            scale,
-            Point::zero(),
-            Point::zero())
+            DrawParam { src: source, dest: dest, scale: scale, .. Default::default()} )
 }
 
 // **********************************************************************
@@ -591,49 +577,62 @@ pub fn set_screen_coordinates(context: &mut Context,
 // TYPES
 // **********************************************************************
 
+
+/// A struct containing all the necessary info for drawing a Drawable.
+///
+/// * `src` - a portion of the drawable to clip.
+/// * `dest` - the position to draw the graphic expressed as a `Point`.
+/// * `rotation` - orientation of the graphic in radians.
+/// * `scale` - x/y scale factors expressed as a `Point`.
+/// * `offset` - used to move the pivot point for transform operations like scale/rotation.
+/// * `shear` - x/y shear factors expressed as a `Point`.
+///
+/// It implements the `Default` trait, so you can just do:
+///
+/// `draw(drawable, DrawParam{ dest: my_dest, .. Default::default()} )`
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct DrawParam {
+    pub src: Rect,
+    pub dest: Point,
+    pub rotation: f32,
+    pub scale: Point,
+    pub offset: Point,
+    pub shear: Point
+}
+
+impl Default for DrawParam {
+    fn default() -> Self {
+        DrawParam {
+            src: Rect::one(),
+            dest: Point::zero(),
+            rotation: 0.0,
+            scale: Point::new(1.0, 1.0),
+            offset: Point::new(0.0, 0.0),
+            shear: Point::new(0.0, 0.0),
+        }
+    }
+}
+
+
 /// All types that can be drawn on the screen implement the `Drawable` trait.
 pub trait Drawable {
     /// Actually draws the object to the screen.
     ///
     /// This is the most general version of the operation, which is all that
     /// is required for implementing this trait.
-    /// (It also maps nicely onto SDL2's Renderer::copy_ex(), we might want to
-    /// wrap the types up a bit more nicely someday.)
-    ///
-    /// * `ctx` - The `Context` this graphic will be rendered to.
-    /// * `quad` - a portion of the drawable to clip.
-    /// * `dest` - the position to draw the graphic expressed as a `Point`.
-    /// * `rotation` - orientation of the graphic in radians.
-    /// * `scale` - x/y scale factors expressed as a `Point`.
-    /// * `offset` - used to move the pivot point for transform operations like scale/rotation.
-    /// * `shear` - x/y shear factors expressed as a `Point`.
-    ///
-    // #[allow(too_many_arguments)]
     fn draw_ex(&self,
                ctx: &mut Context,
-               quad: Rect,
-               dest: Point,
-               rotation: f32,
-               scale: Point,
-               offset: Point,
-               shear: Point)
+               param: DrawParam)
                -> GameResult<()>;
 
     /// Draws the drawable onto the rendering target.
     ///
     /// * `ctx` - The `Context` this graphic will be rendered to.
-    /// * `quad` - a portion of the drawable to clip.
     /// * `dest` - the position to draw the graphic expressed as a `Point`.
     /// * `rotation` - orientation of the graphic in radians.
     ///
-    fn draw(&self, ctx: &mut Context, quad: Rect, dest: Point, rotation: f32) -> GameResult<()> {
-        self.draw_ex(ctx,
-                     quad,
-                     dest,
-                     rotation,
-                     Point::new(1.0, 1.0),
-                     Point::new(0.0, 0.0),
-                     Point::new(0.0, 0.0))
+    fn draw(&self, ctx: &mut Context, dest: Point, rotation: f32) -> GameResult<()> {
+        self.draw_ex(ctx, DrawParam { dest: dest, rotation: rotation, .. Default::default()})
     }
 }
 
@@ -761,25 +760,20 @@ impl fmt::Debug for Image {
 
 
 impl Drawable for Image {
-    // #[allow(too_many_arguments)]
     fn draw_ex(&self,
-               context: &mut Context,
-               quad: Rect,
-               dest: Point,
-               rotation: f32,
-               scale: Point,
-               offset: Point,
-               shear: Point)
+               ctx: &mut Context,
+               param: DrawParam)
                -> GameResult<()> {
-        let gfx = &mut context.gfx_context;
-        let src_width = quad.w - quad.x;
-        let src_height = quad.h - quad.y;
+        let gfx = &mut ctx.gfx_context;
+        let src_width = param.src.w - param.src.x;
+        let src_height = param.src.h - param.src.y;
         let real_scale = Point {
-            x: src_width * scale.x * self.width as f32,
-            y: src_height * scale.y * self.height as f32,
+            x: src_width * param.scale.x * self.width as f32,
+            y: src_height * param.scale.y * self.height as f32,
         };
-        gfx.update_rect_properties(quad, dest, rotation, real_scale, offset, shear);
-
+        let mut param = param;
+        param.scale = real_scale;
+        gfx.update_rect_properties(param);
         // let transform = Transform { transform: ortho(-1.5, 1.5, 1.0, -1.0, 1.0, -1.0) };
         // gfx.encoder.update_buffer(&gfx.data.transform, &[transform], 0);
         // TODO: BUGGO: Make sure these clones are cheap; they should be.
@@ -1054,24 +1048,9 @@ impl Text {
 impl Drawable for Text {
     // #[allow(too_many_arguments)]
     fn draw_ex(&self,
-               context: &mut Context,
-               quad: Rect,
-               dest: Point,
-               rotation: f32,
-               scale: Point,
-               offset: Point,
-               shear: Point)
-               -> GameResult<()> {
+               ctx: &mut Context,
+               param: DrawParam) -> GameResult<()> {
         unimplemented!();
-        // let renderer = &mut context.renderer;
-        // renderer.copy_ex(&self.texture,
-        //              src,
-        //              dst,
-        //              angle,
-        //              center,
-        //              flip_horizontal,
-        //              flip_vertical)
-        //     .map_err(GameError::RenderError)
     }
 }
 
@@ -1145,15 +1124,9 @@ impl Mesh {
 impl Drawable for Mesh {
     fn draw_ex(&self,
                ctx: &mut Context,
-               quad: Rect,
-               dest: Point,
-               rotation: f32,
-               scale: Point,
-               offset: Point,
-               shear: Point)
-               -> GameResult<()> {
+               param: DrawParam) -> GameResult<()> {
         let gfx = &mut ctx.gfx_context;
-        gfx.update_rect_properties(quad, dest, rotation, scale, offset, shear);
+        gfx.update_rect_properties(param);
 
         gfx.data.vbuf = self.buffer.clone();
         gfx.data.tex.0 = gfx.white_image.texture.clone();
