@@ -420,6 +420,7 @@ pub fn present(ctx: &mut Context) {
     gfx.device.cleanup();
 }
 
+/// Draw an arc.
 pub fn arc(ctx: &mut Context,
            mode: DrawMode,
            point: Point,
@@ -431,6 +432,7 @@ pub fn arc(ctx: &mut Context,
     unimplemented!();
 }
 
+/// Draw a circle.
 pub fn circle(ctx: &mut Context,
               mode: DrawMode,
               point: Point,
@@ -441,6 +443,7 @@ pub fn circle(ctx: &mut Context,
     m.draw(ctx, Rect::default(), Point::default(), 0.0)
 }
 
+/// Draw an ellipse.
 pub fn ellipse(ctx: &mut Context,
                mode: DrawMode,
                point: Point,
@@ -467,17 +470,13 @@ pub fn points(ctx: &mut Context, point: &[Point]) -> GameResult<()> {
     // res.map_err(GameError::from)
 }
 
+/// Draws a closed polygon
 pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point]) -> GameResult<()> {
     unimplemented!();
 }
 
-/// Not implemented
-pub fn print(_ctx: &mut Context) {
-    unimplemented!();
-}
-
-/// Not implemented
-pub fn printf(_ctx: &mut Context) {
+/// Renders text with the default font.
+pub fn print(_ctx: &mut Context, dest: Point, text: &str, size: f32) {
     unimplemented!();
 }
 
@@ -486,7 +485,7 @@ pub fn printf(_ctx: &mut Context) {
 pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
     // TODO: See if we can evade this clone() without a double-borrow being involved?
     // That might actually be invalid considering that drawing an Image involves altering
-    // its state.
+    // its state.  And it might just be cloning a texture handle.
     // TODO: Draw mode is unimplemented.
     let img = &mut ctx.gfx_context.white_image.clone();
     let source = Rect::new(0.0, 0.0, 1.0, 1.0);
@@ -506,10 +505,12 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
 // GRAPHICS STATE
 // **********************************************************************
 
+/// Returns the current background color.
 pub fn get_background_color(ctx: &Context) -> Color {
     ctx.gfx_context.background_color
 }
 
+/// Returns thec urrent foreground color.
 pub fn get_color(ctx: &Context) -> Color {
     ctx.gfx_context.shader_globals.color.into()
 }
@@ -523,11 +524,11 @@ pub fn get_font(ctx: &Context) -> Font {
 }
 
 pub fn get_line_width(ctx: &Context) -> f32 {
-    unimplemented!()
+    ctx.gfx_context.line_width
 }
 
 pub fn get_point_size(ctx: &Context) -> f32 {
-    unimplemented!()
+    ctx.gfx_context.point_size
 }
 
 pub fn get_renderer_info(ctx: &Context) {
