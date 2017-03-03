@@ -10,7 +10,7 @@ use std::fmt;
 use std::path;
 use std::collections::BTreeMap;
 use std::convert::From;
-use std::io::Read;
+use std::io::{Read, BufReader};
 
 use sdl2;
 use rusttype;
@@ -648,7 +648,12 @@ pub type Image = ImageGeneric<gfx_device_gl::Resources>;
 impl Image {
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Image> {
-        let img = image::open(path).unwrap().to_rgba();
+        let img = {
+            let mut reader = context.filesystem.open(path)?;
+            let mut buf = BufReader::new(reader);
+            // BUGGO: Figure out image format more intelligently here... :/
+            image::load(buf, image::ImageFormat::PNG).unwrap().to_rgba()
+        };
         let (width, height) = img.dimensions();
         Image::from_rgba8(context, width as u16, height as u16, &[&img])
     }

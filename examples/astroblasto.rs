@@ -509,15 +509,9 @@ fn draw_actor(assets: &mut Assets,
     // let pos = Vec2::new(1.0, 1.0);
     let px = pos.x as f32;
     let py = pos.y as f32;
-    let source_rect = graphics::Rect::new(0.0, 0.0, 1.0, 1.0);
     let dest_point = graphics::Point::new(px, py);
-    let _actor_center = graphics::Point::new(16.0, 16.0);
     let image = assets.actor_image(actor);
-    graphics::draw(ctx,
-                   image,
-                   source_rect,
-                   dest_point,
-                   actor.facing.to_degrees() as f32)
+    graphics::draw(ctx, image, dest_point, actor.facing as f32)
 
 }
 
@@ -616,8 +610,8 @@ impl EventHandler for MainState {
         let level_dest = graphics::Point::new(0.0, 0.0);
         let score_dest = graphics::Point::new(200.0, 0.0);
         let source_rect = graphics::Rect::one();
-        graphics::draw(ctx, &mut self.level_display, source_rect, level_dest, 0.0)?;
-        graphics::draw(ctx, &mut self.score_display, source_rect, score_dest, 0.0)?;
+        // graphics::draw(ctx, &mut self.level_display, level_dest, 0.0)?;
+        // graphics::draw(ctx, &mut self.score_display, score_dest, 0.0)?;
 
         // Then we flip the screen...
         graphics::present(ctx);
