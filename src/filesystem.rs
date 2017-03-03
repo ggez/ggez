@@ -49,16 +49,12 @@ pub struct Filesystem {
     resource_zip: Option<zip::ZipArchive<fs::File>>,
 }
 
-
-
 /// Represents a file, either in the filesystem, or in the resources zip file,
 /// or whatever.
 pub enum File<'a> {
     FSFile(fs::File),
     ZipFile(zip::read::ZipFile<'a>),
 }
-
-unsafe impl<'a> Send for File<'a> {}
 
 impl<'a> fmt::Debug for File<'a> {
     // TODO: Make this more useful.
@@ -103,6 +99,9 @@ impl<'a> io::Seek for File<'a> {
         match *self {
             File::FSFile(ref mut f) => f.seek(pos),
             // BUGGO: Zip files don't implement Seek?
+            // You really can't seek backwards by n bytes in
+            // a zip file, you'd basically have to go back
+            // to the beginning and start reading it all over.
             File::ZipFile(ref mut _f) => {
                 let err = io::Error::new(io::ErrorKind::Other,
                                          "can't seek in zip files apparently");
@@ -190,7 +189,7 @@ impl Filesystem {
             let name = pathref.to_str().ok_or(GameError::UnknownError(errmsg))?;
             let f = zipfile.by_name(name)?;
             return Ok(File::ZipFile(f));
-            // TODO: add path to zip + path within zip to `tried`
+            // TODO: add path to zip + path within zip to `tried`?
         }
 
         // Look in user directory
@@ -521,7 +520,7 @@ mod tests {
             if let Err(e) = fs.open("testfile.txt") {
                 match e {
                     GameError::ResourceNotFound(_, _) => (),
-                    _ => panic!("Invalid error for opening nonexistent file"),
+                    x => panic!("Invalid error for opening nonexistent file: {}", x);
                 }
             } else {
                 panic!("Should have gotten an error but didn't!");
