@@ -649,18 +649,23 @@ impl Image {
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Image> {
         let img = {
+            let mut buf = Vec::new();
             let mut reader = context.filesystem.open(path)?;
-            let mut buf = BufReader::new(reader);
-            // BUGGO: Figure out image format more intelligently here... :/
-            image::load(buf, image::ImageFormat::PNG).unwrap().to_rgba()
+            // TODO:
+            // image's guess_format() stuff is inconvenient.
+            // It would be nicer if they just read the first n
+            // bytes from the reader, but noooooo...
+            // Even though they require a BufReader anyway.
+            reader.read_to_end(&mut buf)?;
+            image::load_from_memory(&buf)?.to_rgba()
         };
         let (width, height) = img.dimensions();
         Image::from_rgba8(context, width as u16, height as u16, &[&img])
     }
 
     /// A helper function that just takes a factory directly so we can make an image
-    /// without needing the full context object, so we can create one inside the context
-    /// object
+    /// without needing the full context object, so we can create an Image while still
+    /// creating the GraphicsContext.
     fn make_raw(factory: &mut gfx_device_gl::Factory,
                 width: u16,
                 height: u16,
@@ -676,8 +681,6 @@ impl Image {
     }
 
     /// Creates an Image from an array of u8's arranged in RGBA order.
-    /// TODO: Refactor the from_* functions, make_raw, and new() to
-    /// be a little more orthogonal.  Also see Love2D's ImageData type.
     pub fn from_rgba8(context: &mut Context,
                       width: u16,
                       height: u16,
@@ -708,7 +711,7 @@ impl Image {
         let pixel_array: [u8; 4] = color.into();
         let size_squared = size as usize * size as usize;
         let mut buffer = Vec::with_capacity(size_squared);
-        for i in 0..size_squared {
+        for _i in 0..size_squared {
             buffer.push(&pixel_array[..]);
         }
         Image::from_rgba8(context, size, size, &buffer[..])
