@@ -39,6 +39,21 @@ impl Rect {
         }
     }
 
+    /// I don't know what to call this yet.
+    /// It creates a new rect a la Love2D's love.graphics.newQuad,
+    /// as a fraction of the reference rect's size.
+    ///
+    /// Basically it does the translation from pixel coordinates to
+    /// UV coordinates.
+    pub fn fraction(x: f32, y: f32, w: f32, h: f32, reference: &Rect) -> Rect {
+        Rect {
+            x: x / reference.w,
+            y: y / reference.h,
+            w: w / reference.w,
+            h: h / reference.h,
+        }
+    }
+
     pub fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
         Rect {
             x: x as f32,
@@ -190,5 +205,16 @@ mod tests {
         assert_eq!(black, b1);
         let b2: u32 = black.into();
         assert_eq!(b2, 0x000000FF);
+    }
+
+    #[test]
+    fn test_rect_scaling() {
+        let r1 = Rect::new(0.0, 0.0, 128.0, 128.0);
+        let r2 = Rect::fraction(0.0, 0.0, 32.0, 32.0, &r1);
+        assert_eq!(r2, Rect::new(0.0, 0.0, 0.25, 0.25));
+
+
+        let r2 = Rect::fraction(32.0, 32.0, 32.0, 32.0, &r1);
+        assert_eq!(r2, Rect::new(0.25, 0.25, 0.25, 0.25));
     }
 }

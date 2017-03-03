@@ -714,11 +714,6 @@ impl Image {
         Image::from_rgba8(context, size, size, &buffer[..])
     }
 
-    /// Returns the dimensions of the image.
-    pub fn rect(&self) -> Rect {
-        Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
-    }
-
     /// Return the width of the image.
     pub fn width(&self) -> u32 {
         self.width
@@ -737,8 +732,9 @@ impl Image {
         unimplemented!()
     }
 
-    pub fn get_dimensions(&self) {
-        unimplemented!()
+    /// Returns the dimensions of the image.
+    pub fn get_dimensions(&self) -> Rect {
+        Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
     }
 
     pub fn get_wrap(&self) {
@@ -775,10 +771,11 @@ impl Drawable for Image {
                shear: Point)
                -> GameResult<()> {
         let gfx = &mut context.gfx_context;
-
+        let src_width = quad.w - quad.x;
+        let src_height = quad.h - quad.y;
         let real_scale = Point {
-            x: scale.x * self.width as f32,
-            y: scale.y * self.height as f32,
+            x: src_width * scale.x * self.width as f32,
+            y: src_height * scale.y * self.height as f32,
         };
         gfx.update_rect_properties(quad, dest, rotation, real_scale, offset, shear);
 
