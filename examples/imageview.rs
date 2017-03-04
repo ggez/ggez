@@ -98,12 +98,11 @@ impl event::EventHandler for MainState {
         graphics::set_color(ctx, Color::from((c, c, c, 255)));
         graphics::clear(ctx);
 
-        let source_rect = graphics::Rect::new(0.0, 0.0, 1.0, 1.0);
         let dest_point = graphics::Point::new(0.0, 0.0);
-        graphics::draw(ctx, &mut self.image, source_rect, dest_point, 0.0)?;
-        graphics::draw(ctx, &mut self.text, source_rect, dest_point, 0.0)?;
+        graphics::draw(ctx, &mut self.image, dest_point, 0.0)?;
+        graphics::draw(ctx, &mut self.text, dest_point, 0.0)?;
         let dest_point = graphics::Point::new(100.0, 50.0);
-        graphics::draw(ctx, &mut self.bmptext, source_rect, dest_point, 0.0)?;
+        graphics::draw(ctx, &mut self.bmptext, dest_point, 0.0)?;
 
         self.draw_crazy_lines(ctx)?;
         graphics::present(ctx);

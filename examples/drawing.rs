@@ -7,7 +7,6 @@ use ggez::timer;
 use ggez::graphics::{DrawMode, Point};
 use std::time::Duration;
 
-// First we make a structure to contain the game's state
 struct MainState {
     image1: graphics::Image,
     image2: graphics::Image,
@@ -25,7 +24,6 @@ impl MainState {
             zoomlevel: 1.0,
         };
 
-        // graphics::set_screen_coordinates(ctx, 0.0, s.zoomlevel, s.zoomlevel, 0.0);
         Ok(s)
     }
 }
@@ -33,8 +31,6 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        // graphics::set_screen_coordinates(ctx, 0.0, self.zoomlevel, self.zoomlevel, 0.0);
-        // graphics::set_screen_coordinates(ctx, 0.0, self.zoomlevel, 0.0, self.zoomlevel);
         self.zoomlevel += 0.01;
         Ok(())
     }
@@ -107,8 +103,6 @@ impl event::EventHandler for MainState {
                          32)?;
 
         graphics::present(ctx);
-        // println!("Approx FPS: {}", timer::get_fps(ctx));
-        // timer::sleep_until_next_frame(ctx, 60);
         Ok(())
     }
 }
