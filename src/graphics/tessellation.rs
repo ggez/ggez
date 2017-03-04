@@ -68,7 +68,12 @@ pub fn build_line(points: &[Point], line_width: f32) -> GameResult<Buffer> {
     let path = build_path(points);
     let opts = path_stroke::StrokeOptions::stroke_width(line_width);
     let mut tessellator = path_stroke::StrokeTessellator::new();
-    build_geometry(|builder| tessellator.tessellate(path.path_iter().flattened(0.5), &opts, builder))
+    build_geometry(|builder| {
+        tessellator.tessellate(path.path_iter()
+                                   .flattened(0.5),
+                               &opts,
+                               builder)
+    })
 }
 
 pub fn build_ellipse_fill(point: Point, r1: f32, r2: f32, segments: u32) -> GameResult<Buffer> {

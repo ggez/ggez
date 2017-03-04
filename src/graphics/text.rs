@@ -218,7 +218,8 @@ fn render_bitmap(context: &Context,
     let text_length = text.len() as u32;
     let glyph_height = image.height;
     // let format = pixels::PixelFormatEnum::RGBA8888;
-    // let mut dest_surface = surface::Surface::new(text_length * glyph_width, glyph_height, format)?;
+    // let mut dest_surface = surface::Surface::new(
+    // text_length * glyph_width, glyph_height, format)?;
     // for (i, c) in text.chars().enumerate() {
     //     let small_i = i as u32;
     //     let error_message = format!("Character '{}' not in bitmap font!", c);

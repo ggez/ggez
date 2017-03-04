@@ -89,7 +89,8 @@ gfx_defines!{
         tex: gfx::TextureSampler<[f32; 4]> = "t_Texture",
         globals: gfx::ConstantBuffer<Globals> = "Globals",
         rect_properties: gfx::ConstantBuffer<RectProperties> = "RectProperties",
-        out: gfx::BlendTarget<ColorFormat> = ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
+        out: gfx::BlendTarget<ColorFormat> =
+          ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
     }
 }
 
@@ -565,7 +566,6 @@ pub fn set_screen_coordinates(context: &mut Context,
     let gfx = &mut context.gfx_context;
     gfx.shader_globals.transform = ortho(left, right, top, bottom, 1.0, -1.0);
     gfx.update_globals();
-    // gfx.encoder.update_buffer(&gfx.data.globals, &[gfx.shader_globals], 0);
 }
 
 // **********************************************************************

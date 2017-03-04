@@ -509,7 +509,7 @@ mod tests {
             if let Err(e) = fs.open("/testfile.txt") {
                 match e {
                     GameError::ResourceLoadError(_) => (),
-                    _ => panic!("Invalid error for opening file with absolute path"),
+                    e => panic!("Invalid error for opening file with absolute path: {:?}", e),
                 }
             } else {
                 panic!("Should have gotten an error but didn't!");
