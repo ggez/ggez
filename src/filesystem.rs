@@ -517,21 +517,24 @@ mod tests {
         }
 
         {
-            if let Err(e) = fs.open("testfile.txt") {
-                match e {
-                    GameError::ResourceNotFound(_, _) => (),
-                    x => panic!("Invalid error for opening nonexistent file: {}", x)
+            match fs.open("testfile.txt") {
+                Err(e) => {
+                    match e {
+                        GameError::ResourceNotFound(_, _) => (),
+                        x => panic!("Invalid error for opening nonexistent file: {}", x),
+                    }
                 }
-            } else {
-                panic!("Should have gotten an error but didn't!");
+                Ok(f) => {
+                    panic!("Should have gotten an error but instead got {:?}", f);
+                }
             }
         }
     }
 
     //#[test]
     //#fn test_app_dirs() {
-    //#  use app_dirs::*;
-    //#  use sdl2;
+    //#use app_dirs::*;
+    //#use sdl2;
 
     //     let app_info = AppInfo{name:"test", author:"ggez"};
     //     println!("user config: {:?}", get_app_root(AppDataType::UserConfig, &app_info));

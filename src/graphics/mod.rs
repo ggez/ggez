@@ -16,6 +16,7 @@ use sdl2;
 use rusttype;
 use image;
 use gfx;
+use gfx::texture;
 use gfx::traits::Device;
 use gfx::traits::FactoryExt;
 use gfx_device_gl;
@@ -33,18 +34,11 @@ mod text;
 mod types;
 
 pub use self::text::*;
-pub use self::types::{Rect, Point, Color, BlendMode};
+pub use self::types::*;
 
 const GL_MAJOR_VERSION: u8 = 3;
 const GL_MINOR_VERSION: u8 = 2;
 
-/// Specifies whether a shape should be drawn
-/// filled or as an outline.
-#[derive(Debug)]
-pub enum DrawMode {
-    Line,
-    Fill,
-}
 
 
 const QUAD_VERTS: [Vertex; 4] = [Vertex {
@@ -502,8 +496,10 @@ pub fn get_color(ctx: &Context) -> Color {
     ctx.gfx_context.shader_globals.color.into()
 }
 
-pub fn get_default_filter(ctx: &Context) {
-    unimplemented!()
+pub fn get_default_filter(ctx: &Context) -> FilterMode {
+    let gfx = &ctx.gfx_context;
+    let sampler_info = gfx.data.tex.1.get_info();
+    sampler_info.filter.into()
 }
 
 
@@ -543,8 +539,14 @@ pub fn set_color(ctx: &mut Context, color: Color) {
     // gfx.encoder.update_buffer(&gfx.data.globals, &[gfx.shader_globals], 0);
 }
 
-pub fn set_default_filter(ctx: &mut Context) {
-    unimplemented!()
+/// Sets the default filter mode used to scale images.
+pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
+    let gfx = &mut ctx.gfx_context;
+    let new_mode = mode.into();
+    let sampler_info = texture::SamplerInfo::new(new_mode, texture::WrapMode::Clamp);
+    let new_sampler = gfx.factory.create_sampler(sampler_info);
+
+    gfx.data.tex.1 = new_sampler;
 }
 
 pub fn set_line_width(ctx: &mut Context, width: f32) {

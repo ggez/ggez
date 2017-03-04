@@ -183,6 +183,44 @@ pub enum BlendMode {
     Dummy,
 }
 
+
+/// Specifies whether a shape should be drawn
+/// filled or as an outline.
+#[derive(Debug, Copy, Clone)]
+pub enum DrawMode {
+    Line,
+    Fill,
+}
+
+/// Specifies how to scale up/down images.
+#[derive(Debug, Copy, Clone)]
+pub enum FilterMode {
+    Linear,
+    Nearest,
+}
+
+use gfx::texture::FilterMethod;
+
+impl From<FilterMethod> for FilterMode {
+    fn from(f: FilterMethod) -> Self {
+        match f {
+            FilterMethod::Scale => FilterMode::Nearest,
+            FilterMethod::Bilinear => FilterMode::Linear,
+            _ => FilterMode::Linear,
+        }
+    }
+}
+
+
+impl From<FilterMode> for FilterMethod {
+    fn from(f: FilterMode) -> Self {
+        match f {
+            FilterMode::Nearest => FilterMethod::Scale,
+            FilterMode::Linear => FilterMethod::Bilinear,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
