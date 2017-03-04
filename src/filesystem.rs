@@ -53,7 +53,7 @@ pub struct Filesystem {
 /// or whatever.
 pub enum File<'a> {
     FSFile(fs::File),
-    ZipFile(zip::read::ZipFile<'a>),
+    ZipFile(zip::read::ZipFile<'a>), // ZipArchive(zip::ZipArchive<fs::File>),
 }
 
 impl<'a> fmt::Debug for File<'a> {
@@ -64,6 +64,7 @@ impl<'a> fmt::Debug for File<'a> {
         match *self {
             File::FSFile(ref _file) => write!(f, "File"),
             File::ZipFile(ref _file) => write!(f, "Zipfile"),
+            // File::ZipArchive(ref _file) => write!(f, "Ziparchive"),
         }
     }
 }
@@ -90,23 +91,6 @@ impl<'a> io::Write for File<'a> {
         match *self {
             File::FSFile(ref mut f) => f.flush(),
             File::ZipFile(_) => Ok(()),
-        }
-    }
-}
-
-impl<'a> io::Seek for File<'a> {
-    fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
-        match *self {
-            File::FSFile(ref mut f) => f.seek(pos),
-            // BUGGO: Zip files don't implement Seek?
-            // You really can't seek backwards by n bytes in
-            // a zip file, you'd basically have to go back
-            // to the beginning and start reading it all over.
-            File::ZipFile(ref mut _f) => {
-                let err = io::Error::new(io::ErrorKind::Other,
-                                         "can't seek in zip files apparently");
-                Err(err)
-            }
         }
     }
 }
@@ -506,7 +490,11 @@ mod tests {
     fn test_file_not_found() {
         let mut fs = get_dummy_fs_for_tests();
         {
-            if let Err(e) = fs.open("/testfile.txt") {
+            #[cfg(target_family = "unix")]
+            let abs_file = "/testfile.txt";
+            #[cfg(target_family = "windows")]
+            let abs_file = "C:\\testfile.txt";
+            if let Err(e) = fs.open(abs_file) {
                 match e {
                     GameError::ResourceLoadError(_) => (),
                     e => panic!("Invalid error for opening file with absolute path: {:?}", e),
@@ -517,7 +505,7 @@ mod tests {
         }
 
         {
-            match fs.open("testfile.txt") {
+            match fs.open("ooglebooglebarg.txt") {
                 Err(e) => {
                     match e {
                         GameError::ResourceNotFound(_, _) => (),
