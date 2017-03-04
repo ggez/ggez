@@ -520,7 +520,7 @@ mod tests {
             if let Err(e) = fs.open("testfile.txt") {
                 match e {
                     GameError::ResourceNotFound(_, _) => (),
-                    x => panic!("Invalid error for opening nonexistent file: {}", x);
+                    x => panic!("Invalid error for opening nonexistent file: {}", x)
                 }
             } else {
                 panic!("Should have gotten an error but didn't!");
