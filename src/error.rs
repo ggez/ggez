@@ -3,6 +3,7 @@ use std;
 use std::error::Error;
 use std::fmt;
 
+use image;
 use rodio::decoder::DecoderError;
 use sdl2;
 use app_dirs::AppDirsError;
@@ -149,5 +150,12 @@ impl From<DecoderError> for GameError {
     fn from(e: DecoderError) -> GameError {
         let errstr = format!("Audio decoder error: {:?}", e);
         GameError::AudioError(errstr)
+    }
+}
+
+impl From<image::ImageError> for GameError {
+    fn from(e: image::ImageError) -> GameError {
+        let errstr = format!("Image load error: {}", e.description());
+        GameError::ResourceLoadError(errstr)
     }
 }

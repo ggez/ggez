@@ -40,7 +40,7 @@ crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```text
-ggez = "0.2.0"
+ggez = "0.2.1"
 ```
 
 However you also need to have the SDL2, SDL2_mixer and SDL2_image
@@ -96,6 +96,38 @@ but for now, them's the breaks.
 
 ## Extant things to do
 
+### Great GFX Rework:
+
+* Make our own rect/color/etc types that default to float values but have functions to convert to/from integer/pixel values
+* Expose transform-creating functions (no matrix stack though) and have it set up to pixel-perfect by default
+* Make image loading more consistent, create load-blank-image function, use it to implement rectangle drawing
+* Fill out image properties: flip x/y UV's, rotate, color, src/dst UV's, rotation centers (ugh), blend modes
+* Make fonts work (should be easy)
+* Make loading better; ditch SDL RWops totally.
+* Make loading images from bytes a thing
+* Make shaders better (or at least rename them something more sensible; hardcoding them with include_bytes! is actually pretty sensible)
+* Make line and point drawing work.  Might still be useful for debug mode!
+* Document alllll the things
+
+To not worry about until later:
+
+* Sprite batching
+* Exposing GFX
+* Making the API nicer.
+* Make draw() not take &mut if possible
+* Make it work with non-GL backends
+
+### Great Rodio Rework:
+
+* Ditch SDL loading
+* Make music work sensibly
+* Add better buffering to rodio
+
+To not worry about until later:
+
+* Add more sound formats to load.
+* Improve cpal
+
 ### 0.3.0
 
 * Making Rodio's Decoder implement Clone when its Read does would be nice.  That way you can have many Decoder's share a single Arc'd in-memory buffer, without it having to re-parse the buffer each time (hopefully?)  -- ...no, no I think it totally would.  Hmmm.  Not sure if it matters.
@@ -104,6 +136,8 @@ but for now, them's the breaks.
 or two in there.
 * Start integrating ncollide?
 * Remove unused example assets
+* Go through `timer` and clean things up a little; it should provide nice functions to do everything you want as accurately as you want using only `Duration`s.  Deprecate the rest.
+* The usual cleanup: go through looking for TODO's, unwrap's, run clippy over it.
 
 
 ## Future work

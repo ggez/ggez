@@ -361,45 +361,6 @@ impl Default for InputState {
 }
 
 /// **********************************************************************
-/// The UpdateTimer is a simple structure to track timing information.
-/// The idea is that you have a desired update rate, in this case 60 fps,
-/// and every update() event you call tick_update() and then run your update
-/// code in a while loop as long as time_to_update() is true.
-/// This gives you fixed-size timesteps, which are nice for physics, while
-/// also handling fractions of a frame that can occur when your fixed update
-/// rate differs from the real update rate.
-/// **********************************************************************
-struct UpdateTimer {
-    update_dt: Duration,
-    residual_update_dt: Duration,
-}
-
-impl UpdateTimer {
-    fn new(target_fps: f64) -> Self {
-        let target_fps = target_fps;
-        let target_nanos = (1.0 / target_fps) * 1e9;
-        let update_dt = Duration::new(0, target_nanos as u32);
-        UpdateTimer {
-            update_dt: update_dt,
-            residual_update_dt: Duration::new(0, 0),
-        }
-    }
-
-    fn tick_update(&mut self, dt: Duration) {
-        self.residual_update_dt += dt;
-    }
-
-    fn time_to_update(&mut self) -> bool {
-        if self.residual_update_dt > self.update_dt {
-            self.residual_update_dt -= self.update_dt;
-            true
-        } else {
-            false
-        }
-    }
-}
-
-/// **********************************************************************
 /// Now we're getting into the actual game loop.  The MainState is our
 /// game's "global" state, it keeps track of everything we need for
 /// actually running the game.
@@ -424,38 +385,13 @@ struct MainState {
     gui_dirty: bool,
     score_display: graphics::Text,
     level_display: graphics::Text,
-    update_timer: UpdateTimer,
-}
-
-fn draw_actor(assets: &mut Assets,
-              ctx: &mut Context,
-              actor: &Actor,
-              world_coords: (u32, u32))
-              -> GameResult<()> {
-    let (screen_w, screen_h) = world_coords;
-    let pos = world_to_screen_coords(screen_w, screen_h, &actor.pos);
-    // let pos = Vec2::new(1.0, 1.0);
-    let px = pos.x as i32;
-    let py = pos.y as i32;
-    let destrect = graphics::Rect::new(px, py, SPRITE_SIZE, SPRITE_SIZE);
-    let actor_center = graphics::Point::new(16, 16);
-    let image = assets.actor_image(actor);
-    graphics::draw_ex(ctx,
-                      image,
-                      None,
-                      Some(destrect),
-                      actor.facing.to_degrees(),
-                      Some(actor_center),
-                      false,
-                      false)
-
 }
 
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.print_resource_stats();
-        graphics::set_background_color(ctx, graphics::Color::RGB(0, 0, 0));
+        graphics::set_background_color(ctx, (0, 0, 0, 255).into());
 
         println!("Game resource path: {:?}", ctx.filesystem);
 
@@ -482,7 +418,6 @@ impl MainState {
             gui_dirty: true,
             score_display: score_disp,
             level_display: level_disp,
-            update_timer: UpdateTimer::new(60.0),
         };
 
         Ok(s)
@@ -538,7 +473,7 @@ impl MainState {
         }
     }
 
-    fn update_ui(&mut self, ctx: &Context) {
+    fn update_ui(&mut self, ctx: &mut Context) {
         let score_str = format!("Score: {}", self.score);
         let level_str = format!("Level: {}", self.level);
         let score_text = graphics::Text::new(ctx, &score_str, &self.assets.font).unwrap();
@@ -549,6 +484,11 @@ impl MainState {
     }
 }
 
+
+/// **********************************************************************
+/// A couple of utility functions.
+/// **********************************************************************
+
 fn print_instructions() {
     println!();
     println!("Welcome to ASTROBLASTO!");
@@ -558,70 +498,87 @@ fn print_instructions() {
     println!();
 }
 
+
+fn draw_actor(assets: &mut Assets,
+              ctx: &mut Context,
+              actor: &Actor,
+              world_coords: (u32, u32))
+              -> GameResult<()> {
+    let (screen_w, screen_h) = world_coords;
+    let pos = world_to_screen_coords(screen_w, screen_h, &actor.pos);
+    // let pos = Vec2::new(1.0, 1.0);
+    let px = pos.x as f32;
+    let py = pos.y as f32;
+    let dest_point = graphics::Point::new(px, py);
+    let image = assets.actor_image(actor);
+    graphics::draw(ctx, image, dest_point, actor.facing as f32)
+
+}
+
 /// **********************************************************************
 /// Now we implement the EventHandler trait from ggez::game, which provides
 /// ggez with callbacks for updating and drawing our game, as well as
 /// handling input events.
 /// **********************************************************************
 impl EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
-        self.update_timer.tick_update(dt);
-        let seconds = timer::duration_to_f64(self.update_timer.update_dt);
-        while self.update_timer.time_to_update() {
-            // let seconds = timer::duration_to_f64(dt);
+    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+        const DESIRED_FPS: u64 = 60;
+        if !timer::check_update_time(ctx, DESIRED_FPS) {
+            return Ok(());
+        }
+        let seconds = 1.0 / (DESIRED_FPS as f64);
 
-            // Update the player state based on the user input.
-            player_handle_input(&mut self.player, &self.input, seconds);
-            self.player_shot_timeout -= seconds;
-            if self.input.fire && self.player_shot_timeout < 0.0 {
-                self.fire_player_shot(ctx);
-            }
+        // Update the player state based on the user input.
+        player_handle_input(&mut self.player, &self.input, seconds);
+        self.player_shot_timeout -= seconds;
+        if self.input.fire && self.player_shot_timeout < 0.0 {
+            self.fire_player_shot(ctx);
+        }
 
-            // Update the physics for all actors.
-            // First the player...
-            update_actor_position(&mut self.player, seconds);
-            wrap_actor_position(&mut self.player,
-                                self.screen_width as f64,
-                                self.screen_height as f64);
+        // Update the physics for all actors.
+        // First the player...
+        update_actor_position(&mut self.player, seconds);
+        wrap_actor_position(&mut self.player,
+                            self.screen_width as f64,
+                            self.screen_height as f64);
 
-            // Then the shots...
-            for act in &mut self.shots {
-                update_actor_position(act, seconds);
-                wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
-                handle_timed_life(act, seconds);
-            }
+        // Then the shots...
+        for act in &mut self.shots {
+            update_actor_position(act, seconds);
+            wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
+            handle_timed_life(act, seconds);
+        }
 
-            // And finally the rocks.
-            for act in &mut self.rocks {
-                update_actor_position(act, seconds);
-                wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
-            }
+        // And finally the rocks.
+        for act in &mut self.rocks {
+            update_actor_position(act, seconds);
+            wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
+        }
 
-            // Handle the results of things moving:
-            // collision detection, object death, and if
-            // we have killed all the rocks in the level,
-            // spawn more of them.
-            self.handle_collisions(ctx);
+        // Handle the results of things moving:
+        // collision detection, object death, and if
+        // we have killed all the rocks in the level,
+        // spawn more of them.
+        self.handle_collisions(ctx);
 
-            self.clear_dead_stuff();
+        self.clear_dead_stuff();
 
-            self.check_for_level_respawn();
+        self.check_for_level_respawn();
 
-            // Using a gui_dirty flag here is a little
-            // messy but fine here.
-            if self.gui_dirty {
-                self.update_ui(ctx);
-                self.gui_dirty = false;
-            }
+        // Using a gui_dirty flag here is a little
+        // messy but fine here.
+        if self.gui_dirty {
+            self.update_ui(ctx);
+            self.gui_dirty = false;
+        }
 
-            // Finally we check for our end state.
-            // I want to have a nice death screen eventually,
-            // but for now we just quit.
-            if self.player.life <= 0.0 {
-                println!("Game over!");
-                // ctx.quit() is broken at the moment.  ;_;
-                let _ = ctx.quit();
-            }
+        // Finally we check for our end state.
+        // I want to have a nice death screen eventually,
+        // but for now we just quit.
+        if self.player.life <= 0.0 {
+            println!("Game over!");
+            // ctx.quit() is broken at the moment.  ;_;
+            let _ = ctx.quit();
         }
         Ok(())
     }
@@ -650,19 +607,15 @@ impl EventHandler for MainState {
 
 
         // And draw the GUI elements in the right places.
-        let level_rect = graphics::Rect::new(0,
-                                             0,
-                                             self.level_display.width(),
-                                             self.level_display.height());
-        let score_rect = graphics::Rect::new(200,
-                                             0,
-                                             self.score_display.width(),
-                                             self.score_display.height());
-        graphics::draw(ctx, &mut self.level_display, None, Some(level_rect))?;
-        graphics::draw(ctx, &mut self.score_display, None, Some(score_rect))?;
+        let level_dest = graphics::Point::new(0.0, 0.0);
+        let score_dest = graphics::Point::new(200.0, 0.0);
+        let source_rect = graphics::Rect::one();
+        // graphics::draw(ctx, &mut self.level_display, level_dest, 0.0)?;
+        // graphics::draw(ctx, &mut self.score_display, score_dest, 0.0)?;
 
         // Then we flip the screen...
         graphics::present(ctx);
+        timer::sleep(Duration::from_secs(0));
         Ok(())
     }
 

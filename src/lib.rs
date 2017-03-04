@@ -92,13 +92,18 @@
 
 extern crate sdl2;
 extern crate app_dirs;
+#[macro_use]
+extern crate gfx;
+extern crate gfx_device_gl;
+extern crate gfx_window_sdl;
+extern crate image;
 extern crate rand;
 extern crate rodio;
 extern crate rustc_serialize;
 extern crate rusttype;
 extern crate toml;
 extern crate zip;
-
+extern crate lyon;
 
 pub mod audio;
 pub mod conf;
@@ -108,7 +113,6 @@ pub mod event;
 pub mod filesystem;
 pub mod graphics;
 pub mod timer;
-mod util;
 
 pub use context::Context;
 pub use error::*;

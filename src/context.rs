@@ -1,7 +1,6 @@
 
 
 use sdl2::{self, Sdl};
-use sdl2::render::Renderer;
 use sdl2::video::Window;
 
 use std::fmt;
@@ -12,7 +11,6 @@ use conf;
 use filesystem::Filesystem;
 use graphics;
 use timer;
-use util;
 use GameError;
 use GameResult;
 
@@ -29,10 +27,9 @@ use GameResult;
 /// drawing things, playing sounds, or loading resources (which then
 /// need to be transformed into a format the hardware likes) will need
 /// to access the `Context`.
-pub struct Context<'a> {
+pub struct Context {
     pub conf: conf::Conf,
     pub sdl_context: Sdl,
-    pub renderer: Renderer<'a>,
     pub filesystem: Filesystem,
     pub gfx_context: graphics::GraphicsContext,
     pub event_context: sdl2::EventSubsystem,
@@ -41,7 +38,7 @@ pub struct Context<'a> {
     pub audio_context: audio::AudioContext,
 }
 
-impl<'a> fmt::Debug for Context<'a> {
+impl fmt::Debug for Context {
     // TODO: Make this more useful.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Context: {:p}>", self)
@@ -72,50 +69,49 @@ fn init_window(video: sdl2::VideoSubsystem,
 fn set_window_icon(context: &mut Context) -> GameResult<()> {
     if !context.conf.window_icon.is_empty() {
         // Grrr, hackhackhack here with the icon path clone.
-        let icon_path = context.conf.window_icon.clone();
-        let path = path::Path::new(&icon_path);
-        let icon_surface = util::load_surface(context, path)?;
+        // BUGGO: TODO: Fix this too since we no longer use SDL_image
+        // let icon_path = context.conf.window_icon.clone();
+        // let path = path::Path::new(&icon_path);
+        // let icon_surface = util::load_surface(context, path)?;
 
-        if let Some(window) = context.renderer.window_mut() {
-            window.set_icon(icon_surface);
-        }
+        // BUGGO: TODO: Fix this
+        // if let Some(window) = context.renderer.window_mut() {
+        //     window.set_icon(icon_surface);
+        // }
     };
     Ok(())
 }
 
-impl<'a> Context<'a> {
+impl Context {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by the engine as part of the set-up code.
-    pub fn from_conf(conf: conf::Conf,
-                     fs: Filesystem,
-                     sdl_context: Sdl)
-                     -> GameResult<Context<'a>> {
-        let screen_width = conf.window_width;
-        let screen_height = conf.window_height;
+    pub fn from_conf(conf: conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context> {
 
+        // let window = {
+
+        //     let window_title = &conf.window_title;
+        //     init_window(video, &window_title, screen_width, screen_height)?
+        // };
+
+        // BUGGO: TODO: Make this part of the GraphicsContext
+        // let display_index = window.display_index()?;
+        // let dpi = window.subsystem().display_dpi(display_index)?;
+        let dpi = (75.0, 75.0, 75.0);
         let video = sdl_context.video()?;
-        let window = {
-
-            let window_title = &conf.window_title;
-            init_window(video, &window_title, screen_width, screen_height)?
-        };
-        let display_index = window.display_index()?;
-        let dpi = window.subsystem().display_dpi(display_index)?;
-
-        let renderer = window.renderer()
-            .accelerated()
-            .build()?;
 
         let audio_context = audio::AudioContext::new()?;
         let event_context = sdl_context.event()?;
         let timer_context = timer::TimeContext::new();
+        let graphics_context = graphics::GraphicsContext::new(video,
+                                                              &conf.window_title,
+                                                              conf.window_width,
+                                                              conf.window_height)?;
 
         let mut ctx = Context {
             conf: conf,
             sdl_context: sdl_context,
-            renderer: renderer,
             filesystem: fs,
-            gfx_context: graphics::GraphicsContext::new(),
+            gfx_context: graphics_context,
             dpi: dpi,
 
             event_context: event_context,
@@ -132,7 +128,7 @@ impl<'a> Context<'a> {
     /// Tries to create a new Context loading a config
     /// file from its default path, using the given Conf
     /// object as a default if none is found.
-    pub fn load_from_conf(id: &str, default_config: conf::Conf) -> GameResult<Context<'a>> {
+    pub fn load_from_conf(id: &str, default_config: conf::Conf) -> GameResult<Context> {
 
         let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(id)?;

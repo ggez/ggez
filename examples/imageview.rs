@@ -31,16 +31,16 @@ impl MainState {
             let r: u8 = rand::random();
             let g: u8 = rand::random();
             let b: u8 = rand::random();
-            colors.push(Color::RGB(r, g, b));
+            colors.push(Color::from((r, g, b, 255)));
         }
 
-        let mut last_point = graphics::Point::new(400, 300);
+        let mut last_point = graphics::Point::new(400.0, 300.0);
         for color in colors {
-            let x = rand::random::<i32>() % 50;
-            let y = rand::random::<i32>() % 50;
-            let point = graphics::Point::new(last_point.x() + x, last_point.y() + y);
+            let x = (rand::random::<i32>() % 50) as f32;
+            let y = (rand::random::<i32>() % 50) as f32;
+            let point = graphics::Point::new(last_point.x + x, last_point.y + y);
             graphics::set_color(ctx, color);
-            graphics::line(ctx, last_point, point)?;
+            graphics::line(ctx, &[last_point, point])?;
             last_point = point;
         }
 
@@ -95,20 +95,20 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let c = self.a as u8;
-        ctx.renderer.set_draw_color(Color::RGB(c, c, c));
-        ctx.renderer.clear();
+        graphics::set_color(ctx, Color::from((c, c, c, 255)));
+        graphics::clear(ctx);
 
-        graphics::draw(ctx, &mut self.image, None, None)?;
-        graphics::draw(ctx, &mut self.text, None, None)?;
-        let destrect = graphics::Rect::new(100, 50, 403, 50);
-        graphics::draw(ctx, &mut self.bmptext, None, Some(destrect))?;
+        let source_rect = graphics::Rect::new(0.0, 0.0, 1.0, 1.0);
+        let dest_point = graphics::Point::new(0.0, 0.0);
+        graphics::draw(ctx, &mut self.image, source_rect, dest_point, 0.0)?;
+        graphics::draw(ctx, &mut self.text, source_rect, dest_point, 0.0)?;
+        let dest_point = graphics::Point::new(100.0, 50.0);
+        graphics::draw(ctx, &mut self.bmptext, source_rect, dest_point, 0.0)?;
 
         self.draw_crazy_lines(ctx)?;
-        ctx.renderer.present();
+        graphics::present(ctx);
 
         timer::sleep_until_next_frame(ctx, 60);
-        // ctx.quit() is broken :-(
-        // ctx.quit();
         Ok(())
     }
 }

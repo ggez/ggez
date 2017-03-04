@@ -34,10 +34,11 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        ctx.renderer.clear();
-        graphics::draw(ctx, &mut self.text, None, None)?;
-        ctx.renderer.present();
-        timer::sleep_until_next_frame(ctx, 60);
+        graphics::clear(ctx);
+        let source_rect = graphics::Rect::new(0.0, 0.0, 1.0, 1.0);
+        let dest_point = graphics::Point::new(0.0, 0.0);
+        graphics::draw(ctx, &mut self.text, source_rect, dest_point, 0.0);
+        graphics::present(ctx);
         Ok(())
     }
 }

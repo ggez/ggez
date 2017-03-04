@@ -19,18 +19,18 @@ categories = ["game-engines"]
 name = "ggez"
 path = "src/lib.rs"
 
-[dependencies.sdl2]
-version = "0.28"
-default-features = false
-features = ["image"]
-
 [dependencies]
-sdl2-sys = "0.27"
 rusttype = "0.2"
 rand = "0.3"
 zip = "0.1"
 app_dirs = "1.1"
+gfx = "0.14"
+gfx_device_gl = "0.13"
+gfx_window_sdl = "0.5"
+image = "0.12"
+sdl2 = "0.28"
 rodio = {git="https://github.com/tomaka/rodio.git", branch="master"}
 
 rustc-serialize = "0.3"
 toml = "0.2"
+lyon = "0.3.2"

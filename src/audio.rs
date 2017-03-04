@@ -50,7 +50,9 @@ impl SoundData {
 
     }
 
-    pub fn from_read<R>(reader: &mut R) -> GameResult<Self> where R: Read {
+    pub fn from_read<R>(reader: &mut R) -> GameResult<Self>
+        where R: Read
+    {
         let mut buffer = Vec::new();
         reader.read_to_end(&mut buffer)?;
 
@@ -72,7 +74,6 @@ impl AsRef<[u8]> for SoundData {
 }
 
 /// A source of audio data.
-//
 // TODO: Will stop when dropped.  Check and see if this matches Love2d's semantics!
 // Eventually it might read from a streaming decoder of some kind,
 // but for now it is just an in-memory SoundData structure.
@@ -89,7 +90,7 @@ impl Source {
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
         let data = {
-        let file = &mut context.filesystem.open(path)?;
+            let file = &mut context.filesystem.open(path)?;
             let data = SoundData::from_read(file)?;
             data
         };
@@ -122,10 +123,9 @@ impl Source {
     pub fn resume(&self) {
         self.sink.play()
     }
-    
 
-    pub fn stop(&self) {
-    }
+
+    pub fn stop(&self) {}
     pub fn set_looping() {}
     pub fn set_volume(&mut self, value: f32) {
         self.sink.set_volume(value)
@@ -146,7 +146,7 @@ impl Source {
     pub fn looping(&self) -> bool {
         false
     }
-    
+
     // TODO: maybe seek(), tell(), rewind()?
 }
 
