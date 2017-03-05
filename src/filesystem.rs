@@ -64,46 +64,42 @@ pub struct Filesystem {
     base_path: path::PathBuf,
     user_path: path::PathBuf,
     resource_path: path::PathBuf,
-    resource_zip: Option<zip::ZipArchive<fs::File>>,
+    resource_zip_path: path::PathBuf,
 }
 
 /// Represents a file, either in the filesystem, or in the resources zip file,
 /// or whatever.
-pub enum File<'a> {
+pub enum File {
     FSFile(fs::File),
-    ZipFile(zip::read::ZipFile<'a>),
     ZipArchive(rent_zip::RentFile<'static>),
 }
 
-impl<'a> fmt::Debug for File<'a> {
+impl fmt::Debug for File {
     // TODO: Make this more useful.
     // But we can't seem to get a filename out of a file,
     // soooooo.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             File::FSFile(ref _file) => write!(f, "File"),
-            File::ZipFile(ref _file) => write!(f, "Zipfile"),
             File::ZipArchive(ref _file) => write!(f, "Ziparchive"),
         }
     }
 }
 
-impl<'a> io::Read for File<'a> {
+impl io::Read for File {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         match *self {
             File::FSFile(ref mut f) => f.read(buf),
-            File::ZipFile(ref mut f) => f.read(buf),
             File::ZipArchive(ref mut f) => f.read(buf),
         }
     }
 }
 
 
-impl<'a> io::Write for File<'a> {
+impl io::Write for File {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         match *self {
             File::FSFile(ref mut f) => f.write(buf),
-            File::ZipFile(_) => panic!("Cannot write to a zip file!"),
             File::ZipArchive(_) => panic!("Cannot write to a zip file!"),
         }
     }
@@ -111,7 +107,6 @@ impl<'a> io::Write for File<'a> {
     fn flush(&mut self) -> io::Result<()> {
         match *self {
             File::FSFile(ref mut f) => f.flush(),
-            File::ZipFile(_) => Ok(()),
             File::ZipArchive(_) => Ok(()),
 
         }
@@ -151,19 +146,18 @@ impl Filesystem {
         }
 
         // Check for resources zip file.
-        let mut resource_zip = None;
         let mut resource_zip_path = root_path.clone();
         resource_zip_path.push("resources.zip");
-        if !resource_zip_path.exists() || !resource_zip_path.is_file() {
-            // Do we want to warn here?  ...maybe not.
-        } else {
-            // We keep this file open so we don't have to re-parse
-            // the zip file every time we load something out of it.
-            let f = fs::File::open(resource_zip_path.clone())?;
-            let z = zip::ZipArchive::new(f)?;
+        // if !resource_zip_path.exists() || !resource_zip_path.is_file() {
+        //     // Do we want to warn here?  ...maybe not.
+        // } else {
+        //     // We keep this file open so we don't have to re-parse
+        //     // the zip file every time we load something out of it.
+        //     let f = fs::File::open(resource_zip_path.clone())?;
+        //     let z = zip::ZipArchive::new(f)?;
 
-            resource_zip = Some(z);
-        }
+        //     resource_zip = Some(z);
+        // }
 
         // Get user path, but it doesn't really matter if it
         // doesn't exist for us so there's no real setup.
@@ -171,7 +165,7 @@ impl Filesystem {
             resource_path: resource_path,
             base_path: root_path,
             user_path: pref_path,
-            resource_zip: resource_zip,
+            resource_zip_path: resource_zip_path,
         };
 
         Ok(fs)
@@ -191,14 +185,28 @@ impl Filesystem {
         }
 
         // Look in resources.zip
-        if let Some(ref mut zipfile) = self.resource_zip {
+        if self.resource_zip_path.exists() && self.resource_zip_path.is_file() {
+            let f = fs::File::open(&self.resource_zip_path)?;
+            let z = zip::ZipArchive::new(f)?;
             let errmsg = format!("Asked for invalid path inside resources.zip; should never \
                                   happen?");
             let name = pathref.to_str().ok_or(GameError::UnknownError(errmsg))?;
-            let f = zipfile.by_name(name)?;
-            return Ok(File::ZipFile(f));
-            // TODO: add path to zip + path within zip to `tried`?
+            let rental = rent_zip::RentFile::try_new(Box::new(z), |archive| archive.by_name(name));
+            match rental {
+                Ok(f) => return Ok(File::ZipArchive(f)),
+                Err((zip_error, _)) => return Err(GameError::from(zip_error)),
+            }
+
         }
+
+        // if let Some(ref mut zipfile) = self.resource_zip {
+        //     let errmsg = format!("Asked for invalid path inside resources.zip; should never \
+        //                           happen?");
+        //     let name = pathref.to_str().ok_or(GameError::UnknownError(errmsg))?;
+        //     let f = zipfile.by_name(name)?;
+        //     return Ok(File::ZipFile(f));
+        //     // TODO: add path to zip + path within zip to `tried`?
+        // }
 
         // Look in user directory
         let pathbuf = self.rel_to_user_path(pathref)?;
@@ -309,11 +317,14 @@ impl Filesystem {
             let name = path.to_str().unwrap_or(INVALID_FILENAME);
             // If we have a valid filename,
             // find the thing.
-            if let Some(ref mut zipfile) = self.resource_zip {
-                zipfile.by_name(name).is_ok()
-            } else {
-                false
-            }
+            // XXX: Fix this with rental
+            false
+            // if let Some(ref mut zipfile) = self.resource_zip_path {
+            //     zipfile.by_name(name).is_ok();
+            //     true
+            // } else {
+            //     false
+            // }
         }
     }
 
@@ -326,11 +337,15 @@ impl Filesystem {
             p.is_file()
         } else {
             let name = path.to_str().unwrap_or(INVALID_FILENAME);
-            if let Some(ref mut zipfile) = self.resource_zip {
-                zipfile.by_name(name).is_ok()
-            } else {
-                false
-            }
+            // XXX: Fix this with rental
+            false
+            // if let Some(ref mut zipfile) = self.resource_zip {
+            //     // XXX: Fix this with rental
+            //     zipfile.by_name(name).is_ok();
+            //     true
+            // } else {
+            //     false
+            // }
         }
     }
 
@@ -343,17 +358,19 @@ impl Filesystem {
             p.is_dir()
         } else {
             let name = path.to_str().unwrap_or(INVALID_FILENAME);
-            if let Some(ref mut zipfile) = self.resource_zip {
-                // BUGGO: This doesn't actually do what we want...
-                // Zip files don't actually store directories,
-                // they just fake it.
-                // What we COULD do is iterate through all files
-                // in the zip file looking for one with the same
-                // name prefix as the directory path?
-                zipfile.by_name(name).is_ok()
-            } else {
-                false
-            }
+            // XXX: Fix this with rental
+            false
+            // if let Some(ref mut zipfile) = self.resource_zip {
+            //     // BUGGO: This doesn't actually do what we want...
+            //     // Zip files don't actually store directories,
+            //     // they just fake it.
+            //     // What we COULD do is iterate through all files
+            //     // in the zip file looking for one with the same
+            //     // name prefix as the directory path?
+            //     zipfile.by_name(name).is_ok()
+            // } else {
+            //     false
+            // }
         }
     }
 
@@ -415,12 +432,13 @@ impl Filesystem {
         }
 
 
-        if let Some(ref mut zipfile) = self.resource_zip {
-            for i in 0..zipfile.len() {
-                let file = zipfile.by_index(i)?;
-                println!("resources.zip: {}", file.name());
-            }
-        }
+        // XXX: Fix this with rental
+        // if let Some(ref mut zipfile) = self.resource_zip {
+        //     for i in 0..zipfile.len() {
+        //         let file = zipfile.by_index(i)?;
+        //         println!("resources.zip: {}", file.name());
+        //     }
+        // }
         Ok(())
     }
 
@@ -468,7 +486,7 @@ mod tests {
             resource_path: path.clone(),
             user_path: path.clone(),
             base_path: path.clone(),
-            resource_zip: None,
+            resource_zip_path: path.clone(),
         }
 
     }
