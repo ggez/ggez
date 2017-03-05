@@ -28,9 +28,27 @@ use app_dirs::*;
 use GameError;
 use GameResult;
 use conf;
-// use warn;
 
 use zip;
+
+use rental;
+
+rental!{
+    mod rent_zip {
+        use std::fs;
+        use zip;
+
+        pub rental mut RentFile<'rental>(
+            Box<zip::ZipArchive<fs::File>>, zip::read::ZipFile<'rental>);
+    }
+}
+
+impl<'a> io::Read for rent_zip::RentFile<'a> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.rent_mut(|zipfile| zipfile.read(buf))
+    }
+}
+
 
 
 const CONFIG_NAME: &'static str = "conf.toml";
@@ -53,7 +71,8 @@ pub struct Filesystem {
 /// or whatever.
 pub enum File<'a> {
     FSFile(fs::File),
-    ZipFile(zip::read::ZipFile<'a>), // ZipArchive(zip::ZipArchive<fs::File>),
+    ZipFile(zip::read::ZipFile<'a>),
+    ZipArchive(rent_zip::RentFile<'static>),
 }
 
 impl<'a> fmt::Debug for File<'a> {
@@ -64,7 +83,7 @@ impl<'a> fmt::Debug for File<'a> {
         match *self {
             File::FSFile(ref _file) => write!(f, "File"),
             File::ZipFile(ref _file) => write!(f, "Zipfile"),
-            // File::ZipArchive(ref _file) => write!(f, "Ziparchive"),
+            File::ZipArchive(ref _file) => write!(f, "Ziparchive"),
         }
     }
 }
@@ -74,6 +93,7 @@ impl<'a> io::Read for File<'a> {
         match *self {
             File::FSFile(ref mut f) => f.read(buf),
             File::ZipFile(ref mut f) => f.read(buf),
+            File::ZipArchive(ref mut f) => f.read(buf),
         }
     }
 }
@@ -84,6 +104,7 @@ impl<'a> io::Write for File<'a> {
         match *self {
             File::FSFile(ref mut f) => f.write(buf),
             File::ZipFile(_) => panic!("Cannot write to a zip file!"),
+            File::ZipArchive(_) => panic!("Cannot write to a zip file!"),
         }
     }
 
@@ -91,6 +112,8 @@ impl<'a> io::Write for File<'a> {
         match *self {
             File::FSFile(ref mut f) => f.flush(),
             File::ZipFile(_) => Ok(()),
+            File::ZipArchive(_) => Ok(()),
+
         }
     }
 }
@@ -136,8 +159,9 @@ impl Filesystem {
         } else {
             // We keep this file open so we don't have to re-parse
             // the zip file every time we load something out of it.
-            let f = fs::File::open(resource_zip_path)?;
+            let f = fs::File::open(resource_zip_path.clone())?;
             let z = zip::ZipArchive::new(f)?;
+
             resource_zip = Some(z);
         }
 
@@ -505,7 +529,8 @@ mod tests {
         }
 
         {
-            match fs.open("ooglebooglebarg.txt") {
+            let r = fs.open("ooglebooglebarg.txt");
+            match r {
                 Err(e) => {
                     match e {
                         GameError::ResourceNotFound(_, _) => (),

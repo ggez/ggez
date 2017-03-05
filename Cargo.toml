@@ -34,3 +34,4 @@ rodio = {git="https://github.com/tomaka/rodio.git", branch="master"}
 rustc-serialize = "0.3"
 toml = "0.2"
 lyon = "0.3.2"
+rental = "0.3"
