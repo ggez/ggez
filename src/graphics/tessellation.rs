@@ -1,4 +1,3 @@
-use lyon;
 use lyon::path;
 use lyon::path_builder::BaseBuilder;
 use lyon::path_iterator::PathIterator;

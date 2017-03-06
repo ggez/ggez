@@ -139,16 +139,18 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     background_color: Color,
     shader_globals: Globals,
     white_image: Image,
-    blend_mode: (),
     line_width: f32,
     point_size: f32,
+    screen_rect: Rect,
 
     window: sdl2::video::Window,
+    #[allow(dead_code)]
     gl_context: sdl2::video::GLContext,
     device: Box<D>,
     factory: Box<F>,
     encoder: gfx::Encoder<R, C>,
     // color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
+    #[allow(dead_code)]
     depth_view: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
 
     pso: gfx::PipelineState<R, pipe::Meta>,
@@ -247,11 +249,12 @@ impl GraphicsContext {
         };
 
         // Set initial uniform values
+        let left = 0.0;
+        let right = screen_width as f32;
+        let top = 0.0;
+        let bottom = screen_height as f32;
         let globals = Globals {
-            transform: ortho(0.0,
-                             screen_width as f32,
-                             0.0,
-                             screen_height as f32,
+            transform: ortho(left, right, top, bottom,
                              1.0,
                              -1.0),
             color: types::WHITE.into(),
@@ -262,8 +265,8 @@ impl GraphicsContext {
             shader_globals: globals,
             line_width: 1.0,
             point_size: 1.0,
-            blend_mode: (),
             white_image: white_image,
+            screen_rect: Rect::new(left, bottom, (right-left), (top-bottom)),
 
             window: window,
             gl_context: gl_context,
@@ -335,19 +338,20 @@ fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [
      [c0r3, c1r3, c2r3, c3r3]]
 }
 
-fn draw_tessellated(gfx: &mut GraphicsContext, buffers: tessellation::Buffer) -> GameResult<()> {
-    let (buf, slice) = gfx.factory
-        .create_vertex_buffer_with_slice(&buffers.vertices[..], &buffers.indices[..]);
+// BUGGO: Has this been obsoleted by the Mesh type?
+// fn draw_tessellated(gfx: &mut GraphicsContext, buffers: tessellation::Buffer) -> GameResult<()> {
+//     let (buf, slice) = gfx.factory
+//         .create_vertex_buffer_with_slice(&buffers.vertices[..], &buffers.indices[..]);
 
-    gfx.encoder.update_buffer(&gfx.data.rect_properties, &[RectProperties::default()], 0)?;
+//     gfx.encoder.update_buffer(&gfx.data.rect_properties, &[RectProperties::default()], 0)?;
 
-    gfx.data.vbuf = buf;
-    gfx.data.tex.0 = gfx.white_image.texture.clone();
+//     gfx.data.vbuf = buf;
+//     gfx.data.tex.0 = gfx.white_image.texture.clone();
 
-    gfx.encoder.draw(&slice, &gfx.pso, &gfx.data);
+//     gfx.encoder.draw(&slice, &gfx.pso, &gfx.data);
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 // **********************************************************************
 // DRAWING
@@ -453,8 +457,18 @@ pub fn points(_ctx: &mut Context, _point: &[Point]) -> GameResult<()> {
 }
 
 /// Draws a closed polygon
-pub fn polygon(_ctx: &mut Context, _mode: DrawMode, _vertices: &[Point]) -> GameResult<()> {
-    unimplemented!();
+pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point]) -> GameResult<()> {
+    match mode {
+        DrawMode::Line => {
+            // We append the first vertex to the list as the last vertex,
+            // and just draw it with line()
+            let mut pts = Vec::with_capacity(vertices.len() + 1);
+            pts.extend(vertices);
+            pts.push(vertices[0]);
+            line(ctx, &pts)
+        },
+        DrawMode::Fill => unimplemented!(),
+    }
 }
 
 /// Renders text with the default font.
@@ -469,18 +483,22 @@ pub fn rectangle(ctx: &mut Context, _mode: DrawMode, rect: Rect) -> GameResult<(
     // That might actually be invalid considering that drawing an Image involves altering
     // its state.  And it might just be cloning a texture handle.
     // TODO: Draw mode is unimplemented.
-    let img = &mut ctx.gfx_context.white_image.clone();
-    let source = Rect::new(0.0, 0.0, 1.0, 1.0);
-    let dest = Point::new(rect.x, rect.y);
-    let scale = Point::new(rect.w, rect.h);
-    draw_ex(ctx,
-            img,
-            DrawParam {
-                src: source,
-                dest: dest,
-                scale: scale,
-                ..Default::default()
-            })
+    match mode {
+        DrawMode::Fill => {
+            let img = &mut ctx.gfx_context.white_image.clone();
+            let source = Rect::new(0.0, 0.0, 1.0, 1.0);
+            let dest = Point::new(rect.x, rect.y);
+            let scale = Point::new(rect.w, rect.h);
+            draw_ex(ctx,
+                    img,
+                    DrawParam {
+                        src: source,
+                        dest: dest,
+                        scale: scale,
+                        ..Default::default()
+                    })
+        },
+        DrawMode::Line => unimplemented!()
 }
 
 // **********************************************************************
@@ -517,12 +535,13 @@ pub fn get_renderer_info(_ctx: &Context) {
 }
 
 // TODO: Better name.  screen_bounds?  Viewport?
-pub fn get_screen_coordinates(_ctx: &Context) {
-    unimplemented!()
+pub fn get_screen_coordinates(ctx: &Context) -> Rect {
+    ctx.gfx_context.screen_rect
 }
 
+// TOOD: Verify!
 pub fn is_gamma_correct(_ctx: &Context) -> bool {
-    unimplemented!()
+    true
 }
 
 /// Sets the background color.  Default: blue.
@@ -563,6 +582,7 @@ pub fn set_screen_coordinates(context: &mut Context,
                               top: f32,
                               bottom: f32) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
+    gfx.screen_rect = Rect::new(left, bottom, (right-left), (top-bottom));
     gfx.shader_globals.transform = ortho(left, right, top, bottom, 1.0, -1.0);
     gfx.update_globals()
 }

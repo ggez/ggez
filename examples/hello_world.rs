@@ -35,7 +35,7 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
         let dest_point = graphics::Point::new(0.0, 0.0);
-        graphics::draw(ctx, &mut self.text, dest_point, 0.0);
+        graphics::draw(ctx, &mut self.text, dest_point, 0.0)?;
         graphics::present(ctx);
         Ok(())
     }

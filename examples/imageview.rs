@@ -39,7 +39,7 @@ impl MainState {
             let x = (rand::random::<i32>() % 50) as f32;
             let y = (rand::random::<i32>() % 50) as f32;
             let point = graphics::Point::new(last_point.x + x, last_point.y + y);
-            graphics::set_color(ctx, color);
+            graphics::set_color(ctx, color)?;
             graphics::line(ctx, &[last_point, point])?;
             last_point = point;
         }
@@ -95,7 +95,7 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let c = self.a as u8;
-        graphics::set_color(ctx, Color::from((c, c, c, 255)));
+        graphics::set_color(ctx, Color::from((c, c, c, 255)))?;
         graphics::clear(ctx);
 
         let dest_point = graphics::Point::new(0.0, 0.0);
