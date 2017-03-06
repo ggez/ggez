@@ -98,8 +98,6 @@ extern crate gfx_device_gl;
 extern crate gfx_window_sdl;
 extern crate image;
 extern crate rand;
-#[macro_use]
-extern crate rental;
 extern crate rodio;
 extern crate rustc_serialize;
 extern crate rusttype;
