@@ -213,7 +213,7 @@ impl GraphicsContext {
 
         let window_builder = video.window(window_title, screen_width, screen_height);
         let (mut window, mut gl_context, mut device, mut factory, color_view, depth_view) =
-            gfx_window_sdl::init(window_builder).unwrap();
+            gfx_window_sdl::init(window_builder)?;
 
         println!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
                  GL_MAJOR_VERSION,
@@ -228,8 +228,7 @@ impl GraphicsContext {
 
         let pso = factory.create_pipeline_simple(include_bytes!("shader/basic_150.glslv"),
                                     include_bytes!("shader/basic_150.glslf"),
-                                    pipe::new())
-            .unwrap();
+                                    pipe::new())?;
 
         let (quad_vertex_buffer, quad_slice) =
             factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
@@ -237,7 +236,7 @@ impl GraphicsContext {
         let rect_props = factory.create_constant_buffer(1);
         let globals_buffer = factory.create_constant_buffer(1);
         let sampler = factory.create_sampler_linear();
-        let white_image = Image::make_raw(&mut factory, 1, 1, &[&[255, 255, 255, 255]]).unwrap();
+        let white_image = Image::make_raw(&mut factory, 1, 1, &[&[255, 255, 255, 255]])?;
         let texture = white_image.texture.clone();
 
         let data = pipe::Data {
@@ -403,13 +402,13 @@ pub fn present(ctx: &mut Context) {
 }
 
 /// Draw an arc.
-pub fn arc(ctx: &mut Context,
-           mode: DrawMode,
-           point: Point,
-           radius: f32,
-           angle1: f32,
-           angle2: f32,
-           segments: u32)
+pub fn arc(_ctx: &mut Context,
+           _mode: DrawMode,
+           _point: Point,
+           _radius: f32,
+           _angle1: f32,
+           _angle2: f32,
+           _segments: u32)
            -> GameResult<()> {
     unimplemented!();
 }
@@ -445,7 +444,7 @@ pub fn line(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
 }
 
 /// Draws points.
-pub fn points(ctx: &mut Context, point: &[Point]) -> GameResult<()> {
+pub fn points(_ctx: &mut Context, _point: &[Point]) -> GameResult<()> {
     unimplemented!();
     // let r = &mut ctx.renderer;
     // let res = r.draw_point(point);
@@ -453,18 +452,18 @@ pub fn points(ctx: &mut Context, point: &[Point]) -> GameResult<()> {
 }
 
 /// Draws a closed polygon
-pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point]) -> GameResult<()> {
+pub fn polygon(_ctx: &mut Context, _mode: DrawMode, _vertices: &[Point]) -> GameResult<()> {
     unimplemented!();
 }
 
 /// Renders text with the default font.
-pub fn print(_ctx: &mut Context, dest: Point, text: &str, size: f32) {
+pub fn print(_ctx: &mut Context, _dest: Point, _text: &str, _size: f32) {
     unimplemented!();
 }
 
 
 /// Draws a rectangle.
-pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
+pub fn rectangle(ctx: &mut Context, _mode: DrawMode, rect: Rect) -> GameResult<()> {
     // TODO: See if we can evade this clone() without a double-borrow being involved?
     // That might actually be invalid considering that drawing an Image involves altering
     // its state.  And it might just be cloning a texture handle.
@@ -512,16 +511,16 @@ pub fn get_point_size(ctx: &Context) -> f32 {
     ctx.gfx_context.point_size
 }
 
-pub fn get_renderer_info(ctx: &Context) {
+pub fn get_renderer_info(_ctx: &Context) {
     unimplemented!()
 }
 
 // TODO: Better name.  screen_bounds?  Viewport?
-pub fn get_screen_coordinates(ctx: &Context) {
+pub fn get_screen_coordinates(_ctx: &Context) {
     unimplemented!()
 }
 
-pub fn is_gamma_correct(ctx: &Context) -> bool {
+pub fn is_gamma_correct(_ctx: &Context) -> bool {
     unimplemented!()
 }
 
@@ -673,8 +672,14 @@ impl Image {
                 height: u16,
                 rgba: &[&[u8]])
                 -> GameResult<Image> {
+        if !(width.is_power_of_two() && height.is_power_of_two()) {
+            let w2 = width.next_power_of_two();
+            let h2 = height.next_power_of_two();
+            let msg = format!("Needed power of 2 texture, got {}x{} (try making it {}x{}", width, height, w2, h2);
+            return Err(GameError::ResourceLoadError(msg));
+        }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        let (_, view) = factory.create_texture_immutable_u8::<Rgba8>(kind, &rgba).unwrap();
+        let (_, view) = factory.create_texture_immutable_u8::<Rgba8>(kind, &rgba)?;
         Ok(Image {
             texture: view,
             width: width as u32,

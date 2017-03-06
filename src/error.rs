@@ -3,6 +3,9 @@ use std;
 use std::error::Error;
 use std::fmt;
 
+use gfx;
+use gfx_window_sdl;
+
 use image;
 use rodio::decoder::DecoderError;
 use sdl2;
@@ -19,7 +22,7 @@ pub enum GameError {
     ResourceNotFound(String, Vec<std::path::PathBuf>),
     RenderError(String),
     AudioError(String),
-    WindowError(sdl2::video::WindowBuildError),
+    WindowError(gfx_window_sdl::InitError),
     IOError(std::io::Error),
     FontError(String),
     VideoError(String),
@@ -58,8 +61,8 @@ impl From<String> for GameError {
     }
 }
 
-impl From<sdl2::video::WindowBuildError> for GameError {
-    fn from(s: sdl2::video::WindowBuildError) -> GameError {
+impl From<gfx_window_sdl::InitError> for GameError {
+    fn from(s: gfx_window_sdl::InitError) -> GameError {
         GameError::WindowError(s)
     }
 }
@@ -158,4 +161,19 @@ impl From<image::ImageError> for GameError {
         let errstr = format!("Image load error: {}", e.description());
         GameError::ResourceLoadError(errstr)
     }
+}
+
+impl From<gfx::PipelineStateError<std::string::String>> for GameError {
+    fn from(e: gfx::PipelineStateError<std::string::String>) -> GameError {
+        let errstr = format!("Error constructing pipeline!\nThis should probably not be happening; it probably means an error in a shader or something.\nError was: {:?}", e);
+        GameError::VideoError(errstr)
+    }
+}
+
+impl From<gfx::CombinedError> for GameError {
+    fn from(e: gfx::CombinedError) -> GameError {
+        let errstr = format!("Texture+view load error: {}", e.description());
+        GameError::VideoError(errstr)
+    }
+
 }
