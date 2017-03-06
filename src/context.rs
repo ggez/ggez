@@ -1,10 +1,8 @@
 
 
 use sdl2::{self, Sdl};
-use sdl2::video::Window;
 
 use std::fmt;
-use std::path;
 
 use audio;
 use conf;
@@ -43,24 +41,6 @@ impl fmt::Debug for Context {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Context: {:p}>", self)
     }
-}
-
-
-
-fn init_window(video: sdl2::VideoSubsystem,
-               window_title: &str,
-               screen_width: u32,
-               screen_height: u32)
-               -> GameResult<Window> {
-
-    // Can't hurt
-    let _ = sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "best");
-
-    video.window(window_title, screen_width, screen_height)
-        .position_centered()
-        .opengl()
-        .build()
-        .map_err(|e| GameError::VideoError(format!("{}", e)))
 }
 
 /// Sets the window icon from the Conf window_icon field.

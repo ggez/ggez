@@ -8,12 +8,10 @@
 
 use std::fmt;
 use std::path;
-use std::collections::BTreeMap;
 use std::convert::From;
-use std::io::{Read, BufReader};
+use std::io::{Read};
 
 use sdl2;
-use rusttype;
 use image;
 use gfx;
 use gfx::texture;
@@ -168,6 +166,7 @@ pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources,
 /// TODO: This can probably be removed before release but might be
 /// handy to keep around until then.  Just in case something else
 /// crazy happens.
+#[allow(unused)]
 fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
     let mut major_versions = [4u8, 3u8, 2u8, 1u8];
     let minor_versions = [5u8, 4u8, 3u8, 2u8, 1u8, 0u8];
@@ -212,7 +211,7 @@ impl GraphicsContext {
         gl.set_alpha_size(8);
 
         let window_builder = video.window(window_title, screen_width, screen_height);
-        let (mut window, mut gl_context, mut device, mut factory, color_view, depth_view) =
+        let (window, gl_context, device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
         println!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
@@ -222,7 +221,7 @@ impl GraphicsContext {
                  gl.context_minor_version(),
                  gl.context_profile());
 
-        let mut encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
+        let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer()
                 .into();
 
@@ -278,17 +277,19 @@ impl GraphicsContext {
             quad_slice: quad_slice,
             quad_vertex_buffer: quad_vertex_buffer,
         };
-        gfx.update_globals();
+        gfx.update_globals()?;
         Ok(gfx)
     }
 
-    fn update_globals(&mut self) {
-        self.encoder.update_buffer(&self.data.globals, &[self.shader_globals], 0);
+    fn update_globals(&mut self) -> GameResult<()> {
+        self.encoder.update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
+        Ok(())
     }
 
-    fn update_rect_properties(&mut self, draw_params: DrawParam) {
+    fn update_rect_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
         let properties = draw_params.into();
-        self.encoder.update_buffer(&self.data.rect_properties, &[properties], 0);
+        self.encoder.update_buffer(&self.data.rect_properties, &[properties], 0)?;
+        Ok(())
     }
 }
 
@@ -338,7 +339,7 @@ fn draw_tessellated(gfx: &mut GraphicsContext, buffers: tessellation::Buffer) ->
     let (buf, slice) = gfx.factory
         .create_vertex_buffer_with_slice(&buffers.vertices[..], &buffers.indices[..]);
 
-    gfx.encoder.update_buffer(&gfx.data.rect_properties, &[RectProperties::default()], 0);
+    gfx.encoder.update_buffer(&gfx.data.rect_properties, &[RectProperties::default()], 0)?;
 
     gfx.data.vbuf = buf;
     gfx.data.tex.0 = gfx.white_image.texture.clone();
@@ -531,12 +532,11 @@ pub fn set_background_color(ctx: &mut Context, color: Color) {
 
 /// Sets the foreground color, which will be used for drawing
 /// rectangles, lines, etc.  Default: white.
-pub fn set_color(ctx: &mut Context, color: Color) {
+pub fn set_color(ctx: &mut Context, color: Color) -> GameResult<()> {
     // TODO: Update buffer!
     let gfx = &mut ctx.gfx_context;
     gfx.shader_globals.color = color.into();
-    gfx.update_globals();
-    // gfx.encoder.update_buffer(&gfx.data.globals, &[gfx.shader_globals], 0);
+    gfx.update_globals()
 }
 
 /// Sets the default filter mode used to scale images.
@@ -561,10 +561,10 @@ pub fn set_screen_coordinates(context: &mut Context,
                               left: f32,
                               right: f32,
                               top: f32,
-                              bottom: f32) {
+                              bottom: f32) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
     gfx.shader_globals.transform = ortho(left, right, top, bottom, 1.0, -1.0);
-    gfx.update_globals();
+    gfx.update_globals()
 }
 
 // **********************************************************************
@@ -783,7 +783,7 @@ impl Drawable for Image {
         // Not entirely sure why the inversion is necessary, but oh well.
         new_param.offset.x *= -1.0 * param.scale.x;
         new_param.offset.y *= param.scale.y;
-        gfx.update_rect_properties(new_param);
+        gfx.update_rect_properties(new_param)?;
         // TODO: BUGGO: Make sure these clones are cheap; they should be.
         let (_, sampler) = gfx.data.tex.clone();
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
@@ -851,7 +851,7 @@ impl Mesh {
 impl Drawable for Mesh {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
         let gfx = &mut ctx.gfx_context;
-        gfx.update_rect_properties(param);
+        gfx.update_rect_properties(param)?;
 
         gfx.data.vbuf = self.buffer.clone();
         gfx.data.tex.0 = gfx.white_image.texture.clone();

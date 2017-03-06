@@ -175,5 +175,14 @@ impl From<gfx::CombinedError> for GameError {
         let errstr = format!("Texture+view load error: {}", e.description());
         GameError::VideoError(errstr)
     }
+    
+}
 
+impl<T> From<gfx::UpdateError<T>> for GameError
+    where T: fmt::Debug + fmt::Display + 'static {
+    fn from(e: gfx::UpdateError<T>) -> GameError {
+        let errstr = format!("Buffer update error: {}", e);
+        GameError::VideoError(errstr)
+    }
+    
 }
