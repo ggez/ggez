@@ -137,22 +137,17 @@ fn render_ttf(context: &mut Context,
     // Ripped almost wholesale from
     // https://github.com/dylanede/rusttype/blob/master/examples/simple.rs
 
-    // TODO: Figure out
-    // Also, 72 DPI is default but might not always be valid; 4K screens etc
-    // SDL has a way to get the proper DPI.
-
-    // let size: f32 = 24.0;
-    // let pixel_height = size.ceil() as usize;
+    // Get the proper DPI to scale font size accordingly
     let (_diag_dpi, x_dpi, y_dpi) = context.dpi;
     let scale = display_independent_scale(size, x_dpi, y_dpi);
-    let pixel_height = scale.y.ceil() as usize;
+    let text_height_pixels = scale.y.ceil() as usize;
     let v_metrics = font.v_metrics(scale);
     let offset = rusttype::point(0.0, v_metrics.ascent);
     // Then turn them into an array of positioned glyphs...
     // `layout()` turns an abstract glyph, which contains no concrete
     // size or position information, into a PositionedGlyph, which does.
     let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
-    let width = glyphs.iter()
+    let text_width_pixels = glyphs.iter()
         .rev()
         .filter_map(|g| {
             g.pixel_bounding_box()
@@ -163,8 +158,8 @@ fn render_ttf(context: &mut Context,
         .ceil() as usize;
     // Make an array for our rendered bitmap
     let bytes_per_pixel = 4;
-    let mut pixel_data = vec![0; width * pixel_height * bytes_per_pixel];
-    let pitch = width * bytes_per_pixel;
+    let mut pixel_data = vec![0; text_width_pixels * text_height_pixels * bytes_per_pixel];
+    let pitch = text_width_pixels * bytes_per_pixel;
 
     // Now we actually render the glyphs to a bitmap...
     for g in glyphs {
@@ -176,7 +171,7 @@ fn render_ttf(context: &mut Context,
                 let x = x as i32 + bb.min.x;
                 let y = y as i32 + bb.min.y;
                 // There's still a possibility that the glyph clips the boundaries of the bitmap
-                if x >= 0 && x < width as i32 && y >= 0 && y < pixel_height as i32 {
+                if x >= 0 && x < text_width_pixels as i32 && y >= 0 && y < text_height_pixels as i32 {
                     let x = x as usize * bytes_per_pixel;
                     let y = y as usize;
                     pixel_data[(x + y * pitch + 0)] = c;
@@ -188,18 +183,9 @@ fn render_ttf(context: &mut Context,
         }
     }
 
-    // Copy the bitmap onto a surface, and we're basically done!
+    // Copy the bitmap into an image, and we're basically done!
     // BUGGO: TODO: Make sure conversions will not fail
-    let image = Image::from_rgba8_flat(context, width as u16, pixel_height as u16, &pixel_data)?;
-    // let format = pixels::PixelFormatEnum::RGBA8888;
-    // let surface = try!(surface::Surface::from_data(&mut pixel_data,
-    //                                               width as u32,
-    //                                               pixel_height as u32,
-    //                                               pitch as u32,
-    //                                               format));
-
-    // let image = Image::from_surface(context, surface)?;
-    // let tq = image.texture.query();
+    let image = Image::from_rgba8_flat(context, text_width_pixels as u16, text_height_pixels as u16, &pixel_data)?;
 
     let text_string = text.to_string();
     Ok(Text {

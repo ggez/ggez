@@ -3,7 +3,6 @@ use ggez::conf;
 use ggez::event;
 use ggez::{GameResult, Context};
 use ggez::graphics;
-use ggez::timer;
 use std::time::Duration;
 
 // First we make a structure to contain the game's state
