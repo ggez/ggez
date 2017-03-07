@@ -9,7 +9,7 @@
 use std::fmt;
 use std::path;
 use std::convert::From;
-use std::io::{Read};
+use std::io::Read;
 
 use sdl2;
 use image;
@@ -254,9 +254,7 @@ impl GraphicsContext {
         let top = 0.0;
         let bottom = screen_height as f32;
         let globals = Globals {
-            transform: ortho(left, right, top, bottom,
-                             1.0,
-                             -1.0),
+            transform: ortho(left, right, top, bottom, 1.0, -1.0),
             color: types::WHITE.into(),
         };
 
@@ -266,7 +264,7 @@ impl GraphicsContext {
             line_width: 1.0,
             point_size: 1.0,
             white_image: white_image,
-            screen_rect: Rect::new(left, bottom, (right-left), (top-bottom)),
+            screen_rect: Rect::new(left, bottom, (right - left), (top - bottom)),
 
             window: window,
             gl_context: gl_context,
@@ -466,7 +464,7 @@ pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point]) -> GameRes
             pts.extend(vertices);
             pts.push(vertices[0]);
             line(ctx, &pts)
-        },
+        }
         DrawMode::Fill => unimplemented!(),
     }
 }
@@ -478,7 +476,7 @@ pub fn print(_ctx: &mut Context, _dest: Point, _text: &str, _size: f32) {
 
 
 /// Draws a rectangle.
-pub fn rectangle(ctx: &mut Context, _mode: DrawMode, rect: Rect) -> GameResult<()> {
+pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
     // TODO: See if we can evade this clone() without a double-borrow being involved?
     // That might actually be invalid considering that drawing an Image involves altering
     // its state.  And it might just be cloning a texture handle.
@@ -497,8 +495,9 @@ pub fn rectangle(ctx: &mut Context, _mode: DrawMode, rect: Rect) -> GameResult<(
                         scale: scale,
                         ..Default::default()
                     })
-        },
-        DrawMode::Line => unimplemented!()
+        }
+        DrawMode::Line => unimplemented!(),
+    }
 }
 
 // **********************************************************************
@@ -580,9 +579,10 @@ pub fn set_screen_coordinates(context: &mut Context,
                               left: f32,
                               right: f32,
                               top: f32,
-                              bottom: f32) -> GameResult<()> {
+                              bottom: f32)
+                              -> GameResult<()> {
     let gfx = &mut context.gfx_context;
-    gfx.screen_rect = Rect::new(left, bottom, (right-left), (top-bottom));
+    gfx.screen_rect = Rect::new(left, bottom, (right - left), (top - bottom));
     gfx.shader_globals.transform = ortho(left, right, top, bottom, 1.0, -1.0);
     gfx.update_globals()
 }
@@ -695,7 +695,11 @@ impl Image {
         if !(width.is_power_of_two() && height.is_power_of_two()) {
             let w2 = width.next_power_of_two();
             let h2 = height.next_power_of_two();
-            let msg = format!("Needed power of 2 texture, got {}x{} (try making it {}x{}", width, height, w2, h2);
+            let msg = format!("Needed power of 2 texture, got {}x{} (try making it {}x{}",
+                              width,
+                              height,
+                              w2,
+                              h2);
             return Err(GameError::ResourceLoadError(msg));
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);

@@ -171,7 +171,8 @@ fn render_ttf(context: &mut Context,
                 let x = x as i32 + bb.min.x;
                 let y = y as i32 + bb.min.y;
                 // There's still a possibility that the glyph clips the boundaries of the bitmap
-                if x >= 0 && x < text_width_pixels as i32 && y >= 0 && y < text_height_pixels as i32 {
+                if x >= 0 && x < text_width_pixels as i32 && y >= 0 &&
+                   y < text_height_pixels as i32 {
                     let x = x as usize * bytes_per_pixel;
                     let y = y as usize;
                     pixel_data[(x + y * pitch + 0)] = c;
@@ -185,7 +186,10 @@ fn render_ttf(context: &mut Context,
 
     // Copy the bitmap into an image, and we're basically done!
     // BUGGO: TODO: Make sure conversions will not fail
-    let image = Image::from_rgba8_flat(context, text_width_pixels as u16, text_height_pixels as u16, &pixel_data)?;
+    let image = Image::from_rgba8_flat(context,
+                                       text_width_pixels as u16,
+                                       text_height_pixels as u16,
+                                       &pixel_data)?;
 
     let text_string = text.to_string();
     Ok(Text {
