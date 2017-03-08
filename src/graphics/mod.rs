@@ -447,11 +447,13 @@ pub fn line(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
 }
 
 /// Draws points.
-pub fn points(_ctx: &mut Context, _point: &[Point]) -> GameResult<()> {
-    unimplemented!();
-    // let r = &mut ctx.renderer;
-    // let res = r.draw_point(point);
-    // res.map_err(GameError::from)
+pub fn points(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
+    let size = ctx.gfx_context.point_size;
+    for p in points {
+        let r = Rect::new(p.x, p.y, size, size);
+        rectangle(ctx, DrawMode::Fill, r)?;
+    }
+    Ok(())
 }
 
 /// Draws a closed polygon
