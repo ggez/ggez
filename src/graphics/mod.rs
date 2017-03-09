@@ -800,9 +800,16 @@ impl Drawable for Image {
         let gfx = &mut ctx.gfx_context;
         let src_width = param.src.w;
         let src_height = param.src.h;
+        // We have to mess with the scale to make everything
+        // be its-unit-size-in-pixels.
+        // We also invert the Y scale if our screen coordinates
+        // are "upside down", because by default we present the
+        // illusion that the screen is addressed in pixels.
+        // BUGGO: Which I rather regret now.
+        let invert_y = if gfx.screen_rect.h < 0.0 { 1.0 } else { -1.0 };
         let real_scale = Point {
             x: src_width * param.scale.x * self.width as f32,
-            y: src_height * param.scale.y * self.height as f32,
+            y: src_height * param.scale.y * self.height as f32 * invert_y,
         };
         let mut new_param = param;
         new_param.scale = real_scale;
