@@ -705,7 +705,7 @@ impl Image {
             return Err(GameError::ResourceLoadError(msg));
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        let (_, view) = factory.create_texture_immutable_u8::<Rgba8>(kind, &rgba)?;
+        let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &rgba)?;
         Ok(Image {
             texture: view,
             width: width as u32,
