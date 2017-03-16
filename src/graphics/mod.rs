@@ -19,7 +19,6 @@ use gfx::traits::Device;
 use gfx::traits::FactoryExt;
 use gfx_device_gl;
 use gfx_window_sdl;
-use gfx::format::Rgba8;
 use gfx::Factory;
 
 

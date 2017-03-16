@@ -367,7 +367,7 @@ impl Default for InputState {
 ///
 /// Our game objects are simply a vector for each actor type, and we
 /// probably mingle gameplay-state (like score) and hardware-state
-/// (like gui_dirty) a little mroe than we should, but for something
+/// (like gui_dirty) a little more than we should, but for something
 /// this small it hardly matters.
 /// **********************************************************************
 
@@ -577,7 +577,6 @@ impl EventHandler for MainState {
         // but for now we just quit.
         if self.player.life <= 0.0 {
             println!("Game over!");
-            // ctx.quit() is broken at the moment.  ;_;
             let _ = ctx.quit();
         }
         Ok(())
@@ -671,7 +670,7 @@ pub fn main() {
     c.window_height = 480;
     c.window_icon = "player.png".to_string();
 
-    let ctx = &mut Context::load_from_conf("helloworld", c).unwrap();
+    let ctx = &mut Context::load_from_conf("astroblasto", c).unwrap();
 
     match MainState::new(ctx) {
         Err(e) => {
