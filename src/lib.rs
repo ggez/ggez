@@ -5,7 +5,7 @@
 //!
 //! More specifically, ggez is a lightweight game framework for making 2D
 //! games with minimum friction.  It aims to implement an API quite
-//! similar to (a Rustified version of) the Love2D game engine.  This
+//! similar to (a Rustified version of) the `Love2D` game engine.  This
 //! means it will contain basic and portable 2D drawing, sound, resource
 //! loading and event handling.
 //!
@@ -21,9 +21,9 @@
 //! ## Features
 //!
 //! * Filesystem abstraction that lets you load resources from folders or zip files
-//! * Hardware-accelerated rendering of bitmaps
-//! * Playing and loading sounds through SDL2_mixer
-//! * TTF font rendering with rusttype, as well as bitmap fonts.
+//! * Hardware-accelerated rendering engine built on the gfx-rs graphics engine
+//! * Playing and loading .ogg, .wav and .flac files via the `rodio` crate
+//! * TTF font rendering with `rusttype`, as well as bitmap fonts.
 //! * Interface for handling keyboard and mouse events easily through callbacks
 //! * Config file for defining engine and game settings
 //! * Easy timing and FPS measurement functions.
@@ -38,7 +38,7 @@
 //! ggez = "0.2.0"
 //! ```
 //!
-//! However you also need to have the SDL2, SDL2_mixer and SDL2_image
+//! However you also need to have the `SDL2` and `SDL2_image`
 //! libraries installed on your system.  The best way to do this is
 //! documented [by the SDL2
 //! crate](https://!github.com/AngryLawyer/rust-sdl2#user-content-requirements).
