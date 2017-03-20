@@ -98,7 +98,7 @@ impl<'a> io::Write for File<'a> {
 
 
 /// This needs to be more better or something.
-pub type PathList = Vec<path::PathBuf>;
+pub type PathList = Vec<String>;
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     let errmessage = format!("Invalid path format for resource: {:?}", path);
@@ -363,13 +363,13 @@ impl Filesystem {
     /// And the user dir.  This probably won't happen until
     /// returning `impl Trait` hits stable, honestly.
     pub fn read_dir(&mut self) -> GameResult<PathList> {
-        let mut pathlist: HashSet<path::PathBuf> = HashSet::new();
+        let mut pathlist: HashSet<String> = HashSet::new();
         {
             let p = self.resource_path.clone();
             if p.is_dir() {
                 let paths = fs::read_dir(p)?;
                 for path in paths {
-                    pathlist.insert(path?.path());
+                    pathlist.insert(path?.file_name().into_string().unwrap());
                     // println!("Resources dir: {}", path?.path().display());
                 }
             }
@@ -381,7 +381,7 @@ impl Filesystem {
             if p.is_dir() {
                 let paths = fs::read_dir(p)?;
                 for path in paths {
-                    pathlist.insert(path?.path());
+                    pathlist.insert(path?.file_name().into_string().unwrap());
                     // println!("User dir: {}", path?.path().display());
                 }
             }
