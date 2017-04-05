@@ -10,6 +10,7 @@ use std::fmt;
 use std::path;
 use std::convert::From;
 use std::io::Read;
+use std::u16;
 
 use sdl2;
 use image;
@@ -303,18 +304,6 @@ impl GraphicsContext {
 }
 
 
-// fn gfx_load_texture<F, R>(factory: &mut F) -> gfx::handle::ShaderResourceView<R, [f32; 4]>
-//     where F: gfx::Factory<R>,
-//           R: gfx::Resources
-// {
-//     use gfx::format::Rgba8;
-//     let img = image::open("resources/player.png").unwrap().to_rgba();
-//     let (width, height) = img.dimensions();
-//     let kind = gfx::texture::Kind::D2(width as u16, height as u16, gfx::texture::AaMode::Single);
-//     let (_, view) = factory.create_texture_immutable_u8::<Rgba8>(kind, &[&img]).unwrap();
-//     view
-// }
-
 /// Rather than create a dependency on cgmath or nalgebra for this one function,
 /// we're just going to define it ourselves.
 fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [[f32; 4]; 4] {
@@ -372,7 +361,7 @@ pub fn clear(ctx: &mut Context) {
 
 /// Draws the given `Drawable` object to the screen.
 ///
-/// * `ctx` - The `Context` this graphic will be rendered to.
+/// * `ctx` - The `Context` this graphic will be rendered with.
 /// * `drawable` - The `Drawable` to render.
 /// * `dest` - the position to draw the graphic expressed as a `Point`.
 /// * `rotation` - orientation of the graphic in radians.
@@ -385,7 +374,7 @@ pub fn draw(ctx: &mut Context, drawable: &Drawable, dest: Point, rotation: f32) 
 /// Draws the given `Drawable` object to the screen,
 /// applying a rotation and mirroring if desired.
 ///
-/// * `ctx` - The `Context` this graphic will be rendered to.
+/// * `ctx` - The `Context` this graphic will be rendered with.
 /// * `drawable` - The `Drawable` to render.
 /// * `quad` - a portion of the drawable to clip.
 /// * `dest` - the position to draw the graphic expressed as a `Point`.
@@ -676,6 +665,28 @@ pub struct ImageGeneric<R>
 
 pub type Image = ImageGeneric<gfx_device_gl::Resources>;
 
+/// Copies an 2D (RGBA) buffer into one that is the next
+/// power of two size up in both dimensions.  All data is
+/// retained and kept closest to [0,0]; anything extra is
+/// filled with 0
+fn scale_rgba_up_to_power_of_2(rgba: &[&[u8]]) -> Vec<Vec<u8>> {
+    let width = rgba[0].len();
+    let height = rgba.len();
+    let w2 = width.next_power_of_two();
+    let h2 = height.next_power_of_two();
+    let mut v: Vec<Vec<u8>> = Vec::with_capacity(h2);
+    for i in 0..h2 {
+        let mut vec = Vec::with_capacity(w2);
+        if i < height {
+            vec.extend_from_slice(rgba[i]);
+        }
+        vec.resize(w2, 0);
+        v.push(vec);
+    }
+    v
+    //rgba.iter().map(|buf| buf.to_vec()).collect()
+}
+
 impl Image {
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Image> {
@@ -702,18 +713,22 @@ impl Image {
                 height: u16,
                 rgba: &[&[u8]])
                 -> GameResult<Image> {
-        if !(width.is_power_of_two() && height.is_power_of_two()) {
-            let w2 = width.next_power_of_two();
-            let h2 = height.next_power_of_two();
-            let msg = format!("Needed power of 2 texture, got {}x{} (try making it {}x{}",
-                              width,
-                              height,
-                              w2,
-                              h2);
-            return Err(GameError::ResourceLoadError(msg));
-        }
-        let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &rgba)?;
+        let view = if !(width.is_power_of_two() && height.is_power_of_two()) {
+            let new_rgba = scale_rgba_up_to_power_of_2(rgba);
+            let rgba = &new_rgba.iter().map(|row| row.as_ref()).collect::<Vec<&[u8]>>();
+            let width = rgba[0].len();
+            let height = rgba.len();
+            assert!(width <= u16::MAX as usize);
+            assert!(height <= u16::MAX as usize);
+            let kind = gfx::texture::Kind::D2(width as u16, height as u16, gfx::texture::AaMode::Single);
+            let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &rgba)?;
+            view
+        } else {
+                let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
+            let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &rgba)?;
+            view
+
+        };
         Ok(Image {
             texture: view,
             width: width as u32,
@@ -900,5 +915,40 @@ impl Drawable for Mesh {
         gfx.encoder.draw(&self.slice, &gfx.pso, &gfx.data);
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_image_scaling_up() {
+        let mut bufs: Vec<Vec<u8>> = Vec::new();
+        let mut from: Vec<&[u8]> = Vec::new();
+        const WIDTH: usize = 5;
+        const HEIGHT: usize = 11;
+        for i in 0..HEIGHT {
+            let v = vec![i as u8;WIDTH];
+            bufs.push(v );
+        }
+        for i in 0..HEIGHT {
+            from.push(&bufs[i as usize]);
+        }
+
+        assert_eq!(from[0].len(), WIDTH);
+        assert_eq!(from.len(), HEIGHT);
+        let res = scale_rgba_up_to_power_of_2(&from);
+        assert_eq!(res[0].len(), WIDTH.next_power_of_two());
+        assert_eq!(res.len(), HEIGHT.next_power_of_two());
+
+        for i in 0..HEIGHT.next_power_of_two() {
+            for j in 0..WIDTH.next_power_of_two() {
+                if i < HEIGHT && j < WIDTH {
+                    assert_eq!(res[i][j], from[i][j]);
+                } else {
+                    assert_eq!(res[i][j], 0);
+                }
+            }
+        }
     }
 }
