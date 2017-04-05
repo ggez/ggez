@@ -277,9 +277,8 @@ impl Text {
 
 
 impl Drawable for Text {
-    // #[allow(too_many_arguments)]
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
-        unimplemented!();
+        draw_ex(ctx, &self.texture, param)
     }
 }
 

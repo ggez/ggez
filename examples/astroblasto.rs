@@ -606,11 +606,11 @@ impl EventHandler for MainState {
 
 
         // And draw the GUI elements in the right places.
-        let level_dest = graphics::Point::new(0.0, 0.0);
-        let score_dest = graphics::Point::new(200.0, 0.0);
+        let level_dest = graphics::Point::new(20.0, 100.0);
+        let score_dest = graphics::Point::new(200.0, 100.0);
         let source_rect = graphics::Rect::one();
-        // graphics::draw(ctx, &mut self.level_display, level_dest, 0.0)?;
-        // graphics::draw(ctx, &mut self.score_display, score_dest, 0.0)?;
+        graphics::draw(ctx, &mut self.level_display, level_dest, 0.0)?;
+        graphics::draw(ctx, &mut self.score_display, score_dest, 0.0)?;
 
         // Then we flip the screen...
         graphics::present(ctx);
