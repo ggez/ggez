@@ -119,8 +119,6 @@ impl From<DrawParam> for RectProperties {
 }
 
 
-// BUGGO: TODO: Impl Debug for GraphicsContext
-
 /// A structure that contains graphics state.
 /// For instance, background and foreground colors.
 ///
@@ -157,6 +155,17 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     data: pipe::Data<R>,
     quad_slice: gfx::Slice<R>,
     quad_vertex_buffer: gfx::handle::Buffer<R, Vertex>,
+}
+
+impl<R, F, C, D> fmt::Debug for GraphicsContextGeneric<R, F, C, D>
+    where R: gfx::Resources,
+          F: gfx::Factory<R>,
+          C: gfx::CommandBuffer<R>,
+          D: gfx::Device<Resources = R, CommandBuffer = C>
+{
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "<GraphicsContext: {:p}>", self)
+    }
 }
 
 // GL only
