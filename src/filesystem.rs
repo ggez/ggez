@@ -23,6 +23,8 @@ use std::fs;
 use std::io;
 use std::path;
 
+use std::collections::HashSet;
+
 use app_dirs::*;
 
 use GameError;
@@ -77,6 +79,7 @@ impl<'a> io::Read for File<'a> {
 }
 
 
+
 impl<'a> io::Write for File<'a> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         match *self {
@@ -92,6 +95,10 @@ impl<'a> io::Write for File<'a> {
         }
     }
 }
+
+
+/// This needs to be more better or something.
+pub type PathList = Vec<String>;
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     let errmessage = format!("Invalid path format for resource: {:?}", path);
@@ -355,11 +362,40 @@ impl Filesystem {
     /// TODO: Make it iterate over the zip file as well!
     /// And the user dir.  This probably won't happen until
     /// returning `impl Trait` hits stable, honestly.
-    pub fn read_dir<P: AsRef<path::Path>>(&self, path: P) -> io::Result<fs::ReadDir> {
-        let resource_dest = self.resource_path.join(path.as_ref());
-        // let user_dest = self.user_path.join(path);
-        resource_dest.read_dir()
-        // .map(|iter| iter.chain(user_dest.read_dir()))
+    pub fn read_dir(&mut self) -> GameResult<PathList> {
+        let mut pathlist: HashSet<String> = HashSet::new();
+        {
+            let p = self.resource_path.clone();
+            if p.is_dir() {
+                let paths = fs::read_dir(p)?;
+                for path in paths {
+                    pathlist.insert(path?.file_name().into_string().unwrap());
+                    // println!("Resources dir: {}", path?.path().display());
+                }
+            }
+        }
+
+        // User dir files
+        {
+            let p = self.user_path.clone();
+            if p.is_dir() {
+                let paths = fs::read_dir(p)?;
+                for path in paths {
+                    pathlist.insert(path?.file_name().into_string().unwrap());
+                    // println!("User dir: {}", path?.path().display());
+                }
+            }
+        }
+
+
+        if let Some(ref mut zipfile) = self.resource_zip {
+            for i in 0..zipfile.len() {
+                let file = zipfile.by_index(i)?;
+                pathlist.insert(file.name().into());
+                // println!("resources.zip: {}", file.name());
+            }
+        }
+        Ok(pathlist.into_iter().collect())
     }
 
     /// Prints the contents of all data directories.
@@ -458,9 +494,9 @@ mod tests {
 
     #[test]
     fn test_read_dir() {
-        let f = get_dummy_fs_for_tests();
+        let mut f = get_dummy_fs_for_tests();
 
-        let dir_contents_size = f.read_dir(path::Path::new("")).unwrap().count();
+        let dir_contents_size = f.read_dir().unwrap().len();
         assert!(dir_contents_size > 0);
     }
 
