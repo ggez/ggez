@@ -23,9 +23,6 @@ before_test:
     - appveyor DownloadFile https://www.libsdl.org/release/SDL2-devel-2.0.5-VC.zip
     - 7z x SDL2-devel-2.0.5-VC.zip > nul
     - xcopy SDL2-2.0.5\lib\x64\* %APPVEYOR_BUILD_FOLDER% > nul
-    - appveyor DownloadFile https://www.libsdl.org/projects/SDL_image/release/SDL2_image-devel-2.0.1-VC.zip
-    - 7z x SDL2_image-devel-2.0.1-VC.zip > nul
-    - xcopy SDL2_image-2.0.1\lib\x64\* %APPVEYOR_BUILD_FOLDER% > nul
     - cd %APPVEYOR_BUILD_FOLDER%
 
 test_script:
