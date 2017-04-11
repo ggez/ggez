@@ -108,16 +108,16 @@ fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
 }
 
 impl Filesystem {
-    /// Create a new Filesystem instance, using
-    /// the given `id` as a portion of the user directory path.
-    /// This function is called automatically by ggez, the end user
-    /// should never need to call it.
-    pub fn new(_id: &str) -> GameResult<Filesystem> {
+    /// Create a new Filesystem instance, using the given `id` and (on
+    /// some platforms) the `author` as a portion of the user
+    /// directory path.  This function is called automatically by
+    /// ggez, the end user should never need to call it.
+    pub fn new(id: &'static str, author: &'static str) -> GameResult<Filesystem> {
         // BUGGO: AppInfo.id needs to be a &'static str which is bogus!
         // See https://github.com/AndyBarron/app-dirs-rs/issues/19
         let app_info = AppInfo {
-            name: "placeholder id",
-            author: "ggez",
+            name: id,
+            author: author,
         };
         let mut root_path = env::current_exe()?;
         let pref_path = get_app_root(AppDataType::UserData, &app_info)?;

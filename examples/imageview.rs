@@ -119,7 +119,7 @@ impl event::EventHandler for MainState {
 pub fn main() {
     let c = conf::Conf::new();
     println!("Starting with default config: {:#?}", c);
-    let ctx = &mut Context::load_from_conf("imageview", c).unwrap();
+    let ctx = &mut Context::load_from_conf("imageview", "ggez", c).unwrap();
     let state = &mut MainState::new(ctx).unwrap();
     if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);

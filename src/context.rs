@@ -108,10 +108,10 @@ impl Context {
     /// Tries to create a new Context loading a config
     /// file from its default path, using the given Conf
     /// object as a default if none is found.
-    pub fn load_from_conf(id: &str, default_config: conf::Conf) -> GameResult<Context> {
+    pub fn load_from_conf(id: &'static str, author: &'static str, default_config: conf::Conf) -> GameResult<Context> {
 
         let sdl_context = sdl2::init()?;
-        let mut fs = Filesystem::new(id)?;
+        let mut fs = Filesystem::new(id, author)?;
 
         // TODO: Verify config version == this version
         let config = fs.read_config().unwrap_or(default_config);

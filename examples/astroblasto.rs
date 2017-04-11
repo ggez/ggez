@@ -670,7 +670,7 @@ pub fn main() {
     c.window_height = 480;
     c.window_icon = "player.png".to_string();
 
-    let ctx = &mut Context::load_from_conf("astroblasto", c).unwrap();
+    let ctx = &mut Context::load_from_conf("astroblasto", "ggez", c).unwrap();
 
     match MainState::new(ctx) {
         Err(e) => {

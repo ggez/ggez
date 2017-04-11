@@ -51,7 +51,7 @@ impl event::EventHandler for MainState {
 // * then just call `game.run()` which runs the `Game` mainloop.
 pub fn main() {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("helloworld", c).unwrap();
+    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
     let state = &mut MainState::new(ctx).unwrap();
     if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);
