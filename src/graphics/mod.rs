@@ -674,7 +674,7 @@ fn scale_rgba_up_to_power_of_2(width: u16, height: u16, rgba: &[u8]) -> (u16, u1
     let height = height as usize;
     let w2 = width.next_power_of_two();
     let h2 = height.next_power_of_two();
-    println!("Scaling from {}x{} to {}x{}", width, height, w2, h2);
+    // println!("Scaling from {}x{} to {}x{}", width, height, w2, h2);
     let num_vals = w2*h2*4;
     let mut v: Vec<u8> = Vec::with_capacity(num_vals);
     // This is a little wasteful because we will be replacing
@@ -917,30 +917,29 @@ mod tests {
     use super::*;
     #[test]
     fn test_image_scaling_up() {
-        let mut bufs: Vec<Vec<u8>> = Vec::new();
-        let mut from: Vec<&[u8]> = Vec::new();
-        const WIDTH: usize = 5;
-        const HEIGHT: usize = 11;
+        let mut from: Vec<u8> = Vec::new();
+        const WIDTH: u16 = 5;
+        const HEIGHT: u16 = 11;
         for i in 0..HEIGHT {
-            let v = vec![i as u8;WIDTH];
-            bufs.push(v );
-        }
-        for i in 0..HEIGHT {
-            from.push(&bufs[i as usize]);
+            let v = vec![i as u8;WIDTH as usize * 4];
+            from.extend(v.iter());
         }
 
-        assert_eq!(from[0].len(), WIDTH);
-        assert_eq!(from.len(), HEIGHT);
-        let res = scale_rgba_up_to_power_of_2(&from);
-        assert_eq!(res[0].len(), WIDTH.next_power_of_two());
-        assert_eq!(res.len(), HEIGHT.next_power_of_two());
+        assert_eq!(from.len(), WIDTH as usize * HEIGHT as usize * 4);
+        let (width, height, res) = scale_rgba_up_to_power_of_2(WIDTH, HEIGHT, &from);
+        assert_eq!(width, WIDTH.next_power_of_two());
+        assert_eq!(height, HEIGHT.next_power_of_two());
 
         for i in 0..HEIGHT.next_power_of_two() {
             for j in 0..WIDTH.next_power_of_two() {
+                let offset_within_row = (j*4) as usize;
+                let src_row_offset = (i * WIDTH*4) as usize;
+                let dst_row_offset = (i * width*4) as usize;
+                println!("{} {}", i, j);
                 if i < HEIGHT && j < WIDTH {
-                    assert_eq!(res[i][j], from[i][j]);
+                    assert_eq!(res[dst_row_offset+offset_within_row], from[src_row_offset+offset_within_row]);
                 } else {
-                    assert_eq!(res[i][j], 0);
+                    assert_eq!(res[dst_row_offset+offset_within_row], 0);
                 }
             }
         }
