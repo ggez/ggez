@@ -246,7 +246,7 @@ impl GraphicsContext {
         let rect_props = factory.create_constant_buffer(1);
         let globals_buffer = factory.create_constant_buffer(1);
         let sampler = factory.create_sampler_linear();
-        let white_image = Image::make_raw(&mut factory, 1, 1, &[&[255, 255, 255, 255]])?;
+        let white_image = Image::make_raw(&mut factory, 1, 1, &[255, 255, 255, 255])?;
         let texture = white_image.texture.clone();
 
         let data = pipe::Data {
@@ -669,22 +669,32 @@ pub type Image = ImageGeneric<gfx_device_gl::Resources>;
 /// power of two size up in both dimensions.  All data is
 /// retained and kept closest to [0,0]; anything extra is
 /// filled with 0
-fn scale_rgba_up_to_power_of_2(rgba: &[&[u8]]) -> Vec<Vec<u8>> {
-    let width = rgba[0].len();
-    let height = rgba.len();
+fn scale_rgba_up_to_power_of_2(width: u16, height: u16, rgba: &[u8]) -> (u16, u16, Vec<u8>) {
+    let width = width as usize;
+    let height = height as usize;
     let w2 = width.next_power_of_two();
     let h2 = height.next_power_of_two();
-    let mut v: Vec<Vec<u8>> = Vec::with_capacity(h2);
+    println!("Scaling from {}x{} to {}x{}", width, height, w2, h2);
+    let num_vals = w2*h2*4;
+    let mut v: Vec<u8> = Vec::with_capacity(num_vals);
+    // This is a little wasteful because we will be replacing
+    // many if not most of these 0's with the actual image data.
+    // But it's much simpler to resize the thing once than to blit 
+    // each row, resize it out to fill the rest of the row with zeroes,
+    // etc.
+    v.resize(num_vals, 0);
+    // Blit each row of the old image into the new array.
     for i in 0..h2 {
-        let mut vec = Vec::with_capacity(w2);
         if i < height {
-            vec.extend_from_slice(rgba[i]);
+            let src_start = i*width*4;
+            let src_end = src_start + width*4;
+            let dest_start = i*w2*4;
+            let dest_end = dest_start + width*4;
+            let slice = &mut v[dest_start..dest_end];
+            slice.copy_from_slice(&rgba[src_start..src_end]);
         }
-        vec.resize(w2, 0);
-        v.push(vec);
     }
-    v
-    //rgba.iter().map(|buf| buf.to_vec()).collect()
+    (w2 as u16, h2 as u16, v)
 }
 
 impl Image {
@@ -702,31 +712,38 @@ impl Image {
             image::load_from_memory(&buf)?.to_rgba()
         };
         let (width, height) = img.dimensions();
-        Image::from_rgba8(context, width as u16, height as u16, &[&img])
+        println!("Loading image dims {}x{}", width, height);
+        Image::from_rgba8(context, width as u16, height as u16, &img)
     }
 
+    pub fn from_rgba8(context: &mut Context,
+                           width: u16,
+                           height: u16,
+                           rgba: &[u8])
+                           -> GameResult<Image> {
+        Image::make_raw(&mut context.gfx_context.factory, width, height, rgba)
+    }
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
     fn make_raw(factory: &mut gfx_device_gl::Factory,
                 width: u16,
                 height: u16,
-                rgba: &[&[u8]])
+                rgba: &[u8])
                 -> GameResult<Image> {
         // Check if the texture is not power of 2, and if not, pad it out.
         let view = if !(width.is_power_of_two() && height.is_power_of_two()) {
-            let new_rgba = scale_rgba_up_to_power_of_2(rgba);
-            let rgba = &new_rgba.iter().map(|row| row.as_ref()).collect::<Vec<&[u8]>>();
-            let width = rgba[0].len();
-            let height = rgba.len();
-            assert!(width <= u16::MAX as usize);
-            assert!(height <= u16::MAX as usize);
-            let kind = gfx::texture::Kind::D2(width as u16, height as u16, gfx::texture::AaMode::Single);
-            let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &rgba)?;
+            let (width, height, rgba) = scale_rgba_up_to_power_of_2(width, height, rgba);
+            let rgba = &rgba;
+            assert_eq!((width as usize)*(height as usize) * 4, rgba.len());
+            let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
+            // The slice containing rgba is NOT rows x columns, it is a slice of 
+            // MIPMAP LEVELS.  Augh!
+            let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
             view
         } else {
                 let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-            let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &rgba)?;
+            let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
             view
 
         };
@@ -737,30 +754,6 @@ impl Image {
         })
     }
 
-    /// Creates an Image from an array of u8's arranged in RGBA order.
-    pub fn from_rgba8(context: &mut Context,
-                      width: u16,
-                      height: u16,
-                      rgba: &[&[u8]])
-                      -> GameResult<Image> {
-        Image::make_raw(&mut context.gfx_context.factory, width, height, rgba)
-    }
-
-    pub fn from_rgba8_flat(context: &mut Context,
-                           width: u16,
-                           height: u16,
-                           rgba: &[u8])
-                           -> GameResult<Image> {
-        let uheight = height as usize;
-        let uwidth = width as usize;
-        let mut buffer = Vec::with_capacity(uheight);
-        for i in 0..uheight {
-            buffer.push(&rgba[i..i * uwidth]);
-        }
-        Image::from_rgba8(context, width, height, &buffer)
-    }
-
-
     /// A little helper function that creates a new Image that is just
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
@@ -769,9 +762,9 @@ impl Image {
         let size_squared = size as usize * size as usize;
         let mut buffer = Vec::with_capacity(size_squared);
         for _i in 0..size_squared {
-            buffer.push(&pixel_array[..]);
+            buffer.extend(&pixel_array[..]);
         }
-        Image::from_rgba8(context, size, size, &buffer[..])
+        Image::from_rgba8(context, size, size, &buffer)
     }
 
     /// Return the width of the image.

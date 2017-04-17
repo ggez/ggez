@@ -19,6 +19,9 @@ categories = ["game-engines"]
 name = "ggez"
 path = "src/lib.rs"
 
+[profile.dev]
+codegen-units=4
+
 [dependencies]
 rusttype = "0.2"
 rand = "0.3"

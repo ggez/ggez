@@ -186,7 +186,7 @@ fn render_ttf(context: &mut Context,
 
     // Copy the bitmap into an image, and we're basically done!
     // BUGGO: TODO: Make sure conversions will not fail
-    let image = Image::from_rgba8_flat(context,
+    let image = Image::from_rgba8(context,
                                        text_width_pixels as u16,
                                        text_height_pixels as u16,
                                        &pixel_data)?;
