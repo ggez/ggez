@@ -712,7 +712,6 @@ impl Image {
             image::load_from_memory(&buf)?.to_rgba()
         };
         let (width, height) = img.dimensions();
-        println!("Loading image dims {}x{}", width, height);
         Image::from_rgba8(context, width as u16, height as u16, &img)
     }
 

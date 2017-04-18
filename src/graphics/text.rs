@@ -186,6 +186,7 @@ fn render_ttf(context: &mut Context,
 
     // Copy the bitmap into an image, and we're basically done!
     // BUGGO: TODO: Make sure conversions will not fail
+    // println!("Creating text {}, {}x{}: {:?}", text, text_width_pixels, text_height_pixels, pixel_data);
     let image = Image::from_rgba8(context,
                                        text_width_pixels as u16,
                                        text_height_pixels as u16,
@@ -243,14 +244,6 @@ fn render_bitmap(context: &Context,
 impl Text {
     /// Renders a new `Text` from the given `Font`
     pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<Text> {
-        // BUGGO: Fix!
-        // Seems that things get frumple when the resulting text texture
-        // is not a power of 2, for one thing.
-        let txt = Text {
-            texture: context.gfx_context.white_image.clone(),
-            contents: text.to_string(),
-        };
-        return Ok(txt);
         match *font {
             Font::TTFFont { font: ref f, points } => render_ttf(context, text, f, points),
             Font::BitmapFont { ref surface, glyph_width, glyphs: ref glyphs_map, .. } => {

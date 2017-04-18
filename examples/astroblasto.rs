@@ -315,7 +315,7 @@ impl Assets {
         // let font_path = path::Path::new("consolefont.png");
         // let font_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!,.?;'\"";
         // let font = graphics::Font::new_bitmap(ctx, font_path, font_chars)?;
-        let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 16)?;
+        let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 36)?;
 
         let shot_sound = audio::Source::new(ctx, "pew.ogg")?;
         let hit_sound = audio::Source::new(ctx, "boom.ogg")?;
@@ -606,9 +606,16 @@ impl EventHandler for MainState {
 
 
         // And draw the GUI elements in the right places.
-        let level_dest = graphics::Point::new(20.0, 100.0);
-        let score_dest = graphics::Point::new(200.0, 100.0);
-        let source_rect = graphics::Rect::one();
+        let level_dest = graphics::Point::new(
+                (self.level_display.width() / 2) as f32 + 10.0,
+                (self.level_display.height() / 2) as f32 + 10.0
+            );
+        let score_dest = graphics::Point::new(
+
+            (self.score_display.width() / 2) as f32 + 200.0,
+            (self.score_display.height() / 2) as f32 + 10.0
+        );
+        // let source_rect = graphics::Rect::one();
         graphics::draw(ctx, &mut self.level_display, level_dest, 0.0)?;
         graphics::draw(ctx, &mut self.score_display, score_dest, 0.0)?;
 
