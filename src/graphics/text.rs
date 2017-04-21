@@ -47,7 +47,7 @@ impl Font {
         Font::font_from_bytes(&name, buf, size)
     }
 
-    fn font_from_bytes<B>(name: &str, bytes: B, size: u32) -> GameResult<Font>
+    pub fn font_from_bytes<B>(name: &str, bytes: B, size: u32) -> GameResult<Font>
         where B: Into<rusttype::SharedBytes<'static>>
     {
         let collection = rusttype::FontCollection::from_bytes(bytes);
