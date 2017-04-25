@@ -12,18 +12,19 @@ use GameResult;
 
 pub type Buffer = geometry_builder::VertexBuffers<Vertex>;
 
-pub struct ConstantUV {
-    uv: [f32; 2],
-}
+// Not used anywhere?  Not sure what vickenty was planning for this.
+// pub struct ConstantUV {
+//     uv: [f32; 2],
+// }
 
-impl geometry_builder::VertexConstructor<math::Point, Vertex> for ConstantUV {
-    fn new_vertex(&mut self, input: math::Point) -> Vertex {
-        Vertex {
-            pos: [input.x, input.y],
-            uv: self.uv.clone(),
-        }
-    }
-}
+// impl geometry_builder::VertexConstructor<math::Point, Vertex> for ConstantUV {
+//     fn new_vertex(&mut self, input: math::Point) -> Vertex {
+//         Vertex {
+//             pos: [input.x, input.y],
+//             uv: self.uv.clone(),
+//         }
+//     }
+// }
 
 pub struct ScreenUV;
 

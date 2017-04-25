@@ -3,11 +3,8 @@
 
 use std::io;
 use toml;
-//use rustc_serialize::{Decodable, Encodable};
-use serde_derive;
-use std::collections::BTreeMap;
 
-use {GameError, GameResult};
+use GameResult;
 
 /// A structure containing configuration data
 /// for the game engine.
