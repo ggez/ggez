@@ -44,13 +44,13 @@ impl Font {
         stream.read_to_end(&mut buf)?;
 
         let name = format!("{:?}", path);
-        Font::font_from_bytes(&name, buf, size)
+        Font::from_bytes(&name, &buf, size)
     }
 
-    pub fn font_from_bytes<B>(name: &str, bytes: B, size: u32) -> GameResult<Font>
-        where B: Into<rusttype::SharedBytes<'static>>
+    /// Loads a new TTF font from data copied out of the given buffer.
+    pub fn from_bytes(name: &str, bytes: &[u8], size: u32) -> GameResult<Font>
     {
-        let collection = rusttype::FontCollection::from_bytes(bytes);
+        let collection = rusttype::FontCollection::from_bytes(bytes.to_vec());
         let font_err = GameError::ResourceLoadError(format!("Could not load font collection for \
                                                              font {:?}",
                                                             name));
@@ -71,7 +71,6 @@ impl Font {
                                             glyphs: &str)
                                             -> GameResult<Font> {
         let s2 = Image::new(context, path.as_ref())?;
-
         let image_width = s2.width();
         let glyph_width = image_width / (glyphs.len() as u32);
         // println!("Number of glyphs: {}, Glyph width: {}, image width: {}",
@@ -92,7 +91,7 @@ impl Font {
     pub fn default_font() -> GameResult<Self> {
         let size = 16;
         let buf = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSerif.ttf"));
-        Font::font_from_bytes("default", &buf[..], size)
+        Font::from_bytes("default", &buf[..], size)
     }
 }
 
@@ -206,6 +205,8 @@ fn render_bitmap(context: &Context,
                  glyphs_map: &BTreeMap<char, u32>,
                  glyph_width: u32)
                  -> GameResult<Text> {
+    unimplemented!();
+    
     let text_length = text.len() as u32;
     let glyph_height = image.height;
     // let format = pixels::PixelFormatEnum::RGBA8888;
@@ -231,7 +232,6 @@ fn render_bitmap(context: &Context,
     // // let image = Image::from_surface(context, dest_surface)?;
     let text_string = text.to_string();
 
-    unimplemented!();
     // let tq = image.texture.query();
     // Ok(Text {
     //     texture: image.texture,

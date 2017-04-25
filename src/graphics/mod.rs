@@ -715,6 +715,7 @@ impl Image {
         Image::from_rgba8(context, width as u16, height as u16, &img)
     }
 
+    /// Creates a new `Image` from the given buffer of `u8` RGBA values.
     pub fn from_rgba8(context: &mut Context,
                            width: u16,
                            height: u16,
