@@ -127,20 +127,22 @@ impl From<std::io::Error> for GameError {
     }
 }
 
-impl From<toml::DecodeError> for GameError {
-    fn from(e: toml::DecodeError) -> GameError {
+
+impl From<toml::de::Error> for GameError {
+    fn from(e: toml::de::Error) -> GameError {
         let errstr = format!("TOML decode error: {}", e.description());
 
         GameError::ConfigError(errstr)
     }
 }
 
-impl From<toml::Error> for GameError {
-    fn from(e: toml::Error) -> GameError {
+impl From<toml::ser::Error> for GameError {
+    fn from(e: toml::ser::Error) -> GameError {
         let errstr = format!("TOML error (possibly encoding?): {}", e.description());
         GameError::ConfigError(errstr)
     }
 }
+
 
 impl From<zip::result::ZipError> for GameError {
     fn from(e: zip::result::ZipError) -> GameError {

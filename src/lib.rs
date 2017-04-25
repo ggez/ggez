@@ -99,7 +99,8 @@ extern crate gfx_window_sdl;
 extern crate image;
 extern crate rand;
 extern crate rodio;
-extern crate rustc_serialize;
+#[macro_use]
+extern crate serde_derive;
 extern crate rusttype;
 extern crate toml;
 extern crate zip;

@@ -3,14 +3,15 @@
 
 use std::io;
 use toml;
-use rustc_serialize::{Decodable, Encodable};
+//use rustc_serialize::{Decodable, Encodable};
+use serde_derive;
 use std::collections::BTreeMap;
 
 use {GameError, GameResult};
 
 /// A structure containing configuration data
 /// for the game engine.
-#[derive(RustcDecodable, RustcEncodable, Debug, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
 pub struct Conf {
     /// The window title.
     pub window_title: String,
@@ -62,13 +63,8 @@ impl Conf {
     pub fn from_toml_file<R: io::Read>(file: &mut R) -> GameResult<Conf> {
         let mut s = String::new();
         file.read_to_string(&mut s)?;
-        let mut parser = toml::Parser::new(&s);
-        let toml = parser.parse()
-            .ok_or(String::from("Could not parse config file?"))?;
-        let config = toml.get("ggez")
-            .ok_or(String::from("Section [ggez] not in config file"))?;
-        let mut decoder = toml::Decoder::new(config.clone());
-        Conf::decode(&mut decoder).map_err(GameError::from)
+        let decoded = toml::from_str(&s)?;
+        Ok(decoded)
     }
 
     /// Saves the `Conf` to the given `Write` object,
@@ -79,18 +75,9 @@ impl Conf {
         // the [ggez] section.
         //
         // So we encode the Conf into a toml::Value...
-        let mut e = toml::Encoder::new();
-        self.encode(&mut e)?;
-
-        // Create another node that is a Table containing it...
-        let mut t = BTreeMap::new();
-        t.insert("ggez".to_owned(), toml::Value::Table(e.toml));
-        let toml_t = toml::Value::Table(t);
-
-        // Then serialize that to a string.
-        let toml_str = toml::encode_str(&toml_t);
-        let toml_bytes = toml_str.as_bytes();
-        file.write_all(toml_bytes).map_err(GameError::from)
+        let s = toml::to_vec(self)?;
+        file.write(&s)?;
+        Ok(())
     }
 }
 
