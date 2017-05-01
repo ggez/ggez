@@ -1,8 +1,5 @@
 extern crate ggez;
-use ggez::conf;
-use ggez::event;
-use ggez::{GameResult, Context};
-use ggez::graphics;
+use ggez::*;
 use ggez::graphics::{Color, DrawMode, Point};
 use std::time::Duration;
 
