@@ -225,13 +225,6 @@ impl GraphicsContext {
         let (window, gl_context, device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
-        println!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
-                 GL_MAJOR_VERSION,
-                 GL_MINOR_VERSION,
-                 gl.context_major_version(),
-                 gl.context_minor_version(),
-                 gl.context_profile());
-
         let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer()
                 .into();
@@ -536,8 +529,20 @@ pub fn get_point_size(ctx: &Context) -> f32 {
     ctx.gfx_context.point_size
 }
 
-pub fn get_renderer_info(_ctx: &Context) {
-    unimplemented!()
+/// Returns a string that tells a little about the obtained rendering mode.
+/// It is supposed to be human-readable and will change; do not try to parse
+/// information out of it!
+pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
+    let video = ctx.sdl_context.video()?;
+
+    let gl = video.gl_attr();
+
+    Ok(format!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
+             GL_MAJOR_VERSION,
+             GL_MINOR_VERSION,
+             gl.context_major_version(),
+             gl.context_minor_version(),
+             gl.context_profile()))
 }
 
 // TODO: Better name.  screen_bounds?  Viewport?
@@ -806,6 +811,7 @@ impl Image {
             Some(mode) => {
                 // We need the Context here to create a Sampler with, which is a little
                 // awkward, but oh well.
+                // ....Actually, this is exactly the same 
                 let sampler_info = texture::SamplerInfo::new(mode.into(), texture::WrapMode::Clamp);
                 let sampler = ctx.gfx_context.factory.create_sampler(sampler_info);
                 self.sampler = Some(sampler);
