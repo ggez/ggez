@@ -96,6 +96,8 @@ pub fn build_polygon(points: &[Point], line_width: f32) -> GameResult<Buffer> {
     })
 }
 
+// This would be ideal but really should be left until we can get around
+// to updating lyon.
 // pub fn build_polygon_fill(points: &[Point]) -> GameResult<Buffer> {
     
 //     let path = build_path(points, true);

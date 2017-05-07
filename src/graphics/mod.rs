@@ -471,7 +471,7 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     // TODO: See if we can evade this clone() without a double-borrow being involved?
     // That might actually be invalid considering that drawing an Image involves altering
     // its state.  And it might just be cloning a texture handle.
-    // TODO: Draw mode is unimplemented.
+    // Or we could just use lyon to build and draw the rect anyway.
     match mode {
         DrawMode::Fill => {
             let img = &mut ctx.gfx_context.white_image.clone();
@@ -667,6 +667,7 @@ pub struct ImageGeneric<R>
     // We should probably keep both the raw image data around,
     // and an Option containing the texture handle if necessary.
     texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
+    sampler: Option<gfx::handle::Sampler<R>>,
     width: u32,
     height: u32,
 }
@@ -757,6 +758,7 @@ impl Image {
         };
         Ok(Image {
             texture: view,
+            sampler: None,
             width: width as u32,
             height: height as u32,
         })
@@ -785,12 +787,30 @@ impl Image {
         self.height
     }
 
-    pub fn get_filter(&self) {
-        unimplemented!()
+    /// Get the filter mode for the image.
+    ///
+    /// If None, it will use the global filter mode.
+    pub fn get_filter(&self) -> Option<FilterMode> {
+        match self.sampler {
+            None => None,
+            Some(ref sampler) => Some(sampler.get_info().filter.into())
+        }
     }
 
-    pub fn set_filter(&self) {
-        unimplemented!()
+    /// Set the filter mode for the image.
+    ///
+    /// If None, it will use the global filter mode.
+    pub fn set_filter(&mut self, ctx: &mut Context, mode: Option<FilterMode>) {
+        match mode {
+            None => self.sampler = None,
+            Some(mode) => {
+                // We need the Context here to create a Sampler with, which is a little
+                // awkward, but oh well.
+                let sampler_info = texture::SamplerInfo::new(mode.into(), texture::WrapMode::Clamp);
+                let sampler = ctx.gfx_context.factory.create_sampler(sampler_info);
+                self.sampler = Some(sampler);
+            }
+        }
     }
 
     /// Returns the dimensions of the image.
@@ -798,13 +818,13 @@ impl Image {
         Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
     }
 
-    pub fn get_wrap(&self) {
-        unimplemented!()
-    }
+    // pub fn get_wrap(&self) {
+    //     unimplemented!()
+    // }
 
-    pub fn set_wrap(&self) {
-        unimplemented!()
-    }
+    // pub fn set_wrap(&self) {
+    //     unimplemented!()
+    // }
 }
 
 
@@ -842,8 +862,8 @@ impl Drawable for Image {
         new_param.offset.x *= -1.0 * param.scale.x;
         new_param.offset.y *= param.scale.y;
         gfx.update_rect_properties(new_param)?;
-        // TODO: BUGGO: Make sure these clones are cheap; they should be.
-        let (_, sampler) = gfx.data.tex.clone();
+        // Use the Image's sampler, or the global default if there isn't one.
+        let sampler = self.sampler.clone().unwrap_or_else(|| gfx.data.tex.clone().1);
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.texture.clone(), sampler);
         gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
