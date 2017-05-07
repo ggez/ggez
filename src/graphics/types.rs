@@ -21,6 +21,13 @@ impl From<Point> for [f32; 2] {
     }
 }
 
+
+impl From<[f32; 2]> for Point {
+    fn from(p: [f32; 2]) -> Point {
+        Point::new(p[0], p[1])
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Rect {
     pub x: f32,
@@ -69,6 +76,10 @@ impl Rect {
 
     pub fn one() -> Self {
         Self::new(0.0, 0.0, 1.0, 1.0)
+    }
+
+    pub fn point(&self) -> Point {
+        Point { x: self.x, y: self.y }
     }
 }
 

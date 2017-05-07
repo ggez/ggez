@@ -455,17 +455,9 @@ pub fn points(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
 
 /// Draws a closed polygon
 pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point]) -> GameResult<()> {
-    match mode {
-        DrawMode::Line => {
-            // We append the first vertex to the list as the last vertex,
-            // and just draw it with line()
-            let mut pts = Vec::with_capacity(vertices.len() + 1);
-            pts.extend(vertices);
-            pts.push(vertices[0]);
-            line(ctx, &pts)
-        }
-        DrawMode::Fill => unimplemented!(),
-    }
+    let w = ctx.gfx_context.line_width;
+    let m = Mesh::new_polygon(ctx, mode, vertices, w)?;
+    m.draw(ctx, Point::default(), 0.0)
 }
 
 /// Renders text with the default font.
@@ -495,7 +487,23 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
                         ..Default::default()
                     })
         }
-        DrawMode::Line => unimplemented!(),
+        DrawMode::Line => {
+            let x = rect.x;
+            let y = rect.y;
+            let w = rect.w;
+            let h = rect.h;
+            let x1 = x - (w/2.0);
+            let x2 = x + (w/2.0);
+            let y1 = y - (h/2.0);
+            let y2 = y + (h/2.0);
+            let pts = [
+                [x1, y1].into(),
+                [x2, y1].into(),
+                [x2, y2].into(),
+                [x1, y2].into(),
+            ];
+            polygon(ctx, mode, &pts)
+        }
     }
 }
 
@@ -892,6 +900,18 @@ impl Mesh {
         let buf = match mode {
             DrawMode::Fill => tessellation::build_ellipse_fill(point, radius1, radius2, segments),
             DrawMode::Line => unimplemented!(),
+        }?;
+
+        Mesh::from_tessellation(ctx, buf)
+    }
+
+    /// Create a new mesh for a closed polygon.
+    pub fn new_polygon(ctx: &mut Context, mode: DrawMode, points: &[Point], width: f32) -> GameResult<Mesh> {
+        let buf = match mode {
+            DrawMode::Fill => unimplemented!(),
+            DrawMode::Line => {
+                tessellation::build_polygon(points, width)
+            }
         }?;
 
         Mesh::from_tessellation(ctx, buf)
