@@ -26,9 +26,14 @@ pub enum Font {
         points: u32,
     },
     BitmapFont {
-        surface: Image,
-        glyphs: BTreeMap<char, u32>,
-        glyph_width: u32,
+        // Width, height and data for the original glyph image.
+        // This is always going to be RGBA.
+        bytes: Vec<u8>,
+        width: usize,
+        height: usize,
+        // Glyph to index mapping
+        glyphs: BTreeMap<char, usize>,
+        glyph_width: usize,
     },
 }
 
@@ -70,19 +75,25 @@ impl Font {
                                             path: P,
                                             glyphs: &str)
                                             -> GameResult<Font> {
-        let s2 = Image::new(context, path.as_ref())?;
-        let image_width = s2.width();
-        let glyph_width = image_width / (glyphs.len() as u32);
+        let img = {
+            let mut buf = Vec::new();
+            let mut reader = context.filesystem.open(path)?;
+            reader.read_to_end(&mut buf)?;
+            image::load_from_memory(&buf)?.to_rgba()
+        };
+        let (image_width, image_height) = img.dimensions();
+
+        let glyph_width = (image_width as usize) / glyphs.len();
         // println!("Number of glyphs: {}, Glyph width: {}, image width: {}",
         // glyphs.len(), glyph_width, image_width);
-        let mut glyphs_map: BTreeMap<char, u32> = BTreeMap::new();
+        let mut glyphs_map: BTreeMap<char, usize> = BTreeMap::new();
         for (i, c) in glyphs.chars().enumerate() {
-            let small_i = i as u32;
-            glyphs_map.insert(c, small_i * glyph_width);
+            glyphs_map.insert(c, i * glyph_width);
         }
         Ok(Font::BitmapFont {
-            surface: s2,
-
+            bytes: img.into_vec(),
+            width: image_width as usize,
+            height: image_height as usize,
             glyphs: glyphs_map,
             glyph_width: glyph_width,
         })
@@ -199,45 +210,57 @@ fn render_ttf(context: &mut Context,
 
 }
 
-fn render_bitmap(context: &Context,
+/// Treats src and dst as row-major 2D arrays, and blits the given rect from src to dst.
+/// Does no bounds checking or anything; if you feed it invalid bounds it will just panic.
+/// Generally, you shouldn't need or use this.
+fn blit(dst: &mut [u8], dst_dims: (usize,usize), dst_point: (usize,usize), src: &[u8], src_dims: (usize, usize), src_point: (usize, usize), rect_size: (usize,usize), pitch: usize) {
+    // The rect properties are all f32's; we truncate them down to integers.
+    let area_row_width = rect_size.0 * pitch;
+    let src_row_width = src_dims.0 * pitch;
+    let dst_row_width = dst_dims.0 * pitch;
+
+    for row_idx in 0..rect_size.1 {
+        let src_row = row_idx + src_point.1;
+        let dst_row = row_idx + dst_point.1;
+        let src_offset = src_row * src_row_width;
+        let dst_offset = dst_row * dst_row_width;
+
+        println!("from {} to {}, width {}", dst_offset, src_offset, area_row_width);
+        let dst_slice = &mut dst[dst_offset..(dst_offset + area_row_width)];
+        let src_slice = &src[src_offset..(src_offset + area_row_width)];
+        dst_slice.copy_from_slice(src_slice);
+    }
+}
+
+fn render_bitmap(context: &mut Context,
                  text: &str,
-                 image: &Image,
-                 glyphs_map: &BTreeMap<char, u32>,
-                 glyph_width: u32)
+                 bytes: &[u8],
+                 width: usize,
+                 height: usize,
+                 glyphs_map: &BTreeMap<char, usize>,
+                 glyph_width: usize)
                  -> GameResult<Text> {
     unimplemented!();
-    
-    let text_length = text.len() as u32;
-    let glyph_height = image.height;
-    // let format = pixels::PixelFormatEnum::RGBA8888;
-    // let mut dest_surface = surface::Surface::new(
-    // text_length * glyph_width, glyph_height, format)?;
-    // for (i, c) in text.chars().enumerate() {
-    //     let small_i = i as u32;
-    //     let error_message = format!("Character '{}' not in bitmap font!", c);
-    //     let source_offset = glyphs_map.get(&c)
-    //         .ok_or(GameError::FontError(String::from(error_message)))?;
-    //     let dest_offset = glyph_width * small_i;
-    //     let source_rect = Rect::new(*source_offset as f32,
-    //                                 0.0,
-    //                                 glyph_width as f32,
-    //                                 glyph_height as f32);
-    //     let dest_rect = Rect::new(dest_offset as f32,
-    //                               0.0,
-    //                               glyph_width as f32,
-    //                               glyph_height as f32);
-    //     // println!("Blitting letter {} to {:?}", c, dest_rect);
-    //     // surface.blit(Some(source_rect), &mut dest_surface, Some(dest_rect))?;
-    // }
-    // // let image = Image::from_surface(context, dest_surface)?;
+    let text_length = text.len();
+    let glyph_height = height;
+    let buf_len = text_length * glyph_width * glyph_height * 4;
+    let mut dest_buf = Vec::with_capacity(buf_len);
+    dest_buf.resize(buf_len, 0u8);
+    for (i, c) in text.chars().enumerate() {
+        let error_message = format!("Character '{}' not in bitmap font!", c);
+        let source_offset = glyphs_map.get(&c)
+            .ok_or(GameError::FontError(String::from(error_message)))?;
+        let dest_offset = glyph_width * i;
+        //fn blit(dst: &mut [u8], dst_dims: (usize,usize), dst_point: (usize,usize), src: &[u8], src_dims: (usize, usize), src_point: (usize, usize), rect_size: (usize,usize), pitch: usize) {
+        blit(&mut dest_buf, (text_length*glyph_width, glyph_height), (0, 0), &bytes, (width, height), (0, 0), (glyph_width, glyph_height), 4);
+    }
+    let image = Image::from_rgba8(context, (text_length * glyph_width) as u16, glyph_height as u16, &dest_buf)?;
     let text_string = text.to_string();
-
-    // let tq = image.texture.query();
-    // Ok(Text {
-    //     texture: image.texture,
-    //     texture_query: tq,
-    //     contents: text_string,
-    // })
+    
+    Ok(Text {
+        texture: image,
+        contents: text_string,
+    })
 }
 
 
@@ -246,8 +269,8 @@ impl Text {
     pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<Text> {
         match *font {
             Font::TTFFont { font: ref f, points } => render_ttf(context, text, f, points),
-            Font::BitmapFont { ref surface, glyph_width, glyphs: ref glyphs_map, .. } => {
-                render_bitmap(context, text, surface, glyphs_map, glyph_width)
+            Font::BitmapFont { ref bytes, width, height, glyph_width, ref glyphs } => {
+                render_bitmap(context, text, bytes, width, height, glyphs, glyph_width)
             }
         }
     }
@@ -283,5 +306,37 @@ impl fmt::Debug for Text {
                self.texture.height,
                &self)
 
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_blit() {
+        let dst = &mut [0; 125][..];
+        let src = &[
+            1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            9, 9, 1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+            0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ][..];
+        assert_eq!(src.len(), 25 * 5);
+
+        // Test just blitting the whole thing
+        let rect_dims = (25, 5);
+        blit(dst, rect_dims, (0,0), src, rect_dims, (0,0), (25, 5), 1);
+        //println!("{:?}", src);
+        //println!("{:?}", dst);
+        assert_eq!(dst, src);
+        for i in 0..dst.len() {
+            dst[i] = 0;
+        }
+
+        // Test blitting the whole thing with a non-1 pitch
+        let rect_dims = (5, 5);
+        blit(dst, rect_dims, (0,0), src, rect_dims, (0,0), (5, 5), 5);
+        assert_eq!(dst, src);
     }
 }
