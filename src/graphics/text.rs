@@ -240,7 +240,6 @@ fn render_bitmap(context: &mut Context,
                  glyphs_map: &BTreeMap<char, usize>,
                  glyph_width: usize)
                  -> GameResult<Text> {
-    unimplemented!();
     let text_length = text.len();
     let glyph_height = height;
     let buf_len = text_length * glyph_width * glyph_height * 4;
