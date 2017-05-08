@@ -210,7 +210,8 @@ pub enum FilterMode {
     Nearest,
 }
 
-use gfx::texture::FilterMethod;
+use gfx::texture;
+use gfx::texture::{FilterMethod};
 
 impl From<FilterMethod> for FilterMode {
     fn from(f: FilterMethod) -> Self {
@@ -231,6 +232,8 @@ impl From<FilterMode> for FilterMethod {
         }
     }
 }
+
+pub type WrapMode = texture::WrapMode;
 
 #[cfg(test)]
 mod tests {

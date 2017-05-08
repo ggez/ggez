@@ -9,6 +9,7 @@
 use std::fmt;
 use std::path;
 use std::convert::From;
+use std::collections::HashMap;
 use std::io::Read;
 use std::u16;
 
@@ -118,6 +119,35 @@ impl From<DrawParam> for RectProperties {
     }
 }
 
+/// A structure for conveniently storing Sampler's, based off
+/// their SamplerInfo.
+///
+/// Making this generic is tricky 'cause it has methods that depend
+/// on the generic Factory trait, it seems, so for now we just kind
+/// of hack it.
+struct SamplerCache<R>
+    where R: gfx::Resources
+{
+    samplers: HashMap<texture::SamplerInfo, gfx::handle::Sampler<R>>,
+}
+
+impl<R> SamplerCache<R>
+    where R: gfx::Resources
+{
+    fn new() -> Self {
+        SamplerCache {
+            samplers: HashMap::new(),
+        }
+    }
+    fn get_or_insert<F>(&mut self, info: texture::SamplerInfo, factory: &mut F) -> gfx::handle::Sampler<R>
+        where F: gfx::Factory<R>
+    {
+        let sampler = self.samplers.entry(info).or_insert_with(
+            || factory.create_sampler(info)
+        );
+        sampler.clone()
+    }
+}
 
 /// A structure that contains graphics state.
 /// For instance, background and foreground colors.
@@ -155,6 +185,8 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     data: pipe::Data<R>,
     quad_slice: gfx::Slice<R>,
     quad_vertex_buffer: gfx::handle::Buffer<R, Vertex>,
+    default_sampler_info: texture::SamplerInfo,
+    samplers: SamplerCache<R>,
 }
 
 impl<R, F, C, D> fmt::Debug for GraphicsContextGeneric<R, F, C, D>
@@ -238,8 +270,11 @@ impl GraphicsContext {
 
         let rect_props = factory.create_constant_buffer(1);
         let globals_buffer = factory.create_constant_buffer(1);
-        let sampler = factory.create_sampler_linear();
-        let white_image = Image::make_raw(&mut factory, 1, 1, &[255, 255, 255, 255])?;
+        let mut samplers: SamplerCache<gfx_device_gl::Resources> = SamplerCache::new();
+        //let sampler = factory.create_sampler_linear();
+        let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Trilinear, texture::WrapMode::Clamp);
+        let sampler = samplers.get_or_insert(sampler_info, &mut factory);
+        let white_image = Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255])?;
         let texture = white_image.texture.clone();
 
         let data = pipe::Data {
@@ -279,6 +314,8 @@ impl GraphicsContext {
             data: data,
             quad_slice: quad_slice,
             quad_vertex_buffer: quad_vertex_buffer,
+            default_sampler_info: sampler_info,
+            samplers: samplers,
         };
         gfx.update_globals()?;
         Ok(gfx)
@@ -509,15 +546,15 @@ pub fn get_background_color(ctx: &Context) -> Color {
     ctx.gfx_context.background_color
 }
 
-/// Returns thec urrent foreground color.
+/// Returns the current foreground color.
 pub fn get_color(ctx: &Context) -> Color {
     ctx.gfx_context.shader_globals.color.into()
 }
 
+/// Get the default filter mode for new images.
 pub fn get_default_filter(ctx: &Context) -> FilterMode {
     let gfx = &ctx.gfx_context;
-    let sampler_info = gfx.data.tex.1.get_info();
-    sampler_info.filter.into()
+    gfx.default_sampler_info.filter.into()
 }
 
 
@@ -570,6 +607,8 @@ pub fn set_color(ctx: &mut Context, color: Color) -> GameResult<()> {
 }
 
 /// Sets the default filter mode used to scale images.
+///
+/// This does not apply retroactively to already created images.
 pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
     let gfx = &mut ctx.gfx_context;
     let new_mode = mode.into();
@@ -672,7 +711,7 @@ pub struct ImageGeneric<R>
     // We should probably keep both the raw image data around,
     // and an Option containing the texture handle if necessary.
     texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
-    sampler: Option<gfx::handle::Sampler<R>>,
+    sampler_info: gfx::texture::SamplerInfo,
     width: u32,
     height: u32,
 }
@@ -734,13 +773,14 @@ impl Image {
                            width: u16,
                            height: u16,
                            rgba: &[u8])
-                           -> GameResult<Image> {
-        Image::make_raw(&mut context.gfx_context.factory, width, height, rgba)
+                      -> GameResult<Image> {
+        Image::make_raw(&mut context.gfx_context.factory, &context.gfx_context.default_sampler_info, width, height, rgba)
     }
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
     fn make_raw(factory: &mut gfx_device_gl::Factory,
+                sampler_info: &texture::SamplerInfo,
                 width: u16,
                 height: u16,
                 rgba: &[u8])
@@ -763,7 +803,7 @@ impl Image {
         };
         Ok(Image {
             texture: view,
-            sampler: None,
+            sampler_info: *sampler_info,
             width: width as u32,
             height: height as u32,
         })
@@ -793,30 +833,15 @@ impl Image {
     }
 
     /// Get the filter mode for the image.
-    ///
-    /// If None, it will use the global filter mode.
-    pub fn get_filter(&self) -> Option<FilterMode> {
-        match self.sampler {
-            None => None,
-            Some(ref sampler) => Some(sampler.get_info().filter.into())
-        }
+    pub fn get_filter(&self) -> FilterMode {
+        self.sampler_info.filter.into()
     }
 
     /// Set the filter mode for the image.
     ///
     /// If None, it will use the global filter mode.
-    pub fn set_filter(&mut self, ctx: &mut Context, mode: Option<FilterMode>) {
-        match mode {
-            None => self.sampler = None,
-            Some(mode) => {
-                // We need the Context here to create a Sampler with, which is a little
-                // awkward, but oh well.
-                // ....Actually, this is exactly the same 
-                let sampler_info = texture::SamplerInfo::new(mode.into(), texture::WrapMode::Clamp);
-                let sampler = ctx.gfx_context.factory.create_sampler(sampler_info);
-                self.sampler = Some(sampler);
-            }
-        }
+    pub fn set_filter(&mut self, ctx: &mut Context, mode: FilterMode) {
+        self.sampler_info.filter = mode.into();
     }
 
     /// Returns the dimensions of the image.
@@ -824,13 +849,15 @@ impl Image {
         Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
     }
 
-    // pub fn get_wrap(&self) {
-    //     unimplemented!()
-    // }
+    pub fn get_wrap(&self) -> (WrapMode, WrapMode) {
+        (self.sampler_info.wrap_mode.0,
+         self.sampler_info.wrap_mode.1)
+    }
 
-    // pub fn set_wrap(&self) {
-    //     unimplemented!()
-    // }
+    pub fn set_wrap(&mut self, wrap_x: WrapMode, wrap_y: WrapMode) {
+        self.sampler_info.wrap_mode.0 = wrap_x;
+        self.sampler_info.wrap_mode.1 = wrap_y;
+    }
 }
 
 
@@ -868,8 +895,8 @@ impl Drawable for Image {
         new_param.offset.x *= -1.0 * param.scale.x;
         new_param.offset.y *= param.scale.y;
         gfx.update_rect_properties(new_param)?;
-        // Use the Image's sampler, or the global default if there isn't one.
-        let sampler = self.sampler.clone().unwrap_or_else(|| gfx.data.tex.clone().1);
+        //let sampler = self.samplers.clone().unwrap_or_else(|| gfx.data.tex.clone().1);
+        let sampler = gfx.samplers.get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.texture.clone(), sampler);
         gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
