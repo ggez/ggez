@@ -46,12 +46,14 @@ pub struct Conf {
 impl Default for Conf {
     /// Create a new Conf with some vague defaults.
     ///
-    /// ```
-    /// window_title: "An easy, good game"
-    /// window_icon: ""
-    /// window_height: 600
-    /// window_width: 800
-    /// vsync: true
+    /// ```rust,ignore
+    /// Conf {
+    ///     window_title: "An easy, good game"
+    ///     window_icon: ""
+    ///     window_height: 600
+    ///     window_width: 800
+    ///     vsync: true
+    /// }
     /// ```
     fn default() -> Self {
         Conf {
