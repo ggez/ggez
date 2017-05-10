@@ -15,8 +15,8 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
 
-        let image1 = graphics::Image::new(ctx, "resources/dragon1.png")?;
-        let image2 = graphics::Image::new(ctx, "resources/player.png")?;
+        let image1 = graphics::Image::new(ctx, "dragon1.png")?;
+        let image2 = graphics::Image::new(ctx, "player.png")?;
         let s = MainState {
             image1: image1,
             image2: image2,
@@ -58,6 +58,11 @@ impl event::EventHandler for MainState {
 
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         graphics::rectangle(ctx, graphics::DrawMode::Fill, rect)?;
+
+        graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0))?;
+        let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
+        graphics::rectangle(ctx, graphics::DrawMode::Line, rect)?;
+        graphics::set_color(ctx, graphics::WHITE)?;
 
         graphics::set_line_width(ctx, 4.0);
         graphics::line(ctx,
@@ -109,6 +114,7 @@ impl event::EventHandler for MainState {
 pub fn main() {
     let c = conf::Conf::new();
     let ctx = &mut Context::load_from_conf("drawing", "ggez", c).unwrap();
+    println!("{}", graphics::get_renderer_info(ctx).unwrap());
     let state = &mut MainState::new(ctx).unwrap();
     if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);

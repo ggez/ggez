@@ -34,7 +34,9 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        let dest_point = graphics::Point::new(0.0, 0.0);
+        // Drawables are drawn from their center.
+        let dest_point = graphics::Point::new(self.text.width() as f32 / 2.0 + 10.0,
+                                              self.text.height() as f32 / 2.0 + 10.0);
         graphics::draw(ctx, &mut self.text, dest_point, 0.0)?;
         graphics::present(ctx);
         Ok(())

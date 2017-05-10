@@ -9,6 +9,7 @@
 use std::fmt;
 use std::path;
 use std::convert::From;
+use std::collections::HashMap;
 use std::io::Read;
 use std::u16;
 
@@ -118,6 +119,35 @@ impl From<DrawParam> for RectProperties {
     }
 }
 
+/// A structure for conveniently storing Sampler's, based off
+/// their SamplerInfo.
+///
+/// Making this generic is tricky 'cause it has methods that depend
+/// on the generic Factory trait, it seems, so for now we just kind
+/// of hack it.
+struct SamplerCache<R>
+    where R: gfx::Resources
+{
+    samplers: HashMap<texture::SamplerInfo, gfx::handle::Sampler<R>>,
+}
+
+impl<R> SamplerCache<R>
+    where R: gfx::Resources
+{
+    fn new() -> Self {
+        SamplerCache {
+            samplers: HashMap::new(),
+        }
+    }
+    fn get_or_insert<F>(&mut self, info: texture::SamplerInfo, factory: &mut F) -> gfx::handle::Sampler<R>
+        where F: gfx::Factory<R>
+    {
+        let sampler = self.samplers.entry(info).or_insert_with(
+            || factory.create_sampler(info)
+        );
+        sampler.clone()
+    }
+}
 
 /// A structure that contains graphics state.
 /// For instance, background and foreground colors.
@@ -155,6 +185,8 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     data: pipe::Data<R>,
     quad_slice: gfx::Slice<R>,
     quad_vertex_buffer: gfx::handle::Buffer<R, Vertex>,
+    default_sampler_info: texture::SamplerInfo,
+    samplers: SamplerCache<R>,
 }
 
 impl<R, F, C, D> fmt::Debug for GraphicsContextGeneric<R, F, C, D>
@@ -225,13 +257,6 @@ impl GraphicsContext {
         let (window, gl_context, device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
-        println!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
-                 GL_MAJOR_VERSION,
-                 GL_MINOR_VERSION,
-                 gl.context_major_version(),
-                 gl.context_minor_version(),
-                 gl.context_profile());
-
         let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer()
                 .into();
@@ -245,8 +270,11 @@ impl GraphicsContext {
 
         let rect_props = factory.create_constant_buffer(1);
         let globals_buffer = factory.create_constant_buffer(1);
-        let sampler = factory.create_sampler_linear();
-        let white_image = Image::make_raw(&mut factory, 1, 1, &[255, 255, 255, 255])?;
+        let mut samplers: SamplerCache<gfx_device_gl::Resources> = SamplerCache::new();
+        //let sampler = factory.create_sampler_linear();
+        let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Trilinear, texture::WrapMode::Clamp);
+        let sampler = samplers.get_or_insert(sampler_info, &mut factory);
+        let white_image = Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255])?;
         let texture = white_image.texture.clone();
 
         let data = pipe::Data {
@@ -286,6 +314,8 @@ impl GraphicsContext {
             data: data,
             quad_slice: quad_slice,
             quad_vertex_buffer: quad_vertex_buffer,
+            default_sampler_info: sampler_info,
+            samplers: samplers,
         };
         gfx.update_globals()?;
         Ok(gfx)
@@ -455,17 +485,9 @@ pub fn points(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
 
 /// Draws a closed polygon
 pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point]) -> GameResult<()> {
-    match mode {
-        DrawMode::Line => {
-            // We append the first vertex to the list as the last vertex,
-            // and just draw it with line()
-            let mut pts = Vec::with_capacity(vertices.len() + 1);
-            pts.extend(vertices);
-            pts.push(vertices[0]);
-            line(ctx, &pts)
-        }
-        DrawMode::Fill => unimplemented!(),
-    }
+    let w = ctx.gfx_context.line_width;
+    let m = Mesh::new_polygon(ctx, mode, vertices, w)?;
+    m.draw(ctx, Point::default(), 0.0)
 }
 
 /// Renders text with the default font.
@@ -479,7 +501,7 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     // TODO: See if we can evade this clone() without a double-borrow being involved?
     // That might actually be invalid considering that drawing an Image involves altering
     // its state.  And it might just be cloning a texture handle.
-    // TODO: Draw mode is unimplemented.
+    // Or we could just use lyon to build and draw the rect anyway.
     match mode {
         DrawMode::Fill => {
             let img = &mut ctx.gfx_context.white_image.clone();
@@ -495,7 +517,23 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
                         ..Default::default()
                     })
         }
-        DrawMode::Line => unimplemented!(),
+        DrawMode::Line => {
+            let x = rect.x;
+            let y = rect.y;
+            let w = rect.w;
+            let h = rect.h;
+            let x1 = x - (w/2.0);
+            let x2 = x + (w/2.0);
+            let y1 = y - (h/2.0);
+            let y2 = y + (h/2.0);
+            let pts = [
+                [x1, y1].into(),
+                [x2, y1].into(),
+                [x2, y2].into(),
+                [x1, y2].into(),
+            ];
+            polygon(ctx, mode, &pts)
+        }
     }
 }
 
@@ -508,15 +546,15 @@ pub fn get_background_color(ctx: &Context) -> Color {
     ctx.gfx_context.background_color
 }
 
-/// Returns thec urrent foreground color.
+/// Returns the current foreground color.
 pub fn get_color(ctx: &Context) -> Color {
     ctx.gfx_context.shader_globals.color.into()
 }
 
+/// Get the default filter mode for new images.
 pub fn get_default_filter(ctx: &Context) -> FilterMode {
     let gfx = &ctx.gfx_context;
-    let sampler_info = gfx.data.tex.1.get_info();
-    sampler_info.filter.into()
+    gfx.default_sampler_info.filter.into()
 }
 
 
@@ -528,8 +566,20 @@ pub fn get_point_size(ctx: &Context) -> f32 {
     ctx.gfx_context.point_size
 }
 
-pub fn get_renderer_info(_ctx: &Context) {
-    unimplemented!()
+/// Returns a string that tells a little about the obtained rendering mode.
+/// It is supposed to be human-readable and will change; do not try to parse
+/// information out of it!
+pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
+    let video = ctx.sdl_context.video()?;
+
+    let gl = video.gl_attr();
+
+    Ok(format!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
+             GL_MAJOR_VERSION,
+             GL_MINOR_VERSION,
+             gl.context_major_version(),
+             gl.context_minor_version(),
+             gl.context_profile()))
 }
 
 // TODO: Better name.  screen_bounds?  Viewport?
@@ -557,6 +607,8 @@ pub fn set_color(ctx: &mut Context, color: Color) -> GameResult<()> {
 }
 
 /// Sets the default filter mode used to scale images.
+///
+/// This does not apply retroactively to already created images.
 pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
     let gfx = &mut ctx.gfx_context;
     let new_mode = mode.into();
@@ -659,6 +711,7 @@ pub struct ImageGeneric<R>
     // We should probably keep both the raw image data around,
     // and an Option containing the texture handle if necessary.
     texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
+    sampler_info: gfx::texture::SamplerInfo,
     width: u32,
     height: u32,
 }
@@ -720,13 +773,14 @@ impl Image {
                            width: u16,
                            height: u16,
                            rgba: &[u8])
-                           -> GameResult<Image> {
-        Image::make_raw(&mut context.gfx_context.factory, width, height, rgba)
+                      -> GameResult<Image> {
+        Image::make_raw(&mut context.gfx_context.factory, &context.gfx_context.default_sampler_info, width, height, rgba)
     }
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
     fn make_raw(factory: &mut gfx_device_gl::Factory,
+                sampler_info: &texture::SamplerInfo,
                 width: u16,
                 height: u16,
                 rgba: &[u8])
@@ -749,6 +803,7 @@ impl Image {
         };
         Ok(Image {
             texture: view,
+            sampler_info: *sampler_info,
             width: width as u32,
             height: height as u32,
         })
@@ -777,12 +832,16 @@ impl Image {
         self.height
     }
 
-    pub fn get_filter(&self) {
-        unimplemented!()
+    /// Get the filter mode for the image.
+    pub fn get_filter(&self) -> FilterMode {
+        self.sampler_info.filter.into()
     }
 
-    pub fn set_filter(&self) {
-        unimplemented!()
+    /// Set the filter mode for the image.
+    ///
+    /// If None, it will use the global filter mode.
+    pub fn set_filter(&mut self, ctx: &mut Context, mode: FilterMode) {
+        self.sampler_info.filter = mode.into();
     }
 
     /// Returns the dimensions of the image.
@@ -790,12 +849,14 @@ impl Image {
         Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
     }
 
-    pub fn get_wrap(&self) {
-        unimplemented!()
+    pub fn get_wrap(&self) -> (WrapMode, WrapMode) {
+        (self.sampler_info.wrap_mode.0,
+         self.sampler_info.wrap_mode.1)
     }
 
-    pub fn set_wrap(&self) {
-        unimplemented!()
+    pub fn set_wrap(&mut self, wrap_x: WrapMode, wrap_y: WrapMode) {
+        self.sampler_info.wrap_mode.0 = wrap_x;
+        self.sampler_info.wrap_mode.1 = wrap_y;
     }
 }
 
@@ -834,8 +895,8 @@ impl Drawable for Image {
         new_param.offset.x *= -1.0 * param.scale.x;
         new_param.offset.y *= param.scale.y;
         gfx.update_rect_properties(new_param)?;
-        // TODO: BUGGO: Make sure these clones are cheap; they should be.
-        let (_, sampler) = gfx.data.tex.clone();
+        //let sampler = self.samplers.clone().unwrap_or_else(|| gfx.data.tex.clone().1);
+        let sampler = gfx.samplers.get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.texture.clone(), sampler);
         gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
@@ -892,6 +953,18 @@ impl Mesh {
         let buf = match mode {
             DrawMode::Fill => tessellation::build_ellipse_fill(point, radius1, radius2, segments),
             DrawMode::Line => unimplemented!(),
+        }?;
+
+        Mesh::from_tessellation(ctx, buf)
+    }
+
+    /// Create a new mesh for a closed polygon.
+    pub fn new_polygon(ctx: &mut Context, mode: DrawMode, points: &[Point], width: f32) -> GameResult<Mesh> {
+        let buf = match mode {
+            DrawMode::Fill => unimplemented!(),
+            DrawMode::Line => {
+                tessellation::build_polygon(points, width)
+            }
         }?;
 
         Mesh::from_tessellation(ctx, buf)
