@@ -8,6 +8,7 @@ use std::time::Duration;
 // First we make a structure to contain the game's state
 struct MainState {
     text: graphics::Text,
+    frames: usize,
 }
 
 // Then we implement the `ggez::game::GameState` trait on it, which
@@ -21,7 +22,10 @@ impl MainState {
         let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 48)?;
         let text = graphics::Text::new(ctx, "Hello world!", &font)?;
 
-        let s = MainState { text: text };
+        let s = MainState {
+            text: text,
+            frames: 0,
+        };
         Ok(s)
     }
 }
@@ -39,6 +43,10 @@ impl event::EventHandler for MainState {
                                               self.text.height() as f32 / 2.0 + 10.0);
         graphics::draw(ctx, &mut self.text, dest_point, 0.0)?;
         graphics::present(ctx);
+        self.frames += 1;
+        if (self.frames % 100) == 0 {
+            println!("FPS: {}", ggez::timer::get_fps(ctx));
+        }
         Ok(())
     }
 }
@@ -52,7 +60,7 @@ impl event::EventHandler for MainState {
 // do the work of creating our MainState and running our game,
 // * then just call `game.run()` which runs the `Game` mainloop.
 pub fn main() {
-    let c = conf::Conf::new();
+    let mut c = conf::Conf::new();
     let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
     let state = &mut MainState::new(ctx).unwrap();
     if let Err(e) = event::run(ctx, state) {

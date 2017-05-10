@@ -79,7 +79,10 @@ impl Rect {
     }
 
     pub fn point(&self) -> Point {
-        Point { x: self.x, y: self.y }
+        Point {
+            x: self.x,
+            y: self.y,
+        }
     }
 }
 
@@ -219,7 +222,7 @@ pub enum FilterMode {
 }
 
 use gfx::texture;
-use gfx::texture::{FilterMethod};
+use gfx::texture::FilterMethod;
 
 impl From<FilterMethod> for FilterMode {
     fn from(f: FilterMethod) -> Self {

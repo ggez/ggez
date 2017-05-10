@@ -135,16 +135,15 @@ impl<R> SamplerCache<R>
     where R: gfx::Resources
 {
     fn new() -> Self {
-        SamplerCache {
-            samplers: HashMap::new(),
-        }
+        SamplerCache { samplers: HashMap::new() }
     }
-    fn get_or_insert<F>(&mut self, info: texture::SamplerInfo, factory: &mut F) -> gfx::handle::Sampler<R>
+    fn get_or_insert<F>(&mut self,
+                        info: texture::SamplerInfo,
+                        factory: &mut F)
+                        -> gfx::handle::Sampler<R>
         where F: gfx::Factory<R>
     {
-        let sampler = self.samplers.entry(info).or_insert_with(
-            || factory.create_sampler(info)
-        );
+        let sampler = self.samplers.entry(info).or_insert_with(|| factory.create_sampler(info));
         sampler.clone()
     }
 }
@@ -243,7 +242,8 @@ impl GraphicsContext {
     pub fn new(video: sdl2::VideoSubsystem,
                window_title: &str,
                screen_width: u32,
-               screen_height: u32)
+               screen_height: u32,
+               vsync: bool)
                -> GameResult<GraphicsContext> {
         let gl = video.gl_attr();
         gl.set_context_version(GL_MAJOR_VERSION, GL_MINOR_VERSION);
@@ -253,10 +253,15 @@ impl GraphicsContext {
         gl.set_blue_size(5);
         gl.set_alpha_size(8);
 
+        // println!("GL swap interval: {}", video.gl_get_swap_interval());
+
         let window_builder = video.window(window_title, screen_width, screen_height);
         let (window, gl_context, device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
+        println!("Vsync enabled: {}", vsync);
+        let vsync_int = if vsync { 1 } else { 0 };
+        video.gl_set_swap_interval(vsync_int);
         let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer()
                 .into();
@@ -272,9 +277,11 @@ impl GraphicsContext {
         let globals_buffer = factory.create_constant_buffer(1);
         let mut samplers: SamplerCache<gfx_device_gl::Resources> = SamplerCache::new();
         //let sampler = factory.create_sampler_linear();
-        let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Trilinear, texture::WrapMode::Clamp);
+        let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Trilinear,
+                                                     texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
-        let white_image = Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255])?;
+        let white_image =
+            Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255])?;
         let texture = white_image.texture.clone();
 
         let data = pipe::Data {
@@ -522,16 +529,11 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
             let y = rect.y;
             let w = rect.w;
             let h = rect.h;
-            let x1 = x - (w/2.0);
-            let x2 = x + (w/2.0);
-            let y1 = y - (h/2.0);
-            let y2 = y + (h/2.0);
-            let pts = [
-                [x1, y1].into(),
-                [x2, y1].into(),
-                [x2, y2].into(),
-                [x1, y2].into(),
-            ];
+            let x1 = x - (w / 2.0);
+            let x2 = x + (w / 2.0);
+            let y1 = y - (h / 2.0);
+            let y2 = y + (h / 2.0);
+            let pts = [[x1, y1].into(), [x2, y1].into(), [x2, y2].into(), [x1, y2].into()];
             polygon(ctx, mode, &pts)
         }
     }
@@ -575,11 +577,11 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
     let gl = video.gl_attr();
 
     Ok(format!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
-             GL_MAJOR_VERSION,
-             GL_MINOR_VERSION,
-             gl.context_major_version(),
-             gl.context_minor_version(),
-             gl.context_profile()))
+               GL_MAJOR_VERSION,
+               GL_MINOR_VERSION,
+               gl.context_major_version(),
+               gl.context_minor_version(),
+               gl.context_profile()))
 }
 
 // TODO: Better name.  screen_bounds?  Viewport?
@@ -728,21 +730,21 @@ fn scale_rgba_up_to_power_of_2(width: u16, height: u16, rgba: &[u8]) -> (u16, u1
     let w2 = width.next_power_of_two();
     let h2 = height.next_power_of_two();
     // println!("Scaling from {}x{} to {}x{}", width, height, w2, h2);
-    let num_vals = w2*h2*4;
+    let num_vals = w2 * h2 * 4;
     let mut v: Vec<u8> = Vec::with_capacity(num_vals);
     // This is a little wasteful because we will be replacing
     // many if not most of these 0's with the actual image data.
-    // But it's much simpler to resize the thing once than to blit 
+    // But it's much simpler to resize the thing once than to blit
     // each row, resize it out to fill the rest of the row with zeroes,
     // etc.
     v.resize(num_vals, 0);
     // Blit each row of the old image into the new array.
     for i in 0..h2 {
         if i < height {
-            let src_start = i*width*4;
-            let src_end = src_start + width*4;
-            let dest_start = i*w2*4;
-            let dest_end = dest_start + width*4;
+            let src_start = i * width * 4;
+            let src_end = src_start + width * 4;
+            let dest_start = i * w2 * 4;
+            let dest_end = dest_start + width * 4;
             let slice = &mut v[dest_start..dest_end];
             slice.copy_from_slice(&rgba[src_start..src_end]);
         }
@@ -770,11 +772,15 @@ impl Image {
 
     /// Creates a new `Image` from the given buffer of `u8` RGBA values.
     pub fn from_rgba8(context: &mut Context,
-                           width: u16,
-                           height: u16,
-                           rgba: &[u8])
+                      width: u16,
+                      height: u16,
+                      rgba: &[u8])
                       -> GameResult<Image> {
-        Image::make_raw(&mut context.gfx_context.factory, &context.gfx_context.default_sampler_info, width, height, rgba)
+        Image::make_raw(&mut context.gfx_context.factory,
+                        &context.gfx_context.default_sampler_info,
+                        width,
+                        height,
+                        rgba)
     }
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
@@ -789,15 +795,17 @@ impl Image {
         let view = if !(width.is_power_of_two() && height.is_power_of_two()) {
             let (width, height, rgba) = scale_rgba_up_to_power_of_2(width, height, rgba);
             let rgba = &rgba;
-            assert_eq!((width as usize)*(height as usize) * 4, rgba.len());
+            assert_eq!((width as usize) * (height as usize) * 4, rgba.len());
             let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-            // The slice containing rgba is NOT rows x columns, it is a slice of 
+            // The slice containing rgba is NOT rows x columns, it is a slice of
             // MIPMAP LEVELS.  Augh!
-            let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
+            let (_, view) =
+                factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
             view
         } else {
-                let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-            let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
+            let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
+            let (_, view) =
+                factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
             view
 
         };
@@ -850,8 +858,7 @@ impl Image {
     }
 
     pub fn get_wrap(&self) -> (WrapMode, WrapMode) {
-        (self.sampler_info.wrap_mode.0,
-         self.sampler_info.wrap_mode.1)
+        (self.sampler_info.wrap_mode.0, self.sampler_info.wrap_mode.1)
     }
 
     pub fn set_wrap(&mut self, wrap_x: WrapMode, wrap_y: WrapMode) {
@@ -959,12 +966,14 @@ impl Mesh {
     }
 
     /// Create a new mesh for a closed polygon.
-    pub fn new_polygon(ctx: &mut Context, mode: DrawMode, points: &[Point], width: f32) -> GameResult<Mesh> {
+    pub fn new_polygon(ctx: &mut Context,
+                       mode: DrawMode,
+                       points: &[Point],
+                       width: f32)
+                       -> GameResult<Mesh> {
         let buf = match mode {
             DrawMode::Fill => unimplemented!(),
-            DrawMode::Line => {
-                tessellation::build_polygon(points, width)
-            }
+            DrawMode::Line => tessellation::build_polygon(points, width),
         }?;
 
         Mesh::from_tessellation(ctx, buf)
@@ -1005,14 +1014,15 @@ mod tests {
 
         for i in 0..HEIGHT.next_power_of_two() {
             for j in 0..WIDTH.next_power_of_two() {
-                let offset_within_row = (j*4) as usize;
-                let src_row_offset = (i * WIDTH*4) as usize;
-                let dst_row_offset = (i * width*4) as usize;
+                let offset_within_row = (j * 4) as usize;
+                let src_row_offset = (i * WIDTH * 4) as usize;
+                let dst_row_offset = (i * width * 4) as usize;
                 println!("{} {}", i, j);
                 if i < HEIGHT && j < WIDTH {
-                    assert_eq!(res[dst_row_offset+offset_within_row], from[src_row_offset+offset_within_row]);
+                    assert_eq!(res[dst_row_offset + offset_within_row],
+                               from[src_row_offset + offset_within_row]);
                 } else {
-                    assert_eq!(res[dst_row_offset+offset_within_row], 0);
+                    assert_eq!(res[dst_row_offset + offset_within_row], 0);
                 }
             }
         }

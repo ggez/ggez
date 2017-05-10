@@ -8,7 +8,7 @@ use GameResult;
 
 /// A structure containing configuration data
 /// for the game engine.
-#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Conf {
     /// The window title.
     pub window_title: String,
@@ -17,7 +17,11 @@ pub struct Conf {
     /// The window's default height
     pub window_height: u32,
     /// The window's default width
-    pub window_width: u32, /* To implement still.
+    pub window_width: u32,
+    /// Whether or not the graphics draw rate should be
+    /// synchronized with the monitor's draw rate.
+    pub vsync: bool, 
+    /* To implement still.
                             * window_borderless: bool,
                             * window_resizable: bool,
                             * window_fullscreen: bool,
@@ -39,16 +43,32 @@ pub struct Conf {
                             * modules_thread: bool, */
 }
 
-
-impl Conf {
+impl Default for Conf {
     /// Create a new Conf with some vague defaults.
-    pub fn new() -> Conf {
+    ///
+    /// ```
+    /// window_title: "An easy, good game"
+    /// window_icon: ""
+    /// window_height: 600
+    /// window_width: 800
+    /// vsync: true
+    /// ```
+    fn default() -> Self {
         Conf {
             window_title: String::from("An easy, good game"),
             window_icon: String::from(""),
             window_height: 600,
             window_width: 800,
+            vsync: true,
         }
+
+    }
+}
+
+impl Conf {
+    /// Same as Conf::default()
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Load a TOML file from the given `Read` and attempts to parse
