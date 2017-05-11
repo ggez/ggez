@@ -112,6 +112,8 @@ pub trait VMetadata {}
 
 /// A VFS that points to a directory and uses it as the root of its
 /// file heirarchy.
+///
+/// It IS allowed to have symlinks in it!  For now.
 pub struct PhysicalFS {
     root: Arc<PathBuf>,
     readonly: bool,
@@ -214,8 +216,7 @@ impl VFS for PhysicalFS {
             return Err(GameError::FilesystemError("Tried to make directory {} but FS is read-only".to_string()));
         }
         let p = self.get_absolute(path)?;
-        println!("Creating {:?}", p);
-        panic!("fdsfdsafs");
+        //println!("Creating {:?}", p);
         fs::DirBuilder::new()
             .recursive(true)
             .create(p)
@@ -438,18 +439,39 @@ mod tests {
     #[test]
     fn test_physical_all() {
         let fs = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), false);
-        let testdir = "testdir";
-        let f1 = "testdir/file1.txt";
-        let f2 = "testdir/file2.txt";
+        let testdir = "/testdir";
+        let f1 = "/testdir/file1.txt";
+        let f2 = "/testdir/file2.txt";
+        
+        // Delete testdir if it is still lying around
+        if fs.exists(testdir) {
+            fs.rmrf(testdir).unwrap();
+        }
+        assert!(!fs.exists(testdir));
 
         // Create and delete test dir
-        //assert!(!fs.exists(testdir));
-        //fs.mkdir(testdir).unwrap();
-        //assert!(fs.exists(testdir));
-        //fs.rm(testdir).unwrap();
-        //assert!(!fs.exists(testdir));
+        fs.mkdir(testdir).unwrap();
+        assert!(fs.exists(testdir));
+        fs.rm(testdir).unwrap();
+        assert!(!fs.exists(testdir));
 
-        //fs.create(testdir);
+        let test_string = "Foo!";
+        fs.mkdir(testdir).unwrap();
+        {
+            let mut f = fs.append(f1).unwrap();
+            f.write(test_string.as_bytes()).unwrap();
+        }
+        {
+            let mut buf = Vec::new();
+            let mut f = fs.open(f1).unwrap();
+            f.read_to_end(&mut buf).unwrap();
+            assert_eq!(&buf[..], test_string.as_bytes());
+        }
+
+        // BUGGO: TODO: Make sure all functions are tested for PhysicalFS!
+        fs.rmrf(testdir).unwrap();
+        assert!(!fs.exists(testdir));
     }
-    
+    // BUGGO: TODO: Make sure all functions are tested for OverlayFS too!
+    // BUGGO: TODO: Implement ZipFS!
 }
