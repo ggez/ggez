@@ -122,38 +122,42 @@ pub struct PhysicalMetadata(fs::Metadata);
 impl VMetadata for PhysicalMetadata {}
 
 
-
-/// Helper function to turn a path::Component into an Option<String> iff the Component
-/// is a normal portion.
-///
-/// Basically this is to help turn a canonicalized absolute path into a relative path.
-fn component_filter(comp: path::Component) -> Option<String> {
-    match comp {
-        path::Component::Normal(osstr) => Some(osstr.to_string_lossy().into_owned()),
-        _ => None
-    }
-}
-
-/// This takes a path and returns whether not it is what we want.
+/// This takes an absolute path and returns either a sanitized relative
+/// version of it, or None if there's something bad in it.
 ///
 /// What we want is an absolute path with no `..`'s in it, so, something
 /// like "/foo" or "/foo/bar.txt".  This means a path with components
 /// starting with a RootDir, and zero or more Normal components.
-fn path_is_valid(path: &path::Path) -> bool {
+///
+/// We gotta return a new path because there's apparently no real good way
+/// to turn an absolute path into a relative path with the same 
+/// components (other than the first), and pushing an absolute Path
+/// onto a PathBuf just completely nukes its existing contents.
+/// Thanks, Obama.
+fn sanitize_path(path: &path::Path) -> Option<PathBuf> {
     let mut c = path.components();
     match c.next() {
         Some(path::Component::RootDir) => (),
-        _ => return false,
+        _ => return None,
     }
 
-    fn is_normal_component(comp: path::Component) -> bool {
+    fn is_normal_component(comp: path::Component) -> Option<&str> {
         match comp {
-            path::Component::Normal(_) => true,
-            _ => false,
+            path::Component::Normal(s) => s.to_str(),
+            _ => None,
         }
     }
 
-    c.all(is_normal_component)
+    // This could be done more cleverly but meh
+    let mut accm = PathBuf::new();
+    for component in c {
+        if let Some(s) = is_normal_component(component) {
+            accm.push(s)
+        } else {
+            return None;
+        }
+    }
+    Some(accm)
 }
 
 impl PhysicalFS {
@@ -169,16 +173,16 @@ impl PhysicalFS {
     /// absolute path you get when appending it
     /// to this filesystem's root.
     fn get_absolute(&self, p: &str) -> GameResult<PathBuf> {
-        let pathbuf = PathBuf::from(p);
-        let relative_path = pathbuf.components().filter_map(component_filter);
-        let mut full_path = (*self.root).clone();
-        full_path.extend(relative_path);
-        // 
-        //full_path.canonicalize()?;
-        if !full_path.starts_with(&*self.root) {
-            panic!("Tried to create an AltPath that exits the AltrootFS's root dir");
+        let p = path::Path::new(p);
+        if let Some(safe_path) = sanitize_path(p) {
+            let mut root_path = (*self.root).clone();
+            root_path.push(safe_path);
+            println!("Path is {:?}", root_path);
+            Ok(root_path)
+        } else {
+            let msg = format!("Path {:?} is not valid: must be an absolute path with no references to parent directories", p);
+            Err(GameError::FilesystemError(msg))
         }
-        Ok(full_path)
     }
 }
 
@@ -373,42 +377,43 @@ mod tests {
     use std::io::{self, BufRead};
     use super::*;
 
+    #[test]
     fn test_path_filtering() {
         let p = path::Path::new("/foo");
-        assert!(path_is_valid(p));
+        sanitize_path(p).unwrap();
 
         let p = path::Path::new("/foo/");
-        assert!(path_is_valid(p));
+        sanitize_path(p).unwrap();
 
         let p = path::Path::new("/foo/bar.txt");
-        assert!(path_is_valid(p));
+        sanitize_path(p).unwrap();
 
         let p = path::Path::new("/");
-        assert!(path_is_valid(p));
+        sanitize_path(p).unwrap();
 
         let p = path::Path::new("../foo");
-        assert!(!path_is_valid(p));
+        assert!(sanitize_path(p).is_none());
 
         let p = path::Path::new("foo");
-        assert!(!path_is_valid(p));
+        assert!(sanitize_path(p).is_none());
 
         let p = path::Path::new("/foo/../../");
-        assert!(!path_is_valid(p));
+        assert!(sanitize_path(p).is_none());
 
         let p = path::Path::new("/foo/../bop");
-        assert!(!path_is_valid(p));
+        assert!(sanitize_path(p).is_none());
         
         let p = path::Path::new("/../bar");
-        assert!(!path_is_valid(p));
+        assert!(sanitize_path(p).is_none());
 
         let p = path::Path::new("");
-        assert!(!path_is_valid(p));
+        assert!(sanitize_path(p).is_none());
     }
     
     #[test]
     fn test_read() {
         let fs = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), true);
-        let f = fs.open("Cargo.toml").unwrap();
+        let f = fs.open("/Cargo.toml").unwrap();
         let mut bf = io::BufReader::new(f);
         let mut s = String::new();
         bf.read_line(&mut s).unwrap();
@@ -425,9 +430,9 @@ mod tests {
         ofs.push(Box::new(fs1));
         ofs.push(Box::new(fs2));
         
-        assert!(ofs.exists("Cargo.toml"));
-        assert!(ofs.exists("lib.rs"));
-        assert!(!ofs.exists("foobaz.rs"));
+        assert!(ofs.exists("/Cargo.toml"));
+        assert!(ofs.exists("/lib.rs"));
+        assert!(!ofs.exists("/foobaz.rs"));
     }
 
     #[test]
