@@ -76,7 +76,7 @@ impl OpenOptions {
 
 pub trait VFS: Debug {
     /// Open the file at this path with the given options
-    fn open_with_options(&self, path: &Path, openOptions: &OpenOptions) -> GameResult<Box<VFile>>;
+    fn open_with_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>>;
     /// Open the file at this path for reading
     fn open(&self, path: &Path) -> GameResult<Box<VFile>> {
         self.open_with_options(path, OpenOptions::new().read(true))
@@ -134,6 +134,28 @@ fn component_filter(comp: path::Component) -> Option<String> {
     }
 }
 
+/// This takes a path and returns whether not it is what we want.
+///
+/// What we want is an absolute path with no `..`'s in it, so, something
+/// like "/foo" or "/foo/bar.txt".  This means a path with components
+/// starting with a RootDir, and zero or more Normal components.
+fn path_is_valid(path: &path::Path) -> bool {
+    let mut c = path.components();
+    match c.next() {
+        Some(path::Component::RootDir) => (),
+        _ => return false,
+    }
+
+    fn is_normal_component(comp: path::Component) -> bool {
+        match comp {
+            path::Component::Normal(_) => true,
+            _ => false,
+        }
+    }
+
+    c.all(is_normal_component)
+}
+
 impl PhysicalFS {
     fn new(root: &str, readonly: bool) -> Self {
         PhysicalFS {
@@ -151,7 +173,8 @@ impl PhysicalFS {
         let relative_path = pathbuf.components().filter_map(component_filter);
         let mut full_path = (*self.root).clone();
         full_path.extend(relative_path);
-        full_path.canonicalize()?;
+        // 
+        //full_path.canonicalize()?;
         if !full_path.starts_with(&*self.root) {
             panic!("Tried to create an AltPath that exits the AltrootFS's root dir");
         }
@@ -168,15 +191,15 @@ impl Debug for PhysicalFS {
 
 impl VFS for PhysicalFS {
     /// Open the file at this path with the given options
-    fn open_with_options(&self, path: &Path, openOptions: &OpenOptions) -> GameResult<Box<VFile>> {
+    fn open_with_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
         if self.readonly {
-            if openOptions.write || openOptions.create || openOptions.append || openOptions.truncate {
+            if open_options.write || open_options.create || open_options.append || open_options.truncate {
                 let msg = format!("Cannot alter file {:?} in root {:?}, filesystem read-only", path, self);
                 return Err(GameError::FilesystemError(msg));
             }
         }
         let p = self.get_absolute(path)?;
-        openOptions.to_fs_openoptions().open(p)
+        open_options.to_fs_openoptions().open(p)
             .map(|x| Box::new(x) as Box<VFile>)
             .map_err(GameError::from)
     }
@@ -187,6 +210,8 @@ impl VFS for PhysicalFS {
             return Err(GameError::FilesystemError("Tried to make directory {} but FS is read-only".to_string()));
         }
         let p = self.get_absolute(path)?;
+        println!("Creating {:?}", p);
+        panic!("fdsfdsafs");
         fs::DirBuilder::new()
             .recursive(true)
             .create(p)
@@ -270,9 +295,9 @@ impl OverlayFS {
 
 impl VFS for OverlayFS {
     /// Open the file at this path with the given options
-    fn open_with_options(&self, path: &Path, openOptions: &OpenOptions) -> GameResult<Box<VFile>> {
+    fn open_with_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
         for vfs in &self.roots {
-            match vfs.open_with_options(path, openOptions) {
+            match vfs.open_with_options(path, open_options) {
                 Err(_) => (),
                 f => return f,
             }
@@ -347,6 +372,39 @@ impl VFS for OverlayFS {
 mod tests {
     use std::io::{self, BufRead};
     use super::*;
+
+    fn test_path_filtering() {
+        let p = path::Path::new("/foo");
+        assert!(path_is_valid(p));
+
+        let p = path::Path::new("/foo/");
+        assert!(path_is_valid(p));
+
+        let p = path::Path::new("/foo/bar.txt");
+        assert!(path_is_valid(p));
+
+        let p = path::Path::new("/");
+        assert!(path_is_valid(p));
+
+        let p = path::Path::new("../foo");
+        assert!(!path_is_valid(p));
+
+        let p = path::Path::new("foo");
+        assert!(!path_is_valid(p));
+
+        let p = path::Path::new("/foo/../../");
+        assert!(!path_is_valid(p));
+
+        let p = path::Path::new("/foo/../bop");
+        assert!(!path_is_valid(p));
+        
+        let p = path::Path::new("/../bar");
+        assert!(!path_is_valid(p));
+
+        let p = path::Path::new("");
+        assert!(!path_is_valid(p));
+    }
+    
     #[test]
     fn test_read() {
         let fs = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), true);
@@ -372,4 +430,21 @@ mod tests {
         assert!(!ofs.exists("foobaz.rs"));
     }
 
+    #[test]
+    fn test_physical_all() {
+        let fs = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), false);
+        let testdir = "testdir";
+        let f1 = "testdir/file1.txt";
+        let f2 = "testdir/file2.txt";
+
+        // Create and delete test dir
+        //assert!(!fs.exists(testdir));
+        //fs.mkdir(testdir).unwrap();
+        //assert!(fs.exists(testdir));
+        //fs.rm(testdir).unwrap();
+        //assert!(!fs.exists(testdir));
+
+        //fs.create(testdir);
+    }
+    
 }
