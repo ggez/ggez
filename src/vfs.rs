@@ -1,15 +1,24 @@
 use std::sync::Arc;
 use std::path;
+use std::fs;
+use std::fmt::{self, Debug};
+use std::io::{self, Read, Write, Seek};
 
 use {GameResult, GameError};
 
 pub type Path = str;
-
+/*
 pub struct VFile {
+    handle: fs::File,
 }
+*/
 
-pub struct VMetadata {
-}
+
+pub trait VFile: Read + Write + Seek + Debug {}
+
+impl<T> VFile for T where T: Read + Write + Seek + Debug {}
+
+/*
 /// Options for opening files
 #[derive(Debug, Default)]
 pub struct OpenOptions {
@@ -56,48 +65,37 @@ impl OpenOptions {
         self
     }
 }
+*/
 
 use std::borrow::Cow;
 use std::path::PathBuf;
 
-pub trait VFS {
+
+pub trait VFS: Debug {
     /// Open the file at this path with the given options
-    fn open_with_options(&self, path: &Path, openOptions: &OpenOptions) -> GameResult<Box<VFile>>;
+    fn open_with_options(&self, path: &Path, openOptions: &fs::OpenOptions) -> GameResult<Box<VFile>>;
     /// Open the file at this path for reading
     fn open(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, OpenOptions::new().read(true))
+        self.open_with_options(path, fs::OpenOptions::new().read(true))
     }
     /// Open the file at this path for writing, truncating it if it exists already
     fn create(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, OpenOptions::new().write(true).create(true).truncate(true))
+        self.open_with_options(path, fs::OpenOptions::new().write(true).create(true).truncate(true))
     }
     /// Open the file at this path for appending, creating it if necessary
     fn append(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, OpenOptions::new().write(true).create(true).append(true))
+        self.open_with_options(path, fs::OpenOptions::new().write(true).create(true).append(true))
     }
     /// Create a directory at the location by this path
     fn mkdir(&self, path: &Path) -> GameResult<()>;
 
-    /// Remove a file
+    /// Remove a file or an empty directory.
     fn rm(&self, path: &Path) -> GameResult<()>;
 
     /// Remove a file or directory and all its contents
     fn rmrf(&self, path: &Path) -> GameResult<()>;
 
-
-    /// The file name of this path
-    fn file_name(&self, path: &Path) -> Option<String>;
-
-    /// The extension of this filename
-    fn extension(&self, path: &Path) -> Option<String>;
-
-    /// append a segment to this path
-    fn resolve(&self, path: &Path, path: &String) -> String;
-
-    /// Get the parent path
-    fn parent(&self, path: &Path) -> Option<String>;
-
-    /// Check if the file existst
+    /// Check if the file exists
     fn exists(&self, path: &Path) -> bool;
 
     /// Get the file's metadata
@@ -105,92 +103,22 @@ pub trait VFS {
 
     /// Retrieve the path entries in this path
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>>;
-
-    /// Retrieve a string representation
-    fn to_string(&self, path: &Path) -> String;
-
-    /// Retrieve a standard &PathBuf, if available (usually only for PhysicalFS)
-    fn to_path_buf(&self, path: &Path) -> Option<&PathBuf>;
 }
 
-struct VfsList {
-    roots: Vec<Box<VFS>>,
-}
+pub trait VMetadata {}
 
 /// A VFS that points to a directory and uses it as the root of its
 /// file heirarchy.
 pub struct PhysicalFS {
     root: Arc<PathBuf>,
+    readonly: bool,
 }
 
-impl VFS for PhysicalFS {
-    /// Open the file at this path with the given options
-    fn open_with_options(&self, path: &Path, openOptions: &OpenOptions) -> GameResult<Box<VFile>> {
-        Err(GameError::FilesystemError("Foo!".to_string()))
-    }
-    
-    /// Create a directory at the location by this path
-    fn mkdir(&self, path: &Path) -> GameResult<()> {
-        Ok(())
-    }
+pub struct PhysicalMetadata(fs::Metadata);
 
-    /// Remove a file
-    fn rm(&self, path: &Path) -> GameResult<()> {
-        Ok(())
-    }
-
-    /// Remove a file or directory and all its contents
-    fn rmrf(&self, path: &Path) -> GameResult<()> {
-        Ok(())
-    }
+impl VMetadata for PhysicalMetadata {}
 
 
-    /// The file name of this path
-    fn file_name(&self, path: &Path) -> Option<String> {
-        None
-    }
-
-    /// The extension of this filename
-    fn extension(&self, path: &Path) -> Option<String> {
-        None
-    }
-
-    /// append a segment to this path
-    fn resolve(&self, path: &Path, path_other: &String) -> String {
-        "".to_string()
-    }
-
-    /// Get the parent path
-    fn parent(&self, path: &Path) -> Option<String> {
-        None
-    }
-
-    /// Check if the file existst
-    fn exists(&self, path: &Path) -> bool {
-        false
-    }
-
-    /// Get the file's metadata
-    fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
-        Err(GameError::FilesystemError("Foo!".to_string()))
-    }
-
-    /// Retrieve the path entries in this path
-    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>> {
-        Err(GameError::FilesystemError("Foo!".to_string()))
-    }
-
-    /// Retrieve a string representation
-    fn to_string(&self, path: &Path) -> String {
-        "".to_string()
-    }
-
-    /// Retrieve a standard &PathBuf, if available (usually only for PhysicalFS)
-    fn to_path_buf(&self, path: &Path) -> Option<&PathBuf> {
-        None
-    }
-
-}
 
 /// Helper function to turn a path::Component into an Option<String> iff the Component
 /// is a normal portion.
@@ -200,13 +128,14 @@ fn component_filter(comp: path::Component) -> Option<String> {
     match comp {
         path::Component::Normal(osstr) => Some(osstr.to_string_lossy().into_owned()),
         _ => None
-}
+    }
 }
 
 impl PhysicalFS {
-    fn new(root: &str) -> Self {
+    fn new(root: &str, readonly: bool) -> Self {
         PhysicalFS {
             root: Arc::new(root.into()),
+            readonly: readonly,
         }
     }
 
@@ -214,23 +143,225 @@ impl PhysicalFS {
     /// a new PathBuf containing the canonical
     /// absolute path you get when appending it
     /// to this filesystem's root.
-    fn get_absolute(&self, p: &str) -> PathBuf {
+    fn get_absolute(&self, p: &str) -> GameResult<PathBuf> {
         let pathbuf = PathBuf::from(p);
         let relative_path = pathbuf.components().filter_map(component_filter);
         let mut full_path = (*self.root).clone();
         full_path.extend(relative_path);
-        full_path.canonicalize().unwrap();
+        full_path.canonicalize()?;
         if !full_path.starts_with(&*self.root) {
             panic!("Tried to create an AltPath that exits the AltrootFS's root dir");
         }
-        full_path
+        Ok(full_path)
     }
 }
 
+impl Debug for PhysicalFS {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "<PhysicalFS root: {}>", self.root.display())
+    }
+}
+
+
+impl VFS for PhysicalFS {
+    /// Open the file at this path with the given options
+    /// XXX: TODO: Check for read-only
+    fn open_with_options(&self, path: &Path, openOptions: &fs::OpenOptions) -> GameResult<Box<VFile>> {
+        let p = self.get_absolute(path)?;
+        openOptions.open(p)
+            .map(|x| Box::new(x) as Box<VFile>)
+            .map_err(GameError::from)
+    }
+    
+    /// Create a directory at the location by this path
+    fn mkdir(&self, path: &Path) -> GameResult<()> {
+        if self.readonly {
+            return Err(GameError::FilesystemError("Tried to make directory {} but FS is read-only".to_string()));
+        }
+        let p = self.get_absolute(path)?;
+        fs::DirBuilder::new()
+            .recursive(true)
+            .create(p)
+            .map_err(GameError::from)
+    }
+
+    /// Remove a file
+    fn rm(&self, path: &Path) -> GameResult<()> {
+        if self.readonly {
+            return Err(GameError::FilesystemError("Tried to remove file {} but FS is read-only".to_string()));
+        }
+
+        let p = self.get_absolute(path)?;
+        if p.is_dir() {
+            fs::remove_dir(p)
+                .map_err(GameError::from)
+        } else {
+            fs::remove_file(p)
+                .map_err(GameError::from)
+        }
+    }
+
+    /// Remove a file or directory and all its contents
+    fn rmrf(&self, path: &Path) -> GameResult<()> {
+        if self.readonly {
+            return Err(GameError::FilesystemError("Tried to remove file/dir {} but FS is read-only".to_string()));
+        }
+        
+        let p = self.get_absolute(path)?;
+        if p.is_dir() {
+            fs::remove_dir_all(p)
+                .map_err(GameError::from)
+        } else {
+            fs::remove_file(p)
+                .map_err(GameError::from)
+        }
+    }
+
+    /// Check if the file exists
+    fn exists(&self, path: &Path) -> bool {
+        match self.get_absolute(path) {
+            Ok(p) => p.exists(),
+            _ => false
+        }
+    }
+
+    /// Get the file's metadata
+    fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
+        let p = self.get_absolute(path)?;
+        p.metadata()
+            .map(|m| Box::new(PhysicalMetadata(m)) as Box<VMetadata>)
+            .map_err(GameError::from)
+    }
+
+    /// Retrieve the path entries in this path
+    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>> {
+        // TODO
+        Err(GameError::FilesystemError("Foo!".to_string()))
+    }
+}
+
+/// A structure that joins several VFS's together in order.
+/// VecDeque instead of Vec?
+#[derive(Debug)]
+struct OverlayFS {
+    roots: Vec<Box<VFS>>,
+}
+
+impl OverlayFS {
+    fn new() -> Self {
+        Self {
+            roots: Vec::new()
+        }
+    }
+
+    /// Adds a new VFS to the end of the list.
+    fn push(&mut self, fs: Box<VFS>) {
+        &self.roots.push(fs);
+    }
+}
+
+impl VFS for OverlayFS {
+    /// Open the file at this path with the given options
+    fn open_with_options(&self, path: &Path, openOptions: &fs::OpenOptions) -> GameResult<Box<VFile>> {
+        for vfs in &self.roots {
+            match vfs.open_with_options(path, openOptions) {
+                Err(_) => (),
+                f => return f,
+            }
+        }
+        Err(GameError::FilesystemError(format!("File {} not found", path)))
+    }
+    
+    /// Create a directory at the location by this path
+    fn mkdir(&self, path: &Path) -> GameResult<()> {
+        for vfs in &self.roots {
+            match vfs.mkdir(path) {
+                Err(_) => (),
+                f => return f,
+            }
+        }
+        Err(GameError::FilesystemError(format!("Could not find anywhere writeable to make dir {}", path)))
+    }
+
+    /// Remove a file
+    fn rm(&self, path: &Path) -> GameResult<()> {
+        for vfs in &self.roots {
+            match vfs.rm(path) {
+                Err(_) => (),
+                f => return f,
+            }
+        }
+        Err(GameError::FilesystemError(format!("Could not remove file {}", path)))
+    }
+
+    /// Remove a file or directory and all its contents
+    fn rmrf(&self, path: &Path) -> GameResult<()> {
+        for vfs in &self.roots {
+            match vfs.rmrf(path) {
+                Err(_) => (),
+                f => return f,
+            }
+        }
+        Err(GameError::FilesystemError(format!("Could not remove file/dir {}", path)))
+    }
+
+    /// Check if the file exists
+    fn exists(&self, path: &Path) -> bool {
+        for vfs in &self.roots {
+            if vfs.exists(path) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// Get the file's metadata
+    fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
+        for vfs in &self.roots {
+            match vfs.metadata(path) {
+                Err(_) => (),
+                f => return f,
+            }
+        }
+        Err(GameError::FilesystemError(format!("Could not remove file/dir {}", path)))
+    }
+
+    /// Retrieve the path entries in this path
+    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>> {
+        // TODO: This is tricky 'cause we have to actually merge iterators together...
+        Err(GameError::FilesystemError("Foo!".to_string()))
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
+    use std::io::{self, BufRead};
+    use super::*;
     #[test]
-    fn test_test() {
-        assert!(true);
+    fn test_read() {
+        let fs = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), true);
+        let f = fs.open("Cargo.toml").unwrap();
+        let mut bf = io::BufReader::new(f);
+        let mut s = String::new();
+        bf.read_line(&mut s).unwrap();
+        assert_eq!(&s, "[package]\n");
     }
+
+    #[test]
+    fn test_read_overlay() {
+        let fs1 = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), true);
+        let mut f2path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        f2path.push("src");
+        let fs2 = PhysicalFS::new(f2path.to_str().unwrap(), true);
+        let mut ofs = OverlayFS::new();
+        ofs.push(Box::new(fs1));
+        ofs.push(Box::new(fs2));
+        
+        assert!(ofs.exists("Cargo.toml"));
+        assert!(ofs.exists("lib.rs"));
+        assert!(!ofs.exists("foobaz.rs"));
+    }
+
 }
