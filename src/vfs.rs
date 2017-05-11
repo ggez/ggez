@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::path;
+use std::path::{self, PathBuf};
 use std::fs;
 use std::fmt::{self, Debug};
 use std::io::{self, Read, Write, Seek};
@@ -7,19 +7,16 @@ use std::io::{self, Read, Write, Seek};
 use {GameResult, GameError};
 
 pub type Path = str;
-/*
-pub struct VFile {
-    handle: fs::File,
-}
-*/
-
 
 pub trait VFile: Read + Write + Seek + Debug {}
 
 impl<T> VFile for T where T: Read + Write + Seek + Debug {}
 
-/*
+
 /// Options for opening files
+///
+/// We need our own version of this structure because the one in
+/// std annoyingly doesn't let you get data out of it.
 #[derive(Debug, Default)]
 pub struct OpenOptions {
     read: bool,
@@ -64,27 +61,33 @@ impl OpenOptions {
         self.truncate = truncate;
         self
     }
+
+    fn to_fs_openoptions(&self) -> fs::OpenOptions {
+        let mut opt = fs::OpenOptions::new();
+        opt.read(self.read)
+            .write(self.write)
+            .create(self.create)
+            .append(self.append)
+            .truncate(self.truncate)
+            .create(self.create);
+        opt
+    }
 }
-*/
-
-use std::borrow::Cow;
-use std::path::PathBuf;
-
 
 pub trait VFS: Debug {
     /// Open the file at this path with the given options
-    fn open_with_options(&self, path: &Path, openOptions: &fs::OpenOptions) -> GameResult<Box<VFile>>;
+    fn open_with_options(&self, path: &Path, openOptions: &OpenOptions) -> GameResult<Box<VFile>>;
     /// Open the file at this path for reading
     fn open(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, fs::OpenOptions::new().read(true))
+        self.open_with_options(path, OpenOptions::new().read(true))
     }
     /// Open the file at this path for writing, truncating it if it exists already
     fn create(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, fs::OpenOptions::new().write(true).create(true).truncate(true))
+        self.open_with_options(path, OpenOptions::new().write(true).create(true).truncate(true))
     }
     /// Open the file at this path for appending, creating it if necessary
     fn append(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, fs::OpenOptions::new().write(true).create(true).append(true))
+        self.open_with_options(path, OpenOptions::new().write(true).create(true).append(true))
     }
     /// Create a directory at the location by this path
     fn mkdir(&self, path: &Path) -> GameResult<()>;
@@ -165,10 +168,15 @@ impl Debug for PhysicalFS {
 
 impl VFS for PhysicalFS {
     /// Open the file at this path with the given options
-    /// XXX: TODO: Check for read-only
-    fn open_with_options(&self, path: &Path, openOptions: &fs::OpenOptions) -> GameResult<Box<VFile>> {
+    fn open_with_options(&self, path: &Path, openOptions: &OpenOptions) -> GameResult<Box<VFile>> {
+        if self.readonly {
+            if openOptions.write || openOptions.create || openOptions.append || openOptions.truncate {
+                let msg = format!("Cannot alter file {:?} in root {:?}, filesystem read-only", path, self);
+                return Err(GameError::FilesystemError(msg));
+            }
+        }
         let p = self.get_absolute(path)?;
-        openOptions.open(p)
+        openOptions.to_fs_openoptions().open(p)
             .map(|x| Box::new(x) as Box<VFile>)
             .map_err(GameError::from)
     }
@@ -262,7 +270,7 @@ impl OverlayFS {
 
 impl VFS for OverlayFS {
     /// Open the file at this path with the given options
-    fn open_with_options(&self, path: &Path, openOptions: &fs::OpenOptions) -> GameResult<Box<VFile>> {
+    fn open_with_options(&self, path: &Path, openOptions: &OpenOptions) -> GameResult<Box<VFile>> {
         for vfs in &self.roots {
             match vfs.open_with_options(path, openOptions) {
                 Err(_) => (),
