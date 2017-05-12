@@ -2,11 +2,13 @@
 //!
 //! This module provides access to files in specific places:
 //!
-//! * The `resources/` subdirectory in the same directory as the program executable,
-//! * The `resources.zip` file in the same directory as the program executable,
-//! * The root folder of the game's "user" directory which is in a
-//! platform-dependent location, such as `~/.local/share/ggez/gameid/` on Linux.
-//! The `gameid` part is the ID passed to `Game::new()`.
+//! * The `resources/` subdirectory in the same directory as the
+//! program executable, * The `resources.zip` file in the same
+//! directory as the program executable, * The root folder of the
+//! game's "user" directory which is in a platform-dependent location,
+//! such as `~/.local/share/author/gameid/` on Linux.  The `gameid`
+//! and `author` parts are the strings passed to
+//! `Context::load_from_conf()`.
 //!
 //! Files will be looked for in these locations in order, and the first one
 //! found used.  That allows game assets to be easily distributed as an archive
@@ -50,10 +52,6 @@ const INVALID_FILENAME: &'static str = "This invalid filename will never exist (
 /// A structure that contains the filesystem state and cache.
 #[derive(Debug)]
 pub struct Filesystem {
-    base_path: path::PathBuf,
-    user_path: path::PathBuf,
-    resource_path: path::PathBuf,
-    resource_zip: Option<zip::ZipArchive<fs::File>>,
     vfs: vfs::OverlayFS,
 }
 
@@ -109,7 +107,9 @@ impl<'a> io::Write for File<'a> {
 }
 
 
-/// This needs to be more better or something.
+/// A list of paths.
+///
+/// BUGGO: TODO: This needs to be more better or something, maybe
 pub type PathList = Vec<String>;
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
@@ -132,53 +132,52 @@ impl Filesystem {
             author: author,
         };
         let mut root_path = env::current_exe()?;
-        let pref_path = get_app_root(AppDataType::UserData, &app_info)?;
+
         // Ditch the filename (if any)
         if let Some(_) = root_path.file_name() {
             root_path.pop();
         }
 
-        let mut resource_path = root_path.clone();
-        resource_path.push("resources");
-        if !resource_path.exists() || !resource_path.is_dir() {
-            // Do we want to warn here?  ...maybe not.
-        }
-
-        // Check for resources zip file.
-        let mut resource_zip = None;
-        let mut resource_zip_path = root_path.clone();
-        resource_zip_path.push("resources.zip");
-        if !resource_zip_path.exists() || !resource_zip_path.is_file() {
-            // Do we want to warn here?  ...maybe not.
-        } else {
-            // We keep this file open so we don't have to re-parse
-            // the zip file every time we load something out of it.
-            let f = fs::File::open(resource_zip_path)?;
-            let z = zip::ZipArchive::new(f)?;
-            resource_zip = Some(z);
-        }
-
-
-        // Set up VFS to merge resource path, root path, and (eventually) zip path.
+        // Set up VFS to merge resource path, root path, and zip path.
+        // TODO: Make these in the right order.
         let mut overlay = vfs::OverlayFS::new();
+        // <root>/resources.zip
         {
-            let fss = &[resource_path.to_str().unwrap(), root_path.to_str().unwrap()];
-            for fs in fss {
-                let physfs = vfs::PhysicalFS::new(fs, true);
-                overlay.push(Box::new(physfs));
+            let mut resource_zip_path = root_path.clone();
+            resource_zip_path.push("resources.zip");
+            if resource_zip_path.exists() {
+                let p = convenient_path_to_str(&resource_zip_path)?;
+                let zipfs = vfs::ZipFS::new(p);
+                overlay.push(Box::new(zipfs));
             }
         }
-        // Save game dir is read-write
-        let physfs = vfs::PhysicalFS::new(pref_path.to_str().unwrap(), false);
-        overlay.push(Box::new(physfs));
+        // <game exe root>/resources/
+        {
+            let mut resource_path = root_path.clone();
+            resource_path.push("resources");
+            let p = convenient_path_to_str(&resource_path)?;
+            let physfs = vfs::PhysicalFS::new(p, true);
+            overlay.push(Box::new(physfs));
+        }
 
-        // Get user path, but it doesn't really matter if it
-        // doesn't exist for us so there's no real setup.
+        // Per-user data dir,
+        // ~/.local/share/whatever/
+        {
+            let user_data_path = app_root(AppDataType::UserData, &app_info)?;
+            let p = convenient_path_to_str(&user_data_path)?;
+            let physfs = vfs::PhysicalFS::new(p, true);
+            overlay.push(Box::new(physfs));
+        }
+
+        // Writeable local dir, ~/.config/whatever/
+        // Save game dir is read-write
+        {
+            let user_path = get_app_root(AppDataType::UserConfig, &app_info)?;
+            let p = convenient_path_to_str(&user_path)?;
+            let physfs = vfs::PhysicalFS::new(p, false);
+            overlay.push(Box::new(physfs));
+        }
         let fs = Filesystem {
-            resource_path: resource_path,
-            base_path: root_path,
-            user_path: pref_path,
-            resource_zip: resource_zip,
             vfs: overlay,
         };
 
@@ -303,6 +302,7 @@ impl Filesystem {
 */
     }
 
+    /*
     /// Takes a relative path and returns an absolute PathBuf
     /// based in the Filesystem's root path.
     fn rel_to_resource_path<P: AsRef<path::Path>>(&self, path: P) -> GameResult<path::PathBuf> {
@@ -341,7 +341,7 @@ impl Filesystem {
         resource_zip_path.push("resources.zip");
         resource_zip_path
     }
-
+*/
     /// Check whether a file or directory exists.
     pub fn exists<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
         let p: &path::Path = path.as_ref();
@@ -428,6 +428,10 @@ impl Filesystem {
 */
     }
 
+    /*
+BUGGO: TODO: These might still be useful.
+But we should cache the info a little more clearly, or
+just pluck the paths out of the VFS.
     /// Return the full path to the directory containing the exe
     pub fn get_root_dir(&self) -> &path::Path {
         &self.base_path
@@ -443,6 +447,7 @@ impl Filesystem {
     pub fn get_resource_dir(&self) -> &path::Path {
         &self.resource_path
     }
+*/
 
     /// Returns an iterator over all files and directories in the resource directory,
     /// in no particular order.
@@ -450,11 +455,15 @@ impl Filesystem {
     /// Lists the base directory if an empty path is given.
     ///
     /// TODO: Make it iterate over the zip file as well!
-    /// And the user dir.  This probably won't happen until
-    /// returning `impl Trait` hits stable, honestly.
+    /// And the user dir.
+    ///
+    /// BUGGO: We have no real way to list the contents of a SINGLE directory,
+    /// which we might want if, say, we want to load every file in `/sprites` or such.
+    /// Fix this, no matter how many times you have to iterate through the resources zip.
     pub fn read_dir(&mut self) -> GameResult<PathList> {
         unimplemented!();
-        /// BUGGO: Implement with VFS!
+        // BUGGO: Implement with VFS!
+        /*
         let mut pathlist: HashSet<String> = HashSet::new();
         {
             let p = self.resource_path.clone();
@@ -488,6 +497,7 @@ impl Filesystem {
             }
         }
         Ok(pathlist.into_iter().collect())
+*/
     }
 
     /// Prints the contents of all data directories.
@@ -495,9 +505,10 @@ impl Filesystem {
     /// TODO: This should return an iterator, and be called iter()
     pub fn print_all(&mut self) -> GameResult<()> {
         unimplemented!();
-        /// BUGGO: Implement with VFS!
+        // BUGGO: Implement with VFS!
 
-        
+
+        /*
         // Print resource files
         {
             let p = self.resource_path.clone();
@@ -528,6 +539,7 @@ impl Filesystem {
             }
         }
         Ok(())
+*/
     }
 
 
@@ -575,10 +587,6 @@ mod tests {
         let mut ofs = vfs::OverlayFS::new();
         ofs.push(Box::new(physfs));
         Filesystem {
-            resource_path: path.clone(),
-            user_path: path.clone(),
-            base_path: path.clone(),
-            resource_zip: None,
             vfs: ofs,
         }
 

@@ -557,14 +557,6 @@ impl VFS for ZipFS {
     }
 }
 
-
-// pub trait VMetadata {
-//     fn is_dir(&self) -> bool;
-//     fn is_file(&self) -> bool;
-//     fn len(&self) -> u64;
-// }
-
-
 #[cfg(test)]
 mod tests {
     use std::io::{self, BufRead};
@@ -633,7 +625,6 @@ mod tests {
         let fs = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), false);
         let testdir = "/testdir";
         let f1 = "/testdir/file1.txt";
-        let f2 = "/testdir/file2.txt";
         
         // Delete testdir if it is still lying around
         if fs.exists(testdir) {
