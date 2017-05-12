@@ -19,6 +19,11 @@ categories = ["game-engines"]
 name = "ggez"
 path = "src/lib.rs"
 
+[features]
+# If this feature is enabled, it will add <cargo root dir>/resources/ to
+# the resource search path.
+cargo-resource-root = []
+
 [profile.dev]
 codegen-units=4
 

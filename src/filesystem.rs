@@ -177,6 +177,17 @@ impl Filesystem {
             let physfs = vfs::PhysicalFS::new(p, false);
             overlay.push(Box::new(physfs));
         }
+
+        // Cargo manifest dir!
+        #[cfg(feature = "cargo-resource-root")]
+        {
+            let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            path.push("resources");
+            let p = convenient_path_to_str(&path)?;
+            let physfs = vfs::PhysicalFS::new(p, false);
+            overlay.push(Box::new(physfs));
+        }
+
         let fs = Filesystem {
             vfs: overlay,
         };
