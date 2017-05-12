@@ -29,25 +29,18 @@ use std::fs;
 use std::io;
 use std::path;
 
-use std::collections::HashSet;
-
 use app_dirs::*;
 
 use GameError;
 use GameResult;
 use conf;
 use vfs;
-use vfs::{VFS, VMetadata};
+use vfs::VFS;
 
 use zip;
 
 
 const CONFIG_NAME: &'static str = "conf.toml";
-const INVALID_FILENAME: &'static str = "This invalid filename will never exist (hopefully) and if \
-                                        you manage to create a file that does have this name and \
-                                        it causes mysterious trouble, well, congratulations!";
-
-
 
 /// A structure that contains the filesystem state and cache.
 #[derive(Debug)]
@@ -188,9 +181,7 @@ impl Filesystem {
             overlay.push(Box::new(physfs));
         }
 
-        let fs = Filesystem {
-            vfs: overlay,
-        };
+        let fs = Filesystem { vfs: overlay };
 
         Ok(fs)
     }
@@ -200,9 +191,10 @@ impl Filesystem {
     /// in read-only mode.
     pub fn open<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
         let p: &path::Path = path.as_ref();
-        self.vfs.open(p.to_str().unwrap())
+        self.vfs
+            .open(p.to_str().unwrap())
             .map(|f| File::VfsFile(f))
-        
+
     }
 
     /// Opens a file in the user directory with the given `std::fs::OpenOptions`.
@@ -214,9 +206,14 @@ impl Filesystem {
                                               -> GameResult<File> {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
-        self.vfs.open_options(pathstr, options)
+        self.vfs
+            .open_options(pathstr, options)
             .map(|f| File::VfsFile(f))
-            .map_err(|e| GameError::ResourceLoadError(format!("File {:?} not found", p)))
+            .map_err(|e| {
+                GameError::ResourceLoadError(format!("Tried to open {:?} but got error: {:?}",
+                                                     p,
+                                                     e))
+            })
     }
 
     /// Creates a new file in the user directory and opens it
@@ -224,7 +221,8 @@ impl Filesystem {
     pub fn create<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
-        self.vfs.create(pathstr)
+        self.vfs
+            .create(pathstr)
             .map(|f| File::VfsFile(f))
     }
 
@@ -263,7 +261,8 @@ impl Filesystem {
     pub fn is_file<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
-        self.vfs.metadata(pathstr)
+        self.vfs
+            .metadata(pathstr)
             .map(|m| m.is_file())
             .unwrap_or(false)
     }
@@ -272,7 +271,8 @@ impl Filesystem {
     pub fn is_dir<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
-        self.vfs.metadata(pathstr)
+        self.vfs
+            .metadata(pathstr)
             .map(|m| m.is_dir())
             .unwrap_or(false)
     }
@@ -367,9 +367,7 @@ mod tests {
         let physfs = vfs::PhysicalFS::new(path.to_str().unwrap(), false);
         let mut ofs = vfs::OverlayFS::new();
         ofs.push(Box::new(physfs));
-        Filesystem {
-            vfs: ofs,
-        }
+        Filesystem { vfs: ofs }
 
     }
 

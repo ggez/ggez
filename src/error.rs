@@ -167,7 +167,10 @@ impl From<image::ImageError> for GameError {
 
 impl From<gfx::PipelineStateError<std::string::String>> for GameError {
     fn from(e: gfx::PipelineStateError<std::string::String>) -> GameError {
-        let errstr = format!("Error constructing pipeline!\nThis should probably not be happening; it probably means an error in a shader or something.\nError was: {:?}", e);
+        let errstr = format!("Error constructing pipeline!\nThis should probably not be \
+                              happening; it probably means an error in a shader or \
+                              something.\nError was: {:?}",
+                             e);
         GameError::VideoError(errstr)
     }
 }
@@ -177,14 +180,13 @@ impl From<gfx::CombinedError> for GameError {
         let errstr = format!("Texture+view load error: {}", e.description());
         GameError::VideoError(errstr)
     }
-    
 }
 
 impl<T> From<gfx::UpdateError<T>> for GameError
-    where T: fmt::Debug + fmt::Display + 'static {
+    where T: fmt::Debug + fmt::Display + 'static
+{
     fn from(e: gfx::UpdateError<T>) -> GameError {
         let errstr = format!("Buffer update error: {}", e);
         GameError::VideoError(errstr)
     }
-    
 }

@@ -85,11 +85,13 @@ pub trait VFS: Debug {
     }
     /// Open the file at this path for writing, truncating it if it exists already
     fn create(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_options(path, OpenOptions::new().write(true).create(true).truncate(true))
+        self.open_options(path,
+                          OpenOptions::new().write(true).create(true).truncate(true))
     }
     /// Open the file at this path for appending, creating it if necessary
     fn append(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_options(path, OpenOptions::new().write(true).create(true).append(true))
+        self.open_options(path,
+                          OpenOptions::new().write(true).create(true).append(true))
     }
     /// Create a directory at the location by this path
     fn mkdir(&self, path: &Path) -> GameResult<()>;
@@ -137,7 +139,6 @@ impl VMetadata for PhysicalMetadata {
     fn len(&self) -> u64 {
         self.0.len()
     }
-
 }
 
 
@@ -149,7 +150,7 @@ impl VMetadata for PhysicalMetadata {
 /// starting with a RootDir, and zero or more Normal components.
 ///
 /// We gotta return a new path because there's apparently no real good way
-/// to turn an absolute path into a relative path with the same 
+/// to turn an absolute path into a relative path with the same
 /// components (other than the first), and pushing an absolute Path
 /// onto a PathBuf just completely nukes its existing contents.
 /// Thanks, Obama.
@@ -199,7 +200,9 @@ impl PhysicalFS {
             println!("Path is {:?}", root_path);
             Ok(root_path)
         } else {
-            let msg = format!("Path {:?} is not valid: must be an absolute path with no references to parent directories", p);
+            let msg = format!("Path {:?} is not valid: must be an absolute path with no \
+                               references to parent directories",
+                              p);
             Err(GameError::FilesystemError(msg))
         }
     }
@@ -216,21 +219,27 @@ impl VFS for PhysicalFS {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
         if self.readonly {
-            if open_options.write || open_options.create || open_options.append || open_options.truncate {
-                let msg = format!("Cannot alter file {:?} in root {:?}, filesystem read-only", path, self);
+            if open_options.write || open_options.create || open_options.append ||
+               open_options.truncate {
+                let msg = format!("Cannot alter file {:?} in root {:?}, filesystem read-only",
+                                  path,
+                                  self);
                 return Err(GameError::FilesystemError(msg));
             }
         }
         let p = self.get_absolute(path)?;
-        open_options.to_fs_openoptions().open(p)
+        open_options.to_fs_openoptions()
+            .open(p)
             .map(|x| Box::new(x) as Box<VFile>)
             .map_err(GameError::from)
     }
-    
+
     /// Create a directory at the location by this path
     fn mkdir(&self, path: &Path) -> GameResult<()> {
         if self.readonly {
-            return Err(GameError::FilesystemError("Tried to make directory {} but FS is read-only".to_string()));
+            return Err(GameError::FilesystemError("Tried to make directory {} but FS is \
+                                                   read-only"
+                .to_string()));
         }
         let p = self.get_absolute(path)?;
         //println!("Creating {:?}", p);
@@ -243,32 +252,31 @@ impl VFS for PhysicalFS {
     /// Remove a file
     fn rm(&self, path: &Path) -> GameResult<()> {
         if self.readonly {
-            return Err(GameError::FilesystemError("Tried to remove file {} but FS is read-only".to_string()));
+            return Err(GameError::FilesystemError("Tried to remove file {} but FS is read-only"
+                .to_string()));
         }
 
         let p = self.get_absolute(path)?;
         if p.is_dir() {
-            fs::remove_dir(p)
-                .map_err(GameError::from)
+            fs::remove_dir(p).map_err(GameError::from)
         } else {
-            fs::remove_file(p)
-                .map_err(GameError::from)
+            fs::remove_file(p).map_err(GameError::from)
         }
     }
 
     /// Remove a file or directory and all its contents
     fn rmrf(&self, path: &Path) -> GameResult<()> {
         if self.readonly {
-            return Err(GameError::FilesystemError("Tried to remove file/dir {} but FS is read-only".to_string()));
+            return Err(GameError::FilesystemError("Tried to remove file/dir {} but FS is \
+                                                   read-only"
+                .to_string()));
         }
-        
+
         let p = self.get_absolute(path)?;
         if p.is_dir() {
-            fs::remove_dir_all(p)
-                .map_err(GameError::from)
+            fs::remove_dir_all(p).map_err(GameError::from)
         } else {
-            fs::remove_file(p)
-                .map_err(GameError::from)
+            fs::remove_file(p).map_err(GameError::from)
         }
     }
 
@@ -276,7 +284,7 @@ impl VFS for PhysicalFS {
     fn exists(&self, path: &Path) -> bool {
         match self.get_absolute(path) {
             Ok(p) => p.exists(),
-            _ => false
+            _ => false,
         }
     }
 
@@ -304,9 +312,7 @@ pub struct OverlayFS {
 
 impl OverlayFS {
     pub fn new() -> Self {
-        Self {
-            roots: Vec::new()
-        }
+        Self { roots: Vec::new() }
     }
 
     /// Adds a new VFS to the end of the list.
@@ -326,7 +332,7 @@ impl VFS for OverlayFS {
         }
         Err(GameError::FilesystemError(format!("File {} not found", path)))
     }
-    
+
     /// Create a directory at the location by this path
     fn mkdir(&self, path: &Path) -> GameResult<()> {
         for vfs in &self.roots {
@@ -335,7 +341,8 @@ impl VFS for OverlayFS {
                 f => return f,
             }
         }
-        Err(GameError::FilesystemError(format!("Could not find anywhere writeable to make dir {}", path)))
+        Err(GameError::FilesystemError(format!("Could not find anywhere writeable to make dir {}",
+                                               path)))
     }
 
     /// Remove a file
@@ -409,7 +416,7 @@ impl ZipFS {
         let f = fs::File::open(filename).unwrap();
         Self {
             source: filename.to_string(),
-            archive: RefCell::new(zip::ZipArchive::new(f).unwrap())
+            archive: RefCell::new(zip::ZipArchive::new(f).unwrap()),
         }
     }
 }
@@ -431,9 +438,7 @@ impl ZipFileWrapper {
     fn new(z: &mut zip::read::ZipFile) -> Self {
         let mut b = Vec::new();
         z.read_to_end(&mut b).unwrap();
-        Self {
-            buffer: io::Cursor::new(b),
-        }
+        Self { buffer: io::Cursor::new(b) }
     }
 }
 
@@ -445,7 +450,7 @@ impl io::Read for ZipFileWrapper {
 
 
 impl io::Write for ZipFileWrapper {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+    fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
         panic!("Cannot write to a zip file!")
     }
 
@@ -513,41 +518,62 @@ impl VMetadata for ZipMetadata {
 impl VFS for ZipFS {
     fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
         // Zip is readonly
-        if open_options.write || open_options.create || open_options.append || open_options.truncate {
-            let msg = format!("Cannot alter file {:?} in zipfile {:?}, filesystem read-only", path, &self.source);
+        if open_options.write || open_options.create || open_options.append ||
+           open_options.truncate {
+            let msg = format!("Cannot alter file {:?} in zipfile {:?}, filesystem read-only",
+                              path,
+                              &self.source);
             return Err(GameError::FilesystemError(msg));
         }
-        let mut stupid_archive_borrow = self.archive.try_borrow_mut().expect("Couldn't borrow ZipArchive in ZipFS::open_options(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
+        let mut stupid_archive_borrow = self.archive
+            .try_borrow_mut()
+            .expect("Couldn't borrow ZipArchive in ZipFS::open_options(); should never happen!  \
+                     Report a bug at https://github.com/ggez/ggez/");
         let mut f = stupid_archive_borrow.by_name(path)?;
         Ok(Box::new(ZipFileWrapper::new(&mut f)) as Box<VFile>)
     }
-    
+
     fn mkdir(&self, path: &Path) -> GameResult<()> {
-        let msg = format!("Cannot mkdir {:?} in zipfile {:?}, filesystem read-only", path, &self.source);
+        let msg = format!("Cannot mkdir {:?} in zipfile {:?}, filesystem read-only",
+                          path,
+                          &self.source);
         return Err(GameError::FilesystemError(msg));
 
     }
 
     fn rm(&self, path: &Path) -> GameResult<()> {
-        let msg = format!("Cannot rm {:?} in zipfile {:?}, filesystem read-only", path, &self.source);
+        let msg = format!("Cannot rm {:?} in zipfile {:?}, filesystem read-only",
+                          path,
+                          &self.source);
         return Err(GameError::FilesystemError(msg));
     }
-    
+
     fn rmrf(&self, path: &Path) -> GameResult<()> {
-        let msg = format!("Cannot rmrf {:?} in zipfile {:?}, filesystem read-only", path, &self.source);
+        let msg = format!("Cannot rmrf {:?} in zipfile {:?}, filesystem read-only",
+                          path,
+                          &self.source);
         return Err(GameError::FilesystemError(msg));
     }
 
     fn exists(&self, path: &Path) -> bool {
-        let mut stupid_archive_borrow = self.archive.try_borrow_mut().expect("Couldn't borrow ZipArchive in ZipFS::exists(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
+        let mut stupid_archive_borrow = self.archive
+            .try_borrow_mut()
+            .expect("Couldn't borrow ZipArchive in ZipFS::exists(); should never happen!  Report \
+                     a bug at https://github.com/ggez/ggez/");
         stupid_archive_borrow.by_name(path).is_ok()
     }
 
     fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
-        let mut stupid_archive_borrow = self.archive.try_borrow_mut().expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
+        let mut stupid_archive_borrow = self.archive
+            .try_borrow_mut()
+            .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen!  \
+                     Report a bug at https://github.com/ggez/ggez/");
         match ZipMetadata::new(path, &mut stupid_archive_borrow) {
-            None => Err(GameError::FilesystemError(format!("Metadata not found in zip file for {}", path))),
-            Some(md) => Ok(Box::new(md) as Box<VMetadata>)
+            None => {
+                Err(GameError::FilesystemError(format!("Metadata not found in zip file for {}",
+                                                       path)))
+            }
+            Some(md) => Ok(Box::new(md) as Box<VMetadata>),
         }
     }
 
@@ -587,14 +613,14 @@ mod tests {
 
         let p = path::Path::new("/foo/../bop");
         assert!(sanitize_path(p).is_none());
-        
+
         let p = path::Path::new("/../bar");
         assert!(sanitize_path(p).is_none());
 
         let p = path::Path::new("");
         assert!(sanitize_path(p).is_none());
     }
-    
+
     #[test]
     fn test_read() {
         let fs = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), true);
@@ -614,7 +640,7 @@ mod tests {
         let mut ofs = OverlayFS::new();
         ofs.push(Box::new(fs1));
         ofs.push(Box::new(fs2));
-        
+
         assert!(ofs.exists("/Cargo.toml"));
         assert!(ofs.exists("/lib.rs"));
         assert!(!ofs.exists("/foobaz.rs"));
@@ -625,7 +651,7 @@ mod tests {
         let fs = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), false);
         let testdir = "/testdir";
         let f1 = "/testdir/file1.txt";
-        
+
         // Delete testdir if it is still lying around
         if fs.exists(testdir) {
             fs.rmrf(testdir).unwrap();

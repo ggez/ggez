@@ -22,25 +22,24 @@ pub struct Conf {
     /// synchronized with the monitor's draw rate.
     pub vsync: bool, 
     /* To implement still.
-                            * window_borderless: bool,
-                            * window_resizable: bool,
-                            * window_fullscreen: bool,
-                            * window_vsync: bool,
-                            *
-                            * Modules to enable
-                            * modules_audio: bool,
-                            * modules_event: bool,
-                            * modules_graphics: bool,
-                            * modules_image: bool,
-                            * modules_joystic: bool,
-                            * modules_keyboard: bool,
-                            * modules_mouse: bool,
-                            * modules_sound: bool,
-                            * modules_system: bool,
-                            * modules_timer: bool,
-                            * modules_video: bool,
-                            * modules_window: bool,
-                            * modules_thread: bool, */
+     * window_borderless: bool,
+     * window_resizable: bool,
+     * window_fullscreen: bool,
+     *
+     * Modules to enable
+     * modules_audio: bool,
+     * modules_event: bool,
+     * modules_graphics: bool,
+     * modules_image: bool,
+     * modules_joystic: bool,
+     * modules_keyboard: bool,
+     * modules_mouse: bool,
+     * modules_sound: bool,
+     * modules_system: bool,
+     * modules_timer: bool,
+     * modules_video: bool,
+     * modules_window: bool,
+     * modules_thread: bool, */
 }
 
 impl Default for Conf {

@@ -848,7 +848,7 @@ impl Image {
     /// Set the filter mode for the image.
     ///
     /// If None, it will use the global filter mode.
-    pub fn set_filter(&mut self, ctx: &mut Context, mode: FilterMode) {
+    pub fn set_filter(&mut self, mode: FilterMode) {
         self.sampler_info.filter = mode.into();
     }
 

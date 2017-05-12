@@ -1,20 +1,11 @@
-
 use std::fmt;
 use std::path;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::io::Read;
 
-use sdl2;
 use rusttype;
 use image;
-use gfx;
-use gfx::traits::Device;
-use gfx::traits::FactoryExt;
-use gfx_device_gl;
-use gfx_window_sdl;
-use gfx::format::Rgba8;
-use gfx::Factory;
 
 use super::*;
 
@@ -193,9 +184,11 @@ fn render_ttf(context: &mut Context,
         }
     }
 
+    // println!("Creating text {}, {}x{}: {:?}",
+    //text, text_width_pixels, text_height_pixels, pixel_data);
+
     // Copy the bitmap into an image, and we're basically done!
-    // BUGGO: TODO: Make sure conversions will not fail
-    // println!("Creating text {}, {}x{}: {:?}", text, text_width_pixels, text_height_pixels, pixel_data);
+    // BUGGO: TODO: Make sure int conversions will not fail
     let image = Image::from_rgba8(context,
                                   text_width_pixels as u16,
                                   text_height_pixels as u16,
@@ -256,16 +249,15 @@ fn render_bitmap(context: &mut Context,
     dest_buf.resize(buf_len, 0u8);
     for (i, c) in text.chars().enumerate() {
         let error_message = format!("Character '{}' not in bitmap font!", c);
-        let source_offset = glyphs_map.get(&c)
+        let source_offset = *glyphs_map.get(&c)
             .ok_or(GameError::FontError(String::from(error_message)))?;
         let dest_offset = glyph_width * i;
-        //fn blit(dst: &mut [u8], dst_dims: (usize,usize), dst_point: (usize,usize), src: &[u8], src_dims: (usize, usize), src_point: (usize, usize), rect_size: (usize,usize), pitch: usize) {
         blit(&mut dest_buf,
              (text_length * glyph_width, glyph_height),
-             (0, 0),
+             (dest_offset, 0),
              &bytes,
              (width, height),
-             (0, 0),
+             (source_offset, 0),
              (glyph_width, glyph_height),
              4);
     }

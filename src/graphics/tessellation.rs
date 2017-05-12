@@ -3,7 +3,6 @@ use lyon::path_builder::BaseBuilder;
 use lyon::path_iterator::PathIterator;
 use lyon::tessellation;
 use lyon::tessellation::math;
-use lyon::tessellation::path_fill;
 use lyon::tessellation::path_stroke;
 use lyon::tessellation::geometry_builder;
 
