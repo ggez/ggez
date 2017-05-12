@@ -85,7 +85,8 @@ impl Context {
         let graphics_context = graphics::GraphicsContext::new(video,
                                                               &conf.window_title,
                                                               conf.window_width,
-                                                              conf.window_height)?;
+                                                              conf.window_height,
+                                                              conf.vsync)?;
 
         let mut ctx = Context {
             conf: conf,
@@ -108,7 +109,10 @@ impl Context {
     /// Tries to create a new Context loading a config
     /// file from its default path, using the given Conf
     /// object as a default if none is found.
-    pub fn load_from_conf(id: &'static str, author: &'static str, default_config: conf::Conf) -> GameResult<Context> {
+    pub fn load_from_conf(id: &'static str,
+                          author: &'static str,
+                          default_config: conf::Conf)
+                          -> GameResult<Context> {
 
         let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(id, author)?;

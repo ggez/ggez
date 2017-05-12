@@ -53,8 +53,7 @@ impl Font {
     }
 
     /// Loads a new TTF font from data copied out of the given buffer.
-    pub fn from_bytes(name: &str, bytes: &[u8], size: u32) -> GameResult<Font>
-    {
+    pub fn from_bytes(name: &str, bytes: &[u8], size: u32) -> GameResult<Font> {
         let collection = rusttype::FontCollection::from_bytes(bytes.to_vec());
         let font_err = GameError::ResourceLoadError(format!("Could not load font collection for \
                                                              font {:?}",
@@ -198,9 +197,9 @@ fn render_ttf(context: &mut Context,
     // BUGGO: TODO: Make sure conversions will not fail
     // println!("Creating text {}, {}x{}: {:?}", text, text_width_pixels, text_height_pixels, pixel_data);
     let image = Image::from_rgba8(context,
-                                       text_width_pixels as u16,
-                                       text_height_pixels as u16,
-                                       &pixel_data)?;
+                                  text_width_pixels as u16,
+                                  text_height_pixels as u16,
+                                  &pixel_data)?;
 
     let text_string = text.to_string();
     Ok(Text {
@@ -213,7 +212,14 @@ fn render_ttf(context: &mut Context,
 /// Treats src and dst as row-major 2D arrays, and blits the given rect from src to dst.
 /// Does no bounds checking or anything; if you feed it invalid bounds it will just panic.
 /// Generally, you shouldn't need or use this.
-fn blit(dst: &mut [u8], dst_dims: (usize,usize), dst_point: (usize,usize), src: &[u8], src_dims: (usize, usize), src_point: (usize, usize), rect_size: (usize,usize), pitch: usize) {
+fn blit(dst: &mut [u8],
+        dst_dims: (usize, usize),
+        dst_point: (usize, usize),
+        src: &[u8],
+        src_dims: (usize, usize),
+        src_point: (usize, usize),
+        rect_size: (usize, usize),
+        pitch: usize) {
     // The rect properties are all f32's; we truncate them down to integers.
     let area_row_width = rect_size.0 * pitch;
     let src_row_width = src_dims.0 * pitch;
@@ -225,7 +231,10 @@ fn blit(dst: &mut [u8], dst_dims: (usize,usize), dst_point: (usize,usize), src: 
         let src_offset = src_row * src_row_width;
         let dst_offset = dst_row * dst_row_width;
 
-        println!("from {} to {}, width {}", dst_offset, src_offset, area_row_width);
+        println!("from {} to {}, width {}",
+                 dst_offset,
+                 src_offset,
+                 area_row_width);
         let dst_slice = &mut dst[dst_offset..(dst_offset + area_row_width)];
         let src_slice = &src[src_offset..(src_offset + area_row_width)];
         dst_slice.copy_from_slice(src_slice);
@@ -251,11 +260,21 @@ fn render_bitmap(context: &mut Context,
             .ok_or(GameError::FontError(String::from(error_message)))?;
         let dest_offset = glyph_width * i;
         //fn blit(dst: &mut [u8], dst_dims: (usize,usize), dst_point: (usize,usize), src: &[u8], src_dims: (usize, usize), src_point: (usize, usize), rect_size: (usize,usize), pitch: usize) {
-        blit(&mut dest_buf, (text_length*glyph_width, glyph_height), (0, 0), &bytes, (width, height), (0, 0), (glyph_width, glyph_height), 4);
+        blit(&mut dest_buf,
+             (text_length * glyph_width, glyph_height),
+             (0, 0),
+             &bytes,
+             (width, height),
+             (0, 0),
+             (glyph_width, glyph_height),
+             4);
     }
-    let image = Image::from_rgba8(context, (text_length * glyph_width) as u16, glyph_height as u16, &dest_buf)?;
+    let image = Image::from_rgba8(context,
+                                  (text_length * glyph_width) as u16,
+                                  glyph_height as u16,
+                                  &dest_buf)?;
     let text_string = text.to_string();
-    
+
     Ok(Text {
         texture: image,
         contents: text_string,
@@ -314,18 +333,17 @@ mod tests {
     #[test]
     fn test_blit() {
         let dst = &mut [0; 125][..];
-        let src = &[
-            1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            9, 9, 1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-            0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ][..];
+        let src = &[1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9,
+                    1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 1, 0,
+                    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+                    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                       [..];
         assert_eq!(src.len(), 25 * 5);
 
         // Test just blitting the whole thing
         let rect_dims = (25, 5);
-        blit(dst, rect_dims, (0,0), src, rect_dims, (0,0), (25, 5), 1);
+        blit(dst, rect_dims, (0, 0), src, rect_dims, (0, 0), (25, 5), 1);
         //println!("{:?}", src);
         //println!("{:?}", dst);
         assert_eq!(dst, src);
@@ -335,7 +353,7 @@ mod tests {
 
         // Test blitting the whole thing with a non-1 pitch
         let rect_dims = (5, 5);
-        blit(dst, rect_dims, (0,0), src, rect_dims, (0,0), (5, 5), 5);
+        blit(dst, rect_dims, (0, 0), src, rect_dims, (0, 0), (5, 5), 5);
         assert_eq!(dst, src);
     }
 }

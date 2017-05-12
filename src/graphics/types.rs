@@ -79,7 +79,10 @@ impl Rect {
     }
 
     pub fn point(&self) -> Point {
-        Point { x: self.x, y: self.y }
+        Point {
+            x: self.x,
+            y: self.y,
+        }
     }
 }
 
@@ -106,6 +109,14 @@ pub struct Color {
 }
 
 pub const WHITE: Color = Color {
+    r: 1.0,
+    g: 1.0,
+    b: 1.0,
+    a: 1.0,
+};
+
+
+pub const BLACK: Color = Color {
     r: 1.0,
     g: 1.0,
     b: 1.0,
@@ -211,7 +222,7 @@ pub enum FilterMode {
 }
 
 use gfx::texture;
-use gfx::texture::{FilterMethod};
+use gfx::texture::FilterMethod;
 
 impl From<FilterMethod> for FilterMode {
     fn from(f: FilterMethod) -> Self {

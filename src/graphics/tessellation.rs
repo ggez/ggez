@@ -84,7 +84,7 @@ pub fn build_line(points: &[Point], line_width: f32) -> GameResult<Buffer> {
 /// Build a closed polygon.  Identical to build_line but closes the path,
 /// which makes sure the two endpoints actually line up.
 pub fn build_polygon(points: &[Point], line_width: f32) -> GameResult<Buffer> {
-    
+
     let path = build_path(points, true);
     let opts = path_stroke::StrokeOptions::stroke_width(line_width);
     let mut tessellator = path_stroke::StrokeTessellator::new();
@@ -99,7 +99,7 @@ pub fn build_polygon(points: &[Point], line_width: f32) -> GameResult<Buffer> {
 // This would be ideal but really should be left until we can get around
 // to updating lyon.
 // pub fn build_polygon_fill(points: &[Point]) -> GameResult<Buffer> {
-    
+
 //     let path = build_path(points, true);
 //     let opts = path_fill::FillOptions::default();
 //     let mut tessellator = path_fill::FillTessellator::new();
