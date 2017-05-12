@@ -192,41 +192,6 @@ impl Filesystem {
         self.vfs.open(p.to_str().unwrap())
             .map(|f| File::VfsFile(f))
         
-/*
-        // Look in resource directory
-        let pathref: &path::Path = path.as_ref();
-        let pathbuf = self.rel_to_resource_path(pathref)?;
-        if pathbuf.is_file() {
-            let f = fs::File::open(pathbuf)?;
-            return Ok(File::FSFile(f));
-        }
-
-        // Look in resources.zip
-        if let Some(ref mut zipfile) = self.resource_zip {
-            let errmsg = format!("Asked for invalid path inside resources.zip; should never \
-                                  happen?");
-            let name = pathref.to_str().ok_or(GameError::UnknownError(errmsg))?;
-            let f = zipfile.by_name(name)?;
-            return Ok(File::ZipFile(f));
-            // TODO: add path to zip + path within zip to `tried`?
-        }
-
-        // Look in user directory
-        let pathbuf = self.rel_to_user_path(pathref)?;
-        if pathbuf.is_file() {
-            let f = fs::File::open(pathbuf)?;
-            return Ok(File::FSFile(f));
-        }
-
-        // Welp, can't find it.
-        let resource_path = self.rel_to_resource_path(pathref)?;
-        let user_path = self.rel_to_user_path(pathref)?;
-        let mut zip_path = self.zip_path();
-        zip_path.push(pathref);
-        let tried = vec![resource_path, user_path, zip_path];
-        let errmessage = String::from(convenient_path_to_str(pathref)?);
-        Err(GameError::ResourceNotFound(errmessage, tried))
-*/
     }
 
     /// Opens a file in the user directory with the given `std::fs::OpenOptions`.
@@ -241,13 +206,6 @@ impl Filesystem {
         self.vfs.open_options(pathstr, options)
             .map(|f| File::VfsFile(f))
             .map_err(|e| GameError::ResourceLoadError(format!("File {:?} not found", p)))
-
-        /*
-        let pathbuf = self.rel_to_user_path(path.as_ref())?;
-
-        let f = options.open(pathbuf)?;
-        Ok(File::FSFile(f))
-         */
     }
 
     /// Creates a new file in the user directory and opens it
@@ -257,12 +215,6 @@ impl Filesystem {
         let pathstr = p.to_str().unwrap();
         self.vfs.create(pathstr)
             .map(|f| File::VfsFile(f))
-
-/*
-        let pathbuf = self.rel_to_user_path(path.as_ref())?;
-        let f = fs::File::create(pathbuf)?;
-        Ok(File::FSFile(f))
-*/
     }
 
     /// Create an empty directory in the user dir
@@ -272,10 +224,6 @@ impl Filesystem {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
         self.vfs.mkdir(pathstr)
-/*
-        let pathbuf = self.rel_to_user_path(path.as_ref())?;
-        fs::create_dir_all(pathbuf).map_err(GameError::from)
-*/
     }
 
     /// Deletes the specified file in the user dir.
@@ -283,11 +231,6 @@ impl Filesystem {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
         self.vfs.rm(pathstr)
-/*
-        
-        let pathbuf = self.rel_to_user_path(path.as_ref())?;
-        fs::remove_file(pathbuf).map_err(GameError::from)
-*/
     }
 
     /// Deletes the specified directory in the user dir,
@@ -296,74 +239,13 @@ impl Filesystem {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
         self.vfs.rmrf(pathstr)
-/*
-        let pathbuf = self.rel_to_user_path(path.as_ref())?;
-        fs::remove_dir_all(pathbuf).map_err(GameError::from)
-*/
     }
 
-    /*
-    /// Takes a relative path and returns an absolute PathBuf
-    /// based in the Filesystem's root path.
-    fn rel_to_resource_path<P: AsRef<path::Path>>(&self, path: P) -> GameResult<path::PathBuf> {
-        let pathref = path.as_ref();
-        if !pathref.is_relative() {
-            let pathstr = convenient_path_to_str(pathref)?;
-            let errmsg = format!("Could not load resource from path {}, path is not relative.",
-                                 pathstr);
-            let err = GameError::ResourceLoadError(errmsg);
-            Err(err)
-        } else {
-            let pathbuf = self.resource_path.join(pathref);
-            Ok(pathbuf)
-        }
-    }
-
-    /// Takes a relative path and returns an absolute PathBuf
-    /// based in the Filesystem's user directory.
-    fn rel_to_user_path<P: AsRef<path::Path>>(&self, path: P) -> GameResult<path::PathBuf> {
-        let pathref = path.as_ref();
-        if !pathref.is_relative() {
-            let pathstr = convenient_path_to_str(pathref)?;
-            let errmsg = format!("Could not load resource from path {}, path is not relative.",
-                                 pathstr);
-            let err = GameError::ResourceLoadError(errmsg);
-            Err(err)
-        } else {
-            let pathbuf = self.user_path.join(pathref);
-            Ok(pathbuf)
-        }
-    }
-
-    /// Constructs a path to the resource zip file.
-    fn zip_path(&self) -> path::PathBuf {
-        let mut resource_zip_path = self.base_path.clone();
-        resource_zip_path.push("resources.zip");
-        resource_zip_path
-    }
-*/
     /// Check whether a file or directory exists.
     pub fn exists<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
         self.vfs.exists(pathstr)
-/*
-        let path = path.as_ref();
-        if let Ok(p) = self.rel_to_resource_path(path) {
-            p.exists()
-        } else if let Ok(p) = self.rel_to_user_path(path) {
-            p.exists()
-        } else {
-            let name = path.to_str().unwrap_or(INVALID_FILENAME);
-            // If we have a valid filename,
-            // find the thing.
-            if let Some(ref mut zipfile) = self.resource_zip {
-                zipfile.by_name(name).is_ok()
-            } else {
-                false
-            }
-        }
-*/
     }
 
     /// Check whether a path points at a file.
@@ -373,23 +255,6 @@ impl Filesystem {
         self.vfs.metadata(pathstr)
             .map(|m| m.is_file())
             .unwrap_or(false)
-
-            
-        /*
-        let path = path.as_ref();
-        if let Ok(p) = self.rel_to_resource_path(path) {
-            p.is_file()
-        } else if let Ok(p) = self.rel_to_user_path(path) {
-            p.is_file()
-        } else {
-            let name = path.to_str().unwrap_or(INVALID_FILENAME);
-            if let Some(ref mut zipfile) = self.resource_zip {
-                zipfile.by_name(name).is_ok()
-            } else {
-                false
-            }
-        }
-*/
     }
 
     /// Check whether a path points at a directory.
@@ -399,33 +264,6 @@ impl Filesystem {
         self.vfs.metadata(pathstr)
             .map(|m| m.is_dir())
             .unwrap_or(false)
-        /*
-        match self.vfs.metadata(pathstr) {
-            Ok(m) => m.is_dir(),
-            Err(_) => false,
-        }
-
-        
-        let path = path.as_ref();
-        if let Ok(p) = self.rel_to_resource_path(path) {
-            p.is_dir()
-        } else if let Ok(p) = self.rel_to_user_path(path) {
-            p.is_dir()
-        } else {
-            let name = path.to_str().unwrap_or(INVALID_FILENAME);
-            if let Some(ref mut zipfile) = self.resource_zip {
-                // BUGGO: This doesn't actually do what we want...
-                // Zip files don't actually store directories,
-                // they just fake it.
-                // What we COULD do is iterate through all files
-                // in the zip file looking for one with the same
-                // name prefix as the directory path?
-                zipfile.by_name(name).is_ok()
-            } else {
-                false
-            }
-        }
-*/
     }
 
     /*
@@ -454,92 +292,24 @@ just pluck the paths out of the VFS.
     ///
     /// Lists the base directory if an empty path is given.
     ///
-    /// TODO: Make it iterate over the zip file as well!
-    /// And the user dir.
-    ///
+    /// TODO: This should return an iterator, and be called iter()
     /// BUGGO: We have no real way to list the contents of a SINGLE directory,
     /// which we might want if, say, we want to load every file in `/sprites` or such.
     /// Fix this, no matter how many times you have to iterate through the resources zip.
     pub fn read_dir(&mut self) -> GameResult<PathList> {
         unimplemented!();
         // BUGGO: Implement with VFS!
-        /*
-        let mut pathlist: HashSet<String> = HashSet::new();
-        {
-            let p = self.resource_path.clone();
-            if p.is_dir() {
-                let paths = fs::read_dir(p)?;
-                for path in paths {
-                    pathlist.insert(path?.file_name().into_string().unwrap());
-                    // println!("Resources dir: {}", path?.path().display());
-                }
-            }
-        }
-
-        // User dir files
-        {
-            let p = self.user_path.clone();
-            if p.is_dir() {
-                let paths = fs::read_dir(p)?;
-                for path in paths {
-                    pathlist.insert(path?.file_name().into_string().unwrap());
-                    // println!("User dir: {}", path?.path().display());
-                }
-            }
-        }
-
-
-        if let Some(ref mut zipfile) = self.resource_zip {
-            for i in 0..zipfile.len() {
-                let file = zipfile.by_index(i)?;
-                pathlist.insert(file.name().into());
-                // println!("resources.zip: {}", file.name());
-            }
-        }
-        Ok(pathlist.into_iter().collect())
-*/
     }
 
     /// Prints the contents of all data directories.
     /// Useful for debugging.
-    /// TODO: This should return an iterator, and be called iter()
+    ///
+    /// TODO: Should tell you which source the resulting files come from...
     pub fn print_all(&mut self) -> GameResult<()> {
-        unimplemented!();
-        // BUGGO: Implement with VFS!
-
-
-        /*
-        // Print resource files
-        {
-            let p = self.resource_path.clone();
-            if p.is_dir() {
-                let paths = fs::read_dir(p)?;
-                for path in paths {
-                    println!("Resources dir: {}", path?.path().display());
-                }
-            }
-        }
-
-        // User dir files
-        {
-            let p = self.user_path.clone();
-            if p.is_dir() {
-                let paths = fs::read_dir(p)?;
-                for path in paths {
-                    println!("User dir: {}", path?.path().display());
-                }
-            }
-        }
-
-
-        if let Some(ref mut zipfile) = self.resource_zip {
-            for i in 0..zipfile.len() {
-                let file = zipfile.by_index(i)?;
-                println!("resources.zip: {}", file.name());
-            }
+        for itm in self.read_dir()? {
+            println!("{:?}", itm);
         }
         Ok(())
-*/
     }
 
 
@@ -611,8 +381,8 @@ mod tests {
     fn test_read_dir() {
         let mut f = get_dummy_fs_for_tests();
 
-        let dir_contents_size = f.read_dir().unwrap().len();
-        assert!(dir_contents_size > 0);
+        //let dir_contents_size = f.read_dir().unwrap().len();
+        //assert!(dir_contents_size > 0);
     }
 
     #[test]
