@@ -792,7 +792,8 @@ impl Image {
                 rgba: &[u8])
                 -> GameResult<Image> {
         // Check if the texture is not power of 2, and if not, pad it out.
-        let view = if !(width.is_power_of_two() && height.is_power_of_two()) {
+        let view = if false {
+        // let view = if !(width.is_power_of_two() && height.is_power_of_two()) {
             let (width, height, rgba) = scale_rgba_up_to_power_of_2(width, height, rgba);
             let rgba = &rgba;
             assert_eq!((width as usize) * (height as usize) * 4, rgba.len());
