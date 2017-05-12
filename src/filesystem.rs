@@ -16,6 +16,10 @@
 //! The `resources/` subdirectory and resources.zip files are read-only.
 //! Files that are opened for writing using `Filesystem::open_options()`
 //! will be created in the `user` directory.
+//!
+//! Note that currently the file lookups WILL follow symlinks!  It is
+//! more for convenience than absolute security, so don't treat it as
+//! being secure.
 
 use std::env;
 use std::fmt;
@@ -31,7 +35,7 @@ use GameError;
 use GameResult;
 use conf;
 use vfs;
-use vfs::VFS;
+use vfs::{VFS, VMetadata};
 
 use zip;
 
@@ -235,8 +239,7 @@ impl Filesystem {
                                               -> GameResult<File> {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
-        // BUGGO: Rename to open_options() or whatever std calls it
-        self.vfs.open_with_options(pathstr, options)
+        self.vfs.open_options(pathstr, options)
             .map(|f| File::VfsFile(f))
             .map_err(|e| GameError::ResourceLoadError(format!("File {:?} not found", p)))
 
@@ -367,9 +370,10 @@ impl Filesystem {
     pub fn is_file<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
-        self.vfs.metadata(pathstr);
-        // BUGGO: Need metadata for this
-        true
+        self.vfs.metadata(pathstr)
+            .map(|m| m.is_file())
+            .unwrap_or(false)
+
             
         /*
         let path = path.as_ref();
@@ -392,10 +396,15 @@ impl Filesystem {
     pub fn is_dir<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
-        self.vfs.metadata(pathstr);
-        // BUGGO: Need metadata for this
-        true
-/*
+        self.vfs.metadata(pathstr)
+            .map(|m| m.is_dir())
+            .unwrap_or(false)
+        /*
+        match self.vfs.metadata(pathstr) {
+            Ok(m) => m.is_dir(),
+            Err(_) => false,
+        }
+
         
         let path = path.as_ref();
         if let Ok(p) = self.rel_to_resource_path(path) {
@@ -576,6 +585,12 @@ mod tests {
         let tile_file = path::Path::new("/tile.png");
         assert!(f.exists(tile_file));
         assert!(f.is_file(tile_file));
+
+        let tile_file = path::Path::new("/oglebog.png");
+        assert!(!f.exists(tile_file));
+        assert!(!f.is_file(tile_file));
+        assert!(!f.is_dir(tile_file));
+
     }
 
     #[test]

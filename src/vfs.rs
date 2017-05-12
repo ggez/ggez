@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use std::path::{self, PathBuf};
 use std::fs;
 use std::fmt::{self, Debug};
@@ -76,18 +75,18 @@ impl OpenOptions {
 
 pub trait VFS: Debug {
     /// Open the file at this path with the given options
-    fn open_with_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>>;
+    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>>;
     /// Open the file at this path for reading
     fn open(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, OpenOptions::new().read(true))
+        self.open_options(path, OpenOptions::new().read(true))
     }
     /// Open the file at this path for writing, truncating it if it exists already
     fn create(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, OpenOptions::new().write(true).create(true).truncate(true))
+        self.open_options(path, OpenOptions::new().write(true).create(true).truncate(true))
     }
     /// Open the file at this path for appending, creating it if necessary
     fn append(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, OpenOptions::new().write(true).create(true).append(true))
+        self.open_options(path, OpenOptions::new().write(true).create(true).append(true))
     }
     /// Create a directory at the location by this path
     fn mkdir(&self, path: &Path) -> GameResult<()>;
@@ -108,22 +107,35 @@ pub trait VFS: Debug {
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>>;
 }
 
-/// BUGGO: TODO: IMPLEMENT!
-pub trait VMetadata {}
+pub trait VMetadata {
+    fn is_dir(&self) -> bool;
+    fn is_file(&self) -> bool;
+    fn len(&self) -> u64;
+}
 
 /// A VFS that points to a directory and uses it as the root of its
 /// file heirarchy.
 ///
 /// It IS allowed to have symlinks in it!  For now.
 pub struct PhysicalFS {
-    // BUGGO: TODO: Arc is unnecessary
-    root: Arc<PathBuf>,
+    root: PathBuf,
     readonly: bool,
 }
 
 pub struct PhysicalMetadata(fs::Metadata);
 
-impl VMetadata for PhysicalMetadata {}
+impl VMetadata for PhysicalMetadata {
+    fn is_dir(&self) -> bool {
+        self.0.is_dir()
+    }
+    fn is_file(&self) -> bool {
+        self.0.is_file()
+    }
+    fn len(&self) -> u64 {
+        self.0.len()
+    }
+
+}
 
 
 /// This takes an absolute path and returns either a sanitized relative
@@ -167,7 +179,7 @@ fn sanitize_path(path: &path::Path) -> Option<PathBuf> {
 impl PhysicalFS {
     pub fn new(root: &str, readonly: bool) -> Self {
         PhysicalFS {
-            root: Arc::new(root.into()),
+            root: root.into(),
             readonly: readonly,
         }
     }
@@ -179,7 +191,7 @@ impl PhysicalFS {
     fn get_absolute(&self, p: &str) -> GameResult<PathBuf> {
         let p = path::Path::new(p);
         if let Some(safe_path) = sanitize_path(p) {
-            let mut root_path = (*self.root).clone();
+            let mut root_path = self.root.clone();
             root_path.push(safe_path);
             println!("Path is {:?}", root_path);
             Ok(root_path)
@@ -199,7 +211,7 @@ impl Debug for PhysicalFS {
 
 impl VFS for PhysicalFS {
     /// Open the file at this path with the given options
-    fn open_with_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
+    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
         if self.readonly {
             if open_options.write || open_options.create || open_options.append || open_options.truncate {
                 let msg = format!("Cannot alter file {:?} in root {:?}, filesystem read-only", path, self);
@@ -302,9 +314,9 @@ impl OverlayFS {
 
 impl VFS for OverlayFS {
     /// Open the file at this path with the given options
-    fn open_with_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
+    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
         for vfs in &self.roots {
-            match vfs.open_with_options(path, open_options) {
+            match vfs.open_options(path, open_options) {
                 Err(_) => (),
                 f => return f,
             }
