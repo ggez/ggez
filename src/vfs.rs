@@ -108,6 +108,7 @@ pub trait VFS: Debug {
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>>;
 }
 
+/// BUGGO: TODO: IMPLEMENT!
 pub trait VMetadata {}
 
 /// A VFS that points to a directory and uses it as the root of its
@@ -115,6 +116,7 @@ pub trait VMetadata {}
 ///
 /// It IS allowed to have symlinks in it!  For now.
 pub struct PhysicalFS {
+    // BUGGO: TODO: Arc is unnecessary
     root: Arc<PathBuf>,
     readonly: bool,
 }
@@ -163,7 +165,7 @@ fn sanitize_path(path: &path::Path) -> Option<PathBuf> {
 }
 
 impl PhysicalFS {
-    fn new(root: &str, readonly: bool) -> Self {
+    pub fn new(root: &str, readonly: bool) -> Self {
         PhysicalFS {
             root: Arc::new(root.into()),
             readonly: readonly,
@@ -281,19 +283,19 @@ impl VFS for PhysicalFS {
 /// A structure that joins several VFS's together in order.
 /// VecDeque instead of Vec?
 #[derive(Debug)]
-struct OverlayFS {
+pub struct OverlayFS {
     roots: Vec<Box<VFS>>,
 }
 
 impl OverlayFS {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             roots: Vec::new()
         }
     }
 
     /// Adds a new VFS to the end of the list.
-    fn push(&mut self, fs: Box<VFS>) {
+    pub fn push(&mut self, fs: Box<VFS>) {
         &self.roots.push(fs);
     }
 }

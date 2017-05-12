@@ -30,6 +30,8 @@ use app_dirs::*;
 use GameError;
 use GameResult;
 use conf;
+use vfs;
+use vfs::VFS;
 
 use zip;
 
@@ -48,6 +50,7 @@ pub struct Filesystem {
     user_path: path::PathBuf,
     resource_path: path::PathBuf,
     resource_zip: Option<zip::ZipArchive<fs::File>>,
+    vfs: vfs::OverlayFS,
 }
 
 /// Represents a file, either in the filesystem, or in the resources zip file,
@@ -55,6 +58,7 @@ pub struct Filesystem {
 pub enum File<'a> {
     FSFile(fs::File),
     ZipFile(zip::read::ZipFile<'a>),
+    VfsFile(Box<vfs::VFile>),
 }
 
 impl<'a> fmt::Debug for File<'a> {
@@ -65,6 +69,7 @@ impl<'a> fmt::Debug for File<'a> {
         match *self {
             File::FSFile(ref _file) => write!(f, "File"),
             File::ZipFile(ref _file) => write!(f, "Zipfile"),
+            File::VfsFile(ref _file) => write!(f, "VfsFile"),
         }
     }
 }
@@ -74,6 +79,7 @@ impl<'a> io::Read for File<'a> {
         match *self {
             File::FSFile(ref mut f) => f.read(buf),
             File::ZipFile(ref mut f) => f.read(buf),
+            File::VfsFile(ref mut f) => f.read(buf),
         }
     }
 }
@@ -85,6 +91,7 @@ impl<'a> io::Write for File<'a> {
         match *self {
             File::FSFile(ref mut f) => f.write(buf),
             File::ZipFile(_) => panic!("Cannot write to a zip file!"),
+            File::VfsFile(ref mut f) => f.write(buf),
         }
     }
 
@@ -92,6 +99,7 @@ impl<'a> io::Write for File<'a> {
         match *self {
             File::FSFile(ref mut f) => f.flush(),
             File::ZipFile(_) => Ok(()),
+            File::VfsFile(ref mut f) => f.flush(),
         }
     }
 }
@@ -146,6 +154,20 @@ impl Filesystem {
             resource_zip = Some(z);
         }
 
+
+        // Set up VFS to merge resource path, root path, and (eventually) zip path.
+        let mut overlay = vfs::OverlayFS::new();
+        {
+            let fss = &[resource_path.to_str().unwrap(), root_path.to_str().unwrap()];
+            for fs in fss {
+                let physfs = vfs::PhysicalFS::new(fs, true);
+                overlay.push(Box::new(physfs));
+            }
+        }
+        // Save game dir is read-write
+        let physfs = vfs::PhysicalFS::new(pref_path.to_str().unwrap(), false);
+        overlay.push(Box::new(physfs));
+
         // Get user path, but it doesn't really matter if it
         // doesn't exist for us so there's no real setup.
         let fs = Filesystem {
@@ -153,6 +175,7 @@ impl Filesystem {
             base_path: root_path,
             user_path: pref_path,
             resource_zip: resource_zip,
+            vfs: overlay,
         };
 
         Ok(fs)
@@ -162,7 +185,11 @@ impl Filesystem {
     /// Opens the given path and returns the resulting `File`
     /// in read-only mode.
     pub fn open<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
-
+        let p: &path::Path = path.as_ref();
+        self.vfs.open(p.to_str().unwrap())
+            .map(|f| File::VfsFile(f))
+        
+/*
         // Look in resource directory
         let pathref: &path::Path = path.as_ref();
         let pathbuf = self.rel_to_resource_path(pathref)?;
@@ -196,6 +223,7 @@ impl Filesystem {
         let tried = vec![resource_path, user_path, zip_path];
         let errmessage = String::from(convenient_path_to_str(pathref)?);
         Err(GameError::ResourceNotFound(errmessage, tried))
+*/
     }
 
     /// Opens a file in the user directory with the given `std::fs::OpenOptions`.
@@ -203,41 +231,73 @@ impl Filesystem {
     /// files in the user directory.
     pub fn open_options<P: AsRef<path::Path>>(&mut self,
                                               path: P,
-                                              options: fs::OpenOptions)
+                                              options: &vfs::OpenOptions)
                                               -> GameResult<File> {
+        let p: &path::Path = path.as_ref();
+        let pathstr = p.to_str().unwrap();
+        // BUGGO: Rename to open_options() or whatever std calls it
+        self.vfs.open_with_options(pathstr, options)
+            .map(|f| File::VfsFile(f))
+            .map_err(|e| GameError::ResourceLoadError(format!("File {:?} not found", p)))
+
+        /*
         let pathbuf = self.rel_to_user_path(path.as_ref())?;
 
         let f = options.open(pathbuf)?;
         Ok(File::FSFile(f))
+         */
     }
 
     /// Creates a new file in the user directory and opens it
     /// to be written to, truncating it if it already exists.
     pub fn create<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
+        let p: &path::Path = path.as_ref();
+        let pathstr = p.to_str().unwrap();
+        self.vfs.create(pathstr)
+            .map(|f| File::VfsFile(f))
+
+/*
         let pathbuf = self.rel_to_user_path(path.as_ref())?;
         let f = fs::File::create(pathbuf)?;
         Ok(File::FSFile(f))
+*/
     }
 
     /// Create an empty directory in the user dir
     /// with the given name.  Any parents to that directory
     /// that do not exist will be created.
     pub fn create_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
+        let p: &path::Path = path.as_ref();
+        let pathstr = p.to_str().unwrap();
+        self.vfs.mkdir(pathstr)
+/*
         let pathbuf = self.rel_to_user_path(path.as_ref())?;
         fs::create_dir_all(pathbuf).map_err(GameError::from)
+*/
     }
 
     /// Deletes the specified file in the user dir.
     pub fn delete<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
+        let p: &path::Path = path.as_ref();
+        let pathstr = p.to_str().unwrap();
+        self.vfs.rm(pathstr)
+/*
+        
         let pathbuf = self.rel_to_user_path(path.as_ref())?;
         fs::remove_file(pathbuf).map_err(GameError::from)
+*/
     }
 
     /// Deletes the specified directory in the user dir,
     /// and all its contents!
     pub fn delete_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
+        let p: &path::Path = path.as_ref();
+        let pathstr = p.to_str().unwrap();
+        self.vfs.rmrf(pathstr)
+/*
         let pathbuf = self.rel_to_user_path(path.as_ref())?;
         fs::remove_dir_all(pathbuf).map_err(GameError::from)
+*/
     }
 
     /// Takes a relative path and returns an absolute PathBuf
@@ -281,6 +341,10 @@ impl Filesystem {
 
     /// Check whether a file or directory exists.
     pub fn exists<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
+        let p: &path::Path = path.as_ref();
+        let pathstr = p.to_str().unwrap();
+        self.vfs.exists(pathstr)
+/*
         let path = path.as_ref();
         if let Ok(p) = self.rel_to_resource_path(path) {
             p.exists()
@@ -296,10 +360,18 @@ impl Filesystem {
                 false
             }
         }
+*/
     }
 
     /// Check whether a path points at a file.
     pub fn is_file<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
+        let p: &path::Path = path.as_ref();
+        let pathstr = p.to_str().unwrap();
+        self.vfs.metadata(pathstr);
+        // BUGGO: Need metadata for this
+        true
+            
+        /*
         let path = path.as_ref();
         if let Ok(p) = self.rel_to_resource_path(path) {
             p.is_file()
@@ -313,10 +385,18 @@ impl Filesystem {
                 false
             }
         }
+*/
     }
 
     /// Check whether a path points at a directory.
     pub fn is_dir<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
+        let p: &path::Path = path.as_ref();
+        let pathstr = p.to_str().unwrap();
+        self.vfs.metadata(pathstr);
+        // BUGGO: Need metadata for this
+        true
+/*
+        
         let path = path.as_ref();
         if let Ok(p) = self.rel_to_resource_path(path) {
             p.is_dir()
@@ -336,6 +416,7 @@ impl Filesystem {
                 false
             }
         }
+*/
     }
 
     /// Return the full path to the directory containing the exe
@@ -457,147 +538,33 @@ impl Filesystem {
         if self.is_file(conf_path) {
             let mut file = self.create(conf_path)?;
             conf.to_toml_file(&mut file)
-
         } else {
             Err(GameError::ConfigError(String::from("Config file not found")))
         }
     }
 }
 
-pub type Path = str;
-
-pub struct VFile {
-}
-
-pub struct VMetadata {
-}
-/// Options for opening files
-#[derive(Debug, Default)]
-pub struct OpenOptions {
-    read: bool,
-    write: bool,
-    create: bool,
-    append: bool,
-    truncate: bool,
-}
-
-impl OpenOptions {
-    /// Create a new instance
-    pub fn new() -> OpenOptions {
-        Default::default()
-    }
-
-    /// Open for reading
-    pub fn read(&mut self, read: bool) -> &mut OpenOptions {
-        self.read = read;
-        self
-    }
-
-    /// Open for writing
-    pub fn write(&mut self, write: bool) -> &mut OpenOptions {
-        self.write = write;
-        self
-    }
-
-    /// Create the file if it does not exist yet
-    pub fn create(&mut self, create: bool) -> &mut OpenOptions {
-        self.create = create;
-        self
-    }
-
-    /// Append at the end of the file
-    pub fn append(&mut self, append: bool) -> &mut OpenOptions {
-        self.append = append;
-        self
-    }
-
-    /// Truncate the file to 0 bytes after opening
-    pub fn truncate(&mut self, truncate: bool) -> &mut OpenOptions {
-        self.truncate = truncate;
-        self
-    }
-}
-
-use std::borrow::Cow;
-use std::path::PathBuf;
-
-pub trait VFS {
-    /// Open the file at this path with the given options
-    fn open_with_options(&self, path: &Path, openOptions: &OpenOptions) -> GameResult<Box<VFile>>;
-    /// Open the file at this path for reading
-    fn open(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, OpenOptions::new().read(true))
-    }
-    /// Open the file at this path for writing, truncating it if it exists already
-    fn create(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, OpenOptions::new().write(true).create(true).truncate(true))
-    }
-    /// Open the file at this path for appending, creating it if necessary
-    fn append(&self, path: &Path) -> GameResult<Box<VFile>> {
-        self.open_with_options(path, OpenOptions::new().write(true).create(true).append(true))
-    }
-    /// Create a directory at the location by this path
-    fn mkdir(&self, path: &Path) -> GameResult<()>;
-
-    /// Remove a file
-    fn rm(&self, path: &Path) -> GameResult<()>;
-
-    /// Remove a file or directory and all its contents
-    fn rmrf(&self, path: &Path) -> GameResult<()>;
-
-
-    /// The file name of this path
-    fn file_name(&self, path: &Path) -> Option<String>;
-
-    /// The extension of this filename
-    fn extension(&self, path: &Path) -> Option<String>;
-
-    /// append a segment to this path
-    fn resolve(&self, path: &Path, path: &String) -> Box<Path>;
-
-    /// Get the parent path
-    fn parent(&self, path: &Path) -> Option<Box<Path>>;
-
-    /// Check if the file existst
-    fn exists(&self, path: &Path) -> bool;
-
-    /// Get the file's metadata
-    fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>>;
-
-    /// Retrieve the path entries in this path
-    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>>;
-
-    /// Retrieve a string representation
-    fn to_string(&self, path: &Path) -> Cow<str>;
-
-    /// Retrieve a standard &PathBuf, if available (usually only for PhysicalFS)
-    fn to_path_buf(&self, path: &Path) -> Option<&PathBuf>;
-
-    fn box_clone(&self, path: &Path) -> Box<Path>;
-}
-
-struct VfsList {
-    roots: Vec<Box<VFS>>,
-}
-
-
-
 
 #[cfg(test)]
 mod tests {
     use error::*;
     use filesystem::*;
+    use vfs::*;
     use std::path;
     use std::io::{Read, Write};
 
     fn get_dummy_fs_for_tests() -> Filesystem {
         let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources");
+        let physfs = vfs::PhysicalFS::new(path.to_str().unwrap(), false);
+        let mut ofs = vfs::OverlayFS::new();
+        ofs.push(Box::new(physfs));
         Filesystem {
             resource_path: path.clone(),
             user_path: path.clone(),
             base_path: path.clone(),
             resource_zip: None,
+            vfs: ofs,
         }
 
     }
@@ -606,7 +573,7 @@ mod tests {
     fn test_file_exists() {
         let mut f = get_dummy_fs_for_tests();
 
-        let tile_file = path::Path::new("tile.png");
+        let tile_file = path::Path::new("/tile.png");
         assert!(f.exists(tile_file));
         assert!(f.is_file(tile_file));
     }
@@ -622,7 +589,7 @@ mod tests {
     #[test]
     fn test_create_delete_file() {
         let mut fs = get_dummy_fs_for_tests();
-        let test_file = path::Path::new("testfile.txt");
+        let test_file = path::Path::new("/testfile.txt");
         let bytes = "test".as_bytes();
 
         {
@@ -643,31 +610,21 @@ mod tests {
     fn test_file_not_found() {
         let mut fs = get_dummy_fs_for_tests();
         {
-            #[cfg(target_family = "unix")]
-            let abs_file = "/testfile.txt";
-            #[cfg(target_family = "windows")]
-            let abs_file = "C:\\testfile.txt";
-            if let Err(e) = fs.open(abs_file) {
-                match e {
-                    GameError::ResourceLoadError(_) => (),
-                    e => panic!("Invalid error for opening file with absolute path: {:?}", e),
-                }
-            } else {
-                panic!("Should have gotten an error but didn't!");
+            let rel_file = "testfile.txt";
+            match fs.open(rel_file) {
+                Err(GameError::FilesystemError(_)) => (),
+                Err(e) => panic!("Invalid error for opening file with relative path: {:?}", e),
+                Ok(f) => panic!("Should have gotten an error but instead got {:?}!", f),
             }
         }
 
         {
-            match fs.open("ooglebooglebarg.txt") {
-                Err(e) => {
-                    match e {
-                        GameError::ResourceNotFound(_, _) => (),
-                        x => panic!("Invalid error for opening nonexistent file: {}", x),
-                    }
-                }
-                Ok(f) => {
-                    panic!("Should have gotten an error but instead got {:?}", f);
-                }
+            // This absolute path should work on Windows too since we
+            // completely remove filesystem roots.
+            match fs.open("/ooglebooglebarg.txt") {
+                Err(GameError::FilesystemError(_)) => (),
+                Err(e) => panic!("Invalid error for opening nonexistent file: {}", e),
+                Ok(f) => panic!("Should have gotten an error but instead got {:?}", f),
             }
         }
     }
