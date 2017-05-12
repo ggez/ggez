@@ -1,7 +1,10 @@
+use std::cell::RefCell;
 use std::path::{self, PathBuf};
 use std::fs;
 use std::fmt::{self, Debug};
 use std::io::{self, Read, Write, Seek};
+
+use zip;
 
 use {GameResult, GameError};
 
@@ -287,8 +290,8 @@ impl VFS for PhysicalFS {
 
     /// Retrieve the path entries in this path
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>> {
-        // TODO
-        Err(GameError::FilesystemError("Foo!".to_string()))
+        // BUGGO: TODO
+        unimplemented!();
     }
 }
 
@@ -381,10 +384,185 @@ impl VFS for OverlayFS {
 
     /// Retrieve the path entries in this path
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>> {
-        // TODO: This is tricky 'cause we have to actually merge iterators together...
+        // BUGGO: TODO: This is tricky 'cause we have to actually merge iterators together...
         Err(GameError::FilesystemError("Foo!".to_string()))
     }
 }
+
+/// A filesystem backed by a zip file.
+/// It's... probably going to be a bit jankity.
+/// Zip files aren't really designed to be virtual filesystems,
+/// and the structure of the `zip` crate doesn't help.  See the various
+/// issues that have been filed on it by icefoxen.
+///
+/// ALSO THE SEMANTICS OF ZIPARCHIVE AND HAVING ZIPFILES BORROW IT IS
+/// HORRIFICALLY BROKEN BY DESIGN SO WE'RE JUST GONNA REFCELL IT AND COPY
+/// ALL CONTENTS OUT OF IT.
+#[derive(Debug)]
+pub struct ZipFS {
+    source: String,
+    archive: RefCell<zip::ZipArchive<fs::File>>,
+}
+
+impl ZipFS {
+    pub fn new(filename: &str) -> Self {
+        let f = fs::File::open(filename).unwrap();
+        Self {
+            source: filename.to_string(),
+            archive: RefCell::new(zip::ZipArchive::new(f).unwrap())
+        }
+    }
+}
+
+/// A wrapper to contain a zipfile so we can implement
+/// (janky) Seek on it and such.
+///
+/// BUGGO: We're going to do it the *really* janky way and just read
+/// the whole ZipFile into a buffer, which is kind of awful but means
+/// we don't have to deal with lifetimes, self-borrowing structs,
+/// rental, re-implementing Seek on compressed data, or any of that
+/// other nonsense.
+pub struct ZipFileWrapper {
+    //zipfile: zip::read::ZipFile<'a>,
+    buffer: io::Cursor<Vec<u8>>,
+}
+
+impl ZipFileWrapper {
+    fn new(z: &mut zip::read::ZipFile) -> Self {
+        let mut b = Vec::new();
+        z.read_to_end(&mut b).unwrap();
+        Self {
+            buffer: io::Cursor::new(b),
+        }
+    }
+}
+
+impl io::Read for ZipFileWrapper {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.buffer.read(buf)
+    }
+}
+
+
+impl io::Write for ZipFileWrapper {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        panic!("Cannot write to a zip file!")
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl io::Seek for ZipFileWrapper {
+    fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
+        self.buffer.seek(pos)
+    }
+}
+
+impl Debug for ZipFileWrapper {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "<Zipfile>")
+    }
+}
+
+
+struct ZipMetadata {
+    len: u64,
+    is_dir: bool,
+    is_file: bool,
+}
+
+impl ZipMetadata {
+    /// Returns a ZipMetadata, or None if the file does not exist or such.
+    /// This is not QUITE correct; since zip archives don't actually have
+    /// directories (just long filenames), we can't get a directory's metadata
+    /// this way.
+    ///
+    /// This does make listing a directory
+    fn new<T>(name: &str, archive: &mut zip::ZipArchive<T>) -> Option<Self>
+        where T: io::Read + io::Seek
+    {
+        match archive.by_name(name) {
+            Err(_) => None,
+            Ok(zipfile) => {
+                let len = zipfile.size();
+                Some(ZipMetadata {
+                    len: len,
+                    is_file: true,
+                    is_dir: false, // mu
+                })
+            }
+        }
+    }
+}
+
+impl VMetadata for ZipMetadata {
+    fn is_dir(&self) -> bool {
+        self.is_dir
+    }
+    fn is_file(&self) -> bool {
+        self.is_file
+    }
+    fn len(&self) -> u64 {
+        self.len
+    }
+}
+
+
+impl VFS for ZipFS {
+    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
+        // Zip is readonly
+        if open_options.write || open_options.create || open_options.append || open_options.truncate {
+            let msg = format!("Cannot alter file {:?} in zipfile {:?}, filesystem read-only", path, &self.source);
+            return Err(GameError::FilesystemError(msg));
+        }
+        let mut stupid_archive_borrow = self.archive.try_borrow_mut().expect("Couldn't borrow ZipArchive in ZipFS::open_options(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
+        let mut f = stupid_archive_borrow.by_name(path)?;
+        Ok(Box::new(ZipFileWrapper::new(&mut f)) as Box<VFile>)
+    }
+    
+    fn mkdir(&self, path: &Path) -> GameResult<()> {
+        let msg = format!("Cannot mkdir {:?} in zipfile {:?}, filesystem read-only", path, &self.source);
+        return Err(GameError::FilesystemError(msg));
+
+    }
+
+    fn rm(&self, path: &Path) -> GameResult<()> {
+        let msg = format!("Cannot rm {:?} in zipfile {:?}, filesystem read-only", path, &self.source);
+        return Err(GameError::FilesystemError(msg));
+    }
+    
+    fn rmrf(&self, path: &Path) -> GameResult<()> {
+        let msg = format!("Cannot rmrf {:?} in zipfile {:?}, filesystem read-only", path, &self.source);
+        return Err(GameError::FilesystemError(msg));
+    }
+
+    fn exists(&self, path: &Path) -> bool {
+        let mut stupid_archive_borrow = self.archive.try_borrow_mut().expect("Couldn't borrow ZipArchive in ZipFS::exists(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
+        stupid_archive_borrow.by_name(path).is_ok()
+    }
+
+    fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
+        let mut stupid_archive_borrow = self.archive.try_borrow_mut().expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
+        match ZipMetadata::new(path, &mut stupid_archive_borrow) {
+            None => Err(GameError::FilesystemError(format!("Metadata not found in zip file for {}", path))),
+            Some(md) => Ok(Box::new(md) as Box<VMetadata>)
+        }
+    }
+
+    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>> {
+        // BUGGO: IMPLEMENT!
+        unimplemented!();
+    }
+}
+
+
+// pub trait VMetadata {
+//     fn is_dir(&self) -> bool;
+//     fn is_file(&self) -> bool;
+//     fn len(&self) -> u64;
+// }
 
 
 #[cfg(test)]

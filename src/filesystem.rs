@@ -453,6 +453,8 @@ impl Filesystem {
     /// And the user dir.  This probably won't happen until
     /// returning `impl Trait` hits stable, honestly.
     pub fn read_dir(&mut self) -> GameResult<PathList> {
+        unimplemented!();
+        /// BUGGO: Implement with VFS!
         let mut pathlist: HashSet<String> = HashSet::new();
         {
             let p = self.resource_path.clone();
@@ -492,6 +494,10 @@ impl Filesystem {
     /// Useful for debugging.
     /// TODO: This should return an iterator, and be called iter()
     pub fn print_all(&mut self) -> GameResult<()> {
+        unimplemented!();
+        /// BUGGO: Implement with VFS!
+
+        
         // Print resource files
         {
             let p = self.resource_path.clone();
