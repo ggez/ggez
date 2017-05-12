@@ -50,14 +50,14 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.print_resource_stats();
 
-        let image = graphics::Image::new(ctx, "dragon1.png").unwrap();
+        let image = graphics::Image::new(ctx, "/dragon1.png").unwrap();
 
-        let font = graphics::Font::new(ctx, "DejaVuSerif.ttf", 48).unwrap();
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48).unwrap();
         let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
-        let bmpfont = graphics::Font::new_bitmap(ctx, "arial.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        let bmpfont = graphics::Font::new_bitmap(ctx, "/arial.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
             .unwrap();
         let bmptext = graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
-        let sound = audio::Source::new(ctx, "sound.ogg").unwrap();
+        let sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
 
         let _ = sound.play();
 

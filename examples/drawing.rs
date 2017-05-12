@@ -15,8 +15,8 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
 
-        let image1 = graphics::Image::new(ctx, "dragon1.png")?;
-        let image2 = graphics::Image::new(ctx, "player.png")?;
+        let image1 = graphics::Image::new(ctx, "/dragon1.png")?;
+        let image2 = graphics::Image::new(ctx, "/player.png")?;
         let s = MainState {
             image1: image1,
             image2: image2,
