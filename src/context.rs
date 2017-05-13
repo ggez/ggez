@@ -58,12 +58,13 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
         // The "pitch" parameter here is not the count
         // between pixels, but the count between rows.
         // For some retarded reason.
-        // Also it seems to have strange ideas of what
+        // Also SDL seems to have strange ideas of what
         // "RGBA" means.
-        let surface = surface::Surface::from_data(
-            image_data, image.width(), 
-            image.height(), image.width() * 4, 
-            pixels::PixelFormatEnum::ABGR8888)?;
+        let surface = surface::Surface::from_data(image_data,
+                                                  image.width(),
+                                                  image.height(),
+                                                  image.width() * 4,
+                                                  pixels::PixelFormatEnum::ABGR8888)?;
         let window = context.gfx_context.get_window();
         window.set_icon(surface);
     };
@@ -72,8 +73,8 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
 
 impl Context {
     /// Tries to create a new Context using settings from the given config file.
-    /// Usually called by the engine as part of the set-up code.
-    pub fn from_conf(conf: conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context> {
+    /// Usually called by `Context::load_from_conf()`.
+    fn from_conf(conf: conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context> {
         let video = sdl_context.video()?;
 
         let audio_context = audio::AudioContext::new()?;
@@ -102,8 +103,13 @@ impl Context {
     }
 
     /// Tries to create a new Context loading a config
-    /// file from its default path, using the given Conf
+    /// file from its default path, using the given `Conf`
     /// object as a default if none is found.
+    ///
+    /// The `id` and `author` are game-specific strings that 
+    /// are used to locate the default storage locations for the
+    /// platform it looks in; for instance, on Linux, it will
+    /// look for `~/.config/id/conf.toml`
     pub fn load_from_conf(id: &'static str,
                           author: &'static str,
                           default_config: conf::Conf)
@@ -112,11 +118,9 @@ impl Context {
         let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(id, author)?;
 
-        // TODO: Verify config version == this version
         let config = fs.read_config().unwrap_or(default_config);
 
         Context::from_conf(config, fs, sdl_context)
-
     }
 
     /// Prints out information on the resources subsystem.

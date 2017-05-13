@@ -3,29 +3,36 @@
 //! This module provides access to files in specific places:
 //!
 //! * The `resources/` subdirectory in the same directory as the
-//! program executable, * The `resources.zip` file in the same
-//! directory as the program executable, * The root folder of the
-//! game's "user" directory which is in a platform-dependent location,
+//! program executable, 
+//! * The `resources.zip` file in the same
+//! directory as the program executable, 
+//! * The root folder of the  game's "user" directory which is in a 
+//! platform-dependent location,
 //! such as `~/.local/share/author/gameid/` on Linux.  The `gameid`
 //! and `author` parts are the strings passed to
 //! `Context::load_from_conf()`.
+//! * There is also a "config" directory which is writeable; on Linux
+//! this is generally `~/.config/gameid/`.  This is where new files are
+//! written to, such as config files or saved games.
 //!
 //! Files will be looked for in these locations in order, and the first one
 //! found used.  That allows game assets to be easily distributed as an archive
 //! file, but locally overridden for testing or modding simply by putting
 //! altered copies of them in the game's `resources/` directory.
 //!
-//! The `resources/` subdirectory and resources.zip files are read-only.
-//! Files that are opened for writing using `Filesystem::open_options()`
-//! will be created in the `user` directory.
-//!
 //! Note that currently the file lookups WILL follow symlinks!  It is
 //! more for convenience than absolute security, so don't treat it as
 //! being secure.
 
+// BUGGO: TODO: Figure out for sure where the data and user dirs are, 
+// make sure the right ones are rw vs ro, and update docs to match.
+// Also verify the order.
+//
+// BUGGO: TODO: Also make it print out the searched directories when it
+// can't find a file!
+
 use std::env;
 use std::fmt;
-use std::fs;
 use std::io;
 use std::path;
 
@@ -37,43 +44,38 @@ use conf;
 use vfs;
 use vfs::VFS;
 
-use zip;
-
-
 const CONFIG_NAME: &'static str = "conf.toml";
 
 /// A structure that contains the filesystem state and cache.
 #[derive(Debug)]
 pub struct Filesystem {
     vfs: vfs::OverlayFS,
+    resources_path: path::PathBuf,
+    zip_path: path::PathBuf,
+    user_config_path: path::PathBuf,
+    user_data_path: path::PathBuf,
 }
 
 /// Represents a file, either in the filesystem, or in the resources zip file,
 /// or whatever.
-pub enum File<'a> {
-    FSFile(fs::File),
-    ZipFile(zip::read::ZipFile<'a>),
+pub enum File {
     VfsFile(Box<vfs::VFile>),
 }
 
-impl<'a> fmt::Debug for File<'a> {
+impl fmt::Debug for File {
     // TODO: Make this more useful.
     // But we can't seem to get a filename out of a file,
     // soooooo.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            File::FSFile(ref _file) => write!(f, "File"),
-            File::ZipFile(ref _file) => write!(f, "Zipfile"),
             File::VfsFile(ref _file) => write!(f, "VfsFile"),
         }
     }
 }
 
-impl<'a> io::Read for File<'a> {
+impl io::Read for File {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         match *self {
-            File::FSFile(ref mut f) => f.read(buf),
-            File::ZipFile(ref mut f) => f.read(buf),
             File::VfsFile(ref mut f) => f.read(buf),
         }
     }
@@ -81,19 +83,15 @@ impl<'a> io::Read for File<'a> {
 
 
 
-impl<'a> io::Write for File<'a> {
+impl io::Write for File {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         match *self {
-            File::FSFile(ref mut f) => f.write(buf),
-            File::ZipFile(_) => panic!("Cannot write to a zip file!"),
             File::VfsFile(ref mut f) => f.write(buf),
         }
     }
 
     fn flush(&mut self) -> io::Result<()> {
         match *self {
-            File::FSFile(ref mut f) => f.flush(),
-            File::ZipFile(_) => Ok(()),
             File::VfsFile(ref mut f) => f.flush(),
         }
     }
@@ -108,8 +106,7 @@ pub type PathList = Vec<String>;
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     let errmessage = format!("Invalid path format for resource: {:?}", path);
     let error = GameError::FilesystemError(errmessage);
-    path.to_str()
-        .ok_or(error)
+    path.to_str().ok_or(error)
 }
 
 impl Filesystem {
@@ -118,8 +115,6 @@ impl Filesystem {
     /// directory path.  This function is called automatically by
     /// ggez, the end user should never need to call it.
     pub fn new(id: &'static str, author: &'static str) -> GameResult<Filesystem> {
-        // BUGGO: AppInfo.id needs to be a &'static str which is bogus!
-        // See https://github.com/AndyBarron/app-dirs-rs/issues/19
         let app_info = AppInfo {
             name: id,
             author: author,
@@ -132,43 +127,48 @@ impl Filesystem {
         }
 
         // Set up VFS to merge resource path, root path, and zip path.
-        // TODO: Make these in the right order.
         let mut overlay = vfs::OverlayFS::new();
-        // <root>/resources.zip
-        {
-            let mut resource_zip_path = root_path.clone();
-            resource_zip_path.push("resources.zip");
-            if resource_zip_path.exists() {
-                let p = convenient_path_to_str(&resource_zip_path)?;
-                let zipfs = vfs::ZipFS::new(p);
-                overlay.push(Box::new(zipfs));
-            }
-        }
+
+        let mut resources_path;
+        let mut resources_zip_path;
+        let user_data_path;
+        let user_config_path;
         // <game exe root>/resources/
         {
-            let mut resource_path = root_path.clone();
-            resource_path.push("resources");
-            let p = convenient_path_to_str(&resource_path)?;
+            resources_path = root_path.clone();
+            resources_path.push("resources");
+            let p = convenient_path_to_str(&resources_path)?;
             let physfs = vfs::PhysicalFS::new(p, true);
-            overlay.push(Box::new(physfs));
+            overlay.push_back(Box::new(physfs));
+        }
+
+        // <root>/resources.zip
+        {
+            resources_zip_path = root_path.clone();
+            resources_zip_path.push("resources.zip");
+            if resources_zip_path.exists() {
+                let p = convenient_path_to_str(&resources_zip_path)?;
+                let zipfs = vfs::ZipFS::new(p);
+                overlay.push_back(Box::new(zipfs));
+            }
         }
 
         // Per-user data dir,
         // ~/.local/share/whatever/
         {
-            let user_data_path = app_root(AppDataType::UserData, &app_info)?;
+            user_data_path = app_root(AppDataType::UserData, &app_info)?;
             let p = convenient_path_to_str(&user_data_path)?;
             let physfs = vfs::PhysicalFS::new(p, true);
-            overlay.push(Box::new(physfs));
+            overlay.push_back(Box::new(physfs));
         }
 
         // Writeable local dir, ~/.config/whatever/
         // Save game dir is read-write
         {
-            let user_path = get_app_root(AppDataType::UserConfig, &app_info)?;
-            let p = convenient_path_to_str(&user_path)?;
+            user_config_path = app_root(AppDataType::UserConfig, &app_info)?;
+            let p = convenient_path_to_str(&user_config_path)?;
             let physfs = vfs::PhysicalFS::new(p, false);
-            overlay.push(Box::new(physfs));
+            overlay.push_back(Box::new(physfs));
         }
 
         // Cargo manifest dir!
@@ -178,10 +178,16 @@ impl Filesystem {
             path.push("resources");
             let p = convenient_path_to_str(&path)?;
             let physfs = vfs::PhysicalFS::new(p, false);
-            overlay.push(Box::new(physfs));
+            overlay.push_back(Box::new(physfs));
         }
 
-        let fs = Filesystem { vfs: overlay };
+        let fs = Filesystem { 
+            vfs: overlay,
+            resources_path: resources_path,
+            zip_path: resources_zip_path,
+            user_config_path: user_config_path,
+            user_data_path: user_data_path,
+        };
 
         Ok(fs)
     }
@@ -221,9 +227,7 @@ impl Filesystem {
     pub fn create<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
         let p: &path::Path = path.as_ref();
         let pathstr = p.to_str().unwrap();
-        self.vfs
-            .create(pathstr)
-            .map(|f| File::VfsFile(f))
+        self.vfs.create(pathstr).map(|f| File::VfsFile(f))
     }
 
     /// Create an empty directory in the user dir
@@ -277,26 +281,16 @@ impl Filesystem {
             .unwrap_or(false)
     }
 
-    /*
-BUGGO: TODO: These might still be useful.
-But we should cache the info a little more clearly, or
-just pluck the paths out of the VFS.
-    /// Return the full path to the directory containing the exe
-    pub fn get_root_dir(&self) -> &path::Path {
-        &self.base_path
-    }
-
-    /// Return the full path to the user directory
-    pub fn get_user_dir(&self) -> &path::Path {
-        &self.user_path
+    /// Return the full path to the user data directory
+    pub fn get_user_data_dir(&self) -> &path::Path {
+        &self.user_data_path
     }
 
     /// Returns the full path to the resource directory
     /// (even if it doesn't exist)
-    pub fn get_resource_dir(&self) -> &path::Path {
-        &self.resource_path
+    pub fn get_resources_dir(&self) -> &path::Path {
+        &self.resources_path
     }
-*/
 
     /// Returns an iterator over all files and directories in the resource directory,
     /// in no particular order.
@@ -347,7 +341,7 @@ just pluck the paths out of the VFS.
             let mut file = self.create(conf_path)?;
             conf.to_toml_file(&mut file)
         } else {
-            Err(GameError::ConfigError(String::from("Config file not found")))
+            Err(GameError::ConfigError(String::from("Could not write config file because a directory is in the way?")))
         }
     }
 }
@@ -366,8 +360,15 @@ mod tests {
         path.push("resources");
         let physfs = vfs::PhysicalFS::new(path.to_str().unwrap(), false);
         let mut ofs = vfs::OverlayFS::new();
-        ofs.push(Box::new(physfs));
-        Filesystem { vfs: ofs }
+        ofs.push_front(Box::new(physfs));
+        Filesystem { 
+            vfs: ofs,
+
+            resources_path: "".into(),
+            zip_path: "".into(),
+            user_config_path: "".into(),
+            user_data_path: "".into(),
+        }
 
     }
 

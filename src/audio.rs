@@ -79,7 +79,7 @@ impl AsRef<[u8]> for SoundData {
 // The source of a rodio decoder must be Send, which something
 // that contains a reference to a ZipFile is not, so we are going
 // to just slurp all the data into memory for now.
-// There's really a lot of work that needs to be done here, since 
+// There's really a lot of work that needs to be done here, since
 // rodio has gotten better (if still somewhat arcane) and our filesystem
 // code has done the data-slurping-from-zip's for us
 // but
@@ -105,9 +105,9 @@ impl Source {
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
         let sink = rodio::Sink::new(&context.audio_context.endpoint);
         Ok(Source {
-            data: data,
-            sink: sink,
-        })
+               data: data,
+               sink: sink,
+           })
     }
 
     /// Plays the Source.

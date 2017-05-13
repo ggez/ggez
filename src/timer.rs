@@ -2,13 +2,13 @@
 //!
 //! ggez does not try to do any framerate limitation by default.
 //! If you want to run at anything other than full-bore max speed all the time,
-//! you should use either the `sleep()` or `sleep_until_next_frame()` function in
-//! this module at the end of your `GameState.draw()` callback.
-//!
-//! `sleep()` with a duration of 0 will just yield to the OS so it has a chance
-//! to breathe before continuing with your game,  while
+//! calling `sleep()` with a duration of 0 will just yield to the OS so it has a 
+//! chance to breathe before continuing with your game,  while
 //! `sleep_until_next_frame()` will attempt to calculate how long it should
 //! wait to hit the desired FPS and sleep that long.
+//!
+//! For a more detailed tutorial in how to handle frame timings in games,
+//! see <http://gafferongames.com/game-physics/fix-your-timestep/>
 
 use context::Context;
 
@@ -68,10 +68,6 @@ impl<T> LogBuffer<T>
 }
 
 /// A structure that contains our time-tracking state.
-// This is independent of SDL.
-// According to the rust-sdl2 maintainers,
-// SDL's time functions are of dubious thread-safety,
-// while Rust's are pretty solid.
 #[derive(Debug)]
 pub struct TimeContext {
     init_instant: time::Instant,
@@ -83,7 +79,7 @@ pub struct TimeContext {
 
 // How many frames we log update times for.
 // Nominally, one second, give or take.
-const TIME_LOG_FRAMES: u32 = 60;
+const TIME_LOG_FRAMES: usize = 60;
 
 impl TimeContext {
     /// Creates a new `TimeContext` and initializes the start to this instant.
@@ -91,7 +87,7 @@ impl TimeContext {
         TimeContext {
             init_instant: time::Instant::now(),
             last_instant: time::Instant::now(),
-            frame_durations: LogBuffer::new(TIME_LOG_FRAMES as usize, time::Duration::new(0, 0)),
+            frame_durations: LogBuffer::new(TIME_LOG_FRAMES, time::Duration::new(0, 0)),
             residual_update_dt: time::Duration::from_secs(0),
         }
     }
@@ -100,7 +96,7 @@ impl TimeContext {
     /// another frame has taken place.
     ///
     /// It's usually not necessary to call this function yourself,
-    /// the `Game` will do it for you.
+    /// the `EventHandler` will do it for you.
     pub fn tick(&mut self) {
         let now = time::Instant::now();
         let time_since_last = now - self.last_instant;
@@ -126,13 +122,14 @@ pub fn get_delta(ctx: &Context) -> time::Duration {
 
 /// Gets the average time of a frame, averaged
 /// over the last 60 frames.
-// TODO: We COULD make it so that a TimeContext has a set_average_window
-// function.  Do we care?
 pub fn get_average_delta(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     let init = time::Duration::new(0, 0);
-    let sum = tc.frame_durations.contents().iter().fold(init, |d1, d2| d1 + *d2);
-    sum / TIME_LOG_FRAMES
+    let sum = tc.frame_durations
+        .contents()
+        .iter()
+        .fold(init, |d1, d2| d1 + *d2);
+    sum / (TIME_LOG_FRAMES as u32)
 }
 
 /// A convenience function to convert a Rust `Duration` type
@@ -187,14 +184,6 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
 /// the update FPS indicated by the `desired_update_rate`.
 /// It keeps track of fractional frames, and does not
 /// do any sleeping.
-///
-/// For the most accurate frame timings, it is recommended
-/// to call this in your `update()` method and only update
-/// if it returns true, and then call `sleep(0)` at the end
-/// of your `draw()` method to ensure your game does not consume
-/// 100% CPU when it does not need to.
-///
-/// Or just see http://gafferongames.com/game-physics/fix-your-timestep/
 pub fn check_update_time(ctx: &mut Context, desired_update_rate: u64) -> bool {
     let dt = get_delta(ctx);
     let timedata = &mut ctx.timer_context;
@@ -214,7 +203,8 @@ pub fn check_update_time(ctx: &mut Context, desired_update_rate: u64) -> bool {
 ///
 /// This is not an especially precise way to do timing;
 /// see the `astroblasto` example for how to do it better.
-/// However, this is very convenient, so I'm leaving it in.
+/// However, this is very convenient for prototyping, 
+/// so I'm leaving it in.
 pub fn sleep_until_next_frame(ctx: &Context, desired_fps: u32) {
     // We assume we'll never sleep more than a second!
     // Using an integer FPS target helps enforce this.

@@ -143,7 +143,9 @@ impl<R> SamplerCache<R>
                         -> gfx::handle::Sampler<R>
         where F: gfx::Factory<R>
     {
-        let sampler = self.samplers.entry(info).or_insert_with(|| factory.create_sampler(info));
+        let sampler = self.samplers
+            .entry(info)
+            .or_insert_with(|| factory.create_sampler(info));
         sampler.clone()
     }
 }
@@ -262,15 +264,15 @@ impl GraphicsContext {
         let vsync_int = if vsync { 1 } else { 0 };
         video.gl_set_swap_interval(vsync_int);
         let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
-            factory.create_command_buffer()
-                .into();
+            factory.create_command_buffer().into();
 
 
         let display_index = window.display_index()?;
         let dpi = window.subsystem().display_dpi(display_index)?;
 
         // GFX SETUP
-        let pso = factory.create_pipeline_simple(include_bytes!("shader/basic_150.glslv"),
+        let pso = factory
+            .create_pipeline_simple(include_bytes!("shader/basic_150.glslv"),
                                     include_bytes!("shader/basic_150.glslf"),
                                     pipe::new())?;
 
@@ -333,13 +335,15 @@ impl GraphicsContext {
     }
 
     fn update_globals(&mut self) -> GameResult<()> {
-        self.encoder.update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
+        self.encoder
+            .update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
         Ok(())
     }
 
     fn update_rect_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
         let properties = draw_params.into();
-        self.encoder.update_buffer(&self.data.rect_properties, &[properties], 0)?;
+        self.encoder
+            .update_buffer(&self.data.rect_properties, &[properties], 0)?;
         Ok(())
     }
 
@@ -402,7 +406,8 @@ fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
-    gfx.encoder.clear(&gfx.data.out, gfx.background_color.into());
+    gfx.encoder
+        .clear(&gfx.data.out, gfx.background_color.into());
 }
 
 /// Draws the given `Drawable` object to the screen.
@@ -542,7 +547,10 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
             let x2 = x + (w / 2.0);
             let y1 = y - (h / 2.0);
             let y2 = y + (h / 2.0);
-            let pts = [[x1, y1].into(), [x2, y1].into(), [x2, y2].into(), [x1, y2].into()];
+            let pts = [[x1, y1].into(),
+                       [x2, y1].into(),
+                       [x2, y2].into(),
+                       [x1, y2].into()];
             polygon(ctx, mode, &pts)
         }
     }
@@ -802,29 +810,29 @@ impl Image {
                 -> GameResult<Image> {
         // Check if the texture is not power of 2, and if not, pad it out.
         let view = if false {
-        // let view = if !(width.is_power_of_two() && height.is_power_of_two()) {
+            // let view = if !(width.is_power_of_two() && height.is_power_of_two()) {
             let (width, height, rgba) = scale_rgba_up_to_power_of_2(width, height, rgba);
             let rgba = &rgba;
             assert_eq!((width as usize) * (height as usize) * 4, rgba.len());
             let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
             // The slice containing rgba is NOT rows x columns, it is a slice of
             // MIPMAP LEVELS.  Augh!
-            let (_, view) =
-                factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
+            let (_, view) = factory
+                .create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
             view
         } else {
             let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-            let (_, view) =
-                factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
+            let (_, view) = factory
+                .create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
             view
 
         };
         Ok(Image {
-            texture: view,
-            sampler_info: *sampler_info,
-            width: width as u32,
-            height: height as u32,
-        })
+               texture: view,
+               sampler_info: *sampler_info,
+               width: width as u32,
+               height: height as u32,
+           })
     }
 
     /// A little helper function that creates a new Image that is just
@@ -913,7 +921,8 @@ impl Drawable for Image {
         new_param.offset.y *= param.scale.y;
         gfx.update_rect_properties(new_param)?;
         //let sampler = self.samplers.clone().unwrap_or_else(|| gfx.data.tex.clone().1);
-        let sampler = gfx.samplers.get_or_insert(self.sampler_info, gfx.factory.as_mut());
+        let sampler = gfx.samplers
+            .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.texture.clone(), sampler);
         gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
@@ -929,14 +938,15 @@ pub struct Mesh {
 
 impl Mesh {
     fn from_tessellation(ctx: &mut Context, buffer: tessellation::Buffer) -> GameResult<Mesh> {
-        let (vbuf, slice) = ctx.gfx_context
-            .factory
-            .create_vertex_buffer_with_slice(&buffer.vertices[..], &buffer.indices[..]);
+        let (vbuf, slice) =
+            ctx.gfx_context
+                .factory
+                .create_vertex_buffer_with_slice(&buffer.vertices[..], &buffer.indices[..]);
 
         Ok(Mesh {
-            buffer: vbuf,
-            slice: slice,
-        })
+               buffer: vbuf,
+               slice: slice,
+           })
     }
 
     /// Create a new mesh for a line of one or more connected segments.

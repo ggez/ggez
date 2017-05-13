@@ -52,9 +52,9 @@ impl Font {
         let font = collection.into_font().ok_or(font_err)?;
 
         Ok(Font::TTFFont {
-            font: font,
-            points: size,
-        })
+               font: font,
+               points: size,
+           })
     }
 
     /// Loads an `Image` and uses it to create a new bitmap font
@@ -81,12 +81,12 @@ impl Font {
             glyphs_map.insert(c, i * glyph_width);
         }
         Ok(Font::BitmapFont {
-            bytes: img.into_vec(),
-            width: image_width as usize,
-            height: image_height as usize,
-            glyphs: glyphs_map,
-            glyph_width: glyph_width,
-        })
+               bytes: img.into_vec(),
+               width: image_width as usize,
+               height: image_height as usize,
+               glyphs: glyphs_map,
+               glyph_width: glyph_width,
+           })
     }
 
     pub fn default_font() -> GameResult<Self> {
@@ -139,7 +139,7 @@ fn render_ttf(context: &mut Context,
 
     // Get the proper DPI to scale font size accordingly
     let (_diag_dpi, x_dpi, y_dpi) = context.gfx_context.dpi;
-    println!("DPI: {}, {}", x_dpi, y_dpi);
+    // println!("DPI: {}, {}", x_dpi, y_dpi);
     let scale = display_independent_scale(size, x_dpi, y_dpi);
     let text_height_pixels = scale.y.ceil() as usize;
     let v_metrics = font.v_metrics(scale);
@@ -148,12 +148,15 @@ fn render_ttf(context: &mut Context,
     // `layout()` turns an abstract glyph, which contains no concrete
     // size or position information, into a PositionedGlyph, which does.
     let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
-    let text_width_pixels = glyphs.iter()
+    let text_width_pixels = glyphs
+        .iter()
         .rev()
         .filter_map(|g| {
-            g.pixel_bounding_box()
-                .map(|b| b.min.x as f32 + g.unpositioned().h_metrics().advance_width)
-        })
+                        g.pixel_bounding_box()
+                            .map(|b| {
+                                     b.min.x as f32 + g.unpositioned().h_metrics().advance_width
+                                 })
+                    })
         .next()
         .unwrap_or(0.0)
         .ceil() as usize;
@@ -197,9 +200,9 @@ fn render_ttf(context: &mut Context,
 
     let text_string = text.to_string();
     Ok(Text {
-        texture: image,
-        contents: text_string,
-    })
+           texture: image,
+           contents: text_string,
+       })
 
 }
 
@@ -250,8 +253,9 @@ fn render_bitmap(context: &mut Context,
     dest_buf.resize(buf_len, 0u8);
     for (i, c) in text.chars().enumerate() {
         let error_message = format!("Character '{}' not in bitmap font!", c);
-        let source_offset = *glyphs_map.get(&c)
-            .ok_or(GameError::FontError(String::from(error_message)))?;
+        let source_offset = *glyphs_map
+                                 .get(&c)
+                                 .ok_or(GameError::FontError(String::from(error_message)))?;
         let dest_offset = glyph_width * i;
         blit(&mut dest_buf,
              (text_length * glyph_width, glyph_height),
@@ -269,9 +273,9 @@ fn render_bitmap(context: &mut Context,
     let text_string = text.to_string();
 
     Ok(Text {
-        texture: image,
-        contents: text_string,
-    })
+           texture: image,
+           contents: text_string,
+       })
 }
 
 
@@ -279,10 +283,17 @@ impl Text {
     /// Renders a new `Text` from the given `Font`
     pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<Text> {
         match *font {
-            Font::TTFFont { font: ref f, points } => render_ttf(context, text, f, points),
-            Font::BitmapFont { ref bytes, width, height, glyph_width, ref glyphs } => {
-                render_bitmap(context, text, bytes, width, height, glyphs, glyph_width)
-            }
+            Font::TTFFont {
+                font: ref f,
+                points,
+            } => render_ttf(context, text, f, points),
+            Font::BitmapFont {
+                ref bytes,
+                width,
+                height,
+                glyph_width,
+                ref glyphs,
+            } => render_bitmap(context, text, bytes, width, height, glyphs, glyph_width),
         }
     }
 

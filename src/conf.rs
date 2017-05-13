@@ -24,7 +24,7 @@ pub struct Conf {
     pub window_width: u32,
     /// Whether or not the graphics draw rate should be
     /// synchronized with the monitor's draw rate.
-    pub vsync: bool, 
+    pub vsync: bool,
     /* To implement still.
      * window_borderless: bool,
      * window_resizable: bool,

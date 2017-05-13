@@ -321,13 +321,13 @@ impl Assets {
         let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
         let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
         Ok(Assets {
-            player_image: player_image,
-            shot_image: shot_image,
-            rock_image: rock_image,
-            font: font,
-            shot_sound: shot_sound,
-            hit_sound: hit_sound,
-        })
+               player_image: player_image,
+               shot_image: shot_image,
+               rock_image: rock_image,
+               font: font,
+               shot_sound: shot_sound,
+               hit_sound: hit_sound,
+           })
     }
 
     fn actor_image(&mut self, actor: &Actor) -> &mut graphics::Image {

@@ -73,11 +73,8 @@ pub fn build_line(points: &[Point], line_width: f32) -> GameResult<Buffer> {
     let opts = path_stroke::StrokeOptions::stroke_width(line_width);
     let mut tessellator = path_stroke::StrokeTessellator::new();
     build_geometry(|builder| {
-        tessellator.tessellate(path.path_iter()
-                                   .flattened(0.5),
-                               &opts,
-                               builder)
-    })
+                       tessellator.tessellate(path.path_iter().flattened(0.5), &opts, builder)
+                   })
 }
 
 /// Build a closed polygon.  Identical to build_line but closes the path,
@@ -88,11 +85,8 @@ pub fn build_polygon(points: &[Point], line_width: f32) -> GameResult<Buffer> {
     let opts = path_stroke::StrokeOptions::stroke_width(line_width);
     let mut tessellator = path_stroke::StrokeTessellator::new();
     build_geometry(|builder| {
-        tessellator.tessellate(path.path_iter()
-                                   .flattened(0.5),
-                               &opts,
-                               builder)
-    })
+                       tessellator.tessellate(path.path_iter().flattened(0.5), &opts, builder)
+                   })
 }
 
 // This would be ideal but really should be left until we can get around
@@ -112,9 +106,10 @@ pub fn build_polygon(points: &[Point], line_width: f32) -> GameResult<Buffer> {
 
 pub fn build_ellipse_fill(point: Point, r1: f32, r2: f32, segments: u32) -> GameResult<Buffer> {
     build_geometry(|builder| {
-        Ok(tessellation::basic_shapes::tessellate_ellipsis(math::point(point.x, point.y),
-                                                           math::point(r1, r2),
-                                                           segments,
-                                                           builder))
-    })
+                       Ok(tessellation::basic_shapes::tessellate_ellipsis(math::point(point.x,
+                                                                                      point.y),
+                                                                          math::point(r1, r2),
+                                                                          segments,
+                                                                          builder))
+                   })
 }

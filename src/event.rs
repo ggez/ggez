@@ -31,6 +31,7 @@ use std::time::Duration;
 ///
 /// The default event handlers do nothing, apart from `key_down_event()`,
 /// which *should* by default exit the game if escape is pressed.
+/// Just override the methods you want to do things with.
 pub trait EventHandler {
     /// Called upon each physics update to the game.
     /// This should be where the game's logic takes place.
@@ -42,10 +43,6 @@ pub trait EventHandler {
     /// `graphics::present()` and `timer::sleep_until_next_frame()`
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
 
-    // You don't have to override these if you don't want to; the defaults
-    // do nothing.
-    // It might be nice to be able to have custom event types and a map or
-    // such of handlers?  Hmm, maybe later.
     fn mouse_button_down_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
 
     fn mouse_button_up_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
@@ -81,8 +78,8 @@ pub trait EventHandler {
 /// Runs the game's main loop, calling event callbacks on the given state
 /// object as events occur.
 ///
-/// It does not try to do any type of rate limiting, apart from calling
-/// `timer::sleep(0)` at the end of each frame.
+/// It does not try to do any type of framerate limiting.  See the
+/// documentation for the `timer` module for more info.
 pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
     where S: EventHandler
 {
@@ -99,14 +96,12 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                         continuing = state.quit_event();
                         // println!("Quit event: {:?}", t);
                     }
-                    // TODO: We need a good way to have
-                    // a default like this, while still allowing
-                    // it to be overridden.
-                    // Bah, just put it in the GameState trait
-                    // as the default function.
-                    // But it doesn't have access to the context
-                    // to call quit!  Bah.
-                    KeyDown { keycode, keymod, repeat, .. } => {
+                    KeyDown {
+                        keycode,
+                        keymod,
+                        repeat,
+                        ..
+                    } => {
                         if let Some(key) = keycode {
                             if key == keyboard::Keycode::Escape {
                                 ctx.quit()?;
@@ -115,7 +110,12 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                             }
                         }
                     }
-                    KeyUp { keycode, keymod, repeat, .. } => {
+                    KeyUp {
+                        keycode,
+                        keymod,
+                        repeat,
+                        ..
+                    } => {
                         if let Some(key) = keycode {
                             state.key_up_event(key, keymod, repeat)
                         }
@@ -126,9 +126,14 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                     MouseButtonUp { mouse_btn, x, y, .. } => {
                         state.mouse_button_up_event(mouse_btn, x, y)
                     }
-                    MouseMotion { mousestate, x, y, xrel, yrel, .. } => {
-                        state.mouse_motion_event(mousestate, x, y, xrel, yrel)
-                    }
+                    MouseMotion {
+                        mousestate,
+                        x,
+                        y,
+                        xrel,
+                        yrel,
+                        ..
+                    } => state.mouse_motion_event(mousestate, x, y, xrel, yrel),
                     MouseWheel { x, y, .. } => state.mouse_wheel_event(x, y),
                     ControllerButtonDown { button, .. } => {
                         state.controller_button_down_event(button)

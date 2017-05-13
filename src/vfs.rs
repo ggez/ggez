@@ -1,4 +1,18 @@
+//! A virtual file system layer that lets us define multiple
+//! "file systems" with various backing stores, then merge them 
+//! together.
+//!
+//! Basically a re-implementation of PhysFS.  The `vfs` crate
+//! does something similar but has a couple design decisions that make 
+//! it kind of incompatible with this use case;
+//!
+//! We make some simplifying assumptions as well, namely that
+//! Path == str.  Because doing defining all our paths to be 
+//! generic `T: Into<Path>` or such means that we can't use the
+//! resulting traits as trait objects.
+
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::path::{self, PathBuf};
 use std::fs;
 use std::fmt::{self, Debug};
@@ -86,7 +100,10 @@ pub trait VFS: Debug {
     /// Open the file at this path for writing, truncating it if it exists already
     fn create(&self, path: &Path) -> GameResult<Box<VFile>> {
         self.open_options(path,
-                          OpenOptions::new().write(true).create(true).truncate(true))
+                          OpenOptions::new()
+                              .write(true)
+                              .create(true)
+                              .truncate(true))
     }
     /// Open the file at this path for appending, creating it if necessary
     fn append(&self, path: &Path) -> GameResult<Box<VFile>> {
@@ -228,7 +245,8 @@ impl VFS for PhysicalFS {
             }
         }
         let p = self.get_absolute(path)?;
-        open_options.to_fs_openoptions()
+        open_options
+            .to_fs_openoptions()
             .open(p)
             .map(|x| Box::new(x) as Box<VFile>)
             .map_err(GameError::from)
@@ -239,7 +257,7 @@ impl VFS for PhysicalFS {
         if self.readonly {
             return Err(GameError::FilesystemError("Tried to make directory {} but FS is \
                                                    read-only"
-                .to_string()));
+                                                          .to_string()));
         }
         let p = self.get_absolute(path)?;
         //println!("Creating {:?}", p);
@@ -253,7 +271,7 @@ impl VFS for PhysicalFS {
     fn rm(&self, path: &Path) -> GameResult<()> {
         if self.readonly {
             return Err(GameError::FilesystemError("Tried to remove file {} but FS is read-only"
-                .to_string()));
+                                                      .to_string()));
         }
 
         let p = self.get_absolute(path)?;
@@ -269,7 +287,7 @@ impl VFS for PhysicalFS {
         if self.readonly {
             return Err(GameError::FilesystemError("Tried to remove file/dir {} but FS is \
                                                    read-only"
-                .to_string()));
+                                                          .to_string()));
         }
 
         let p = self.get_absolute(path)?;
@@ -307,17 +325,23 @@ impl VFS for PhysicalFS {
 /// VecDeque instead of Vec?
 #[derive(Debug)]
 pub struct OverlayFS {
-    roots: Vec<Box<VFS>>,
+    roots: VecDeque<Box<VFS>>,
 }
 
 impl OverlayFS {
     pub fn new() -> Self {
-        Self { roots: Vec::new() }
+        Self { roots: VecDeque::new() }
+    }
+
+
+    /// Adds a new VFS to the front of the list.
+    pub fn push_front(&mut self, fs: Box<VFS>) {
+        &self.roots.push_front(fs);
     }
 
     /// Adds a new VFS to the end of the list.
-    pub fn push(&mut self, fs: Box<VFS>) {
-        &self.roots.push(fs);
+    pub fn push_back(&mut self, fs: Box<VFS>) {
+        &self.roots.push_back(fs);
     }
 }
 
@@ -493,10 +517,10 @@ impl ZipMetadata {
             Ok(zipfile) => {
                 let len = zipfile.size();
                 Some(ZipMetadata {
-                    len: len,
-                    is_file: true,
-                    is_dir: false, // mu
-                })
+                         len: len,
+                         is_file: true,
+                         is_dir: false, // mu
+                     })
             }
         }
     }
@@ -564,9 +588,10 @@ impl VFS for ZipFS {
     }
 
     fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
-        let mut stupid_archive_borrow = self.archive
-            .try_borrow_mut()
-            .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen!  \
+        let mut stupid_archive_borrow =
+            self.archive
+                .try_borrow_mut()
+                .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen!  \
                      Report a bug at https://github.com/ggez/ggez/");
         match ZipMetadata::new(path, &mut stupid_archive_borrow) {
             None => {
@@ -638,8 +663,8 @@ mod tests {
         f2path.push("src");
         let fs2 = PhysicalFS::new(f2path.to_str().unwrap(), true);
         let mut ofs = OverlayFS::new();
-        ofs.push(Box::new(fs1));
-        ofs.push(Box::new(fs2));
+        ofs.push_back(Box::new(fs1));
+        ofs.push_back(Box::new(fs2));
 
         assert!(ofs.exists("/Cargo.toml"));
         assert!(ofs.exists("/lib.rs"));
