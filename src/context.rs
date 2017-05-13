@@ -58,10 +58,15 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
         f.read_to_end(&mut buf)?;
         let image = image::load_from_memory(&buf)?;
         let image_data = &mut image.to_rgba();
+        // The "pitch" parameter here is not the count
+        // between pixels, but the count between rows.
+        // For some retarded reason.
+        // Also it seems to have strange ideas of what
+        // "RGBA" means.
         let surface = surface::Surface::from_data(
             image_data, image.width(), 
-            image.height(), 4, 
-            pixels::PixelFormatEnum::RGBA8888)?;
+            image.height(), image.width() * 4, 
+            pixels::PixelFormatEnum::ABGR8888)?;
         let window = context.gfx_context.get_window();
         window.set_icon(surface);
     };
