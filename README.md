@@ -9,19 +9,18 @@
 ggez is a Rust library to create a Good Game Easily.
 
 More specifically, ggez is a lightweight game framework for making 2D
-games with minimum friction.  It aims to implement an API quite
-similar to (a Rustified version of) the Love2D game engine.  This
-means it will contain basic and portable 2D drawing, sound, resource
-loading and event handling.
+games with minimum friction.  It aims to implement an API based on (a
+Rustified version of) the Love2D game framework.  This means it will
+contain basic and portable 2D drawing, sound, resource loading and
+event handling.
 
 ggez is not meant to be everything to everyone, but rather a good base
 upon which to build.  Thus it takes a fairly batteries-included
-approach without needing a million options and plugins for everything
+approach without needing a million additions and plugins for everything
 imaginable, but also does not dictate higher-level functionality such
 as physics engine or ECS.  Instead the goal is to allow you to use
 whichever libraries you want to provide these functions, or build your
-own libraries atop ggez such as the
-[ggez-goodies](https://github.com/ggez/ggez-goodies) crate.
+own libraries atop ggez.
 
 ## Features
 
@@ -40,7 +39,7 @@ crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```text
-ggez = "0.2.2"
+ggez = "0.3.0"
 ```
 
 However you also need to have the SDL2 libraries installed on your
@@ -59,17 +58,18 @@ provide the functionality to actually get stuff done.
 See the `examples/` directory in the source.  `hello_world` is exactly
 what it says.  `imageview` is a simple program that shows off a number
 of features such as sound and drawing.  `astroblasto` is a small
-Asteroids-like game.
+but complete Asteroids-like game.
 
-To run the examples, you have to copy or symlink the `resources`
-directory to a place the running game can find it.  Cargo does not
-have an easy way of doing this itself at the moment, so the procedure
-is (on Linux):
+To run the examples, you have to tell your program where to find the
+`resources` directory included in the git repository.  The easy way is
+to enable `cargo-resource-root` flag to tell ggez to look for a
+`resources` directory next to your `Cargo.toml`, or copy or symlink
+the `resources` directory to a place the running game can find it
+(such as next to the game executable).
 
 ```text
 cargo build --example astroblasto
-cp -R resources target/debug/examples
-cargo run --example astroblasto
+cargo run --example astroblasto --features=cargo-resource-root
 ```
 
 Either way, if it can't find the resources it will give you an error
@@ -82,7 +82,7 @@ looking.
 
 ggez is built upon SDL2 for windowing and events, `rodio` for sound,
 and a 2D drawing engine implemented in `gfx` using the OpenGL backend
-(which is currently hardwired to use OpenGL 3.2).  It *should* be
+(which currently defaults to use OpenGL 3.2).  It *should* be
 entirely thread-safe outside of the basic event-handling loop, and
 portable to Windows, Linux and Mac.
 
@@ -94,35 +94,32 @@ joystick/controller input; once that exists we can drop SDL2 for
 
 ### 0.3.0
 
-* Make screen transforms a bit more transparent
-* Make non-power-of-2 textures work (issue #59)
-* Make text drawing work
-* Document **everything**
-* Make it always possible to load resources from raw data instead of files. (which might make testing easier) (issue #38)
 * Remove unused example assets
-* Go through `timer` and clean things up a little; it should provide nice functions to do everything you want as accurately as you want using only `Duration`s.  Deprecate the rest.
+* Go through `timer` and clean things up a little; it should provide nice functions to do everything you want as accurately as you want using only `Duration`s.  Remove the rest, though still have convenience functions to convert to seconds or such.
 * The usual cleanup: go through looking for TODO's, unwrap's, run clippy over it.
-* Make `app_dirs` work (issue #56)
 
+Changelog:
 
-## Future work
+* Almost everything is now pure rust; the only C dependency is libsdl2.
+* Graphics:
+ * Entirely new rendering engine using `gfx-rs` backed by OpenGL 3.2
+ * New (if limited) 2D drawing primitives using `lyon`
+ * Font rendering still uses `rusttype` but it's still cool
+ * New option to enable/disable vsync
+* Other stuff
+ * New sound system using `rodio`, supporting pure Rust loading of WAV, Vorbis and FLAC files
+ * Configuration system now uses `serde` rather than `rustc_serialize`
+ * Refactored event loop handling somewhat to make it less magical and more composable.
+ * New filesystem indirection code using `app_dirs`.  There's also a new `cargo-resource-root` feature flag that will make the file loader look for a `resources` directory next to your `Cargo.toml`; worse than useless for release, but great for development.
 
-* Sprite batching
-* Exposing GFX
-* Make it work with non-GL backends
-* Make subsystems modular, so we don't *have* to initialize sound if we don't need to and it's not a hard error if we can't use it.  See https://www.idolagames.com/piston-sdl-window-with-sound/ perhaps.
-* Possibly related, see if it's possible to make the event::run() function optional; provide tools with which to roll your own game loop.
-* Interpolation for the mainloop timing stuff?  Or at least be able to support the user doing it.
-* Start integrating ncollide?
-* Need to add more tests
+So this has been a pretty revolutionary change; I think the only part that hasn't been significantly rewritten is the timing utility functions.  The drawing API is much more powerful and flexible, as well as more rusty, and there's been a million tiny ergonomic improvements.  I'm also willing to call most of the current API more or less stable; I expect to make additions, but quite few breaking changes.
 
-## Useful goodies
+As always, thanks to all who contributed: svenstaro, onelson, vickenty, and whoever I don't remember!  And thanks to everyone who makes the libraries we rely on, especially `rust-sdl2`, `rodio` and all its dependencies, `gfx-rs` and all its dependencies, `serde`, `image`, as well as all the tiny but vital cogs like `app_dirs` and `zip`.  None of this would be possible without you guys.
 
-* specs for entity-component system (alternatives: ecs or recs crates)
-* nalgebra or cgmath for vector math.
-* physics/collision???  ncollide and nphysics; there's ports/wrappers of box2d and chipmunk physics engines but they're young.
-* ggez-goodies for things that are useful but not fundamental and generally don't depend on each other (rather
-  incomplete at the moment, but...)
+Of course, there's plans for 0.4: I mainly want to improve the graphics functionality with sprite batches, better 2D drawing, and exposing the gfx-rs innards a little to allow the adventurous to write their own rendering pipelines.  It should be a *much* less massive change, and hopefully won't take four months to write.
+
+For now though... if you'll excuse me, I've got some games to make.
+
 
 ## Credits
 
