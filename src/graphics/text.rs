@@ -138,7 +138,8 @@ fn render_ttf(context: &mut Context,
     // https://github.com/dylanede/rusttype/blob/master/examples/simple.rs
 
     // Get the proper DPI to scale font size accordingly
-    let (_diag_dpi, x_dpi, y_dpi) = context.dpi;
+    let (_diag_dpi, x_dpi, y_dpi) = context.gfx_context.dpi;
+    println!("DPI: {}, {}", x_dpi, y_dpi);
     let scale = display_independent_scale(size, x_dpi, y_dpi);
     let text_height_pixels = scale.y.ceil() as usize;
     let v_metrics = font.v_metrics(scale);

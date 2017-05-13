@@ -169,6 +169,7 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     line_width: f32,
     point_size: f32,
     screen_rect: Rect,
+    dpi: (f32, f32, f32),
 
     window: sdl2::video::Window,
     #[allow(dead_code)]
@@ -245,6 +246,7 @@ impl GraphicsContext {
                screen_height: u32,
                vsync: bool)
                -> GameResult<GraphicsContext> {
+        // WINDOW SETUP
         let gl = video.gl_attr();
         gl.set_context_version(GL_MAJOR_VERSION, GL_MINOR_VERSION);
         gl.set_context_profile(sdl2::video::GLProfile::Core);
@@ -252,9 +254,6 @@ impl GraphicsContext {
         gl.set_green_size(5);
         gl.set_blue_size(5);
         gl.set_alpha_size(8);
-
-        // println!("GL swap interval: {}", video.gl_get_swap_interval());
-
         let window_builder = video.window(window_title, screen_width, screen_height);
         let (window, gl_context, device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder)?;
@@ -266,6 +265,11 @@ impl GraphicsContext {
             factory.create_command_buffer()
                 .into();
 
+
+        let display_index = window.display_index()?;
+        let dpi = window.subsystem().display_dpi(display_index)?;
+
+        // GFX SETUP
         let pso = factory.create_pipeline_simple(include_bytes!("shader/basic_150.glslv"),
                                     include_bytes!("shader/basic_150.glslf"),
                                     pipe::new())?;
@@ -276,7 +280,6 @@ impl GraphicsContext {
         let rect_props = factory.create_constant_buffer(1);
         let globals_buffer = factory.create_constant_buffer(1);
         let mut samplers: SamplerCache<gfx_device_gl::Resources> = SamplerCache::new();
-        //let sampler = factory.create_sampler_linear();
         let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Trilinear,
                                                      texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
@@ -309,6 +312,7 @@ impl GraphicsContext {
             point_size: 1.0,
             white_image: white_image,
             screen_rect: Rect::new(left, bottom, (right - left), (top - bottom)),
+            dpi: dpi,
 
             window: window,
             gl_context: gl_context,

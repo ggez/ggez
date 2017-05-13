@@ -316,7 +316,7 @@ impl Assets {
         // let font_chars =
         //"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!,.?;'\"";
         // let font = graphics::Font::new_bitmap(ctx, font_path, font_chars)?;
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 36)?;
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 18)?;
 
         let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
         let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;

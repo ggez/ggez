@@ -34,7 +34,6 @@ pub struct Context {
     pub gfx_context: graphics::GraphicsContext,
     pub event_context: sdl2::EventSubsystem,
     pub timer_context: timer::TimeContext,
-    pub dpi: (f32, f32, f32),
     pub audio_context: audio::AudioContext,
 }
 
@@ -50,9 +49,7 @@ impl fmt::Debug for Context {
 /// means to do nothing.
 fn set_window_icon(context: &mut Context) -> GameResult<()> {
     if !context.conf.window_icon.is_empty() {
-        // Grrr, hackhackhack here with the icon path clone.
-        // BUGGO: TODO: Fix this too since we no longer use SDL_image
-        let icon_path = context.conf.window_icon.clone();
+        let icon_path = &context.conf.window_icon;
         let mut f = context.filesystem.open(icon_path)?;
         let mut buf = Vec::new();
         f.read_to_end(&mut buf)?;
@@ -77,17 +74,6 @@ impl Context {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by the engine as part of the set-up code.
     pub fn from_conf(conf: conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context> {
-
-        // let window = {
-
-        //     let window_title = &conf.window_title;
-        //     init_window(video, &window_title, screen_width, screen_height)?
-        // };
-
-        // BUGGO: TODO: Make this part of the GraphicsContext
-        // let display_index = window.display_index()?;
-        // let dpi = window.subsystem().display_dpi(display_index)?;
-        let dpi = (75.0, 75.0, 75.0);
         let video = sdl_context.video()?;
 
         let audio_context = audio::AudioContext::new()?;
@@ -104,8 +90,6 @@ impl Context {
             sdl_context: sdl_context,
             filesystem: fs,
             gfx_context: graphics_context,
-            dpi: dpi,
-
             event_context: event_context,
             timer_context: timer_context,
 
