@@ -112,7 +112,7 @@ Changelog:
  * Refactored event loop handling somewhat to make it less magical and more composable.
  * New filesystem indirection code using `app_dirs`.  There's also a new `cargo-resource-root` feature flag that will make the file loader look for a `resources` directory next to your `Cargo.toml`; worse than useless for release, but great for development.
 
-So this has been a pretty revolutionary change; I think the only part that hasn't been significantly rewritten is the timing utility functions.  The drawing API is much more powerful and flexible, as well as more rusty, and there's been a million tiny ergonomic improvements.  I'm also willing to call most of the current API more or less stable; I expect to make additions, but quite few breaking changes.
+So this has been a pretty revolutionary change; I think the only part that hasn't been significantly rewritten is the timing utility functions.  The drawing API is much more powerful and flexible, as well as more rusty, and there's been a million tiny ergonomic improvements.  I'm also willing to call most of the current API more or less stable; I expect to make additions, but not many breaking changes.
 
 As always, thanks to all who contributed: svenstaro, onelson, vickenty, and whoever I don't remember!  And thanks to everyone who makes the libraries we rely on, especially `rust-sdl2`, `rodio` and all its dependencies, `gfx-rs` and all its dependencies, `serde`, `image`, as well as all the tiny but vital cogs like `app_dirs` and `zip`.  None of this would be possible without you guys.
 

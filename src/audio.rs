@@ -1,9 +1,7 @@
 //! Provides an interface to output sound to the user's speakers.
 //!
-//! This departs from the LÖVE API a bit because `SDL2_mixer` is opinionated
-//! about the difference between samples and music files, and also makes channel
-//! management and such more explicit.
-//! This seems a bit awkward but we'll roll with it for now.
+//! It consists of two main portions: A `SoundData` is just raw sound data,
+//! and a `Source` is a `SoundData` connected to a particular channel.
 
 use std::fmt;
 use std::io;
@@ -74,12 +72,18 @@ impl AsRef<[u8]> for SoundData {
 }
 
 /// A source of audio data.
-// TODO: Will stop when dropped.  Check and see if this matches Love2d's semantics!
+/// Will stop playing when dropped.
+// TODO: Check and see if this matches Love2d's semantics!
 // Eventually it might read from a streaming decoder of some kind,
 // but for now it is just an in-memory SoundData structure.
 // The source of a rodio decoder must be Send, which something
 // that contains a reference to a ZipFile is not, so we are going
 // to just slurp all the data into memory for now.
+// There's really a lot of work that needs to be done here, since 
+// rodio has gotten better (if still somewhat arcane) and our filesystem
+// code has done the data-slurping-from-zip's for us
+// but
+// for now it works.
 pub struct Source {
     data: SoundData,
     sink: rodio::Sink,
@@ -125,8 +129,8 @@ impl Source {
     }
 
 
-    pub fn stop(&self) {}
-    pub fn set_looping() {}
+    // pub fn stop(&self) {}
+    // pub fn set_looping() {}
     pub fn set_volume(&mut self, value: f32) {
         self.sink.set_volume(value)
     }
@@ -134,18 +138,18 @@ impl Source {
     pub fn volume(&self) -> f32 {
         self.sink.volume()
     }
-    pub fn stopped(&self) -> bool {
-        false
-    }
+    // pub fn stopped(&self) -> bool {
+    //     false
+    // }
     pub fn paused(&self) -> bool {
         self.sink.is_paused()
     }
     pub fn playing(&self) -> bool {
-        !self.paused() && !self.stopped()
+        !self.paused() // && !self.stopped()
     }
-    pub fn looping(&self) -> bool {
-        false
-    }
+    // pub fn looping(&self) -> bool {
+    //     false
+    // }
 
     // TODO: maybe seek(), tell(), rewind()?
 }

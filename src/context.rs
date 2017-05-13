@@ -1,8 +1,12 @@
 
 
 use sdl2::{self, Sdl};
+use sdl2::surface;
+use sdl2::pixels;
+use image::{self, GenericImage};
 
 use std::fmt;
+use std::io::Read;
 
 use audio;
 use conf;
@@ -17,9 +21,7 @@ use GameResult;
 /// It basically tracks hardware state such as the screen, audio
 /// system, timers, and so on.  Generally this type is **not** thread-
 /// safe and only one `Context` can exist at a time.  Trying to create
-/// another one will fail.  In normal usage you don't have to worry
-/// about this because it gets created and managed by the `Game` object,
-/// and is handed to your `GameState` for use in drawing and such.
+/// another one will fail.
 ///
 /// Most functions that interact with the hardware, for instance
 /// drawing things, playing sounds, or loading resources (which then
@@ -50,14 +52,18 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
     if !context.conf.window_icon.is_empty() {
         // Grrr, hackhackhack here with the icon path clone.
         // BUGGO: TODO: Fix this too since we no longer use SDL_image
-        // let icon_path = context.conf.window_icon.clone();
-        // let path = path::Path::new(&icon_path);
-        // let icon_surface = util::load_surface(context, path)?;
-
-        // BUGGO: TODO: Fix this
-        // if let Some(window) = context.renderer.window_mut() {
-        //     window.set_icon(icon_surface);
-        // }
+        let icon_path = context.conf.window_icon.clone();
+        let mut f = context.filesystem.open(icon_path)?;
+        let mut buf = Vec::new();
+        f.read_to_end(&mut buf)?;
+        let image = image::load_from_memory(&buf)?;
+        let image_data = &mut image.to_rgba();
+        let surface = surface::Surface::from_data(
+            image_data, image.width(), 
+            image.height(), 4, 
+            pixels::PixelFormatEnum::RGBA8888)?;
+        let window = context.gfx_context.get_window();
+        window.set_icon(surface);
     };
     Ok(())
 }

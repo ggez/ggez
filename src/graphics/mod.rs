@@ -338,6 +338,11 @@ impl GraphicsContext {
         self.encoder.update_buffer(&self.data.rect_properties, &[properties], 0)?;
         Ok(())
     }
+
+    /// Returns a reference to the SDL window.  Ideally you should not need to use this.
+    pub fn get_window(&mut self) -> &mut sdl2::video::Window {
+        &mut self.window
+    }
 }
 
 

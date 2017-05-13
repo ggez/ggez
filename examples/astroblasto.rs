@@ -391,7 +391,7 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.print_resource_stats();
+        // ctx.print_resource_stats();
         graphics::set_background_color(ctx, (0, 0, 0, 255).into());
 
         println!("Game resource path: {:?}", ctx.filesystem);
@@ -671,7 +671,7 @@ pub fn main() {
     c.window_title = "Astroblasto!".to_string();
     c.window_width = 640;
     c.window_height = 480;
-    c.window_icon = "player.png".to_string();
+    c.window_icon = "/player.png".to_string();
 
     let ctx = &mut Context::load_from_conf("astroblasto", "ggez", c).unwrap();
 

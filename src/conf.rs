@@ -1,5 +1,8 @@
 //! The `conf` module contains functions for loading and saving game
 //! configurations.
+//!
+//! A `Conf` object is used to specify hardware setup stuff used to create
+//! the window and other context information.
 
 use std::io;
 use toml;
@@ -13,6 +16,7 @@ pub struct Conf {
     /// The window title.
     pub window_title: String,
     /// A file path to the window's icon.
+    /// It is rooted in the `resources` directory (see the `filesystem` module for details).
     pub window_icon: String,
     /// The window's default height
     pub window_height: u32,
@@ -88,11 +92,6 @@ impl Conf {
     /// Saves the `Conf` to the given `Write` object,
     /// formatted as TOML.
     pub fn to_toml_file<W: io::Write>(&self, file: &mut W) -> GameResult<()> {
-        // This gets a little elaborate because we have to
-        // add another level to the TOML object to create
-        // the [ggez] section.
-        //
-        // So we encode the Conf into a toml::Value...
         let s = toml::to_vec(self)?;
         file.write(&s)?;
         Ok(())
