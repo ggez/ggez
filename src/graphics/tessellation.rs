@@ -5,6 +5,7 @@ use lyon::tessellation;
 use lyon::tessellation::basic_shapes;
 use lyon::tessellation::math;
 use lyon::tessellation::path_stroke;
+use lyon::tessellation::path_fill;
 use lyon::tessellation::geometry_builder;
 
 use super::{Point, Vertex};
@@ -53,16 +54,16 @@ fn build_path(points: &[Point], closed: bool) -> path::Path {
     path_builder.build()
 }
 
-fn build_geometry<F, V>(line_width: f32, f: F) -> GameResult<Buffer>
+fn build_geometry<F, V, E>(line_width: f32, f: F) -> GameResult<Buffer>
     where F: for<'a> FnOnce(&mut geometry_builder::BuffersBuilder<'a, Vertex, V, VertexConstructor>)
-                            -> Result<tessellation::geometry_builder::Count, ()>,
+                            -> Result<geometry_builder::Count, E>,
         VertexConstructor: geometry_builder::VertexConstructor<V, Vertex>,
 {
     let mut buffers = geometry_builder::VertexBuffers::new();
     let vertex_ctor = VertexConstructor { stroke_width: line_width };
     {
         let mut builder = geometry_builder::BuffersBuilder::new(&mut buffers, vertex_ctor);
-        if let Err(()) = f(&mut builder) {
+        if let Err(_) = f(&mut builder) {
             return Err(GameError::RenderError(String::from("geometry tessellation failed")));
         }
     }
@@ -90,23 +91,16 @@ pub fn build_polygon(points: &[Point], line_width: f32) -> GameResult<Buffer> {
                    })
 }
 
-// This would be ideal but really should be left until we can get around
-// to updating lyon.
-// pub fn build_polygon_fill(points: &[Point]) -> GameResult<Buffer> {
-
-//     let path = build_path(points, true);
-//     let opts = path_fill::FillOptions::default();
-//     let mut tessellator = path_fill::FillTessellator::new();
-//     build_geometry(|builder| {
-//         tessellator.tessellate_events(path.path_iter()
-//                                    .flattened(0.5),
-//                                &opts,
-//                                builder)
-//     })
-// }
+ pub fn build_polygon_fill(points: &[Point]) -> GameResult<Buffer> {
+     let path = build_path(points, true);
+     let path_iter = path.path_iter().flattened(0.5);
+     let opts = path_fill::FillOptions::default();
+     let mut tessellator = path_fill::FillTessellator::new();
+     build_geometry(0.0, |builder| tessellator.tessellate_path(path_iter, &opts, builder))
+ }
 
 pub fn build_ellipse_fill(point: Point, r1: f32, r2: f32, segments: u32) -> GameResult<Buffer> {
     let center = math::point(point.x, point.y);
     let radii = math::point(r1, r2);
-    build_geometry(0.0, |builder| Ok(basic_shapes::fill_ellipse(center, radii, segments, builder)))
+    build_geometry(0.0, |builder| Ok::<_, ()>(basic_shapes::fill_ellipse(center, radii, segments, builder)))
 }
