@@ -101,5 +101,8 @@ pub fn build_polygon(points: &[Point], line_width: f32) -> GameResult<Buffer> {
 pub fn build_ellipse_fill(point: Point, r1: f32, r2: f32, segments: u32) -> GameResult<Buffer> {
     let center = math::point(point.x, point.y);
     let radii = math::point(r1, r2);
-    build_geometry(0.0, |builder| Ok::<_, ()>(basic_shapes::fill_ellipse(center, radii, segments, builder)))
+    build_geometry(0.0, |builder| {
+        let count = basic_shapes::fill_ellipse(center, radii, segments, builder);
+        Ok::<_, ()>(count)
+    })
 }
