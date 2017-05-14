@@ -214,7 +214,6 @@ impl PhysicalFS {
         if let Some(safe_path) = sanitize_path(p) {
             let mut root_path = self.root.clone();
             root_path.push(safe_path);
-            // println!("Path is {:?}", root_path);
             Ok(root_path)
         } else {
             let msg = format!("Path {:?} is not valid: must be an absolute path with no \
@@ -317,8 +316,10 @@ impl VFS for PhysicalFS {
     /// Retrieve the path entries in this path
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
         let p = self.get_absolute(path)?;
+        // BUGGO: This is WRONG because it returns the full absolute
+        // path of the bloody file, which is NOT what we want!
         let itr = fs::read_dir(p)?
-            .map(|direntry| Ok(direntry?.path()));
+            .map(|direntry| Ok(PathBuf::from(direntry?.file_name().into_string().unwrap())));
         Ok(Box::new(itr))
     }
 }
