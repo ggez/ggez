@@ -316,10 +316,22 @@ impl VFS for PhysicalFS {
     /// Retrieve the path entries in this path
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
         let p = self.get_absolute(path)?;
-        // BUGGO: This is WRONG because it returns the full absolute
+        // BUGGO: This is WRONG because path() returns the full absolute
         // path of the bloody file, which is NOT what we want!
+        // But if we use file_name() to just get the name then it is ALSO not what we want!
+        // what we WANT is the full absolute file path, *relative to the resources dir*.
+        // So that we can do read_dir("/foobar/"), and for each file, open it and query 
+        // it and such by name.
+        let direntry_to_path = |entry: &fs::DirEntry| -> GameResult<PathBuf> {
+            let fname = entry.file_name().into_string().unwrap();
+            let mut pathbuf = PathBuf::from(path);
+            pathbuf.push(fname);
+            Ok(pathbuf)
+        };
         let itr = fs::read_dir(p)?
-            .map(|direntry| Ok(PathBuf::from(direntry?.file_name().into_string().unwrap())));
+            .map(|entry| direntry_to_path(&entry?))
+            .collect::<Vec<_>>()
+            .into_iter();
         Ok(Box::new(itr))
     }
 }

@@ -118,6 +118,8 @@ As always, thanks to all who contributed: svenstaro, onelson, vickenty, and whoe
 
 Of course, there's plans for 0.4: I mainly want to improve the graphics functionality with sprite batches, better 2D drawing, and exposing the gfx-rs innards a little to allow the adventurous to write their own rendering pipelines.  It should be a *much* less massive change, and hopefully won't take four months to write.
 
+Annoyances with rust I've found: Paths need to be decoupled from OsString (and strings in general) because that's the only sane way to operate.  Features aren't featureful enough -- can't be defined for examples, can't be set for debug mode and not for release mode, etc.
+
 For now though... if you'll excuse me, I've got some games to make.
 
 
