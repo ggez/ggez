@@ -125,8 +125,8 @@ pub trait VFS: Debug {
     /// Get the file's metadata
     fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>>;
 
-    /// Retrieve the path entries in this path
-    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>>;
+    /// Retrieve all file and directory entries in the given directory.
+    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>>;
 }
 
 pub trait VMetadata {
@@ -214,7 +214,7 @@ impl PhysicalFS {
         if let Some(safe_path) = sanitize_path(p) {
             let mut root_path = self.root.clone();
             root_path.push(safe_path);
-            println!("Path is {:?}", root_path);
+            // println!("Path is {:?}", root_path);
             Ok(root_path)
         } else {
             let msg = format!("Path {:?} is not valid: must be an absolute path with no \
@@ -315,9 +315,11 @@ impl VFS for PhysicalFS {
     }
 
     /// Retrieve the path entries in this path
-    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>> {
-        // BUGGO: TODO
-        unimplemented!();
+    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
+        let p = self.get_absolute(path)?;
+        let itr = fs::read_dir(p)?
+            .map(|direntry| Ok(direntry?.path()));
+        Ok(Box::new(itr))
     }
 }
 
@@ -414,9 +416,13 @@ impl VFS for OverlayFS {
     }
 
     /// Retrieve the path entries in this path
-    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>> {
+    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
         // BUGGO: TODO: This is tricky 'cause we have to actually merge iterators together...
-        Err(GameError::FilesystemError("Foo!".to_string()))
+        // Err(GameError::FilesystemError("Foo!".to_string()))
+        let itr = self.roots.iter()
+            .flat_map(|fs| fs.read_dir(path).unwrap()).collect::<Vec<_>>();
+        Ok(Box::new(itr.into_iter()))
+
     }
 }
 
@@ -433,14 +439,22 @@ impl VFS for OverlayFS {
 pub struct ZipFS {
     source: String,
     archive: RefCell<zip::ZipArchive<fs::File>>,
+    // We keep an index of what files are in the zip file
+    // because trying to read it lazily is a pain in the butt.
+    index: Vec<String>,
 }
 
 impl ZipFS {
     pub fn new(filename: &str) -> Self {
         let f = fs::File::open(filename).unwrap();
+        let mut archive = zip::ZipArchive::new(f).unwrap();
+        let idx = (0..archive.len())
+            .map(|i| archive.by_index(i).unwrap().name().to_string())
+            .collect();
         Self {
             source: filename.to_string(),
-            archive: RefCell::new(zip::ZipArchive::new(f).unwrap()),
+            archive: RefCell::new(archive),
+            index: idx,
         }
     }
 }
@@ -551,8 +565,7 @@ impl VFS for ZipFS {
         }
         let mut stupid_archive_borrow = self.archive
             .try_borrow_mut()
-            .expect("Couldn't borrow ZipArchive in ZipFS::open_options(); should never happen!  \
-                     Report a bug at https://github.com/ggez/ggez/");
+            .expect("Couldn't borrow ZipArchive in ZipFS::open_options(); should never happen! Report a bug at https://github.com/ggez/ggez/");
         let mut f = stupid_archive_borrow.by_name(path)?;
         Ok(Box::new(ZipFileWrapper::new(&mut f)) as Box<VFile>)
     }
@@ -582,8 +595,7 @@ impl VFS for ZipFS {
     fn exists(&self, path: &Path) -> bool {
         let mut stupid_archive_borrow = self.archive
             .try_borrow_mut()
-            .expect("Couldn't borrow ZipArchive in ZipFS::exists(); should never happen!  Report \
-                     a bug at https://github.com/ggez/ggez/");
+            .expect("Couldn't borrow ZipArchive in ZipFS::exists(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
         stupid_archive_borrow.by_name(path).is_ok()
     }
 
@@ -591,8 +603,7 @@ impl VFS for ZipFS {
         let mut stupid_archive_borrow =
             self.archive
                 .try_borrow_mut()
-                .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen!  \
-                     Report a bug at https://github.com/ggez/ggez/");
+                .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen! Report a bug at https://github.com/ggez/ggez/");
         match ZipMetadata::new(path, &mut stupid_archive_borrow) {
             None => {
                 Err(GameError::FilesystemError(format!("Metadata not found in zip file for {}",
@@ -602,9 +613,24 @@ impl VFS for ZipFS {
         }
     }
 
-    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<Box<Path>>>>> {
-        // BUGGO: IMPLEMENT!
-        unimplemented!();
+    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
+        // let mut stupid_archive_borrow = self.archive
+        //     .try_borrow_mut()
+        //     .expect("Couldn't borrow ZipArchive in ZipFS::read_dir(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
+
+        // let itr = //(0..stupid_archive_borrow.len())
+        //     (0..1)
+        //     .map(|i| stupid_archive_borrow.by_index(i).unwrap())
+        //     .filter(|zipfile| zipfile.name().starts_with(path))
+        //     .map(|zipfile| Ok(PathBuf::from(zipfile.name())))
+        //     .collect::<Vec<_>>();
+        // Ok(Box::new(itr.into_iter()))
+        // unimplemented!()
+        let itr = self.index.iter()
+            .filter(|s| s.starts_with(path))
+            .map(|s| Ok(PathBuf::from(s)))
+            .collect::<Vec<_>>();
+        Ok(Box::new(itr.into_iter()))
     }
 }
 

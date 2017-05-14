@@ -260,7 +260,7 @@ impl GraphicsContext {
         let (window, gl_context, device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
-        println!("Vsync enabled: {}", vsync);
+        // println!("Vsync enabled: {}", vsync);
         let vsync_int = if vsync { 1 } else { 0 };
         video.gl_set_swap_interval(vsync_int);
         let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =

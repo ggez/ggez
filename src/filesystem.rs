@@ -301,9 +301,14 @@ impl Filesystem {
     /// BUGGO: We have no real way to list the contents of a SINGLE directory,
     /// which we might want if, say, we want to load every file in `/sprites` or such.
     /// Fix this, no matter how many times you have to iterate through the resources zip.
-    pub fn read_dir(&mut self) -> GameResult<PathList> {
-        unimplemented!();
+    pub fn read_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<PathList> {
+        // unimplemented!();
         // BUGGO: Implement with VFS!
+        let s = convenient_path_to_str(path.as_ref())?;
+        let itr = self.vfs.read_dir(&s)?
+            .map(|fname| fname.unwrap().to_str().unwrap().to_string())
+            .collect();
+        Ok(itr)
     }
 
     /// Prints the contents of all data directories.
@@ -311,7 +316,7 @@ impl Filesystem {
     ///
     /// TODO: Should tell you which source the resulting files come from...
     pub fn print_all(&mut self) -> GameResult<()> {
-        for itm in self.read_dir()? {
+        for itm in self.read_dir("/")? {
             println!("{:?}", itm);
         }
         Ok(())
