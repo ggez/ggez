@@ -14,6 +14,8 @@ use GameResult;
 
 pub type Buffer = geometry_builder::VertexBuffers<Vertex>;
 
+const FLATTEN_TOLERANCE: f32 = 0.5;
+
 pub struct VertexConstructor {
     stroke_width: f32,
 }
@@ -70,30 +72,27 @@ fn build_geometry<F, V, E>(line_width: f32, f: F) -> GameResult<Buffer>
     Ok(buffers)
 }
 
-pub fn build_line(points: &[Point], line_width: f32) -> GameResult<Buffer> {
-    let path = build_path(points, false);
+fn build_stroke(points: &[Point], close: bool, line_width: f32) -> GameResult<Buffer> {
+    let path = build_path(points, close);
+    let path_iter = path.path_iter().flattened(FLATTEN_TOLERANCE);
     let opts = path_stroke::StrokeOptions::default();
     let mut tessellator = path_stroke::StrokeTessellator::new();
-    build_geometry(line_width, |builder| {
-                       tessellator.tessellate(path.path_iter().flattened(0.5), &opts, builder)
-                   })
+    build_geometry(line_width, |builder| tessellator.tessellate(path_iter, &opts, builder))
+}
+
+pub fn build_line(points: &[Point], line_width: f32) -> GameResult<Buffer> {
+    build_stroke(points, false, line_width)
 }
 
 /// Build a closed polygon.  Identical to build_line but closes the path,
 /// which makes sure the two endpoints actually line up.
 pub fn build_polygon(points: &[Point], line_width: f32) -> GameResult<Buffer> {
-
-    let path = build_path(points, true);
-    let opts = path_stroke::StrokeOptions::default();
-    let mut tessellator = path_stroke::StrokeTessellator::new();
-    build_geometry(line_width, |builder| {
-                       tessellator.tessellate(path.path_iter().flattened(0.5), &opts, builder)
-                   })
+    build_stroke(points, true, line_width)
 }
 
  pub fn build_polygon_fill(points: &[Point]) -> GameResult<Buffer> {
      let path = build_path(points, true);
-     let path_iter = path.path_iter().flattened(0.5);
+     let path_iter = path.path_iter().flattened(FLATTEN_TOLERANCE);
      let opts = path_fill::FillOptions::default();
      let mut tessellator = path_fill::FillTessellator::new();
      build_geometry(0.0, |builder| tessellator.tessellate_path(path_iter, &opts, builder))
