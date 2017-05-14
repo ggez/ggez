@@ -90,13 +90,13 @@ pub fn build_polygon(points: &[Point], line_width: f32) -> GameResult<Buffer> {
     build_stroke(points, true, line_width)
 }
 
- pub fn build_polygon_fill(points: &[Point]) -> GameResult<Buffer> {
-     let path = build_path(points, true);
-     let path_iter = path.path_iter().flattened(FLATTEN_TOLERANCE);
-     let opts = path_fill::FillOptions::default();
-     let mut tessellator = path_fill::FillTessellator::new();
-     build_geometry(0.0, |builder| tessellator.tessellate_path(path_iter, &opts, builder))
- }
+pub fn build_polygon_fill(points: &[Point]) -> GameResult<Buffer> {
+    let path = build_path(points, true);
+    let path_iter = path.path_iter().flattened(FLATTEN_TOLERANCE);
+    let opts = path_fill::FillOptions::default();
+    let mut tessellator = path_fill::FillTessellator::new();
+    build_geometry(0.0, |builder| tessellator.tessellate_path(path_iter, &opts, builder))
+}
 
 pub fn build_ellipse_fill(point: Point, r1: f32, r2: f32, segments: u32) -> GameResult<Buffer> {
     let center = math::point(point.x, point.y);
