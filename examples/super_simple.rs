@@ -1,6 +1,6 @@
 extern crate ggez;
 use ggez::*;
-use ggez::graphics::{Color, DrawMode, Point};
+use ggez::graphics::{DrawMode, Point};
 use std::time::Duration;
 
 struct MainState {
@@ -8,7 +8,7 @@ struct MainState {
 }
 
 impl MainState {
-    fn new(ctx: &mut Context) -> GameResult<MainState> {
+    fn new(_ctx: &mut Context) -> GameResult<MainState> {
         let s = MainState { pos_x: 0.0 };
         Ok(s)
     }

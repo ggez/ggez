@@ -13,7 +13,7 @@
 
 use std::cell::RefCell;
 use std::collections::VecDeque;
-use std::path::{self, PathBuf};
+use std::path::{self, PathBuf, Path};
 use std::fs;
 use std::fmt::{self, Debug};
 use std::io::{self, Read, Write, Seek};
@@ -22,7 +22,13 @@ use zip;
 
 use {GameResult, GameError};
 
-pub type Path = str;
+fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
+    let errmessage = format!("Invalid path format for resource: {:?}", path);
+    let error = GameError::FilesystemError(errmessage);
+    path.to_str().ok_or(error)
+}
+
+//pub type Path = str;
 
 pub trait VFile: Read + Write + Seek + Debug {}
 
@@ -198,7 +204,7 @@ fn sanitize_path(path: &path::Path) -> Option<PathBuf> {
 }
 
 impl PhysicalFS {
-    pub fn new(root: &str, readonly: bool) -> Self {
+    pub fn new(root: &Path, readonly: bool) -> Self {
         PhysicalFS {
             root: root.into(),
             readonly: readonly,
@@ -209,8 +215,8 @@ impl PhysicalFS {
     /// a new PathBuf containing the canonical
     /// absolute path you get when appending it
     /// to this filesystem's root.
-    fn get_absolute(&self, p: &str) -> GameResult<PathBuf> {
-        let p = path::Path::new(p);
+    fn get_absolute(&self, p: &Path) -> GameResult<PathBuf> {
+        //let p = path::Path::new(p);
         if let Some(safe_path) = sanitize_path(p) {
             let mut root_path = self.root.clone();
             root_path.push(safe_path);
@@ -348,8 +354,8 @@ impl OverlayFS {
         Self { roots: VecDeque::new() }
     }
 
-
     /// Adds a new VFS to the front of the list.
+    /// Currently unused, I suppose.
     pub fn push_front(&mut self, fs: Box<VFS>) {
         &self.roots.push_front(fs);
     }
@@ -369,7 +375,7 @@ impl VFS for OverlayFS {
                 f => return f,
             }
         }
-        Err(GameError::FilesystemError(format!("File {} not found", path)))
+        Err(GameError::FilesystemError(format!("File {:?} not found", path)))
     }
 
     /// Create a directory at the location by this path
@@ -380,7 +386,7 @@ impl VFS for OverlayFS {
                 f => return f,
             }
         }
-        Err(GameError::FilesystemError(format!("Could not find anywhere writeable to make dir {}",
+        Err(GameError::FilesystemError(format!("Could not find anywhere writeable to make dir {:?}",
                                                path)))
     }
 
@@ -392,7 +398,7 @@ impl VFS for OverlayFS {
                 f => return f,
             }
         }
-        Err(GameError::FilesystemError(format!("Could not remove file {}", path)))
+        Err(GameError::FilesystemError(format!("Could not remove file {:?}", path)))
     }
 
     /// Remove a file or directory and all its contents
@@ -403,7 +409,7 @@ impl VFS for OverlayFS {
                 f => return f,
             }
         }
-        Err(GameError::FilesystemError(format!("Could not remove file/dir {}", path)))
+        Err(GameError::FilesystemError(format!("Could not remove file/dir {:?}", path)))
     }
 
     /// Check if the file exists
@@ -425,7 +431,7 @@ impl VFS for OverlayFS {
                 f => return f,
             }
         }
-        Err(GameError::FilesystemError(format!("Could not remove file/dir {}", path)))
+        Err(GameError::FilesystemError(format!("Could not get metadata for file/dir {:?}", path)))
     }
 
     /// Retrieve the path entries in this path
@@ -458,14 +464,14 @@ pub struct ZipFS {
 }
 
 impl ZipFS {
-    pub fn new(filename: &str) -> GameResult<Self> {
+    pub fn new(filename: &Path) -> GameResult<Self> {
         let f = fs::File::open(filename)?;
         let mut archive = zip::ZipArchive::new(f)?;
         let idx = (0..archive.len())
             .map(|i| archive.by_index(i).unwrap().name().to_string())
             .collect();
         Ok(Self {
-            source: filename.to_string(),
+            source: filename.to_string_lossy().into_owned(),
             archive: RefCell::new(archive),
             index: idx,
         })
@@ -535,7 +541,7 @@ impl ZipMetadata {
     /// directories (just long filenames), we can't get a directory's metadata
     /// this way.
     ///
-    /// This does make listing a directory
+    /// This does make listing a directory rather screwy.
     fn new<T>(name: &str, archive: &mut zip::ZipArchive<T>) -> Option<Self>
         where T: io::Read + io::Seek
     {
@@ -569,6 +575,7 @@ impl VMetadata for ZipMetadata {
 impl VFS for ZipFS {
     fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
         // Zip is readonly
+        let path = convenient_path_to_str(path)?;
         if open_options.write || open_options.create || open_options.append ||
            open_options.truncate {
             let msg = format!("Cannot alter file {:?} in zipfile {:?}, filesystem read-only",
@@ -610,10 +617,15 @@ impl VFS for ZipFS {
         let mut stupid_archive_borrow = self.archive
             .try_borrow_mut()
             .expect("Couldn't borrow ZipArchive in ZipFS::exists(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
-        stupid_archive_borrow.by_name(path).is_ok()
+        if let Ok(path) = convenient_path_to_str(path) {
+            stupid_archive_borrow.by_name(path).is_ok()
+        } else {
+            false
+        }
     }
 
     fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
+        let path = convenient_path_to_str(path)?;
         let mut stupid_archive_borrow =
             self.archive
                 .try_borrow_mut()
@@ -640,6 +652,7 @@ impl VFS for ZipFS {
         //     .collect::<Vec<_>>();
         // Ok(Box::new(itr.into_iter()))
         // unimplemented!()
+        let path = convenient_path_to_str(path)?;
         let itr = self.index.iter()
             .filter(|s| s.starts_with(path))
             .map(|s| Ok(PathBuf::from(s)))
@@ -688,8 +701,9 @@ mod tests {
 
     #[test]
     fn test_read() {
-        let fs = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), true);
-        let f = fs.open("/Cargo.toml").unwrap();
+        let cargo_path = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let fs = PhysicalFS::new(cargo_path, true);
+        let f = fs.open(Path::new("/Cargo.toml")).unwrap();
         let mut bf = io::BufReader::new(f);
         let mut s = String::new();
         bf.read_line(&mut s).unwrap();
@@ -698,24 +712,26 @@ mod tests {
 
     #[test]
     fn test_read_overlay() {
-        let fs1 = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), true);
-        let mut f2path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cargo_path = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let fs1 = PhysicalFS::new(cargo_path, true);
+        let mut f2path = PathBuf::from(cargo_path);
         f2path.push("src");
-        let fs2 = PhysicalFS::new(f2path.to_str().unwrap(), true);
+        let fs2 = PhysicalFS::new(&f2path, true);
         let mut ofs = OverlayFS::new();
         ofs.push_back(Box::new(fs1));
         ofs.push_back(Box::new(fs2));
 
-        assert!(ofs.exists("/Cargo.toml"));
-        assert!(ofs.exists("/lib.rs"));
-        assert!(!ofs.exists("/foobaz.rs"));
+        assert!(ofs.exists(Path::new("/Cargo.toml")));
+        assert!(ofs.exists(Path::new("/lib.rs")));
+        assert!(!ofs.exists(Path::new("/foobaz.rs")));
     }
 
     #[test]
     fn test_physical_all() {
-        let fs = PhysicalFS::new(env!("CARGO_MANIFEST_DIR"), false);
-        let testdir = "/testdir";
-        let f1 = "/testdir/file1.txt";
+        let cargo_path = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let fs = PhysicalFS::new(cargo_path, false);
+        let testdir = Path::new("/testdir");
+        let f1 = Path::new("/testdir/file1.txt");
 
         // Delete testdir if it is still lying around
         if fs.exists(testdir) {

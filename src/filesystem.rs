@@ -41,8 +41,7 @@ use app_dirs::*;
 use GameError;
 use GameResult;
 use conf;
-use vfs;
-use vfs::VFS;
+use vfs::{self, VFS};
 
 const CONFIG_NAME: &'static str = "conf.toml";
 
@@ -103,11 +102,6 @@ impl io::Write for File {
 /// BUGGO: TODO: This needs to be more better or something, maybe
 pub type PathList = Vec<path::PathBuf>;
 
-fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
-    let errmessage = format!("Invalid path format for resource: {:?}", path);
-    let error = GameError::FilesystemError(errmessage);
-    path.to_str().ok_or(error)
-}
 
 impl Filesystem {
     /// Create a new Filesystem instance, using the given `id` and (on
@@ -137,8 +131,7 @@ impl Filesystem {
         {
             resources_path = root_path.clone();
             resources_path.push("resources");
-            let p = convenient_path_to_str(&resources_path)?;
-            let physfs = vfs::PhysicalFS::new(p, true);
+            let physfs = vfs::PhysicalFS::new(&resources_path, true);
             overlay.push_back(Box::new(physfs));
         }
 
@@ -147,8 +140,7 @@ impl Filesystem {
             resources_zip_path = root_path.clone();
             resources_zip_path.push("resources.zip");
             if resources_zip_path.exists() {
-                let p = convenient_path_to_str(&resources_zip_path)?;
-                let zipfs = vfs::ZipFS::new(p)?;
+                let zipfs = vfs::ZipFS::new(&resources_zip_path)?;
                 overlay.push_back(Box::new(zipfs));
             }
         }
@@ -157,8 +149,7 @@ impl Filesystem {
         // ~/.local/share/whatever/
         {
             user_data_path = app_root(AppDataType::UserData, &app_info)?;
-            let p = convenient_path_to_str(&user_data_path)?;
-            let physfs = vfs::PhysicalFS::new(p, true);
+            let physfs = vfs::PhysicalFS::new(&user_data_path, true);
             overlay.push_back(Box::new(physfs));
         }
 
@@ -166,8 +157,7 @@ impl Filesystem {
         // Save game dir is read-write
         {
             user_config_path = app_root(AppDataType::UserConfig, &app_info)?;
-            let p = convenient_path_to_str(&user_config_path)?;
-            let physfs = vfs::PhysicalFS::new(p, false);
+            let physfs = vfs::PhysicalFS::new(&user_config_path, false);
             overlay.push_back(Box::new(physfs));
         }
 
@@ -176,8 +166,7 @@ impl Filesystem {
         {
             let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             path.push("resources");
-            let p = convenient_path_to_str(&path)?;
-            let physfs = vfs::PhysicalFS::new(p, false);
+            let physfs = vfs::PhysicalFS::new(&path, false);
             overlay.push_back(Box::new(physfs));
         }
 
@@ -196,11 +185,9 @@ impl Filesystem {
     /// Opens the given path and returns the resulting `File`
     /// in read-only mode.
     pub fn open<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
-        let ps = convenient_path_to_str(path.as_ref())?;
         self.vfs
-            .open(ps)
+            .open(path.as_ref())
             .map(|f| File::VfsFile(f))
-
     }
 
     /// Opens a file in the user directory with the given `std::fs::OpenOptions`.
@@ -210,13 +197,12 @@ impl Filesystem {
                                               path: P,
                                               options: &vfs::OpenOptions)
                                               -> GameResult<File> {
-        let pathstr = convenient_path_to_str(path.as_ref())?;
         self.vfs
-            .open_options(pathstr, options)
+            .open_options(path.as_ref(), options)
             .map(|f| File::VfsFile(f))
             .map_err(|e| {
                 GameError::ResourceLoadError(format!("Tried to open {:?} but got error: {:?}",
-                                                     p,
+                                                     path.as_ref(),
                                                      e))
             })
     }
@@ -224,51 +210,44 @@ impl Filesystem {
     /// Creates a new file in the user directory and opens it
     /// to be written to, truncating it if it already exists.
     pub fn create<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
-        let pathstr = convenient_path_to_str(path.as_ref())?;
-        self.vfs.create(pathstr).map(|f| File::VfsFile(f))
+        self.vfs.create(path.as_ref()).map(|f| File::VfsFile(f))
     }
 
     /// Create an empty directory in the user dir
     /// with the given name.  Any parents to that directory
     /// that do not exist will be created.
     pub fn create_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let pathstr = convenient_path_to_str(path.as_ref())?;
-        self.vfs.mkdir(pathstr)
+        self.vfs.mkdir(path.as_ref())
     }
 
     /// Deletes the specified file in the user dir.
     pub fn delete<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let pathstr = convenient_path_to_str(path.as_ref())?;
-        self.vfs.rm(pathstr)
+        self.vfs.rm(path.as_ref())
     }
 
     /// Deletes the specified directory in the user dir,
     /// and all its contents!
     pub fn delete_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let pathstr = convenient_path_to_str(path.as_ref())?;
-        self.vfs.rmrf(pathstr)
+        self.vfs.rmrf(path.as_ref())
     }
 
     /// Check whether a file or directory exists.
     pub fn exists<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
-        let pathstr = convenient_path_to_str(path.as_ref())?;
-        self.vfs.exists(pathstr)
+        self.vfs.exists(path.as_ref())
     }
 
     /// Check whether a path points at a file.
     pub fn is_file<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
-        let pathstr = convenient_path_to_str(path.as_ref())?;
         self.vfs
-            .metadata(pathstr)
+            .metadata(path.as_ref())
             .map(|m| m.is_file())
             .unwrap_or(false)
     }
 
     /// Check whether a path points at a directory.
     pub fn is_dir<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
-        let pathstr = convenient_path_to_str(path.as_ref())?;
         self.vfs
-            .metadata(pathstr)
+            .metadata(path.as_ref())
             .map(|m| m.is_dir())
             .unwrap_or(false)
     }
@@ -294,10 +273,7 @@ impl Filesystem {
     /// which we might want if, say, we want to load every file in `/sprites` or such.
     /// Fix this, no matter how many times you have to iterate through the resources zip.
     pub fn read_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<PathList> {
-        // unimplemented!();
-        // BUGGO: Implement with VFS!
-        let s = convenient_path_to_str(path.as_ref())?;
-        let itr = self.vfs.read_dir(&s)?
+        let itr = self.vfs.read_dir(path.as_ref())?
             .map(|fname| fname.unwrap())
             .collect();
         Ok(itr)
@@ -324,7 +300,6 @@ impl Filesystem {
             let mut file = self.open(conf_path)?;
             let c = conf::Conf::from_toml_file(&mut file)?;
             Ok(c)
-
         } else {
             Err(GameError::ConfigError(String::from("Config file not found")))
         }
@@ -355,7 +330,7 @@ mod tests {
     fn get_dummy_fs_for_tests() -> Filesystem {
         let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources");
-        let physfs = vfs::PhysicalFS::new(path.to_str().unwrap(), false);
+        let physfs = vfs::PhysicalFS::new(&path, false);
         let mut ofs = vfs::OverlayFS::new();
         ofs.push_front(Box::new(physfs));
         Filesystem { 
