@@ -148,7 +148,7 @@ impl Filesystem {
             resources_zip_path.push("resources.zip");
             if resources_zip_path.exists() {
                 let p = convenient_path_to_str(&resources_zip_path)?;
-                let zipfs = vfs::ZipFS::new(p);
+                let zipfs = vfs::ZipFS::new(p)?;
                 overlay.push_back(Box::new(zipfs));
             }
         }
@@ -196,9 +196,9 @@ impl Filesystem {
     /// Opens the given path and returns the resulting `File`
     /// in read-only mode.
     pub fn open<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
-        let p: &path::Path = path.as_ref();
+        let ps = convenient_path_to_str(path.as_ref())?;
         self.vfs
-            .open(p.to_str().unwrap())
+            .open(ps)
             .map(|f| File::VfsFile(f))
 
     }
@@ -210,8 +210,7 @@ impl Filesystem {
                                               path: P,
                                               options: &vfs::OpenOptions)
                                               -> GameResult<File> {
-        let p: &path::Path = path.as_ref();
-        let pathstr = p.to_str().unwrap();
+        let pathstr = convenient_path_to_str(path.as_ref())?;
         self.vfs
             .open_options(pathstr, options)
             .map(|f| File::VfsFile(f))
@@ -225,8 +224,7 @@ impl Filesystem {
     /// Creates a new file in the user directory and opens it
     /// to be written to, truncating it if it already exists.
     pub fn create<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
-        let p: &path::Path = path.as_ref();
-        let pathstr = p.to_str().unwrap();
+        let pathstr = convenient_path_to_str(path.as_ref())?;
         self.vfs.create(pathstr).map(|f| File::VfsFile(f))
     }
 
@@ -234,37 +232,32 @@ impl Filesystem {
     /// with the given name.  Any parents to that directory
     /// that do not exist will be created.
     pub fn create_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let p: &path::Path = path.as_ref();
-        let pathstr = p.to_str().unwrap();
+        let pathstr = convenient_path_to_str(path.as_ref())?;
         self.vfs.mkdir(pathstr)
     }
 
     /// Deletes the specified file in the user dir.
     pub fn delete<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let p: &path::Path = path.as_ref();
-        let pathstr = p.to_str().unwrap();
+        let pathstr = convenient_path_to_str(path.as_ref())?;
         self.vfs.rm(pathstr)
     }
 
     /// Deletes the specified directory in the user dir,
     /// and all its contents!
     pub fn delete_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
-        let p: &path::Path = path.as_ref();
-        let pathstr = p.to_str().unwrap();
+        let pathstr = convenient_path_to_str(path.as_ref())?;
         self.vfs.rmrf(pathstr)
     }
 
     /// Check whether a file or directory exists.
     pub fn exists<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
-        let p: &path::Path = path.as_ref();
-        let pathstr = p.to_str().unwrap();
+        let pathstr = convenient_path_to_str(path.as_ref())?;
         self.vfs.exists(pathstr)
     }
 
     /// Check whether a path points at a file.
     pub fn is_file<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
-        let p: &path::Path = path.as_ref();
-        let pathstr = p.to_str().unwrap();
+        let pathstr = convenient_path_to_str(path.as_ref())?;
         self.vfs
             .metadata(pathstr)
             .map(|m| m.is_file())
@@ -273,8 +266,7 @@ impl Filesystem {
 
     /// Check whether a path points at a directory.
     pub fn is_dir<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
-        let p: &path::Path = path.as_ref();
-        let pathstr = p.to_str().unwrap();
+        let pathstr = convenient_path_to_str(path.as_ref())?;
         self.vfs
             .metadata(pathstr)
             .map(|m| m.is_dir())

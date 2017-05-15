@@ -458,17 +458,17 @@ pub struct ZipFS {
 }
 
 impl ZipFS {
-    pub fn new(filename: &str) -> Self {
-        let f = fs::File::open(filename).unwrap();
-        let mut archive = zip::ZipArchive::new(f).unwrap();
+    pub fn new(filename: &str) -> GameResult<Self> {
+        let f = fs::File::open(filename)?;
+        let mut archive = zip::ZipArchive::new(f)?;
         let idx = (0..archive.len())
             .map(|i| archive.by_index(i).unwrap().name().to_string())
             .collect();
-        Self {
+        Ok(Self {
             source: filename.to_string(),
             archive: RefCell::new(archive),
             index: idx,
-        }
+        })
     }
 }
 
@@ -486,10 +486,10 @@ pub struct ZipFileWrapper {
 }
 
 impl ZipFileWrapper {
-    fn new(z: &mut zip::read::ZipFile) -> Self {
+    fn new(z: &mut zip::read::ZipFile) -> GameResult<Self> {
         let mut b = Vec::new();
-        z.read_to_end(&mut b).unwrap();
-        Self { buffer: io::Cursor::new(b) }
+        z.read_to_end(&mut b)?;
+        Ok(Self { buffer: io::Cursor::new(b) })
     }
 }
 
@@ -580,7 +580,8 @@ impl VFS for ZipFS {
             .try_borrow_mut()
             .expect("Couldn't borrow ZipArchive in ZipFS::open_options(); should never happen! Report a bug at https://github.com/ggez/ggez/");
         let mut f = stupid_archive_borrow.by_name(path)?;
-        Ok(Box::new(ZipFileWrapper::new(&mut f)) as Box<VFile>)
+        let zipfile = ZipFileWrapper::new(&mut f)?;
+        Ok(Box::new(zipfile) as Box<VFile>)
     }
 
     fn mkdir(&self, path: &Path) -> GameResult<()> {

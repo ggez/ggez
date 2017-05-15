@@ -920,7 +920,6 @@ impl Drawable for Image {
         new_param.offset.x *= -1.0 * param.scale.x;
         new_param.offset.y *= param.scale.y;
         gfx.update_rect_properties(new_param)?;
-        //let sampler = self.samplers.clone().unwrap_or_else(|| gfx.data.tex.clone().1);
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
