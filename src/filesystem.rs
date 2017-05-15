@@ -101,7 +101,7 @@ impl io::Write for File {
 /// A list of paths.
 ///
 /// BUGGO: TODO: This needs to be more better or something, maybe
-pub type PathList = Vec<String>;
+pub type PathList = Vec<path::PathBuf>;
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     let errmessage = format!("Invalid path format for resource: {:?}", path);
@@ -306,7 +306,7 @@ impl Filesystem {
         // BUGGO: Implement with VFS!
         let s = convenient_path_to_str(path.as_ref())?;
         let itr = self.vfs.read_dir(&s)?
-            .map(|fname| fname.unwrap().to_str().unwrap().to_string())
+            .map(|fname| fname.unwrap())
             .collect();
         Ok(itr)
     }
