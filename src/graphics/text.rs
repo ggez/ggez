@@ -1,3 +1,4 @@
+use std::cmp;
 use std::fmt;
 use std::path;
 use std::collections::BTreeMap;
@@ -89,10 +90,71 @@ impl Font {
            })
     }
 
+    /// Returns a baked-in default font: currently DejaVuSerif.ttf
     pub fn default_font() -> GameResult<Self> {
         let size = 16;
         let buf = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSerif.ttf"));
         Font::from_bytes("default", &buf[..], size)
+    }
+
+    /// Get the height of the Font in pixels.
+    ///
+    /// The height of the font includes any spacing, it will be the total height
+    /// a line needs.
+    /// BUGGO: TODO: implement this for TTF fonts.  Should just be a matter of
+    /// rusttype::Font.v_metrics() but that needs some rearranging of where the
+    /// appropriate Scale is kept.
+    pub fn get_height(&self) -> usize {
+        match *self {
+            Font::BitmapFont{ height, .. } => height,
+            Font::TTFFont{ref font, points } => {
+                0
+            },
+        }
+    }
+
+    /// Returns the width a line of text needs, in pixels.
+    /// Does not handle line-breaks.
+    /// BUGGO: TODO: Implement
+    pub fn get_width(&self, text: &str) -> usize {
+        match *self {
+            Font::BitmapFont{ width, .. } => width * text.len(),
+            Font::TTFFont{ref font, points } => {
+                0
+            },
+        }
+    }
+
+    /// Breaks the given text into lines that will not exceed `wrap_limit` pixels
+    /// in length.  It accounts for newlines correctly but does not
+    /// try to break words or handle hypenated words; it just breaks
+    /// at whitespace.
+    ///
+    /// Returns a tuple of maximum line width and a `Vec` of wrapped `String`s.
+    pub fn get_wrap(&self, text: &str, wrap_limit: usize) -> (usize, Vec<String>) {
+        let mut broken_lines = Vec::new();
+        let mut max_line_length = 0;
+        for line in text.lines() {
+            let mut current_line = Vec::new();
+            let mut current_line_length = 0;
+            for word in line.split_whitespace() {
+                let width = self.get_width(word);
+                if current_line_length + width > wrap_limit {
+                    // Overflow word onto next line
+                    broken_lines.push(current_line.join(" "));
+                    current_line.clear();
+                    current_line.push(word);
+                    current_line_length = width;
+                } else {
+                    // Continue with current line
+                    current_line.push(word);
+                    current_line_length += width;
+                    max_line_length = cmp::max(max_line_length, current_line_length);
+                }
+            }
+        }
+
+        (max_line_length, broken_lines)
     }
 }
 
