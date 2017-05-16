@@ -436,26 +436,29 @@ impl VFS for OverlayFS {
 
     /// Retrieve the path entries in this path
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
-        // BUGGO: TODO: This is tricky 'cause we have to actually merge iterators together...
-        // Err(GameError::FilesystemError("Foo!".to_string()))
-        let itr = self.roots.iter()
-            .flat_map(|fs| fs.read_dir(path).unwrap()).collect::<Vec<_>>();
-        Ok(Box::new(itr.into_iter()))
-
+        // This is tricky 'cause we have to actually merge iterators together...
+        // Doing it the simple and stupid way works though.
+        let mut v = Vec::new();
+        for fs in self.roots.iter() {
+            if let Ok(rddir) = fs.read_dir(path) {
+                v.extend(rddir)
+            }
+        }
+        Ok(Box::new(v.into_iter()))
     }
 }
 
 /// A filesystem backed by a zip file.
-/// It's... probably going to be a bit jankity.
-/// Zip files aren't really designed to be virtual filesystems,
-/// and the structure of the `zip` crate doesn't help.  See the various
-/// issues that have been filed on it by icefoxen.
-///
-/// ALSO THE SEMANTICS OF ZIPARCHIVE AND HAVING ZIPFILES BORROW IT IS
-/// HORRIFICALLY BROKEN BY DESIGN SO WE'RE JUST GONNA REFCELL IT AND COPY
-/// ALL CONTENTS OUT OF IT.
 #[derive(Debug)]
 pub struct ZipFS {
+    // It's... a bit jankity.
+    // Zip files aren't really designed to be virtual filesystems,
+    // and the structure of the `zip` crate doesn't help.  See the various
+    // issues that have been filed on it by icefoxen.
+    //
+    // ALSO THE SEMANTICS OF ZIPARCHIVE AND HAVING ZIPFILES BORROW IT IS
+    // HORRIFICALLY BROKEN BY DESIGN SO WE'RE JUST GONNA REFCELL IT AND COPY
+    // ALL CONTENTS OUT OF IT.
     source: String,
     archive: RefCell<zip::ZipArchive<fs::File>>,
     // We keep an index of what files are in the zip file
@@ -481,13 +484,13 @@ impl ZipFS {
 /// A wrapper to contain a zipfile so we can implement
 /// (janky) Seek on it and such.
 ///
-/// BUGGO: We're going to do it the *really* janky way and just read
+/// We're going to do it the *really* janky way and just read
 /// the whole ZipFile into a buffer, which is kind of awful but means
 /// we don't have to deal with lifetimes, self-borrowing structs,
-/// rental, re-implementing Seek on compressed data, or any of that
+/// rental, re-implementing Seek on compressed data, making multiple zip
+/// zip file objects share a single file handle, or any of that
 /// other nonsense.
 pub struct ZipFileWrapper {
-    //zipfile: zip::read::ZipFile<'a>,
     buffer: io::Cursor<Vec<u8>>,
 }
 
@@ -539,7 +542,7 @@ impl ZipMetadata {
     /// Returns a ZipMetadata, or None if the file does not exist or such.
     /// This is not QUITE correct; since zip archives don't actually have
     /// directories (just long filenames), we can't get a directory's metadata
-    /// this way.
+    /// this way without basically just faking it.
     ///
     /// This does make listing a directory rather screwy.
     fn new<T>(name: &str, archive: &mut zip::ZipArchive<T>) -> Option<Self>
@@ -758,10 +761,40 @@ mod tests {
             assert_eq!(&buf[..], test_string.as_bytes());
         }
 
-        // BUGGO: TODO: Make sure all functions are tested for PhysicalFS!
+        {
+            // Test metadata()
+            let m = fs.metadata(f1).unwrap();
+            assert!(m.is_file());
+            assert!(!m.is_dir());
+            assert_eq!(m.len(), 4);
+
+            let m = fs.metadata(testdir).unwrap();
+            assert!(!m.is_file());
+            assert!(m.is_dir());
+            // Not exactly sure what the "length" of a directory is, buuuuuut...
+            assert_eq!(m.len(), 18);
+        }
+
+        {
+            // Test read_dir()
+            let mut r = fs.read_dir(testdir).unwrap();
+            assert_eq!(r.count(), 1);
+            let mut r = fs.read_dir(testdir).unwrap();
+            for f in r {
+                let fname = f.unwrap();
+                assert!(fs.exists(&fname));
+            }
+        }
+        
+        {
+            assert!(fs.exists(f1));
+            fs.rm(f1).unwrap();
+            assert!(!fs.exists(f1));
+        }
+
         fs.rmrf(testdir).unwrap();
         assert!(!fs.exists(testdir));
     }
-    // BUGGO: TODO: Make sure all functions are tested for OverlayFS too!
-    // BUGGO: TODO: Implement ZipFS!
+    
+    // BUGGO: TODO: Make sure all functions are tested for OverlayFS and ZipFS!!
 }
