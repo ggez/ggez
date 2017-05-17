@@ -519,41 +519,19 @@ pub fn print(_ctx: &mut Context, _dest: Point, _text: &str, _size: f32) {
 
 /// Draws a rectangle.
 pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
-    // TODO: See if we can evade this clone() without a double-borrow being involved?
-    // That might actually be invalid considering that drawing an Image involves altering
-    // its state.  And it might just be cloning a texture handle.
-    // Or we could just use lyon to build and draw the rect anyway.
-    match mode {
-        DrawMode::Fill => {
-            let img = &mut ctx.gfx_context.white_image.clone();
-            let source = Rect::new(0.0, 0.0, 1.0, 1.0);
-            let dest = Point::new(rect.x, rect.y);
-            let scale = Point::new(rect.w, rect.h);
-            draw_ex(ctx,
-                    img,
-                    DrawParam {
-                        src: source,
-                        dest: dest,
-                        scale: scale,
-                        ..Default::default()
-                    })
-        }
-        DrawMode::Line => {
-            let x = rect.x;
-            let y = rect.y;
-            let w = rect.w;
-            let h = rect.h;
-            let x1 = x - (w / 2.0);
-            let x2 = x + (w / 2.0);
-            let y1 = y - (h / 2.0);
-            let y2 = y + (h / 2.0);
-            let pts = [[x1, y1].into(),
-                       [x2, y1].into(),
-                       [x2, y2].into(),
-                       [x1, y2].into()];
-            polygon(ctx, mode, &pts)
-        }
-    }
+    let x = rect.x;
+    let y = rect.y;
+    let w = rect.w;
+    let h = rect.h;
+    let x1 = x - (w / 2.0);
+    let x2 = x + (w / 2.0);
+    let y1 = y - (h / 2.0);
+    let y2 = y + (h / 2.0);
+    let pts = [[x1, y1].into(),
+               [x2, y1].into(),
+               [x2, y2].into(),
+               [x1, y2].into()];
+    polygon(ctx, mode, &pts)
 }
 
 // **********************************************************************
@@ -991,7 +969,7 @@ impl Mesh {
                        width: f32)
                        -> GameResult<Mesh> {
         let buf = match mode {
-            DrawMode::Fill => unimplemented!(),
+            DrawMode::Fill => tessellation::build_polygon_fill(points),
             DrawMode::Line => tessellation::build_polygon(points, width),
         }?;
 

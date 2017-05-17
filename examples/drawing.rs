@@ -62,6 +62,7 @@ impl event::EventHandler for MainState {
         graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0))?;
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         graphics::rectangle(ctx, graphics::DrawMode::Line, rect)?;
+
         graphics::set_color(ctx, graphics::WHITE)?;
 
         graphics::set_line_width(ctx, 4.0);
