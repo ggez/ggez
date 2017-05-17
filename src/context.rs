@@ -44,8 +44,8 @@ impl fmt::Debug for Context {
     }
 }
 
-/// Sets the window icon from the Conf window_icon field.
-/// Assumes an empty string in the conf's window_icon
+/// Sets the window icon from the Conf `window_icon` field.
+/// An empty string in the conf's `window_icon`
 /// means to do nothing.
 fn set_window_icon(context: &mut Context) -> GameResult<()> {
     if !context.conf.window_icon.is_empty() {
@@ -125,9 +125,8 @@ impl Context {
 
     /// Prints out information on the resources subsystem.
     pub fn print_resource_stats(&mut self) {
-        match self.filesystem.print_all() {
-            Err(e) => println!("Error printing out filesystem info: {}", e),
-            _ => (),
+        if let Err(e) = self.filesystem.print_all() {
+            println!("Error printing out filesystem info: {}", e)
         }
     }
 

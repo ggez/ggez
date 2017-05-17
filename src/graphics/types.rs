@@ -228,8 +228,7 @@ impl From<FilterMethod> for FilterMode {
     fn from(f: FilterMethod) -> Self {
         match f {
             FilterMethod::Scale => FilterMode::Nearest,
-            FilterMethod::Bilinear => FilterMode::Linear,
-            _ => FilterMode::Linear,
+            _other => FilterMode::Linear,
         }
     }
 }

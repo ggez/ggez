@@ -93,7 +93,7 @@ impl Conf {
     /// formatted as TOML.
     pub fn to_toml_file<W: io::Write>(&self, file: &mut W) -> GameResult<()> {
         let s = toml::to_vec(self)?;
-        file.write(&s)?;
+        file.write_all(&s)?;
         Ok(())
     }
 }

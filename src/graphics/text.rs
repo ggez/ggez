@@ -2,7 +2,6 @@ use std::cmp;
 use std::fmt;
 use std::path;
 use std::collections::BTreeMap;
-use std::convert::From;
 use std::io::Read;
 
 use rusttype;
@@ -184,11 +183,10 @@ fn display_independent_scale(points: u32, dpi_w: f32, dpi_h: f32) -> rusttype::S
     let pixels_per_point_h = dpi_h * (1.0 / points_per_inch);
 
     // rusttype::Scale is in units of pixels, so.
-    let scale = rusttype::Scale {
+    rusttype::Scale {
         x: pixels_per_point_w * points,
         y: pixels_per_point_h * points,
-    };
-    scale
+    }
 }
 
 fn render_ttf(context: &mut Context,
@@ -271,6 +269,7 @@ fn render_ttf(context: &mut Context,
 /// Treats src and dst as row-major 2D arrays, and blits the given rect from src to dst.
 /// Does no bounds checking or anything; if you feed it invalid bounds it will just panic.
 /// Generally, you shouldn't need or use this.
+#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 fn blit(dst: &mut [u8],
         dst_dims: (usize, usize),
         dst_point: (usize, usize),
@@ -314,15 +313,15 @@ fn render_bitmap(context: &mut Context,
     let mut dest_buf = Vec::with_capacity(buf_len);
     dest_buf.resize(buf_len, 0u8);
     for (i, c) in text.chars().enumerate() {
-        let error_message = format!("Character '{}' not in bitmap font!", c);
+        let error = GameError::FontError(format!("Character '{}' not in bitmap font!", c));
         let source_offset = *glyphs_map
                                  .get(&c)
-                                 .ok_or(GameError::FontError(String::from(error_message)))?;
+                                 .ok_or(error)?;
         let dest_offset = glyph_width * i;
         blit(&mut dest_buf,
              (text_length * glyph_width, glyph_height),
              (dest_offset, 0),
-             &bytes,
+             bytes,
              (width, height),
              (source_offset, 0),
              (glyph_width, glyph_height),

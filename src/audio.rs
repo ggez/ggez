@@ -95,8 +95,7 @@ impl Source {
         let path = path.as_ref();
         let data = {
             let file = &mut context.filesystem.open(path)?;
-            let data = SoundData::from_read(file)?;
-            data
+            SoundData::from_read(file)?
         };
         Source::from_data(context, data)
     }

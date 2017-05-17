@@ -65,7 +65,7 @@ fn build_geometry<F, V, E>(line_width: f32, f: F) -> GameResult<Buffer>
     let vertex_ctor = VertexConstructor { stroke_width: line_width };
     {
         let mut builder = geometry_builder::BuffersBuilder::new(&mut buffers, vertex_ctor);
-        if let Err(_) = f(&mut builder) {
+        if f(&mut builder).is_err() {
             return Err(GameError::RenderError(String::from("geometry tessellation failed")));
         }
     }
@@ -84,7 +84,7 @@ pub fn build_line(points: &[Point], line_width: f32) -> GameResult<Buffer> {
     build_stroke(points, false, line_width)
 }
 
-/// Build a closed polygon.  Identical to build_line but closes the path,
+/// Build a closed polygon.  Identical to `build_line` but closes the path,
 /// which makes sure the two endpoints actually line up.
 pub fn build_polygon(points: &[Point], line_width: f32) -> GameResult<Buffer> {
     build_stroke(points, true, line_width)

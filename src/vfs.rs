@@ -2,7 +2,7 @@
 //! "file systems" with various backing stores, then merge them 
 //! together.
 //!
-//! Basically a re-implementation of PhysFS.  The `vfs` crate
+//! Basically a re-implementation of `PhysFS`.  The `vfs` crate
 //! does something similar but has a couple design decisions that make 
 //! it kind of incompatible with this use case;
 //!
@@ -170,13 +170,12 @@ impl VMetadata for PhysicalMetadata {
 ///
 /// What we want is an absolute path with no `..`'s in it, so, something
 /// like "/foo" or "/foo/bar.txt".  This means a path with components
-/// starting with a RootDir, and zero or more Normal components.
+/// starting with a `RootDir`, and zero or more `Normal` components.
 ///
 /// We gotta return a new path because there's apparently no real good way
 /// to turn an absolute path into a relative path with the same
-/// components (other than the first), and pushing an absolute Path
-/// onto a PathBuf just completely nukes its existing contents.
-/// Thanks, Obama.
+/// components (other than the first), and pushing an absolute `Path`
+/// onto a `PathBuf` just completely nukes its existing contents.
 fn sanitize_path(path: &path::Path) -> Option<PathBuf> {
     let mut c = path.components();
     match c.next() {
@@ -343,7 +342,6 @@ impl VFS for PhysicalFS {
 }
 
 /// A structure that joins several VFS's together in order.
-/// VecDeque instead of Vec?
 #[derive(Debug)]
 pub struct OverlayFS {
     roots: VecDeque<Box<VFS>>,
@@ -356,13 +354,13 @@ impl OverlayFS {
 
     /// Adds a new VFS to the front of the list.
     /// Currently unused, I suppose.
-    pub fn push_front(&mut self, fs: Box<VFS>) {
-        &self.roots.push_front(fs);
-    }
+    // pub fn push_front(&mut self, fs: Box<VFS>) {
+    //     self.roots.push_front(fs);
+    // }
 
     /// Adds a new VFS to the end of the list.
     pub fn push_back(&mut self, fs: Box<VFS>) {
-        &self.roots.push_back(fs);
+        self.roots.push_back(fs);
     }
 }
 
@@ -439,7 +437,7 @@ impl VFS for OverlayFS {
         // This is tricky 'cause we have to actually merge iterators together...
         // Doing it the simple and stupid way works though.
         let mut v = Vec::new();
-        for fs in self.roots.iter() {
+        for fs in &self.roots {
             if let Ok(rddir) = fs.read_dir(path) {
                 v.extend(rddir)
             }
@@ -485,7 +483,7 @@ impl ZipFS {
 /// (janky) Seek on it and such.
 ///
 /// We're going to do it the *really* janky way and just read
-/// the whole ZipFile into a buffer, which is kind of awful but means
+/// the whole `ZipFile` into a buffer, which is kind of awful but means
 /// we don't have to deal with lifetimes, self-borrowing structs,
 /// rental, re-implementing Seek on compressed data, making multiple zip
 /// zip file objects share a single file handle, or any of that
@@ -598,7 +596,7 @@ impl VFS for ZipFS {
         let msg = format!("Cannot mkdir {:?} in zipfile {:?}, filesystem read-only",
                           path,
                           &self.source);
-        return Err(GameError::FilesystemError(msg));
+        Err(GameError::FilesystemError(msg))
 
     }
 
@@ -606,14 +604,14 @@ impl VFS for ZipFS {
         let msg = format!("Cannot rm {:?} in zipfile {:?}, filesystem read-only",
                           path,
                           &self.source);
-        return Err(GameError::FilesystemError(msg));
+        Err(GameError::FilesystemError(msg))
     }
 
     fn rmrf(&self, path: &Path) -> GameResult<()> {
         let msg = format!("Cannot rmrf {:?} in zipfile {:?}, filesystem read-only",
                           path,
                           &self.source);
-        return Err(GameError::FilesystemError(msg));
+        Err(GameError::FilesystemError(msg))
     }
 
     fn exists(&self, path: &Path) -> bool {

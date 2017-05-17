@@ -161,8 +161,7 @@ pub fn f64_to_duration(t: f64) -> time::Duration {
 fn fps_as_duration(fps: u64) -> time::Duration {
     // TODO: Make this better!
     let target_dt_seconds = 1.0 / (fps as f64);
-    let target_dt = f64_to_duration(target_dt_seconds);
-    target_dt
+    f64_to_duration(target_dt_seconds)
 }
 
 /// Gets the FPS of the game, averaged over the last

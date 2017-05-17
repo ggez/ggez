@@ -116,7 +116,7 @@ impl Filesystem {
         let mut root_path = env::current_exe()?;
 
         // Ditch the filename (if any)
-        if let Some(_) = root_path.file_name() {
+        if root_path.file_name().is_some() {
             root_path.pop();
         }
 
@@ -232,12 +232,12 @@ impl Filesystem {
     }
 
     /// Check whether a file or directory exists.
-    pub fn exists<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
+    pub fn exists<P: AsRef<path::Path>>(&self, path: P) -> bool {
         self.vfs.exists(path.as_ref())
     }
 
     /// Check whether a path points at a file.
-    pub fn is_file<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
+    pub fn is_file<P: AsRef<path::Path>>(&self, path: P) -> bool {
         self.vfs
             .metadata(path.as_ref())
             .map(|m| m.is_file())
@@ -245,7 +245,7 @@ impl Filesystem {
     }
 
     /// Check whether a path points at a directory.
-    pub fn is_dir<P: AsRef<path::Path>>(&mut self, path: P) -> bool {
+    pub fn is_dir<P: AsRef<path::Path>>(&self, path: P) -> bool {
         self.vfs
             .metadata(path.as_ref())
             .map(|m| m.is_dir())

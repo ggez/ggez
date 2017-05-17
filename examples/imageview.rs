@@ -24,7 +24,7 @@ struct MainState {
 }
 
 impl MainState {
-    fn draw_crazy_lines(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw_crazy_lines(&self, ctx: &mut Context) -> GameResult<()> {
         let num_lines = 100;
         let mut colors = Vec::new();
         for _ in 0..num_lines {
@@ -99,10 +99,10 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
 
         let dest_point = graphics::Point::new(0.0, 0.0);
-        graphics::draw(ctx, &mut self.image, dest_point, 0.0)?;
-        graphics::draw(ctx, &mut self.text, dest_point, 0.0)?;
+        graphics::draw(ctx, &self.image, dest_point, 0.0)?;
+        graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         let dest_point = graphics::Point::new(100.0, 50.0);
-        graphics::draw(ctx, &mut self.bmptext, dest_point, 0.0)?;
+        graphics::draw(ctx, &self.bmptext, dest_point, 0.0)?;
 
         self.draw_crazy_lines(ctx)?;
         graphics::present(ctx);

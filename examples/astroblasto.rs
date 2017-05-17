@@ -340,7 +340,7 @@ impl Assets {
 }
 
 /// **********************************************************************
-/// The InputState is exactly what it sounds like, it just keeps track of
+/// The `InputState` is exactly what it sounds like, it just keeps track of
 /// the user's input state so that we turn keyboard events into something
 /// state-based and device-independent.
 /// **********************************************************************
@@ -362,13 +362,13 @@ impl Default for InputState {
 }
 
 /// **********************************************************************
-/// Now we're getting into the actual game loop.  The MainState is our
+/// Now we're getting into the actual game loop.  The `MainState` is our
 /// game's "global" state, it keeps track of everything we need for
 /// actually running the game.
 ///
 /// Our game objects are simply a vector for each actor type, and we
 /// probably mingle gameplay-state (like score) and hardware-state
-/// (like gui_dirty) a little more than we should, but for something
+/// (like gui_`dirty`) a little more than we should, but for something
 /// this small it hardly matters.
 /// **********************************************************************
 
@@ -517,7 +517,7 @@ fn draw_actor(assets: &mut Assets,
 }
 
 /// **********************************************************************
-/// Now we implement the EventHandler trait from ggez::game, which provides
+/// Now we implement the `EventHandler` trait from `ggez::event`, which provides
 /// ggez with callbacks for updating and drawing our game, as well as
 /// handling input events.
 /// **********************************************************************
@@ -612,8 +612,8 @@ impl EventHandler for MainState {
         let score_dest = graphics::Point::new((self.score_display.width() / 2) as f32 + 200.0,
                                               (self.score_display.height() / 2) as f32 + 10.0);
         // let source_rect = graphics::Rect::one();
-        graphics::draw(ctx, &mut self.level_display, level_dest, 0.0)?;
-        graphics::draw(ctx, &mut self.score_display, score_dest, 0.0)?;
+        graphics::draw(ctx, &self.level_display, level_dest, 0.0)?;
+        graphics::draw(ctx, &self.score_display, score_dest, 0.0)?;
 
         // Then we flip the screen...
         graphics::present(ctx);
@@ -647,10 +647,7 @@ impl EventHandler for MainState {
             Keycode::Up => {
                 self.input.yaxis = 0.0;
             }
-            Keycode::Left => {
-                self.input.xaxis = 0.0;
-            }
-            Keycode::Right => {
+            Keycode::Left | Keycode::Right => {
                 self.input.xaxis = 0.0;
             }
             Keycode::Space => {
@@ -663,7 +660,7 @@ impl EventHandler for MainState {
 
 /// **********************************************************************
 /// Finally our main function!  Which merely sets up a config and calls
-/// ggez::event::run() with our EventHandler type.
+/// `ggez::event::run()` with our `EventHandler` type.
 /// **********************************************************************
 
 pub fn main() {

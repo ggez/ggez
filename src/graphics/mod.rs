@@ -120,7 +120,7 @@ impl From<DrawParam> for RectProperties {
 }
 
 /// A structure for conveniently storing Sampler's, based off
-/// their SamplerInfo.
+/// their `SamplerInfo`.
 ///
 /// Making this generic is tricky 'cause it has methods that depend
 /// on the generic Factory trait, it seems, so for now we just kind
