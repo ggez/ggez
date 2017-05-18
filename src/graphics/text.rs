@@ -459,7 +459,7 @@ mod tests {
         assert_eq!(f.get_width("Foo!"), 33);
 
         // http://www.catipsum.com/index.php
-        let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff other cat's butt and hang jaw half open thereafter for give attitude. Annoy kitten brother with poking.\nMrow toy mouse squeak roll over. Human give me attention meow.";
+        let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff other cat's butt and hang jaw half open thereafter for give attitude. Annoy kitten\nbrother with poking. Mrow toy mouse squeak roll over. Human give me attention meow.";
         let (len, v) = f.get_wrap(text_to_wrap, 250);
         println!("{} {:?}", len, v);
         assert_eq!(len, 244);
@@ -469,9 +469,11 @@ mod tests {
             "on hood and windshield sniff other",
             "cat\'s butt and hang jaw half open",
             "thereafter for give attitude. Annoy",
-            "kitten brother with poking.",
-            "Mrow toy mouse squeak roll over.",
-            "Human give me attention meow."];
+            "kitten",
+            "brother with poking. Mrow toy",
+            "mouse squeak roll over. Human give",
+            "me attention meow."
+            ];
         assert_eq!(&v, &wrapped_text);
     }
 }
