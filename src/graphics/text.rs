@@ -127,12 +127,14 @@ impl Font {
 
     /// Returns the width a line of text needs, in pixels.
     /// Does not handle line-breaks.
-    /// BUGGO: TODO: Implement
     pub fn get_width(&self, text: &str) -> usize {
         match *self {
             Font::BitmapFont{ width, .. } => width * text.len(),
             Font::TTFFont{ref font, scale, .. } => {
-                0
+                let v_metrics = font.v_metrics(scale);
+                let offset = rusttype::point(0.0, v_metrics.ascent);
+                let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
+                text_width(&glyphs) as usize
             },
         }
     }
@@ -164,6 +166,9 @@ impl Font {
                     max_line_length = cmp::max(max_line_length, current_line_length);
                 }
             }
+
+            // Push the last bit of the line
+            broken_lines.push(current_line.join(" "));
         }
 
         (max_line_length, broken_lines)
@@ -445,5 +450,28 @@ mod tests {
         let rect_dims = (5, 5);
         blit(dst, rect_dims, (0, 0), src, rect_dims, (0, 0), (5, 5), 5);
         assert_eq!(dst, src);
+    }
+
+    #[test]
+    fn test_metrics() {
+        let f = Font::default_font().unwrap();
+        assert_eq!(f.get_height(), 17);
+        assert_eq!(f.get_width("Foo!"), 33);
+
+        // http://www.catipsum.com/index.php
+        let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff other cat's butt and hang jaw half open thereafter for give attitude. Annoy kitten brother with poking.\nMrow toy mouse squeak roll over. Human give me attention meow.";
+        let (len, v) = f.get_wrap(text_to_wrap, 250);
+        println!("{} {:?}", len, v);
+        assert_eq!(len, 244);
+
+        let wrapped_text = vec![
+            "Walk on car leaving trail of paw prints",
+            "on hood and windshield sniff other",
+            "cat\'s butt and hang jaw half open",
+            "thereafter for give attitude. Annoy",
+            "kitten brother with poking.",
+            "Mrow toy mouse squeak roll over.",
+            "Human give me attention meow."];
+        assert_eq!(&v, &wrapped_text);
     }
 }
