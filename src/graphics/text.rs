@@ -15,6 +15,7 @@ pub enum Font {
     TTFFont {
         font: rusttype::Font<'static>,
         points: u32,
+        scale: rusttype::Scale,
     },
     BitmapFont {
         // Width, height and data for the original glyph image.
@@ -30,7 +31,7 @@ pub enum Font {
 
 impl Font {
     /// Load a new TTF font from the given file.
-    pub fn new<P>(context: &mut Context, path: P, size: u32) -> GameResult<Font>
+    pub fn new<P>(context: &mut Context, path: P, points: u32) -> GameResult<Font>
         where P: AsRef<path::Path> + fmt::Debug
     {
         // let mut buffer: Vec<u8> = Vec::new();
@@ -40,20 +41,27 @@ impl Font {
         stream.read_to_end(&mut buf)?;
 
         let name = format!("{:?}", path);
-        Font::from_bytes(&name, &buf, size)
+
+        // Get the proper DPI to scale font size accordingly
+        let (_diag_dpi, x_dpi, y_dpi) = context.gfx_context.dpi;
+        Font::from_bytes(&name, &buf, points, (x_dpi, y_dpi))
     }
 
     /// Loads a new TTF font from data copied out of the given buffer.
-    pub fn from_bytes(name: &str, bytes: &[u8], size: u32) -> GameResult<Font> {
+    pub fn from_bytes(name: &str, bytes: &[u8], points: u32, dpi: (f32, f32)) -> GameResult<Font> {
         let collection = rusttype::FontCollection::from_bytes(bytes.to_vec());
         let font_err = GameError::ResourceLoadError(format!("Could not load font collection for \
                                                              font {:?}",
                                                             name));
         let font = collection.into_font().ok_or(font_err)?;
+        let (x_dpi, y_dpi) = dpi;
+        // println!("DPI: {}, {}", x_dpi, y_dpi);
+        let scale = display_independent_scale(points, x_dpi, y_dpi);
 
         Ok(Font::TTFFont {
                font: font,
-               points: size,
+               points: points,
+               scale: scale,
            })
     }
 
@@ -93,21 +101,26 @@ impl Font {
     pub fn default_font() -> GameResult<Self> {
         let size = 16;
         let buf = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSerif.ttf"));
-        Font::from_bytes("default", &buf[..], size)
+        // BUGGO: fix DPI.
+        // BUGGO: This also means we can implement printf and stuff!
+        Font::from_bytes("default", &buf[..], size, (75.0, 75.0))
     }
 
     /// Get the height of the Font in pixels.
     ///
     /// The height of the font includes any spacing, it will be the total height
     /// a line needs.
-    /// BUGGO: TODO: implement this for TTF fonts.  Should just be a matter of
-    /// rusttype::Font.v_metrics() but that needs some rearranging of where the
-    /// appropriate Scale is kept.
     pub fn get_height(&self) -> usize {
         match *self {
             Font::BitmapFont{ height, .. } => height,
-            Font::TTFFont{ref font, points } => {
-                0
+            Font::TTFFont{ref font, scale, .. } => {
+                // let v_metrics = font.v_metrics(scale);
+                // v_metrics.
+                // TODO: Check and make sure this is right;
+                // shouldn't we be using v_metrics instead?
+                // if not you will have to change this in the 
+                // ttf font rendering code as well.
+                scale.y.ceil() as usize
             },
         }
     }
@@ -118,7 +131,7 @@ impl Font {
     pub fn get_width(&self, text: &str) -> usize {
         match *self {
             Font::BitmapFont{ width, .. } => width * text.len(),
-            Font::TTFFont{ref font, points } => {
+            Font::TTFFont{ref font, scale, .. } => {
                 0
             },
         }
@@ -189,26 +202,8 @@ fn display_independent_scale(points: u32, dpi_w: f32, dpi_h: f32) -> rusttype::S
     }
 }
 
-fn render_ttf(context: &mut Context,
-              text: &str,
-              font: &rusttype::Font<'static>,
-              size: u32)
-              -> GameResult<Text> {
-    // Ripped almost wholesale from
-    // https://github.com/dylanede/rusttype/blob/master/examples/simple.rs
-
-    // Get the proper DPI to scale font size accordingly
-    let (_diag_dpi, x_dpi, y_dpi) = context.gfx_context.dpi;
-    // println!("DPI: {}, {}", x_dpi, y_dpi);
-    let scale = display_independent_scale(size, x_dpi, y_dpi);
-    let text_height_pixels = scale.y.ceil() as usize;
-    let v_metrics = font.v_metrics(scale);
-    let offset = rusttype::point(0.0, v_metrics.ascent);
-    // Then turn them into an array of positioned glyphs...
-    // `layout()` turns an abstract glyph, which contains no concrete
-    // size or position information, into a PositionedGlyph, which does.
-    let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
-    let text_width_pixels = glyphs
+fn text_width(glyphs: &[rusttype::PositionedGlyph]) -> f32 {
+    glyphs
         .iter()
         .rev()
         .filter_map(|g| {
@@ -219,8 +214,37 @@ fn render_ttf(context: &mut Context,
                     })
         .next()
         .unwrap_or(0.0)
-        .ceil() as usize;
-    // Make an array for our rendered bitmap
+}
+
+fn render_ttf(context: &mut Context,
+              text: &str,
+              font: &rusttype::Font<'static>,
+              scale: rusttype::Scale)
+              -> GameResult<Text> {
+    // Ripped almost wholesale from
+    // https://github.com/dylanede/rusttype/blob/master/examples/simple.rs
+
+    let text_height_pixels = scale.y.ceil() as usize;
+    let v_metrics = font.v_metrics(scale);
+    let offset = rusttype::point(0.0, v_metrics.ascent);
+    // Then turn them into an array of positioned glyphs...
+    // `layout()` turns an abstract glyph, which contains no concrete
+    // size or position information, into a PositionedGlyph, which does.
+    let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
+    let text_width_pixels = text_width(&glyphs).ceil() as usize;
+    // let text_width_pixels = glyphs
+    //     .iter()
+    //     .rev()
+    //     .filter_map(|g| {
+    //                     g.pixel_bounding_box()
+    //                         .map(|b| {
+    //                                  b.min.x as f32 + g.unpositioned().h_metrics().advance_width
+    //                              })
+    //                 })
+    //     .next()
+    //     .unwrap_or(0.0)
+    //     .ceil() as usize;
+    // // Make an array for our rendered bitmap
     let bytes_per_pixel = 4;
     let mut pixel_data = vec![0; text_width_pixels * text_height_pixels * bytes_per_pixel];
     let pitch = text_width_pixels * bytes_per_pixel;
@@ -346,8 +370,9 @@ impl Text {
         match *font {
             Font::TTFFont {
                 font: ref f,
-                points,
-            } => render_ttf(context, text, f, points),
+                scale,
+                ..
+            } => render_ttf(context, text, f, scale),
             Font::BitmapFont {
                 ref bytes,
                 width,
