@@ -159,7 +159,6 @@ pub fn f64_to_duration(t: f64) -> time::Duration {
 ///
 /// Approximately.
 fn fps_as_duration(fps: u64) -> time::Duration {
-    // TODO: Make this better!
     let target_dt_seconds = 1.0 / (fps as f64);
     f64_to_duration(target_dt_seconds)
 }

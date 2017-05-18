@@ -326,12 +326,13 @@ impl VFS for PhysicalFS {
     /// Retrieve the path entries in this path
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
         let p = self.get_absolute(path)?;
-        // BUGGO: This is WRONG because path() returns the full absolute
+        // This is inconvenient because path() returns the full absolute
         // path of the bloody file, which is NOT what we want!
         // But if we use file_name() to just get the name then it is ALSO not what we want!
         // what we WANT is the full absolute file path, *relative to the resources dir*.
         // So that we can do read_dir("/foobar/"), and for each file, open it and query 
         // it and such by name.
+        // So we build the paths ourself.
         let direntry_to_path = |entry: &fs::DirEntry| -> GameResult<PathBuf> {
             let fname = entry.file_name().into_string().unwrap();
             let mut pathbuf = PathBuf::from(path);
@@ -646,19 +647,9 @@ impl VFS for ZipFS {
         }
     }
 
+    /// Zip files don't have real directories, so we (incorrectly) hack it by
+    /// just looking for a path prefix for now.
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
-        // let mut stupid_archive_borrow = self.archive
-        //     .try_borrow_mut()
-        //     .expect("Couldn't borrow ZipArchive in ZipFS::read_dir(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
-
-        // let itr = //(0..stupid_archive_borrow.len())
-        //     (0..1)
-        //     .map(|i| stupid_archive_borrow.by_index(i).unwrap())
-        //     .filter(|zipfile| zipfile.name().starts_with(path))
-        //     .map(|zipfile| Ok(PathBuf::from(zipfile.name())))
-        //     .collect::<Vec<_>>();
-        // Ok(Box::new(itr.into_iter()))
-        // unimplemented!()
         let path = convenient_path_to_str(path)?;
         let itr = self.index.iter()
             .filter(|s| s.starts_with(path))

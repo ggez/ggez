@@ -35,10 +35,12 @@ pub struct Context {
     pub event_context: sdl2::EventSubsystem,
     pub timer_context: timer::TimeContext,
     pub audio_context: audio::AudioContext,
+
+    pub default_font: graphics::Font,
 }
 
 impl fmt::Debug for Context {
-    // TODO: Make this more useful.
+    // TODO: Make this include more information?
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Context: {:p}>", self)
     }
@@ -80,6 +82,7 @@ impl Context {
         let audio_context = audio::AudioContext::new()?;
         let event_context = sdl_context.event()?;
         let timer_context = timer::TimeContext::new();
+        let font = graphics::Font::default_font()?;
         let graphics_context = graphics::GraphicsContext::new(video,
                                                               &conf.window_title,
                                                               conf.window_width,
@@ -93,8 +96,9 @@ impl Context {
             gfx_context: graphics_context,
             event_context: event_context,
             timer_context: timer_context,
-
             audio_context: audio_context,
+            
+            default_font: font,
         };
 
         set_window_icon(&mut ctx)?;

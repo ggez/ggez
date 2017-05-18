@@ -98,11 +98,12 @@ impl Font {
     }
 
     /// Returns a baked-in default font: currently DejaVuSerif.ttf
+    /// Note it does create a new `Font` object with every call.
     pub fn default_font() -> GameResult<Self> {
         let size = 16;
         let buf = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSerif.ttf"));
-        // BUGGO: fix DPI.
-        // BUGGO: This also means we can implement printf and stuff!
+        // BUGGO: fix DPI.  Get from Context?  If we do that we can basically
+        // just make Context always keep the default Font itself... hmm.
         Font::from_bytes("default", &buf[..], size, (75.0, 75.0))
     }
 
@@ -281,7 +282,8 @@ fn render_ttf(context: &mut Context,
     //text, text_width_pixels, text_height_pixels, pixel_data);
 
     // Copy the bitmap into an image, and we're basically done!
-    // BUGGO: TODO: Make sure int conversions will not fail
+    assert!(text_width_pixels < u16::MAX as usize);
+    assert!(text_height_pixels < u16::MAX as usize);
     let image = Image::from_rgba8(context,
                                   text_width_pixels as u16,
                                   text_height_pixels as u16,

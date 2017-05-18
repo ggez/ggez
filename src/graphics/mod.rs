@@ -208,8 +208,8 @@ pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources,
                                                   gfx_device_gl::CommandBuffer,
                                                   gfx_device_gl::Device>;
 
-/// TODO: This can probably be removed before release but might be
-/// handy to keep around until then.  Just in case something else
+/// This can probably be removed but might be
+/// handy to keep around a bit longer.  Just in case something else
 /// crazy happens.
 #[allow(unused)]
 fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
@@ -383,21 +383,6 @@ fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [
      [c0r3, c1r3, c2r3, c3r3]]
 }
 
-// BUGGO: Has this been obsoleted by the Mesh type?
-// fn draw_tessellated(gfx: &mut GraphicsContext, buffers: tessellation::Buffer) -> GameResult<()> {
-//     let (buf, slice) = gfx.factory
-//         .create_vertex_buffer_with_slice(&buffers.vertices[..], &buffers.indices[..]);
-
-//     gfx.encoder.update_buffer(&gfx.data.rect_properties, &[RectProperties::default()], 0)?;
-
-//     gfx.data.vbuf = buf;
-//     gfx.data.tex.0 = gfx.white_image.texture.clone();
-
-//     gfx.encoder.draw(&slice, &gfx.pso, &gfx.data);
-
-//     Ok(())
-// }
-
 // **********************************************************************
 // DRAWING
 // **********************************************************************
@@ -452,17 +437,18 @@ pub fn present(ctx: &mut Context) {
     gfx.device.cleanup();
 }
 
-/// Draw an arc.
-pub fn arc(_ctx: &mut Context,
-           _mode: DrawMode,
-           _point: Point,
-           _radius: f32,
-           _angle1: f32,
-           _angle2: f32,
-           _segments: u32)
-           -> GameResult<()> {
-    unimplemented!();
-}
+// Draw an arc.
+// Punting on this until later.
+// pub fn arc(_ctx: &mut Context,
+//            _mode: DrawMode,
+//            _point: Point,
+//            _radius: f32,
+//            _angle1: f32,
+//            _angle2: f32,
+//            _segments: u32)
+//            -> GameResult<()> {
+//     unimplemented!();
+// }
 
 /// Draw a circle.
 pub fn circle(ctx: &mut Context,
@@ -511,10 +497,17 @@ pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point]) -> GameRes
     m.draw(ctx, Point::default(), 0.0)
 }
 
-/// Renders text with the default font.
-pub fn print(_ctx: &mut Context, _dest: Point, _text: &str, _size: f32) {
-    unimplemented!();
-}
+// Renders text with the default font.
+// Not terribly efficient as it re-renders the text with each call,
+// but good enough for debugging.
+// Doesn't actually work, double-borrow on ctx.  Bah.
+// pub fn print(ctx: &mut Context, dest: Point, text: &str) -> GameResult<()> {
+//     let rendered_text = {
+//         let font = &ctx.default_font;
+//         text::Text::new(ctx, text, font)?
+//     };
+//     draw(ctx, &rendered_text, dest, 0.0)
+// }
 
 
 /// Draws a rectangle.
@@ -579,12 +572,13 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
                gl.context_profile()))
 }
 
-// TODO: Better name.  screen_bounds?  Viewport?
+/// Returns a rectangle defining the coordinate system of the screen.
+/// It will be `Rect { x: left, y: bottom, w: width, h: height }`
 pub fn get_screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
 }
 
-// TOOD: Verify!
+// TODO: Verify!
 pub fn is_gamma_correct(_ctx: &Context) -> bool {
     true
 }
@@ -597,7 +591,6 @@ pub fn set_background_color(ctx: &mut Context, color: Color) {
 /// Sets the foreground color, which will be used for drawing
 /// rectangles, lines, etc.  Default: white.
 pub fn set_color(ctx: &mut Context, color: Color) -> GameResult<()> {
-    // TODO: Update buffer!
     let gfx = &mut ctx.gfx_context;
     gfx.shader_globals.color = color.into();
     gfx.update_globals()
@@ -753,11 +746,6 @@ impl Image {
         let img = {
             let mut buf = Vec::new();
             let mut reader = context.filesystem.open(path)?;
-            // TODO:
-            // image's guess_format() stuff is inconvenient.
-            // It would be nicer if they just read the first n
-            // bytes from the reader, but noooooo...
-            // Even though they require a BufReader anyway.
             reader.read_to_end(&mut buf)?;
             image::load_from_memory(&buf)?.to_rgba()
         };
@@ -932,6 +920,7 @@ impl Mesh {
     }
 
     /// Create a new mesh for a circle.
+    /// Stroked circles are still WIP, sorry.
     pub fn new_circle(ctx: &mut Context,
                       mode: DrawMode,
                       point: Point,
@@ -947,6 +936,7 @@ impl Mesh {
     }
 
     /// Create a new mesh for an ellipse.
+    /// Stroked ellipses are still WIP, sorry.
     pub fn new_ellipse(ctx: &mut Context,
                        mode: DrawMode,
                        point: Point,
