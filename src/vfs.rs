@@ -136,8 +136,13 @@ pub trait VFS: Debug {
 }
 
 pub trait VMetadata {
+    /// Returns whether or not it is a directory.
+    /// Note that zip files don't actually have directories, awkwardly.
     fn is_dir(&self) -> bool;
+    /// Returns whether or not it is a file.
     fn is_file(&self) -> bool;
+    /// Returns the length of the thing.  If it is a directory,
+    /// the result of this is undefined/platform dependent.
     fn len(&self) -> u64;
 }
 
@@ -771,7 +776,12 @@ mod tests {
             assert!(!m.is_file());
             assert!(m.is_dir());
             // Not exactly sure what the "length" of a directory is, buuuuuut...
-            assert_eq!(m.len(), 18);
+            // It appears to vary based on the platform in fact.
+            // On my desktop, it's 18.
+            // On Travis's VM, it's 4096.
+            // On Appveyor's VM, it's 0.
+            // So, it's meaningless.
+            //assert_eq!(m.len(), 18);
         }
 
         {
