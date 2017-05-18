@@ -282,7 +282,7 @@ impl GraphicsContext {
         let rect_props = factory.create_constant_buffer(1);
         let globals_buffer = factory.create_constant_buffer(1);
         let mut samplers: SamplerCache<gfx_device_gl::Resources> = SamplerCache::new();
-        let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Trilinear,
+        let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Bilinear,
                                                      texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
         let white_image =
@@ -603,9 +603,10 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
     let gfx = &mut ctx.gfx_context;
     let new_mode = mode.into();
     let sampler_info = texture::SamplerInfo::new(new_mode, texture::WrapMode::Clamp);
-    let new_sampler = gfx.factory.create_sampler(sampler_info);
-
-    gfx.data.tex.1 = new_sampler;
+    // We create the sampler now so we don't end up creating it at some
+    // random-ass time while we're trying to draw stuff.
+    let _sampler = gfx.samplers.get_or_insert(sampler_info, &mut *gfx.factory);
+    gfx.default_sampler_info = sampler_info;
 }
 
 pub fn set_line_width(ctx: &mut Context, width: f32) {

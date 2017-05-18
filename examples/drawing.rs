@@ -8,18 +8,21 @@ use std::time::Duration;
 
 struct MainState {
     image1: graphics::Image,
-    image2: graphics::Image,
+    image2_linear: graphics::Image,
+    image2_nearest: graphics::Image,
     zoomlevel: f32,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-
         let image1 = graphics::Image::new(ctx, "/dragon1.png")?;
-        let image2 = graphics::Image::new(ctx, "/player.png")?;
+        let image2_linear = graphics::Image::new(ctx, "/shot.png")?;
+        let mut image2_nearest = graphics::Image::new(ctx, "/shot.png")?;
+        image2_nearest.set_filter(graphics::FilterMode::Nearest);
         let s = MainState {
             image1: image1,
-            image2: image2,
+            image2_linear: image2_linear,
+            image2_nearest: image2_nearest,
             zoomlevel: 1.0,
         };
 
@@ -41,16 +44,28 @@ impl event::EventHandler for MainState {
         let dst = graphics::Point::new(200.0, 200.0);
         graphics::draw(ctx, &self.image1, dst, 0.0)?;
         let dst = graphics::Point::new(100.0, 100.0);
-        let scale = graphics::Point::new(4.0, 4.0);
+        let dst2 = graphics::Point::new(400.0, 400.0);
+        let scale = graphics::Point::new(40.0, 40.0);
         // let shear = graphics::Point::new(self.zoomlevel, self.zoomlevel);
         // graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0));
         graphics::draw_ex(ctx,
-                          &self.image2,
+                          &self.image2_linear,
                           graphics::DrawParam {
                               // src: src,
                               dest: dst,
                               rotation: self.zoomlevel,
-                              offset: Point::new(-16.0, 0.0),
+                              // offset: Point::new(-16.0, 0.0),
+                              scale: scale,
+                              // shear: shear,
+                              ..Default::default()
+                          })?;
+        graphics::draw_ex(ctx,
+                          &self.image2_nearest,
+                          graphics::DrawParam {
+                              // src: src,
+                              dest: dst2,
+                              rotation: self.zoomlevel,
+                              // offset: Point::new(-16.0, 0.0),
                               scale: scale,
                               // shear: shear,
                               ..Default::default()
