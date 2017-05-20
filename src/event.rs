@@ -9,6 +9,7 @@ pub use sdl2::mouse::MouseState;
 
 pub use sdl2::controller::Button;
 pub use sdl2::controller::Axis;
+pub use sdl2::controller::GameController;
 
 use sdl2::event::Event::*;
 use sdl2::event;
@@ -84,6 +85,22 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
     where S: EventHandler
 {
     {
+        // TODO put all this into the context
+        // before we can use gamepads (or joysticks) we need to "open" them
+        // then we need to keep th
+        let controller_ctx = ctx.sdl_context.game_controller().unwrap();
+
+        let joy_count = controller_ctx.num_joysticks().unwrap();
+        let mut controllers: Vec<GameController> = Vec::new();
+        for i in 0..joy_count {
+            if controller_ctx.is_game_controller(i) {
+                let controller: GameController = controller_ctx.open(i).unwrap();
+                // the GameController instance do fancy things, for example it can give us the id
+                // which is used in events
+                controllers.push(controller);
+            }
+        }
+
         let mut event_pump = ctx.sdl_context.event_pump()?;
 
         let mut continuing = true;
