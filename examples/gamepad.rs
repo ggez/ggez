@@ -27,13 +27,13 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn controller_button_down_event(&mut self, btn: Button) {
-        println!("Button pressed: {:?}", btn);
+    fn controller_button_down_event(&mut self, btn: Button, instance_id: i32) {
+        println!("Button pressed: {:?} Controller_Id: {}", btn, instance_id);
     }
 
 
-    fn controller_axis_event(&mut self, axis: Axis, value: i16) {
-        println!("Axis Event: {:?} Value: {}", axis, value);
+    fn controller_axis_event(&mut self, axis: Axis, value: i16, instance_id: i32) {
+        println!("Axis Event: {:?} Value: {} Controller_Id: {}", axis, value, instance_id);
     }
 }
 

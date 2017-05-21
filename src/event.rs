@@ -9,7 +9,6 @@ pub use sdl2::mouse::MouseState;
 
 pub use sdl2::controller::Button;
 pub use sdl2::controller::Axis;
-pub use sdl2::controller::GameController;
 
 use sdl2::event::Event::*;
 use sdl2::event;
@@ -62,9 +61,9 @@ pub trait EventHandler {
 
     fn key_up_event(&mut self, _keycode: Keycode, _keymod: Mod, _repeat: bool) {}
 
-    fn controller_button_down_event(&mut self, _btn: Button) {}
-    fn controller_button_up_event(&mut self, _btn: Button) {}
-    fn controller_axis_event(&mut self, _axis: Axis, _value: i16) {}
+    fn controller_button_down_event(&mut self, _btn: Button, _instance_id: i32) {}
+    fn controller_button_up_event(&mut self, _btn: Button, _instance_id: i32) {}
+    fn controller_axis_event(&mut self, _axis: Axis, _value: i16, _instance_id: i32) {}
 
     fn focus_event(&mut self, _gained: bool) {}
 
@@ -85,22 +84,6 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
     where S: EventHandler
 {
     {
-        // TODO put all this into the context
-        // before we can use gamepads (or joysticks) we need to "open" them
-        // then we need to keep th
-        let controller_ctx = ctx.sdl_context.game_controller().unwrap();
-
-        let joy_count = controller_ctx.num_joysticks().unwrap();
-        let mut controllers: Vec<GameController> = Vec::new();
-        for i in 0..joy_count {
-            if controller_ctx.is_game_controller(i) {
-                let controller: GameController = controller_ctx.open(i).unwrap();
-                // the GameController instance do fancy things, for example it can give us the id
-                // which is used in events
-                controllers.push(controller);
-            }
-        }
-
         let mut event_pump = ctx.sdl_context.event_pump()?;
 
         let mut continuing = true;
@@ -152,12 +135,13 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                         ..
                     } => state.mouse_motion_event(mousestate, x, y, xrel, yrel),
                     MouseWheel { x, y, .. } => state.mouse_wheel_event(x, y),
-                    ControllerButtonDown { button, .. } => {
-                        state.controller_button_down_event(button)
+                    ControllerButtonDown { button, which, .. } => {
+                        state.controller_button_down_event(button, which)
                     }
-                    ControllerButtonUp { button, .. } => state.controller_button_up_event(button),
-                    ControllerAxisMotion { axis, value, .. } => {
-                        state.controller_axis_event(axis, value)
+                    ControllerButtonUp { button, which, .. } =>
+                        state.controller_button_up_event(button, which),
+                    ControllerAxisMotion { axis, value, which, .. } => {
+                        state.controller_axis_event(axis, value, which)
                     }
                     Window { win_event: event::WindowEvent::FocusGained, .. } => {
                         state.focus_event(true)
