@@ -1,11 +1,12 @@
 //! Timing and measurement functions.
 //!
-//! ggez does not try to do any framerate limitation by default.
-//! If you want to run at anything other than full-bore max speed all the time,
-//! calling `sleep()` with a duration of 0 will just yield to the OS so it has a 
-//! chance to breathe before continuing with your game,  while
-//! `sleep_until_next_frame()` will attempt to calculate how long it should
-//! wait to hit the desired FPS and sleep that long.
+//! ggez does not try to do any framerate limitation by default. If
+//! you want to run at anything other than full-bore max speed all the
+//! time, calling `sleep()` with a duration of 0 will yield to the OS
+//! so it has a chance to breathe before continuing with your game,
+//! which will prevent it from using 100% CPU unless it really needs
+//! to.  Enabling vsync by setting `vsync` in your `Conf` object is
+//! generally the best way to cap your displayed framerate.
 //!
 //! For a more detailed tutorial in how to handle frame timings in games,
 //! see <http://gafferongames.com/game-physics/fix-your-timestep/>
@@ -78,8 +79,7 @@ pub struct TimeContext {
 
 
 // How many frames we log update times for.
-// Nominally, one second, give or take.
-const TIME_LOG_FRAMES: usize = 60;
+const TIME_LOG_FRAMES: usize = 200;
 
 impl TimeContext {
     /// Creates a new `TimeContext` and initializes the start to this instant.
@@ -121,7 +121,7 @@ pub fn get_delta(ctx: &Context) -> time::Duration {
 
 
 /// Gets the average time of a frame, averaged
-/// over the last 60 frames.
+/// over the last 200 frames.
 pub fn get_average_delta(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     let init = time::Duration::new(0, 0);
@@ -164,7 +164,7 @@ fn fps_as_duration(fps: u64) -> time::Duration {
 }
 
 /// Gets the FPS of the game, averaged over the last
-/// 60 frames.
+/// 200 frames.
 pub fn get_fps(ctx: &Context) -> f64 {
     let duration_per_frame = get_average_delta(ctx);
     let seconds_per_frame = duration_to_f64(duration_per_frame);

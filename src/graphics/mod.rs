@@ -425,7 +425,7 @@ pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> Gam
 }
 
 /// Tells the graphics system to actually put everything on the screen.
-/// Call this at the end of your `GameState`'s `draw()` method.
+/// Call this at the end of your `EventHandler`'s `draw()` method.
 pub fn present(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
     // We might want to give the user more control over when the

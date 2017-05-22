@@ -41,11 +41,17 @@
 //! system.  The best way to do this is documented [by the SDL2
 //! crate](https://github.com/AngryLawyer/rust-sdl2#user-content-requirements).
 //! 
-//! ggez consists of three main parts: A `Context` object which contains
-//! all the state required to interface with the computer's hardware, an
-//! `EventHandler` trait that the user implements to register callbacks for
-//! events, and various sub-modules such as `graphics` and `audio` that
-//! provide the functionality to actually get stuff done.
+//! ggez consists of three main parts: A `Context` object which
+//! contains all the state required to interface with the computer's
+//! hardware, an `EventHandler` trait that the user implements to
+//! register callbacks for events, and various sub-modules such as
+//! `graphics` and `audio` that provide the functionality to actually
+//! get stuff done.  The general pattern is to create a struct holding
+//! your game's data which implements the `EventHandler` trait.
+//! Create a `Conf` object with the default values you want in it,
+//! Create a new `Context` from it, and then call `event::run()` with
+//! the `Context` and an instance of your `EventHandler`.
+//! 
 //! 
 //! 
 //! ## Examples
@@ -82,9 +88,7 @@
 //! portable to Windows, Linux and Mac.
 //! 
 //! The goal is to eventually have ggez be pure Rust, but we're not there
-//! yet.  The main blocker appears to be cross-platform
-//! joystick/controller input; once that exists we can drop SDL2 for
-//! `glutin`.
+//! yet.
 
 
 

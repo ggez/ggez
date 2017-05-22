@@ -117,9 +117,9 @@ pub const WHITE: Color = Color {
 
 
 pub const BLACK: Color = Color {
-    r: 1.0,
-    g: 1.0,
-    b: 1.0,
+    r: 0.0,
+    g: 0.0,
+    b: 0.0,
     a: 1.0,
 };
 
@@ -199,12 +199,6 @@ impl From<Color> for u32 {
         (rp | gp | bp | ap)
     }
 }
-
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum BlendMode {
-    Dummy,
-}
-
 
 /// Specifies whether a shape should be drawn
 /// filled or as an outline.

@@ -11,11 +11,10 @@ struct MainState {
     frames: usize,
 }
 
-// Then we implement the `ggez::game::GameState` trait on it, which
-// requires callbacks for creating the game state, updating it each
-// frame, and drawing it.
+// Then we implement the `ggez:event::EventHandler` trait on it, which
+// requires callbacks for updating and drawing the game state each frame.
 //
-// The `GameState` trait also contains callbacks for event handling
+// The `EventHandler` trait also contains callbacks for event handling
 // that you can override if you wish, but the defaults are fine.
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
