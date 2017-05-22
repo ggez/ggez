@@ -795,6 +795,7 @@ mod tests {
         fs.rmrf(testdir).unwrap();
         assert!(!fs.exists(testdir));
     }
-    
+
+
     // BUGGO: TODO: Make sure all functions are tested for OverlayFS and ZipFS!!
 }
