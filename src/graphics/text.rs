@@ -114,7 +114,7 @@ impl Font {
     pub fn get_height(&self) -> usize {
         match *self {
             Font::BitmapFont{ height, .. } => height,
-            Font::TTFFont{ref font, scale, .. } => {
+            Font::TTFFont{ scale, .. } => {
                 // let v_metrics = font.v_metrics(scale);
                 // v_metrics.
                 // TODO: Check and make sure this is right;
@@ -299,7 +299,7 @@ fn render_ttf(context: &mut Context,
 
 /// Treats src and dst as row-major 2D arrays, and blits the given rect from src to dst.
 /// Does no bounds checking or anything; if you feed it invalid bounds it will just panic.
-/// Generally, you shouldn't need or use this.
+/// Generally, you shouldn't need to use this directly.
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 fn blit(dst: &mut [u8],
         dst_dims: (usize, usize),
@@ -317,13 +317,14 @@ fn blit(dst: &mut [u8],
     for row_idx in 0..rect_size.1 {
         let src_row = row_idx + src_point.1;
         let dst_row = row_idx + dst_point.1;
-        let src_offset = src_row * src_row_width;
-        let dst_offset = dst_row * dst_row_width;
+        let src_offset = src_row * src_row_width + (src_point.0 * pitch);
+        let dst_offset = dst_row * dst_row_width + (dst_point.0 * pitch);
 
-        println!("from {} to {}, width {}",
-                 dst_offset,
-                 src_offset,
-                 area_row_width);
+
+        // println!("from {} to {}, width {}",
+        //          dst_offset,
+        //          src_offset,
+        //          area_row_width);
         let dst_slice = &mut dst[dst_offset..(dst_offset + area_row_width)];
         let src_slice = &src[src_offset..(src_offset + area_row_width)];
         dst_slice.copy_from_slice(src_slice);
@@ -344,11 +345,13 @@ fn render_bitmap(context: &mut Context,
     let mut dest_buf = Vec::with_capacity(buf_len);
     dest_buf.resize(buf_len, 0u8);
     for (i, c) in text.chars().enumerate() {
+        // println!("Rendering character {}: {}", i, c);
         let error = GameError::FontError(format!("Character '{}' not in bitmap font!", c));
         let source_offset = *glyphs_map
                                  .get(&c)
                                  .ok_or(error)?;
         let dest_offset = glyph_width * i;
+        // println!("Blitting {:?} to {:?}", source_offset, dest_offset);
         blit(&mut dest_buf,
              (text_length * glyph_width, glyph_height),
              (dest_offset, 0),
@@ -358,6 +361,7 @@ fn render_bitmap(context: &mut Context,
              (glyph_width, glyph_height),
              4);
     }
+    // println!("width {}, height {}", text_length * glyph_width, glyph_height);
     let image = Image::from_rgba8(context,
                                   (text_length * glyph_width) as u16,
                                   glyph_height as u16,

@@ -312,7 +312,7 @@ impl Assets {
         let player_image = graphics::Image::new(ctx, "/player.png")?;
         let shot_image = graphics::Image::new(ctx, "/shot.png")?;
         let rock_image = graphics::Image::new(ctx, "/rock.png")?;
-        // let font_path = path::Path::new("consolefont.png");
+        // let font_path = path::Path::new("/consolefont.png");
         // let font_chars =
         //"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!,.?;'\"";
         // let font = graphics::Font::new_bitmap(ctx, font_path, font_chars)?;

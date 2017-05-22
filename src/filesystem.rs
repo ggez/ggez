@@ -6,28 +6,22 @@
 //! program executable, 
 //! * The `resources.zip` file in the same
 //! directory as the program executable, 
-//! * The root folder of the  game's "user" directory which is in a 
+//! * The root folder of the  game's "save" directory which is in a 
 //! platform-dependent location,
 //! such as `~/.local/share/author/gameid/` on Linux.  The `gameid`
 //! and `author` parts are the strings passed to
 //! `Context::load_from_conf()`.
-//! * There is also a "config" directory which is writeable; on Linux
-//! this is generally `~/.config/gameid/`.  This is where new files are
-//! written to, such as config files or saved games.
 //!
 //! Files will be looked for in these locations in order, and the first one
 //! found used.  That allows game assets to be easily distributed as an archive
 //! file, but locally overridden for testing or modding simply by putting
 //! altered copies of them in the game's `resources/` directory.
 //!
-//! Note that currently the file lookups WILL follow symlinks!  It is
+//! Note that the file lookups WILL follow symlinks!  It is
 //! more for convenience than absolute security, so don't treat it as
 //! being secure.
 
-// BUGGO: TODO: Figure out for sure where the data and user dirs are, 
-// make sure the right ones are rw vs ro, and update docs to match.
-// Also verify the order.
-//
+
 // BUGGO: TODO: Also make it print out the searched directories when it
 // can't find a file!
 
@@ -51,7 +45,7 @@ pub struct Filesystem {
     vfs: vfs::OverlayFS,
     resources_path: path::PathBuf,
     zip_path: path::PathBuf,
-    user_config_path: path::PathBuf,
+    // user_config_path: path::PathBuf,
     user_data_path: path::PathBuf,
 }
 
@@ -98,8 +92,6 @@ impl io::Write for File {
 
 
 /// A list of paths.
-///
-/// BUGGO: TODO: This needs to be more better or something, maybe
 pub type PathList = Vec<path::PathBuf>;
 
 
@@ -126,7 +118,7 @@ impl Filesystem {
         let mut resources_path;
         let mut resources_zip_path;
         let user_data_path;
-        let user_config_path;
+        // let user_config_path;
         // <game exe root>/resources/
         {
             resources_path = root_path.clone();
@@ -153,13 +145,13 @@ impl Filesystem {
             overlay.push_back(Box::new(physfs));
         }
 
-        // Writeable local dir, ~/.config/whatever/
-        // Save game dir is read-write
-        {
-            user_config_path = app_root(AppDataType::UserConfig, &app_info)?;
-            let physfs = vfs::PhysicalFS::new(&user_config_path, false);
-            overlay.push_back(Box::new(physfs));
-        }
+        // // Writeable local dir, ~/.config/whatever/
+        // // Save game dir is read-write
+        // {
+        //     user_config_path = app_root(AppDataType::UserConfig, &app_info)?;
+        //     let physfs = vfs::PhysicalFS::new(&user_config_path, false);
+        //     overlay.push_back(Box::new(physfs));
+        // }
 
         // Cargo manifest dir!
         #[cfg(feature = "cargo-resource-root")]
@@ -174,7 +166,7 @@ impl Filesystem {
             vfs: overlay,
             resources_path: resources_path,
             zip_path: resources_zip_path,
-            user_config_path: user_config_path,
+            // user_config_path: user_config_path,
             user_data_path: user_data_path,
         };
 
@@ -338,7 +330,7 @@ mod tests {
 
             resources_path: "".into(),
             zip_path: "".into(),
-            user_config_path: "".into(),
+            // user_config_path: "".into(),
             user_data_path: "".into(),
         }
 
