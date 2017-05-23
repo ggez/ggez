@@ -4,7 +4,7 @@ uniform sampler2D t_Texture;
 in vec2 v_Uv;
 out vec4 Target0;
 
-uniform Globals {
+layout (std140) uniform Globals {
     mat4 u_Transform;
     vec4 u_Color;
 };

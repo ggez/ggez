@@ -3,12 +3,12 @@
 in vec2 a_Pos;
 in vec2 a_Uv;
 
-uniform Globals {
+layout (std140) uniform Globals {
     mat4 u_Transform;
     vec4 u_Color;
 };
 
-uniform RectProperties {
+layout (std140) uniform RectProperties {
     vec4 u_Src;
     vec2 u_Dest;
     vec2 u_Scale;
