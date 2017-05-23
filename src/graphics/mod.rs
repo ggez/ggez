@@ -59,21 +59,23 @@ const QUAD_VERTS: [Vertex; 4] = [Vertex {
 
 const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
-pub type ColorFormat = gfx::format::Srgba8;
-pub type DepthFormat = gfx::format::DepthStencil;
+type ColorFormat = gfx::format::Srgba8;
+type DepthFormat = gfx::format::DepthStencil;
 
 gfx_defines!{
+    /// Internal structure containing vertex data.
     vertex Vertex {
         pos: [f32; 2] = "a_Pos",
         uv: [f32; 2] = "a_Uv",
     }
 
+    /// Internal structure containing global shader state.
     constant Globals {
         transform: [[f32; 4];4] = "u_Transform",
         color: [f32; 4] = "u_Color",
     }
 
-    // Values that are different for each rect.
+    /// Internal structure containing values that are different for each rect.
     constant RectProperties {
         src: [f32; 4] = "u_Src",
         dest: [f32; 2] = "u_Dest",
@@ -151,10 +153,8 @@ impl<R> SamplerCache<R>
 }
 
 /// A structure that contains graphics state.
-/// For instance, background and foreground colors.
-///
-/// It doesn't actually hold any of the SDL graphics stuff,
-/// just info we need that SDL doesn't keep track of.
+/// For instance, background and foreground colors,
+/// window info, DPI, rendering pipeline state, etc.
 ///
 /// As an end-user you shouldn't ever have to touch this, but it goes
 /// into part of the `Context` and so has to be public, at least
@@ -202,7 +202,7 @@ impl<R, F, C, D> fmt::Debug for GraphicsContextGeneric<R, F, C, D>
     }
 }
 
-// GL only
+/// A concrete graphics context for GL rendering.
 pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources,
                                                   gfx_device_gl::Factory,
                                                   gfx_device_gl::CommandBuffer,
@@ -354,6 +354,8 @@ impl GraphicsContext {
 }
 
 
+/// Creates an orthographic projection matrix.
+/// 
 /// Rather than create a dependency on cgmath or nalgebra for this one function,
 /// we're just going to define it ourselves.
 fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [[f32; 4]; 4] {
@@ -395,31 +397,14 @@ pub fn clear(ctx: &mut Context) {
         .clear(&gfx.data.out, gfx.background_color.into());
 }
 
-/// Draws the given `Drawable` object to the screen.
-///
-/// * `ctx` - The `Context` this graphic will be rendered with.
-/// * `drawable` - The `Drawable` to render.
-/// * `dest` - the position to draw the graphic expressed as a `Point`.
-/// * `rotation` - orientation of the graphic in radians.
-///
+/// Draws the given `Drawable` object to the screen by calling its
+/// `draw()` method.
 pub fn draw(ctx: &mut Context, drawable: &Drawable, dest: Point, rotation: f32) -> GameResult<()> {
     drawable.draw(ctx, dest, rotation)
 }
 
 
-/// Draws the given `Drawable` object to the screen,
-/// applying a rotation and mirroring if desired.
-///
-/// * `ctx` - The `Context` this graphic will be rendered with.
-/// * `drawable` - The `Drawable` to render.
-/// * `quad` - a portion of the drawable to clip.
-/// * `dest` - the position to draw the graphic expressed as a `Point`.
-/// * `rotation` - orientation of the graphic in radians.
-/// * `scale` - x/y scale factors expressed as a `Point`.
-/// * `offset` - used to move the pivot point for transform operations like scale/rotation.
-/// * `shear` - x/y shear factors expressed as a `Point`.
-///
-// #[allow(too_many_arguments)]
+/// Draws the given `Drawable` object to the screen by calling its `draw_ex()` method.
 pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> GameResult<()> {
     drawable.draw_ex(ctx, params)
 }
@@ -548,10 +533,13 @@ pub fn get_default_filter(ctx: &Context) -> FilterMode {
 }
 
 
+/// Get the current width for drawing lines and stroked polygons.
 pub fn get_line_width(ctx: &Context) -> f32 {
     ctx.gfx_context.line_width
 }
 
+
+/// Get the current size for drawing points.
 pub fn get_point_size(ctx: &Context) -> f32 {
     ctx.gfx_context.point_size
 }
@@ -576,11 +564,6 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 /// It will be `Rect { x: left, y: bottom, w: width, h: height }`
 pub fn get_screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
-}
-
-// TODO: Verify!
-pub fn is_gamma_correct(_ctx: &Context) -> bool {
-    true
 }
 
 /// Sets the background color.  Default: blue.
@@ -609,14 +592,23 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
     gfx.default_sampler_info = sampler_info;
 }
 
+/// Set the current width for drawing lines and stroked polygons.
 pub fn set_line_width(ctx: &mut Context, width: f32) {
     ctx.gfx_context.line_width = width;
 }
 
+/// Set the current size for drawing points.
 pub fn set_point_size(ctx: &mut Context, size: f32) {
     ctx.gfx_context.point_size = size;
 }
 
+/// Sets the bounds of the screen viewport.
+///
+/// The default coordinate system has (0,0) at the top-left corner
+/// with X increasing to the right and Y increasing down, with the
+/// viewport scaled such that one coordinate unit is one pixel on the
+/// screen.  This function lets you change this coordinate system to
+/// be whatever you prefer.
 pub fn set_screen_coordinates(context: &mut Context,
                               left: f32,
                               right: f32,
@@ -636,16 +628,16 @@ pub fn set_screen_coordinates(context: &mut Context,
 
 /// A struct containing all the necessary info for drawing a Drawable.
 ///
-/// * `src` - a portion of the drawable to clip.
+/// * `src` - a portion of the drawable to clip, in pixels.  Defaults to the whole image if omitted.
 /// * `dest` - the position to draw the graphic expressed as a `Point`.
 /// * `rotation` - orientation of the graphic in radians.
 /// * `scale` - x/y scale factors expressed as a `Point`.
-/// * `offset` - used to move the pivot point for transform operations like scale/rotation.
+/// * `offset` - specifies an offset from the center for transform operations like scale/rotation.
 /// * `shear` - x/y shear factors expressed as a `Point`.
 ///
-/// It implements the `Default` trait, so you can just do:
+/// This struct implements the `Default` trait, so you can just do:
 ///
-/// `draw(drawable, DrawParam{ dest: my_dest, .. Default::default()} )`
+/// `graphics::draw_ex(ctx, drawable, DrawParam{ dest: my_dest, .. Default::default()} )`
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawParam {
     pub src: Rect,
@@ -680,6 +672,8 @@ pub trait Drawable {
 
     /// Draws the drawable onto the rendering target.
     ///
+    /// It just is a shortcut that calls `draw_ex()` with some sane defaults.
+    ///
     /// * `ctx` - The `Context` this graphic will be rendered to.
     /// * `dest` - the position to draw the graphic expressed as a `Point`.
     /// * `rotation` - orientation of the graphic in radians.
@@ -694,19 +688,19 @@ pub trait Drawable {
     }
 }
 
-/// In-memory image data available to be drawn on the screen.
+/// Generic in-GPU-memory image data available to be drawn on the screen.
 #[derive(Clone)]
 pub struct ImageGeneric<R>
     where R: gfx::Resources
 {
-    // We should probably keep both the raw image data around,
-    // and an Option containing the texture handle if necessary.
     texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
     sampler_info: gfx::texture::SamplerInfo,
     width: u32,
     height: u32,
 }
 
+/// In-GPU-memory image data available to be drawn on the screen,
+/// using the OpenGL backend.
 pub type Image = ImageGeneric<gfx_device_gl::Resources>;
 
 /// Copies an 2D (RGBA) buffer into one that is the next
@@ -842,10 +836,12 @@ impl Image {
         Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
     }
 
+    /// Gets the `Image`'s `WrapMode` along the X and Y axes.
     pub fn get_wrap(&self) -> (WrapMode, WrapMode) {
         (self.sampler_info.wrap_mode.0, self.sampler_info.wrap_mode.1)
     }
 
+    /// Sets the `Image`'s `WrapMode` along the X and Y axes.
     pub fn set_wrap(&mut self, wrap_x: WrapMode, wrap_y: WrapMode) {
         self.sampler_info.wrap_mode.0 = wrap_x;
         self.sampler_info.wrap_mode.1 = wrap_y;
@@ -966,6 +962,28 @@ impl Mesh {
 
         Mesh::from_tessellation(ctx, buf)
     }
+
+    /// Create a new `Mesh` from a raw list of triangles.
+    ///
+    /// Currently does not support UV's or indices.
+    fn from_triangles(ctx: &mut Context, triangles: &[Point]) -> GameResult<Mesh> {
+        // This is kind of non-ideal but works for now.
+        let points: Vec<Vertex> = triangles.into_iter()
+            .map(|p| Vertex{
+                pos: (*p).into(),
+                uv: (*p).into(),
+            }).collect();
+        let (vbuf, slice) =
+            ctx.gfx_context
+                .factory
+                .create_vertex_buffer_with_slice(&points[..], ());
+
+        Ok(Mesh {
+               buffer: vbuf,
+               slice: slice,
+           })
+    }
+
 }
 
 impl Drawable for Mesh {

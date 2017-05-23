@@ -1,7 +1,7 @@
 //! The `conf` module contains functions for loading and saving game
 //! configurations.
 //!
-//! A `Conf` object is used to specify hardware setup stuff used to create
+//! A `Conf` struct is used to specify hardware setup stuff used to create
 //! the window and other context information.
 
 use std::io;
@@ -16,11 +16,12 @@ pub struct Conf {
     /// The window title.
     pub window_title: String,
     /// A file path to the window's icon.
-    /// It is rooted in the `resources` directory (see the `filesystem` module for details).
+    /// It is rooted in the `resources` directory (see the `filesystem` module for details),
+    /// and an empty string results in a blank/default icon.
     pub window_icon: String,
-    /// The window's default height
+    /// The window's height
     pub window_height: u32,
-    /// The window's default width
+    /// The window's width
     pub window_width: u32,
     /// Whether or not the graphics draw rate should be
     /// synchronized with the monitor's draw rate.
@@ -78,10 +79,6 @@ impl Conf {
 
     /// Load a TOML file from the given `Read` and attempts to parse
     /// a `Conf` from it.
-    ///
-    /// It only looks for things under the `[ggez]` section heading,
-    /// so you can put your own sections in the file and use them for
-    /// your own purposes and they will not interfere here.
     pub fn from_toml_file<R: io::Read>(file: &mut R) -> GameResult<Conf> {
         let mut s = String::new();
         file.read_to_string(&mut s)?;
@@ -109,7 +106,8 @@ mod tests {
     fn encode_round_trip() {
         let c1 = conf::Conf::new();
         let mut writer = Vec::new();
-        c1.to_toml_file(&mut writer).unwrap();
+        let _c = c1.to_toml_file(&mut writer).unwrap();
+        //println!("{}", String::from_utf8_lossy(&writer));
         let mut reader = writer.as_slice();
         let c2 = conf::Conf::from_toml_file(&mut reader).unwrap();
         assert_eq!(c1, c2);

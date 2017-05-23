@@ -1,3 +1,4 @@
+/// A simple 2D point.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Point {
     pub x: f32,
@@ -28,6 +29,7 @@ impl From<[f32; 2]> for Point {
     }
 }
 
+/// A simple 2D rectangle.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Rect {
     pub x: f32,
@@ -100,6 +102,8 @@ impl From<Rect> for [f32; 4] {
     }
 }
 
+
+/// A RGBA color.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Color {
     pub r: f32,
@@ -208,7 +212,7 @@ pub enum DrawMode {
     Fill,
 }
 
-/// Specifies how to scale up/down images.
+/// Specifies what blending method to use when scaling up/down images.
 #[derive(Debug, Copy, Clone)]
 pub enum FilterMode {
     Linear,
@@ -237,6 +241,7 @@ impl From<FilterMode> for FilterMethod {
     }
 }
 
+/// Specifies how to wrap textures.
 pub type WrapMode = texture::WrapMode;
 
 #[cfg(test)]

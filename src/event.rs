@@ -2,12 +2,19 @@
 //! and handle top-level state, as well as handle input events such as keyboard
 //! and mouse.
 
+/// A key code.
 pub use sdl2::keyboard::Keycode;
+
+/// A struct that holds the state of modifier buttons such as ctrl or shift.
 pub use sdl2::keyboard::Mod;
+/// A mouse button press.
 pub use sdl2::mouse::MouseButton;
+/// A struct containing the mouse state at a given instant.
 pub use sdl2::mouse::MouseState;
 
+/// A controller button.
 pub use sdl2::controller::Button;
+/// A controller axis.
 pub use sdl2::controller::Axis;
 
 use sdl2::event::Event::*;
@@ -25,13 +32,14 @@ use std::time::Duration;
 
 
 
-/// A trait defining event callbacks.  Have a type implement this trait
-/// and override at least the update() and draw() methods, then pass it
-/// to `event::run()` to run the game's mainloop.
+/// A trait defining event callbacks; your primary interface with
+/// `ggez`'s event loop.  Have a type implement this trait and
+/// override at least the update() and draw() methods, then pass it to
+/// `event::run()` to run the game's mainloop.
 ///
-/// The default event handlers do nothing, apart from `key_down_event()`,
-/// which *should* by default exit the game if escape is pressed.
-/// Just override the methods you want to do things with.
+/// The default event handlers do nothing, apart from
+/// `key_down_event()`, which will by default exit the game if escape
+/// is pressed.  Just override the methods you want to do things with.
 pub trait EventHandler {
     /// Called upon each physics update to the game.
     /// This should be where the game's logic takes place.

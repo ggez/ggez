@@ -1,7 +1,8 @@
 //! Provides an interface to output sound to the user's speakers.
 //!
-//! It consists of two main portions: A `SoundData` is just raw sound data,
-//! and a `Source` is a `SoundData` connected to a particular channel.
+//! It consists of two main types: `SoundData` is just raw sound data,
+//! and a `Source` is a `SoundData` connected to a particular sound
+//! channel.
 
 use std::fmt;
 use std::io;
@@ -16,8 +17,9 @@ use context::Context;
 use GameError;
 use GameResult;
 
-/// An object representing a channel that may be playing a particular Sound.
-pub type Channel = rodio::Sink;
+// An object representing a channel that may be playing a particular `Source`.
+// 
+//pub type Channel = rodio::Sink;
 
 
 /// A struct that contains all information for tracking sound info.
@@ -71,7 +73,7 @@ impl AsRef<[u8]> for SoundData {
     }
 }
 
-/// A source of audio data.
+/// A source of audio data connected to a particular `Channel`.
 /// Will stop playing when dropped.
 // TODO: Check and see if this matches Love2d's semantics!
 // Eventually it might read from a streaming decoder of some kind,

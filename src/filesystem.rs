@@ -1,4 +1,4 @@
-//! Provides an interface to the user's filesystem.
+//! Provides a portable interface to the filesystem.
 //!
 //! This module provides access to files in specific places:
 //!
@@ -8,7 +8,7 @@
 //! directory as the program executable, 
 //! * The root folder of the  game's "save" directory which is in a 
 //! platform-dependent location,
-//! such as `~/.local/share/author/gameid/` on Linux.  The `gameid`
+//! such as `~/.local/share/<author>/<gameid>/` on Linux.  The `gameid`
 //! and `author` parts are the strings passed to
 //! `Context::load_from_conf()`.
 //!
@@ -89,10 +89,6 @@ impl io::Write for File {
         }
     }
 }
-
-
-/// A list of paths.
-pub type PathList = Vec<path::PathBuf>;
 
 
 impl Filesystem {
@@ -259,12 +255,8 @@ impl Filesystem {
     /// in no particular order.
     ///
     /// Lists the base directory if an empty path is given.
-    ///
-    /// TODO: This should return an iterator, and be called iter()
-    /// BUGGO: We have no real way to list the contents of a SINGLE directory,
-    /// which we might want if, say, we want to load every file in `/sprites` or such.
-    /// Fix this, no matter how many times you have to iterate through the resources zip.
-    pub fn read_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<PathList> {
+    pub fn read_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<Vec<path::PathBuf>> {
+        // TODO: This should return an iterator, and be called iter()
         let itr = self.vfs.read_dir(path.as_ref())?
             .map(|fname| fname.unwrap())
             .collect();
@@ -273,9 +265,8 @@ impl Filesystem {
 
     /// Prints the contents of all data directories.
     /// Useful for debugging.
-    ///
-    /// TODO: Should tell you which source the resulting files come from...
     pub fn print_all(&mut self) -> GameResult<()> {
+        /// TODO: Should tell you which source the resulting files come from...
         for itm in self.read_dir("/")? {
             println!("{:?}", itm);
         }

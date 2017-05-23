@@ -1,5 +1,5 @@
 //! # What is this?
-//! [![Build Status](https://!travis-ci.org/ggez/ggez.svg?branch=master)](https://!travis-ci.org/ggez/ggez) [![Docs Status](https://!docs.rs/ggez/badge.svg)](https://!docs.rs/ggez) [![license](http://!img.shields.io/badge/license-MIT-blue.svg)](https://!github.com/svenstaro/ggez/blob/master/LICENSE) [![Crates.io](https://!img.shields.io/crates/v/ggez.svg)](https://!crates.io/crates/ggez) [![Crates.io](https://!img.shields.io/crates/d/ggez.svg)](https://!crates.io/crates/ggez)
+//! [![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez) [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez) [![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/svenstaro/ggez/blob/master/LICENSE) [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez) [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
 //! 
 //! ggez is a Rust library to create a Good Game Easily.
 //! 
@@ -21,7 +21,7 @@
 //! 
 //! * Filesystem abstraction that lets you load resources from folders or zip files
 //! * Hardware-accelerated rendering engine built on the `gfx-rs` graphics engine
-//! * Playing and loading .ogg, .wav and .flac files via the `rodio` crate
+//! * Loading and playing .ogg, .wav and .flac files via the `rodio` crate
 //! * TTF font rendering with `rusttype`, as well as bitmap fonts.
 //! * Interface for handling keyboard and mouse events easily through callbacks
 //! * Config file for defining engine and game settings
@@ -51,8 +51,6 @@
 //! Create a `Conf` object with the default values you want in it,
 //! Create a new `Context` from it, and then call `event::run()` with
 //! the `Context` and an instance of your `EventHandler`.
-//! 
-//! 
 //! 
 //! ## Examples
 //! 

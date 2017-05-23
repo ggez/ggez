@@ -1,3 +1,4 @@
+//! Error types and conversion functions.
 
 use std;
 use std::error::Error;
