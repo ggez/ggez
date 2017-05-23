@@ -9,13 +9,14 @@
 //! framework.  This means it will contain basic and portable 2D
 //! drawing, sound, resource loading and event handling.
 //! 
-//! ggez is not meant to be everything to everyone, but rather a good base
-//! upon which to build.  Thus it takes a fairly batteries-included
-//! approach without needing a million additions and plugins for everything
-//! imaginable, but also does not dictate higher-level functionality such
-//! as physics engine or ECS.  Instead the goal is to allow you to use
-//! whichever libraries you want to provide these functions, or build your
-//! own libraries atop ggez.
+//! ggez is not meant to be everything to everyone, but rather a good
+//! base upon which to build.  Thus it takes a fairly
+//! batteries-included approach without needing a million additions
+//! and plugins for everything imaginable, but also does not dictate
+//! higher-level functionality such as physics engine or entity
+//! component system.  Instead the goal is to allow you to use
+//! whichever libraries you want to provide these functions, or build
+//! your own libraries atop ggez.
 //! 
 //! ## Features
 //! 

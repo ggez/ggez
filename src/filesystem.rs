@@ -20,7 +20,10 @@
 //! Note that the file lookups WILL follow symlinks!  It is
 //! more for convenience than absolute security, so don't treat it as
 //! being secure.
-
+//!
+//! If you build `ggez` with the `cargo-resource-root` feature flags, it will
+//! also look for a `resources/` subdirectory in the same directory as your
+//! `Cargo.toml`, which can be very convenient for development.
 
 // BUGGO: TODO: Also make it print out the searched directories when it
 // can't find a file!
