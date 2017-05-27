@@ -17,12 +17,11 @@ use context::Context;
 use GameError;
 use GameResult;
 
-// An object representing a channel that may be playing a particular `Source`.
-// 
-//pub type Channel = rodio::Sink;
-
 
 /// A struct that contains all information for tracking sound info.
+///
+/// You generally don't have to create this yourself, it will be part 
+/// of your `Context` object.
 pub struct AudioContext {
     endpoint: rodio::Endpoint,
 }

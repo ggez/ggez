@@ -110,17 +110,17 @@ impl Context {
     /// file from its default path, using the given `Conf`
     /// object as a default if none is found.
     ///
-    /// The `id` and `author` are game-specific strings that 
+    /// The `game_id` and `author` are game-specific strings that 
     /// are used to locate the default storage locations for the
     /// platform it looks in; for instance, on Linux, it will
     /// look for `~/.config/id/conf.toml`
-    pub fn load_from_conf(id: &'static str,
+    pub fn load_from_conf(game_id: &'static str,
                           author: &'static str,
                           default_config: conf::Conf)
                           -> GameResult<Context> {
 
         let sdl_context = sdl2::init()?;
-        let mut fs = Filesystem::new(id, author)?;
+        let mut fs = Filesystem::new(game_id, author)?;
 
         let config = fs.read_config().unwrap_or(default_config);
 

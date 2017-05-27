@@ -263,14 +263,14 @@ impl GraphicsContext {
         // println!("Vsync enabled: {}", vsync);
         let vsync_int = if vsync { 1 } else { 0 };
         video.gl_set_swap_interval(vsync_int);
-        let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
-            factory.create_command_buffer().into();
-
 
         let display_index = window.display_index()?;
         let dpi = window.subsystem().display_dpi(display_index)?;
 
         // GFX SETUP
+        let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
+            factory.create_command_buffer().into();
+            
         let pso = factory
             .create_pipeline_simple(include_bytes!("shader/basic_150.glslv"),
                                     include_bytes!("shader/basic_150.glslf"),

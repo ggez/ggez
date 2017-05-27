@@ -62,13 +62,12 @@
 //! 
 //! To run the examples, you have to tell your program where to find the
 //! `resources` directory included in the git repository.  The easy way is
-//! to enable `cargo-resource-root` flag to tell ggez to look for a
+//! to enable `cargo-resource-root` feature flag to tell ggez to look for a
 //! `resources` directory next to your `Cargo.toml`, or copy or symlink
 //! the `resources` directory to a place the running game can find it
 //! (such as next to the game executable).
 //! 
 //! ```text
-//! cargo build --example astroblasto
 //! cargo run --example astroblasto --features=cargo-resource-root
 //! ```
 //! 
