@@ -4,6 +4,7 @@ use sdl2::Sdl;
 use std::collections::HashMap;
 
 use context::Context;
+use error::GameResult;
 
 
 // before we can use gamepads (or joysticks) we need to "open" them
@@ -16,22 +17,22 @@ pub struct GamepadContext {
 }
 
 impl GamepadContext {
-    pub fn new(sdl_context: &Sdl) -> Self {
-        let controller_ctx = sdl_context.game_controller().unwrap();
-        let joy_count = controller_ctx.num_joysticks().unwrap();
+    pub fn new(sdl_context: &Sdl) -> GameResult<Self> {
+        let controller_ctx = sdl_context.game_controller()?;
+        let joy_count = controller_ctx.num_joysticks()?;
         let mut gamepads = HashMap::new();
         for i in 0..joy_count {
             if controller_ctx.is_game_controller(i) {
-                let controller: GameController = controller_ctx.open(i).unwrap();
+                let controller: GameController = controller_ctx.open(i)?;
                 // gamepad events use this instance_id
                 let id = controller.instance_id();
                 gamepads.insert(id, controller);
             }
         }
-        GamepadContext {
+        Ok(GamepadContext {
             gamepads: gamepads,
             controller_ctx: controller_ctx,
-        }
+        })
     }
 }
 

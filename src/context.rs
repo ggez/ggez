@@ -90,7 +90,7 @@ impl Context {
                                                               conf.window_width,
                                                               conf.window_height,
                                                               conf.vsync)?;
-        let gamepad_context = input::GamepadContext::new(&sdl_context);
+        let gamepad_context = input::GamepadContext::new(&sdl_context)?;
 
         let mut ctx = Context {
             conf: conf,
