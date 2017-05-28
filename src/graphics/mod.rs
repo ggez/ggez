@@ -852,11 +852,12 @@ impl Image {
 impl fmt::Debug for Image {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
-               "<Image: {}x{}, {:p}, texture address {:p}>",
+               "<Image: {}x{}, {:p}, texture address {:p}, sampler: {:?}>",
                self.width(),
                self.height(),
                self,
-               &self.texture)
+               &self.texture,
+               &self.sampler_info)
     }
 }
 
@@ -966,7 +967,7 @@ impl Mesh {
     /// Create a new `Mesh` from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
-    fn from_triangles(ctx: &mut Context, triangles: &[Point]) -> GameResult<Mesh> {
+    pub fn from_triangles(ctx: &mut Context, triangles: &[Point]) -> GameResult<Mesh> {
         // This is kind of non-ideal but works for now.
         let points: Vec<Vertex> = triangles.into_iter()
             .map(|p| Vertex{
