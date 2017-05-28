@@ -39,7 +39,7 @@ crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```text
-ggez = "0.2.2"
+ggez = "0.3.0"
 ```
 
 However you also need to have the SDL2 libraries installed on your
@@ -68,7 +68,6 @@ the `resources` directory to a place the running game can find it
 (such as next to the game executable).
 
 ```text
-cargo build --example astroblasto
 cargo run --example astroblasto --features=cargo-resource-root
 ```
 
@@ -87,40 +86,8 @@ entirely thread-safe outside of the basic event-handling loop, and
 portable to Windows, Linux and Mac.
 
 The goal is to eventually have ggez be pure Rust, but we're not there
-yet.  The main blocker appears to be cross-platform
-joystick/controller input; once that exists we can drop SDL2 for
-`glutin`.
-
-
-### 0.3.0
-
-* Remove unused example assets
-* Go through `timer` and clean things up a little; it should provide nice functions to do everything you want as accurately as you want using only `Duration`s.  Remove the rest, though still have convenience functions to convert to seconds or such.
-* The usual cleanup: go through looking for TODO's, unwrap's, run clippy over it.
-
-Changelog:
-
-* Almost everything is now pure rust; the only C dependency is libsdl2.
-* Graphics:
- * Entirely new rendering engine using `gfx-rs` backed by OpenGL 3.2
- * New (if limited) 2D drawing primitives using `lyon`
- * Font rendering still uses `rusttype` but it's still cool
- * New option to enable/disable vsync
-* Other stuff
- * New sound system using `rodio`, supporting pure Rust loading of WAV, Vorbis and FLAC files
- * Configuration system now uses `serde` rather than `rustc_serialize`
- * Refactored event loop handling somewhat to make it less magical and more composable.
- * New filesystem indirection code using `app_dirs`.  There's also a new `cargo-resource-root` feature flag that will make the file loader look for a `resources` directory next to your `Cargo.toml`; worse than useless for release, but great for development.
-
-So this has been a pretty revolutionary change; I think the only part that hasn't been significantly rewritten is the timing utility functions.  The drawing API is much more powerful and flexible, as well as more rusty, and there's been a million tiny ergonomic improvements.  I'm also willing to call most of the current API more or less stable; I expect to make additions, but not many breaking changes.
-
-As always, thanks to all who contributed: svenstaro, onelson, vickenty, and whoever I don't remember!  And thanks to everyone who makes the libraries we rely on, especially `rust-sdl2`, `rodio` and all its dependencies, `gfx-rs` and all its dependencies, `serde`, `image`, as well as all the tiny but vital cogs like `app_dirs` and `zip`.  None of this would be possible without you guys.
-
-Of course, there's plans for 0.4: I mainly want to improve the graphics functionality with sprite batches, better 2D drawing, and exposing the gfx-rs innards a little to allow the adventurous to write their own rendering pipelines.  It should be a *much* less massive change, and hopefully won't take four months to write.
-
-Annoyances with rust I've found: Paths need to be decoupled from OsString (and strings in general) because that's the only sane way to operate.  Features aren't featureful enough -- can't be defined for examples, can't be set for debug mode and not for release mode, etc.
-
-For now though... if you'll excuse me, I've got some games to make.
+yet.  There's some blockers before we can drop SDL2 for
+`glutin`, see the issue tracker for more info.
 
 
 ## Credits
