@@ -69,9 +69,9 @@ pub trait EventHandler {
 
     fn key_up_event(&mut self, _keycode: Keycode, _keymod: Mod, _repeat: bool) {}
 
-    fn controller_button_down_event(&mut self, _btn: Button) {}
-    fn controller_button_up_event(&mut self, _btn: Button) {}
-    fn controller_axis_event(&mut self, _axis: Axis, _value: i16) {}
+    fn controller_button_down_event(&mut self, _btn: Button, _instance_id: i32) {}
+    fn controller_button_up_event(&mut self, _btn: Button, _instance_id: i32) {}
+    fn controller_axis_event(&mut self, _axis: Axis, _value: i16, _instance_id: i32) {}
 
     fn focus_event(&mut self, _gained: bool) {}
 
@@ -143,12 +143,13 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                         ..
                     } => state.mouse_motion_event(mousestate, x, y, xrel, yrel),
                     MouseWheel { x, y, .. } => state.mouse_wheel_event(x, y),
-                    ControllerButtonDown { button, .. } => {
-                        state.controller_button_down_event(button)
+                    ControllerButtonDown { button, which, .. } => {
+                        state.controller_button_down_event(button, which)
                     }
-                    ControllerButtonUp { button, .. } => state.controller_button_up_event(button),
-                    ControllerAxisMotion { axis, value, .. } => {
-                        state.controller_axis_event(axis, value)
+                    ControllerButtonUp { button, which, .. } =>
+                        state.controller_button_up_event(button, which),
+                    ControllerAxisMotion { axis, value, which, .. } => {
+                        state.controller_axis_event(axis, value, which)
                     }
                     Window { win_event: event::WindowEvent::FocusGained, .. } => {
                         state.focus_event(true)

@@ -115,6 +115,7 @@ pub mod error;
 pub mod event;
 pub mod filesystem;
 pub mod graphics;
+pub mod input;
 pub mod timer;
 mod vfs;
 

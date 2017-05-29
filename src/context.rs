@@ -12,6 +12,7 @@ use audio;
 use conf;
 use filesystem::Filesystem;
 use graphics;
+use input;
 use timer;
 use GameError;
 use GameResult;
@@ -35,6 +36,7 @@ pub struct Context {
     pub event_context: sdl2::EventSubsystem,
     pub timer_context: timer::TimeContext,
     pub audio_context: audio::AudioContext,
+    pub gamepad_context: input::GamepadContext,
 
     pub default_font: graphics::Font,
 }
@@ -88,6 +90,7 @@ impl Context {
                                                               conf.window_width,
                                                               conf.window_height,
                                                               conf.vsync)?;
+        let gamepad_context = input::GamepadContext::new(&sdl_context)?;
 
         let mut ctx = Context {
             conf: conf,
@@ -97,6 +100,7 @@ impl Context {
             event_context: event_context,
             timer_context: timer_context,
             audio_context: audio_context,
+            gamepad_context: gamepad_context,
             
             default_font: font,
         };
