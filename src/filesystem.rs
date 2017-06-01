@@ -155,10 +155,12 @@ impl Filesystem {
         // Cargo manifest dir!
         #[cfg(feature = "cargo-resource-root")]
         {
-            let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            path.push("resources");
-            let physfs = vfs::PhysicalFS::new(&path, false);
-            overlay.push_back(Box::new(physfs));
+            if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+                let mut path = path::PathBuf::from(manifest_dir);
+                path.push("resources");
+                let physfs = vfs::PhysicalFS::new(&path, false);
+                overlay.push_back(Box::new(physfs));
+            }
         }
 
         let fs = Filesystem { 
