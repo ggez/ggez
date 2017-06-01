@@ -1,3 +1,8 @@
+# 0.3.1
+
+ * Fixed bug in when CARGO_MANIFEST_DIR is checked
+ * Added experimental support for SDL's gamepads
+
 # 0.3.0
 
  * Almost everything is now pure rust; the only C dependency is libsdl2.
