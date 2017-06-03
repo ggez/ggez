@@ -464,7 +464,7 @@ pub struct ZipFS {
     // ALSO THE SEMANTICS OF ZIPARCHIVE AND HAVING ZIPFILES BORROW IT IS
     // HORRIFICALLY BROKEN BY DESIGN SO WE'RE JUST GONNA REFCELL IT AND COPY
     // ALL CONTENTS OUT OF IT.
-    source: String,
+    source: PathBuf,
     archive: RefCell<zip::ZipArchive<fs::File>>,
     // We keep an index of what files are in the zip file
     // because trying to read it lazily is a pain in the butt.
@@ -479,7 +479,7 @@ impl ZipFS {
             .map(|i| archive.by_index(i).unwrap().name().to_string())
             .collect();
         Ok(Self {
-            source: filename.to_string_lossy().into_owned(),
+            source: filename.into(),
             archive: RefCell::new(archive),
             index: idx,
         })
@@ -588,7 +588,7 @@ impl VFS for ZipFS {
            open_options.truncate {
             let msg = format!("Cannot alter file {:?} in zipfile {:?}, filesystem read-only",
                               path,
-                              &self.source);
+                              self);
             return Err(GameError::FilesystemError(msg));
         }
         let mut stupid_archive_borrow = self.archive
@@ -602,7 +602,7 @@ impl VFS for ZipFS {
     fn mkdir(&self, path: &Path) -> GameResult<()> {
         let msg = format!("Cannot mkdir {:?} in zipfile {:?}, filesystem read-only",
                           path,
-                          &self.source);
+                          self);
         Err(GameError::FilesystemError(msg))
 
     }
@@ -610,14 +610,14 @@ impl VFS for ZipFS {
     fn rm(&self, path: &Path) -> GameResult<()> {
         let msg = format!("Cannot rm {:?} in zipfile {:?}, filesystem read-only",
                           path,
-                          &self.source);
+                          self);
         Err(GameError::FilesystemError(msg))
     }
 
     fn rmrf(&self, path: &Path) -> GameResult<()> {
         let msg = format!("Cannot rmrf {:?} in zipfile {:?}, filesystem read-only",
                           path,
-                          &self.source);
+                          self);
         Err(GameError::FilesystemError(msg))
     }
 
