@@ -628,7 +628,8 @@ pub fn set_screen_coordinates(context: &mut Context,
 
 /// A struct containing all the necessary info for drawing a Drawable.
 ///
-/// * `src` - a portion of the drawable to clip, in pixels.  Defaults to the whole image if omitted.
+/// * `src` - a portion of the drawable to clip, as a fraction of the whole image.
+///    Defaults to the whole image (1.0) if omitted.
 /// * `dest` - the position to draw the graphic expressed as a `Point`.
 /// * `rotation` - orientation of the graphic in radians.
 /// * `scale` - x/y scale factors expressed as a `Point`.
