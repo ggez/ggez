@@ -133,6 +133,9 @@ pub trait VFS: Debug {
 
     /// Retrieve all file and directory entries in the given directory.
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>>;
+
+    /// Retrieve the actual location of the VFS root, if available.
+    fn to_path_buf(&self) -> Option<PathBuf>;
 }
 
 pub trait VMetadata {
@@ -345,6 +348,11 @@ impl VFS for PhysicalFS {
             .into_iter();
         Ok(Box::new(itr))
     }
+
+    /// Retrieve the actual location of the VFS root, if available.
+    fn to_path_buf(&self) -> Option<PathBuf> {
+        Some(self.root.clone())
+    }
 }
 
 /// A structure that joins several VFS's together in order.
@@ -450,6 +458,11 @@ impl VFS for OverlayFS {
             }
         }
         Ok(Box::new(v.into_iter()))
+    }
+
+    /// Retrieve the actual location of the VFS root, if available.
+    fn to_path_buf(&self) -> Option<PathBuf> {
+        None
     }
 }
 
@@ -656,6 +669,10 @@ impl VFS for ZipFS {
             .map(|s| Ok(PathBuf::from(s)))
             .collect::<Vec<_>>();
         Ok(Box::new(itr.into_iter()))
+    }
+
+    fn to_path_buf(&self) -> Option<PathBuf> {
+        Some(self.source.clone())
     }
 }
 
