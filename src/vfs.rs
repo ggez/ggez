@@ -382,13 +382,20 @@ impl OverlayFS {
 impl VFS for OverlayFS {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
+        let mut tried: Vec<PathBuf> = vec![];
+
         for vfs in &self.roots {
             match vfs.open_options(path, open_options) {
-                Err(_) => (),
+                Err(_) => {
+                    if let Some(vfs_path) = vfs.to_path_buf() {
+                        tried.push(vfs_path);
+                    }
+                },
                 f => return f,
             }
         }
-        Err(GameError::FilesystemError(format!("File {:?} not found", path)))
+        let errmessage = String::from(convenient_path_to_str(path)?);
+        Err(GameError::ResourceNotFound(errmessage, tried))
     }
 
     /// Create a directory at the location by this path
