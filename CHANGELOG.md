@@ -2,6 +2,8 @@
 
  * Fixed bug in when CARGO_MANIFEST_DIR is checked
  * Added experimental support for SDL's gamepads
+ * Re-improved resource-not-found error messages.
+ * Fixed minor bug with text rendering alpha
 
 # 0.3.0
 
