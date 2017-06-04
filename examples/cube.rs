@@ -201,9 +201,15 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let dest_point = graphics::Point::new(self.text.width() as f32 / 2.0 + 10.0,
                                               self.text.height() as f32 / 2.0 + 10.0);
-        self.encoder.clear(&self.data.out_color, [0.3, 0.2, 0.1, 1.0].into());
-        self.encoder.draw(&self.slice, &self.pso, &self.data);
-        self.encoder.flush(ctx.gfx_context.get_device());
+        // self.encoder.clear(&self.data.out_color, [0.3, 0.2, 0.1, 1.0].into());
+        // self.encoder.draw(&self.slice, &self.pso, &self.data);
+        // self.encoder.flush(ctx.gfx_context.get_device());
+
+        {
+            let encoder = ctx.gfx_context.get_encoder();
+            encoder.clear(&self.data.out_color, [0.3, 0.2, 0.1, 1.0].into());
+            encoder.draw(&self.slice, &self.pso, &self.data);
+        }
 
 
         let dest_point = graphics::Point::new(self.text.width() as f32 / 2.0 + 10.0,

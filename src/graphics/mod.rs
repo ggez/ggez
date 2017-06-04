@@ -368,6 +368,10 @@ impl GraphicsContext {
     pub fn get_color_view(&self) -> gfx::handle::RenderTargetView<gfx_device_gl::Resources, (gfx::format::R8_G8_B8_A8, gfx::format::Srgb)> {
         self.data.out.clone()
     }
+
+    pub fn get_encoder(&mut self) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
+        &mut self.encoder
+    }
 }
 
 
