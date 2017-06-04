@@ -396,17 +396,33 @@ impl Text {
 
     /// Returns the width of the rendered text, in pixels.
     pub fn width(&self) -> u32 {
-        self.texture.width
+        self.texture.width()
     }
 
     /// Returns the height of the rendered text, in pixels.
     pub fn height(&self) -> u32 {
-        self.texture.height
+        self.texture.height()
     }
 
     /// Returns the string that the text represents.
     pub fn contents(&self) -> &str {
         &self.contents
+    }
+
+    /// Returns the dimensions of the rendered text.
+    pub fn get_dimensions(&self) -> Rect {
+        self.texture.get_dimensions()
+    }
+
+
+    /// Get the filter mode for the the rendered text.
+    pub fn get_filter(&self) -> FilterMode {
+        self.texture.get_filter()
+    }
+
+    /// Set the filter mode for the the rendered text.
+    pub fn set_filter(&mut self, mode: FilterMode) {
+        self.texture.set_filter(mode);
     }
 }
 

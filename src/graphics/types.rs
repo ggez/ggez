@@ -10,6 +10,7 @@ impl Point {
         Point { x: x, y: y }
     }
 
+    /// Creates a new `Point` at coordinates 0,0.
     pub fn zero() -> Self {
         Self::new(0.0, 0.0)
     }
@@ -48,12 +49,8 @@ impl Rect {
         }
     }
 
-    /// I don't know what to call this yet.
-    /// It creates a new rect a la Love2D's love.graphics.newQuad,
+    /// Ceates a new rect a la Love2D's love.graphics.newQuad,
     /// as a fraction of the reference rect's size.
-    ///
-    /// Basically it does the translation from pixel coordinates to
-    /// UV coordinates.
     pub fn fraction(x: f32, y: f32, w: f32, h: f32, reference: &Rect) -> Rect {
         Rect {
             x: x / reference.w,
@@ -72,14 +69,17 @@ impl Rect {
         }
     }
 
+    /// Create a new `Rect` with all values zero.
     pub fn zero() -> Self {
         Self::new(0.0, 0.0, 0.0, 0.0)
     }
 
+    /// Creates a new `Rect` at 0,0 with width and height 1.
     pub fn one() -> Self {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
+    /// Gets the `Rect`'s x and y coordinates as a `Point`.
     pub fn point(&self) -> Point {
         Point {
             x: self.x,
