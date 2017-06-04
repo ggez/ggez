@@ -27,6 +27,8 @@ cargo-resource-root = []
 [profile.dev]
 codegen-units=4
 
+
+
 [dependencies]
 rusttype = "0.2"
 rand = "0.3"
@@ -42,3 +44,7 @@ serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
 lyon = "0.4.1"
+
+[dev-dependencies]
+
+cgmath = "0.14"

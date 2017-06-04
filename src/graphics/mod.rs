@@ -351,6 +351,23 @@ impl GraphicsContext {
     pub fn get_window(&mut self) -> &mut sdl2::video::Window {
         &mut self.window
     }
+
+    pub fn get_factory(&mut self) -> &mut gfx_device_gl::Factory {
+        &mut self.factory
+    }
+
+
+    pub fn get_device(&mut self) -> &mut gfx_device_gl::Device {
+        self.device.as_mut()
+    }
+
+    pub fn get_depth_view(&self) -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
+        self.depth_view.clone()
+    }
+
+    pub fn get_color_view(&self) -> gfx::handle::RenderTargetView<gfx_device_gl::Resources, (gfx::format::R8_G8_B8_A8, gfx::format::Srgb)> {
+        self.data.out.clone()
+    }
 }
 
 
