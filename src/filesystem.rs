@@ -381,7 +381,7 @@ mod tests {
         {
             let rel_file = "testfile.txt";
             match fs.open(rel_file) {
-                Err(GameError::FilesystemError(_)) => (),
+                Err(GameError::ResourceNotFound(_, _)) => (),
                 Err(e) => panic!("Invalid error for opening file with relative path: {:?}", e),
                 Ok(f) => panic!("Should have gotten an error but instead got {:?}!", f),
             }
@@ -391,7 +391,7 @@ mod tests {
             // This absolute path should work on Windows too since we
             // completely remove filesystem roots.
             match fs.open("/ooglebooglebarg.txt") {
-                Err(GameError::FilesystemError(_)) => (),
+                Err(GameError::ResourceNotFound(_, _)) => (),
                 Err(e) => panic!("Invalid error for opening nonexistent file: {}", e),
                 Ok(f) => panic!("Should have gotten an error but instead got {:?}", f),
             }
