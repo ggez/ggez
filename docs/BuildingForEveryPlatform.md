@@ -19,11 +19,11 @@ cd hello_world
 ```
 
 Now copy-paste the contents of
-<https://raw.githubusercontent.com/ggez/ggez/master/examples/hello_world.rs>
+<https://raw.githubusercontent.com/ggez/ggez/0.3/examples/hello_world.rs>
 into `hello_world/src/main.rs`, or just wget it:
 
 ```sh
-wget https://raw.githubusercontent.com/ggez/ggez/master/examples/hello_world.rs
+wget https://raw.githubusercontent.com/ggez/ggez/0.3/examples/hello_world.rs
 mv hello_world.rs src/main.rs
 ```
 
