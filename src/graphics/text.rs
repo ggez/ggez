@@ -195,11 +195,17 @@ impl Font {
             broken_lines.push(current_line.join(" "));
         }
 
+        // If we have a line with only whitespace on it,
+        // this results in the unwrap_or value.
+        // And we can't create a texture of size 0, so
+        // we put 1 here.
+        // Not entirely sure what this will actually result
+        // in though; hopefully a blank line.
         let max_line_length = broken_lines
             .iter()
             .map(|line| self.get_width(line))
             .max()
-            .unwrap_or(0);
+            .unwrap_or(1);
 
         (max_line_length, broken_lines)
     }
@@ -537,6 +543,7 @@ mod tests {
             "mouse squeak roll over. Human",
             "give me attention meow."
         ];
+
         assert_eq!(&v, &wrapped_text);
     }
 
