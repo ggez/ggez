@@ -27,16 +27,26 @@ wget https://raw.githubusercontent.com/ggez/ggez/0.3/examples/hello_world.rs
 mv hello_world.rs src/main.rs
 ```
 
+You'll need a font to print "Hello world!" with, so we need to fetch one and
+put it in a subdirectory called `resources` in your project root:
+
+```sh
+mkdir resources
+cd resources
+wget https://raw.githubusercontent.com/ggez/ggez/0.3/resources/DejaVuSerif.ttf"
+```
+
 Then edit your `Cargo.toml` with your favorite super duper editor and under `[dependencies]` add:
 
 ```
 ggez = "0.3"
 ```
 
-Now run `cargo run` and it should build and run!  ...maybe.  It
-depends on what platform you're on and what libraries you have
-installed.  To make super-duper sure you have all the bits and pieces
-in the right places to make this always work, read on!
+Now run `cargo run --features=cargo-resource-root` and it should build
+and run!  ...maybe.  It depends on what platform you're on and what
+libraries you have installed.  To make super-duper sure you have all
+the bits and pieces in the right places to make this always work, read
+on!
 
 # Linux
 
@@ -88,6 +98,8 @@ env LD_RUN_PATH='$ORIGIN/lib' cargo build
 ```
 
 Then, when the executable is run, it will look in `lib/` relative to the executable location for shared objects along with wherever the system says it should look.
+
+Note that distributing your own libSDL2.so will still fail if the user has a significantly different of `glibc` than you do.  If anyone comes up with a good way to build everything statically with musl it would be interesting to be able to do that.
 
 # Mac
 
@@ -147,4 +159,27 @@ Just copy SDL2.dll to the same directory that your compiled exe is in
 
 # Web
 
-???
+(INCOMPLETE, WIP!  ggez doesn't actually work on wasm yet.)
+
+For the sake of (my) simplicity, I am going to assume this is being done on Linux or something like it for now.
+
+First fetch and install the emscripten SDK, which is a compiler and set of libraries for turning LLVM code into asm.js or wasm.  You should get the latest version from [the emscripten website](http://kripken.github.io/emscripten-site/docs/getting_started/downloads.html).  It appears to be distributed as a portable package since it contains a lot of stuff you don't want mucking up your system with anyway; it's basically a self-contained cross-compiler, and you usually want to make sure those live in their own little world.
+
+Follow the emscripten install instructions.  Unpack it somewhere convenient, install dependencies, set environment variables, etc.
+
+Now install the Rust emscripten toolchain:
+
+```sh
+rustup target install wasm32-unknown-emscripten
+```
+
+(We're using wasm here 'cause it's awesome.)
+
+Build the thing:
+
+```
+embuilder.py build sdl2
+export EMMAKEN_CFLAGS="-s USE_SDL=2"
+cargo build --target=wasm32-unknown-emscripten
+```
+
