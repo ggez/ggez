@@ -1,7 +1,7 @@
 [package]
 name = "ggez"
 description = "Rust library to create a Good Game Easily"
-version = "0.3.0"
+version = "0.3.1"
 homepage = "http://ggez.rs"
 repository = "https://github.com/ggez/ggez"
 documentation = "https://docs.rs/ggez"
@@ -27,6 +27,8 @@ cargo-resource-root = []
 [profile.dev]
 codegen-units=4
 
+
+
 [dependencies]
 rusttype = "0.2"
 rand = "0.3"
@@ -42,3 +44,7 @@ serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
 lyon = "0.4.1"
+
+[dev-dependencies]
+
+cgmath = "0.14"

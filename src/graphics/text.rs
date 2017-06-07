@@ -143,16 +143,37 @@ impl Font {
     /// Breaks the given text into lines that will not exceed `wrap_limit` pixels
     /// in length.  It accounts for newlines correctly but does not
     /// try to break words or handle hypenated words; it just breaks
-    /// at whitespace.
+    /// at whitespace.  (It also doesn't preserve whitespace.)
     ///
     /// Returns a tuple of maximum line width and a `Vec` of wrapped `String`s.
     pub fn get_wrap(&self, text: &str, wrap_limit: usize) -> (usize, Vec<String>) {
         let mut broken_lines = Vec::new();
         let mut max_line_length = 0;
+        // hack hack hack...
+        // Calling get_width() on " " returns 0, because text_width()
+        // on " " returns 0 because apparently laying out a lone whitespace
+        // gets you None
+        let whitespace_width = self.get_width("x");
         for line in text.lines() {
             let mut current_line = Vec::new();
             let mut current_line_length = 0;
             for word in line.split_whitespace() {
+                // This is not the most efficient way but...
+                let mut prospective_line = current_line.clone();
+                prospective_line.push(word);
+                let text = prospective_line.join(" ");
+                let prospective_line_width = self.get_width(&text);
+                if prospective_line_width > wrap_limit {
+                    // Current line is long enough, keep it
+                    broken_lines.push(current_line.join(" "));
+                    // and overflow the current word onto the next line.
+                    current_line.clear();
+                    current_line.push(word);
+                } else {
+                    // Current line with the added word is still short enough
+                    current_line.push(word);
+                }
+                /*
                 let width = self.get_width(word);
                 if current_line_length + width > wrap_limit {
                     // Overflow word onto next line
@@ -163,14 +184,28 @@ impl Font {
                 } else {
                     // Continue with current line
                     current_line.push(word);
-                    current_line_length += width;
+                    current_line_length += width + whitespace_width;
+                    println!("Continuing, current line is {} out of {}", current_line_length, wrap_limit);
                     max_line_length = cmp::max(max_line_length, current_line_length);
                 }
+                 */
             }
 
-            // Push the last bit of the line
+            // Push the last line of the text
             broken_lines.push(current_line.join(" "));
         }
+
+        // If we have a line with only whitespace on it,
+        // this results in the unwrap_or value.
+        // And we can't create a texture of size 0, so
+        // we put 1 here.
+        // Not entirely sure what this will actually result
+        // in though; hopefully a blank line.
+        let max_line_length = broken_lines
+            .iter()
+            .map(|line| self.get_width(line))
+            .max()
+            .unwrap_or(1);
 
         (max_line_length, broken_lines)
     }
@@ -213,11 +248,11 @@ fn text_width(glyphs: &[rusttype::PositionedGlyph]) -> f32 {
         .iter()
         .rev()
         .filter_map(|g| {
-                        g.pixel_bounding_box()
-                            .map(|b| {
-                                     b.min.x as f32 + g.unpositioned().h_metrics().advance_width
-                                 })
-                    })
+            g.pixel_bounding_box()
+                .map(|b| {
+                    b.min.x as f32 + g.unpositioned().h_metrics().advance_width
+                })
+        })
         .next()
         .unwrap_or(0.0)
 }
@@ -269,9 +304,9 @@ fn render_ttf(context: &mut Context,
                    y < text_height_pixels as i32 {
                     let x = x as usize * bytes_per_pixel;
                     let y = y as usize;
-                    pixel_data[(x + y * pitch + 0)] = c;
-                    pixel_data[(x + y * pitch + 1)] = c;
-                    pixel_data[(x + y * pitch + 2)] = c;
+                    pixel_data[(x + y * pitch + 0)] = 255;
+                    pixel_data[(x + y * pitch + 1)] = 255;
+                    pixel_data[(x + y * pitch + 2)] = 255;
                     pixel_data[(x + y * pitch + 3)] = c;
                 }
             })
@@ -396,17 +431,33 @@ impl Text {
 
     /// Returns the width of the rendered text, in pixels.
     pub fn width(&self) -> u32 {
-        self.texture.width
+        self.texture.width()
     }
 
     /// Returns the height of the rendered text, in pixels.
     pub fn height(&self) -> u32 {
-        self.texture.height
+        self.texture.height()
     }
 
     /// Returns the string that the text represents.
     pub fn contents(&self) -> &str {
         &self.contents
+    }
+
+    /// Returns the dimensions of the rendered text.
+    pub fn get_dimensions(&self) -> Rect {
+        self.texture.get_dimensions()
+    }
+
+
+    /// Get the filter mode for the the rendered text.
+    pub fn get_filter(&self) -> FilterMode {
+        self.texture.get_filter()
+    }
+
+    /// Set the filter mode for the the rendered text.
+    pub fn set_filter(&mut self, mode: FilterMode) {
+        self.texture.set_filter(mode);
     }
 }
 
@@ -468,8 +519,9 @@ mod tests {
         let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff other cat's butt and hang jaw half open thereafter for give attitude. Annoy kitten\nbrother with poking. Mrow toy mouse squeak roll over. Human give me attention meow.";
         let (len, v) = f.get_wrap(text_to_wrap, 250);
         println!("{} {:?}", len, v);
-        assert_eq!(len, 244);
+        assert_eq!(len, 249);
 
+        /*
         let wrapped_text = vec![
             "Walk on car leaving trail of paw prints",
             "on hood and windshield sniff other",
@@ -479,7 +531,40 @@ mod tests {
             "brother with poking. Mrow toy",
             "mouse squeak roll over. Human give",
             "me attention meow."
-            ];
+        ];
+*/
+        let wrapped_text = vec![
+            "Walk on car leaving trail of paw",
+            "prints on hood and windshield",
+            "sniff other cat\'s butt and hang jaw",
+            "half open thereafter for give",
+            "attitude. Annoy kitten",
+            "brother with poking. Mrow toy",
+            "mouse squeak roll over. Human",
+            "give me attention meow."
+        ];
+
         assert_eq!(&v, &wrapped_text);
+    }
+
+    // We sadly can't have this test in the general case because it needs to create a Context,
+    // which creates a window, which fails on a headless server like our CI systems.  :/
+    //#[test]
+    fn test_wrapping() {
+        use conf;
+        let c = conf::Conf::new();
+        let ctx = &mut Context::load_from_conf("test_wrapping", "ggez", c).unwrap();
+        let font = Font::default_font().unwrap();
+        let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff other cat's butt and hang jaw half open thereafter for give attitude. Annoy kitten\nbrother with poking. Mrow toy mouse squeak roll over. Human give me attention meow.";
+        let wrap_length = 250;
+        let (len, v) = font.get_wrap(text_to_wrap, wrap_length);
+        assert!(len < wrap_length);
+        for line in &v {
+            let t = Text::new(ctx, line, &font).unwrap();
+            println!("Width is claimed to be <= {}, should be <= {}, is {}", len, wrap_length, t.width());
+            // Why does this not match?  x_X
+            //assert!(t.width() as usize <= len);
+            assert!(t.width() as usize <= wrap_length);
+        }
     }
 }

@@ -351,6 +351,31 @@ impl GraphicsContext {
     pub fn get_window(&mut self) -> &mut sdl2::video::Window {
         &mut self.window
     }
+
+    /// EXPERIMENTAL function to get the gfx-rs `Factory` object.
+    pub fn get_factory(&mut self) -> &mut gfx_device_gl::Factory {
+        &mut self.factory
+    }
+
+    /// EXPERIMENTAL function to get the gfx-rs `Device` object.
+    pub fn get_device(&mut self) -> &mut gfx_device_gl::Device {
+        self.device.as_mut()
+    }
+
+    /// EXPERIMENTAL function to get the gfx-rs `Encoder` object.
+    pub fn get_encoder(&mut self) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
+        &mut self.encoder
+    }
+
+    /// EXPERIMENTAL function to get the gfx-rs depth view
+    pub fn get_depth_view(&self) -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
+        self.depth_view.clone()
+    }
+
+    /// EXPERIMENTAL function to get the gfx-rs color view
+    pub fn get_color_view(&self) -> gfx::handle::RenderTargetView<gfx_device_gl::Resources, (gfx::format::R8_G8_B8_A8, gfx::format::Srgb)> {
+        self.data.out.clone()
+    }
 }
 
 
@@ -628,7 +653,8 @@ pub fn set_screen_coordinates(context: &mut Context,
 
 /// A struct containing all the necessary info for drawing a Drawable.
 ///
-/// * `src` - a portion of the drawable to clip, in pixels.  Defaults to the whole image if omitted.
+/// * `src` - a portion of the drawable to clip, as a fraction of the whole image.
+///    Defaults to the whole image (1.0) if omitted.
 /// * `dest` - the position to draw the graphic expressed as a `Point`.
 /// * `rotation` - orientation of the graphic in radians.
 /// * `scale` - x/y scale factors expressed as a `Point`.
@@ -782,6 +808,10 @@ impl Image {
                 .create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
             view
         } else {
+            if width == 0 || height == 0 {
+                let msg = format!("Tried to create a texture of size {}x{}, each dimension must be >0", width, height);
+                return Err(GameError::ResourceLoadError(msg));
+            }
             let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
             let (_, view) = factory
                 .create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
@@ -825,8 +855,6 @@ impl Image {
     }
 
     /// Set the filter mode for the image.
-    ///
-    /// If None, it will use the global filter mode.
     pub fn set_filter(&mut self, mode: FilterMode) {
         self.sampler_info.filter = mode.into();
     }

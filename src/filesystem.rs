@@ -155,10 +155,12 @@ impl Filesystem {
         // Cargo manifest dir!
         #[cfg(feature = "cargo-resource-root")]
         {
-            let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            path.push("resources");
-            let physfs = vfs::PhysicalFS::new(&path, false);
-            overlay.push_back(Box::new(physfs));
+            if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+                let mut path = path::PathBuf::from(manifest_dir);
+                path.push("resources");
+                let physfs = vfs::PhysicalFS::new(&path, false);
+                overlay.push_back(Box::new(physfs));
+            }
         }
 
         let fs = Filesystem { 
@@ -379,7 +381,7 @@ mod tests {
         {
             let rel_file = "testfile.txt";
             match fs.open(rel_file) {
-                Err(GameError::FilesystemError(_)) => (),
+                Err(GameError::ResourceNotFound(_, _)) => (),
                 Err(e) => panic!("Invalid error for opening file with relative path: {:?}", e),
                 Ok(f) => panic!("Should have gotten an error but instead got {:?}!", f),
             }
@@ -389,7 +391,7 @@ mod tests {
             // This absolute path should work on Windows too since we
             // completely remove filesystem roots.
             match fs.open("/ooglebooglebarg.txt") {
-                Err(GameError::FilesystemError(_)) => (),
+                Err(GameError::ResourceNotFound(_, _)) => (),
                 Err(e) => panic!("Invalid error for opening nonexistent file: {}", e),
                 Ok(f) => panic!("Should have gotten an error but instead got {:?}", f),
             }

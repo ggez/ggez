@@ -133,6 +133,9 @@ pub trait VFS: Debug {
 
     /// Retrieve all file and directory entries in the given directory.
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>>;
+
+    /// Retrieve the actual location of the VFS root, if available.
+    fn to_path_buf(&self) -> Option<PathBuf>;
 }
 
 pub trait VMetadata {
@@ -345,6 +348,11 @@ impl VFS for PhysicalFS {
             .into_iter();
         Ok(Box::new(itr))
     }
+
+    /// Retrieve the actual location of the VFS root, if available.
+    fn to_path_buf(&self) -> Option<PathBuf> {
+        Some(self.root.clone())
+    }
 }
 
 /// A structure that joins several VFS's together in order.
@@ -374,13 +382,20 @@ impl OverlayFS {
 impl VFS for OverlayFS {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
+        let mut tried: Vec<PathBuf> = vec![];
+
         for vfs in &self.roots {
             match vfs.open_options(path, open_options) {
-                Err(_) => (),
+                Err(_) => {
+                    if let Some(vfs_path) = vfs.to_path_buf() {
+                        tried.push(vfs_path);
+                    }
+                },
                 f => return f,
             }
         }
-        Err(GameError::FilesystemError(format!("File {:?} not found", path)))
+        let errmessage = String::from(convenient_path_to_str(path)?);
+        Err(GameError::ResourceNotFound(errmessage, tried))
     }
 
     /// Create a directory at the location by this path
@@ -451,6 +466,11 @@ impl VFS for OverlayFS {
         }
         Ok(Box::new(v.into_iter()))
     }
+
+    /// Retrieve the actual location of the VFS root, if available.
+    fn to_path_buf(&self) -> Option<PathBuf> {
+        None
+    }
 }
 
 /// A filesystem backed by a zip file.
@@ -464,7 +484,7 @@ pub struct ZipFS {
     // ALSO THE SEMANTICS OF ZIPARCHIVE AND HAVING ZIPFILES BORROW IT IS
     // HORRIFICALLY BROKEN BY DESIGN SO WE'RE JUST GONNA REFCELL IT AND COPY
     // ALL CONTENTS OUT OF IT.
-    source: String,
+    source: PathBuf,
     archive: RefCell<zip::ZipArchive<fs::File>>,
     // We keep an index of what files are in the zip file
     // because trying to read it lazily is a pain in the butt.
@@ -479,7 +499,7 @@ impl ZipFS {
             .map(|i| archive.by_index(i).unwrap().name().to_string())
             .collect();
         Ok(Self {
-            source: filename.to_string_lossy().into_owned(),
+            source: filename.into(),
             archive: RefCell::new(archive),
             index: idx,
         })
@@ -588,7 +608,7 @@ impl VFS for ZipFS {
            open_options.truncate {
             let msg = format!("Cannot alter file {:?} in zipfile {:?}, filesystem read-only",
                               path,
-                              &self.source);
+                              self);
             return Err(GameError::FilesystemError(msg));
         }
         let mut stupid_archive_borrow = self.archive
@@ -602,7 +622,7 @@ impl VFS for ZipFS {
     fn mkdir(&self, path: &Path) -> GameResult<()> {
         let msg = format!("Cannot mkdir {:?} in zipfile {:?}, filesystem read-only",
                           path,
-                          &self.source);
+                          self);
         Err(GameError::FilesystemError(msg))
 
     }
@@ -610,14 +630,14 @@ impl VFS for ZipFS {
     fn rm(&self, path: &Path) -> GameResult<()> {
         let msg = format!("Cannot rm {:?} in zipfile {:?}, filesystem read-only",
                           path,
-                          &self.source);
+                          self);
         Err(GameError::FilesystemError(msg))
     }
 
     fn rmrf(&self, path: &Path) -> GameResult<()> {
         let msg = format!("Cannot rmrf {:?} in zipfile {:?}, filesystem read-only",
                           path,
-                          &self.source);
+                          self);
         Err(GameError::FilesystemError(msg))
     }
 
@@ -656,6 +676,10 @@ impl VFS for ZipFS {
             .map(|s| Ok(PathBuf::from(s)))
             .collect::<Vec<_>>();
         Ok(Box::new(itr.into_iter()))
+    }
+
+    fn to_path_buf(&self) -> Option<PathBuf> {
+        Some(self.source.clone())
     }
 }
 
