@@ -352,25 +352,29 @@ impl GraphicsContext {
         &mut self.window
     }
 
+    /// EXPERIMENTAL function to get the gfx-rs `Factory` object.
     pub fn get_factory(&mut self) -> &mut gfx_device_gl::Factory {
         &mut self.factory
     }
 
-
+    /// EXPERIMENTAL function to get the gfx-rs `Device` object.
     pub fn get_device(&mut self) -> &mut gfx_device_gl::Device {
         self.device.as_mut()
     }
 
+    /// EXPERIMENTAL function to get the gfx-rs `Encoder` object.
+    pub fn get_encoder(&mut self) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
+        &mut self.encoder
+    }
+
+    /// EXPERIMENTAL function to get the gfx-rs depth view
     pub fn get_depth_view(&self) -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
         self.depth_view.clone()
     }
 
+    /// EXPERIMENTAL function to get the gfx-rs color view
     pub fn get_color_view(&self) -> gfx::handle::RenderTargetView<gfx_device_gl::Resources, (gfx::format::R8_G8_B8_A8, gfx::format::Srgb)> {
         self.data.out.clone()
-    }
-
-    pub fn get_encoder(&mut self) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
-        &mut self.encoder
     }
 }
 

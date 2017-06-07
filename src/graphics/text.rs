@@ -547,7 +547,9 @@ mod tests {
         assert_eq!(&v, &wrapped_text);
     }
 
-    #[test]
+    // We sadly can't have this test in the general case because it needs to create a Context,
+    // which creates a window, which fails on a headless server like our CI systems.  :/
+    //#[test]
     fn test_wrapping() {
         use conf;
         let c = conf::Conf::new();
