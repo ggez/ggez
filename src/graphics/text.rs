@@ -498,4 +498,22 @@ mod tests {
             ];
         assert_eq!(&v, &wrapped_text);
     }
+
+    #[test]
+    fn test_wrapping() {
+        use conf;
+        let c = conf::Conf::new();
+        let ctx = &mut Context::load_from_conf("test_wrapping", "ggez", c).unwrap();
+        let font = Font::default_font().unwrap();
+        let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff other cat's butt and hang jaw half open thereafter for give attitude. Annoy kitten\nbrother with poking. Mrow toy mouse squeak roll over. Human give me attention meow.";
+        let wrap_length = 250;
+        let (len, v) = font.get_wrap(text_to_wrap, wrap_length);
+        assert!(len < wrap_length);
+        for line in &v {
+            let t = Text::new(ctx, line, &font).unwrap();
+            println!("Width is claimed to be <= {}, should be <= {}, is {}", len, wrap_length, t.width());
+            assert!(t.width() as usize <= len);
+            assert!(t.width() as usize <= wrap_length);
+        }
+    }
 }
