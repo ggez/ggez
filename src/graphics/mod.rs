@@ -583,6 +583,9 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 
 /// Returns a rectangle defining the coordinate system of the screen.
 /// It will be `Rect { x: left, y: bottom, w: width, h: height }`
+///
+/// If the Y axis increases downwards, the `height` of the Rect
+/// will be negative.
 pub fn get_screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
 }
