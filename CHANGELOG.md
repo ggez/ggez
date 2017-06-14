@@ -4,6 +4,8 @@
  * Added experimental support for SDL's gamepads (thanks kampffrosch94)
  * Re-improved resource-not-found error messages (thanks 17cupsofcoffee)
  * Fixed minor bug with text rendering alpha, added more useful methods to `Text`
+ * Fixed bug with text wrapping (I hope)
+ * VERY EXPERIMENTAL functions for exposing the gfx-rs rendering context to a bold user
 
 # 0.3.0
 

@@ -39,7 +39,7 @@ crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```text
-ggez = "0.3.0"
+ggez = "0.3"
 ```
 
 However you also need to have the SDL2 libraries installed on your
