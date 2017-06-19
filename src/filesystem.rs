@@ -8,9 +8,10 @@
 //! directory as the program executable, 
 //! * The root folder of the  game's "save" directory which is in a 
 //! platform-dependent location,
-//! such as `~/.local/share/<author>/<gameid>/` on Linux.  The `gameid`
-//! and `author` parts are the strings passed to
-//! `Context::load_from_conf()`.
+//! such as `~/.local/share/<gameid>/` on Linux.  The `gameid`
+//! is the the string passed to
+//! `Context::load_from_conf()`; some platforms such as Windows also
+//! incorporate the `author` string into the path.
 //!
 //! Files will be looked for in these locations in order, and the first one
 //! found used.  That allows game assets to be easily distributed as an archive
