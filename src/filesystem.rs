@@ -3,10 +3,10 @@
 //! This module provides access to files in specific places:
 //!
 //! * The `resources/` subdirectory in the same directory as the
-//! program executable, 
+//! program executable,
 //! * The `resources.zip` file in the same
-//! directory as the program executable, 
-//! * The root folder of the  game's "save" directory which is in a 
+//! directory as the program executable,
+//! * The root folder of the  game's "save" directory which is in a
 //! platform-dependent location,
 //! such as `~/.local/share/<gameid>/` on Linux.  The `gameid`
 //! is the the string passed to
@@ -41,7 +41,7 @@ use GameResult;
 use conf;
 use vfs::{self, VFS};
 
-const CONFIG_NAME: &'static str = "conf.toml";
+const CONFIG_NAME: &'static str = "/conf.toml";
 
 /// A structure that contains the filesystem state and cache.
 #[derive(Debug)]
@@ -164,7 +164,7 @@ impl Filesystem {
             }
         }
 
-        let fs = Filesystem { 
+        let fs = Filesystem {
             vfs: overlay,
             resources_path: resources_path,
             zip_path: resources_zip_path,
@@ -298,11 +298,12 @@ impl Filesystem {
     /// overwriting any file already there.
     pub fn write_config(&mut self, conf: &conf::Conf) -> GameResult<()> {
         let conf_path = path::Path::new(CONFIG_NAME);
+        let mut file = self.create(conf_path)?;
+        let f = conf.to_toml_file(&mut file)?;
         if self.is_file(conf_path) {
-            let mut file = self.create(conf_path)?;
-            conf.to_toml_file(&mut file)
+            Ok(f)
         } else {
-            Err(GameError::ConfigError(String::from("Could not write config file because a directory is in the way?")))
+            Err(GameError::ConfigError(format!("Failed to write config file at {}", conf_path.to_string_lossy())))
         }
     }
 }
@@ -315,6 +316,7 @@ mod tests {
     use vfs::*;
     use std::path;
     use std::io::{Read, Write};
+    use conf;
 
     fn get_dummy_fs_for_tests() -> Filesystem {
         let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -322,7 +324,7 @@ mod tests {
         let physfs = vfs::PhysicalFS::new(&path, false);
         let mut ofs = vfs::OverlayFS::new();
         ofs.push_front(Box::new(physfs));
-        Filesystem { 
+        Filesystem {
             vfs: ofs,
 
             resources_path: "".into(),
@@ -397,6 +399,20 @@ mod tests {
                 Ok(f) => panic!("Should have gotten an error but instead got {:?}", f),
             }
         }
+    }
+
+    #[test]
+    fn test_write_config() {
+        let mut f = get_dummy_fs_for_tests();
+        let mut conf = conf::Conf::new();
+        // The config file should end up in
+        // the resources directory with this
+        match f.write_config(&conf) {
+            Ok(f) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+        // Remove the config file!
+        f.delete(CONFIG_NAME);
     }
 
     //#[test]
