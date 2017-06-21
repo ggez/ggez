@@ -336,20 +336,6 @@ mod tests {
     }
 
     #[test]
-    fn test_write_config() {
-        let mut f = get_dummy_fs_for_tests();
-        let mut conf = conf::Conf::new();
-        // The config file should end up in
-        // the resources directory with this
-        match f.write_config(&conf) {
-            Ok(f) => (),
-            Err(e) => panic!("{:?}", e),
-        }
-        // Remove the config file!
-        f.delete(CONFIG_NAME);
-    }
-
-    #[test]
     fn test_file_exists() {
         let mut f = get_dummy_fs_for_tests();
 
@@ -413,6 +399,20 @@ mod tests {
                 Ok(f) => panic!("Should have gotten an error but instead got {:?}", f),
             }
         }
+    }
+
+    #[test]
+    fn test_write_config() {
+        let mut f = get_dummy_fs_for_tests();
+        let mut conf = conf::Conf::new();
+        // The config file should end up in
+        // the resources directory with this
+        match f.write_config(&conf) {
+            Ok(f) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+        // Remove the config file!
+        f.delete(CONFIG_NAME);
     }
 
     //#[test]
