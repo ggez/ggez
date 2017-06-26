@@ -1,3 +1,5 @@
+use sdl2;
+
 /// A simple 2D point.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Point {
@@ -243,6 +245,45 @@ impl From<FilterMode> for FilterMethod {
 
 /// Specifies how to wrap textures.
 pub type WrapMode = texture::WrapMode;
+
+
+pub type FullscreenType = sdl2::video::FullscreenType;
+
+/// A builder structure containing flags for defining window settings.
+#[derive(Debug, Copy, Clone)]
+pub struct WindowMode {
+    pub borderless: bool,
+    pub fullscreen_type: FullscreenType,
+    pub vsync: bool,
+}
+
+impl Default for WindowMode {
+    fn default() -> Self {
+        Self {
+            borderless: false,
+            fullscreen_type: sdl2::video::FullscreenType::Off,
+            vsync: true
+        }
+    }
+}
+
+impl WindowMode {
+    fn borderless(mut self, borderless: bool) -> Self {
+        self.borderless = borderless;
+        self
+    }
+
+    fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
+        self.fullscreen_type = fullscreen_type;
+        self
+    }
+
+    fn vsync(mut self, vsync: bool) -> Self {
+        self.vsync = vsync;
+        self
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

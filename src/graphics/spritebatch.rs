@@ -51,7 +51,7 @@ impl SpriteBatch {
             sprites: vec![],
         }
     }
-    
+
     /// Adds a new sprite to the sprite batch.
     ///
     /// Returns a handle with which to modify the sprite using `set()`
