@@ -1,3 +1,10 @@
+# 0.3.2 (pending)
+
+ * Fixed bug in conf.toml reading and writing (thanks chinatsu)
+ * Made filesystem.print_all() a little more informative
+ * Added graphics::set_mode() function to allow setting window size, etc.
+ * Made gamepad example test all input
+
 # 0.3.1
 
  * Fixed bug in when CARGO_MANIFEST_DIR is checked (thanks 17cupsofcoffee)
