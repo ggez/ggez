@@ -2,7 +2,7 @@ extern crate ggez;
 
 use ggez::*;
 use ggez::event::*;
-use ggez::graphics::{Color, DrawMode, Point};
+use ggez::graphics::{DrawMode, Point};
 use std::time::Duration;
 
 struct MainState {
@@ -10,7 +10,7 @@ struct MainState {
 }
 
 impl MainState {
-    fn new(ctx: &mut Context) -> MainState {
+    fn new() -> MainState {
         MainState { pos_x: 100.0 }
     }
 }
@@ -42,7 +42,7 @@ impl event::EventHandler for MainState {
         println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
     }
 
-    fn mouse_motion_event(&mut self, state: MouseState, x: i32, y: i32, xrel: i32, yrel: i32) {
+    fn mouse_motion_event(&mut self, _state: MouseState, x: i32, y: i32, xrel: i32, yrel: i32) {
         println!("Mouse motion, x: {}, y: {}, relative x: {}, relative y: {}",
                  x,
                  y,
@@ -100,6 +100,6 @@ impl event::EventHandler for MainState {
 pub fn main() {
     let c = conf::Conf::new();
     let ctx = &mut Context::load_from_conf("event_test", "ggez", c).unwrap();
-    let state = &mut MainState::new(ctx);
+    let state = &mut MainState::new();
     event::run(ctx, state).unwrap();
 }

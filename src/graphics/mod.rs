@@ -61,6 +61,9 @@ const QUAD_VERTS: [Vertex; 4] = [Vertex {
 const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
 type ColorFormat = gfx::format::Srgba8;
+// I don't know why this gives a dead code warning
+// since this type is definitely used... oh well.
+#[allow(dead_code)]
 type DepthFormat = gfx::format::DepthStencil;
 
 gfx_defines!{
@@ -663,7 +666,7 @@ pub fn set_screen_coordinates(context: &mut Context,
 pub fn set_mode(context: &mut Context, width: u32, height: u32, mode: WindowMode) -> GameResult<()> {
     {
         let window = &mut context.gfx_context.get_window();
-        window.set_size(width, height);
+        window.set_size(width, height)?;
         // SDL sets "bordered" but Love2D does "not bordered";
         // we use the Love2D convention.
         window.set_bordered(!mode.borderless);

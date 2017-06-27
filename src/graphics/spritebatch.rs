@@ -95,7 +95,7 @@ impl SpriteBatch {
 impl graphics::Drawable for SpriteBatch {
     /// Does not properly work yet, ideally the position, scale, etc. of the given
     /// DrawParam would be added to the DrawParam for each sprite.
-    fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, _param: graphics::DrawParam) -> GameResult<()> {
         self.flush(ctx);
         Ok(())
     }

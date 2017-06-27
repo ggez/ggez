@@ -1,4 +1,3 @@
-use std::cmp;
 use std::fmt;
 use std::path;
 use std::collections::BTreeMap;
@@ -149,17 +148,16 @@ impl Font {
     /// Returns a tuple of maximum line width and a `Vec` of wrapped `String`s.
     pub fn get_wrap(&self, text: &str, wrap_limit: usize) -> (usize, Vec<String>) {
         let mut broken_lines = Vec::new();
-        let mut max_line_length = 0;
-        // hack hack hack...
-        // Calling get_width() on " " returns 0, because text_width()
-        // on " " returns 0 because apparently laying out a lone whitespace
-        // gets you None
-        let whitespace_width = self.get_width("x");
         for line in text.lines() {
             let mut current_line = Vec::new();
-            let mut current_line_length = 0;
             for word in line.split_whitespace() {
-                // This is not the most efficient way but...
+                // I'm sick of trying to do things the clever way and
+                // build up a line word by word while tracking how
+                // long it should be, so instead I just re-render the whole
+                // line, incrementally adding a word at a time until it
+                // becomes too long.
+                // This is not the most efficient way but it is simple and
+                // it works.
                 let mut prospective_line = current_line.clone();
                 prospective_line.push(word);
                 let text = prospective_line.join(" ");
@@ -174,22 +172,6 @@ impl Font {
                     // Current line with the added word is still short enough
                     current_line.push(word);
                 }
-                /*
-                let width = self.get_width(word);
-                if current_line_length + width > wrap_limit {
-                    // Overflow word onto next line
-                    broken_lines.push(current_line.join(" "));
-                    current_line.clear();
-                    current_line.push(word);
-                    current_line_length = width;
-                } else {
-                    // Continue with current line
-                    current_line.push(word);
-                    current_line_length += width + whitespace_width;
-                    println!("Continuing, current line is {} out of {}", current_line_length, wrap_limit);
-                    max_line_length = cmp::max(max_line_length, current_line_length);
-                }
-                 */
             }
 
             // Push the last line of the text
@@ -539,6 +521,7 @@ mod tests {
     // We sadly can't have this test in the general case because it needs to create a Context,
     // which creates a window, which fails on a headless server like our CI systems.  :/
     //#[test]
+    #[allow(dead_code)]
     fn test_wrapping() {
         use conf;
         let c = conf::Conf::new();

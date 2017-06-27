@@ -315,7 +315,6 @@ impl Filesystem {
 mod tests {
     use error::*;
     use filesystem::*;
-    use vfs::*;
     use std::path;
     use std::io::{Read, Write};
     use conf;
@@ -339,7 +338,7 @@ mod tests {
 
     #[test]
     fn test_file_exists() {
-        let mut f = get_dummy_fs_for_tests();
+        let f = get_dummy_fs_for_tests();
 
         let tile_file = path::Path::new("/tile.png");
         assert!(f.exists(tile_file));
@@ -356,8 +355,8 @@ mod tests {
     fn test_read_dir() {
         let mut f = get_dummy_fs_for_tests();
 
-        //let dir_contents_size = f.read_dir().unwrap().len();
-        //assert!(dir_contents_size > 0);
+        let dir_contents_size = f.read_dir("/").unwrap().len();
+        assert!(dir_contents_size > 0);
     }
 
     #[test]
@@ -406,14 +405,14 @@ mod tests {
     #[test]
     fn test_write_config() {
         let mut f = get_dummy_fs_for_tests();
-        let mut conf = conf::Conf::new();
+        let conf = conf::Conf::new();
         // The config file should end up in
         // the resources directory with this
         match f.write_config(&conf) {
-            Ok(f) => (),
+            Ok(_) => (),
             Err(e) => panic!("{:?}", e),
         }
         // Remove the config file!
-        f.delete(CONFIG_NAME);
+        f.delete(CONFIG_NAME).unwrap();
     }
 }

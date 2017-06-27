@@ -268,17 +268,17 @@ impl Default for WindowMode {
 }
 
 impl WindowMode {
-    fn borderless(mut self, borderless: bool) -> Self {
+    pub fn borderless(mut self, borderless: bool) -> Self {
         self.borderless = borderless;
         self
     }
 
-    fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
+    pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
         self.fullscreen_type = fullscreen_type;
         self
     }
 
-    fn vsync(mut self, vsync: bool) -> Self {
+    pub fn vsync(mut self, vsync: bool) -> Self {
         self.vsync = vsync;
         self
     }
