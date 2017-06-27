@@ -257,7 +257,7 @@ impl Filesystem {
         &self.resources_path
     }
 
-    /// Returns an iterator over all files and directories in the resource directory,
+    /// Returns a list of all files and directories in the resource directory,
     /// in no particular order.
     ///
     /// Lists the base directory if an empty path is given.
@@ -272,9 +272,11 @@ impl Filesystem {
     /// Prints the contents of all data directories.
     /// Useful for debugging.
     pub fn print_all(&mut self) -> GameResult<()> {
-        /// TODO: Should tell you which source the resulting files come from...
-        for itm in self.read_dir("/")? {
-            println!("{:?}", itm);
+        for vfs in self.vfs.roots() {
+            println!("Source {:?}", vfs);
+            for itm in vfs.read_dir(path::Path::new("/"))? {
+                println!("  {:?}", itm);
+            }
         }
         Ok(())
     }
@@ -414,42 +416,4 @@ mod tests {
         // Remove the config file!
         f.delete(CONFIG_NAME);
     }
-
-    //#[test]
-    //#fn test_app_dirs() {
-    //#use app_dirs::*;
-    //#use sdl2;
-
-    //     let app_info = AppInfo{name:"test", author:"ggez"};
-    //     println!("user config: {:?}", get_app_root(AppDataType::UserConfig, &app_info));
-    //     println!("user cache: {:?}", get_app_root(AppDataType::UserCache, &app_info));
-    //     println!("user data: {:?}", get_app_root(AppDataType::UserData, &app_info));
-
-    //     println!("shared config: {:?}", get_app_root(AppDataType::SharedConfig, &app_info));
-    //     println!("shared data: {:?}", get_app_root(AppDataType::SharedData, &app_info));
-
-    //     println!("SDL base path: {}", sdl2::filesystem::base_path().unwrap());
-    //     println!("SDL pref path: {}", sdl2::filesystem::pref_path("ggez", "id").unwrap());
-
-    // Okay, we want user data for data, user config for config,
-    // On Linux these map to:
-    // ~/.local/share/test
-    // ~/.config/test
-    //
-    // Plus we should search next to the exe path,
-    // AND we should search in env!(CARGO_MANIFEST_DIR) if it exists.
-    // (which is a bit hacky since we'll then end up distributing binaries
-    // that check in that dir as defined at compile time...  But hmm.)
-    //
-    // So what we really need is to search in all these places:
-    // next-to-executable
-    // CARGO_MANIFEST_DIR
-    // AppDataType::UserData for read-only data
-    // AppDataType::UserConfig for read-write data (saved games, config files)
-    // Last, zip file in ANY of the read-only data locations.
-    //
-    // This is getting complex.
-    // We're starting to really need a full VFS layer to properly overlay
-    // these things.  Look more at how physfs implements it?
-    //
 }
