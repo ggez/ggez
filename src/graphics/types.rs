@@ -33,6 +33,10 @@ impl From<[f32; 2]> for Point {
 }
 
 /// A simple 2D rectangle.
+///
+/// The ggez convention is that `x` and `y` are the **center** of the rectangle,
+/// with `width` and `height` being the total width and height, because this
+/// is generally also how OpenGL tends to think about the world.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Rect {
     pub x: f32,
@@ -87,6 +91,26 @@ impl Rect {
             x: self.x,
             y: self.y,
         }
+    }
+
+    /// Returns the left edge of the `Rect`
+    pub fn left(&self) -> f32 {
+        self.x - (self.w / 2.0)
+    }
+
+    /// Returns the right edge of the `Rect`
+    pub fn right(&self) -> f32 {
+        self.x + (self.w / 2.0)
+    }
+
+    /// Returns the top edge of the `Rect`
+    pub fn top(&self) -> f32 {
+        self.y + (self.h / 2.0)
+    }
+    
+    /// Returns the bottom edge of the `Rect`
+    pub fn bottom(&self) -> f32 {
+        self.y - (self.h / 2.0)
     }
 }
 
