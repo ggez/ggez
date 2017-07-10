@@ -23,7 +23,6 @@ path = "src/lib.rs"
 # If this feature is enabled, it will add <cargo root dir>/resources/ to
 # the resource search path.
 cargo-resource-root = []
-mint-exports = ["mint"]
 
 [profile.dev]
 codegen-units=4
