@@ -32,6 +32,23 @@ impl From<[f32; 2]> for Point {
     }
 }
 
+#[cfg(feature = "mint-exports")]
+extern crate mint;
+#[cfg(feature = "mint-exports")]
+impl From<mint::Point2<f32>> for Point {
+    fn from(p: mint::Point2<f32>) -> Point {
+        Point::new(p.x, p.y)
+    }
+}
+
+#[cfg(feature = "mint-exports")]
+impl From<Point> for mint::Point2<f32> {
+    fn from(p: Point) -> mint::Point2<f32> {
+        mint::Point2 { x: p.x, y: p.y }
+    }
+}
+
+
 /// A simple 2D rectangle.
 ///
 /// The ggez convention is that `x` and `y` are the **center** of the rectangle,

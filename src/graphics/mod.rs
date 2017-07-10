@@ -28,7 +28,7 @@ use context::Context;
 use GameError;
 use GameResult;
 
-mod spritebatch;
+//mod spritebatch;
 mod tessellation;
 mod text;
 mod types;
