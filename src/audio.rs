@@ -86,7 +86,7 @@ impl AsRef<[u8]> for SoundData {
 // but
 // for now it works.
 pub struct Source {
-    data: SoundData,
+    data: io::Cursor<SoundData>,
     sink: rodio::Sink,
 }
 
@@ -104,10 +104,11 @@ impl Source {
     /// Creates a new Source using the given SoundData object.
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
         let sink = rodio::Sink::new(&context.audio_context.endpoint);
+        let cursor = io::Cursor::new(data);
         Ok(Source {
-               data: data,
-               sink: sink,
-           })
+            data: cursor,
+            sink: sink,
+        })
     }
 
     /// Plays the Source.
@@ -115,7 +116,8 @@ impl Source {
         // Creating a new Decoder each time seems a little messy,
         // since it may do checking and data-type detection that is
         // redundant, but it's fine for now.
-        let cursor = io::Cursor::new(self.data.clone());
+        // See https://github.com/ggez/ggez/issues/98 for discussion
+        let cursor = self.data.clone();
         let decoder = rodio::Decoder::new(cursor)?;
         self.sink.append(decoder);
         Ok(())
@@ -128,30 +130,25 @@ impl Source {
         self.sink.play()
     }
 
-
-    // pub fn stop(&self) {}
-    // pub fn set_looping() {}
-    pub fn set_volume(&mut self, value: f32) {
-        self.sink.set_volume(value)
+    pub fn stop(&self) {
+        self.sink.stop()
     }
 
     pub fn volume(&self) -> f32 {
         self.sink.volume()
     }
-    // pub fn stopped(&self) -> bool {
-    //     false
-    // }
+
+    pub fn set_volume(&mut self, value: f32) {
+        self.sink.set_volume(value)
+    }
+    
     pub fn paused(&self) -> bool {
         self.sink.is_paused()
     }
+
     pub fn playing(&self) -> bool {
         !self.paused() // && !self.stopped()
     }
-    // pub fn looping(&self) -> bool {
-    //     false
-    // }
-
-    // TODO: maybe seek(), tell(), rewind()?
 }
 
 

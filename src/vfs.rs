@@ -377,6 +377,10 @@ impl OverlayFS {
     pub fn push_back(&mut self, fs: Box<VFS>) {
         self.roots.push_back(fs);
     }
+
+    pub fn roots(&self) -> &VecDeque<Box<VFS>> {
+        &self.roots
+    }
 }
 
 impl VFS for OverlayFS {
@@ -801,9 +805,9 @@ mod tests {
 
         {
             // Test read_dir()
-            let mut r = fs.read_dir(testdir).unwrap();
+            let r = fs.read_dir(testdir).unwrap();
             assert_eq!(r.count(), 1);
-            let mut r = fs.read_dir(testdir).unwrap();
+            let r = fs.read_dir(testdir).unwrap();
             for f in r {
                 let fname = f.unwrap();
                 assert!(fs.exists(&fname));

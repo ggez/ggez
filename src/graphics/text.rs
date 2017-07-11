@@ -1,4 +1,3 @@
-use std::cmp;
 use std::fmt;
 use std::path;
 use std::collections::BTreeMap;
@@ -59,10 +58,10 @@ impl Font {
         let scale = display_independent_scale(points, x_dpi, y_dpi);
 
         Ok(Font::TTFFont {
-               font: font,
-               points: points,
-               scale: scale,
-           })
+            font: font,
+            points: points,
+            scale: scale,
+        })
     }
 
     /// Loads an `Image` and uses it to create a new bitmap font
@@ -89,12 +88,12 @@ impl Font {
             glyphs_map.insert(c, i * glyph_width);
         }
         Ok(Font::BitmapFont {
-               bytes: img.into_vec(),
-               width: image_width as usize,
-               height: image_height as usize,
-               glyphs: glyphs_map,
-               glyph_width: glyph_width,
-           })
+            bytes: img.into_vec(),
+            width: image_width as usize,
+            height: image_height as usize,
+            glyphs: glyphs_map,
+            glyph_width: glyph_width,
+        })
     }
 
     /// Returns a baked-in default font: currently DejaVuSerif.ttf
@@ -113,16 +112,16 @@ impl Font {
     /// a line needs.
     pub fn get_height(&self) -> usize {
         match *self {
-            Font::BitmapFont{ height, .. } => height,
-            Font::TTFFont{ scale, .. } => {
+            Font::BitmapFont { height, .. } => height,
+            Font::TTFFont { scale, .. } => {
                 // let v_metrics = font.v_metrics(scale);
                 // v_metrics.
                 // TODO: Check and make sure this is right;
                 // shouldn't we be using v_metrics instead?
-                // if not you will have to change this in the 
+                // if not you will have to change this in the
                 // ttf font rendering code as well.
                 scale.y.ceil() as usize
-            },
+            }
         }
     }
 
@@ -130,13 +129,14 @@ impl Font {
     /// Does not handle line-breaks.
     pub fn get_width(&self, text: &str) -> usize {
         match *self {
-            Font::BitmapFont{ width, .. } => width * text.len(),
-            Font::TTFFont{ref font, scale, .. } => {
+            Font::BitmapFont { width, .. } => width * text.len(),
+            Font::TTFFont { ref font, scale, .. } => {
                 let v_metrics = font.v_metrics(scale);
                 let offset = rusttype::point(0.0, v_metrics.ascent);
-                let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
+                let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset)
+                    .collect();
                 text_width(&glyphs) as usize
-            },
+            }
         }
     }
 
@@ -148,17 +148,16 @@ impl Font {
     /// Returns a tuple of maximum line width and a `Vec` of wrapped `String`s.
     pub fn get_wrap(&self, text: &str, wrap_limit: usize) -> (usize, Vec<String>) {
         let mut broken_lines = Vec::new();
-        let mut max_line_length = 0;
-        // hack hack hack...
-        // Calling get_width() on " " returns 0, because text_width()
-        // on " " returns 0 because apparently laying out a lone whitespace
-        // gets you None
-        let whitespace_width = self.get_width("x");
         for line in text.lines() {
             let mut current_line = Vec::new();
-            let mut current_line_length = 0;
             for word in line.split_whitespace() {
-                // This is not the most efficient way but...
+                // I'm sick of trying to do things the clever way and
+                // build up a line word by word while tracking how
+                // long it should be, so instead I just re-render the whole
+                // line, incrementally adding a word at a time until it
+                // becomes too long.
+                // This is not the most efficient way but it is simple and
+                // it works.
                 let mut prospective_line = current_line.clone();
                 prospective_line.push(word);
                 let text = prospective_line.join(" ");
@@ -173,22 +172,6 @@ impl Font {
                     // Current line with the added word is still short enough
                     current_line.push(word);
                 }
-                /*
-                let width = self.get_width(word);
-                if current_line_length + width > wrap_limit {
-                    // Overflow word onto next line
-                    broken_lines.push(current_line.join(" "));
-                    current_line.clear();
-                    current_line.push(word);
-                    current_line_length = width;
-                } else {
-                    // Continue with current line
-                    current_line.push(word);
-                    current_line_length += width + whitespace_width;
-                    println!("Continuing, current line is {} out of {}", current_line_length, wrap_limit);
-                    max_line_length = cmp::max(max_line_length, current_line_length);
-                }
-                 */
             }
 
             // Push the last line of the text
@@ -201,8 +184,7 @@ impl Font {
         // we put 1 here.
         // Not entirely sure what this will actually result
         // in though; hopefully a blank line.
-        let max_line_length = broken_lines
-            .iter()
+        let max_line_length = broken_lines.iter()
             .map(|line| self.get_width(line))
             .max()
             .unwrap_or(1);
@@ -244,14 +226,11 @@ fn display_independent_scale(points: u32, dpi_w: f32, dpi_h: f32) -> rusttype::S
 }
 
 fn text_width(glyphs: &[rusttype::PositionedGlyph]) -> f32 {
-    glyphs
-        .iter()
+    glyphs.iter()
         .rev()
         .filter_map(|g| {
             g.pixel_bounding_box()
-                .map(|b| {
-                    b.min.x as f32 + g.unpositioned().h_metrics().advance_width
-                })
+                .map(|b| b.min.x as f32 + g.unpositioned().h_metrics().advance_width)
         })
         .next()
         .unwrap_or(0.0)
@@ -326,9 +305,9 @@ fn render_ttf(context: &mut Context,
 
     let text_string = text.to_string();
     Ok(Text {
-           texture: image,
-           contents: text_string,
-       })
+        texture: image,
+        contents: text_string,
+    })
 
 }
 
@@ -382,9 +361,8 @@ fn render_bitmap(context: &mut Context,
     for (i, c) in text.chars().enumerate() {
         // println!("Rendering character {}: {}", i, c);
         let error = GameError::FontError(format!("Character '{}' not in bitmap font!", c));
-        let source_offset = *glyphs_map
-                                 .get(&c)
-                                 .ok_or(error)?;
+        let source_offset = *glyphs_map.get(&c)
+            .ok_or(error)?;
         let dest_offset = glyph_width * i;
         // println!("Blitting {:?} to {:?}", source_offset, dest_offset);
         blit(&mut dest_buf,
@@ -404,9 +382,9 @@ fn render_bitmap(context: &mut Context,
     let text_string = text.to_string();
 
     Ok(Text {
-           texture: image,
-           contents: text_string,
-       })
+        texture: image,
+        contents: text_string,
+    })
 }
 
 
@@ -414,18 +392,10 @@ impl Text {
     /// Renders a new `Text` from the given `Font`
     pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<Text> {
         match *font {
-            Font::TTFFont {
-                font: ref f,
-                scale,
-                ..
-            } => render_ttf(context, text, f, scale),
-            Font::BitmapFont {
-                ref bytes,
-                width,
-                height,
-                glyph_width,
-                ref glyphs,
-            } => render_bitmap(context, text, bytes, width, height, glyphs, glyph_width),
+            Font::TTFFont { font: ref f, scale, .. } => render_ttf(context, text, f, scale),
+            Font::BitmapFont { ref bytes, width, height, glyph_width, ref glyphs } => {
+                render_bitmap(context, text, bytes, width, height, glyphs, glyph_width)
+            }
         }
     }
 
@@ -516,7 +486,10 @@ mod tests {
         assert_eq!(f.get_width("Foo!"), 33);
 
         // http://www.catipsum.com/index.php
-        let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff other cat's butt and hang jaw half open thereafter for give attitude. Annoy kitten\nbrother with poking. Mrow toy mouse squeak roll over. Human give me attention meow.";
+        let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff \
+                            other cat's butt and hang jaw half open thereafter for give attitude. \
+                            Annoy kitten\nbrother with poking. Mrow toy mouse squeak roll over. \
+                            Human give me attention meow.";
         let (len, v) = f.get_wrap(text_to_wrap, 250);
         println!("{} {:?}", len, v);
         assert_eq!(len, 249);
@@ -533,16 +506,14 @@ mod tests {
             "me attention meow."
         ];
 */
-        let wrapped_text = vec![
-            "Walk on car leaving trail of paw",
-            "prints on hood and windshield",
-            "sniff other cat\'s butt and hang jaw",
-            "half open thereafter for give",
-            "attitude. Annoy kitten",
-            "brother with poking. Mrow toy",
-            "mouse squeak roll over. Human",
-            "give me attention meow."
-        ];
+        let wrapped_text = vec!["Walk on car leaving trail of paw",
+                                "prints on hood and windshield",
+                                "sniff other cat\'s butt and hang jaw",
+                                "half open thereafter for give",
+                                "attitude. Annoy kitten",
+                                "brother with poking. Mrow toy",
+                                "mouse squeak roll over. Human",
+                                "give me attention meow."];
 
         assert_eq!(&v, &wrapped_text);
     }
@@ -550,18 +521,25 @@ mod tests {
     // We sadly can't have this test in the general case because it needs to create a Context,
     // which creates a window, which fails on a headless server like our CI systems.  :/
     //#[test]
+    #[allow(dead_code)]
     fn test_wrapping() {
         use conf;
         let c = conf::Conf::new();
         let ctx = &mut Context::load_from_conf("test_wrapping", "ggez", c).unwrap();
         let font = Font::default_font().unwrap();
-        let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff other cat's butt and hang jaw half open thereafter for give attitude. Annoy kitten\nbrother with poking. Mrow toy mouse squeak roll over. Human give me attention meow.";
+        let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff \
+                            other cat's butt and hang jaw half open thereafter for give attitude. \
+                            Annoy kitten\nbrother with poking. Mrow toy mouse squeak roll over. \
+                            Human give me attention meow.";
         let wrap_length = 250;
         let (len, v) = font.get_wrap(text_to_wrap, wrap_length);
         assert!(len < wrap_length);
         for line in &v {
             let t = Text::new(ctx, line, &font).unwrap();
-            println!("Width is claimed to be <= {}, should be <= {}, is {}", len, wrap_length, t.width());
+            println!("Width is claimed to be <= {}, should be <= {}, is {}",
+                     len,
+                     wrap_length,
+                     t.width());
             // Why does this not match?  x_X
             //assert!(t.width() as usize <= len);
             assert!(t.width() as usize <= wrap_length);

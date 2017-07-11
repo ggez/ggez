@@ -59,7 +59,7 @@ fn build_path(points: &[Point], closed: bool) -> path::Path {
 fn build_geometry<F, V, E>(line_width: f32, f: F) -> GameResult<Buffer>
     where F: for<'a> FnOnce(&mut geometry_builder::BuffersBuilder<'a, Vertex, V, VertexConstructor>)
                             -> Result<geometry_builder::Count, E>,
-        VertexConstructor: geometry_builder::VertexConstructor<V, Vertex>,
+          VertexConstructor: geometry_builder::VertexConstructor<V, Vertex>
 {
     let mut buffers = geometry_builder::VertexBuffers::new();
     let vertex_ctor = VertexConstructor { stroke_width: line_width };
@@ -77,7 +77,8 @@ fn build_stroke(points: &[Point], close: bool, line_width: f32) -> GameResult<Bu
     let path_iter = path.path_iter().flattened(FLATTEN_TOLERANCE);
     let opts = path_stroke::StrokeOptions::default();
     let mut tessellator = path_stroke::StrokeTessellator::new();
-    build_geometry(line_width, |builder| tessellator.tessellate(path_iter, &opts, builder))
+    build_geometry(line_width,
+                   |builder| tessellator.tessellate(path_iter, &opts, builder))
 }
 
 pub fn build_line(points: &[Point], line_width: f32) -> GameResult<Buffer> {
@@ -95,7 +96,8 @@ pub fn build_polygon_fill(points: &[Point]) -> GameResult<Buffer> {
     let path_iter = path.path_iter().flattened(FLATTEN_TOLERANCE);
     let opts = path_fill::FillOptions::default();
     let mut tessellator = path_fill::FillTessellator::new();
-    build_geometry(0.0, |builder| tessellator.tessellate_path(path_iter, &opts, builder))
+    build_geometry(0.0,
+                   |builder| tessellator.tessellate_path(path_iter, &opts, builder))
 }
 
 pub fn build_ellipse_fill(point: Point, r1: f32, r2: f32, segments: u32) -> GameResult<Buffer> {

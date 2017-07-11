@@ -26,6 +26,7 @@ pub struct Conf {
     /// Whether or not the graphics draw rate should be
     /// synchronized with the monitor's draw rate.
     pub vsync: bool,
+    pub resizable: bool,
     /* To implement still.
      * window_borderless: bool,
      * window_resizable: bool,
@@ -66,6 +67,7 @@ impl Default for Conf {
             window_height: 600,
             window_width: 800,
             vsync: true,
+            resizable: false,
         }
 
     }

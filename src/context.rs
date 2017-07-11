@@ -89,7 +89,8 @@ impl Context {
                                                               &conf.window_title,
                                                               conf.window_width,
                                                               conf.window_height,
-                                                              conf.vsync)?;
+                                                              conf.vsync,
+                                                              conf.resizable)?;
         let gamepad_context = input::GamepadContext::new(&sdl_context)?;
 
         let mut ctx = Context {
@@ -116,8 +117,10 @@ impl Context {
     ///
     /// The `game_id` and `author` are game-specific strings that 
     /// are used to locate the default storage locations for the
-    /// platform it looks in; for instance, on Linux, it will
-    /// look for `~/.config/id/conf.toml`
+    /// platform it looks in, as documented in the `filesystem`
+    /// module.  You can also always debug-print the
+    /// `Context::filesystem` field to see what paths it is
+    /// searching.
     pub fn load_from_conf(game_id: &'static str,
                           author: &'static str,
                           default_config: conf::Conf)

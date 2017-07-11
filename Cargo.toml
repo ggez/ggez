@@ -1,7 +1,7 @@
 [package]
 name = "ggez"
 description = "Rust library to create a Good Game Easily"
-version = "0.3.1"
+version = "0.3.2"
 homepage = "http://ggez.rs"
 repository = "https://github.com/ggez/ggez"
 documentation = "https://docs.rs/ggez"
@@ -44,7 +44,7 @@ serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
 lyon = "0.4.1"
+mint = { version = "0.4", optional = true }
 
 [dev-dependencies]
-
 cgmath = "0.14"

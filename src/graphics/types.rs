@@ -1,3 +1,5 @@
+use sdl2;
+
 /// A simple 2D point.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Point {
@@ -30,7 +32,28 @@ impl From<[f32; 2]> for Point {
     }
 }
 
+#[cfg(feature = "mint-exports")]
+extern crate mint;
+#[cfg(feature = "mint-exports")]
+impl From<mint::Point2<f32>> for Point {
+    fn from(p: mint::Point2<f32>) -> Point {
+        Point::new(p.x, p.y)
+    }
+}
+
+#[cfg(feature = "mint-exports")]
+impl From<Point> for mint::Point2<f32> {
+    fn from(p: Point) -> mint::Point2<f32> {
+        mint::Point2 { x: p.x, y: p.y }
+    }
+}
+
+
 /// A simple 2D rectangle.
+///
+/// The ggez convention is that `x` and `y` are the **center** of the rectangle,
+/// with `width` and `height` being the total width and height, because this
+/// is generally also how OpenGL tends to think about the world.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Rect {
     pub x: f32,
@@ -85,6 +108,26 @@ impl Rect {
             x: self.x,
             y: self.y,
         }
+    }
+
+    /// Returns the left edge of the `Rect`
+    pub fn left(&self) -> f32 {
+        self.x - (self.w / 2.0)
+    }
+
+    /// Returns the right edge of the `Rect`
+    pub fn right(&self) -> f32 {
+        self.x + (self.w / 2.0)
+    }
+
+    /// Returns the top edge of the `Rect`
+    pub fn top(&self) -> f32 {
+        self.y + (self.h / 2.0)
+    }
+    
+    /// Returns the bottom edge of the `Rect`
+    pub fn bottom(&self) -> f32 {
+        self.y - (self.h / 2.0)
     }
 }
 
@@ -243,6 +286,61 @@ impl From<FilterMode> for FilterMethod {
 
 /// Specifies how to wrap textures.
 pub type WrapMode = texture::WrapMode;
+
+
+pub type FullscreenType = sdl2::video::FullscreenType;
+
+/// A builder structure containing flags for defining window settings.
+#[derive(Debug, Copy, Clone)]
+pub struct WindowMode {
+    pub borderless: bool,
+    pub fullscreen_type: FullscreenType,
+    pub vsync: bool,
+    /// Minimum dimensions for resizable windows; (0, 0) means no limit
+    pub min_dimensions: (u32, u32),
+    /// Maximum dimensions for resizable windows; (0, 0) means no limit
+    pub max_dimensions: (u32, u32),
+}
+
+impl Default for WindowMode {
+    fn default() -> Self {
+        Self {
+            borderless: false,
+            fullscreen_type: sdl2::video::FullscreenType::Off,
+            vsync: true,
+            min_dimensions: (0, 0),
+            max_dimensions: (0, 0),
+        }
+    }
+}
+
+impl WindowMode {
+    pub fn borderless(mut self, borderless: bool) -> Self {
+        self.borderless = borderless;
+        self
+    }
+
+    pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
+        self.fullscreen_type = fullscreen_type;
+        self
+    }
+
+    pub fn vsync(mut self, vsync: bool) -> Self {
+        self.vsync = vsync;
+        self
+    }
+
+    pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.min_dimensions = (width, height);
+        self
+    }
+
+    pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.max_dimensions = (width, height);
+        self
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

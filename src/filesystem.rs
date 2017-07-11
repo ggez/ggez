@@ -3,14 +3,15 @@
 //! This module provides access to files in specific places:
 //!
 //! * The `resources/` subdirectory in the same directory as the
-//! program executable, 
+//! program executable,
 //! * The `resources.zip` file in the same
-//! directory as the program executable, 
-//! * The root folder of the  game's "save" directory which is in a 
+//! directory as the program executable,
+//! * The root folder of the  game's "save" directory which is in a
 //! platform-dependent location,
-//! such as `~/.local/share/<author>/<gameid>/` on Linux.  The `gameid`
-//! and `author` parts are the strings passed to
-//! `Context::load_from_conf()`.
+//! such as `~/.local/share/<gameid>/` on Linux.  The `gameid`
+//! is the the string passed to
+//! `Context::load_from_conf()`; some platforms such as Windows also
+//! incorporate the `author` string into the path.
 //!
 //! Files will be looked for in these locations in order, and the first one
 //! found used.  That allows game assets to be easily distributed as an archive
@@ -40,7 +41,7 @@ use GameResult;
 use conf;
 use vfs::{self, VFS};
 
-const CONFIG_NAME: &'static str = "conf.toml";
+const CONFIG_NAME: &'static str = "/conf.toml";
 
 /// A structure that contains the filesystem state and cache.
 #[derive(Debug)]
@@ -163,7 +164,7 @@ impl Filesystem {
             }
         }
 
-        let fs = Filesystem { 
+        let fs = Filesystem {
             vfs: overlay,
             resources_path: resources_path,
             zip_path: resources_zip_path,
@@ -256,7 +257,7 @@ impl Filesystem {
         &self.resources_path
     }
 
-    /// Returns an iterator over all files and directories in the resource directory,
+    /// Returns a list of all files and directories in the resource directory,
     /// in no particular order.
     ///
     /// Lists the base directory if an empty path is given.
@@ -271,9 +272,11 @@ impl Filesystem {
     /// Prints the contents of all data directories.
     /// Useful for debugging.
     pub fn print_all(&mut self) -> GameResult<()> {
-        /// TODO: Should tell you which source the resulting files come from...
-        for itm in self.read_dir("/")? {
-            println!("{:?}", itm);
+        for vfs in self.vfs.roots() {
+            println!("Source {:?}", vfs);
+            for itm in vfs.read_dir(path::Path::new("/"))? {
+                println!("  {:?}", itm);
+            }
         }
         Ok(())
     }
@@ -297,11 +300,12 @@ impl Filesystem {
     /// overwriting any file already there.
     pub fn write_config(&mut self, conf: &conf::Conf) -> GameResult<()> {
         let conf_path = path::Path::new(CONFIG_NAME);
+        let mut file = self.create(conf_path)?;
+        let f = conf.to_toml_file(&mut file)?;
         if self.is_file(conf_path) {
-            let mut file = self.create(conf_path)?;
-            conf.to_toml_file(&mut file)
+            Ok(f)
         } else {
-            Err(GameError::ConfigError(String::from("Could not write config file because a directory is in the way?")))
+            Err(GameError::ConfigError(format!("Failed to write config file at {}", conf_path.to_string_lossy())))
         }
     }
 }
@@ -311,9 +315,9 @@ impl Filesystem {
 mod tests {
     use error::*;
     use filesystem::*;
-    use vfs::*;
     use std::path;
     use std::io::{Read, Write};
+    use conf;
 
     fn get_dummy_fs_for_tests() -> Filesystem {
         let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -321,7 +325,7 @@ mod tests {
         let physfs = vfs::PhysicalFS::new(&path, false);
         let mut ofs = vfs::OverlayFS::new();
         ofs.push_front(Box::new(physfs));
-        Filesystem { 
+        Filesystem {
             vfs: ofs,
 
             resources_path: "".into(),
@@ -334,7 +338,7 @@ mod tests {
 
     #[test]
     fn test_file_exists() {
-        let mut f = get_dummy_fs_for_tests();
+        let f = get_dummy_fs_for_tests();
 
         let tile_file = path::Path::new("/tile.png");
         assert!(f.exists(tile_file));
@@ -351,8 +355,8 @@ mod tests {
     fn test_read_dir() {
         let mut f = get_dummy_fs_for_tests();
 
-        //let dir_contents_size = f.read_dir().unwrap().len();
-        //assert!(dir_contents_size > 0);
+        let dir_contents_size = f.read_dir("/").unwrap().len();
+        assert!(dir_contents_size > 0);
     }
 
     #[test]
@@ -398,41 +402,17 @@ mod tests {
         }
     }
 
-    //#[test]
-    //#fn test_app_dirs() {
-    //#use app_dirs::*;
-    //#use sdl2;
-
-    //     let app_info = AppInfo{name:"test", author:"ggez"};
-    //     println!("user config: {:?}", get_app_root(AppDataType::UserConfig, &app_info));
-    //     println!("user cache: {:?}", get_app_root(AppDataType::UserCache, &app_info));
-    //     println!("user data: {:?}", get_app_root(AppDataType::UserData, &app_info));
-
-    //     println!("shared config: {:?}", get_app_root(AppDataType::SharedConfig, &app_info));
-    //     println!("shared data: {:?}", get_app_root(AppDataType::SharedData, &app_info));
-
-    //     println!("SDL base path: {}", sdl2::filesystem::base_path().unwrap());
-    //     println!("SDL pref path: {}", sdl2::filesystem::pref_path("ggez", "id").unwrap());
-
-    // Okay, we want user data for data, user config for config,
-    // On Linux these map to:
-    // ~/.local/share/test
-    // ~/.config/test
-    //
-    // Plus we should search next to the exe path,
-    // AND we should search in env!(CARGO_MANIFEST_DIR) if it exists.
-    // (which is a bit hacky since we'll then end up distributing binaries
-    // that check in that dir as defined at compile time...  But hmm.)
-    //
-    // So what we really need is to search in all these places:
-    // next-to-executable
-    // CARGO_MANIFEST_DIR
-    // AppDataType::UserData for read-only data
-    // AppDataType::UserConfig for read-write data (saved games, config files)
-    // Last, zip file in ANY of the read-only data locations.
-    //
-    // This is getting complex.
-    // We're starting to really need a full VFS layer to properly overlay
-    // these things.  Look more at how physfs implements it?
-    //
+    #[test]
+    fn test_write_config() {
+        let mut f = get_dummy_fs_for_tests();
+        let conf = conf::Conf::new();
+        // The config file should end up in
+        // the resources directory with this
+        match f.write_config(&conf) {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+        // Remove the config file!
+        f.delete(CONFIG_NAME).unwrap();
+    }
 }

@@ -28,6 +28,7 @@ use context::Context;
 use GameError;
 use GameResult;
 
+//mod spritebatch;
 mod tessellation;
 mod text;
 mod types;
@@ -60,6 +61,9 @@ const QUAD_VERTS: [Vertex; 4] = [Vertex {
 const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
 type ColorFormat = gfx::format::Srgba8;
+// I don't know why this gives a dead code warning
+// since this type is definitely used... oh well.
+#[allow(dead_code)]
 type DepthFormat = gfx::format::DepthStencil;
 
 gfx_defines!{
@@ -246,7 +250,8 @@ impl GraphicsContext {
                window_title: &str,
                screen_width: u32,
                screen_height: u32,
-               vsync: bool)
+               vsync: bool,
+               resize: bool)
                -> GameResult<GraphicsContext> {
         // WINDOW SETUP
         let gl = video.gl_attr();
@@ -256,7 +261,10 @@ impl GraphicsContext {
         gl.set_green_size(5);
         gl.set_blue_size(5);
         gl.set_alpha_size(8);
-        let window_builder = video.window(window_title, screen_width, screen_height);
+        let mut window_builder = video.window(window_title, screen_width, screen_height);
+        if resize {
+            window_builder.resizable();
+        }
         let (window, gl_context, device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
@@ -270,9 +278,8 @@ impl GraphicsContext {
         // GFX SETUP
         let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer().into();
-            
-        let pso = factory
-            .create_pipeline_simple(include_bytes!("shader/basic_150.glslv"),
+
+        let pso = factory.create_pipeline_simple(include_bytes!("shader/basic_150.glslv"),
                                     include_bytes!("shader/basic_150.glslf"),
                                     pipe::new())?;
 
@@ -347,7 +354,10 @@ impl GraphicsContext {
         Ok(())
     }
 
-    /// Returns a reference to the SDL window.  Ideally you should not need to use this.
+    /// Returns a reference to the SDL window.  
+    /// Ideally you should not need to use this because ggez 
+    /// would provide all the functions you need without having
+    /// to dip into SDL itself.
     pub fn get_window(&mut self) -> &mut sdl2::video::Window {
         &mut self.window
     }
@@ -363,24 +373,31 @@ impl GraphicsContext {
     }
 
     /// EXPERIMENTAL function to get the gfx-rs `Encoder` object.
-    pub fn get_encoder(&mut self) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
+    pub fn get_encoder
+        (&mut self)
+         -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
         &mut self.encoder
     }
 
     /// EXPERIMENTAL function to get the gfx-rs depth view
-    pub fn get_depth_view(&self) -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
+    pub fn get_depth_view
+        (&self)
+         -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
         self.depth_view.clone()
     }
 
     /// EXPERIMENTAL function to get the gfx-rs color view
-    pub fn get_color_view(&self) -> gfx::handle::RenderTargetView<gfx_device_gl::Resources, (gfx::format::R8_G8_B8_A8, gfx::format::Srgb)> {
+    pub fn get_color_view(&self)
+                          -> gfx::handle::RenderTargetView<gfx_device_gl::Resources,
+                                                           (gfx::format::R8_G8_B8_A8,
+                                                            gfx::format::Srgb)> {
         self.data.out.clone()
     }
 }
 
 
 /// Creates an orthographic projection matrix.
-/// 
+///
 /// Rather than create a dependency on cgmath or nalgebra for this one function,
 /// we're just going to define it ourselves.
 fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [[f32; 4]; 4] {
@@ -530,10 +547,7 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     let x2 = x + (w / 2.0);
     let y1 = y - (h / 2.0);
     let y2 = y + (h / 2.0);
-    let pts = [[x1, y1].into(),
-               [x2, y1].into(),
-               [x2, y2].into(),
-               [x1, y2].into()];
+    let pts = [[x1, y1].into(), [x2, y1].into(), [x2, y2].into(), [x1, y2].into()];
     polygon(ctx, mode, &pts)
 }
 
@@ -587,6 +601,9 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 
 /// Returns a rectangle defining the coordinate system of the screen.
 /// It will be `Rect { x: left, y: bottom, w: width, h: height }`
+///
+/// If the Y axis increases downwards, the `height` of the Rect
+/// will be negative.
 pub fn get_screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
 }
@@ -644,6 +661,56 @@ pub fn set_screen_coordinates(context: &mut Context,
     gfx.screen_rect = Rect::new(left, bottom, (right - left), (top - bottom));
     gfx.shader_globals.transform = ortho(left, right, top, bottom, 1.0, -1.0);
     gfx.update_globals()
+}
+
+/// Sets the window mode, such as the size and other properties.
+///
+/// Setting the window mode may have side effects, such as clearing
+/// the screen or setting the screen coordinates viewport to some undefined value.
+/// It is recommended to call `set_screen_coordinates()` after changing the window
+/// size to make sure everything is what you want it to be.
+pub fn set_mode(context: &mut Context, width: u32, height: u32, mode: WindowMode) -> GameResult<()> {
+    {
+        let window = &mut context.gfx_context.get_window();
+        window.set_size(width, height)?;
+        // SDL sets "bordered" but Love2D does "not bordered";
+        // we use the Love2D convention.
+        window.set_bordered(!mode.borderless);
+        window.set_fullscreen(mode.fullscreen_type)?;
+        let (min_w, min_h) = mode.min_dimensions;
+        window.set_minimum_size(min_w, min_h)?;
+        let (max_w, max_h) = mode.max_dimensions;
+        window.set_maximum_size(max_w, max_h)?;
+    }
+    {
+        let video = context.sdl_context.video()?;
+        let vsync_int = if mode.vsync { 1 } else { 0 };
+        video.gl_set_swap_interval(vsync_int);
+    }
+    Ok(())
+}
+
+/// Returns a `Vec` of `(width, height)` tuples describing what
+/// fullscreen resolutions are available for the given display.
+pub fn get_fullscreen_modes(context: &Context, display_idx: i32) -> GameResult<Vec<(u32, u32)>> {
+    let video = context.sdl_context.video()?;
+    let display_count = video.num_video_displays()?;
+    assert!(display_idx < display_count);
+
+    let num_modes = video.num_display_modes(display_idx)?;
+
+    (0..num_modes)
+        .map(|i| video.display_mode(display_idx, i))
+        .map(|ires| ires.map_err(GameError::VideoError))
+        .map(|gres| gres.map(|dispmode| (dispmode.w as u32, dispmode.h as u32)))
+        .collect()
+}
+
+/// Returns the number of connected displays.
+pub fn get_display_count(context: &Context) -> GameResult<i32> {
+    let video = context.sdl_context.video()?;
+    video.num_video_displays()
+        .map_err(GameError::VideoError)
 }
 
 // **********************************************************************
@@ -804,26 +871,29 @@ impl Image {
             let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
             // The slice containing rgba is NOT rows x columns, it is a slice of
             // MIPMAP LEVELS.  Augh!
-            let (_, view) = factory
-                .create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
+            let (_, view) =
+                factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
             view
         } else {
             if width == 0 || height == 0 {
-                let msg = format!("Tried to create a texture of size {}x{}, each dimension must be >0", width, height);
+                let msg = format!("Tried to create a texture of size {}x{}, each dimension must \
+                                   be >0",
+                                  width,
+                                  height);
                 return Err(GameError::ResourceLoadError(msg));
             }
             let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-            let (_, view) = factory
-                .create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
+            let (_, view) =
+                factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
             view
 
         };
         Ok(Image {
-               texture: view,
-               sampler_info: *sampler_info,
-               width: width as u32,
-               height: height as u32,
-           })
+            texture: view,
+            sampler_info: *sampler_info,
+            width: width as u32,
+            height: height as u32,
+        })
     }
 
     /// A little helper function that creates a new Image that is just
@@ -929,15 +999,14 @@ pub struct Mesh {
 
 impl Mesh {
     fn from_tessellation(ctx: &mut Context, buffer: tessellation::Buffer) -> GameResult<Mesh> {
-        let (vbuf, slice) =
-            ctx.gfx_context
-                .factory
-                .create_vertex_buffer_with_slice(&buffer.vertices[..], &buffer.indices[..]);
+        let (vbuf, slice) = ctx.gfx_context
+            .factory
+            .create_vertex_buffer_with_slice(&buffer.vertices[..], &buffer.indices[..]);
 
         Ok(Mesh {
-               buffer: vbuf,
-               slice: slice,
-           })
+            buffer: vbuf,
+            slice: slice,
+        })
     }
 
     /// Create a new mesh for a line of one or more connected segments.
@@ -998,21 +1067,22 @@ impl Mesh {
     pub fn from_triangles(ctx: &mut Context, triangles: &[Point]) -> GameResult<Mesh> {
         // This is kind of non-ideal but works for now.
         let points: Vec<Vertex> = triangles.into_iter()
-            .map(|p| Vertex{
-                pos: (*p).into(),
-                uv: (*p).into(),
-            }).collect();
-        let (vbuf, slice) =
-            ctx.gfx_context
-                .factory
-                .create_vertex_buffer_with_slice(&points[..], ());
+            .map(|p| {
+                Vertex {
+                    pos: (*p).into(),
+                    uv: (*p).into(),
+                }
+            })
+            .collect();
+        let (vbuf, slice) = ctx.gfx_context
+            .factory
+            .create_vertex_buffer_with_slice(&points[..], ());
 
         Ok(Mesh {
-               buffer: vbuf,
-               slice: slice,
-           })
+            buffer: vbuf,
+            slice: slice,
+        })
     }
-
 }
 
 impl Drawable for Mesh {

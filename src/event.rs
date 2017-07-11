@@ -73,6 +73,7 @@ pub trait EventHandler {
     fn controller_button_up_event(&mut self, _btn: Button, _instance_id: i32) {}
     fn controller_axis_event(&mut self, _axis: Axis, _value: i16, _instance_id: i32) {}
 
+    /// Called when the window is shown or hidden.
     fn focus_event(&mut self, _gained: bool) {}
 
     /// Called upon a quit event.  If it returns true,
@@ -81,6 +82,11 @@ pub trait EventHandler {
         println!("Quitting game");
         false
     }
+
+    /// Called when the user resizes the window.
+    /// Is not called when you resize it yourself with
+    /// `graphics::set_mode()` though.
+    fn resize_event(&mut self, _ctx: &mut Context, _width: u32, _height: u32) {}
 }
 
 /// Runs the game's main loop, calling event callbacks on the given state
@@ -156,6 +162,9 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                     }
                     Window { win_event: event::WindowEvent::FocusLost, .. } => {
                         state.focus_event(false)
+                    }
+                    Window { win_event: event::WindowEvent::Resized(w,h), .. } => {
+                        state.resize_event(ctx, w as u32, h as u32);
                     }
                     _ => {}
                 }
