@@ -73,6 +73,7 @@ pub trait EventHandler {
     fn controller_button_up_event(&mut self, _btn: Button, _instance_id: i32) {}
     fn controller_axis_event(&mut self, _axis: Axis, _value: i16, _instance_id: i32) {}
 
+    /// Called when the window is shown or hidden.
     fn focus_event(&mut self, _gained: bool) {}
 
     /// Called upon a quit event.  If it returns true,
