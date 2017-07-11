@@ -250,7 +250,8 @@ impl GraphicsContext {
                window_title: &str,
                screen_width: u32,
                screen_height: u32,
-               vsync: bool)
+               vsync: bool,
+               resize: bool)
                -> GameResult<GraphicsContext> {
         // WINDOW SETUP
         let gl = video.gl_attr();
@@ -260,7 +261,10 @@ impl GraphicsContext {
         gl.set_green_size(5);
         gl.set_blue_size(5);
         gl.set_alpha_size(8);
-        let window_builder = video.window(window_title, screen_width, screen_height);
+        let mut window_builder = video.window(window_title, screen_width, screen_height);
+        if resize {
+            window_builder.resizable();
+        }
         let (window, gl_context, device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 

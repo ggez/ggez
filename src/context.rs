@@ -89,7 +89,8 @@ impl Context {
                                                               &conf.window_title,
                                                               conf.window_width,
                                                               conf.window_height,
-                                                              conf.vsync)?;
+                                                              conf.vsync,
+                                                              conf.resizable)?;
         let gamepad_context = input::GamepadContext::new(&sdl_context)?;
 
         let mut ctx = Context {
