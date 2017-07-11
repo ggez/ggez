@@ -81,6 +81,11 @@ pub trait EventHandler {
         println!("Quitting game");
         false
     }
+
+    /// Called when the user resizes the window.
+    /// Is not called when you resize it yourself with
+    /// `graphics::set_mode()` though.
+    fn resize_event(&mut self, _ctx: &mut Context, _width: u32, _height: u32) {}
 }
 
 /// Runs the game's main loop, calling event callbacks on the given state
@@ -156,6 +161,9 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                     }
                     Window { win_event: event::WindowEvent::FocusLost, .. } => {
                         state.focus_event(false)
+                    }
+                    Window { win_event: event::WindowEvent::Resized(w,h), .. } => {
+                        state.resize_event(ctx, w as u32, h as u32);
                     }
                     _ => {}
                 }
