@@ -296,6 +296,10 @@ pub struct WindowMode {
     pub borderless: bool,
     pub fullscreen_type: FullscreenType,
     pub vsync: bool,
+    /// Minimum dimensions for resizable windows; (0, 0) means no limit
+    pub min_dimensions: (u32, u32),
+    /// Maximum dimensions for resizable windows; (0, 0) means no limit
+    pub max_dimensions: (u32, u32),
 }
 
 impl Default for WindowMode {
@@ -303,7 +307,9 @@ impl Default for WindowMode {
         Self {
             borderless: false,
             fullscreen_type: sdl2::video::FullscreenType::Off,
-            vsync: true
+            vsync: true,
+            min_dimensions: (0, 0),
+            max_dimensions: (0, 0),
         }
     }
 }
@@ -321,6 +327,16 @@ impl WindowMode {
 
     pub fn vsync(mut self, vsync: bool) -> Self {
         self.vsync = vsync;
+        self
+    }
+
+    pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.min_dimensions = (width, height);
+        self
+    }
+
+    pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.max_dimensions = (width, height);
         self
     }
 }

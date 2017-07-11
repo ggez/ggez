@@ -3,6 +3,7 @@
  * Fixed bug in conf.toml reading and writing (thanks chinatsu)
  * Made filesystem.print_all() a little more informative
  * Added graphics::set_mode() function to allow setting window size, etc.
+ * Added some functions to allow querying fullscreen modes and such
  * Made gamepad example test all input
  * Added bindings to the `mint` crate (a whole one type conversion)
  * Implemented stop() for audio

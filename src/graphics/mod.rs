@@ -665,8 +665,10 @@ pub fn set_screen_coordinates(context: &mut Context,
 
 /// Sets the window mode, such as the size and other properties.
 ///
-/// Setting the display mode may have side effects, such as clearing
-/// the screen or setting the window coordinates to 
+/// Setting the window mode may have side effects, such as clearing
+/// the screen or setting the screen coordinates viewport to some undefined value.
+/// It is recommended to call `set_screen_coordinates()` after changing the window
+/// size to make sure everything is what you want it to be.
 pub fn set_mode(context: &mut Context, width: u32, height: u32, mode: WindowMode) -> GameResult<()> {
     {
         let window = &mut context.gfx_context.get_window();
@@ -675,6 +677,10 @@ pub fn set_mode(context: &mut Context, width: u32, height: u32, mode: WindowMode
         // we use the Love2D convention.
         window.set_bordered(!mode.borderless);
         window.set_fullscreen(mode.fullscreen_type)?;
+        let (min_w, min_h) = mode.min_dimensions;
+        window.set_minimum_size(min_w, min_h)?;
+        let (max_w, max_h) = mode.max_dimensions;
+        window.set_maximum_size(max_w, max_h)?;
     }
     {
         let video = context.sdl_context.video()?;
@@ -682,6 +688,29 @@ pub fn set_mode(context: &mut Context, width: u32, height: u32, mode: WindowMode
         video.gl_set_swap_interval(vsync_int);
     }
     Ok(())
+}
+
+/// Returns a `Vec` of `(width, height)` tuples describing what
+/// fullscreen resolutions are available for the given display.
+pub fn get_fullscreen_modes(context: &Context, display_idx: i32) -> GameResult<Vec<(u32, u32)>> {
+    let video = context.sdl_context.video()?;
+    let display_count = video.num_video_displays()?;
+    assert!(display_idx < display_count);
+
+    let num_modes = video.num_display_modes(display_idx)?;
+
+    (0..num_modes)
+        .map(|i| video.display_mode(display_idx, i))
+        .map(|ires| ires.map_err(GameError::VideoError))
+        .map(|gres| gres.map(|dispmode| (dispmode.w as u32, dispmode.h as u32)))
+        .collect()
+}
+
+/// Returns the number of connected displays.
+pub fn get_display_count(context: &Context) -> GameResult<i32> {
+    let video = context.sdl_context.video()?;
+    video.num_video_displays()
+        .map_err(GameError::VideoError)
 }
 
 // **********************************************************************
