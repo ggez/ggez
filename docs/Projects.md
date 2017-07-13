@@ -3,6 +3,16 @@ submit a PR, please!
 
 # Games!
 
-# Examples/tutorials
+ * <https://github.com/obsoke/rustris>
+
+# Examples/tutorial code
+
+ * <https://github.com/Maplicant/purplerain>
 
 # Tools/add-ons
+
+ * <https://github.com/ggez/ggez-gooodies> (incomplete, and crashes rustc 1.18, but maybe useful to someone)
+
+# Written things
+
+ * [Rustris Postmortem](http://dale.io/blog/rustris-post-mortem.html)
