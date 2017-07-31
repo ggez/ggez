@@ -10,6 +10,7 @@ use super::*;
 
 /// A font that defines the shape of characters drawn on the screen.
 /// Can be created from a .ttf file or from an image (bitmap fonts).
+#[derive(Clone)]
 pub enum Font {
     TTFFont {
         font: rusttype::Font<'static>,
@@ -203,6 +204,7 @@ impl fmt::Debug for Font {
 }
 
 /// Drawable text created from a `Font`.
+#[derive(Clone)]
 pub struct Text {
     texture: Image,
     contents: String,

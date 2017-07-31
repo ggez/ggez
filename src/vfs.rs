@@ -39,7 +39,7 @@ impl<T> VFile for T where T: Read + Write + Seek + Debug {}
 ///
 /// We need our own version of this structure because the one in
 /// std annoyingly doesn't let you get data out of it.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct OpenOptions {
     read: bool,
     write: bool,
@@ -153,11 +153,13 @@ pub trait VMetadata {
 /// file heirarchy.
 ///
 /// It IS allowed to have symlinks in it!  For now.
+#[derive(Clone)]
 pub struct PhysicalFS {
     root: PathBuf,
     readonly: bool,
 }
 
+#[derive(Debug, Clone)]
 pub struct PhysicalMetadata(fs::Metadata);
 
 impl VMetadata for PhysicalMetadata {
@@ -369,6 +371,7 @@ impl OverlayFS {
     /// Adds a new VFS to the front of the list.
     /// Currently unused, I suppose, but good to
     /// have at least for tests.
+    #[allow(dead_code)]
     pub fn push_front(&mut self, fs: Box<VFS>) {
         self.roots.push_front(fs);
     }
@@ -519,6 +522,7 @@ impl ZipFS {
 /// rental, re-implementing Seek on compressed data, making multiple zip
 /// zip file objects share a single file handle, or any of that
 /// other nonsense.
+#[derive(Clone)]
 pub struct ZipFileWrapper {
     buffer: io::Cursor<Vec<u8>>,
 }
@@ -561,6 +565,7 @@ impl Debug for ZipFileWrapper {
 }
 
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 struct ZipMetadata {
     len: u64,
     is_dir: bool,
