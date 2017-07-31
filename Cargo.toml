@@ -32,12 +32,12 @@ codegen-units=4
 [dependencies]
 rusttype = "0.2"
 rand = "0.3"
-zip = "0.1"
+zip = "0.2"
 app_dirs = "1.1"
-gfx = "0.15"
+gfx = "0.16"
 gfx_device_gl = "0.14"
 gfx_window_sdl = "0.6"
-image = "0.12"
+image = "0.15"
 sdl2 = "0.29"
 rodio = "0.5.1"
 serde = "1.0"
@@ -47,4 +47,4 @@ lyon = "0.4.1"
 mint = { version = "0.4", optional = true }
 
 [dev-dependencies]
-cgmath = "0.14"
+cgmath = "0.15"
