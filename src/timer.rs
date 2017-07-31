@@ -24,8 +24,8 @@ use std::thread;
 /// It's not quite a ring buffer 'cause you can't
 /// remove items from it, it just holds the last N
 /// things.
-#[derive(Debug)]
-struct LogBuffer<T> {
+#[derive(Debug, Clone)]
+struct LogBuffer<T> where T: Clone {
     head: usize,
     size: usize,
     contents: Vec<T>,
