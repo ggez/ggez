@@ -371,6 +371,7 @@ impl OverlayFS {
     /// Adds a new VFS to the front of the list.
     /// Currently unused, I suppose, but good to
     /// have at least for tests.
+    #[allow(dead_code)]
     pub fn push_front(&mut self, fs: Box<VFS>) {
         self.roots.push_front(fs);
     }
