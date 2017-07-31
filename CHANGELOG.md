@@ -1,3 +1,8 @@
+# 0.3.3
+
+ * Documentation and unit test updates
+ * Derive some common traits on types
+
 # 0.3.2
 
  * Fixed bug in conf.toml reading and writing (thanks chinatsu)
