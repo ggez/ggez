@@ -12,6 +12,10 @@ Please [report bugs](https://github.com/ggez/ggez/issues) and open issues genero
 
 > ***Please Note:*** ggez is written by volunteers. If you encounter a problem while using it, we'll do our best to help you, but the authors cannot offer any support.
 
+### Finding things to work on
+
+Known bugs and feature requests are all in the [issue tracker](https://github.com/ggez/ggez/issues) so that's a good place to start looking for places to help.  Bugs marked `*EASY*` are fairly self-contained and probably don't need lots and lots of research.  Bugs marked `*LESS EASY*` will require a bit of finesse, or larger/broader changes to the library.
+
 ### Submitting a pull request
 
 * [Fork](https://github.com/ggez/ggez/fork) and clone the repository
