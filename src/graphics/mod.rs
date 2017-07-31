@@ -992,6 +992,7 @@ impl Drawable for Image {
 }
 
 /// 2D polygon mesh
+#[derive(Debug, Clone, PartialEq)]
 pub struct Mesh {
     buffer: gfx::handle::Buffer<gfx_device_gl::Resources, Vertex>,
     slice: gfx::Slice<gfx_device_gl::Resources>,
