@@ -482,9 +482,9 @@ pub fn circle(ctx: &mut Context,
               mode: DrawMode,
               point: Point,
               radius: f32,
-              segments: u32)
+              tolerance: f32)
               -> GameResult<()> {
-    let m = Mesh::new_circle(ctx, mode, point, radius, segments)?;
+    let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
     m.draw(ctx, Point::default(), 0.0)
 }
 
@@ -1058,7 +1058,7 @@ impl Mesh {
                       mode: DrawMode,
                       point: Point,
                       radius: f32,
-                      segments: u32)
+                      tolerance: f32)
                       -> GameResult<Mesh> {
         {
             let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
@@ -1068,13 +1068,13 @@ impl Mesh {
                     // different types; one is GeometryBuilder<StrokeVertex> and the other is
                     // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::fill_circle(t::math::point(point.x, point.y), radius, 1.0, builder);
+                    t::basic_shapes::fill_circle(t::math::point(point.x, point.y), radius, tolerance, builder);
                 },
                 DrawMode::Line => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let options = t::StrokeOptions::default()
                         .with_line_width(ctx.gfx_context.line_width)
-                        .with_tolerance(1.0);
+                        .with_tolerance(tolerance);
                     t::basic_shapes::stroke_circle(t::math::point(point.x, point.y), radius, &options, builder);
                 }
             };
