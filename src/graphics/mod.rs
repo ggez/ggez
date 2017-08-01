@@ -1011,6 +1011,15 @@ impl t::VertexConstructor<t::FillVertex, Vertex> for VertexBuilder {
     }
 }
 
+impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
+    fn new_vertex(&mut self, vertex: t::StrokeVertex) -> Vertex {
+        Vertex {
+            pos: [vertex.position.x, vertex.position.y],
+            uv: [0.0, 0.0],
+        }
+    }
+}
+
 impl Mesh {
     /*
     fn from_tessellation(ctx: &mut Context, buffer: tessellation::Buffer) -> GameResult<Mesh> {
@@ -1026,8 +1035,6 @@ impl Mesh {
 */
 
     fn from_vbuf(ctx: &mut Context, buffer: &t::geometry_builder::VertexBuffers<Vertex>) -> GameResult<Mesh> {
-        unimplemented!()
-        /*
         let (vbuf, slice) = ctx.gfx_context
             .factory
             .create_vertex_buffer_with_slice(&buffer.vertices[..], &buffer.indices[..]);
@@ -1036,7 +1043,6 @@ impl Mesh {
             buffer: vbuf,
             slice: slice,
         })
-*/
     }
 
     
@@ -1054,17 +1060,27 @@ impl Mesh {
                       radius: f32,
                       segments: u32)
                       -> GameResult<Mesh> {
-        let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
         {
-            //let builder: &mut t::GeometryBuilder<_> = &mut t::geometry_builder::simple_builder(buffers);
-            let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+            let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
             match mode {
-                DrawMode::Fill => t::basic_shapes::fill_circle(t::math::point(point.x, point.y), radius, 1.0, builder),
-                DrawMode::Line => unimplemented!(),
+                DrawMode::Fill => {
+                    // These builders have to be in separate match arms 'cause they're actually
+                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
+                    // GeometryBuilder<FillVertex>
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    t::basic_shapes::fill_circle(t::math::point(point.x, point.y), radius, 1.0, builder);
+                },
+                DrawMode::Line => {
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let options = t::StrokeOptions::default()
+                        .with_line_width(ctx.gfx_context.line_width)
+                        .with_tolerance(1.0);
+                    t::basic_shapes::stroke_circle(t::math::point(point.x, point.y), radius, &options, builder);
+                }
             };
+            Mesh::from_vbuf(ctx, buffers)
         }
 
-        Mesh::from_vbuf(ctx, buffers)
     }
 
     /// Create a new mesh for an ellipse.
