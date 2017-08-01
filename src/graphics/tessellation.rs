@@ -4,10 +4,10 @@ use lyon::path_iterator::PathIterator;
 use lyon::tessellation;
 use lyon::tessellation::basic_shapes;
 use lyon::tessellation::math;
-use lyon::tessellation::path_stroke;
-use lyon::tessellation::path_fill;
+//use lyon::tessellation::path_stroke;
+//use lyon::tessellation::path_fill;
 use lyon::tessellation::geometry_builder;
-
+/*
 use super::{Point, Vertex};
 use GameError;
 use GameResult;
@@ -108,3 +108,4 @@ pub fn build_ellipse_fill(point: Point, r1: f32, r2: f32, segments: u32) -> Game
         Ok::<_, ()>(count)
     })
 }
+*/

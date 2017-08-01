@@ -29,7 +29,7 @@ use GameError;
 use GameResult;
 
 //mod spritebatch;
-mod tessellation;
+//mod tessellation;
 mod text;
 mod types;
 
@@ -998,7 +998,21 @@ pub struct Mesh {
     slice: gfx::Slice<gfx_device_gl::Resources>,
 }
 
+use lyon::tessellation as t;
+
+struct VertexBuilder;
+
+impl t::VertexConstructor<t::FillVertex, Vertex> for VertexBuilder {
+    fn new_vertex(&mut self, vertex: t::FillVertex) -> Vertex {
+        Vertex {
+            pos: [vertex.position.x, vertex.position.y],
+            uv: [0.0, 0.0],
+        }
+    }
+}
+
 impl Mesh {
+    /*
     fn from_tessellation(ctx: &mut Context, buffer: tessellation::Buffer) -> GameResult<Mesh> {
         let (vbuf, slice) = ctx.gfx_context
             .factory
@@ -1009,10 +1023,27 @@ impl Mesh {
             slice: slice,
         })
     }
+*/
 
+    fn from_vbuf(ctx: &mut Context, buffer: &t::geometry_builder::VertexBuffers<Vertex>) -> GameResult<Mesh> {
+        unimplemented!()
+        /*
+        let (vbuf, slice) = ctx.gfx_context
+            .factory
+            .create_vertex_buffer_with_slice(&buffer.vertices[..], &buffer.indices[..]);
+
+        Ok(Mesh {
+            buffer: vbuf,
+            slice: slice,
+        })
+*/
+    }
+
+    
     /// Create a new mesh for a line of one or more connected segments.
     pub fn new_line(ctx: &mut Context, points: &[Point], width: f32) -> GameResult<Mesh> {
-        Mesh::from_tessellation(ctx, tessellation::build_line(points, width)?)
+        unimplemented!()
+        //Mesh::from_tessellation(ctx, t::build_line(points, width)?)
     }
 
     /// Create a new mesh for a circle.
@@ -1023,12 +1054,17 @@ impl Mesh {
                       radius: f32,
                       segments: u32)
                       -> GameResult<Mesh> {
-        let buf = match mode {
-            DrawMode::Fill => tessellation::build_ellipse_fill(point, radius, radius, segments),
-            DrawMode::Line => unimplemented!(),
-        }?;
+        let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
+        {
+            //let builder: &mut t::GeometryBuilder<_> = &mut t::geometry_builder::simple_builder(buffers);
+            let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+            match mode {
+                DrawMode::Fill => t::basic_shapes::fill_circle(t::math::point(point.x, point.y), radius, 1.0, builder),
+                DrawMode::Line => unimplemented!(),
+            };
+        }
 
-        Mesh::from_tessellation(ctx, buf)
+        Mesh::from_vbuf(ctx, buffers)
     }
 
     /// Create a new mesh for an ellipse.
@@ -1040,12 +1076,15 @@ impl Mesh {
                        radius2: f32,
                        segments: u32)
                        -> GameResult<Mesh> {
+        unimplemented!()
+            /*
         let buf = match mode {
             DrawMode::Fill => tessellation::build_ellipse_fill(point, radius1, radius2, segments),
             DrawMode::Line => unimplemented!(),
         }?;
 
         Mesh::from_tessellation(ctx, buf)
+*/
     }
 
     /// Create a new mesh for a closed polygon.
@@ -1054,12 +1093,15 @@ impl Mesh {
                        points: &[Point],
                        width: f32)
                        -> GameResult<Mesh> {
+        unimplemented!()
+            /*
         let buf = match mode {
             DrawMode::Fill => tessellation::build_polygon_fill(points),
             DrawMode::Line => tessellation::build_polygon(points, width),
         }?;
 
         Mesh::from_tessellation(ctx, buf)
+*/
     }
 
     /// Create a new `Mesh` from a raw list of triangles.

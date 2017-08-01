@@ -43,7 +43,7 @@ rodio = "0.5.1"
 serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
-lyon = "0.4.1"
+lyon = "0.7"
 mint = { version = "0.4", optional = true }
 
 [dev-dependencies]
