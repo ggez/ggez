@@ -1,3 +1,7 @@
+# 0.4.0 (IN PROGRESS)
+
+ * Updated all dependencies (except SDL2) to newer versions
+
 # 0.3.3
 
  * Documentation and unit test updates
