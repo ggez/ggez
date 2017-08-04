@@ -101,7 +101,7 @@ impl event::EventHandler for MainState {
             32,
         )?;
 
-        graphics::circle(ctx, DrawMode::Fill, Point { x: 600.0, y: 380.0 }, 40.0, 32)?;
+        graphics::circle(ctx, DrawMode::Fill, Point { x: 600.0, y: 380.0 }, 40.0, 32.0)?;
 
         graphics::present(ctx);
         Ok(())

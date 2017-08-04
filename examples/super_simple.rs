@@ -30,7 +30,7 @@ impl event::EventHandler for MainState {
                 y: 380.0,
             },
             100.0,
-            32,
+            32.0,
         )?;
         graphics::present(ctx);
         Ok(())

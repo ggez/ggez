@@ -7,7 +7,6 @@ extern crate cgmath;
 
 use cgmath::{Deg, Matrix4, Point3, Vector3};
 use gfx::texture;
-use gfx::traits::Device;
 use gfx::traits::FactoryExt;
 use gfx::Factory;
 
@@ -80,7 +79,7 @@ impl MainState {
         let depth_view = gfx.get_depth_view();
         let factory = gfx.get_factory();
 
-        let vs = r#"#version 150 core
+        let vs = br#"#version 150 core
 
 in vec4 a_Pos;
 in vec2 a_TexCoord;
@@ -94,8 +93,8 @@ void main() {
     v_TexCoord = a_TexCoord;
     gl_Position = u_Transform * a_Pos;
     gl_ClipDistance[0] = 1.0;
-}"#.as_bytes();
-        let fs = r#"#version 150 core
+}"#;
+        let fs = br#"#version 150 core
 
 in vec2 v_TexCoord;
 out vec4 Target0;
@@ -105,7 +104,7 @@ void main() {
     vec4 tex = texture(t_Color, v_TexCoord);
     float blend = dot(v_TexCoord-vec2(0.5,0.5), v_TexCoord-vec2(0.5,0.5));
     Target0 = mix(tex, vec4(0.0,0.0,0.0,0.0), blend*1.0);
-}"#.as_bytes();
+}"#;
 
         let vertex_data = [
             // top (0, 0, 1)
@@ -178,15 +177,14 @@ void main() {
 
         let encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
-        let s = MainState {
+        MainState {
             text: text,
             frames: 0,
             data: data,
             pso: pso,
             encoder: encoder,
             slice: slice,
-        };
-        s
+        }
     }
 }
 
@@ -197,10 +195,6 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let dest_point = graphics::Point::new(
-            self.text.width() as f32 / 2.0 + 10.0,
-            self.text.height() as f32 / 2.0 + 10.0,
-        );
         // self.encoder.clear(&self.data.out_color, [0.3, 0.2, 0.1, 1.0].into());
         // self.encoder.draw(&self.slice, &self.pso, &self.data);
         // self.encoder.flush(ctx.gfx_context.get_device());

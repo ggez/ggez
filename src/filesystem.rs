@@ -305,9 +305,9 @@ impl Filesystem {
     pub fn write_config(&mut self, conf: &conf::Conf) -> GameResult<()> {
         let conf_path = path::Path::new(CONFIG_NAME);
         let mut file = self.create(conf_path)?;
-        let f = conf.to_toml_file(&mut file)?;
+        conf.to_toml_file(&mut file)?;
         if self.is_file(conf_path) {
-            Ok(f)
+            Ok(())
         } else {
             Err(GameError::ConfigError(format!(
                 "Failed to write config file at {}",

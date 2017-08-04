@@ -299,7 +299,7 @@ fn render_ttf(
                 {
                     let x = x as usize * bytes_per_pixel;
                     let y = y as usize;
-                    pixel_data[(x + y * pitch + 0)] = 255;
+                    pixel_data[(x + y * pitch)] = 255;
                     pixel_data[(x + y * pitch + 1)] = 255;
                     pixel_data[(x + y * pitch + 2)] = 255;
                     pixel_data[(x + y * pitch + 3)] = c;

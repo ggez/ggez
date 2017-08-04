@@ -256,17 +256,16 @@ impl Debug for PhysicalFS {
 impl VFS for PhysicalFS {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
-        if self.readonly {
-            if open_options.write || open_options.create || open_options.append ||
-                open_options.truncate
-            {
-                let msg = format!(
-                    "Cannot alter file {:?} in root {:?}, filesystem read-only",
-                    path,
-                    self
-                );
-                return Err(GameError::FilesystemError(msg));
-            }
+        if self.readonly &&
+            (open_options.write || open_options.create || open_options.append ||
+                open_options.truncate)
+        {
+            let msg = format!(
+                "Cannot alter file {:?} in root {:?}, filesystem read-only",
+                path,
+                self
+            );
+            return Err(GameError::FilesystemError(msg));
         }
         let p = self.get_absolute(path)?;
         open_options

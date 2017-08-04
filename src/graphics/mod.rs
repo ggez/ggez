@@ -483,18 +483,20 @@ pub fn present(ctx: &mut Context) {
     gfx.device.cleanup();
 }
 
+/*
 // Draw an arc.
 // Punting on this until later.
-// pub fn arc(_ctx: &mut Context,
-//            _mode: DrawMode,
-//            _point: Point,
-//            _radius: f32,
-//            _angle1: f32,
-//            _angle2: f32,
-//            _segments: u32)
-//            -> GameResult<()> {
-//     unimplemented!();
-// }
+pub fn arc(_ctx: &mut Context,
+           _mode: DrawMode,
+           _point: Point,
+           _radius: f32,
+           _angle1: f32,
+           _angle2: f32,
+           _segments: u32)
+           -> GameResult<()> {
+    unimplemented!();
+}
+*/
 
 /// Draw a circle.
 pub fn circle(
@@ -1096,7 +1098,8 @@ impl Mesh {
 
 
     /// Create a new mesh for a line of one or more connected segments.
-    pub fn new_line(ctx: &mut Context, points: &[Point], width: f32) -> GameResult<Mesh> {
+    /// WIP, sorry
+    pub fn new_line(_ctx: &mut Context, _points: &[Point], _width: f32) -> GameResult<Mesh> {
         unimplemented!()
         //Mesh::from_tessellation(ctx, t::build_line(points, width)?)
     }
@@ -1146,12 +1149,12 @@ impl Mesh {
     /// Create a new mesh for an ellipse.
     /// Stroked ellipses are still WIP, sorry.
     pub fn new_ellipse(
-        ctx: &mut Context,
-        mode: DrawMode,
-        point: Point,
-        radius1: f32,
-        radius2: f32,
-        segments: u32,
+        _ctx: &mut Context,
+        _mode: DrawMode,
+        _point: Point,
+        _radius1: f32,
+        _radius2: f32,
+        _segments: u32,
     ) -> GameResult<Mesh> {
         unimplemented!()
         /*
@@ -1165,11 +1168,12 @@ impl Mesh {
     }
 
     /// Create a new mesh for a closed polygon.
+    /// WIP, sorry
     pub fn new_polygon(
-        ctx: &mut Context,
-        mode: DrawMode,
-        points: &[Point],
-        width: f32,
+        _ctx: &mut Context,
+        _mode: DrawMode,
+        _points: &[Point],
+        _width: f32,
     ) -> GameResult<Mesh> {
         unimplemented!()
         /*
