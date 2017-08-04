@@ -617,6 +617,11 @@ impl EventHandler for MainState {
 
         // Then we flip the screen...
         graphics::present(ctx);
+        // And sleep for 0 seconds.
+        // This tells the OS that we're done using the CPU but it should 
+        // get back to this program as soon as it can.
+        // This prevents the game from using 100% CPU all the time
+        // even if vsync is off.
         timer::sleep(Duration::from_secs(0));
         Ok(())
     }
