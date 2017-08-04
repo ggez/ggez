@@ -7,13 +7,12 @@ extern crate cgmath;
 
 use cgmath::{Deg, Matrix4, Point3, Vector3};
 use gfx::texture;
-use gfx::traits::Device;
 use gfx::traits::FactoryExt;
 use gfx::Factory;
 
 use ggez::conf;
 use ggez::event;
-use ggez::{GameResult, Context};
+use ggez::{Context, GameResult};
 use ggez::graphics;
 use std::time::Duration;
 
@@ -80,7 +79,7 @@ impl MainState {
         let depth_view = gfx.get_depth_view();
         let factory = gfx.get_factory();
 
-        let vs = r#"#version 150 core
+        let vs = br#"#version 150 core
 
 in vec4 a_Pos;
 in vec2 a_TexCoord;
@@ -94,8 +93,8 @@ void main() {
     v_TexCoord = a_TexCoord;
     gl_Position = u_Transform * a_Pos;
     gl_ClipDistance[0] = 1.0;
-}"#.as_bytes();
-        let fs = r#"#version 150 core
+}"#;
+        let fs = br#"#version 150 core
 
 in vec2 v_TexCoord;
 out vec4 Target0;
@@ -105,41 +104,42 @@ void main() {
     vec4 tex = texture(t_Color, v_TexCoord);
     float blend = dot(v_TexCoord-vec2(0.5,0.5), v_TexCoord-vec2(0.5,0.5));
     Target0 = mix(tex, vec4(0.0,0.0,0.0,0.0), blend*1.0);
-}"#.as_bytes();
+}"#;
 
         let vertex_data = [
             // top (0, 0, 1)
-            Vertex::new([-100, -100,  100], [0, 0]),
-            Vertex::new([ 100, -100,  100], [1, 0]),
-            Vertex::new([ 100,  100,  100], [1, 1]),
-            Vertex::new([-100,  100,  100], [0, 1]),
+            Vertex::new([-100, -100, 100], [0, 0]),
+            Vertex::new([100, -100, 100], [1, 0]),
+            Vertex::new([100, 100, 100], [1, 1]),
+            Vertex::new([-100, 100, 100], [0, 1]),
             // bottom (0, 0, -1)
-            Vertex::new([-100,  100, -100], [1, 0]),
-            Vertex::new([ 100,  100, -100], [0, 0]),
-            Vertex::new([ 100, -100, -100], [0, 1]),
+            Vertex::new([-100, 100, -100], [1, 0]),
+            Vertex::new([100, 100, -100], [0, 0]),
+            Vertex::new([100, -100, -100], [0, 1]),
             Vertex::new([-100, -100, -100], [1, 1]),
             // right (1, 0, 0)
-            Vertex::new([ 100, -100, -100], [0, 0]),
-            Vertex::new([ 100,  100, -100], [1, 0]),
-            Vertex::new([ 100,  100,  100], [1, 1]),
-            Vertex::new([ 100, -100,  100], [0, 1]),
+            Vertex::new([100, -100, -100], [0, 0]),
+            Vertex::new([100, 100, -100], [1, 0]),
+            Vertex::new([100, 100, 100], [1, 1]),
+            Vertex::new([100, -100, 100], [0, 1]),
             // left (-1, 0, 0)
-            Vertex::new([-100, -100,  100], [1, 0]),
-            Vertex::new([-100,  100,  100], [0, 0]),
-            Vertex::new([-100,  100, -100], [0, 1]),
+            Vertex::new([-100, -100, 100], [1, 0]),
+            Vertex::new([-100, 100, 100], [0, 0]),
+            Vertex::new([-100, 100, -100], [0, 1]),
             Vertex::new([-100, -100, -100], [1, 1]),
             // front (0, 1, 0)
-            Vertex::new([ 100,  100, -100], [1, 0]),
-            Vertex::new([-100,  100, -100], [0, 0]),
-            Vertex::new([-100,  100,  100], [0, 1]),
-            Vertex::new([ 100,  100,  100], [1, 1]),
+            Vertex::new([100, 100, -100], [1, 0]),
+            Vertex::new([-100, 100, -100], [0, 0]),
+            Vertex::new([-100, 100, 100], [0, 1]),
+            Vertex::new([100, 100, 100], [1, 1]),
             // back (0, -1, 0)
-            Vertex::new([ 100, -100,  100], [0, 0]),
-            Vertex::new([-100, -100,  100], [1, 0]),
+            Vertex::new([100, -100, 100], [0, 0]),
+            Vertex::new([-100, -100, 100], [1, 0]),
             Vertex::new([-100, -100, -100], [1, 1]),
-            Vertex::new([ 100, -100, -100], [0, 1]),
+            Vertex::new([100, -100, -100], [0, 1]),
         ];
 
+        #[cfg_attr(rustfmt, rustfmt_skip)]
         let index_data: &[u16] = &[
              0,  1,  2,  2,  3,  0, // top
              4,  5,  6,  6,  7,  4, // bottom
@@ -152,21 +152,19 @@ void main() {
         let (vbuf, slice) = factory.create_vertex_buffer_with_slice(&vertex_data, index_data);
 
         let texels = [[0x20, 0xA0, 0xC0, 0x00]];
-        let (_, texture_view) = factory.create_texture_immutable::<gfx::format::Rgba8>(
-            texture::Kind::D2(1, 1, texture::AaMode::Single), &[&texels]
-            ).unwrap();
+        let (_, texture_view) = factory
+            .create_texture_immutable::<gfx::format::Rgba8>(
+                texture::Kind::D2(1, 1, texture::AaMode::Single),
+                &[&texels],
+            )
+            .unwrap();
 
-        let sinfo = texture::SamplerInfo::new(
-            texture::FilterMethod::Bilinear,
-            texture::WrapMode::Clamp);
+        let sinfo =
+            texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
 
-        let pso = factory.create_pipeline_simple(
-            vs,
-            fs,
-            pipe::new()
-        ).unwrap();
+        let pso = factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap();
 
-        let proj = cgmath::perspective(Deg(45.0f32), 4.0/3.0, 1.0, 10.0);
+        let proj = cgmath::perspective(Deg(45.0f32), 4.0 / 3.0, 1.0, 10.0);
 
         let data = pipe::Data {
             vbuf: vbuf,
@@ -179,16 +177,14 @@ void main() {
 
         let encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
-        let s = MainState {
+        MainState {
             text: text,
             frames: 0,
-
             data: data,
             pso: pso,
             encoder: encoder,
             slice: slice,
-        };
-        s
+        }
     }
 }
 
@@ -199,8 +195,6 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let dest_point = graphics::Point::new(self.text.width() as f32 / 2.0 + 10.0,
-                                              self.text.height() as f32 / 2.0 + 10.0);
         // self.encoder.clear(&self.data.out_color, [0.3, 0.2, 0.1, 1.0].into());
         // self.encoder.draw(&self.slice, &self.pso, &self.data);
         // self.encoder.flush(ctx.gfx_context.get_device());
@@ -212,8 +206,10 @@ impl event::EventHandler for MainState {
         }
 
 
-        let dest_point = graphics::Point::new(self.text.width() as f32 / 2.0 + 10.0,
-                                              self.text.height() as f32 / 2.0 + 10.0);
+        let dest_point = graphics::Point::new(
+            self.text.width() as f32 / 2.0 + 10.0,
+            self.text.height() as f32 / 2.0 + 10.0,
+        );
         graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         graphics::present(ctx);
         self.frames += 1;

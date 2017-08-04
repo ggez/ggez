@@ -124,7 +124,7 @@ impl Rect {
     pub fn top(&self) -> f32 {
         self.y + (self.h / 2.0)
     }
-    
+
     /// Returns the bottom edge of the `Rect`
     pub fn bottom(&self) -> f32 {
         self.y - (self.h / 2.0)

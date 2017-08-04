@@ -8,7 +8,7 @@ extern crate rand;
 use ggez::audio;
 use ggez::conf;
 use ggez::event::*;
-use ggez::{GameResult, Context};
+use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::timer;
 use std::time::Duration;
@@ -321,13 +321,13 @@ impl Assets {
         let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
         let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
         Ok(Assets {
-               player_image: player_image,
-               shot_image: shot_image,
-               rock_image: rock_image,
-               font: font,
-               shot_sound: shot_sound,
-               hit_sound: hit_sound,
-           })
+            player_image: player_image,
+            shot_image: shot_image,
+            rock_image: rock_image,
+            font: font,
+            shot_sound: shot_sound,
+            hit_sound: hit_sound,
+        })
     }
 
     fn actor_image(&mut self, actor: &Actor) -> &mut graphics::Image {
@@ -500,11 +500,12 @@ fn print_instructions() {
 }
 
 
-fn draw_actor(assets: &mut Assets,
-              ctx: &mut Context,
-              actor: &Actor,
-              world_coords: (u32, u32))
-              -> GameResult<()> {
+fn draw_actor(
+    assets: &mut Assets,
+    ctx: &mut Context,
+    actor: &Actor,
+    world_coords: (u32, u32),
+) -> GameResult<()> {
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, &actor.pos);
     // let pos = Vec2::new(1.0, 1.0);
@@ -539,9 +540,11 @@ impl EventHandler for MainState {
         // Update the physics for all actors.
         // First the player...
         update_actor_position(&mut self.player, seconds);
-        wrap_actor_position(&mut self.player,
-                            self.screen_width as f64,
-                            self.screen_height as f64);
+        wrap_actor_position(
+            &mut self.player,
+            self.screen_width as f64,
+            self.screen_height as f64,
+        );
 
         // Then the shots...
         for act in &mut self.shots {
@@ -607,10 +610,14 @@ impl EventHandler for MainState {
 
 
         // And draw the GUI elements in the right places.
-        let level_dest = graphics::Point::new((self.level_display.width() / 2) as f32 + 10.0,
-                                              (self.level_display.height() / 2) as f32 + 10.0);
-        let score_dest = graphics::Point::new((self.score_display.width() / 2) as f32 + 200.0,
-                                              (self.score_display.height() / 2) as f32 + 10.0);
+        let level_dest = graphics::Point::new(
+            (self.level_display.width() / 2) as f32 + 10.0,
+            (self.level_display.height() / 2) as f32 + 10.0,
+        );
+        let score_dest = graphics::Point::new(
+            (self.score_display.width() / 2) as f32 + 200.0,
+            (self.score_display.height() / 2) as f32 + 10.0,
+        );
         // let source_rect = graphics::Rect::one();
         graphics::draw(ctx, &self.level_display, level_dest, 0.0)?;
         graphics::draw(ctx, &self.score_display, score_dest, 0.0)?;

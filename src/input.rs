@@ -37,7 +37,7 @@ impl GamepadContext {
 }
 
 /// returns the `GameController` associated with an instance id.
-/// The instance_id can be obtained from GamepadEvents in the `EventHandler`
+/// The `instance_id` can be obtained from `GamepadEvents` in the `EventHandler`
 pub fn get_gamepad(ctx: &Context, instance_id: i32) -> Option<&GameController> {
     ctx.gamepad_context.gamepads.get(&instance_id)
 }
