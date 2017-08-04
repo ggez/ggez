@@ -21,6 +21,7 @@ Known bugs and feature requests are all in the [issue tracker](https://github.co
 * [Fork](https://github.com/ggez/ggez/fork) and clone the repository
 * Create a new branch: git checkout -b my-branch-name
 * Make your changes
+> It's adviced to run [rustfmt](https://github.com/rust-lang-nursery/rustfmt) and [clippy](https://github.com/rust-lang-nursery/rust-clippy) before submitting a pull request
 * Push to your fork and [submit a pull request](https://github.com/ggez/ggez/compare)
 * Pat your self on the back and wait for your pull request to be reviewed.
 

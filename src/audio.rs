@@ -20,7 +20,7 @@ use GameResult;
 
 /// A struct that contains all information for tracking sound info.
 ///
-/// You generally don't have to create this yourself, it will be part 
+/// You generally don't have to create this yourself, it will be part
 /// of your `Context` object.
 pub struct AudioContext {
     endpoint: rodio::Endpoint,
@@ -28,8 +28,10 @@ pub struct AudioContext {
 
 impl AudioContext {
     pub fn new() -> GameResult<AudioContext> {
-        let error = GameError::AudioError(String::from("Could not initialize sound system (for \
-                                                        some reason)"));
+        let error = GameError::AudioError(String::from(
+            "Could not initialize sound system (for \
+             some reason)",
+        ));
         let e = rodio::get_default_endpoint().ok_or(error)?;
         Ok(AudioContext { endpoint: e })
     }
@@ -50,7 +52,8 @@ impl SoundData {
     }
 
     pub fn from_read<R>(reader: &mut R) -> GameResult<Self>
-        where R: Read
+    where
+        R: Read,
     {
         let mut buffer = Vec::new();
         reader.read_to_end(&mut buffer)?;
@@ -141,7 +144,7 @@ impl Source {
     pub fn set_volume(&mut self, value: f32) {
         self.sink.set_volume(value)
     }
-    
+
     pub fn paused(&self) -> bool {
         self.sink.is_paused()
     }

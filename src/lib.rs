@@ -1,14 +1,14 @@
 //! # What is this?
 //! [![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez) [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez) [![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/svenstaro/ggez/blob/master/LICENSE) [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez) [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
-//! 
+//!
 //! ggez is a Rust library to create a Good Game Easily.
-//! 
+//!
 //! More specifically, ggez is a lightweight game framework for making
 //! 2D games with minimum friction.  It aims to implement an API based
 //! on (a Rustified version of) the [LÖVE](https://love2d.org/) game
 //! framework.  This means it will contain basic and portable 2D
 //! drawing, sound, resource loading and event handling.
-//! 
+//!
 //! ggez is not meant to be everything to everyone, but rather a good
 //! base upon which to build.  Thus it takes a fairly
 //! batteries-included approach without needing a million additions
@@ -17,9 +17,9 @@
 //! component system.  Instead the goal is to allow you to use
 //! whichever libraries you want to provide these functions, or build
 //! your own libraries atop ggez.
-//! 
+//!
 //! ## Features
-//! 
+//!
 //! * Filesystem abstraction that lets you load resources from folders or zip files
 //! * Hardware-accelerated rendering engine built on the `gfx-rs` graphics engine
 //! * Loading and playing .ogg, .wav and .flac files via the `rodio` crate
@@ -27,21 +27,21 @@
 //! * Interface for handling keyboard and mouse events easily through callbacks
 //! * Config file for defining engine and game settings
 //! * Easy timing and FPS measurement functions.
-//! 
+//!
 //! ## Usage
-//! 
+//!
 //! ggez is built on the latest stable Rust compiler and distributed on
 //! crates.io.  To include it in your project, just add the dependency
 //! line to your `Cargo.toml` file:
-//! 
+//!
 //! ```text
 //! ggez = "0.3"
 //! ```
-//! 
+//!
 //! However you also need to have the SDL2 libraries installed on your
 //! system.  The best way to do this is documented [by the SDL2
 //! crate](https://github.com/AngryLawyer/rust-sdl2#user-content-requirements).
-//! 
+//!
 //! ggez consists of three main parts: A `Context` object which
 //! contains all the state required to interface with the computer's
 //! hardware, an `EventHandler` trait that the user implements to
@@ -52,39 +52,39 @@
 //! Create a `Conf` object with the default values you want in it,
 //! Create a new `Context` from it, and then call `event::run()` with
 //! the `Context` and an instance of your `EventHandler`.
-//! 
+//!
 //! ## Examples
-//! 
+//!
 //! See the `examples/` directory in the source.  `hello_world` is exactly
 //! what it says.  `imageview` is a simple program that shows off a number
 //! of features such as sound and drawing.  `astroblasto` is a small
 //! but complete Asteroids-like game.
-//! 
+//!
 //! To run the examples, you have to tell your program where to find the
 //! `resources` directory included in the git repository.  The easy way is
 //! to enable `cargo-resource-root` feature flag to tell ggez to look for a
 //! `resources` directory next to your `Cargo.toml`, or copy or symlink
 //! the `resources` directory to a place the running game can find it
 //! (such as next to the game executable).
-//! 
+//!
 //! ```text
 //! cargo run --example astroblasto --features=cargo-resource-root
 //! ```
-//! 
+//!
 //! Either way, if it can't find the resources it will give you an error
 //! along the lines of `ResourceNotFound("'resources' directory not
 //! found!  Should be in "/home/foo/src/ggez/target/debug/resources")`.
 //! Just copy or symlink the `resources/` directory to where the error says it's
 //! looking.
-//! 
+//!
 //! ## Implementation details
-//! 
+//!
 //! ggez is built upon SDL2 for windowing and events, `rodio` for sound,
 //! and a 2D drawing engine implemented in `gfx` using the OpenGL backend
 //! (which currently defaults to use OpenGL 3.2).  It *should* be
 //! entirely thread-safe outside of the basic event-handling loop, and
 //! portable to Windows, Linux and Mac.
-//! 
+//!
 //! The goal is to eventually have ggez be pure Rust, but we're not there
 //! yet.
 
