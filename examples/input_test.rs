@@ -22,14 +22,16 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        graphics::circle(ctx,
-                         DrawMode::Fill,
-                         Point {
-                             x: self.pos_x,
-                             y: 380.0,
-                         },
-                         100.0,
-                         1.0)?;
+        graphics::circle(
+            ctx,
+            DrawMode::Fill,
+            Point {
+                x: self.pos_x,
+                y: 380.0,
+            },
+            100.0,
+            1.0,
+        )?;
         graphics::present(ctx);
         Ok(())
     }
@@ -43,11 +45,13 @@ impl event::EventHandler for MainState {
     }
 
     fn mouse_motion_event(&mut self, _state: MouseState, x: i32, y: i32, xrel: i32, yrel: i32) {
-        println!("Mouse motion, x: {}, y: {}, relative x: {}, relative y: {}",
-                 x,
-                 y,
-                 xrel,
-                 yrel);
+        println!(
+            "Mouse motion, x: {}, y: {}, relative x: {}, relative y: {}",
+            x,
+            y,
+            xrel,
+            yrel
+        );
     }
 
     fn mouse_wheel_event(&mut self, x: i32, y: i32) {
@@ -56,35 +60,45 @@ impl event::EventHandler for MainState {
 
 
     fn key_down_event(&mut self, keycode: Keycode, keymod: Mod, repeat: bool) {
-        println!("Key pressed: {:?}, modifier {:?}, repeat: {}",
-                 keycode,
-                 keymod,
-                 repeat);
+        println!(
+            "Key pressed: {:?}, modifier {:?}, repeat: {}",
+            keycode,
+            keymod,
+            repeat
+        );
     }
     fn key_up_event(&mut self, keycode: Keycode, keymod: Mod, repeat: bool) {
-        println!("Key released: {:?}, modifier {:?}, repeat: {}",
-                 keycode,
-                 keymod,
-                 repeat);
+        println!(
+            "Key released: {:?}, modifier {:?}, repeat: {}",
+            keycode,
+            keymod,
+            repeat
+        );
     }
 
     fn controller_button_down_event(&mut self, btn: Button, instance_id: i32) {
-        println!("Controller button pressed: {:?} Controller_Id: {}",
-                 btn,
-                 instance_id);
+        println!(
+            "Controller button pressed: {:?} Controller_Id: {}",
+            btn,
+            instance_id
+        );
     }
 
     fn controller_button_up_event(&mut self, btn: Button, instance_id: i32) {
-        println!("Controller button released: {:?} Controller_Id: {}",
-                 btn,
-                 instance_id);
+        println!(
+            "Controller button released: {:?} Controller_Id: {}",
+            btn,
+            instance_id
+        );
     }
 
     fn controller_axis_event(&mut self, axis: Axis, value: i16, instance_id: i32) {
-        println!("Axis Event: {:?} Value: {} Controller_Id: {}",
-                 axis,
-                 value,
-                 instance_id);
+        println!(
+            "Axis Event: {:?} Value: {} Controller_Id: {}",
+            axis,
+            value,
+            instance_id
+        );
     }
 
 

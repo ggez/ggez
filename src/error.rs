@@ -33,12 +33,12 @@ pub enum GameError {
 impl fmt::Display for GameError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            GameError::ResourceNotFound(ref s, ref paths) => {
-                write!(f,
-                       "Resource not found: {}, searched in paths {:?}",
-                       s,
-                       paths)
-            }
+            GameError::ResourceNotFound(ref s, ref paths) => write!(
+                f,
+                "Resource not found: {}, searched in paths {:?}",
+                s,
+                paths
+            ),
             GameError::ConfigError(ref s) => write!(f, "Config error: {}", s),
             GameError::ResourceLoadError(ref s) => write!(f, "Error loading resource: {}", s),
             _ => write!(f, "GameError {:?}", self),
@@ -154,10 +154,12 @@ impl From<image::ImageError> for GameError {
 
 impl From<gfx::PipelineStateError<std::string::String>> for GameError {
     fn from(e: gfx::PipelineStateError<std::string::String>) -> GameError {
-        let errstr = format!("Error constructing pipeline!\nThis should probably not be \
-                              happening; it probably means an error in a shader or \
-                              something.\nError was: {:?}",
-                             e);
+        let errstr = format!(
+            "Error constructing pipeline!\nThis should probably not be \
+             happening; it probably means an error in a shader or \
+             something.\nError was: {:?}",
+            e
+        );
         GameError::VideoError(errstr)
     }
 }
@@ -170,7 +172,8 @@ impl From<gfx::CombinedError> for GameError {
 }
 
 impl<T> From<gfx::UpdateError<T>> for GameError
-    where T: fmt::Debug + fmt::Display + 'static
+where
+    T: fmt::Debug + fmt::Display + 'static,
 {
     fn from(e: gfx::UpdateError<T>) -> GameError {
         let errstr = format!("Buffer update error: {}", e);

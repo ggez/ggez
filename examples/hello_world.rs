@@ -1,7 +1,7 @@
 extern crate ggez;
 use ggez::conf;
 use ggez::event;
-use ggez::{GameResult, Context};
+use ggez::{Context, GameResult};
 use ggez::graphics;
 use std::time::Duration;
 
@@ -38,8 +38,10 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
         // Drawables are drawn from their center.
-        let dest_point = graphics::Point::new(self.text.width() as f32 / 2.0 + 10.0,
-                                              self.text.height() as f32 / 2.0 + 10.0);
+        let dest_point = graphics::Point::new(
+            self.text.width() as f32 / 2.0 + 10.0,
+            self.text.height() as f32 / 2.0 + 10.0,
+        );
         graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         graphics::present(ctx);
         self.frames += 1;

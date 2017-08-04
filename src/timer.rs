@@ -25,14 +25,18 @@ use std::thread;
 /// remove items from it, it just holds the last N
 /// things.
 #[derive(Debug, Clone)]
-struct LogBuffer<T> where T: Clone {
+struct LogBuffer<T>
+where
+    T: Clone,
+{
     head: usize,
     size: usize,
     contents: Vec<T>,
 }
 
 impl<T> LogBuffer<T>
-    where T: Clone + Copy
+where
+    T: Clone + Copy,
 {
     fn new(size: usize, init_val: T) -> LogBuffer<T> {
         let mut v = Vec::with_capacity(size);
@@ -201,7 +205,7 @@ pub fn check_update_time(ctx: &mut Context, desired_update_rate: u64) -> bool {
 ///
 /// This is not an especially precise way to do timing;
 /// see the `astroblasto` example for how to do it better.
-/// However, this is very convenient for prototyping, 
+/// However, this is very convenient for prototyping,
 /// so I'm leaving it in.
 pub fn sleep_until_next_frame(ctx: &Context, desired_fps: u32) {
     // We assume we'll never sleep more than a second!

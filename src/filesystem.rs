@@ -179,25 +179,26 @@ impl Filesystem {
     /// Opens the given path and returns the resulting `File`
     /// in read-only mode.
     pub fn open<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
-        self.vfs
-            .open(path.as_ref())
-            .map(|f| File::VfsFile(f))
+        self.vfs.open(path.as_ref()).map(|f| File::VfsFile(f))
     }
 
     /// Opens a file in the user directory with the given `std::fs::OpenOptions`.
     /// Note that even if you open a file read-only, it can only access
     /// files in the user directory.
-    pub fn open_options<P: AsRef<path::Path>>(&mut self,
-                                              path: P,
-                                              options: &vfs::OpenOptions)
-                                              -> GameResult<File> {
+    pub fn open_options<P: AsRef<path::Path>>(
+        &mut self,
+        path: P,
+        options: &vfs::OpenOptions,
+    ) -> GameResult<File> {
         self.vfs
             .open_options(path.as_ref(), options)
             .map(|f| File::VfsFile(f))
             .map_err(|e| {
-                GameError::ResourceLoadError(format!("Tried to open {:?} but got error: {:?}",
-                                                     path.as_ref(),
-                                                     e))
+                GameError::ResourceLoadError(format!(
+                    "Tried to open {:?} but got error: {:?}",
+                    path.as_ref(),
+                    e
+                ))
             })
     }
 
@@ -263,7 +264,8 @@ impl Filesystem {
     /// Lists the base directory if an empty path is given.
     pub fn read_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<Vec<path::PathBuf>> {
         // TODO: This should return an iterator, and be called iter()
-        let itr = self.vfs.read_dir(path.as_ref())?
+        let itr = self.vfs
+            .read_dir(path.as_ref())?
             .map(|fname| fname.unwrap())
             .collect();
         Ok(itr)
@@ -292,7 +294,9 @@ impl Filesystem {
             let c = conf::Conf::from_toml_file(&mut file)?;
             Ok(c)
         } else {
-            Err(GameError::ConfigError(String::from("Config file not found")))
+            Err(GameError::ConfigError(
+                String::from("Config file not found"),
+            ))
         }
     }
 
@@ -305,7 +309,10 @@ impl Filesystem {
         if self.is_file(conf_path) {
             Ok(f)
         } else {
-            Err(GameError::ConfigError(format!("Failed to write config file at {}", conf_path.to_string_lossy())))
+            Err(GameError::ConfigError(format!(
+                "Failed to write config file at {}",
+                conf_path.to_string_lossy()
+            )))
         }
     }
 }
