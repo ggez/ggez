@@ -107,6 +107,7 @@ extern crate rusttype;
 extern crate toml;
 extern crate zip;
 extern crate lyon;
+extern crate euclid;
 
 pub mod audio;
 pub mod conf;

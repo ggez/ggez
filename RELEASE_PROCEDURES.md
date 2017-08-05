@@ -5,3 +5,4 @@
  * Test all examples
  * rustfmt
  * clippy
+ * Search for and remove all `expect()` and `unwrap()` calls

@@ -28,8 +28,6 @@ use context::Context;
 use GameError;
 use GameResult;
 
-//mod spritebatch;
-//mod tessellation;
 mod text;
 mod types;
 
@@ -517,9 +515,9 @@ pub fn ellipse(
     point: Point,
     radius1: f32,
     radius2: f32,
-    segments: u32,
+    tolerance: f32,
 ) -> GameResult<()> {
-    let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, segments)?;
+    let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
     m.draw(ctx, Point::default(), 0.0)
 }
 
@@ -1069,19 +1067,6 @@ impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
 }
 
 impl Mesh {
-    /*
-    fn from_tessellation(ctx: &mut Context, buffer: tessellation::Buffer) -> GameResult<Mesh> {
-        let (vbuf, slice) = ctx.gfx_context
-            .factory
-            .create_vertex_buffer_with_slice(&buffer.vertices[..], &buffer.indices[..]);
-
-        Ok(Mesh {
-            buffer: vbuf,
-            slice: slice,
-        })
-    }
-*/
-
     fn from_vbuf(
         ctx: &mut Context,
         buffer: &t::geometry_builder::VertexBuffers<Vertex>,
@@ -1099,9 +1084,8 @@ impl Mesh {
 
     /// Create a new mesh for a line of one or more connected segments.
     /// WIP, sorry
-    pub fn new_line(_ctx: &mut Context, _points: &[Point], _width: f32) -> GameResult<Mesh> {
-        unimplemented!()
-        //Mesh::from_tessellation(ctx, t::build_line(points, width)?)
+    pub fn new_line(ctx: &mut Context, points: &[Point], width: f32) -> GameResult<Mesh> {
+        Mesh::new_polyline(ctx, DrawMode::Line, points, width)
     }
 
     /// Create a new mesh for a circle.
@@ -1149,41 +1133,133 @@ impl Mesh {
     /// Create a new mesh for an ellipse.
     /// Stroked ellipses are still WIP, sorry.
     pub fn new_ellipse(
-        _ctx: &mut Context,
-        _mode: DrawMode,
-        _point: Point,
-        _radius1: f32,
-        _radius2: f32,
-        _segments: u32,
+        ctx: &mut Context,
+        mode: DrawMode,
+        point: Point,
+        radius1: f32,
+        radius2: f32,
+        tolerance: f32,
     ) -> GameResult<Mesh> {
-        unimplemented!()
-        /*
-        let buf = match mode {
-            DrawMode::Fill => tessellation::build_ellipse_fill(point, radius1, radius2, segments),
-            DrawMode::Line => unimplemented!(),
-        }?;
-
-        Mesh::from_tessellation(ctx, buf)
-*/
+            use euclid::Length;
+            let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
+            match mode {
+                DrawMode::Fill => {
+                    // These builders have to be in separate match arms 'cause they're actually
+                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
+                    // GeometryBuilder<FillVertex>
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    t::basic_shapes::fill_ellipse(
+                        t::math::point(point.x, point.y),
+                        t::math::vec2(radius1, radius2),
+                        Length::new(0.0),
+                        tolerance,
+                        builder,
+                    );
+                }
+                DrawMode::Line => {
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let options = t::StrokeOptions::default()
+                        .with_line_width(ctx.gfx_context.line_width)
+                        .with_tolerance(tolerance);
+                    t::basic_shapes::stroke_ellipse(
+                        t::math::point(point.x, point.y),
+                        t::math::vec2(radius1, radius2),
+                        Length::new(0.0),
+                        &options,
+                        builder,
+                    );
+                }
+            };
+            Mesh::from_vbuf(ctx, buffers)
     }
 
-    /// Create a new mesh for a closed polygon.
-    /// WIP, sorry
-    pub fn new_polygon(
-        _ctx: &mut Context,
-        _mode: DrawMode,
-        _points: &[Point],
-        _width: f32,
-    ) -> GameResult<Mesh> {
-        unimplemented!()
-        /*
-        let buf = match mode {
-            DrawMode::Fill => tessellation::build_polygon_fill(points),
-            DrawMode::Line => tessellation::build_polygon(points, width),
-        }?;
+    /// Create a new mesh for series of connected lines
+    pub fn new_polyline(
+        ctx: &mut Context,
+        mode: DrawMode,
+        points: &[Point],
+        width: f32)
+        -> GameResult<Mesh> {
+            let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
+            // BUGGO: Annoyingly have to copy these points to lyon's point type;
+            // this should probably go away when we get real euclid integration
+            let points = points
+                .iter()
+                .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y))
+                .collect::<Vec<_>>();
+            match mode {
+                DrawMode::Fill => {
+                    // These builders have to be in separate match arms 'cause they're actually
+                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
+                    // GeometryBuilder<FillVertex>
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let tessellator = &mut t::FillTessellator::new();
+                    let options = t::FillOptions::default();
+                    t::basic_shapes::fill_polyline(
+                        points.into_iter(),
+                        tessellator,
+                        &options,
+                        builder,
+                    ).unwrap();
+                }
+                DrawMode::Line => {
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let options = t::StrokeOptions::default()
+                        .with_line_width(width);
+                    t::basic_shapes::stroke_polyline(
+                        points.into_iter(),
+                        false,
+                        &options,
+                        builder,
+                    );
+                }
+            };
+            Mesh::from_vbuf(ctx, buffers)
+    }
 
-        Mesh::from_tessellation(ctx, buf)
-*/
+
+    /// Create a new mesh for closed polygon
+    pub fn new_polygon(
+        ctx: &mut Context,
+        mode: DrawMode,
+        points: &[Point],
+        width: f32)
+        -> GameResult<Mesh> {
+            let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
+            // BUGGO: Annoyingly have to copy these points to lyon's point type;
+            // this should probably go away when we get real euclid integration
+            let points = points
+                .iter()
+                .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y))
+                .collect::<Vec<_>>();
+            match mode {
+                DrawMode::Fill => {
+                    // These builders have to be in separate match arms 'cause they're actually
+                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
+                    // GeometryBuilder<FillVertex>
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let tessellator = &mut t::FillTessellator::new();
+                    let options = t::FillOptions::default();
+                    t::basic_shapes::fill_polyline(
+                        points.into_iter(),
+                        tessellator,
+                        &options,
+                        builder,
+                    ).unwrap();
+                }
+                DrawMode::Line => {
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let options = t::StrokeOptions::default()
+                        .with_line_width(width);
+                    t::basic_shapes::stroke_polyline(
+                        points.into_iter(),
+                        true,
+                        &options,
+                        builder,
+                    );
+                }
+            };
+            Mesh::from_vbuf(ctx, buffers)
     }
 
     /// Create a new `Mesh` from a raw list of triangles.
