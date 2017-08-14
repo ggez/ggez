@@ -71,8 +71,8 @@ impl Error for GameError {
             GameError::ResourceNotFound(ref _s, _) => None,
             GameError::RenderError(ref _s) => None,
             GameError::AudioError(ref _s) => None,
-            GameError::WindowError(ref _s) => None,
-            GameError::IOError(ref _s) => None,
+            GameError::WindowError(ref _we) => None,
+            GameError::IOError(ref e) => Some(e),
             GameError::FontError(ref _s) => None,
             GameError::VideoError(ref _s) => None,
             GameError::UnknownError(ref _s) => None,
@@ -82,13 +82,6 @@ impl Error for GameError {
 
 /// A convenient result type consisting of a return type and a `GameError`
 pub type GameResult<T> = Result<T, GameError>;
-
-/// Emit a non-fatal warning message
-/// Ideally we probably want some sort of real logging interface here...
-// fn warn(err: GameError) -> GameResult<()> {
-//     println!("WARNING: Encountered error: {:?}", err);
-//     Ok(())
-// }
 
 impl From<String> for GameError {
     fn from(s: String) -> GameError {
