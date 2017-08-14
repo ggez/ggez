@@ -88,6 +88,7 @@
 //! The goal is to eventually have ggez be pure Rust, but we're not there
 //! yet.
 
+//#![deny(missing_docs)]
 
 
 
