@@ -375,6 +375,17 @@ impl GraphicsContext {
         &mut self.window
     }
 
+    /// Returns the size of the window in pixels as (height, width).
+    pub fn get_size(&self) -> (u32, u32) {
+        self.window.size()
+    }
+
+    /// Returns the size of the window's underlaying drawable in pixels as (height, width).
+    /// This may return a different value than `get_size()` when run on a platform with high-DPI support
+    pub fn get_drawable_size(&self) -> (u32, u32) {
+        self.window.drawable_size()
+    }
+
     /// EXPERIMENTAL function to get the gfx-rs `Factory` object.
     pub fn get_factory(&mut self) -> &mut gfx_device_gl::Factory {
         &mut self.factory
