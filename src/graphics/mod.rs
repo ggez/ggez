@@ -370,11 +370,17 @@ impl GraphicsContext {
     /// Returns a reference to the SDL window.
     /// Ideally you should not need to use this because ggez
     /// would provide all the functions you need without having
-    /// to dip into SDL itself.
-    pub fn get_window(&mut self) -> &mut sdl2::video::Window {
+    /// to dip into SDL itself.  But life isn't always ideal.
+    pub fn get_window(&self) -> &sdl2::video::Window {
+        &self.window
+    }
+
+    /// Returns a mutable reference to the SDL window.
+    pub fn get_window_mut(&mut self) -> &mut sdl2::video::Window {
         &mut self.window
     }
 
+    
     /// Returns the size of the window in pixels as (height, width).
     pub fn get_size(&self) -> (u32, u32) {
         self.window.size()
@@ -716,7 +722,7 @@ pub fn set_mode(
     mode: WindowMode,
 ) -> GameResult<()> {
     {
-        let window = &mut context.gfx_context.get_window();
+        let window = &mut context.gfx_context.get_window_mut();
         window.set_size(width, height)?;
         // SDL sets "bordered" but Love2D does "not bordered";
         // we use the Love2D convention.

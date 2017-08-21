@@ -69,7 +69,7 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
             image.width() * 4,
             pixels::PixelFormatEnum::ABGR8888,
         )?;
-        let window = context.gfx_context.get_window();
+        let window = context.gfx_context.get_window_mut();
         window.set_icon(surface);
     };
     Ok(())

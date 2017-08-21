@@ -2,6 +2,7 @@ pub use sdl2::controller::GameController;
 use sdl2::GameControllerSubsystem;
 use sdl2::Sdl;
 use std::collections::HashMap;
+use std::fmt;
 
 use context::Context;
 use error::GameResult;
@@ -15,6 +16,13 @@ pub struct GamepadContext {
     #[allow(dead_code)]
     controller_ctx: GameControllerSubsystem,
 }
+
+impl fmt::Debug for GamepadContext {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<GamepadContext: {:p}>", self)
+    }
+}
+
 
 impl GamepadContext {
     pub fn new(sdl_context: &Sdl) -> GameResult<Self> {

@@ -89,7 +89,8 @@
 //! yet.
 
 //#![deny(missing_docs)]
-
+#![deny(missing_debug_implementations)]
+    
 
 
 
@@ -117,6 +118,7 @@ pub mod error;
 pub mod event;
 pub mod filesystem;
 pub mod graphics;
+pub mod mouse;
 pub mod input;
 pub mod timer;
 mod vfs;

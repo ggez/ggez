@@ -37,9 +37,16 @@ impl AudioContext {
     }
 }
 
+impl fmt::Debug for AudioContext {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<AudioContext: {:p}>", self)
+    }
+}
+
+
 /// Static sound data stored in memory.
 /// It is Arc'ed, so cheap to clone.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SoundData(Arc<Vec<u8>>);
 
 impl SoundData {
