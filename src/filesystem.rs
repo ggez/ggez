@@ -147,13 +147,13 @@ impl Filesystem {
             overlay.push_back(Box::new(physfs));
         }
 
-        // // Writeable local dir, ~/.config/whatever/
-        // // Save game dir is read-write
-        // {
-        //     user_config_path = app_root(AppDataType::UserConfig, &app_info)?;
-        //     let physfs = vfs::PhysicalFS::new(&user_config_path, false);
-        //     overlay.push_back(Box::new(physfs));
-        // }
+        // Writeable local dir, ~/.config/whatever/
+        // Save game dir is read-write
+        {
+            user_config_path = app_root(AppDataType::UserConfig, &app_info)?;
+            let physfs = vfs::PhysicalFS::new(&user_config_path, false);
+            overlay.push_back(Box::new(physfs));
+        }
 
         // Cargo manifest dir!
         #[cfg(feature = "cargo-resource-root")]
@@ -161,7 +161,7 @@ impl Filesystem {
             if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
                 let mut path = path::PathBuf::from(manifest_dir);
                 path.push("resources");
-                let physfs = vfs::PhysicalFS::new(&path, false);
+                let physfs = vfs::PhysicalFS::new(&path, true);
                 overlay.push_back(Box::new(physfs));
             }
         }
