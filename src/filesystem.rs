@@ -51,7 +51,7 @@ pub struct Filesystem {
     vfs: vfs::OverlayFS,
     resources_path: path::PathBuf,
     zip_path: path::PathBuf,
-    // user_config_path: path::PathBuf,
+    user_config_path: path::PathBuf,
     user_data_path: path::PathBuf,
 }
 
@@ -120,7 +120,7 @@ impl Filesystem {
         let mut resources_path;
         let mut resources_zip_path;
         let user_data_path;
-        // let user_config_path;
+        let user_config_path;
         // <game exe root>/resources/
         {
             resources_path = root_path.clone();
@@ -170,7 +170,7 @@ impl Filesystem {
             vfs: overlay,
             resources_path: resources_path,
             zip_path: resources_zip_path,
-            // user_config_path: user_config_path,
+            user_config_path: user_config_path,
             user_data_path: user_data_path,
         };
 
@@ -339,7 +339,7 @@ mod tests {
 
             resources_path: "".into(),
             zip_path: "".into(),
-            // user_config_path: "".into(),
+            user_config_path: "".into(),
             user_data_path: "".into(),
         }
 
