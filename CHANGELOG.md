@@ -1,6 +1,9 @@
 # 0.4.0 (IN PROGRESS)
 
- * Updated all dependencies (except SDL2) to newer versions
+ * Updated all dependencies to newer versions (except SDL2 'cause gfx_window_sdl uses 0.29; no big deal)
+ * Added `mouse` module with some utility functions
+ * Added some utility functions to query window size
+ * Fixed some bugs with type visibility and directory paths.
 
 # 0.3.3
 

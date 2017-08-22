@@ -41,6 +41,8 @@ use GameResult;
 use conf;
 use vfs::{self, VFS};
 
+pub use vfs::OpenOptions;
+
 const CONFIG_NAME: &'static str = "/conf.toml";
 
 /// A structure that contains the filesystem state and cache.
@@ -182,13 +184,13 @@ impl Filesystem {
         self.vfs.open(path.as_ref()).map(|f| File::VfsFile(f))
     }
 
-    /// Opens a file in the user directory with the given `std::fs::OpenOptions`.
+    /// Opens a file in the user directory with the given `filesystem::OpenOptions`.
     /// Note that even if you open a file read-only, it can only access
     /// files in the user directory.
     pub fn open_options<P: AsRef<path::Path>>(
         &mut self,
         path: P,
-        options: &vfs::OpenOptions,
+        options: &OpenOptions,
     ) -> GameResult<File> {
         self.vfs
             .open_options(path.as_ref(), options)
