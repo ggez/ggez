@@ -1,10 +1,4 @@
-use std::fmt;
-use std::path;
-use std::convert::From;
-use std::collections::HashMap;
-use std::io::Read;
-use std::u16;
-
+/*
 use sdl2;
 use image;
 use gfx;
@@ -12,19 +6,17 @@ use gfx::texture;
 use gfx::traits::Device;
 use gfx::traits::FactoryExt;
 use gfx_device_gl;
-use gfx_window_sdl;
 use gfx::Factory;
-
+*/
 
 use context::Context;
 use graphics;
-use GameError;
 use GameResult;
 
 // Owning the given Image is inconvenient because we might want, say,
 // the same Rc<Image> shared among many SpriteBatch'es.
 //
-// But draw() doesn't
+// But draw() doesn't handle that particularly well...
 //
 // The right way to fix this might be to have another object that implements
 // Drawable that is created from a SpriteBatch and an image reference.
@@ -34,8 +26,12 @@ use GameResult;
 // that's squirrelly.
 //
 // Oh, or maybe make it take a Cow<Image> ?  that might work.
+//
+// For now though, let's mess around with the gfx bits rather than the ggez bits.
+// We need to be able to, essentially, have an array of RectProperties.
 
 /// A SpriteBatch draws a number of copies of the same image, using a single draw call.
+#[derive(Debug)]
 pub struct SpriteBatch {
     image: graphics::Image,
     sprites: Vec<graphics::DrawParam>,

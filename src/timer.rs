@@ -79,6 +79,7 @@ pub struct TimeContext {
     last_instant: time::Instant,
     frame_durations: LogBuffer<time::Duration>,
     residual_update_dt: time::Duration,
+    frame_count: usize,
 }
 
 
@@ -93,6 +94,7 @@ impl TimeContext {
             last_instant: time::Instant::now(),
             frame_durations: LogBuffer::new(TIME_LOG_FRAMES, time::Duration::new(0, 0)),
             residual_update_dt: time::Duration::from_secs(0),
+            frame_count: 0
         }
     }
 
@@ -106,6 +108,7 @@ impl TimeContext {
         let time_since_last = now - self.last_instant;
         self.frame_durations.push(time_since_last);
         self.last_instant = now;
+        self.frame_count += 1;
     }
 }
 
@@ -232,4 +235,13 @@ pub fn sleep_until_next_frame(ctx: &Context, desired_fps: u32) {
 /// as that is.
 pub fn sleep(duration: time::Duration) {
     thread::sleep(duration);
+}
+
+
+/// Gets the number of times the game has gone through its event loop.
+///
+/// Specifically, the number of times that TimeContext::tick() has been
+/// called by it.
+pub fn get_ticks(ctx: &Context) -> usize {
+    ctx.timer_context.frame_count
 }

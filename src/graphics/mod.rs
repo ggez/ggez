@@ -30,6 +30,7 @@ use GameResult;
 
 mod text;
 mod types;
+pub mod spritebatch;
 
 pub use self::text::*;
 pub use self::types::*;
@@ -1198,12 +1199,9 @@ impl Mesh {
         width: f32)
         -> GameResult<Mesh> {
             let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
-            // BUGGO: Annoyingly have to copy these points to lyon's point type;
-            // this should probably go away when we get real euclid integration
             let points = points
-                .iter()
-                .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y))
-                .collect::<Vec<_>>();
+                .into_iter()
+                .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
             match mode {
                 DrawMode::Fill => {
                     // These builders have to be in separate match arms 'cause they're actually
@@ -1213,7 +1211,7 @@ impl Mesh {
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
                     t::basic_shapes::fill_polyline(
-                        points.into_iter(),
+                        points,
                         tessellator,
                         &options,
                         builder,
@@ -1224,7 +1222,7 @@ impl Mesh {
                     let options = t::StrokeOptions::default()
                         .with_line_width(width);
                     t::basic_shapes::stroke_polyline(
-                        points.into_iter(),
+                        points,
                         false,
                         &options,
                         builder,
@@ -1243,12 +1241,9 @@ impl Mesh {
         width: f32)
         -> GameResult<Mesh> {
             let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
-            // BUGGO: Annoyingly have to copy these points to lyon's point type;
-            // this should probably go away when we get real euclid integration
             let points = points
-                .iter()
-                .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y))
-                .collect::<Vec<_>>();
+                .into_iter()
+                .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
             match mode {
                 DrawMode::Fill => {
                     // These builders have to be in separate match arms 'cause they're actually
@@ -1258,7 +1253,7 @@ impl Mesh {
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
                     t::basic_shapes::fill_polyline(
-                        points.into_iter(),
+                        points,
                         tessellator,
                         &options,
                         builder,
@@ -1269,7 +1264,7 @@ impl Mesh {
                     let options = t::StrokeOptions::default()
                         .with_line_width(width);
                     t::basic_shapes::stroke_polyline(
-                        points.into_iter(),
+                        points,
                         true,
                         &options,
                         builder,
