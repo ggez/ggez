@@ -46,6 +46,7 @@ toml = "0.4"
 lyon = "0.7"
 euclid = "0.15"
 mint = { version = "0.4", optional = true }
+smart-default = "0.2"
 
 [dev-dependencies]
 cgmath = "0.15"

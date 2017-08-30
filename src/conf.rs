@@ -11,21 +11,27 @@ use GameResult;
 
 /// A structure containing configuration data
 /// for the game engine.
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault)]
 pub struct Conf {
     /// The window title.
+    #[default = r#""An easy, good game".to_owned()"#]
     pub window_title: String,
     /// A file path to the window's icon.
     /// It is rooted in the `resources` directory (see the `filesystem` module for details),
     /// and an empty string results in a blank/default icon.
+    #[default = r#""".to_owned()"#]
     pub window_icon: String,
     /// The window's height
+    #[default = "800"]
     pub window_height: u32,
     /// The window's width
+    #[default = "600"]
     pub window_width: u32,
     /// Whether or not the graphics draw rate should be
     /// synchronized with the monitor's draw rate.
+    #[default = "true"]
     pub vsync: bool,
+    #[default = "true"]
     pub resizable: bool,
     /* To implement still.
      * window_borderless: bool,
@@ -48,30 +54,30 @@ pub struct Conf {
      * modules_thread: bool, */
 }
 
-impl Default for Conf {
-    /// Create a new Conf with some vague defaults.
-    ///
-    /// ```rust,ignore
-    /// Conf {
-    ///     window_title: "An easy, good game"
-    ///     window_icon: ""
-    ///     window_height: 600
-    ///     window_width: 800
-    ///     vsync: true
-    /// }
-    /// ```
-    fn default() -> Self {
-        Conf {
-            window_title: String::from("An easy, good game"),
-            window_icon: String::from(""),
-            window_height: 600,
-            window_width: 800,
-            vsync: true,
-            resizable: false,
-        }
+// impl Default for Conf {
+//     /// Create a new Conf with some vague defaults.
+//     ///
+//     /// ```rust,ignore
+//     /// Conf {
+//     ///     window_title: "An easy, good game"
+//     ///     window_icon: ""
+//     ///     window_height: 600
+//     ///     window_width: 800
+//     ///     vsync: true
+//     /// }
+//     /// ```
+//     fn default() -> Self {
+//         Conf {
+//             window_title: String::from("An easy, good game"),
+//             window_icon: String::from(""),
+//             window_height: 600,
+//             window_width: 800,
+//             vsync: true,
+//             resizable: false,
+//         }
 
-    }
-}
+//     }
+// }
 
 impl Conf {
     /// Same as Conf::default()

@@ -110,6 +110,8 @@ extern crate toml;
 extern crate zip;
 extern crate lyon;
 extern crate euclid;
+#[macro_use]
+extern crate smart_default;
 
 pub mod audio;
 pub mod conf;
