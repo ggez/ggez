@@ -22,10 +22,10 @@ pub struct Conf {
     #[default = r#""".to_owned()"#]
     pub window_icon: String,
     /// The window's height
-    #[default = "800"]
+    #[default = "600"]
     pub window_height: u32,
     /// The window's width
-    #[default = "600"]
+    #[default = "800"]
     pub window_width: u32,
     /// Whether or not the graphics draw rate should be
     /// synchronized with the monitor's draw rate.
