@@ -699,14 +699,11 @@ pub fn set_point_size(ctx: &mut Context, size: f32) {
 /// be whatever you prefer.
 pub fn set_screen_coordinates(
     context: &mut Context,
-    left: f32,
-    right: f32,
-    top: f32,
-    bottom: f32,
+    rect: Rect,
 ) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
-    gfx.screen_rect = Rect::new(left, bottom, (right - left), (top - bottom));
-    gfx.shader_globals.transform = ortho(left, right, top, bottom, 1.0, -1.0);
+    gfx.screen_rect = rect;
+    gfx.shader_globals.transform = ortho(rect.x, rect.w + rect.x, rect.h + rect.y, rect.y, 1.0, -1.0);
     gfx.update_globals()
 }
 
