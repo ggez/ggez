@@ -351,6 +351,17 @@ impl GraphicsContext {
             default_sampler_info: sampler_info,
             samplers: samplers,
         };
+
+
+        let w = screen_width as f32;
+        let h = screen_height as f32;
+        let rect = Rect {
+            x: (w / 2.0),
+            y: (h / 2.0),
+            w: w,
+            h: -h,
+        };
+        gfx.set_graphics_rect(rect);
         gfx.update_globals()?;
         Ok(gfx)
     }
@@ -425,6 +436,21 @@ impl GraphicsContext {
         (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
     > {
         self.data.out.clone()
+    }
+
+    /// Shortcut function to set the screen rect ortho mode
+    /// to a given `Rect`.
+    /// 
+    /// Call `update_globals()` to apply them after calling this.
+    fn set_graphics_rect(&mut self, rect: Rect) {
+        self.screen_rect = rect;
+        let half_width = rect.w / 2.0;
+        let half_height = rect.h / 2.0;
+        self.shader_globals.transform = ortho(
+            rect.x - half_width, rect.x + half_width, 
+            rect.y + half_height, rect.y - half_height, 
+            1.0, -1.0
+        );
     }
 }
 
@@ -646,7 +672,7 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 }
 
 /// Returns a rectangle defining the coordinate system of the screen.
-/// It will be `Rect { x: left, y: bottom, w: width, h: height }`
+/// It will be `Rect { x: center_x, y: cenyer_y, w: width, h: height }`
 ///
 /// If the Y axis increases downwards, the `height` of the Rect
 /// will be negative.
@@ -697,13 +723,17 @@ pub fn set_point_size(ctx: &mut Context, size: f32) {
 /// viewport scaled such that one coordinate unit is one pixel on the
 /// screen.  This function lets you change this coordinate system to
 /// be whatever you prefer.
+///
+/// Recall that a `Rect` currently the x and y coordinates at the center,
+/// so if you wanted a coordinate system from (0,0) at the bottom-left
+/// to (640, 480) at the top-right, you would call this function with
+/// a `Rect{x: 320, y: 240, w: 640, h: 480}`
 pub fn set_screen_coordinates(
     context: &mut Context,
     rect: Rect,
 ) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
-    gfx.screen_rect = rect;
-    gfx.shader_globals.transform = ortho(rect.x, rect.w + rect.x, rect.h + rect.y, rect.y, 1.0, -1.0);
+    gfx.set_graphics_rect(rect);
     gfx.update_globals()
 }
 
