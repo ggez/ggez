@@ -39,17 +39,31 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        for x in 0..100 {
-            for y in 0..100 {
+        for x in 0..80 {
+            for y in 0..60 {
                 let p = graphics::DrawParam {
-                    dest: graphics::Point::new(x as f32 * 10.0 + 5.0, y as f32 * 10.0 + 5.0),
+                    dest: graphics::Point::new(x as f32 * 10.0, y as f32 * 10.0),
                     scale: graphics::Point::new(0.0625, 0.0625),
+                    rotation: -2.0 * ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28),
                     .. Default::default()
                 };
                 self.spritebatch.add(p);
             }
         }
-        graphics::draw_ex(ctx, &self.spritebatch, Default::default())?;
+        let param = graphics::DrawParam {
+            dest: graphics::Point::new(
+                ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28).cos() * 50.0 + 5.0,
+                ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28).sin() * 50.0 + 5.0,
+            ),
+            scale: graphics::Point::new(
+                ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28).cos().abs() * 2.0 + 0.5,
+                ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28).cos().abs() * 2.0 + 0.5,
+            ),
+            rotation: ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28),
+            offset: graphics::Point::new(400.0, 300.0),
+            .. Default::default()
+        };
+        graphics::draw_ex(ctx, &self.spritebatch, param)?;
         self.spritebatch.clear();
 
         graphics::present(ctx);

@@ -138,7 +138,7 @@ impl graphics::Drawable for SpriteBatch {
     /// DrawParam would be added to the DrawParam for each sprite.
     fn draw_ex(
         &self, ctx: &mut Context, 
-        _param: graphics::DrawParam
+        param: graphics::DrawParam
     ) -> GameResult<()> {
         self.flush(ctx)?;
         let gfx = &mut ctx.gfx_context;
@@ -147,7 +147,10 @@ impl graphics::Drawable for SpriteBatch {
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.image.texture.clone(), sampler);
         gfx.quad_slice.instances = Some((self.sprites.len() as u32, 0));
+        let prev_transform = gfx.data.transform.clone();
+        gfx.update_transform(param.into())?;
         gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
+        gfx.data.transform = prev_transform;
         Ok(())
     }
 }
