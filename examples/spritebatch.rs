@@ -39,11 +39,11 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        for x in 0..50 {
-            for y in 0..50 {
+        for x in 0..100 {
+            for y in 0..100 {
                 let p = graphics::DrawParam {
-                    dest: graphics::Point::new(x as f32 * 21.0 + 10.0, y as f32 * 20.0 + 10.0),
-                    scale: graphics::Point::new(0.125, 0.125),
+                    dest: graphics::Point::new(x as f32 * 10.0 + 5.0, y as f32 * 10.0 + 5.0),
+                    scale: graphics::Point::new(0.0625, 0.0625),
                     .. Default::default()
                 };
                 self.spritebatch.add(p);
