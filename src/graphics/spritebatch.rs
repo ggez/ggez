@@ -11,6 +11,7 @@ use gfx::Factory;
 
 use context::Context;
 use graphics;
+use error;
 use gfx;
 use gfx::Factory;
 use GameResult;
@@ -86,15 +87,20 @@ impl SpriteBatch {
         &mut self,
         handle: SpriteIdx,
         param: graphics::DrawParam
-    ) {
-        self.sprites[handle] = param.into();
+    ) -> GameResult<()> {
+        if handle < self.sprites.len() - 1 {
+            self.sprites[handle] = param.into();
+            Ok(())
+        } else {
+            Err(error::GameError::RenderError(String::from("Provided index is out of bounds.")))
+        }
     }
 
     /// Immediately sends all data in the batch to the graphics card.
     ///
     /// Generally just calling `graphics::draw()` on the `SpriteBatch`
     /// will do this automatically.
-    pub fn flush(&self, ctx: &mut Context) {
+    pub fn flush(&self, ctx: &mut Context) -> GameResult<()> {
         let gfx = &mut ctx.gfx_context;
         if gfx.data.rect_instance_properties.len() < self.sprites.len() {
             gfx.data.rect_instance_properties = gfx.factory.create_buffer(
@@ -102,11 +108,12 @@ impl SpriteBatch {
                 gfx::buffer::Role::Vertex,
                 gfx::memory::Usage::Dynamic,
                 gfx::TRANSFER_DST
-            ).unwrap();
+            )?;
         }
         gfx.encoder.update_buffer(
             &gfx.data.rect_instance_properties, &self.sprites[..], 0
-        ).unwrap();
+        )?;
+        Ok(())
     }
 
     /// Removes all data from the sprite batch.
@@ -133,7 +140,7 @@ impl graphics::Drawable for SpriteBatch {
         &self, ctx: &mut Context, 
         _param: graphics::DrawParam
     ) -> GameResult<()> {
-        self.flush(ctx);
+        self.flush(ctx)?;
         let gfx = &mut ctx.gfx_context;
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());

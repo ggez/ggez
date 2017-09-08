@@ -256,6 +256,17 @@ fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
     }
 }
 
+impl From<gfx::buffer::CreationError> for GameError {
+    fn from(e: gfx::buffer::CreationError) -> Self {
+        use gfx::buffer::CreationError;
+        match e {
+            CreationError::UnsupportedBind(b) => GameError::RenderError(format!("Could not create buffer: Unsupported Bind ({:?})", b)),
+            CreationError::UnsupportedUsage(u) => GameError::RenderError(format!("Could not create buffer: Unsupported Usage ({:?})", u)),
+            CreationError::Other => GameError::RenderError(format!("Could not create buffer: Unknown error"))
+        }
+    }
+}
+
 impl GraphicsContext {
     pub fn new(
         video: sdl2::VideoSubsystem,
@@ -302,7 +313,7 @@ impl GraphicsContext {
             gfx::buffer::Role::Vertex,
             gfx::memory::Usage::Dynamic,
             gfx::SHADER_RESOURCE
-        ).unwrap();
+        )?;
 
         let (quad_vertex_buffer, mut quad_slice) =
             factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
