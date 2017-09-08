@@ -74,35 +74,35 @@ gfx_defines!{
         uv: [f32; 2] = "a_Uv",
     }
 
+    /// Internal structure containing values that are different for each rect.
+    vertex RectInstanceProperties {
+        src: [f32; 4] = "a_Src",
+        dest: [f32; 2] = "a_Dest",
+        scale: [f32; 2] = "a_Scale",
+        offset: [f32; 2] = "a_Offset",
+        shear: [f32; 2] = "a_Shear",
+        rotation: f32 = "a_Rotation",
+    }
+
     /// Internal structure containing global shader state.
     constant Globals {
         transform: [[f32; 4];4] = "u_Transform",
         color: [f32; 4] = "u_Color",
     }
 
-    /// Internal structure containing values that are different for each rect.
-    constant RectProperties {
-        src: [f32; 4] = "u_Src",
-        dest: [f32; 2] = "u_Dest",
-        scale: [f32;2] = "u_Scale",
-        offset: [f32;2] = "u_Offset",
-        shear: [f32;2] = "u_Shear",
-        rotation: f32 = "u_Rotation",
-    }
-
     pipeline pipe {
         vbuf: gfx::VertexBuffer<Vertex> = (),
         tex: gfx::TextureSampler<[f32; 4]> = "t_Texture",
         globals: gfx::ConstantBuffer<Globals> = "Globals",
-        rect_properties: gfx::ConstantBuffer<RectProperties> = "RectProperties",
+        rect_instance_properties: gfx::InstanceBuffer<RectInstanceProperties> = (),
         out: gfx::BlendTarget<ColorFormat> =
           ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
     }
 }
 
-impl Default for RectProperties {
+impl Default for RectInstanceProperties {
     fn default() -> Self {
-        RectProperties {
+        RectInstanceProperties {
             src: [0.0, 0.0, 1.0, 1.0],
             dest: [0.0, 0.0],
             scale: [1.0, 1.0],
@@ -113,9 +113,9 @@ impl Default for RectProperties {
     }
 }
 
-impl From<DrawParam> for RectProperties {
+impl From<DrawParam> for RectInstanceProperties {
     fn from(p: DrawParam) -> Self {
-        RectProperties {
+        RectInstanceProperties {
             src: p.src.into(),
             dest: p.dest.into(),
             scale: [p.scale.x, p.scale.y],
@@ -297,10 +297,18 @@ impl GraphicsContext {
             pipe::new(),
         )?;
 
-        let (quad_vertex_buffer, quad_slice) =
+        let rect_inst_props = factory.create_buffer(
+            1,
+            gfx::buffer::Role::Vertex,
+            gfx::memory::Usage::Dynamic,
+            gfx::SHADER_RESOURCE
+        ).unwrap();
+
+        let (quad_vertex_buffer, mut quad_slice) =
             factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
 
-        let rect_props = factory.create_constant_buffer(1);
+        quad_slice.instances = Some((1,0));
+
         let globals_buffer = factory.create_constant_buffer(1);
         let mut samplers: SamplerCache<gfx_device_gl::Resources> = SamplerCache::new();
         let sampler_info =
@@ -313,7 +321,7 @@ impl GraphicsContext {
         let data = pipe::Data {
             vbuf: quad_vertex_buffer.clone(),
             tex: (texture, sampler),
-            rect_properties: rect_props,
+            rect_instance_properties: rect_inst_props,
             globals: globals_buffer,
             out: color_view,
         };
@@ -374,8 +382,10 @@ impl GraphicsContext {
 
     fn update_rect_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
         let properties = draw_params.into();
-        self.encoder
-            .update_buffer(&self.data.rect_properties, &[properties], 0)?;
+        self.encoder.update_buffer(
+            &self.data.rect_instance_properties, &[properties], 0
+        )?;
+        self.quad_slice.instances = Some((1, 0));
         Ok(())
     }
 

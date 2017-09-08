@@ -19,7 +19,7 @@ impl MainState {
         let image = graphics::Image::new(ctx, "/tile.png").unwrap();
         let batch = graphics::spritebatch::SpriteBatch::new(image);
         let s = MainState {
-            spritebatch: batch
+            spritebatch: batch,
         };
         Ok(s)
     }
@@ -39,10 +39,11 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        for x in 0..10 {
-            for y in 0..10 {
+        for x in 0..50 {
+            for y in 0..50 {
                 let p = graphics::DrawParam {
-                    dest: graphics::Point::new(x as f32, y as f32),
+                    dest: graphics::Point::new(x as f32 * 21.0 + 10.0, y as f32 * 20.0 + 10.0),
+                    scale: graphics::Point::new(0.125, 0.125),
                     .. Default::default()
                 };
                 self.spritebatch.add(p);
