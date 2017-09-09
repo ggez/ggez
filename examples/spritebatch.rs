@@ -39,12 +39,18 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        for x in 0..80 {
-            for y in 0..60 {
+        let time = (timer::duration_to_f64(timer::get_time_since_start(ctx)) * 1000.0) as u32;
+        let cycle = 10000;
+        for x in 0..150 {
+            for y in 0..150 {
                 let p = graphics::DrawParam {
                     dest: graphics::Point::new(x as f32 * 10.0, y as f32 * 10.0),
-                    scale: graphics::Point::new(0.0625, 0.0625),
-                    rotation: -2.0 * ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28),
+                    // scale: graphics::Point::new(0.0625, 0.0625),
+                    scale: graphics::Point::new(
+                        ((time % cycle * 2) as f32 / cycle as f32 * 6.28).cos().abs() * 0.0625,
+                        ((time % cycle * 2) as f32 / cycle as f32 * 6.28).cos().abs() * 0.0625
+                    ),
+                    rotation: -2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28),
                     .. Default::default()
                 };
                 self.spritebatch.add(p);
@@ -52,15 +58,15 @@ impl event::EventHandler for MainState {
         }
         let param = graphics::DrawParam {
             dest: graphics::Point::new(
-                ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28).cos() * 50.0 + 5.0,
-                ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28).sin() * 50.0 + 5.0,
+                ((time % cycle) as f32 / cycle as f32 * 6.28).cos() * 50.0 - 350.0,
+                ((time % cycle) as f32 / cycle as f32 * 6.28).sin() * 50.0 - 450.0,
             ),
             scale: graphics::Point::new(
-                ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28).cos().abs() * 2.0 + 0.5,
-                ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28).cos().abs() * 2.0 + 0.5,
+                ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
+                ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
             ),
-            rotation: ((timer::get_ticks(ctx) % 500) as f32 / 500.0 * 6.28),
-            offset: graphics::Point::new(400.0, 300.0),
+            rotation: ((time % cycle) as f32 / cycle as f32 * 6.28),
+            offset: graphics::Point::new(750.0, 750.0),
             .. Default::default()
         };
         graphics::draw_ex(ctx, &self.spritebatch, param)?;
