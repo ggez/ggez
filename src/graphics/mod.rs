@@ -74,19 +74,27 @@ gfx_defines!{
         uv: [f32; 2] = "a_Uv",
     }
 
+    /// Internal structure containing values that are different for each rect.
+    vertex RectInstanceProperties {
+        src: [f32; 4] = "a_Src",
+        dest: [f32; 2] = "a_Dest",
+        scale: [f32; 2] = "a_Scale",
+        offset: [f32; 2] = "a_Offset",
+        shear: [f32; 2] = "a_Shear",
+        rotation: f32 = "a_Rotation",
+    }
+
     /// Internal structure containing global shader state.
     constant Globals {
-        transform: [[f32; 4];4] = "u_Transform",
+        projection: [[f32; 4]; 4] = "u_Projection",
         color: [f32; 4] = "u_Color",
     }
 
-    /// Internal structure containing values that are different for each rect.
-    constant RectProperties {
-        src: [f32; 4] = "u_Src",
-        dest: [f32; 2] = "u_Dest",
-        scale: [f32;2] = "u_Scale",
-        offset: [f32;2] = "u_Offset",
-        shear: [f32;2] = "u_Shear",
+    constant GlobalTransform {
+        translation: [f32; 2] = "u_Translation",
+        scale: [f32; 2] = "u_Scale",
+        offset: [f32; 2] = "u_Offset",
+        shear: [f32; 2] = "u_Shear",
         rotation: f32 = "u_Rotation",
     }
 
@@ -94,15 +102,16 @@ gfx_defines!{
         vbuf: gfx::VertexBuffer<Vertex> = (),
         tex: gfx::TextureSampler<[f32; 4]> = "t_Texture",
         globals: gfx::ConstantBuffer<Globals> = "Globals",
-        rect_properties: gfx::ConstantBuffer<RectProperties> = "RectProperties",
+        transform: gfx::ConstantBuffer<GlobalTransform> = "GlobalTransform",
+        rect_instance_properties: gfx::InstanceBuffer<RectInstanceProperties> = (),
         out: gfx::BlendTarget<ColorFormat> =
           ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
     }
 }
 
-impl Default for RectProperties {
+impl Default for RectInstanceProperties {
     fn default() -> Self {
-        RectProperties {
+        RectInstanceProperties {
             src: [0.0, 0.0, 1.0, 1.0],
             dest: [0.0, 0.0],
             scale: [1.0, 1.0],
@@ -113,11 +122,35 @@ impl Default for RectProperties {
     }
 }
 
-impl From<DrawParam> for RectProperties {
+impl From<DrawParam> for RectInstanceProperties {
     fn from(p: DrawParam) -> Self {
-        RectProperties {
+        RectInstanceProperties {
             src: p.src.into(),
             dest: p.dest.into(),
+            scale: [p.scale.x, p.scale.y],
+            offset: p.offset.into(),
+            shear: p.shear.into(),
+            rotation: p.rotation,
+        }
+    }
+}
+
+impl Default for GlobalTransform {
+    fn default() -> Self {
+        GlobalTransform {
+            translation: [0.0, 0.0],
+            scale: [1.0, 1.0],
+            offset: [0.0, 0.0],
+            shear: [0.0, 0.0],
+            rotation: 0.0,
+        }
+    }
+}
+
+impl From<DrawParam> for GlobalTransform {
+    fn from(p: DrawParam) -> Self {
+        GlobalTransform {
+            translation: p.dest.into(),
             scale: [p.scale.x, p.scale.y],
             offset: p.offset.into(),
             shear: p.shear.into(),
@@ -256,6 +289,17 @@ fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
     }
 }
 
+impl From<gfx::buffer::CreationError> for GameError {
+    fn from(e: gfx::buffer::CreationError) -> Self {
+        use gfx::buffer::CreationError;
+        match e {
+            CreationError::UnsupportedBind(b) => GameError::RenderError(format!("Could not create buffer: Unsupported Bind ({:?})", b)),
+            CreationError::UnsupportedUsage(u) => GameError::RenderError(format!("Could not create buffer: Unsupported Usage ({:?})", u)),
+            CreationError::Other => GameError::RenderError(format!("Could not create buffer: Unknown error"))
+        }
+    }
+}
+
 impl GraphicsContext {
     pub fn new(
         video: sdl2::VideoSubsystem,
@@ -297,11 +341,20 @@ impl GraphicsContext {
             pipe::new(),
         )?;
 
-        let (quad_vertex_buffer, quad_slice) =
+        let rect_inst_props = factory.create_buffer(
+            1,
+            gfx::buffer::Role::Vertex,
+            gfx::memory::Usage::Dynamic,
+            gfx::SHADER_RESOURCE
+        )?;
+
+        let (quad_vertex_buffer, mut quad_slice) =
             factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
 
-        let rect_props = factory.create_constant_buffer(1);
+        quad_slice.instances = Some((1,0));
+
         let globals_buffer = factory.create_constant_buffer(1);
+        let transform_buffer = factory.create_constant_buffer(1);
         let mut samplers: SamplerCache<gfx_device_gl::Resources> = SamplerCache::new();
         let sampler_info =
             texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
@@ -313,8 +366,9 @@ impl GraphicsContext {
         let data = pipe::Data {
             vbuf: quad_vertex_buffer.clone(),
             tex: (texture, sampler),
-            rect_properties: rect_props,
+            rect_instance_properties: rect_inst_props,
             globals: globals_buffer,
+            transform: transform_buffer,
             out: color_view,
         };
 
@@ -324,7 +378,7 @@ impl GraphicsContext {
         let top = 0.0;
         let bottom = screen_height as f32;
         let globals = Globals {
-            transform: ortho(left, right, top, bottom, 1.0, -1.0),
+            projection: ortho(left, right, top, bottom, 1.0, -1.0),
             color: types::WHITE.into(),
         };
 
@@ -352,7 +406,8 @@ impl GraphicsContext {
             samplers: samplers,
         };
 
-
+        let transform: GlobalTransform = Default::default();
+        gfx.update_transform(transform)?;
         let w = screen_width as f32;
         let h = screen_height as f32;
         let rect = Rect {
@@ -372,10 +427,19 @@ impl GraphicsContext {
         Ok(())
     }
 
+    fn update_transform(&mut self, transform: GlobalTransform) -> GameResult<()> {
+        self.encoder.update_buffer(
+            &self.data.transform, &[transform], 0
+        )?;
+        Ok(())
+    }
+
     fn update_rect_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
         let properties = draw_params.into();
-        self.encoder
-            .update_buffer(&self.data.rect_properties, &[properties], 0)?;
+        self.encoder.update_buffer(
+            &self.data.rect_instance_properties, &[properties], 0
+        )?;
+        self.quad_slice.instances = Some((1, 0));
         Ok(())
     }
 
@@ -446,7 +510,7 @@ impl GraphicsContext {
         self.screen_rect = rect;
         let half_width = rect.w / 2.0;
         let half_height = rect.h / 2.0;
-        self.shader_globals.transform = ortho(
+        self.shader_globals.projection = ortho(
             rect.x - half_width, rect.x + half_width, 
             rect.y + half_height, rect.y - half_height, 
             1.0, -1.0
