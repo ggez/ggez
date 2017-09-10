@@ -52,11 +52,9 @@ impl Vertex {
 }
 
 fn default_view() -> Matrix4<f32> {
-    Matrix4::look_at(
-        Point3::new(1.5f32, -5.0, 3.0),
-        Point3::new(0f32, 0.0, 0.0),
-        Vector3::unit_z(),
-    )
+    Matrix4::look_at(Point3::new(1.5f32, -5.0, 3.0),
+                     Point3::new(0f32, 0.0, 0.0),
+                     Vector3::unit_z())
 }
 
 struct MainState {
@@ -106,38 +104,36 @@ void main() {
     Target0 = mix(tex, vec4(0.0,0.0,0.0,0.0), blend*1.0);
 }"#;
 
-        let vertex_data = [
-            // top (0, 0, 1)
-            Vertex::new([-100, -100, 100], [0, 0]),
-            Vertex::new([100, -100, 100], [1, 0]),
-            Vertex::new([100, 100, 100], [1, 1]),
-            Vertex::new([-100, 100, 100], [0, 1]),
-            // bottom (0, 0, -1)
-            Vertex::new([-100, 100, -100], [1, 0]),
-            Vertex::new([100, 100, -100], [0, 0]),
-            Vertex::new([100, -100, -100], [0, 1]),
-            Vertex::new([-100, -100, -100], [1, 1]),
-            // right (1, 0, 0)
-            Vertex::new([100, -100, -100], [0, 0]),
-            Vertex::new([100, 100, -100], [1, 0]),
-            Vertex::new([100, 100, 100], [1, 1]),
-            Vertex::new([100, -100, 100], [0, 1]),
-            // left (-1, 0, 0)
-            Vertex::new([-100, -100, 100], [1, 0]),
-            Vertex::new([-100, 100, 100], [0, 0]),
-            Vertex::new([-100, 100, -100], [0, 1]),
-            Vertex::new([-100, -100, -100], [1, 1]),
-            // front (0, 1, 0)
-            Vertex::new([100, 100, -100], [1, 0]),
-            Vertex::new([-100, 100, -100], [0, 0]),
-            Vertex::new([-100, 100, 100], [0, 1]),
-            Vertex::new([100, 100, 100], [1, 1]),
-            // back (0, -1, 0)
-            Vertex::new([100, -100, 100], [0, 0]),
-            Vertex::new([-100, -100, 100], [1, 0]),
-            Vertex::new([-100, -100, -100], [1, 1]),
-            Vertex::new([100, -100, -100], [0, 1]),
-        ];
+        let vertex_data = [// top (0, 0, 1)
+                           Vertex::new([-100, -100, 100], [0, 0]),
+                           Vertex::new([100, -100, 100], [1, 0]),
+                           Vertex::new([100, 100, 100], [1, 1]),
+                           Vertex::new([-100, 100, 100], [0, 1]),
+                           // bottom (0, 0, -1)
+                           Vertex::new([-100, 100, -100], [1, 0]),
+                           Vertex::new([100, 100, -100], [0, 0]),
+                           Vertex::new([100, -100, -100], [0, 1]),
+                           Vertex::new([-100, -100, -100], [1, 1]),
+                           // right (1, 0, 0)
+                           Vertex::new([100, -100, -100], [0, 0]),
+                           Vertex::new([100, 100, -100], [1, 0]),
+                           Vertex::new([100, 100, 100], [1, 1]),
+                           Vertex::new([100, -100, 100], [0, 1]),
+                           // left (-1, 0, 0)
+                           Vertex::new([-100, -100, 100], [1, 0]),
+                           Vertex::new([-100, 100, 100], [0, 0]),
+                           Vertex::new([-100, 100, -100], [0, 1]),
+                           Vertex::new([-100, -100, -100], [1, 1]),
+                           // front (0, 1, 0)
+                           Vertex::new([100, 100, -100], [1, 0]),
+                           Vertex::new([-100, 100, -100], [0, 0]),
+                           Vertex::new([-100, 100, 100], [0, 1]),
+                           Vertex::new([100, 100, 100], [1, 1]),
+                           // back (0, -1, 0)
+                           Vertex::new([100, -100, 100], [0, 0]),
+                           Vertex::new([-100, -100, 100], [1, 0]),
+                           Vertex::new([-100, -100, -100], [1, 1]),
+                           Vertex::new([100, -100, -100], [0, 1])];
 
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let index_data: &[u16] = &[
@@ -159,10 +155,12 @@ void main() {
             )
             .unwrap();
 
-        let sinfo =
-            texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
+        let sinfo = texture::SamplerInfo::new(texture::FilterMethod::Bilinear,
+                                              texture::WrapMode::Clamp);
 
-        let pso = factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap();
+        let pso = factory
+            .create_pipeline_simple(vs, fs, pipe::new())
+            .unwrap();
 
         let proj = cgmath::perspective(Deg(45.0f32), 4.0 / 3.0, 1.0, 10.0);
 
@@ -206,10 +204,8 @@ impl event::EventHandler for MainState {
         }
 
 
-        let dest_point = graphics::Point::new(
-            self.text.width() as f32 / 2.0 + 10.0,
-            self.text.height() as f32 / 2.0 + 10.0,
-        );
+        let dest_point = graphics::Point::new(self.text.width() as f32 / 2.0 + 10.0,
+                                              self.text.height() as f32 / 2.0 + 10.0);
         graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         graphics::present(ctx);
         self.frames += 1;

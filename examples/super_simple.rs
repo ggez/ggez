@@ -22,16 +22,14 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        graphics::circle(
-            ctx,
-            DrawMode::Fill,
-            Point {
-                x: self.pos_x,
-                y: 380.0,
-            },
-            100.0,
-            2.0,
-        )?;
+        graphics::circle(ctx,
+                         DrawMode::Fill,
+                         Point {
+                             x: self.pos_x,
+                             y: 380.0,
+                         },
+                         100.0,
+                         2.0)?;
         graphics::present(ctx);
         Ok(())
     }

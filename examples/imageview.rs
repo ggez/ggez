@@ -54,8 +54,8 @@ impl MainState {
 
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48).unwrap();
         let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
-        let bmpfont =
-            graphics::Font::new_bitmap(ctx, "/arial.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ").unwrap();
+        let bmpfont = graphics::Font::new_bitmap(ctx, "/arial.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+            .unwrap();
         let bmptext = graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
         let sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
 

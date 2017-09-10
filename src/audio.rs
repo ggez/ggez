@@ -28,10 +28,8 @@ pub struct AudioContext {
 
 impl AudioContext {
     pub fn new() -> GameResult<AudioContext> {
-        let error = GameError::AudioError(String::from(
-            "Could not initialize sound system (for \
-             some reason)",
-        ));
+        let error = GameError::AudioError(String::from("Could not initialize sound system (for \
+             some reason)"));
         let e = rodio::get_default_endpoint().ok_or(error)?;
         Ok(AudioContext { endpoint: e })
     }
@@ -59,8 +57,7 @@ impl SoundData {
     }
 
     pub fn from_read<R>(reader: &mut R) -> GameResult<Self>
-    where
-        R: Read,
+        where R: Read
     {
         let mut buffer = Vec::new();
         reader.read_to_end(&mut buffer)?;
@@ -116,9 +113,9 @@ impl Source {
         let sink = rodio::Sink::new(&context.audio_context.endpoint);
         let cursor = io::Cursor::new(data);
         Ok(Source {
-            data: cursor,
-            sink: sink,
-        })
+               data: cursor,
+               sink: sink,
+           })
     }
 
     /// Plays the Source.

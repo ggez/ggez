@@ -26,8 +26,7 @@ use std::thread;
 /// things.
 #[derive(Debug, Clone)]
 struct LogBuffer<T>
-where
-    T: Clone,
+    where T: Clone
 {
     head: usize,
     size: usize,
@@ -35,8 +34,7 @@ where
 }
 
 impl<T> LogBuffer<T>
-where
-    T: Clone + Copy,
+    where T: Clone + Copy
 {
     fn new(size: usize, init_val: T) -> LogBuffer<T> {
         let mut v = Vec::with_capacity(size);
@@ -94,7 +92,7 @@ impl TimeContext {
             last_instant: time::Instant::now(),
             frame_durations: LogBuffer::new(TIME_LOG_FRAMES, time::Duration::new(0, 0)),
             residual_update_dt: time::Duration::from_secs(0),
-            frame_count: 0
+            frame_count: 0,
         }
     }
 

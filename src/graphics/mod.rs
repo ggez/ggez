@@ -40,24 +40,22 @@ const GL_MINOR_VERSION: u8 = 2;
 
 
 
-const QUAD_VERTS: [Vertex; 4] = [
-    Vertex {
-        pos: [-0.5, -0.5],
-        uv: [0.0, 0.0],
-    },
-    Vertex {
-        pos: [0.5, -0.5],
-        uv: [1.0, 0.0],
-    },
-    Vertex {
-        pos: [0.5, 0.5],
-        uv: [1.0, 1.0],
-    },
-    Vertex {
-        pos: [-0.5, 0.5],
-        uv: [0.0, 1.0],
-    },
-];
+const QUAD_VERTS: [Vertex; 4] = [Vertex {
+                                     pos: [-0.5, -0.5],
+                                     uv: [0.0, 0.0],
+                                 },
+                                 Vertex {
+                                     pos: [0.5, -0.5],
+                                     uv: [1.0, 0.0],
+                                 },
+                                 Vertex {
+                                     pos: [0.5, 0.5],
+                                     uv: [1.0, 1.0],
+                                 },
+                                 Vertex {
+                                     pos: [-0.5, 0.5],
+                                     uv: [0.0, 1.0],
+                                 }];
 
 const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
@@ -166,28 +164,22 @@ impl From<DrawParam> for GlobalTransform {
 /// on the generic Factory trait, it seems, so for now we just kind
 /// of hack it.
 struct SamplerCache<R>
-where
-    R: gfx::Resources,
+    where R: gfx::Resources
 {
     samplers: HashMap<texture::SamplerInfo, gfx::handle::Sampler<R>>,
 }
 
 impl<R> SamplerCache<R>
-where
-    R: gfx::Resources,
+    where R: gfx::Resources
 {
     fn new() -> Self {
-        SamplerCache {
-            samplers: HashMap::new(),
-        }
+        SamplerCache { samplers: HashMap::new() }
     }
-    fn get_or_insert<F>(
-        &mut self,
-        info: texture::SamplerInfo,
-        factory: &mut F,
-    ) -> gfx::handle::Sampler<R>
-    where
-        F: gfx::Factory<R>,
+    fn get_or_insert<F>(&mut self,
+                        info: texture::SamplerInfo,
+                        factory: &mut F)
+                        -> gfx::handle::Sampler<R>
+        where F: gfx::Factory<R>
     {
         let sampler = self.samplers
             .entry(info)
@@ -204,11 +196,10 @@ where
 /// into part of the `Context` and so has to be public, at least
 /// until the `pub(restricted)` feature is stable.
 pub struct GraphicsContextGeneric<R, F, C, D>
-where
-    R: gfx::Resources,
-    F: gfx::Factory<R>,
-    C: gfx::CommandBuffer<R>,
-    D: gfx::Device<Resources = R, CommandBuffer = C>,
+    where R: gfx::Resources,
+          F: gfx::Factory<R>,
+          C: gfx::CommandBuffer<R>,
+          D: gfx::Device<Resources = R, CommandBuffer = C>
 {
     background_color: Color,
     shader_globals: Globals,
@@ -237,11 +228,10 @@ where
 }
 
 impl<R, F, C, D> fmt::Debug for GraphicsContextGeneric<R, F, C, D>
-where
-    R: gfx::Resources,
-    F: gfx::Factory<R>,
-    C: gfx::CommandBuffer<R>,
-    D: gfx::Device<Resources = R, CommandBuffer = C>,
+    where R: gfx::Resources,
+          F: gfx::Factory<R>,
+          C: gfx::CommandBuffer<R>,
+          D: gfx::Device<Resources = R, CommandBuffer = C>
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<GraphicsContext: {:p}>", self)
@@ -249,12 +239,10 @@ where
 }
 
 /// A concrete graphics context for GL rendering.
-pub type GraphicsContext = GraphicsContextGeneric<
-    gfx_device_gl::Resources,
-    gfx_device_gl::Factory,
-    gfx_device_gl::CommandBuffer,
-    gfx_device_gl::Device,
->;
+pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources,
+                                                  gfx_device_gl::Factory,
+                                                  gfx_device_gl::CommandBuffer,
+                                                  gfx_device_gl::Device>;
 
 /// This can probably be removed but might be
 /// handy to keep around a bit longer.  Just in case something else
@@ -278,11 +266,11 @@ fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
             let window_builder = video.window("so full of hate", 640, 480);
             let result = gfx_window_sdl::init::<ColorFormat, DepthFormat>(window_builder);
             match result {
-                Ok(_) => println!(
-                    "Ok, got GL {}.{}.",
-                    gl.context_major_version(),
-                    gl.context_minor_version()
-                ),
+                Ok(_) => {
+                    println!("Ok, got GL {}.{}.",
+                             gl.context_major_version(),
+                             gl.context_minor_version())
+                }
                 Err(res) => println!("Request failed: {:?}", res),
             }
         }
@@ -293,22 +281,27 @@ impl From<gfx::buffer::CreationError> for GameError {
     fn from(e: gfx::buffer::CreationError) -> Self {
         use gfx::buffer::CreationError;
         match e {
-            CreationError::UnsupportedBind(b) => GameError::RenderError(format!("Could not create buffer: Unsupported Bind ({:?})", b)),
-            CreationError::UnsupportedUsage(u) => GameError::RenderError(format!("Could not create buffer: Unsupported Usage ({:?})", u)),
-            CreationError::Other => GameError::RenderError(format!("Could not create buffer: Unknown error"))
+            CreationError::UnsupportedBind(b) => {
+                GameError::RenderError(format!("Could not create buffer: Unsupported Bind ({:?})",
+                                               b))
+            }
+            CreationError::UnsupportedUsage(u) => {
+                GameError::RenderError(format!("Could not create buffer: Unsupported Usage ({:?})",
+                                               u))
+            }
+            CreationError::Other => GameError::RenderError(format!("Could not create buffer: Unknown error")),
         }
     }
 }
 
 impl GraphicsContext {
-    pub fn new(
-        video: sdl2::VideoSubsystem,
-        window_title: &str,
-        screen_width: u32,
-        screen_height: u32,
-        vsync: bool,
-        resize: bool,
-    ) -> GameResult<GraphicsContext> {
+    pub fn new(video: sdl2::VideoSubsystem,
+               window_title: &str,
+               screen_width: u32,
+               screen_height: u32,
+               vsync: bool,
+               resize: bool)
+               -> GameResult<GraphicsContext> {
         // WINDOW SETUP
         let gl = video.gl_attr();
         gl.set_context_version(GL_MAJOR_VERSION, GL_MINOR_VERSION);
@@ -335,29 +328,27 @@ impl GraphicsContext {
         let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer().into();
 
-        let pso = factory.create_pipeline_simple(
-            include_bytes!("shader/basic_150.glslv"),
-            include_bytes!("shader/basic_150.glslf"),
-            pipe::new(),
-        )?;
+        let pso = factory
+            .create_pipeline_simple(include_bytes!("shader/basic_150.glslv"),
+                                    include_bytes!("shader/basic_150.glslf"),
+                                    pipe::new())?;
 
-        let rect_inst_props = factory.create_buffer(
-            1,
-            gfx::buffer::Role::Vertex,
-            gfx::memory::Usage::Dynamic,
-            gfx::SHADER_RESOURCE
-        )?;
+        let rect_inst_props = factory
+            .create_buffer(1,
+                           gfx::buffer::Role::Vertex,
+                           gfx::memory::Usage::Dynamic,
+                           gfx::SHADER_RESOURCE)?;
 
         let (quad_vertex_buffer, mut quad_slice) =
             factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
 
-        quad_slice.instances = Some((1,0));
+        quad_slice.instances = Some((1, 0));
 
         let globals_buffer = factory.create_constant_buffer(1);
         let transform_buffer = factory.create_constant_buffer(1);
         let mut samplers: SamplerCache<gfx_device_gl::Resources> = SamplerCache::new();
-        let sampler_info =
-            texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
+        let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Bilinear,
+                                                     texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
         let white_image =
             Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255])?;
@@ -428,17 +419,15 @@ impl GraphicsContext {
     }
 
     fn update_transform(&mut self, transform: GlobalTransform) -> GameResult<()> {
-        self.encoder.update_buffer(
-            &self.data.transform, &[transform], 0
-        )?;
+        self.encoder
+            .update_buffer(&self.data.transform, &[transform], 0)?;
         Ok(())
     }
 
     fn update_rect_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
         let properties = draw_params.into();
-        self.encoder.update_buffer(
-            &self.data.rect_instance_properties, &[properties], 0
-        )?;
+        self.encoder
+            .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;
         self.quad_slice.instances = Some((1, 0));
         Ok(())
     }
@@ -456,7 +445,7 @@ impl GraphicsContext {
         &mut self.window
     }
 
-    
+
     /// Returns the size of the window in pixels as (height, width).
     pub fn get_size(&self) -> (u32, u32) {
         self.window.size()
@@ -479,42 +468,41 @@ impl GraphicsContext {
     }
 
     /// EXPERIMENTAL function to get the gfx-rs `Encoder` object.
-    pub fn get_encoder(
-        &mut self,
-    ) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
+    pub fn get_encoder
+        (&mut self)
+         -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
         &mut self.encoder
     }
 
     /// EXPERIMENTAL function to get the gfx-rs depth view
-    pub fn get_depth_view(
-        &self,
-    ) -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
+    pub fn get_depth_view
+        (&self)
+         -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
         self.depth_view.clone()
     }
 
     /// EXPERIMENTAL function to get the gfx-rs color view
-    pub fn get_color_view(
-        &self,
-    ) -> gfx::handle::RenderTargetView<
-        gfx_device_gl::Resources,
-        (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
-    > {
+    pub fn get_color_view(&self)
+                          -> gfx::handle::RenderTargetView<gfx_device_gl::Resources,
+                                                           (gfx::format::R8_G8_B8_A8,
+                                                            gfx::format::Srgb)> {
         self.data.out.clone()
     }
 
     /// Shortcut function to set the screen rect ortho mode
     /// to a given `Rect`.
-    /// 
+    ///
     /// Call `update_globals()` to apply them after calling this.
     fn set_graphics_rect(&mut self, rect: Rect) {
         self.screen_rect = rect;
         let half_width = rect.w / 2.0;
         let half_height = rect.h / 2.0;
-        self.shader_globals.projection = ortho(
-            rect.x - half_width, rect.x + half_width, 
-            rect.y + half_height, rect.y - half_height, 
-            1.0, -1.0
-        );
+        self.shader_globals.projection = ortho(rect.x - half_width,
+                                               rect.x + half_width,
+                                               rect.y + half_height,
+                                               rect.y - half_height,
+                                               1.0,
+                                               -1.0);
     }
 }
 
@@ -544,12 +532,10 @@ fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [
     let c3r2 = -(far + near) / (far - near);
     let c3r3 = 1.0;
 
-    [
-        [c0r0, c1r0, c2r0, c3r0],
-        [c0r1, c1r1, c2r1, c3r1],
-        [c0r2, c1r2, c2r2, c3r2],
-        [c0r3, c1r3, c2r3, c3r3],
-    ]
+    [[c0r0, c1r0, c2r0, c3r0],
+     [c0r1, c1r1, c2r1, c3r1],
+     [c0r2, c1r2, c2r2, c3r2],
+     [c0r3, c1r3, c2r3, c3r3]]
 }
 
 // **********************************************************************
@@ -605,26 +591,24 @@ pub fn arc(_ctx: &mut Context,
 */
 
 /// Draw a circle.
-pub fn circle(
-    ctx: &mut Context,
-    mode: DrawMode,
-    point: Point,
-    radius: f32,
-    tolerance: f32,
-) -> GameResult<()> {
+pub fn circle(ctx: &mut Context,
+              mode: DrawMode,
+              point: Point,
+              radius: f32,
+              tolerance: f32)
+              -> GameResult<()> {
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
     m.draw(ctx, Point::default(), 0.0)
 }
 
 /// Draw an ellipse.
-pub fn ellipse(
-    ctx: &mut Context,
-    mode: DrawMode,
-    point: Point,
-    radius1: f32,
-    radius2: f32,
-    tolerance: f32,
-) -> GameResult<()> {
+pub fn ellipse(ctx: &mut Context,
+               mode: DrawMode,
+               point: Point,
+               radius1: f32,
+               radius2: f32,
+               tolerance: f32)
+               -> GameResult<()> {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
     m.draw(ctx, Point::default(), 0.0)
 }
@@ -676,12 +660,10 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     let x2 = x + (w / 2.0);
     let y1 = y - (h / 2.0);
     let y2 = y + (h / 2.0);
-    let pts = [
-        [x1, y1].into(),
-        [x2, y1].into(),
-        [x2, y2].into(),
-        [x1, y2].into(),
-    ];
+    let pts = [[x1, y1].into(),
+               [x2, y1].into(),
+               [x2, y2].into(),
+               [x1, y2].into()];
     polygon(ctx, mode, &pts)
 }
 
@@ -725,14 +707,12 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 
     let gl = video.gl_attr();
 
-    Ok(format!(
-        "Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
-        GL_MAJOR_VERSION,
-        GL_MINOR_VERSION,
-        gl.context_major_version(),
-        gl.context_minor_version(),
-        gl.context_profile()
-    ))
+    Ok(format!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
+               GL_MAJOR_VERSION,
+               GL_MINOR_VERSION,
+               gl.context_major_version(),
+               gl.context_minor_version(),
+               gl.context_profile()))
 }
 
 /// Returns a rectangle defining the coordinate system of the screen.
@@ -766,7 +746,8 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
     let sampler_info = texture::SamplerInfo::new(new_mode, texture::WrapMode::Clamp);
     // We create the sampler now so we don't end up creating it at some
     // random-ass time while we're trying to draw stuff.
-    let _sampler = gfx.samplers.get_or_insert(sampler_info, &mut *gfx.factory);
+    let _sampler = gfx.samplers
+        .get_or_insert(sampler_info, &mut *gfx.factory);
     gfx.default_sampler_info = sampler_info;
 }
 
@@ -792,10 +773,7 @@ pub fn set_point_size(ctx: &mut Context, size: f32) {
 /// so if you wanted a coordinate system from (0,0) at the bottom-left
 /// to (640, 480) at the top-right, you would call this function with
 /// a `Rect{x: 320, y: 240, w: 640, h: 480}`
-pub fn set_screen_coordinates(
-    context: &mut Context,
-    rect: Rect,
-) -> GameResult<()> {
+pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
     gfx.set_graphics_rect(rect);
     gfx.update_globals()
@@ -807,12 +785,11 @@ pub fn set_screen_coordinates(
 /// the screen or setting the screen coordinates viewport to some undefined value.
 /// It is recommended to call `set_screen_coordinates()` after changing the window
 /// size to make sure everything is what you want it to be.
-pub fn set_mode(
-    context: &mut Context,
-    width: u32,
-    height: u32,
-    mode: WindowMode,
-) -> GameResult<()> {
+pub fn set_mode(context: &mut Context,
+                width: u32,
+                height: u32,
+                mode: WindowMode)
+                -> GameResult<()> {
     {
         let window = &mut context.gfx_context.get_window_mut();
         window.set_size(width, height)?;
@@ -845,9 +822,7 @@ pub fn get_fullscreen_modes(context: &Context, display_idx: i32) -> GameResult<V
     (0..num_modes)
         .map(|i| video.display_mode(display_idx, i))
         .map(|ires| ires.map_err(GameError::VideoError))
-        .map(|gres| {
-            gres.map(|dispmode| (dispmode.w as u32, dispmode.h as u32))
-        })
+        .map(|gres| gres.map(|dispmode| (dispmode.w as u32, dispmode.h as u32)))
         .collect()
 }
 
@@ -916,22 +891,19 @@ pub trait Drawable {
     /// * `rotation` - orientation of the graphic in radians.
     ///
     fn draw(&self, ctx: &mut Context, dest: Point, rotation: f32) -> GameResult<()> {
-        self.draw_ex(
-            ctx,
-            DrawParam {
-                dest: dest,
-                rotation: rotation,
-                ..Default::default()
-            },
-        )
+        self.draw_ex(ctx,
+                     DrawParam {
+                         dest: dest,
+                         rotation: rotation,
+                         ..Default::default()
+                     })
     }
 }
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
 #[derive(Clone)]
 pub struct ImageGeneric<R>
-where
-    R: gfx::Resources,
+    where R: gfx::Resources
 {
     texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
     sampler_info: gfx::texture::SamplerInfo,
@@ -989,30 +961,26 @@ impl Image {
     }
 
     /// Creates a new `Image` from the given buffer of `u8` RGBA values.
-    pub fn from_rgba8(
-        context: &mut Context,
-        width: u16,
-        height: u16,
-        rgba: &[u8],
-    ) -> GameResult<Image> {
-        Image::make_raw(
-            &mut context.gfx_context.factory,
-            &context.gfx_context.default_sampler_info,
-            width,
-            height,
-            rgba,
-        )
+    pub fn from_rgba8(context: &mut Context,
+                      width: u16,
+                      height: u16,
+                      rgba: &[u8])
+                      -> GameResult<Image> {
+        Image::make_raw(&mut context.gfx_context.factory,
+                        &context.gfx_context.default_sampler_info,
+                        width,
+                        height,
+                        rgba)
     }
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
-    fn make_raw(
-        factory: &mut gfx_device_gl::Factory,
-        sampler_info: &texture::SamplerInfo,
-        width: u16,
-        height: u16,
-        rgba: &[u8],
-    ) -> GameResult<Image> {
+    fn make_raw(factory: &mut gfx_device_gl::Factory,
+                sampler_info: &texture::SamplerInfo,
+                width: u16,
+                height: u16,
+                rgba: &[u8])
+                -> GameResult<Image> {
         // Check if the texture is not power of 2, and if not, pad it out.
         let view = if false {
             // let view = if !(width.is_power_of_two() && height.is_power_of_two()) {
@@ -1027,12 +995,10 @@ impl Image {
             view
         } else {
             if width == 0 || height == 0 {
-                let msg = format!(
-                    "Tried to create a texture of size {}x{}, each dimension must \
+                let msg = format!("Tried to create a texture of size {}x{}, each dimension must \
                      be >0",
-                    width,
-                    height
-                );
+                                  width,
+                                  height);
                 return Err(GameError::ResourceLoadError(msg));
             }
             let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
@@ -1042,11 +1008,11 @@ impl Image {
 
         };
         Ok(Image {
-            texture: view,
-            sampler_info: *sampler_info,
-            width: width as u32,
-            height: height as u32,
-        })
+               texture: view,
+               sampler_info: *sampler_info,
+               width: width as u32,
+               height: height as u32,
+           })
     }
 
     /// A little helper function that creates a new Image that is just
@@ -1102,15 +1068,13 @@ impl Image {
 
 impl fmt::Debug for Image {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "<Image: {}x{}, {:p}, texture address {:p}, sampler: {:?}>",
-            self.width(),
-            self.height(),
-            self,
-            &self.texture,
-            &self.sampler_info
-        )
+        write!(f,
+               "<Image: {}x{}, {:p}, texture address {:p}, sampler: {:?}>",
+               self.width(),
+               self.height(),
+               self,
+               &self.texture,
+               &self.sampler_info)
     }
 }
 
@@ -1176,18 +1140,18 @@ impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
 }
 
 impl Mesh {
-    fn from_vbuf(
-        ctx: &mut Context,
-        buffer: &t::geometry_builder::VertexBuffers<Vertex>,
-    ) -> GameResult<Mesh> {
-        let (vbuf, slice) = ctx.gfx_context
-            .factory
-            .create_vertex_buffer_with_slice(&buffer.vertices[..], &buffer.indices[..]);
+    fn from_vbuf(ctx: &mut Context,
+                 buffer: &t::geometry_builder::VertexBuffers<Vertex>)
+                 -> GameResult<Mesh> {
+        let (vbuf, slice) =
+            ctx.gfx_context
+                .factory
+                .create_vertex_buffer_with_slice(&buffer.vertices[..], &buffer.indices[..]);
 
         Ok(Mesh {
-            buffer: vbuf,
-            slice: slice,
-        })
+               buffer: vbuf,
+               slice: slice,
+           })
     }
 
 
@@ -1199,13 +1163,12 @@ impl Mesh {
 
     /// Create a new mesh for a circle.
     /// Stroked circles are still WIP, sorry.
-    pub fn new_circle(
-        ctx: &mut Context,
-        mode: DrawMode,
-        point: Point,
-        radius: f32,
-        tolerance: f32,
-    ) -> GameResult<Mesh> {
+    pub fn new_circle(ctx: &mut Context,
+                      mode: DrawMode,
+                      point: Point,
+                      radius: f32,
+                      tolerance: f32)
+                      -> GameResult<Mesh> {
         {
             let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
             match mode {
@@ -1214,24 +1177,20 @@ impl Mesh {
                     // different types; one is GeometryBuilder<StrokeVertex> and the other is
                     // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::fill_circle(
-                        t::math::point(point.x, point.y),
-                        radius,
-                        tolerance,
-                        builder,
-                    );
+                    t::basic_shapes::fill_circle(t::math::point(point.x, point.y),
+                                                 radius,
+                                                 tolerance,
+                                                 builder);
                 }
                 DrawMode::Line => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let options = t::StrokeOptions::default()
                         .with_line_width(ctx.gfx_context.line_width)
                         .with_tolerance(tolerance);
-                    t::basic_shapes::stroke_circle(
-                        t::math::point(point.x, point.y),
-                        radius,
-                        &options,
-                        builder,
-                    );
+                    t::basic_shapes::stroke_circle(t::math::point(point.x, point.y),
+                                                   radius,
+                                                   &options,
+                                                   builder);
                 }
             };
             Mesh::from_vbuf(ctx, buffers)
@@ -1241,128 +1200,99 @@ impl Mesh {
 
     /// Create a new mesh for an ellipse.
     /// Stroked ellipses are still WIP, sorry.
-    pub fn new_ellipse(
-        ctx: &mut Context,
-        mode: DrawMode,
-        point: Point,
-        radius1: f32,
-        radius2: f32,
-        tolerance: f32,
-    ) -> GameResult<Mesh> {
-            use euclid::Length;
-            let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
-            match mode {
-                DrawMode::Fill => {
-                    // These builders have to be in separate match arms 'cause they're actually
-                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                    // GeometryBuilder<FillVertex>
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::fill_ellipse(
-                        t::math::point(point.x, point.y),
-                        t::math::vec2(radius1, radius2),
-                        Length::new(0.0),
-                        tolerance,
-                        builder,
-                    );
-                }
-                DrawMode::Line => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let options = t::StrokeOptions::default()
-                        .with_line_width(ctx.gfx_context.line_width)
-                        .with_tolerance(tolerance);
-                    t::basic_shapes::stroke_ellipse(
-                        t::math::point(point.x, point.y),
-                        t::math::vec2(radius1, radius2),
-                        Length::new(0.0),
-                        &options,
-                        builder,
-                    );
-                }
-            };
-            Mesh::from_vbuf(ctx, buffers)
+    pub fn new_ellipse(ctx: &mut Context,
+                       mode: DrawMode,
+                       point: Point,
+                       radius1: f32,
+                       radius2: f32,
+                       tolerance: f32)
+                       -> GameResult<Mesh> {
+        use euclid::Length;
+        let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
+        match mode {
+            DrawMode::Fill => {
+                // These builders have to be in separate match arms 'cause they're actually
+                // different types; one is GeometryBuilder<StrokeVertex> and the other is
+                // GeometryBuilder<FillVertex>
+                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                t::basic_shapes::fill_ellipse(t::math::point(point.x, point.y),
+                                              t::math::vec2(radius1, radius2),
+                                              Length::new(0.0),
+                                              tolerance,
+                                              builder);
+            }
+            DrawMode::Line => {
+                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                let options = t::StrokeOptions::default()
+                    .with_line_width(ctx.gfx_context.line_width)
+                    .with_tolerance(tolerance);
+                t::basic_shapes::stroke_ellipse(t::math::point(point.x, point.y),
+                                                t::math::vec2(radius1, radius2),
+                                                Length::new(0.0),
+                                                &options,
+                                                builder);
+            }
+        };
+        Mesh::from_vbuf(ctx, buffers)
     }
 
     /// Create a new mesh for series of connected lines
-    pub fn new_polyline(
-        ctx: &mut Context,
-        mode: DrawMode,
-        points: &[Point],
-        width: f32)
-        -> GameResult<Mesh> {
-            let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
-            let points = points
-                .into_iter()
-                .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
-            match mode {
-                DrawMode::Fill => {
-                    // These builders have to be in separate match arms 'cause they're actually
-                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                    // GeometryBuilder<FillVertex>
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let tessellator = &mut t::FillTessellator::new();
-                    let options = t::FillOptions::default();
-                    t::basic_shapes::fill_polyline(
-                        points,
-                        tessellator,
-                        &options,
-                        builder,
-                    ).unwrap();
-                }
-                DrawMode::Line => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let options = t::StrokeOptions::default()
-                        .with_line_width(width);
-                    t::basic_shapes::stroke_polyline(
-                        points,
-                        false,
-                        &options,
-                        builder,
-                    );
-                }
-            };
-            Mesh::from_vbuf(ctx, buffers)
+    pub fn new_polyline(ctx: &mut Context,
+                        mode: DrawMode,
+                        points: &[Point],
+                        width: f32)
+                        -> GameResult<Mesh> {
+        let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
+        let points = points
+            .into_iter()
+            .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
+        match mode {
+            DrawMode::Fill => {
+                // These builders have to be in separate match arms 'cause they're actually
+                // different types; one is GeometryBuilder<StrokeVertex> and the other is
+                // GeometryBuilder<FillVertex>
+                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                let tessellator = &mut t::FillTessellator::new();
+                let options = t::FillOptions::default();
+                t::basic_shapes::fill_polyline(points, tessellator, &options, builder).unwrap();
+            }
+            DrawMode::Line => {
+                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                let options = t::StrokeOptions::default().with_line_width(width);
+                t::basic_shapes::stroke_polyline(points, false, &options, builder);
+            }
+        };
+        Mesh::from_vbuf(ctx, buffers)
     }
 
 
     /// Create a new mesh for closed polygon
-    pub fn new_polygon(
-        ctx: &mut Context,
-        mode: DrawMode,
-        points: &[Point],
-        width: f32)
-        -> GameResult<Mesh> {
-            let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
-            let points = points
-                .into_iter()
-                .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
-            match mode {
-                DrawMode::Fill => {
-                    // These builders have to be in separate match arms 'cause they're actually
-                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                    // GeometryBuilder<FillVertex>
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let tessellator = &mut t::FillTessellator::new();
-                    let options = t::FillOptions::default();
-                    t::basic_shapes::fill_polyline(
-                        points,
-                        tessellator,
-                        &options,
-                        builder,
-                    ).unwrap();
-                }
-                DrawMode::Line => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let options = t::StrokeOptions::default()
-                        .with_line_width(width);
-                    t::basic_shapes::stroke_polyline(
-                        points,
-                        true,
-                        &options,
-                        builder,
-                    );
-                }
-            };
-            Mesh::from_vbuf(ctx, buffers)
+    pub fn new_polygon(ctx: &mut Context,
+                       mode: DrawMode,
+                       points: &[Point],
+                       width: f32)
+                       -> GameResult<Mesh> {
+        let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
+        let points = points
+            .into_iter()
+            .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
+        match mode {
+            DrawMode::Fill => {
+                // These builders have to be in separate match arms 'cause they're actually
+                // different types; one is GeometryBuilder<StrokeVertex> and the other is
+                // GeometryBuilder<FillVertex>
+                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                let tessellator = &mut t::FillTessellator::new();
+                let options = t::FillOptions::default();
+                t::basic_shapes::fill_polyline(points, tessellator, &options, builder).unwrap();
+            }
+            DrawMode::Line => {
+                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                let options = t::StrokeOptions::default().with_line_width(width);
+                t::basic_shapes::stroke_polyline(points, true, &options, builder);
+            }
+        };
+        Mesh::from_vbuf(ctx, buffers)
     }
 
     /// Create a new `Mesh` from a raw list of triangles.
@@ -1373,20 +1303,20 @@ impl Mesh {
         let points: Vec<Vertex> = triangles
             .into_iter()
             .map(|p| {
-                Vertex {
-                    pos: (*p).into(),
-                    uv: (*p).into(),
-                }
-            })
+                     Vertex {
+                         pos: (*p).into(),
+                         uv: (*p).into(),
+                     }
+                 })
             .collect();
         let (vbuf, slice) = ctx.gfx_context
             .factory
             .create_vertex_buffer_with_slice(&points[..], ());
 
         Ok(Mesh {
-            buffer: vbuf,
-            slice: slice,
-        })
+               buffer: vbuf,
+               slice: slice,
+           })
     }
 }
 
@@ -1429,10 +1359,8 @@ mod tests {
                 let dst_row_offset = (i * width * 4) as usize;
                 println!("{} {}", i, j);
                 if i < HEIGHT && j < WIDTH {
-                    assert_eq!(
-                        res[dst_row_offset + offset_within_row],
-                        from[src_row_offset + offset_within_row]
-                    );
+                    assert_eq!(res[dst_row_offset + offset_within_row],
+                               from[src_row_offset + offset_within_row]);
                 } else {
                     assert_eq!(res[dst_row_offset + offset_within_row], 0);
                 }

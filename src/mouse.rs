@@ -43,5 +43,7 @@ pub fn get_position(ctx: &Context) -> GameResult<Point> {
 /// Uses strictly window-only coordinates.
 pub fn set_position(ctx: &Context, point: Point) {
     let window = ctx.gfx_context.get_window();
-    ctx.sdl_context.mouse().warp_mouse_in_window(window, point.x as i32, point.y as i32)
+    ctx.sdl_context
+        .mouse()
+        .warp_mouse_in_window(window, point.x as i32, point.y as i32)
 }
