@@ -23,6 +23,8 @@ use gfx_device_gl;
 use gfx_window_sdl;
 use gfx::Factory;
 
+use nalgebra as na;
+
 
 use context::Context;
 use GameError;
@@ -124,10 +126,10 @@ impl From<DrawParam> for RectInstanceProperties {
     fn from(p: DrawParam) -> Self {
         RectInstanceProperties {
             src: p.src.into(),
-            dest: p.dest.into(),
-            scale: [p.scale.x, p.scale.y],
-            offset: p.offset.into(),
-            shear: p.shear.into(),
+            dest: types::pt2vec(p.dest),
+            scale: types::pt2vec(p.scale),
+            offset: types::pt2vec(p.offset),
+            shear: types::pt2vec(p.shear),
             rotation: p.rotation,
         }
     }
@@ -148,10 +150,10 @@ impl Default for GlobalTransform {
 impl From<DrawParam> for GlobalTransform {
     fn from(p: DrawParam) -> Self {
         GlobalTransform {
-            translation: p.dest.into(),
-            scale: [p.scale.x, p.scale.y],
-            offset: p.offset.into(),
-            shear: p.shear.into(),
+            translation: types::pt2vec(p.dest),
+            scale: types::pt2vec(p.scale),
+            offset: types::pt2vec(p.offset),
+            shear: types::pt2vec(p.shear),
             rotation: p.rotation,
         }
     }
@@ -598,7 +600,7 @@ pub fn circle(ctx: &mut Context,
               tolerance: f32)
               -> GameResult<()> {
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
-    m.draw(ctx, Point::default(), 0.0)
+    m.draw(ctx, Point::origin(), 0.0)
 }
 
 /// Draw an ellipse.
@@ -610,14 +612,14 @@ pub fn ellipse(ctx: &mut Context,
                tolerance: f32)
                -> GameResult<()> {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
-    m.draw(ctx, Point::default(), 0.0)
+    m.draw(ctx, Point::origin(), 0.0)
 }
 
 /// Draws a line of one or more connected segments.
 pub fn line(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
     let w = ctx.gfx_context.line_width;
     let m = Mesh::new_line(ctx, points, w)?;
-    m.draw(ctx, Point::default(), 0.0)
+    m.draw(ctx, Point::origin(), 0.0)
 }
 
 /// Draws points.
@@ -634,7 +636,7 @@ pub fn points(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
 pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point]) -> GameResult<()> {
     let w = ctx.gfx_context.line_width;
     let m = Mesh::new_polygon(ctx, mode, vertices, w)?;
-    m.draw(ctx, Point::default(), 0.0)
+    m.draw(ctx, Point::origin(), 0.0)
 }
 
 // Renders text with the default font.
@@ -660,10 +662,10 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     let x2 = x + (w / 2.0);
     let y1 = y - (h / 2.0);
     let y2 = y + (h / 2.0);
-    let pts = [[x1, y1].into(),
-               [x2, y1].into(),
-               [x2, y2].into(),
-               [x1, y2].into()];
+    let pts = [Point::new(x1, y1),
+               Point::new(x2, y1),
+               Point::new(x2, y2),
+               Point::new(x1, y2)];
     polygon(ctx, mode, &pts)
 }
 
@@ -864,7 +866,7 @@ impl Default for DrawParam {
     fn default() -> Self {
         DrawParam {
             src: Rect::one(),
-            dest: Point::zero(),
+            dest: Point::origin(),
             rotation: 0.0,
             scale: Point::new(1.0, 1.0),
             offset: Point::new(0.0, 0.0),
@@ -1091,10 +1093,10 @@ impl Drawable for Image {
         // illusion that the screen is addressed in pixels.
         // BUGGO: Which I rather regret now.
         let invert_y = if gfx.screen_rect.h < 0.0 { 1.0 } else { -1.0 };
-        let real_scale = Point {
-            x: src_width * param.scale.x * self.width as f32,
-            y: src_height * param.scale.y * self.height as f32 * invert_y,
-        };
+        let real_scale = Point::new(
+            src_width * param.scale.x * self.width as f32,
+            src_height * param.scale.y * self.height as f32 * invert_y,
+        );
         let mut new_param = param;
         new_param.scale = real_scale;
         // Not entirely sure why the inversion is necessary, but oh well.
@@ -1304,8 +1306,8 @@ impl Mesh {
             .into_iter()
             .map(|p| {
                      Vertex {
-                         pos: (*p).into(),
-                         uv: (*p).into(),
+                         pos: types::pt2vec(*p),
+                         uv: types::pt2vec(*p),
                      }
                  })
             .collect();
