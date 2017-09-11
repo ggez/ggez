@@ -18,9 +18,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let image = graphics::Image::new(ctx, "/tile.png").unwrap();
         let batch = graphics::spritebatch::SpriteBatch::new(image);
-        let s = MainState {
-            spritebatch: batch,
-        };
+        let s = MainState { spritebatch: batch };
         Ok(s)
     }
 }
@@ -28,7 +26,7 @@ impl MainState {
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
 
-        if timer::get_ticks(ctx) % 100 == 0{
+        if timer::get_ticks(ctx) % 100 == 0 {
 
             println!("Delta frame time: {:?} ", _dt);
             println!("Average FPS: {}", timer::get_fps(ctx));
@@ -46,28 +44,32 @@ impl event::EventHandler for MainState {
                 let p = graphics::DrawParam {
                     dest: graphics::Point::new(x as f32 * 10.0, y as f32 * 10.0),
                     // scale: graphics::Point::new(0.0625, 0.0625),
-                    scale: graphics::Point::new(
-                        ((time % cycle * 2) as f32 / cycle as f32 * 6.28).cos().abs() * 0.0625,
-                        ((time % cycle * 2) as f32 / cycle as f32 * 6.28).cos().abs() * 0.0625
-                    ),
+                    scale: graphics::Point::new(((time % cycle * 2) as f32 / cycle as f32 * 6.28)
+                                                    .cos()
+                                                    .abs() *
+                                                0.0625,
+                                                ((time % cycle * 2) as f32 / cycle as f32 * 6.28)
+                                                    .cos()
+                                                    .abs() *
+                                                0.0625),
                     rotation: -2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28),
-                    .. Default::default()
+                    ..Default::default()
                 };
                 self.spritebatch.add(p);
             }
         }
         let param = graphics::DrawParam {
-            dest: graphics::Point::new(
-                ((time % cycle) as f32 / cycle as f32 * 6.28).cos() * 50.0 - 350.0,
-                ((time % cycle) as f32 / cycle as f32 * 6.28).sin() * 50.0 - 450.0,
-            ),
-            scale: graphics::Point::new(
-                ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
-                ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
-            ),
+            dest: graphics::Point::new(((time % cycle) as f32 / cycle as f32 * 6.28).cos() *
+                                       50.0 - 350.0,
+                                       ((time % cycle) as f32 / cycle as f32 * 6.28).sin() *
+                                       50.0 - 450.0),
+            scale: graphics::Point::new(((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() *
+                                        2.0 + 1.0,
+                                        ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() *
+                                        2.0 + 1.0),
             rotation: ((time % cycle) as f32 / cycle as f32 * 6.28),
             offset: graphics::Point::new(750.0, 750.0),
-            .. Default::default()
+            ..Default::default()
         };
         graphics::draw_ex(ctx, &self.spritebatch, param)?;
         self.spritebatch.clear();

@@ -55,10 +55,7 @@ impl SpriteBatch {
     /// Adds a new sprite to the sprite batch.
     ///
     /// Returns a handle with which to modify the sprite using `set()`
-    pub fn add(
-        &mut self, 
-        param: graphics::DrawParam
-    ) -> SpriteIdx {
+    pub fn add(&mut self, param: graphics::DrawParam) -> SpriteIdx {
         let src_width = param.src.w;
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
@@ -83,11 +80,7 @@ impl SpriteBatch {
     }
 
     /// Alters a sprite in the batch to use the given draw params
-    pub fn set(
-        &mut self,
-        handle: SpriteIdx,
-        param: graphics::DrawParam
-    ) -> GameResult<()> {
+    pub fn set(&mut self, handle: SpriteIdx, param: graphics::DrawParam) -> GameResult<()> {
         if handle < self.sprites.len() - 1 {
             self.sprites[handle] = param.into();
             Ok(())
@@ -103,16 +96,14 @@ impl SpriteBatch {
     pub fn flush(&self, ctx: &mut Context) -> GameResult<()> {
         let gfx = &mut ctx.gfx_context;
         if gfx.data.rect_instance_properties.len() < self.sprites.len() {
-            gfx.data.rect_instance_properties = gfx.factory.create_buffer(
-                self.sprites.len(),
-                gfx::buffer::Role::Vertex,
-                gfx::memory::Usage::Dynamic,
-                gfx::TRANSFER_DST
-            )?;
+            gfx.data.rect_instance_properties = gfx.factory
+                .create_buffer(self.sprites.len(),
+                               gfx::buffer::Role::Vertex,
+                               gfx::memory::Usage::Dynamic,
+                               gfx::TRANSFER_DST)?;
         }
-        gfx.encoder.update_buffer(
-            &gfx.data.rect_instance_properties, &self.sprites[..], 0
-        )?;
+        gfx.encoder
+            .update_buffer(&gfx.data.rect_instance_properties, &self.sprites[..], 0)?;
         Ok(())
     }
 
@@ -136,10 +127,7 @@ impl SpriteBatch {
 impl graphics::Drawable for SpriteBatch {
     /// Does not properly work yet, ideally the position, scale, etc. of the given
     /// DrawParam would be added to the DrawParam for each sprite.
-    fn draw_ex(
-        &self, ctx: &mut Context, 
-        param: graphics::DrawParam
-    ) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
         self.flush(ctx)?;
         let gfx = &mut ctx.gfx_context;
         let sampler = gfx.samplers

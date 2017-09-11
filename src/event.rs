@@ -65,14 +65,12 @@ pub trait EventHandler {
 
     fn mouse_button_up_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
 
-    fn mouse_motion_event(
-        &mut self,
-        _state: mouse::MouseState,
-        _x: i32,
-        _y: i32,
-        _xrel: i32,
-        _yrel: i32,
-    ) {
+    fn mouse_motion_event(&mut self,
+                          _state: mouse::MouseState,
+                          _x: i32,
+                          _y: i32,
+                          _xrel: i32,
+                          _yrel: i32) {
     }
 
     fn mouse_wheel_event(&mut self, _x: i32, _y: i32) {}
@@ -107,8 +105,7 @@ pub trait EventHandler {
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the `timer` module for more info.
 pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
-where
-    S: EventHandler,
+    where S: EventHandler
 {
     {
         let mut event_pump = ctx.sdl_context.event_pump()?;
@@ -128,27 +125,31 @@ where
                         keymod,
                         repeat,
                         ..
-                    } => if let Some(key) = keycode {
-                        if key == keyboard::Keycode::Escape {
-                            ctx.quit()?;
-                        } else {
-                            state.key_down_event(key, keymod, repeat)
+                    } => {
+                        if let Some(key) = keycode {
+                            if key == keyboard::Keycode::Escape {
+                                ctx.quit()?;
+                            } else {
+                                state.key_down_event(key, keymod, repeat)
+                            }
                         }
-                    },
+                    }
                     KeyUp {
                         keycode,
                         keymod,
                         repeat,
                         ..
-                    } => if let Some(key) = keycode {
-                        state.key_up_event(key, keymod, repeat)
-                    },
-                    MouseButtonDown {
-                        mouse_btn, x, y, ..
-                    } => state.mouse_button_down_event(mouse_btn, x, y),
-                    MouseButtonUp {
-                        mouse_btn, x, y, ..
-                    } => state.mouse_button_up_event(mouse_btn, x, y),
+                    } => {
+                        if let Some(key) = keycode {
+                            state.key_up_event(key, keymod, repeat)
+                        }
+                    }
+                    MouseButtonDown { mouse_btn, x, y, .. } => {
+                        state.mouse_button_down_event(mouse_btn, x, y)
+                    }
+                    MouseButtonUp { mouse_btn, x, y, .. } => {
+                        state.mouse_button_up_event(mouse_btn, x, y)
+                    }
                     MouseMotion {
                         mousestate,
                         x,
@@ -164,21 +165,16 @@ where
                     ControllerButtonUp { button, which, .. } => {
                         state.controller_button_up_event(button, which)
                     }
-                    ControllerAxisMotion {
-                        axis, value, which, ..
-                    } => state.controller_axis_event(axis, value, which),
-                    Window {
-                        win_event: event::WindowEvent::FocusGained,
-                        ..
-                    } => state.focus_event(true),
-                    Window {
-                        win_event: event::WindowEvent::FocusLost,
-                        ..
-                    } => state.focus_event(false),
-                    Window {
-                        win_event: event::WindowEvent::Resized(w, h),
-                        ..
-                    } => {
+                    ControllerAxisMotion { axis, value, which, .. } => {
+                        state.controller_axis_event(axis, value, which)
+                    }
+                    Window { win_event: event::WindowEvent::FocusGained, .. } => {
+                        state.focus_event(true)
+                    }
+                    Window { win_event: event::WindowEvent::FocusLost, .. } => {
+                        state.focus_event(false)
+                    }
+                    Window { win_event: event::WindowEvent::Resized(w, h), .. } => {
                         state.resize_event(ctx, w as u32, h as u32);
                     }
                     _ => {}

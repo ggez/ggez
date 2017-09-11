@@ -4,6 +4,7 @@
  * Added `mouse` module with some utility functions
  * Added some utility functions to query window size
  * Fixed some bugs with type visibility and directory paths.
+ * Sprite batching implemented by termhn!
 
 # 0.3.3
 

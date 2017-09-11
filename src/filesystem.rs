@@ -187,11 +187,10 @@ impl Filesystem {
     /// Opens a file in the user directory with the given `filesystem::OpenOptions`.
     /// Note that even if you open a file read-only, it can only access
     /// files in the user directory.
-    pub fn open_options<P: AsRef<path::Path>>(
-        &mut self,
-        path: P,
-        options: &OpenOptions,
-    ) -> GameResult<File> {
+    pub fn open_options<P: AsRef<path::Path>>(&mut self,
+                                              path: P,
+                                              options: &OpenOptions)
+                                              -> GameResult<File> {
         self.vfs
             .open_options(path.as_ref(), options)
             .map(|f| File::VfsFile(f))
@@ -296,9 +295,7 @@ impl Filesystem {
             let c = conf::Conf::from_toml_file(&mut file)?;
             Ok(c)
         } else {
-            Err(GameError::ConfigError(
-                String::from("Config file not found"),
-            ))
+            Err(GameError::ConfigError(String::from("Config file not found")))
         }
     }
 
@@ -311,10 +308,8 @@ impl Filesystem {
         if self.is_file(conf_path) {
             Ok(())
         } else {
-            Err(GameError::ConfigError(format!(
-                "Failed to write config file at {}",
-                conf_path.to_string_lossy()
-            )))
+            Err(GameError::ConfigError(format!("Failed to write config file at {}",
+                                               conf_path.to_string_lossy())))
         }
     }
 }
