@@ -58,7 +58,8 @@ fn default_view() -> Matrix4<f32> {
 }
 
 struct MainState {
-    text: graphics::Text,
+    text1: graphics::Text,
+    text2: graphics::Text,
     frames: usize,
     data: pipe::Data<gfx_device_gl::Resources>,
     pso: gfx::PipelineState<gfx_device_gl::Resources, pipe::Meta>,
@@ -69,8 +70,9 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> Self {
 
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48).unwrap();
-        let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 24).unwrap();
+        let text1 = graphics::Text::new(ctx, "Doesn't actually successfully", &font).unwrap();
+        let text2 = graphics::Text::new(ctx, "draw a cube yet, sorry.", &font).unwrap();
 
         let gfx = &mut ctx.gfx_context;
         let color_view = gfx.get_color_view();
@@ -176,7 +178,8 @@ void main() {
         let encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
         MainState {
-            text: text,
+            text1: text1,
+            text2: text2,
             frames: 0,
             data: data,
             pso: pso,
@@ -204,9 +207,12 @@ impl event::EventHandler for MainState {
         }
 
 
-        let dest_point = graphics::Point::new(self.text.width() as f32 / 2.0 + 10.0,
-                                              self.text.height() as f32 / 2.0 + 10.0);
-        graphics::draw(ctx, &self.text, dest_point, 0.0)?;
+        let dest_point1 = graphics::Point::new(self.text1.width() as f32 / 2.0 + 10.0,
+                                              self.text1.height() as f32 / 2.0 + 10.0);
+        let dest_point2 = graphics::Point::new(self.text2.width() as f32 / 2.0 + 10.0,
+                                              self.text2.height() as f32 / 2.0 + 50.0);
+        graphics::draw(ctx, &self.text1, dest_point1, 0.0)?;
+        graphics::draw(ctx, &self.text2, dest_point2, 0.0)?;
         graphics::present(ctx);
         self.frames += 1;
         if (self.frames % 100) == 0 {
