@@ -134,11 +134,13 @@ impl graphics::Drawable for SpriteBatch {
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.image.texture.clone(), sampler);
-        gfx.quad_slice.instances = Some((self.sprites.len() as u32, 0));
-        let prev_transform = gfx.data.transform.clone();
-        gfx.update_transform(param.into())?;
-        gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
-        gfx.data.transform = prev_transform;
+        let mut slice = gfx.quad_slice.clone();
+        slice.instances = Some((self.sprites.len() as u32, 0));
+        gfx.push_transform(param.into());
+        gfx.update_transform()?;
+        gfx.encoder.draw(&slice, &gfx.pso, &gfx.data);
+        gfx.pop_transform();
+        gfx.update_transform()?;
         Ok(())
     }
 }

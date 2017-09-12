@@ -203,6 +203,7 @@ pub struct GraphicsContextGeneric<R, F, C, D>
 {
     background_color: Color,
     shader_globals: Globals,
+    global_transform: Vec<GlobalTransform>,
     white_image: Image,
     line_width: f32,
     point_size: f32,
@@ -372,10 +373,13 @@ impl GraphicsContext {
             projection: ortho(left, right, top, bottom, 1.0, -1.0),
             color: types::WHITE.into(),
         };
+        let initial_transform: GlobalTransform = Default::default();
+        let global_transform = vec![initial_transform];
 
         let mut gfx = GraphicsContext {
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             shader_globals: globals,
+            global_transform,
             line_width: 1.0,
             point_size: 1.0,
             white_image: white_image,
@@ -397,8 +401,6 @@ impl GraphicsContext {
             samplers: samplers,
         };
 
-        let transform: GlobalTransform = Default::default();
-        gfx.update_transform(transform)?;
         let w = screen_width as f32;
         let h = screen_height as f32;
         let rect = Rect {
@@ -409,6 +411,7 @@ impl GraphicsContext {
         };
         gfx.set_graphics_rect(rect);
         gfx.update_globals()?;
+        gfx.update_transform()?;
         Ok(gfx)
     }
 
@@ -417,11 +420,29 @@ impl GraphicsContext {
             .update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
         Ok(())
     }
-
-    fn update_transform(&mut self, transform: GlobalTransform) -> GameResult<()> {
-        self.encoder
-            .update_buffer(&self.data.transform, &[transform], 0)?;
+  
+    fn update_transform(&mut self) -> GameResult<()> {
+        let transform = self.get_transform();
+        self.encoder.update_buffer(
+            &self.data.transform, 
+            &[transform],
+            0
+        )?;
         Ok(())
+    }
+
+    fn push_transform(&mut self, transform: GlobalTransform) {
+        self.global_transform.push(transform);
+    }
+
+    fn pop_transform(&mut self) {
+        if self.global_transform.len() > 1 {
+            self.global_transform.pop();
+        }
+    }
+
+    fn get_transform(&self) -> GlobalTransform {
+        self.global_transform[self.global_transform.len() - 1]
     }
 
     fn update_rect_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
