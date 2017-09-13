@@ -20,93 +20,99 @@ use std::ops::{Add, AddAssign, Sub};
 /// You're probably better off using a real vector math lib but I
 /// didn't want to add more dependencies and such.
 /// **********************************************************************
-#[derive(Debug, Copy, Clone)]
-struct Vec2 {
-    x: f64,
-    y: f64,
-}
 
-impl Vec2 {
-    fn new(x: f64, y: f64) -> Self {
-        Vec2 { x: x, y: y }
-    }
+use ggez::nalgebra as na;
 
-    /// Create a unit vector representing the
-    /// given angle (in radians)
-    fn from_angle(angle: f64) -> Self {
-        let vx = angle.sin();
-        let vy = angle.cos();
-        Vec2 { x: vx, y: vy }
-    }
+type Point2 = na::Point2<f32>;
+type Vec2 = na::Vector2<f32>;
 
-    fn random(max_magnitude: f64) -> Self {
-        let angle = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
-        let mag = rand::random::<f64>() * max_magnitude;
-        Vec2::from_angle(angle).scaled(mag)
-    }
+// #[derive(Debug, Copy, Clone)]
+// struct Vec2 {
+//     x: f64,
+//     y: f64,
+// }
 
-    fn magnitude(&self) -> f64 {
-        ((self.x * self.x) + (self.y * self.y)).sqrt()
-    }
+// impl Vec2 {
+//     fn new(x: f64, y: f64) -> Self {
+//         Vec2 { x: x, y: y }
+//     }
 
-    fn normalized(&self) -> Self {
-        let mag = self.magnitude();
-        self.scaled(1.0 / mag)
-    }
+//     /// Create a unit vector representing the
+//     /// given angle (in radians)
+//     fn from_angle(angle: f64) -> Self {
+//         let vx = angle.sin();
+//         let vy = angle.cos();
+//         Vec2 { x: vx, y: vy }
+//     }
 
-    fn scaled(&self, rhs: f64) -> Self {
-        Vec2 {
-            x: self.x * rhs,
-            y: self.y * rhs,
-        }
-    }
+//     fn random(max_magnitude: f64) -> Self {
+//         let angle = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
+//         let mag = rand::random::<f64>() * max_magnitude;
+//         Vec2::from_angle(angle).scaled(mag)
+//     }
 
-    /// Returns a vector whose magnitude is between
-    /// 0 and max.
-    fn clamped(&self, max: f64) -> Self {
-        let mag = self.magnitude();
-        if mag > max {
-            self.normalized().scaled(max)
-        } else {
-            *self
-        }
-    }
-}
+//     fn magnitude(&self) -> f64 {
+//         ((self.x * self.x) + (self.y * self.y)).sqrt()
+//     }
 
-impl Add for Vec2 {
-    type Output = Self;
-    fn add(self, rhs: Vec2) -> Self {
-        Vec2 {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-        }
-    }
-}
+//     fn normalized(&self) -> Self {
+//         let mag = self.magnitude();
+//         self.scaled(1.0 / mag)
+//     }
 
+//     fn scaled(&self, rhs: f64) -> Self {
+//         Vec2 {
+//             x: self.x * rhs,
+//             y: self.y * rhs,
+//         }
+//     }
 
-impl AddAssign for Vec2 {
-    fn add_assign(&mut self, rhs: Vec2) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-    }
-}
+//     /// Returns a vector whose magnitude is between
+//     /// 0 and max.
+//     fn clamped(&self, max: f64) -> Self {
+//         let mag = self.magnitude();
+//         if mag > max {
+//             self.normalized().scaled(max)
+//         } else {
+//             *self
+//         }
+//     }
+// }
+
+// impl Add for Vec2 {
+//     type Output = Self;
+//     fn add(self, rhs: Vec2) -> Self {
+//         Vec2 {
+//             x: self.x + rhs.x,
+//             y: self.y + rhs.y,
+//         }
+//     }
+// }
 
 
-impl Sub for Vec2 {
-    type Output = Self;
-    fn sub(self, rhs: Vec2) -> Self {
-        Vec2 {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-        }
-    }
-}
+// impl AddAssign for Vec2 {
+//     fn add_assign(&mut self, rhs: Vec2) {
+//         self.x += rhs.x;
+//         self.y += rhs.y;
+//     }
+// }
 
-impl Default for Vec2 {
-    fn default() -> Self {
-        Self::new(0., 0.)
-    }
-}
+
+// impl Sub for Vec2 {
+//     type Output = Self;
+//     fn sub(self, rhs: Vec2) -> Self {
+//         Vec2 {
+//             x: self.x - rhs.x,
+//             y: self.y - rhs.y,
+//         }
+//     }
+// }
+
+// impl Default for Vec2 {
+//     fn default() -> Self {
+//         Self::new(0., 0.)
+//     }
+// }
 
 /// *********************************************************************
 /// Now we define our Actor's.
@@ -126,7 +132,7 @@ enum ActorType {
 #[derive(Debug)]
 struct Actor {
     tag: ActorType,
-    pos: Vec2,
+    pos: Point2,
     facing: f64,
     velocity: Vec2,
     rvel: f64,
@@ -154,9 +160,9 @@ const SHOT_BBOX: f64 = 6.0;
 fn create_player() -> Actor {
     Actor {
         tag: ActorType::Player,
-        pos: Vec2::default(),
+        pos: Point2::origin(),
         facing: 0.,
-        velocity: Vec2::default(),
+        velocity: na::zero(),
         rvel: 0.,
         bbox_size: PLAYER_BBOX,
         life: PLAYER_LIFE,
@@ -166,9 +172,9 @@ fn create_player() -> Actor {
 fn create_rock() -> Actor {
     Actor {
         tag: ActorType::Rock,
-        pos: Vec2::default(),
+        pos: Point2::origin(),
         facing: 0.,
-        velocity: Vec2::default(),
+        velocity: na::zero(),
         rvel: 0.,
         bbox_size: ROCK_BBOX,
         life: ROCK_LIFE,
@@ -178,9 +184,9 @@ fn create_rock() -> Actor {
 fn create_shot() -> Actor {
     Actor {
         tag: ActorType::Shot,
-        pos: Vec2::default(),
+        pos: Point2::origin(),
         facing: 0.,
-        velocity: Vec2::default(),
+        velocity: na::zero(),
         rvel: SHOT_RVEL,
         bbox_size: SHOT_BBOX,
         life: SHOT_LIFE,
