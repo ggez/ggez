@@ -208,9 +208,9 @@ impl event::EventHandler for MainState {
 
 
         let dest_point1 = graphics::Point::new(self.text1.width() as f32 / 2.0 + 10.0,
-                                              self.text1.height() as f32 / 2.0 + 10.0);
+                                               self.text1.height() as f32 / 2.0 + 10.0);
         let dest_point2 = graphics::Point::new(self.text2.width() as f32 / 2.0 + 10.0,
-                                              self.text2.height() as f32 / 2.0 + 50.0);
+                                               self.text2.height() as f32 / 2.0 + 50.0);
         graphics::draw(ctx, &self.text1, dest_point1, 0.0)?;
         graphics::draw(ctx, &self.text2, dest_point2, 0.0)?;
         graphics::present(ctx);

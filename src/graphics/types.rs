@@ -251,7 +251,7 @@ impl From<Color> for u32 {
 /// filled or as an outline.
 #[derive(Debug, Copy, Clone)]
 pub enum DrawMode {
-    Line,
+    Line(f32),
     Fill,
 }
 

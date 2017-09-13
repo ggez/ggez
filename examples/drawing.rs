@@ -30,6 +30,27 @@ impl MainState {
     }
 }
 
+fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
+    let mb = &mut graphics::MeshBuilder::new();
+
+    mb.new_line(
+                       &[Point { x: 200.0, y: 200.0 },
+                         Point { x: 400.0, y: 200.0 },
+                         Point { x: 400.0, y: 400.0 },
+                         Point { x: 200.0, y: 400.0 },
+                         Point { x: 200.0, y: 300.0 }], 4.0);
+
+    mb.new_ellipse(
+                          DrawMode::Fill,
+                          Point { x: 600.0, y: 200.0 },
+                          50.0,
+                          120.0,
+                          1.0);
+
+    mb.new_circle(DrawMode::Fill, Point { x: 600.0, y: 380.0 }, 40.0, 1.0);
+    mb.build(ctx)
+}
+
 
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
@@ -39,6 +60,7 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
+        graphics::set_color(ctx, graphics::WHITE)?;
         // let src = graphics::Rect::new(0.25, 0.25, 0.5, 0.5);
         // let src = graphics::Rect::one();
         let dst = graphics::Point::new(200.0, 200.0);
@@ -76,26 +98,28 @@ impl event::EventHandler for MainState {
 
         graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0))?;
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
-        graphics::rectangle(ctx, graphics::DrawMode::Line, rect)?;
+        graphics::rectangle(ctx, graphics::DrawMode::Line(1.0), rect)?;
 
-        graphics::set_color(ctx, graphics::WHITE)?;
 
         graphics::set_line_width(ctx, 4.0);
-        graphics::line(ctx,
-                       &[Point { x: 200.0, y: 200.0 },
-                         Point { x: 400.0, y: 200.0 },
-                         Point { x: 400.0, y: 400.0 },
-                         Point { x: 200.0, y: 400.0 },
-                         Point { x: 200.0, y: 200.0 }])?;
+        let mesh = build_mesh(ctx)?;
+        graphics::set_color(ctx, (0, 0, 255).into())?;
+        graphics::draw_ex(ctx, &mesh, Default::default())?;
+        // graphics::line(ctx,
+        //                &[Point { x: 200.0, y: 200.0 },
+        //                  Point { x: 400.0, y: 200.0 },
+        //                  Point { x: 400.0, y: 400.0 },
+        //                  Point { x: 200.0, y: 400.0 },
+        //                  Point { x: 200.0, y: 300.0 }])?;
 
-        graphics::ellipse(ctx,
-                          DrawMode::Fill,
-                          Point { x: 600.0, y: 200.0 },
-                          50.0,
-                          120.0,
-                          1.0)?;
+        // graphics::ellipse(ctx,
+        //                   DrawMode::Fill,
+        //                   Point { x: 600.0, y: 200.0 },
+        //                   50.0,
+        //                   120.0,
+        //                   1.0)?;
 
-        graphics::circle(ctx, DrawMode::Fill, Point { x: 600.0, y: 380.0 }, 40.0, 1.0)?;
+        // graphics::circle(ctx, DrawMode::Fill, Point { x: 600.0, y: 380.0 }, 40.0, 1.0)?;
 
         graphics::present(ctx);
         Ok(())
