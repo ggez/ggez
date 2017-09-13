@@ -652,8 +652,7 @@ pub fn points(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
 
 /// Draws a closed polygon
 pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point]) -> GameResult<()> {
-    let w = ctx.gfx_context.line_width;
-    let m = Mesh::new_polygon(ctx, mode, vertices, w)?;
+    let m = Mesh::new_polygon(ctx, mode, vertices)?;
     m.draw(ctx, Point::default(), 0.0)
 }
 

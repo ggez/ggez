@@ -21,13 +21,13 @@ impl MeshBuilder {
 
     /// Create a new mesh for a line of one or more connected segments.
     /// WIP, sorry
-    pub fn new_line(&mut self, points: &[Point], width: f32) -> &mut Self {
-        self.new_polyline(DrawMode::Line(width), points)
+    pub fn line(&mut self, points: &[Point], width: f32) -> &mut Self {
+        self.polyline(DrawMode::Line(width), points)
     }
 
     /// Create a new mesh for a circle.
     /// Stroked circles are still WIP, sorry.
-    pub fn new_circle(&mut self,
+    pub fn circle(&mut self,
                       mode: DrawMode,
                       point: Point,
                       radius: f32,
@@ -64,7 +64,7 @@ impl MeshBuilder {
 
     /// Create a new mesh for an ellipse.
     /// Stroked ellipses are still WIP, sorry.
-    pub fn new_ellipse(&mut self,
+    pub fn ellipse(&mut self,
                        mode: DrawMode,
                        point: Point,
                        radius1: f32,
@@ -103,7 +103,7 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for series of connected lines
-    pub fn new_polyline(&mut self, mode: DrawMode, points: &[Point]) -> &mut Self {
+    pub fn polyline(&mut self, mode: DrawMode, points: &[Point]) -> &mut Self {
         {
             let buffers = &mut self.buffer;
             let points = points
@@ -130,7 +130,7 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for closed polygon
-    pub fn new_polygon(&mut self, mode: DrawMode, points: &[Point]) -> &mut Self {
+    pub fn polygon(&mut self, mode: DrawMode, points: &[Point]) -> &mut Self {
         {
             let buffers = &mut self.buffer;
             let points = points
@@ -156,6 +156,7 @@ impl MeshBuilder {
         self
     }
 
+    /// BUGGO: TODO
     /// Create a new `Mesh` from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
@@ -243,7 +244,9 @@ impl Mesh {
     /// Create a new mesh for a line of one or more connected segments.
     /// WIP, sorry
     pub fn new_line(ctx: &mut Context, points: &[Point], width: f32) -> GameResult<Mesh> {
-        Mesh::new_polyline(ctx, DrawMode::Line(width), points, width)
+        let mut mb = MeshBuilder::new();
+        mb.polyline(DrawMode::Line(width), points);
+        mb.build(ctx)
     }
 
     /// Create a new mesh for a circle.
@@ -254,33 +257,9 @@ impl Mesh {
                       radius: f32,
                       tolerance: f32)
                       -> GameResult<Mesh> {
-        {
-            let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
-            match mode {
-                DrawMode::Fill => {
-                    // These builders have to be in separate match arms 'cause they're actually
-                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                    // GeometryBuilder<FillVertex>
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::fill_circle(t::math::point(point.x, point.y),
-                                                 radius,
-                                                 tolerance,
-                                                 builder);
-                }
-                DrawMode::Line(_) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let options = t::StrokeOptions::default()
-                        .with_line_width(ctx.gfx_context.line_width)
-                        .with_tolerance(tolerance);
-                    t::basic_shapes::stroke_circle(t::math::point(point.x, point.y),
-                                                   radius,
-                                                   &options,
-                                                   builder);
-                }
-            };
-            Mesh::from_vbuf(ctx, buffers)
-        }
-
+        let mut mb = MeshBuilder::new();
+        mb.circle(mode, point, radius, tolerance);
+        mb.build(ctx)
     }
 
     /// Create a new mesh for an ellipse.
@@ -292,92 +271,30 @@ impl Mesh {
                        radius2: f32,
                        tolerance: f32)
                        -> GameResult<Mesh> {
-        use euclid::Length;
-        let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
-        match mode {
-            DrawMode::Fill => {
-                // These builders have to be in separate match arms 'cause they're actually
-                // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                // GeometryBuilder<FillVertex>
-                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                t::basic_shapes::fill_ellipse(t::math::point(point.x, point.y),
-                                              t::math::vec2(radius1, radius2),
-                                              Length::new(0.0),
-                                              tolerance,
-                                              builder);
-            }
-            DrawMode::Line(_) => {
-                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                let options = t::StrokeOptions::default()
-                    .with_line_width(ctx.gfx_context.line_width)
-                    .with_tolerance(tolerance);
-                t::basic_shapes::stroke_ellipse(t::math::point(point.x, point.y),
-                                                t::math::vec2(radius1, radius2),
-                                                Length::new(0.0),
-                                                &options,
-                                                builder);
-            }
-        };
-        Mesh::from_vbuf(ctx, buffers)
+        let mut mb = MeshBuilder::new();
+        mb.ellipse(mode, point, radius1, radius2, tolerance);
+        mb.build(ctx)
     }
 
     /// Create a new mesh for series of connected lines
     pub fn new_polyline(ctx: &mut Context,
                         mode: DrawMode,
-                        points: &[Point],
-                        width: f32)
+                        points: &[Point])
                         -> GameResult<Mesh> {
-        let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
-        let points = points
-            .into_iter()
-            .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
-        match mode {
-            DrawMode::Fill => {
-                // These builders have to be in separate match arms 'cause they're actually
-                // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                // GeometryBuilder<FillVertex>
-                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                let tessellator = &mut t::FillTessellator::new();
-                let options = t::FillOptions::default();
-                t::basic_shapes::fill_polyline(points, tessellator, &options, builder).unwrap();
-            }
-            DrawMode::Line(_) => {
-                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                let options = t::StrokeOptions::default().with_line_width(width);
-                t::basic_shapes::stroke_polyline(points, false, &options, builder);
-            }
-        };
-        Mesh::from_vbuf(ctx, buffers)
+        let mut mb = MeshBuilder::new();
+        mb.polyline(mode, points);
+        mb.build(ctx)
     }
 
 
     /// Create a new mesh for closed polygon
     pub fn new_polygon(ctx: &mut Context,
                        mode: DrawMode,
-                       points: &[Point],
-                       width: f32)
+                       points: &[Point])
                        -> GameResult<Mesh> {
-        let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
-        let points = points
-            .into_iter()
-            .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
-        match mode {
-            DrawMode::Fill => {
-                // These builders have to be in separate match arms 'cause they're actually
-                // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                // GeometryBuilder<FillVertex>
-                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                let tessellator = &mut t::FillTessellator::new();
-                let options = t::FillOptions::default();
-                t::basic_shapes::fill_polyline(points, tessellator, &options, builder).unwrap();
-            }
-            DrawMode::Line(_) => {
-                let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                let options = t::StrokeOptions::default().with_line_width(width);
-                t::basic_shapes::stroke_polyline(points, true, &options, builder);
-            }
-        };
-        Mesh::from_vbuf(ctx, buffers)
+        let mut mb = MeshBuilder::new();
+        mb.polygon(mode, points);
+        mb.build(ctx)
     }
 
     /// Create a new `Mesh` from a raw list of triangles.
