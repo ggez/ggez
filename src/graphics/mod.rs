@@ -30,7 +30,7 @@ use GameResult;
 
 mod text;
 mod types;
-pub mod spritebatch;
+pub mod batch;
 
 pub use self::text::*;
 pub use self::types::*;

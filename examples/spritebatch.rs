@@ -7,17 +7,18 @@ use ggez::conf;
 use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
+use graphics::batch::Batch;
 use ggez::timer;
 use std::time::Duration;
 
 struct MainState {
-    spritebatch: graphics::spritebatch::SpriteBatch,
+    spritebatch: graphics::batch::SpriteBatch,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let image = graphics::Image::new(ctx, "/tile.png").unwrap();
-        let batch = graphics::spritebatch::SpriteBatch::new(image);
+        let batch = graphics::batch::SpriteBatch::new(image);
         let s = MainState { spritebatch: batch };
         Ok(s)
     }
@@ -43,7 +44,6 @@ impl event::EventHandler for MainState {
             for y in 0..150 {
                 let p = graphics::DrawParam {
                     dest: graphics::Point::new(x as f32 * 10.0, y as f32 * 10.0),
-                    // scale: graphics::Point::new(0.0625, 0.0625),
                     scale: graphics::Point::new(((time % cycle * 2) as f32 / cycle as f32 * 6.28)
                                                     .cos()
                                                     .abs() *
@@ -59,10 +59,7 @@ impl event::EventHandler for MainState {
             }
         }
         let param = graphics::DrawParam {
-            dest: graphics::Point::new(((time % cycle) as f32 / cycle as f32 * 6.28).cos() *
-                                       50.0 - 350.0,
-                                       ((time % cycle) as f32 / cycle as f32 * 6.28).sin() *
-                                       50.0 - 450.0),
+            dest: graphics::Point::new(-350.0, -450.0),
             scale: graphics::Point::new(((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() *
                                         2.0 + 1.0,
                                         ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() *
