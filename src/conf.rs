@@ -11,6 +11,18 @@ use GameResult;
 
 /// A structure containing configuration data
 /// for the game engine.
+///
+/// Defaults:
+///
+/// ```rust,ignore
+/// Conf {
+///     window_title: "An easy, good game"
+///     window_icon: ""
+///     window_height: 600
+///     window_width: 800
+///     vsync: true
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault)]
 pub struct Conf {
     /// The window title.
