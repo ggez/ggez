@@ -4,6 +4,7 @@ pub use nalgebra as na;
 
 pub type Point = na::Point2<f32>;
 pub type Vector = na::Vector2<f32>;
+pub type Matrix4 = na::Matrix4<f32>;
 
 pub fn pt2vec(pt: Point) -> [f32;2] {
     [pt.x, pt.y]

@@ -38,7 +38,7 @@ use GameResult;
 #[derive(Debug)]
 pub struct SpriteBatch {
     image: graphics::Image,
-    sprites: Vec<graphics::RectInstanceProperties>,
+    sprites: Vec<graphics::InstanceProperties>,
 }
 
 pub type SpriteIdx = usize;
@@ -135,10 +135,10 @@ impl graphics::Drawable for SpriteBatch {
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.image.texture.clone(), sampler);
         gfx.quad_slice.instances = Some((self.sprites.len() as u32, 0));
-        let prev_transform = gfx.data.transform.clone();
-        gfx.update_transform(param.into())?;
+        gfx.push_transform(param.into_matrix());
+        gfx.update_globals()?;
         gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
-        gfx.data.transform = prev_transform;
+        gfx.pop_transform();
         Ok(())
     }
 }

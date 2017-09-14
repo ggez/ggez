@@ -75,7 +75,7 @@ gfx_defines!{
     }
 
     /// Internal structure containing values that are different for each rect.
-    vertex RectInstanceProperties {
+    vertex InstanceProperties {
         src: [f32; 4] = "a_Src",
         dest: [f32; 2] = "a_Dest",
         scale: [f32; 2] = "a_Scale",
@@ -86,32 +86,23 @@ gfx_defines!{
 
     /// Internal structure containing global shader state.
     constant Globals {
-        projection: [[f32; 4]; 4] = "u_Projection",
+        mvp_matrix: [[f32; 4]; 4] = "u_MVP",
         color: [f32; 4] = "u_Color",
-    }
-
-    constant GlobalTransform {
-        translation: [f32; 2] = "u_Translation",
-        scale: [f32; 2] = "u_Scale",
-        offset: [f32; 2] = "u_Offset",
-        shear: [f32; 2] = "u_Shear",
-        rotation: f32 = "u_Rotation",
     }
 
     pipeline pipe {
         vbuf: gfx::VertexBuffer<Vertex> = (),
         tex: gfx::TextureSampler<[f32; 4]> = "t_Texture",
         globals: gfx::ConstantBuffer<Globals> = "Globals",
-        transform: gfx::ConstantBuffer<GlobalTransform> = "GlobalTransform",
-        rect_instance_properties: gfx::InstanceBuffer<RectInstanceProperties> = (),
+        rect_instance_properties: gfx::InstanceBuffer<InstanceProperties> = (),
         out: gfx::BlendTarget<ColorFormat> =
           ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
     }
 }
 
-impl Default for RectInstanceProperties {
+impl Default for InstanceProperties {
     fn default() -> Self {
-        RectInstanceProperties {
+        InstanceProperties {
             src: [0.0, 0.0, 1.0, 1.0],
             dest: [0.0, 0.0],
             scale: [1.0, 1.0],
@@ -122,35 +113,11 @@ impl Default for RectInstanceProperties {
     }
 }
 
-impl From<DrawParam> for RectInstanceProperties {
+impl From<DrawParam> for InstanceProperties {
     fn from(p: DrawParam) -> Self {
-        RectInstanceProperties {
+        InstanceProperties {
             src: p.src.into(),
             dest: types::pt2vec(p.dest),
-            scale: types::pt2vec(p.scale),
-            offset: types::pt2vec(p.offset),
-            shear: types::pt2vec(p.shear),
-            rotation: p.rotation,
-        }
-    }
-}
-
-impl Default for GlobalTransform {
-    fn default() -> Self {
-        GlobalTransform {
-            translation: [0.0, 0.0],
-            scale: [1.0, 1.0],
-            offset: [0.0, 0.0],
-            shear: [0.0, 0.0],
-            rotation: 0.0,
-        }
-    }
-}
-
-impl From<DrawParam> for GlobalTransform {
-    fn from(p: DrawParam) -> Self {
-        GlobalTransform {
-            translation: types::pt2vec(p.dest),
             scale: types::pt2vec(p.scale),
             offset: types::pt2vec(p.offset),
             shear: types::pt2vec(p.shear),
@@ -205,6 +172,9 @@ pub struct GraphicsContextGeneric<R, F, C, D>
 {
     background_color: Color,
     shader_globals: Globals,
+    projection: Matrix4,
+    transform_stack: Vec<Matrix4>,
+    view_stack: Vec<Matrix4>,
     white_image: Image,
     line_width: f32,
     point_size: f32,
@@ -347,7 +317,6 @@ impl GraphicsContext {
         quad_slice.instances = Some((1, 0));
 
         let globals_buffer = factory.create_constant_buffer(1);
-        let transform_buffer = factory.create_constant_buffer(1);
         let mut samplers: SamplerCache<gfx_device_gl::Resources> = SamplerCache::new();
         let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Bilinear,
                                                      texture::WrapMode::Clamp);
@@ -361,7 +330,6 @@ impl GraphicsContext {
             tex: (texture, sampler),
             rect_instance_properties: rect_inst_props,
             globals: globals_buffer,
-            transform: transform_buffer,
             out: color_view,
         };
 
@@ -370,14 +338,21 @@ impl GraphicsContext {
         let right = screen_width as f32;
         let top = 0.0;
         let bottom = screen_height as f32;
+        let initial_projection = Matrix4::new_orthographic(left, right, top, bottom, -1.0, 1.0);
+        let initial_view = Matrix4::identity();//.prepend_scaling(0.05);
+        let initial_transform = Matrix4::identity();
         let globals = Globals {
-            projection: ortho(left, right, top, bottom, 1.0, -1.0),
+            mvp_matrix: initial_projection.into(),
             color: types::WHITE.into(),
         };
+
 
         let mut gfx = GraphicsContext {
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             shader_globals: globals,
+            projection: initial_projection,
+            view_stack: vec![initial_view],
+            transform_stack: vec![initial_transform],
             line_width: 1.0,
             point_size: 1.0,
             white_image: white_image,
@@ -399,34 +374,50 @@ impl GraphicsContext {
             samplers: samplers,
         };
 
-        let transform: GlobalTransform = Default::default();
-        gfx.update_transform(transform)?;
         let w = screen_width as f32;
         let h = screen_height as f32;
         let rect = Rect {
             x: (w / 2.0),
             y: (h / 2.0),
-            w: w,
+            w,
             h: -h,
         };
-        gfx.set_graphics_rect(rect);
+        gfx.set_projection_rect(rect);
         gfx.update_globals()?;
         Ok(gfx)
     }
 
     fn update_globals(&mut self) -> GameResult<()> {
+        let model = self.transform_stack[self.transform_stack.len() - 1];
+        let view = self.view_stack[self.view_stack.len() - 1];
+        let mvp = self.projection * view * model;
+        self.shader_globals.mvp_matrix = mvp.into();
         self.encoder
             .update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
         Ok(())
     }
 
-    fn update_transform(&mut self, transform: GlobalTransform) -> GameResult<()> {
-        self.encoder
-            .update_buffer(&self.data.transform, &[transform], 0)?;
-        Ok(())
+    fn push_transform(&mut self, t: Matrix4) {
+        self.transform_stack.push(t);
     }
 
-    fn update_rect_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
+    fn pop_transform(&mut self) {
+        if self.transform_stack.len() > 1 {
+            self.transform_stack.pop();
+        }
+    }
+
+    fn push_view(&mut self, v: Matrix4) {
+        self.view_stack.push(v);
+    }
+
+    fn pop_view(&mut self) {
+        if self.view_stack.len() > 1 {
+            self.view_stack.pop();
+        }
+    }
+
+    fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
         let properties = draw_params.into();
         self.encoder
             .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;
@@ -495,55 +486,26 @@ impl GraphicsContext {
     /// to a given `Rect`.
     ///
     /// Call `update_globals()` to apply them after calling this.
-    fn set_graphics_rect(&mut self, rect: Rect) {
+    fn set_projection_rect(&mut self, rect: Rect) {
+        type Vec3 = na::Vector3<f32>;
         self.screen_rect = rect;
         let half_width = rect.w / 2.0;
         let half_height = rect.h / 2.0;
-        self.shader_globals.projection = ortho(rect.x - half_width,
-                                               rect.x + half_width,
-                                               rect.y + half_height,
-                                               rect.y - half_height,
-                                               1.0,
-                                               -1.0);
+        self.projection = Matrix4::new_orthographic(
+            rect.x - half_width,
+            rect.x + half_width,
+            rect.y + half_height,
+            rect.y - half_height,
+            -1.0,
+            1.0)
+            .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
+                            
     }
-}
-
-
-/// Creates an orthographic projection matrix.
-///
-/// Rather than create a dependency on cgmath or nalgebra for this one function,
-/// we're just going to define it ourselves.
-fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [[f32; 4]; 4] {
-    let c0r0 = 2.0 / (right - left);
-    let c0r1 = 0.0;
-    let c0r2 = 0.0;
-    let c0r3 = 0.0;
-
-    let c1r0 = 0.0;
-    let c1r1 = 2.0 / (top - bottom);
-    let c1r2 = 0.0;
-    let c1r3 = 0.0;
-
-    let c2r0 = 0.0;
-    let c2r1 = 0.0;
-    let c2r2 = -2.0 / (far - near);
-    let c2r3 = 0.0;
-
-    let c3r0 = -(right + left) / (right - left);
-    let c3r1 = -(top + bottom) / (top - bottom);
-    let c3r2 = -(far + near) / (far - near);
-    let c3r3 = 1.0;
-
-    [[c0r0, c1r0, c2r0, c3r0],
-     [c0r1, c1r1, c2r1, c3r1],
-     [c0r2, c1r2, c2r2, c3r2],
-     [c0r3, c1r3, c2r3, c3r3]]
 }
 
 // **********************************************************************
 // DRAWING
 // **********************************************************************
-
 
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
@@ -777,7 +739,7 @@ pub fn set_point_size(ctx: &mut Context, size: f32) {
 /// a `Rect{x: 320, y: 240, w: 640, h: 480}`
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
-    gfx.set_graphics_rect(rect);
+    gfx.set_projection_rect(rect);
     gfx.update_globals()
 }
 
@@ -872,6 +834,25 @@ impl Default for DrawParam {
             offset: Point::new(0.0, 0.0),
             shear: Point::new(0.0, 0.0),
         }
+    }
+}
+
+impl DrawParam {
+    fn into_matrix(self) -> Matrix4 {
+        type Vec3 = na::Vector3<f32>;
+        let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
+        let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
+        let offset_inverse = Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
+        let axang = Vec3::z() * self.rotation;
+        let rotation = Matrix4::new_rotation(axang);
+        let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
+        let shear = Matrix4::new(
+            1.0, self.shear.x, 0.0, 0.0,
+            self.shear.y, 1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            0.0, 0.0, 0.0, 1.0,
+        );
+        translate * offset * rotation * shear * scale * offset_inverse * Matrix4::identity()
     }
 }
 
@@ -1102,7 +1083,7 @@ impl Drawable for Image {
         // Not entirely sure why the inversion is necessary, but oh well.
         new_param.offset.x *= -1.0 * param.scale.x;
         new_param.offset.y *= param.scale.y;
-        gfx.update_rect_properties(new_param)?;
+        gfx.update_instance_properties(new_param)?;
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
@@ -1325,7 +1306,7 @@ impl Mesh {
 impl Drawable for Mesh {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
         let gfx = &mut ctx.gfx_context;
-        gfx.update_rect_properties(param)?;
+        gfx.update_instance_properties(param)?;
 
         gfx.data.vbuf = self.buffer.clone();
         gfx.data.tex.0 = gfx.white_image.texture.clone();
