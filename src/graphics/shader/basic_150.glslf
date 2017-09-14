@@ -5,7 +5,7 @@ in vec2 v_Uv;
 out vec4 Target0;
 
 layout (std140) uniform Globals {
-    mat4 u_Projection;
+    mat4 u_MVP;
     vec4 u_Color;
 };
 

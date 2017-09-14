@@ -29,7 +29,7 @@ use GameResult;
 #[derive(Debug)]
 pub struct SpriteBatch {
     image: graphics::Image,
-    sprites: Vec<graphics::RectInstanceProperties>,
+    sprites: Vec<graphics::InstanceProperties>,
 }
 
 /// An index of a particular sprite in a SpriteBatch.
