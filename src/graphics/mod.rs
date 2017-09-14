@@ -126,10 +126,10 @@ impl From<DrawParam> for RectInstanceProperties {
     fn from(p: DrawParam) -> Self {
         RectInstanceProperties {
             src: p.src.into(),
-            dest: types::pt2vec(p.dest),
-            scale: types::pt2vec(p.scale),
-            offset: types::pt2vec(p.offset),
-            shear: types::pt2vec(p.shear),
+            dest: types::pt2arr(p.dest),
+            scale: types::pt2arr(p.scale),
+            offset: types::pt2arr(p.offset),
+            shear: types::pt2arr(p.shear),
             rotation: p.rotation,
         }
     }
@@ -150,10 +150,10 @@ impl Default for GlobalTransform {
 impl From<DrawParam> for GlobalTransform {
     fn from(p: DrawParam) -> Self {
         GlobalTransform {
-            translation: types::pt2vec(p.dest),
-            scale: types::pt2vec(p.scale),
-            offset: types::pt2vec(p.offset),
-            shear: types::pt2vec(p.shear),
+            translation: types::pt2arr(p.dest),
+            scale: types::pt2arr(p.scale),
+            offset: types::pt2arr(p.offset),
+            shear: types::pt2arr(p.shear),
             rotation: p.rotation,
         }
     }
@@ -1306,8 +1306,8 @@ impl Mesh {
             .into_iter()
             .map(|p| {
                      Vertex {
-                         pos: types::pt2vec(*p),
-                         uv: types::pt2vec(*p),
+                         pos: types::pt2arr(*p),
+                         uv: types::pt2arr(*p),
                      }
                  })
             .collect();

@@ -5,11 +5,13 @@ pub use nalgebra as na;
 pub type Point = na::Point2<f32>;
 pub type Vector = na::Vector2<f32>;
 
-pub fn pt2vec(pt: Point) -> [f32;2] {
+pub fn pt2arr(pt: Point) -> [f32;2] {
     [pt.x, pt.y]
+    // pt.into()
 }
 
-pub fn vec2pt(pt: [f32;2]) -> Point {
+
+pub fn arr2pt(pt: [f32;2]) -> Point {
     Point::new(pt[0], pt[1])
 }
 
