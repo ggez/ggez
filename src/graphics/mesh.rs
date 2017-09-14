@@ -160,19 +160,46 @@ impl MeshBuilder {
     /// Create a new `Mesh` from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
-    // pub fn from_triangles(&mut self, triangles: &[Point]) -> &mut Self {
-    //     // This is kind of non-ideal but works for now.
-    //     let points = triangles
-    //         .into_iter()
-    //         .map(|p| {
-    //                  Vertex {
-    //                      pos: (*p).into(),
-    //                      uv: (*p).into(),
-    //                  }
-    //              });
-    //     self.buffer.extend(points);
-    //     self
-    // }
+    pub fn from_triangles(&mut self, triangles: &[Point]) -> &mut Self {
+        {
+            assert_eq!(triangles.len() % 3, 0);
+            let tris = triangles
+                .iter()
+                .cloned()
+                .map(|p| {
+                    // Gotta turn ggez Point's into lyon FillVertex's
+                        let np = lyon::math::Point2D::new(p.x, p.y);
+                        let nv = lyon::math::Vector2D::new(p.x, p.y);
+                        t::FillVertex {
+                            position: np,
+                            normal: nv,
+                        }
+                    })
+                    // BUGGO: TODO: Remove the collect, iterate more nicely.
+                    // (Probably means collecting into chunks first, THEN 
+                    // converting point types, since we can't chunk an iterator,
+                    // only a slice.)
+                .collect::<Vec<_>>();
+            let tris = tris.chunks(3);
+            let builder: &mut t::BuffersBuilder<_,_,_> = &mut t::BuffersBuilder::new(&mut self.buffer, VertexBuilder);
+            use lyon::tessellation::GeometryBuilder;
+            builder.begin_geometry();
+            for tri in tris {
+                // Ideally this assert makes bounds-checks only happen once.
+                assert!(tri.len() == 3);
+                let fst = tri[0];
+                let snd = tri[1];
+                let thd = tri[2];
+                let i1 = builder.add_vertex(fst);
+                let i2 = builder.add_vertex(snd);
+                let i3 = builder.add_vertex(thd);
+                builder.add_triangle(i1, i2, i3);
+
+            }
+            builder.end_geometry();
+        }
+        self
+    }
 
     pub fn build(&self, ctx: &mut Context) -> GameResult<Mesh> {
         let (vbuf, slice) =
@@ -226,21 +253,6 @@ pub struct Mesh {
 
 
 impl Mesh {
-    fn from_vbuf(ctx: &mut Context,
-                 buffer: &t::geometry_builder::VertexBuffers<Vertex>)
-                 -> GameResult<Mesh> {
-        let (vbuf, slice) =
-            ctx.gfx_context
-                .factory
-                .create_vertex_buffer_with_slice(&buffer.vertices[..], &buffer.indices[..]);
-
-        Ok(Mesh {
-               buffer: vbuf,
-               slice: slice,
-           })
-    }
-
-
     /// Create a new mesh for a line of one or more connected segments.
     /// WIP, sorry
     pub fn new_line(ctx: &mut Context, points: &[Point], width: f32) -> GameResult<Mesh> {

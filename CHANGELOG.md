@@ -5,7 +5,7 @@
  * Added some utility functions to query window size
  * Fixed some bugs with type visibility and directory paths.
  * Sprite batching implemented by termhn!
- * Mesh builders allowing you to build complex meshes simply.
+ * Added mesh builders allowing you to build complex meshes simply.
 
 # 0.3.3
 
