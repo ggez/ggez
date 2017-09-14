@@ -1,4 +1,4 @@
-use *;
+use ::*;
 use graphics::*;
 use lyon::tessellation as t;
 
@@ -12,27 +12,23 @@ pub struct MeshBuilder {
 }
 
 impl MeshBuilder {
-
+    /// Create a new MeshBuilder.
     pub fn new() -> Self {
-        MeshBuilder {
-            buffer: t::VertexBuffers::new(),
-        }
+        MeshBuilder { buffer: t::VertexBuffers::new() }
     }
 
     /// Create a new mesh for a line of one or more connected segments.
-    /// WIP, sorry
     pub fn line(&mut self, points: &[Point], width: f32) -> &mut Self {
         self.polyline(DrawMode::Line(width), points)
     }
 
     /// Create a new mesh for a circle.
-    /// Stroked circles are still WIP, sorry.
     pub fn circle(&mut self,
-                      mode: DrawMode,
-                      point: Point,
-                      radius: f32,
-                      tolerance: f32)
-                      -> &mut Self {
+                  mode: DrawMode,
+                  point: Point,
+                  radius: f32,
+                  tolerance: f32)
+                  -> &mut Self {
         {
             let buffers = &mut self.buffer;
             match mode {
@@ -63,14 +59,13 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for an ellipse.
-    /// Stroked ellipses are still WIP, sorry.
     pub fn ellipse(&mut self,
-                       mode: DrawMode,
-                       point: Point,
-                       radius1: f32,
-                       radius2: f32,
-                       tolerance: f32)
-                       -> &mut Self {
+                   mode: DrawMode,
+                   point: Point,
+                   radius1: f32,
+                   radius2: f32,
+                   tolerance: f32)
+                   -> &mut Self {
         {
             let buffers = &mut self.buffer;
             use euclid::Length;
@@ -102,7 +97,7 @@ impl MeshBuilder {
         self
     }
 
-    /// Create a new mesh for series of connected lines
+    /// Create a new mesh for a series of connected lines.
     pub fn polyline(&mut self, mode: DrawMode, points: &[Point]) -> &mut Self {
         {
             let buffers = &mut self.buffer;
@@ -129,7 +124,7 @@ impl MeshBuilder {
         self
     }
 
-    /// Create a new mesh for closed polygon
+    /// Create a new mesh for a closed polygon
     pub fn polygon(&mut self, mode: DrawMode, points: &[Point]) -> &mut Self {
         {
             let buffers = &mut self.buffer;
@@ -156,11 +151,10 @@ impl MeshBuilder {
         self
     }
 
-    /// BUGGO: TODO
     /// Create a new `Mesh` from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
-    pub fn from_triangles(&mut self, triangles: &[Point]) -> &mut Self {
+    pub fn triangles(&mut self, triangles: &[Point]) -> &mut Self {
         {
             assert_eq!(triangles.len() % 3, 0);
             let tris = triangles
@@ -181,7 +175,8 @@ impl MeshBuilder {
                     // only a slice.)
                 .collect::<Vec<_>>();
             let tris = tris.chunks(3);
-            let builder: &mut t::BuffersBuilder<_,_,_> = &mut t::BuffersBuilder::new(&mut self.buffer, VertexBuilder);
+            let builder: &mut t::BuffersBuilder<_, _, _> =
+                &mut t::BuffersBuilder::new(&mut self.buffer, VertexBuilder);
             use lyon::tessellation::GeometryBuilder;
             builder.begin_geometry();
             for tri in tris {
@@ -201,6 +196,8 @@ impl MeshBuilder {
         self
     }
 
+    /// Takes the accumulated geometry and load it into GPU memory,
+    /// creating a single `Mesh`.
     pub fn build(&self, ctx: &mut Context) -> GameResult<Mesh> {
         let (vbuf, slice) =
             ctx.gfx_context
@@ -244,7 +241,9 @@ impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
 }
 
 
-/// 2D polygon mesh
+/// 2D polygon mesh.
+///
+/// All of its methods are just shortcuts for doing the same operations via a `MeshBuilder`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mesh {
     buffer: gfx::handle::Buffer<gfx_device_gl::Resources, Vertex>,
@@ -254,7 +253,6 @@ pub struct Mesh {
 
 impl Mesh {
     /// Create a new mesh for a line of one or more connected segments.
-    /// WIP, sorry
     pub fn new_line(ctx: &mut Context, points: &[Point], width: f32) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.polyline(DrawMode::Line(width), points);
@@ -262,7 +260,6 @@ impl Mesh {
     }
 
     /// Create a new mesh for a circle.
-    /// Stroked circles are still WIP, sorry.
     pub fn new_circle(ctx: &mut Context,
                       mode: DrawMode,
                       point: Point,
@@ -275,7 +272,6 @@ impl Mesh {
     }
 
     /// Create a new mesh for an ellipse.
-    /// Stroked ellipses are still WIP, sorry.
     pub fn new_ellipse(ctx: &mut Context,
                        mode: DrawMode,
                        point: Point,
@@ -289,10 +285,7 @@ impl Mesh {
     }
 
     /// Create a new mesh for series of connected lines
-    pub fn new_polyline(ctx: &mut Context,
-                        mode: DrawMode,
-                        points: &[Point])
-                        -> GameResult<Mesh> {
+    pub fn new_polyline(ctx: &mut Context, mode: DrawMode, points: &[Point]) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.polyline(mode, points);
         mb.build(ctx)
@@ -300,37 +293,17 @@ impl Mesh {
 
 
     /// Create a new mesh for closed polygon
-    pub fn new_polygon(ctx: &mut Context,
-                       mode: DrawMode,
-                       points: &[Point])
-                       -> GameResult<Mesh> {
+    pub fn new_polygon(ctx: &mut Context, mode: DrawMode, points: &[Point]) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.polygon(mode, points);
         mb.build(ctx)
     }
 
     /// Create a new `Mesh` from a raw list of triangles.
-    ///
-    /// Currently does not support UV's or indices.
     pub fn from_triangles(ctx: &mut Context, triangles: &[Point]) -> GameResult<Mesh> {
-        // This is kind of non-ideal but works for now.
-        let points: Vec<Vertex> = triangles
-            .into_iter()
-            .map(|p| {
-                     Vertex {
-                         pos: (*p).into(),
-                         uv: (*p).into(),
-                     }
-                 })
-            .collect();
-        let (vbuf, slice) = ctx.gfx_context
-            .factory
-            .create_vertex_buffer_with_slice(&points[..], ());
-
-        Ok(Mesh {
-               buffer: vbuf,
-               slice: slice,
-           })
+        let mut mb = MeshBuilder::new();
+        mb.triangles(triangles);
+        mb.build(ctx)
     }
 }
 
