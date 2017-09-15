@@ -18,17 +18,21 @@ use ggez::nalgebra as na;
 
 /// *********************************************************************
 /// Basic stuff, make some helpers for vector functions.
+/// ggez includes the nalgebra math library to provide lots of 
+/// math stuff, we just fill in a couple gaps.
 /// **********************************************************************
 
 
 /// Create a unit vector representing the
 /// given angle (in radians)
+/// BUGGO: TODO: We should be able to create these from a Rotation?
 fn vec_from_angle(angle: f32) -> Vector2 {
     let vx = angle.sin();
     let vy = angle.cos();
     Vector2::new(vx, vy)
 }
 
+/// BUGGO: TODO: Vector2 implements Rand so this is unnecessary
 fn random_vec(max_magnitude: f32) -> Vector2 {
     let angle = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
     let mag = rand::random::<f32>() * max_magnitude;

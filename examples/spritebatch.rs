@@ -41,10 +41,12 @@ impl event::EventHandler for MainState {
         let cycle = 10000;
         for x in 0..150 {
             for y in 0..150 {
+                let x = x as f32;
+                let y = y as f32;
                 let p = graphics::DrawParam {
-                    dest: graphics::Point::new(x as f32 * 10.0, y as f32 * 10.0),
+                    dest: graphics::Point2::new(x * 10.0, y * 10.0),
                     // scale: graphics::Point::new(0.0625, 0.0625),
-                    scale: graphics::Point::new(((time % cycle * 2) as f32 / cycle as f32 * 6.28)
+                    scale: graphics::Point2::new(((time % cycle * 2) as f32 / cycle as f32 * 6.28)
                                                     .cos()
                                                     .abs() *
                                                 0.0625,
@@ -59,16 +61,16 @@ impl event::EventHandler for MainState {
             }
         }
         let param = graphics::DrawParam {
-            dest: graphics::Point::new(((time % cycle) as f32 / cycle as f32 * 6.28).cos() *
+            dest: graphics::Point2::new(((time % cycle) as f32 / cycle as f32 * 6.28).cos() *
                                        50.0 - 350.0,
                                        ((time % cycle) as f32 / cycle as f32 * 6.28).sin() *
                                        50.0 - 450.0),
-            scale: graphics::Point::new(((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() *
+            scale: graphics::Point2::new(((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() *
                                         2.0 + 1.0,
                                         ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() *
                                         2.0 + 1.0),
             rotation: ((time % cycle) as f32 / cycle as f32 * 6.28),
-            offset: graphics::Point::new(750.0, 750.0),
+            offset: graphics::Point2::new(750.0, 750.0),
             ..Default::default()
         };
         graphics::draw_ex(ctx, &self.spritebatch, param)?;

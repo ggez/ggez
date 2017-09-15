@@ -207,8 +207,6 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     shader_globals: Globals,
     global_transform: Vec<GlobalTransform>,
     white_image: Image,
-    line_width: f32,
-    point_size: f32,
     screen_rect: Rect,
     dpi: (f32, f32, f32),
 
@@ -382,8 +380,6 @@ impl GraphicsContext {
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             shader_globals: globals,
             global_transform,
-            line_width: 1.0,
-            point_size: 1.0,
             white_image: white_image,
             screen_rect: Rect::new(left, bottom, (right - left), (top - bottom)),
             dpi: dpi,
@@ -634,17 +630,15 @@ pub fn ellipse(ctx: &mut Context,
 }
 
 /// Draws a line of one or more connected segments.
-pub fn line(ctx: &mut Context, points: &[Point2]) -> GameResult<()> {
-    let w = ctx.gfx_context.line_width;
-    let m = Mesh::new_line(ctx, points, w)?;
+pub fn line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult<()> {
+    let m = Mesh::new_line(ctx, points, width)?;
     m.draw(ctx, Point2::origin(), 0.0)
 }
 
-/// Draws points.
-pub fn points(ctx: &mut Context, points: &[Point2]) -> GameResult<()> {
-    let size = ctx.gfx_context.point_size;
+/// Draws points (as rectangles)
+pub fn points(ctx: &mut Context, points: &[Point2], point_size: f32) -> GameResult<()> {
     for p in points {
-        let r = Rect::new(p.x, p.y, size, size);
+        let r = Rect::new(p.x, p.y, point_size, point_size);
         rectangle(ctx, DrawMode::Fill, r)?;
     }
     Ok(())
@@ -652,7 +646,6 @@ pub fn points(ctx: &mut Context, points: &[Point2]) -> GameResult<()> {
 
 /// Draws a closed polygon
 pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameResult<()> {
-    let w = ctx.gfx_context.line_width;
     let m = Mesh::new_polygon(ctx, mode, vertices)?;
     m.draw(ctx, Point2::origin(), 0.0)
 }
@@ -707,18 +700,6 @@ pub fn get_default_filter(ctx: &Context) -> FilterMode {
     gfx.default_sampler_info.filter.into()
 }
 
-
-/// Get the current width for drawing lines and stroked polygons.
-pub fn get_line_width(ctx: &Context) -> f32 {
-    ctx.gfx_context.line_width
-}
-
-
-/// Get the current size for drawing points.
-pub fn get_point_size(ctx: &Context) -> f32 {
-    ctx.gfx_context.point_size
-}
-
 /// Returns a string that tells a little about the obtained rendering mode.
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
@@ -769,16 +750,6 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
     let _sampler = gfx.samplers
         .get_or_insert(sampler_info, &mut *gfx.factory);
     gfx.default_sampler_info = sampler_info;
-}
-
-/// Set the current width for drawing lines and stroked polygons.
-pub fn set_line_width(ctx: &mut Context, width: f32) {
-    ctx.gfx_context.line_width = width;
-}
-
-/// Set the current size for drawing points.
-pub fn set_point_size(ctx: &mut Context, size: f32) {
-    ctx.gfx_context.point_size = size;
 }
 
 /// Sets the bounds of the screen viewport.

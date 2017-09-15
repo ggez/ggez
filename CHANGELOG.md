@@ -6,6 +6,10 @@
  * Fixed some bugs with type visibility and directory paths.
  * Sprite batching implemented by termhn!
  * Added mesh builders allowing you to build complex meshes simply.
+ * Removed `get_line_width()` and `set_line_width()` and made line widths parameters where necessary
+ * Did the same for `get/set_point_size()`
+ * Integrated nalgebra to provide point and vector types.
+ * Removed inaccurate `timer::sleep_until_next_frame()`, added `timer::yield_now()`.
 
 # 0.3.3
 

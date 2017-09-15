@@ -3,7 +3,7 @@ use ggez::conf;
 use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
-use ggez::graphics::{DrawMode, Point};
+use ggez::graphics::{DrawMode, Point2};
 use std::time::Duration;
 
 struct MainState {
@@ -33,20 +33,20 @@ impl MainState {
 fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
     let mb = &mut graphics::MeshBuilder::new();
 
-    mb.line(&[Point { x: 200.0, y: 200.0 },
-              Point { x: 400.0, y: 200.0 },
-              Point { x: 400.0, y: 400.0 },
-              Point { x: 200.0, y: 400.0 },
-              Point { x: 200.0, y: 300.0 }],
+    mb.line(&[Point2::new(200.0, 200.0 ),
+              Point2::new(400.0, 200.0 ),
+              Point2::new(400.0, 400.0 ),
+              Point2::new(200.0, 400.0 ),
+              Point2::new(200.0, 300.0 )],
             4.0);
 
     mb.ellipse(DrawMode::Fill,
-               Point { x: 600.0, y: 200.0 },
+               Point2::new(600.0, 200.0),
                50.0,
                120.0,
                1.0);
 
-    mb.circle(DrawMode::Fill, Point { x: 600.0, y: 380.0 }, 40.0, 1.0);
+    mb.circle(DrawMode::Fill, Point2::new(600.0, 380.0), 40.0, 1.0);
     mb.build(ctx)
 }
 
@@ -62,11 +62,11 @@ impl event::EventHandler for MainState {
         graphics::set_color(ctx, graphics::WHITE)?;
         // let src = graphics::Rect::new(0.25, 0.25, 0.5, 0.5);
         // let src = graphics::Rect::one();
-        let dst = graphics::Point::new(200.0, 200.0);
+        let dst = graphics::Point2::new(200.0, 200.0);
         graphics::draw(ctx, &self.image1, dst, 0.0)?;
-        let dst = graphics::Point::new(100.0, 100.0);
-        let dst2 = graphics::Point::new(400.0, 400.0);
-        let scale = graphics::Point::new(40.0, 40.0);
+        let dst = graphics::Point2::new(100.0, 100.0);
+        let dst2 = graphics::Point2::new(400.0, 400.0);
+        let scale = graphics::Point2::new(40.0, 40.0);
         // let shear = graphics::Point::new(self.zoomlevel, self.zoomlevel);
         // graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0));
         graphics::draw_ex(ctx,
@@ -75,7 +75,7 @@ impl event::EventHandler for MainState {
                               // src: src,
                               dest: dst,
                               rotation: self.zoomlevel,
-                              // offset: Point::new(-16.0, 0.0),
+                              // offset: Point2::new(-16.0, 0.0),
                               scale: scale,
                               // shear: shear,
                               ..Default::default()
@@ -86,7 +86,7 @@ impl event::EventHandler for MainState {
                               // src: src,
                               dest: dst2,
                               rotation: self.zoomlevel,
-                              // offset: Point::new(-16.0, 0.0),
+                              // offset: Point2::new(-16.0, 0.0),
                               scale: scale,
                               // shear: shear,
                               ..Default::default()
@@ -100,25 +100,9 @@ impl event::EventHandler for MainState {
         graphics::rectangle(ctx, graphics::DrawMode::Line(1.0), rect)?;
 
 
-        graphics::set_line_width(ctx, 4.0);
         let mesh = build_mesh(ctx)?;
         graphics::set_color(ctx, (0, 0, 255).into())?;
         graphics::draw_ex(ctx, &mesh, Default::default())?;
-        // graphics::line(ctx,
-        //                &[Point { x: 200.0, y: 200.0 },
-        //                  Point { x: 400.0, y: 200.0 },
-        //                  Point { x: 400.0, y: 400.0 },
-        //                  Point { x: 200.0, y: 400.0 },
-        //                  Point { x: 200.0, y: 300.0 }])?;
-
-        // graphics::ellipse(ctx,
-        //                   DrawMode::Fill,
-        //                   Point { x: 600.0, y: 200.0 },
-        //                   50.0,
-        //                   120.0,
-        //                   1.0)?;
-
-        // graphics::circle(ctx, DrawMode::Fill, Point { x: 600.0, y: 380.0 }, 40.0, 1.0)?;
 
         graphics::present(ctx);
         Ok(())

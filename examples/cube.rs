@@ -71,7 +71,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> Self {
 
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 24).unwrap();
-        let text1 = graphics::Text::new(ctx, "Doesn't actually successfully", &font).unwrap();
+        let text1 = graphics::Text::new(ctx, "WIP; doesn't actually successfully", &font).unwrap();
         let text2 = graphics::Text::new(ctx, "draw a cube yet, sorry.", &font).unwrap();
 
         let gfx = &mut ctx.gfx_context;
@@ -207,9 +207,9 @@ impl event::EventHandler for MainState {
         }
 
 
-        let dest_point1 = graphics::Point::new(self.text1.width() as f32 / 2.0 + 10.0,
+        let dest_point1 = graphics::Point2::new(self.text1.width() as f32 / 2.0 + 10.0,
                                                self.text1.height() as f32 / 2.0 + 10.0);
-        let dest_point2 = graphics::Point::new(self.text2.width() as f32 / 2.0 + 10.0,
+        let dest_point2 = graphics::Point2::new(self.text2.width() as f32 / 2.0 + 10.0,
                                                self.text2.height() as f32 / 2.0 + 50.0);
         graphics::draw(ctx, &self.text1, dest_point1, 0.0)?;
         graphics::draw(ctx, &self.text2, dest_point2, 0.0)?;

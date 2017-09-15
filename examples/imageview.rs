@@ -34,13 +34,13 @@ impl MainState {
             colors.push(Color::from((r, g, b, 255)));
         }
 
-        let mut last_point = graphics::Point::new(400.0, 300.0);
+        let mut last_point = graphics::Point2::new(400.0, 300.0);
         for color in colors {
             let x = (rand::random::<i32>() % 50) as f32;
             let y = (rand::random::<i32>() % 50) as f32;
-            let point = graphics::Point::new(last_point.x + x, last_point.y + y);
+            let point = graphics::Point2::new(last_point.x + x, last_point.y + y);
             graphics::set_color(ctx, color)?;
-            graphics::line(ctx, &[last_point, point])?;
+            graphics::line(ctx, &[last_point, point], 3.0)?;
             last_point = point;
         }
 
@@ -82,13 +82,17 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+        const DESIRED_FPS: u64 = 60;
+        if !timer::check_update_time(ctx, DESIRED_FPS) {
+            return Ok(());
+        }
         self.a += self.direction;
         if self.a > 250 || self.a <= 0 {
             self.direction *= -1;
 
             println!("Delta frame time: {:?} ", _dt);
-            println!("Average FPS: {}", timer::get_fps(_ctx));
+            println!("Average FPS: {}", timer::get_fps(ctx));
         }
         Ok(())
     }
@@ -98,16 +102,16 @@ impl event::EventHandler for MainState {
         graphics::set_color(ctx, Color::from((c, c, c, 255)))?;
         graphics::clear(ctx);
 
-        let dest_point = graphics::Point::new(0.0, 0.0);
+        let dest_point = graphics::Point2::new(0.0, 0.0);
         graphics::draw(ctx, &self.image, dest_point, 0.0)?;
         graphics::draw(ctx, &self.text, dest_point, 0.0)?;
-        let dest_point = graphics::Point::new(100.0, 50.0);
+        let dest_point = graphics::Point2::new(100.0, 50.0);
         graphics::draw(ctx, &self.bmptext, dest_point, 0.0)?;
 
         self.draw_crazy_lines(ctx)?;
         graphics::present(ctx);
 
-        timer::sleep_until_next_frame(ctx, 60);
+        timer::yield_now();
         Ok(())
     }
 }
