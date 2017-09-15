@@ -2,17 +2,17 @@ use sdl2;
 
 pub use nalgebra as na;
 
-pub type Point = na::Point2<f32>;
-pub type Vector = na::Vector2<f32>;
+pub type Point2 = na::Point2<f32>;
+pub type Vector2 = na::Vector2<f32>;
 
-pub fn pt2arr(pt: Point) -> [f32;2] {
+pub fn pt2arr(pt: Point2) -> [f32;2] {
     [pt.x, pt.y]
     // pt.into()
 }
 
 
-pub fn arr2pt(pt: [f32;2]) -> Point {
-    Point::new(pt[0], pt[1])
+pub fn arr2pt(pt: [f32;2]) -> Point2 {
+    Point2::new(pt[0], pt[1])
 }
 
 // pub type Point = na::Point2<f32>;
@@ -119,9 +119,9 @@ impl Rect {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
-    /// Gets the `Rect`'s x and y coordinates as a `Point`.
-    pub fn point(&self) -> Point {
-        Point::new(self.x, self.y)
+    /// Gets the `Rect`'s x and y coordinates as a `Point2`.
+    pub fn point(&self) -> Point2 {
+        Point2::new(self.x, self.y)
     }
 
     /// Returns the left edge of the `Rect`

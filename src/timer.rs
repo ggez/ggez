@@ -200,34 +200,6 @@ pub fn check_update_time(ctx: &mut Context, desired_update_rate: u64) -> bool {
     }
 }
 
-/// This function will *attempt* to sleep the current
-/// thread until the beginning of the next frame should
-/// occur, to reach the desired FPS.
-///
-/// This is not an especially precise way to do timing;
-/// see the `astroblasto` example for how to do it better.
-/// However, this is very convenient for prototyping,
-/// so I'm leaving it in.
-pub fn sleep_until_next_frame(ctx: &Context, desired_fps: u32) {
-    // We assume we'll never sleep more than a second!
-    // Using an integer FPS target helps enforce this.
-    assert!(desired_fps > 0);
-    let tc = &ctx.timer_context;
-    let fps_delay = 1.0 / (desired_fps as f64);
-    let nanos_per_frame = fps_delay * 1e9;
-    let duration_per_frame = time::Duration::new(0, nanos_per_frame as u32);
-    let now = time::Instant::now();
-    let time_spent_this_frame = now - tc.last_instant;
-    if time_spent_this_frame >= duration_per_frame {
-        // We don't even yield to the OS in this case
-        ()
-    } else {
-        let duration_to_sleep = duration_per_frame - time_spent_this_frame;
-        // println!("Sleeping for {:?}", duration_to_sleep);
-        thread::sleep(duration_to_sleep);
-    }
-}
-
 /// Pauses the current thread for the target duration.
 /// Just calls `std::thread::sleep()` so it's as accurate
 /// as that is.
@@ -235,6 +207,13 @@ pub fn sleep(duration: time::Duration) {
     thread::sleep(duration);
 }
 
+/// Yields the current timeslice to the OS.
+///
+/// This just calls std::thread::yield_now() but it's
+/// handy to have here.
+pub fn yield_now() {
+    thread::yield_now();
+}
 
 /// Gets the number of times the game has gone through its event loop.
 ///

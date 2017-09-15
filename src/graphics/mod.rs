@@ -23,8 +23,6 @@ use gfx_device_gl;
 use gfx_window_sdl;
 use gfx::Factory;
 
-use nalgebra as na;
-
 
 use context::Context;
 use GameError;
@@ -554,7 +552,7 @@ pub fn clear(ctx: &mut Context) {
 
 /// Draws the given `Drawable` object to the screen by calling its
 /// `draw()` method.
-pub fn draw(ctx: &mut Context, drawable: &Drawable, dest: Point, rotation: f32) -> GameResult<()> {
+pub fn draw(ctx: &mut Context, drawable: &Drawable, dest: Point2, rotation: f32) -> GameResult<()> {
     drawable.draw(ctx, dest, rotation)
 }
 
@@ -595,35 +593,35 @@ pub fn arc(_ctx: &mut Context,
 /// Draw a circle.
 pub fn circle(ctx: &mut Context,
               mode: DrawMode,
-              point: Point,
+              point: Point2,
               radius: f32,
               tolerance: f32)
               -> GameResult<()> {
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
-    m.draw(ctx, Point::origin(), 0.0)
+    m.draw(ctx, Point2::origin(), 0.0)
 }
 
 /// Draw an ellipse.
 pub fn ellipse(ctx: &mut Context,
                mode: DrawMode,
-               point: Point,
+               point: Point2,
                radius1: f32,
                radius2: f32,
                tolerance: f32)
                -> GameResult<()> {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
-    m.draw(ctx, Point::origin(), 0.0)
+    m.draw(ctx, Point2::origin(), 0.0)
 }
 
 /// Draws a line of one or more connected segments.
-pub fn line(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
+pub fn line(ctx: &mut Context, points: &[Point2]) -> GameResult<()> {
     let w = ctx.gfx_context.line_width;
     let m = Mesh::new_line(ctx, points, w)?;
-    m.draw(ctx, Point::origin(), 0.0)
+    m.draw(ctx, Point2::origin(), 0.0)
 }
 
 /// Draws points.
-pub fn points(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
+pub fn points(ctx: &mut Context, points: &[Point2]) -> GameResult<()> {
     let size = ctx.gfx_context.point_size;
     for p in points {
         let r = Rect::new(p.x, p.y, size, size);
@@ -633,10 +631,10 @@ pub fn points(ctx: &mut Context, points: &[Point]) -> GameResult<()> {
 }
 
 /// Draws a closed polygon
-pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point]) -> GameResult<()> {
+pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameResult<()> {
     let w = ctx.gfx_context.line_width;
     let m = Mesh::new_polygon(ctx, mode, vertices, w)?;
-    m.draw(ctx, Point::origin(), 0.0)
+    m.draw(ctx, Point2::origin(), 0.0)
 }
 
 // Renders text with the default font.
@@ -662,10 +660,10 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()
     let x2 = x + (w / 2.0);
     let y1 = y - (h / 2.0);
     let y2 = y + (h / 2.0);
-    let pts = [Point::new(x1, y1),
-               Point::new(x2, y1),
-               Point::new(x2, y2),
-               Point::new(x1, y2)];
+    let pts = [Point2::new(x1, y1),
+               Point2::new(x2, y1),
+               Point2::new(x2, y2),
+               Point2::new(x1, y2)];
     polygon(ctx, mode, &pts)
 }
 
@@ -843,11 +841,11 @@ pub fn get_display_count(context: &Context) -> GameResult<i32> {
 ///
 /// * `src` - a portion of the drawable to clip, as a fraction of the whole image.
 ///    Defaults to the whole image (1.0) if omitted.
-/// * `dest` - the position to draw the graphic expressed as a `Point`.
+/// * `dest` - the position to draw the graphic expressed as a `Point2`.
 /// * `rotation` - orientation of the graphic in radians.
-/// * `scale` - x/y scale factors expressed as a `Point`.
+/// * `scale` - x/y scale factors expressed as a `Point2`.
 /// * `offset` - specifies an offset from the center for transform operations like scale/rotation.
-/// * `shear` - x/y shear factors expressed as a `Point`.
+/// * `shear` - x/y shear factors expressed as a `Point2`.
 ///
 /// This struct implements the `Default` trait, so you can just do:
 ///
@@ -855,22 +853,22 @@ pub fn get_display_count(context: &Context) -> GameResult<i32> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawParam {
     pub src: Rect,
-    pub dest: Point,
+    pub dest: Point2,
     pub rotation: f32,
-    pub scale: Point,
-    pub offset: Point,
-    pub shear: Point,
+    pub scale: Point2,
+    pub offset: Point2,
+    pub shear: Point2,
 }
 
 impl Default for DrawParam {
     fn default() -> Self {
         DrawParam {
             src: Rect::one(),
-            dest: Point::origin(),
+            dest: Point2::origin(),
             rotation: 0.0,
-            scale: Point::new(1.0, 1.0),
-            offset: Point::new(0.0, 0.0),
-            shear: Point::new(0.0, 0.0),
+            scale: Point2::new(1.0, 1.0),
+            offset: Point2::new(0.0, 0.0),
+            shear: Point2::new(0.0, 0.0),
         }
     }
 }
@@ -889,10 +887,10 @@ pub trait Drawable {
     /// It just is a shortcut that calls `draw_ex()` with some sane defaults.
     ///
     /// * `ctx` - The `Context` this graphic will be rendered to.
-    /// * `dest` - the position to draw the graphic expressed as a `Point`.
+    /// * `dest` - the position to draw the graphic expressed as a `Point2`.
     /// * `rotation` - orientation of the graphic in radians.
     ///
-    fn draw(&self, ctx: &mut Context, dest: Point, rotation: f32) -> GameResult<()> {
+    fn draw(&self, ctx: &mut Context, dest: Point2, rotation: f32) -> GameResult<()> {
         self.draw_ex(ctx,
                      DrawParam {
                          dest: dest,
@@ -1093,7 +1091,7 @@ impl Drawable for Image {
         // illusion that the screen is addressed in pixels.
         // BUGGO: Which I rather regret now.
         let invert_y = if gfx.screen_rect.h < 0.0 { 1.0 } else { -1.0 };
-        let real_scale = Point::new(
+        let real_scale = Point2::new(
             src_width * param.scale.x * self.width as f32,
             src_height * param.scale.y * self.height as f32 * invert_y,
         );
@@ -1159,7 +1157,7 @@ impl Mesh {
 
     /// Create a new mesh for a line of one or more connected segments.
     /// WIP, sorry
-    pub fn new_line(ctx: &mut Context, points: &[Point], width: f32) -> GameResult<Mesh> {
+    pub fn new_line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult<Mesh> {
         Mesh::new_polyline(ctx, DrawMode::Line, points, width)
     }
 
@@ -1167,7 +1165,7 @@ impl Mesh {
     /// Stroked circles are still WIP, sorry.
     pub fn new_circle(ctx: &mut Context,
                       mode: DrawMode,
-                      point: Point,
+                      point: Point2,
                       radius: f32,
                       tolerance: f32)
                       -> GameResult<Mesh> {
@@ -1204,7 +1202,7 @@ impl Mesh {
     /// Stroked ellipses are still WIP, sorry.
     pub fn new_ellipse(ctx: &mut Context,
                        mode: DrawMode,
-                       point: Point,
+                       point: Point2,
                        radius1: f32,
                        radius2: f32,
                        tolerance: f32)
@@ -1241,7 +1239,7 @@ impl Mesh {
     /// Create a new mesh for series of connected lines
     pub fn new_polyline(ctx: &mut Context,
                         mode: DrawMode,
-                        points: &[Point],
+                        points: &[Point2],
                         width: f32)
                         -> GameResult<Mesh> {
         let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
@@ -1271,7 +1269,7 @@ impl Mesh {
     /// Create a new mesh for closed polygon
     pub fn new_polygon(ctx: &mut Context,
                        mode: DrawMode,
-                       points: &[Point],
+                       points: &[Point2],
                        width: f32)
                        -> GameResult<Mesh> {
         let buffers: &mut t::geometry_builder::VertexBuffers<_> = &mut t::VertexBuffers::new();
@@ -1300,7 +1298,7 @@ impl Mesh {
     /// Create a new `Mesh` from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
-    pub fn from_triangles(ctx: &mut Context, triangles: &[Point]) -> GameResult<Mesh> {
+    pub fn from_triangles(ctx: &mut Context, triangles: &[Point2]) -> GameResult<Mesh> {
         // This is kind of non-ideal but works for now.
         let points: Vec<Vertex> = triangles
             .into_iter()

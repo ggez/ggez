@@ -66,7 +66,7 @@ impl SpriteBatch {
         // BUGGO: Which I rather regret now.
         // let invert_y = if gfx.screen_rect.h < 0.0 { 1.0 } else { -1.0 };
         // TODO: Figure out whether implementing this is needed/how to do it cleanly
-        let real_scale = graphics::Point::new(
+        let real_scale = graphics::Point2::new(
             src_width * param.scale.x * self.image.width as f32,
             src_height * param.scale.y * self.image.height as f32,
         );
