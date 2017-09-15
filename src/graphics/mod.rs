@@ -351,8 +351,8 @@ impl GraphicsContext {
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             shader_globals: globals,
             projection: initial_projection,
-            view_stack: vec![initial_view],
             transform_stack: vec![initial_transform],
+            view_stack: vec![initial_view],
             line_width: 1.0,
             point_size: 1.0,
             white_image: white_image,
@@ -388,13 +388,16 @@ impl GraphicsContext {
     }
 
     fn update_globals(&mut self) -> GameResult<()> {
+        self.encoder
+            .update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
+        Ok(())
+    }
+
+    fn apply_transformation_globals(&mut self) {
         let model = self.transform_stack[self.transform_stack.len() - 1];
         let view = self.view_stack[self.view_stack.len() - 1];
         let mvp = self.projection * view * model;
         self.shader_globals.mvp_matrix = mvp.into();
-        self.encoder
-            .update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
-        Ok(())
     }
 
     fn push_transform(&mut self, t: Matrix4) {
@@ -499,7 +502,6 @@ impl GraphicsContext {
             -1.0,
             1.0)
             .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
-                            
     }
 }
 
@@ -740,6 +742,28 @@ pub fn set_point_size(ctx: &mut Context, size: f32) {
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
+    gfx.update_globals()
+}
+
+pub fn push_transform(context: &mut Context, transform: Matrix4) {
+    let gfx = &mut context.gfx_context;
+    gfx.push_transform(transform);
+}
+pub fn pop_transform(context: &mut Context) {
+    let gfx = &mut context.gfx_context;
+    gfx.pop_transform();
+}
+pub fn push_view(context: &mut Context, view: Matrix4) {
+    let gfx = &mut context.gfx_context;
+    gfx.push_view(view);
+}
+pub fn pop_view(context: &mut Context) {
+    let gfx = &mut context.gfx_context;
+    gfx.pop_view();
+}
+pub fn apply_transformations(context: &mut Context) -> GameResult<()> {
+    let gfx = &mut context.gfx_context;
+    gfx.apply_transformation_globals();
     gfx.update_globals()
 }
 
