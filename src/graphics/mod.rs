@@ -387,44 +387,58 @@ impl GraphicsContext {
         Ok(gfx)
     }
 
+    /// Sends the current value of the graphics context's shader globals
+    /// to the graphics card.
     fn update_globals(&mut self) -> GameResult<()> {
         self.encoder
             .update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
         Ok(())
     }
 
-    fn apply_transformation_globals(&mut self) {
+    /// Recalculates the context's Model-View-Projection matrix based on
+    /// the matrices on the top of the respective stacks and the projection
+    /// matrix.
+    fn calculate_transform_matrix(&mut self) {
         let model = self.transform_stack[self.transform_stack.len() - 1];
         let view = self.view_stack[self.view_stack.len() - 1];
         let mvp = self.projection * view * model;
         self.shader_globals.mvp_matrix = mvp.into();
     }
 
+    /// Pushes a homogeneous transform matrix to the top of the transform 
+    /// (model) matrix stack.
     fn push_transform(&mut self, t: Matrix4) {
         self.transform_stack.push(t);
     }
 
+    /// Pops the current transform matrix off the top of the transform 
+    /// (model) matrix stack.
     fn pop_transform(&mut self) {
         if self.transform_stack.len() > 1 {
             self.transform_stack.pop();
         }
     }
 
+    /// Pushes a homogeneous transform matrix to the top of the view 
+    /// matrix stack.
     fn push_view(&mut self, v: Matrix4) {
         self.view_stack.push(v);
     }
 
+    /// Pops the current transform matrix off the top of the view 
+    /// matrix stack.
     fn pop_view(&mut self) {
         if self.view_stack.len() > 1 {
             self.view_stack.pop();
         }
     }
 
+    /// Converts the given `DrawParam` into an `InstanceProperties` object and
+    /// sends it to the graphics card at the front of the instance buffer.
     fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
         let properties = draw_params.into();
         self.encoder
             .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;
-        self.quad_slice.instances = Some((1, 0));
         Ok(())
     }
 
@@ -745,25 +759,47 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<(
     gfx.update_globals()
 }
 
+/// Pushes a homogeneous transform matrix to the top of the transform 
+/// (model) matrix stack of the `Context`.
+///
+/// A `DrawParam` can be converted into an appropriate transform
+/// matrix by calling `param.into_matrix()` like so:
+///
+/// ```
+/// graphics::push_transform(param.into_matrix());
+/// ```
 pub fn push_transform(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
     gfx.push_transform(transform);
 }
+
+/// Pops the transform matrix off the top of the transform 
+/// (model) matrix stack of the `Context`.
 pub fn pop_transform(context: &mut Context) {
     let gfx = &mut context.gfx_context;
     gfx.pop_transform();
 }
+
+/// Pushes a homogeneous transform matrix to the top of the view 
+/// matrix stack of the `Context`.
 pub fn push_view(context: &mut Context, view: Matrix4) {
     let gfx = &mut context.gfx_context;
     gfx.push_view(view);
 }
+
+/// Pops the transform matrix off the top of the view 
+/// matrix stack of the `Context`.
 pub fn pop_view(context: &mut Context) {
     let gfx = &mut context.gfx_context;
     gfx.pop_view();
 }
+
+/// Calculates the new total transformation (Model-View-Projection) matrix
+/// based on the matrices at the top of the transform and view matrix stacks
+/// and sends it to the graphics card.
 pub fn apply_transformations(context: &mut Context) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
-    gfx.apply_transformation_globals();
+    gfx.calculate_transform_matrix();
     gfx.update_globals()
 }
 
