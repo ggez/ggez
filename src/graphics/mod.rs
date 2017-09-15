@@ -416,6 +416,12 @@ impl GraphicsContext {
         }
     }
 
+    /// Sets the current transform matrix.
+    fn set_transform(&mut self, t: Matrix4) {
+        let idx = self.transform_stack.len() - 1;
+        self.transform_stack[idx] = t;
+    }
+
     /// Pushes a homogeneous transform matrix to the top of the view 
     /// matrix stack.
     fn push_view(&mut self, v: Matrix4) {
@@ -428,6 +434,12 @@ impl GraphicsContext {
         if self.view_stack.len() > 1 {
             self.view_stack.pop();
         }
+    }
+
+    /// Sets the current transform matrix.
+    fn set_view(&mut self, t: Matrix4) {
+        let idx = self.view_stack.len() - 1;
+        self.view_stack[idx] = t;
     }
 
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
@@ -754,7 +766,8 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<(
 }
 
 /// Pushes a homogeneous transform matrix to the top of the transform 
-/// (model) matrix stack of the `Context`.
+/// (model) matrix stack of the `Context`. If no matrix is given, then
+/// pushes a copy of the current transform matrix to the top of the stack.
 ///
 /// A `DrawParam` can be converted into an appropriate transform
 /// matrix by calling `param.into_matrix()` like so:
@@ -762,9 +775,14 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<(
 /// ```
 /// graphics::push_transform(param.into_matrix());
 /// ```
-pub fn push_transform(context: &mut Context, transform: Matrix4) {
+pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
     let gfx = &mut context.gfx_context;
-    gfx.push_transform(transform);
+    if let Some(t) = transform {
+        gfx.push_transform(t);
+    } else {
+        let copy = gfx.transform_stack[gfx.transform_stack.len() - 1].clone();
+        gfx.push_transform(copy);
+    }
 }
 
 /// Pops the transform matrix off the top of the transform 
@@ -772,6 +790,40 @@ pub fn push_transform(context: &mut Context, transform: Matrix4) {
 pub fn pop_transform(context: &mut Context) {
     let gfx = &mut context.gfx_context;
     gfx.pop_transform();
+}
+
+/// Sets the current model transformation to the given homogeneous
+/// transformation matrix.
+///
+/// A `DrawParam` can be converted into an appropriate transform
+/// matrix by calling `param.into_matrix()` like so:
+///
+/// ```
+/// graphics::set_transform(param.into_matrix());
+/// ```
+pub fn set_transform(context: &mut Context, transform: Matrix4) {
+    let gfx = &mut context.gfx_context;
+    gfx.set_transform(transform);
+}
+
+/// Appends the given transform to the current model transform.
+/// 
+/// A `DrawParam` can be converted into an appropriate transform
+/// matrix by calling `param.into_matrix()` like so:
+///
+/// ```
+/// graphics::transform(param.into_matrix());
+/// ```
+pub fn transform(context: &mut Context, transform: Matrix4) {
+    let gfx = &mut context.gfx_context;
+    let curr = gfx.transform_stack[gfx.transform_stack.len() - 1].clone();
+    gfx.set_transform(transform * curr);
+}
+
+/// Sets the current model transform to the origin transform (no transformation)
+pub fn origin(context: &mut Context) {
+    let gfx = &mut context.gfx_context;
+    gfx.set_transform(Matrix4::identity());
 }
 
 /// Pushes a homogeneous transform matrix to the top of the view 
@@ -786,6 +838,20 @@ pub fn push_view(context: &mut Context, view: Matrix4) {
 pub fn pop_view(context: &mut Context) {
     let gfx = &mut context.gfx_context;
     gfx.pop_view();
+}
+
+/// Sets the current view matrix to the given homogeneous
+/// transformation matrix.
+pub fn set_view(context: &mut Context, view: Matrix4) {
+    let gfx = &mut context.gfx_context;
+    gfx.set_view(view);
+}
+
+/// Appends the given transformation matrix to the current view transform matrix 
+pub fn transform_view(context: &mut Context, transform: Matrix4) {
+    let gfx = &mut context.gfx_context;
+    let curr = gfx.view_stack[gfx.view_stack.len() - 1].clone();
+    gfx.set_view(transform * curr);
 }
 
 /// Calculates the new total transformation (Model-View-Projection) matrix
