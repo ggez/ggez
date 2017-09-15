@@ -27,8 +27,6 @@ cargo-resource-root = []
 [profile.dev]
 codegen-units=4
 
-
-
 [dependencies]
 rusttype = "0.2"
 rand = "0.3"
@@ -47,6 +45,7 @@ lyon = "0.7"
 euclid = "0.15"
 mint = { version = "0.4", optional = true }
 smart-default = "0.2"
+nalgebra = "0.13"
 
 [dev-dependencies]
 cgmath = "0.15"

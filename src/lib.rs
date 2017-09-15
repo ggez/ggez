@@ -112,6 +112,7 @@ extern crate lyon;
 extern crate euclid;
 #[macro_use]
 extern crate smart_default;
+pub extern crate nalgebra;
 
 pub mod audio;
 pub mod conf;

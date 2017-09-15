@@ -18,14 +18,14 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a line of one or more connected segments.
-    pub fn line(&mut self, points: &[Point], width: f32) -> &mut Self {
+    pub fn line(&mut self, points: &[Point2], width: f32) -> &mut Self {
         self.polyline(DrawMode::Line(width), points)
     }
 
     /// Create a new mesh for a circle.
     pub fn circle(&mut self,
                   mode: DrawMode,
-                  point: Point,
+                  point: Point2,
                   radius: f32,
                   tolerance: f32)
                   -> &mut Self {
@@ -61,7 +61,7 @@ impl MeshBuilder {
     /// Create a new mesh for an ellipse.
     pub fn ellipse(&mut self,
                    mode: DrawMode,
-                   point: Point,
+                   point: Point2,
                    radius1: f32,
                    radius2: f32,
                    tolerance: f32)
@@ -98,7 +98,7 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a series of connected lines.
-    pub fn polyline(&mut self, mode: DrawMode, points: &[Point]) -> &mut Self {
+    pub fn polyline(&mut self, mode: DrawMode, points: &[Point2]) -> &mut Self {
         {
             let buffers = &mut self.buffer;
             let points = points
@@ -125,7 +125,7 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a closed polygon
-    pub fn polygon(&mut self, mode: DrawMode, points: &[Point]) -> &mut Self {
+    pub fn polygon(&mut self, mode: DrawMode, points: &[Point2]) -> &mut Self {
         {
             let buffers = &mut self.buffer;
             let points = points
@@ -154,14 +154,14 @@ impl MeshBuilder {
     /// Create a new `Mesh` from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
-    pub fn triangles(&mut self, triangles: &[Point]) -> &mut Self {
+    pub fn triangles(&mut self, triangles: &[Point2]) -> &mut Self {
         {
             assert_eq!(triangles.len() % 3, 0);
             let tris = triangles
                 .iter()
                 .cloned()
                 .map(|p| {
-                    // Gotta turn ggez Point's into lyon FillVertex's
+                    // Gotta turn ggez Point2's into lyon FillVertex's
                         let np = lyon::math::Point2D::new(p.x, p.y);
                         let nv = lyon::math::Vector2D::new(p.x, p.y);
                         t::FillVertex {
@@ -253,7 +253,7 @@ pub struct Mesh {
 
 impl Mesh {
     /// Create a new mesh for a line of one or more connected segments.
-    pub fn new_line(ctx: &mut Context, points: &[Point], width: f32) -> GameResult<Mesh> {
+    pub fn new_line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.polyline(DrawMode::Line(width), points);
         mb.build(ctx)
@@ -262,7 +262,7 @@ impl Mesh {
     /// Create a new mesh for a circle.
     pub fn new_circle(ctx: &mut Context,
                       mode: DrawMode,
-                      point: Point,
+                      point: Point2,
                       radius: f32,
                       tolerance: f32)
                       -> GameResult<Mesh> {
@@ -274,7 +274,7 @@ impl Mesh {
     /// Create a new mesh for an ellipse.
     pub fn new_ellipse(ctx: &mut Context,
                        mode: DrawMode,
-                       point: Point,
+                       point: Point2,
                        radius1: f32,
                        radius2: f32,
                        tolerance: f32)
@@ -285,7 +285,7 @@ impl Mesh {
     }
 
     /// Create a new mesh for series of connected lines
-    pub fn new_polyline(ctx: &mut Context, mode: DrawMode, points: &[Point]) -> GameResult<Mesh> {
+    pub fn new_polyline(ctx: &mut Context, mode: DrawMode, points: &[Point2]) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.polyline(mode, points);
         mb.build(ctx)
@@ -293,14 +293,14 @@ impl Mesh {
 
 
     /// Create a new mesh for closed polygon
-    pub fn new_polygon(ctx: &mut Context, mode: DrawMode, points: &[Point]) -> GameResult<Mesh> {
+    pub fn new_polygon(ctx: &mut Context, mode: DrawMode, points: &[Point2]) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.polygon(mode, points);
         mb.build(ctx)
     }
 
     /// Create a new `Mesh` from a raw list of triangles.
-    pub fn from_triangles(ctx: &mut Context, triangles: &[Point]) -> GameResult<Mesh> {
+    pub fn from_triangles(ctx: &mut Context, triangles: &[Point2]) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.triangles(triangles);
         mb.build(ctx)

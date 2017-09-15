@@ -1,52 +1,69 @@
 use sdl2;
 
-/// A simple 2D point.
-#[derive(Copy, Clone, PartialEq, Debug, Default)]
-pub struct Point {
-    pub x: f32,
-    pub y: f32,
-}
+pub use nalgebra as na;
 
-impl Point {
-    pub fn new(x: f32, y: f32) -> Self {
-        Point { x: x, y: y }
-    }
+pub type Point2 = na::Point2<f32>;
+pub type Vector2 = na::Vector2<f32>;
 
-    /// Creates a new `Point` at coordinates 0,0.
-    pub fn zero() -> Self {
-        Self::new(0.0, 0.0)
-    }
+pub fn pt2arr(pt: Point2) -> [f32;2] {
+    [pt.x, pt.y]
+    // pt.into()
 }
 
 
-impl From<Point> for [f32; 2] {
-    fn from(p: Point) -> [f32; 2] {
-        [p.x, p.y]
-    }
+pub fn arr2pt(pt: [f32;2]) -> Point2 {
+    Point2::new(pt[0], pt[1])
 }
 
+// pub type Point = na::Point2<f32>;
 
-impl From<[f32; 2]> for Point {
-    fn from(p: [f32; 2]) -> Point {
-        Point::new(p[0], p[1])
-    }
-}
+// /// A simple 2D point.
+// #[derive(Copy, Clone, PartialEq, Debug, Default)]
+// pub struct Point {
+//     pub x: f32,
+//     pub y: f32,
+// }
 
-#[cfg(feature = "mint-exports")]
-extern crate mint;
-#[cfg(feature = "mint-exports")]
-impl From<mint::Point2<f32>> for Point {
-    fn from(p: mint::Point2<f32>) -> Point {
-        Point::new(p.x, p.y)
-    }
-}
+// impl Point {
+//     pub fn new(x: f32, y: f32) -> Self {
+//         Point { x: x, y: y }
+//     }
 
-#[cfg(feature = "mint-exports")]
-impl From<Point> for mint::Point2<f32> {
-    fn from(p: Point) -> mint::Point2<f32> {
-        mint::Point2 { x: p.x, y: p.y }
-    }
-}
+//     /// Creates a new `Point` at coordinates 0,0.
+//     pub fn zero() -> Self {
+//         Self::new(0.0, 0.0)
+//     }
+// }
+
+
+// impl From<Point> for [f32; 2] {
+//     fn from(p: Point) -> [f32; 2] {
+//         [p.x, p.y]
+//     }
+// }
+
+
+// impl From<[f32; 2]> for Point {
+//     fn from(p: [f32; 2]) -> Point {
+//         Point::new(p[0], p[1])
+//     }
+// }
+
+// #[cfg(feature = "mint-exports")]
+// extern crate mint;
+// #[cfg(feature = "mint-exports")]
+// impl From<mint::Point2<f32>> for Point {
+//     fn from(p: mint::Point2<f32>) -> Point {
+//         Point::new(p.x, p.y)
+//     }
+// }
+
+// #[cfg(feature = "mint-exports")]
+// impl From<Point> for mint::Point2<f32> {
+//     fn from(p: Point) -> mint::Point2<f32> {
+//         mint::Point2 { x: p.x, y: p.y }
+//     }
+// }
 
 
 /// A simple 2D rectangle.
@@ -102,12 +119,9 @@ impl Rect {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
-    /// Gets the `Rect`'s x and y coordinates as a `Point`.
-    pub fn point(&self) -> Point {
-        Point {
-            x: self.x,
-            y: self.y,
-        }
+    /// Gets the `Rect`'s x and y coordinates as a `Point2`.
+    pub fn point(&self) -> Point2 {
+        Point2::new(self.x, self.y)
     }
 
     /// Returns the left edge of the `Rect`

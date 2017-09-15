@@ -89,7 +89,7 @@ pub trait EventHandler {
     /// Called upon a quit event.  If it returns true,
     /// the game does not exit.
     fn quit_event(&mut self) -> bool {
-        println!("Quitting game");
+        println!("quit_event() callback called, quitting...");
         false
     }
 

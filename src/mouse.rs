@@ -3,7 +3,7 @@
 use sdl2::mouse;
 use context::Context;
 use error::GameResult;
-use graphics::Point;
+use graphics::Point2;
 
 /// Get whether or not the mouse is "grabbed", ie, confined to the window.
 pub fn get_grabbed(ctx: &Context) -> bool {
@@ -31,17 +31,17 @@ pub fn set_relative_mode(ctx: &Context, mode: bool) {
 
 /// Get the current position of the mouse cursor, in pixels.
 /// Uses strictly window-only coordinates.
-pub fn get_position(ctx: &Context) -> GameResult<Point> {
+pub fn get_position(ctx: &Context) -> GameResult<Point2> {
     let event_pump = &ctx.sdl_context.event_pump()?;
     let mouse = mouse::MouseState::new(event_pump);
     let x = mouse.x() as f32;
     let y = mouse.y() as f32;
-    Ok(Point::new(x, y))
+    Ok(Point2::new(x, y))
 }
 
 /// Set the current position of the mouse cursor, in pixels.
 /// Uses strictly window-only coordinates.
-pub fn set_position(ctx: &Context, point: Point) {
+pub fn set_position(ctx: &Context, point: Point2) {
     let window = ctx.gfx_context.get_window();
     ctx.sdl_context
         .mouse()
