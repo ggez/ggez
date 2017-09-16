@@ -24,6 +24,7 @@ use gfx_window_sdl;
 use gfx::Factory;
 
 
+use conf::WindowMode;
 use context::Context;
 use GameError;
 use GameResult;
@@ -300,8 +301,7 @@ impl GraphicsContext {
                window_title: &str,
                screen_width: u32,
                screen_height: u32,
-               vsync: bool,
-               resize: bool)
+               window_mode: WindowMode)
                -> GameResult<GraphicsContext> {
         // WINDOW SETUP
         let gl = video.gl_attr();
@@ -312,15 +312,14 @@ impl GraphicsContext {
         gl.set_blue_size(5);
         gl.set_alpha_size(8);
         let mut window_builder = video.window(window_title, screen_width, screen_height);
-        if resize {
+        if window_mode.resizable {
             window_builder.resizable();
         }
         let (window, gl_context, device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
         // println!("Vsync enabled: {}", vsync);
-        let vsync_int = if vsync { 1 } else { 0 };
-        video.gl_set_swap_interval(vsync_int);
+        GraphicsContext::set_vsync(&video, window_mode.vsync);
 
         let display_index = window.display_index()?;
         let dpi = window.subsystem().display_dpi(display_index)?;
@@ -398,6 +397,7 @@ impl GraphicsContext {
             default_sampler_info: sampler_info,
             samplers: samplers,
         };
+        gfx.set_window_mode(screen_width, screen_height, window_mode)?;
 
         let w = screen_width as f32;
         let h = screen_height as f32;
@@ -519,6 +519,30 @@ impl GraphicsContext {
                                                rect.y - half_height,
                                                1.0,
                                                -1.0);
+    }
+
+    /// Just a helper method to set window mode from a WindowMode object.
+    fn set_window_mode(&mut self, width: u32, height: u32, mode: WindowMode) -> GameResult<()> {
+            let window = &mut self.window;
+            window.set_size(width, height)?;
+            // SDL sets "bordered" but Love2D does "not bordered";
+            // we use the Love2D convention.
+            window.set_bordered(!mode.borderless);
+            window.set_fullscreen(mode.fullscreen_type.into())?;
+            let (min_w, min_h) = mode.min_dimensions;
+            window.set_minimum_size(min_w, min_h)?;
+            let (max_w, max_h) = mode.max_dimensions;
+            window.set_maximum_size(max_w, max_h)?;
+            Ok(())
+    }
+
+    /// Another helper method to set vsync.
+    /// This SHOULD go together with `set_window_mode()` above but cannot because it
+    /// needs the Sdl2 VideoSubsystem object, which we don't hang on to (because we can't????
+    /// Not so sure about that; BUGGO: investigate!) 
+    fn set_vsync(video: &sdl2::VideoSubsystem, vsync: bool) {
+        let vsync_int = if vsync { 1 } else { 0 };
+        video.gl_set_swap_interval(vsync_int);
     }
 }
 
@@ -770,6 +794,7 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<(
     gfx.update_globals()
 }
 
+
 /// Sets the window mode, such as the size and other properties.
 ///
 /// Setting the window mode may have side effects, such as clearing
@@ -782,21 +807,12 @@ pub fn set_mode(context: &mut Context,
                 mode: WindowMode)
                 -> GameResult<()> {
     {
-        let window = &mut context.gfx_context.get_window_mut();
-        window.set_size(width, height)?;
-        // SDL sets "bordered" but Love2D does "not bordered";
-        // we use the Love2D convention.
-        window.set_bordered(!mode.borderless);
-        window.set_fullscreen(mode.fullscreen_type)?;
-        let (min_w, min_h) = mode.min_dimensions;
-        window.set_minimum_size(min_w, min_h)?;
-        let (max_w, max_h) = mode.max_dimensions;
-        window.set_maximum_size(max_w, max_h)?;
+        let gfx = &mut context.gfx_context;
+        gfx.set_window_mode(width, height, mode)?;
     }
     {
-        let video = context.sdl_context.video()?;
-        let vsync_int = if mode.vsync { 1 } else { 0 };
-        video.gl_set_swap_interval(vsync_int);
+        let video = &mut context.sdl_context.video()?;
+        GraphicsContext::set_vsync(video, mode.vsync);
     }
     Ok(())
 }

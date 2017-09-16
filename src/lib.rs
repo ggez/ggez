@@ -114,6 +114,8 @@ extern crate euclid;
 extern crate smart_default;
 pub extern crate nalgebra;
 
+extern crate serde_json;
+
 pub mod audio;
 pub mod conf;
 mod context;

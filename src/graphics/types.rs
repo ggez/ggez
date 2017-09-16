@@ -1,5 +1,3 @@
-use sdl2;
-
 pub use nalgebra as na;
 
 pub type Point2 = na::Point2<f32>;
@@ -301,76 +299,6 @@ impl From<FilterMode> for FilterMethod {
 /// Specifies how to wrap textures.
 pub type WrapMode = texture::WrapMode;
 
-
-pub type FullscreenType = sdl2::video::FullscreenType;
-
-/// A builder structure containing flags for defining window settings.
-///
-/// Defaults:
-///
-/// ```rust,ignore
-/// WindowMode {
-///     borderless: false,
-///     fullscreen_type: sdl2::video::FullscreenType::Off,
-///     vsync: true,
-///     min_dimensions: (0, 0),
-///     max_dimensions: (0, 0),
-/// }
-/// ```
-#[derive(Debug, Copy, Clone, SmartDefault)]
-pub struct WindowMode {
-    #[default = r#"false"#]
-    pub borderless: bool,
-    #[default = r#"sdl2::video::FullscreenType::Off"#]
-    pub fullscreen_type: FullscreenType,
-    #[default = r#"true"#]
-    pub vsync: bool,
-    /// Minimum dimensions for resizable windows; (0, 0) means no limit
-    #[default = r#"(0, 0)"#]
-    pub min_dimensions: (u32, u32),
-    /// Maximum dimensions for resizable windows; (0, 0) means no limit
-    #[default = r#"(0, 0)"#]
-    pub max_dimensions: (u32, u32),
-}
-
-// impl Default for WindowMode {
-//     fn default() -> Self {
-//         Self {
-//             borderless: false,
-//             fullscreen_type: sdl2::video::FullscreenType::Off,
-//             vsync: true,
-//             min_dimensions: (0, 0),
-//             max_dimensions: (0, 0),
-//         }
-//     }
-// }
-
-impl WindowMode {
-    pub fn borderless(mut self, borderless: bool) -> Self {
-        self.borderless = borderless;
-        self
-    }
-
-    pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
-        self.fullscreen_type = fullscreen_type;
-        self
-    }
-
-    pub fn vsync(mut self, vsync: bool) -> Self {
-        self.vsync = vsync;
-        self
-    }
-
-    pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.min_dimensions = (width, height);
-        self
-    }
-
-    pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.max_dimensions = (width, height);
-        self
-    }
-}
 
 
 #[cfg(test)]
