@@ -20,93 +20,112 @@ use std::ops::{Add, AddAssign, Sub};
 /// You're probably better off using a real vector math lib but I
 /// didn't want to add more dependencies and such.
 /// **********************************************************************
-#[derive(Debug, Copy, Clone)]
-struct Vec2 {
-    x: f64,
-    y: f64,
+
+use ggez::nalgebra as na;
+
+type Point2 = na::Point2<f32>;
+type Vec2 = na::Vector2<f32>;
+
+// #[derive(Debug, Copy, Clone)]
+// struct Vec2 {
+//     x: f32,
+//     y: f32,
+// }
+
+// impl Vec2 {
+//     fn new(x: f32, y: f32) -> Self {
+//         Vec2 { x: x, y: y }
+//     }
+
+//     /// Create a unit vector representing the
+//     /// given angle (in radians)
+fn vec_from_angle(angle: f32) -> Vec2 {
+    let vx = angle.sin();
+    let vy = angle.cos();
+    Vec2::new(vx, vy)
 }
 
-impl Vec2 {
-    fn new(x: f64, y: f64) -> Self {
-        Vec2 { x: x, y: y }
-    }
-
-    /// Create a unit vector representing the
-    /// given angle (in radians)
-    fn from_angle(angle: f64) -> Self {
-        let vx = angle.sin();
-        let vy = angle.cos();
-        Vec2 { x: vx, y: vy }
-    }
-
-    fn random(max_magnitude: f64) -> Self {
-        let angle = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
-        let mag = rand::random::<f64>() * max_magnitude;
-        Vec2::from_angle(angle).scaled(mag)
-    }
-
-    fn magnitude(&self) -> f64 {
-        ((self.x * self.x) + (self.y * self.y)).sqrt()
-    }
-
-    fn normalized(&self) -> Self {
-        let mag = self.magnitude();
-        self.scaled(1.0 / mag)
-    }
-
-    fn scaled(&self, rhs: f64) -> Self {
-        Vec2 {
-            x: self.x * rhs,
-            y: self.y * rhs,
-        }
-    }
-
-    /// Returns a vector whose magnitude is between
-    /// 0 and max.
-    fn clamped(&self, max: f64) -> Self {
-        let mag = self.magnitude();
-        if mag > max {
-            self.normalized().scaled(max)
-        } else {
-            *self
-        }
-    }
+fn point_from_angle(angle: f32) -> Point2 {
+    let vx = angle.sin();
+    let vy = angle.cos();
+    Point2::new(vx, vy)
 }
 
-impl Add for Vec2 {
-    type Output = Self;
-    fn add(self, rhs: Vec2) -> Self {
-        Vec2 {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-        }
-    }
+fn random_vec(max_magnitude: f32) -> Vec2 {
+    let angle = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
+    let mag = rand::random::<f32>() * max_magnitude;
+    vec_from_angle(angle) * (mag)
 }
 
 
-impl AddAssign for Vec2 {
-    fn add_assign(&mut self, rhs: Vec2) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-    }
+fn random_point(max_magnitude: f32) -> Point2 {
+    let angle = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
+    let mag = rand::random::<f32>() * max_magnitude;
+    point_from_angle(angle) * (mag)
 }
 
+//     fn magnitude(&self) -> f32 {
+//         ((self.x * self.x) + (self.y * self.y)).sqrt()
+//     }
 
-impl Sub for Vec2 {
-    type Output = Self;
-    fn sub(self, rhs: Vec2) -> Self {
-        Vec2 {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-        }
-    }
-}
+//     fn normalized(&self) -> Self {
+//         let mag = self.magnitude();
+//         self.scaled(1.0 / mag)
+//     }
 
-impl Default for Vec2 {
-    fn default() -> Self {
-        Self::new(0., 0.)
-    }
-}
+//     fn scaled(&self, rhs: f32) -> Self {
+//         Vec2 {
+//             x: self.x * rhs,
+//             y: self.y * rhs,
+//         }
+//     }
+
+//     /// Returns a vector whose magnitude is between
+//     /// 0 and max.
+//     fn clamped(&self, max: f32) -> Self {
+//         let mag = self.magnitude();
+//         if mag > max {
+//             self.normalized().scaled(max)
+//         } else {
+//             *self
+//         }
+//     }
+// }
+
+// impl Add for Vec2 {
+//     type Output = Self;
+//     fn add(self, rhs: Vec2) -> Self {
+//         Vec2 {
+//             x: self.x + rhs.x,
+//             y: self.y + rhs.y,
+//         }
+//     }
+// }
+
+
+// impl AddAssign for Vec2 {
+//     fn add_assign(&mut self, rhs: Vec2) {
+//         self.x += rhs.x;
+//         self.y += rhs.y;
+//     }
+// }
+
+
+// impl Sub for Vec2 {
+//     type Output = Self;
+//     fn sub(self, rhs: Vec2) -> Self {
+//         Vec2 {
+//             x: self.x - rhs.x,
+//             y: self.y - rhs.y,
+//         }
+//     }
+// }
+
+// impl Default for Vec2 {
+//     fn default() -> Self {
+//         Self::new(0., 0.)
+//     }
+// }
 
 /// *********************************************************************
 /// Now we define our Actor's.
@@ -126,26 +145,26 @@ enum ActorType {
 #[derive(Debug)]
 struct Actor {
     tag: ActorType,
-    pos: Vec2,
-    facing: f64,
+    pos: Point2,
+    facing: f32,
     velocity: Vec2,
-    rvel: f64,
-    bbox_size: f64,
+    rvel: f32,
+    bbox_size: f32,
 
     // I am going to lazily overload "life" with a
     // double meaning rather than making a proper ECS;
     // for shots, it is the time left to live,
     // for players and such, it is the actual hit points.
-    life: f64,
+    life: f32,
 }
 
-const PLAYER_LIFE: f64 = 1.0;
-const SHOT_LIFE: f64 = 2.0;
-const ROCK_LIFE: f64 = 1.0;
+const PLAYER_LIFE: f32 = 1.0;
+const SHOT_LIFE: f32 = 2.0;
+const ROCK_LIFE: f32 = 1.0;
 
-const PLAYER_BBOX: f64 = 12.0;
-const ROCK_BBOX: f64 = 12.0;
-const SHOT_BBOX: f64 = 6.0;
+const PLAYER_BBOX: f32 = 12.0;
+const ROCK_BBOX: f32 = 12.0;
+const SHOT_BBOX: f32 = 6.0;
 
 /// *********************************************************************
 /// Now we have some initializer functions for different game objects.
@@ -154,9 +173,9 @@ const SHOT_BBOX: f64 = 6.0;
 fn create_player() -> Actor {
     Actor {
         tag: ActorType::Player,
-        pos: Vec2::default(),
+        pos: Point2::origin(),
         facing: 0.,
-        velocity: Vec2::default(),
+        velocity: na::zero(),
         rvel: 0.,
         bbox_size: PLAYER_BBOX,
         life: PLAYER_LIFE,
@@ -166,9 +185,9 @@ fn create_player() -> Actor {
 fn create_rock() -> Actor {
     Actor {
         tag: ActorType::Rock,
-        pos: Vec2::default(),
+        pos: Point2::origin(),
         facing: 0.,
-        velocity: Vec2::default(),
+        velocity: na::zero(),
         rvel: 0.,
         bbox_size: ROCK_BBOX,
         life: ROCK_LIFE,
@@ -178,16 +197,16 @@ fn create_rock() -> Actor {
 fn create_shot() -> Actor {
     Actor {
         tag: ActorType::Shot,
-        pos: Vec2::default(),
+        pos: Point2::origin(),
         facing: 0.,
-        velocity: Vec2::default(),
+        velocity: na::zero(),
         rvel: SHOT_RVEL,
         bbox_size: SHOT_BBOX,
         life: SHOT_LIFE,
     }
 }
 
-const MAX_ROCK_VEL: f64 = 50.0;
+const MAX_ROCK_VEL: f32 = 50.0;
 
 /// Create the given number of rocks.
 /// Makes sure that none of them are within the
@@ -195,14 +214,14 @@ const MAX_ROCK_VEL: f64 = 50.0;
 /// Note that this *could* create rocks outside the
 /// bounds of the playing field, so it should be
 /// called before `wrap_actor_position()` happens.
-fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f64, max_radius: f64) -> Vec<Actor> {
+fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f32, max_radius: f32) -> Vec<Actor> {
     assert!(max_radius > min_radius);
     let new_rock = |_| {
         let mut rock = create_rock();
-        let r_angle = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
-        let r_distance = rand::random::<f64>() * (max_radius - min_radius) + min_radius;
-        rock.pos = Vec2::from_angle(r_angle).scaled(r_distance) + *exclusion;
-        rock.velocity = Vec2::random(MAX_ROCK_VEL);
+        let r_angle = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
+        let r_distance = rand::random::<f32>() * (max_radius - min_radius) + min_radius;
+        rock.pos = point_from_angle(r_angle) * r_distance + *exclusion;
+        rock.velocity = random_vec(MAX_ROCK_VEL);
         rock
     };
     (0..num).map(new_rock).collect()
@@ -218,19 +237,19 @@ fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f64, max_radius: f64) ->
 /// the coordinate system so that +y is up and -y is down.
 /// **********************************************************************
 
-const SHOT_SPEED: f64 = 200.0;
-const SHOT_RVEL: f64 = 0.1;
+const SHOT_SPEED: f32 = 200.0;
+const SHOT_RVEL: f32 = 0.1;
 const SPRITE_SIZE: u32 = 32;
 
 // Acceleration in pixels per second, more or less.
-const PLAYER_THRUST: f64 = 100.0;
+const PLAYER_THRUST: f32 = 100.0;
 // Rotation in radians per second.
-const PLAYER_TURN_RATE: f64 = 3.05;
+const PLAYER_TURN_RATE: f32 = 3.05;
 // Seconds between shots
-const PLAYER_SHOT_TIME: f64 = 0.5;
+const PLAYER_SHOT_TIME: f32 = 0.5;
 
 
-fn player_handle_input(actor: &mut Actor, input: &InputState, dt: f64) {
+fn player_handle_input(actor: &mut Actor, input: &InputState, dt: f32) {
     actor.facing += dt * PLAYER_TURN_RATE * input.xaxis;
 
     if input.yaxis > 0.0 {
@@ -238,17 +257,17 @@ fn player_handle_input(actor: &mut Actor, input: &InputState, dt: f64) {
     }
 }
 
-fn player_thrust(actor: &mut Actor, dt: f64) {
-    let direction_vector = Vec2::from_angle(actor.facing);
-    let thrust_vector = direction_vector.scaled(PLAYER_THRUST);
-    actor.velocity += thrust_vector.scaled(dt);
+fn player_thrust(actor: &mut Actor, dt: f32) {
+    let direction_vector = vec_from_angle(actor.facing);
+    let thrust_vector = direction_vector * (PLAYER_THRUST);
+    actor.velocity += thrust_vector * (dt);
 }
 
-const MAX_PHYSICS_VEL: f64 = 250.0;
+const MAX_PHYSICS_VEL: f32 = 250.0;
 
-fn update_actor_position(actor: &mut Actor, dt: f64) {
-    actor.velocity = actor.velocity.clamped(MAX_PHYSICS_VEL);
-    let dv = actor.velocity.scaled(dt);
+fn update_actor_position(actor: &mut Actor, dt: f32) {
+    actor.velocity = na::clamp(actor.velocity, na::zero(), na::one::<Vec2>() * MAX_PHYSICS_VEL);
+    let dv = actor.velocity * (dt);
     actor.pos += dv;
     actor.facing += actor.rvel;
 }
@@ -256,11 +275,11 @@ fn update_actor_position(actor: &mut Actor, dt: f64) {
 /// Takes an actor and wraps its position to the bounds of the
 /// screen, so if it goes off the left side of the screen it
 /// will re-enter on the right side and so on.
-fn wrap_actor_position(actor: &mut Actor, sx: f64, sy: f64) {
+fn wrap_actor_position(actor: &mut Actor, sx: f32, sy: f32) {
     // Wrap screen
     let screen_x_bounds = sx / 2.0;
     let screen_y_bounds = sy / 2.0;
-    let sprite_half_size = (SPRITE_SIZE / 2) as f64;
+    let sprite_half_size = (SPRITE_SIZE / 2) as f32;
     let actor_center = actor.pos - Vec2::new(-sprite_half_size, sprite_half_size);
     if actor_center.x > screen_x_bounds {
         actor.pos.x -= sx;
@@ -274,7 +293,7 @@ fn wrap_actor_position(actor: &mut Actor, sx: f64, sy: f64) {
     }
 }
 
-fn handle_timed_life(actor: &mut Actor, dt: f64) {
+fn handle_timed_life(actor: &mut Actor, dt: f32) {
     actor.life -= dt;
 }
 
@@ -284,11 +303,11 @@ fn handle_timed_life(actor: &mut Actor, dt: f64) {
 /// to the screen coordinate system, which has Y
 /// pointing downward and the origin at the top-left,
 fn world_to_screen_coords(screen_width: u32, screen_height: u32, point: &Vec2) -> Vec2 {
-    let width = screen_width as f64;
-    let height = screen_height as f64;
+    let width = screen_width as f32;
+    let height = screen_height as f32;
     let x = point.x + width / 2.0;
     let y = height - (point.y + height / 2.0);
-    Vec2 { x: x, y: y }
+    Vector2::new(x, y)
 }
 
 /// **********************************************************************
@@ -346,8 +365,8 @@ impl Assets {
 /// **********************************************************************
 #[derive(Debug)]
 struct InputState {
-    xaxis: f64,
-    yaxis: f64,
+    xaxis: f32,
+    yaxis: f32,
     fire: bool,
 }
 
@@ -382,7 +401,7 @@ struct MainState {
     screen_width: u32,
     screen_height: u32,
     input: InputState,
-    player_shot_timeout: f64,
+    player_shot_timeout: f32,
     gui_dirty: bool,
     score_display: graphics::Text,
     level_display: graphics::Text,
@@ -431,7 +450,7 @@ impl MainState {
         let mut shot = create_shot();
         shot.pos = player.pos;
         shot.facing = player.facing;
-        let direction = Vec2::from_angle(shot.facing);
+        let direction = vec_from_angle(shot.facing);
         shot.velocity.x = SHOT_SPEED * direction.x;
         shot.velocity.y = SHOT_SPEED * direction.y;
 
@@ -527,7 +546,7 @@ impl EventHandler for MainState {
         if !timer::check_update_time(ctx, DESIRED_FPS) {
             return Ok(());
         }
-        let seconds = 1.0 / (DESIRED_FPS as f64);
+        let seconds = 1.0 / (DESIRED_FPS as f32);
 
         // Update the player state based on the user input.
         player_handle_input(&mut self.player, &self.input, seconds);
@@ -540,20 +559,20 @@ impl EventHandler for MainState {
         // First the player...
         update_actor_position(&mut self.player, seconds);
         wrap_actor_position(&mut self.player,
-                            self.screen_width as f64,
-                            self.screen_height as f64);
+                            self.screen_width as f32,
+                            self.screen_height as f32);
 
         // Then the shots...
         for act in &mut self.shots {
             update_actor_position(act, seconds);
-            wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
+            wrap_actor_position(act, self.screen_width as f32, self.screen_height as f32);
             handle_timed_life(act, seconds);
         }
 
         // And finally the rocks.
         for act in &mut self.rocks {
             update_actor_position(act, seconds);
-            wrap_actor_position(act, self.screen_width as f64, self.screen_height as f64);
+            wrap_actor_position(act, self.screen_width as f32, self.screen_height as f32);
         }
 
         // Handle the results of things moving:

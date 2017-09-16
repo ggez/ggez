@@ -117,10 +117,10 @@ impl From<DrawParam> for InstanceProperties {
     fn from(p: DrawParam) -> Self {
         InstanceProperties {
             src: p.src.into(),
-            dest: types::pt2vec(p.dest),
-            scale: types::pt2vec(p.scale),
-            offset: types::pt2vec(p.offset),
-            shear: types::pt2vec(p.shear),
+            dest: types::pt2arr(p.dest),
+            scale: types::pt2arr(p.scale),
+            offset: types::pt2arr(p.offset),
+            shear: types::pt2arr(p.shear),
             rotation: p.rotation,
         }
     }
@@ -1413,8 +1413,8 @@ impl Mesh {
             .into_iter()
             .map(|p| {
                      Vertex {
-                         pos: types::pt2vec(*p),
-                         uv: types::pt2vec(*p),
+                         pos: types::pt2arr(*p),
+                         uv: types::pt2arr(*p),
                      }
                  })
             .collect();
