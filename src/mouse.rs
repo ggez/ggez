@@ -1,4 +1,4 @@
-/// Mouse utility functions.
+//! Mouse utility functions.
 
 use sdl2::mouse;
 use context::Context;

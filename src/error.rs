@@ -17,16 +17,27 @@ use zip;
 /// An enum containing all kinds of game framework errors.
 #[derive(Debug)]
 pub enum GameError {
+    /// An error in the filesystem layout
     FilesystemError(String),
+    /// An error in the config file
     ConfigError(String),
+    /// An error trying to parse a resource
     ResourceLoadError(String),
+    /// Unable to find a resource; the Vec is the paths it searched for.
     ResourceNotFound(String, Vec<std::path::PathBuf>),
+    /// Something went wrong in the renderer
     RenderError(String),
+    /// Something went wrong in the audio playback
     AudioError(String),
+    /// Something went wrong trying to create a window
     WindowError(gfx_window_sdl::InitError),
+    /// Something went wrong trying to read from a file
     IOError(std::io::Error),
+    /// Something went wrong trying to load/render a font
     FontError(String),
+    /// Something went wrong applying video settings.
     VideoError(String),
+    /// Something else happened; this is generally a bug.
     UnknownError(String),
 }
 

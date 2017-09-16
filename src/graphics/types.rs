@@ -1,14 +1,16 @@
 pub use nalgebra as na;
 
+/// A 2 dimensional point representing a location
 pub type Point2 = na::Point2<f32>;
+/// A 2 dimensional vector representing an offeset of a location
 pub type Vector2 = na::Vector2<f32>;
 
+/// Turns a point into an array of floats
 pub fn pt2arr(pt: Point2) -> [f32;2] {
     [pt.x, pt.y]
-    // pt.into()
 }
 
-
+/// Turns an array of floats into a point.
 pub fn arr2pt(pt: [f32;2]) -> Point2 {
     Point2::new(pt[0], pt[1])
 }
@@ -71,13 +73,18 @@ pub fn arr2pt(pt: [f32;2]) -> Point2 {
 /// is generally also how OpenGL tends to think about the world.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Rect {
+    /// X coordinate of the center of the rect.
     pub x: f32,
+    /// Y coordinate of the center of the rect.
     pub y: f32,
+    /// Total width of the rect
     pub w: f32,
+    /// Total height of the rect.
     pub h: f32,
 }
 
 impl Rect {
+    /// Create a new rect.
     pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
         Rect {
             x: x,
@@ -98,6 +105,7 @@ impl Rect {
         }
     }
 
+    /// Create a new rect from i32 coordinates.
     pub fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
         Rect {
             x: x as f32,
@@ -161,12 +169,17 @@ impl From<Rect> for [f32; 4] {
 /// A RGBA color.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Color {
+    /// Red component
     pub r: f32,
+    /// Green component
     pub g: f32,
+    /// Blue component
     pub b: f32,
+    /// Alpha component
     pub a: f32,
 }
 
+/// White
 pub const WHITE: Color = Color {
     r: 1.0,
     g: 1.0,
@@ -175,6 +188,7 @@ pub const WHITE: Color = Color {
 };
 
 
+/// Black
 pub const BLACK: Color = Color {
     r: 0.0,
     g: 0.0,
@@ -183,6 +197,7 @@ pub const BLACK: Color = Color {
 };
 
 impl Color {
+    /// Create a new Color from components.
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color {
             r: r,
@@ -263,14 +278,18 @@ impl From<Color> for u32 {
 /// filled or as an outline.
 #[derive(Debug, Copy, Clone)]
 pub enum DrawMode {
+    /// A stroked line with the given width
     Line(f32),
+    /// A filled shape.
     Fill,
 }
 
 /// Specifies what blending method to use when scaling up/down images.
 #[derive(Debug, Copy, Clone)]
 pub enum FilterMode {
+    /// Use linear interpolation
     Linear,
+    /// Use nearest-neighbor interpolation
     Nearest,
 }
 

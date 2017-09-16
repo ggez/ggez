@@ -31,6 +31,7 @@ use GameResult;
 
 mod text;
 mod types;
+/// SpriteBatch type.
 pub mod spritebatch;
 mod mesh;
 
@@ -297,6 +298,7 @@ impl From<gfx::buffer::CreationError> for GameError {
 }
 
 impl GraphicsContext {
+    /// Create a new GraphicsContext
     pub fn new(video: sdl2::VideoSubsystem,
                window_title: &str,
                screen_width: u32,
@@ -844,24 +846,23 @@ pub fn get_display_count(context: &Context) -> GameResult<i32> {
 
 /// A struct containing all the necessary info for drawing a Drawable.
 ///
-/// * `src` - a portion of the drawable to clip, as a fraction of the whole image.
-///    Defaults to the whole image (1.0) if omitted.
-/// * `dest` - the position to draw the graphic expressed as a `Point2`.
-/// * `rotation` - orientation of the graphic in radians.
-/// * `scale` - x/y scale factors expressed as a `Point2`.
-/// * `offset` - specifies an offset from the center for transform operations like scale/rotation.
-/// * `shear` - x/y shear factors expressed as a `Point2`.
-///
 /// This struct implements the `Default` trait, so you can just do:
 ///
 /// `graphics::draw_ex(ctx, drawable, DrawParam{ dest: my_dest, .. Default::default()} )`
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawParam {
+    /// a portion of the drawable to clip, as a fraction of the whole image.
+    /// Defaults to the whole image (1.0) if omitted.
     pub src: Rect,
+    /// the position to draw the graphic expressed as a `Point2`.
     pub dest: Point2,
+    /// orientation of the graphic in radians.
     pub rotation: f32,
+    /// x/y scale factors expressed as a `Point2`.
     pub scale: Point2,
+    /// specifies an offset from the center for transform operations like scale/rotation.
     pub offset: Point2,
+    /// x/y shear factors expressed as a `Point2`.
     pub shear: Point2,
 }
 

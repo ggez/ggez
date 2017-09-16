@@ -27,6 +27,7 @@ pub struct AudioContext {
 }
 
 impl AudioContext {
+    /// Create new AudioContext.
     pub fn new() -> GameResult<AudioContext> {
         let error = GameError::AudioError(String::from("Could not initialize sound system (for \
              some reason)"));
@@ -56,6 +57,8 @@ impl SoundData {
 
     }
 
+    /// Creates a SoundData from any Read object; this involves
+    /// copying it into a buffer.
     pub fn from_read<R>(reader: &mut R) -> GameResult<Self>
         where R: Read
     {
@@ -130,29 +133,37 @@ impl Source {
         Ok(())
     }
 
+    /// Pauses playback
     pub fn pause(&self) {
         self.sink.pause()
     }
+
+    /// Resumes playback
     pub fn resume(&self) {
         self.sink.play()
     }
 
+    /// Stops playback
     pub fn stop(&self) {
         self.sink.stop()
     }
 
+    /// Gets the current volume
     pub fn volume(&self) -> f32 {
         self.sink.volume()
     }
 
+    /// Sets the current volume
     pub fn set_volume(&mut self, value: f32) {
         self.sink.set_volume(value)
     }
 
+    /// Get whether or not the source is paused
     pub fn paused(&self) -> bool {
         self.sink.is_paused()
     }
 
+    /// Get whether or not the source is playing
     pub fn playing(&self) -> bool {
         !self.paused() // && !self.stopped()
     }

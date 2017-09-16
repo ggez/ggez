@@ -61,10 +61,14 @@ pub trait EventHandler {
     /// `graphics::present()` and `timer::sleep_until_next_frame()`
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()>;
 
+    /// A mouse button was pressed
     fn mouse_button_down_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
 
+    /// A mouse button was released
     fn mouse_button_up_event(&mut self, _button: mouse::MouseButton, _x: i32, _y: i32) {}
 
+    /// The mouse was moved; it provides both absolute x and y coordinates in the window,
+    /// and relative x and y coordinates compared to its last position.
     fn mouse_motion_event(&mut self,
                           _state: mouse::MouseState,
                           _x: i32,
@@ -73,14 +77,20 @@ pub trait EventHandler {
                           _yrel: i32) {
     }
 
+    /// The mousewheel was clicked.
     fn mouse_wheel_event(&mut self, _x: i32, _y: i32) {}
 
+    /// A keyboard button was pressed.
     fn key_down_event(&mut self, _keycode: Keycode, _keymod: Mod, _repeat: bool) {}
 
+    /// A keyboard button was released.
     fn key_up_event(&mut self, _keycode: Keycode, _keymod: Mod, _repeat: bool) {}
 
+    /// A controller button was pressed; instance_id identifies which controller.
     fn controller_button_down_event(&mut self, _btn: Button, _instance_id: i32) {}
+    /// A controller button was released.
     fn controller_button_up_event(&mut self, _btn: Button, _instance_id: i32) {}
+    /// A controller axis moved.
     fn controller_axis_event(&mut self, _axis: Axis, _value: i16, _instance_id: i32) {}
 
     /// Called when the window is shown or hidden.

@@ -27,15 +27,23 @@ use GameResult;
 /// need to be transformed into a format the hardware likes) will need
 /// to access the `Context`.
 pub struct Context {
+    /// The Conf object the Context was created with
     pub conf: conf::Conf,
+    /// SDL context
     pub sdl_context: Sdl,
+    /// Filesystem state
     pub filesystem: Filesystem,
+    /// Graphics state
     pub gfx_context: graphics::GraphicsContext,
+    /// Event context
     pub event_context: sdl2::EventSubsystem,
+    /// Timer state
     pub timer_context: timer::TimeContext,
+    /// Audio context
     pub audio_context: audio::AudioContext,
+    /// Gamepad context
     pub gamepad_context: input::GamepadContext,
-
+    /// Default font
     pub default_font: graphics::Font,
 }
 

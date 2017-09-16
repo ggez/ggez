@@ -9,10 +9,15 @@ use toml;
 
 use GameResult;
 
+/// Possible fullscreen modes.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum FullscreenType {
+    /// Windowed mode
     Off,
+    /// Real fullscreen
     True,
+    /// Windowed fullscreen, generally preferred over real fullscreen
+    /// these days 'cause it plays nicer with multiple monitors.
     Desktop
 }
 
@@ -54,12 +59,16 @@ impl From<FullscreenType> for SdlFullscreenType {
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowMode {
+    /// Whether or not to show window decorations
     #[default = r#"false"#]
     pub borderless: bool,
+    /// Whether or not the window is resizable
     #[default = r#"false"#]
     pub resizable: bool,
+    /// Fullscreen type
     #[default = r#"FullscreenType::Off"#]
     pub fullscreen_type: FullscreenType,
+    /// Whether or not to enable vsync
     #[default = r#"true"#]
     pub vsync: bool,
     /// Minimum width for resizable windows; 0 means no limit
@@ -78,27 +87,32 @@ pub struct WindowMode {
 
 
 impl WindowMode {
+    /// Set borderless
     pub fn borderless(mut self, borderless: bool) -> Self {
         self.borderless = borderless;
         self
     }
 
+    /// Set the fullscreen type
     pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
         self.fullscreen_type = fullscreen_type;
         self
     }
 
+    /// Set vsync
     pub fn vsync(mut self, vsync: bool) -> Self {
         self.vsync = vsync;
         self
     }
 
+    /// Set minimum window dimensions for windowed mode
     pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
         self.min_width = width;
         self.min_height = height;
         self
     }
 
+    /// Set maximum window dimensions for windowed mode
     pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
         self.max_width = width;
         self.max_height = height;

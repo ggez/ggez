@@ -12,19 +12,26 @@ use super::*;
 /// Can be created from a .ttf file or from an image (bitmap fonts).
 #[derive(Clone)]
 pub enum Font {
+    /// A truetype font
     TTFFont {
+        /// The actual font data
         font: rusttype::Font<'static>,
+        /// The size of the font
         points: u32,
+        /// Scale information for the font
         scale: rusttype::Scale,
     },
+    /// A bitmap font.
     BitmapFont {
-        // Width, height and data for the original glyph image.
-        // This is always going to be RGBA.
+        /// The original glyph image
         bytes: Vec<u8>,
+        /// Width of the image
         width: usize,
+        /// Height of the image (same as the height of a glyph)
         height: usize,
-        // Glyph to index mapping
+        /// Glyph to index mapping
         glyphs: BTreeMap<char, usize>,
+        /// Width of the glyph
         glyph_width: usize,
     },
 }

@@ -1,13 +1,4 @@
-/*
-use sdl2;
-use image;
-use gfx;
-use gfx::texture;
-use gfx::traits::Device;
-use gfx::traits::FactoryExt;
-use gfx_device_gl;
-use gfx::Factory;
-*/
+//! SpriteBatch type.
 
 use context::Context;
 use graphics;
@@ -41,6 +32,7 @@ pub struct SpriteBatch {
     sprites: Vec<graphics::RectInstanceProperties>,
 }
 
+/// An index of a particular sprite in a SpriteBatch.
 pub type SpriteIdx = usize;
 
 impl SpriteBatch {

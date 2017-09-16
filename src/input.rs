@@ -1,3 +1,5 @@
+//! Misc. input functions, currently just gamepad stuff.
+
 pub use sdl2::controller::GameController;
 use sdl2::GameControllerSubsystem;
 use sdl2::Sdl;
@@ -8,11 +10,13 @@ use context::Context;
 use error::GameResult;
 
 
-// before we can use gamepads (or joysticks) we need to "open" them
-// then we have to keep them around
+/// before we can use gamepads (or joysticks) we need to "open" them
+/// then we have to keep them around, so this structure hangs on to
+/// them for us.
 pub struct GamepadContext {
+    /// Mapping of gamepad ID to controllers
     gamepads: HashMap<i32, GameController>,
-    // we need to keep the context around too
+    /// we need to keep the context around too
     #[allow(dead_code)]
     controller_ctx: GameControllerSubsystem,
 }
@@ -25,6 +29,7 @@ impl fmt::Debug for GamepadContext {
 
 
 impl GamepadContext {
+    /// Create new GamepadContext
     pub fn new(sdl_context: &Sdl) -> GameResult<Self> {
         let controller_ctx = sdl_context.game_controller()?;
         let joy_count = controller_ctx.num_joysticks()?;
