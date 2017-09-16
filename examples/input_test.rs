@@ -24,10 +24,10 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
         graphics::circle(ctx,
                          DrawMode::Fill,
-                         Point {
-                             x: self.pos_x,
-                             y: 380.0,
-                         },
+                         Point::new(
+                             self.pos_x,
+                             380.0,
+                         ),
                          100.0,
                          1.0)?;
         graphics::present(ctx);

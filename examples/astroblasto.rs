@@ -12,7 +12,6 @@ use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::timer;
 use std::time::Duration;
-use std::ops::{Add, AddAssign, Sub};
 
 /// *********************************************************************
 /// Basic stuff.
@@ -22,9 +21,8 @@ use std::ops::{Add, AddAssign, Sub};
 /// **********************************************************************
 
 use ggez::nalgebra as na;
-
-type Point2 = na::Point2<f32>;
-type Vec2 = na::Vector2<f32>;
+use ggez::graphics::Point as Point2;
+use ggez::graphics::Vector as Vec2;
 
 // #[derive(Debug, Copy, Clone)]
 // struct Vec2 {
@@ -45,11 +43,11 @@ fn vec_from_angle(angle: f32) -> Vec2 {
     Vec2::new(vx, vy)
 }
 
-fn point_from_angle(angle: f32) -> Point2 {
-    let vx = angle.sin();
-    let vy = angle.cos();
-    Point2::new(vx, vy)
-}
+// fn point_from_angle(angle: f32) -> Point2 {
+//     let vx = angle.sin();
+//     let vy = angle.cos();
+//     Point2::new(vx, vy)
+// }
 
 fn random_vec(max_magnitude: f32) -> Vec2 {
     let angle = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
@@ -58,11 +56,11 @@ fn random_vec(max_magnitude: f32) -> Vec2 {
 }
 
 
-fn random_point(max_magnitude: f32) -> Point2 {
-    let angle = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
-    let mag = rand::random::<f32>() * max_magnitude;
-    point_from_angle(angle) * (mag)
-}
+// fn random_point(max_magnitude: f32) -> Point2 {
+//     let angle = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
+//     let mag = rand::random::<f32>() * max_magnitude;
+//     point_from_angle(angle) * (mag)
+// }
 
 //     fn magnitude(&self) -> f32 {
 //         ((self.x * self.x) + (self.y * self.y)).sqrt()
@@ -214,13 +212,13 @@ const MAX_ROCK_VEL: f32 = 50.0;
 /// Note that this *could* create rocks outside the
 /// bounds of the playing field, so it should be
 /// called before `wrap_actor_position()` happens.
-fn create_rocks(num: i32, exclusion: &Vec2, min_radius: f32, max_radius: f32) -> Vec<Actor> {
+fn create_rocks(num: i32, exclusion: &Point2, min_radius: f32, max_radius: f32) -> Vec<Actor> {
     assert!(max_radius > min_radius);
     let new_rock = |_| {
         let mut rock = create_rock();
         let r_angle = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
         let r_distance = rand::random::<f32>() * (max_radius - min_radius) + min_radius;
-        rock.pos = point_from_angle(r_angle) * r_distance + *exclusion;
+        rock.pos = *exclusion + vec_from_angle(r_angle) * r_distance;
         rock.velocity = random_vec(MAX_ROCK_VEL);
         rock
     };
@@ -266,7 +264,10 @@ fn player_thrust(actor: &mut Actor, dt: f32) {
 const MAX_PHYSICS_VEL: f32 = 250.0;
 
 fn update_actor_position(actor: &mut Actor, dt: f32) {
-    actor.velocity = na::clamp(actor.velocity, na::zero(), na::one::<Vec2>() * MAX_PHYSICS_VEL);
+    let norm_sq = actor.velocity.norm_squared();
+    if norm_sq > MAX_PHYSICS_VEL.powi(2) {
+        actor.velocity = actor.velocity / norm_sq.sqrt() * MAX_PHYSICS_VEL;
+    }
     let dv = actor.velocity * (dt);
     actor.pos += dv;
     actor.facing += actor.rvel;
@@ -302,12 +303,12 @@ fn handle_timed_life(actor: &mut Actor, dt: f32) {
 /// has Y pointing up and the origin at the center,
 /// to the screen coordinate system, which has Y
 /// pointing downward and the origin at the top-left,
-fn world_to_screen_coords(screen_width: u32, screen_height: u32, point: &Vec2) -> Vec2 {
+fn world_to_screen_coords(screen_width: u32, screen_height: u32, point: &Point2) -> Point2 {
     let width = screen_width as f32;
     let height = screen_height as f32;
     let x = point.x + width / 2.0;
     let y = height - (point.y + height / 2.0);
-    Vector2::new(x, y)
+    Point2::new(x, y)
 }
 
 /// **********************************************************************
@@ -468,12 +469,12 @@ impl MainState {
     fn handle_collisions(&mut self) {
         for rock in &mut self.rocks {
             let pdistance = rock.pos - self.player.pos;
-            if pdistance.magnitude() < (self.player.bbox_size + rock.bbox_size) {
+            if pdistance.norm() < (self.player.bbox_size + rock.bbox_size) {
                 self.player.life = 0.0;
             }
             for shot in &mut self.shots {
                 let distance = shot.pos - rock.pos;
-                if distance.magnitude() < (shot.bbox_size + rock.bbox_size) {
+                if distance.norm() < (shot.bbox_size + rock.bbox_size) {
                     shot.life = 0.0;
                     rock.life = 0.0;
                     self.score += 1;

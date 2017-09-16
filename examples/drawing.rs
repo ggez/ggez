@@ -82,20 +82,20 @@ impl event::EventHandler for MainState {
 
         graphics::set_line_width(ctx, 4.0);
         graphics::line(ctx,
-                       &[Point { x: 200.0, y: 200.0 },
-                         Point { x: 400.0, y: 200.0 },
-                         Point { x: 400.0, y: 400.0 },
-                         Point { x: 200.0, y: 400.0 },
-                         Point { x: 200.0, y: 200.0 }])?;
+                       &[Point::new(200.0, 200.0),
+                         Point::new(400.0, 200.0),
+                         Point::new(400.0, 400.0),
+                         Point::new(200.0, 400.0),
+                         Point::new(200.0, 200.0)])?;
 
         graphics::ellipse(ctx,
                           DrawMode::Fill,
-                          Point { x: 600.0, y: 200.0 },
+                          Point::new(600.0, 200.0),
                           50.0,
                           120.0,
                           1.0)?;
 
-        graphics::circle(ctx, DrawMode::Fill, Point { x: 600.0, y: 380.0 }, 40.0, 1.0)?;
+        graphics::circle(ctx, DrawMode::Fill, Point::new(600.0, 380.0), 40.0, 1.0)?;
 
         graphics::present(ctx);
         Ok(())
