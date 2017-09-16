@@ -778,13 +778,7 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<(
 /// pushes a copy of the current transform matrix to the top of the stack.
 ///
 /// A `DrawParam` can be converted into an appropriate transform
-/// matrix by calling `param.into_matrix()` like so:
-///
-/// ```
-/// # use ggez::graphics;
-/// # let param: graphics::DrawParam = Default::default();
-/// graphics::push_transform(Some(param.into_matrix()));
-/// ```
+/// matrix by calling `param.into_matrix()`.
 pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
     let gfx = &mut context.gfx_context;
     if let Some(t) = transform {
@@ -806,13 +800,7 @@ pub fn pop_transform(context: &mut Context) {
 /// transformation matrix.
 ///
 /// A `DrawParam` can be converted into an appropriate transform
-/// matrix by calling `param.into_matrix()` like so:
-///
-/// ```
-/// # use ggez::graphics;
-/// # let param: graphics::DrawParam = Default::default();
-/// graphics::set_transform(param.into_matrix());
-/// ```
+/// matrix by calling `param.into_matrix()`.
 pub fn set_transform(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
     gfx.set_transform(transform);
@@ -821,13 +809,7 @@ pub fn set_transform(context: &mut Context, transform: Matrix4) {
 /// Appends the given transform to the current model transform.
 /// 
 /// A `DrawParam` can be converted into an appropriate transform
-/// matrix by calling `param.into_matrix()` like so:
-///
-/// ```
-/// # use ggez::graphics;
-/// # let param: graphics::DrawParam = Default::default();
-/// graphics::transform(param.into_matrix());
-/// ```
+/// matrix by calling `param.into_matrix()`.
 pub fn transform(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
     let curr = gfx.transform_stack[gfx.transform_stack.len() - 1].clone();
