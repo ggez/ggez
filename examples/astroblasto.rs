@@ -13,14 +13,14 @@ use ggez::graphics;
 use ggez::timer;
 use std::time::Duration;
 
-use ggez::graphics::{Vector2, Point2};
-use ggez::nalgebra as na;
-
 /// *********************************************************************
 /// Basic stuff, make some helpers for vector functions.
 /// ggez includes the nalgebra math library to provide lots of 
 /// math stuff, we just fill in a couple gaps.
 /// **********************************************************************
+use ggez::graphics::{Vector2, Point2};
+use ggez::nalgebra as na;
+
 
 
 /// Create a unit vector representing the
@@ -179,9 +179,11 @@ fn player_thrust(actor: &mut Actor, dt: f32) {
 const MAX_PHYSICS_VEL: f32 = 250.0;
 
 fn update_actor_position(actor: &mut Actor, dt: f32) {
-    let min_vel = Vector2::new(-MAX_PHYSICS_VEL, -MAX_PHYSICS_VEL);
-    let max_vel = Vector2::new(MAX_PHYSICS_VEL, MAX_PHYSICS_VEL);
-    actor.velocity = na::clamp(actor.velocity, min_vel, max_vel);
+    // Clamp the velocity to the max efficiently
+    let norm_sq = actor.velocity.norm_squared();
+    if norm_sq > MAX_PHYSICS_VEL.powi(2) {
+        actor.velocity = actor.velocity / norm_sq.sqrt() * MAX_PHYSICS_VEL;
+    }
     let dv = actor.velocity * (dt);
     actor.pos += dv;
     actor.facing += actor.rvel;
