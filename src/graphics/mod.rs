@@ -775,7 +775,9 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<(
 /// matrix by calling `param.into_matrix()` like so:
 ///
 /// ```
-/// graphics::push_transform(param.into_matrix());
+/// # use ggez::graphics;
+/// # let param: graphics::DrawParam = Default::default();
+/// graphics::push_transform(Some(param.into_matrix()));
 /// ```
 pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
     let gfx = &mut context.gfx_context;
@@ -801,6 +803,8 @@ pub fn pop_transform(context: &mut Context) {
 /// matrix by calling `param.into_matrix()` like so:
 ///
 /// ```
+/// # use ggez::graphics;
+/// # let param: graphics::DrawParam = Default::default();
 /// graphics::set_transform(param.into_matrix());
 /// ```
 pub fn set_transform(context: &mut Context, transform: Matrix4) {
@@ -814,6 +818,8 @@ pub fn set_transform(context: &mut Context, transform: Matrix4) {
 /// matrix by calling `param.into_matrix()` like so:
 ///
 /// ```
+/// # use ggez::graphics;
+/// # let param: graphics::DrawParam = Default::default();
 /// graphics::transform(param.into_matrix());
 /// ```
 pub fn transform(context: &mut Context, transform: Matrix4) {
