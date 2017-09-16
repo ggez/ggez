@@ -337,8 +337,8 @@ impl GraphicsContext {
         let right = screen_width as f32;
         let top = 0.0;
         let bottom = screen_height as f32;
-        let initial_projection = Matrix4::new_orthographic(left, right, top, bottom, -1.0, 1.0);
-        let initial_view = Matrix4::identity();//.prepend_scaling(0.05);
+        let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
+        let initial_view = Matrix4::identity();
         let initial_transform = Matrix4::identity();
         let globals = Globals {
             mvp_matrix: initial_projection.into(),
@@ -371,6 +371,7 @@ impl GraphicsContext {
         };
         gfx.set_window_mode(screen_width, screen_height, window_mode)?;
 
+        // Calculate and apply the actual initial projection matrix
         let w = screen_width as f32;
         let h = screen_height as f32;
         let rect = Rect {
@@ -380,6 +381,7 @@ impl GraphicsContext {
             h: -h,
         };
         gfx.set_projection_rect(rect);
+        gfx.calculate_transform_matrix();
         gfx.update_globals()?;
         Ok(gfx)
     }
