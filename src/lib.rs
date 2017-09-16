@@ -101,7 +101,6 @@ extern crate gfx;
 extern crate gfx_device_gl;
 extern crate gfx_window_sdl;
 extern crate image;
-extern crate rand;
 extern crate rodio;
 #[macro_use]
 extern crate serde_derive;
@@ -113,8 +112,6 @@ extern crate euclid;
 #[macro_use]
 extern crate smart_default;
 pub extern crate nalgebra;
-
-extern crate serde_json;
 
 pub mod audio;
 pub mod conf;

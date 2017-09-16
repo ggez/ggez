@@ -62,12 +62,18 @@ pub struct WindowMode {
     pub fullscreen_type: FullscreenType,
     #[default = r#"true"#]
     pub vsync: bool,
-    /// Minimum dimensions for resizable windows; (0, 0) means no limit
-    #[default = r#"(0, 0)"#]
-    pub min_dimensions: (u32, u32),
-    /// Maximum dimensions for resizable windows; (0, 0) means no limit
-    #[default = r#"(0, 0)"#]
-    pub max_dimensions: (u32, u32),
+    /// Minimum width for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub min_width: u32,
+    /// Minimum height for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub min_height: u32,
+    /// Maximum width for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub max_width: u32,
+    /// Maximum height for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub max_height: u32,
 }
 
 
@@ -88,12 +94,14 @@ impl WindowMode {
     }
 
     pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.min_dimensions = (width, height);
+        self.min_width = width;
+        self.min_height = height;
         self
     }
 
     pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.max_dimensions = (width, height);
+        self.max_width = width;
+        self.max_height = height;
         self
     }
 }
@@ -129,6 +137,7 @@ pub struct Conf {
     /// The window's width
     #[default = "800"]
     pub window_width: u32,
+    /// Window setting information
     pub window_mode: WindowMode,
 }
 

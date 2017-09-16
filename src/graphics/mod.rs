@@ -529,10 +529,8 @@ impl GraphicsContext {
             // we use the Love2D convention.
             window.set_bordered(!mode.borderless);
             window.set_fullscreen(mode.fullscreen_type.into())?;
-            let (min_w, min_h) = mode.min_dimensions;
-            window.set_minimum_size(min_w, min_h)?;
-            let (max_w, max_h) = mode.max_dimensions;
-            window.set_maximum_size(max_w, max_h)?;
+            window.set_minimum_size(mode.min_width, mode.min_height)?;
+            window.set_maximum_size(mode.max_width, mode.max_height)?;
             Ok(())
     }
 

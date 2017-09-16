@@ -29,7 +29,6 @@ codegen-units=4
 
 [dependencies]
 rusttype = "0.2"
-rand = "0.3"
 zip = "0.2"
 app_dirs = "1.1"
 gfx = "0.16"
@@ -46,7 +45,7 @@ euclid = "0.15"
 mint = { version = "0.4", optional = true }
 smart-default = "0.2"
 nalgebra = "0.13"
-serde_json = "*"
 
 [dev-dependencies]
+rand = "0.3"
 cgmath = "0.15"
