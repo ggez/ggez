@@ -952,7 +952,7 @@ impl DrawParam {
             0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, 0.0, 1.0,
         );
-        translate * offset * rotation * shear * scale * offset_inverse * Matrix4::identity()
+        translate * offset * rotation * shear * scale * offset_inverse
     }
 }
 
