@@ -29,7 +29,7 @@ use GameResult;
 #[derive(Debug)]
 pub struct SpriteBatch {
     image: graphics::Image,
-    sprites: Vec<graphics::RectInstanceProperties>,
+    sprites: Vec<graphics::InstanceProperties>,
 }
 
 /// An index of a particular sprite in a SpriteBatch.
@@ -128,11 +128,13 @@ impl graphics::Drawable for SpriteBatch {
         gfx.data.tex = (self.image.texture.clone(), sampler);
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.sprites.len() as u32, 0));
-        gfx.push_transform(param.into());
-        gfx.update_transform()?;
+        gfx.push_transform(param.into_matrix());
+        gfx.calculate_transform_matrix();
+        gfx.update_globals()?;
         gfx.encoder.draw(&slice, &gfx.pso, &gfx.data);
         gfx.pop_transform();
-        gfx.update_transform()?;
+        gfx.calculate_transform_matrix();
+        gfx.update_globals()?;
         Ok(())
     }
 }

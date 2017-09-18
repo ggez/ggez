@@ -310,7 +310,7 @@ impl Mesh {
 impl Drawable for Mesh {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
         let gfx = &mut ctx.gfx_context;
-        gfx.update_rect_properties(param)?;
+        gfx.update_instance_properties(param)?;
 
         gfx.data.vbuf = self.buffer.clone();
         gfx.data.tex.0 = gfx.white_image.texture.clone();
