@@ -299,10 +299,25 @@ impl GraphicsContext {
         let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer().into();
 
+        let set = factory.create_shader_set(
+            include_bytes!("shader/basic_150.glslv"),
+            include_bytes!("shader/basic_150.glslf")
+        ).unwrap();
+
+        let rasterizer = gfx::state::Rasterizer {
+            front_face: gfx::state::FrontFace::CounterClockwise,
+            cull_face: gfx::state::CullFace::Nothing,
+            method: gfx::state::RasterMethod::Fill,
+            offset: None,
+            samples: Some(gfx::state::MultiSample)
+        };
+
         let pso = factory
-            .create_pipeline_simple(include_bytes!("shader/basic_150.glslv"),
-                                    include_bytes!("shader/basic_150.glslf"),
-                                    pipe::new())?;
+            .create_pipeline_state(
+                &set,
+                gfx::Primitive::TriangleList,
+                rasterizer,
+                pipe::new())?;
 
         let rect_inst_props = factory
             .create_buffer(1,
