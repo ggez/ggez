@@ -183,7 +183,6 @@ impl Conf {
 #[cfg(test)]
 mod tests {
     use conf;
-    use serde_json;
 
     /// Tries to encode and decode a `Conf` object
     /// and makes sure it gets the same result it had.
@@ -191,10 +190,7 @@ mod tests {
     fn encode_round_trip() {
         let c1 = conf::Conf::new();
         let mut writer = Vec::new();
-        let s = serde_json::to_string(&c1);
-        println!("S is {:?}", s);
         let _c = c1.to_toml_file(&mut writer).unwrap();
-        println!("{}", String::from_utf8_lossy(&writer));
         let mut reader = writer.as_slice();
         let c2 = conf::Conf::from_toml_file(&mut reader).unwrap();
         assert_eq!(c1, c2);
