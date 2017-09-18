@@ -282,6 +282,8 @@ impl GraphicsContext {
         gl.set_green_size(5);
         gl.set_blue_size(5);
         gl.set_alpha_size(8);
+        gl.set_multisample_buffers(1);
+        gl.set_multisample_samples(4);
         let mut window_builder = video.window(window_title, screen_width, screen_height);
         if window_mode.resizable {
             window_builder.resizable();
@@ -317,7 +319,8 @@ impl GraphicsContext {
                 &set,
                 gfx::Primitive::TriangleList,
                 rasterizer,
-                pipe::new())?;
+                pipe::new()
+            )?;
 
         let rect_inst_props = factory
             .create_buffer(1,
