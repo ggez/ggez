@@ -55,6 +55,7 @@ impl From<FullscreenType> for SdlFullscreenType {
 ///     vsync: true,
 ///     min_dimensions: (0, 0),
 ///     max_dimensions: (0, 0),
+///     samples: NumSamples::One,
 /// }
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
@@ -83,8 +84,25 @@ pub struct WindowMode {
     /// Maximum height for resizable windows; 0 means no limit
     #[default = r#"0"#]
     pub max_height: u32,
+    /// Number of samples for multisample anti-aliasing
+    #[default = r#"NumSamples::Sixteen"#]
+    pub samples: NumSamples
 }
 
+/// The possible number of samples for multisample anti-aliasing
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum NumSamples {
+    /// One sample
+    One = 1,
+    /// Two samples
+    Two = 2,
+    /// Four samples
+    Four = 4,
+    /// Eight samples
+    Eight = 8,
+    /// Sixteen samples
+    Sixteen = 16,
+}
 
 impl WindowMode {
     /// Set borderless
@@ -116,6 +134,12 @@ impl WindowMode {
     pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
         self.max_width = width;
         self.max_height = height;
+        self
+    }
+
+    /// Set number of samples for MSAA
+    pub fn samples(mut self, samples: NumSamples) -> Self {
+        self.samples = samples;
         self
     }
 }

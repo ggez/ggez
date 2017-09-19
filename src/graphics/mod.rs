@@ -282,8 +282,11 @@ impl GraphicsContext {
         gl.set_green_size(5);
         gl.set_blue_size(5);
         gl.set_alpha_size(8);
-        gl.set_multisample_buffers(1);
-        gl.set_multisample_samples(4);
+        let samples = window_mode.samples as u8;
+        if samples > 1 {
+            gl.set_multisample_buffers(1);
+            gl.set_multisample_samples(samples);
+        }
         let mut window_builder = video.window(window_title, screen_width, screen_height);
         if window_mode.resizable {
             window_builder.resizable();
