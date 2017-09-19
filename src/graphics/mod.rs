@@ -79,11 +79,10 @@ gfx_defines!{
     /// Internal structure containing values that are different for each rect.
     vertex InstanceProperties {
         src: [f32; 4] = "a_Src",
-        dest: [f32; 2] = "a_Dest",
-        scale: [f32; 2] = "a_Scale",
-        offset: [f32; 2] = "a_Offset",
-        shear: [f32; 2] = "a_Shear",
-        rotation: f32 = "a_Rotation",
+        col1: [f32; 4] = "a_TCol1",
+        col2: [f32; 4] = "a_TCol2",
+        col3: [f32; 4] = "a_TCol3",
+        col4: [f32; 4] = "a_TCol4",
     }
 
     /// Internal structure containing global shader state.
@@ -106,24 +105,23 @@ impl Default for InstanceProperties {
     fn default() -> Self {
         InstanceProperties {
             src: [0.0, 0.0, 1.0, 1.0],
-            dest: [0.0, 0.0],
-            scale: [1.0, 1.0],
-            offset: [0.0, 0.0],
-            shear: [0.0, 0.0],
-            rotation: 0.0,
+            col1: [1.0, 0.0, 0.0, 0.0],
+            col2: [0.0, 1.0, 0.0, 0.0],
+            col3: [1.0, 0.0, 1.0, 0.0],
+            col4: [1.0, 0.0, 0.0, 1.0],
         }
     }
 }
 
 impl From<DrawParam> for InstanceProperties {
     fn from(p: DrawParam) -> Self {
-        InstanceProperties {
+        let mat: [[f32; 4]; 4] = p.into_matrix().into();
+        Self {
             src: p.src.into(),
-            dest: types::pt2arr(p.dest),
-            scale: types::pt2arr(p.scale),
-            offset: types::pt2arr(p.offset),
-            shear: types::pt2arr(p.shear),
-            rotation: p.rotation,
+            col1: mat[0],
+            col2: mat[1],
+            col3: mat[2],
+            col4: mat[3],
         }
     }
 }
