@@ -12,6 +12,8 @@ use std::convert::From;
 use std::collections::HashMap;
 use std::io::Read;
 use std::u16;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 use sdl2;
 use image;
@@ -33,11 +35,13 @@ mod text;
 mod types;
 /// SpriteBatch type.
 pub mod spritebatch;
+pub mod pixelshader;
 mod mesh;
 
 pub use self::text::*;
 pub use self::types::*;
 pub use self::mesh::*;
+pub use self::pixelshader::*;
 
 const GL_MAJOR_VERSION: u8 = 3;
 const GL_MINOR_VERSION: u8 = 2;
@@ -197,6 +201,8 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     quad_vertex_buffer: gfx::handle::Buffer<R, Vertex>,
     default_sampler_info: texture::SamplerInfo,
     samplers: SamplerCache<R>,
+
+    shader: Rc<RefCell<Option<PixelShaderHandle<R, C>>>>,
 }
 
 impl<R, F, C, D> fmt::Debug for GraphicsContextGeneric<R, F, C, D>
@@ -368,6 +374,8 @@ impl GraphicsContext {
             quad_vertex_buffer: quad_vertex_buffer,
             default_sampler_info: sampler_info,
             samplers: samplers,
+
+            shader: Rc::new(RefCell::new(None)),
         };
         gfx.set_window_mode(screen_width, screen_height, window_mode)?;
 
@@ -451,6 +459,17 @@ impl GraphicsContext {
         self.encoder
             .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;
         Ok(())
+    }
+
+    /// Draws with the current encoder, slice, and pixel shader. Prefer calling
+    /// this method from `Drawables` so that the pixel shader gets used
+    fn draw(&mut self, slice: Option<&gfx::Slice<gfx_device_gl::Resources>>) {
+        let slice = slice.unwrap_or(&self.quad_slice);
+        if let &Some(ref shader) = &*self.shader.borrow() {
+            shader.draw(&mut self.encoder, slice, &self.data);
+        } else {
+            self.encoder.draw(slice, &self.pso, &self.data);
+        }
     }
 
     /// Returns a reference to the SDL window.
@@ -1188,7 +1207,7 @@ impl Drawable for Image {
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.texture.clone(), sampler);
-        gfx.encoder.draw(&gfx.quad_slice, &gfx.pso, &gfx.data);
+        gfx.draw(None);
         Ok(())
     }
 }

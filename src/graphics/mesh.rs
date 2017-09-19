@@ -315,7 +315,7 @@ impl Drawable for Mesh {
         gfx.data.vbuf = self.buffer.clone();
         gfx.data.tex.0 = gfx.white_image.texture.clone();
 
-        gfx.encoder.draw(&self.slice, &gfx.pso, &gfx.data);
+        gfx.draw(Some(&self.slice));
 
         Ok(())
     }
