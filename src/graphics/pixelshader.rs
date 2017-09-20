@@ -2,6 +2,7 @@
 //! with ggez for cool and spooky effects. See the `shader` example for a
 //! taste...
 
+use gfx;
 use gfx::*;
 use gfx::handle::*;
 use gfx::pso::*;
@@ -56,12 +57,23 @@ where
         ctx.gfx_context.encoder.update_buffer(&buffer, &[consts], 0)?;
 
         let init = ConstInit::<C>(graphics::pipe::new(), name.into(), PhantomData);
-        let pso = (&mut ctx.gfx_context.factory).create_pipeline_simple(
-            include_bytes!(
-                "shader/basic_150.glslv"
-            ),
-            &source,
-            init,
+        let factory = &mut ctx.gfx_context.factory;
+        let set = factory.create_shader_set(
+            include_bytes!("shader/basic_150.glslv"),
+            &source
+        ).unwrap();
+
+        let mut rasterizer = gfx::state::Rasterizer::new_fill().with_cull_back();
+        if ctx.gfx_context.multisample_samples > 1 {
+            rasterizer.samples = Some(gfx::state::MultiSample);
+        }
+
+        let pso = factory.create_pipeline_state
+        (
+            &set,
+            gfx::Primitive::TriangleList,
+            rasterizer,
+            init
         )?;
 
         Ok(PixelShader { buffer, pso })
