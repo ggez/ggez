@@ -186,6 +186,7 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     dpi: (f32, f32, f32),
 
     window: sdl2::video::Window,
+    multisample_samples: u8,
     #[allow(dead_code)]
     gl_context: sdl2::video::GLContext,
     device: Box<D>,
@@ -315,21 +316,18 @@ impl GraphicsContext {
             include_bytes!("shader/basic_150.glslf")
         ).unwrap();
 
-        let rasterizer = gfx::state::Rasterizer {
-            front_face: gfx::state::FrontFace::CounterClockwise,
-            cull_face: gfx::state::CullFace::Nothing,
-            method: gfx::state::RasterMethod::Fill,
-            offset: None,
-            samples: Some(gfx::state::MultiSample)
-        };
+        let mut rasterizer = gfx::state::Rasterizer::new_fill().with_cull_back();
+        if samples > 1 {
+            rasterizer.samples = Some(gfx::state::MultiSample);
+        }
 
-        let pso = factory
-            .create_pipeline_state(
-                &set,
-                gfx::Primitive::TriangleList,
-                rasterizer,
-                pipe::new()
-            )?;
+        let pso = factory.create_pipeline_state
+        (
+            &set,
+            gfx::Primitive::TriangleList,
+            rasterizer,
+            pipe::new()
+        )?;
 
         let rect_inst_props = factory
             .create_buffer(1,
@@ -383,6 +381,7 @@ impl GraphicsContext {
             dpi: dpi,
 
             window: window,
+            multisample_samples: samples,
             gl_context: gl_context,
             device: Box::new(device),
             factory: Box::new(factory),
