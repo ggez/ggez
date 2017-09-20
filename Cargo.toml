@@ -49,3 +49,4 @@ nalgebra = "0.13"
 [dev-dependencies]
 rand = "0.3"
 cgmath = "0.15"
+clap = "2"

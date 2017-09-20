@@ -85,7 +85,7 @@ pub struct WindowMode {
     #[default = r#"0"#]
     pub max_height: u32,
     /// Number of samples for multisample anti-aliasing
-    #[default = r#"NumSamples::Sixteen"#]
+    #[default = r#"NumSamples::One"#]
     pub samples: NumSamples
 }
 
@@ -102,6 +102,21 @@ pub enum NumSamples {
     Eight = 8,
     /// Sixteen samples
     Sixteen = 16,
+}
+
+impl NumSamples {
+    /// Create a NumSamples from a number.
+    /// Returns None if i is invalid.
+    pub fn from_u32(i: u32) -> Option<NumSamples> {
+        match i {
+            1 => Some(NumSamples::One),
+            2 => Some(NumSamples::Two),
+            4 => Some(NumSamples::Four),
+            8 => Some(NumSamples::Eight),
+            16 => Some(NumSamples::Sixteen),
+            _ => None,
+        }
+    }
 }
 
 impl WindowMode {
