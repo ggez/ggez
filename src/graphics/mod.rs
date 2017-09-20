@@ -12,8 +12,8 @@ use std::convert::From;
 use std::collections::HashMap;
 use std::io::Read;
 use std::u16;
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use sdl2;
 use image;
@@ -196,14 +196,16 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     #[allow(dead_code)]
     depth_view: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
 
-    pso: gfx::PipelineState<R, pipe::Meta>,
     data: pipe::Data<R>,
     quad_slice: gfx::Slice<R>,
     quad_vertex_buffer: gfx::handle::Buffer<R, Vertex>,
+
     default_sampler_info: texture::SamplerInfo,
     samplers: SamplerCache<R>,
 
-    shader: Rc<RefCell<Option<PixelShaderHandle<R, C>>>>,
+    default_shader: PixelShaderId,
+    current_shader: Rc<RefCell<Option<PixelShaderId>>>,
+    shaders: Vec<Box<PixelShaderDraw<R, C>>>,
 }
 
 impl<R, F, C, D> fmt::Debug for GraphicsContextGeneric<R, F, C, D>
@@ -308,25 +310,16 @@ impl GraphicsContext {
         let dpi = window.subsystem().display_dpi(display_index)?;
 
         // GFX SETUP
-        let encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
+        let mut encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer().into();
 
-        let set = factory.create_shader_set(
-            include_bytes!("shader/basic_150.glslv"),
-            include_bytes!("shader/basic_150.glslf")
-        ).unwrap();
-
-        let mut rasterizer = gfx::state::Rasterizer::new_fill().with_cull_back();
-        if samples > 1 {
-            rasterizer.samples = Some(gfx::state::MultiSample);
-        }
-
-        let pso = factory.create_pipeline_state
-        (
-            &set,
-            gfx::Primitive::TriangleList,
-            rasterizer,
-            pipe::new()
+        let (shader, draw) = create_shader(
+            include_bytes!("shader/basic_150.glslf"),
+            EmptyConst,
+            "Empty",
+            &mut encoder,
+            &mut factory,
+            samples,
         )?;
 
         let rect_inst_props = factory
@@ -388,14 +381,16 @@ impl GraphicsContext {
             encoder: encoder,
             depth_view: depth_view,
 
-            pso: pso,
             data: data,
             quad_slice: quad_slice,
             quad_vertex_buffer: quad_vertex_buffer,
+
             default_sampler_info: sampler_info,
             samplers: samplers,
 
-            shader: Rc::new(RefCell::new(None)),
+            default_shader: shader.shader_id(),
+            current_shader: Rc::new(RefCell::new(None)),
+            shaders: vec![draw],
         };
         gfx.set_window_mode(screen_width, screen_height, window_mode)?;
 
@@ -485,11 +480,10 @@ impl GraphicsContext {
     /// this method from `Drawables` so that the pixel shader gets used
     fn draw(&mut self, slice: Option<&gfx::Slice<gfx_device_gl::Resources>>) {
         let slice = slice.unwrap_or(&self.quad_slice);
-        if let &Some(ref shader) = &*self.shader.borrow() {
-            shader.draw(&mut self.encoder, slice, &self.data);
-        } else {
-            self.encoder.draw(slice, &self.pso, &self.data);
-        }
+        let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
+        let shader = &self.shaders[id];
+
+        shader.draw(&mut self.encoder, slice, &self.data);
     }
 
     /// Returns a reference to the SDL window.

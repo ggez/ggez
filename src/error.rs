@@ -37,6 +37,8 @@ pub enum GameError {
     FontError(String),
     /// Something went wrong applying video settings.
     VideoError(String),
+    /// Something went compiling shaders
+    ShaderProgramError(gfx::shade::ProgramError),
     /// Something else happened; this is generally a bug.
     UnknownError(String),
 }
@@ -70,6 +72,7 @@ impl Error for GameError {
             GameError::IOError(_) => "IO error",
             GameError::FontError(_) => "Font error",
             GameError::VideoError(_) => "Video error",
+            GameError::ShaderProgramError(_) => "Shader program error",
             GameError::UnknownError(_) => "Unknown error",
         }
     }
@@ -86,6 +89,7 @@ impl Error for GameError {
             GameError::IOError(ref e) => Some(e),
             GameError::FontError(ref _s) => None,
             GameError::VideoError(ref _s) => None,
+            GameError::ShaderProgramError(ref e) => Some(e),
             GameError::UnknownError(ref _s) => None,
         }
     }
@@ -213,5 +217,11 @@ impl<T> From<gfx::UpdateError<T>> for GameError
     fn from(e: gfx::UpdateError<T>) -> GameError {
         let errstr = format!("Buffer update error: {}", e);
         GameError::VideoError(errstr)
+    }
+}
+
+impl From<gfx::shade::ProgramError> for GameError {
+    fn from(e: gfx::shade::ProgramError) -> GameError {
+        GameError::ShaderProgramError(e)
     }
 }
