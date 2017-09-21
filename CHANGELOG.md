@@ -10,6 +10,9 @@
  * Did the same for `get/set_point_size()`
  * Integrated nalgebra to provide point and vector types.
  * Removed inaccurate `timer::sleep_until_next_frame()`, added `timer::yield_now()`.
+ * Added MSAA (thanks termhn!)
+ * Added graphics_settings example to show hot to play with graphics modes
+ * Made the render pipeline just use matrices instead of separate transform elements
 
 # 0.3.3
 
