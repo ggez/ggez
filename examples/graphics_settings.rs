@@ -2,16 +2,17 @@ extern crate ggez;
 extern crate clap;
 use clap::{Arg, App};
 use ggez::*;
-use ggez::graphics::{DrawMode, Point2};
+use ggez::graphics::{DrawMode, Point2, Drawable};
 use std::time::Duration;
 
 struct MainState {
     pos_x: f32,
+    angle: f32, // in radians
 }
 
 impl MainState {
     fn new(_ctx: &mut Context) -> GameResult<MainState> {
-        let s = MainState { pos_x: 0.0 };
+        let s = MainState { pos_x: 0.0, angle: 0.0 };
         Ok(s)
     }
 }
@@ -19,12 +20,16 @@ impl MainState {
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         self.pos_x = self.pos_x % 800.0 + 1.0;
+        self.angle = self.angle + 0.01;
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        graphics::circle(ctx, DrawMode::Line(3.0), Point2::new(400.0, 300.0), 100.0, 4.0)?;
+
+        let rot_circle = graphics::Mesh::new_circle(ctx, DrawMode::Line(3.0), Point2::new(0.0, 0.0), 100.0, 4.0)?;
+
+        rot_circle.draw(ctx, Point2::new(400.0, 300.0), self.angle)?;
         graphics::present(ctx);
         Ok(())
     }
