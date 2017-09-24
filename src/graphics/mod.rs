@@ -7,6 +7,7 @@
 //! corner of the screen.
 
 use std::fmt;
+use std::hash;
 use std::path;
 use std::convert::From;
 use std::collections::HashMap;
@@ -46,7 +47,33 @@ pub use self::pixelshader::*;
 const GL_MAJOR_VERSION: u8 = 3;
 const GL_MINOR_VERSION: u8 = 2;
 
+/// A marker trait that something is a label for a particular backend.
+pub trait BackendSpec: fmt::Debug {
+    /// gfx resource type
+    type Resources: gfx::Resources;
+    /// gfx factory type
+    type Factory: gfx::Factory<Self::Resources>;
+    /// gfx command buffer type
+    type CommandBuffer: gfx::CommandBuffer<Self::Resources>;
+    /// gfx device type
+    type Device: gfx::Device<Resources = Self::Resources, CommandBuffer = Self::CommandBuffer>;
+}
 
+/// A backend specification for OpenGL.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
+pub struct GlBackendSpec {
+    #[default = r#"3"#]
+    major: u8,
+    #[default = r#"2"#]
+    minor: u8,
+}
+
+impl BackendSpec for GlBackendSpec {
+    type Resources = gfx_device_gl::Resources;
+    type Factory = gfx_device_gl::Factory;
+    type CommandBuffer = gfx_device_gl::CommandBuffer;
+    type Device = gfx_device_gl::Device;
+}
 
 const QUAD_VERTS: [Vertex; 4] = [Vertex {
                                      pos: [-0.5, -0.5],
@@ -168,11 +195,8 @@ impl<R> SamplerCache<R>
 /// As an end-user you shouldn't ever have to touch this, but it goes
 /// into part of the `Context` and so has to be public, at least
 /// until the `pub(restricted)` feature is stable.
-pub struct GraphicsContextGeneric<R, F, C, D>
-    where R: gfx::Resources,
-          F: gfx::Factory<R>,
-          C: gfx::CommandBuffer<R>,
-          D: gfx::Device<Resources = R, CommandBuffer = C>
+pub struct GraphicsContextGeneric<B>
+    where B: BackendSpec,
 {
     background_color: Color,
     shader_globals: Globals,
@@ -183,45 +207,41 @@ pub struct GraphicsContextGeneric<R, F, C, D>
     screen_rect: Rect,
     dpi: (f32, f32, f32),
 
+    backend_spec: B,
     window: sdl2::video::Window,
     multisample_samples: u8,
     #[allow(dead_code)]
     gl_context: sdl2::video::GLContext,
-    device: Box<D>,
-    factory: Box<F>,
-    encoder: gfx::Encoder<R, C>,
+    device: Box<B::Device>,
+    factory: Box<B::Factory>,
+    encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
     // color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
     #[allow(dead_code)]
-    depth_view: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
+    depth_view: gfx::handle::DepthStencilView<B::Resources, gfx::format::DepthStencil>,
 
-    data: pipe::Data<R>,
-    quad_slice: gfx::Slice<R>,
-    quad_vertex_buffer: gfx::handle::Buffer<R, Vertex>,
+    data: pipe::Data<B::Resources>,
+    quad_slice: gfx::Slice<B::Resources>,
+    quad_vertex_buffer: gfx::handle::Buffer<B::Resources, Vertex>,
 
     default_sampler_info: texture::SamplerInfo,
-    samplers: SamplerCache<R>,
+    samplers: SamplerCache<B::Resources>,
 
     default_shader: PixelShaderId,
     current_shader: Rc<RefCell<Option<PixelShaderId>>>,
-    shaders: Vec<Box<PixelShaderDraw<R, C>>>,
+    shaders: Vec<Box<PixelShaderDraw<B::Resources, B::CommandBuffer>>>,
 }
 
-impl<R, F, C, D> fmt::Debug for GraphicsContextGeneric<R, F, C, D>
-    where R: gfx::Resources,
-          F: gfx::Factory<R>,
-          C: gfx::CommandBuffer<R>,
-          D: gfx::Device<Resources = R, CommandBuffer = C>
-{
+impl<B> fmt::Debug for GraphicsContextGeneric<B>
+    where B: BackendSpec 
+    {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<GraphicsContext: {:p}>", self)
     }
 }
 
 /// A concrete graphics context for GL rendering.
-pub type GraphicsContext = GraphicsContextGeneric<gfx_device_gl::Resources,
-                                                  gfx_device_gl::Factory,
-                                                  gfx_device_gl::CommandBuffer,
-                                                  gfx_device_gl::Device>;
+pub type GraphicsContext = GraphicsContextGeneric<
+                                                  GlBackendSpec>;
 
 /// This can probably be removed but might be
 /// handy to keep around a bit longer.  Just in case something else
@@ -282,8 +302,9 @@ impl GraphicsContext {
                window_mode: WindowMode)
                -> GameResult<GraphicsContext> {
         // WINDOW SETUP
+        let backend_spec = GlBackendSpec::default();
         let gl = video.gl_attr();
-        gl.set_context_version(GL_MAJOR_VERSION, GL_MINOR_VERSION);
+        gl.set_context_version(backend_spec.major, backend_spec.minor);
         gl.set_context_profile(sdl2::video::GLProfile::Core);
         gl.set_red_size(5);
         gl.set_green_size(5);
@@ -371,6 +392,7 @@ impl GraphicsContext {
             screen_rect: Rect::new(left, bottom, (right - left), (top - bottom)),
             dpi: dpi,
 
+            backend_spec: backend_spec,
             window: window,
             multisample_samples: samples,
             gl_context: gl_context,
