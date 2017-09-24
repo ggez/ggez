@@ -9,7 +9,6 @@ use gfx::pso::buffer::*;
 use gfx::shade::*;
 use gfx::state::*;
 use gfx::traits::{FactoryExt, Pod};
-use gfx_device_gl::Resources as GlResources;
 use std::cell::RefCell;
 use std::fmt;
 use std::io::prelude::*;
@@ -43,29 +42,27 @@ pub type PixelShaderId = usize;
 /// As an end-user you shouldn't ever have to touch this and should use
 /// `PixelShader` instead.
 #[derive(Clone)]
-pub struct PixelShaderGeneric<R: Resources, C: Structure<ConstFormat>> {
+pub struct PixelShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
     id: PixelShaderId,
-    buffer: Rc<Buffer<R, C>>,
+    buffer: Rc<Buffer<Spec::Resources, C>>,
 }
 
 /// A `PixelShader` reprensents a handle user-defined shader that can be used
 /// with a ggez graphics context
-pub type PixelShader<C> = PixelShaderGeneric<GlResources, C>;
+pub type PixelShader<C> = PixelShaderGeneric<graphics::GlBackendSpec, C>;
 
-pub(crate) fn create_shader<C, S, R, CB, F>(
+pub(crate) fn create_shader<C, S, Spec>(
     source: &[u8],
     consts: C,
     name: S,
-    encoder: &mut Encoder<R, CB>,
-    factory: &mut F,
+    encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+    factory: &mut Spec::Factory,
     multisample_samples: u8,
-) -> GameResult<(PixelShaderGeneric<R, C>, Box<PixelShaderDraw<R, CB>>)>
+) -> GameResult<(PixelShaderGeneric<Spec, C>, Box<PixelShaderDraw<Spec>>)>
 where
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
     S: Into<String>,
-    R: Resources,
-    CB: CommandBuffer<R>,
-    F: Factory<R>,
+    Spec: graphics::BackendSpec + 'static
 {
     let buffer = factory.create_constant_buffer(1);
     let buffer = Rc::new(buffer);
@@ -103,7 +100,7 @@ where
         buffer: buffer.clone(),
         pso,
     };
-    let draw: Box<PixelShaderDraw<R, CB>> = Box::new(program);
+    let draw: Box<PixelShaderDraw<Spec>> = Box::new(program);
 
     let id = 0;
     let shader = PixelShaderGeneric { id, buffer };
@@ -111,7 +108,7 @@ where
     Ok((shader, draw))
 }
 
-impl<C> PixelShaderGeneric<GlResources, C>
+impl<C> PixelShader<C>
 where
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
 {
@@ -121,7 +118,7 @@ where
         path: P,
         consts: C,
         name: S,
-    ) -> GameResult<PixelShaderGeneric<GlResources, C>> {
+    ) -> GameResult<PixelShader<C>> {
         let source = {
             let mut buf = Vec::new();
             let mut reader = ctx.filesystem.open(path)?;
@@ -160,9 +157,9 @@ where
     }
 }
 
-impl<R, C> fmt::Debug for PixelShaderGeneric<R, C>
+impl<Spec, C> fmt::Debug for PixelShaderGeneric<Spec, C>
 where
-    R: Resources,
+    Spec: graphics::BackendSpec,
     C: Structure<ConstFormat>,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -170,14 +167,14 @@ where
     }
 }
 
-struct PixelShaderProgram<R: Resources, C: Structure<ConstFormat>> {
-    buffer: Rc<Buffer<R, C>>,
-    pso: PipelineState<R, ConstMeta<C>>,
+struct PixelShaderProgram<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
+    buffer: Rc<Buffer<Spec::Resources, C>>,
+    pso: PipelineState<Spec::Resources, ConstMeta<C>>,
 }
 
-impl<R, C> fmt::Debug for PixelShaderProgram<R, C>
+impl<Spec, C> fmt::Debug for PixelShaderProgram<Spec, C>
 where
-    R: Resources,
+    Spec: graphics::BackendSpec,
     C: Structure<ConstFormat>,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -187,18 +184,17 @@ where
 
 /// A trait that is used to create trait objects to abstract away the
 /// Structure<ConstFormat> type of the constant data for drawing
-pub trait PixelShaderDraw<R: Resources, CB: CommandBuffer<R>>: fmt::Debug {
+pub trait PixelShaderDraw<Spec: graphics::BackendSpec>: fmt::Debug {
     /// Draw with the current PixelShader
-    fn draw(&self, &mut Encoder<R, CB>, &Slice<R>, &graphics::pipe::Data<R>);
+    fn draw(&self, &mut Encoder<Spec::Resources, Spec::CommandBuffer>, &Slice<Spec::Resources>, &graphics::pipe::Data<Spec::Resources>);
 }
 
-impl<R, CB, C> PixelShaderDraw<R, CB> for PixelShaderProgram<R, C>
+impl<Spec, C> PixelShaderDraw<Spec> for PixelShaderProgram<Spec, C>
 where
-    R: Resources,
-    CB: CommandBuffer<R>,
+    Spec: graphics::BackendSpec,
     C: Structure<ConstFormat>,
 {
-    fn draw(&self, encoder: &mut Encoder<R, CB>, slice: &Slice<R>, data: &graphics::pipe::Data<R>) {
+    fn draw(&self, encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>, slice: &Slice<Spec::Resources>, data: &graphics::pipe::Data<Spec::Resources>) {
         encoder.draw(slice, &self.pso, &ConstData(data, &self.buffer));
     }
 }

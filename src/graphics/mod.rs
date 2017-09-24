@@ -7,7 +7,6 @@
 //! corner of the screen.
 
 use std::fmt;
-use std::hash;
 use std::path;
 use std::convert::From;
 use std::collections::HashMap;
@@ -43,9 +42,6 @@ pub use self::text::*;
 pub use self::types::*;
 pub use self::mesh::*;
 pub use self::pixelshader::*;
-
-const GL_MAJOR_VERSION: u8 = 3;
-const GL_MINOR_VERSION: u8 = 2;
 
 /// A marker trait that something is a label for a particular backend.
 pub trait BackendSpec: fmt::Debug {
@@ -228,7 +224,7 @@ pub struct GraphicsContextGeneric<B>
 
     default_shader: PixelShaderId,
     current_shader: Rc<RefCell<Option<PixelShaderId>>>,
-    shaders: Vec<Box<PixelShaderDraw<B::Resources, B::CommandBuffer>>>,
+    shaders: Vec<Box<PixelShaderDraw<B>>>,
 }
 
 impl<B> fmt::Debug for GraphicsContextGeneric<B>
@@ -759,8 +755,8 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
     let gl = video.gl_attr();
 
     Ok(format!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
-               GL_MAJOR_VERSION,
-               GL_MINOR_VERSION,
+               ctx.gfx_context.backend_spec.major,
+               ctx.gfx_context.backend_spec.minor,
                gl.context_major_version(),
                gl.context_minor_version(),
                gl.context_profile()))
