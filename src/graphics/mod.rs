@@ -24,7 +24,7 @@ use gfx_window_sdl;
 use gfx::Factory;
 
 
-use conf::WindowMode;
+use conf::{WindowMode, FullscreenType};
 use context::Context;
 use GameError;
 use GameResult;
@@ -893,6 +893,30 @@ pub fn set_mode(context: &mut Context,
         let video = &mut context.sdl_context.video()?;
         GraphicsContext::set_vsync(video, mode.vsync);
     }
+    Ok(())
+}
+
+/// Toggles the fullscreen state of the window subsystem
+/// 
+pub fn set_fullscreen(context: &mut Context,
+                      fullscreen: bool)
+                      -> GameResult<()> {
+//mang
+
+    let (win_x, win_y) = {
+        let gfx = &context.gfx_context;
+        gfx.get_size()
+    };
+    let fs_type = if fullscreen { FullscreenType::Desktop} else { FullscreenType::Off};
+
+    let screen_coords = get_screen_coordinates(context);
+    let mut mode = context.conf.window_mode.clone();
+    mode.fullscreen_type = fs_type;
+
+    set_mode(context, win_x, win_y, mode);
+
+    set_screen_coordinates(context, screen_coords);
+
     Ok(())
 }
 
