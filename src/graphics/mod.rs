@@ -192,7 +192,7 @@ impl<R> SamplerCache<R>
 /// into part of the `Context` and so has to be public, at least
 /// until the `pub(restricted)` feature is stable.
 pub struct GraphicsContextGeneric<B>
-    where B: BackendSpec,
+    where B: BackendSpec
 {
     background_color: Color,
     shader_globals: Globals,
@@ -228,16 +228,15 @@ pub struct GraphicsContextGeneric<B>
 }
 
 impl<B> fmt::Debug for GraphicsContextGeneric<B>
-    where B: BackendSpec 
-    {
+    where B: BackendSpec
+{
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<GraphicsContext: {:p}>", self)
     }
 }
 
 /// A concrete graphics context for GL rendering.
-pub type GraphicsContext = GraphicsContextGeneric<
-                                                  GlBackendSpec>;
+pub type GraphicsContext = GraphicsContextGeneric<GlBackendSpec>;
 
 /// This can probably be removed but might be
 /// handy to keep around a bit longer.  Just in case something else
@@ -325,17 +324,16 @@ impl GraphicsContext {
         let dpi = window.subsystem().display_dpi(display_index)?;
 
         // GFX SETUP
-        let mut encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
+        let mut encoder: gfx::Encoder<gfx_device_gl::Resources,
+                                      gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer().into();
 
-        let (shader, draw) = create_shader(
-            include_bytes!("shader/basic_150.glslf"),
-            EmptyConst,
-            "Empty",
-            &mut encoder,
-            &mut factory,
-            samples,
-        )?;
+        let (shader, draw) = create_shader(include_bytes!("shader/basic_150.glslf"),
+                                           EmptyConst,
+                                           "Empty",
+                                           &mut encoder,
+                                           &mut factory,
+                                           samples)?;
 
         let rect_inst_props = factory
             .create_buffer(1,
@@ -443,13 +441,13 @@ impl GraphicsContext {
         self.shader_globals.mvp_matrix = mvp.into();
     }
 
-    /// Pushes a homogeneous transform matrix to the top of the transform 
+    /// Pushes a homogeneous transform matrix to the top of the transform
     /// (model) matrix stack.
     fn push_transform(&mut self, t: Matrix4) {
         self.transform_stack.push(t);
     }
 
-    /// Pops the current transform matrix off the top of the transform 
+    /// Pops the current transform matrix off the top of the transform
     /// (model) matrix stack.
     fn pop_transform(&mut self) {
         if self.transform_stack.len() > 1 {
@@ -463,13 +461,13 @@ impl GraphicsContext {
         self.transform_stack[idx] = t;
     }
 
-    /// Pushes a homogeneous transform matrix to the top of the view 
+    /// Pushes a homogeneous transform matrix to the top of the view
     /// matrix stack.
     fn push_view(&mut self, v: Matrix4) {
         self.view_stack.push(v);
     }
 
-    /// Pops the current transform matrix off the top of the view 
+    /// Pops the current transform matrix off the top of the view
     /// matrix stack.
     fn pop_view(&mut self) {
         if self.view_stack.len() > 1 {
@@ -568,33 +566,32 @@ impl GraphicsContext {
         self.screen_rect = rect;
         let half_width = rect.w / 2.0;
         let half_height = rect.h / 2.0;
-        self.projection = Matrix4::new_orthographic(
-            rect.x - half_width,
-            rect.x + half_width,
-            rect.y + half_height,
-            rect.y - half_height,
-            -1.0,
-            1.0)
-            .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
+        self.projection = Matrix4::new_orthographic(rect.x - half_width,
+                                                    rect.x + half_width,
+                                                    rect.y + half_height,
+                                                    rect.y - half_height,
+                                                    -1.0,
+                                                    1.0)
+                .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
     }
 
     /// Just a helper method to set window mode from a WindowMode object.
     fn set_window_mode(&mut self, width: u32, height: u32, mode: WindowMode) -> GameResult<()> {
-            let window = &mut self.window;
-            window.set_size(width, height)?;
-            // SDL sets "bordered" but Love2D does "not bordered";
-            // we use the Love2D convention.
-            window.set_bordered(!mode.borderless);
-            window.set_fullscreen(mode.fullscreen_type.into())?;
-            window.set_minimum_size(mode.min_width, mode.min_height)?;
-            window.set_maximum_size(mode.max_width, mode.max_height)?;
-            Ok(())
+        let window = &mut self.window;
+        window.set_size(width, height)?;
+        // SDL sets "bordered" but Love2D does "not bordered";
+        // we use the Love2D convention.
+        window.set_bordered(!mode.borderless);
+        window.set_fullscreen(mode.fullscreen_type.into())?;
+        window.set_minimum_size(mode.min_width, mode.min_height)?;
+        window.set_maximum_size(mode.max_width, mode.max_height)?;
+        Ok(())
     }
 
     /// Another helper method to set vsync.
     /// This SHOULD go together with `set_window_mode()` above but cannot because it
     /// needs the Sdl2 VideoSubsystem object, which we don't hang on to (because we can't????
-    /// Not so sure about that; BUGGO: investigate!) 
+    /// Not so sure about that; BUGGO: investigate!)
     fn set_vsync(video: &sdl2::VideoSubsystem, vsync: bool) {
         let vsync_int = if vsync { 1 } else { 0 };
         video.gl_set_swap_interval(vsync_int);
@@ -816,7 +813,7 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<(
     gfx.update_globals()
 }
 
-/// Pushes a homogeneous transform matrix to the top of the transform 
+/// Pushes a homogeneous transform matrix to the top of the transform
 /// (model) matrix stack of the `Context`. If no matrix is given, then
 /// pushes a copy of the current transform matrix to the top of the stack.
 ///
@@ -832,7 +829,7 @@ pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
     }
 }
 
-/// Pops the transform matrix off the top of the transform 
+/// Pops the transform matrix off the top of the transform
 /// (model) matrix stack of the `Context`.
 pub fn pop_transform(context: &mut Context) {
     let gfx = &mut context.gfx_context;
@@ -850,7 +847,7 @@ pub fn set_transform(context: &mut Context, transform: Matrix4) {
 }
 
 /// Appends the given transform to the current model transform.
-/// 
+///
 /// A `DrawParam` can be converted into an appropriate transform
 /// matrix by calling `param.into_matrix()`.
 pub fn transform(context: &mut Context, transform: Matrix4) {
@@ -865,14 +862,14 @@ pub fn origin(context: &mut Context) {
     gfx.set_transform(Matrix4::identity());
 }
 
-/// Pushes a homogeneous transform matrix to the top of the view 
+/// Pushes a homogeneous transform matrix to the top of the view
 /// matrix stack of the `Context`.
 pub fn push_view(context: &mut Context, view: Matrix4) {
     let gfx = &mut context.gfx_context;
     gfx.push_view(view);
 }
 
-/// Pops the transform matrix off the top of the view 
+/// Pops the transform matrix off the top of the view
 /// matrix stack of the `Context`.
 pub fn pop_view(context: &mut Context) {
     let gfx = &mut context.gfx_context;
@@ -886,7 +883,7 @@ pub fn set_view(context: &mut Context, view: Matrix4) {
     gfx.set_view(view);
 }
 
-/// Appends the given transformation matrix to the current view transform matrix 
+/// Appends the given transformation matrix to the current view transform matrix
 pub fn transform_view(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
     let curr = gfx.view_stack[gfx.view_stack.len() - 1].clone();
@@ -991,16 +988,27 @@ impl DrawParam {
         type Vec3 = na::Vector3<f32>;
         let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
         let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
-        let offset_inverse = Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
+        let offset_inverse =
+            Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
         let axang = Vec3::z() * self.rotation;
         let rotation = Matrix4::new_rotation(axang);
         let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
-        let shear = Matrix4::new(
-            1.0, self.shear.x, 0.0, 0.0,
-            self.shear.y, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, 0.0, 1.0,
-        );
+        let shear = Matrix4::new(1.0,
+                                 self.shear.x,
+                                 0.0,
+                                 0.0,
+                                 self.shear.y,
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0);
         translate * offset * rotation * shear * scale * offset_inverse
     }
 }
@@ -1223,10 +1231,8 @@ impl Drawable for Image {
         // illusion that the screen is addressed in pixels.
         // BUGGO: Which I rather regret now.
         let invert_y = if gfx.screen_rect.h < 0.0 { 1.0 } else { -1.0 };
-        let real_scale = Point2::new(
-            src_width * param.scale.x * self.width as f32,
-            src_height * param.scale.y * self.height as f32 * invert_y,
-        );
+        let real_scale = Point2::new(src_width * param.scale.x * self.width as f32,
+                                     src_height * param.scale.y * self.height as f32 * invert_y);
         let mut new_param = param;
         new_param.scale = real_scale;
         // Not entirely sure why the inversion is necessary, but oh well.

@@ -56,8 +56,8 @@ impl Vertex {
 fn default_view() -> Isometry3 {
     // Eye location, target location, up-vector
     Isometry3::look_at_rh(&Point3::new(1.5f32, -5.0, 3.0),
-                        &Point3::new(0f32, 0.0, 0.0),
-                        &Vector3::z_axis())
+                          &Point3::new(0f32, 0.0, 0.0),
+                          &Vector3::z_axis())
 }
 
 struct MainState {
@@ -163,11 +163,12 @@ void main() {
         let sinfo = texture::SamplerInfo::new(texture::FilterMethod::Bilinear,
                                               texture::WrapMode::Clamp);
 
-        let pso = factory.create_pipeline_simple(vs, fs, pipe::new())
+        let pso = factory
+            .create_pipeline_simple(vs, fs, pipe::new())
             .unwrap();
 
         // Aspect ratio, FOV, znear, zfar
-        let proj = na::Perspective3::new(4.0/3.0, 3.14 / 4.0, 1.0, 10.0);
+        let proj = na::Perspective3::new(4.0 / 3.0, 3.14 / 4.0, 1.0, 10.0);
         let transform = proj.as_matrix() * default_view().to_homogeneous();
         let data = pipe::Data {
             vbuf: vbuf,

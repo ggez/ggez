@@ -33,18 +33,14 @@ impl MainState {
 fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
     let mb = &mut graphics::MeshBuilder::new();
 
-    mb.line(&[Point2::new(200.0, 200.0 ),
-              Point2::new(400.0, 200.0 ),
-              Point2::new(400.0, 400.0 ),
-              Point2::new(200.0, 400.0 ),
-              Point2::new(200.0, 300.0 )],
+    mb.line(&[Point2::new(200.0, 200.0),
+              Point2::new(400.0, 200.0),
+              Point2::new(400.0, 400.0),
+              Point2::new(200.0, 400.0),
+              Point2::new(200.0, 300.0)],
             4.0);
 
-    mb.ellipse(DrawMode::Fill,
-               Point2::new(600.0, 200.0),
-               50.0,
-               120.0,
-               1.0);
+    mb.ellipse(DrawMode::Fill, Point2::new(600.0, 200.0), 50.0, 120.0, 1.0);
 
     mb.circle(DrawMode::Fill, Point2::new(600.0, 380.0), 40.0, 1.0);
     mb.build(ctx)

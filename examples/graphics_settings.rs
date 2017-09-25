@@ -24,7 +24,11 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        graphics::circle(ctx, DrawMode::Line(3.0), Point2::new(400.0, 300.0), 100.0, 4.0)?;
+        graphics::circle(ctx,
+                         DrawMode::Line(3.0),
+                         Point2::new(400.0, 300.0),
+                         100.0,
+                         4.0)?;
         graphics::present(ctx);
         Ok(())
     }
@@ -33,19 +37,20 @@ impl event::EventHandler for MainState {
 pub fn main() {
     let matches = App::new("graphics settings example")
         .arg(Arg::with_name("msaa")
-            .short("m")
-            .value_name("N")
-            .help("Number of MSAA samples to do (powers of 2 from 1 to 16)")
-            .takes_value(true))
+                 .short("m")
+                 .value_name("N")
+                 .help("Number of MSAA samples to do (powers of 2 from 1 to 16)")
+                 .takes_value(true))
         .get_matches();
-    
-    let msaa: u32 = matches.value_of("msaa")
+
+    let msaa: u32 = matches
+        .value_of("msaa")
         .unwrap_or("1")
         .parse()
         .expect("Option msaa needs to be a number!");
     let mut c = conf::Conf::new();
-    c.window_mode.samples = conf::NumSamples::from_u32(msaa)
-        .expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
+    c.window_mode.samples =
+        conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
     let ctx = &mut Context::load_from_conf("super_simple", "ggez", c).unwrap();
     let state = &mut MainState::new(ctx).unwrap();
     event::run(ctx, state).unwrap();

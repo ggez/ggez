@@ -51,18 +51,17 @@ pub struct PixelShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFor
 /// with a ggez graphics context
 pub type PixelShader<C> = PixelShaderGeneric<graphics::GlBackendSpec, C>;
 
-pub(crate) fn create_shader<C, S, Spec>(
-    source: &[u8],
-    consts: C,
-    name: S,
-    encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
-    factory: &mut Spec::Factory,
-    multisample_samples: u8,
-) -> GameResult<(PixelShaderGeneric<Spec, C>, Box<PixelShaderDraw<Spec>>)>
-where
-    C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
-    S: Into<String>,
-    Spec: graphics::BackendSpec + 'static
+pub(crate) fn create_shader<C, S, Spec>
+    (source: &[u8],
+     consts: C,
+     name: S,
+     encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+     factory: &mut Spec::Factory,
+     multisample_samples: u8)
+     -> GameResult<(PixelShaderGeneric<Spec, C>, Box<PixelShaderDraw<Spec>>)>
+    where C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
+          S: Into<String>,
+          Spec: graphics::BackendSpec + 'static
 {
     let buffer = factory.create_constant_buffer(1);
     let buffer = Rc::new(buffer);
@@ -71,10 +70,8 @@ where
 
     let pso = {
         let init = ConstInit::<C>(graphics::pipe::new(), name.into(), PhantomData);
-        let set = factory.create_shader_set(
-            include_bytes!("shader/basic_150.glslv"),
-            &source,
-        )?;
+        let set = factory
+            .create_shader_set(include_bytes!("shader/basic_150.glslv"), &source)?;
         let sample = if multisample_samples > 1 {
             Some(MultiSample)
         } else {
@@ -88,12 +85,8 @@ where
             samples: sample,
         };
 
-        factory.create_pipeline_state(
-            &set,
-            Primitive::TriangleList,
-            rasterizer,
-            init,
-        )?
+        factory
+            .create_pipeline_state(&set, Primitive::TriangleList, rasterizer, init)?
     };
 
     let program = PixelShaderProgram {
@@ -109,16 +102,14 @@ where
 }
 
 impl<C> PixelShader<C>
-where
-    C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
+    where C: 'static + Pod + Structure<ConstFormat> + Clone + Copy
 {
     /// Create a new `PixelShader` given a gfx pipeline object
-    pub fn new<P: AsRef<Path>, S: Into<String>>(
-        ctx: &mut Context,
-        path: P,
-        consts: C,
-        name: S,
-    ) -> GameResult<PixelShader<C>> {
+    pub fn new<P: AsRef<Path>, S: Into<String>>(ctx: &mut Context,
+                                                path: P,
+                                                consts: C,
+                                                name: S)
+                                                -> GameResult<PixelShader<C>> {
         let source = {
             let mut buf = Vec::new();
             let mut reader = ctx.filesystem.open(path)?;
@@ -126,14 +117,12 @@ where
             buf
         };
 
-        let (mut shader, draw) = create_shader(
-            &source,
-            consts,
-            name,
-            &mut ctx.gfx_context.encoder,
-            &mut *ctx.gfx_context.factory,
-            ctx.gfx_context.multisample_samples,
-        )?;
+        let (mut shader, draw) = create_shader(&source,
+                                               consts,
+                                               name,
+                                               &mut ctx.gfx_context.encoder,
+                                               &mut *ctx.gfx_context.factory,
+                                               ctx.gfx_context.multisample_samples)?;
         shader.id = ctx.gfx_context.shaders.len();
         ctx.gfx_context.shaders.push(draw);
 
@@ -142,11 +131,9 @@ where
 
     /// Send data to the GPU for use with the `PixelShader`
     pub fn send(&self, ctx: &mut Context, consts: C) -> GameResult<()> {
-        ctx.gfx_context.encoder.update_buffer(
-            &self.buffer,
-            &[consts],
-            0,
-        )?;
+        ctx.gfx_context
+            .encoder
+            .update_buffer(&self.buffer, &[consts], 0)?;
         Ok(())
     }
 
@@ -158,9 +145,8 @@ where
 }
 
 impl<Spec, C> fmt::Debug for PixelShaderGeneric<Spec, C>
-where
-    Spec: graphics::BackendSpec,
-    C: Structure<ConstFormat>,
+    where Spec: graphics::BackendSpec,
+          C: Structure<ConstFormat>
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<PixelShader[{}]: {:p}>", self.id, self)
@@ -173,9 +159,8 @@ struct PixelShaderProgram<Spec: graphics::BackendSpec, C: Structure<ConstFormat>
 }
 
 impl<Spec, C> fmt::Debug for PixelShaderProgram<Spec, C>
-where
-    Spec: graphics::BackendSpec,
-    C: Structure<ConstFormat>,
+    where Spec: graphics::BackendSpec,
+          C: Structure<ConstFormat>
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<PixelShaderProgram: {:p}>", self)
@@ -186,15 +171,20 @@ where
 /// Structure<ConstFormat> type of the constant data for drawing
 pub trait PixelShaderDraw<Spec: graphics::BackendSpec>: fmt::Debug {
     /// Draw with the current PixelShader
-    fn draw(&self, &mut Encoder<Spec::Resources, Spec::CommandBuffer>, &Slice<Spec::Resources>, &graphics::pipe::Data<Spec::Resources>);
+    fn draw(&self,
+            &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+            &Slice<Spec::Resources>,
+            &graphics::pipe::Data<Spec::Resources>);
 }
 
 impl<Spec, C> PixelShaderDraw<Spec> for PixelShaderProgram<Spec, C>
-where
-    Spec: graphics::BackendSpec,
-    C: Structure<ConstFormat>,
+    where Spec: graphics::BackendSpec,
+          C: Structure<ConstFormat>
 {
-    fn draw(&self, encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>, slice: &Slice<Spec::Resources>, data: &graphics::pipe::Data<Spec::Resources>) {
+    fn draw(&self,
+            encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+            slice: &Slice<Spec::Resources>,
+            data: &graphics::pipe::Data<Spec::Resources>) {
         encoder.draw(slice, &self.pso, &ConstData(data, &self.buffer));
     }
 }
@@ -215,8 +205,7 @@ impl Drop for PixelShaderLock {
 
 /// Use a shader until the returned lock goes out of scope
 pub fn use_shader<C>(ctx: &mut Context, ps: &PixelShader<C>) -> PixelShaderLock
-where
-    C: Structure<ConstFormat>,
+    where C: Structure<ConstFormat>
 {
     let cell = ctx.gfx_context.current_shader.clone();
     let previous_shader = (*cell.borrow()).clone();
@@ -229,8 +218,7 @@ where
 
 /// Set the current pixel shader for the Context to render with
 pub fn set_shader<C>(ctx: &mut Context, ps: &PixelShader<C>)
-where
-    C: Structure<ConstFormat>,
+    where C: Structure<ConstFormat>
 {
     *ctx.gfx_context.current_shader.borrow_mut() = Some(ps.id);
 }
@@ -247,19 +235,16 @@ struct ConstMeta<C: Structure<ConstFormat>>(graphics::pipe::Meta, ConstantBuffer
 struct ConstData<'a, R: Resources, C: 'a>(&'a graphics::pipe::Data<R>, &'a Buffer<R, C>);
 
 impl<'a, R, C> PipelineData<R> for ConstData<'a, R, C>
-where
-    R: Resources,
-    C: Structure<ConstFormat>,
+    where R: Resources,
+          C: Structure<ConstFormat>
 {
     type Meta = ConstMeta<C>;
 
-    fn bake_to(
-        &self,
-        out: &mut RawDataSet<R>,
-        meta: &Self::Meta,
-        man: &mut Manager<R>,
-        access: &mut AccessInfo<R>,
-    ) {
+    fn bake_to(&self,
+               out: &mut RawDataSet<R>,
+               meta: &Self::Meta,
+               man: &mut Manager<R>,
+               access: &mut AccessInfo<R>) {
         self.0.bake_to(out, &meta.0, man, access);
         meta.1.bind_to(out, &self.1, man, access);
     }
@@ -269,16 +254,14 @@ where
 struct ConstInit<'a, C>(graphics::pipe::Init<'a>, String, PhantomData<C>);
 
 impl<'a, C> PipelineInit for ConstInit<'a, C>
-where
-    C: Structure<ConstFormat>,
+    where C: Structure<ConstFormat>
 {
     type Meta = ConstMeta<C>;
 
-    fn link_to<'s>(
-        &self,
-        desc: &mut Descriptor,
-        info: &'s ProgramInfo,
-    ) -> Result<Self::Meta, InitError<&'s str>> {
+    fn link_to<'s>(&self,
+                   desc: &mut Descriptor,
+                   info: &'s ProgramInfo)
+                   -> Result<Self::Meta, InitError<&'s str>> {
         let mut meta1 = ConstantBuffer::<C>::new();
 
         let mut index = None;
