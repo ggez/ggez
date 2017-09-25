@@ -4,7 +4,6 @@ extern crate ggez;
 
 use ggez::*;
 use ggez::graphics::{DrawMode, Point2};
-use std::time::Duration;
 
 gfx_defines!{
     constant Dim {
@@ -26,7 +25,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.dim.rate = 0.5 + (((timer::get_ticks(ctx) as f32) / 100.0).cos() / 2.0);
         Ok(())
     }

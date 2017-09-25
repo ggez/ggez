@@ -10,7 +10,6 @@ use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::graphics::Color;
 use ggez::timer;
-use std::time::Duration;
 
 struct MainState {
     a: i32,
@@ -82,14 +81,14 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         const DESIRED_FPS: u32 = 60;
         while timer::check_update_time(ctx, DESIRED_FPS) {
             self.a += self.direction;
             if self.a > 250 || self.a <= 0 {
                 self.direction *= -1;
 
-                println!("Delta frame time: {:?} ", _dt);
+                println!("Delta frame time: {:?} ", timer::get_delta(ctx));
                 println!("Average FPS: {}", timer::get_fps(ctx));
             }
         }

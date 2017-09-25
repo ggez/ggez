@@ -13,7 +13,6 @@ use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::nalgebra as na;
-use std::time::Duration;
 
 //type Matrix4 = na::Matrix4<f32>;
 type Isometry3 = na::Isometry3<f32>;
@@ -195,7 +194,7 @@ void main() {
 
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         Ok(())
     }
 

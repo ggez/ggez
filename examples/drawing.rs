@@ -4,7 +4,7 @@ use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::graphics::{DrawMode, Point2};
-use std::time::Duration;
+use ggez::timer;
 
 struct MainState {
     image1: graphics::Image,
@@ -48,7 +48,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
 
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         const DESIRED_FPS: u32 = 60;
 
         while timer::check_update_time(ctx, DESIRED_FPS) {

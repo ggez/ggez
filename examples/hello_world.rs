@@ -3,7 +3,6 @@ use ggez::conf;
 use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
-use std::time::Duration;
 
 // First we make a structure to contain the game's state
 struct MainState {
@@ -31,7 +30,7 @@ impl MainState {
 
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         Ok(())
     }
 

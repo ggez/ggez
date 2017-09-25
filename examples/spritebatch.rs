@@ -8,7 +8,6 @@ use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::timer;
-use std::time::Duration;
 
 struct MainState {
     spritebatch: graphics::spritebatch::SpriteBatch,
@@ -24,11 +23,10 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
 
         if timer::get_ticks(ctx) % 100 == 0 {
-
-            println!("Delta frame time: {:?} ", _dt);
+            println!("Delta frame time: {:?} ", timer::get_delta(ctx));
             println!("Average FPS: {}", timer::get_fps(ctx));
         }
         Ok(())

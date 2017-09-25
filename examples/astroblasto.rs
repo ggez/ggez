@@ -11,7 +11,6 @@ use ggez::event::*;
 use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::timer;
-use std::time::Duration;
 
 /// *********************************************************************
 /// Basic stuff, make some helpers for vector functions.
@@ -458,7 +457,7 @@ fn draw_actor(assets: &mut Assets,
 /// handling input events.
 /// **********************************************************************
 impl EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         const DESIRED_FPS: u32 = 60;
 
         while timer::check_update_time(ctx, DESIRED_FPS) {
@@ -566,7 +565,11 @@ impl EventHandler for MainState {
 
     // Handle key events.  These just map keyboard events
     // and alter our input state appropriately.
-    fn key_down_event(&mut self, keycode: Keycode, _keymod: Mod, _repeat: bool) {
+    fn key_down_event(&mut self,
+                      ctx: &mut Context,
+                      keycode: Keycode,
+                      _keymod: Mod,
+                      _repeat: bool) {
         match keycode {
             Keycode::Up => {
                 self.input.yaxis = 1.0;
@@ -580,12 +583,13 @@ impl EventHandler for MainState {
             Keycode::Space => {
                 self.input.fire = true;
             }
+            Keycode::Escape => ctx.quit().unwrap(),
             _ => (), // Do nothing
         }
     }
 
 
-    fn key_up_event(&mut self, keycode: Keycode, _keymod: Mod, _repeat: bool) {
+    fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, _keymod: Mod, _repeat: bool) {
         match keycode {
             Keycode::Up => {
                 self.input.yaxis = 0.0;
