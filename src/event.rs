@@ -40,6 +40,10 @@ use timer;
 use std::time::Duration;
 
 
+pub use sdl2::keyboard::{CAPSMOD, LALTMOD, LCTRLMOD, LGUIMOD, LSHIFTMOD, MODEMOD, NOMOD, NUMMOD,
+                         RALTMOD, RCTRLMOD, RESERVEDMOD, RGUIMOD, RSHIFTMOD};
+
+
 
 
 /// A trait defining event callbacks; your primary interface with
