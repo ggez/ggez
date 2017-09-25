@@ -83,16 +83,15 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        const DESIRED_FPS: u64 = 60;
-        if !timer::check_update_time(ctx, DESIRED_FPS) {
-            return Ok(());
-        }
-        self.a += self.direction;
-        if self.a > 250 || self.a <= 0 {
-            self.direction *= -1;
+        const DESIRED_FPS: u32 = 60;
+        while timer::check_update_time(ctx, DESIRED_FPS) {
+            self.a += self.direction;
+            if self.a > 250 || self.a <= 0 {
+                self.direction *= -1;
 
-            println!("Delta frame time: {:?} ", _dt);
-            println!("Average FPS: {}", timer::get_fps(ctx));
+                println!("Delta frame time: {:?} ", _dt);
+                println!("Average FPS: {}", timer::get_fps(ctx));
+            }
         }
         Ok(())
     }

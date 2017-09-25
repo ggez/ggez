@@ -18,7 +18,10 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        self.pos_x = self.pos_x % 800.0 + 1.0;
+        const DESIRED_FPS: u32 = 60;
+        while timer::check_update_time(ctx, DESIRED_FPS) {
+            self.pos_x = self.pos_x % 800.0 + 1.0;
+        }
         Ok(())
     }
 

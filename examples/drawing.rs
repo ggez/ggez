@@ -49,7 +49,11 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        self.zoomlevel += 0.01;
+        const DESIRED_FPS: u32 = 60;
+
+        while timer::check_update_time(ctx, DESIRED_FPS) {
+            self.zoomlevel += 0.01;
+        }
         Ok(())
     }
 
