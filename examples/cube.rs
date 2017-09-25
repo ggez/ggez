@@ -2,11 +2,8 @@ extern crate ggez;
 #[macro_use]
 extern crate gfx;
 extern crate gfx_device_gl;
-/// BUGGO: TODO: remove this to use built-in nalgebra instead.
-extern crate cgmath;
 
 
-use cgmath::{Deg, Matrix4, Point3, Vector3};
 use gfx::texture;
 use gfx::traits::FactoryExt;
 use gfx::Factory;
@@ -15,9 +12,13 @@ use ggez::conf;
 use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
+use ggez::nalgebra as na;
 use std::time::Duration;
 
-
+//type Matrix4 = na::Matrix4<f32>;
+type Isometry3 = na::Isometry3<f32>;
+type Point3 = na::Point3<f32>;
+type Vector3 = na::Vector3<f32>;
 type ColorFormat = gfx::format::Srgba8;
 type DepthFormat = gfx::format::DepthStencil;
 
@@ -52,10 +53,11 @@ impl Vertex {
     }
 }
 
-fn default_view() -> Matrix4<f32> {
-    Matrix4::look_at(Point3::new(1.5f32, -5.0, 3.0),
-                     Point3::new(0f32, 0.0, 0.0),
-                     Vector3::unit_z())
+fn default_view() -> Isometry3 {
+    // Eye location, target location, up-vector
+    Isometry3::look_at_rh(&Point3::new(1.5f32, -5.0, 3.0),
+                        &Point3::new(0f32, 0.0, 0.0),
+                        &Vector3::z_axis())
 }
 
 struct MainState {
@@ -161,15 +163,15 @@ void main() {
         let sinfo = texture::SamplerInfo::new(texture::FilterMethod::Bilinear,
                                               texture::WrapMode::Clamp);
 
-        let pso = factory
-            .create_pipeline_simple(vs, fs, pipe::new())
+        let pso = factory.create_pipeline_simple(vs, fs, pipe::new())
             .unwrap();
 
-        let proj = cgmath::perspective(Deg(45.0f32), 4.0 / 3.0, 1.0, 10.0);
-
+        // Aspect ratio, FOV, znear, zfar
+        let proj = na::Perspective3::new(4.0/3.0, 3.14 / 4.0, 1.0, 10.0);
+        let transform = proj.as_matrix() * default_view().to_homogeneous();
         let data = pipe::Data {
             vbuf: vbuf,
-            transform: (proj * default_view()).into(),
+            transform: transform.into(),
             locals: factory.create_constant_buffer(1),
             color: (texture_view, factory.create_sampler(sinfo)),
             out_color: color_view,
@@ -209,9 +211,9 @@ impl event::EventHandler for MainState {
 
 
         let dest_point1 = graphics::Point2::new(self.text1.width() as f32 / 2.0 + 10.0,
-                                               self.text1.height() as f32 / 2.0 + 10.0);
+                                                self.text1.height() as f32 / 2.0 + 10.0);
         let dest_point2 = graphics::Point2::new(self.text2.width() as f32 / 2.0 + 10.0,
-                                               self.text2.height() as f32 / 2.0 + 50.0);
+                                                self.text2.height() as f32 / 2.0 + 50.0);
         graphics::draw(ctx, &self.text1, dest_point1, 0.0)?;
         graphics::draw(ctx, &self.text2, dest_point2, 0.0)?;
         graphics::present(ctx);
