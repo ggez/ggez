@@ -24,7 +24,7 @@ use gfx_window_sdl;
 use gfx::Factory;
 
 
-use conf::{WindowMode, FullscreenType};
+use conf::WindowMode;
 use context::Context;
 use GameError;
 use GameResult;
@@ -901,23 +901,20 @@ pub fn set_mode(context: &mut Context,
 pub fn set_fullscreen(context: &mut Context,
                       fullscreen: bool)
                       -> GameResult<()> {
-//mang
-
-    let (win_x, win_y) = {
-        let gfx = &context.gfx_context;
-        gfx.get_size()
-    };
-    let fs_type = if fullscreen { FullscreenType::Desktop} else { FullscreenType::Off};
-
-    let screen_coords = get_screen_coordinates(context);
-    let mut mode = context.conf.window_mode.clone();
-    mode.fullscreen_type = fs_type;
-
-    set_mode(context, win_x, win_y, mode);
-
-    set_screen_coordinates(context, screen_coords);
+    let fs_type = if fullscreen { sdl2::video::FullscreenType::True} else { sdl2::video::FullscreenType::Off};
+    let gfx = &mut context.gfx_context;
+    gfx.window.set_fullscreen(fs_type)?;
 
     Ok(())
+}
+
+/// Sets the window resolution based on the specified width and height
+///
+pub fn set_resolution(context: &mut Context,
+                                      width: u32,
+                                      height: u32) -> GameResult<()> {
+    let window_mode = context.conf.window_mode.clone();
+    set_mode(context, width, height, window_mode)
 }
 
 /// Returns a `Vec` of `(width, height)` tuples describing what

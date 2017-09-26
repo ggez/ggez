@@ -16,6 +16,8 @@ struct WindowSettings {
     window_size_toggle: WindowToggle,
     toggle_fullscreen: bool,
     is_fullscreen: usize,
+    num_of_resolutions: usize,
+    resolution_index: usize,
 }
 
 struct MainState {
@@ -26,15 +28,22 @@ struct MainState {
 
 impl MainState {
     fn new(_ctx: &mut Context) -> GameResult<MainState> {
-        let s = MainState { 
+        let mut s = MainState { 
             pos_x: 0.0,
             angle: 0.0,
             window_settings: WindowSettings {
                 toggle_fullscreen: false,
                 window_size_toggle: WindowToggle::NONE,
-                is_fullscreen : 0,
+                is_fullscreen: 0,
+                resolution_index: 0,
+                num_of_resolutions: 0,
             }
         };
+
+
+        let resolutions = ggez::graphics::get_fullscreen_modes(_ctx, 0)?;
+        s.window_settings.num_of_resolutions = resolutions.len();
+
         Ok(s)
     }
 }
@@ -45,24 +54,21 @@ impl event::EventHandler for MainState {
         self.angle = self.angle + 0.01;
 
         if self.window_settings.toggle_fullscreen {
-            ggez::graphics::set_fullscreen(_ctx, self.window_settings.is_fullscreen != 0);
+            ggez::graphics::set_fullscreen(_ctx, self.window_settings.is_fullscreen != 0)?;
             self.window_settings.toggle_fullscreen = false;
         }
 
         match self.window_settings.window_size_toggle {
-            WindowToggle::FORWARD => {
-                let resolution = ggez::graphics::get_fullscreen_modes(_ctx, 0);
-                self.window_settings.window_size_toggle = WindowToggle::NONE;
-            }
-            WindowToggle::REVERSE => {
+            WindowToggle::FORWARD | WindowToggle::REVERSE => {
+                let resolutions = ggez::graphics::get_fullscreen_modes(_ctx, 0)?;
+                let (width, height) = resolutions[self.window_settings.resolution_index];
+
+                ggez::graphics::set_resolution(_ctx, width, height);
 
                 self.window_settings.window_size_toggle = WindowToggle::NONE;
             }
             _ => {},
         }
-
-       // ggez::graphics::set_mode(ctx, width, height, mode)?;
-       // ggez::graphics::set_screen_coordinates();
 
         Ok(())
     }
@@ -81,9 +87,22 @@ impl event::EventHandler for MainState {
 
         if !repeat {
             match keycode {
-                Keycode::F => {self.window_settings.toggle_fullscreen = true; self.window_settings.is_fullscreen ^= 1;},
-                Keycode::H => self.window_settings.window_size_toggle = WindowToggle::FORWARD,
-                Keycode::G => self.window_settings.window_size_toggle = WindowToggle::REVERSE,
+                Keycode::F => {
+                    self.window_settings.toggle_fullscreen = true;
+                    self.window_settings.is_fullscreen ^= 1;
+                }
+                Keycode::H => {
+                    self.window_settings.window_size_toggle = WindowToggle::FORWARD;
+                    self.window_settings.resolution_index += 1;
+                    self.window_settings.resolution_index %= self.window_settings.num_of_resolutions;
+                }
+                Keycode::G => {
+                    if self.window_settings.resolution_index > 0 {
+                        self.window_settings.window_size_toggle = WindowToggle::REVERSE;
+                        self.window_settings.resolution_index -= 1;
+                        self.window_settings.resolution_index %= self.window_settings.num_of_resolutions;
+                    }
+                }
                 _ => {},
             }
         }
