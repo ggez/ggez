@@ -12,6 +12,8 @@
 //! See issue <https://github.com/ggez/ggez/issues/117> for
 //! discussion.
 
+use sdl2;
+
 /// A key code.
 pub use sdl2::keyboard::Keycode;
 
@@ -26,6 +28,10 @@ pub use sdl2::mouse::MouseState;
 pub use sdl2::controller::Button;
 /// A controller axis.
 pub use sdl2::controller::Axis;
+
+/// The event iterator
+pub use sdl2::event::EventPollIterator;
+pub use sdl2::event::Event;
 
 use sdl2::event::Event::*;
 use sdl2::event;
@@ -141,6 +147,29 @@ pub trait EventHandler {
     /// Is not called when you resize it yourself with
     /// `graphics::set_mode()` though.
     fn resize_event(&mut self, _ctx: &mut Context, _width: u32, _height: u32) {}
+}
+
+/// A handle to access the OS's event pump.
+pub struct Events(sdl2::EventPump);
+
+use std::fmt;
+impl fmt::Debug for Events {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<Events: {:p}>", self)
+    }
+}
+
+impl Events {
+    /// Create a new Events object.
+    pub fn new(ctx: &Context) -> GameResult<Events> {
+        let e = ctx.sdl_context.event_pump()?;
+        Ok(Events(e))
+    }
+
+    /// Get an iterator for all events.
+    pub fn poll(&mut self) -> EventPollIterator {
+        self.0.poll_iter()
+    }
 }
 
 /// Runs the game's main loop, calling event callbacks on the given state
