@@ -5,12 +5,16 @@ use ggez::event::*;
 use ggez::graphics::{DrawMode, Point2};
 
 struct MainState {
-    pos_x: f32,
+    pos_x: i32,
+    mouse_down: bool,
 }
 
 impl MainState {
     fn new() -> MainState {
-        MainState { pos_x: 100.0 }
+        MainState {
+            pos_x: 100,
+            mouse_down: false,
+        }
     }
 }
 
@@ -23,7 +27,7 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
         graphics::circle(ctx,
                          DrawMode::Fill,
-                         Point2::new(self.pos_x, 380.0),
+                         Point2::new(self.pos_x as f32, 380.0),
                          100.0,
                          1.0)?;
         graphics::present(ctx);
@@ -35,10 +39,14 @@ impl event::EventHandler for MainState {
                                button: MouseButton,
                                x: i32,
                                y: i32) {
+        self.mouse_down = true;
+        self.pos_x = x;
         println!("Mouse button pressed: {:?}, x: {}, y: {}", button, x, y);
     }
 
     fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, x: i32, y: i32) {
+        self.mouse_down = false;
+        self.pos_x = x;
         println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
     }
 
@@ -49,6 +57,9 @@ impl event::EventHandler for MainState {
                           y: i32,
                           xrel: i32,
                           yrel: i32) {
+        if self.mouse_down {
+            self.pos_x = x;
+        }
         println!("Mouse motion, x: {}, y: {}, relative x: {}, relative y: {}",
                  x,
                  y,
