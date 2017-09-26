@@ -263,11 +263,11 @@ fn render_ttf(context: &mut Context,
     // `layout()` turns an abstract glyph, which contains no concrete
     // size or position information, into a PositionedGlyph, which does.
     let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
-	// If the string is empty or only whitespace, we end up trying to create a 0-width
-	// texture which is invalid.  Instead we create a texture 1 texel wide, with everything
-	// set to zero, which probably isn't ideal but is 100% consistent and doesn't require
-	// special-casing things like get_filter().
-	// See issue #109
+    // If the string is empty or only whitespace, we end up trying to create a 0-width
+    // texture which is invalid.  Instead we create a texture 1 texel wide, with everything
+    // set to zero, which probably isn't ideal but is 100% consistent and doesn't require
+    // special-casing things like get_filter().
+    // See issue #109
     let text_width_pixels = cmp::max(text_width(&glyphs).ceil() as usize, 1);
     let bytes_per_pixel = 4;
     let mut pixel_data = vec![0; text_width_pixels * text_height_pixels * bytes_per_pixel];
@@ -356,7 +356,7 @@ fn render_bitmap(context: &mut Context,
                  -> GameResult<Text> {
     let text_length = text.len();
     let glyph_height = height;
-	// Same at-least-one-pixel-wide constraint here as with TTF fonts.
+    // Same at-least-one-pixel-wide constraint here as with TTF fonts.
     let buf_len = cmp::max(text_length * glyph_width * glyph_height * 4, 1);
     let mut dest_buf = Vec::with_capacity(buf_len);
     dest_buf.resize(buf_len, 0u8);

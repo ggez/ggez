@@ -28,15 +28,12 @@ pub fn main() {
         // Handle events
         for event in events.poll() {
             match event {
-                event::Event::Quit { .. }  |
-                event::Event::KeyDown {
-                    keycode: Some(event::Keycode::Escape),
-                    ..
-                } => { 
+                event::Event::Quit { .. } |
+                event::Event::KeyDown { keycode: Some(event::Keycode::Escape), .. } => {
                     println!("Quitting");
                     continuing = false
                 }
-                x => println!("Event fired: {:?}", x)
+                x => println!("Event fired: {:?}", x),
             }
         }
 
@@ -49,7 +46,8 @@ pub fn main() {
                          DrawMode::Fill,
                          Point2::new(position, 380.0),
                          100.0,
-                         2.0).unwrap();
+                         2.0)
+                .unwrap();
         graphics::present(ctx);
         ggez::timer::yield_now();
     }
