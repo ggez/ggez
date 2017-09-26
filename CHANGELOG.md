@@ -13,6 +13,9 @@
  * Added MSAA (thanks termhn!)
  * Added graphics_settings example to show hot to play with graphics modes
  * Made the render pipeline just use matrices instead of separate transform elements
+ * SHADERS!  Woo, thanks nlordell!
+ * Refactored EventHandler interface, again
+ * Altered timestep functions to be nicer and made examples use them consistently
 
 # 0.3.3
 
