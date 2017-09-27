@@ -162,6 +162,7 @@ impl From<DrawParam> for InstanceProperties {
 struct SamplerCache<R>
     where R: gfx::Resources
 {
+    // TODO: Make this generic on BackendSpec?
     samplers: HashMap<texture::SamplerInfo, gfx::handle::Sampler<R>>,
 }
 

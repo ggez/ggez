@@ -25,7 +25,6 @@ path = "src/lib.rs"
 cargo-resource-root = []
 
 [profile.dev]
-codegen-units=4
 
 [dependencies]
 rusttype = "0.2"
@@ -40,7 +39,7 @@ rodio = "0.5.1"
 serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
-lyon = "0.7"
+lyon = "0.8"
 euclid = "0.15"
 mint = { version = "0.4", optional = true }
 smart-default = "0.2"
