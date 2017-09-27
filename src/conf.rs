@@ -18,7 +18,7 @@ pub enum FullscreenType {
     True,
     /// Windowed fullscreen, generally preferred over real fullscreen
     /// these days 'cause it plays nicer with multiple monitors.
-    Desktop
+    Desktop,
 }
 
 use sdl2::video::FullscreenType as SdlFullscreenType;
@@ -40,7 +40,6 @@ impl From<FullscreenType> for SdlFullscreenType {
             FullscreenType::Desktop => SdlFullscreenType::Desktop,
         }
     }
-
 }
 
 /// A builder structure containing flags for defining window settings.
@@ -86,7 +85,7 @@ pub struct WindowMode {
     pub max_height: u32,
     /// Number of samples for multisample anti-aliasing
     #[default = r#"NumSamples::One"#]
-    pub samples: NumSamples
+    pub samples: NumSamples,
 }
 
 /// The possible number of samples for multisample anti-aliasing

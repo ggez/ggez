@@ -125,7 +125,7 @@ impl Source {
     pub fn play(&self) -> GameResult<()> {
         // Creating a new Decoder each time seems a little messy,
         // since it may do checking and data-type detection that is
-        // redundant, but it's fine for now.
+        // redundant, but it's not super expensive.
         // See https://github.com/ggez/ggez/issues/98 for discussion
         let cursor = self.data.clone();
         let decoder = rodio::Decoder::new(cursor)?;

@@ -1,7 +1,6 @@
 extern crate ggez;
 use ggez::*;
 use ggez::graphics::{DrawMode, Point2};
-use std::time::Duration;
 
 struct MainState {
     pos_x: f32,
@@ -15,7 +14,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         self.pos_x = self.pos_x % 800.0 + 1.0;
         Ok(())
     }

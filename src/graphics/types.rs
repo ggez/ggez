@@ -8,12 +8,12 @@ pub type Vector2 = na::Vector2<f32>;
 pub type Matrix4 = na::Matrix4<f32>;
 
 /// Turns a point into an array of floats
-pub fn pt2arr(pt: Point2) -> [f32;2] {
+pub fn pt2arr(pt: Point2) -> [f32; 2] {
     [pt.x, pt.y]
 }
 
 /// Turns an array of floats into a point.
-pub fn arr2pt(pt: [f32;2]) -> Point2 {
+pub fn arr2pt(pt: [f32; 2]) -> Point2 {
     Point2::new(pt[0], pt[1])
 }
 
