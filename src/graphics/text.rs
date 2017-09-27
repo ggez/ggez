@@ -1,3 +1,4 @@
+use std::cmp;
 use std::fmt;
 use std::path;
 use std::collections::BTreeMap;
@@ -41,8 +42,6 @@ impl Font {
     pub fn new<P>(context: &mut Context, path: P, points: u32) -> GameResult<Font>
         where P: AsRef<path::Path> + fmt::Debug
     {
-        // let mut buffer: Vec<u8> = Vec::new();
-        // let mut rwops = util::rwops_from_path(context, path, &mut buffer)?;
         let mut stream = context.filesystem.open(path.as_ref())?;
         let mut buf = Vec::new();
         stream.read_to_end(&mut buf)?;
@@ -264,20 +263,12 @@ fn render_ttf(context: &mut Context,
     // `layout()` turns an abstract glyph, which contains no concrete
     // size or position information, into a PositionedGlyph, which does.
     let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
-    let text_width_pixels = text_width(&glyphs).ceil() as usize;
-    // let text_width_pixels = glyphs
-    //     .iter()
-    //     .rev()
-    //     .filter_map(|g| {
-    //                     g.pixel_bounding_box()
-    //                         .map(|b| {
-    //                                  b.min.x as f32 + g.unpositioned().h_metrics().advance_width
-    //                              })
-    //                 })
-    //     .next()
-    //     .unwrap_or(0.0)
-    //     .ceil() as usize;
-    // // Make an array for our rendered bitmap
+    // If the string is empty or only whitespace, we end up trying to create a 0-width
+    // texture which is invalid.  Instead we create a texture 1 texel wide, with everything
+    // set to zero, which probably isn't ideal but is 100% consistent and doesn't require
+    // special-casing things like get_filter().
+    // See issue #109
+    let text_width_pixels = cmp::max(text_width(&glyphs).ceil() as usize, 1);
     let bytes_per_pixel = 4;
     let mut pixel_data = vec![0; text_width_pixels * text_height_pixels * bytes_per_pixel];
     let pitch = text_width_pixels * bytes_per_pixel;
@@ -304,9 +295,6 @@ fn render_ttf(context: &mut Context,
             })
         }
     }
-
-    // println!("Creating text {}, {}x{}: {:?}",
-    //text, text_width_pixels, text_height_pixels, pixel_data);
 
     // Copy the bitmap into an image, and we're basically done!
     assert!(text_width_pixels < u16::MAX as usize);
@@ -368,7 +356,8 @@ fn render_bitmap(context: &mut Context,
                  -> GameResult<Text> {
     let text_length = text.len();
     let glyph_height = height;
-    let buf_len = text_length * glyph_width * glyph_height * 4;
+    // Same at-least-one-pixel-wide constraint here as with TTF fonts.
+    let buf_len = cmp::max(text_length * glyph_width * glyph_height * 4, 1);
     let mut dest_buf = Vec::with_capacity(buf_len);
     dest_buf.resize(buf_len, 0u8);
     for (i, c) in text.chars().enumerate() {

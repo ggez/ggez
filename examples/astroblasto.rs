@@ -11,11 +11,10 @@ use ggez::event::*;
 use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::timer;
-use std::time::Duration;
 
 /// *********************************************************************
 /// Basic stuff, make some helpers for vector functions.
-/// ggez includes the nalgebra math library to provide lots of 
+/// ggez includes the nalgebra math library to provide lots of
 /// math stuff, we just fill in a couple gaps.
 /// **********************************************************************
 use ggez::graphics::{Vector2, Point2};
@@ -458,63 +457,63 @@ fn draw_actor(assets: &mut Assets,
 /// handling input events.
 /// **********************************************************************
 impl EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        const DESIRED_FPS: u64 = 60;
-        if !timer::check_update_time(ctx, DESIRED_FPS) {
-            return Ok(());
-        }
-        let seconds = 1.0 / (DESIRED_FPS as f32);
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        const DESIRED_FPS: u32 = 60;
 
-        // Update the player state based on the user input.
-        player_handle_input(&mut self.player, &self.input, seconds);
-        self.player_shot_timeout -= seconds;
-        if self.input.fire && self.player_shot_timeout < 0.0 {
-            self.fire_player_shot();
-        }
+        while timer::check_update_time(ctx, DESIRED_FPS) {
+            let seconds = 1.0 / (DESIRED_FPS as f32);
 
-        // Update the physics for all actors.
-        // First the player...
-        update_actor_position(&mut self.player, seconds);
-        wrap_actor_position(&mut self.player,
-                            self.screen_width as f32,
-                            self.screen_height as f32);
+            // Update the player state based on the user input.
+            player_handle_input(&mut self.player, &self.input, seconds);
+            self.player_shot_timeout -= seconds;
+            if self.input.fire && self.player_shot_timeout < 0.0 {
+                self.fire_player_shot();
+            }
 
-        // Then the shots...
-        for act in &mut self.shots {
-            update_actor_position(act, seconds);
-            wrap_actor_position(act, self.screen_width as f32, self.screen_height as f32);
-            handle_timed_life(act, seconds);
-        }
+            // Update the physics for all actors.
+            // First the player...
+            update_actor_position(&mut self.player, seconds);
+            wrap_actor_position(&mut self.player,
+                                self.screen_width as f32,
+                                self.screen_height as f32);
 
-        // And finally the rocks.
-        for act in &mut self.rocks {
-            update_actor_position(act, seconds);
-            wrap_actor_position(act, self.screen_width as f32, self.screen_height as f32);
-        }
+            // Then the shots...
+            for act in &mut self.shots {
+                update_actor_position(act, seconds);
+                wrap_actor_position(act, self.screen_width as f32, self.screen_height as f32);
+                handle_timed_life(act, seconds);
+            }
 
-        // Handle the results of things moving:
-        // collision detection, object death, and if
-        // we have killed all the rocks in the level,
-        // spawn more of them.
-        self.handle_collisions();
+            // And finally the rocks.
+            for act in &mut self.rocks {
+                update_actor_position(act, seconds);
+                wrap_actor_position(act, self.screen_width as f32, self.screen_height as f32);
+            }
 
-        self.clear_dead_stuff();
+            // Handle the results of things moving:
+            // collision detection, object death, and if
+            // we have killed all the rocks in the level,
+            // spawn more of them.
+            self.handle_collisions();
 
-        self.check_for_level_respawn();
+            self.clear_dead_stuff();
 
-        // Using a gui_dirty flag here is a little
-        // messy but fine here.
-        if self.gui_dirty {
-            self.update_ui(ctx);
-            self.gui_dirty = false;
-        }
+            self.check_for_level_respawn();
 
-        // Finally we check for our end state.
-        // I want to have a nice death screen eventually,
-        // but for now we just quit.
-        if self.player.life <= 0.0 {
-            println!("Game over!");
-            let _ = ctx.quit();
+            // Using a gui_dirty flag here is a little
+            // messy but fine here.
+            if self.gui_dirty {
+                self.update_ui(ctx);
+                self.gui_dirty = false;
+            }
+
+            // Finally we check for our end state.
+            // I want to have a nice death screen eventually,
+            // but for now we just quit.
+            if self.player.life <= 0.0 {
+                println!("Game over!");
+                let _ = ctx.quit();
+            }
         }
 
         Ok(())
@@ -545,9 +544,9 @@ impl EventHandler for MainState {
 
         // And draw the GUI elements in the right places.
         let level_dest = graphics::Point2::new((self.level_display.width() / 2) as f32 + 10.0,
-                                              (self.level_display.height() / 2) as f32 + 10.0);
+                                               (self.level_display.height() / 2) as f32 + 10.0);
         let score_dest = graphics::Point2::new((self.score_display.width() / 2) as f32 + 200.0,
-                                              (self.score_display.height() / 2) as f32 + 10.0);
+                                               (self.score_display.height() / 2) as f32 + 10.0);
         graphics::draw(ctx, &self.level_display, level_dest, 0.0)?;
         graphics::draw(ctx, &self.score_display, score_dest, 0.0)?;
 
@@ -566,7 +565,11 @@ impl EventHandler for MainState {
 
     // Handle key events.  These just map keyboard events
     // and alter our input state appropriately.
-    fn key_down_event(&mut self, keycode: Keycode, _keymod: Mod, _repeat: bool) {
+    fn key_down_event(&mut self,
+                      ctx: &mut Context,
+                      keycode: Keycode,
+                      _keymod: Mod,
+                      _repeat: bool) {
         match keycode {
             Keycode::Up => {
                 self.input.yaxis = 1.0;
@@ -580,12 +583,13 @@ impl EventHandler for MainState {
             Keycode::Space => {
                 self.input.fire = true;
             }
+            Keycode::Escape => ctx.quit().unwrap(),
             _ => (), // Do nothing
         }
     }
 
 
-    fn key_up_event(&mut self, keycode: Keycode, _keymod: Mod, _repeat: bool) {
+    fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, _keymod: Mod, _repeat: bool) {
         match keycode {
             Keycode::Up => {
                 self.input.yaxis = 0.0;

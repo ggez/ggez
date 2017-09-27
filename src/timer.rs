@@ -107,6 +107,8 @@ impl TimeContext {
         self.frame_durations.push(time_since_last);
         self.last_instant = now;
         self.frame_count += 1;
+
+        self.residual_update_dt += time_since_last;
     }
 }
 
@@ -163,7 +165,7 @@ pub fn f64_to_duration(t: f64) -> time::Duration {
 /// frame should be to match the given fps.
 ///
 /// Approximately.
-fn fps_as_duration(fps: u64) -> time::Duration {
+fn fps_as_duration(fps: u32) -> time::Duration {
     let target_dt_seconds = 1.0 / (fps as f64);
     f64_to_duration(target_dt_seconds)
 }
@@ -182,16 +184,16 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
     time::Instant::now() - tc.init_instant
 }
 
+/// BUGGO: Fix docs plz
 /// This function will return true if the time since the
 /// last `update()` call has been equal to or greater to
 /// the update FPS indicated by the `desired_update_rate`.
 /// It keeps track of fractional frames, and does not
 /// do any sleeping.
-pub fn check_update_time(ctx: &mut Context, desired_update_rate: u64) -> bool {
-    let dt = get_delta(ctx);
+pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
     let timedata = &mut ctx.timer_context;
-    let target_dt = fps_as_duration(desired_update_rate);
-    timedata.residual_update_dt += dt;
+
+    let target_dt = fps_as_duration(target_fps);
     if timedata.residual_update_dt > target_dt {
         timedata.residual_update_dt -= target_dt;
         true

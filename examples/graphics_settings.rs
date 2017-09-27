@@ -50,26 +50,28 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        self.pos_x = self.pos_x % 800.0 + 1.0;
-        self.angle = self.angle + 0.01;
+        const DESIRED_FPS: u32 = 60;
+        while timer::check_update_time(ctx, DESIRED_FPS) {
+            self.pos_x = self.pos_x % 800.0 + 1.0;
+            self.angle = self.angle + 0.01;
 
-        if self.window_settings.toggle_fullscreen {
-            ggez::graphics::set_fullscreen(ctx, self.window_settings.is_fullscreen != 0)?;
-            self.window_settings.toggle_fullscreen = false;
-        }
-
-        match self.window_settings.window_size_toggle {
-            WindowToggle::FORWARD | WindowToggle::REVERSE => {
-                let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
-                let (width, height) = resolutions[self.window_settings.resolution_index];
-
-                ggez::graphics::set_resolution(ctx, width, height)?;
-
-                self.window_settings.window_size_toggle = WindowToggle::NONE;
+            if self.window_settings.toggle_fullscreen {
+                ggez::graphics::set_fullscreen(ctx, self.window_settings.is_fullscreen != 0)?;
+                self.window_settings.toggle_fullscreen = false;
             }
-            _ => {},
-        }
 
+            match self.window_settings.window_size_toggle {
+                WindowToggle::FORWARD | WindowToggle::REVERSE => {
+                    let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
+                    let (width, height) = resolutions[self.window_settings.resolution_index];
+
+                    ggez::graphics::set_resolution(ctx, width, height)?;
+
+                    self.window_settings.window_size_toggle = WindowToggle::NONE;
+                }
+                _ => {},
+            }
+      }
         Ok(())
     }
 
@@ -78,7 +80,7 @@ impl event::EventHandler for MainState {
 
         let rot_circle = graphics::Mesh::new_circle(ctx, DrawMode::Line(3.0), Point2::new(0.0, 0.0), 100.0, 4.0)?;
         rot_circle.draw(ctx, Point2::new(400.0, 300.0), self.angle)?;
-
+      
         graphics::present(ctx);
         Ok(())
     }
@@ -112,19 +114,20 @@ impl event::EventHandler for MainState {
 pub fn main() {
     let matches = App::new("graphics settings example")
         .arg(Arg::with_name("msaa")
-            .short("m")
-            .value_name("N")
-            .help("Number of MSAA samples to do (powers of 2 from 1 to 16)")
-            .takes_value(true))
+                 .short("m")
+                 .value_name("N")
+                 .help("Number of MSAA samples to do (powers of 2 from 1 to 16)")
+                 .takes_value(true))
         .get_matches();
-    
-    let msaa: u32 = matches.value_of("msaa")
+
+    let msaa: u32 = matches
+        .value_of("msaa")
         .unwrap_or("1")
         .parse()
         .expect("Option msaa needs to be a number!");
     let mut c = conf::Conf::new();
-    c.window_mode.samples = conf::NumSamples::from_u32(msaa)
-        .expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
+    c.window_mode.samples =
+        conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
     let ctx = &mut Context::load_from_conf("super_simple", "ggez", c).unwrap();
     let state = &mut MainState::new(ctx).unwrap();
     event::run(ctx, state).unwrap();

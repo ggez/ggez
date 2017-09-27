@@ -4,7 +4,7 @@ use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::graphics::{DrawMode, Point2};
-use std::time::Duration;
+use ggez::timer;
 
 struct MainState {
     image1: graphics::Image,
@@ -33,18 +33,14 @@ impl MainState {
 fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
     let mb = &mut graphics::MeshBuilder::new();
 
-    mb.line(&[Point2::new(200.0, 200.0 ),
-              Point2::new(400.0, 200.0 ),
-              Point2::new(400.0, 400.0 ),
-              Point2::new(200.0, 400.0 ),
-              Point2::new(200.0, 300.0 )],
+    mb.line(&[Point2::new(200.0, 200.0),
+              Point2::new(400.0, 200.0),
+              Point2::new(400.0, 400.0),
+              Point2::new(200.0, 400.0),
+              Point2::new(200.0, 300.0)],
             4.0);
 
-    mb.ellipse(DrawMode::Fill,
-               Point2::new(600.0, 200.0),
-               50.0,
-               120.0,
-               1.0);
+    mb.ellipse(DrawMode::Fill, Point2::new(600.0, 200.0), 50.0, 120.0, 1.0);
 
     mb.circle(DrawMode::Fill, Point2::new(600.0, 380.0), 40.0, 1.0);
     mb.build(ctx)
@@ -52,8 +48,12 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
 
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
-        self.zoomlevel += 0.01;
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        const DESIRED_FPS: u32 = 60;
+
+        while timer::check_update_time(ctx, DESIRED_FPS) {
+            self.zoomlevel += 0.01;
+        }
         Ok(())
     }
 

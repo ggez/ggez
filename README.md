@@ -89,8 +89,6 @@ The goal is to eventually have ggez be pure Rust, but we're not there
 yet.  There's some blockers before we can drop SDL2 for
 `glutin`, see the issue tracker for more info.
 
+## Contact
 
-## Credits
-
-* http://opengameart.org/content/flappy-dragon-sprite-sheets
-* http://opengameart.org/content/cozy-endless-game-background
+If you need help or just want to talk about it, the most reliable way is to open an [issue](https://github.com/ggez/ggez/issues).  The creators also tend to hang out on IRC in the `#rust-gamedev` channel on `irc.mozilla.org`.
