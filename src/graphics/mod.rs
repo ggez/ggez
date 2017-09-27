@@ -908,6 +908,14 @@ pub fn set_fullscreen(context: &mut Context,
     Ok(())
 }
 
+/// Queries the fullscreen state of the window subsystem.
+/// If true, then the game is running in fullscreen mode.
+/// 
+pub fn is_fullscreen(context: &mut Context) -> bool {
+    let gfx = &context.gfx_context;
+    gfx.window.fullscreen_state() == sdl2::video::FullscreenType::True
+}
+
 /// Sets the window resolution based on the specified width and height
 ///
 pub fn set_resolution(context: &mut Context,

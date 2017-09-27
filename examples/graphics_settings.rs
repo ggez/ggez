@@ -49,21 +49,21 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         self.pos_x = self.pos_x % 800.0 + 1.0;
         self.angle = self.angle + 0.01;
 
         if self.window_settings.toggle_fullscreen {
-            ggez::graphics::set_fullscreen(_ctx, self.window_settings.is_fullscreen != 0)?;
+            ggez::graphics::set_fullscreen(ctx, self.window_settings.is_fullscreen != 0)?;
             self.window_settings.toggle_fullscreen = false;
         }
 
         match self.window_settings.window_size_toggle {
             WindowToggle::FORWARD | WindowToggle::REVERSE => {
-                let resolutions = ggez::graphics::get_fullscreen_modes(_ctx, 0)?;
+                let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
                 let (width, height) = resolutions[self.window_settings.resolution_index];
 
-                ggez::graphics::set_resolution(_ctx, width, height);
+                ggez::graphics::set_resolution(ctx, width, height)?;
 
                 self.window_settings.window_size_toggle = WindowToggle::NONE;
             }
