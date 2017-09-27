@@ -49,7 +49,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.pos_x = self.pos_x % 800.0 + 1.0;
         self.angle = self.angle + 0.01;
 
@@ -83,7 +83,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn key_up_event(&mut self, keycode: Keycode, _keymod: Mod, repeat: bool) {
+    fn key_up_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, repeat: bool) {
 
         if !repeat {
             match keycode {
