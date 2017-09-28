@@ -15,7 +15,7 @@ enum WindowToggle {
 struct WindowSettings {
     window_size_toggle: WindowToggle,
     toggle_fullscreen: bool,
-    is_fullscreen: usize,
+    is_fullscreen: bool,
     num_of_resolutions: usize,
     resolution_index: usize,
 }
@@ -34,7 +34,7 @@ impl MainState {
             window_settings: WindowSettings {
                 toggle_fullscreen: false,
                 window_size_toggle: WindowToggle::NONE,
-                is_fullscreen: 0,
+                is_fullscreen: false,
                 resolution_index: 0,
                 num_of_resolutions: 0,
             }
@@ -56,7 +56,7 @@ impl event::EventHandler for MainState {
             self.angle = self.angle + 0.01;
 
             if self.window_settings.toggle_fullscreen {
-                ggez::graphics::set_fullscreen(ctx, self.window_settings.is_fullscreen != 0)?;
+                ggez::graphics::set_fullscreen(ctx, self.window_settings.is_fullscreen)?;
                 self.window_settings.toggle_fullscreen = false;
             }
 
@@ -91,7 +91,7 @@ impl event::EventHandler for MainState {
             match keycode {
                 Keycode::F => {
                     self.window_settings.toggle_fullscreen = true;
-                    self.window_settings.is_fullscreen ^= 1;
+                    self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
                 }
                 Keycode::H => {
                     self.window_settings.window_size_toggle = WindowToggle::FORWARD;
