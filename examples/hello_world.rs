@@ -68,7 +68,7 @@ pub fn main() {
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        ctx.filesystem.add_physical_path(&path, true);
+        ctx.filesystem.mount(&path, true);
     }
 
     let state = &mut MainState::new(ctx).unwrap();

@@ -296,8 +296,8 @@ impl Filesystem {
     /// You probably shouldn't use this in the general case, since it is
     /// harder than you think to get it bulletproof across platforms, I promise.
     /// But it can be very nice for debugging and dev purposes, such as
-    /// by pushing `$CARGO_MANIFEST_DIR` to it
-    pub fn add_physical_path(&mut self, path: &path::Path, readonly: bool) {
+    /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
+    pub fn mount(&mut self, path: &path::Path, readonly: bool) {
         let physfs = vfs::PhysicalFS::new(&path, readonly);
         self.vfs.push_back(Box::new(physfs));
     }
