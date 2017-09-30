@@ -388,13 +388,15 @@ impl OverlayFS {
 impl VFS for OverlayFS {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
-        let mut tried: Vec<PathBuf> = vec![];
+        let mut tried: Vec<(PathBuf, GameError)> = vec![];
 
         for vfs in &self.roots {
             match vfs.open_options(path, open_options) {
-                Err(_) => {
+                Err(e) => {
                     if let Some(vfs_path) = vfs.to_path_buf() {
-                        tried.push(vfs_path);
+                        tried.push((vfs_path, e));
+                    } else {
+                        tried.push((PathBuf::from("<invalid path>"), e));
                     }
                 }
                 f => return f,

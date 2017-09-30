@@ -21,6 +21,8 @@ pub fn main() {
         println!("   {:?}", itm);
     }
 
+    println!("");
+    println!("Let's wroite to a file, it should end up in the user config dir");
 
     let test_file = path::Path::new("/testfile.txt");
     let bytes = "test".as_bytes();
@@ -30,6 +32,13 @@ pub fn main() {
     }
     println!("Wrote to test file");
     {
+        let mut options = filesystem::OpenOptions::new();
+        options.append(true);
+        let mut file = ctx.filesystem.open_options(test_file, &options).unwrap();
+        file.write(bytes).unwrap();
+    }
+    println!("Appended to test file");
+    {
         let mut buffer = Vec::new();
         let mut file = ctx.filesystem.open(test_file).unwrap();
         file.read_to_end(&mut buffer).unwrap();
@@ -37,6 +46,8 @@ pub fn main() {
     }
 
 
+    println!("");
+    println!("Let's read the default conf file");
     if let Ok(_conf) = ctx.filesystem.read_config() {
         println!("Found existing conf file, its contents are:");
         let mut file = ctx.filesystem.open("/conf.toml").unwrap();
@@ -52,4 +63,17 @@ pub fn main() {
         ctx.filesystem.write_config(&c).unwrap();
         println!("Should now be a 'conf.toml' file under user config dir");
     }
+
+    println!("");
+        println!("Now let's try to read a file that does not exist");
+    {
+        if let Err(e) = ctx.filesystem.open("/jfkdlasfjdsa") {
+            // The error message contains a big hairy list of each
+            // directory tried and what error it got from it.
+            println!("Got the error: {:?}", e);
+        } else {
+            println!("Wait, it does exist?  Weird.")
+        }
+    }
+
 }
