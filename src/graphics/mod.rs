@@ -921,6 +921,35 @@ pub fn set_mode(context: &mut Context,
     Ok(())
 }
 
+/// Toggles the fullscreen state of the window subsystem
+/// 
+pub fn set_fullscreen(context: &mut Context,
+                      fullscreen: bool)
+                      -> GameResult<()> {
+    let fs_type = if fullscreen { sdl2::video::FullscreenType::True} else { sdl2::video::FullscreenType::Off};
+    let gfx = &mut context.gfx_context;
+    gfx.window.set_fullscreen(fs_type)?;
+
+    Ok(())
+}
+
+/// Queries the fullscreen state of the window subsystem.
+/// If true, then the game is running in fullscreen mode.
+/// 
+pub fn is_fullscreen(context: &mut Context) -> bool {
+    let gfx = &context.gfx_context;
+    gfx.window.fullscreen_state() == sdl2::video::FullscreenType::True
+}
+
+/// Sets the window resolution based on the specified width and height
+///
+pub fn set_resolution(context: &mut Context,
+                                      width: u32,
+                                      height: u32) -> GameResult<()> {
+    let window_mode = context.conf.window_mode.clone();
+    set_mode(context, width, height, window_mode)
+}
+
 /// Returns a `Vec` of `(width, height)` tuples describing what
 /// fullscreen resolutions are available for the given display.
 pub fn get_fullscreen_modes(context: &Context, display_idx: i32) -> GameResult<Vec<(u32, u32)>> {
