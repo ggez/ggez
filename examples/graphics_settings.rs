@@ -72,18 +72,34 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        graphics::set_background_color(ctx, graphics::BLACK);
         graphics::clear(ctx);
 
         let rot_circle = graphics::Mesh::new_circle(ctx, DrawMode::Line(3.0), Point2::new(0.0, 0.0), 100.0, 4.0)?;
         let (w,h) = ctx.gfx_context.get_size();
-        // println!("Drawing at {}, {}", w/2, h/2);
+        graphics::set_color(ctx, graphics::WHITE)?;
         rot_circle.draw(ctx, Point2::new((w/2) as f32, (h/2) as f32), self.angle)?;
+
+        // Draw a grid so you can see how the coordinate system relates to the screen.
+        let grid_size = 100;
+        for x in 0..(w/grid_size) {
+            for y in 0..(h/grid_size) {
+                let x_grid = (x * grid_size) as f32;
+                let x_color = x_grid as f32 / w as f32;
+                let y_grid = (y * grid_size) as f32;
+                let y_color = y_grid as f32 / h as f32;
+                let dest = graphics::Point2::new(x_grid, y_grid);
+                let color = graphics::Color::new(x_color, y_color, 0.0, 1.0);
+                graphics::set_color(ctx, color)?;
+                graphics::points(ctx, &[dest], 3.0)?;
+            }
+        }
       
         graphics::present(ctx);
         Ok(())
     }
 
-    fn key_up_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, repeat: bool) {
+    fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, _keymod: Mod, repeat: bool) {
 
         if !repeat {
             match keycode {
