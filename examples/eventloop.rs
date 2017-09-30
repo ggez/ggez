@@ -3,10 +3,10 @@
 //! trait to do that for you.
 //!
 //! This is exactly how `ggez::event::run()` works though, it really is not
-//! doing anything magical.  But, if you want a bit more fanatical control over
+//! doing anything magical.  But, if you want a bit more power over
 //! the control flow of your game, this is how you get it.
 //!
-//! It is functionally identical to the super_simple.rs example apart from that..
+//! It is functionally identical to the super_simple.rs example apart from that.
 
 extern crate ggez;
 use ggez::*;
@@ -15,7 +15,7 @@ use ggez::graphics::{DrawMode, Point2};
 
 pub fn main() {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("super_simple", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("eventloop", "ggez", c).unwrap();
     let mut events = event::Events::new(ctx).unwrap();
     let mut continuing = true;
 

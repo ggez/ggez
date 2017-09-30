@@ -4,13 +4,15 @@
 
 extern crate ggez;
 extern crate rand;
-
 use ggez::audio;
 use ggez::conf;
 use ggez::event::*;
 use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::timer;
+
+use std::env;
+use std::path;
 
 /// *********************************************************************
 /// Basic stuff, make some helpers for vector functions.
@@ -615,9 +617,19 @@ pub fn main() {
     c.window_title = "Astroblasto!".to_string();
     c.window_width = 640;
     c.window_height = 480;
-    c.window_icon = "/player.png".to_string();
 
     let ctx = &mut Context::load_from_conf("astroblasto", "ggez", c).unwrap();
+
+    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so 
+    // we we look in the cargo project for files.
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        ctx.filesystem.add_physical_path(&path, true);
+        println!("Adding path {:?}", path);
+    } else {
+        println!("aie?");
+    }
 
     match MainState::new(ctx) {
         Err(e) => {

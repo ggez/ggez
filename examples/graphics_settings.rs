@@ -159,7 +159,7 @@ pub fn main() {
     // c.window_mode.max_height = 5000;
     // c.window_mode.min_width = 50;
     // c.window_mode.max_width = 5000;
-    let ctx = &mut Context::load_from_conf("super_simple", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("graphics_settings", "ggez", c).unwrap();
     let state = &mut MainState::new(ctx).unwrap();
     event::run(ctx, state).unwrap();
 }

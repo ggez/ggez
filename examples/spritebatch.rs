@@ -1,6 +1,5 @@
 extern crate ggez;
 extern crate rand;
-extern crate sdl2;
 
 
 use ggez::conf;
@@ -8,6 +7,8 @@ use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::timer;
+use std::env;
+use std::path;
 
 struct MainState {
     spritebatch: graphics::spritebatch::SpriteBatch,
@@ -84,9 +85,18 @@ impl event::EventHandler for MainState {
 // Loading a config file depends on having FS (or we can just fake our way around it
 // by creating an FS and then throwing it away; the costs are not huge.)
 pub fn main() {
-    let c = conf::Conf::new();
+    let mut c = conf::Conf::new();
     println!("Starting with default config: {:#?}", c);
-    let ctx = &mut Context::load_from_conf("imageview", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("spritebatch", "ggez", c).unwrap();
+
+    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so 
+    // we we look in the cargo project for files.
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        ctx.filesystem.add_physical_path(&path, true);
+    }
+
     let state = &mut MainState::new(ctx).unwrap();
     if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);

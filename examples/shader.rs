@@ -4,6 +4,8 @@ extern crate ggez;
 
 use ggez::*;
 use ggez::graphics::{DrawMode, Point2};
+use std::env;
+use std::path;
 
 gfx_defines!{
     constant Dim {
@@ -50,7 +52,16 @@ impl event::EventHandler for MainState {
 
 pub fn main() {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("super_simple", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("shader", "ggez", c).unwrap();
+
+    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so 
+    // we we look in the cargo project for files.
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        ctx.filesystem.add_physical_path(&path, true);
+    }
+
     let state = &mut MainState::new(ctx).unwrap();
     event::run(ctx, state).unwrap();
 }
