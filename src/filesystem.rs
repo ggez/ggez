@@ -254,6 +254,11 @@ impl Filesystem {
         &self.user_data_path
     }
 
+    /// Return the full path to the user config directory
+    pub fn get_user_config_dir(&self) -> &path::Path {
+        &self.user_config_path
+    }
+
     /// Returns the full path to the resource directory
     /// (even if it doesn't exist)
     pub fn get_resources_dir(&self) -> &path::Path {
