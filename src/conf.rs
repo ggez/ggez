@@ -125,10 +125,6 @@ impl WindowMode {
         self
     }
 
-    /// Get borderless
-    pub fn get_borderless(self) -> bool {
-        self.borderless
-    }
 
     /// Set the fullscreen type
     pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
@@ -140,11 +136,6 @@ impl WindowMode {
     pub fn vsync(mut self, vsync: bool) -> Self {
         self.vsync = vsync;
         self
-    }
-
-    /// Get vsync
-    pub fn get_vsync(self) -> bool {
-        self.vsync
     }
 
     /// Set minimum window dimensions for windowed mode
@@ -159,16 +150,6 @@ impl WindowMode {
         self.max_width = width;
         self.max_height = height;
         self
-    }
-
-    /// Get minimum window dimensions for windowed mode
-    pub fn get_min_dimensions(self) -> (u32, u32) {
-        (self.min_width, self.min_height)
-    }
-
-    /// Get maximum window dimensions for windowed mode
-    pub fn get_max_dimensions(self) -> (u32, u32) {
-        (self.max_width, self.max_height)
     }
 
     /// Set number of samples for MSAA

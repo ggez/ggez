@@ -4,7 +4,6 @@ use clap::{Arg, App};
 use ggez::*;
 use ggez::graphics::{DrawMode, Point2, Drawable};
 use ggez::event::{Keycode, Mod};
-use std::time::Duration;
 
 enum WindowToggle {
     NONE,
@@ -21,7 +20,6 @@ struct WindowSettings {
 }
 
 struct MainState {
-    pos_x: f32,
     angle: f32, // in radians
     window_settings: WindowSettings,
 }
@@ -29,7 +27,6 @@ struct MainState {
 impl MainState {
     fn new(_ctx: &mut Context) -> GameResult<MainState> {
         let mut s = MainState { 
-            pos_x: 0.0,
             angle: 0.0,
             window_settings: WindowSettings {
                 toggle_fullscreen: false,
@@ -52,7 +49,6 @@ impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         const DESIRED_FPS: u32 = 60;
         while timer::check_update_time(ctx, DESIRED_FPS) {
-            self.pos_x = self.pos_x % 800.0 + 1.0;
             self.angle = self.angle + 0.01;
 
             if self.window_settings.toggle_fullscreen {
@@ -79,7 +75,9 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
 
         let rot_circle = graphics::Mesh::new_circle(ctx, DrawMode::Line(3.0), Point2::new(0.0, 0.0), 100.0, 4.0)?;
-        rot_circle.draw(ctx, Point2::new(400.0, 300.0), self.angle)?;
+        let (w,h) = ctx.gfx_context.get_size();
+        // println!("Drawing at {}, {}", w/2, h/2);
+        rot_circle.draw(ctx, Point2::new((w/2) as f32, (h/2) as f32), self.angle)?;
       
         graphics::present(ctx);
         Ok(())
@@ -109,6 +107,18 @@ impl event::EventHandler for MainState {
             }
         }
     }
+
+    fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
+            println!("Resized screen to {}, {}", width, height);
+            // BUGGO: Should be able to return an actual error here!
+            let new_rect = graphics::Rect::new(
+                (width/2) as f32,
+                (height/2) as f32,
+                width as f32,
+                -(height as f32),
+            );
+            graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+    }
 }
 
 pub fn main() {
@@ -128,6 +138,11 @@ pub fn main() {
     let mut c = conf::Conf::new();
     c.window_mode.samples =
         conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
+    c.window_mode.resizable = true;
+    // c.window_mode.min_height = 50;
+    // c.window_mode.max_height = 5000;
+    // c.window_mode.min_width = 50;
+    // c.window_mode.max_width = 5000;
     let ctx = &mut Context::load_from_conf("super_simple", "ggez", c).unwrap();
     let state = &mut MainState::new(ctx).unwrap();
     event::run(ctx, state).unwrap();
