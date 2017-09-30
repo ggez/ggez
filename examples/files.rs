@@ -3,6 +3,7 @@
 
 extern crate ggez;
 use ggez::*;
+use std::env;
 use std::path;
 use std::io::{Read, Write};
 use std::str;
@@ -11,9 +12,15 @@ pub fn main() {
     let c = conf::Conf::new();
     let ctx = &mut Context::load_from_conf("ggez_files_example", "ggez", c).unwrap();
 
-    println!("Filesystem paths are:");
-    println!("   User data: {:?}", ctx.filesystem.get_user_data_dir());
-    println!("   User config: {:?}", ctx.filesystem.get_user_config_dir());
+    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so 
+    // we we look in the cargo project for files.
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        ctx.filesystem.add_physical_path(&path, true);
+    }
+
+    println!("Full filesystem info: {:#?}", ctx.filesystem);
 
     let dir_contents = ctx.filesystem.read_dir("/").unwrap();
     println!("Directory has {} things in it:", dir_contents.len());
@@ -22,7 +29,7 @@ pub fn main() {
     }
 
     println!("");
-    println!("Let's wroite to a file, it should end up in the user config dir");
+    println!("Let's write to a file, it should end up in the user config dir");
 
     let test_file = path::Path::new("/testfile.txt");
     let bytes = "test".as_bytes();

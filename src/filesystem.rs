@@ -290,6 +290,18 @@ impl Filesystem {
         Ok(())
     }
 
+    /// Adds the given (absolute) path to the list of directories 
+    /// it will search to look for resources.
+    ///
+    /// You probably shouldn't use this in the general case, since it is
+    /// harder than you think to get it bulletproof across platforms, I promise.
+    /// But it can be very nice for debugging and dev purposes, such as
+    /// by pushing `$CARGO_MANIFEST_DIR` to it
+    pub fn add_physical_path(&mut self, path: &path::Path, readonly: bool) {
+        let physfs = vfs::PhysicalFS::new(&path, readonly);
+        self.vfs.push_back(Box::new(physfs));
+    }
+
 
     /// Looks for a file named "conf.toml" in the resources directory
     /// loads it if it finds it.
