@@ -58,6 +58,7 @@ pub struct Filesystem {
 /// Represents a file, either in the filesystem, or in the resources zip file,
 /// or whatever.
 pub enum File {
+    /// A wrapper for a VFile trait object.
     VfsFile(Box<vfs::VFile>),
 }
 
@@ -187,11 +188,10 @@ impl Filesystem {
     /// Opens a file in the user directory with the given `filesystem::OpenOptions`.
     /// Note that even if you open a file read-only, it can only access
     /// files in the user directory.
-    pub fn open_options<P: AsRef<path::Path>>(
-        &mut self,
-        path: P,
-        options: &OpenOptions,
-    ) -> GameResult<File> {
+    pub fn open_options<P: AsRef<path::Path>>(&mut self,
+                                              path: P,
+                                              options: &OpenOptions)
+                                              -> GameResult<File> {
         self.vfs
             .open_options(path.as_ref(), options)
             .map(|f| File::VfsFile(f))
@@ -254,6 +254,11 @@ impl Filesystem {
         &self.user_data_path
     }
 
+    /// Return the full path to the user config directory
+    pub fn get_user_config_dir(&self) -> &path::Path {
+        &self.user_config_path
+    }
+
     /// Returns the full path to the resource directory
     /// (even if it doesn't exist)
     pub fn get_resources_dir(&self) -> &path::Path {
@@ -285,6 +290,18 @@ impl Filesystem {
         Ok(())
     }
 
+    /// Adds the given (absolute) path to the list of directories 
+    /// it will search to look for resources.
+    ///
+    /// You probably shouldn't use this in the general case, since it is
+    /// harder than you think to get it bulletproof across platforms, I promise.
+    /// But it can be very nice for debugging and dev purposes, such as
+    /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
+    pub fn mount(&mut self, path: &path::Path, readonly: bool) {
+        let physfs = vfs::PhysicalFS::new(&path, readonly);
+        self.vfs.push_back(Box::new(physfs));
+    }
+
 
     /// Looks for a file named "conf.toml" in the resources directory
     /// loads it if it finds it.
@@ -296,9 +313,7 @@ impl Filesystem {
             let c = conf::Conf::from_toml_file(&mut file)?;
             Ok(c)
         } else {
-            Err(GameError::ConfigError(
-                String::from("Config file not found"),
-            ))
+            Err(GameError::ConfigError(String::from("Config file not found")))
         }
     }
 
@@ -311,10 +326,8 @@ impl Filesystem {
         if self.is_file(conf_path) {
             Ok(())
         } else {
-            Err(GameError::ConfigError(format!(
-                "Failed to write config file at {}",
-                conf_path.to_string_lossy()
-            )))
+            Err(GameError::ConfigError(format!("Failed to write config file at {}",
+                                               conf_path.to_string_lossy())))
         }
     }
 }

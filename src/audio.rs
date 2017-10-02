@@ -27,11 +27,10 @@ pub struct AudioContext {
 }
 
 impl AudioContext {
+    /// Create new AudioContext.
     pub fn new() -> GameResult<AudioContext> {
-        let error = GameError::AudioError(String::from(
-            "Could not initialize sound system (for \
-             some reason)",
-        ));
+        let error = GameError::AudioError(String::from("Could not initialize sound system (for \
+             some reason)"));
         let e = rodio::get_default_endpoint().ok_or(error)?;
         Ok(AudioContext { endpoint: e })
     }
@@ -58,9 +57,10 @@ impl SoundData {
 
     }
 
+    /// Creates a SoundData from any Read object; this involves
+    /// copying it into a buffer.
     pub fn from_read<R>(reader: &mut R) -> GameResult<Self>
-    where
-        R: Read,
+        where R: Read
     {
         let mut buffer = Vec::new();
         reader.read_to_end(&mut buffer)?;
@@ -116,16 +116,16 @@ impl Source {
         let sink = rodio::Sink::new(&context.audio_context.endpoint);
         let cursor = io::Cursor::new(data);
         Ok(Source {
-            data: cursor,
-            sink: sink,
-        })
+               data: cursor,
+               sink: sink,
+           })
     }
 
     /// Plays the Source.
     pub fn play(&self) -> GameResult<()> {
         // Creating a new Decoder each time seems a little messy,
         // since it may do checking and data-type detection that is
-        // redundant, but it's fine for now.
+        // redundant, but it's not super expensive.
         // See https://github.com/ggez/ggez/issues/98 for discussion
         let cursor = self.data.clone();
         let decoder = rodio::Decoder::new(cursor)?;
@@ -133,29 +133,37 @@ impl Source {
         Ok(())
     }
 
+    /// Pauses playback
     pub fn pause(&self) {
         self.sink.pause()
     }
+
+    /// Resumes playback
     pub fn resume(&self) {
         self.sink.play()
     }
 
+    /// Stops playback
     pub fn stop(&self) {
         self.sink.stop()
     }
 
+    /// Gets the current volume
     pub fn volume(&self) -> f32 {
         self.sink.volume()
     }
 
+    /// Sets the current volume
     pub fn set_volume(&mut self, value: f32) {
         self.sink.set_volume(value)
     }
 
+    /// Get whether or not the source is paused
     pub fn paused(&self) -> bool {
         self.sink.is_paused()
     }
 
+    /// Get whether or not the source is playing
     pub fn playing(&self) -> bool {
         !self.paused() // && !self.stopped()
     }

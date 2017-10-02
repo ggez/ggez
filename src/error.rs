@@ -17,28 +17,41 @@ use zip;
 /// An enum containing all kinds of game framework errors.
 #[derive(Debug)]
 pub enum GameError {
+    /// An error in the filesystem layout
     FilesystemError(String),
+    /// An error in the config file
     ConfigError(String),
+    /// An error trying to parse a resource
     ResourceLoadError(String),
-    ResourceNotFound(String, Vec<std::path::PathBuf>),
+    /// Unable to find a resource; the Vec is the paths it searched for and associated errors
+    ResourceNotFound(String, Vec<(std::path::PathBuf, GameError)>),
+    /// Something went wrong in the renderer
     RenderError(String),
+    /// Something went wrong in the audio playback
     AudioError(String),
+    /// Something went wrong trying to create a window
     WindowError(gfx_window_sdl::InitError),
+    /// Something went wrong trying to read from a file
     IOError(std::io::Error),
+    /// Something went wrong trying to load/render a font
     FontError(String),
+    /// Something went wrong applying video settings.
     VideoError(String),
+    /// Something went compiling shaders
+    ShaderProgramError(gfx::shade::ProgramError),
+    /// Something else happened; this is generally a bug.
     UnknownError(String),
 }
 
 impl fmt::Display for GameError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            GameError::ResourceNotFound(ref s, ref paths) => write!(
-                f,
-                "Resource not found: {}, searched in paths {:?}",
-                s,
-                paths
-            ),
+            GameError::ResourceNotFound(ref s, ref paths) => {
+                write!(f,
+                       "Resource not found: {}, searched in paths {:?}",
+                       s,
+                       paths)
+            }
             GameError::ConfigError(ref s) => write!(f, "Config error: {}", s),
             GameError::ResourceLoadError(ref s) => write!(f, "Error loading resource: {}", s),
             _ => write!(f, "GameError {:?}", self),
@@ -59,6 +72,7 @@ impl Error for GameError {
             GameError::IOError(_) => "IO error",
             GameError::FontError(_) => "Font error",
             GameError::VideoError(_) => "Video error",
+            GameError::ShaderProgramError(_) => "Shader program error",
             GameError::UnknownError(_) => "Unknown error",
         }
     }
@@ -75,6 +89,7 @@ impl Error for GameError {
             GameError::IOError(ref e) => Some(e),
             GameError::FontError(ref _s) => None,
             GameError::VideoError(ref _s) => None,
+            GameError::ShaderProgramError(ref e) => Some(e),
             GameError::UnknownError(ref _s) => None,
         }
     }
@@ -181,12 +196,10 @@ impl From<image::ImageError> for GameError {
 
 impl From<gfx::PipelineStateError<std::string::String>> for GameError {
     fn from(e: gfx::PipelineStateError<std::string::String>) -> GameError {
-        let errstr = format!(
-            "Error constructing pipeline!\nThis should probably not be \
+        let errstr = format!("Error constructing pipeline!\nThis should probably not be \
              happening; it probably means an error in a shader or \
              something.\nError was: {:?}",
-            e
-        );
+                             e);
         GameError::VideoError(errstr)
     }
 }
@@ -199,11 +212,16 @@ impl From<gfx::CombinedError> for GameError {
 }
 
 impl<T> From<gfx::UpdateError<T>> for GameError
-where
-    T: fmt::Debug + fmt::Display + 'static,
+    where T: fmt::Debug + fmt::Display + 'static
 {
     fn from(e: gfx::UpdateError<T>) -> GameError {
         let errstr = format!("Buffer update error: {}", e);
         GameError::VideoError(errstr)
+    }
+}
+
+impl From<gfx::shade::ProgramError> for GameError {
+    fn from(e: gfx::shade::ProgramError) -> GameError {
+        GameError::ShaderProgramError(e)
     }
 }

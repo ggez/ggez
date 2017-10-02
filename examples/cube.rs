@@ -2,10 +2,7 @@ extern crate ggez;
 #[macro_use]
 extern crate gfx;
 extern crate gfx_device_gl;
-extern crate cgmath;
 
-
-use cgmath::{Deg, Matrix4, Point3, Vector3};
 use gfx::texture;
 use gfx::traits::FactoryExt;
 use gfx::Factory;
@@ -14,9 +11,14 @@ use ggez::conf;
 use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
-use std::time::Duration;
+use ggez::nalgebra as na;
+use std::env;
+use std::path;
 
-
+//type Matrix4 = na::Matrix4<f32>;
+type Isometry3 = na::Isometry3<f32>;
+type Point3 = na::Point3<f32>;
+type Vector3 = na::Vector3<f32>;
 type ColorFormat = gfx::format::Srgba8;
 type DepthFormat = gfx::format::DepthStencil;
 
@@ -51,16 +53,16 @@ impl Vertex {
     }
 }
 
-fn default_view() -> Matrix4<f32> {
-    Matrix4::look_at(
-        Point3::new(1.5f32, -5.0, 3.0),
-        Point3::new(0f32, 0.0, 0.0),
-        Vector3::unit_z(),
-    )
+fn default_view() -> Isometry3 {
+    // Eye location, target location, up-vector
+    Isometry3::look_at_rh(&Point3::new(1.5f32, -5.0, 3.0),
+                          &Point3::new(0f32, 0.0, 0.0),
+                          &Vector3::z_axis())
 }
 
 struct MainState {
-    text: graphics::Text,
+    text1: graphics::Text,
+    text2: graphics::Text,
     frames: usize,
     data: pipe::Data<gfx_device_gl::Resources>,
     pso: gfx::PipelineState<gfx_device_gl::Resources, pipe::Meta>,
@@ -71,8 +73,9 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> Self {
 
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48).unwrap();
-        let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 24).unwrap();
+        let text1 = graphics::Text::new(ctx, "WIP; doesn't actually successfully", &font).unwrap();
+        let text2 = graphics::Text::new(ctx, "draw a cube yet, sorry.", &font).unwrap();
 
         let gfx = &mut ctx.gfx_context;
         let color_view = gfx.get_color_view();
@@ -106,38 +109,36 @@ void main() {
     Target0 = mix(tex, vec4(0.0,0.0,0.0,0.0), blend*1.0);
 }"#;
 
-        let vertex_data = [
-            // top (0, 0, 1)
-            Vertex::new([-100, -100, 100], [0, 0]),
-            Vertex::new([100, -100, 100], [1, 0]),
-            Vertex::new([100, 100, 100], [1, 1]),
-            Vertex::new([-100, 100, 100], [0, 1]),
-            // bottom (0, 0, -1)
-            Vertex::new([-100, 100, -100], [1, 0]),
-            Vertex::new([100, 100, -100], [0, 0]),
-            Vertex::new([100, -100, -100], [0, 1]),
-            Vertex::new([-100, -100, -100], [1, 1]),
-            // right (1, 0, 0)
-            Vertex::new([100, -100, -100], [0, 0]),
-            Vertex::new([100, 100, -100], [1, 0]),
-            Vertex::new([100, 100, 100], [1, 1]),
-            Vertex::new([100, -100, 100], [0, 1]),
-            // left (-1, 0, 0)
-            Vertex::new([-100, -100, 100], [1, 0]),
-            Vertex::new([-100, 100, 100], [0, 0]),
-            Vertex::new([-100, 100, -100], [0, 1]),
-            Vertex::new([-100, -100, -100], [1, 1]),
-            // front (0, 1, 0)
-            Vertex::new([100, 100, -100], [1, 0]),
-            Vertex::new([-100, 100, -100], [0, 0]),
-            Vertex::new([-100, 100, 100], [0, 1]),
-            Vertex::new([100, 100, 100], [1, 1]),
-            // back (0, -1, 0)
-            Vertex::new([100, -100, 100], [0, 0]),
-            Vertex::new([-100, -100, 100], [1, 0]),
-            Vertex::new([-100, -100, -100], [1, 1]),
-            Vertex::new([100, -100, -100], [0, 1]),
-        ];
+        let vertex_data = [// top (0, 0, 1)
+                           Vertex::new([-100, -100, 100], [0, 0]),
+                           Vertex::new([100, -100, 100], [1, 0]),
+                           Vertex::new([100, 100, 100], [1, 1]),
+                           Vertex::new([-100, 100, 100], [0, 1]),
+                           // bottom (0, 0, -1)
+                           Vertex::new([-100, 100, -100], [1, 0]),
+                           Vertex::new([100, 100, -100], [0, 0]),
+                           Vertex::new([100, -100, -100], [0, 1]),
+                           Vertex::new([-100, -100, -100], [1, 1]),
+                           // right (1, 0, 0)
+                           Vertex::new([100, -100, -100], [0, 0]),
+                           Vertex::new([100, 100, -100], [1, 0]),
+                           Vertex::new([100, 100, 100], [1, 1]),
+                           Vertex::new([100, -100, 100], [0, 1]),
+                           // left (-1, 0, 0)
+                           Vertex::new([-100, -100, 100], [1, 0]),
+                           Vertex::new([-100, 100, 100], [0, 0]),
+                           Vertex::new([-100, 100, -100], [0, 1]),
+                           Vertex::new([-100, -100, -100], [1, 1]),
+                           // front (0, 1, 0)
+                           Vertex::new([100, 100, -100], [1, 0]),
+                           Vertex::new([-100, 100, -100], [0, 0]),
+                           Vertex::new([-100, 100, 100], [0, 1]),
+                           Vertex::new([100, 100, 100], [1, 1]),
+                           // back (0, -1, 0)
+                           Vertex::new([100, -100, 100], [0, 0]),
+                           Vertex::new([-100, -100, 100], [1, 0]),
+                           Vertex::new([-100, -100, -100], [1, 1]),
+                           Vertex::new([100, -100, -100], [0, 1])];
 
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let index_data: &[u16] = &[
@@ -159,16 +160,19 @@ void main() {
             )
             .unwrap();
 
-        let sinfo =
-            texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
+        let sinfo = texture::SamplerInfo::new(texture::FilterMethod::Bilinear,
+                                              texture::WrapMode::Clamp);
 
-        let pso = factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap();
+        let pso = factory
+            .create_pipeline_simple(vs, fs, pipe::new())
+            .unwrap();
 
-        let proj = cgmath::perspective(Deg(45.0f32), 4.0 / 3.0, 1.0, 10.0);
-
+        // Aspect ratio, FOV, znear, zfar
+        let proj = na::Perspective3::new(4.0 / 3.0, 3.14 / 4.0, 1.0, 10.0);
+        let transform = proj.as_matrix() * default_view().to_homogeneous();
         let data = pipe::Data {
             vbuf: vbuf,
-            transform: (proj * default_view()).into(),
+            transform: transform.into(),
             locals: factory.create_constant_buffer(1),
             color: (texture_view, factory.create_sampler(sinfo)),
             out_color: color_view,
@@ -178,7 +182,8 @@ void main() {
         let encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
         MainState {
-            text: text,
+            text1: text1,
+            text2: text2,
             frames: 0,
             data: data,
             pso: pso,
@@ -190,7 +195,7 @@ void main() {
 
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         Ok(())
     }
 
@@ -206,11 +211,12 @@ impl event::EventHandler for MainState {
         }
 
 
-        let dest_point = graphics::Point::new(
-            self.text.width() as f32 / 2.0 + 10.0,
-            self.text.height() as f32 / 2.0 + 10.0,
-        );
-        graphics::draw(ctx, &self.text, dest_point, 0.0)?;
+        let dest_point1 = graphics::Point2::new(self.text1.width() as f32 / 2.0 + 10.0,
+                                                self.text1.height() as f32 / 2.0 + 10.0);
+        let dest_point2 = graphics::Point2::new(self.text2.width() as f32 / 2.0 + 10.0,
+                                                self.text2.height() as f32 / 2.0 + 50.0);
+        graphics::draw(ctx, &self.text1, dest_point1, 0.0)?;
+        graphics::draw(ctx, &self.text2, dest_point2, 0.0)?;
         graphics::present(ctx);
         self.frames += 1;
         if (self.frames % 100) == 0 {
@@ -222,7 +228,16 @@ impl event::EventHandler for MainState {
 
 pub fn main() {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("cube", "ggez", c).unwrap();
+
+    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so 
+    // we we look in the cargo project for files.
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        ctx.filesystem.mount(&path, true);
+    }
+
     let state = &mut MainState::new(ctx);
     if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);

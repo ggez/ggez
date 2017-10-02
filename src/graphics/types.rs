@@ -1,53 +1,21 @@
-use sdl2;
+pub use nalgebra as na;
 
-/// A simple 2D point.
-#[derive(Copy, Clone, PartialEq, Debug, Default)]
-pub struct Point {
-    pub x: f32,
-    pub y: f32,
+/// A 2 dimensional point representing a location
+pub type Point2 = na::Point2<f32>;
+/// A 2 dimensional vector representing an offeset of a location
+pub type Vector2 = na::Vector2<f32>;
+/// A 4 dimensional matrix representing an arbitrary 3d transformation
+pub type Matrix4 = na::Matrix4<f32>;
+
+/// Turns a point into an array of floats
+pub fn pt2arr(pt: Point2) -> [f32; 2] {
+    [pt.x, pt.y]
 }
 
-impl Point {
-    pub fn new(x: f32, y: f32) -> Self {
-        Point { x: x, y: y }
-    }
-
-    /// Creates a new `Point` at coordinates 0,0.
-    pub fn zero() -> Self {
-        Self::new(0.0, 0.0)
-    }
+/// Turns an array of floats into a point.
+pub fn arr2pt(pt: [f32; 2]) -> Point2 {
+    Point2::new(pt[0], pt[1])
 }
-
-
-impl From<Point> for [f32; 2] {
-    fn from(p: Point) -> [f32; 2] {
-        [p.x, p.y]
-    }
-}
-
-
-impl From<[f32; 2]> for Point {
-    fn from(p: [f32; 2]) -> Point {
-        Point::new(p[0], p[1])
-    }
-}
-
-#[cfg(feature = "mint-exports")]
-extern crate mint;
-#[cfg(feature = "mint-exports")]
-impl From<mint::Point2<f32>> for Point {
-    fn from(p: mint::Point2<f32>) -> Point {
-        Point::new(p.x, p.y)
-    }
-}
-
-#[cfg(feature = "mint-exports")]
-impl From<Point> for mint::Point2<f32> {
-    fn from(p: Point) -> mint::Point2<f32> {
-        mint::Point2 { x: p.x, y: p.y }
-    }
-}
-
 
 /// A simple 2D rectangle.
 ///
@@ -56,13 +24,18 @@ impl From<Point> for mint::Point2<f32> {
 /// is generally also how OpenGL tends to think about the world.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Rect {
+    /// X coordinate of the center of the rect.
     pub x: f32,
+    /// Y coordinate of the center of the rect.
     pub y: f32,
+    /// Total width of the rect
     pub w: f32,
+    /// Total height of the rect.
     pub h: f32,
 }
 
 impl Rect {
+    /// Create a new rect.
     pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
         Rect {
             x: x,
@@ -83,6 +56,7 @@ impl Rect {
         }
     }
 
+    /// Create a new rect from i32 coordinates.
     pub fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
         Rect {
             x: x as f32,
@@ -102,12 +76,9 @@ impl Rect {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
-    /// Gets the `Rect`'s x and y coordinates as a `Point`.
-    pub fn point(&self) -> Point {
-        Point {
-            x: self.x,
-            y: self.y,
-        }
+    /// Gets the `Rect`'s x and y coordinates as a `Point2`.
+    pub fn point(&self) -> Point2 {
+        Point2::new(self.x, self.y)
     }
 
     /// Returns the left edge of the `Rect`
@@ -149,12 +120,17 @@ impl From<Rect> for [f32; 4] {
 /// A RGBA color.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Color {
+    /// Red component
     pub r: f32,
+    /// Green component
     pub g: f32,
+    /// Blue component
     pub b: f32,
+    /// Alpha component
     pub a: f32,
 }
 
+/// White
 pub const WHITE: Color = Color {
     r: 1.0,
     g: 1.0,
@@ -163,6 +139,7 @@ pub const WHITE: Color = Color {
 };
 
 
+/// Black
 pub const BLACK: Color = Color {
     r: 0.0,
     g: 0.0,
@@ -171,6 +148,7 @@ pub const BLACK: Color = Color {
 };
 
 impl Color {
+    /// Create a new Color from components.
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color {
             r: r,
@@ -251,14 +229,18 @@ impl From<Color> for u32 {
 /// filled or as an outline.
 #[derive(Debug, Copy, Clone)]
 pub enum DrawMode {
-    Line,
+    /// A stroked line with the given width
+    Line(f32),
+    /// A filled shape.
     Fill,
 }
 
 /// Specifies what blending method to use when scaling up/down images.
 #[derive(Debug, Copy, Clone)]
 pub enum FilterMode {
+    /// Use linear interpolation
     Linear,
+    /// Use nearest-neighbor interpolation
     Nearest,
 }
 
@@ -287,59 +269,6 @@ impl From<FilterMode> for FilterMethod {
 /// Specifies how to wrap textures.
 pub type WrapMode = texture::WrapMode;
 
-
-pub type FullscreenType = sdl2::video::FullscreenType;
-
-/// A builder structure containing flags for defining window settings.
-#[derive(Debug, Copy, Clone)]
-pub struct WindowMode {
-    pub borderless: bool,
-    pub fullscreen_type: FullscreenType,
-    pub vsync: bool,
-    /// Minimum dimensions for resizable windows; (0, 0) means no limit
-    pub min_dimensions: (u32, u32),
-    /// Maximum dimensions for resizable windows; (0, 0) means no limit
-    pub max_dimensions: (u32, u32),
-}
-
-impl Default for WindowMode {
-    fn default() -> Self {
-        Self {
-            borderless: false,
-            fullscreen_type: sdl2::video::FullscreenType::Off,
-            vsync: true,
-            min_dimensions: (0, 0),
-            max_dimensions: (0, 0),
-        }
-    }
-}
-
-impl WindowMode {
-    pub fn borderless(mut self, borderless: bool) -> Self {
-        self.borderless = borderless;
-        self
-    }
-
-    pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
-        self.fullscreen_type = fullscreen_type;
-        self
-    }
-
-    pub fn vsync(mut self, vsync: bool) -> Self {
-        self.vsync = vsync;
-        self
-    }
-
-    pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.min_dimensions = (width, height);
-        self
-    }
-
-    pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.max_dimensions = (width, height);
-        self
-    }
-}
 
 
 #[cfg(test)]

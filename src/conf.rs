@@ -9,68 +9,189 @@ use toml;
 
 use GameResult;
 
+/// Possible fullscreen modes.
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum FullscreenType {
+    /// Windowed mode
+    Off,
+    /// Real fullscreen
+    True,
+    /// Windowed fullscreen, generally preferred over real fullscreen
+    /// these days 'cause it plays nicer with multiple monitors.
+    Desktop,
+}
+
+use sdl2::video::FullscreenType as SdlFullscreenType;
+impl From<SdlFullscreenType> for FullscreenType {
+    fn from(other: SdlFullscreenType) -> Self {
+        match other {
+            SdlFullscreenType::Off => FullscreenType::Off,
+            SdlFullscreenType::True => FullscreenType::True,
+            SdlFullscreenType::Desktop => FullscreenType::Desktop,
+        }
+    }
+}
+
+impl From<FullscreenType> for SdlFullscreenType {
+    fn from(other: FullscreenType) -> Self {
+        match other {
+            FullscreenType::Off => SdlFullscreenType::Off,
+            FullscreenType::True => SdlFullscreenType::True,
+            FullscreenType::Desktop => SdlFullscreenType::Desktop,
+        }
+    }
+}
+
+/// A builder structure containing flags for defining window settings.
+///
+/// Defaults:
+///
+/// ```rust,ignore
+/// WindowMode {
+///     borderless: false,
+///     resizable: false,
+///     fullscreen_type: FullscreenType::Off,
+///     vsync: true,
+///     min_dimensions: (0, 0),
+///     max_dimensions: (0, 0),
+///     samples: NumSamples::One,
+/// }
+/// ```
+#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WindowMode {
+    /// Whether or not to show window decorations
+    #[default = r#"false"#]
+    pub borderless: bool,
+    /// Whether or not the window is resizable
+    #[default = r#"false"#]
+    pub resizable: bool,
+    /// Fullscreen type
+    #[default = r#"FullscreenType::Off"#]
+    pub fullscreen_type: FullscreenType,
+    /// Whether or not to enable vsync
+    #[default = r#"true"#]
+    pub vsync: bool,
+    /// Minimum width for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub min_width: u32,
+    /// Minimum height for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub min_height: u32,
+    /// Maximum width for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub max_width: u32,
+    /// Maximum height for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub max_height: u32,
+    /// Number of samples for multisample anti-aliasing
+    #[default = r#"NumSamples::One"#]
+    pub samples: NumSamples,
+}
+
+/// The possible number of samples for multisample anti-aliasing
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum NumSamples {
+    /// One sample
+    One = 1,
+    /// Two samples
+    Two = 2,
+    /// Four samples
+    Four = 4,
+    /// Eight samples
+    Eight = 8,
+    /// Sixteen samples
+    Sixteen = 16,
+}
+
+impl NumSamples {
+    /// Create a NumSamples from a number.
+    /// Returns None if i is invalid.
+    pub fn from_u32(i: u32) -> Option<NumSamples> {
+        match i {
+            1 => Some(NumSamples::One),
+            2 => Some(NumSamples::Two),
+            4 => Some(NumSamples::Four),
+            8 => Some(NumSamples::Eight),
+            16 => Some(NumSamples::Sixteen),
+            _ => None,
+        }
+    }
+}
+
+impl WindowMode {
+    /// Set borderless
+    pub fn borderless(mut self, borderless: bool) -> Self {
+        self.borderless = borderless;
+        self
+    }
+
+
+    /// Set the fullscreen type
+    pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
+        self.fullscreen_type = fullscreen_type;
+        self
+    }
+
+    /// Set vsync
+    pub fn vsync(mut self, vsync: bool) -> Self {
+        self.vsync = vsync;
+        self
+    }
+
+    /// Set minimum window dimensions for windowed mode
+    pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.min_width = width;
+        self.min_height = height;
+        self
+    }
+
+    /// Set maximum window dimensions for windowed mode
+    pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.max_width = width;
+        self.max_height = height;
+        self
+    }
+
+    /// Set number of samples for MSAA
+    pub fn samples(mut self, samples: NumSamples) -> Self {
+        self.samples = samples;
+        self
+    }
+}
+
+
 /// A structure containing configuration data
 /// for the game engine.
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+///
+/// Defaults:
+///
+/// ```rust,ignore
+/// Conf {
+///     window_title: "An easy, good game"
+///     window_icon: ""
+///     window_height: 600
+///     window_width: 800
+///     vsync: true
+/// }
+/// ```
+#[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault)]
 pub struct Conf {
     /// The window title.
+    #[default = r#""An easy, good game".to_owned()"#]
     pub window_title: String,
     /// A file path to the window's icon.
     /// It is rooted in the `resources` directory (see the `filesystem` module for details),
     /// and an empty string results in a blank/default icon.
+    #[default = r#""".to_owned()"#]
     pub window_icon: String,
     /// The window's height
+    #[default = "600"]
     pub window_height: u32,
     /// The window's width
+    #[default = "800"]
     pub window_width: u32,
-    /// Whether or not the graphics draw rate should be
-    /// synchronized with the monitor's draw rate.
-    pub vsync: bool,
-    pub resizable: bool,
-    /* To implement still.
-     * window_borderless: bool,
-     * window_resizable: bool,
-     * window_fullscreen: bool,
-     *
-     * Modules to enable
-     * modules_audio: bool,
-     * modules_event: bool,
-     * modules_graphics: bool,
-     * modules_image: bool,
-     * modules_joystic: bool,
-     * modules_keyboard: bool,
-     * modules_mouse: bool,
-     * modules_sound: bool,
-     * modules_system: bool,
-     * modules_timer: bool,
-     * modules_video: bool,
-     * modules_window: bool,
-     * modules_thread: bool, */
-}
-
-impl Default for Conf {
-    /// Create a new Conf with some vague defaults.
-    ///
-    /// ```rust,ignore
-    /// Conf {
-    ///     window_title: "An easy, good game"
-    ///     window_icon: ""
-    ///     window_height: 600
-    ///     window_width: 800
-    ///     vsync: true
-    /// }
-    /// ```
-    fn default() -> Self {
-        Conf {
-            window_title: String::from("An easy, good game"),
-            window_icon: String::from(""),
-            window_height: 600,
-            window_width: 800,
-            vsync: true,
-            resizable: false,
-        }
-
-    }
+    /// Window setting information
+    pub window_mode: WindowMode,
 }
 
 impl Conf {
@@ -109,7 +230,6 @@ mod tests {
         let c1 = conf::Conf::new();
         let mut writer = Vec::new();
         let _c = c1.to_toml_file(&mut writer).unwrap();
-        //println!("{}", String::from_utf8_lossy(&writer));
         let mut reader = writer.as_slice();
         let c2 = conf::Conf::from_toml_file(&mut reader).unwrap();
         assert_eq!(c1, c2);

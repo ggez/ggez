@@ -9,7 +9,11 @@ layout (std140) uniform Globals {
     vec4 u_Color;
 };
 
+layout (std140) uniform Dim {
+    float u_Rate;
+};
+
 void main() {
     //Target0 = vec4(1.0, 1.0, 1.0, 1.0);
-    Target0 = texture(t_Texture, v_Uv) * u_Color;
+    Target0 = texture(t_Texture, v_Uv) * u_Color * u_Rate;
 }

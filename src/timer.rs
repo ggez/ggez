@@ -27,8 +27,7 @@ use std::thread;
 /// things.
 #[derive(Debug, Clone)]
 struct LogBuffer<T>
-where
-    T: Clone,
+    where T: Clone
 {
     head: usize,
     size: usize,
@@ -36,8 +35,7 @@ where
 }
 
 impl<T> LogBuffer<T>
-where
-    T: Clone + Copy,
+    where T: Clone + Copy
 {
     fn new(size: usize, init_val: T) -> LogBuffer<T> {
         let mut v = Vec::with_capacity(size);
@@ -81,6 +79,7 @@ pub struct TimeContext {
     last_instant: time::Instant,
     frame_durations: LogBuffer<time::Duration>,
     residual_update_dt: time::Duration,
+    frame_count: usize,
 }
 
 
@@ -95,6 +94,7 @@ impl TimeContext {
             last_instant: time::Instant::now(),
             frame_durations: LogBuffer::new(TIME_LOG_FRAMES, time::Duration::new(0, 0)),
             residual_update_dt: time::Duration::from_secs(0),
+            frame_count: 0,
         }
     }
 
@@ -108,6 +108,9 @@ impl TimeContext {
         let time_since_last = now - self.last_instant;
         self.frame_durations.push(time_since_last);
         self.last_instant = now;
+        self.frame_count += 1;
+
+        self.residual_update_dt += time_since_last;
     }
 }
 
@@ -164,7 +167,7 @@ pub fn f64_to_duration(t: f64) -> time::Duration {
 /// frame should be to match the given fps.
 ///
 /// Approximately.
-fn fps_as_duration(fps: u64) -> time::Duration {
+fn fps_as_duration(fps: u32) -> time::Duration {
     let target_dt_seconds = 1.0 / (fps as f64);
     f64_to_duration(target_dt_seconds)
 }
@@ -183,16 +186,16 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
     time::Instant::now() - tc.init_instant
 }
 
+/// BUGGO: Fix docs plz
 /// This function will return true if the time since the
 /// last `update()` call has been equal to or greater to
 /// the update FPS indicated by the `desired_update_rate`.
 /// It keeps track of fractional frames, and does not
 /// do any sleeping.
-pub fn check_update_time(ctx: &mut Context, desired_update_rate: u64) -> bool {
-    let dt = get_delta(ctx);
+pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
     let timedata = &mut ctx.timer_context;
-    let target_dt = fps_as_duration(desired_update_rate);
-    timedata.residual_update_dt += dt;
+
+    let target_dt = fps_as_duration(target_fps);
     if timedata.residual_update_dt > target_dt {
         timedata.residual_update_dt -= target_dt;
         true
@@ -201,37 +204,25 @@ pub fn check_update_time(ctx: &mut Context, desired_update_rate: u64) -> bool {
     }
 }
 
-/// This function will *attempt* to sleep the current
-/// thread until the beginning of the next frame should
-/// occur, to reach the desired FPS.
-///
-/// This is not an especially precise way to do timing;
-/// see the `astroblasto` example for how to do it better.
-/// However, this is very convenient for prototyping,
-/// so I'm leaving it in.
-pub fn sleep_until_next_frame(ctx: &Context, desired_fps: u32) {
-    // We assume we'll never sleep more than a second!
-    // Using an integer FPS target helps enforce this.
-    assert!(desired_fps > 0);
-    let tc = &ctx.timer_context;
-    let fps_delay = 1.0 / (desired_fps as f64);
-    let nanos_per_frame = fps_delay * 1e9;
-    let duration_per_frame = time::Duration::new(0, nanos_per_frame as u32);
-    let now = time::Instant::now();
-    let time_spent_this_frame = now - tc.last_instant;
-    if time_spent_this_frame >= duration_per_frame {
-        // We don't even yield to the OS in this case
-        ()
-    } else {
-        let duration_to_sleep = duration_per_frame - time_spent_this_frame;
-        // println!("Sleeping for {:?}", duration_to_sleep);
-        thread::sleep(duration_to_sleep);
-    }
-}
-
 /// Pauses the current thread for the target duration.
 /// Just calls `std::thread::sleep()` so it's as accurate
 /// as that is.
 pub fn sleep(duration: time::Duration) {
     thread::sleep(duration);
+}
+
+/// Yields the current timeslice to the OS.
+///
+/// This just calls std::thread::yield_now() but it's
+/// handy to have here.
+pub fn yield_now() {
+    thread::yield_now();
+}
+
+/// Gets the number of times the game has gone through its event loop.
+///
+/// Specifically, the number of times that TimeContext::tick() has been
+/// called by it.
+pub fn get_ticks(ctx: &Context) -> usize {
+    ctx.timer_context.frame_count
 }

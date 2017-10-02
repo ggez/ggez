@@ -4,6 +4,22 @@
  * Added `mouse` module with some utility functions
  * Added some utility functions to query window size
  * Fixed some bugs with type visibility and directory paths.
+ * Sprite batching implemented by termhn!
+ * Added mesh builders allowing you to build complex meshes simply.
+ * Removed `get_line_width()` and `set_line_width()` and made line widths parameters where necessary
+ * Did the same for `get/set_point_size()`
+ * Integrated nalgebra to provide point and vector types.
+ * Removed inaccurate `timer::sleep_until_next_frame()`, added `timer::yield_now()`.
+ * Added MSAA (thanks termhn!)
+ * Added graphics_settings example to show hot to play with graphics modes
+ * Made the render pipeline just use matrices instead of separate transform elements
+ * SHADERS!  Woo, thanks nlordell!
+ * Refactored EventHandler interface, again
+ * Altered timestep functions to be nicer and made examples use them consistently
+ * Added `Filesystem::mount()` function and made examples use it; they no longer need the `cargo-resource-root` feature
+ * Added filesystem and graphics setting examples
+ * Fixed a few smallish filesystem bugs
+ * Updated to Lyon 0.8, which brings some bugfixes
 
 # 0.3.3
 

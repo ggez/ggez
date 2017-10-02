@@ -88,9 +88,9 @@
 //! The goal is to eventually have ggez be pure Rust, but we're not there
 //! yet.
 
-//#![deny(missing_docs)]
+#![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
-    
+
 
 
 
@@ -101,7 +101,6 @@ extern crate gfx;
 extern crate gfx_device_gl;
 extern crate gfx_window_sdl;
 extern crate image;
-extern crate rand;
 extern crate rodio;
 #[macro_use]
 extern crate serde_derive;
@@ -110,6 +109,9 @@ extern crate toml;
 extern crate zip;
 extern crate lyon;
 extern crate euclid;
+#[macro_use]
+extern crate smart_default;
+pub extern crate nalgebra;
 
 pub mod audio;
 pub mod conf;

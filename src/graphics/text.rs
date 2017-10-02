@@ -1,3 +1,4 @@
+use std::cmp;
 use std::fmt;
 use std::path;
 use std::collections::BTreeMap;
@@ -12,19 +13,26 @@ use super::*;
 /// Can be created from a .ttf file or from an image (bitmap fonts).
 #[derive(Clone)]
 pub enum Font {
+    /// A truetype font
     TTFFont {
+        /// The actual font data
         font: rusttype::Font<'static>,
+        /// The size of the font
         points: u32,
+        /// Scale information for the font
         scale: rusttype::Scale,
     },
+    /// A bitmap font.
     BitmapFont {
-        // Width, height and data for the original glyph image.
-        // This is always going to be RGBA.
+        /// The original glyph image
         bytes: Vec<u8>,
+        /// Width of the image
         width: usize,
+        /// Height of the image (same as the height of a glyph)
         height: usize,
-        // Glyph to index mapping
+        /// Glyph to index mapping
         glyphs: BTreeMap<char, usize>,
+        /// Width of the glyph
         glyph_width: usize,
     },
 }
@@ -32,11 +40,8 @@ pub enum Font {
 impl Font {
     /// Load a new TTF font from the given file.
     pub fn new<P>(context: &mut Context, path: P, points: u32) -> GameResult<Font>
-    where
-        P: AsRef<path::Path> + fmt::Debug,
+        where P: AsRef<path::Path> + fmt::Debug
     {
-        // let mut buffer: Vec<u8> = Vec::new();
-        // let mut rwops = util::rwops_from_path(context, path, &mut buffer)?;
         let mut stream = context.filesystem.open(path.as_ref())?;
         let mut buf = Vec::new();
         stream.read_to_end(&mut buf)?;
@@ -51,32 +56,29 @@ impl Font {
     /// Loads a new TTF font from data copied out of the given buffer.
     pub fn from_bytes(name: &str, bytes: &[u8], points: u32, dpi: (f32, f32)) -> GameResult<Font> {
         let collection = rusttype::FontCollection::from_bytes(bytes.to_vec());
-        let font_err = GameError::ResourceLoadError(format!(
-            "Could not load font collection for \
+        let font_err = GameError::ResourceLoadError(format!("Could not load font collection for \
              font {:?}",
-            name
-        ));
+                                                            name));
         let font = collection.into_font().ok_or(font_err)?;
         let (x_dpi, y_dpi) = dpi;
         // println!("DPI: {}, {}", x_dpi, y_dpi);
         let scale = display_independent_scale(points, x_dpi, y_dpi);
 
         Ok(Font::TTFFont {
-            font: font,
-            points: points,
-            scale: scale,
-        })
+               font: font,
+               points: points,
+               scale: scale,
+           })
     }
 
     /// Loads an `Image` and uses it to create a new bitmap font
     /// The `Image` is a 1D list of glyphs, which maybe isn't
     /// super ideal but should be fine.
     /// The `glyphs` string is the characters in the image from left to right.
-    pub fn new_bitmap<P: AsRef<path::Path>>(
-        context: &mut Context,
-        path: P,
-        glyphs: &str,
-    ) -> GameResult<Font> {
+    pub fn new_bitmap<P: AsRef<path::Path>>(context: &mut Context,
+                                            path: P,
+                                            glyphs: &str)
+                                            -> GameResult<Font> {
         let img = {
             let mut buf = Vec::new();
             let mut reader = context.filesystem.open(path)?;
@@ -93,22 +95,19 @@ impl Font {
             glyphs_map.insert(c, i * glyph_width);
         }
         Ok(Font::BitmapFont {
-            bytes: img.into_vec(),
-            width: image_width as usize,
-            height: image_height as usize,
-            glyphs: glyphs_map,
-            glyph_width: glyph_width,
-        })
+               bytes: img.into_vec(),
+               width: image_width as usize,
+               height: image_height as usize,
+               glyphs: glyphs_map,
+               glyph_width: glyph_width,
+           })
     }
 
     /// Returns a baked-in default font: currently DejaVuSerif.ttf
     /// Note it does create a new `Font` object with every call.
     pub fn default_font() -> GameResult<Self> {
         let size = 16;
-        let buf = include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/resources/DejaVuSerif.ttf"
-        ));
+        let buf = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSerif.ttf"));
         // BUGGO: fix DPI.  Get from Context?  If we do that we can basically
         // just make Context always keep the default Font itself... hmm.
         Font::from_bytes("default", &buf[..], size, (75.0, 75.0))
@@ -138,13 +137,11 @@ impl Font {
     pub fn get_width(&self, text: &str) -> usize {
         match *self {
             Font::BitmapFont { width, .. } => width * text.len(),
-            Font::TTFFont {
-                ref font, scale, ..
-            } => {
+            Font::TTFFont { ref font, scale, .. } => {
                 let v_metrics = font.v_metrics(scale);
                 let offset = rusttype::point(0.0, v_metrics.ascent);
-                let glyphs: Vec<rusttype::PositionedGlyph> =
-                    font.layout(text, scale, offset).collect();
+                let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset)
+                    .collect();
                 text_width(&glyphs) as usize
             }
         }
@@ -242,20 +239,20 @@ fn text_width(glyphs: &[rusttype::PositionedGlyph]) -> f32 {
         .iter()
         .rev()
         .filter_map(|g| {
-            g.pixel_bounding_box().map(|b| {
-                b.min.x as f32 + g.unpositioned().h_metrics().advance_width
-            })
-        })
+                        g.pixel_bounding_box()
+                            .map(|b| {
+                                     b.min.x as f32 + g.unpositioned().h_metrics().advance_width
+                                 })
+                    })
         .next()
         .unwrap_or(0.0)
 }
 
-fn render_ttf(
-    context: &mut Context,
-    text: &str,
-    font: &rusttype::Font<'static>,
-    scale: rusttype::Scale,
-) -> GameResult<Text> {
+fn render_ttf(context: &mut Context,
+              text: &str,
+              font: &rusttype::Font<'static>,
+              scale: rusttype::Scale)
+              -> GameResult<Text> {
     // Ripped almost wholesale from
     // https://github.com/dylanede/rusttype/blob/master/examples/simple.rs
 
@@ -266,20 +263,12 @@ fn render_ttf(
     // `layout()` turns an abstract glyph, which contains no concrete
     // size or position information, into a PositionedGlyph, which does.
     let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
-    let text_width_pixels = text_width(&glyphs).ceil() as usize;
-    // let text_width_pixels = glyphs
-    //     .iter()
-    //     .rev()
-    //     .filter_map(|g| {
-    //                     g.pixel_bounding_box()
-    //                         .map(|b| {
-    //                                  b.min.x as f32 + g.unpositioned().h_metrics().advance_width
-    //                              })
-    //                 })
-    //     .next()
-    //     .unwrap_or(0.0)
-    //     .ceil() as usize;
-    // // Make an array for our rendered bitmap
+    // If the string is empty or only whitespace, we end up trying to create a 0-width
+    // texture which is invalid.  Instead we create a texture 1 texel wide, with everything
+    // set to zero, which probably isn't ideal but is 100% consistent and doesn't require
+    // special-casing things like get_filter().
+    // See issue #109
+    let text_width_pixels = cmp::max(text_width(&glyphs).ceil() as usize, 1);
     let bytes_per_pixel = 4;
     let mut pixel_data = vec![0; text_width_pixels * text_height_pixels * bytes_per_pixel];
     let pitch = text_width_pixels * bytes_per_pixel;
@@ -295,8 +284,7 @@ fn render_ttf(
                 let y = y as i32 + bb.min.y;
                 // There's still a possibility that the glyph clips the boundaries of the bitmap
                 if x >= 0 && x < text_width_pixels as i32 && y >= 0 &&
-                    y < text_height_pixels as i32
-                {
+                   y < text_height_pixels as i32 {
                     let x = x as usize * bytes_per_pixel;
                     let y = y as usize;
                     pixel_data[(x + y * pitch)] = 255;
@@ -308,24 +296,19 @@ fn render_ttf(
         }
     }
 
-    // println!("Creating text {}, {}x{}: {:?}",
-    //text, text_width_pixels, text_height_pixels, pixel_data);
-
     // Copy the bitmap into an image, and we're basically done!
     assert!(text_width_pixels < u16::MAX as usize);
     assert!(text_height_pixels < u16::MAX as usize);
-    let image = Image::from_rgba8(
-        context,
-        text_width_pixels as u16,
-        text_height_pixels as u16,
-        &pixel_data,
-    )?;
+    let image = Image::from_rgba8(context,
+                                  text_width_pixels as u16,
+                                  text_height_pixels as u16,
+                                  &pixel_data)?;
 
     let text_string = text.to_string();
     Ok(Text {
-        texture: image,
-        contents: text_string,
-    })
+           texture: image,
+           contents: text_string,
+       })
 
 }
 
@@ -333,16 +316,14 @@ fn render_ttf(
 /// Does no bounds checking or anything; if you feed it invalid bounds it will just panic.
 /// Generally, you shouldn't need to use this directly.
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
-fn blit(
-    dst: &mut [u8],
-    dst_dims: (usize, usize),
-    dst_point: (usize, usize),
-    src: &[u8],
-    src_dims: (usize, usize),
-    src_point: (usize, usize),
-    rect_size: (usize, usize),
-    pitch: usize,
-) {
+fn blit(dst: &mut [u8],
+        dst_dims: (usize, usize),
+        dst_point: (usize, usize),
+        src: &[u8],
+        src_dims: (usize, usize),
+        src_point: (usize, usize),
+        rect_size: (usize, usize),
+        pitch: usize) {
     // The rect properties are all f32's; we truncate them down to integers.
     let area_row_width = rect_size.0 * pitch;
     let src_row_width = src_dims.0 * pitch;
@@ -365,18 +346,18 @@ fn blit(
     }
 }
 
-fn render_bitmap(
-    context: &mut Context,
-    text: &str,
-    bytes: &[u8],
-    width: usize,
-    height: usize,
-    glyphs_map: &BTreeMap<char, usize>,
-    glyph_width: usize,
-) -> GameResult<Text> {
+fn render_bitmap(context: &mut Context,
+                 text: &str,
+                 bytes: &[u8],
+                 width: usize,
+                 height: usize,
+                 glyphs_map: &BTreeMap<char, usize>,
+                 glyph_width: usize)
+                 -> GameResult<Text> {
     let text_length = text.len();
     let glyph_height = height;
-    let buf_len = text_length * glyph_width * glyph_height * 4;
+    // Same at-least-one-pixel-wide constraint here as with TTF fonts.
+    let buf_len = cmp::max(text_length * glyph_width * glyph_height * 4, 1);
     let mut dest_buf = Vec::with_capacity(buf_len);
     dest_buf.resize(buf_len, 0u8);
     for (i, c) in text.chars().enumerate() {
@@ -385,30 +366,26 @@ fn render_bitmap(
         let source_offset = *glyphs_map.get(&c).ok_or(error)?;
         let dest_offset = glyph_width * i;
         // println!("Blitting {:?} to {:?}", source_offset, dest_offset);
-        blit(
-            &mut dest_buf,
-            (text_length * glyph_width, glyph_height),
-            (dest_offset, 0),
-            bytes,
-            (width, height),
-            (source_offset, 0),
-            (glyph_width, glyph_height),
-            4,
-        );
+        blit(&mut dest_buf,
+             (text_length * glyph_width, glyph_height),
+             (dest_offset, 0),
+             bytes,
+             (width, height),
+             (source_offset, 0),
+             (glyph_width, glyph_height),
+             4);
     }
     // println!("width {}, height {}", text_length * glyph_width, glyph_height);
-    let image = Image::from_rgba8(
-        context,
-        (text_length * glyph_width) as u16,
-        glyph_height as u16,
-        &dest_buf,
-    )?;
+    let image = Image::from_rgba8(context,
+                                  (text_length * glyph_width) as u16,
+                                  glyph_height as u16,
+                                  &dest_buf)?;
     let text_string = text.to_string();
 
     Ok(Text {
-        texture: image,
-        contents: text_string,
-    })
+           texture: image,
+           contents: text_string,
+       })
 }
 
 
@@ -416,9 +393,7 @@ impl Text {
     /// Renders a new `Text` from the given `Font`
     pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<Text> {
         match *font {
-            Font::TTFFont {
-                font: ref f, scale, ..
-            } => render_ttf(context, text, f, scale),
+            Font::TTFFont { font: ref f, scale, .. } => render_ttf(context, text, f, scale),
             Font::BitmapFont {
                 ref bytes,
                 width,
@@ -470,13 +445,11 @@ impl Drawable for Text {
 
 impl fmt::Debug for Text {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "<Text: {}x{}, {:p}>",
-            self.texture.width,
-            self.texture.height,
-            &self
-        )
+        write!(f,
+               "<Text: {}x{}, {:p}>",
+               self.texture.width,
+               self.texture.height,
+               &self)
 
     }
 }
@@ -491,7 +464,8 @@ mod tests {
                     1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9,
                     1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 1, 0,
                     1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-                    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0][..];
+                    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                       [..];
         assert_eq!(src.len(), 25 * 5);
 
         // Test just blitting the whole thing
@@ -537,11 +511,14 @@ mod tests {
             "me attention meow."
         ];
 */
-        let wrapped_text =
-            vec!["Walk on car leaving trail of paw", "prints on hood and windshield",
-                 "sniff other cat\'s butt and hang jaw", "half open thereafter for give",
-                 "attitude. Annoy kitten", "brother with poking. Mrow toy",
-                 "mouse squeak roll over. Human", "give me attention meow."];
+        let wrapped_text = vec!["Walk on car leaving trail of paw",
+                                "prints on hood and windshield",
+                                "sniff other cat\'s butt and hang jaw",
+                                "half open thereafter for give",
+                                "attitude. Annoy kitten",
+                                "brother with poking. Mrow toy",
+                                "mouse squeak roll over. Human",
+                                "give me attention meow."];
 
         assert_eq!(&v, &wrapped_text);
     }
@@ -564,12 +541,10 @@ mod tests {
         assert!(len < wrap_length);
         for line in &v {
             let t = Text::new(ctx, line, &font).unwrap();
-            println!(
-                "Width is claimed to be <= {}, should be <= {}, is {}",
-                len,
-                wrap_length,
-                t.width()
-            );
+            println!("Width is claimed to be <= {}, should be <= {}, is {}",
+                     len,
+                     wrap_length,
+                     t.width());
             // Why does this not match?  x_X
             //assert!(t.width() as usize <= len);
             assert!(t.width() as usize <= wrap_length);

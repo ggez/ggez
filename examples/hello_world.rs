@@ -3,7 +3,8 @@ use ggez::conf;
 use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
-use std::time::Duration;
+use std::env;
+use std::path;
 
 // First we make a structure to contain the game's state
 struct MainState {
@@ -31,17 +32,15 @@ impl MainState {
 
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
         // Drawables are drawn from their center.
-        let dest_point = graphics::Point::new(
-            self.text.width() as f32 / 2.0 + 10.0,
-            self.text.height() as f32 / 2.0 + 10.0,
-        );
+        let dest_point = graphics::Point2::new(self.text.width() as f32 / 2.0 + 10.0,
+                                               self.text.height() as f32 / 2.0 + 10.0);
         graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         graphics::present(ctx);
         self.frames += 1;
@@ -63,6 +62,15 @@ impl event::EventHandler for MainState {
 pub fn main() {
     let c = conf::Conf::new();
     let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
+
+    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so 
+    // we we look in the cargo project for files.
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        ctx.filesystem.mount(&path, true);
+    }
+
     let state = &mut MainState::new(ctx).unwrap();
     if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);

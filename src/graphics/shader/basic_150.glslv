@@ -3,26 +3,23 @@
 in vec2 a_Pos;
 in vec2 a_Uv;
 
-layout (std140) uniform Globals {
-    mat4 u_Transform;
-    vec4 u_Color;
-};
+in vec4 a_Src;
+in vec4 a_TCol1;
+in vec4 a_TCol2;
+in vec4 a_TCol3;
+in vec4 a_TCol4;
 
-layout (std140) uniform RectProperties {
-    vec4 u_Src;
-    vec2 u_Dest;
-    vec2 u_Scale;
-    vec2 u_Offset;
-    vec2 u_Shear;
-    float u_Rotation;
+layout (std140) uniform Globals {
+    mat4 u_MVP;
+    vec4 u_Color;
 };
 
 out vec2 v_Uv;
 
 void main() {
-    v_Uv = a_Uv * u_Src.zw + u_Src.xy;
-    mat2 rotation = mat2(cos(u_Rotation), -sin(u_Rotation), sin(u_Rotation), cos(u_Rotation));
-    mat2 shear = mat2(1, u_Shear.x, u_Shear.y, 1);
-    vec2 position = (((a_Pos * u_Scale) * shear) + u_Offset) * rotation + u_Dest;
-    gl_Position = vec4(position, 0.0, 1.0) * u_Transform;
+    v_Uv = a_Uv * a_Src.zw + a_Src.xy;
+    mat4 instance_transform = mat4(a_TCol1, a_TCol2, a_TCol3, a_TCol4);
+    vec4 position = instance_transform * vec4(a_Pos, 0.0, 1.0);
+
+    gl_Position = u_MVP * position;
 }

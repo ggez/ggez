@@ -27,15 +27,23 @@ use GameResult;
 /// need to be transformed into a format the hardware likes) will need
 /// to access the `Context`.
 pub struct Context {
+    /// The Conf object the Context was created with
     pub conf: conf::Conf,
+    /// SDL context
     pub sdl_context: Sdl,
+    /// Filesystem state
     pub filesystem: Filesystem,
+    /// Graphics state
     pub gfx_context: graphics::GraphicsContext,
+    /// Event context
     pub event_context: sdl2::EventSubsystem,
+    /// Timer state
     pub timer_context: timer::TimeContext,
+    /// Audio context
     pub audio_context: audio::AudioContext,
+    /// Gamepad context
     pub gamepad_context: input::GamepadContext,
-
+    /// Default font
     pub default_font: graphics::Font,
 }
 
@@ -62,13 +70,11 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
         // For some retarded reason.
         // Also SDL seems to have strange ideas of what
         // "RGBA" means.
-        let surface = surface::Surface::from_data(
-            image_data,
-            image.width(),
-            image.height(),
-            image.width() * 4,
-            pixels::PixelFormatEnum::ABGR8888,
-        )?;
+        let surface = surface::Surface::from_data(image_data,
+                                                  image.width(),
+                                                  image.height(),
+                                                  image.width() * 4,
+                                                  pixels::PixelFormatEnum::ABGR8888)?;
         let window = context.gfx_context.get_window_mut();
         window.set_icon(surface);
     };
@@ -85,14 +91,11 @@ impl Context {
         let event_context = sdl_context.event()?;
         let timer_context = timer::TimeContext::new();
         let font = graphics::Font::default_font()?;
-        let graphics_context = graphics::GraphicsContext::new(
-            video,
-            &conf.window_title,
-            conf.window_width,
-            conf.window_height,
-            conf.vsync,
-            conf.resizable,
-        )?;
+        let graphics_context = graphics::GraphicsContext::new(video,
+                                                              &conf.window_title,
+                                                              conf.window_width,
+                                                              conf.window_height,
+                                                              conf.window_mode)?;
         let gamepad_context = input::GamepadContext::new(&sdl_context)?;
 
         let mut ctx = Context {
@@ -123,11 +126,10 @@ impl Context {
     /// module.  You can also always debug-print the
     /// `Context::filesystem` field to see what paths it is
     /// searching.
-    pub fn load_from_conf(
-        game_id: &'static str,
-        author: &'static str,
-        default_config: conf::Conf,
-    ) -> GameResult<Context> {
+    pub fn load_from_conf(game_id: &'static str,
+                          author: &'static str,
+                          default_config: conf::Conf)
+                          -> GameResult<Context> {
 
         let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(game_id, author)?;
@@ -148,10 +150,10 @@ impl Context {
     pub fn quit(&mut self) -> GameResult<()> {
         let now_dur = timer::get_time_since_start(self);
         let now = timer::duration_to_f64(now_dur);
-        let e = sdl2::event::Event::Quit {
-            timestamp: now as u32,
-        };
+        let e = sdl2::event::Event::Quit { timestamp: now as u32 };
         // println!("Pushing event {:?}", e);
-        self.event_context.push_event(e).map_err(GameError::from)
+        self.event_context
+            .push_event(e)
+            .map_err(GameError::from)
     }
 }
