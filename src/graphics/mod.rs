@@ -159,24 +159,23 @@ impl From<DrawParam> for InstanceProperties {
 /// Making this generic is tricky 'cause it has methods that depend
 /// on the generic Factory trait, it seems, so for now we just kind
 /// of hack it.
-struct SamplerCache<R>
-    where R: gfx::Resources
+struct SamplerCache<B>
+    where B: BackendSpec
 {
     // TODO: Make this generic on BackendSpec?
-    samplers: HashMap<texture::SamplerInfo, gfx::handle::Sampler<R>>,
+    samplers: HashMap<texture::SamplerInfo, gfx::handle::Sampler<B::Resources>>,
 }
 
-impl<R> SamplerCache<R>
-    where R: gfx::Resources
+impl<B> SamplerCache<B>
+    where B: BackendSpec
 {
     fn new() -> Self {
         SamplerCache { samplers: HashMap::new() }
     }
-    fn get_or_insert<F>(&mut self,
+    fn get_or_insert(&mut self,
                         info: texture::SamplerInfo,
-                        factory: &mut F)
-                        -> gfx::handle::Sampler<R>
-        where F: gfx::Factory<R>
+                        factory: &mut B::Factory)
+                        -> gfx::handle::Sampler<B::Resources>
     {
         let sampler = self.samplers
             .entry(info)
@@ -221,7 +220,7 @@ pub struct GraphicsContextGeneric<B>
     quad_vertex_buffer: gfx::handle::Buffer<B::Resources, Vertex>,
 
     default_sampler_info: texture::SamplerInfo,
-    samplers: SamplerCache<B::Resources>,
+    samplers: SamplerCache<B>,
 
     default_shader: PixelShaderId,
     current_shader: Rc<RefCell<Option<PixelShaderId>>>,
@@ -348,7 +347,7 @@ impl GraphicsContext {
         quad_slice.instances = Some((1, 0));
 
         let globals_buffer = factory.create_constant_buffer(1);
-        let mut samplers: SamplerCache<gfx_device_gl::Resources> = SamplerCache::new();
+        let mut samplers: SamplerCache<GlBackendSpec> = SamplerCache::new();
         let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Bilinear,
                                                      texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);

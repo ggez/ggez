@@ -74,27 +74,14 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::set_background_color(ctx, graphics::BLACK);
         graphics::clear(ctx);
-
-        let rot_circle = graphics::Mesh::new_circle(ctx, DrawMode::Line(3.0), Point2::new(0.0, 0.0), 100.0, 4.0)?;
-        let (w,h) = ctx.gfx_context.get_size();
-        graphics::set_color(ctx, graphics::WHITE)?;
-        rot_circle.draw(ctx, Point2::new((w/2) as f32, (h/2) as f32), self.angle)?;
-
-        // Draw a grid so you can see how the coordinate system relates to the screen.
-        let grid_size = 100;
-        for x in 0..(w/grid_size) {
-            for y in 0..(h/grid_size) {
-                let x_grid = (x * grid_size) as f32;
-                let x_color = x_grid as f32 / w as f32;
-                let y_grid = (y * grid_size) as f32;
-                let y_color = y_grid as f32 / h as f32;
-                let dest = graphics::Point2::new(x_grid, y_grid);
-                let color = graphics::Color::new(x_color, y_color, 0.0, 1.0);
-                graphics::set_color(ctx, color)?;
-                graphics::points(ctx, &[dest], 3.0)?;
-            }
-        }
-      
+        let rotation = timer::get_ticks(ctx) % 1000;
+        let circle = graphics::Mesh::new_circle(
+                        ctx,
+                         DrawMode::Line(3.0),
+                         Point2::new(0.0, 0.0),
+                         100.0,
+                         4.0)?;
+        graphics::draw(ctx, &circle, Point2::new(400.0, 300.0), rotation as f32)?;
         graphics::present(ctx);
         Ok(())
     }

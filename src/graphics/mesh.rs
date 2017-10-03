@@ -7,6 +7,7 @@ use lyon::tessellation as t;
 ///
 /// This allows you to easily make one `Mesh` containing
 /// many different complex pieces of geometry.
+#[derive(Debug, Clone)]
 pub struct MeshBuilder {
     buffer: t::geometry_builder::VertexBuffers<Vertex>,
 }
@@ -209,13 +210,6 @@ impl MeshBuilder {
                buffer: vbuf,
                slice: slice,
            })
-    }
-}
-
-// Lyon's VertexBuffers doesn't impl debug or clone, see https://github.com/nical/lyon/issues/167
-impl fmt::Debug for MeshBuilder {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<MeshBuilder>")
     }
 }
 
