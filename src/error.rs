@@ -23,8 +23,8 @@ pub enum GameError {
     ConfigError(String),
     /// An error trying to parse a resource
     ResourceLoadError(String),
-    /// Unable to find a resource; the Vec is the paths it searched for.
-    ResourceNotFound(String, Vec<std::path::PathBuf>),
+    /// Unable to find a resource; the Vec is the paths it searched for and associated errors
+    ResourceNotFound(String, Vec<(std::path::PathBuf, GameError)>),
     /// Something went wrong in the renderer
     RenderError(String),
     /// Something went wrong in the audio playback

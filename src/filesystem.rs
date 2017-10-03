@@ -254,6 +254,11 @@ impl Filesystem {
         &self.user_data_path
     }
 
+    /// Return the full path to the user config directory
+    pub fn get_user_config_dir(&self) -> &path::Path {
+        &self.user_config_path
+    }
+
     /// Returns the full path to the resource directory
     /// (even if it doesn't exist)
     pub fn get_resources_dir(&self) -> &path::Path {
@@ -283,6 +288,18 @@ impl Filesystem {
             }
         }
         Ok(())
+    }
+
+    /// Adds the given (absolute) path to the list of directories 
+    /// it will search to look for resources.
+    ///
+    /// You probably shouldn't use this in the general case, since it is
+    /// harder than you think to get it bulletproof across platforms, I promise.
+    /// But it can be very nice for debugging and dev purposes, such as
+    /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
+    pub fn mount(&mut self, path: &path::Path, readonly: bool) {
+        let physfs = vfs::PhysicalFS::new(&path, readonly);
+        self.vfs.push_back(Box::new(physfs));
     }
 
 

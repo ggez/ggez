@@ -13,6 +13,7 @@
 
 use context::Context;
 
+use std::cmp;
 use std::time;
 use std::thread;
 
@@ -49,8 +50,9 @@ impl<T> LogBuffer<T>
     /// Pushes a new item into the logbuffer, overwriting
     /// the oldest item in it.
     fn push(&mut self, item: T) {
-        self.head = (self.head + 1) % self.size;
+        self.head = (self.head + 1) % self.contents.len();
         self.contents[self.head] = item;
+        self.size = cmp::min(self.size + 1, self.contents.len());
     }
 
     /// Returns a slice pointing at the contents of the buffer.
@@ -136,7 +138,7 @@ pub fn get_average_delta(ctx: &Context) -> time::Duration {
         .contents()
         .iter()
         .fold(init, |d1, d2| d1 + *d2);
-    sum / (TIME_LOG_FRAMES as u32)
+    sum / (tc.frame_durations.size as u32)
 }
 
 /// A convenience function to convert a Rust `Duration` type

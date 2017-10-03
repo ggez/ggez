@@ -125,6 +125,7 @@ impl WindowMode {
         self
     }
 
+
     /// Set the fullscreen type
     pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
         self.fullscreen_type = fullscreen_type;

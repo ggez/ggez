@@ -3,7 +3,6 @@ extern crate ggez;
 extern crate gfx;
 extern crate gfx_device_gl;
 
-
 use gfx::texture;
 use gfx::traits::FactoryExt;
 use gfx::Factory;
@@ -13,6 +12,8 @@ use ggez::event;
 use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::nalgebra as na;
+use std::env;
+use std::path;
 
 //type Matrix4 = na::Matrix4<f32>;
 type Isometry3 = na::Isometry3<f32>;
@@ -227,7 +228,16 @@ impl event::EventHandler for MainState {
 
 pub fn main() {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("cube", "ggez", c).unwrap();
+
+    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so 
+    // we we look in the cargo project for files.
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        ctx.filesystem.mount(&path, true);
+    }
+
     let state = &mut MainState::new(ctx);
     if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);

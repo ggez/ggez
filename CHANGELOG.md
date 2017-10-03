@@ -16,6 +16,10 @@
  * SHADERS!  Woo, thanks nlordell!
  * Refactored EventHandler interface, again
  * Altered timestep functions to be nicer and made examples use them consistently
+ * Added `Filesystem::mount()` function and made examples use it; they no longer need the `cargo-resource-root` feature
+ * Added filesystem and graphics setting examples
+ * Fixed a few smallish filesystem bugs
+ * Updated to Lyon 0.8, which brings some bugfixes
 
 # 0.3.3
 
