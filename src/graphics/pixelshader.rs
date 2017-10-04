@@ -116,7 +116,16 @@ impl<C> PixelShader<C>
             reader.read_to_end(&mut buf)?;
             buf
         };
+        PixelShader::from_u8(ctx, &source, consts, name)
+    }
 
+    /// Create a new `PixelShader` directly from source given a gfx pipeline
+    /// object
+    pub fn from_u8<S: Into<String>>(ctx: &mut Context,
+                                    source: &[u8],
+                                    consts: C,
+                                    name: S)
+                                    -> GameResult<PixelShader<C>> {
         let (mut shader, draw) = create_shader(&source,
                                                consts,
                                                name,
