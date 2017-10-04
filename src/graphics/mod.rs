@@ -25,23 +25,24 @@ use gfx_device_gl;
 use gfx_window_sdl;
 use gfx::Factory;
 
-
 use conf::WindowMode;
 use context::Context;
 use GameError;
 use GameResult;
 
+mod canvas;
 mod text;
 mod types;
-/// SpriteBatch type.
-pub mod spritebatch;
-pub mod pixelshader;
 mod mesh;
+mod pixelshader;
+
+pub mod spritebatch;
 
 pub use self::text::*;
 pub use self::types::*;
 pub use self::mesh::*;
 pub use self::pixelshader::*;
+pub use self::canvas::*;
 
 /// A marker trait that something is a label for a particular backend.
 pub trait BackendSpec: fmt::Debug {
@@ -211,7 +212,7 @@ pub struct GraphicsContextGeneric<B>
     device: Box<B::Device>,
     factory: Box<B::Factory>,
     encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
-    // color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
+    color_view: gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
     #[allow(dead_code)]
     depth_view: gfx::handle::DepthStencilView<B::Resources, gfx::format::DepthStencil>,
 
@@ -360,7 +361,7 @@ impl GraphicsContext {
             tex: (texture, sampler),
             rect_instance_properties: rect_inst_props,
             globals: globals_buffer,
-            out: color_view,
+            out: color_view.clone(),
         };
 
         // Set initial uniform values
@@ -393,6 +394,7 @@ impl GraphicsContext {
             device: Box::new(device),
             factory: Box::new(factory),
             encoder: encoder,
+            color_view: color_view,
             depth_view: depth_view,
 
             data: data,
