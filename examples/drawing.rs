@@ -12,6 +12,8 @@ struct MainState {
     image1: graphics::Image,
     image2_linear: graphics::Image,
     image2_nearest: graphics::Image,
+    gradient: graphics::Image,
+    gradient_rect: graphics::Rect,
     zoomlevel: f32,
 }
 
@@ -21,10 +23,26 @@ impl MainState {
         let image2_linear = graphics::Image::new(ctx, "/shot.png")?;
         let mut image2_nearest = graphics::Image::new(ctx, "/shot.png")?;
         image2_nearest.set_filter(graphics::FilterMode::Nearest);
+        let gradient_colors = [
+            graphics::Color::new(1.0, 1.0, 1.0, 0.5),
+            graphics::Color::new(1.0, 0.0, 0.0, 1.0),
+            graphics::Color::new(0.0, 0.0, 0.0, 0.0),
+        ];
+        let gradient = graphics::Image::gradient(
+            ctx,
+            &gradient_colors,
+            graphics::GradientDirection::Horizontal
+        )?;
+        let gradient_rect = graphics::Rect::new(
+            400.0, 300.0,
+            800.8, 600.0
+        );
         let s = MainState {
             image1: image1,
             image2_linear: image2_linear,
             image2_nearest: image2_nearest,
+            gradient: gradient,
+            gradient_rect: gradient_rect,
             zoomlevel: 1.0,
         };
 
@@ -60,8 +78,13 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx);
+       graphics::clear(ctx);
         graphics::set_color(ctx, graphics::WHITE)?;
+        graphics::draw_in_rect(
+            ctx,
+            &self.gradient,
+            &self.gradient_rect,
+        )?;
         // let src = graphics::Rect::new(0.25, 0.25, 0.5, 0.5);
         // let src = graphics::Rect::one();
         let dst = graphics::Point2::new(200.0, 200.0);
