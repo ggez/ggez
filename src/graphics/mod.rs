@@ -770,6 +770,18 @@ pub fn get_screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
 }
 
+/// Converts coordinates in between pixel and screen coordinates taking into
+/// account the direction in which the Y axis increases. This method is useful
+/// sending positions to PixelShaders.
+pub fn convert_screen_coordinates(ctx: &Context, p: Point2) -> Point2 {
+    let y = if ctx.gfx_context.screen_rect.h < 0.0 {
+        -ctx.gfx_context.screen_rect.h - p.y
+    } else {
+        p.y
+    };
+    Point2::new(p.x, y)
+}
+
 /// Sets the background color.  Default: blue.
 pub fn set_background_color(ctx: &mut Context, color: Color) {
     ctx.gfx_context.background_color = color;
