@@ -11,7 +11,8 @@ use std::path;
 gfx_defines!{
     /// Constants used by the shaders to calculate 
     constant Light {
-        color: [f32; 4] = "u_Color",
+        light_color: [f32; 4] = "u_Color",
+        shadow_color: [f32; 4] = "u_ShadowColor",
         pos: [f32; 2] = "u_Pos",
         screen_size: [f32; 2] = "u_ScreenSize",
         glow: f32 = "u_Glow",
@@ -34,6 +35,7 @@ out vec4 Target0;
 
 layout (std140) uniform Light {
     vec4 u_Color;
+    vec4 u_ShadowColor;
     vec2 u_Pos;
     vec2 u_ScreenSize;
     float u_Glow;
@@ -76,6 +78,7 @@ out vec4 Target0;
 
 layout (std140) uniform Light {
     vec4 u_Color;
+    vec4 u_ShadowColor;
     vec2 u_Pos;
     vec2 u_ScreenSize;
     float u_Glow;
@@ -95,14 +98,14 @@ void main() {
     float r = length(rel);
     float occl = texture(t_Texture, vec2(ox, 0.5)).r * 2.0;
 
-    float intencity = 1.0;
+    float intensity = 0.9;
     if (r < occl) {
         float p = u_Strength + u_Glow;
         float d = distance(gl_FragCoord.xy, u_Pos);
-        intencity = 1.0 - clamp(p/(d*d), 0.0, 1.0);
+        intensity = 0.9 - clamp(p/(d*d), 0.0, 0.9);
     }
 
-    Target0 = vec4(0.0, 0.0, 0.0, intencity);
+    Target0 = vec4(u_ShadowColor.rgb / 80.0, intensity);
 }
 ";
 
@@ -117,22 +120,24 @@ struct MainState {
     shadows_shader: PixelShader<Light>,
 }
 
+/// The color cast things take when not illuminated
+const AMBIENT_COLOR: [f32; 4] = [0.30, 0.30, 0.53, 1.0];
 /// The default color for the light
-const LIGHT_COLOR: [f32; 4] = [0.7, 0.64, 0.34, 1.0];
+const LIGHT_COLOR: [f32; 4] = [0.72, 0.64, 0.32, 1.0];
 /// The number of rays to cast to. Increasing this number will result in better
 /// quality shadows. If you increase too much you might hit some GPU shader
 /// hardware limits.
 const LIGHT_RAY_COUNT: u32 = 1440;
 /// The strength of the light - how far it shines
-const LIGHT_STRENGTH: f32 = 2500.0;
+const LIGHT_STRENGTH: f32 = 4000.0;
 /// The factor at which the light glows - just for fun
-const LIGHT_GLOW_FACTOR: f32 = 200.0;
+const LIGHT_GLOW_FACTOR: f32 = 50.0;
 /// The rate at which the glow effect oscillates
-const LIGHT_GLOW_RATE: f32 = 20.0;
+const LIGHT_GLOW_RATE: f32 = 50.0;
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let background = Image::new(ctx, "/background.png")?;
+        let background = Image::new(ctx, "/bg_top.png")?;
         let tile = Image::new(ctx, "/tile.png")?;
         let text = {
             let font = Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
@@ -144,7 +149,8 @@ impl MainState {
         };
         let light = Light {
             pos: [0.0, 0.0],
-            color: LIGHT_COLOR,
+            light_color: LIGHT_COLOR,
+            shadow_color: AMBIENT_COLOR,
             screen_size,
             glow: 0.0,
             strength: LIGHT_STRENGTH,
@@ -220,6 +226,7 @@ impl event::EventHandler for MainState {
                 ..Default::default()
             },
         )?;
+        // graphics::draw_ex(ctx, &self.walls, center)?;
         graphics::draw_ex(ctx, &self.text, center)?;
 
         // Now we want to run the occlusions shader to calculate our 1D shadow
@@ -237,7 +244,7 @@ impl event::EventHandler for MainState {
         // light color as the color for our render giving everything the "tint"
         // we desire.
         graphics::set_canvas(ctx, None);
-        graphics::set_color(ctx, self.light.color.into())?; // color filter so things take the light color
+        graphics::set_color(ctx, self.light.light_color.into())?; // color filter so things take the light color
         graphics::clear(ctx);
         graphics::draw_ex(ctx, &self.background, center)?;
         {
@@ -250,6 +257,7 @@ impl event::EventHandler for MainState {
             };
             graphics::draw_ex(ctx, &self.occlusions, param)?;
         }
+        graphics::set_color(ctx, AMBIENT_COLOR.into())?;
         graphics::draw_ex(ctx, &self.foreground, center)?;
 
         // Uncomment following two lines to visualize the 1D occlusions canvas,
@@ -281,7 +289,8 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() {
-    let c = conf::Conf::new();
+    let mut c = conf::Conf::new();
+    c.window_mode.samples = conf::NumSamples::Eight;
     let ctx = &mut Context::load_from_conf("shadows", "ggez", c).unwrap();
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
