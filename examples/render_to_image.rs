@@ -34,7 +34,7 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
         graphics::draw_ex(
             ctx,
-            self.canvas.get_image(),
+            &self.canvas,
             DrawParam {
                 dest: Point2::new(200.0, 150.0),
                 scale: Point2::new(0.5, 0.5),
@@ -43,7 +43,7 @@ impl event::EventHandler for MainState {
         )?;
         graphics::draw_ex(
             ctx,
-            self.canvas.get_image(),
+            &self.canvas,
             DrawParam {
                 dest: Point2::new(600.0, 450.0),
                 scale: Point2::new(0.5, 0.5),

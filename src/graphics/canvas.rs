@@ -8,7 +8,7 @@ use gfx::handle::*;
 
 use Context;
 use error::*;
-use graphics::{BackendSpec, GlBackendSpec, Image};
+use graphics::*;
 
 /// A generic canvas independant of graphics backend. This type should probably
 /// never be used; use `ggez::graphics::Canvas` instead.
@@ -22,8 +22,7 @@ where
 }
 
 /// A canvas that can be rendered to instead of the screen (sometimes referred
-/// to as "render target" or "render to texture"). The result of the render can
-/// be accessed via the `get_image()` method. Set the cavas with the
+/// to as "render target" or "render to texture"). Set the cavas with the
 /// `ggez::graphics::set_canvas()` function.
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
@@ -49,9 +48,20 @@ impl Canvas {
         Canvas::new(ctx, w, h)
     }
 
-    /// Gets the image corresponding to this canvas.
+    /// Gets the backend Image that is being rendered to.
     pub fn get_image(&self) -> &Image {
         &self.image
+    }
+}
+
+impl Drawable for Canvas {
+    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+        // We need to make sure we correct for the different coordinate systems
+        let mut param = param;
+        if ctx.gfx_context.screen_rect.h < 0.0 {
+            param.scale.y = -param.scale.y;
+        }
+        self.image.draw_ex(ctx, param)
     }
 }
 
