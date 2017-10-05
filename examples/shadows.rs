@@ -9,6 +9,7 @@ use std::env;
 use std::path;
 
 gfx_defines!{
+    /// Constants used by the shaders to calculate 
     constant Light {
         color: [f32; 4] = "u_Color",
         pos: [f32; 2] = "u_Pos",
@@ -18,6 +19,13 @@ gfx_defines!{
     }
 }
 
+/// Shader source for calculating a 1D shadow map that encodes half distances
+/// in the red channel. The idea is that we scan X rays (X is the horizontal
+/// size of the output) and calculate the distance to the nearest pixel at that
+/// angle that has transparency above a threashold. The distance gets halved
+/// and encoded in the red channel (it is havled because if the distance can be
+/// greater than 1.0 - think bottom left to top right corner, that sqrt(1) and
+/// will not get properly encoded).
 const OCCLUSIONS_SHADER_SOURCE: &[u8] = b"#version 150 core
 
 uniform sampler2D t_Texture;
@@ -42,7 +50,7 @@ void main() {
         float r = fi / 1024.0;
         vec2 rel = r * dir;
         vec2 p = clamp(pos+rel, 0.0, 1.0);
-        if (texture(t_Texture, p).a == 1.0) {
+        if (texture(t_Texture, p).a > 0.8) {
             dist = distance(pos, p) * 0.5;
             break;
         }
@@ -53,6 +61,13 @@ void main() {
 }
 ";
 
+/// Shader for drawing shadows based on a 1D shadow map. It takes current
+/// fragment cordinates and converts them to polar coordinates centered
+/// around the light source, using the angle to sample from the 1D shadow map.
+/// If the distance from the light source is greater than the distance of the
+/// closest reported shadow, then the output is black, else it calculates some
+/// shadow based on the distance from light source based on strength and glow
+/// uniform parameters.
 const SHADOWS_SHADER_SOURCE: &[u8] = b"#version 150 core
 
 uniform sampler2D t_Texture;
@@ -102,6 +117,19 @@ struct MainState {
     shadows_shader: PixelShader<Light>,
 }
 
+/// The default color for the light
+const LIGHT_COLOR: [f32; 4] = [0.7, 0.64, 0.34, 1.0];
+/// The number of rays to cast to. Increasing this number will result in better
+/// quality shadows. If you increase too much you might hit some GPU shader
+/// hardware limits.
+const LIGHT_RAY_COUNT: u32 = 1440;
+/// The strength of the light - how far it shines
+const LIGHT_STRENGTH: f32 = 2500.0;
+/// The factor at which the light glows - just for fun
+const LIGHT_GLOW_FACTOR: f32 = 200.0;
+/// The rate at which the glow effect oscillates
+const LIGHT_GLOW_RATE: f32 = 20.0;
+
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let background = Image::new(ctx, "/background.png")?;
@@ -116,13 +144,13 @@ impl MainState {
         };
         let light = Light {
             pos: [0.0, 0.0],
-            color: [0.7, 0.64, 0.34, 1.0],
+            color: LIGHT_COLOR,
             screen_size,
             glow: 0.0,
-            strength: 2500.0,
+            strength: LIGHT_STRENGTH,
         };
         let foreground = Canvas::with_window_size(ctx)?;
-        let occlusions = Canvas::new(ctx, 360, 1)?;
+        let occlusions = Canvas::new(ctx, LIGHT_RAY_COUNT, 1)?;
         let occlusions_shader =
             PixelShader::from_u8(ctx, OCCLUSIONS_SHADER_SOURCE, light, "Light")?;
         let shadows_shader = PixelShader::from_u8(ctx, SHADOWS_SHADER_SOURCE, light, "Light")?;
@@ -142,14 +170,11 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        self.light.glow = 200.0 * ((timer::get_ticks(ctx) as f32) / 20.0).cos();
-        self.occlusions_shader.send(ctx, self.light)?;
-        self.shadows_shader.send(ctx, self.light)?;
-
         if timer::get_ticks(ctx) % 100 == 0 {
-            println!("Delta frame time: {:?} ", timer::get_delta(ctx));
             println!("Average FPS: {}", timer::get_fps(ctx));
         }
+
+        self.light.glow = LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
         Ok(())
     }
 
@@ -162,8 +187,14 @@ impl event::EventHandler for MainState {
             ..Default::default()
         };
 
+        // First thing we want to do it to render all the foreground items (that
+        // will have shadows) onto their own Canvas (off-scree render). We will
+        // use this canvas to:
+        //  - run the occlusions shader to determine where the shadows are
+        //  - render to screen once all the shadows are caculated and rendered
         graphics::set_canvas(ctx, Some(&self.foreground));
         graphics::set_background_color(ctx, [0.0; 4].into());
+        graphics::clear(ctx);
         graphics::draw_ex(
             ctx,
             &self.tile,
@@ -191,27 +222,40 @@ impl event::EventHandler for MainState {
         )?;
         graphics::draw_ex(ctx, &self.text, center)?;
 
+        // Now we want to run the occlusions shader to calculate our 1D shadow
+        // distances into the `occlusions` canvas.
         {
             let _shader_lock = graphics::use_shader(ctx, &self.occlusions_shader);
+            self.occlusions_shader.send(ctx, self.light)?;
+
             graphics::set_canvas(ctx, Some(&self.occlusions));
             graphics::draw_ex(ctx, &self.foreground, center)?;
         }
 
+        // Now lets finally render to screen starting with out background, then
+        // the shadows overtop and finally our foreground. Note that we set the
+        // light color as the color for our render giving everything the "tint"
+        // we desire.
         graphics::set_canvas(ctx, None);
-        graphics::set_color(ctx, self.light.color.into())?;
+        graphics::set_color(ctx, self.light.color.into())?; // color filter so things take the light color
         graphics::clear(ctx);
         graphics::draw_ex(ctx, &self.background, center)?;
         {
             let _shader_lock = graphics::use_shader(ctx, &self.shadows_shader);
+            self.shadows_shader.send(ctx, self.light)?;
+
             let param = DrawParam {
-                scale: Point2::new(self.light.screen_size[0] / 360.0, self.light.screen_size[1]),
+                scale: Point2::new(self.light.screen_size[0] / (LIGHT_RAY_COUNT as f32), self.light.screen_size[1]),
                 ..center
             };
             graphics::draw_ex(ctx, &self.occlusions, param)?;
         }
         graphics::draw_ex(ctx, &self.foreground, center)?;
 
-        // Uncomment following two lines to visualize the 1D occlusions canvas
+        // Uncomment following two lines to visualize the 1D occlusions canvas,
+        // red pixels represent angles at which no shadows were found, and then
+        // the greyscale pixels are the half distances of the nearest shadows to
+        // the mouse position (equally encoded in all color channels).
         // graphics::set_color(ctx, [1.0; 4].into())?;
         // graphics::draw_ex(ctx, &self.occlusions, center)?;
 
