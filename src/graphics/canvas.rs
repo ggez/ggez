@@ -44,7 +44,7 @@ impl Canvas {
 
     /// Create a new canvas with the current window dimentions.
     pub fn with_window_size(ctx: &mut Context) -> GameResult<Canvas> {
-        let (w, h) = (ctx.conf.window_width, ctx.conf.window_height);
+        let (w, h) = ctx.gfx_context.get_drawable_size();
         Canvas::new(ctx, w, h)
     }
 
