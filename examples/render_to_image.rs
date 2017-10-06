@@ -25,7 +25,6 @@ impl event::EventHandler for MainState {
         graphics::set_background_color(ctx, Color::new(0.1, 0.2, 0.3, 1.0));
         graphics::clear(ctx);
         graphics::circle(ctx, DrawMode::Fill, Point2::new(400.0, 300.0), 100.0, 2.0)?;
-        graphics::present(ctx);
 
         // now lets render our scene once in the top right and in the bottom
         // right
