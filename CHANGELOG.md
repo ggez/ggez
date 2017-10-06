@@ -1,5 +1,7 @@
 # 0.4.0 (IN PROGRESS)
 
+ * First off, there will be some switches in process: We're going to make the master branch STABLE, tracking the latest release,
+   and create a devel branch that new work will be pushed to.  That way people don't check out master and get some WIP stuff.
  * Updated all dependencies to newer versions (except SDL2 'cause gfx_window_sdl uses 0.29; no big deal)
  * Added `mouse` module with some utility functions
  * Added some utility functions to query window size

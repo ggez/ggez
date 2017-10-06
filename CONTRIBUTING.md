@@ -23,7 +23,7 @@ Known bugs and feature requests are all in the [issue tracker](https://github.co
 * Make your changes
 > Ideally all commits will contain no use of `unwrap()`, no compiler warnings and all tests will pass.
 > It's advised to run [rustfmt](https://github.com/rust-lang-nursery/rustfmt) and [clippy](https://github.com/rust-lang-nursery/rust-clippy) before submitting a pull request
-* Push to your fork and [submit a pull request](https://github.com/ggez/ggez/compare)
+* Push to your fork and [submit a pull request](https://github.com/ggez/ggez/compare) to the `devel` branch
 * Pat your self on the back and wait for your pull request to be reviewed.
 
 If you're unfamiliar with how pull requests work, [GitHub's documentation on them](https://help.github.com/articles/using-pull-requests/) is very good.
@@ -36,9 +36,13 @@ Here are a few things you can do that will increase the likelihood of your pull 
 
 ### Branches
 
-All of ggez's in-progress work happens on the `master` branch.  When we make a major release, we make a new branch for that release number, and only backwards-compatible changes get merged from `master` into it.
+All of ggez's in-progress work happens on the `devel` branch.  The `master` branch tracks the current latest release.  When we make
+a major release, we merge the `devel` branch into `master`, and from then on only backwards-compatible changes get merged from
+`devel` into `master`.
 
-For example, when we release `0.3.0`, it gets its own branch.  If we then discover and fix a bug in `master`, we can merge the changes fixing that bug into the `0.3` branch, and make a `0.3.1` release from it.
+For example, when we release `0.3.0`, we create a new branch for `0.2` from `master`, `devel` gets merged into `master` and the
+release gets made from `master`.  If we then discover and fix a bug in `devel`, we can merge the changes fixing that bug into the
+`master` branch, and make a `0.3.1` release from it.
 
 ### Code and other contributions
 
