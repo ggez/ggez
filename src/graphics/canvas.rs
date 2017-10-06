@@ -2,11 +2,14 @@
 //! the screen allowing graphics to be rendered off-screen in order to do things
 //! like saving to an image file or creating cool effects
 
-use gfx::*;
-use gfx::format::*;
-use gfx::handle::*;
+use gfx::{Factory, RENDER_TARGET, SHADER_RESOURCE};
+use gfx::format::{Srgb, Srgba8, ChannelTyped, Swizzle};
+use gfx::handle::RenderTargetView;
+use gfx::memory::Usage;
+use gfx::texture::{AaMode, Kind};
 
 use Context;
+use conf::*;
 use error::*;
 use graphics::*;
 
@@ -27,14 +30,39 @@ where
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 impl Canvas {
-    /// Create a new canvas with the given size.
-    pub fn new(ctx: &mut Context, width: u32, height: u32) -> GameResult<Canvas> {
+    /// Create a new canvas with the given size and number of samples.
+    pub fn new(
+        ctx: &mut Context,
+        width: u32,
+        height: u32,
+        samples: NumSamples,
+    ) -> GameResult<Canvas> {
         let (w, h) = (width as u16, height as u16);
-        let (_, texture, target) = ctx.gfx_context.factory.create_render_target(w, h)?;
+        let aa = match samples {
+            NumSamples::One => AaMode::Single,
+            s => AaMode::Multi(s as u8),
+        };
+        let kind = Kind::D2(w, h, aa);
+        let cty = Srgb::get_channel_type();
+        let levels = 1;
+        let factory = &mut ctx.gfx_context.factory;
+        let tex = factory.create_texture(
+            kind,
+            levels,
+            SHADER_RESOURCE | RENDER_TARGET,
+            Usage::Data,
+            Some(cty),
+        )?;
+        let resource = factory.view_texture_as_shader_resource::<Srgba8>(
+            &tex,
+            (0, levels - 1),
+            Swizzle::new(),
+        )?;
+        let target = factory.view_texture_as_render_target(&tex, 0, None)?;
         Ok(Canvas {
             target,
             image: Image {
-                texture,
+                texture: resource,
                 sampler_info: ctx.gfx_context.default_sampler_info,
                 width,
                 height,
@@ -45,7 +73,8 @@ impl Canvas {
     /// Create a new canvas with the current window dimentions.
     pub fn with_window_size(ctx: &mut Context) -> GameResult<Canvas> {
         let (w, h) = ctx.gfx_context.get_drawable_size();
-        Canvas::new(ctx, w, h)
+        // Default to no multisampling
+        Canvas::new(ctx, w, h, NumSamples::One)
     }
 
     /// Gets the backend Image that is being rendered to.

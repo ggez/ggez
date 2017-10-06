@@ -9,7 +9,7 @@ use std::env;
 use std::path;
 
 gfx_defines!{
-    /// Constants used by the shaders to calculate 
+    /// Constants used by the shaders to calculate stuff
     constant Light {
         light_color: [f32; 4] = "u_Color",
         shadow_color: [f32; 4] = "u_ShadowColor",
@@ -156,7 +156,7 @@ impl MainState {
             strength: LIGHT_STRENGTH,
         };
         let foreground = Canvas::with_window_size(ctx)?;
-        let occlusions = Canvas::new(ctx, LIGHT_RAY_COUNT, 1)?;
+        let occlusions = Canvas::new(ctx, LIGHT_RAY_COUNT, 1, conf::NumSamples::One)?;
         let occlusions_shader =
             PixelShader::from_u8(ctx, OCCLUSIONS_SHADER_SOURCE, light, "Light")?;
         let shadows_shader = PixelShader::from_u8(ctx, SHADOWS_SHADER_SOURCE, light, "Light")?;
@@ -180,7 +180,8 @@ impl event::EventHandler for MainState {
             println!("Average FPS: {}", timer::get_fps(ctx));
         }
 
-        self.light.glow = LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
+        self.light.glow = LIGHT_GLOW_FACTOR *
+            ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
         Ok(())
     }
 
@@ -244,7 +245,8 @@ impl event::EventHandler for MainState {
         // light color as the color for our render giving everything the "tint"
         // we desire.
         graphics::set_canvas(ctx, None);
-        graphics::set_color(ctx, self.light.light_color.into())?; // color filter so things take the light color
+        // color filter so things take the light color
+        graphics::set_color(ctx, self.light.light_color.into())?;
         graphics::clear(ctx);
         graphics::draw_ex(ctx, &self.background, center)?;
         {
@@ -252,7 +254,10 @@ impl event::EventHandler for MainState {
             self.shadows_shader.send(ctx, self.light)?;
 
             let param = DrawParam {
-                scale: Point2::new(self.light.screen_size[0] / (LIGHT_RAY_COUNT as f32), self.light.screen_size[1]),
+                scale: Point2::new(
+                    self.light.screen_size[0] / (LIGHT_RAY_COUNT as f32),
+                    self.light.screen_size[1],
+                ),
                 ..center
             };
             graphics::draw_ex(ctx, &self.occlusions, param)?;
