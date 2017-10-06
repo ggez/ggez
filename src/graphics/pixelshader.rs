@@ -15,6 +15,7 @@ use std::io::prelude::*;
 use std::marker::PhantomData;
 use std::path::Path;
 use std::rc::Rc;
+use std::collections::HashMap;
 
 use Context;
 use error::*;
@@ -32,6 +33,62 @@ impl<F> Structure<F> for EmptyConst {
 }
 
 unsafe impl Pod for EmptyConst {}
+
+/// An enum for specifying default and custom blend modes
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum BlendMode {
+    Add,
+    Subtract,
+    Alpha,
+    Invert,
+    Multiply,
+    Replace,
+    Lighten,
+    Darken
+}
+
+/// A structure for conveniently storing Sampler's, based off
+/// their `SamplerInfo`.
+///
+/// Making this generic is tricky 'cause it has methods that depend
+/// on the generic Factory trait, it seems, so for now we just kind
+/// of hack it.
+struct PsoSet<Spec, C>
+    where Spec: graphics::BackendSpec,
+          C: 'static + Pod + Structure<ConstFormat> + Clone + Copy
+{
+    psos: HashMap<BlendMode, PipelineState<Spec::Resources, ConstMeta<C>>>,
+}
+
+impl<Spec, C> PsoSet<Spec, C>
+    where Spec: graphics::BackendSpec,
+          C: 'static + Pod + Structure<ConstFormat> + Clone + Copy
+{
+    fn new(cap: usize) -> Self {
+        Self {
+            psos: HashMap::with_capacity(cap)
+        }
+    }
+
+    fn insert_mode(
+        &mut self,
+        mode: BlendMode,
+        pso: PipelineState<Spec::Resources, ConstMeta<C>>
+    ) {
+        self.psos.insert(mode, pso);
+    }
+
+    fn get_mode(
+        &self,
+        mode: BlendMode,
+    ) -> GameResult<PipelineState<Spec::Resources, ConstMeta<C>>>
+    {
+        self.psos.get(mode)
+            .unwrap_or(
+                GameError::RenderError("Could not find a pipeline for the specified shader and BlendMode".into()))
+            .clone()
+    }
+}
 
 /// An ID used by the `GraphicsContext` to uniquely identify a pixel shader
 pub type PixelShaderId = usize;
@@ -51,27 +108,44 @@ pub struct PixelShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFor
 /// with a ggez graphics context
 pub type PixelShader<C> = PixelShaderGeneric<graphics::GlBackendSpec, C>;
 
-pub(crate) fn create_shader<C, S, Spec>(
-    source: &[u8],
-    consts: C,
-    name: S,
-    encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
-    factory: &mut Spec::Factory,
-    multisample_samples: u8,
+pub(crate) fn create_shader<C, S, Spec>
+    (source: &[u8],
+     consts: C,
+     name: S,
+     encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+     factory: &mut Spec::Factory,
+     multisample_samples: u8,
+     blend_modes: Option<Vec<BlendMode>>
 ) -> GameResult<(PixelShaderGeneric<Spec, C>, Box<PixelShaderDraw<Spec>>)>
-where
-    C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
-    S: Into<String>,
-    Spec: graphics::BackendSpec + 'static,
+    where C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
+          S: Into<String>,
+          Spec: graphics::BackendSpec + 'static
 {
     let buffer = factory.create_constant_buffer(1);
     let buffer = Rc::new(buffer);
 
     encoder.update_buffer(&buffer, &[consts], 0)?;
 
-    let pso = {
-        let init = ConstInit::<C>(graphics::pipe::new(), name.into(), PhantomData);
-        let set = factory.create_shader_set(include_bytes!("shader/basic_150.glslv"), &source)?;
+    let blend_modes = if let Some(m) = blend_modes {
+        m
+    } else {
+        let mut m = Vec::with_capacity(1);
+        m.push(BlendMode::Alpha);
+        m
+    };
+
+    let psos = PsoSet::new(blend_modes.len());
+    for mode in blend_modes {
+        let init = ConstInit::<C>(
+            graphics::pipe::Init{
+                out: ("Target0", MASK_ALL, mode.into()),
+                ..graphics::pipe::new()
+            }, 
+            name.into(),
+            PhantomData
+        );
+        let set = factory
+            .create_shader_set(include_bytes!("shader/basic_150.glslv"), &source)?;
         let sample = if multisample_samples > 1 {
             Some(MultiSample)
         } else {
@@ -85,12 +159,13 @@ where
             samples: sample,
         };
 
-        factory.create_pipeline_state(&set, Primitive::TriangleList, rasterizer, init)?
-    };
+        psos.insert_mode(mode, factory
+            .create_pipeline_state(&set, Primitive::TriangleList, rasterizer, init)?);
+    }
 
     let program = PixelShaderProgram {
         buffer: buffer.clone(),
-        pso,
+        psos,
     };
     let draw: Box<PixelShaderDraw<Spec>> = Box::new(program);
 
@@ -169,7 +244,7 @@ where
 
 struct PixelShaderProgram<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
     buffer: Rc<Buffer<Spec::Resources, C>>,
-    pso: PipelineState<Spec::Resources, ConstMeta<C>>,
+    psos: PsoSet<Spec, ConstMeta<C>>,
 }
 
 impl<Spec, C> fmt::Debug for PixelShaderProgram<Spec, C>
