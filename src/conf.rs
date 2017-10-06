@@ -65,6 +65,9 @@ pub struct WindowMode {
     /// Whether or not the window is resizable
     #[default = r#"false"#]
     pub resizable: bool,
+    /// Whether or not to allow high DPI mode when creating the window
+    #[default = r#"true"#]
+    pub allow_highdpi: bool,
     /// Fullscreen type
     #[default = r#"FullscreenType::Off"#]
     pub fullscreen_type: FullscreenType,
