@@ -46,14 +46,13 @@ void main() {
     float dist = 1.0;
     float theta = radians(v_Uv.x * 360.0);
     vec2 dir = vec2(cos(theta), sin(theta));
-    vec2 pos = u_Pos / u_ScreenSize;
     for(int i = 0; i < 1024; i++) {
         float fi = i;
         float r = fi / 1024.0;
         vec2 rel = r * dir;
-        vec2 p = clamp(pos+rel, 0.0, 1.0);
+        vec2 p = clamp(u_Pos+rel, 0.0, 1.0);
         if (texture(t_Texture, p).a > 0.8) {
-            dist = distance(pos, p) * 0.5;
+            dist = distance(u_Pos, p) * 0.5;
             break;
         }
     }
@@ -87,9 +86,7 @@ layout (std140) uniform Light {
 
 void main() {
     vec2 coord = gl_FragCoord.xy / u_ScreenSize;
-    vec2 pos = u_Pos / u_ScreenSize;
-
-    vec2 rel = coord - pos;
+    vec2 rel = coord - u_Pos;
     float theta = atan(rel.y, rel.x);
     float ox = degrees(theta) / 360.0;
     if (ox < 0) {
@@ -100,8 +97,9 @@ void main() {
 
     float intensity = 0.9;
     if (r < occl) {
+        vec2 g = u_ScreenSize / u_ScreenSize.y;
         float p = u_Strength + u_Glow;
-        float d = distance(gl_FragCoord.xy, u_Pos);
+        float d = distance(g * coord, g * u_Pos);
         intensity = 0.9 - clamp(p/(d*d), 0.0, 0.9);
     }
 
@@ -129,9 +127,9 @@ const LIGHT_COLOR: [f32; 4] = [0.72, 0.64, 0.32, 1.0];
 /// hardware limits.
 const LIGHT_RAY_COUNT: u32 = 1440;
 /// The strength of the light - how far it shines
-const LIGHT_STRENGTH: f32 = 4000.0;
+const LIGHT_STRENGTH: f32 = 0.01;
 /// The factor at which the light glows - just for fun
-const LIGHT_GLOW_FACTOR: f32 = 50.0;
+const LIGHT_GLOW_FACTOR: f32 = 0.001;
 /// The rate at which the glow effect oscillates
 const LIGHT_GLOW_RATE: f32 = 50.0;
 
@@ -144,8 +142,8 @@ impl MainState {
             Text::new(ctx, "SHADOWS...", &font)?
         };
         let screen_size = {
-            let coords = graphics::get_screen_coordinates(ctx);
-            [coords.w, coords.h.abs()]
+            let size = ctx.gfx_context.get_drawable_size();
+            [size.0 as f32, size.1 as f32]
         };
         let light = Light {
             pos: [0.0, 0.0],
@@ -186,12 +184,22 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let size = ctx.gfx_context.get_size();
         let center = DrawParam {
-            dest: Point2::new(
-                self.light.screen_size[0] / 2.0,
-                self.light.screen_size[1] / 2.0,
-            ),
+            dest: Point2::new(size.0 as f32 / 2.0, size.1 as f32 / 2.0),
             ..Default::default()
+        };
+        // for re-rendering canvases, we need to take the DPI into account
+        let dpiscale = {
+            let dsize = ctx.gfx_context.get_drawable_size();
+            Point2::new(
+                size.0 as f32 / dsize.0 as f32,
+                size.1 as f32 / dsize.1 as f32,
+            )
+        };
+        let canvascenter = DrawParam {
+            scale: dpiscale,
+            ..center
         };
 
         // First thing we want to do it to render all the foreground items (that
@@ -227,7 +235,6 @@ impl event::EventHandler for MainState {
                 ..Default::default()
             },
         )?;
-        // graphics::draw_ex(ctx, &self.walls, center)?;
         graphics::draw_ex(ctx, &self.text, center)?;
 
         // Now we want to run the occlusions shader to calculate our 1D shadow
@@ -237,7 +244,7 @@ impl event::EventHandler for MainState {
             self.occlusions_shader.send(ctx, self.light)?;
 
             graphics::set_canvas(ctx, Some(&self.occlusions));
-            graphics::draw_ex(ctx, &self.foreground, center)?;
+            graphics::draw_ex(ctx, &self.foreground, canvascenter)?;
         }
 
         // Now lets finally render to screen starting with out background, then
@@ -254,16 +261,13 @@ impl event::EventHandler for MainState {
             self.shadows_shader.send(ctx, self.light)?;
 
             let param = DrawParam {
-                scale: Point2::new(
-                    self.light.screen_size[0] / (LIGHT_RAY_COUNT as f32),
-                    self.light.screen_size[1],
-                ),
+                scale: Point2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), (size.1 as f32)),
                 ..center
             };
             graphics::draw_ex(ctx, &self.occlusions, param)?;
         }
         graphics::set_color(ctx, AMBIENT_COLOR.into())?;
-        graphics::draw_ex(ctx, &self.foreground, center)?;
+        graphics::draw_ex(ctx, &self.foreground, canvascenter)?;
 
         // Uncomment following two lines to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
@@ -285,17 +289,14 @@ impl event::EventHandler for MainState {
         _xrel: i32,
         _yrel: i32,
     ) {
-        let pos = {
-            let pos = Point2::new(x as f32, y as f32);
-            graphics::convert_screen_coordinates(ctx, pos)
-        };
-        self.light.pos = [pos.x, pos.y];
+        let (w, h) = ctx.gfx_context.get_size();
+        let (x, y) = (x as f32 / w as f32, 1.0 - y as f32 / h as f32);
+        self.light.pos = [x, y];
     }
 }
 
 pub fn main() {
-    let mut c = conf::Conf::new();
-    c.window_mode.samples = conf::NumSamples::Eight;
+    let c = conf::Conf::new();
     let ctx = &mut Context::load_from_conf("shadows", "ggez", c).unwrap();
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so

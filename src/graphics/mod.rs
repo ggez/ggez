@@ -31,18 +31,18 @@ use GameError;
 use GameResult;
 
 mod canvas;
-mod text;
-mod types;
 mod mesh;
 mod pixelshader;
+mod text;
+mod types;
 
 pub mod spritebatch;
 
-pub use self::text::*;
-pub use self::types::*;
+pub use self::canvas::*;
 pub use self::mesh::*;
 pub use self::pixelshader::*;
-pub use self::canvas::*;
+pub use self::text::*;
+pub use self::types::*;
 
 /// A marker trait that something is a label for a particular backend.
 pub trait BackendSpec: fmt::Debug {
@@ -771,18 +771,6 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 /// will be negative.
 pub fn get_screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
-}
-
-/// Converts coordinates in between pixel and screen coordinates taking into
-/// account the direction in which the Y axis increases. This method is useful
-/// sending positions to PixelShaders.
-pub fn convert_screen_coordinates(ctx: &Context, p: Point2) -> Point2 {
-    let y = if ctx.gfx_context.screen_rect.h < 0.0 {
-        -ctx.gfx_context.screen_rect.h - p.y
-    } else {
-        p.y
-    };
-    Point2::new(p.x, y)
 }
 
 /// Sets the background color.  Default: blue.
