@@ -1,7 +1,7 @@
 extern crate ggez;
 
 use ggez::*;
-use ggez::graphics::{Canvas, Color, DrawMode, DrawParam, Point2};
+use ggez::graphics::*;
 
 struct MainState {
     canvas: Canvas,
@@ -28,6 +28,11 @@ impl event::EventHandler for MainState {
 
         // now lets render our scene once in the top right and in the bottom
         // right
+        let window_size = ctx.gfx_context.get_size();
+        let scale = Point2::new(
+            0.5 * window_size.0 as f32 / self.canvas.get_image().width() as f32,
+            0.5 * window_size.1 as f32 / self.canvas.get_image().height() as f32,
+        );
         graphics::set_canvas(ctx, None);
         graphics::set_background_color(ctx, Color::new(0.0, 0.0, 0.0, 1.0));
         graphics::clear(ctx);
@@ -36,7 +41,7 @@ impl event::EventHandler for MainState {
             &self.canvas,
             DrawParam {
                 dest: Point2::new(200.0, 150.0),
-                scale: Point2::new(0.5, 0.5),
+                scale,
                 ..Default::default()
             },
         )?;
@@ -45,7 +50,7 @@ impl event::EventHandler for MainState {
             &self.canvas,
             DrawParam {
                 dest: Point2::new(600.0, 450.0),
-                scale: Point2::new(0.5, 0.5),
+                scale,
                 ..Default::default()
             },
         )?;
