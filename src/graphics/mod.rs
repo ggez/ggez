@@ -337,7 +337,8 @@ impl GraphicsContext {
                                            "Empty",
                                            &mut encoder,
                                            &mut factory,
-                                           samples)?;
+                                           samples,
+                                           None)?;
 
         let rect_inst_props = factory
             .create_buffer(1,
@@ -497,12 +498,13 @@ impl GraphicsContext {
 
     /// Draws with the current encoder, slice, and pixel shader. Prefer calling
     /// this method from `Drawables` so that the pixel shader gets used
-    fn draw(&mut self, slice: Option<&gfx::Slice<gfx_device_gl::Resources>>) {
+    fn draw(&mut self, slice: Option<&gfx::Slice<gfx_device_gl::Resources>>) -> GameResult<()> {
         let slice = slice.unwrap_or(&self.quad_slice);
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
         let shader = &self.shaders[id];
 
-        shader.draw(&mut self.encoder, slice, &self.data);
+        shader.draw(&mut self.encoder, slice, &self.data)?;
+        Ok(())
     }
 
     /// Returns a reference to the SDL window.

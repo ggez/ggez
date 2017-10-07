@@ -16,6 +16,7 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::rc::Rc;
 use std::collections::HashMap;
+use gfx::preset::blend;
 
 use Context;
 use error::*;
@@ -37,14 +38,70 @@ unsafe impl Pod for EmptyConst {}
 /// An enum for specifying default and custom blend modes
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum BlendMode {
+    /// When combining two fragments, add their values together, saturating at 1.0
     Add,
+    /// When combining two fragments, subtract the source value from the destination value
     Subtract,
+    /// When combining two fragments, add the value of the source times its alpha channel with the value of the destination multiplied by the inverse of the source alpha channel. Has the usual transparency effect: mixes the two colors using a fraction of each one specified by the alpha of the source.
     Alpha,
+    /// When combining two fragments, subtract the destination color from a constant color using the source color as weight. Has an invert effect with the constant color as base and source color controlling displacement from the base color. A white source color and a white value results in plain invert. The output alpha is same as destination alpha.
     Invert,
+	/// When combining two fragments, multiply their values together.
     Multiply,
+    /// When combining two fragments, choose the source value
     Replace,
+    /// When combining two fragments, choose the lighter value
     Lighten,
+    /// When combining two fragments, choose the darker value
     Darken
+}
+
+impl From<BlendMode> for Blend {
+    fn from(bm: BlendMode) -> Self {
+        match bm {
+            BlendMode::Add => blend::ADD,
+            BlendMode::Subtract => Blend {
+                color: BlendChannel {
+                    equation: Equation::Sub,
+                    source: Factor::One,
+                    destination: Factor::One
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Sub,
+                    source: Factor::One,
+                    destination: Factor::One
+                },
+            },
+            BlendMode::Alpha => blend::ALPHA,
+            BlendMode::Invert => blend::INVERT,
+            BlendMode::Multiply => blend::MULTIPLY,
+            BlendMode::Replace => blend::REPLACE,
+            BlendMode::Lighten => Blend {
+                color: BlendChannel {
+                    equation: Equation::Max,
+                    source: Factor::One,
+                    destination: Factor::One
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Sub,
+                    source: Factor::One,
+                    destination: Factor::One
+                },
+            },
+            BlendMode::Darken => Blend {
+                color: BlendChannel {
+                    equation: Equation::Sub,
+                    source: Factor::One,
+                    destination: Factor::One
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Sub,
+                    source: Factor::One,
+                    destination: Factor::One
+                },
+            },
+        }
+    }
 }
 
 /// A structure for conveniently storing Sampler's, based off
@@ -55,22 +112,22 @@ pub enum BlendMode {
 /// of hack it.
 struct PsoSet<Spec, C>
     where Spec: graphics::BackendSpec,
-          C: 'static + Pod + Structure<ConstFormat> + Clone + Copy
+          C: Structure<ConstFormat>
 {
     psos: HashMap<BlendMode, PipelineState<Spec::Resources, ConstMeta<C>>>,
 }
 
 impl<Spec, C> PsoSet<Spec, C>
     where Spec: graphics::BackendSpec,
-          C: 'static + Pod + Structure<ConstFormat> + Clone + Copy
+          C: Structure<ConstFormat>
 {
-    fn new(cap: usize) -> Self {
+    pub fn new(cap: usize) -> Self {
         Self {
             psos: HashMap::with_capacity(cap)
         }
     }
 
-    fn insert_mode(
+    pub fn insert_mode(
         &mut self,
         mode: BlendMode,
         pso: PipelineState<Spec::Resources, ConstMeta<C>>
@@ -78,15 +135,15 @@ impl<Spec, C> PsoSet<Spec, C>
         self.psos.insert(mode, pso);
     }
 
-    fn get_mode(
+    pub fn get_mode(
         &self,
-        mode: BlendMode,
-    ) -> GameResult<PipelineState<Spec::Resources, ConstMeta<C>>>
+        mode: &BlendMode,
+    ) -> GameResult<&PipelineState<Spec::Resources, ConstMeta<C>>>
     {
-        self.psos.get(mode)
-            .unwrap_or(
-                GameError::RenderError("Could not find a pipeline for the specified shader and BlendMode".into()))
-            .clone()
+        match self.psos.get(mode) {
+            Some(pso) => Ok(pso),
+            None => Err(GameError::RenderError("Could not find a pipeline for the specified shader and BlendMode".into()))
+        }
     }
 }
 
@@ -115,7 +172,7 @@ pub(crate) fn create_shader<C, S, Spec>
      encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
      factory: &mut Spec::Factory,
      multisample_samples: u8,
-     blend_modes: Option<Vec<BlendMode>>
+     blend_modes: Option<&[BlendMode]>
 ) -> GameResult<(PixelShaderGeneric<Spec, C>, Box<PixelShaderDraw<Spec>>)>
     where C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
           S: Into<String>,
@@ -126,22 +183,19 @@ pub(crate) fn create_shader<C, S, Spec>
 
     encoder.update_buffer(&buffer, &[consts], 0)?;
 
-    let blend_modes = if let Some(m) = blend_modes {
-        m
-    } else {
-        let mut m = Vec::with_capacity(1);
-        m.push(BlendMode::Alpha);
-        m
-    };
+    let default_mode = vec![BlendMode::Alpha];
+    let blend_modes = blend_modes.unwrap_or(&default_mode[..]);
 
-    let psos = PsoSet::new(blend_modes.len());
-    for mode in blend_modes {
+    let mut psos = PsoSet::new(blend_modes.len());
+    let name: String = name.into();
+    for mode in blend_modes.clone() {
+        let mode = mode.clone();
         let init = ConstInit::<C>(
             graphics::pipe::Init{
                 out: ("Target0", MASK_ALL, mode.into()),
                 ..graphics::pipe::new()
             }, 
-            name.into(),
+            name.clone(),
             PhantomData
         );
         let set = factory
@@ -163,9 +217,11 @@ pub(crate) fn create_shader<C, S, Spec>
             .create_pipeline_state(&set, Primitive::TriangleList, rasterizer, init)?);
     }
 
+    let default_pso = psos.get_mode(&blend_modes[0])?;
     let program = PixelShaderProgram {
         buffer: buffer.clone(),
         psos,
+        active_pso: Rc::new(default_pso.clone()),
     };
     let draw: Box<PixelShaderDraw<Spec>> = Box::new(program);
 
@@ -210,6 +266,7 @@ where
             &mut ctx.gfx_context.encoder,
             &mut *ctx.gfx_context.factory,
             ctx.gfx_context.multisample_samples,
+            None
         )?;
         shader.id = ctx.gfx_context.shaders.len();
         ctx.gfx_context.shaders.push(draw);
@@ -244,7 +301,8 @@ where
 
 struct PixelShaderProgram<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
     buffer: Rc<Buffer<Spec::Resources, C>>,
-    psos: PsoSet<Spec, ConstMeta<C>>,
+    psos: PsoSet<Spec, C>,
+    active_pso: Rc<PipelineState<Spec::Resources, ConstMeta<C>>>,
 }
 
 impl<Spec, C> fmt::Debug for PixelShaderProgram<Spec, C>
@@ -266,7 +324,7 @@ pub trait PixelShaderDraw<Spec: graphics::BackendSpec>: fmt::Debug {
         &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
         &Slice<Spec::Resources>,
         &graphics::pipe::Data<Spec::Resources>,
-    );
+    ) -> GameResult<()>;
 }
 
 impl<Spec, C> PixelShaderDraw<Spec> for PixelShaderProgram<Spec, C>
@@ -278,9 +336,10 @@ where
         &self,
         encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
         slice: &Slice<Spec::Resources>,
-        data: &graphics::pipe::Data<Spec::Resources>,
-    ) {
-        encoder.draw(slice, &self.pso, &ConstData(data, &self.buffer));
+        data: &graphics::pipe::Data<Spec::Resources>
+    ) -> GameResult<()> {
+        encoder.draw(slice, &self.active_pso, &ConstData(data, &self.buffer));
+        Ok(())
     }
 }
 
