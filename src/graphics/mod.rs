@@ -314,6 +314,9 @@ impl GraphicsContext {
         if window_mode.resizable {
             window_builder.resizable();
         }
+        if window_mode.allow_highdpi {
+            window_builder.allow_highdpi();
+        }
         let (window, gl_context, device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
