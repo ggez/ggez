@@ -46,6 +46,41 @@ impl fmt::Display for GameError {
     }
 }
 
+impl Error for GameError {
+    fn description(&self) -> &str {
+        match *self {
+            GameError::FilesystemError(_) => "Filesystem error",
+            GameError::ConfigError(_) => "Config file error",
+            GameError::ResourceLoadError(_) => "Resource load error",
+            GameError::ResourceNotFound(_, _) => "Resource not found",
+            GameError::RenderError(_) => "Render error",
+            GameError::AudioError(_) => "Audio error",
+            GameError::WindowError(_) => "Window error",
+            GameError::IOError(_) => "IO error",
+            GameError::FontError(_) => "Font error",
+            GameError::VideoError(_) => "Video error",
+            GameError::UnknownError(_) => "Unknown error",
+        }
+    }
+
+    fn cause(&self) -> Option<&Error> {
+        match *self {
+            GameError::FilesystemError(ref _s) => None,
+            GameError::ConfigError(ref _s) => None,
+            GameError::ResourceLoadError(ref _s) => None,
+            GameError::ResourceNotFound(ref _s, _) => None,
+            GameError::RenderError(ref _s) => None,
+            GameError::AudioError(ref _s) => None,
+            GameError::WindowError(ref _we) => None,
+            GameError::IOError(ref e) => Some(e),
+            GameError::FontError(ref _s) => None,
+            GameError::VideoError(ref _s) => None,
+            GameError::UnknownError(ref _s) => None,
+        }
+    }
+}
+
+
 /// A convenient result type consisting of a return type and a `GameError`
 pub type GameResult<T> = Result<T, GameError>;
 
