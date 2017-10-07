@@ -25,23 +25,24 @@ use gfx_device_gl;
 use gfx_window_sdl;
 use gfx::Factory;
 
-
 use conf::WindowMode;
 use context::Context;
 use GameError;
 use GameResult;
 
+mod canvas;
 mod text;
 mod types;
-/// SpriteBatch type.
-pub mod spritebatch;
-pub mod pixelshader;
 mod mesh;
+mod pixelshader;
+
+pub mod spritebatch;
 
 pub use self::text::*;
 pub use self::types::*;
 pub use self::mesh::*;
 pub use self::pixelshader::*;
+pub use self::canvas::*;
 
 /// A marker trait that something is a label for a particular backend.
 pub trait BackendSpec: fmt::Debug {
@@ -211,7 +212,7 @@ pub struct GraphicsContextGeneric<B>
     device: Box<B::Device>,
     factory: Box<B::Factory>,
     encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
-    // color_view: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
+    color_view: gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
     #[allow(dead_code)]
     depth_view: gfx::handle::DepthStencilView<B::Resources, gfx::format::DepthStencil>,
 
@@ -363,7 +364,7 @@ impl GraphicsContext {
             tex: (texture, sampler),
             rect_instance_properties: rect_inst_props,
             globals: globals_buffer,
-            out: color_view,
+            out: color_view.clone(),
         };
 
         // Set initial uniform values
@@ -396,6 +397,7 @@ impl GraphicsContext {
             device: Box::new(device),
             factory: Box::new(factory),
             encoder: encoder,
+            color_view: color_view,
             depth_view: depth_view,
 
             data: data,
@@ -769,6 +771,18 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 /// will be negative.
 pub fn get_screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
+}
+
+/// Converts coordinates in between pixel and screen coordinates taking into
+/// account the direction in which the Y axis increases. This method is useful
+/// sending positions to PixelShaders.
+pub fn convert_screen_coordinates(ctx: &Context, p: Point2) -> Point2 {
+    let y = if ctx.gfx_context.screen_rect.h < 0.0 {
+        -ctx.gfx_context.screen_rect.h - p.y
+    } else {
+        p.y
+    };
+    Point2::new(p.x, y)
 }
 
 /// Sets the background color.  Default: blue.

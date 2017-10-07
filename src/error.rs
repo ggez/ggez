@@ -211,6 +211,24 @@ impl From<gfx::CombinedError> for GameError {
     }
 }
 
+impl From<gfx::texture::CreationError> for GameError {
+    fn from(e: gfx::texture::CreationError) -> GameError {
+        gfx::CombinedError::from(e).into()
+    }
+}
+
+impl From<gfx::ResourceViewError> for GameError {
+    fn from(e: gfx::ResourceViewError) -> GameError {
+        gfx::CombinedError::from(e).into()
+    }
+}
+
+impl From<gfx::TargetViewError> for GameError {
+    fn from(e: gfx::TargetViewError) -> GameError {
+        gfx::CombinedError::from(e).into()
+    }
+}
+
 impl<T> From<gfx::UpdateError<T>> for GameError
     where T: fmt::Debug + fmt::Display + 'static
 {
