@@ -130,7 +130,7 @@ impl graphics::Drawable for SpriteBatch {
         gfx.push_transform(param.into_matrix());
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
-        gfx.draw(Some(&slice));
+        gfx.draw(Some(&slice))?;
         gfx.pop_transform();
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;

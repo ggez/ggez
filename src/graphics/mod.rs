@@ -225,7 +225,7 @@ pub struct GraphicsContextGeneric<B>
 
     default_shader: PixelShaderId,
     current_shader: Rc<RefCell<Option<PixelShaderId>>>,
-    shaders: Vec<Box<PixelShaderDraw<B>>>,
+    shaders: Vec<Box<PixelShaderHandle<B>>>,
 }
 
 impl<B> fmt::Debug for GraphicsContextGeneric<B>
@@ -501,10 +501,17 @@ impl GraphicsContext {
     fn draw(&mut self, slice: Option<&gfx::Slice<gfx_device_gl::Resources>>) -> GameResult<()> {
         let slice = slice.unwrap_or(&self.quad_slice);
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
-        let shader = &self.shaders[id];
+        let shader_handle = &self.shaders[id];
 
-        shader.draw(&mut self.encoder, slice, &self.data)?;
+        shader_handle.draw(&mut self.encoder, slice, &self.data)?;
         Ok(())
+    }
+
+    /// Sets the blend mode of the active shader
+    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()> {
+        let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
+        let shader_handle = &mut self.shaders[id];
+        shader_handle.set_blend_mode(mode)
     }
 
     /// Returns a reference to the SDL window.
@@ -1279,7 +1286,7 @@ impl Drawable for Image {
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.texture.clone(), sampler);
-        gfx.draw(None);
+        gfx.draw(None)?;
         Ok(())
     }
 }

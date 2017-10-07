@@ -173,7 +173,7 @@ pub(crate) fn create_shader<C, S, Spec>
      factory: &mut Spec::Factory,
      multisample_samples: u8,
      blend_modes: Option<&[BlendMode]>
-) -> GameResult<(PixelShaderGeneric<Spec, C>, Box<PixelShaderDraw<Spec>>)>
+) -> GameResult<(PixelShaderGeneric<Spec, C>, Box<PixelShaderHandle<Spec>>)>
     where C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
           S: Into<String>,
           Spec: graphics::BackendSpec + 'static
@@ -217,13 +217,12 @@ pub(crate) fn create_shader<C, S, Spec>
             .create_pipeline_state(&set, Primitive::TriangleList, rasterizer, init)?);
     }
 
-    let default_pso = psos.get_mode(&blend_modes[0])?;
     let program = PixelShaderProgram {
         buffer: buffer.clone(),
         psos,
-        active_pso: Rc::new(default_pso.clone()),
+        active_blend_mode: blend_modes[0].clone()
     };
-    let draw: Box<PixelShaderDraw<Spec>> = Box::new(program);
+    let draw: Box<PixelShaderHandle<Spec>> = Box::new(program);
 
     let id = 0;
     let shader = PixelShaderGeneric { id, buffer };
@@ -302,7 +301,7 @@ where
 struct PixelShaderProgram<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
     buffer: Rc<Buffer<Spec::Resources, C>>,
     psos: PsoSet<Spec, C>,
-    active_pso: Rc<PipelineState<Spec::Resources, ConstMeta<C>>>,
+    active_blend_mode: BlendMode
 }
 
 impl<Spec, C> fmt::Debug for PixelShaderProgram<Spec, C>
@@ -317,20 +316,22 @@ where
 
 /// A trait that is used to create trait objects to abstract away the
 /// Structure<ConstFormat> type of the constant data for drawing
-pub trait PixelShaderDraw<Spec: graphics::BackendSpec>: fmt::Debug {
+pub trait PixelShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
     /// Draw with the current PixelShader
     fn draw(
         &self,
         &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
         &Slice<Spec::Resources>,
-        &graphics::pipe::Data<Spec::Resources>,
+        &graphics::pipe::Data<Spec::Resources>
     ) -> GameResult<()>;
+
+    /// Sets the shader's blend mode
+    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()>;
 }
 
-impl<Spec, C> PixelShaderDraw<Spec> for PixelShaderProgram<Spec, C>
-where
-    Spec: graphics::BackendSpec,
-    C: Structure<ConstFormat>,
+impl<Spec, C> PixelShaderHandle<Spec> for PixelShaderProgram<Spec, C>
+    where Spec: graphics::BackendSpec,
+          C: Structure<ConstFormat>
 {
     fn draw(
         &self,
@@ -338,7 +339,14 @@ where
         slice: &Slice<Spec::Resources>,
         data: &graphics::pipe::Data<Spec::Resources>
     ) -> GameResult<()> {
-        encoder.draw(slice, &self.active_pso, &ConstData(data, &self.buffer));
+        let pso = self.psos.get_mode(&self.active_blend_mode)?;
+        encoder.draw(slice, pso, &ConstData(data, &self.buffer));
+        Ok(())
+    }
+
+    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()> {
+        self.psos.get_mode(&mode)?;
+        self.active_blend_mode = mode;
         Ok(())
     }
 }
@@ -382,6 +390,11 @@ where
 /// Clears the the current pixel shader for the Context making use the default
 pub fn clear_shader(ctx: &mut Context) {
     *ctx.gfx_context.current_shader.borrow_mut() = None;
+}
+
+/// Sets the blend mode of the currently active shader program
+pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult<()> {
+    ctx.gfx_context.set_blend_mode(mode)
 }
 
 #[derive(Debug)]
