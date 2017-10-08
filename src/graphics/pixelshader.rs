@@ -76,6 +76,7 @@ impl From<BlendMode> for Blend {
             BlendMode::Invert => blend::INVERT,
             BlendMode::Multiply => blend::MULTIPLY,
             BlendMode::Replace => blend::REPLACE,
+            // TODO: IMPLEMENT Lighten and Darken blend modes
             BlendMode::Lighten => Blend {
                 color: BlendChannel {
                     equation: Equation::Max,
