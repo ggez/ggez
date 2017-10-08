@@ -84,21 +84,22 @@ impl From<BlendMode> for Blend {
                     destination: Factor::One
                 },
                 alpha: BlendChannel {
-                    equation: Equation::Sub,
-                    source: Factor::One,
-                    destination: Factor::One
+                    equation: Equation::Add,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                    destination: Factor::OneMinus(BlendValue::SourceAlpha)
                 },
             },
             BlendMode::Darken => Blend {
                 color: BlendChannel {
-                    equation: Equation::Sub,
+                    equation: Equation::Min,
                     source: Factor::One,
                     destination: Factor::One
                 },
                 alpha: BlendChannel {
-                    equation: Equation::Sub,
-                    source: Factor::One,
-                    destination: Factor::One
+
+                    equation: Equation::Add,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                    destination: Factor::OneMinus(BlendValue::SourceAlpha)
                 },
             },
         }
