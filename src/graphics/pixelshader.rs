@@ -240,6 +240,7 @@ where
         path: P,
         consts: C,
         name: S,
+        blend_modes: Option<&[BlendMode]>,
     ) -> GameResult<PixelShader<C>> {
         let source = {
             let mut buf = Vec::new();
@@ -247,7 +248,7 @@ where
             reader.read_to_end(&mut buf)?;
             buf
         };
-        PixelShader::from_u8(ctx, &source, consts, name)
+        PixelShader::from_u8(ctx, &source, consts, name, blend_modes)
     }
 
     /// Create a new `PixelShader` directly from source given a gfx pipeline
@@ -257,6 +258,7 @@ where
         source: &[u8],
         consts: C,
         name: S,
+        blend_modes: Option<&[BlendMode]>,
     ) -> GameResult<PixelShader<C>> {
         let (mut shader, draw) = create_shader(
             &source,
@@ -265,7 +267,7 @@ where
             &mut ctx.gfx_context.encoder,
             &mut *ctx.gfx_context.factory,
             ctx.gfx_context.multisample_samples,
-            None
+            blend_modes
         )?;
         shader.id = ctx.gfx_context.shaders.len();
         ctx.gfx_context.shaders.push(draw);

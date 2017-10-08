@@ -332,13 +332,23 @@ impl GraphicsContext {
                                       gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer().into();
 
+        let blend_modes = vec![
+            BlendMode::Alpha,
+            BlendMode::Add,
+            BlendMode::Subtract,
+            BlendMode::Invert,
+            BlendMode::Multiply,
+            BlendMode::Replace,
+            BlendMode::Lighten,
+            BlendMode::Darken
+        ];
         let (shader, draw) = create_shader(include_bytes!("shader/basic_150.glslf"),
                                            EmptyConst,
                                            "Empty",
                                            &mut encoder,
                                            &mut factory,
                                            samples,
-                                           None)?;
+                                           Some(&blend_modes[..]))?;
 
         let rect_inst_props = factory
             .create_buffer(1,
