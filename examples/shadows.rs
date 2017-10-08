@@ -362,9 +362,7 @@ impl event::EventHandler for MainState {
         self.render_light(ctx, light, center, canvascenter)?;
 
         // Now lets finally render to screen starting with out background, then
-        // the shadows and lights overtop and finally our foreground. Note that we set the
-        // light color as the color for our render giving everything the "tint"
-        // we desire.
+        // the shadows and lights overtop and finally our foreground.
         graphics::set_canvas(ctx, None);
         graphics::set_color(ctx, graphics::WHITE)?;
         graphics::set_blend_mode(ctx, BlendMode::Alpha)?;
