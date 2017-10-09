@@ -923,6 +923,11 @@ pub fn apply_transformations(context: &mut Context) -> GameResult<()> {
     gfx.update_globals()
 }
 
+/// Sets the blend mode of the currently active shader program
+pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult<()> {
+    ctx.gfx_context.set_blend_mode(mode)
+}
+
 /// Sets the window mode, such as the size and other properties.
 ///
 /// Setting the window mode may have side effects, such as clearing

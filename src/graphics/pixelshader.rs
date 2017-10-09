@@ -76,7 +76,6 @@ impl From<BlendMode> for Blend {
             BlendMode::Invert => blend::INVERT,
             BlendMode::Multiply => blend::MULTIPLY,
             BlendMode::Replace => blend::REPLACE,
-            // TODO: IMPLEMENT Lighten and Darken blend modes
             BlendMode::Lighten => Blend {
                 color: BlendChannel {
                     equation: Equation::Max,
@@ -396,10 +395,6 @@ pub fn clear_shader(ctx: &mut Context) {
     *ctx.gfx_context.current_shader.borrow_mut() = None;
 }
 
-/// Sets the blend mode of the currently active shader program
-pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult<()> {
-    ctx.gfx_context.set_blend_mode(mode)
-}
 
 #[derive(Debug)]
 struct ConstMeta<C: Structure<ConstFormat>>(graphics::pipe::Meta, ConstantBuffer<C>);
