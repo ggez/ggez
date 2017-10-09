@@ -217,8 +217,12 @@ impl MainState {
         };
         let foreground = Canvas::with_window_size(ctx)?;
         let occlusions = Canvas::new(ctx, LIGHT_RAY_COUNT, 1, conf::NumSamples::One)?;
-        let shadows = Canvas::with_window_size(ctx)?;
-        let lights = Canvas::with_window_size(ctx)?;
+        let mut shadows = Canvas::with_window_size(ctx)?;
+        // The shadow map will be drawn on top using the mutiply blend mode
+        shadows.set_blend_mode(Some(BlendMode::Multiply));
+        let mut lights = Canvas::with_window_size(ctx)?;
+        // The light map will be drawn on top using the add blend mode
+        lights.set_blend_mode(Some(BlendMode::Add));
         let occlusions_shader =
             PixelShader::from_u8(ctx, OCCLUSIONS_SHADER_SOURCE, torch, "Light", None)?;
         let shadows_shader =
@@ -365,22 +369,13 @@ impl event::EventHandler for MainState {
         // the shadows and lights overtop and finally our foreground.
         graphics::set_canvas(ctx, None);
         graphics::set_color(ctx, graphics::WHITE)?;
-        graphics::set_blend_mode(ctx, BlendMode::Alpha)?;
         graphics::draw_ex(ctx, &self.background, center)?;
-
-        // The shadow map will be drawn on top using the mutiply blend mode
-        graphics::set_blend_mode(ctx, BlendMode::Multiply)?;
         graphics::draw_ex(ctx, &self.shadows, center)?;
-
-        // The light map will be drawn on top using the add blend mode
-        graphics::set_blend_mode(ctx, BlendMode::Add)?;
         graphics::draw_ex(ctx, &self.lights, center)?;
-
         // We switch the color to the shadow color before drawing the foreground objects
         // this has the same effect as applying this color in a multiply blend mode with
         // full opacity. We also reset the blend mode back to the default Alpha blend mode.
         graphics::set_color(ctx, AMBIENT_COLOR.into())?;
-        graphics::set_blend_mode(ctx, BlendMode::Alpha)?;
         graphics::draw_ex(ctx, &self.foreground, canvascenter)?;
 
         // Uncomment following two lines to visualize the 1D occlusions canvas,

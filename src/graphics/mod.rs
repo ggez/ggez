@@ -524,6 +524,13 @@ impl GraphicsContext {
         shader_handle.set_blend_mode(mode)
     }
 
+    /// Gets the current blend mode of the active shader
+    fn get_blend_mode(&self) -> BlendMode {
+        let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
+        let shader_handle = &self.shaders[id];
+        shader_handle.get_blend_mode()
+    }
+
     /// Returns a reference to the SDL window.
     /// Ideally you should not need to use this because ggez
     /// would provide all the functions you need without having
@@ -1096,6 +1103,15 @@ pub trait Drawable {
                          ..Default::default()
                      })
     }
+
+    /// Sets the blend mode to be used when drawing this drawable.
+    /// This overrides the general `graphics::set_blend_mode()`.
+    /// If `None` is set, defers to the blend mode set by
+    /// `graphics::set_blend_mode()`.
+    fn set_blend_mode(&mut self, mode: Option<BlendMode>);
+
+    /// Gets the blend mode to be used when drawing this drawable.
+    fn get_blend_mode(&self) -> Option<BlendMode>;
 }
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
@@ -1105,6 +1121,7 @@ pub struct ImageGeneric<R>
 {
     texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
     sampler_info: gfx::texture::SamplerInfo,
+    blend_mode: Option<BlendMode>,
     width: u32,
     height: u32,
 }
@@ -1208,6 +1225,7 @@ impl Image {
         Ok(Image {
                texture: view,
                sampler_info: *sampler_info,
+               blend_mode: None,
                width: width as u32,
                height: height as u32,
            })
@@ -1301,8 +1319,28 @@ impl Drawable for Image {
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.texture.clone(), sampler);
+        let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
+            let current_mode = gfx.get_blend_mode();
+            if current_mode != mode {
+                gfx.set_blend_mode(mode)?;
+                Some(current_mode)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
         gfx.draw(None)?;
+        if let Some(mode) = previous_mode {
+            gfx.set_blend_mode(mode)?;
+        }
         Ok(())
+    }
+    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
+        self.blend_mode = mode;
+    }
+    fn get_blend_mode(&self) -> Option<BlendMode> {
+        self.blend_mode
     }
 }
 

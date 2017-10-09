@@ -328,8 +328,11 @@ pub trait PixelShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
         &graphics::pipe::Data<Spec::Resources>
     ) -> GameResult<()>;
 
-    /// Sets the shader's blend mode
+    /// Sets the shader program's blend mode
     fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()>;
+
+    /// Gets the shader program's current blend mode
+    fn get_blend_mode(&self) -> BlendMode;
 }
 
 impl<Spec, C> PixelShaderHandle<Spec> for PixelShaderProgram<Spec, C>
@@ -351,6 +354,10 @@ impl<Spec, C> PixelShaderHandle<Spec> for PixelShaderProgram<Spec, C>
         self.psos.get_mode(&mode)?;
         self.active_blend_mode = mode;
         Ok(())
+    }
+
+    fn get_blend_mode(&self) -> BlendMode {
+        self.active_blend_mode
     }
 }
 
@@ -394,7 +401,6 @@ where
 pub fn clear_shader(ctx: &mut Context) {
     *ctx.gfx_context.current_shader.borrow_mut() = None;
 }
-
 
 #[derive(Debug)]
 struct ConstMeta<C: Structure<ConstFormat>>(graphics::pipe::Meta, ConstantBuffer<C>);
