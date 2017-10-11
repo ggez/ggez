@@ -620,6 +620,12 @@ pub fn draw(ctx: &mut Context, drawable: &Drawable, dest: Point2, rotation: f32)
     drawable.draw(ctx, dest, rotation)
 }
 
+/// Draws the given `Drawable` and `Rectangle` object to the screen by calling its
+/// `draw_in_rect()` method
+pub fn draw_in_rect<D>(ctx: &mut Context, drawable: &D, rect: &Rect) -> GameResult<()>
+    where D: Drawable + Rectangle {
+    drawable.draw_in_rect(ctx, rect)
+}
 
 /// Draws the given `Drawable` object to the screen by calling its `draw_ex()` method.
 pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> GameResult<()> {
@@ -1074,6 +1080,31 @@ pub trait Drawable {
     }
 }
 
+/// A type that can be drawn within rectangle bounds
+pub trait RectDraw
+    where Self: Drawable + Rectangle {
+    /// Draws an image inside a specified rectangle, mainly useful for gradients.
+    fn draw_in_rect(&self, ctx: &mut Context, rect: &Rect) -> GameResult<()> {
+        self.draw_ex(ctx,
+                     DrawParam {
+                        //  dest: Point2::new(rect.x - rect.w / 2.0, rect.x - rect.h / 2.0),
+                         dest: rect.point(),
+                         scale: Point2::new(rect.w / self.width() as f32, rect.h / self.height() as f32),
+                         ..Default::default()
+                     })
+    }
+}
+
+impl<D> RectDraw for D where D: Drawable + Rectangle {}
+
+/// A type that can be represented with a width and height
+pub trait Rectangle {
+    /// Get width
+    fn width(&self) -> u32;
+    /// Get height
+    fn height(&self) -> u32;
+}
+
 /// Generic in-GPU-memory image data available to be drawn on the screen.
 #[derive(Clone)]
 pub struct ImageGeneric<R>
@@ -1119,6 +1150,15 @@ fn scale_rgba_up_to_power_of_2(width: u16, height: u16, rgba: &[u8]) -> (u16, u1
         }
     }
     (w2 as u16, h2 as u16, v)
+}
+
+/// Direction of a Gradient image.
+#[derive(Debug)]
+pub enum GradientDirection {
+    /// Horizontal gradient
+    Horizontal,
+    /// Vertical gradient
+    Vertical
 }
 
 impl Image {
@@ -1202,6 +1242,35 @@ impl Image {
         Image::from_rgba8(context, size, size, &buffer)
     }
 
+    /// A helper function to create a gradient from a slice of specified `Color`s
+    /// to be evenly spaced throughout the gradient in the given direction. Useful when
+    /// paired with `draw_in_rect()`
+    pub fn gradient(
+        ctx: &mut Context,
+        colors: &[Color],
+        direction: GradientDirection
+    ) -> GameResult<Image> {
+        let buf_size = colors.len();
+        let mut buffer: Vec<u8> = Vec::with_capacity(buf_size);
+        for color in colors {
+            let color: [u8; 4] = color.clone().into();
+            buffer.extend(color.iter());
+        }
+        let mut result;
+        match direction {
+            GradientDirection::Horizontal => {
+                result = Image::from_rgba8(ctx, buf_size as u16, 1, &buffer)?;
+                result.set_filter(FilterMode::Linear)
+            },
+            GradientDirection::Vertical => {
+                result = Image::from_rgba8(ctx, 1, buf_size as u16, &buffer)?;
+                result.set_filter(FilterMode::Linear);
+            }
+        }
+        Ok(result)
+    }
+
+
     /// Return the width of the image.
     pub fn width(&self) -> u32 {
         self.width
@@ -1252,6 +1321,10 @@ impl fmt::Debug for Image {
     }
 }
 
+impl Rectangle for Image {
+    fn width(&self) -> u32 { self.width }
+    fn height(&self) -> u32 { self.height }
+}
 
 impl Drawable for Image {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
