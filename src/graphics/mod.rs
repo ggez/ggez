@@ -225,7 +225,7 @@ pub struct GraphicsContextGeneric<B>
 
     default_shader: PixelShaderId,
     current_shader: Rc<RefCell<Option<PixelShaderId>>>,
-    shaders: Vec<Box<PixelShaderDraw<B>>>,
+    shaders: Vec<Box<PixelShaderHandle<B>>>,
 }
 
 impl<B> fmt::Debug for GraphicsContextGeneric<B>
@@ -332,12 +332,23 @@ impl GraphicsContext {
                                       gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer().into();
 
+        let blend_modes = vec![
+            BlendMode::Alpha,
+            BlendMode::Add,
+            BlendMode::Subtract,
+            BlendMode::Invert,
+            BlendMode::Multiply,
+            BlendMode::Replace,
+            BlendMode::Lighten,
+            BlendMode::Darken
+        ];
         let (shader, draw) = create_shader(include_bytes!("shader/basic_150.glslf"),
                                            EmptyConst,
                                            "Empty",
                                            &mut encoder,
                                            &mut factory,
-                                           samples)?;
+                                           samples,
+                                           Some(&blend_modes[..]))?;
 
         let rect_inst_props = factory
             .create_buffer(1,
@@ -509,12 +520,27 @@ impl GraphicsContext {
 
     /// Draws with the current encoder, slice, and pixel shader. Prefer calling
     /// this method from `Drawables` so that the pixel shader gets used
-    fn draw(&mut self, slice: Option<&gfx::Slice<gfx_device_gl::Resources>>) {
+    fn draw(&mut self, slice: Option<&gfx::Slice<gfx_device_gl::Resources>>) -> GameResult<()> {
         let slice = slice.unwrap_or(&self.quad_slice);
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
-        let shader = &self.shaders[id];
+        let shader_handle = &self.shaders[id];
 
-        shader.draw(&mut self.encoder, slice, &self.data);
+        shader_handle.draw(&mut self.encoder, slice, &self.data)?;
+        Ok(())
+    }
+
+    /// Sets the blend mode of the active shader
+    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()> {
+        let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
+        let shader_handle = &mut self.shaders[id];
+        shader_handle.set_blend_mode(mode)
+    }
+
+    /// Gets the current blend mode of the active shader
+    fn get_blend_mode(&self) -> BlendMode {
+        let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
+        let shader_handle = &self.shaders[id];
+        shader_handle.get_blend_mode()
     }
 
     /// Returns a reference to the SDL window.
@@ -960,6 +986,11 @@ pub fn apply_transformations(context: &mut Context) -> GameResult<()> {
     gfx.update_globals()
 }
 
+/// Sets the blend mode of the currently active shader program
+pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult<()> {
+    ctx.gfx_context.set_blend_mode(mode)
+}
+
 /// Sets the window mode, such as the size and other properties.
 ///
 /// Setting the window mode may have side effects, such as clearing
@@ -1128,6 +1159,15 @@ pub trait Drawable {
                          ..Default::default()
                      })
     }
+
+    /// Sets the blend mode to be used when drawing this drawable.
+    /// This overrides the general `graphics::set_blend_mode()`.
+    /// If `None` is set, defers to the blend mode set by
+    /// `graphics::set_blend_mode()`.
+    fn set_blend_mode(&mut self, mode: Option<BlendMode>);
+
+    /// Gets the blend mode to be used when drawing this drawable.
+    fn get_blend_mode(&self) -> Option<BlendMode>;
 }
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
@@ -1137,6 +1177,7 @@ pub struct ImageGeneric<R>
 {
     texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
     sampler_info: gfx::texture::SamplerInfo,
+    blend_mode: Option<BlendMode>,
     width: u32,
     height: u32,
 }
@@ -1240,6 +1281,7 @@ impl Image {
         Ok(Image {
                texture: view,
                sampler_info: *sampler_info,
+               blend_mode: None,
                width: width as u32,
                height: height as u32,
            })
@@ -1333,8 +1375,28 @@ impl Drawable for Image {
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
         gfx.data.tex = (self.texture.clone(), sampler);
-        gfx.draw(None);
+        let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
+            let current_mode = gfx.get_blend_mode();
+            if current_mode != mode {
+                gfx.set_blend_mode(mode)?;
+                Some(current_mode)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        gfx.draw(None)?;
+        if let Some(mode) = previous_mode {
+            gfx.set_blend_mode(mode)?;
+        }
         Ok(())
+    }
+    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
+        self.blend_mode = mode;
+    }
+    fn get_blend_mode(&self) -> Option<BlendMode> {
+        self.blend_mode
     }
 }
 

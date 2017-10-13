@@ -64,6 +64,7 @@ impl Canvas {
             image: Image {
                 texture: resource,
                 sampler_info: ctx.gfx_context.default_sampler_info,
+                blend_mode: None,
                 width,
                 height,
             },
@@ -91,6 +92,12 @@ impl Drawable for Canvas {
             param.scale.y = -param.scale.y;
         }
         self.image.draw_ex(ctx, param)
+    }
+    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
+        self.image.blend_mode = mode;
+    }
+    fn get_blend_mode(&self) -> Option<BlendMode> {
+        self.image.blend_mode
     }
 }
 

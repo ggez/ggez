@@ -6,6 +6,7 @@ use error;
 use gfx;
 use gfx::Factory;
 use GameResult;
+use super::pixelshader::BlendMode;
 
 // Owning the given Image is inconvenient because we might want, say,
 // the same Rc<Image> shared among many SpriteBatch'es.
@@ -30,6 +31,7 @@ use GameResult;
 pub struct SpriteBatch {
     image: graphics::Image,
     sprites: Vec<graphics::InstanceProperties>,
+    blend_mode: Option<BlendMode>,
 }
 
 /// An index of a particular sprite in a SpriteBatch.
@@ -41,6 +43,7 @@ impl SpriteBatch {
         Self {
             image: image,
             sprites: vec![],
+            blend_mode: None
         }
     }
 
@@ -131,10 +134,30 @@ impl graphics::Drawable for SpriteBatch {
         gfx.push_transform(param.into_matrix() * curr_transform);
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
-        gfx.draw(Some(&slice));
+        let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
+            let current_mode = gfx.get_blend_mode();
+            if current_mode != mode {
+                gfx.set_blend_mode(mode)?;
+                Some(current_mode)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        gfx.draw(Some(&slice))?;
+        if let Some(mode) = previous_mode {
+            gfx.set_blend_mode(mode)?;
+        }
         gfx.pop_transform();
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
         Ok(())
+    }
+    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
+        self.blend_mode = mode;
+    }
+    fn get_blend_mode(&self) -> Option<BlendMode> {
+        self.blend_mode
     }
 }

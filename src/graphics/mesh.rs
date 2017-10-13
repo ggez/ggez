@@ -209,6 +209,7 @@ impl MeshBuilder {
         Ok(Mesh {
                buffer: vbuf,
                slice: slice,
+               blend_mode: None
            })
     }
 }
@@ -242,6 +243,7 @@ impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
 pub struct Mesh {
     buffer: gfx::handle::Buffer<gfx_device_gl::Resources, Vertex>,
     slice: gfx::Slice<gfx_device_gl::Resources>,
+    blend_mode: Option<BlendMode>,
 }
 
 
@@ -309,8 +311,14 @@ impl Drawable for Mesh {
         gfx.data.vbuf = self.buffer.clone();
         gfx.data.tex.0 = gfx.white_image.texture.clone();
 
-        gfx.draw(Some(&self.slice));
+        gfx.draw(Some(&self.slice))?;
 
         Ok(())
+    }
+    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
+        self.blend_mode = mode;
+    }
+    fn get_blend_mode(&self) -> Option<BlendMode> {
+        self.blend_mode
     }
 }

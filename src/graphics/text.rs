@@ -215,6 +215,7 @@ impl fmt::Debug for Font {
 pub struct Text {
     texture: Image,
     contents: String,
+    blend_mode: Option<BlendMode>,
 }
 
 /// Compute a scale for a font of a given size.
@@ -308,6 +309,7 @@ fn render_ttf(context: &mut Context,
     Ok(Text {
            texture: image,
            contents: text_string,
+           blend_mode: None,
        })
 
 }
@@ -385,6 +387,7 @@ fn render_bitmap(context: &mut Context,
     Ok(Text {
            texture: image,
            contents: text_string,
+           blend_mode: None,
        })
 }
 
@@ -440,6 +443,12 @@ impl Text {
 impl Drawable for Text {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
         draw_ex(ctx, &self.texture, param)
+    }
+    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
+        self.blend_mode = mode;
+    }
+    fn get_blend_mode(&self) -> Option<BlendMode> {
+        self.blend_mode
     }
 }
 
