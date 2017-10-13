@@ -127,7 +127,8 @@ impl graphics::Drawable for SpriteBatch {
         gfx.data.tex = (self.image.texture.clone(), sampler);
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.sprites.len() as u32, 0));
-        gfx.push_transform(param.into_matrix());
+        let curr_transform = gfx.get_transform();
+        gfx.push_transform(param.into_matrix() * curr_transform);
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
         gfx.draw(Some(&slice));

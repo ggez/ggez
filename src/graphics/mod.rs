@@ -466,6 +466,12 @@ impl GraphicsContext {
         self.transform_stack[idx] = t;
     }
 
+    /// Gets a copy of the current transform matrix.
+    fn get_transform(&self) -> Matrix4 {
+        let idx = self.transform_stack.len() - 1;
+        self.transform_stack[idx].clone()
+    }
+
     /// Pushes a homogeneous transform matrix to the top of the view
     /// matrix stack.
     fn push_view(&mut self, v: Matrix4) {
@@ -484,6 +490,12 @@ impl GraphicsContext {
     fn set_view(&mut self, t: Matrix4) {
         let idx = self.view_stack.len() - 1;
         self.view_stack[idx] = t;
+    }
+
+    /// Gets a copy of the current transform matrix.
+    fn get_view(&self) -> Matrix4 {
+        let idx = self.view_stack.len() - 1;
+        self.view_stack[idx].clone()
     }
 
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
@@ -562,10 +574,10 @@ impl GraphicsContext {
         self.data.out.clone()
     }
 
-    /// Shortcut function to set the screen rect ortho mode
-    /// to a given `Rect`.
+    /// Shortcut function to set the projection matrix to an 
+    /// orthographic projection based on the given `Rect`.
     ///
-    /// Call `update_globals()` to apply them after calling this.
+    /// Call `update_globals()` to apply it after calling this.
     fn set_projection_rect(&mut self, rect: Rect) {
         type Vec3 = na::Vector3<f32>;
         self.screen_rect = rect;
@@ -578,6 +590,18 @@ impl GraphicsContext {
                                                     -1.0,
                                                     1.0)
                 .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
+    }
+
+    /// Sets the raw projection matrix to the given Matrix.
+    ///
+    /// Call `update_globals()` to apply after calling this.
+    fn set_projection(&mut self, mat: Matrix4) {
+        self.projection = mat;
+    }
+
+    /// Gets a copy of the raw projection matrix.
+    fn get_projection(&self) -> Matrix4 {
+        self.projection.clone()
     }
 
     /// Just a helper method to set window mode from a WindowMode object.
@@ -818,6 +842,26 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<(
     gfx.update_globals()
 }
 
+/// Sets the raw projection matrix to the given homogeneous
+/// transformation matrix.
+pub fn set_projection(context: &mut Context, proj: Matrix4) {
+    let gfx = &mut context.gfx_context;
+    gfx.set_projection(proj);
+}
+
+/// Premultiplies the given transformation matrix with the current projection matrix
+pub fn transform_projection(context: &mut Context, transform: Matrix4) {
+    let gfx = &mut context.gfx_context;
+    let curr = gfx.get_projection();
+    gfx.set_projection(transform * curr);
+}
+
+/// Gets a copy of the context's raw projection matrix
+pub fn get_projection(context: &Context) -> Matrix4 {
+    let gfx = &context.gfx_context;
+    gfx.get_projection()
+}
+
 /// Pushes a homogeneous transform matrix to the top of the transform
 /// (model) matrix stack of the `Context`. If no matrix is given, then
 /// pushes a copy of the current transform matrix to the top of the stack.
@@ -851,13 +895,19 @@ pub fn set_transform(context: &mut Context, transform: Matrix4) {
     gfx.set_transform(transform);
 }
 
-/// Appends the given transform to the current model transform.
+/// Gets a copy of the context's current transform matrix
+pub fn get_transform(context: &Context) -> Matrix4 {
+    let gfx = &context.gfx_context;
+    gfx.get_transform()
+}
+
+/// Premultiplies the given transform with the current model transform.
 ///
 /// A `DrawParam` can be converted into an appropriate transform
 /// matrix by calling `param.into_matrix()`.
 pub fn transform(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
-    let curr = gfx.transform_stack[gfx.transform_stack.len() - 1].clone();
+    let curr = gfx.get_transform();
     gfx.set_transform(transform * curr);
 }
 
@@ -888,10 +938,16 @@ pub fn set_view(context: &mut Context, view: Matrix4) {
     gfx.set_view(view);
 }
 
-/// Appends the given transformation matrix to the current view transform matrix
+/// Gets a copy of the context's current view matrix
+pub fn get_view(context: &Context) -> Matrix4 {
+    let gfx = &context.gfx_context;
+    gfx.get_view()
+}
+
+/// Premultiplies the given transformation matrix to the current view transform matrix
 pub fn transform_view(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
-    let curr = gfx.view_stack[gfx.view_stack.len() - 1].clone();
+    let curr = gfx.get_view();
     gfx.set_view(transform * curr);
 }
 
