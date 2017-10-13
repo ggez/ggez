@@ -104,13 +104,18 @@ impl From<BlendMode> for Blend {
         }
     }
 }
-
-/// A structure for conveniently storing Sampler's, based off
-/// their `SamplerInfo`.
+/// A struct to easily store a set of PSOs that is
+/// associated with a specific shader program.
 ///
-/// Making this generic is tricky 'cause it has methods that depend
-/// on the generic Factory trait, it seems, so for now we just kind
-/// of hack it.
+/// In gfx, because Vulkan and DX are more strict 
+/// about how blend modes work than GL is, blend modes are 
+/// baked in as a piece of state for a PSO and you can't change it 
+/// dynamically. After chatting with @kvark on IRC and looking 
+/// how he does it in three-rs, the best way to change blend 
+/// modes is to just make multiple PSOs with respective blend modes baked in. 
+/// The PsoSet struct is basically just a hash map for easily 
+/// storing each shader set's PSOs and then retrieving them based 
+/// on a BlendMode.
 struct PsoSet<Spec, C>
     where Spec: graphics::BackendSpec,
           C: Structure<ConstFormat>
@@ -236,6 +241,11 @@ where
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
 {
     /// Create a new `PixelShader` given a gfx pipeline object
+    ///
+    /// In order to use a specific blend mode when this shader is being
+    /// used, you must include that blend mode as part of the
+    /// `blend_modes` parameter at creation. If `None` is given, only the
+    /// default `Alpha` blend mode is used.
     pub fn new<P: AsRef<Path>, S: Into<String>>(
         ctx: &mut Context,
         path: P,
@@ -254,6 +264,11 @@ where
 
     /// Create a new `PixelShader` directly from source given a gfx pipeline
     /// object
+    ///
+    /// In order to use a specific blend mode when this shader is being
+    /// used, you must include that blend mode as part of the
+    /// `blend_modes` parameter at creation. If `None` is given, only the
+    /// default `Alpha` blend mode is used.
     pub fn from_u8<S: Into<String>>(
         ctx: &mut Context,
         source: &[u8],
