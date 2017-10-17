@@ -34,7 +34,8 @@ test_script:
 # source: https://github.com/starkat99/appveyor-rust/blob/master/appveyor.yml#L113
 build: false
 
-cache:
-    - target
-    - C:\Users\appveyor\.cargo\registry
-
+# For now disable the AppVeyor cache since it seems to be causing build problems
+# but should eventually be re-enabled once the issues get resolved.
+# cache:
+#     - target
+#     - C:\Users\appveyor\.cargo\registry
