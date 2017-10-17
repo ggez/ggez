@@ -24,5 +24,6 @@ install:
       && pushd SDL2-2.0.5 && ./configure --prefix=/usr && make && sudo make install && popd;
     fi
   - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then
-      brew install sdl2;
+      brew update
+      && brew install sdl2;
     fi
