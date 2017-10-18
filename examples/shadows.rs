@@ -370,8 +370,8 @@ impl event::EventHandler for MainState {
         graphics::set_canvas(ctx, None);
         graphics::set_color(ctx, graphics::WHITE)?;
         graphics::draw_ex(ctx, &self.background, center)?;
-        graphics::draw_ex(ctx, &self.shadows, center)?;
-        graphics::draw_ex(ctx, &self.lights, center)?;
+        graphics::draw_ex(ctx, &self.shadows, canvascenter)?;
+        graphics::draw_ex(ctx, &self.lights, canvascenter)?;
         // We switch the color to the shadow color before drawing the foreground objects
         // this has the same effect as applying this color in a multiply blend mode with
         // full opacity. We also reset the blend mode back to the default Alpha blend mode.
