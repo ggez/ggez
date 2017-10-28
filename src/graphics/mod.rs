@@ -815,7 +815,7 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 }
 
 /// Returns a rectangle defining the coordinate system of the screen.
-/// It will be `Rect { x: center_x, y: cenyer_y, w: width, h: height }`
+/// It will be `Rect { x: center_x, y: center_y, w: width, h: height }`
 ///
 /// If the Y axis increases downwards, the `height` of the Rect
 /// will be negative.
@@ -861,7 +861,7 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
 /// Recall that a `Rect` currently the x and y coordinates at the center,
 /// so if you wanted a coordinate system from (0,0) at the bottom-left
 /// to (640, 480) at the top-right, you would call this function with
-/// a `Rect{x: 320, y: 240, w: 640, h: 480}`
+/// a `Rect{x: 320.0, y: 240.0, w: 640.0, h: 480.0}`
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
