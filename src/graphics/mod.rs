@@ -106,6 +106,9 @@ gfx_defines!{
 
     /// Internal structure containing values that are different for each rect.
     vertex InstanceProperties {
+        // the columns here are for the transform matrix;
+        // you can't shove a full matrix into an instance
+        // buffer, annoyingly.
         src: [f32; 4] = "a_Src",
         col1: [f32; 4] = "a_TCol1",
         col2: [f32; 4] = "a_TCol2",
@@ -163,7 +166,6 @@ impl From<DrawParam> for InstanceProperties {
 struct SamplerCache<B>
     where B: BackendSpec
 {
-    // TODO: Make this generic on BackendSpec?
     samplers: HashMap<texture::SamplerInfo, gfx::handle::Sampler<B::Resources>>,
 }
 
@@ -173,6 +175,7 @@ impl<B> SamplerCache<B>
     fn new() -> Self {
         SamplerCache { samplers: HashMap::new() }
     }
+
     fn get_or_insert(&mut self,
                         info: texture::SamplerInfo,
                         factory: &mut B::Factory)
@@ -321,7 +324,6 @@ impl GraphicsContext {
         let (window, gl_context, device, mut factory, color_view, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
-        // println!("Vsync enabled: {}", vsync);
         GraphicsContext::set_vsync(&video, window_mode.vsync);
 
         let display_index = window.display_index()?;
@@ -332,7 +334,7 @@ impl GraphicsContext {
                                       gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer().into();
 
-        let blend_modes = vec![
+        let blend_modes = [
             BlendMode::Alpha,
             BlendMode::Add,
             BlendMode::Subtract,
@@ -473,14 +475,18 @@ impl GraphicsContext {
 
     /// Sets the current transform matrix.
     fn set_transform(&mut self, t: Matrix4) {
-        let idx = self.transform_stack.len() - 1;
-        self.transform_stack[idx] = t;
+        assert!(self.transform_stack.len() > 0, "Tried to set a transform on an empty transform stack!");
+        let last = self.transform_stack.last_mut()
+            .expect("Transform stack empty; should never happen!");
+        *last = t;
     }
 
     /// Gets a copy of the current transform matrix.
     fn get_transform(&self) -> Matrix4 {
-        let idx = self.transform_stack.len() - 1;
-        self.transform_stack[idx].clone()
+        assert!(self.transform_stack.len() > 0, "Tried to get a transform on an empty transform stack!");
+        let last = self.transform_stack.last()
+            .expect("Transform stack empty; should never happen!");
+        last.clone()
     }
 
     /// Pushes a homogeneous transform matrix to the top of the view
@@ -499,14 +505,18 @@ impl GraphicsContext {
 
     /// Sets the current transform matrix.
     fn set_view(&mut self, t: Matrix4) {
-        let idx = self.view_stack.len() - 1;
-        self.view_stack[idx] = t;
+        assert!(self.view_stack.len() > 0, "Tried to set a transform on an empty view stack!");
+        let last = self.view_stack.last_mut()
+            .expect("View stack empty; should never happen!");
+        *last = t;
     }
 
     /// Gets a copy of the current transform matrix.
     fn get_view(&self) -> Matrix4 {
-        let idx = self.view_stack.len() - 1;
-        self.view_stack[idx].clone()
+        assert!(self.view_stack.len() > 0, "Tried to get a transform on an empty view stack!");
+        let last = self.view_stack.last()
+            .expect("Transform stack empty; should never happen!");
+        last.clone()
     }
 
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
@@ -647,6 +657,8 @@ impl GraphicsContext {
     /// This SHOULD go together with `set_window_mode()` above but cannot because it
     /// needs the Sdl2 VideoSubsystem object, which we don't hang on to (because we can't????
     /// Not so sure about that; BUGGO: investigate!)
+    /// TODO: We can get the video subsystem from
+    /// sdl2::video::Window::subsystem()
     fn set_vsync(video: &sdl2::VideoSubsystem, vsync: bool) {
         let vsync_int = if vsync { 1 } else { 0 };
         video.gl_set_swap_interval(vsync_int);
