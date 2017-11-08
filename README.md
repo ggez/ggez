@@ -89,6 +89,6 @@ The goal is to eventually have ggez be pure Rust, but we're not there
 yet.  There's some blockers before we can drop SDL2 for
 `glutin`, see the issue tracker for more info.
 
-## Contact
+## Help!
 
-If you need help or just want to talk about it, the most reliable way is to open an [issue](https://github.com/ggez/ggez/issues).  The creators also tend to hang out on IRC in the `#rust-gamedev` channel on `irc.mozilla.org`.
+Check out `docs/FAQ.md`.  Check out the [module docs](https://docs.rs/ggez/0.3.3/ggez/), a lot of design stuff is explained there.  Check out the examples.  If you still have problems, feel free to [open an issue](https://github.com/ggez/ggez/issues) or say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server.
