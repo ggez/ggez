@@ -1,4 +1,5 @@
 pub use nalgebra as na;
+use std::cmp::{ min, max };
 
 /// A 2 dimensional point representing a location
 pub type Point2 = na::Point2<f32>;
@@ -99,6 +100,61 @@ impl Rect {
     /// Returns the bottom edge of the `Rect`
     pub fn bottom(&self) -> f32 {
         self.y - (self.h / 2.0)
+    }
+
+    /// Checks whether the `Rect` contains a `Point`
+    pub fn contains(&self, point: &Point2) -> bool {
+        point.x >= self.left() &&
+        point.x <= self.right() &&
+        point.y >= self.bottom() &&
+        point.y <= self.top()
+    }
+
+    /// Checks whether the `Rect` overlaps another `Rect`
+    pub fn overlaps(&self, other: &Rect) -> bool {
+        self.left() < other.right() &&
+        self.right() > other.left() &&
+        self.top() > other.bottom() &&
+        self.bottom() < other.top()
+    }
+
+    /// Translates the `Rect` by an offset of (x, y)
+    pub fn translate(&mut self, x: f32, y: f32) {
+        self.x += x;
+        self.y += y;
+    }
+
+    /// Moves the `Rect`'s center to (x, y)
+    pub fn move_to(&mut self, x: f32, y: f32) {
+        self.x = x;
+        self.y = y;
+    }
+
+    /// Scales the `Rect` about its center by a factor of (sx, sy)
+    pub fn scale(&mut self, sx: f32, sy: f32) {
+        self.w *= sx;
+        self.h *= sy;
+    }
+
+    /// Finds the intersection between two `Rect`s, or `None` iff
+    /// they don't intersect.
+    pub fn intersect(&self, other: &Rect) -> Option<Rect> {
+        if !self.overlaps(other) {
+            None
+        } else {
+            let a = (self.left().max(other.left()), self.top().max(other.top()));
+            let b = (self.right().min(other.right()), self.bottom().min(other.bottom()));
+            
+            let width = (a.0 - b.0).abs();
+            let height = (a.1 - b.1).abs();
+
+            Some(Rect::new(
+                a.0 + width / 2.0,
+                a.1 + height / 2.0,
+                width,
+                height,
+            ))
+        }
     }
 }
 
