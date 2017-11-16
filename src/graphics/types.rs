@@ -100,6 +100,40 @@ impl Rect {
     pub fn bottom(&self) -> f32 {
         self.y - (self.h / 2.0)
     }
+
+    /// Checks whether the `Rect` contains a `Point`
+    pub fn contains(&self, point: &Point2) -> bool {
+        point.x >= self.left() &&
+        point.x <= self.right() &&
+        point.y >= self.bottom() &&
+        point.y <= self.top()
+    }
+
+    /// Checks whether the `Rect` overlaps another `Rect`
+    pub fn overlaps(&self, other: &Rect) -> bool {
+        self.left() < other.right() &&
+        self.right() > other.left() &&
+        self.top() > other.bottom() &&
+        self.bottom() < other.top()
+    }
+
+    /// Translates the `Rect` by an offset of (x, y)
+    pub fn translate(&mut self, x: f32, y: f32) {
+        self.x += x;
+        self.y += y;
+    }
+
+    /// Moves the `Rect`'s center to (x, y)
+    pub fn move_to(&mut self, x: f32, y: f32) {
+        self.x = x;
+        self.y = y;
+    }
+
+    /// Scales the `Rect` about its center by a factor of (sx, sy)
+    pub fn scale(&mut self, sx: f32, sy: f32) {
+        self.w *= sx;
+        self.h *= sy;
+    }
 }
 
 
@@ -304,5 +338,46 @@ mod tests {
 
         let r2 = Rect::fraction(32.0, 32.0, 32.0, 32.0, &r1);
         assert_eq!(r2, Rect::new(0.25, 0.25, 0.25, 0.25));
+    }
+
+    #[test]
+    fn test_rect_contains() {
+        let r = Rect::new(0.0, 0.0, 128.0, 128.0);
+        let p = Point2::new(0.0, 0.0);
+        assert!(r.contains(&p));
+
+        let p = Point2::new(500.0, 0.0);
+        assert!(!r.contains(&p));
+    }
+
+    #[test]
+    fn test_rect_overlaps() {
+        let r1 = Rect::new(0.0, 0.0, 128.0, 128.0);
+        let r2 = Rect::new(0.0, 0.0, 64.0, 64.0);
+        assert!(r1.overlaps(&r2));
+
+        let r2 = Rect::new(100.0, 0.0, 128.0, 128.0);
+        assert!(r1.overlaps(&r2));
+
+        let r2 = Rect::new(500.0, 0.0, 64.0, 64.0);
+        assert!(!r1.overlaps(&r2));
+    }
+
+    #[test]
+    fn test_rect_transform() {
+        let mut r1 = Rect::new(0.0, 0.0, 64.0, 64.0);
+        let r2 = Rect::new(64.0, 64.0, 64.0, 64.0);
+        r1.translate(64.0, 64.0);
+        assert!(r1 == r2);
+
+        let mut r1 = Rect::new(0.0, 0.0, 64.0, 64.0);
+        let r2 = Rect::new(0.0, 0.0, 128.0, 128.0);
+        r1.scale(2.0, 2.0);
+        assert!(r1 == r2);
+
+        let mut r1 = Rect::new(32.0, 32.0, 64.0, 64.0);
+        let r2 = Rect::new(64.0, 64.0, 64.0, 64.0);
+        r1.move_to(64.0, 64.0);
+        assert!(r1 == r2);
     }
 }
