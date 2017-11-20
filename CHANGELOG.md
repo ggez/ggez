@@ -70,7 +70,7 @@ lifetimes.
 
 # 0.2.0
 
-Made a fairly fully fleshed out SDL implmentation
+Made a fairly fully fleshed out SDL implementation
 
 # 0.1.0
 

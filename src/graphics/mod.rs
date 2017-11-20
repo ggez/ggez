@@ -572,7 +572,7 @@ impl GraphicsContext {
         self.window.size()
     }
 
-    /// Returns the size of the window's underlaying drawable in pixels as (height, width).
+    /// Returns the size of the window's underlying drawable in pixels as (height, width).
     /// This may return a different value than `get_size()` when run on a platform with high-DPI support
     pub fn get_drawable_size(&self) -> (u32, u32) {
         self.window.drawable_size()

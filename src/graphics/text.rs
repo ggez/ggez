@@ -149,7 +149,7 @@ impl Font {
 
     /// Breaks the given text into lines that will not exceed `wrap_limit` pixels
     /// in length.  It accounts for newlines correctly but does not
-    /// try to break words or handle hypenated words; it just breaks
+    /// try to break words or handle hyphenated words; it just breaks
     /// at whitespace.  (It also doesn't preserve whitespace.)
     ///
     /// Returns a tuple of maximum line width and a `Vec` of wrapped `String`s.

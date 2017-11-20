@@ -13,7 +13,7 @@ use conf::*;
 use error::*;
 use graphics::*;
 
-/// A generic canvas independant of graphics backend. This type should probably
+/// A generic canvas independent of graphics backend. This type should probably
 /// never be used; use `ggez::graphics::Canvas` instead.
 #[derive(Debug)]
 pub struct CanvasGeneric<Spec>
@@ -25,7 +25,7 @@ where
 }
 
 /// A canvas that can be rendered to instead of the screen (sometimes referred
-/// to as "render target" or "render to texture"). Set the cavas with the
+/// to as "render target" or "render to texture"). Set the canvas with the
 /// `ggez::graphics::set_canvas()` function.
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
@@ -71,7 +71,7 @@ impl Canvas {
         })
     }
 
-    /// Create a new canvas with the current window dimentions.
+    /// Create a new canvas with the current window dimensions.
     pub fn with_window_size(ctx: &mut Context) -> GameResult<Canvas> {
         let (w, h) = ctx.gfx_context.get_drawable_size();
         // Default to no multisampling
