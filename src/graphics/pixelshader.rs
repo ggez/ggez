@@ -22,7 +22,7 @@ use Context;
 use error::*;
 use graphics;
 
-/// A type for empty shader data for shaders that do not require any aditional
+/// A type for empty shader data for shaders that do not require any additional
 /// data to be sent to the GPU
 #[derive(Clone, Copy, Debug)]
 pub struct EmptyConst;

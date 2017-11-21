@@ -150,7 +150,7 @@ pub trait VMetadata {
 }
 
 /// A VFS that points to a directory and uses it as the root of its
-/// file heirarchy.
+/// file hierarchy.
 ///
 /// It IS allowed to have symlinks in it!  For now.
 #[derive(Clone)]

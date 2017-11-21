@@ -2,7 +2,7 @@ pub use nalgebra as na;
 
 /// A 2 dimensional point representing a location
 pub type Point2 = na::Point2<f32>;
-/// A 2 dimensional vector representing an offeset of a location
+/// A 2 dimensional vector representing an offset of a location
 pub type Vector2 = na::Vector2<f32>;
 /// A 4 dimensional matrix representing an arbitrary 3d transformation
 pub type Matrix4 = na::Matrix4<f32>;
@@ -45,7 +45,7 @@ impl Rect {
         }
     }
 
-    /// Ceates a new rect a la Love2D's love.graphics.newQuad,
+    /// Creates a new rect a la Love2D's love.graphics.newQuad,
     /// as a fraction of the reference rect's size.
     pub fn fraction(x: f32, y: f32, w: f32, h: f32, reference: &Rect) -> Rect {
         Rect {

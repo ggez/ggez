@@ -23,8 +23,8 @@ gfx_defines!{
 /// Shader source for calculating a 1D shadow map that encodes half distances
 /// in the red channel. The idea is that we scan X rays (X is the horizontal
 /// size of the output) and calculate the distance to the nearest pixel at that
-/// angle that has transparency above a threashold. The distance gets halved
-/// and encoded in the red channel (it is havled because if the distance can be
+/// angle that has transparency above a threshold. The distance gets halved
+/// and encoded in the red channel (it is halved because if the distance can be
 /// greater than 1.0 - think bottom left to top right corner, that sqrt(1) and
 /// will not get properly encoded).
 const OCCLUSIONS_SHADER_SOURCE: &[u8] = b"#version 150 core
@@ -63,7 +63,7 @@ void main() {
 ";
 
 /// Shader for drawing shadows based on a 1D shadow map. It takes current
-/// fragment cordinates and converts them to polar coordinates centered
+/// fragment coordinates and converts them to polar coordinates centered
 /// around the light source, using the angle to sample from the 1D shadow map.
 /// If the distance from the light source is greater than the distance of the
 /// closest reported shadow, then the output is the shadow color, else it calculates some
@@ -108,7 +108,7 @@ void main() {
 ";
 
 /// Shader for drawing lights based on a 1D shadow map. It takes current
-/// fragment cordinates and converts them to polar coordinates centered
+/// fragment coordinates and converts them to polar coordinates centered
 /// around the light source, using the angle to sample from the 1D shadow map.
 /// If the distance from the light source is greater than the distance of the
 /// closest reported shadow, then the output is black, else it calculates some
@@ -218,7 +218,7 @@ impl MainState {
         let foreground = Canvas::with_window_size(ctx)?;
         let occlusions = Canvas::new(ctx, LIGHT_RAY_COUNT, 1, conf::NumSamples::One)?;
         let mut shadows = Canvas::with_window_size(ctx)?;
-        // The shadow map will be drawn on top using the mutiply blend mode
+        // The shadow map will be drawn on top using the multiply blend mode
         shadows.set_blend_mode(Some(BlendMode::Multiply));
         let mut lights = Canvas::with_window_size(ctx)?;
         // The light map will be drawn on top using the add blend mode
@@ -321,10 +321,10 @@ impl event::EventHandler for MainState {
         };
 
         // First thing we want to do it to render all the foreground items (that
-        // will have shadows) onto their own Canvas (off-scree render). We will
+        // will have shadows) onto their own Canvas (off-screen render). We will
         // use this canvas to:
         //  - run the occlusions shader to determine where the shadows are
-        //  - render to screen once all the shadows are caculated and rendered
+        //  - render to screen once all the shadows are calculated and rendered
         graphics::set_canvas(ctx, Some(&self.foreground));
         graphics::set_background_color(ctx, [0.0; 4].into());
         graphics::clear(ctx);
