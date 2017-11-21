@@ -297,12 +297,12 @@ impl GraphicsContext {
                window_title: &str,
                screen_width: u32,
                screen_height: u32,
-               window_mode: WindowMode)
+               window_mode: WindowMode,
+               backend: GlBackendSpec)
                -> GameResult<GraphicsContext> {
         // WINDOW SETUP
-        let backend_spec = GlBackendSpec::default();
         let gl = video.gl_attr();
-        gl.set_context_version(backend_spec.major, backend_spec.minor);
+        gl.set_context_version(backend.major, backend.minor);
         gl.set_context_profile(sdl2::video::GLProfile::Core);
         gl.set_red_size(5);
         gl.set_green_size(5);
@@ -400,7 +400,7 @@ impl GraphicsContext {
             screen_rect: Rect::new(left, bottom, (right - left), (top - bottom)),
             dpi: dpi,
 
-            backend_spec: backend_spec,
+            backend_spec: backend,
             window: window,
             multisample_samples: samples,
             gl_context: gl_context,

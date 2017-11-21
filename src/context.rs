@@ -91,11 +91,13 @@ impl Context {
         let event_context = sdl_context.event()?;
         let timer_context = timer::TimeContext::new();
         let font = graphics::Font::default_font()?;
+        let backend_spec = graphics::GlBackendSpec::default();
         let graphics_context = graphics::GraphicsContext::new(video,
                                                               &conf.window_title,
                                                               conf.window_width,
                                                               conf.window_height,
-                                                              conf.window_mode)?;
+                                                              conf.window_mode,
+                                                              backend_spec)?;
         let gamepad_context = input::GamepadContext::new(&sdl_context)?;
 
         let mut ctx = Context {
