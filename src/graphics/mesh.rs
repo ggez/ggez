@@ -209,7 +209,7 @@ impl MeshBuilder {
         Ok(Mesh {
                buffer: vbuf,
                slice: slice,
-               blend_mode: None
+               blend_mode: None,
            })
     }
 }

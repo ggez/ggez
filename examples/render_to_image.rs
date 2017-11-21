@@ -29,31 +29,26 @@ impl event::EventHandler for MainState {
         // now lets render our scene once in the top right and in the bottom
         // right
         let window_size = ctx.gfx_context.get_size();
-        let scale = Point2::new(
-            0.5 * window_size.0 as f32 / self.canvas.get_image().width() as f32,
-            0.5 * window_size.1 as f32 / self.canvas.get_image().height() as f32,
-        );
+        let scale =
+            Point2::new(0.5 * window_size.0 as f32 / self.canvas.get_image().width() as f32,
+                        0.5 * window_size.1 as f32 / self.canvas.get_image().height() as f32);
         graphics::set_canvas(ctx, None);
         graphics::set_background_color(ctx, Color::new(0.0, 0.0, 0.0, 1.0));
         graphics::clear(ctx);
-        graphics::draw_ex(
-            ctx,
-            &self.canvas,
-            DrawParam {
-                dest: Point2::new(200.0, 150.0),
-                scale,
-                ..Default::default()
-            },
-        )?;
-        graphics::draw_ex(
-            ctx,
-            &self.canvas,
-            DrawParam {
-                dest: Point2::new(600.0, 450.0),
-                scale,
-                ..Default::default()
-            },
-        )?;
+        graphics::draw_ex(ctx,
+                          &self.canvas,
+                          DrawParam {
+                              dest: Point2::new(200.0, 150.0),
+                              scale,
+                              ..Default::default()
+                          })?;
+        graphics::draw_ex(ctx,
+                          &self.canvas,
+                          DrawParam {
+                              dest: Point2::new(600.0, 450.0),
+                              scale,
+                              ..Default::default()
+                          })?;
         graphics::present(ctx);
 
         Ok(())

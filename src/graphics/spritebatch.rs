@@ -43,7 +43,7 @@ impl SpriteBatch {
         Self {
             image: image,
             sprites: vec![],
-            blend_mode: None
+            blend_mode: None,
         }
     }
 

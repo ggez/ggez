@@ -123,14 +123,14 @@ pub fn main() {
     println!("Starting with default config: {:#?}", c);
     let ctx = &mut Context::load_from_conf("imageview", "ggez", c).unwrap();
 
-    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so 
+    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
         ctx.filesystem.mount(&path, true);
     }
-    
+
     let state = &mut MainState::new(ctx).unwrap();
     if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);

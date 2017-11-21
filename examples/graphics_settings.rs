@@ -8,7 +8,7 @@ use ggez::event::{Keycode, Mod};
 enum WindowToggle {
     NONE,
     FORWARD,
-    REVERSE
+    REVERSE,
 }
 
 struct WindowSettings {
@@ -26,7 +26,7 @@ struct MainState {
 
 impl MainState {
     fn new(_ctx: &mut Context) -> GameResult<MainState> {
-        let mut s = MainState { 
+        let mut s = MainState {
             angle: 0.0,
             window_settings: WindowSettings {
                 toggle_fullscreen: false,
@@ -34,7 +34,7 @@ impl MainState {
                 is_fullscreen: false,
                 resolution_index: 0,
                 num_of_resolutions: 0,
-            }
+            },
         };
 
 
@@ -65,9 +65,9 @@ impl event::EventHandler for MainState {
 
                     self.window_settings.window_size_toggle = WindowToggle::NONE;
                 }
-                _ => {},
+                _ => {}
             }
-      }
+        }
         Ok(())
     }
 
@@ -75,12 +75,11 @@ impl event::EventHandler for MainState {
         graphics::set_background_color(ctx, graphics::BLACK);
         graphics::clear(ctx);
         let rotation = timer::get_ticks(ctx) % 1000;
-        let circle = graphics::Mesh::new_circle(
-                        ctx,
-                         DrawMode::Line(3.0),
-                         Point2::new(0.0, 0.0),
-                         100.0,
-                         4.0)?;
+        let circle = graphics::Mesh::new_circle(ctx,
+                                                DrawMode::Line(3.0),
+                                                Point2::new(0.0, 0.0),
+                                                100.0,
+                                                4.0)?;
         graphics::draw(ctx, &circle, Point2::new(400.0, 300.0), rotation as f32)?;
         graphics::present(ctx);
         Ok(())
@@ -97,30 +96,30 @@ impl event::EventHandler for MainState {
                 Keycode::H => {
                     self.window_settings.window_size_toggle = WindowToggle::FORWARD;
                     self.window_settings.resolution_index += 1;
-                    self.window_settings.resolution_index %= self.window_settings.num_of_resolutions;
+                    self.window_settings.resolution_index %=
+                        self.window_settings.num_of_resolutions;
                 }
                 Keycode::G => {
                     if self.window_settings.resolution_index > 0 {
                         self.window_settings.window_size_toggle = WindowToggle::REVERSE;
                         self.window_settings.resolution_index -= 1;
-                        self.window_settings.resolution_index %= self.window_settings.num_of_resolutions;
+                        self.window_settings.resolution_index %=
+                            self.window_settings.num_of_resolutions;
                     }
                 }
-                _ => {},
+                _ => {}
             }
         }
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
-            println!("Resized screen to {}, {}", width, height);
-            // BUGGO: Should be able to return an actual error here!
-            let new_rect = graphics::Rect::new(
-                (width/2) as f32,
-                (height/2) as f32,
-                width as f32,
-                -(height as f32),
-            );
-            graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+        println!("Resized screen to {}, {}", width, height);
+        // BUGGO: Should be able to return an actual error here!
+        let new_rect = graphics::Rect::new((width / 2) as f32,
+                                           (height / 2) as f32,
+                                           width as f32,
+                                           -(height as f32));
+        graphics::set_screen_coordinates(ctx, new_rect).unwrap();
     }
 }
 

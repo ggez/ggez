@@ -46,75 +46,80 @@ pub enum BlendMode {
     Alpha,
     /// When combining two fragments, subtract the destination color from a constant color using the source color as weight. Has an invert effect with the constant color as base and source color controlling displacement from the base color. A white source color and a white value results in plain invert. The output alpha is same as destination alpha.
     Invert,
-	/// When combining two fragments, multiply their values together.
+    /// When combining two fragments, multiply their values together.
     Multiply,
     /// When combining two fragments, choose the source value
     Replace,
     /// When combining two fragments, choose the lighter value
     Lighten,
     /// When combining two fragments, choose the darker value
-    Darken
+    Darken,
 }
 
 impl From<BlendMode> for Blend {
     fn from(bm: BlendMode) -> Self {
         match bm {
             BlendMode::Add => blend::ADD,
-            BlendMode::Subtract => Blend {
-                color: BlendChannel {
-                    equation: Equation::Sub,
-                    source: Factor::One,
-                    destination: Factor::One
-                },
-                alpha: BlendChannel {
-                    equation: Equation::Sub,
-                    source: Factor::One,
-                    destination: Factor::One
-                },
-            },
+            BlendMode::Subtract => {
+                Blend {
+                    color: BlendChannel {
+                        equation: Equation::Sub,
+                        source: Factor::One,
+                        destination: Factor::One,
+                    },
+                    alpha: BlendChannel {
+                        equation: Equation::Sub,
+                        source: Factor::One,
+                        destination: Factor::One,
+                    },
+                }
+            }
             BlendMode::Alpha => blend::ALPHA,
             BlendMode::Invert => blend::INVERT,
             BlendMode::Multiply => blend::MULTIPLY,
             BlendMode::Replace => blend::REPLACE,
-            BlendMode::Lighten => Blend {
-                color: BlendChannel {
-                    equation: Equation::Max,
-                    source: Factor::One,
-                    destination: Factor::One
-                },
-                alpha: BlendChannel {
-                    equation: Equation::Add,
-                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
-                    destination: Factor::OneMinus(BlendValue::SourceAlpha)
-                },
-            },
-            BlendMode::Darken => Blend {
-                color: BlendChannel {
-                    equation: Equation::Min,
-                    source: Factor::One,
-                    destination: Factor::One
-                },
-                alpha: BlendChannel {
-
-                    equation: Equation::Add,
-                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
-                    destination: Factor::OneMinus(BlendValue::SourceAlpha)
-                },
-            },
+            BlendMode::Lighten => {
+                Blend {
+                    color: BlendChannel {
+                        equation: Equation::Max,
+                        source: Factor::One,
+                        destination: Factor::One,
+                    },
+                    alpha: BlendChannel {
+                        equation: Equation::Add,
+                        source: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                        destination: Factor::OneMinus(BlendValue::SourceAlpha),
+                    },
+                }
+            }
+            BlendMode::Darken => {
+                Blend {
+                    color: BlendChannel {
+                        equation: Equation::Min,
+                        source: Factor::One,
+                        destination: Factor::One,
+                    },
+                    alpha: BlendChannel {
+                        equation: Equation::Add,
+                        source: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                        destination: Factor::OneMinus(BlendValue::SourceAlpha),
+                    },
+                }
+            }
         }
     }
 }
 /// A struct to easily store a set of PSOs that is
 /// associated with a specific shader program.
 ///
-/// In gfx, because Vulkan and DX are more strict 
-/// about how blend modes work than GL is, blend modes are 
-/// baked in as a piece of state for a PSO and you can't change it 
-/// dynamically. After chatting with @kvark on IRC and looking 
-/// how he does it in three-rs, the best way to change blend 
-/// modes is to just make multiple PSOs with respective blend modes baked in. 
-/// The PsoSet struct is basically just a hash map for easily 
-/// storing each shader set's PSOs and then retrieving them based 
+/// In gfx, because Vulkan and DX are more strict
+/// about how blend modes work than GL is, blend modes are
+/// baked in as a piece of state for a PSO and you can't change it
+/// dynamically. After chatting with @kvark on IRC and looking
+/// how he does it in three-rs, the best way to change blend
+/// modes is to just make multiple PSOs with respective blend modes baked in.
+/// The PsoSet struct is basically just a hash map for easily
+/// storing each shader set's PSOs and then retrieving them based
 /// on a BlendMode.
 struct PsoSet<Spec, C>
     where Spec: graphics::BackendSpec,
@@ -128,27 +133,21 @@ impl<Spec, C> PsoSet<Spec, C>
           C: Structure<ConstFormat>
 {
     pub fn new(cap: usize) -> Self {
-        Self {
-            psos: HashMap::with_capacity(cap)
-        }
+        Self { psos: HashMap::with_capacity(cap) }
     }
 
-    pub fn insert_mode(
-        &mut self,
-        mode: BlendMode,
-        pso: PipelineState<Spec::Resources, ConstMeta<C>>
-    ) {
+    pub fn insert_mode(&mut self,
+                       mode: BlendMode,
+                       pso: PipelineState<Spec::Resources, ConstMeta<C>>) {
         self.psos.insert(mode, pso);
     }
 
-    pub fn get_mode(
-        &self,
-        mode: &BlendMode,
-    ) -> GameResult<&PipelineState<Spec::Resources, ConstMeta<C>>>
-    {
+    pub fn get_mode(&self,
+                    mode: &BlendMode)
+                    -> GameResult<&PipelineState<Spec::Resources, ConstMeta<C>>> {
         match self.psos.get(mode) {
             Some(pso) => Ok(pso),
-            None => Err(GameError::RenderError("Could not find a pipeline for the specified shader and BlendMode".into()))
+            None => Err(GameError::RenderError("Could not find a pipeline for the specified shader and BlendMode".into())),
         }
     }
 }
@@ -178,8 +177,8 @@ pub(crate) fn create_shader<C, S, Spec>
      encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
      factory: &mut Spec::Factory,
      multisample_samples: u8,
-     blend_modes: Option<&[BlendMode]>
-) -> GameResult<(PixelShaderGeneric<Spec, C>, Box<PixelShaderHandle<Spec>>)>
+     blend_modes: Option<&[BlendMode]>)
+     -> GameResult<(PixelShaderGeneric<Spec, C>, Box<PixelShaderHandle<Spec>>)>
     where C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
           S: Into<String>,
           Spec: graphics::BackendSpec + 'static
@@ -196,14 +195,12 @@ pub(crate) fn create_shader<C, S, Spec>
     let name: String = name.into();
     for mode in blend_modes.clone() {
         let mode = mode.clone();
-        let init = ConstInit::<C>(
-            graphics::pipe::Init{
-                out: ("Target0", MASK_ALL, mode.into()),
-                ..graphics::pipe::new()
-            }, 
-            name.clone(),
-            PhantomData
-        );
+        let init = ConstInit::<C>(graphics::pipe::Init {
+                                      out: ("Target0", MASK_ALL, mode.into()),
+                                      ..graphics::pipe::new()
+                                  },
+                                  name.clone(),
+                                  PhantomData);
         let set = factory
             .create_shader_set(include_bytes!("shader/basic_150.glslv"), &source)?;
         let sample = if multisample_samples > 1 {
@@ -219,14 +216,18 @@ pub(crate) fn create_shader<C, S, Spec>
             samples: sample,
         };
 
-        psos.insert_mode(mode, factory
-            .create_pipeline_state(&set, Primitive::TriangleList, rasterizer, init)?);
+        psos.insert_mode(mode,
+                         factory
+                             .create_pipeline_state(&set,
+                                                    Primitive::TriangleList,
+                                                    rasterizer,
+                                                    init)?);
     }
 
     let program = PixelShaderProgram {
         buffer: buffer.clone(),
         psos,
-        active_blend_mode: blend_modes[0].clone()
+        active_blend_mode: blend_modes[0].clone(),
     };
     let draw: Box<PixelShaderHandle<Spec>> = Box::new(program);
 
@@ -237,8 +238,7 @@ pub(crate) fn create_shader<C, S, Spec>
 }
 
 impl<C> PixelShader<C>
-where
-    C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
+    where C: 'static + Pod + Structure<ConstFormat> + Clone + Copy
 {
     /// Create a new `PixelShader` given a gfx pipeline object
     ///
@@ -246,13 +246,12 @@ where
     /// used, you must include that blend mode as part of the
     /// `blend_modes` parameter at creation. If `None` is given, only the
     /// default `Alpha` blend mode is used.
-    pub fn new<P: AsRef<Path>, S: Into<String>>(
-        ctx: &mut Context,
-        path: P,
-        consts: C,
-        name: S,
-        blend_modes: Option<&[BlendMode]>,
-    ) -> GameResult<PixelShader<C>> {
+    pub fn new<P: AsRef<Path>, S: Into<String>>(ctx: &mut Context,
+                                                path: P,
+                                                consts: C,
+                                                name: S,
+                                                blend_modes: Option<&[BlendMode]>)
+                                                -> GameResult<PixelShader<C>> {
         let source = {
             let mut buf = Vec::new();
             let mut reader = ctx.filesystem.open(path)?;
@@ -269,22 +268,19 @@ where
     /// used, you must include that blend mode as part of the
     /// `blend_modes` parameter at creation. If `None` is given, only the
     /// default `Alpha` blend mode is used.
-    pub fn from_u8<S: Into<String>>(
-        ctx: &mut Context,
-        source: &[u8],
-        consts: C,
-        name: S,
-        blend_modes: Option<&[BlendMode]>,
-    ) -> GameResult<PixelShader<C>> {
-        let (mut shader, draw) = create_shader(
-            &source,
-            consts,
-            name,
-            &mut ctx.gfx_context.encoder,
-            &mut *ctx.gfx_context.factory,
-            ctx.gfx_context.multisample_samples,
-            blend_modes
-        )?;
+    pub fn from_u8<S: Into<String>>(ctx: &mut Context,
+                                    source: &[u8],
+                                    consts: C,
+                                    name: S,
+                                    blend_modes: Option<&[BlendMode]>)
+                                    -> GameResult<PixelShader<C>> {
+        let (mut shader, draw) = create_shader(&source,
+                                               consts,
+                                               name,
+                                               &mut ctx.gfx_context.encoder,
+                                               &mut *ctx.gfx_context.factory,
+                                               ctx.gfx_context.multisample_samples,
+                                               blend_modes)?;
         shader.id = ctx.gfx_context.shaders.len();
         ctx.gfx_context.shaders.push(draw);
 
@@ -307,9 +303,8 @@ where
 }
 
 impl<Spec, C> fmt::Debug for PixelShaderGeneric<Spec, C>
-where
-    Spec: graphics::BackendSpec,
-    C: Structure<ConstFormat>,
+    where Spec: graphics::BackendSpec,
+          C: Structure<ConstFormat>
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<PixelShader[{}]: {:p}>", self.id, self)
@@ -319,13 +314,12 @@ where
 struct PixelShaderProgram<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
     buffer: Rc<Buffer<Spec::Resources, C>>,
     psos: PsoSet<Spec, C>,
-    active_blend_mode: BlendMode
+    active_blend_mode: BlendMode,
 }
 
 impl<Spec, C> fmt::Debug for PixelShaderProgram<Spec, C>
-where
-    Spec: graphics::BackendSpec,
-    C: Structure<ConstFormat>,
+    where Spec: graphics::BackendSpec,
+          C: Structure<ConstFormat>
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<PixelShaderProgram: {:p}>", self)
@@ -336,12 +330,11 @@ where
 /// Structure<ConstFormat> type of the constant data for drawing
 pub trait PixelShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
     /// Draw with the current PixelShader
-    fn draw(
-        &self,
-        &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
-        &Slice<Spec::Resources>,
-        &graphics::pipe::Data<Spec::Resources>
-    ) -> GameResult<()>;
+    fn draw(&self,
+            &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+            &Slice<Spec::Resources>,
+            &graphics::pipe::Data<Spec::Resources>)
+            -> GameResult<()>;
 
     /// Sets the shader program's blend mode
     fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()>;
@@ -354,12 +347,11 @@ impl<Spec, C> PixelShaderHandle<Spec> for PixelShaderProgram<Spec, C>
     where Spec: graphics::BackendSpec,
           C: Structure<ConstFormat>
 {
-    fn draw(
-        &self,
-        encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
-        slice: &Slice<Spec::Resources>,
-        data: &graphics::pipe::Data<Spec::Resources>
-    ) -> GameResult<()> {
+    fn draw(&self,
+            encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+            slice: &Slice<Spec::Resources>,
+            data: &graphics::pipe::Data<Spec::Resources>)
+            -> GameResult<()> {
         let pso = self.psos.get_mode(&self.active_blend_mode)?;
         encoder.draw(slice, pso, &ConstData(data, &self.buffer));
         Ok(())
@@ -392,8 +384,7 @@ impl Drop for PixelShaderLock {
 
 /// Use a shader until the returned lock goes out of scope
 pub fn use_shader<C>(ctx: &mut Context, ps: &PixelShader<C>) -> PixelShaderLock
-where
-    C: Structure<ConstFormat>,
+    where C: Structure<ConstFormat>
 {
     let cell = ctx.gfx_context.current_shader.clone();
     let previous_shader = (*cell.borrow()).clone();
@@ -406,8 +397,7 @@ where
 
 /// Set the current pixel shader for the Context to render with
 pub fn set_shader<C>(ctx: &mut Context, ps: &PixelShader<C>)
-where
-    C: Structure<ConstFormat>,
+    where C: Structure<ConstFormat>
 {
     *ctx.gfx_context.current_shader.borrow_mut() = Some(ps.id);
 }
@@ -424,19 +414,16 @@ struct ConstMeta<C: Structure<ConstFormat>>(graphics::pipe::Meta, ConstantBuffer
 struct ConstData<'a, R: Resources, C: 'a>(&'a graphics::pipe::Data<R>, &'a Buffer<R, C>);
 
 impl<'a, R, C> PipelineData<R> for ConstData<'a, R, C>
-where
-    R: Resources,
-    C: Structure<ConstFormat>,
+    where R: Resources,
+          C: Structure<ConstFormat>
 {
     type Meta = ConstMeta<C>;
 
-    fn bake_to(
-        &self,
-        out: &mut RawDataSet<R>,
-        meta: &Self::Meta,
-        man: &mut Manager<R>,
-        access: &mut AccessInfo<R>,
-    ) {
+    fn bake_to(&self,
+               out: &mut RawDataSet<R>,
+               meta: &Self::Meta,
+               man: &mut Manager<R>,
+               access: &mut AccessInfo<R>) {
         self.0.bake_to(out, &meta.0, man, access);
         meta.1.bind_to(out, &self.1, man, access);
     }
@@ -446,16 +433,14 @@ where
 struct ConstInit<'a, C>(graphics::pipe::Init<'a>, String, PhantomData<C>);
 
 impl<'a, C> PipelineInit for ConstInit<'a, C>
-where
-    C: Structure<ConstFormat>,
+    where C: Structure<ConstFormat>
 {
     type Meta = ConstMeta<C>;
 
-    fn link_to<'s>(
-        &self,
-        desc: &mut Descriptor,
-        info: &'s ProgramInfo,
-    ) -> Result<Self::Meta, InitError<&'s str>> {
+    fn link_to<'s>(&self,
+                   desc: &mut Descriptor,
+                   info: &'s ProgramInfo)
+                   -> Result<Self::Meta, InitError<&'s str>> {
         let mut meta1 = ConstantBuffer::<C>::new();
 
         let mut index = None;

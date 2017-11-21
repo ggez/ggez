@@ -17,8 +17,7 @@ use graphics::*;
 /// never be used; use `ggez::graphics::Canvas` instead.
 #[derive(Debug)]
 pub struct CanvasGeneric<Spec>
-where
-    Spec: BackendSpec,
+    where Spec: BackendSpec
 {
     target: RenderTargetView<Spec::Resources, Srgba8>,
     image: Image,
@@ -31,12 +30,11 @@ pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 impl Canvas {
     /// Create a new canvas with the given size and number of samples.
-    pub fn new(
-        ctx: &mut Context,
-        width: u32,
-        height: u32,
-        samples: NumSamples,
-    ) -> GameResult<Canvas> {
+    pub fn new(ctx: &mut Context,
+               width: u32,
+               height: u32,
+               samples: NumSamples)
+               -> GameResult<Canvas> {
         let (w, h) = (width as u16, height as u16);
         let aa = match samples {
             NumSamples::One => AaMode::Single,
@@ -46,29 +44,26 @@ impl Canvas {
         let cty = Srgb::get_channel_type();
         let levels = 1;
         let factory = &mut ctx.gfx_context.factory;
-        let tex = factory.create_texture(
-            kind,
-            levels,
-            SHADER_RESOURCE | RENDER_TARGET,
-            Usage::Data,
-            Some(cty),
-        )?;
-        let resource = factory.view_texture_as_shader_resource::<Srgba8>(
-            &tex,
-            (0, levels - 1),
-            Swizzle::new(),
-        )?;
+        let tex = factory
+            .create_texture(kind,
+                            levels,
+                            SHADER_RESOURCE | RENDER_TARGET,
+                            Usage::Data,
+                            Some(cty))?;
+        let resource =
+            factory
+                .view_texture_as_shader_resource::<Srgba8>(&tex, (0, levels - 1), Swizzle::new())?;
         let target = factory.view_texture_as_render_target(&tex, 0, None)?;
         Ok(Canvas {
-            target,
-            image: Image {
-                texture: resource,
-                sampler_info: ctx.gfx_context.default_sampler_info,
-                blend_mode: None,
-                width,
-                height,
-            },
-        })
+               target,
+               image: Image {
+                   texture: resource,
+                   sampler_info: ctx.gfx_context.default_sampler_info,
+                   blend_mode: None,
+                   width,
+                   height,
+               },
+           })
     }
 
     /// Create a new canvas with the current window dimensions.

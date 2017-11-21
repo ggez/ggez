@@ -290,7 +290,7 @@ impl Filesystem {
         Ok(())
     }
 
-    /// Adds the given (absolute) path to the list of directories 
+    /// Adds the given (absolute) path to the list of directories
     /// it will search to look for resources.
     ///
     /// You probably shouldn't use this in the general case, since it is

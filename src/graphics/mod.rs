@@ -177,10 +177,9 @@ impl<B> SamplerCache<B>
     }
 
     fn get_or_insert(&mut self,
-                        info: texture::SamplerInfo,
-                        factory: &mut B::Factory)
-                        -> gfx::handle::Sampler<B::Resources>
-    {
+                     info: texture::SamplerInfo,
+                     factory: &mut B::Factory)
+                     -> gfx::handle::Sampler<B::Resources> {
         let sampler = self.samplers
             .entry(info)
             .or_insert_with(|| factory.create_sampler(info));
@@ -334,16 +333,14 @@ impl GraphicsContext {
                                       gfx_device_gl::CommandBuffer> =
             factory.create_command_buffer().into();
 
-        let blend_modes = [
-            BlendMode::Alpha,
-            BlendMode::Add,
-            BlendMode::Subtract,
-            BlendMode::Invert,
-            BlendMode::Multiply,
-            BlendMode::Replace,
-            BlendMode::Lighten,
-            BlendMode::Darken
-        ];
+        let blend_modes = [BlendMode::Alpha,
+                           BlendMode::Add,
+                           BlendMode::Subtract,
+                           BlendMode::Invert,
+                           BlendMode::Multiply,
+                           BlendMode::Replace,
+                           BlendMode::Lighten,
+                           BlendMode::Darken];
         let (shader, draw) = create_shader(include_bytes!("shader/basic_150.glslf"),
                                            EmptyConst,
                                            "Empty",
@@ -475,16 +472,20 @@ impl GraphicsContext {
 
     /// Sets the current transform matrix.
     fn set_transform(&mut self, t: Matrix4) {
-        assert!(self.transform_stack.len() > 0, "Tried to set a transform on an empty transform stack!");
-        let last = self.transform_stack.last_mut()
+        assert!(self.transform_stack.len() > 0,
+                "Tried to set a transform on an empty transform stack!");
+        let last = self.transform_stack
+            .last_mut()
             .expect("Transform stack empty; should never happen!");
         *last = t;
     }
 
     /// Gets a copy of the current transform matrix.
     fn get_transform(&self) -> Matrix4 {
-        assert!(self.transform_stack.len() > 0, "Tried to get a transform on an empty transform stack!");
-        let last = self.transform_stack.last()
+        assert!(self.transform_stack.len() > 0,
+                "Tried to get a transform on an empty transform stack!");
+        let last = self.transform_stack
+            .last()
             .expect("Transform stack empty; should never happen!");
         last.clone()
     }
@@ -505,16 +506,20 @@ impl GraphicsContext {
 
     /// Sets the current transform matrix.
     fn set_view(&mut self, t: Matrix4) {
-        assert!(self.view_stack.len() > 0, "Tried to set a transform on an empty view stack!");
-        let last = self.view_stack.last_mut()
+        assert!(self.view_stack.len() > 0,
+                "Tried to set a transform on an empty view stack!");
+        let last = self.view_stack
+            .last_mut()
             .expect("View stack empty; should never happen!");
         *last = t;
     }
 
     /// Gets a copy of the current transform matrix.
     fn get_view(&self) -> Matrix4 {
-        assert!(self.view_stack.len() > 0, "Tried to get a transform on an empty view stack!");
-        let last = self.view_stack.last()
+        assert!(self.view_stack.len() > 0,
+                "Tried to get a transform on an empty view stack!");
+        let last = self.view_stack
+            .last()
             .expect("Transform stack empty; should never happen!");
         last.clone()
     }
@@ -610,7 +615,7 @@ impl GraphicsContext {
         self.data.out.clone()
     }
 
-    /// Shortcut function to set the projection matrix to an 
+    /// Shortcut function to set the projection matrix to an
     /// orthographic projection based on the given `Rect`.
     ///
     /// Call `update_globals()` to apply it after calling this.
@@ -1026,11 +1031,13 @@ pub fn set_mode(context: &mut Context,
 }
 
 /// Toggles the fullscreen state of the window subsystem
-/// 
-pub fn set_fullscreen(context: &mut Context,
-                      fullscreen: bool)
-                      -> GameResult<()> {
-    let fs_type = if fullscreen { sdl2::video::FullscreenType::True} else { sdl2::video::FullscreenType::Off};
+///
+pub fn set_fullscreen(context: &mut Context, fullscreen: bool) -> GameResult<()> {
+    let fs_type = if fullscreen {
+        sdl2::video::FullscreenType::True
+    } else {
+        sdl2::video::FullscreenType::Off
+    };
     let gfx = &mut context.gfx_context;
     gfx.window.set_fullscreen(fs_type)?;
 
@@ -1039,7 +1046,7 @@ pub fn set_fullscreen(context: &mut Context,
 
 /// Queries the fullscreen state of the window subsystem.
 /// If true, then the game is running in fullscreen mode.
-/// 
+///
 pub fn is_fullscreen(context: &mut Context) -> bool {
     let gfx = &context.gfx_context;
     gfx.window.fullscreen_state() == sdl2::video::FullscreenType::True
@@ -1047,9 +1054,7 @@ pub fn is_fullscreen(context: &mut Context) -> bool {
 
 /// Sets the window resolution based on the specified width and height
 ///
-pub fn set_resolution(context: &mut Context,
-                                      width: u32,
-                                      height: u32) -> GameResult<()> {
+pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameResult<()> {
     let window_mode = context.conf.window_mode.clone();
     set_mode(context, width, height, window_mode)
 }
