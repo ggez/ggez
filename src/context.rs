@@ -59,8 +59,8 @@ impl fmt::Debug for Context {
 /// means to do nothing.
 fn set_window_icon(context: &mut Context) -> GameResult<()> {
     if !context.conf.window_icon.is_empty() {
-        let icon_path = &context.conf.window_icon;
-        let mut f = context.filesystem.open(icon_path)?;
+        // let icon_path = &context.conf.window_icon;
+        let mut f = context.filesystem.open(&context.conf.window_icon)?;
         let mut buf = Vec::new();
         f.read_to_end(&mut buf)?;
         let image = image::load_from_memory(&buf)?;
@@ -75,7 +75,7 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
                                                   image.height(),
                                                   image.width() * 4,
                                                   pixels::PixelFormatEnum::ABGR8888)?;
-        let window = context.gfx_context.get_window_mut();
+        let window = graphics::get_window_mut(context);
         window.set_icon(surface);
     };
     Ok(())

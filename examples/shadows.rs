@@ -194,7 +194,7 @@ impl MainState {
             Text::new(ctx, "SHADOWS...", &font)?
         };
         let screen_size = {
-            let size = ctx.gfx_context.get_drawable_size();
+            let size = graphics::get_drawable_size(ctx);
             [size.0 as f32, size.1 as f32]
         };
         let torch = Light {
@@ -205,7 +205,7 @@ impl MainState {
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
-        let (w, h) = ctx.gfx_context.get_size();
+        let (w, h) = graphics::get_size(ctx);
         let (x, y) = (100 as f32 / w as f32, 1.0 - 75 as f32 / h as f32);
         let static_light = Light {
             pos: [x, y],
@@ -254,7 +254,7 @@ impl MainState {
                     center: DrawParam,
                     canvascenter: DrawParam)
                     -> GameResult<()> {
-        let size = ctx.gfx_context.get_size();
+        let size = graphics::get_size(ctx);
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
         graphics::set_canvas(ctx, Some(&self.occlusions));
@@ -310,14 +310,14 @@ impl event::EventHandler for MainState {
 
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let size = ctx.gfx_context.get_size();
+        let size = graphics::get_size(ctx);
         let center = DrawParam {
             dest: Point2::new(size.0 as f32 / 2.0, size.1 as f32 / 2.0),
             ..Default::default()
         };
         // for re-rendering canvases, we need to take the DPI into account
         let dpiscale = {
-            let dsize = ctx.gfx_context.get_drawable_size();
+            let dsize = graphics::get_drawable_size(ctx);
             Point2::new(size.0 as f32 / dsize.0 as f32,
                         size.1 as f32 / dsize.1 as f32)
         };
@@ -396,7 +396,7 @@ impl event::EventHandler for MainState {
                           y: i32,
                           _xrel: i32,
                           _yrel: i32) {
-        let (w, h) = ctx.gfx_context.get_size();
+        let (w, h) = graphics::get_size(ctx);
         let (x, y) = (x as f32 / w as f32, 1.0 - y as f32 / h as f32);
         self.torch.pos = [x, y];
     }

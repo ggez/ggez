@@ -558,63 +558,6 @@ impl GraphicsContext {
         shader_handle.get_blend_mode()
     }
 
-    /// Returns a reference to the SDL window.
-    /// Ideally you should not need to use this because ggez
-    /// would provide all the functions you need without having
-    /// to dip into SDL itself.  But life isn't always ideal.
-    pub fn get_window(&self) -> &sdl2::video::Window {
-        &self.window
-    }
-
-    /// Returns a mutable reference to the SDL window.
-    pub fn get_window_mut(&mut self) -> &mut sdl2::video::Window {
-        &mut self.window
-    }
-
-
-    /// Returns the size of the window in pixels as (height, width).
-    pub fn get_size(&self) -> (u32, u32) {
-        self.window.size()
-    }
-
-    /// Returns the size of the window's underlying drawable in pixels as (height, width).
-    /// This may return a different value than `get_size()` when run on a platform with high-DPI support
-    pub fn get_drawable_size(&self) -> (u32, u32) {
-        self.window.drawable_size()
-    }
-
-    /// EXPERIMENTAL function to get the gfx-rs `Factory` object.
-    pub fn get_factory(&mut self) -> &mut gfx_device_gl::Factory {
-        &mut self.factory
-    }
-
-    /// EXPERIMENTAL function to get the gfx-rs `Device` object.
-    pub fn get_device(&mut self) -> &mut gfx_device_gl::Device {
-        self.device.as_mut()
-    }
-
-    /// EXPERIMENTAL function to get the gfx-rs `Encoder` object.
-    pub fn get_encoder
-        (&mut self)
-         -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
-        &mut self.encoder
-    }
-
-    /// EXPERIMENTAL function to get the gfx-rs depth view
-    pub fn get_depth_view
-        (&self)
-         -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
-        self.depth_view.clone()
-    }
-
-    /// EXPERIMENTAL function to get the gfx-rs color view
-    pub fn get_color_view(&self)
-                          -> gfx::handle::RenderTargetView<gfx_device_gl::Resources,
-                                                           (gfx::format::R8_G8_B8_A8,
-                                                            gfx::format::Srgb)> {
-        self.data.out.clone()
-    }
-
     /// Shortcut function to set the projection matrix to an
     /// orthographic projection based on the given `Rect`.
     ///
@@ -1080,6 +1023,75 @@ pub fn get_display_count(context: &Context) -> GameResult<i32> {
     let video = context.sdl_context.video()?;
     video.num_video_displays().map_err(GameError::VideoError)
 }
+
+
+/// Returns a reference to the SDL window.
+/// Ideally you should not need to use this because ggez
+/// would provide all the functions you need without having
+/// to dip into SDL itself.  But life isn't always ideal.
+pub fn get_window(context: &Context) -> &sdl2::video::Window {
+    let gfx = &context.gfx_context;
+    &gfx.window
+}
+
+/// Returns a mutable reference to the SDL window.
+pub fn get_window_mut(context: &mut Context) -> &mut sdl2::video::Window {
+    let gfx = &mut context.gfx_context;
+    &mut gfx.window
+}
+
+
+/// Returns the size of the window in pixels as (height, width).
+/// TODO: Make sure it's the CURRENT size!
+pub fn get_size(context: &Context) -> (u32, u32) {
+    let gfx = &context.gfx_context;
+    gfx.window.size()
+}
+
+/// Returns the size of the window's underlying drawable in pixels as (height, width).
+/// This may return a different value than `get_size()` when run on a platform with high-DPI support
+pub fn get_drawable_size(context: &Context) -> (u32, u32) {
+    let gfx = &context.gfx_context;
+    gfx.window.drawable_size()
+}
+
+/// EXPERIMENTAL function to get the gfx-rs `Factory` object.
+pub fn get_factory(context: &mut Context) -> &mut gfx_device_gl::Factory {
+    let gfx = &mut context.gfx_context;
+    &mut gfx.factory
+}
+
+/// EXPERIMENTAL function to get the gfx-rs `Device` object.
+pub fn get_device(context: &mut Context) -> &mut gfx_device_gl::Device {
+    let gfx = &mut context.gfx_context;
+    gfx.device.as_mut()
+}
+
+/// EXPERIMENTAL function to get the gfx-rs `Encoder` object.
+pub fn get_encoder
+    (context: &mut Context)
+        -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
+    let gfx = &mut context.gfx_context;
+    &mut gfx.encoder
+}
+
+/// EXPERIMENTAL function to get the gfx-rs depth view
+pub fn get_depth_view
+    (context: &mut Context)
+        -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
+    let gfx = &mut context.gfx_context;
+    gfx.depth_view.clone()
+}
+
+/// EXPERIMENTAL function to get the gfx-rs color view
+pub fn get_color_view(context: &Context)
+                        -> gfx::handle::RenderTargetView<gfx_device_gl::Resources,
+                                                        (gfx::format::R8_G8_B8_A8,
+                                                        gfx::format::Srgb)> {
+    let gfx = &context.gfx_context;
+    gfx.data.out.clone()
+}
+
 
 // **********************************************************************
 // TYPES

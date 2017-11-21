@@ -77,10 +77,9 @@ impl MainState {
         let text1 = graphics::Text::new(ctx, "WIP; doesn't actually successfully", &font).unwrap();
         let text2 = graphics::Text::new(ctx, "draw a cube yet, sorry.", &font).unwrap();
 
-        let gfx = &mut ctx.gfx_context;
-        let color_view = gfx.get_color_view();
-        let depth_view = gfx.get_depth_view();
-        let factory = gfx.get_factory();
+        let color_view = graphics::get_color_view(ctx);
+        let depth_view = graphics::get_depth_view(ctx);
+        let factory = graphics::get_factory(ctx);
 
         let vs = br#"#version 150 core
 
@@ -205,7 +204,7 @@ impl event::EventHandler for MainState {
         // self.encoder.flush(ctx.gfx_context.get_device());
 
         {
-            let encoder = ctx.gfx_context.get_encoder();
+            let encoder = graphics::get_encoder(ctx);
             encoder.clear(&self.data.out_color, [0.3, 0.2, 0.1, 1.0].into());
             encoder.draw(&self.slice, &self.pso, &self.data);
         }

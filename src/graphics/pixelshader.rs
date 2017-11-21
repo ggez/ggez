@@ -163,7 +163,7 @@ pub type PixelShaderId = usize;
 #[derive(Clone)]
 pub struct PixelShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
     id: PixelShaderId,
-    buffer: Rc<Buffer<Spec::Resources, C>>,
+    buffer: Buffer<Spec::Resources, C>,
 }
 
 /// A `PixelShader` reprensents a handle user-defined shader that can be used
@@ -184,7 +184,6 @@ pub(crate) fn create_shader<C, S, Spec>
           Spec: graphics::BackendSpec + 'static
 {
     let buffer = factory.create_constant_buffer(1);
-    let buffer = Rc::new(buffer);
 
     encoder.update_buffer(&buffer, &[consts], 0)?;
 
@@ -312,7 +311,7 @@ impl<Spec, C> fmt::Debug for PixelShaderGeneric<Spec, C>
 }
 
 struct PixelShaderProgram<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
-    buffer: Rc<Buffer<Spec::Resources, C>>,
+    buffer: Buffer<Spec::Resources, C>,
     psos: PsoSet<Spec, C>,
     active_blend_mode: BlendMode,
 }
@@ -370,8 +369,10 @@ impl<Spec, C> PixelShaderHandle<Spec> for PixelShaderProgram<Spec, C>
 
 /// A lock for RAII shader regions. The shader automatically gets cleared once
 /// the lock goes out of scope
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PixelShaderLock {
+    // TODO: See if it's possible to clean up the Rc<Refcell<Option<T>>>
+    // It connects up to GraphicsContextGeneric.current_shader tho
     cell: Rc<RefCell<Option<PixelShaderId>>>,
     previous_shader: Option<PixelShaderId>,
 }

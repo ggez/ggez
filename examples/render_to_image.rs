@@ -28,7 +28,7 @@ impl event::EventHandler for MainState {
 
         // now lets render our scene once in the top right and in the bottom
         // right
-        let window_size = ctx.gfx_context.get_size();
+        let window_size = graphics::get_size(ctx);
         let scale =
             Point2::new(0.5 * window_size.0 as f32 / self.canvas.get_image().width() as f32,
                         0.5 * window_size.1 as f32 / self.canvas.get_image().height() as f32);
