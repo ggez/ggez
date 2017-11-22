@@ -147,7 +147,7 @@ impl From<Rect> for [f32; 4] {
 }
 
 
-/// A RGBA color.
+/// A RGBA color in the sRGB color space represented as f32's in the range `[0.0-1.0]`
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Color {
     /// Red component
@@ -187,9 +187,48 @@ impl Color {
             a: a,
         }
     }
+
+    /// Convert a packed u32 containing 0xRRGGBBAA into a Color.conf
+    pub fn from_rgba(c: u32) -> Color {
+        let rp = ((c & 0xFF000000) >> 24) as u8;
+        let gp = ((c & 0x00FF0000) >> 16) as u8;
+        let bp = ((c & 0x0000FF00) >> 8) as u8;
+        let ap = ((c & 0x000000FF) >> 0) as u8;
+        Color::from((rp, gp, bp, ap))
+    }
+
+    /// Convert a packed u32 containing 0x00RRGGBB into a Color.
+    /// This lets you do things like `Color::from(0xCD09AA)` easily if you want.
+    pub fn from_rgb(c: u32) -> Color {
+        let rp = ((c & 0x00FF0000) >> 16) as u8;
+        let gp = ((c & 0x0000FF00) >> 8) as u8;
+        let bp = ((c & 0x000000FF) >> 0) as u8;
+        Color::from((rp, gp, bp))
+    }
+
+
+    /// Convert a Color into a packed u32, containing 0xRRGGBBAA as bytes.
+    pub fn to_rgba(self) -> u32 {
+        let (r, g, b, a): (u8, u8, u8, u8) = self.into();
+        let rp = (r as u32) << 24;
+        let gp = (g as u32) << 16;
+        let bp = (b as u32) << 8;
+        let ap = a as u32;
+        (rp | gp | bp | ap)
+    }
+
+    /// Convert a Color into a packed u32, containing 0x00RRGGBB as bytes.
+    pub fn to_rgb(self) -> u32 {
+        let (r, g, b, _a): (u8, u8, u8, u8) = self.into();
+        let rp = (r as u32) << 16;
+        let gp = (g as u32) << 8;
+        let bp = (b as u32) << 0;
+        (rp | gp | bp)
+    }
 }
 
 impl From<(u8, u8, u8, u8)> for Color {
+    /// Convert a `(R, G, B, A)` tuple of `u8`'s in the range 0-255 into a Color
     fn from(val: (u8, u8, u8, u8)) -> Self {
         let (r, g, b, a) = val;
         let rf = (r as f32) / 255.0;
@@ -201,6 +240,8 @@ impl From<(u8, u8, u8, u8)> for Color {
 }
 
 impl From<(u8, u8, u8)> for Color {
+    /// Convert a `(R, G, B)` tuple of `u8`'s in the range 0-255 into a Color,
+    /// with a value of 255 for the alpha element (ie, no transparency.)
     fn from(val: (u8, u8, u8)) -> Self {
         let (r, g, b) = val;
         Color::from((r, g, b, 255))
@@ -208,12 +249,15 @@ impl From<(u8, u8, u8)> for Color {
 }
 
 impl From<[f32; 4]> for Color {
+    /// Turns an `[R, G, B, A] array of f32's into a Color with no format changes.
+    /// All inputs should be in the range `[0.0-1.0]`.
     fn from(val: [f32; 4]) -> Self {
         Color::new(val[0], val[1], val[2], val[3])
     }
 }
 
 impl From<Color> for (u8, u8, u8, u8) {
+    /// Convert a Color into a `(R, G, B, A)` tuple of `u8`'s in the range of 0-255.
     fn from(color: Color) -> Self {
         let r = (color.r * 255.0) as u8;
         let g = (color.g * 255.0) as u8;
@@ -224,6 +268,7 @@ impl From<Color> for (u8, u8, u8, u8) {
 }
 
 impl From<Color> for [u8; 4] {
+    /// Convert a Color into a `[R, G, B, A]` array of `u8`'s in the range of 0-255.
     fn from(color: Color) -> Self {
         let (r, g, b, a) = color.into();
         [r, g, b, a]
@@ -231,6 +276,7 @@ impl From<Color> for [u8; 4] {
 }
 
 impl From<Color> for [f32; 4] {
+    /// Convert a Color into an `[R, G, B, A]` array of `f32`'s in the range of `[0.0-1.0]`.
     fn from(color: Color) -> Self {
         [color.r, color.g, color.b, color.a]
     }
@@ -238,22 +284,46 @@ impl From<Color> for [f32; 4] {
 
 
 impl From<Color> for (u8, u8, u8) {
+    /// Convert a Color into a `(R, G, B)` tuple of `u8`'s in the range of 0-255,
+    /// ignoring the alpha term
     fn from(color: Color) -> Self {
         let (r, g, b, _) = color.into();
         (r, g, b)
     }
 }
 
-impl From<Color> for u32 {
-    fn from(color: Color) -> Self {
-        let (r, g, b, a): (u8, u8, u8, u8) = color.into();
-        let rp = (r as u32) << 24;
-        let gp = (g as u32) << 16;
-        let bp = (b as u32) << 8;
-        let ap = a as u32;
-        (rp | gp | bp | ap)
+/// A RGBA color in the *linear* color space,
+/// suitable for shoving into a shader.
+#[derive(Copy, Clone, PartialEq, Debug)]
+struct LinearColor {
+    /// Red component
+    pub r: f32,
+    /// Green component
+    pub g: f32,
+    /// Blue component
+    pub b: f32,
+    /// Alpha component
+    pub a: f32,
+}
+
+impl From<Color> for LinearColor {
+    fn from(c: Color) -> Self {
+        LinearColor {
+            r: c.r,
+            g: c.g,
+            b: c.b,
+            a: c.a,
+        }
     }
 }
+
+impl From<LinearColor> for [f32; 4] {
+    fn from(color: LinearColor) -> Self {
+        [color.r, color.g, color.b, color.a]
+    }
+}
+
+
 
 /// Specifies whether a shape should be drawn
 /// filled or as an outline.
@@ -323,6 +393,17 @@ mod tests {
         assert_eq!(black, b1);
         let b2: u32 = black.into();
         assert_eq!(b2, 0x000000FF);
+        assert_eq!(black, Color::from_rgb(0x000000));
+        assert_eq!(black, Color::from_rgba(0x000000FF));
+
+
+        let puce1 = Color::from_rgb(0xCC8899);
+        let puce2 = Color::from_rgba(0xCC8899FF);
+        let puce3 = Color::from((0xCC, 0x88, 0x99, 255));
+        let puce4 = Color::new(0.80, 0.53333336, 0.60, 1.0);
+        assert_eq!(puce1, puce2);
+        assert_eq!(puce1, puce3);
+        assert_eq!(puce1, puce4);
     }
 
     #[test]
