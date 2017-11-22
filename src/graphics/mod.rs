@@ -213,7 +213,7 @@ impl<B> SamplerCache<B>
 /// As an end-user you shouldn't ever have to touch this, but it goes
 /// into part of the `Context` and so has to be public, at least
 /// until the `pub(restricted)` feature is stable.
-pub struct GraphicsContextGeneric<B>
+pub(crate) struct GraphicsContextGeneric<B>
     where B: BackendSpec
 {
     background_color: Color,
@@ -258,7 +258,7 @@ impl<B> fmt::Debug for GraphicsContextGeneric<B>
 }
 
 /// A concrete graphics context for GL rendering.
-pub type GraphicsContext = GraphicsContextGeneric<GlBackendSpec>;
+pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec>;
 
 /// This can probably be removed but might be
 /// handy to keep around a bit longer.  Just in case something else
@@ -312,7 +312,7 @@ impl From<gfx::buffer::CreationError> for GameError {
 
 impl GraphicsContext {
     /// Create a new GraphicsContext
-    pub fn new(video: sdl2::VideoSubsystem,
+    pub(crate) fn new(video: sdl2::VideoSubsystem,
                window_title: &str,
                screen_width: u32,
                screen_height: u32,

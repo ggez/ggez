@@ -34,7 +34,7 @@ pub struct Context {
     /// Filesystem state
     pub filesystem: Filesystem,
     /// Graphics state
-    pub gfx_context: graphics::GraphicsContext,
+    pub(crate) gfx_context: graphics::GraphicsContext,
     /// Event context
     pub event_context: sdl2::EventSubsystem,
     /// Timer state
