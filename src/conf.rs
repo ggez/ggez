@@ -91,6 +91,25 @@ pub struct WindowMode {
     pub samples: NumSamples,
 }
 
+/// Possible backends
+/// Currently, only OpenGL Core spec is supported,
+/// but this lets you specify the version numbers.
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, SmartDefault)]
+#[serde(tag = "type")]
+pub enum Backend {
+    /// Defaults to OpenGL 3.2, which is supported on basically
+    /// every machine since 2009 or so (apart from the ones it isn't)
+    #[default]
+    OpenGL {
+        /// OpenGL major version
+        #[default = r#"3"#]
+        major: u8, 
+        /// OpenGL minor version
+        #[default = r#"2"#]
+        minor: u8
+    }
+}
+
 /// The possible number of samples for multisample anti-aliasing
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum NumSamples {
@@ -195,6 +214,8 @@ pub struct Conf {
     pub window_width: u32,
     /// Window setting information
     pub window_mode: WindowMode,
+    /// Backend configuration
+    pub backend: Backend,
 }
 
 impl Conf {

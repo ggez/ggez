@@ -2,7 +2,7 @@ extern crate ggez;
 extern crate clap;
 use clap::{Arg, App};
 use ggez::*;
-use ggez::graphics::{DrawMode, Point2, Drawable};
+use ggez::graphics::{DrawMode, Point2};
 use ggez::event::{Keycode, Mod};
 
 enum WindowToggle {

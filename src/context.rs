@@ -91,7 +91,7 @@ impl Context {
         let event_context = sdl_context.event()?;
         let timer_context = timer::TimeContext::new();
         let font = graphics::Font::default_font()?;
-        let backend_spec = graphics::GlBackendSpec::default();
+        let backend_spec = graphics::GlBackendSpec::from(conf.backend);
         let graphics_context = graphics::GraphicsContext::new(video,
                                                               &conf.window_title,
                                                               conf.window_width,

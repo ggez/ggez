@@ -25,7 +25,8 @@ use gfx_device_gl;
 use gfx_window_sdl;
 use gfx::Factory;
 
-use conf::WindowMode;
+use conf;
+use conf::{WindowMode};
 use context::Context;
 use GameError;
 use GameResult;
@@ -57,12 +58,30 @@ pub trait BackendSpec: fmt::Debug {
 }
 
 /// A backend specification for OpenGL.
+/// This is different from `conf::Backend` because
+/// this needs to be its own struct to implement traits upon,
+/// and because there may need to be a layer of translation
+/// between what the user specifies in the config, and what the
+/// graphics backend init code actually gets.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
 pub struct GlBackendSpec {
     #[default = r#"3"#]
     major: u8,
     #[default = r#"2"#]
     minor: u8,
+}
+
+impl From<conf::Backend> for GlBackendSpec {
+    fn from(c: conf::Backend) -> Self {
+        match c {
+            conf::Backend::OpenGL{major, minor} => {
+                Self {
+                    major: major,
+                    minor: minor,
+                }
+            }
+        }
+    }
 }
 
 impl BackendSpec for GlBackendSpec {
