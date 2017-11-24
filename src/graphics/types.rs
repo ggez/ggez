@@ -178,7 +178,7 @@ pub const BLACK: Color = Color {
 };
 
 impl Color {
-    /// Create a new Color from components.
+    /// Create a new Color from four f32's in the range [0.0-1.0]
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color {
             r: r,
@@ -188,8 +188,31 @@ impl Color {
         }
     }
 
+    /// Create a new Color from four u8's in the range `[0-255]`
+    pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
+        Color::from((r, g, b, a))
+    }
+
+    /// Create a new Color from three u8's in the range `[0-255]`,
+    /// with the alpha component fixed to 255 (opaque)
+    pub fn from_rgb(r: u8, g: u8, b: u8) -> Color {
+        Color::from((r, g, b))
+    }
+
+    /// Return a tuple of four u8's in the range `[0-255]` with the Color's
+    /// components.
+    pub fn to_rgba(self) -> (u8, u8, u8, u8) {
+        self.into()
+    }
+
+    /// Return a tuple of three u8's in the range `[0-255]` with the Color's
+    /// components.
+    pub fn to_rgb(self) -> (u8, u8, u8) {
+        self.into()
+    }
+
     /// Convert a packed u32 containing 0xRRGGBBAA into a Color.conf
-    pub fn from_rgba(c: u32) -> Color {
+    pub fn from_rgba_u32(c: u32) -> Color {
         let rp = ((c & 0xFF000000) >> 24) as u8;
         let gp = ((c & 0x00FF0000) >> 16) as u8;
         let bp = ((c & 0x0000FF00) >> 8) as u8;
@@ -199,7 +222,7 @@ impl Color {
 
     /// Convert a packed u32 containing 0x00RRGGBB into a Color.
     /// This lets you do things like `Color::from(0xCD09AA)` easily if you want.
-    pub fn from_rgb(c: u32) -> Color {
+    pub fn from_rgb_u32(c: u32) -> Color {
         let rp = ((c & 0x00FF0000) >> 16) as u8;
         let gp = ((c & 0x0000FF00) >> 8) as u8;
         let bp = ((c & 0x000000FF) >> 0) as u8;
@@ -208,7 +231,7 @@ impl Color {
 
 
     /// Convert a Color into a packed u32, containing 0xRRGGBBAA as bytes.
-    pub fn to_rgba(self) -> u32 {
+    pub fn to_rgba_u32(self) -> u32 {
         let (r, g, b, a): (u8, u8, u8, u8) = self.into();
         let rp = (r as u32) << 24;
         let gp = (g as u32) << 16;
@@ -218,7 +241,7 @@ impl Color {
     }
 
     /// Convert a Color into a packed u32, containing 0x00RRGGBB as bytes.
-    pub fn to_rgb(self) -> u32 {
+    pub fn to_rgb_u32(self) -> u32 {
         let (r, g, b, _a): (u8, u8, u8, u8) = self.into();
         let rp = (r as u32) << 16;
         let gp = (g as u32) << 8;
@@ -267,11 +290,12 @@ impl From<Color> for (u8, u8, u8, u8) {
     }
 }
 
-impl From<Color> for [u8; 4] {
-    /// Convert a Color into a `[R, G, B, A]` array of `u8`'s in the range of 0-255.
+impl From<Color> for (u8, u8, u8) {
+    /// Convert a Color into a `(R, G, B)` tuple of `u8`'s in the range of 0-255,
+    /// ignoring the alpha term
     fn from(color: Color) -> Self {
-        let (r, g, b, a) = color.into();
-        [r, g, b, a]
+        let (r, g, b, _) = color.into();
+        (r, g, b)
     }
 }
 
@@ -279,16 +303,6 @@ impl From<Color> for [f32; 4] {
     /// Convert a Color into an `[R, G, B, A]` array of `f32`'s in the range of `[0.0-1.0]`.
     fn from(color: Color) -> Self {
         [color.r, color.g, color.b, color.a]
-    }
-}
-
-
-impl From<Color> for (u8, u8, u8) {
-    /// Convert a Color into a `(R, G, B)` tuple of `u8`'s in the range of 0-255,
-    /// ignoring the alpha term
-    fn from(color: Color) -> Self {
-        let (r, g, b, _) = color.into();
-        (r, g, b)
     }
 }
 
