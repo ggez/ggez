@@ -2,7 +2,7 @@
 
  * First off, there will be some switches in process: We're going to make the master branch STABLE, tracking the latest release,
    and create a devel branch that new work will be pushed to.  That way people don't check out master and get some WIP stuff.
- * Updated all dependencies to newer versions (except SDL2 'cause gfx_window_sdl uses 0.29; no big deal)
+ * Updated all dependencies to newer versions
  * Added `mouse` module with some utility functions
  * Added some utility functions to query window size
  * Fixed some bugs with type visibility and directory paths.
@@ -12,7 +12,7 @@
  * Did the same for `get/set_point_size()`
  * Integrated nalgebra to provide point and vector types.
  * Removed inaccurate `timer::sleep_until_next_frame()`, added `timer::yield_now()`.
- * Added MSAA (thanks termhn!)
+ * Added MSAA, blend modes, other graphics toys (thanks termhn!)
  * Added graphics_settings example to show hot to play with graphics modes
  * Made the render pipeline just use matrices instead of separate transform elements
  * SHADERS!  Woo, thanks nlordell!
@@ -22,6 +22,10 @@
  * Added filesystem and graphics setting examples
  * Fixed a few smallish filesystem bugs
  * Updated to Lyon 0.8, which brings some bugfixes
+ * Added more useful/informative constructors for `Color`
+ * Added ability to select OpenGL version
+ * Added some useful methods to `Rect`
+ * Added a FAQ and some other documentation
 
 # 0.3.3
 
