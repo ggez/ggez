@@ -1,3 +1,8 @@
+# 0.3.4
+
+ * Backported correction to SRGB color conversions
+ * Added std::error::Error implementation for GameError
+
 # 0.3.3
 
  * Documentation and unit test updates

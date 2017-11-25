@@ -169,6 +169,7 @@ pub struct GraphicsContextGeneric<R, F, C, D>
           C: gfx::CommandBuffer<R>,
           D: gfx::Device<Resources = R, CommandBuffer = C>
 {
+    foreground_color: Color,
     background_color: Color,
     shader_globals: Globals,
     white_image: Image,
@@ -315,6 +316,7 @@ impl GraphicsContext {
         };
 
         let mut gfx = GraphicsContext {
+            foreground_color: types::WHITE,
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             shader_globals: globals,
             line_width: 1.0,
@@ -435,8 +437,9 @@ fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
+    let linear_color: types::LinearColor = gfx.background_color.into();
     gfx.encoder
-        .clear(&gfx.data.out, gfx.background_color.into());
+        .clear(&gfx.data.out, linear_color.into());
 }
 
 /// Draws the given `Drawable` object to the screen by calling its
@@ -562,7 +565,7 @@ pub fn get_background_color(ctx: &Context) -> Color {
 
 /// Returns the current foreground color.
 pub fn get_color(ctx: &Context) -> Color {
-    ctx.gfx_context.shader_globals.color.into()
+    ctx.gfx_context.foreground_color
 }
 
 /// Get the default filter mode for new images.
@@ -617,7 +620,9 @@ pub fn set_background_color(ctx: &mut Context, color: Color) {
 /// rectangles, lines, etc.  Default: white.
 pub fn set_color(ctx: &mut Context, color: Color) -> GameResult<()> {
     let gfx = &mut ctx.gfx_context;
-    gfx.shader_globals.color = color.into();
+    gfx.foreground_color = color;
+    let linear_color: types::LinearColor = color.into();
+    gfx.shader_globals.color = linear_color.into();
     gfx.update_globals()
 }
 

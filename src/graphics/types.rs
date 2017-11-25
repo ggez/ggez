@@ -247,6 +247,70 @@ impl From<Color> for u32 {
     }
 }
 
+
+/// A RGBA color in the *linear* color space,
+/// suitable for shoving into a shader.
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub(crate) struct LinearColor {
+    /// Red component
+    pub r: f32,
+    /// Green component
+    pub g: f32,
+    /// Blue component
+    pub b: f32,
+    /// Alpha component
+    pub a: f32,
+}
+
+impl From<Color> for LinearColor {
+    /// Convert an (sRGB) Color into a linear color,
+    /// per https://en.wikipedia.org/wiki/Srgb#The_reverse_transformation
+    fn from(c: Color) -> Self {
+        fn f(component: f32) -> f32 {
+            let a = 0.055;
+            if component <= 0.04045 {
+                component / 12.92
+            } else {
+                ((component + a) / (1.0 + a)).powf(2.4)
+            }
+        }
+        LinearColor {
+            r: f(c.r),
+            g: f(c.g),
+            b: f(c.b),
+            a: c.a
+        }
+    }
+}
+
+
+impl From<LinearColor> for Color {
+    fn from(c: LinearColor) -> Self {
+        fn f(component: f32) -> f32 {
+            let a = 0.055;
+            if component <= 0.0031308 {
+                component * 12.92
+            } else {
+                (1.0 + a) * component.powf(1.0/2.4)
+            }
+        }
+        Color {
+            r: f(c.r),
+            g: f(c.g),
+            b: f(c.b),
+            a: c.a
+        }
+    }
+}
+
+
+impl From<LinearColor> for [f32; 4] {
+    fn from(color: LinearColor) -> Self {
+        [color.r, color.g, color.b, color.a]
+    }
+}
+
+
 /// Specifies whether a shape should be drawn
 /// filled or as an outline.
 #[derive(Debug, Copy, Clone)]
