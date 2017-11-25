@@ -216,6 +216,7 @@ impl<B> SamplerCache<B>
 pub(crate) struct GraphicsContextGeneric<B>
     where B: BackendSpec
 {
+    foreground_color: Color,
     background_color: Color,
     shader_globals: Globals,
     projection: Matrix4,
@@ -410,6 +411,7 @@ impl GraphicsContext {
         };
 
         let mut gfx = GraphicsContext {
+            foreground_color: types::WHITE,
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             shader_globals: globals,
             projection: initial_projection,
@@ -639,8 +641,9 @@ impl GraphicsContext {
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
+    let linear_color: types::LinearColor = gfx.background_color.into();
     gfx.encoder
-        .clear(&gfx.data.out, gfx.background_color.into());
+        .clear(&gfx.data.out, linear_color.into());
 }
 
 /// Draws the given `Drawable` object to the screen by calling its
@@ -768,7 +771,7 @@ pub fn get_background_color(ctx: &Context) -> Color {
 
 /// Returns the current foreground color.
 pub fn get_color(ctx: &Context) -> Color {
-    ctx.gfx_context.shader_globals.color.into()
+    ctx.gfx_context.foreground_color
 }
 
 /// Get the default filter mode for new images.
@@ -811,7 +814,9 @@ pub fn set_background_color(ctx: &mut Context, color: Color) {
 /// rectangles, lines, etc.  Default: white.
 pub fn set_color(ctx: &mut Context, color: Color) -> GameResult<()> {
     let gfx = &mut ctx.gfx_context;
-    gfx.shader_globals.color = color.into();
+    gfx.foreground_color = color;
+    let linear_color: types::LinearColor = color.into();
+    gfx.shader_globals.color = linear_color.into();
     gfx.update_globals()
 }
 
@@ -1339,7 +1344,9 @@ impl Image {
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
     pub fn solid(context: &mut Context, size: u16, color: Color) -> GameResult<Image> {
-        let pixel_array: [u8; 4] = color.into();
+        // let pixel_array: [u8; 4] = color.into();
+        let (r, g, b, a) = color.into();
+        let pixel_array: [u8; 4] = [r, g, b, a];
         let size_squared = size as usize * size as usize;
         let mut buffer = Vec::with_capacity(size_squared);
         for _i in 0..size_squared {

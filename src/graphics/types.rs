@@ -309,7 +309,7 @@ impl From<Color> for [f32; 4] {
 /// A RGBA color in the *linear* color space,
 /// suitable for shoving into a shader.
 #[derive(Copy, Clone, PartialEq, Debug)]
-struct LinearColor {
+pub(crate) struct LinearColor {
     /// Red component
     pub r: f32,
     /// Green component
@@ -321,15 +321,46 @@ struct LinearColor {
 }
 
 impl From<Color> for LinearColor {
+    /// Convert an (sRGB) Color into a linear color,
+    /// per https://en.wikipedia.org/wiki/Srgb#The_reverse_transformation
     fn from(c: Color) -> Self {
+        fn f(component: f32) -> f32 {
+            let a = 0.055;
+            if component <= 0.04045 {
+                component / 12.92
+            } else {
+                ((component + a) / (1.0 + a)).powf(2.4)
+            }
+        }
         LinearColor {
-            r: c.r,
-            g: c.g,
-            b: c.b,
-            a: c.a,
+            r: f(c.r),
+            g: f(c.g),
+            b: f(c.b),
+            a: c.a
         }
     }
 }
+
+
+impl From<LinearColor> for Color {
+    fn from(c: LinearColor) -> Self {
+        fn f(component: f32) -> f32 {
+            let a = 0.055;
+            if component <= 0.0031308 {
+                component * 12.92
+            } else {
+                (1.0 + a) * component.powf(1.0/2.4)
+            }
+        }
+        Color {
+            r: f(c.r),
+            g: f(c.g),
+            b: f(c.b),
+            a: c.a
+        }
+    }
+}
+
 
 impl From<LinearColor> for [f32; 4] {
     fn from(color: LinearColor) -> Self {
@@ -393,26 +424,26 @@ mod tests {
         let white = Color::new(1.0, 1.0, 1.0, 1.0);
         let w1 = Color::from((255, 255, 255, 255));
         assert_eq!(white, w1);
-        let w2: u32 = white.into();
+        let w2: u32 = white.to_rgba_u32();
         assert_eq!(w2, 0xFFFFFFFF);
 
         let grey = Color::new(0.5019608, 0.5019608, 0.5019608, 1.0);
         let g1 = Color::from((128, 128, 128, 255));
         assert_eq!(grey, g1);
-        let g2: u32 = grey.into();
+        let g2: u32 = grey.to_rgba_u32();
         assert_eq!(g2, 0x808080FF);
 
         let black = Color::new(0.0, 0.0, 0.0, 1.0);
         let b1 = Color::from((0, 0, 0, 255));
         assert_eq!(black, b1);
-        let b2: u32 = black.into();
+        let b2: u32 = black.to_rgba_u32();
         assert_eq!(b2, 0x000000FF);
-        assert_eq!(black, Color::from_rgb(0x000000));
-        assert_eq!(black, Color::from_rgba(0x000000FF));
+        assert_eq!(black, Color::from_rgb_u32(0x000000));
+        assert_eq!(black, Color::from_rgba_u32(0x000000FF));
 
 
-        let puce1 = Color::from_rgb(0xCC8899);
-        let puce2 = Color::from_rgba(0xCC8899FF);
+        let puce1 = Color::from_rgb_u32(0xCC8899);
+        let puce2 = Color::from_rgba_u32(0xCC8899FF);
         let puce3 = Color::from((0xCC, 0x88, 0x99, 255));
         let puce4 = Color::new(0.80, 0.53333336, 0.60, 1.0);
         assert_eq!(puce1, puce2);
