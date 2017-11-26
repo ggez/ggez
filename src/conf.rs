@@ -42,56 +42,24 @@ impl From<FullscreenType> for SdlFullscreenType {
     }
 }
 
-/// A builder structure containing flags for defining window settings.
+/// A builder structure containing window settings
+/// that can be set at runtime and changed with `graphics::set_mode()`
 ///
 /// Defaults:
 ///
 /// ```rust,ignore
 /// WindowMode {
+///     width: 800,
+///     height: 600,
 ///     borderless: false,
-///     resizable: false,
 ///     fullscreen_type: FullscreenType::Off,
 ///     vsync: true,
-///     min_dimensions: (0, 0),
-///     max_dimensions: (0, 0),
-///     samples: NumSamples::One,
+///     min width: 0,
+///     max_width: 0,
+///     min_height: 0,
+///     max_height: 0,
 /// }
 /// ```
-#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
-pub struct WindowModeOld {
-    /// Whether or not to show window decorations
-    #[default = r#"false"#]
-    pub borderless: bool,
-    /// Whether or not the window is resizable
-    #[default = r#"false"#]
-    pub resizable: bool,
-    /// Whether or not to allow high DPI mode when creating the window
-    #[default = r#"true"#]
-    pub allow_highdpi: bool,
-    /// Fullscreen type
-    #[default = r#"FullscreenType::Off"#]
-    pub fullscreen_type: FullscreenType,
-    /// Whether or not to enable vsync
-    #[default = r#"true"#]
-    pub vsync: bool,
-    /// Minimum width for resizable windows; 0 means no limit
-    #[default = r#"0"#]
-    pub min_width: u32,
-    /// Minimum height for resizable windows; 0 means no limit
-    #[default = r#"0"#]
-    pub min_height: u32,
-    /// Maximum width for resizable windows; 0 means no limit
-    #[default = r#"0"#]
-    pub max_width: u32,
-    /// Maximum height for resizable windows; 0 means no limit
-    #[default = r#"0"#]
-    pub max_height: u32,
-    /// Number of samples for multisample anti-aliasing
-    #[default = r#"NumSamples::One"#]
-    pub samples: NumSamples,
-}
-
-/// Things that can be set at runtime
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowMode {
     /// Window width
@@ -106,6 +74,9 @@ pub struct WindowMode {
     /// Fullscreen type
     #[default = r#"FullscreenType::Off"#]
     pub fullscreen_type: FullscreenType,
+    /// Whether or not to enable vsync
+    #[default = r#"true"#]
+    pub vsync: bool,
     /// Minimum width for resizable windows; 0 means no limit
     #[default = r#"0"#]
     pub min_width: u32,
@@ -118,12 +89,62 @@ pub struct WindowMode {
     /// Maximum height for resizable windows; 0 means no limit
     #[default = r#"0"#]
     pub max_height: u32,
-    /// Whether or not to enable vsync
-    #[default = r#"true"#]
-    pub vsync: bool,
 }
 
-/// Things that must be set at init time
+impl WindowMode {
+    /// Set borderless
+    pub fn borderless(mut self, borderless: bool) -> Self {
+        self.borderless = borderless;
+        self
+    }
+
+    /// Set the fullscreen type
+    pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
+        self.fullscreen_type = fullscreen_type;
+        self
+    }
+
+    /// Set vsync
+    pub fn vsync(mut self, vsync: bool) -> Self {
+        self.vsync = vsync;
+        self
+    }
+
+    /// Set default window size, or screen resolution in fullscreen mode
+    pub fn dimensions(mut self, width: u32, height: u32) -> Self {
+        self.width = width;
+        self.height = height;
+        self
+    }
+
+    /// Set minimum window dimensions for windowed mode
+    pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.min_width = width;
+        self.min_height = height;
+        self
+    }
+
+    /// Set maximum window dimensions for windowed mode
+    pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.max_width = width;
+        self.max_height = height;
+        self
+    }
+}
+
+
+/// A builder structure containing window settings
+/// that must be set at init time and cannot be changed afterwards.
+///
+/// Defaults:
+///
+/// ```rust,ignore
+/// WindowSetup {
+///     resizable: false,
+///     allow_highdpi: true,
+///     samples: NumSamples::One,
+/// }
+/// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowSetup {
     /// Whether or not the window is resizable
@@ -137,7 +158,37 @@ pub struct WindowSetup {
     pub samples: NumSamples,
 }
 
-/// Possible backends
+impl WindowSetup {
+    /// Set resizable
+    pub fn resizable(mut self, resizable: bool) -> Self {
+        self.resizable = resizable;
+        self
+    }
+
+    /// Set allow_highdpi
+    pub fn allow_highdpi(mut self, allow: bool) -> Self {
+        self.allow_highdpi = allow;
+        self
+    }
+
+    /// Set number of samples
+    ///
+    /// Returns None if given an invalid value 
+    /// (valid values are powers of 2 from 1 to 16)
+    pub fn samples(mut self, samples: u32) -> Option<Self> {
+        match NumSamples::from_u32(samples) {
+            Some(s) => {
+                self.samples = s;
+                Some(self)
+            },
+            None => {
+                None
+            }
+        }
+    }
+}
+
+/// Possible backends.
 /// Currently, only OpenGL Core spec is supported,
 /// but this lets you specify the version numbers.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, SmartDefault)]
@@ -186,48 +237,6 @@ impl NumSamples {
     }
 }
 
-impl WindowMode {
-    /// Set borderless
-    pub fn borderless(mut self, borderless: bool) -> Self {
-        self.borderless = borderless;
-        self
-    }
-
-
-    /// Set the fullscreen type
-    pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
-        self.fullscreen_type = fullscreen_type;
-        self
-    }
-
-    // /// Set vsync
-    // pub fn vsync(mut self, vsync: bool) -> Self {
-    //     self.vsync = vsync;
-    //     self
-    // }
-
-    /// Set minimum window dimensions for windowed mode
-    pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.min_width = width;
-        self.min_height = height;
-        self
-    }
-
-    /// Set maximum window dimensions for windowed mode
-    pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.max_width = width;
-        self.max_height = height;
-        self
-    }
-
-    // /// Set number of samples for MSAA
-    // pub fn samples(mut self, samples: NumSamples) -> Self {
-    //     self.samples = samples;
-    //     self
-    // }
-}
-
-
 /// A structure containing configuration data
 /// for the game engine.
 ///
@@ -237,9 +246,9 @@ impl WindowMode {
 /// Conf {
 ///     window_title: "An easy, good game"
 ///     window_icon: ""
-///     window_height: 600
-///     window_width: 800
-///     vsync: true
+///     window_mode: WindowMode::default(),
+///     window_setup: WindowSetup::default(),
+///     backend: Backend::OpenGL(3, 2),
 /// }
 /// ```
 #[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault)]
@@ -252,12 +261,6 @@ pub struct Conf {
     /// and an empty string results in a blank/default icon.
     #[default = r#""".to_owned()"#]
     pub window_icon: String,
-    // /// The window's height
-    // #[default = "600"]
-    // pub window_height: u32,
-    // /// The window's width
-    // #[default = "800"]
-    // pub window_width: u32,
     /// Window setting information that can be set at runtime
     pub window_mode: WindowMode,
     /// Window setting information that must be set at init-time
