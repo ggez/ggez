@@ -349,8 +349,8 @@ impl MainState {
             level: 0,
             score: 0,
             assets: assets,
-            screen_width: ctx.conf.window_width,
-            screen_height: ctx.conf.window_height,
+            screen_width: ctx.conf.window_mode.width,
+            screen_height: ctx.conf.window_mode.height,
             input: InputState::default(),
             player_shot_timeout: 0.0,
             gui_dirty: true,
@@ -615,8 +615,8 @@ impl EventHandler for MainState {
 pub fn main() {
     let mut c = conf::Conf::new();
     c.window_title = "Astroblasto!".to_string();
-    c.window_width = 640;
-    c.window_height = 480;
+    c.window_mode.width = 640;
+    c.window_mode.height = 480;
 
     let ctx = &mut Context::load_from_conf("astroblasto", "ggez", c).unwrap();
 

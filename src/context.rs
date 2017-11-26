@@ -94,8 +94,7 @@ impl Context {
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
         let graphics_context = graphics::GraphicsContext::new(video,
                                                               &conf.window_title,
-                                                              conf.window_width,
-                                                              conf.window_height,
+                                                              conf.window_setup,
                                                               conf.window_mode,
                                                               backend_spec)?;
         let gamepad_context = input::GamepadContext::new(&sdl_context)?;

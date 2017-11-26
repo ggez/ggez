@@ -26,7 +26,7 @@ use gfx_window_sdl;
 use gfx::Factory;
 
 use conf;
-use conf::{WindowMode};
+use conf::{WindowMode, WindowSetup};
 use context::Context;
 use GameError;
 use GameResult;
@@ -315,8 +315,7 @@ impl GraphicsContext {
     /// Create a new GraphicsContext
     pub(crate) fn new(video: sdl2::VideoSubsystem,
                window_title: &str,
-               screen_width: u32,
-               screen_height: u32,
+               window_setup: WindowSetup,
                window_mode: WindowMode,
                backend: GlBackendSpec)
                -> GameResult<GraphicsContext> {
@@ -328,16 +327,16 @@ impl GraphicsContext {
         gl.set_green_size(5);
         gl.set_blue_size(5);
         gl.set_alpha_size(8);
-        let samples = window_mode.samples as u8;
+        let samples = window_setup.samples as u8;
         if samples > 1 {
             gl.set_multisample_buffers(1);
             gl.set_multisample_samples(samples);
         }
-        let mut window_builder = video.window(window_title, screen_width, screen_height);
-        if window_mode.resizable {
+        let mut window_builder = video.window(window_title, window_mode.width, window_mode.height);
+        if window_setup.resizable {
             window_builder.resizable();
         }
-        if window_mode.allow_highdpi {
+        if window_setup.allow_highdpi {
             window_builder.allow_highdpi();
         }
         let (window, gl_context, device, mut factory, color_view, depth_view) =
@@ -399,9 +398,9 @@ impl GraphicsContext {
 
         // Set initial uniform values
         let left = 0.0;
-        let right = screen_width as f32;
+        let right = window_mode.width as f32;
         let top = 0.0;
-        let bottom = screen_height as f32;
+        let bottom = window_mode.height as f32;
         let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
         let initial_view = Matrix4::identity();
         let initial_transform = Matrix4::identity();
@@ -442,11 +441,11 @@ impl GraphicsContext {
             current_shader: Rc::new(RefCell::new(None)),
             shaders: vec![draw],
         };
-        gfx.set_window_mode(screen_width, screen_height, window_mode)?;
+        gfx.set_window_mode(window_mode)?;
 
         // Calculate and apply the actual initial projection matrix
-        let w = screen_width as f32;
-        let h = screen_height as f32;
+        let w = window_mode.width as f32;
+        let h = window_mode.height as f32;
         let rect = Rect {
             x: (w / 2.0),
             y: (h / 2.0),
@@ -610,9 +609,9 @@ impl GraphicsContext {
     }
 
     /// Just a helper method to set window mode from a WindowMode object.
-    fn set_window_mode(&mut self, width: u32, height: u32, mode: WindowMode) -> GameResult<()> {
+    fn set_window_mode(&mut self, mode: WindowMode) -> GameResult<()> {
         let window = &mut self.window;
-        window.set_size(width, height)?;
+        window.set_size(mode.width, mode.height)?;
         // SDL sets "bordered" but Love2D does "not bordered";
         // we use the Love2D convention.
         window.set_bordered(!mode.borderless);
@@ -982,13 +981,11 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult<()> {
 /// It is recommended to call `set_screen_coordinates()` after changing the window
 /// size to make sure everything is what you want it to be.
 pub fn set_mode(context: &mut Context,
-                width: u32,
-                height: u32,
                 mode: WindowMode)
                 -> GameResult<()> {
     {
         let gfx = &mut context.gfx_context;
-        gfx.set_window_mode(width, height, mode)?;
+        gfx.set_window_mode(mode)?;
     }
     {
         let video = &mut context.sdl_context.video()?;
@@ -1022,8 +1019,10 @@ pub fn is_fullscreen(context: &mut Context) -> bool {
 /// Sets the window resolution based on the specified width and height
 ///
 pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameResult<()> {
-    let window_mode = context.conf.window_mode.clone();
-    set_mode(context, width, height, window_mode)
+    let mut window_mode = context.conf.window_mode.clone();
+    window_mode.width = width;
+    window_mode.height = height;
+    set_mode(context, window_mode)
 }
 
 /// Returns a `Vec` of `(width, height)` tuples describing what

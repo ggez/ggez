@@ -58,7 +58,7 @@ impl From<FullscreenType> for SdlFullscreenType {
 /// }
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
-pub struct WindowMode {
+pub struct WindowModeOld {
     /// Whether or not to show window decorations
     #[default = r#"false"#]
     pub borderless: bool,
@@ -86,6 +86,52 @@ pub struct WindowMode {
     /// Maximum height for resizable windows; 0 means no limit
     #[default = r#"0"#]
     pub max_height: u32,
+    /// Number of samples for multisample anti-aliasing
+    #[default = r#"NumSamples::One"#]
+    pub samples: NumSamples,
+}
+
+/// Things that can be set at runtime
+#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WindowMode {
+    /// Window width
+    #[default = r#"800"#]
+    pub width: u32,
+    /// Window height
+    #[default = r#"600"#]
+    pub height: u32,
+    /// Whether or not to show window decorations
+    #[default = r#"false"#]
+    pub borderless: bool,
+    /// Fullscreen type
+    #[default = r#"FullscreenType::Off"#]
+    pub fullscreen_type: FullscreenType,
+    /// Minimum width for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub min_width: u32,
+    /// Minimum height for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub min_height: u32,
+    /// Maximum width for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub max_width: u32,
+    /// Maximum height for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub max_height: u32,
+    /// Whether or not to enable vsync
+    #[default = r#"true"#]
+    pub vsync: bool,
+}
+
+/// Things that must be set at init time
+#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WindowSetup {
+    /// Whether or not the window is resizable
+    #[default = r#"false"#]
+    pub resizable: bool,
+    /// Whether or not to allow high DPI mode when creating the window
+    #[default = r#"true"#]
+    pub allow_highdpi: bool,
     /// Number of samples for multisample anti-aliasing
     #[default = r#"NumSamples::One"#]
     pub samples: NumSamples,
@@ -154,11 +200,11 @@ impl WindowMode {
         self
     }
 
-    /// Set vsync
-    pub fn vsync(mut self, vsync: bool) -> Self {
-        self.vsync = vsync;
-        self
-    }
+    // /// Set vsync
+    // pub fn vsync(mut self, vsync: bool) -> Self {
+    //     self.vsync = vsync;
+    //     self
+    // }
 
     /// Set minimum window dimensions for windowed mode
     pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
@@ -174,11 +220,11 @@ impl WindowMode {
         self
     }
 
-    /// Set number of samples for MSAA
-    pub fn samples(mut self, samples: NumSamples) -> Self {
-        self.samples = samples;
-        self
-    }
+    // /// Set number of samples for MSAA
+    // pub fn samples(mut self, samples: NumSamples) -> Self {
+    //     self.samples = samples;
+    //     self
+    // }
 }
 
 
@@ -206,14 +252,16 @@ pub struct Conf {
     /// and an empty string results in a blank/default icon.
     #[default = r#""".to_owned()"#]
     pub window_icon: String,
-    /// The window's height
-    #[default = "600"]
-    pub window_height: u32,
-    /// The window's width
-    #[default = "800"]
-    pub window_width: u32,
-    /// Window setting information
+    // /// The window's height
+    // #[default = "600"]
+    // pub window_height: u32,
+    // /// The window's width
+    // #[default = "800"]
+    // pub window_width: u32,
+    /// Window setting information that can be set at runtime
     pub window_mode: WindowMode,
+    /// Window setting information that must be set at init-time
+    pub window_setup: WindowSetup,
     /// Backend configuration
     pub backend: Backend,
 }

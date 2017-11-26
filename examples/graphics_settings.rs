@@ -138,9 +138,9 @@ pub fn main() {
         .parse()
         .expect("Option msaa needs to be a number!");
     let mut c = conf::Conf::new();
-    c.window_mode.samples =
+    c.window_setup.samples =
         conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
-    c.window_mode.resizable = true;
+    c.window_setup.resizable = true;
     // c.window_mode.min_height = 50;
     // c.window_mode.max_height = 5000;
     // c.window_mode.min_width = 50;
