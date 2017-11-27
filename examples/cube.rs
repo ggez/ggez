@@ -67,12 +67,14 @@ struct MainState {
     text1: graphics::Text,
     text2: graphics::Text,
     frames: usize,
+    rotation: f32,
+    transform: na::Matrix4<f32>,
+
+    // All the gfx-rs state stuff we need to keep track of.
     data: pipe::Data<gfx_device_gl::Resources>,
     pso: gfx::PipelineState<gfx_device_gl::Resources, pipe::Meta>,
     encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
     slice: gfx::Slice<gfx_device_gl::Resources>,
-    rotation: f32,
-    transform: na::Matrix4<f32>,
 }
 
 impl MainState {
@@ -86,6 +88,7 @@ impl MainState {
         let depth_view = graphics::get_depth_view(ctx);
         let factory = graphics::get_factory(ctx);
 
+        // Shaders.
         let vs = br#"#version 150 core
 
 in vec4 a_Pos;
@@ -114,6 +117,7 @@ void main() {
     Target0 = mix(tex, vec4(0.0,0.0,0.0,0.0), blend*1.0);
 }"#;
 
+        // Cube geometry
         let vertex_data = [// top (0, 0, 1)
                            Vertex::new([-1, -1, 1], [0, 0]),
                            Vertex::new([1, -1, 1], [1, 0]),
@@ -155,8 +159,10 @@ void main() {
             20, 21, 22, 22, 23, 20, // back
         ];
 
+        // Create vertex buffer
         let (vbuf, slice) = factory.create_vertex_buffer_with_slice(&vertex_data, index_data);
 
+        // Create 1-pixel blue texture.
         let texels = [[0x20, 0xA0, 0xC0, 0x00]];
         let (_, texture_view) = factory
             .create_texture_immutable::<gfx::format::Rgba8>(
@@ -168,6 +174,7 @@ void main() {
         let sinfo = texture::SamplerInfo::new(texture::FilterMethod::Bilinear,
                                               texture::WrapMode::Clamp);
 
+        // Create pipeline state object
         let pso = factory
             .create_pipeline_simple(vs, fs, pipe::new())
             .unwrap();
@@ -175,6 +182,8 @@ void main() {
         // Aspect ratio, FOV, znear, zfar
         let proj = na::Perspective3::new(4.0 / 3.0, 3.14 / 4.0, 1.0, 10.0);
         let transform = proj.as_matrix() * default_view().to_homogeneous();
+
+        // Bundle all the data together.
         let data = pipe::Data {
             vbuf: vbuf,
             transform: transform.into(),
@@ -208,8 +217,9 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        // Do gfx-rs drawing
         {
-            let (factory, device, encoder, depthview) = graphics::get_gfx_objects(ctx);
+            let (_factory, device, encoder, _depthview) = graphics::get_gfx_objects(ctx);
             encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0].into());
 
             let rotation = na::Matrix4::from_scaled_axis(&na::Vector3::z() * self.rotation);
@@ -227,7 +237,7 @@ impl event::EventHandler for MainState {
             encoder.flush(device);
         }
 
-
+        // Do ggez drawing
         let dest_point1 = graphics::Point2::new(self.text1.width() as f32 / 2.0 + 10.0,
                                                 self.text1.height() as f32 / 2.0 + 210.0);
         let dest_point2 = graphics::Point2::new(self.text2.width() as f32 / 2.0 + 10.0,
