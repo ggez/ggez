@@ -15,10 +15,12 @@ use ggez::nalgebra as na;
 use std::env;
 use std::path;
 
-//type Matrix4 = na::Matrix4<f32>;
 type Isometry3 = na::Isometry3<f32>;
 type Point3 = na::Point3<f32>;
 type Vector3 = na::Vector3<f32>;
+// ColorFormat and DepthFormat are kinda hardwired into ggez's drawing code,
+// and there isn't a way to easily change them, so for the moment we just have
+// to know what they are and use the same settings.
 type ColorFormat = gfx::format::Srgba8;
 type DepthFormat = gfx::format::DepthStencil;
 
@@ -73,9 +75,9 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> Self {
 
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 24).unwrap();
-        let text1 = graphics::Text::new(ctx, "WIP; doesn't actually successfully", &font).unwrap();
-        let text2 = graphics::Text::new(ctx, "draw a cube yet, sorry.", &font).unwrap();
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 18).unwrap();
+        let text1 = graphics::Text::new(ctx, "You can mix ggez and gfx drawing;", &font).unwrap();
+        let text2 = graphics::Text::new(ctx, "it basically draws gfx stuff first, then ggez", &font).unwrap();
 
         let color_view = graphics::get_color_view(ctx);
         let depth_view = graphics::get_depth_view(ctx);
@@ -109,35 +111,35 @@ void main() {
 }"#;
 
         let vertex_data = [// top (0, 0, 1)
-                           Vertex::new([-100, -100, 100], [0, 0]),
-                           Vertex::new([100, -100, 100], [1, 0]),
-                           Vertex::new([100, 100, 100], [1, 1]),
-                           Vertex::new([-100, 100, 100], [0, 1]),
+                           Vertex::new([-1, -1, 1], [0, 0]),
+                           Vertex::new([1, -1, 1], [1, 0]),
+                           Vertex::new([1, 1, 1], [1, 1]),
+                           Vertex::new([-1, 1, 1], [0, 1]),
                            // bottom (0, 0, -1)
-                           Vertex::new([-100, 100, -100], [1, 0]),
-                           Vertex::new([100, 100, -100], [0, 0]),
-                           Vertex::new([100, -100, -100], [0, 1]),
-                           Vertex::new([-100, -100, -100], [1, 1]),
+                           Vertex::new([-1, 1, -1], [1, 0]),
+                           Vertex::new([1, 1, -1], [0, 0]),
+                           Vertex::new([1, -1, -1], [0, 1]),
+                           Vertex::new([-1, -1, -1], [1, 1]),
                            // right (1, 0, 0)
-                           Vertex::new([100, -100, -100], [0, 0]),
-                           Vertex::new([100, 100, -100], [1, 0]),
-                           Vertex::new([100, 100, 100], [1, 1]),
-                           Vertex::new([100, -100, 100], [0, 1]),
+                           Vertex::new([1, -1, -1], [0, 0]),
+                           Vertex::new([1, 1, -1], [1, 0]),
+                           Vertex::new([1, 1, 1], [1, 1]),
+                           Vertex::new([1, -1, 1], [0, 1]),
                            // left (-1, 0, 0)
-                           Vertex::new([-100, -100, 100], [1, 0]),
-                           Vertex::new([-100, 100, 100], [0, 0]),
-                           Vertex::new([-100, 100, -100], [0, 1]),
-                           Vertex::new([-100, -100, -100], [1, 1]),
+                           Vertex::new([-1, -1, 1], [1, 0]),
+                           Vertex::new([-1, 1, 1], [0, 0]),
+                           Vertex::new([-1, 1, -1], [0, 1]),
+                           Vertex::new([-1, -1, -1], [1, 1]),
                            // front (0, 1, 0)
-                           Vertex::new([100, 100, -100], [1, 0]),
-                           Vertex::new([-100, 100, -100], [0, 0]),
-                           Vertex::new([-100, 100, 100], [0, 1]),
-                           Vertex::new([100, 100, 100], [1, 1]),
+                           Vertex::new([1, 1, -1], [1, 0]),
+                           Vertex::new([-1, 1, -1], [0, 0]),
+                           Vertex::new([-1, 1, 1], [0, 1]),
+                           Vertex::new([1, 1, 1], [1, 1]),
                            // back (0, -1, 0)
-                           Vertex::new([100, -100, 100], [0, 0]),
-                           Vertex::new([-100, -100, 100], [1, 0]),
-                           Vertex::new([-100, -100, -100], [1, 1]),
-                           Vertex::new([100, -100, -100], [0, 1])];
+                           Vertex::new([1, -1, 1], [0, 0]),
+                           Vertex::new([-1, -1, 1], [1, 0]),
+                           Vertex::new([-1, -1, -1], [1, 1]),
+                           Vertex::new([1, -1, -1], [0, 1])];
 
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let index_data: &[u16] = &[
@@ -199,26 +201,28 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        // self.encoder.clear(&self.data.out_color, [0.3, 0.2, 0.1, 1.0].into());
-        // self.encoder.draw(&self.slice, &self.pso, &self.data);
-        // self.encoder.flush(ctx.gfx_context.get_device());
-
         {
-            let encoder = graphics::get_encoder(ctx);
-            encoder.clear(&self.data.out_color, [0.3, 0.2, 0.1, 1.0].into());
+            let (factory, device, encoder, depthview) = graphics::get_gfx_objects(ctx);
+            encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0].into());
+
+            let locals = Locals { transform: self.data.transform };
+            encoder.update_constant_buffer(&self.data.locals, &locals);
+            encoder.clear_depth(&self.data.out_depth, 1.0);
+
             encoder.draw(&self.slice, &self.pso, &self.data);
+            encoder.flush(device);
         }
 
 
         let dest_point1 = graphics::Point2::new(self.text1.width() as f32 / 2.0 + 10.0,
-                                                self.text1.height() as f32 / 2.0 + 10.0);
+                                                self.text1.height() as f32 / 2.0 + 210.0);
         let dest_point2 = graphics::Point2::new(self.text2.width() as f32 / 2.0 + 10.0,
-                                                self.text2.height() as f32 / 2.0 + 50.0);
+                                                self.text2.height() as f32 / 2.0 + 250.0);
         graphics::draw(ctx, &self.text1, dest_point1, 0.0)?;
         graphics::draw(ctx, &self.text2, dest_point2, 0.0)?;
         graphics::present(ctx);
         self.frames += 1;
-        if (self.frames % 100) == 0 {
+        if (self.frames % 10) == 0 {
             println!("FPS: {}", ggez::timer::get_fps(ctx));
         }
         Ok(())

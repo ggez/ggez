@@ -1106,6 +1106,23 @@ pub fn get_depth_view
     gfx.depth_view.clone()
 }
 
+/// EXPERIMENTAL function to get gfx-rs objects
+/// Getting them one by one is awkward 'cause it tends to create double-borrows
+/// on the Context object.
+pub fn get_gfx_objects(context: &mut Context) -> (
+    &mut gfx_device_gl::Factory,
+    &mut gfx_device_gl::Device,
+    &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
+    gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil>,
+) {
+    let gfx = &mut context.gfx_context;
+    let f = &mut gfx.factory;
+    let d = gfx.device.as_mut();
+    let e = &mut gfx.encoder;
+    let dv = gfx.depth_view.clone();
+    (f, d, e, dv)
+}
+
 /// EXPERIMENTAL function to get the gfx-rs color view
 pub fn get_color_view(context: &Context)
                         -> gfx::handle::RenderTargetView<gfx_device_gl::Resources,
