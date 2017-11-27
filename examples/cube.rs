@@ -32,6 +32,7 @@ gfx_defines!{
 
     constant Locals {
         transform: [[f32; 4]; 4] = "u_Transform",
+        rotation: [[f32; 4]; 4] = "u_Rotation",
     }
 
     pipeline pipe {
@@ -70,6 +71,8 @@ struct MainState {
     pso: gfx::PipelineState<gfx_device_gl::Resources, pipe::Meta>,
     encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
     slice: gfx::Slice<gfx_device_gl::Resources>,
+    rotation: f32,
+    transform: na::Matrix4<f32>,
 }
 
 impl MainState {
@@ -91,11 +94,12 @@ out vec2 v_TexCoord;
 
 uniform Locals {
     mat4 u_Transform;
+    mat4 u_Rotation;
 };
 
 void main() {
     v_TexCoord = a_TexCoord;
-    gl_Position = u_Transform * a_Pos;
+    gl_Position = u_Transform * u_Rotation * a_Pos ;
     gl_ClipDistance[0] = 1.0;
 }"#;
         let fs = br#"#version 150 core
@@ -190,6 +194,8 @@ void main() {
             pso: pso,
             encoder: encoder,
             slice: slice,
+            rotation: 0.0,
+            transform: transform,
         }
     }
 }
@@ -197,6 +203,7 @@ void main() {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+        self.rotation += 0.01;
         Ok(())
     }
 
@@ -205,7 +212,14 @@ impl event::EventHandler for MainState {
             let (factory, device, encoder, depthview) = graphics::get_gfx_objects(ctx);
             encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0].into());
 
-            let locals = Locals { transform: self.data.transform };
+            let rotation = na::Matrix4::from_scaled_axis(&na::Vector3::z() * self.rotation);
+
+
+            let locals = Locals { 
+                transform: self.data.transform,
+                rotation: rotation.into(),
+            };
+            // let locals = Locals { transform: new_transform.into() };
             encoder.update_constant_buffer(&self.data.locals, &locals);
             encoder.clear_depth(&self.data.out_depth, 1.0);
 
