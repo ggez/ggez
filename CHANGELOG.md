@@ -27,6 +27,7 @@
  * Added some useful methods to `Rect`
  * Added a FAQ and some other documentation
  * Got the 3D cube example working and shuffled around the gfx-rs interface methods a little, so we could make more of the graphics innards hidden.
+ * Refactored Conf interface a little to separate "things that can be set at runtime" from "things which must be specified at init time".
 
 # 0.3.3
 

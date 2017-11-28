@@ -219,7 +219,7 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         // Do gfx-rs drawing
         {
-            let (_factory, device, encoder, _depthview) = graphics::get_gfx_objects(ctx);
+            let (_factory, device, encoder, _depthview, _colorview) = graphics::get_gfx_objects(ctx);
             encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0].into());
 
             let rotation = na::Matrix4::from_scaled_axis(&na::Vector3::z() * self.rotation);
