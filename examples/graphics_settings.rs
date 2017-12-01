@@ -81,6 +81,22 @@ impl event::EventHandler for MainState {
                                                 100.0,
                                                 4.0)?;
         graphics::draw(ctx, &circle, Point2::new(400.0, 300.0), rotation as f32)?;
+
+        const COUNT: i32 = 10;
+        for x in -COUNT..COUNT {
+            for y in -COUNT..COUNT {
+                const SPACING: i32 = 100;
+                let fx = (x * SPACING) as f32;
+                let fy = (y * SPACING) as f32;
+                // println!("POS: {},{}", fx, fy);
+                let r = (x as f32) / (COUNT as f32);
+                let b = (y as f32) / (COUNT as f32);
+                // println!("R: {}", r);
+                let color = graphics::Color::new(r, 1.0, b, 1.0);
+                graphics::set_color(ctx, color)?;
+                graphics::rectangle(ctx, graphics::DrawMode::Fill, graphics::Rect::new(fx, fy, 5.0, 5.0))?
+            }
+        }
         graphics::present(ctx);
         Ok(())
     }
@@ -115,10 +131,12 @@ impl event::EventHandler for MainState {
     fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
         println!("Resized screen to {}, {}", width, height);
         // BUGGO: Should be able to return an actual error here!
-        let new_rect = graphics::Rect::new((width / 2) as f32,
-                                           (height / 2) as f32,
+        let new_rect = graphics::Rect::new(0.0,
+                                           0.0,
+                                        //    800.0,
+                                        //    600.0);
                                            width as f32,
-                                           -(height as f32));
+                                           height as f32);
         graphics::set_screen_coordinates(ctx, new_rect).unwrap();
     }
 }

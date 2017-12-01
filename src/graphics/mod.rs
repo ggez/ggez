@@ -447,10 +447,10 @@ impl GraphicsContext {
         let w = window_mode.width as f32;
         let h = window_mode.height as f32;
         let rect = Rect {
-            x: (w / 2.0),
-            y: (h / 2.0),
-            w,
-            h: -h,
+            x: 0.0,
+            y: 0.0,
+            w: w,
+            h: h,
         };
         gfx.set_projection_rect(rect);
         gfx.calculate_transform_matrix();
@@ -581,19 +581,22 @@ impl GraphicsContext {
     /// Shortcut function to set the projection matrix to an
     /// orthographic projection based on the given `Rect`.
     ///
+    /// Also 
     /// Call `update_globals()` to apply it after calling this.
+    /// and `calculate_transform_matrix()`
     fn set_projection_rect(&mut self, rect: Rect) {
         type Vec3 = na::Vector3<f32>;
         self.screen_rect = rect;
-        let half_width = rect.w / 2.0;
-        let half_height = rect.h / 2.0;
-        self.projection = Matrix4::new_orthographic(rect.x - half_width,
-                                                    rect.x + half_width,
-                                                    rect.y + half_height,
-                                                    rect.y - half_height,
+        println!("RECT RAR: {:?}", rect);
+        self.projection = Matrix4::new_orthographic(rect.x,
+                                                    rect.x + rect.w,
+                                                    rect.y,
+                                                    rect.y +  rect.h,
                                                     -1.0,
                                                     1.0)
                 .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
+
+        // println!("PROJ: {:?}", self.projection);
     }
 
     /// Sets the raw projection matrix to the given Matrix.
@@ -848,6 +851,7 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
+    gfx.calculate_transform_matrix();
     gfx.update_globals()
 }
 
