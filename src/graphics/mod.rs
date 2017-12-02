@@ -234,7 +234,7 @@ pub(crate) struct GraphicsContextGeneric<B>
     device: Box<B::Device>,
     factory: Box<B::Factory>,
     encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
-    color_view: gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
+    // color_view: gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
     #[allow(dead_code)]
     depth_view: gfx::handle::DepthStencilView<B::Resources, gfx::format::DepthStencil>,
 
@@ -393,7 +393,7 @@ impl GraphicsContext {
             tex: (texture, sampler),
             rect_instance_properties: rect_inst_props,
             globals: globals_buffer,
-            out: color_view.clone(),
+            out: color_view,
         };
 
         // Set initial uniform values
@@ -402,12 +402,19 @@ impl GraphicsContext {
         let top = 0.0;
         let bottom = window_mode.height as f32;
         let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
-        let initial_view = Matrix4::identity();
+
+        let eye    = na::Point3::new(0.0, 0.0, -1.0);
+        let target = na::Point3::new(0.0, 0.0, 0.0);
+        let view   = na::Isometry3::look_at_rh(&eye, &target, &na::Vector3::y());
+        let initial_view = view.to_homogeneous();
+        // let initial_view = Matrix4::identity();
         let initial_transform = Matrix4::identity();
         let globals = Globals {
             mvp_matrix: initial_projection.into(),
             color: types::WHITE.into(),
         };
+
+        println!("Data is: {:#?}", data);
 
         let mut gfx = GraphicsContext {
             foreground_color: types::WHITE,
@@ -427,7 +434,7 @@ impl GraphicsContext {
             device: Box::new(device),
             factory: Box::new(factory),
             encoder: encoder,
-            color_view: color_view,
+            // color_view: color_view,
             depth_view: depth_view,
 
             data: data,
@@ -587,7 +594,7 @@ impl GraphicsContext {
     fn set_projection_rect(&mut self, rect: Rect) {
         type Vec3 = na::Vector3<f32>;
         self.screen_rect = rect;
-        println!("RECT RAR: {:?}", rect);
+        println!("Setting projection to rect: {:?}", rect);
         self.projection = Matrix4::new_orthographic(rect.x,
                                                     rect.x + rect.w,
                                                     rect.y,
@@ -595,8 +602,6 @@ impl GraphicsContext {
                                                     -1.0,
                                                     1.0)
                 .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
-
-        // println!("PROJ: {:?}", self.projection);
     }
 
     /// Sets the raw projection matrix to the given Matrix.
@@ -850,8 +855,13 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
 /// a `Rect{x: 320.0, y: 240.0, w: 640.0, h: 480.0}`
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
-    gfx.set_projection_rect(rect);
+    // gfx.set_projection_rect(rect);
     gfx.calculate_transform_matrix();
+    // gfx_window_sdl::update_views(&gfx.window, &mut gfx.color_view, &mut gfx.depth_view);
+    gfx_window_sdl::update_views(&gfx.window, &mut gfx.data.out, &mut gfx.depth_view);
+    // println!("Color view: {:#?}", gfx.color_view);
+    // println!("Out   view: {:#?}", gfx.data.out);
+    // gfx.window.set_size(rect.w as u32, rect.h as u32)?;
     gfx.update_globals()
 }
 
