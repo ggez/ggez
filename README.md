@@ -91,4 +91,4 @@ yet.  There's some blockers before we can drop SDL2 for
 
 ## Help!
 
-Check out `docs/FAQ.md`.  Check out the [module docs](https://docs.rs/ggez/0.3.3/ggez/), a lot of design stuff is explained there.  Check out the examples.  If you still have problems, feel free to [open an issue](https://github.com/ggez/ggez/issues) or say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server.
+Check out `docs/FAQ.md`.  Check out the [module docs](https://docs.rs/ggez/), a lot of design stuff is explained there.  Check out the examples.  If you still have problems, feel free to [open an issue](https://github.com/ggez/ggez/issues) or say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server.
