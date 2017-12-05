@@ -5,6 +5,9 @@ use ggez::*;
 use ggez::graphics::{DrawMode, Point2};
 use ggez::event::{Keycode, Mod};
 
+use std::env;
+use std::path;
+
 enum WindowToggle {
     NONE,
     FORWARD,
@@ -21,13 +24,17 @@ struct WindowSettings {
 
 struct MainState {
     angle: f32, // in radians
+    zoom: f32,
+    image: graphics::Image,
     window_settings: WindowSettings,
 }
 
 impl MainState {
-    fn new(_ctx: &mut Context) -> GameResult<MainState> {
+    fn new(ctx: &mut Context) -> GameResult<MainState> {
         let mut s = MainState {
             angle: 0.0,
+            zoom: 1.0,
+            image: graphics::Image::new(ctx, "/tile.png")?,
             window_settings: WindowSettings {
                 toggle_fullscreen: false,
                 window_size_toggle: WindowToggle::NONE,
@@ -38,7 +45,7 @@ impl MainState {
         };
 
 
-        let resolutions = ggez::graphics::get_fullscreen_modes(_ctx, 0)?;
+        let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
         s.window_settings.num_of_resolutions = resolutions.len();
 
         Ok(s)
@@ -75,11 +82,13 @@ impl event::EventHandler for MainState {
         graphics::set_background_color(ctx, graphics::BLACK);
         graphics::clear(ctx);
         let rotation = timer::get_ticks(ctx) % 1000;
+        graphics::set_color(ctx, graphics::WHITE)?;
         let circle = graphics::Mesh::new_circle(ctx,
                                                 DrawMode::Line(3.0),
                                                 Point2::new(0.0, 0.0),
                                                 100.0,
                                                 4.0)?;
+        graphics::draw(ctx, &self.image, Point2::new(400.0, 300.0), 0.0)?;
         graphics::draw(ctx, &circle, Point2::new(400.0, 300.0), rotation as f32)?;
 
         const COUNT: i32 = 10;
@@ -92,7 +101,7 @@ impl event::EventHandler for MainState {
                 let r = (x as f32) / (COUNT as f32);
                 let b = (y as f32) / (COUNT as f32);
                 // println!("R: {}", r);
-                let color = graphics::Color::new(r, 1.0, b, 1.0);
+                let color = graphics::Color::new(r, 0.0, b, 1.0);
                 graphics::set_color(ctx, color)?;
                 graphics::rectangle(ctx, graphics::DrawMode::Fill, graphics::Rect::new(fx, fy, 5.0, 5.0))?
             }
@@ -101,8 +110,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, _keymod: Mod, repeat: bool) {
-
+    fn key_up_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, repeat: bool) {
         if !repeat {
             match keycode {
                 Keycode::F => {
@@ -122,6 +130,27 @@ impl event::EventHandler for MainState {
                         self.window_settings.resolution_index %=
                             self.window_settings.num_of_resolutions;
                     }
+                },
+                Keycode::Up => {
+                    self.zoom += 0.1;
+                    println!("Zoom is now {}", self.zoom);
+                    let (w, h) = graphics::get_size(ctx);
+                    let new_rect = graphics::Rect::new(0.0,
+                                                    0.0,
+                                                    w as f32 * self.zoom,
+                                                    h as f32 * self.zoom);
+                    graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+
+                },
+                Keycode::Down => {
+                    self.zoom -= 0.1;
+                    println!("Zoom is now {}", self.zoom);
+                    let (w, h) = graphics::get_size(ctx);
+                    let new_rect = graphics::Rect::new(0.0,
+                                                    0.0,
+                                                    w as f32 * self.zoom,
+                                                    h as f32 * self.zoom);
+                    graphics::set_screen_coordinates(ctx, new_rect).unwrap();
                 }
                 _ => {}
             }
@@ -133,11 +162,9 @@ impl event::EventHandler for MainState {
         // BUGGO: Should be able to return an actual error here!
         let new_rect = graphics::Rect::new(0.0,
                                            0.0,
-                                        //    800.0,
-                                        //    600.0);
-                                           width as f32,
-                                           height as f32);
-        graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+                                           width as f32 * self.zoom,
+                                           height as f32 * self.zoom);
+        // graphics::set_screen_coordinates(ctx, new_rect).unwrap();
     }
 }
 
@@ -163,7 +190,21 @@ pub fn main() {
     // c.window_mode.max_height = 5000;
     // c.window_mode.min_width = 50;
     // c.window_mode.max_width = 5000;
+
+
     let ctx = &mut Context::load_from_conf("graphics_settings", "ggez", c).unwrap();
+
+    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
+    // we we look in the cargo project for files.
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        ctx.filesystem.mount(&path, true);
+        println!("Adding path {:?}", path);
+    } else {
+        println!("not building with cargo?");
+    }
+
     let state = &mut MainState::new(ctx).unwrap();
     event::run(ctx, state).unwrap();
 }

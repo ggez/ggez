@@ -447,10 +447,10 @@ impl GraphicsContext {
         let w = window_mode.width as f32;
         let h = window_mode.height as f32;
         let rect = Rect {
-            x: (w / 2.0),
-            y: (h / 2.0),
+            x: 0.0,
+            y: 0.0,
             w,
-            h: -h,
+            h,
         };
         gfx.set_projection_rect(rect);
         gfx.calculate_transform_matrix();
@@ -585,12 +585,12 @@ impl GraphicsContext {
     fn set_projection_rect(&mut self, rect: Rect) {
         type Vec3 = na::Vector3<f32>;
         self.screen_rect = rect;
-        let half_width = rect.w / 2.0;
-        let half_height = rect.h / 2.0;
-        self.projection = Matrix4::new_orthographic(rect.x - half_width,
-                                                    rect.x + half_width,
-                                                    rect.y + half_height,
-                                                    rect.y - half_height,
+        // let half_width = rect.w / 2.0;
+        // let half_height = rect.h / 2.0;
+        self.projection = Matrix4::new_orthographic(rect.x,
+                                                    rect.x + rect.w,
+                                                    rect.y,
+                                                    rect.y + rect.h,
                                                     -1.0,
                                                     1.0)
                 .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
@@ -856,6 +856,7 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
+    gfx.calculate_transform_matrix();
     gfx.update_globals()
 }
 
@@ -1446,7 +1447,8 @@ impl Drawable for Image {
         // are "upside down", because by default we present the
         // illusion that the screen is addressed in pixels.
         // BUGGO: Which I rather regret now.
-        let invert_y = if gfx.screen_rect.h < 0.0 { 1.0 } else { -1.0 };
+        // TODO: Fix this.
+        let invert_y = 1.0;// if gfx.screen_rect.h < 0.0 { 1.0 } else { -1.0 };
         let real_scale = Point2::new(src_width * param.scale.x * self.width as f32,
                                      src_height * param.scale.y * self.height as f32 * invert_y);
         let mut new_param = param;
