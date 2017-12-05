@@ -10,5 +10,6 @@ layout (std140) uniform Globals {
 };
 
 void main() {
+    //Target0 = vec4(1.0, 1.0, 1.0, 1.0);
     Target0 = texture(t_Texture, v_Uv) * u_Color;
 }

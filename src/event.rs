@@ -243,6 +243,7 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                     state.focus_event(ctx, false)
                 }
                 Window { win_event: event::WindowEvent::Resized(w, h), .. } => {
+                    ctx.gfx_context.resize_viewport();
                     state.resize_event(ctx, w as u32, h as u32);
                 }
                 _ => {}
