@@ -133,12 +133,12 @@ gfx_defines!{
         col2: [f32; 4] = "a_TCol2",
         col3: [f32; 4] = "a_TCol3",
         col4: [f32; 4] = "a_TCol4",
+        color: [f32; 4] = "a_Color",
     }
 
     /// Internal structure containing global shader state.
     constant Globals {
         mvp_matrix: [[f32; 4]; 4] = "u_MVP",
-        color: [f32; 4] = "u_Color",
     }
 
     pipeline pipe {
@@ -159,6 +159,7 @@ impl Default for InstanceProperties {
             col2: [0.0, 1.0, 0.0, 0.0],
             col3: [1.0, 0.0, 1.0, 0.0],
             col4: [1.0, 0.0, 0.0, 1.0],
+            color: types::WHITE.into()
         }
     }
 }
@@ -172,6 +173,7 @@ impl From<DrawParam> for InstanceProperties {
             col2: mat[1],
             col3: mat[2],
             col4: mat[3],
+            color: p.color.into()
         }
     }
 }
@@ -216,7 +218,6 @@ impl<B> SamplerCache<B>
 pub(crate) struct GraphicsContextGeneric<B>
     where B: BackendSpec
 {
-    foreground_color: Color,
     background_color: Color,
     shader_globals: Globals,
     projection: Matrix4,
@@ -406,11 +407,9 @@ impl GraphicsContext {
         let initial_transform = Matrix4::identity();
         let globals = Globals {
             mvp_matrix: initial_projection.into(),
-            color: types::WHITE.into(),
         };
 
         let mut gfx = GraphicsContext {
-            foreground_color: types::WHITE,
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             shader_globals: globals,
             projection: initial_projection,
@@ -776,11 +775,6 @@ pub fn get_background_color(ctx: &Context) -> Color {
     ctx.gfx_context.background_color
 }
 
-/// Returns the current foreground color.
-pub fn get_color(ctx: &Context) -> Color {
-    ctx.gfx_context.foreground_color
-}
-
 /// Get the default filter mode for new images.
 pub fn get_default_filter(ctx: &Context) -> FilterMode {
     let gfx = &ctx.gfx_context;
@@ -815,16 +809,6 @@ pub fn get_screen_coordinates(ctx: &Context) -> Rect {
 /// Sets the background color.  Default: blue.
 pub fn set_background_color(ctx: &mut Context, color: Color) {
     ctx.gfx_context.background_color = color;
-}
-
-/// Sets the foreground color, which will be used for drawing
-/// rectangles, lines, etc.  Default: white.
-pub fn set_color(ctx: &mut Context, color: Color) -> GameResult<()> {
-    let gfx = &mut ctx.gfx_context;
-    gfx.foreground_color = color;
-    let linear_color: types::LinearColor = color.into();
-    gfx.shader_globals.color = linear_color.into();
-    gfx.update_globals()
 }
 
 /// Sets the default filter mode used to scale images.
@@ -1172,6 +1156,8 @@ pub struct DrawParam {
     pub offset: Point2,
     /// x/y shear factors expressed as a `Point2`.
     pub shear: Point2,
+    /// color to tint the drawable.
+    pub color: Color,
 }
 
 impl Default for DrawParam {
@@ -1183,6 +1169,7 @@ impl Default for DrawParam {
             scale: Point2::new(1.0, 1.0),
             offset: Point2::new(0.0, 0.0),
             shear: Point2::new(0.0, 0.0),
+            color: types::WHITE
         }
     }
 }
