@@ -42,6 +42,10 @@
  * Fixed a few smallish filesystem bugs
  * Got the 3D cube example working and shuffled around the gfx-rs interface methods a little, so we could make more of the graphics innards hidden.
 
+# 0.3.4
+
+ * Backported correction to SRGB color conversions
+ * Added std::error::Error implementation for GameError
 
 # 0.3.3
 
