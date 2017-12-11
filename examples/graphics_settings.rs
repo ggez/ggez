@@ -20,6 +20,7 @@ struct WindowSettings {
     is_fullscreen: bool,
     num_of_resolutions: usize,
     resolution_index: usize,
+    resize_projection: bool,
 }
 
 struct MainState {
@@ -41,6 +42,7 @@ impl MainState {
                 is_fullscreen: false,
                 resolution_index: 0,
                 num_of_resolutions: 0,
+                resize_projection: false,
             },
         };
 
@@ -151,6 +153,10 @@ impl event::EventHandler for MainState {
                                                     w as f32 * self.zoom,
                                                     h as f32 * self.zoom);
                     graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+                },
+                Keycode::Space => {
+                    self.window_settings.resize_projection = !self.window_settings.resize_projection;
+                    println!("Resizing the projection on window resize is now: {}", self.window_settings.resize_projection);
                 }
                 _ => {}
             }
@@ -160,11 +166,13 @@ impl event::EventHandler for MainState {
     fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
         println!("Resized screen to {}, {}", width, height);
         // BUGGO: Should be able to return an actual error here!
-        let new_rect = graphics::Rect::new(0.0,
-                                           0.0,
-                                           width as f32 * self.zoom,
-                                           height as f32 * self.zoom);
-        // graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+        if self.window_settings.resize_projection {
+            let new_rect = graphics::Rect::new(0.0,
+                                            0.0,
+                                            width as f32 * self.zoom,
+                                            height as f32 * self.zoom);
+            graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+        }
     }
 }
 
@@ -186,11 +194,6 @@ pub fn main() {
     c.window_setup.samples =
         conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
     c.window_setup.resizable = true;
-    // c.window_mode.min_height = 50;
-    // c.window_mode.max_height = 5000;
-    // c.window_mode.min_width = 50;
-    // c.window_mode.max_width = 5000;
-
 
     let ctx = &mut Context::load_from_conf("graphics_settings", "ggez", c).unwrap();
 
