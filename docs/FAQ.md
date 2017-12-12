@@ -44,3 +44,7 @@ In general, ggez is designed to focus on 2D graphics.  We want it to be possible
  I know of no good ui options thus far besides "implement it yourself" or "write a backend for Conrod or something so it can draw using ggez".
 
 Contributions are welcome!
+
+# Trying to build something gives me "library not found for -lSDL2"
+
+You don't have the SDL2 development libraries installed.  See [build docs](https://github.com/ggez/ggez/blob/master/docs/BuildingForEveryPlatform.md) for how to install them for your platform.

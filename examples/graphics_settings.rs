@@ -176,8 +176,19 @@ impl event::EventHandler for MainState {
     }
 }
 
+fn print_help() {
+    println!("GRAPHICS SETTING EXAMPLE:");
+    println!("    F: toggle fullscreen");
+    println!("    H/G: Increase/decrease window sizes");
+    println!("    Up/Down: Zoom in/out");
+    println!("    Spacebar: Toggle whether or not to resize the projection when the window is resized");
+    println!("    ");
+    println!("    To see command-line options, run with `cargo run --example graphics_settings -- --help`");
+    println!("    ");
+}
+
 pub fn main() {
-    let matches = App::new("graphics settings example")
+    let matches = App::new("ggez graphics settings example")
         .arg(Arg::with_name("msaa")
                  .short("m")
                  .value_name("N")
@@ -197,6 +208,7 @@ pub fn main() {
 
     let ctx = &mut Context::load_from_conf("graphics_settings", "ggez", c).unwrap();
 
+
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
@@ -208,6 +220,7 @@ pub fn main() {
         println!("not building with cargo?");
     }
 
+    print_help();
     let state = &mut MainState::new(ctx).unwrap();
     event::run(ctx, state).unwrap();
 }
