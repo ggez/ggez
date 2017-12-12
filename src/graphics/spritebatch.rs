@@ -6,7 +6,7 @@ use error;
 use gfx;
 use gfx::Factory;
 use GameResult;
-use super::pixelshader::BlendMode;
+use super::shader::BlendMode;
 
 // TODO:
 //

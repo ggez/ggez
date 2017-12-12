@@ -1,4 +1,4 @@
-//! The `pixelshader` module allows user-defined fragment shaders to be used
+//! The `Shader` module allows user-defined fragment shaders to be used
 //! with ggez for cool and spooky effects. See the `shader` example for a
 //! taste...
 
@@ -152,23 +152,23 @@ impl<Spec, C> PsoSet<Spec, C>
     }
 }
 
-/// An ID used by the `GraphicsContext` to uniquely identify a pixel shader
-pub type PixelShaderId = usize;
+/// An ID used by the `GraphicsContext` to uniquely identify a shader
+pub type ShaderId = usize;
 
-/// A `PixelShader` reprensents a handle user-defined shader that can be used
+/// A `ShaderGeneric` reprensents a handle user-defined shader that can be used
 /// with a ggez graphics context that is generic over `gfx::Resources`
 ///
 /// As an end-user you shouldn't ever have to touch this and should use
-/// `PixelShader` instead.
+/// `Shader` instead.
 #[derive(Clone)]
-pub struct PixelShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
-    id: PixelShaderId,
+pub struct ShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
+    id: ShaderId,
     buffer: Buffer<Spec::Resources, C>,
 }
 
-/// A `PixelShader` reprensents a handle user-defined shader that can be used
+/// A `Shader` represents a handle user-defined shader that can be used
 /// with a ggez graphics context
-pub type PixelShader<C> = PixelShaderGeneric<graphics::GlBackendSpec, C>;
+pub type Shader<C> = ShaderGeneric<graphics::GlBackendSpec, C>;
 
 pub(crate) fn create_shader<C, S, Spec>
     (vertex_source: &[u8],
@@ -179,7 +179,7 @@ pub(crate) fn create_shader<C, S, Spec>
      factory: &mut Spec::Factory,
      multisample_samples: u8,
      blend_modes: Option<&[BlendMode]>)
-     -> GameResult<(PixelShaderGeneric<Spec, C>, Box<PixelShaderHandle<Spec>>)>
+     -> GameResult<(ShaderGeneric<Spec, C>, Box<ShaderHandle<Spec>>)>
     where C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
           S: Into<String>,
           Spec: graphics::BackendSpec + 'static
@@ -224,23 +224,23 @@ pub(crate) fn create_shader<C, S, Spec>
                                                     init)?);
     }
 
-    let program = PixelShaderProgram {
+    let program = ShaderProgram {
         buffer: buffer.clone(),
         psos,
         active_blend_mode: blend_modes[0].clone(),
     };
-    let draw: Box<PixelShaderHandle<Spec>> = Box::new(program);
+    let draw: Box<ShaderHandle<Spec>> = Box::new(program);
 
     let id = 0;
-    let shader = PixelShaderGeneric { id, buffer };
+    let shader = ShaderGeneric { id, buffer };
 
     Ok((shader, draw))
 }
 
-impl<C> PixelShader<C>
+impl<C> Shader<C>
     where C: 'static + Pod + Structure<ConstFormat> + Clone + Copy
 {
-    /// Create a new `PixelShader` given a gfx pipeline object
+    /// Create a new `Shader` given a gfx pipeline object
     ///
     /// In order to use a specific blend mode when this shader is being
     /// used, you must include that blend mode as part of the
@@ -252,7 +252,7 @@ impl<C> PixelShader<C>
                                                 consts: C,
                                                 name: S,
                                                 blend_modes: Option<&[BlendMode]>)
-                                                -> GameResult<PixelShader<C>> {
+                                                -> GameResult<Shader<C>> {
         let vertex_source = {
             let mut buf = Vec::new();
             let mut reader = ctx.filesystem.open(vertex_path)?;
@@ -265,10 +265,10 @@ impl<C> PixelShader<C>
             reader.read_to_end(&mut buf)?;
             buf
         };
-        PixelShader::from_u8(ctx, &vertex_source, &pixel_source, consts, name, blend_modes)
+        Shader::from_u8(ctx, &vertex_source, &pixel_source, consts, name, blend_modes)
     }
 
-    /// Create a new `PixelShader` directly from source given a gfx pipeline
+    /// Create a new `Shader` directly from source given a gfx pipeline
     /// object
     ///
     /// In order to use a specific blend mode when this shader is being
@@ -281,7 +281,7 @@ impl<C> PixelShader<C>
                                     consts: C,
                                     name: S,
                                     blend_modes: Option<&[BlendMode]>)
-                                    -> GameResult<PixelShader<C>> {
+                                    -> GameResult<Shader<C>> {
         let (mut shader, draw) = create_shader(vertex_source,
                                                pixel_source,
                                                consts,
@@ -296,7 +296,7 @@ impl<C> PixelShader<C>
         Ok(shader)
     }
 
-    /// Send data to the GPU for use with the `PixelShader`
+    /// Send data to the GPU for use with the `Shader`
     pub fn send(&self, ctx: &mut Context, consts: C) -> GameResult<()> {
         ctx.gfx_context
             .encoder
@@ -304,41 +304,41 @@ impl<C> PixelShader<C>
         Ok(())
     }
 
-    /// Gets the shader ID for the `PixelShader` which is used by the
+    /// Gets the shader ID for the `Shader` which is used by the
     /// `GraphicsContext` for identifying shaders in its cache
-    pub fn shader_id(&self) -> PixelShaderId {
+    pub fn shader_id(&self) -> ShaderId {
         self.id
     }
 }
 
-impl<Spec, C> fmt::Debug for PixelShaderGeneric<Spec, C>
+impl<Spec, C> fmt::Debug for ShaderGeneric<Spec, C>
     where Spec: graphics::BackendSpec,
           C: Structure<ConstFormat>
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "<PixelShader[{}]: {:p}>", self.id, self)
+        write!(formatter, "<Shader[{}]: {:p}>", self.id, self)
     }
 }
 
-struct PixelShaderProgram<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
+struct ShaderProgram<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
     buffer: Buffer<Spec::Resources, C>,
     psos: PsoSet<Spec, C>,
     active_blend_mode: BlendMode,
 }
 
-impl<Spec, C> fmt::Debug for PixelShaderProgram<Spec, C>
+impl<Spec, C> fmt::Debug for ShaderProgram<Spec, C>
     where Spec: graphics::BackendSpec,
           C: Structure<ConstFormat>
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "<PixelShaderProgram: {:p}>", self)
+        write!(formatter, "<ShaderProgram: {:p}>", self)
     }
 }
 
 /// A trait that is used to create trait objects to abstract away the
 /// Structure<ConstFormat> type of the constant data for drawing
-pub trait PixelShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
-    /// Draw with the current PixelShader
+pub trait ShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
+    /// Draw with the current Shader
     fn draw(&self,
             &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
             &Slice<Spec::Resources>,
@@ -352,7 +352,7 @@ pub trait PixelShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
     fn get_blend_mode(&self) -> BlendMode;
 }
 
-impl<Spec, C> PixelShaderHandle<Spec> for PixelShaderProgram<Spec, C>
+impl<Spec, C> ShaderHandle<Spec> for ShaderProgram<Spec, C>
     where Spec: graphics::BackendSpec,
           C: Structure<ConstFormat>
 {
@@ -380,40 +380,40 @@ impl<Spec, C> PixelShaderHandle<Spec> for PixelShaderProgram<Spec, C>
 /// A lock for RAII shader regions. The shader automatically gets cleared once
 /// the lock goes out of scope
 #[derive(Debug, Clone)]
-pub struct PixelShaderLock {
+pub struct ShaderLock {
     // TODO: See if it's possible to clean up the Rc<Refcell<Option<T>>>
     // It connects up to GraphicsContextGeneric.current_shader tho
-    cell: Rc<RefCell<Option<PixelShaderId>>>,
-    previous_shader: Option<PixelShaderId>,
+    cell: Rc<RefCell<Option<ShaderId>>>,
+    previous_shader: Option<ShaderId>,
 }
 
-impl Drop for PixelShaderLock {
+impl Drop for ShaderLock {
     fn drop(&mut self) {
         *self.cell.borrow_mut() = self.previous_shader;
     }
 }
 
 /// Use a shader until the returned lock goes out of scope
-pub fn use_shader<C>(ctx: &mut Context, ps: &PixelShader<C>) -> PixelShaderLock
+pub fn use_shader<C>(ctx: &mut Context, ps: &Shader<C>) -> ShaderLock
     where C: Structure<ConstFormat>
 {
     let cell = ctx.gfx_context.current_shader.clone();
     let previous_shader = (*cell.borrow()).clone();
     set_shader(ctx, ps);
-    PixelShaderLock {
+    ShaderLock {
         cell,
         previous_shader,
     }
 }
 
-/// Set the current pixel shader for the Context to render with
-pub fn set_shader<C>(ctx: &mut Context, ps: &PixelShader<C>)
+/// Set the current  shader for the Context to render with
+pub fn set_shader<C>(ctx: &mut Context, ps: &Shader<C>)
     where C: Structure<ConstFormat>
 {
     *ctx.gfx_context.current_shader.borrow_mut() = Some(ps.id);
 }
 
-/// Clears the the current pixel shader for the Context making use the default
+/// Clears the the current  shader for the Context making use the default
 pub fn clear_shader(ctx: &mut Context) {
     *ctx.gfx_context.current_shader.borrow_mut() = None;
 }

@@ -33,7 +33,7 @@ use GameResult;
 
 mod canvas;
 mod mesh;
-mod pixelshader;
+mod shader;
 mod text;
 mod types;
 
@@ -41,7 +41,7 @@ pub mod spritebatch;
 
 pub use self::canvas::*;
 pub use self::mesh::*;
-pub use self::pixelshader::*;
+pub use self::shader::*;
 pub use self::text::*;
 pub use self::types::*;
 
@@ -244,9 +244,9 @@ pub(crate) struct GraphicsContextGeneric<B>
     default_sampler_info: texture::SamplerInfo,
     samplers: SamplerCache<B>,
 
-    default_shader: PixelShaderId,
-    current_shader: Rc<RefCell<Option<PixelShaderId>>>,
-    shaders: Vec<Box<PixelShaderHandle<B>>>,
+    default_shader: ShaderId,
+    current_shader: Rc<RefCell<Option<ShaderId>>>,
+    shaders: Vec<Box<ShaderHandle<B>>>,
 }
 
 impl<B> fmt::Debug for GraphicsContextGeneric<B>

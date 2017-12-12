@@ -165,9 +165,9 @@ struct MainState {
     occlusions: Canvas,
     shadows: Canvas,
     lights: Canvas,
-    occlusions_shader: PixelShader<Light>,
-    shadows_shader: PixelShader<Light>,
-    lights_shader: PixelShader<Light>,
+    occlusions_shader: Shader<Light>,
+    shadows_shader: Shader<Light>,
+    lights_shader: Shader<Light>,
 }
 
 /// The color cast things take when not illuminated
@@ -226,10 +226,10 @@ impl MainState {
         // The light map will be drawn on top using the add blend mode
         lights.set_blend_mode(Some(BlendMode::Add));
         let occlusions_shader =
-            PixelShader::from_u8(ctx, VERTEX_SHADER_SOURCE, OCCLUSIONS_SHADER_SOURCE, torch, "Light", None)?;
+            Shader::from_u8(ctx, VERTEX_SHADER_SOURCE, OCCLUSIONS_SHADER_SOURCE, torch, "Light", None)?;
         let shadows_shader =
-            PixelShader::from_u8(ctx, VERTEX_SHADER_SOURCE, SHADOWS_SHADER_SOURCE, torch, "Light", None)?;
-        let lights_shader = PixelShader::from_u8(ctx,
+            Shader::from_u8(ctx, VERTEX_SHADER_SOURCE, SHADOWS_SHADER_SOURCE, torch, "Light", None)?;
+        let lights_shader = Shader::from_u8(ctx,
                                                  VERTEX_SHADER_SOURCE,
                                                  LIGHTS_SHADER_SOURCE,
                                                  torch,
