@@ -444,12 +444,18 @@ fn draw_actor(assets: &mut Assets,
               -> GameResult<()> {
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, actor.pos);
-    // let pos = Vector2::new(1.0, 1.0);
-    let px = pos.x as f32;
-    let py = pos.y as f32;
+    let dims = assets.actor_image(actor).get_dimensions();
+    let px = pos.x as f32 + dims.w;
+    let py = pos.y as f32 + dims.h;
     let dest_point = graphics::Point2::new(px, py);
     let image = assets.actor_image(actor);
-    graphics::draw(ctx, image, dest_point, actor.facing as f32)
+    let drawparams = graphics::DrawParam {
+        dest: dest_point,
+        rotation: actor.facing as f32,
+        offset: graphics::Point2::new(0.5, 0.5),
+        .. Default::default()
+    };
+    graphics::draw_ex(ctx, image, drawparams)
 
 }
 
