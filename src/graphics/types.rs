@@ -19,9 +19,8 @@ pub fn arr2pt(pt: [f32; 2]) -> Point2 {
 
 /// A simple 2D rectangle.
 ///
-/// The ggez convention is that `x` and `y` are the **center** of the rectangle,
-/// with `width` and `height` being the total width and height, because this
-/// is generally also how OpenGL tends to think about the world.
+/// The origin of the rectangle is at the top-left,
+/// with x increasing to the right and y increasing down.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Rect {
     /// X coordinate of the center of the rect.
@@ -83,34 +82,34 @@ impl Rect {
 
     /// Returns the left edge of the `Rect`
     pub fn left(&self) -> f32 {
-        self.x - (self.w / 2.0)
+        self.x
     }
 
     /// Returns the right edge of the `Rect`
     pub fn right(&self) -> f32 {
-        self.x + (self.w / 2.0)
+        self.x + self.w
     }
 
     /// Returns the top edge of the `Rect`
     pub fn top(&self) -> f32 {
-        self.y + (self.h / 2.0)
+        self.y
     }
 
     /// Returns the bottom edge of the `Rect`
     pub fn bottom(&self) -> f32 {
-        self.y - (self.h / 2.0)
+        self.y + self.h
     }
 
     /// Checks whether the `Rect` contains a `Point`
     pub fn contains(&self, point: &Point2) -> bool {
-        point.x >= self.left() && point.x <= self.right() && point.y >= self.bottom() &&
-        point.y <= self.top()
+        point.x >= self.left() && point.x <= self.right() && point.y <= self.bottom() &&
+        point.y >= self.top()
     }
 
     /// Checks whether the `Rect` overlaps another `Rect`
     pub fn overlaps(&self, other: &Rect) -> bool {
-        self.left() < other.right() && self.right() > other.left() &&
-        self.top() > other.bottom() && self.bottom() < other.top()
+        self.left() <= other.right() && self.right() >= other.left() &&
+        self.top() <= other.bottom() && self.bottom() >= other.top()
     }
 
     /// Translates the `Rect` by an offset of (x, y)
@@ -125,7 +124,8 @@ impl Rect {
         self.y = y;
     }
 
-    /// Scales the `Rect` about its center by a factor of (sx, sy)
+    /// Scales the `Rect` by a factor of (sx, sy),
+    /// growing towards the bottom-left
     pub fn scale(&mut self, sx: f32, sy: f32) {
         self.w *= sx;
         self.h *= sy;
@@ -465,7 +465,8 @@ mod tests {
     #[test]
     fn test_rect_contains() {
         let r = Rect::new(0.0, 0.0, 128.0, 128.0);
-        let p = Point2::new(0.0, 0.0);
+        println!("{} {} {} {}", r.top(), r.bottom(), r.left(), r.right());
+        let p = Point2::new(1.0, 1.0);
         assert!(r.contains(&p));
 
         let p = Point2::new(500.0, 0.0);

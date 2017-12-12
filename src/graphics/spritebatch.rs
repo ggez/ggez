@@ -8,6 +8,8 @@ use gfx::Factory;
 use GameResult;
 use super::pixelshader::BlendMode;
 
+// TODO:
+//
 // Owning the given Image is inconvenient because we might want, say,
 // the same Rc<Image> shared among many SpriteBatch'es.
 //
@@ -27,6 +29,11 @@ use super::pixelshader::BlendMode;
 
 
 /// A SpriteBatch draws a number of copies of the same image, using a single draw call.
+///
+/// This is generally faster than drawing the same sprite with many invocations of `draw()`,
+/// though it has a bit of overhead to set up the batch.  This makes it run very slowly
+/// in Debug mode; you need to build with optimizations enabled to really get the
+/// speed boost.
 #[derive(Debug)]
 pub struct SpriteBatch {
     image: graphics::Image,
@@ -55,12 +62,6 @@ impl SpriteBatch {
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
-        // We also invert the Y scale if our screen coordinates
-        // are "upside down", because by default we present the
-        // illusion that the screen is addressed in pixels.
-        // BUGGO: Which I rather regret now.
-        // let invert_y = if gfx.screen_rect.h < 0.0 { 1.0 } else { -1.0 };
-        // TODO: Figure out whether implementing this is needed/how to do it cleanly
         let real_scale = graphics::Point2::new(src_width * param.scale.x * self.image.width as f32,
                                                src_height * param.scale.y *
                                                self.image.height as f32);

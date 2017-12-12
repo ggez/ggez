@@ -92,19 +92,19 @@ impl BackendSpec for GlBackendSpec {
 }
 
 const QUAD_VERTS: [Vertex; 4] = [Vertex {
-                                     pos: [-0.5, -0.5],
+                                     pos: [0.0, 0.0],
                                      uv: [0.0, 0.0],
                                  },
                                  Vertex {
-                                     pos: [0.5, -0.5],
+                                     pos: [1.0, 0.0],
                                      uv: [1.0, 0.0],
                                  },
                                  Vertex {
-                                     pos: [0.5, 0.5],
+                                     pos: [1.0, 1.0],
                                      uv: [1.0, 1.0],
                                  },
                                  Vertex {
-                                     pos: [-0.5, 0.5],
+                                     pos: [0.0, 1.0],
                                      uv: [0.0, 1.0],
                                  }];
 
@@ -417,7 +417,7 @@ impl GraphicsContext {
             transform_stack: vec![initial_transform],
             view_stack: vec![initial_view],
             white_image: white_image,
-            screen_rect: Rect::new(left, bottom, (right - left), (top - bottom)),
+            screen_rect: Rect::new(left, top, (right - left), (bottom - top)),
             dpi: dpi,
 
             backend_spec: backend,
@@ -585,8 +585,6 @@ impl GraphicsContext {
     fn set_projection_rect(&mut self, rect: Rect) {
         type Vec3 = na::Vector3<f32>;
         self.screen_rect = rect;
-        // let half_width = rect.w / 2.0;
-        // let half_height = rect.h / 2.0;
         self.projection = Matrix4::new_orthographic(rect.x,
                                                     rect.x + rect.w,
                                                     rect.y,
@@ -752,14 +750,10 @@ pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameRe
 
 /// Draws a rectangle.
 pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
-    let x = rect.x;
-    let y = rect.y;
-    let w = rect.w;
-    let h = rect.h;
-    let x1 = x - (w / 2.0);
-    let x2 = x + (w / 2.0);
-    let y1 = y - (h / 2.0);
-    let y2 = y + (h / 2.0);
+    let x1 = rect.x;
+    let x2 = rect.x + rect.w;
+    let y1 = rect.y;
+    let y2 = rect.y + rect.h;
     let pts = [Point2::new(x1, y1),
                Point2::new(x2, y1),
                Point2::new(x2, y2),
@@ -804,7 +798,7 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 }
 
 /// Returns a rectangle defining the coordinate system of the screen.
-/// It will be `Rect { x: center_x, y: center_y, w: width, h: height }`
+/// It will be `Rect { x: left, y: top, w: width, h: height }`
 ///
 /// If the Y axis increases downwards, the `height` of the Rect
 /// will be negative.
@@ -849,10 +843,8 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
 /// screen.  This function lets you change this coordinate system to
 /// be whatever you prefer.
 ///
-/// Recall that a `Rect` currently the x and y coordinates at the center,
-/// so if you wanted a coordinate system from (0,0) at the bottom-left
-/// to (640, 480) at the top-right, you would call this function with
-/// a `Rect{x: 320.0, y: 240.0, w: 640.0, h: 480.0}`
+/// The `Rect`'s x and y will define the top-left corner of the screen,
+/// and that plus its w and h will define the bottom-right corner.
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
@@ -1269,38 +1261,6 @@ pub struct ImageGeneric<R>
 /// using the OpenGL backend.
 pub type Image = ImageGeneric<gfx_device_gl::Resources>;
 
-/// Copies an 2D (RGBA) buffer into one that is the next
-/// power of two size up in both dimensions.  All data is
-/// retained and kept closest to [0,0]; anything extra is
-/// filled with 0
-fn scale_rgba_up_to_power_of_2(width: u16, height: u16, rgba: &[u8]) -> (u16, u16, Vec<u8>) {
-    let width = width as usize;
-    let height = height as usize;
-    let w2 = width.next_power_of_two();
-    let h2 = height.next_power_of_two();
-    // println!("Scaling from {}x{} to {}x{}", width, height, w2, h2);
-    let num_vals = w2 * h2 * 4;
-    let mut v: Vec<u8> = Vec::with_capacity(num_vals);
-    // This is a little wasteful because we will be replacing
-    // many if not most of these 0's with the actual image data.
-    // But it's much simpler to resize the thing once than to blit
-    // each row, resize it out to fill the rest of the row with zeroes,
-    // etc.
-    v.resize(num_vals, 0);
-    // Blit each row of the old image into the new array.
-    for i in 0..h2 {
-        if i < height {
-            let src_start = i * width * 4;
-            let src_end = src_start + width * 4;
-            let dest_start = i * w2 * 4;
-            let dest_end = dest_start + width * 4;
-            let slice = &mut v[dest_start..dest_end];
-            slice.copy_from_slice(&rgba[src_start..src_end]);
-        }
-    }
-    (w2 as u16, h2 as u16, v)
-}
-
 impl Image {
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Image> {
@@ -1335,32 +1295,17 @@ impl Image {
                 height: u16,
                 rgba: &[u8])
                 -> GameResult<Image> {
-        // Check if the texture is not power of 2, and if not, pad it out.
-        let view = if false {
-            // let view = if !(width.is_power_of_two() && height.is_power_of_two()) {
-            let (width, height, rgba) = scale_rgba_up_to_power_of_2(width, height, rgba);
-            let rgba = &rgba;
-            assert_eq!((width as usize) * (height as usize) * 4, rgba.len());
-            let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-            // The slice containing rgba is NOT rows x columns, it is a slice of
-            // MIPMAP LEVELS.  Augh!
-            let (_, view) = factory
-                .create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
-            view
-        } else {
-            if width == 0 || height == 0 {
-                let msg = format!("Tried to create a texture of size {}x{}, each dimension must \
-                     be >0",
-                                  width,
-                                  height);
-                return Err(GameError::ResourceLoadError(msg));
-            }
-            let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-            let (_, view) = factory
-                .create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
-            view
 
-        };
+        if width == 0 || height == 0 {
+            let msg = format!("Tried to create a texture of size {}x{}, each dimension must
+                be >0",
+                            width,
+                            height);
+            return Err(GameError::ResourceLoadError(msg));
+        }
+        let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
+        let (_, view) = factory
+            .create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
         Ok(Image {
                texture: view,
                sampler_info: *sampler_info,
@@ -1443,14 +1388,8 @@ impl Drawable for Image {
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
-        // We also invert the Y scale if our screen coordinates
-        // are "upside down", because by default we present the
-        // illusion that the screen is addressed in pixels.
-        // BUGGO: Which I rather regret now.
-        // TODO: Fix this.
-        let invert_y = 1.0;// if gfx.screen_rect.h < 0.0 { 1.0 } else { -1.0 };
         let real_scale = Point2::new(src_width * param.scale.x * self.width as f32,
-                                     src_height * param.scale.y * self.height as f32 * invert_y);
+                                     src_height * param.scale.y * self.height as f32);
         let mut new_param = param;
         new_param.scale = real_scale;
         // Not entirely sure why the inversion is necessary, but oh well.
