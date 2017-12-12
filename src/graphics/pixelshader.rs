@@ -171,7 +171,8 @@ pub struct PixelShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFor
 pub type PixelShader<C> = PixelShaderGeneric<graphics::GlBackendSpec, C>;
 
 pub(crate) fn create_shader<C, S, Spec>
-    (source: &[u8],
+    (vertex_source: &[u8],
+     pixel_source: &[u8],
      consts: C,
      name: S,
      encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
@@ -201,7 +202,7 @@ pub(crate) fn create_shader<C, S, Spec>
                                   name.clone(),
                                   PhantomData);
         let set = factory
-            .create_shader_set(include_bytes!("shader/basic_150.glslv"), &source)?;
+            .create_shader_set(vertex_source, pixel_source)?;
         let sample = if multisample_samples > 1 {
             Some(MultiSample)
         } else {
@@ -246,18 +247,25 @@ impl<C> PixelShader<C>
     /// `blend_modes` parameter at creation. If `None` is given, only the
     /// default `Alpha` blend mode is used.
     pub fn new<P: AsRef<Path>, S: Into<String>>(ctx: &mut Context,
-                                                path: P,
+                                                vertex_path: P,
+                                                pixel_path: P,
                                                 consts: C,
                                                 name: S,
                                                 blend_modes: Option<&[BlendMode]>)
                                                 -> GameResult<PixelShader<C>> {
-        let source = {
+        let vertex_source = {
             let mut buf = Vec::new();
-            let mut reader = ctx.filesystem.open(path)?;
+            let mut reader = ctx.filesystem.open(vertex_path)?;
             reader.read_to_end(&mut buf)?;
             buf
         };
-        PixelShader::from_u8(ctx, &source, consts, name, blend_modes)
+        let pixel_source = {
+            let mut buf = Vec::new();
+            let mut reader = ctx.filesystem.open(pixel_path)?;
+            reader.read_to_end(&mut buf)?;
+            buf
+        };
+        PixelShader::from_u8(ctx, &vertex_source, &pixel_source, consts, name, blend_modes)
     }
 
     /// Create a new `PixelShader` directly from source given a gfx pipeline
@@ -268,12 +276,14 @@ impl<C> PixelShader<C>
     /// `blend_modes` parameter at creation. If `None` is given, only the
     /// default `Alpha` blend mode is used.
     pub fn from_u8<S: Into<String>>(ctx: &mut Context,
-                                    source: &[u8],
+                                    vertex_source: &[u8],
+                                    pixel_source: &[u8],
                                     consts: C,
                                     name: S,
                                     blend_modes: Option<&[BlendMode]>)
                                     -> GameResult<PixelShader<C>> {
-        let (mut shader, draw) = create_shader(&source,
+        let (mut shader, draw) = create_shader(vertex_source,
+                                               pixel_source,
                                                consts,
                                                name,
                                                &mut ctx.gfx_context.encoder,

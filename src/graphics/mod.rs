@@ -359,7 +359,8 @@ impl GraphicsContext {
                            BlendMode::Replace,
                            BlendMode::Lighten,
                            BlendMode::Darken];
-        let (shader, draw) = create_shader(include_bytes!("shader/basic_150.glslf"),
+        let (shader, draw) = create_shader(include_bytes!("shader/basic_150.glslv"),
+                                           include_bytes!("shader/basic_150.glslf"),
                                            EmptyConst,
                                            "Empty",
                                            &mut encoder,

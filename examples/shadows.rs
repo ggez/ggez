@@ -62,6 +62,8 @@ void main() {
 }
 ";
 
+const VERTEX_SHADER_SOURCE: &[u8] = include_bytes!("../resources/basic_150.glslv");
+
 /// Shader for drawing shadows based on a 1D shadow map. It takes current
 /// fragment coordinates and converts them to polar coordinates centered
 /// around the light source, using the angle to sample from the 1D shadow map.
@@ -206,7 +208,7 @@ impl MainState {
             strength: LIGHT_STRENGTH,
         };
         let (w, h) = graphics::get_size(ctx);
-        let (x, y) = (100 as f32 / w as f32, 1.0 - 75 as f32 / h as f32);
+        let (x, y) = (100.0 / w as f32, 1.0 - 75.0 / h as f32);
         let static_light = Light {
             pos: [x, y],
             light_color: STATIC_LIGHT_COLOR,
@@ -224,10 +226,11 @@ impl MainState {
         // The light map will be drawn on top using the add blend mode
         lights.set_blend_mode(Some(BlendMode::Add));
         let occlusions_shader =
-            PixelShader::from_u8(ctx, OCCLUSIONS_SHADER_SOURCE, torch, "Light", None)?;
+            PixelShader::from_u8(ctx, VERTEX_SHADER_SOURCE, OCCLUSIONS_SHADER_SOURCE, torch, "Light", None)?;
         let shadows_shader =
-            PixelShader::from_u8(ctx, SHADOWS_SHADER_SOURCE, torch, "Light", None)?;
+            PixelShader::from_u8(ctx, VERTEX_SHADER_SOURCE, SHADOWS_SHADER_SOURCE, torch, "Light", None)?;
         let lights_shader = PixelShader::from_u8(ctx,
+                                                 VERTEX_SHADER_SOURCE,
                                                  LIGHTS_SHADER_SOURCE,
                                                  torch,
                                                  "Light",
