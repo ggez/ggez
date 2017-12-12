@@ -220,8 +220,7 @@ pub(crate) struct GraphicsContextGeneric<B>
     background_color: Color,
     shader_globals: Globals,
     projection: Matrix4,
-    transform_stack: Vec<Matrix4>,
-    view_stack: Vec<Matrix4>,
+    modelview_stack: Vec<Matrix4>,
     white_image: Image,
     screen_rect: Rect,
     dpi: (f32, f32, f32),
@@ -402,7 +401,6 @@ impl GraphicsContext {
         let top = 0.0;
         let bottom = window_mode.height as f32;
         let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
-        let initial_view = Matrix4::identity();
         let initial_transform = Matrix4::identity();
         let globals = Globals {
             mvp_matrix: initial_projection.into(),
@@ -414,8 +412,7 @@ impl GraphicsContext {
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             shader_globals: globals,
             projection: initial_projection,
-            transform_stack: vec![initial_transform],
-            view_stack: vec![initial_view],
+            modelview_stack: vec![initial_transform],
             white_image: white_image,
             screen_rect: Rect::new(left, top, (right - left), (bottom - top)),
             dpi: dpi,
@@ -470,31 +467,31 @@ impl GraphicsContext {
     /// the matrices on the top of the respective stacks and the projection
     /// matrix.
     fn calculate_transform_matrix(&mut self) {
-        let model = self.transform_stack[self.transform_stack.len() - 1];
-        let view = self.view_stack[self.view_stack.len() - 1];
-        let mvp = self.projection * view * model;
+        let modelview = self.modelview_stack.last()
+            .expect("Transform stack empty; should never happen");
+        let mvp = self.projection * modelview;
         self.shader_globals.mvp_matrix = mvp.into();
     }
 
     /// Pushes a homogeneous transform matrix to the top of the transform
     /// (model) matrix stack.
     fn push_transform(&mut self, t: Matrix4) {
-        self.transform_stack.push(t);
+        self.modelview_stack.push(t);
     }
 
     /// Pops the current transform matrix off the top of the transform
     /// (model) matrix stack.
     fn pop_transform(&mut self) {
-        if self.transform_stack.len() > 1 {
-            self.transform_stack.pop();
+        if self.modelview_stack.len() > 1 {
+            self.modelview_stack.pop();
         }
     }
 
-    /// Sets the current transform matrix.
+    /// Sets the current model-view transform matrix.
     fn set_transform(&mut self, t: Matrix4) {
-        assert!(self.transform_stack.len() > 0,
+        assert!(self.modelview_stack.len() > 0,
                 "Tried to set a transform on an empty transform stack!");
-        let last = self.transform_stack
+        let last = self.modelview_stack
             .last_mut()
             .expect("Transform stack empty; should never happen!");
         *last = t;
@@ -502,43 +499,9 @@ impl GraphicsContext {
 
     /// Gets a copy of the current transform matrix.
     fn get_transform(&self) -> Matrix4 {
-        assert!(self.transform_stack.len() > 0,
+        assert!(self.modelview_stack.len() > 0,
                 "Tried to get a transform on an empty transform stack!");
-        let last = self.transform_stack
-            .last()
-            .expect("Transform stack empty; should never happen!");
-        last.clone()
-    }
-
-    /// Pushes a homogeneous transform matrix to the top of the view
-    /// matrix stack.
-    fn push_view(&mut self, v: Matrix4) {
-        self.view_stack.push(v);
-    }
-
-    /// Pops the current transform matrix off the top of the view
-    /// matrix stack.
-    fn pop_view(&mut self) {
-        if self.view_stack.len() > 1 {
-            self.view_stack.pop();
-        }
-    }
-
-    /// Sets the current transform matrix.
-    fn set_view(&mut self, t: Matrix4) {
-        assert!(self.view_stack.len() > 0,
-                "Tried to set a transform on an empty view stack!");
-        let last = self.view_stack
-            .last_mut()
-            .expect("View stack empty; should never happen!");
-        *last = t;
-    }
-
-    /// Gets a copy of the current transform matrix.
-    fn get_view(&self) -> Matrix4 {
-        assert!(self.view_stack.len() > 0,
-                "Tried to get a transform on an empty view stack!");
-        let last = self.view_stack
+        let last = self.modelview_stack
             .last()
             .expect("Transform stack empty; should never happen!");
         last.clone()
@@ -883,7 +846,9 @@ pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
     if let Some(t) = transform {
         gfx.push_transform(t);
     } else {
-        let copy = gfx.transform_stack[gfx.transform_stack.len() - 1].clone();
+        let copy = gfx.modelview_stack.last()
+            .expect("Matrix stack empty, should never happen")
+            .clone();
         gfx.push_transform(copy);
     }
 }
@@ -925,40 +890,6 @@ pub fn transform(context: &mut Context, transform: Matrix4) {
 pub fn origin(context: &mut Context) {
     let gfx = &mut context.gfx_context;
     gfx.set_transform(Matrix4::identity());
-}
-
-/// Pushes a homogeneous transform matrix to the top of the view
-/// matrix stack of the `Context`.
-pub fn push_view(context: &mut Context, view: Matrix4) {
-    let gfx = &mut context.gfx_context;
-    gfx.push_view(view);
-}
-
-/// Pops the transform matrix off the top of the view
-/// matrix stack of the `Context`.
-pub fn pop_view(context: &mut Context) {
-    let gfx = &mut context.gfx_context;
-    gfx.pop_view();
-}
-
-/// Sets the current view matrix to the given homogeneous
-/// transformation matrix.
-pub fn set_view(context: &mut Context, view: Matrix4) {
-    let gfx = &mut context.gfx_context;
-    gfx.set_view(view);
-}
-
-/// Gets a copy of the context's current view matrix
-pub fn get_view(context: &Context) -> Matrix4 {
-    let gfx = &context.gfx_context;
-    gfx.get_view()
-}
-
-/// Premultiplies the given transformation matrix to the current view transform matrix
-pub fn transform_view(context: &mut Context, transform: Matrix4) {
-    let gfx = &mut context.gfx_context;
-    let curr = gfx.get_view();
-    gfx.set_view(transform * curr);
 }
 
 /// Calculates the new total transformation (Model-View-Projection) matrix
@@ -1427,35 +1358,4 @@ impl Drawable for Image {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    #[test]
-    fn test_image_scaling_up() {
-        let mut from: Vec<u8> = Vec::new();
-        const WIDTH: u16 = 5;
-        const HEIGHT: u16 = 11;
-        for i in 0..HEIGHT {
-            let v = vec![i as u8; WIDTH as usize * 4];
-            from.extend(v.iter());
-        }
-
-        assert_eq!(from.len(), WIDTH as usize * HEIGHT as usize * 4);
-        let (width, height, res) = scale_rgba_up_to_power_of_2(WIDTH, HEIGHT, &from);
-        assert_eq!(width, WIDTH.next_power_of_two());
-        assert_eq!(height, HEIGHT.next_power_of_two());
-
-        for i in 0..HEIGHT.next_power_of_two() {
-            for j in 0..WIDTH.next_power_of_two() {
-                let offset_within_row = (j * 4) as usize;
-                let src_row_offset = (i * WIDTH * 4) as usize;
-                let dst_row_offset = (i * width * 4) as usize;
-                println!("{} {}", i, j);
-                if i < HEIGHT && j < WIDTH {
-                    assert_eq!(res[dst_row_offset + offset_within_row],
-                               from[src_row_offset + offset_within_row]);
-                } else {
-                    assert_eq!(res[dst_row_offset + offset_within_row], 0);
-                }
-            }
-        }
-    }
 }

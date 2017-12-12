@@ -73,7 +73,6 @@ struct MainState {
     // All the gfx-rs state stuff we need to keep track of.
     data: pipe::Data<gfx_device_gl::Resources>,
     pso: gfx::PipelineState<gfx_device_gl::Resources, pipe::Meta>,
-    encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
     slice: gfx::Slice<gfx_device_gl::Resources>,
 }
 
@@ -193,15 +192,12 @@ void main() {
             out_depth: depth_view,
         };
 
-        let encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
-
         MainState {
             text1: text1,
             text2: text2,
             frames: 0,
             data: data,
             pso: pso,
-            encoder: encoder,
             slice: slice,
             rotation: 0.0,
             transform: transform,
