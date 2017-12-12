@@ -75,7 +75,7 @@ impl SpriteBatch {
 
     /// Alters a sprite in the batch to use the given draw params
     pub fn set(&mut self, handle: SpriteIdx, param: graphics::DrawParam) -> GameResult<()> {
-        if handle < self.sprites.len() - 1 {
+        if handle < self.sprites.len() {
             self.sprites[handle] = param.into();
             Ok(())
         } else {
