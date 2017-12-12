@@ -100,9 +100,15 @@ impl Drawable for Canvas {
 /// Set the canvas to render to. Specifying `Option::None` will cause all
 /// rendering to be done directly to the screen.
 pub fn set_canvas(ctx: &mut Context, target: Option<&Canvas>) {
-    let out = match target {
-        Some(ref surface) => &surface.target,
-        None => &ctx.gfx_context.color_view,
+    match target {
+        Some(ref surface) => {
+            ctx.gfx_context.data.out = surface.target.clone();
+        },
+        None => {
+            let (w,h) = super::get_drawable_size(ctx);
+            let (_tex, _shaderview, rendertarget) = ctx.gfx_context.factory.create_render_target(w as u16, h as u16)
+                .unwrap();
+            ctx.gfx_context.data.out = rendertarget;
+        },
     };
-    ctx.gfx_context.data.out = out.clone();
 }
