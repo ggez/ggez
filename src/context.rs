@@ -59,7 +59,6 @@ impl fmt::Debug for Context {
 /// means to do nothing.
 fn set_window_icon(context: &mut Context) -> GameResult<()> {
     if !context.conf.window_icon.is_empty() {
-        // let icon_path = &context.conf.window_icon;
         let mut f = context.filesystem.open(&context.conf.window_icon)?;
         let mut buf = Vec::new();
         f.read_to_end(&mut buf)?;
@@ -156,5 +155,78 @@ impl Context {
         self.event_context
             .push_event(e)
             .map_err(GameError::from)
+    }
+}
+
+use std::path;
+
+/// WindowMode should probably include title and icon...
+///
+/// except those hardly ever have to be *reset*, just set at init time,
+/// so putting those in WindowSetup is reasonable.  We currently don't offer
+/// a way to alter them anyway.  Though it shouldn't be hard to add?
+///
+/// We should also have a way to retrieve the current WindowMode,
+/// to make it easier to alter rather than overwrite settings?
+///
+/// We also need to think harder about how the conf file interacts with this.
+/// Currently it overwrites everything but that jibes poorly with this sort of
+/// incremental stuffs.
+/// Hmmm.
+///
+/// Maybe you set up the ContextBuilder, then when you call build()
+/// then IF a conf file it exists it overwrites its settings?  That's similar
+/// to how it works now, but allows you the opportunity to fiddle with paths
+/// and such before hand.
+/// That's probably the best option.
+#[derive(Debug)]
+pub struct ContextBuilder {
+    game_id: &'static str,
+    author: &'static str,
+    conf: conf::Conf,
+    paths: Vec<path::PathBuf>,
+}
+
+impl ContextBuilder {
+    /// Create a new ContextBuilder
+    pub fn new(game_id: &'static str, author: &'static str) -> Self {
+        Self {
+            game_id: game_id,
+            author: author,
+            conf: conf::Conf::default(),
+            paths: vec![],
+        }
+    }
+
+    /// Sets the window setup settings
+    pub fn window_setup(mut self, setup: conf::WindowSetup) -> Self {
+        self.conf.window_setup = setup;
+        self
+    }
+
+    /// Sets the window mode settings
+    pub fn window_mode(mut self, mode: conf::WindowMode) -> Self {
+        self.conf.window_mode = mode;
+        self
+    }
+
+    /// Sets the graphics backend
+    pub fn backend(mut self, backend: conf::Backend) -> Self {
+        self.conf.backend = backend;
+        self
+    }
+
+
+    /// Add a new filesystem path to the places to search for resources.
+    pub fn add_resource_path<T>(mut self, path: T) -> Self
+        where T: Into<path::PathBuf>
+    {
+        self.paths.push(path.into());
+        self
+    }
+
+    /// Build the Context.
+    pub fn build(self) -> GameResult<Context> {
+        Context::load_from_conf(self.game_id, self.author, self.conf)
     }
 }

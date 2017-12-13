@@ -68,7 +68,6 @@ struct MainState {
     text2: graphics::Text,
     frames: usize,
     rotation: f32,
-    transform: na::Matrix4<f32>,
 
     // All the gfx-rs state stuff we need to keep track of.
     data: pipe::Data<gfx_device_gl::Resources>,
@@ -200,7 +199,6 @@ void main() {
             pso: pso,
             slice: slice,
             rotation: 0.0,
-            transform: transform,
         }
     }
 }
@@ -225,7 +223,6 @@ impl event::EventHandler for MainState {
                 transform: self.data.transform,
                 rotation: rotation.into(),
             };
-            // let locals = Locals { transform: new_transform.into() };
             encoder.update_constant_buffer(&self.data.locals, &locals);
             encoder.clear_depth(&self.data.out_depth, 1.0);
 

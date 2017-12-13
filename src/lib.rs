@@ -125,5 +125,5 @@ pub mod input;
 pub mod timer;
 mod vfs;
 
-pub use context::Context;
+pub use context::{Context, ContextBuilder};
 pub use error::*;
