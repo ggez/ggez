@@ -17,6 +17,7 @@
  * Added ability to select OpenGL version
  * Added some useful methods to `Rect`
  * Added a FAQ and some other documentation
+ * Added a `ContextBuilder` type that allows finer control over creating a `Context`
 
 ## Changed
 
@@ -38,9 +39,9 @@
 
 ## Fixed
 
- * Fixed some bugs with type visibility and directory paths.  
+ * Fixed some bugs with type visibility and directory paths.
  * Fixed a few smallish filesystem bugs
- * Got the 3D cube example working and shuffled around the gfx-rs interface methods a little, so we could make more of the graphics innards hidden.
+ * Got the 3D cube example working and shuffled around the gfx-rs interface methods a little, so we could make more of the graphics innards hidden while still exposing the useful bits.
 
 # 0.3.4
 

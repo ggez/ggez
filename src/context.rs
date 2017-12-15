@@ -185,6 +185,7 @@ pub struct ContextBuilder {
     author: &'static str,
     conf: conf::Conf,
     paths: Vec<path::PathBuf>,
+    load_conf_file: bool,
 }
 
 impl ContextBuilder {
@@ -195,6 +196,7 @@ impl ContextBuilder {
             author: author,
             conf: conf::Conf::default(),
             paths: vec![],
+            load_conf_file: true,
         }
     }
 
@@ -217,7 +219,8 @@ impl ContextBuilder {
     }
 
 
-    /// Add a new filesystem path to the places to search for resources.
+    /// Add a new read-only filesystem path to the places to search
+    /// for resources.
     pub fn add_resource_path<T>(mut self, path: T) -> Self
         where T: Into<path::PathBuf>
     {
@@ -225,8 +228,30 @@ impl ContextBuilder {
         self
     }
 
+    /// Specifies whether or not to load the `conf.toml` file if it
+    /// exists and use its settings to override the provided values.
+    /// Defaults to `true` which is usually what you want, but being
+    /// able to fiddle with it is sometimes useful for debugging.
+    pub fn with_conf_file(mut self, load_conf_file: bool) -> Self {
+        self.load_conf_file = load_conf_file;
+        self
+    }
+
     /// Build the Context.
     pub fn build(self) -> GameResult<Context> {
-        Context::load_from_conf(self.game_id, self.author, self.conf)
+        let sdl_context = sdl2::init()?;
+        let mut fs = Filesystem::new(self.game_id, self.author)?;
+
+        let config = if self.load_conf_file {
+            fs.read_config().unwrap_or(self.conf)
+        } else {
+            self.conf
+        };
+
+        for path in &self.paths {
+            fs.mount(path, true);
+        }
+
+        Context::from_conf(config, fs, sdl_context)
     }
 }
