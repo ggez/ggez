@@ -133,12 +133,13 @@ gfx_defines!{
         col2: [f32; 4] = "a_TCol2",
         col3: [f32; 4] = "a_TCol3",
         col4: [f32; 4] = "a_TCol4",
+        color: [f32; 4] = "a_Color",
     }
 
     /// Internal structure containing global shader state.
     constant Globals {
         mvp_matrix: [[f32; 4]; 4] = "u_MVP",
-        color: [f32; 4] = "u_Color",
+        //color: [f32; 4] = "u_Color",
     }
 
     pipeline pipe {
@@ -159,6 +160,7 @@ impl Default for InstanceProperties {
             col2: [0.0, 1.0, 0.0, 0.0],
             col3: [1.0, 0.0, 1.0, 0.0],
             col4: [1.0, 0.0, 0.0, 1.0],
+            color: [1.0, 1.0, 1.0, 1.0],
         }
     }
 }
@@ -166,12 +168,17 @@ impl Default for InstanceProperties {
 impl From<DrawParam> for InstanceProperties {
     fn from(p: DrawParam) -> Self {
         let mat: [[f32; 4]; 4] = p.into_matrix().into();
+        let linear_color: types::LinearColor = p.color
+            .expect("Converting DrawParam to InstanceProperties had None for a color; this should never happen!")
+            .into();
         Self {
             src: p.src.into(),
             col1: mat[0],
             col2: mat[1],
             col3: mat[2],
             col4: mat[3],
+            color: linear_color
+                .into()
         }
     }
 }
@@ -404,7 +411,7 @@ impl GraphicsContext {
         let initial_transform = Matrix4::identity();
         let globals = Globals {
             mvp_matrix: initial_projection.into(),
-            color: types::WHITE.into(),
+            //color: types::WHITE.into(),
         };
 
         let mut gfx = GraphicsContext {
@@ -510,7 +517,10 @@ impl GraphicsContext {
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
     /// sends it to the graphics card at the front of the instance buffer.
     fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
-        let properties = draw_params.into();
+        // This clone is cheap since draw_params is Copy
+        let mut new_draw_params = draw_params.clone();
+        new_draw_params.color = draw_params.color.or(Some(self.foreground_color));
+        let properties = new_draw_params.into();
         self.encoder
             .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;
         Ok(())
@@ -779,9 +789,10 @@ pub fn set_background_color(ctx: &mut Context, color: Color) {
 pub fn set_color(ctx: &mut Context, color: Color) -> GameResult<()> {
     let gfx = &mut ctx.gfx_context;
     gfx.foreground_color = color;
-    let linear_color: types::LinearColor = color.into();
-    gfx.shader_globals.color = linear_color.into();
-    gfx.update_globals()
+    //let linear_color: types::LinearColor = color.into();
+    //gfx.shader_globals.color = linear_color.into();
+    //gfx.update_globals()
+    Ok(())
 }
 
 /// Sets the default filter mode used to scale images.
@@ -1095,6 +1106,9 @@ pub struct DrawParam {
     pub offset: Point2,
     /// x/y shear factors expressed as a `Point2`.
     pub shear: Point2,
+    /// A color to draw the target with.
+    /// If `None`, the color set by `graphics::set_color()` is used; default white.
+    pub color: Option<Color>,
 }
 
 impl Default for DrawParam {
@@ -1106,6 +1120,7 @@ impl Default for DrawParam {
             scale: Point2::new(1.0, 1.0),
             offset: Point2::new(0.0, 0.0),
             shear: Point2::new(0.0, 0.0),
+            color: None,
         }
     }
 }
