@@ -47,7 +47,7 @@ pub fn main() {
                          Point2::new(position, 380.0),
                          100.0,
                          2.0)
-                .unwrap();
+            .unwrap();
         graphics::present(ctx);
         ggez::timer::yield_now();
     }

@@ -88,7 +88,7 @@ impl event::EventHandler for MainState {
                               // src: src,
                               dest: dst2,
                               rotation: self.zoomlevel,
-                            //   offset: Point2::new(-16.0, 0.0),
+                              //   offset: Point2::new(-16.0, 0.0),
                               scale: scale,
                               // shear: shear,
                               ..Default::default()
@@ -111,12 +111,13 @@ impl event::EventHandler for MainState {
             // mb.ellipse(DrawMode::Fill, Point2::new(0.0, 0.0), 50.0, 120.0, 1.0);
             // graphics::set_color(ctx, (255, 255, 255).into())?;
             // let mesh = mb.build(ctx)?;
-            graphics::draw_ex(ctx, &self.image2_nearest,
-                graphics::DrawParam {
-                    dest: Point2::new(400.0, 300.0),
-                    rotation: self.zoomlevel,
-                    .. Default::default()
-                })?;
+            graphics::draw_ex(ctx,
+                              &self.image2_nearest,
+                              graphics::DrawParam {
+                                  dest: Point2::new(400.0, 300.0),
+                                  rotation: self.zoomlevel,
+                                  ..Default::default()
+                              })?;
         }
 
         graphics::present(ctx);

@@ -105,7 +105,9 @@ impl event::EventHandler for MainState {
                 // println!("R: {}", r);
                 let color = graphics::Color::new(r, 0.0, b, 1.0);
                 graphics::set_color(ctx, color)?;
-                graphics::rectangle(ctx, graphics::DrawMode::Fill, graphics::Rect::new(fx, fy, 5.0, 5.0))?
+                graphics::rectangle(ctx,
+                                    graphics::DrawMode::Fill,
+                                    graphics::Rect::new(fx, fy, 5.0, 5.0))?
             }
         }
         graphics::present(ctx);
@@ -122,41 +124,39 @@ impl event::EventHandler for MainState {
                 Keycode::H => {
                     self.window_settings.window_size_toggle = WindowToggle::FORWARD;
                     self.window_settings.resolution_index += 1;
-                    self.window_settings.resolution_index %=
-                        self.window_settings.num_of_resolutions;
+                    self.window_settings.resolution_index %= self.window_settings
+                        .num_of_resolutions;
                 }
                 Keycode::G => {
                     if self.window_settings.resolution_index > 0 {
                         self.window_settings.window_size_toggle = WindowToggle::REVERSE;
                         self.window_settings.resolution_index -= 1;
-                        self.window_settings.resolution_index %=
-                            self.window_settings.num_of_resolutions;
+                        self.window_settings.resolution_index %= self.window_settings
+                            .num_of_resolutions;
                     }
-                },
+                }
                 Keycode::Up => {
                     self.zoom += 0.1;
                     println!("Zoom is now {}", self.zoom);
                     let (w, h) = graphics::get_size(ctx);
-                    let new_rect = graphics::Rect::new(0.0,
-                                                    0.0,
-                                                    w as f32 * self.zoom,
-                                                    h as f32 * self.zoom);
+                    let new_rect =
+                        graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                     graphics::set_screen_coordinates(ctx, new_rect).unwrap();
 
-                },
+                }
                 Keycode::Down => {
                     self.zoom -= 0.1;
                     println!("Zoom is now {}", self.zoom);
                     let (w, h) = graphics::get_size(ctx);
-                    let new_rect = graphics::Rect::new(0.0,
-                                                    0.0,
-                                                    w as f32 * self.zoom,
-                                                    h as f32 * self.zoom);
+                    let new_rect =
+                        graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                     graphics::set_screen_coordinates(ctx, new_rect).unwrap();
-                },
+                }
                 Keycode::Space => {
-                    self.window_settings.resize_projection = !self.window_settings.resize_projection;
-                    println!("Resizing the projection on window resize is now: {}", self.window_settings.resize_projection);
+                    self.window_settings.resize_projection = !self.window_settings
+                        .resize_projection;
+                    println!("Resizing the projection on window resize is now: {}",
+                             self.window_settings.resize_projection);
                 }
                 _ => {}
             }
@@ -168,9 +168,9 @@ impl event::EventHandler for MainState {
         // BUGGO: Should be able to return an actual error here!
         if self.window_settings.resize_projection {
             let new_rect = graphics::Rect::new(0.0,
-                                            0.0,
-                                            width as f32 * self.zoom,
-                                            height as f32 * self.zoom);
+                                               0.0,
+                                               width as f32 * self.zoom,
+                                               height as f32 * self.zoom);
             graphics::set_screen_coordinates(ctx, new_rect).unwrap();
         }
     }
@@ -181,29 +181,30 @@ fn print_help() {
     println!("    F: toggle fullscreen");
     println!("    H/G: Increase/decrease window sizes");
     println!("    Up/Down: Zoom in/out");
-    println!("    Spacebar: Toggle whether or not to resize the projection when the window is resized");
+    println!("    Spacebar: Toggle whether or not to resize the projection when the window is \
+              resized");
     println!("    ");
-    println!("    To see command-line options, run with `cargo run --example graphics_settings -- --help`");
+    println!("    To see command-line options, run with `cargo run --example graphics_settings \
+              -- --help`");
     println!("    ");
 }
 
 pub fn main() {
     let matches = App::new("ggez graphics settings example")
         .arg(Arg::with_name("msaa")
-                 .short("m")
-                 .value_name("N")
-                 .help("Number of MSAA samples to do (powers of 2 from 1 to 16)")
-                 .takes_value(true))
+            .short("m")
+            .value_name("N")
+            .help("Number of MSAA samples to do (powers of 2 from 1 to 16)")
+            .takes_value(true))
         .get_matches();
 
-    let msaa: u32 = matches
-        .value_of("msaa")
+    let msaa: u32 = matches.value_of("msaa")
         .unwrap_or("1")
         .parse()
         .expect("Option msaa needs to be a number!");
     let mut c = conf::Conf::new();
-    c.window_setup.samples =
-        conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
+    c.window_setup.samples = conf::NumSamples::from_u32(msaa)
+        .expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
     c.window_setup.resizable = true;
 
     let ctx = &mut Context::load_from_conf("graphics_settings", "ggez", c).unwrap();

@@ -44,8 +44,7 @@ impl Canvas {
         let cty = Srgb::get_channel_type();
         let levels = 1;
         let factory = &mut ctx.gfx_context.factory;
-        let tex = factory
-            .create_texture(kind,
+        let tex = factory.create_texture(kind,
                             levels,
                             SHADER_RESOURCE | RENDER_TARGET,
                             Usage::Data,
@@ -55,15 +54,15 @@ impl Canvas {
                 .view_texture_as_shader_resource::<Srgba8>(&tex, (0, levels - 1), Swizzle::new())?;
         let target = factory.view_texture_as_render_target(&tex, 0, None)?;
         Ok(Canvas {
-               target,
-               image: Image {
-                   texture: resource,
-                   sampler_info: ctx.gfx_context.default_sampler_info,
-                   blend_mode: None,
-                   width,
-                   height,
-               },
-           })
+            target: target,
+            image: Image {
+                texture: resource,
+                sampler_info: ctx.gfx_context.default_sampler_info,
+                blend_mode: None,
+                width: width,
+                height: height,
+            },
+        })
     }
 
     /// Create a new canvas with the current window dimensions.
@@ -103,12 +102,14 @@ pub fn set_canvas(ctx: &mut Context, target: Option<&Canvas>) {
     match target {
         Some(ref surface) => {
             ctx.gfx_context.data.out = surface.target.clone();
-        },
+        }
         None => {
-            let (w,h) = super::get_drawable_size(ctx);
-            let (_tex, _shaderview, rendertarget) = ctx.gfx_context.factory.create_render_target(w as u16, h as u16)
+            let (w, h) = super::get_drawable_size(ctx);
+            let (_tex, _shaderview, rendertarget) = ctx.gfx_context
+                .factory
+                .create_render_target(w as u16, h as u16)
                 .unwrap();
             ctx.gfx_context.data.out = rendertarget;
-        },
+        }
     };
 }

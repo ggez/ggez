@@ -43,9 +43,9 @@ impl GamepadContext {
             }
         }
         Ok(GamepadContext {
-               gamepads: gamepads,
-               controller_ctx: controller_ctx,
-           })
+            gamepads: gamepads,
+            controller_ctx: controller_ctx,
+        })
     }
 }
 

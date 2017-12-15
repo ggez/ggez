@@ -258,13 +258,13 @@ impl Assets {
         let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
         let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
         Ok(Assets {
-               player_image: player_image,
-               shot_image: shot_image,
-               rock_image: rock_image,
-               font: font,
-               shot_sound: shot_sound,
-               hit_sound: hit_sound,
-           })
+            player_image: player_image,
+            shot_image: shot_image,
+            rock_image: rock_image,
+            font: font,
+            shot_sound: shot_sound,
+            hit_sound: hit_sound,
+        })
     }
 
     fn actor_image(&mut self, actor: &Actor) -> &mut graphics::Image {
@@ -453,7 +453,7 @@ fn draw_actor(assets: &mut Assets,
         dest: dest_point,
         rotation: actor.facing as f32,
         offset: graphics::Point2::new(0.5, 0.5),
-        .. Default::default()
+        ..Default::default()
     };
     graphics::draw_ex(ctx, image, drawparams)
 
@@ -642,7 +642,7 @@ pub fn main() {
     } else {
         println!("Not building from cargo?  Ok.");
     }
-    
+
     //let ctx = &mut Context::load_from_conf("astroblasto", "ggez", c).unwrap();
     let ctx = &mut cb.build().unwrap();
 

@@ -164,7 +164,6 @@ pub struct WindowSetup {
     /// Number of samples for multisample anti-aliasing
     #[default = r#"NumSamples::One"#]
     pub samples: NumSamples,
-
 }
 
 impl WindowSetup {
@@ -179,7 +178,7 @@ impl WindowSetup {
         self.icon = icon.to_owned();
         self
     }
-    
+
     /// Set resizable
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
@@ -194,17 +193,15 @@ impl WindowSetup {
 
     /// Set number of samples
     ///
-    /// Returns None if given an invalid value 
+    /// Returns None if given an invalid value
     /// (valid values are powers of 2 from 1 to 16)
     pub fn samples(mut self, samples: u32) -> Option<Self> {
         match NumSamples::from_u32(samples) {
             Some(s) => {
                 self.samples = s;
                 Some(self)
-            },
-            None => {
-                None
             }
+            None => None,
         }
     }
 }
@@ -221,11 +218,11 @@ pub enum Backend {
     OpenGL {
         /// OpenGL major version
         #[default = r#"3"#]
-        major: u8, 
+        major: u8,
         /// OpenGL minor version
         #[default = r#"2"#]
-        minor: u8
-    }
+        minor: u8,
+    },
 }
 
 /// The possible number of samples for multisample anti-aliasing

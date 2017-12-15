@@ -203,7 +203,7 @@ impl MainState {
             pos: [0.0, 0.0],
             light_color: TORCH_COLOR,
             shadow_color: AMBIENT_COLOR,
-            screen_size,
+            screen_size: screen_size,
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
@@ -213,7 +213,7 @@ impl MainState {
             pos: [x, y],
             light_color: STATIC_LIGHT_COLOR,
             shadow_color: AMBIENT_COLOR,
-            screen_size,
+            screen_size: screen_size,
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
@@ -225,31 +225,39 @@ impl MainState {
         let mut lights = Canvas::with_window_size(ctx)?;
         // The light map will be drawn on top using the add blend mode
         lights.set_blend_mode(Some(BlendMode::Add));
-        let occlusions_shader =
-            Shader::from_u8(ctx, VERTEX_SHADER_SOURCE, OCCLUSIONS_SHADER_SOURCE, torch, "Light", None)?;
-        let shadows_shader =
-            Shader::from_u8(ctx, VERTEX_SHADER_SOURCE, SHADOWS_SHADER_SOURCE, torch, "Light", None)?;
+        let occlusions_shader = Shader::from_u8(ctx,
+                                                VERTEX_SHADER_SOURCE,
+                                                OCCLUSIONS_SHADER_SOURCE,
+                                                torch,
+                                                "Light",
+                                                None)?;
+        let shadows_shader = Shader::from_u8(ctx,
+                                             VERTEX_SHADER_SOURCE,
+                                             SHADOWS_SHADER_SOURCE,
+                                             torch,
+                                             "Light",
+                                             None)?;
         let lights_shader = Shader::from_u8(ctx,
-                                                 VERTEX_SHADER_SOURCE,
-                                                 LIGHTS_SHADER_SOURCE,
-                                                 torch,
-                                                 "Light",
-                                                 Some(&[BlendMode::Add]))?;
+                                            VERTEX_SHADER_SOURCE,
+                                            LIGHTS_SHADER_SOURCE,
+                                            torch,
+                                            "Light",
+                                            Some(&[BlendMode::Add]))?;
 
         Ok(MainState {
-               background,
-               tile,
-               text,
-               torch,
-               static_light,
-               foreground,
-               occlusions,
-               shadows,
-               lights,
-               occlusions_shader,
-               shadows_shader,
-               lights_shader,
-           })
+            background: background,
+            tile: tile,
+            text: text,
+            torch: torch,
+            static_light: static_light,
+            foreground: foreground,
+            occlusions: occlusions,
+            shadows: shadows,
+            lights: lights,
+            occlusions_shader: occlusions_shader,
+            shadows_shader: shadows_shader,
+            lights_shader: lights_shader,
+        })
     }
     fn render_light(&mut self,
                     ctx: &mut Context,
@@ -324,10 +332,7 @@ impl event::EventHandler for MainState {
             Point2::new(size.0 as f32 / dsize.0 as f32,
                         size.1 as f32 / dsize.1 as f32)
         };
-        let canvascenter = DrawParam {
-            scale: dpiscale,
-            ..center
-        };
+        let canvascenter = DrawParam { scale: dpiscale, ..center };
 
         // First thing we want to do it to render all the foreground items (that
         // will have shadows) onto their own Canvas (off-screen render). We will
@@ -339,16 +344,10 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
         graphics::draw_ex(ctx,
                           &self.tile,
-                          DrawParam {
-                              dest: Point2::new(598.0, 124.0),
-                              ..Default::default()
-                          })?;
+                          DrawParam { dest: Point2::new(598.0, 124.0), ..Default::default() })?;
         graphics::draw_ex(ctx,
                           &self.tile,
-                          DrawParam {
-                              dest: Point2::new(92.0, 350.0),
-                              ..Default::default()
-                          })?;
+                          DrawParam { dest: Point2::new(92.0, 350.0), ..Default::default() })?;
         graphics::draw_ex(ctx,
                           &self.tile,
                           DrawParam {

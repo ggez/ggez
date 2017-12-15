@@ -116,9 +116,9 @@ impl Source {
         let sink = rodio::Sink::new(&context.audio_context.endpoint);
         let cursor = io::Cursor::new(data);
         Ok(Source {
-               data: cursor,
-               sink: sink,
-           })
+            data: cursor,
+            sink: sink,
+        })
     }
 
     /// Plays the Source.

@@ -192,22 +192,12 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                     continuing = state.quit_event(ctx);
                     // println!("Quit event: {:?}", t);
                 }
-                KeyDown {
-                    keycode,
-                    keymod,
-                    repeat,
-                    ..
-                } => {
+                KeyDown { keycode, keymod, repeat, .. } => {
                     if let Some(key) = keycode {
                         state.key_down_event(ctx, key, keymod, repeat)
                     }
                 }
-                KeyUp {
-                    keycode,
-                    keymod,
-                    repeat,
-                    ..
-                } => {
+                KeyUp { keycode, keymod, repeat, .. } => {
                     if let Some(key) = keycode {
                         state.key_up_event(ctx, key, keymod, repeat)
                     }
@@ -218,14 +208,9 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                 MouseButtonUp { mouse_btn, x, y, .. } => {
                     state.mouse_button_up_event(ctx, mouse_btn, x, y)
                 }
-                MouseMotion {
-                    mousestate,
-                    x,
-                    y,
-                    xrel,
-                    yrel,
-                    ..
-                } => state.mouse_motion_event(ctx, mousestate, x, y, xrel, yrel),
+                MouseMotion { mousestate, x, y, xrel, yrel, .. } => {
+                    state.mouse_motion_event(ctx, mousestate, x, y, xrel, yrel)
+                }
                 MouseWheel { x, y, .. } => state.mouse_wheel_event(ctx, x, y),
                 ControllerButtonDown { button, which, .. } => {
                     state.controller_button_down_event(ctx, button, which)
