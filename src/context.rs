@@ -58,8 +58,10 @@ impl fmt::Debug for Context {
 /// An empty string in the conf's `window_icon`
 /// means to do nothing.
 fn set_window_icon(context: &mut Context) -> GameResult<()> {
-    if !context.conf.window_icon.is_empty() {
-        let mut f = context.filesystem.open(&context.conf.window_icon)?;
+    // This clone is a little annoying, but, borrowing is inconvenient.
+    let icon = &context.conf.window_setup.icon.clone();
+    if !icon.is_empty() {
+        let mut f = context.filesystem.open(icon)?;
         let mut buf = Vec::new();
         f.read_to_end(&mut buf)?;
         let image = image::load_from_memory(&buf)?;
@@ -92,8 +94,7 @@ impl Context {
         let font = graphics::Font::default_font()?;
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
         let graphics_context = graphics::GraphicsContext::new(video,
-                                                              &conf.window_title,
-                                                              conf.window_setup,
+                                                              &conf.window_setup,
                                                               conf.window_mode,
                                                               backend_spec)?;
         let gamepad_context = input::GamepadContext::new(&sdl_context)?;

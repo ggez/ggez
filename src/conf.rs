@@ -145,8 +145,16 @@ impl WindowMode {
 ///     samples: NumSamples::One,
 /// }
 /// ```
-#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowSetup {
+    /// The window title.
+    #[default = r#""An easy, good game".to_owned()"#]
+    pub title: String,
+    /// A file path to the window's icon.
+    /// It is rooted in the `resources` directory (see the `filesystem` module for details),
+    /// and an empty string results in a blank/default icon.
+    #[default = r#""".to_owned()"#]
+    pub icon: String,
     /// Whether or not the window is resizable
     #[default = r#"false"#]
     pub resizable: bool,
@@ -156,9 +164,22 @@ pub struct WindowSetup {
     /// Number of samples for multisample anti-aliasing
     #[default = r#"NumSamples::One"#]
     pub samples: NumSamples,
+
 }
 
 impl WindowSetup {
+    /// Set window title
+    pub fn title(mut self, title: &str) -> Self {
+        self.title = title.to_owned();
+        self
+    }
+
+    /// Set the window's icon.
+    pub fn icon(mut self, icon: &str) -> Self {
+        self.icon = icon.to_owned();
+        self
+    }
+    
     /// Set resizable
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
@@ -253,14 +274,6 @@ impl NumSamples {
 /// ```
 #[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault)]
 pub struct Conf {
-    /// The window title.
-    #[default = r#""An easy, good game".to_owned()"#]
-    pub window_title: String,
-    /// A file path to the window's icon.
-    /// It is rooted in the `resources` directory (see the `filesystem` module for details),
-    /// and an empty string results in a blank/default icon.
-    #[default = r#""".to_owned()"#]
-    pub window_icon: String,
     /// Window setting information that can be set at runtime
     pub window_mode: WindowMode,
     /// Window setting information that must be set at init-time

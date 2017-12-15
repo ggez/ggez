@@ -313,8 +313,7 @@ impl From<gfx::buffer::CreationError> for GameError {
 impl GraphicsContext {
     /// Create a new GraphicsContext
     pub(crate) fn new(video: sdl2::VideoSubsystem,
-               window_title: &str,
-               window_setup: WindowSetup,
+               window_setup: &WindowSetup,
                window_mode: WindowMode,
                backend: GlBackendSpec)
                -> GameResult<GraphicsContext> {
@@ -331,7 +330,7 @@ impl GraphicsContext {
             gl.set_multisample_buffers(1);
             gl.set_multisample_samples(samples);
         }
-        let mut window_builder = video.window(window_title, window_mode.width, window_mode.height);
+        let mut window_builder = video.window(&window_setup.title, window_mode.width, window_mode.height);
         if window_setup.resizable {
             window_builder.resizable();
         }
