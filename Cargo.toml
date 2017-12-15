@@ -27,21 +27,20 @@ cargo-resource-root = []
 [profile.dev]
 
 [dependencies]
-rusttype = "0.2"
+rusttype = "0.3"
 zip = "0.2"
 app_dirs = "1.1"
 gfx = "0.16"
 gfx_device_gl = "0.14"
 gfx_window_sdl = "0.7"
-image = "0.15"
+image = "0.18"
 sdl2 = "0.30"
-rodio = "0.5.1"
+rodio = "0.5"
 serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
 lyon = "0.8"
 euclid = "0.15"
-mint = { version = "0.4", optional = true }
 smart-default = "0.2"
 nalgebra = "0.13"
 
