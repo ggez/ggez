@@ -147,11 +147,7 @@ impl<Spec, C> PsoSet<Spec, C>
                     -> GameResult<&PipelineState<Spec::Resources, ConstMeta<C>>> {
         match self.psos.get(mode) {
             Some(pso) => Ok(pso),
-            None => {
-                Err(GameError::RenderError("Could not find a pipeline for the specified shader \
-                                            and BlendMode"
-                    .into()))
-            }
+            None => Err(GameError::RenderError("Could not find a pipeline for the specified shader and BlendMode".into())),
         }
     }
 }
@@ -205,7 +201,8 @@ pub(crate) fn create_shader<C, S, Spec>
                                   },
                                   name.clone(),
                                   PhantomData);
-        let set = factory.create_shader_set(vertex_source, pixel_source)?;
+        let set = factory
+            .create_shader_set(vertex_source, pixel_source)?;
         let sample = if multisample_samples > 1 {
             Some(MultiSample)
         } else {
@@ -220,7 +217,8 @@ pub(crate) fn create_shader<C, S, Spec>
         };
 
         psos.insert_mode(mode,
-                         factory.create_pipeline_state(&set,
+                         factory
+                             .create_pipeline_state(&set,
                                                     Primitive::TriangleList,
                                                     rasterizer,
                                                     init)?);
@@ -228,16 +226,13 @@ pub(crate) fn create_shader<C, S, Spec>
 
     let program = ShaderProgram {
         buffer: buffer.clone(),
-        psos: psos,
+        psos,
         active_blend_mode: blend_modes[0].clone(),
     };
     let draw: Box<ShaderHandle<Spec>> = Box::new(program);
 
     let id = 0;
-    let shader = ShaderGeneric {
-        id: id,
-        buffer: buffer,
-    };
+    let shader = ShaderGeneric { id, buffer };
 
     Ok((shader, draw))
 }
@@ -270,12 +265,7 @@ impl<C> Shader<C>
             reader.read_to_end(&mut buf)?;
             buf
         };
-        Shader::from_u8(ctx,
-                        &vertex_source,
-                        &pixel_source,
-                        consts,
-                        name,
-                        blend_modes)
+        Shader::from_u8(ctx, &vertex_source, &pixel_source, consts, name, blend_modes)
     }
 
     /// Create a new `Shader` directly from source given a gfx pipeline
@@ -411,8 +401,8 @@ pub fn use_shader<C>(ctx: &mut Context, ps: &Shader<C>) -> ShaderLock
     let previous_shader = (*cell.borrow()).clone();
     set_shader(ctx, ps);
     ShaderLock {
-        cell: cell,
-        previous_shader: previous_shader,
+        cell,
+        previous_shader,
     }
 }
 

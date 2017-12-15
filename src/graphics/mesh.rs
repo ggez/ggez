@@ -102,7 +102,8 @@ impl MeshBuilder {
     pub fn polyline(&mut self, mode: DrawMode, points: &[Point2]) -> &mut Self {
         {
             let buffers = &mut self.buffer;
-            let points = points.into_iter()
+            let points = points
+                .into_iter()
                 .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
             match mode {
                 DrawMode::Fill => {
@@ -128,7 +129,8 @@ impl MeshBuilder {
     pub fn polygon(&mut self, mode: DrawMode, points: &[Point2]) -> &mut Self {
         {
             let buffers = &mut self.buffer;
-            let points = points.into_iter()
+            let points = points
+                .into_iter()
                 .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
             match mode {
                 DrawMode::Fill => {
@@ -198,15 +200,17 @@ impl MeshBuilder {
     /// Takes the accumulated geometry and load it into GPU memory,
     /// creating a single `Mesh`.
     pub fn build(&self, ctx: &mut Context) -> GameResult<Mesh> {
-        let (vbuf, slice) = ctx.gfx_context
-            .factory
-            .create_vertex_buffer_with_slice(&self.buffer.vertices[..], &self.buffer.indices[..]);
+        let (vbuf, slice) =
+            ctx.gfx_context
+                .factory
+                .create_vertex_buffer_with_slice(&self.buffer.vertices[..],
+                                                 &self.buffer.indices[..]);
 
         Ok(Mesh {
-            buffer: vbuf,
-            slice: slice,
-            blend_mode: None,
-        })
+               buffer: vbuf,
+               slice: slice,
+               blend_mode: None,
+           })
     }
 }
 

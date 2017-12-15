@@ -65,10 +65,10 @@ impl Font {
         let scale = display_independent_scale(points, x_dpi, y_dpi);
 
         Ok(Font::TTFFont {
-            font: font,
-            points: points,
-            scale: scale,
-        })
+               font: font,
+               points: points,
+               scale: scale,
+           })
     }
 
     /// Loads an `Image` and uses it to create a new bitmap font
@@ -95,12 +95,12 @@ impl Font {
             glyphs_map.insert(c, i * glyph_width);
         }
         Ok(Font::BitmapFont {
-            bytes: img.into_vec(),
-            width: image_width as usize,
-            height: image_height as usize,
-            glyphs: glyphs_map,
-            glyph_width: glyph_width,
-        })
+               bytes: img.into_vec(),
+               width: image_width as usize,
+               height: image_height as usize,
+               glyphs: glyphs_map,
+               glyph_width: glyph_width,
+           })
     }
 
     /// Returns a baked-in default font: currently DejaVuSerif.ttf
@@ -191,7 +191,8 @@ impl Font {
         // we put 1 here.
         // Not entirely sure what this will actually result
         // in though; hopefully a blank line.
-        let max_line_length = broken_lines.iter()
+        let max_line_length = broken_lines
+            .iter()
             .map(|line| self.get_width(line))
             .max()
             .unwrap_or(1);
@@ -235,12 +236,15 @@ fn display_independent_scale(points: u32, dpi_w: f32, dpi_h: f32) -> rusttype::S
 }
 
 fn text_width(glyphs: &[rusttype::PositionedGlyph]) -> f32 {
-    glyphs.iter()
+    glyphs
+        .iter()
         .rev()
         .filter_map(|g| {
-            g.pixel_bounding_box()
-                .map(|b| b.min.x as f32 + g.unpositioned().h_metrics().advance_width)
-        })
+                        g.pixel_bounding_box()
+                            .map(|b| {
+                                     b.min.x as f32 + g.unpositioned().h_metrics().advance_width
+                                 })
+                    })
         .next()
         .unwrap_or(0.0)
 }
@@ -303,10 +307,10 @@ fn render_ttf(context: &mut Context,
 
     let text_string = text.to_string();
     Ok(Text {
-        texture: image,
-        contents: text_string,
-        blend_mode: None,
-    })
+           texture: image,
+           contents: text_string,
+           blend_mode: None,
+       })
 
 }
 
@@ -381,10 +385,10 @@ fn render_bitmap(context: &mut Context,
     let text_string = text.to_string();
 
     Ok(Text {
-        texture: image,
-        contents: text_string,
-        blend_mode: None,
-    })
+           texture: image,
+           contents: text_string,
+           blend_mode: None,
+       })
 }
 
 
@@ -393,9 +397,13 @@ impl Text {
     pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<Text> {
         match *font {
             Font::TTFFont { font: ref f, scale, .. } => render_ttf(context, text, f, scale),
-            Font::BitmapFont { ref bytes, width, height, glyph_width, ref glyphs } => {
-                render_bitmap(context, text, bytes, width, height, glyphs, glyph_width)
-            }
+            Font::BitmapFont {
+                ref bytes,
+                width,
+                height,
+                glyph_width,
+                ref glyphs,
+            } => render_bitmap(context, text, bytes, width, height, glyphs, glyph_width),
         }
     }
 

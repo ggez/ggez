@@ -10,7 +10,7 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let canvas = Canvas::with_window_size(ctx)?;
-        Ok(MainState { canvas: canvas })
+        Ok(MainState { canvas })
     }
 }
 
@@ -39,14 +39,14 @@ impl event::EventHandler for MainState {
                           &self.canvas,
                           DrawParam {
                               dest: Point2::new(200.0, 150.0),
-                              scale: scale,
+                              scale,
                               ..Default::default()
                           })?;
         graphics::draw_ex(ctx,
                           &self.canvas,
                           DrawParam {
                               dest: Point2::new(600.0, 450.0),
-                              scale: scale,
+                              scale,
                               ..Default::default()
                           })?;
         graphics::present(ctx);

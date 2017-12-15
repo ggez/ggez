@@ -258,7 +258,8 @@ impl VFS for PhysicalFS {
             return Err(GameError::FilesystemError(msg));
         }
         let p = self.get_absolute(path)?;
-        open_options.to_fs_openoptions()
+        open_options
+            .to_fs_openoptions()
             .open(p)
             .map(|x| Box::new(x) as Box<VFile>)
             .map_err(GameError::from)
@@ -269,7 +270,7 @@ impl VFS for PhysicalFS {
         if self.readonly {
             return Err(GameError::FilesystemError("Tried to make directory {} but FS is \
                  read-only"
-                .to_string()));
+                                                          .to_string()));
         }
         let p = self.get_absolute(path)?;
         //println!("Creating {:?}", p);
@@ -283,7 +284,7 @@ impl VFS for PhysicalFS {
     fn rm(&self, path: &Path) -> GameResult<()> {
         if self.readonly {
             return Err(GameError::FilesystemError("Tried to remove file {} but FS is read-only"
-                .to_string()));
+                                                      .to_string()));
         }
 
         let p = self.get_absolute(path)?;
@@ -299,7 +300,7 @@ impl VFS for PhysicalFS {
         if self.readonly {
             return Err(GameError::FilesystemError("Tried to remove file/dir {} but FS is \
                  read-only"
-                .to_string()));
+                                                          .to_string()));
         }
 
         let p = self.get_absolute(path)?;
@@ -342,8 +343,7 @@ impl VFS for PhysicalFS {
             pathbuf.push(fname);
             Ok(pathbuf)
         };
-        let itr = fs::read_dir(p)
-            ?
+        let itr = fs::read_dir(p)?
             .map(|entry| direntry_to_path(&entry?))
             .collect::<Vec<_>>()
             .into_iter();
@@ -507,10 +507,10 @@ impl ZipFS {
             .map(|i| archive.by_index(i).unwrap().name().to_string())
             .collect();
         Ok(Self {
-            source: filename.into(),
-            archive: RefCell::new(archive),
-            index: idx,
-        })
+               source: filename.into(),
+               archive: RefCell::new(archive),
+               index: idx,
+           })
     }
 }
 
@@ -588,10 +588,10 @@ impl ZipMetadata {
             Ok(zipfile) => {
                 let len = zipfile.size();
                 Some(ZipMetadata {
-                    len: len,
-                    is_file: true,
-                    is_dir: false, // mu
-                })
+                         len: len,
+                         is_file: true,
+                         is_dir: false, // mu
+                     })
             }
         }
     }
@@ -623,8 +623,7 @@ impl VFS for ZipFS {
         }
         let mut stupid_archive_borrow = self.archive
             .try_borrow_mut()
-            .expect("Couldn't borrow ZipArchive in ZipFS::open_options(); should never happen! \
-                     Report a bug at https://github.com/ggez/ggez/");
+            .expect("Couldn't borrow ZipArchive in ZipFS::open_options(); should never happen! Report a bug at https://github.com/ggez/ggez/");
         let mut f = stupid_archive_borrow.by_name(path)?;
         let zipfile = ZipFileWrapper::new(&mut f)?;
         Ok(Box::new(zipfile) as Box<VFile>)
@@ -655,8 +654,7 @@ impl VFS for ZipFS {
     fn exists(&self, path: &Path) -> bool {
         let mut stupid_archive_borrow = self.archive
             .try_borrow_mut()
-            .expect("Couldn't borrow ZipArchive in ZipFS::exists(); should never happen!  Report \
-                     a bug at https://github.com/ggez/ggez/");
+            .expect("Couldn't borrow ZipArchive in ZipFS::exists(); should never happen!  Report a bug at https://github.com/ggez/ggez/");
         if let Ok(path) = convenient_path_to_str(path) {
             stupid_archive_borrow.by_name(path).is_ok()
         } else {
@@ -666,10 +664,10 @@ impl VFS for ZipFS {
 
     fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
         let path = convenient_path_to_str(path)?;
-        let mut stupid_archive_borrow = self.archive
-            .try_borrow_mut()
-            .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen! \
-                     Report a bug at https://github.com/ggez/ggez/");
+        let mut stupid_archive_borrow =
+            self.archive
+                .try_borrow_mut()
+                .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen! Report a bug at https://github.com/ggez/ggez/");
         match ZipMetadata::new(path, &mut stupid_archive_borrow) {
             None => {
                 Err(GameError::FilesystemError(format!("Metadata not found in zip file for {}",

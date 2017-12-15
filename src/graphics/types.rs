@@ -336,7 +336,7 @@ impl From<Color> for LinearColor {
             r: f(c.r),
             g: f(c.g),
             b: f(c.b),
-            a: c.a,
+            a: c.a
         }
     }
 }
@@ -349,14 +349,14 @@ impl From<LinearColor> for Color {
             if component <= 0.0031308 {
                 component * 12.92
             } else {
-                (1.0 + a) * component.powf(1.0 / 2.4)
+                (1.0 + a) * component.powf(1.0/2.4)
             }
         }
         Color {
             r: f(c.r),
             g: f(c.g),
             b: f(c.b),
-            a: c.a,
+            a: c.a
         }
     }
 }
