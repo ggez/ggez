@@ -37,7 +37,7 @@ use super::shader::BlendMode;
 #[derive(Debug)]
 pub struct SpriteBatch {
     image: graphics::Image,
-    sprites: Vec<graphics::InstanceProperties>,
+    sprites: Vec<graphics::DrawParam>,
     blend_mode: Option<BlendMode>,
 }
 
@@ -58,27 +58,14 @@ impl SpriteBatch {
     ///
     /// Returns a handle with which to modify the sprite using `set()`
     pub fn add(&mut self, param: graphics::DrawParam) -> SpriteIdx {
-        let src_width = param.src.w;
-        let src_height = param.src.h;
-        // We have to mess with the scale to make everything
-        // be its-unit-size-in-pixels.
-        let real_scale = graphics::Point2::new(src_width * param.scale.x * self.image.width as f32,
-                                               src_height * param.scale.y *
-                                               self.image.height as f32);
-        let mut new_param = param;
-        new_param.scale = real_scale;
-        // Not entirely sure why the inversion is necessary, but oh well.
-        // new_param.offset.x *= -1.0 * param.scale.x;
-        // new_param.offset.y *= param.scale.y;
-        new_param.color = new_param.color.or(Some(graphics::WHITE));
-        self.sprites.push(new_param.into());
+        self.sprites.push(param.into());
         self.sprites.len() - 1
     }
 
     /// Alters a sprite in the batch to use the given draw params
     pub fn set(&mut self, handle: SpriteIdx, param: graphics::DrawParam) -> GameResult<()> {
         if handle < self.sprites.len() {
-            self.sprites[handle] = param.into();
+            self.sprites[handle] = param;
             Ok(())
         } else {
             Err(error::GameError::RenderError(String::from("Provided index is out of bounds.")))
@@ -89,7 +76,32 @@ impl SpriteBatch {
     ///
     /// Generally just calling `graphics::draw()` on the `SpriteBatch`
     /// will do this automatically.
-    pub fn flush(&self, ctx: &mut Context) -> GameResult<()> {
+    fn flush(&self, ctx: &mut Context, draw_color: Option<graphics::Color>) -> GameResult<()> {
+        // This is a little awkward but this is the right place
+        // to do whatever transformations need to happen to DrawParam's.
+        // We have a Context, and *everything* must pass through this
+        // function to be drawn, so.
+        // Though we do awkwardly have to allocate a new vector.
+        assert!(draw_color.is_some());
+        let new_sprites = self.sprites.iter()
+            // .map(|p| clean_up_drawparam(self, ctx, *p))
+            .map(|param| {
+                // Copy old params
+                let mut new_param = *param;
+                let src_width = param.src.w;
+                let src_height = param.src.h;
+                let real_scale = graphics::Point2::new(src_width * param.scale.x * self.image.width as f32,
+                                                    src_height * param.scale.y *
+                                                    self.image.height as f32);
+                new_param.scale = real_scale;
+                // If we have no color, our color is white.
+                // This is fine because coloring the whole spritebatch is possible
+                // with graphics::set_color(); this just inherits from that.
+                new_param.color = new_param.color.or(draw_color);
+                graphics::InstanceProperties::from(new_param)
+            })
+            .collect::<Vec<_>>();
+
         let gfx = &mut ctx.gfx_context;
         if gfx.data.rect_instance_properties.len() < self.sprites.len() {
             gfx.data.rect_instance_properties = gfx.factory
@@ -99,7 +111,7 @@ impl SpriteBatch {
                                gfx::TRANSFER_DST)?;
         }
         gfx.encoder
-            .update_buffer(&gfx.data.rect_instance_properties, &self.sprites[..], 0)?;
+            .update_buffer(&gfx.data.rect_instance_properties, &new_sprites[..], 0)?;
         Ok(())
     }
 
@@ -121,10 +133,11 @@ impl SpriteBatch {
 }
 
 impl graphics::Drawable for SpriteBatch {
-    /// Does not properly work yet, ideally the position, scale, etc. of the given
-    /// DrawParam would be added to the DrawParam for each sprite.
     fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
-        self.flush(ctx)?;
+        // Awkwardly we must update values on all sprites and such.
+        // Also awkwardly we have this chain of colors with differing priorities.
+        let draw_color = param.color.or(Some(ctx.gfx_context.foreground_color));
+        self.flush(ctx, draw_color)?;
         let gfx = &mut ctx.gfx_context;
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
@@ -135,6 +148,8 @@ impl graphics::Drawable for SpriteBatch {
         let curr_transform = gfx.get_transform();
         gfx.push_transform(param.into_matrix() * curr_transform);
         gfx.calculate_transform_matrix();
+        // BUGGO: No update_instance_properties here
+        // gfx.update_instance_properties(param);
         gfx.update_globals()?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.get_blend_mode();
