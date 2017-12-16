@@ -68,8 +68,9 @@ impl SpriteBatch {
         let mut new_param = param;
         new_param.scale = real_scale;
         // Not entirely sure why the inversion is necessary, but oh well.
-        new_param.offset.x *= -1.0 * param.scale.x;
-        new_param.offset.y *= param.scale.y;
+        // new_param.offset.x *= -1.0 * param.scale.x;
+        // new_param.offset.y *= param.scale.y;
+        new_param.color = new_param.color.or(Some(graphics::WHITE));
         self.sprites.push(new_param.into());
         self.sprites.len() - 1
     }

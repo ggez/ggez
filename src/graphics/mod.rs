@@ -1339,8 +1339,8 @@ impl Drawable for Image {
         let mut new_param = param;
         new_param.scale = real_scale;
         // Not entirely sure why the inversion is necessary, but oh well.
-        new_param.offset.x *= -1.0 * param.scale.x;
-        new_param.offset.y *= param.scale.y;
+        // new_param.offset.x *= param.scale.x;
+        // new_param.offset.y *= param.scale.y;
         gfx.update_instance_properties(new_param)?;
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
