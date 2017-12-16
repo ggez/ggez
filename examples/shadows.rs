@@ -314,6 +314,7 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let size = graphics::get_size(ctx);
+        let center_point = Point2::new(size.0 as f32 / 2.0, size.1 as f32 / 2.0);
         let center = DrawParam {
             // dest: Point2::new(size.0 as f32 / 2.0, size.1 as f32 / 2.0),
             dest: Point2::new(0.0, 0.0),
@@ -357,7 +358,7 @@ impl event::EventHandler for MainState {
                               rotation: 0.5,
                               ..Default::default()
                           })?;
-        graphics::draw_ex(ctx, &self.text, center)?;
+        graphics::draw(ctx, &self.text, Point2::new(200.0, 200.0), 0.0)?;
 
         // First we draw our light and shadow maps
         let torch = self.torch.clone();
@@ -371,16 +372,23 @@ impl event::EventHandler for MainState {
 
         // Now lets finally render to screen starting with out background, then
         // the shadows and lights overtop and finally our foreground.
+        // Because of coordinate system annyoingness, we have to invert
+        // the texture we draw, and draw it at the bottom-left corner.
+        let draw_upright = DrawParam {
+            dest: Point2::new(0.0, size.1 as f32),
+            scale: Point2::new(1.0, -1.0),
+            ..center
+        };
         graphics::set_canvas(ctx, None);
         graphics::set_color(ctx, graphics::WHITE)?;
         graphics::draw_ex(ctx, &self.background, center)?;
-        graphics::draw_ex(ctx, &self.shadows, canvascenter)?;
-        graphics::draw_ex(ctx, &self.lights, canvascenter)?;
+        graphics::draw_ex(ctx, &self.shadows, draw_upright)?;
+        graphics::draw_ex(ctx, &self.lights, draw_upright)?;
         // We switch the color to the shadow color before drawing the foreground objects
         // this has the same effect as applying this color in a multiply blend mode with
         // full opacity. We also reset the blend mode back to the default Alpha blend mode.
         graphics::set_color(ctx, AMBIENT_COLOR.into())?;
-        graphics::draw_ex(ctx, &self.foreground, canvascenter)?;
+        graphics::draw_ex(ctx, &self.foreground, draw_upright)?;
 
         // Uncomment following two lines to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
@@ -388,9 +396,6 @@ impl event::EventHandler for MainState {
         // the mouse position (equally encoded in all color channels).
         // graphics::set_color(ctx, [1.0; 4].into())?;
         // graphics::draw_ex(ctx, &self.occlusions, center)?;
-
-
-        graphics::draw(ctx, &self.tile, Point2::new(0.0, 0.0), 0.0)?;
 
         graphics::present(ctx);
         Ok(())
