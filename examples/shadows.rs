@@ -315,7 +315,8 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let size = graphics::get_size(ctx);
         let center = DrawParam {
-            dest: Point2::new(size.0 as f32 / 2.0, size.1 as f32 / 2.0),
+            // dest: Point2::new(size.0 as f32 / 2.0, size.1 as f32 / 2.0),
+            dest: Point2::new(0.0, 0.0),
             ..Default::default()
         };
         // for re-rendering canvases, we need to take the DPI into account
@@ -387,6 +388,9 @@ impl event::EventHandler for MainState {
         // the mouse position (equally encoded in all color channels).
         // graphics::set_color(ctx, [1.0; 4].into())?;
         // graphics::draw_ex(ctx, &self.occlusions, center)?;
+
+
+        graphics::draw(ctx, &self.tile, Point2::new(0.0, 0.0), 0.0)?;
 
         graphics::present(ctx);
         Ok(())
