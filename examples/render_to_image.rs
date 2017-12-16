@@ -38,14 +38,14 @@ impl event::EventHandler for MainState {
         graphics::draw_ex(ctx,
                           &self.canvas,
                           DrawParam {
-                              dest: Point2::new(200.0, 150.0),
+                              dest: Point2::new(0.0, 0.0),
                               scale,
                               ..Default::default()
                           })?;
         graphics::draw_ex(ctx,
                           &self.canvas,
                           DrawParam {
-                              dest: Point2::new(600.0, 450.0),
+                              dest: Point2::new(400.0, 300.0),
                               scale,
                               ..Default::default()
                           })?;
@@ -53,10 +53,20 @@ impl event::EventHandler for MainState {
 
         Ok(())
     }
+
+
+    fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
+        let new_rect = graphics::Rect::new(0.0,
+                                        0.0,
+                                        width as f32,
+                                        height as f32);
+        graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+    }
 }
 
 pub fn main() {
-    let c = conf::Conf::new();
+    let mut c = conf::Conf::new();
+    c.window_setup.resizable = true;
     let ctx = &mut Context::load_from_conf("super_simple", "ggez", c).unwrap();
     let state = &mut MainState::new(ctx).unwrap();
     event::run(ctx, state).unwrap();

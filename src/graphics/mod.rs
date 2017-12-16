@@ -240,7 +240,7 @@ pub(crate) struct GraphicsContextGeneric<B>
     device: Box<B::Device>,
     factory: Box<B::Factory>,
     encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
-    color_view: gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
+    screen_render_target: gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
     #[allow(dead_code)]
     depth_view: gfx::handle::DepthStencilView<B::Resources, gfx::format::DepthStencil>,
 
@@ -344,7 +344,8 @@ impl GraphicsContext {
         if window_setup.allow_highdpi {
             window_builder.allow_highdpi();
         }
-        let (window, gl_context, device, mut factory, color_view, depth_view) =
+        let (window, gl_context, device, mut factory, screen_render_target
+, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
         GraphicsContext::set_vsync(&video, window_mode.vsync);
@@ -399,7 +400,7 @@ impl GraphicsContext {
             tex: (texture, sampler),
             rect_instance_properties: rect_inst_props,
             globals: globals_buffer,
-            out: color_view.clone(),
+            out: screen_render_target.clone(),
         };
 
         // Set initial uniform values
@@ -431,7 +432,9 @@ impl GraphicsContext {
             device: Box::new(device),
             factory: Box::new(factory),
             encoder: encoder,
-            color_view: color_view,
+            screen_render_target
+    : screen_render_target
+    ,
             depth_view: depth_view,
 
             data: data,
@@ -608,7 +611,8 @@ impl GraphicsContext {
     /// Also replaces gfx.data.out so it may cause squirrelliness to
     /// happen with canvases or other things that touch it.
     pub(crate) fn resize_viewport(&mut self) {
-        gfx_window_sdl::update_views(&self.window, &mut self.data.out, &mut self.depth_view);
+        gfx_window_sdl::update_views(&self.window, &mut self.screen_render_target
+, &mut self.depth_view);
     }
 }
 
@@ -1050,7 +1054,7 @@ pub fn get_depth_view
 }
 
 /// EXPERIMENTAL function to get the gfx-rs color view
-pub fn get_color_view(context: &Context)
+pub fn get_screen_render_targe(context: &Context)
                         -> gfx::handle::RenderTargetView<gfx_device_gl::Resources,
                                                         (gfx::format::R8_G8_B8_A8,
                                                         gfx::format::Srgb)> {

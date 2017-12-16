@@ -226,15 +226,15 @@ impl MainState {
         // The light map will be drawn on top using the add blend mode
         lights.set_blend_mode(Some(BlendMode::Add));
         let occlusions_shader =
-            Shader::from_u8(ctx, VERTEX_SHADER_SOURCE, OCCLUSIONS_SHADER_SOURCE, torch, "Light", None)?;
+            Shader::from_u8(ctx, VERTEX_SHADER_SOURCE, OCCLUSIONS_SHADER_SOURCE, torch, "Light", None).unwrap();
         let shadows_shader =
-            Shader::from_u8(ctx, VERTEX_SHADER_SOURCE, SHADOWS_SHADER_SOURCE, torch, "Light", None)?;
+            Shader::from_u8(ctx, VERTEX_SHADER_SOURCE, SHADOWS_SHADER_SOURCE, torch, "Light", None).unwrap();
         let lights_shader = Shader::from_u8(ctx,
                                                  VERTEX_SHADER_SOURCE,
                                                  LIGHTS_SHADER_SOURCE,
                                                  torch,
                                                  "Light",
-                                                 Some(&[BlendMode::Add]))?;
+                                                 Some(&[BlendMode::Add])).unwrap();
 
         Ok(MainState {
                background,
