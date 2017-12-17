@@ -105,7 +105,7 @@ pub trait EventHandler {
                       _keymod: Mod,
                       _repeat: bool) {
         if keycode == keyboard::Keycode::Escape {
-            ctx.quit().unwrap();
+            ctx.quit().expect("Should never fail");
         }
     }
 

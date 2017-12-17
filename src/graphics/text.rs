@@ -495,7 +495,7 @@ mod tests {
 
     #[test]
     fn test_metrics() {
-        let f = Font::default_font().unwrap();
+        let f = Font::default_font().expect("Could not get default font");
         assert_eq!(f.get_height(), 17);
         assert_eq!(f.get_width("Foo!"), 33);
 
@@ -539,8 +539,10 @@ mod tests {
     fn test_wrapping() {
         use conf;
         let c = conf::Conf::new();
-        let ctx = &mut Context::load_from_conf("test_wrapping", "ggez", c).unwrap();
-        let font = Font::default_font().unwrap();
+        let ctx = &mut Context::load_from_conf("test_wrapping", "ggez", c)
+            .expect("Could not create context?");
+        let font = Font::default_font()
+            .expect("Could not get default font");;
         let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff \
                             other cat's butt and hang jaw half open thereafter for give attitude. \
                             Annoy kitten\nbrother with poking. Mrow toy mouse squeak roll over. \

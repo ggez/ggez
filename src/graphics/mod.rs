@@ -794,9 +794,6 @@ pub fn set_background_color(ctx: &mut Context, color: Color) {
 pub fn set_color(ctx: &mut Context, color: Color) -> GameResult<()> {
     let gfx = &mut ctx.gfx_context;
     gfx.foreground_color = color;
-    //let linear_color: types::LinearColor = color.into();
-    //gfx.shader_globals.color = linear_color.into();
-    //gfx.update_globals()
     Ok(())
 }
 
@@ -1055,7 +1052,7 @@ pub fn get_depth_view
 }
 
 /// EXPERIMENTAL function to get the gfx-rs color view
-pub fn get_screen_render_targe(context: &Context)
+pub fn get_screen_render_target(context: &Context)
                         -> gfx::handle::RenderTargetView<gfx_device_gl::Resources,
                                                         (gfx::format::R8_G8_B8_A8,
                                                         gfx::format::Srgb)> {

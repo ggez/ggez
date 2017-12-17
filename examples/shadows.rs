@@ -314,7 +314,6 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let size = graphics::get_size(ctx);
-        let center_point = Point2::new(size.0 as f32 / 2.0, size.1 as f32 / 2.0);
         let center = DrawParam {
             // dest: Point2::new(size.0 as f32 / 2.0, size.1 as f32 / 2.0),
             dest: Point2::new(0.0, 0.0),

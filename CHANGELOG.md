@@ -18,6 +18,7 @@
  * Added some useful methods to `Rect`
  * Added a FAQ and some other documentation
  * Added a `ContextBuilder` type that allows finer control over creating a `Context`
+ * Added an optional `color` value to `DrawParam`, which overrides the default foreground color.  Life would be simpler removing the foreground color entirely...
 
 ## Changed
 

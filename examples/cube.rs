@@ -82,7 +82,7 @@ impl MainState {
         let text1 = graphics::Text::new(ctx, "You can mix ggez and gfx drawing;", &font).unwrap();
         let text2 = graphics::Text::new(ctx, "it basically draws gfx stuff first, then ggez", &font).unwrap();
 
-        let color_view = graphics::get_color_view(ctx);
+        let color_view = graphics::get_screen_render_target(ctx);
         let depth_view = graphics::get_depth_view(ctx);
         let factory = graphics::get_factory(ctx);
 
@@ -231,10 +231,10 @@ impl event::EventHandler for MainState {
         }
 
         // Do ggez drawing
-        let dest_point1 = graphics::Point2::new(self.text1.width() as f32 / 2.0 + 10.0,
-                                                self.text1.height() as f32 / 2.0 + 210.0);
-        let dest_point2 = graphics::Point2::new(self.text2.width() as f32 / 2.0 + 10.0,
-                                                self.text2.height() as f32 / 2.0 + 250.0);
+        let dest_point1 = graphics::Point2::new(10.0,
+                                                210.0);
+        let dest_point2 = graphics::Point2::new(10.0,
+                                                250.0);
         graphics::draw(ctx, &self.text1, dest_point1, 0.0)?;
         graphics::draw(ctx, &self.text2, dest_point2, 0.0)?;
         graphics::present(ctx);

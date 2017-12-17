@@ -64,8 +64,8 @@ impl event::EventHandler for MainState {
         graphics::set_color(ctx, graphics::WHITE)?;
         // let src = graphics::Rect::new(0.25, 0.25, 0.5, 0.5);
         // let src = graphics::Rect::one();
-        let dst = graphics::Point2::new(200.0, 200.0);
-        // graphics::draw(ctx, &self.image1, dst, 0.0)?;
+        let dst = graphics::Point2::new(20.0, 20.0);
+        graphics::draw(ctx, &self.image1, dst, 0.0)?;
         let dst = graphics::Point2::new(100.0, 100.0);
         let dst2 = graphics::Point2::new(400.0, 400.0);
         let scale = graphics::Point2::new(10.0, 10.0);
