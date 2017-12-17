@@ -644,6 +644,7 @@ pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> Gam
 /// Call this at the end of your `EventHandler`'s `draw()` method.
 pub fn present(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
+    gfx.data.out = gfx.screen_render_target.clone();
     // We might want to give the user more control over when the
     // encoder gets flushed eventually, if we want them to be able
     // to do their own gfx drawing.  HOWEVER, the whole pipeline type
