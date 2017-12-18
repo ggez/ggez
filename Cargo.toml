@@ -15,6 +15,9 @@ license = "MIT"
 readme = "README.md"
 categories = ["game-engines"]
 
+[badges]
+maintenance = { status = "actively-developed" }
+
 [lib]
 name = "ggez"
 path = "src/lib.rs"
