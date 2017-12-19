@@ -151,15 +151,22 @@ Just copy SDL2.dll to the same directory that your compiled exe is in
 
 # Android
 
-???
+Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
 
 # iOS
 
-???
+Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
 
-# Web
+# Web/wasm/emscripten
 
-(INCOMPLETE, WIP!  ggez doesn't actually work on wasm yet.)
+Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/71
+
+However, there are some WIP notes for getting things running on
+emscripten:
+
+Known blockers for wasm: threads (rodio), gfx-rs (OpenGL backend
+should work but is touchy to set up, we don't yet have a good way to
+specify WebGL), probably app_dirs/resources, SDL2
 
 For the sake of (my) simplicity, I am going to assume this is being done on Linux or something like it for now.
 
