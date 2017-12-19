@@ -4,6 +4,8 @@ submit a PR, please!
 # Games!
 
  * <https://github.com/obsoke/rustris>
+ * <https://rap2hpoutre.github.io/llamassacre-website/> 
+ * <https://github.com/maccam912/thewizzerofoz>
 
 # Examples/tutorial code
 
