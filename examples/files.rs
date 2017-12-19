@@ -9,18 +9,26 @@ use std::io::{Read, Write};
 use std::str;
 
 pub fn main() {
-    let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("ggez_files_example", "ggez", c).unwrap();
+    let mut cb = ContextBuilder::new("ggez_files_example", "ggez");
 
-    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
+    // We add the CARGO_MANIFEST_DIR/resources to the filesystems paths so
     // we we look in the cargo project for files.
+    // Using a ContextBuilder is nice for this because it means that
+    // it will look for a conf.toml or icon file or such in
+    // this directory when the Context is created.
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        ctx.filesystem.mount(&path, true);
+        println!("Adding path {:?}", path);
+        cb = cb.add_resource_path(path);
     }
 
+    let ctx = &mut cb.build().unwrap();
+
     println!("Full filesystem info: {:#?}", ctx.filesystem);
+
+    println!("Resource stats:");
+    ctx.print_resource_stats();
 
     let dir_contents = ctx.filesystem.read_dir("/").unwrap();
     println!("Directory has {} things in it:", dir_contents.len());

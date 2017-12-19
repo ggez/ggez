@@ -26,9 +26,6 @@
 //! also look for a `resources/` subdirectory in the same directory as your
 //! `Cargo.toml`, which can be very convenient for development.
 
-// BUGGO: TODO: Also make it print out the searched directories when it
-// can't find a file!
-
 use std::env;
 use std::fmt;
 use std::io;
@@ -280,14 +277,20 @@ impl Filesystem {
 
     /// Prints the contents of all data directories.
     /// Useful for debugging.
-    pub fn print_all(&mut self) -> GameResult<()> {
+    pub fn print_all(&mut self) {
         for vfs in self.vfs.roots() {
             println!("Source {:?}", vfs);
-            for itm in vfs.read_dir(path::Path::new("/"))? {
-                println!("  {:?}", itm);
+            match vfs.read_dir(path::Path::new("/")) {
+                Ok(files) => {
+                    for itm in files {
+                        println!("  {:?}", itm);
+                    }
+                },
+                Err(e) => {
+                    println!(" Could not read source: {:?}", e)
+                }
             }
         }
-        Ok(())
     }
 
     /// Adds the given (absolute) path to the list of directories

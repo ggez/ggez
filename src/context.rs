@@ -142,9 +142,7 @@ impl Context {
 
     /// Prints out information on the resources subsystem.
     pub fn print_resource_stats(&mut self) {
-        if let Err(e) = self.filesystem.print_all() {
-            println!("Error printing out filesystem info: {}", e)
-        }
+        self.filesystem.print_all();
     }
 
     /// Triggers a Quit event.
