@@ -74,9 +74,16 @@ impl Canvas {
         Canvas::new(ctx, w, h, NumSamples::One)
     }
 
-    /// Gets the backend Image that is being rendered to.
+    /// Gets the backend `Image` that is being rendered to.
     pub fn get_image(&self) -> &Image {
         &self.image
+    }
+
+    /// Destroys the Canvas and returns the `Image` it contains.
+    pub fn into_inner(self) -> Image {
+        // This texture is created with different settings
+        // than the default; does that matter?
+        self.image
     }
 }
 
