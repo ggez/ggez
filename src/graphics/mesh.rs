@@ -120,7 +120,8 @@ impl MeshBuilder {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
-                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder).unwrap();
+                    // TODO: Removing this expect would be rather nice.
+                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder).expect("Could not fill polyline?");
                 }
                 DrawMode::Line(width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
@@ -144,7 +145,8 @@ impl MeshBuilder {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
-                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder).unwrap();
+                    // TODO: Removing this expect would be rather nice.
+                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder).expect("Could not fill polygon?");
                 }
                 DrawMode::Line(width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);

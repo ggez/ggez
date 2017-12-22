@@ -271,7 +271,7 @@ impl Filesystem {
     ) -> GameResult<Box<Iterator<Item = path::PathBuf>>> {
         let itr = self.vfs
             .read_dir(path.as_ref())?
-            .map(|fname| fname.unwrap());
+            .map(|fname| fname.expect("Could not read file in read_dir()?  Should never happen, I hope!"));
         Ok(Box::new(itr))
     }
 
