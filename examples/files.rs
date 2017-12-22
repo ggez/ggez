@@ -30,7 +30,7 @@ pub fn main() {
     println!("Resource stats:");
     ctx.print_resource_stats();
 
-    let dir_contents = ctx.filesystem.read_dir("/").unwrap();
+    let dir_contents: Vec<_> = ctx.filesystem.read_dir("/").unwrap().collect();
     println!("Directory has {} things in it:", dir_contents.len());
     for itm in dir_contents {
         println!("   {:?}", itm);

@@ -4,12 +4,9 @@
 //!
 //! Basically a re-implementation of `PhysFS`.  The `vfs` crate
 //! does something similar but has a couple design decisions that make
-//! it kind of incompatible with this use case;
-//!
-//! We make some simplifying assumptions as well, namely that
-//! Path == str.  Because doing defining all our paths to be
-//! generic `T: Into<Path>` or such means that we can't use the
-//! resulting traits as trait objects.
+//! it kind of incompatible with this use case: the relevant trait
+//! for it has generic methods so we can't use it as a trait object,
+//! and its path abstraction is not the most convenient.
 
 use std::cell::RefCell;
 use std::collections::VecDeque;
@@ -27,8 +24,6 @@ fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     let error = GameError::FilesystemError(errmessage);
     path.to_str().ok_or(error)
 }
-
-//pub type Path = str;
 
 pub trait VFile: Read + Write + Seek + Debug {}
 
@@ -701,6 +696,7 @@ mod tests {
 
     #[test]
     fn test_path_filtering() {
+        // Valid pahts
         let p = path::Path::new("/foo");
         sanitize_path(p).unwrap();
 
@@ -713,6 +709,7 @@ mod tests {
         let p = path::Path::new("/");
         sanitize_path(p).unwrap();
 
+        // Invalid paths
         let p = path::Path::new("../foo");
         assert!(sanitize_path(p).is_none());
 

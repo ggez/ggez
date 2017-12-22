@@ -93,8 +93,7 @@ impl AsRef<[u8]> for SoundData {
 // There's really a lot of work that needs to be done here, since
 // rodio has gotten better (if still somewhat arcane) and our filesystem
 // code has done the data-slurping-from-zip's for us
-// but
-// for now it works.
+// but for now it works.
 pub struct Source {
     data: io::Cursor<SoundData>,
     sink: rodio::Sink,

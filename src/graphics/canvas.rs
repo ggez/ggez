@@ -1,6 +1,6 @@
 //! The `canvas` module enables creating render targets to be used instead of
-//! the screen allowing graphics to be rendered off-screen in order to do things
-//! like saving to an image file or creating cool effects
+//! the screen.  This allows graphics to be rendered to images off-screen 
+//! in order to do things like saving to an image file or creating cool effects.
 
 use gfx::{Factory, RENDER_TARGET, SHADER_RESOURCE};
 use gfx::format::{Srgb, Srgba8, ChannelTyped, Swizzle};
@@ -14,7 +14,7 @@ use error::*;
 use graphics::*;
 
 /// A generic canvas independent of graphics backend. This type should probably
-/// never be used; use `ggez::graphics::Canvas` instead.
+/// never be used directly; use `ggez::graphics::Canvas` instead.
 #[derive(Debug)]
 pub struct CanvasGeneric<Spec>
     where Spec: BackendSpec
@@ -90,6 +90,7 @@ impl Canvas {
 impl Drawable for Canvas {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
         // We need to make sure we correct for the different coordinate systems
+        // BUGGO: Can this be removed now?
         let mut param = param;
         if ctx.gfx_context.screen_rect.h < 0.0 {
             param.scale.y = -param.scale.y;

@@ -1,4 +1,4 @@
-//! Provides a portable interface to the filesystem.
+//! A cross-platform interface to the filesystem.
 //!
 //! This module provides access to files in specific places:
 //!
@@ -13,10 +13,12 @@
 //! `Context::load_from_conf()`; some platforms such as Windows also
 //! incorporate the `author` string into the path.
 //!
-//! Files will be looked for in these locations in order, and the first one
+//! Files will be searched for in these locations in order, and the first one
 //! found used.  That allows game assets to be easily distributed as an archive
 //! file, but locally overridden for testing or modding simply by putting
 //! altered copies of them in the game's `resources/` directory.
+//!
+//! See the source of the `files` example for more details.
 //!
 //! Note that the file lookups WILL follow symlinks!  It is
 //! more for convenience than absolute security, so don't treat it as
@@ -266,13 +268,11 @@ impl Filesystem {
     /// in no particular order.
     ///
     /// Lists the base directory if an empty path is given.
-    pub fn read_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<Vec<path::PathBuf>> {
-        // TODO: This should return an iterator, and be called iter()
+    pub fn read_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<Box<Iterator<Item=path::PathBuf>>> {
         let itr = self.vfs
             .read_dir(path.as_ref())?
-            .map(|fname| fname.unwrap())
-            .collect();
-        Ok(itr)
+            .map(|fname| fname.unwrap());
+        Ok(Box::new(itr))
     }
 
     /// Prints the contents of all data directories.
@@ -297,7 +297,7 @@ impl Filesystem {
     /// it will search to look for resources.
     ///
     /// You probably shouldn't use this in the general case, since it is
-    /// harder than you think to get it bulletproof across platforms, I promise.
+    /// harder than it looks to make it bulletproof across platforms.
     /// But it can be very nice for debugging and dev purposes, such as
     /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
     pub fn mount(&mut self, path: &path::Path, readonly: bool) {
@@ -306,7 +306,7 @@ impl Filesystem {
     }
 
 
-    /// Looks for a file named "conf.toml" in the resources directory
+    /// Looks for a file named "/conf.toml" in any resource directory and
     /// loads it if it finds it.
     /// If it can't read it for some reason, returns an error.
     pub fn read_config(&mut self) -> GameResult<conf::Conf> {
@@ -380,7 +380,7 @@ mod tests {
     fn test_read_dir() {
         let mut f = get_dummy_fs_for_tests();
 
-        let dir_contents_size = f.read_dir("/").unwrap().len();
+        let dir_contents_size = f.read_dir("/").unwrap().count();
         assert!(dir_contents_size > 0);
     }
 

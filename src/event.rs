@@ -6,11 +6,12 @@
 //! get the necessary event machinery by calling
 //! `context.sdl_context.event_pump()` on your `Context`.  You can
 //! then call whatever SDL event methods you want on that.  This is
-//! not particularly elegant and is not guaranteed to be stable (if,
-//! for instance, we someday get rid of SDL2), but trying to wrap it
+//! not particularly elegant and is not guaranteed to be stable across
+//! different versions of ggez (for instance, we may someday get rid of SDL2), 
+//! but trying to wrap it
 //! up more conveniently really ends up with the exact same interface.
-//! See issue <https://github.com/ggez/ggez/issues/117> for
-//! discussion.
+//!
+//! See the `eventloop` example for an implementation.
 
 use sdl2;
 

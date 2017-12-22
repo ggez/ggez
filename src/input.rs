@@ -1,4 +1,4 @@
-//! Misc. input functions, currently just gamepad stuff.
+//! Misc. input functions, currently just for handling gamepads.
 
 pub use sdl2::controller::GameController;
 use sdl2::GameControllerSubsystem;
@@ -10,9 +10,9 @@ use context::Context;
 use error::GameResult;
 
 
-/// before we can use gamepads (or joysticks) we need to "open" them
-/// then we have to keep them around, so this structure hangs on to
-/// them for us.
+/// To use gamepads (or joysticks) we need to "open" them
+/// and keep them around, so this structure hangs on to
+/// their state for us.
 pub struct GamepadContext {
     /// Mapping of gamepad ID to controllers
     gamepads: HashMap<i32, GameController>,

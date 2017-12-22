@@ -36,6 +36,7 @@ mod mesh;
 mod shader;
 mod text;
 mod types;
+use nalgebra as na;
 
 pub mod spritebatch;
 
@@ -45,7 +46,8 @@ pub use self::shader::*;
 pub use self::text::*;
 pub use self::types::*;
 
-/// A marker trait that something is a label for a particular backend.
+/// A marker trait saying that something is a label for a particular backend,
+/// with associated gfx-rs types for that backend.
 pub trait BackendSpec: fmt::Debug {
     /// gfx resource type
     type Resources: gfx::Resources;
@@ -139,7 +141,6 @@ gfx_defines!{
     /// Internal structure containing global shader state.
     constant Globals {
         mvp_matrix: [[f32; 4]; 4] = "u_MVP",
-        //color: [f32; 4] = "u_Color",
     }
 
     pipeline pipe {
@@ -185,10 +186,6 @@ impl From<DrawParam> for InstanceProperties {
 
 /// A structure for conveniently storing Sampler's, based off
 /// their `SamplerInfo`.
-///
-/// Making this generic is tricky 'cause it has methods that depend
-/// on the generic Factory trait, it seems, so for now we just kind
-/// of hack it.
 struct SamplerCache<B>
     where B: BackendSpec
 {
@@ -217,9 +214,7 @@ impl<B> SamplerCache<B>
 /// For instance, background and foreground colors,
 /// window info, DPI, rendering pipeline state, etc.
 ///
-/// As an end-user you shouldn't ever have to touch this, but it goes
-/// into part of the `Context` and so has to be public, at least
-/// until the `pub(restricted)` feature is stable.
+/// As an end-user you shouldn't ever have to touch this.
 pub(crate) struct GraphicsContextGeneric<B>
     where B: BackendSpec
 {
@@ -412,7 +407,6 @@ impl GraphicsContext {
         let initial_transform = Matrix4::identity();
         let globals = Globals {
             mvp_matrix: initial_projection.into(),
-            //color: types::WHITE.into(),
         };
 
         let mut gfx = GraphicsContext {
@@ -432,9 +426,7 @@ impl GraphicsContext {
             device: Box::new(device),
             factory: Box::new(factory),
             encoder: encoder,
-            screen_render_target
-    : screen_render_target
-    ,
+            screen_render_target: screen_render_target,
             depth_view: depth_view,
 
             data: data,

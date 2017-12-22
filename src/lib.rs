@@ -21,7 +21,7 @@
 //! ## Features
 //!
 //! * Filesystem abstraction that lets you load resources from folders or zip files
-//! * Hardware-accelerated rendering engine built on the `gfx-rs` graphics engine
+//! * Hardware-accelerated 2D rendering built on the `gfx-rs` graphics engine
 //! * Loading and playing .ogg, .wav and .flac files via the `rodio` crate
 //! * TTF font rendering with `rusttype`, as well as bitmap fonts.
 //! * Interface for handling keyboard and mouse events easily through callbacks
@@ -35,7 +35,7 @@
 //! line to your `Cargo.toml` file:
 //!
 //! ```text
-//! ggez = "0.3"
+//! ggez = "0.4"
 //! ```
 //!
 //! However you also need to have the SDL2 libraries installed on your
@@ -49,33 +49,27 @@
 //! `graphics` and `audio` that provide the functionality to actually
 //! get stuff done.  The general pattern is to create a struct holding
 //! your game's data which implements the `EventHandler` trait.
-//! Create a `Conf` object with the default values you want in it,
-//! Create a new `Context` from it, and then call `event::run()` with
-//! the `Context` and an instance of your `EventHandler`.
+//! Create a new `Context` object with default objects from a `ContextBuilder`
+//! or `Conf` object, and then call `event::run()` with
+//! the `Context` and an instance of your `EventHandler` to run your game's
+//! main loop.
 //!
 //! ## Examples
 //!
-//! See the `examples/` directory in the source.  `hello_world` is exactly
-//! what it says.  `imageview` is a simple program that shows off a number
-//! of features such as sound and drawing.  `astroblasto` is a small
-//! but complete Asteroids-like game.
+//! See the `examples/` directory in the source.  Most examples show off 
+//! a single feature of ggez, while `astroblasto` is a small  but 
+//! complete Asteroids-like game.
 //!
-//! To run the examples, you have to tell your program where to find the
-//! `resources` directory included in the git repository.  The easy way is
-//! to enable `cargo-resource-root` feature flag to tell ggez to look for a
-//! `resources` directory next to your `Cargo.toml`, or copy or symlink
-//! the `resources` directory to a place the running game can find it
-//! (such as next to the game executable).
+//! To run the examples, just check out the source and execute `cargo run --example`
+//! in the root directory:
 //!
 //! ```text
-//! cargo run --example astroblasto --features=cargo-resource-root
+//! cargo run --example astroblasto
 //! ```
 //!
-//! Either way, if it can't find the resources it will give you an error
-//! along the lines of `ResourceNotFound("'resources' directory not
-//! found!  Should be in "/home/foo/src/ggez/target/debug/resources")`.
-//! Just copy or symlink the `resources/` directory to where the error says it's
-//! looking.
+//! If this doesn't work, see the 
+//! [FAQ](https://github.com/ggez/ggez/blob/master/docs/FAQ.md) for solutions
+//! to common problems.
 //!
 //! ## Implementation details
 //!
@@ -90,8 +84,6 @@
 
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
-
-
 
 
 extern crate sdl2;

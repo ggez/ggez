@@ -3,6 +3,12 @@
 //!
 //! A `Conf` struct is used to specify hardware setup stuff used to create
 //! the window and other context information.
+//!
+//! By default a ggez game will search its resource paths for a `/conf.toml`
+//! file and load values from it when the `Context` is created.  This file 
+//! must be complete (ie you cannot just fill in some fields and have the
+//! rest be default) and provides a nice way to specify settings that
+//! can be tweaked such as window resolution, multisampling options, etc.
 
 use std::io;
 use toml;
@@ -140,6 +146,8 @@ impl WindowMode {
 ///
 /// ```rust,ignore
 /// WindowSetup {
+///     window_title: "An easy, good game",
+///     window_icon: "",
 ///     resizable: false,
 ///     allow_highdpi: true,
 ///     samples: NumSamples::One,
@@ -215,8 +223,8 @@ impl WindowSetup {
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, SmartDefault)]
 #[serde(tag = "type")]
 pub enum Backend {
-    /// Defaults to OpenGL 3.2, which is supported on basically
-    /// every machine since 2009 or so (apart from the ones it isn't)
+    /// Defaults to OpenGL 3.2, which is supported by basically
+    /// every machine since 2009 or so (apart from the ones that don't)
     #[default]
     OpenGL {
         /// OpenGL major version
@@ -265,8 +273,6 @@ impl NumSamples {
 ///
 /// ```rust,ignore
 /// Conf {
-///     window_title: "An easy, good game"
-///     window_icon: ""
 ///     window_mode: WindowMode::default(),
 ///     window_setup: WindowSetup::default(),
 ///     backend: Backend::OpenGL(3, 2),

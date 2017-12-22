@@ -1,4 +1,4 @@
-pub use nalgebra as na;
+use nalgebra as na;
 
 /// A 2 dimensional point representing a location
 pub type Point2 = na::Point2<f32>;
@@ -7,6 +7,9 @@ pub type Vector2 = na::Vector2<f32>;
 /// A 4 dimensional matrix representing an arbitrary 3d transformation
 pub type Matrix4 = na::Matrix4<f32>;
 
+
+// BUGGO: TODO: are these next two functions redundant,
+// and/or can they be private or pub(crate)?
 /// Turns a point into an array of floats
 pub fn pt2arr(pt: Point2) -> [f32; 2] {
     [pt.x, pt.y]

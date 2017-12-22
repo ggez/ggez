@@ -393,7 +393,11 @@ fn render_bitmap(context: &mut Context,
 
 
 impl Text {
-    /// Renders a new `Text` from the given `Font`
+    /// Renders a new `Text` from the given `Font`.
+    ///
+    /// Note that this is relatively computationally expensive;
+    /// if you want to draw text every frame you probably want to save
+    /// it and only update it when it changes.
     pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<Text> {
         match *font {
             Font::TTFFont { font: ref f, scale, .. } => render_ttf(context, text, f, scale),

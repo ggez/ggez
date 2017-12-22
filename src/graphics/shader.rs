@@ -1,6 +1,6 @@
-//! The `Shader` module allows user-defined fragment shaders to be used
-//! with ggez for cool and spooky effects. See the `shader` example for a
-//! taste...
+//! The `Shader` module allows user-defined shaders to be used
+//! with ggez for cool and spooky effects. See the `shader` and `shadows`
+//! examples for a taste.
 
 use gfx::*;
 use gfx::handle::*;
@@ -109,7 +109,8 @@ impl From<BlendMode> for Blend {
         }
     }
 }
-/// A struct to easily store a set of PSOs that is
+
+/// A struct to easily store a set of pipeline state objects that are
 /// associated with a specific shader program.
 ///
 /// In gfx, because Vulkan and DX are more strict
@@ -166,7 +167,7 @@ pub struct ShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFormat>>
     buffer: Buffer<Spec::Resources, C>,
 }
 
-/// A `Shader` represents a handle user-defined shader that can be used
+/// A `Shader` represents a handle to a user-defined shader that can be used
 /// with a ggez graphics context
 pub type Shader<C> = ShaderGeneric<graphics::GlBackendSpec, C>;
 
@@ -216,12 +217,11 @@ pub(crate) fn create_shader<C, S, Spec>
             samples: sample,
         };
 
-        psos.insert_mode(mode,
-                         factory
-                             .create_pipeline_state(&set,
+        let pso = factory.create_pipeline_state(&set,
                                                     Primitive::TriangleList,
                                                     rasterizer,
-                                                    init)?);
+                                                    init)?;
+        psos.insert_mode(mode,pso);
     }
 
     let program = ShaderProgram {

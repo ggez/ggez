@@ -6,7 +6,9 @@ use lyon::tessellation as t;
 /// A builder for creating `Mesh`es.
 ///
 /// This allows you to easily make one `Mesh` containing
-/// many different complex pieces of geometry.
+/// many different complex pieces of geometry.  They don't
+/// have to be connected to each other, and will all be 
+/// drawn at once.
 #[derive(Debug, Clone)]
 pub struct MeshBuilder {
     buffer: t::geometry_builder::VertexBuffers<Vertex>,
@@ -72,9 +74,6 @@ impl MeshBuilder {
             use euclid::Length;
             match mode {
                 DrawMode::Fill => {
-                    // These builders have to be in separate match arms 'cause they're actually
-                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                    // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     t::basic_shapes::fill_ellipse(t::math::point(point.x, point.y),
                                                   t::math::vec2(radius1, radius2),
@@ -101,15 +100,13 @@ impl MeshBuilder {
     /// Create a new mesh for a series of connected lines.
     pub fn polyline(&mut self, mode: DrawMode, points: &[Point2]) -> &mut Self {
         {
+            assert!(points.len() > 1);
             let buffers = &mut self.buffer;
             let points = points
                 .into_iter()
                 .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
             match mode {
                 DrawMode::Fill => {
-                    // These builders have to be in separate match arms 'cause they're actually
-                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                    // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
@@ -134,9 +131,6 @@ impl MeshBuilder {
                 .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
             match mode {
                 DrawMode::Fill => {
-                    // These builders have to be in separate match arms 'cause they're actually
-                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                    // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
@@ -238,7 +232,8 @@ impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
 
 /// 2D polygon mesh.
 ///
-/// All of its methods are just shortcuts for doing the same operations via a `MeshBuilder`.
+/// All of its creation methods are just shortcuts for doing the same operation 
+// via a `MeshBuilder`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mesh {
     buffer: gfx::handle::Buffer<gfx_device_gl::Resources, Vertex>,

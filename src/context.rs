@@ -48,7 +48,6 @@ pub struct Context {
 }
 
 impl fmt::Debug for Context {
-    // TODO: Make this include more information?
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Context: {:p}>", self)
     }
@@ -117,7 +116,7 @@ impl Context {
         Ok(ctx)
     }
 
-    /// Tries to create a new Context loading a config
+    /// Tries to create a new Context by loading a config
     /// file from its default path, using the given `Conf`
     /// object as a default if none is found.
     ///
@@ -159,25 +158,11 @@ impl Context {
 
 use std::path;
 
-/// WindowMode should probably include title and icon...
+/// A builder object for creating a context.
 ///
-/// except those hardly ever have to be *reset*, just set at init time,
-/// so putting those in WindowSetup is reasonable.  We currently don't offer
-/// a way to alter them anyway.  Though it shouldn't be hard to add?
-///
-/// We should also have a way to retrieve the current WindowMode,
-/// to make it easier to alter rather than overwrite settings?
-///
-/// We also need to think harder about how the conf file interacts with this.
-/// Currently it overwrites everything but that jibes poorly with this sort of
-/// incremental stuffs.
-/// Hmmm.
-///
-/// Maybe you set up the ContextBuilder, then when you call build()
-/// then IF a conf file it exists it overwrites its settings?  That's similar
-/// to how it works now, but allows you the opportunity to fiddle with paths
-/// and such before hand.
-/// That's probably the best option.
+/// Can do everything the `Context::load_from_conf()` method does, plus you can
+/// also specify new paths to add to the resource path list at build time instead
+/// of using `filesystem::mount()`.
 #[derive(Debug)]
 pub struct ContextBuilder {
     game_id: &'static str,

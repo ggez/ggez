@@ -2,9 +2,10 @@
 //!
 //! ggez does not try to do any framerate limitation by default. If
 //! you want to run at anything other than full-bore max speed all the
-//! time, calling `sleep()` with a duration of 0 will yield to the OS
-//! so it has a chance to breathe before continuing with your game,
-//! which will prevent it from using 100% CPU unless it really needs
+//! time, calling `thread::yield_now()` (or `timer::yield_now()` which 
+//! does the same thing) yield to the OS
+//! so it has a chance to breathe before continuing with your game.
+//! This should prevent it from using 100% CPU unless it really needs
 //! to.  Enabling vsync by setting `vsync` in your `Conf` object is
 //! generally the best way to cap your displayed framerate.
 //!
@@ -102,7 +103,7 @@ impl TimeContext {
     /// another frame has taken place.
     ///
     /// It's usually not necessary to call this function yourself,
-    /// the `EventHandler` will do it for you.
+    /// `EventHandler::run()` will do it for you.
     pub fn tick(&mut self) {
         let now = time::Instant::now();
         let time_since_last = now - self.last_instant;
@@ -186,12 +187,25 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
     time::Instant::now() - tc.init_instant
 }
 
-/// BUGGO: Fix docs plz
 /// This function will return true if the time since the
 /// last `update()` call has been equal to or greater to
 /// the update FPS indicated by the `desired_update_rate`.
-/// It keeps track of fractional frames, and does not
-/// do any sleeping.
+/// It keeps track of fractional frames, so if you want
+/// 60 fps (16.67 ms/frame) and the game stutters so that
+/// there is 40 ms between `update()` calls, this will return
+/// `true` twice, and take the remaining 6.67 ms into account
+/// in the next frame.
+///
+/// The intention is to for it to be called in a while loop:
+///
+/// ```rust,ignore
+/// fn update(&mut self, ctx: &mut Context) -> GameResult<()>
+///     while(timer::get_time_since_start(ctx)) {
+///         update_game_physics()?;
+///     }
+///     Ok(())
+/// }
+/// ```
 pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
     let timedata = &mut ctx.timer_context;
 
@@ -206,7 +220,7 @@ pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
 
 /// Pauses the current thread for the target duration.
 /// Just calls `std::thread::sleep()` so it's as accurate
-/// as that is.
+/// as that is (which is usually not very).
 pub fn sleep(duration: time::Duration) {
     thread::sleep(duration);
 }

@@ -21,6 +21,11 @@ pub enum GameError {
     FilesystemError(String),
     /// An error in the config file
     ConfigError(String),
+    /// An error in some part of the underlying SDL library.
+    SdlError(String),
+    /// An error saying that a an integer overflow/underflow occured
+    /// in an underlying library.
+    IntegerError(String),
     /// An error trying to parse a resource
     ResourceLoadError(String),
     /// Unable to find a resource; the Vec is the paths it searched for and associated errors
@@ -64,6 +69,8 @@ impl Error for GameError {
         match *self {
             GameError::FilesystemError(_) => "Filesystem error",
             GameError::ConfigError(_) => "Config file error",
+            GameError::SdlError(_) => "SDL error",
+            GameError::IntegerError(_) => "Integer error",
             GameError::ResourceLoadError(_) => "Resource load error",
             GameError::ResourceNotFound(_, _) => "Resource not found",
             GameError::RenderError(_) => "Render error",
@@ -81,6 +88,8 @@ impl Error for GameError {
         match *self {
             GameError::FilesystemError(ref _s) => None,
             GameError::ConfigError(ref _s) => None,
+            GameError::SdlError(ref _s) => None,
+            GameError::IntegerError(ref _s) => None,
             GameError::ResourceLoadError(ref _s) => None,
             GameError::ResourceNotFound(ref _s, _) => None,
             GameError::RenderError(ref _s) => None,
@@ -115,9 +124,9 @@ impl From<sdl2::IntegerOrSdlError> for GameError {
         match e {
             sdl2::IntegerOrSdlError::IntegerOverflows(s, i) => {
                 let message = format!("Integer overflow: {}, str {}", i, s);
-                GameError::UnknownError(message)
+                GameError::IntegerError(message)
             }
-            sdl2::IntegerOrSdlError::SdlError(s) => GameError::UnknownError(s),
+            sdl2::IntegerOrSdlError::SdlError(s) => GameError::SdlError(s),
         }
     }
 }
