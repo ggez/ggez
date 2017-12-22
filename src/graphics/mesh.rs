@@ -240,7 +240,7 @@ impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
 /// 2D polygon mesh.
 ///
 /// All of its creation methods are just shortcuts for doing the same operation
-// via a `MeshBuilder`.
+/// via a `MeshBuilder`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mesh {
     buffer: gfx::handle::Buffer<gfx_device_gl::Resources, Vertex>,

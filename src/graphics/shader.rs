@@ -397,7 +397,7 @@ where
 }
 
 /// A lock for RAII shader regions. The shader automatically gets cleared once
-/// the lock goes out of scope
+/// the lock goes out of scope, restoring the previous shader (if any).
 #[derive(Debug, Clone)]
 pub struct ShaderLock {
     // TODO: See if it's possible to clean up the Rc<Refcell<Option<T>>>

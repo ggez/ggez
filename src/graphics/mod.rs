@@ -65,6 +65,10 @@ pub trait BackendSpec: fmt::Debug {
 /// and because there may need to be a layer of translation
 /// between what the user specifies in the config, and what the
 /// graphics backend init code actually gets.
+///
+/// You shouldn't normally need to fiddle with this directly
+/// but it has to be exported cause generic types like
+/// `Shader` depend on it.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
 pub struct GlBackendSpec {
     #[default = r#"3"#] major: u8,
@@ -141,6 +145,9 @@ gfx_defines!{
         mvp_matrix: [[f32; 4]; 4] = "u_MVP",
     }
 
+    // Internal structure containing graphics pipeline state.
+    // This can't be a doc comment though because it somehow
+    // breaks the gfx_defines! macro though.  :-(
     pipeline pipe {
         vbuf: gfx::VertexBuffer<Vertex> = (),
         tex: gfx::TextureSampler<[f32; 4]> = "t_Texture",
@@ -1099,9 +1106,12 @@ pub fn get_gfx_objects(
 
 /// A struct containing all the necessary info for drawing a Drawable.
 ///
-/// This struct implements the `Default` trait, so you can just do:
+/// This struct implements the `Default` trait, so to set only some parameter
+/// you can just do:
 ///
-/// `graphics::draw_ex(ctx, drawable, DrawParam{ dest: my_dest, .. Default::default()} )`
+/// ```rust,ignore
+/// graphics::draw_ex(ctx, drawable, DrawParam{ dest: my_dest, .. Default::default()} )
+/// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawParam {
     /// a portion of the drawable to clip, as a fraction of the whole image.
@@ -1113,7 +1123,10 @@ pub struct DrawParam {
     pub rotation: f32,
     /// x/y scale factors expressed as a `Point2`.
     pub scale: Point2,
-    /// specifies an offset from the center for transform operations like scale/rotation.
+    /// specifies an offset from the center for transform operations like scale/rotation,
+    /// with `0,0` meaning the origin and `1,1` meaning the opposite corner from the origin.
+    /// By default these are done from the top-left corner, so to rotate something
+    /// from the center specify `Point::new(0.5, 0.5)` here.
     pub offset: Point2,
     /// x/y shear factors expressed as a `Point2`.
     pub shear: Point2,

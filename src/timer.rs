@@ -101,7 +101,8 @@ impl TimeContext {
     }
 
     /// Update the state of the TimeContext to record that
-    /// another frame has taken place.
+    /// another frame has taken place.  Necessary for the FPS
+    /// tracking and `check_update_time()` functions to work.
     ///
     /// It's usually not necessary to call this function yourself,
     /// `EventHandler::run()` will do it for you.
@@ -180,7 +181,8 @@ pub fn get_fps(ctx: &Context) -> f64 {
     1.0 / seconds_per_frame
 }
 
-/// Returns the time since the game was initialized.
+/// Returns the time since the game was initialized,
+/// as reported by the system clock.
 pub fn get_time_since_start(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     time::Instant::now() - tc.init_instant
@@ -195,11 +197,12 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
 /// `true` twice, and take the remaining 6.67 ms into account
 /// in the next frame.
 ///
-/// The intention is to for it to be called in a while loop:
+/// The intention is to for it to be called in a while loop
+/// in your `update()` callback:
 ///
 /// ```rust,ignore
 /// fn update(&mut self, ctx: &mut Context) -> GameResult<()>
-///     while(timer::get_time_since_start(ctx)) {
+///     while(timer::get_time_since_start(ctx, 60)) {
 ///         update_game_physics()?;
 ///     }
 ///     Ok(())

@@ -7,18 +7,6 @@ pub type Vector2 = na::Vector2<f32>;
 /// A 4 dimensional matrix representing an arbitrary 3d transformation
 pub type Matrix4 = na::Matrix4<f32>;
 
-// BUGGO: TODO: are these next two functions redundant,
-// and/or can they be private or pub(crate)?
-/// Turns a point into an array of floats
-pub fn pt2arr(pt: Point2) -> [f32; 2] {
-    [pt.x, pt.y]
-}
-
-/// Turns an array of floats into a point.
-pub fn arr2pt(pt: [f32; 2]) -> Point2 {
-    Point2::new(pt[0], pt[1])
-}
-
 /// A simple 2D rectangle.
 ///
 /// The origin of the rectangle is at the top-left,
@@ -219,7 +207,7 @@ impl Color {
     }
 
     /// Convert a packed u32 containing 0x00RRGGBB into a Color.
-    /// This lets you do things like `Color::from(0xCD09AA)` easily if you want.
+    /// This lets you do things like `Color::from_rgb_u32(0xCD09AA)` easily if you want.
     pub fn from_rgb_u32(c: u32) -> Color {
         let rp = ((c & 0x00FF0000) >> 16) as u8;
         let gp = ((c & 0x0000FF00) >> 8) as u8;
