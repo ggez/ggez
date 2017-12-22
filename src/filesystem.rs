@@ -80,8 +80,6 @@ impl io::Read for File {
     }
 }
 
-
-
 impl io::Write for File {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         match *self {
@@ -95,7 +93,6 @@ impl io::Write for File {
         }
     }
 }
-
 
 impl Filesystem {
     /// Create a new Filesystem instance, using the given `id` and (on
@@ -177,7 +174,6 @@ impl Filesystem {
         Ok(fs)
     }
 
-
     /// Opens the given path and returns the resulting `File`
     /// in read-only mode.
     pub fn open<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
@@ -187,10 +183,11 @@ impl Filesystem {
     /// Opens a file in the user directory with the given `filesystem::OpenOptions`.
     /// Note that even if you open a file read-only, it can only access
     /// files in the user directory.
-    pub fn open_options<P: AsRef<path::Path>>(&mut self,
-                                              path: P,
-                                              options: &OpenOptions)
-                                              -> GameResult<File> {
+    pub fn open_options<P: AsRef<path::Path>>(
+        &mut self,
+        path: P,
+        options: &OpenOptions,
+    ) -> GameResult<File> {
         self.vfs
             .open_options(path.as_ref(), options)
             .map(|f| File::VfsFile(f))
@@ -268,7 +265,10 @@ impl Filesystem {
     /// in no particular order.
     ///
     /// Lists the base directory if an empty path is given.
-    pub fn read_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<Box<Iterator<Item=path::PathBuf>>> {
+    pub fn read_dir<P: AsRef<path::Path>>(
+        &mut self,
+        path: P,
+    ) -> GameResult<Box<Iterator<Item = path::PathBuf>>> {
         let itr = self.vfs
             .read_dir(path.as_ref())?
             .map(|fname| fname.unwrap());
@@ -281,14 +281,10 @@ impl Filesystem {
         for vfs in self.vfs.roots() {
             println!("Source {:?}", vfs);
             match vfs.read_dir(path::Path::new("/")) {
-                Ok(files) => {
-                    for itm in files {
-                        println!("  {:?}", itm);
-                    }
+                Ok(files) => for itm in files {
+                    println!("  {:?}", itm);
                 },
-                Err(e) => {
-                    println!(" Could not read source: {:?}", e)
-                }
+                Err(e) => println!(" Could not read source: {:?}", e),
             }
         }
     }
@@ -305,7 +301,6 @@ impl Filesystem {
         self.vfs.push_back(Box::new(physfs));
     }
 
-
     /// Looks for a file named "/conf.toml" in any resource directory and
     /// loads it if it finds it.
     /// If it can't read it for some reason, returns an error.
@@ -316,7 +311,9 @@ impl Filesystem {
             let c = conf::Conf::from_toml_file(&mut file)?;
             Ok(c)
         } else {
-            Err(GameError::ConfigError(String::from("Config file not found")))
+            Err(GameError::ConfigError(String::from(
+                "Config file not found",
+            )))
         }
     }
 
@@ -329,12 +326,13 @@ impl Filesystem {
         if self.is_file(conf_path) {
             Ok(())
         } else {
-            Err(GameError::ConfigError(format!("Failed to write config file at {}",
-                                               conf_path.to_string_lossy())))
+            Err(GameError::ConfigError(format!(
+                "Failed to write config file at {}",
+                conf_path.to_string_lossy()
+            )))
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -358,7 +356,6 @@ mod tests {
             user_config_path: "".into(),
             user_data_path: "".into(),
         }
-
     }
 
     #[test]
@@ -373,7 +370,6 @@ mod tests {
         assert!(!f.exists(tile_file));
         assert!(!f.is_file(tile_file));
         assert!(!f.is_dir(tile_file));
-
     }
 
     #[test]

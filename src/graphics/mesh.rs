@@ -2,12 +2,11 @@ use ::*;
 use graphics::*;
 use lyon::tessellation as t;
 
-
 /// A builder for creating `Mesh`es.
 ///
 /// This allows you to easily make one `Mesh` containing
 /// many different complex pieces of geometry.  They don't
-/// have to be connected to each other, and will all be 
+/// have to be connected to each other, and will all be
 /// drawn at once.
 #[derive(Debug, Clone)]
 pub struct MeshBuilder {
@@ -17,7 +16,9 @@ pub struct MeshBuilder {
 impl MeshBuilder {
     /// Create a new MeshBuilder.
     pub fn new() -> Self {
-        MeshBuilder { buffer: t::VertexBuffers::new() }
+        MeshBuilder {
+            buffer: t::VertexBuffers::new(),
+        }
     }
 
     /// Create a new mesh for a line of one or more connected segments.
@@ -26,12 +27,13 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a circle.
-    pub fn circle(&mut self,
-                  mode: DrawMode,
-                  point: Point2,
-                  radius: f32,
-                  tolerance: f32)
-                  -> &mut Self {
+    pub fn circle(
+        &mut self,
+        mode: DrawMode,
+        point: Point2,
+        radius: f32,
+        tolerance: f32,
+    ) -> &mut Self {
         {
             let buffers = &mut self.buffer;
             match mode {
@@ -40,57 +42,65 @@ impl MeshBuilder {
                     // different types; one is GeometryBuilder<StrokeVertex> and the other is
                     // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::fill_circle(t::math::point(point.x, point.y),
-                                                 radius,
-                                                 tolerance,
-                                                 builder);
+                    t::basic_shapes::fill_circle(
+                        t::math::point(point.x, point.y),
+                        radius,
+                        tolerance,
+                        builder,
+                    );
                 }
                 DrawMode::Line(line_width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width)
                         .with_tolerance(tolerance);
-                    t::basic_shapes::stroke_circle(t::math::point(point.x, point.y),
-                                                   radius,
-                                                   &options,
-                                                   builder);
+                    t::basic_shapes::stroke_circle(
+                        t::math::point(point.x, point.y),
+                        radius,
+                        &options,
+                        builder,
+                    );
                 }
             };
         }
         self
-
     }
 
     /// Create a new mesh for an ellipse.
-    pub fn ellipse(&mut self,
-                   mode: DrawMode,
-                   point: Point2,
-                   radius1: f32,
-                   radius2: f32,
-                   tolerance: f32)
-                   -> &mut Self {
+    pub fn ellipse(
+        &mut self,
+        mode: DrawMode,
+        point: Point2,
+        radius1: f32,
+        radius2: f32,
+        tolerance: f32,
+    ) -> &mut Self {
         {
             let buffers = &mut self.buffer;
             use euclid::Length;
             match mode {
                 DrawMode::Fill => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::fill_ellipse(t::math::point(point.x, point.y),
-                                                  t::math::vec2(radius1, radius2),
-                                                  Length::new(0.0),
-                                                  tolerance,
-                                                  builder);
+                    t::basic_shapes::fill_ellipse(
+                        t::math::point(point.x, point.y),
+                        t::math::vec2(radius1, radius2),
+                        Length::new(0.0),
+                        tolerance,
+                        builder,
+                    );
                 }
                 DrawMode::Line(line_width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width)
                         .with_tolerance(tolerance);
-                    t::basic_shapes::stroke_ellipse(t::math::point(point.x, point.y),
-                                                    t::math::vec2(radius1, radius2),
-                                                    Length::new(0.0),
-                                                    &options,
-                                                    builder);
+                    t::basic_shapes::stroke_ellipse(
+                        t::math::point(point.x, point.y),
+                        t::math::vec2(radius1, radius2),
+                        Length::new(0.0),
+                        &options,
+                        builder,
+                    );
                 }
             };
         }
@@ -184,7 +194,6 @@ impl MeshBuilder {
                 let i2 = builder.add_vertex(snd);
                 let i3 = builder.add_vertex(thd);
                 builder.add_triangle(i1, i2, i3);
-
             }
             builder.end_geometry();
         }
@@ -194,20 +203,17 @@ impl MeshBuilder {
     /// Takes the accumulated geometry and load it into GPU memory,
     /// creating a single `Mesh`.
     pub fn build(&self, ctx: &mut Context) -> GameResult<Mesh> {
-        let (vbuf, slice) =
-            ctx.gfx_context
-                .factory
-                .create_vertex_buffer_with_slice(&self.buffer.vertices[..],
-                                                 &self.buffer.indices[..]);
+        let (vbuf, slice) = ctx.gfx_context
+            .factory
+            .create_vertex_buffer_with_slice(&self.buffer.vertices[..], &self.buffer.indices[..]);
 
         Ok(Mesh {
-               buffer: vbuf,
-               slice: slice,
-               blend_mode: None,
-           })
+            buffer: vbuf,
+            slice: slice,
+            blend_mode: None,
+        })
     }
 }
-
 
 struct VertexBuilder;
 
@@ -229,10 +235,9 @@ impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
     }
 }
 
-
 /// 2D polygon mesh.
 ///
-/// All of its creation methods are just shortcuts for doing the same operation 
+/// All of its creation methods are just shortcuts for doing the same operation
 // via a `MeshBuilder`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mesh {
@@ -240,7 +245,6 @@ pub struct Mesh {
     slice: gfx::Slice<gfx_device_gl::Resources>,
     blend_mode: Option<BlendMode>,
 }
-
 
 impl Mesh {
     /// Create a new mesh for a line of one or more connected segments.
@@ -251,25 +255,27 @@ impl Mesh {
     }
 
     /// Create a new mesh for a circle.
-    pub fn new_circle(ctx: &mut Context,
-                      mode: DrawMode,
-                      point: Point2,
-                      radius: f32,
-                      tolerance: f32)
-                      -> GameResult<Mesh> {
+    pub fn new_circle(
+        ctx: &mut Context,
+        mode: DrawMode,
+        point: Point2,
+        radius: f32,
+        tolerance: f32,
+    ) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.circle(mode, point, radius, tolerance);
         mb.build(ctx)
     }
 
     /// Create a new mesh for an ellipse.
-    pub fn new_ellipse(ctx: &mut Context,
-                       mode: DrawMode,
-                       point: Point2,
-                       radius1: f32,
-                       radius2: f32,
-                       tolerance: f32)
-                       -> GameResult<Mesh> {
+    pub fn new_ellipse(
+        ctx: &mut Context,
+        mode: DrawMode,
+        point: Point2,
+        radius1: f32,
+        radius2: f32,
+        tolerance: f32,
+    ) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.ellipse(mode, point, radius1, radius2, tolerance);
         mb.build(ctx)
@@ -281,7 +287,6 @@ impl Mesh {
         mb.polyline(mode, points);
         mb.build(ctx)
     }
-
 
     /// Create a new mesh for closed polygon
     pub fn new_polygon(ctx: &mut Context, mode: DrawMode, points: &[Point2]) -> GameResult<Mesh> {

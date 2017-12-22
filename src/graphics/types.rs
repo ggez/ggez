@@ -7,7 +7,6 @@ pub type Vector2 = na::Vector2<f32>;
 /// A 4 dimensional matrix representing an arbitrary 3d transformation
 pub type Matrix4 = na::Matrix4<f32>;
 
-
 // BUGGO: TODO: are these next two functions redundant,
 // and/or can they be private or pub(crate)?
 /// Turns a point into an array of floats
@@ -105,14 +104,14 @@ impl Rect {
 
     /// Checks whether the `Rect` contains a `Point`
     pub fn contains(&self, point: &Point2) -> bool {
-        point.x >= self.left() && point.x <= self.right() && point.y <= self.bottom() &&
-        point.y >= self.top()
+        point.x >= self.left() && point.x <= self.right() && point.y <= self.bottom()
+            && point.y >= self.top()
     }
 
     /// Checks whether the `Rect` overlaps another `Rect`
     pub fn overlaps(&self, other: &Rect) -> bool {
-        self.left() <= other.right() && self.right() >= other.left() &&
-        self.top() <= other.bottom() && self.bottom() >= other.top()
+        self.left() <= other.right() && self.right() >= other.left() && self.top() <= other.bottom()
+            && self.bottom() >= other.top()
     }
 
     /// Translates the `Rect` by an offset of (x, y)
@@ -135,20 +134,17 @@ impl Rect {
     }
 }
 
-
 impl From<[f32; 4]> for Rect {
     fn from(val: [f32; 4]) -> Self {
         Rect::new(val[0], val[1], val[2], val[3])
     }
 }
 
-
 impl From<Rect> for [f32; 4] {
     fn from(val: Rect) -> Self {
         [val.x, val.y, val.w, val.h]
     }
 }
-
 
 /// A RGBA color in the sRGB color space represented as f32's in the range `[0.0-1.0]`
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -170,7 +166,6 @@ pub const WHITE: Color = Color {
     b: 1.0,
     a: 1.0,
 };
-
 
 /// Black
 pub const BLACK: Color = Color {
@@ -231,7 +226,6 @@ impl Color {
         let bp = ((c & 0x000000FF) >> 0) as u8;
         Color::from((rp, gp, bp))
     }
-
 
     /// Convert a Color into a packed u32, containing 0xRRGGBBAA as bytes.
     pub fn to_rgba_u32(self) -> u32 {
@@ -339,11 +333,10 @@ impl From<Color> for LinearColor {
             r: f(c.r),
             g: f(c.g),
             b: f(c.b),
-            a: c.a
+            a: c.a,
         }
     }
 }
-
 
 impl From<LinearColor> for Color {
     fn from(c: LinearColor) -> Self {
@@ -352,26 +345,23 @@ impl From<LinearColor> for Color {
             if component <= 0.0031308 {
                 component * 12.92
             } else {
-                (1.0 + a) * component.powf(1.0/2.4)
+                (1.0 + a) * component.powf(1.0 / 2.4)
             }
         }
         Color {
             r: f(c.r),
             g: f(c.g),
             b: f(c.b),
-            a: c.a
+            a: c.a,
         }
     }
 }
-
 
 impl From<LinearColor> for [f32; 4] {
     fn from(color: LinearColor) -> Self {
         [color.r, color.g, color.b, color.a]
     }
 }
-
-
 
 /// Specifies whether a shape should be drawn
 /// filled or as an outline.
@@ -404,7 +394,6 @@ impl From<FilterMethod> for FilterMode {
     }
 }
 
-
 impl From<FilterMode> for FilterMethod {
     fn from(f: FilterMode) -> Self {
         match f {
@@ -416,8 +405,6 @@ impl From<FilterMode> for FilterMethod {
 
 /// Specifies how to wrap textures.
 pub type WrapMode = texture::WrapMode;
-
-
 
 #[cfg(test)]
 mod tests {
@@ -444,7 +431,6 @@ mod tests {
         assert_eq!(black, Color::from_rgb_u32(0x000000));
         assert_eq!(black, Color::from_rgba_u32(0x000000FF));
 
-
         let puce1 = Color::from_rgb_u32(0xCC8899);
         let puce2 = Color::from_rgba_u32(0xCC8899FF);
         let puce3 = Color::from((0xCC, 0x88, 0x99, 255));
@@ -459,7 +445,6 @@ mod tests {
         let r1 = Rect::new(0.0, 0.0, 128.0, 128.0);
         let r2 = Rect::fraction(0.0, 0.0, 32.0, 32.0, &r1);
         assert_eq!(r2, Rect::new(0.0, 0.0, 0.25, 0.25));
-
 
         let r2 = Rect::fraction(32.0, 32.0, 32.0, 32.0, &r1);
         assert_eq!(r2, Rect::new(0.25, 0.25, 0.25, 0.25));

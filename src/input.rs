@@ -9,7 +9,6 @@ use std::fmt;
 use context::Context;
 use error::GameResult;
 
-
 /// To use gamepads (or joysticks) we need to "open" them
 /// and keep them around, so this structure hangs on to
 /// their state for us.
@@ -27,7 +26,6 @@ impl fmt::Debug for GamepadContext {
     }
 }
 
-
 impl GamepadContext {
     /// Create new GamepadContext
     pub fn new(sdl_context: &Sdl) -> GameResult<Self> {
@@ -43,9 +41,9 @@ impl GamepadContext {
             }
         }
         Ok(GamepadContext {
-               gamepads: gamepads,
-               controller_ctx: controller_ctx,
-           })
+            gamepads: gamepads,
+            controller_ctx: controller_ctx,
+        })
     }
 }
 

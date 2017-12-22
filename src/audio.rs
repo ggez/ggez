@@ -17,7 +17,6 @@ use context::Context;
 use GameError;
 use GameResult;
 
-
 /// A struct that contains all information for tracking sound info.
 ///
 /// You generally don't have to create this yourself, it will be part
@@ -29,8 +28,12 @@ pub struct AudioContext {
 impl AudioContext {
     /// Create new AudioContext.
     pub fn new() -> GameResult<AudioContext> {
-        let error = GameError::AudioError(String::from("Could not initialize sound system (for \
-             some reason)"));
+        let error = GameError::AudioError(String::from(
+            "Could not initialize sound system (for \
+             some reason)",
+        ));
+        // This is deprecated in cpal but not in the most recent rodio (0.5.2) yet.
+        #[allow(deprecated)]
         let e = rodio::get_default_endpoint().ok_or(error)?;
         Ok(AudioContext { endpoint: e })
     }
@@ -41,7 +44,6 @@ impl fmt::Debug for AudioContext {
         write!(f, "<AudioContext: {:p}>", self)
     }
 }
-
 
 /// Static sound data stored in memory.
 /// It is Arc'ed, so cheap to clone.
@@ -54,19 +56,18 @@ impl SoundData {
         let mut buffer = Vec::with_capacity(data.len());
         buffer.extend(data);
         SoundData::from(buffer)
-
     }
 
     /// Creates a SoundData from any Read object; this involves
     /// copying it into a buffer.
     pub fn from_read<R>(reader: &mut R) -> GameResult<Self>
-        where R: Read
+    where
+        R: Read,
     {
         let mut buffer = Vec::new();
         reader.read_to_end(&mut buffer)?;
 
         Ok(SoundData::from(buffer))
-
     }
 }
 
@@ -115,9 +116,9 @@ impl Source {
         let sink = rodio::Sink::new(&context.audio_context.endpoint);
         let cursor = io::Cursor::new(data);
         Ok(Source {
-               data: cursor,
-               sink: sink,
-           })
+            data: cursor,
+            sink: sink,
+        })
     }
 
     /// Plays the Source.
@@ -168,12 +169,10 @@ impl Source {
     }
 }
 
-
 impl fmt::Debug for Source {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Audio source: {:p}>", self)
     }
 }
-
 
 // TODO: global start, stop, volume?

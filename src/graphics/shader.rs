@@ -60,52 +60,46 @@ impl From<BlendMode> for Blend {
     fn from(bm: BlendMode) -> Self {
         match bm {
             BlendMode::Add => blend::ADD,
-            BlendMode::Subtract => {
-                Blend {
-                    color: BlendChannel {
-                        equation: Equation::Sub,
-                        source: Factor::One,
-                        destination: Factor::One,
-                    },
-                    alpha: BlendChannel {
-                        equation: Equation::Sub,
-                        source: Factor::One,
-                        destination: Factor::One,
-                    },
-                }
-            }
+            BlendMode::Subtract => Blend {
+                color: BlendChannel {
+                    equation: Equation::Sub,
+                    source: Factor::One,
+                    destination: Factor::One,
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Sub,
+                    source: Factor::One,
+                    destination: Factor::One,
+                },
+            },
             BlendMode::Alpha => blend::ALPHA,
             BlendMode::Invert => blend::INVERT,
             BlendMode::Multiply => blend::MULTIPLY,
             BlendMode::Replace => blend::REPLACE,
-            BlendMode::Lighten => {
-                Blend {
-                    color: BlendChannel {
-                        equation: Equation::Max,
-                        source: Factor::One,
-                        destination: Factor::One,
-                    },
-                    alpha: BlendChannel {
-                        equation: Equation::Add,
-                        source: Factor::ZeroPlus(BlendValue::SourceAlpha),
-                        destination: Factor::OneMinus(BlendValue::SourceAlpha),
-                    },
-                }
-            }
-            BlendMode::Darken => {
-                Blend {
-                    color: BlendChannel {
-                        equation: Equation::Min,
-                        source: Factor::One,
-                        destination: Factor::One,
-                    },
-                    alpha: BlendChannel {
-                        equation: Equation::Add,
-                        source: Factor::ZeroPlus(BlendValue::SourceAlpha),
-                        destination: Factor::OneMinus(BlendValue::SourceAlpha),
-                    },
-                }
-            }
+            BlendMode::Lighten => Blend {
+                color: BlendChannel {
+                    equation: Equation::Max,
+                    source: Factor::One,
+                    destination: Factor::One,
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                    destination: Factor::OneMinus(BlendValue::SourceAlpha),
+                },
+            },
+            BlendMode::Darken => Blend {
+                color: BlendChannel {
+                    equation: Equation::Min,
+                    source: Factor::One,
+                    destination: Factor::One,
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                    destination: Factor::OneMinus(BlendValue::SourceAlpha),
+                },
+            },
         }
     }
 }
@@ -123,32 +117,41 @@ impl From<BlendMode> for Blend {
 /// storing each shader set's PSOs and then retrieving them based
 /// on a BlendMode.
 struct PsoSet<Spec, C>
-    where Spec: graphics::BackendSpec,
-          C: Structure<ConstFormat>
+where
+    Spec: graphics::BackendSpec,
+    C: Structure<ConstFormat>,
 {
     psos: HashMap<BlendMode, PipelineState<Spec::Resources, ConstMeta<C>>>,
 }
 
 impl<Spec, C> PsoSet<Spec, C>
-    where Spec: graphics::BackendSpec,
-          C: Structure<ConstFormat>
+where
+    Spec: graphics::BackendSpec,
+    C: Structure<ConstFormat>,
 {
     pub fn new(cap: usize) -> Self {
-        Self { psos: HashMap::with_capacity(cap) }
+        Self {
+            psos: HashMap::with_capacity(cap),
+        }
     }
 
-    pub fn insert_mode(&mut self,
-                       mode: BlendMode,
-                       pso: PipelineState<Spec::Resources, ConstMeta<C>>) {
+    pub fn insert_mode(
+        &mut self,
+        mode: BlendMode,
+        pso: PipelineState<Spec::Resources, ConstMeta<C>>,
+    ) {
         self.psos.insert(mode, pso);
     }
 
-    pub fn get_mode(&self,
-                    mode: &BlendMode)
-                    -> GameResult<&PipelineState<Spec::Resources, ConstMeta<C>>> {
+    pub fn get_mode(
+        &self,
+        mode: &BlendMode,
+    ) -> GameResult<&PipelineState<Spec::Resources, ConstMeta<C>>> {
         match self.psos.get(mode) {
             Some(pso) => Ok(pso),
-            None => Err(GameError::RenderError("Could not find a pipeline for the specified shader and BlendMode".into())),
+            None => Err(GameError::RenderError(
+                "Could not find a pipeline for the specified shader and BlendMode".into(),
+            )),
         }
     }
 }
@@ -171,19 +174,20 @@ pub struct ShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFormat>>
 /// with a ggez graphics context
 pub type Shader<C> = ShaderGeneric<graphics::GlBackendSpec, C>;
 
-pub(crate) fn create_shader<C, S, Spec>
-    (vertex_source: &[u8],
-     pixel_source: &[u8],
-     consts: C,
-     name: S,
-     encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
-     factory: &mut Spec::Factory,
-     multisample_samples: u8,
-     blend_modes: Option<&[BlendMode]>)
-     -> GameResult<(ShaderGeneric<Spec, C>, Box<ShaderHandle<Spec>>)>
-    where C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
-          S: Into<String>,
-          Spec: graphics::BackendSpec + 'static
+pub(crate) fn create_shader<C, S, Spec>(
+    vertex_source: &[u8],
+    pixel_source: &[u8],
+    consts: C,
+    name: S,
+    encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+    factory: &mut Spec::Factory,
+    multisample_samples: u8,
+    blend_modes: Option<&[BlendMode]>,
+) -> GameResult<(ShaderGeneric<Spec, C>, Box<ShaderHandle<Spec>>)>
+where
+    C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
+    S: Into<String>,
+    Spec: graphics::BackendSpec + 'static,
 {
     let buffer = factory.create_constant_buffer(1);
 
@@ -196,14 +200,15 @@ pub(crate) fn create_shader<C, S, Spec>
     let name: String = name.into();
     for mode in blend_modes.clone() {
         let mode = mode.clone();
-        let init = ConstInit::<C>(graphics::pipe::Init {
-                                      out: ("Target0", MASK_ALL, mode.into()),
-                                      ..graphics::pipe::new()
-                                  },
-                                  name.clone(),
-                                  PhantomData);
-        let set = factory
-            .create_shader_set(vertex_source, pixel_source)?;
+        let init = ConstInit::<C>(
+            graphics::pipe::Init {
+                out: ("Target0", MASK_ALL, mode.into()),
+                ..graphics::pipe::new()
+            },
+            name.clone(),
+            PhantomData,
+        );
+        let set = factory.create_shader_set(vertex_source, pixel_source)?;
         let sample = if multisample_samples > 1 {
             Some(MultiSample)
         } else {
@@ -217,11 +222,8 @@ pub(crate) fn create_shader<C, S, Spec>
             samples: sample,
         };
 
-        let pso = factory.create_pipeline_state(&set,
-                                                    Primitive::TriangleList,
-                                                    rasterizer,
-                                                    init)?;
-        psos.insert_mode(mode,pso);
+        let pso = factory.create_pipeline_state(&set, Primitive::TriangleList, rasterizer, init)?;
+        psos.insert_mode(mode, pso);
     }
 
     let program = ShaderProgram {
@@ -238,7 +240,8 @@ pub(crate) fn create_shader<C, S, Spec>
 }
 
 impl<C> Shader<C>
-    where C: 'static + Pod + Structure<ConstFormat> + Clone + Copy
+where
+    C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
 {
     /// Create a new `Shader` given a gfx pipeline object
     ///
@@ -246,13 +249,14 @@ impl<C> Shader<C>
     /// used, you must include that blend mode as part of the
     /// `blend_modes` parameter at creation. If `None` is given, only the
     /// default `Alpha` blend mode is used.
-    pub fn new<P: AsRef<Path>, S: Into<String>>(ctx: &mut Context,
-                                                vertex_path: P,
-                                                pixel_path: P,
-                                                consts: C,
-                                                name: S,
-                                                blend_modes: Option<&[BlendMode]>)
-                                                -> GameResult<Shader<C>> {
+    pub fn new<P: AsRef<Path>, S: Into<String>>(
+        ctx: &mut Context,
+        vertex_path: P,
+        pixel_path: P,
+        consts: C,
+        name: S,
+        blend_modes: Option<&[BlendMode]>,
+    ) -> GameResult<Shader<C>> {
         let vertex_source = {
             let mut buf = Vec::new();
             let mut reader = ctx.filesystem.open(vertex_path)?;
@@ -265,7 +269,14 @@ impl<C> Shader<C>
             reader.read_to_end(&mut buf)?;
             buf
         };
-        Shader::from_u8(ctx, &vertex_source, &pixel_source, consts, name, blend_modes)
+        Shader::from_u8(
+            ctx,
+            &vertex_source,
+            &pixel_source,
+            consts,
+            name,
+            blend_modes,
+        )
     }
 
     /// Create a new `Shader` directly from source given a gfx pipeline
@@ -275,21 +286,24 @@ impl<C> Shader<C>
     /// used, you must include that blend mode as part of the
     /// `blend_modes` parameter at creation. If `None` is given, only the
     /// default `Alpha` blend mode is used.
-    pub fn from_u8<S: Into<String>>(ctx: &mut Context,
-                                    vertex_source: &[u8],
-                                    pixel_source: &[u8],
-                                    consts: C,
-                                    name: S,
-                                    blend_modes: Option<&[BlendMode]>)
-                                    -> GameResult<Shader<C>> {
-        let (mut shader, draw) = create_shader(vertex_source,
-                                               pixel_source,
-                                               consts,
-                                               name,
-                                               &mut ctx.gfx_context.encoder,
-                                               &mut *ctx.gfx_context.factory,
-                                               ctx.gfx_context.multisample_samples,
-                                               blend_modes)?;
+    pub fn from_u8<S: Into<String>>(
+        ctx: &mut Context,
+        vertex_source: &[u8],
+        pixel_source: &[u8],
+        consts: C,
+        name: S,
+        blend_modes: Option<&[BlendMode]>,
+    ) -> GameResult<Shader<C>> {
+        let (mut shader, draw) = create_shader(
+            vertex_source,
+            pixel_source,
+            consts,
+            name,
+            &mut ctx.gfx_context.encoder,
+            &mut *ctx.gfx_context.factory,
+            ctx.gfx_context.multisample_samples,
+            blend_modes,
+        )?;
         shader.id = ctx.gfx_context.shaders.len();
         ctx.gfx_context.shaders.push(draw);
 
@@ -312,8 +326,9 @@ impl<C> Shader<C>
 }
 
 impl<Spec, C> fmt::Debug for ShaderGeneric<Spec, C>
-    where Spec: graphics::BackendSpec,
-          C: Structure<ConstFormat>
+where
+    Spec: graphics::BackendSpec,
+    C: Structure<ConstFormat>,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<Shader[{}]: {:p}>", self.id, self)
@@ -327,8 +342,9 @@ struct ShaderProgram<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
 }
 
 impl<Spec, C> fmt::Debug for ShaderProgram<Spec, C>
-    where Spec: graphics::BackendSpec,
-          C: Structure<ConstFormat>
+where
+    Spec: graphics::BackendSpec,
+    C: Structure<ConstFormat>,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<ShaderProgram: {:p}>", self)
@@ -339,11 +355,12 @@ impl<Spec, C> fmt::Debug for ShaderProgram<Spec, C>
 /// Structure<ConstFormat> type of the constant data for drawing
 pub trait ShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
     /// Draw with the current Shader
-    fn draw(&self,
-            &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
-            &Slice<Spec::Resources>,
-            &graphics::pipe::Data<Spec::Resources>)
-            -> GameResult<()>;
+    fn draw(
+        &self,
+        &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+        &Slice<Spec::Resources>,
+        &graphics::pipe::Data<Spec::Resources>,
+    ) -> GameResult<()>;
 
     /// Sets the shader program's blend mode
     fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()>;
@@ -353,14 +370,16 @@ pub trait ShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
 }
 
 impl<Spec, C> ShaderHandle<Spec> for ShaderProgram<Spec, C>
-    where Spec: graphics::BackendSpec,
-          C: Structure<ConstFormat>
+where
+    Spec: graphics::BackendSpec,
+    C: Structure<ConstFormat>,
 {
-    fn draw(&self,
-            encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
-            slice: &Slice<Spec::Resources>,
-            data: &graphics::pipe::Data<Spec::Resources>)
-            -> GameResult<()> {
+    fn draw(
+        &self,
+        encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+        slice: &Slice<Spec::Resources>,
+        data: &graphics::pipe::Data<Spec::Resources>,
+    ) -> GameResult<()> {
         let pso = self.psos.get_mode(&self.active_blend_mode)?;
         encoder.draw(slice, pso, &ConstData(data, &self.buffer));
         Ok(())
@@ -395,7 +414,8 @@ impl Drop for ShaderLock {
 
 /// Use a shader until the returned lock goes out of scope
 pub fn use_shader<C>(ctx: &mut Context, ps: &Shader<C>) -> ShaderLock
-    where C: Structure<ConstFormat>
+where
+    C: Structure<ConstFormat>,
 {
     let cell = ctx.gfx_context.current_shader.clone();
     let previous_shader = (*cell.borrow()).clone();
@@ -408,7 +428,8 @@ pub fn use_shader<C>(ctx: &mut Context, ps: &Shader<C>) -> ShaderLock
 
 /// Set the current  shader for the Context to render with
 pub fn set_shader<C>(ctx: &mut Context, ps: &Shader<C>)
-    where C: Structure<ConstFormat>
+where
+    C: Structure<ConstFormat>,
 {
     *ctx.gfx_context.current_shader.borrow_mut() = Some(ps.id);
 }
@@ -425,16 +446,19 @@ struct ConstMeta<C: Structure<ConstFormat>>(graphics::pipe::Meta, ConstantBuffer
 struct ConstData<'a, R: Resources, C: 'a>(&'a graphics::pipe::Data<R>, &'a Buffer<R, C>);
 
 impl<'a, R, C> PipelineData<R> for ConstData<'a, R, C>
-    where R: Resources,
-          C: Structure<ConstFormat>
+where
+    R: Resources,
+    C: Structure<ConstFormat>,
 {
     type Meta = ConstMeta<C>;
 
-    fn bake_to(&self,
-               out: &mut RawDataSet<R>,
-               meta: &Self::Meta,
-               man: &mut Manager<R>,
-               access: &mut AccessInfo<R>) {
+    fn bake_to(
+        &self,
+        out: &mut RawDataSet<R>,
+        meta: &Self::Meta,
+        man: &mut Manager<R>,
+        access: &mut AccessInfo<R>,
+    ) {
         self.0.bake_to(out, &meta.0, man, access);
         meta.1.bind_to(out, &self.1, man, access);
     }
@@ -444,14 +468,16 @@ impl<'a, R, C> PipelineData<R> for ConstData<'a, R, C>
 struct ConstInit<'a, C>(graphics::pipe::Init<'a>, String, PhantomData<C>);
 
 impl<'a, C> PipelineInit for ConstInit<'a, C>
-    where C: Structure<ConstFormat>
+where
+    C: Structure<ConstFormat>,
 {
     type Meta = ConstMeta<C>;
 
-    fn link_to<'s>(&self,
-                   desc: &mut Descriptor,
-                   info: &'s ProgramInfo)
-                   -> Result<Self::Meta, InitError<&'s str>> {
+    fn link_to<'s>(
+        &self,
+        desc: &mut Descriptor,
+        info: &'s ProgramInfo,
+    ) -> Result<Self::Meta, InitError<&'s str>> {
         let mut meta1 = ConstantBuffer::<C>::new();
 
         let mut index = None;

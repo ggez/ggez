@@ -56,8 +56,8 @@
 //!
 //! ## Examples
 //!
-//! See the `examples/` directory in the source.  Most examples show off 
-//! a single feature of ggez, while `astroblasto` is a small  but 
+//! See the `examples/` directory in the source.  Most examples show off
+//! a single feature of ggez, while `astroblasto` is a small  but
 //! complete Asteroids-like game.
 //!
 //! To run the examples, just check out the source and execute `cargo run --example`
@@ -67,7 +67,7 @@
 //! cargo run --example astroblasto
 //! ```
 //!
-//! If this doesn't work, see the 
+//! If this doesn't work, see the
 //! [FAQ](https://github.com/ggez/ggez/blob/master/docs/FAQ.md) for solutions
 //! to common problems.
 //!
@@ -85,24 +85,23 @@
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 
-
-extern crate sdl2;
 extern crate app_dirs;
+extern crate euclid;
 #[macro_use]
 extern crate gfx;
 extern crate gfx_device_gl;
 extern crate gfx_window_sdl;
 extern crate image;
+extern crate lyon;
 extern crate rodio;
+extern crate rusttype;
+extern crate sdl2;
 #[macro_use]
 extern crate serde_derive;
-extern crate rusttype;
-extern crate toml;
-extern crate zip;
-extern crate lyon;
-extern crate euclid;
 #[macro_use]
 extern crate smart_default;
+extern crate toml;
+extern crate zip;
 pub extern crate nalgebra;
 
 pub mod audio;

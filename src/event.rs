@@ -7,7 +7,7 @@
 //! `context.sdl_context.event_pump()` on your `Context`.  You can
 //! then call whatever SDL event methods you want on that.  This is
 //! not particularly elegant and is not guaranteed to be stable across
-//! different versions of ggez (for instance, we may someday get rid of SDL2), 
+//! different versions of ggez (for instance, we may someday get rid of SDL2),
 //! but trying to wrap it
 //! up more conveniently really ends up with the exact same interface.
 //!
@@ -39,16 +39,11 @@ use sdl2::event;
 use sdl2::mouse;
 use sdl2::keyboard;
 
-
 use context::Context;
 use GameResult;
 
-
 pub use sdl2::keyboard::{CAPSMOD, LALTMOD, LCTRLMOD, LGUIMOD, LSHIFTMOD, MODEMOD, NOMOD, NUMMOD,
                          RALTMOD, RCTRLMOD, RESERVEDMOD, RGUIMOD, RSHIFTMOD};
-
-
-
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
@@ -70,68 +65,70 @@ pub trait EventHandler {
     fn draw(&mut self, _ctx: &mut Context) -> GameResult<()>;
 
     /// A mouse button was pressed
-    fn mouse_button_down_event(&mut self,
-                               _ctx: &mut Context,
-                               _button: mouse::MouseButton,
-                               _x: i32,
-                               _y: i32) {
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: mouse::MouseButton,
+        _x: i32,
+        _y: i32,
+    ) {
     }
 
     /// A mouse button was released
-    fn mouse_button_up_event(&mut self,
-                             _ctx: &mut Context,
-                             _button: mouse::MouseButton,
-                             _x: i32,
-                             _y: i32) {
+    fn mouse_button_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: mouse::MouseButton,
+        _x: i32,
+        _y: i32,
+    ) {
     }
 
     /// The mouse was moved; it provides both absolute x and y coordinates in the window,
     /// and relative x and y coordinates compared to its last position.
-    fn mouse_motion_event(&mut self,
-                          _ctx: &mut Context,
-                          _state: mouse::MouseState,
-                          _x: i32,
-                          _y: i32,
-                          _xrel: i32,
-                          _yrel: i32) {
+    fn mouse_motion_event(
+        &mut self,
+        _ctx: &mut Context,
+        _state: mouse::MouseState,
+        _x: i32,
+        _y: i32,
+        _xrel: i32,
+        _yrel: i32,
+    ) {
     }
 
     /// The mousewheel was clicked.
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: i32, _y: i32) {}
 
     /// A keyboard button was pressed.
-    fn key_down_event(&mut self,
-                      ctx: &mut Context,
-                      keycode: Keycode,
-                      _keymod: Mod,
-                      _repeat: bool) {
+    fn key_down_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, _repeat: bool) {
         if keycode == keyboard::Keycode::Escape {
             ctx.quit().expect("Should never fail");
         }
     }
 
     /// A keyboard button was released.
-    fn key_up_event(&mut self,
-                    _ctx: &mut Context,
-                    _keycode: Keycode,
-                    _keymod: Mod,
-                    _repeat: bool) {
+    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: Keycode, _keymod: Mod, _repeat: bool) {
     }
 
     /// A controller button was pressed; instance_id identifies which controller.
-    fn controller_button_down_event(&mut self,
-                                    _ctx: &mut Context,
-                                    _btn: Button,
-                                    _instance_id: i32) {
+    fn controller_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _btn: Button,
+        _instance_id: i32,
+    ) {
     }
     /// A controller button was released.
     fn controller_button_up_event(&mut self, _ctx: &mut Context, _btn: Button, _instance_id: i32) {}
     /// A controller axis moved.
-    fn controller_axis_event(&mut self,
-                             _ctx: &mut Context,
-                             _axis: Axis,
-                             _value: i16,
-                             _instance_id: i32) {
+    fn controller_axis_event(
+        &mut self,
+        _ctx: &mut Context,
+        _axis: Axis,
+        _value: i16,
+        _instance_id: i32,
+    ) {
     }
 
     /// Called when the window is shown or hidden.
@@ -179,7 +176,8 @@ impl Events {
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the `timer` module for more info.
 pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
-    where S: EventHandler
+where
+    S: EventHandler,
 {
     let mut event_pump = ctx.sdl_context.event_pump()?;
 
@@ -213,12 +211,12 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                         state.key_up_event(ctx, key, keymod, repeat)
                     }
                 }
-                MouseButtonDown { mouse_btn, x, y, .. } => {
-                    state.mouse_button_down_event(ctx, mouse_btn, x, y)
-                }
-                MouseButtonUp { mouse_btn, x, y, .. } => {
-                    state.mouse_button_up_event(ctx, mouse_btn, x, y)
-                }
+                MouseButtonDown {
+                    mouse_btn, x, y, ..
+                } => state.mouse_button_down_event(ctx, mouse_btn, x, y),
+                MouseButtonUp {
+                    mouse_btn, x, y, ..
+                } => state.mouse_button_up_event(ctx, mouse_btn, x, y),
                 MouseMotion {
                     mousestate,
                     x,
@@ -234,16 +232,21 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
                 ControllerButtonUp { button, which, .. } => {
                     state.controller_button_up_event(ctx, button, which)
                 }
-                ControllerAxisMotion { axis, value, which, .. } => {
-                    state.controller_axis_event(ctx, axis, value, which)
-                }
-                Window { win_event: event::WindowEvent::FocusGained, .. } => {
-                    state.focus_event(ctx, true)
-                }
-                Window { win_event: event::WindowEvent::FocusLost, .. } => {
-                    state.focus_event(ctx, false)
-                }
-                Window { win_event: event::WindowEvent::Resized(w, h), .. } => {
+                ControllerAxisMotion {
+                    axis, value, which, ..
+                } => state.controller_axis_event(ctx, axis, value, which),
+                Window {
+                    win_event: event::WindowEvent::FocusGained,
+                    ..
+                } => state.focus_event(ctx, true),
+                Window {
+                    win_event: event::WindowEvent::FocusLost,
+                    ..
+                } => state.focus_event(ctx, false),
+                Window {
+                    win_event: event::WindowEvent::Resized(w, h),
+                    ..
+                } => {
                     ctx.gfx_context.resize_viewport();
                     state.resize_event(ctx, w as u32, h as u32);
                 }

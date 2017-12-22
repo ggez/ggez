@@ -2,7 +2,7 @@
 //!
 //! ggez does not try to do any framerate limitation by default. If
 //! you want to run at anything other than full-bore max speed all the
-//! time, calling `thread::yield_now()` (or `timer::yield_now()` which 
+//! time, calling `thread::yield_now()` (or `timer::yield_now()` which
 //! does the same thing) yield to the OS
 //! so it has a chance to breathe before continuing with your game.
 //! This should prevent it from using 100% CPU unless it really needs
@@ -28,7 +28,8 @@ use std::thread;
 /// things.
 #[derive(Debug, Clone)]
 struct LogBuffer<T>
-    where T: Clone
+where
+    T: Clone,
 {
     head: usize,
     size: usize,
@@ -36,7 +37,8 @@ struct LogBuffer<T>
 }
 
 impl<T> LogBuffer<T>
-    where T: Clone + Copy
+where
+    T: Clone + Copy,
 {
     fn new(size: usize, init_val: T) -> LogBuffer<T> {
         let mut v = Vec::with_capacity(size);
@@ -83,7 +85,6 @@ pub struct TimeContext {
     frame_count: usize,
 }
 
-
 // How many frames we log update times for.
 const TIME_LOG_FRAMES: usize = 200;
 
@@ -121,14 +122,12 @@ impl Default for TimeContext {
     }
 }
 
-
 /// Get the time between the start of the last frame and the current one;
 /// in other words, the length of the last frame.
 pub fn get_delta(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     tc.frame_durations.latest()
 }
-
 
 /// Gets the average time of a frame, averaged
 /// over the last 200 frames.

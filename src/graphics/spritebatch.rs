@@ -35,7 +35,6 @@ use super::shader::BlendMode;
 // For now though, let's mess around with the gfx bits rather than the ggez bits.
 // We need to be able to, essentially, have an array of RectProperties.
 
-
 /// A SpriteBatch draws a number of copies of the same image, using a single draw call.
 ///
 /// This is generally faster than drawing the same sprite with many invocations of `draw()`,
@@ -78,7 +77,9 @@ impl SpriteBatch {
             self.sprites[handle.0] = param;
             Ok(())
         } else {
-            Err(error::GameError::RenderError(String::from("Provided index is out of bounds.")))
+            Err(error::GameError::RenderError(String::from(
+                "Provided index is out of bounds.",
+            )))
         }
     }
 
@@ -93,15 +94,17 @@ impl SpriteBatch {
         // function to be drawn, so.
         // Though we do awkwardly have to allocate a new vector.
         assert!(draw_color.is_some());
-        let new_sprites = self.sprites.iter()
+        let new_sprites = self.sprites
+            .iter()
             .map(|param| {
                 // Copy old params
                 let mut new_param = *param;
                 let src_width = param.src.w;
                 let src_height = param.src.h;
-                let real_scale = graphics::Point2::new(src_width * param.scale.x * self.image.width as f32,
-                                                    src_height * param.scale.y *
-                                                    self.image.height as f32);
+                let real_scale = graphics::Point2::new(
+                    src_width * param.scale.x * self.image.width as f32,
+                    src_height * param.scale.y * self.image.height as f32,
+                );
                 new_param.scale = real_scale;
                 // If we have no color, our color is white.
                 // This is fine because coloring the whole spritebatch is possible
@@ -113,11 +116,12 @@ impl SpriteBatch {
 
         let gfx = &mut ctx.gfx_context;
         if gfx.data.rect_instance_properties.len() < self.sprites.len() {
-            gfx.data.rect_instance_properties = gfx.factory
-                .create_buffer(self.sprites.len(),
-                               gfx::buffer::Role::Vertex,
-                               gfx::memory::Usage::Dynamic,
-                               gfx::TRANSFER_DST)?;
+            gfx.data.rect_instance_properties = gfx.factory.create_buffer(
+                self.sprites.len(),
+                gfx::buffer::Role::Vertex,
+                gfx::memory::Usage::Dynamic,
+                gfx::TRANSFER_DST,
+            )?;
         }
         gfx.encoder
             .update_buffer(&gfx.data.rect_instance_properties, &new_sprites[..], 0)?;

@@ -67,21 +67,17 @@ pub trait BackendSpec: fmt::Debug {
 /// graphics backend init code actually gets.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
 pub struct GlBackendSpec {
-    #[default = r#"3"#]
-    major: u8,
-    #[default = r#"2"#]
-    minor: u8,
+    #[default = r#"3"#] major: u8,
+    #[default = r#"2"#] minor: u8,
 }
 
 impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL{major, minor} => {
-                Self {
-                    major: major,
-                    minor: minor,
-                }
-            }
+            conf::Backend::OpenGL { major, minor } => Self {
+                major: major,
+                minor: minor,
+            },
         }
     }
 }
@@ -93,22 +89,24 @@ impl BackendSpec for GlBackendSpec {
     type Device = gfx_device_gl::Device;
 }
 
-const QUAD_VERTS: [Vertex; 4] = [Vertex {
-                                     pos: [0.0, 0.0],
-                                     uv: [0.0, 0.0],
-                                 },
-                                 Vertex {
-                                     pos: [1.0, 0.0],
-                                     uv: [1.0, 0.0],
-                                 },
-                                 Vertex {
-                                     pos: [1.0, 1.0],
-                                     uv: [1.0, 1.0],
-                                 },
-                                 Vertex {
-                                     pos: [0.0, 1.0],
-                                     uv: [0.0, 1.0],
-                                 }];
+const QUAD_VERTS: [Vertex; 4] = [
+    Vertex {
+        pos: [0.0, 0.0],
+        uv: [0.0, 0.0],
+    },
+    Vertex {
+        pos: [1.0, 0.0],
+        uv: [1.0, 0.0],
+    },
+    Vertex {
+        pos: [1.0, 1.0],
+        uv: [1.0, 1.0],
+    },
+    Vertex {
+        pos: [0.0, 1.0],
+        uv: [0.0, 1.0],
+    },
+];
 
 const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
@@ -178,8 +176,7 @@ impl From<DrawParam> for InstanceProperties {
             col2: mat[1],
             col3: mat[2],
             col4: mat[3],
-            color: linear_color
-                .into()
+            color: linear_color.into(),
         }
     }
 }
@@ -187,22 +184,27 @@ impl From<DrawParam> for InstanceProperties {
 /// A structure for conveniently storing Sampler's, based off
 /// their `SamplerInfo`.
 struct SamplerCache<B>
-    where B: BackendSpec
+where
+    B: BackendSpec,
 {
     samplers: HashMap<texture::SamplerInfo, gfx::handle::Sampler<B::Resources>>,
 }
 
 impl<B> SamplerCache<B>
-    where B: BackendSpec
+where
+    B: BackendSpec,
 {
     fn new() -> Self {
-        SamplerCache { samplers: HashMap::new() }
+        SamplerCache {
+            samplers: HashMap::new(),
+        }
     }
 
-    fn get_or_insert(&mut self,
-                     info: texture::SamplerInfo,
-                     factory: &mut B::Factory)
-                     -> gfx::handle::Sampler<B::Resources> {
+    fn get_or_insert(
+        &mut self,
+        info: texture::SamplerInfo,
+        factory: &mut B::Factory,
+    ) -> gfx::handle::Sampler<B::Resources> {
         let sampler = self.samplers
             .entry(info)
             .or_insert_with(|| factory.create_sampler(info));
@@ -216,7 +218,8 @@ impl<B> SamplerCache<B>
 ///
 /// As an end-user you shouldn't ever have to touch this.
 pub(crate) struct GraphicsContextGeneric<B>
-    where B: BackendSpec
+where
+    B: BackendSpec,
 {
     foreground_color: Color,
     background_color: Color,
@@ -230,8 +233,7 @@ pub(crate) struct GraphicsContextGeneric<B>
     backend_spec: B,
     window: sdl2::video::Window,
     multisample_samples: u8,
-    #[allow(dead_code)]
-    gl_context: sdl2::video::GLContext,
+    #[allow(dead_code)] gl_context: sdl2::video::GLContext,
     device: Box<B::Device>,
     factory: Box<B::Factory>,
     encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
@@ -252,7 +254,8 @@ pub(crate) struct GraphicsContextGeneric<B>
 }
 
 impl<B> fmt::Debug for GraphicsContextGeneric<B>
-    where B: BackendSpec
+where
+    B: BackendSpec,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<GraphicsContext: {:p}>", self)
@@ -284,11 +287,11 @@ fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
             let window_builder = video.window("so full of hate", 640, 480);
             let result = gfx_window_sdl::init::<ColorFormat, DepthFormat>(window_builder);
             match result {
-                Ok(_) => {
-                    println!("Ok, got GL {}.{}.",
-                             gl.context_major_version(),
-                             gl.context_minor_version())
-                }
+                Ok(_) => println!(
+                    "Ok, got GL {}.{}.",
+                    gl.context_major_version(),
+                    gl.context_minor_version()
+                ),
                 Err(res) => println!("Request failed: {:?}", res),
             }
         }
@@ -299,26 +302,29 @@ impl From<gfx::buffer::CreationError> for GameError {
     fn from(e: gfx::buffer::CreationError) -> Self {
         use gfx::buffer::CreationError;
         match e {
-            CreationError::UnsupportedBind(b) => {
-                GameError::RenderError(format!("Could not create buffer: Unsupported Bind ({:?})",
-                                               b))
+            CreationError::UnsupportedBind(b) => GameError::RenderError(format!(
+                "Could not create buffer: Unsupported Bind ({:?})",
+                b
+            )),
+            CreationError::UnsupportedUsage(u) => GameError::RenderError(format!(
+                "Could not create buffer: Unsupported Usage ({:?})",
+                u
+            )),
+            CreationError::Other => {
+                GameError::RenderError(format!("Could not create buffer: Unknown error"))
             }
-            CreationError::UnsupportedUsage(u) => {
-                GameError::RenderError(format!("Could not create buffer: Unsupported Usage ({:?})",
-                                               u))
-            }
-            CreationError::Other => GameError::RenderError(format!("Could not create buffer: Unknown error")),
         }
     }
 }
 
 impl GraphicsContext {
     /// Create a new GraphicsContext
-    pub(crate) fn new(video: sdl2::VideoSubsystem,
-               window_setup: &WindowSetup,
-               window_mode: WindowMode,
-               backend: GlBackendSpec)
-               -> GameResult<GraphicsContext> {
+    pub(crate) fn new(
+        video: sdl2::VideoSubsystem,
+        window_setup: &WindowSetup,
+        window_mode: WindowMode,
+        backend: GlBackendSpec,
+    ) -> GameResult<GraphicsContext> {
         // WINDOW SETUP
         let gl = video.gl_attr();
         gl.set_context_version(backend.major, backend.minor);
@@ -332,15 +338,15 @@ impl GraphicsContext {
             gl.set_multisample_buffers(1);
             gl.set_multisample_samples(samples);
         }
-        let mut window_builder = video.window(&window_setup.title, window_mode.width, window_mode.height);
+        let mut window_builder =
+            video.window(&window_setup.title, window_mode.width, window_mode.height);
         if window_setup.resizable {
             window_builder.resizable();
         }
         if window_setup.allow_highdpi {
             window_builder.allow_highdpi();
         }
-        let (window, gl_context, device, mut factory, screen_render_target
-, depth_view) =
+        let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
         GraphicsContext::set_vsync(&video, window_mode.vsync);
@@ -349,32 +355,38 @@ impl GraphicsContext {
         let dpi = window.subsystem().display_dpi(display_index)?;
 
         // GFX SETUP
-        let mut encoder: gfx::Encoder<gfx_device_gl::Resources,
-                                      gfx_device_gl::CommandBuffer> =
-            factory.create_command_buffer().into();
+        let mut encoder: gfx::Encoder<
+            gfx_device_gl::Resources,
+            gfx_device_gl::CommandBuffer,
+        > = factory.create_command_buffer().into();
 
-        let blend_modes = [BlendMode::Alpha,
-                           BlendMode::Add,
-                           BlendMode::Subtract,
-                           BlendMode::Invert,
-                           BlendMode::Multiply,
-                           BlendMode::Replace,
-                           BlendMode::Lighten,
-                           BlendMode::Darken];
-        let (shader, draw) = create_shader(include_bytes!("shader/basic_150.glslv"),
-                                           include_bytes!("shader/basic_150.glslf"),
-                                           EmptyConst,
-                                           "Empty",
-                                           &mut encoder,
-                                           &mut factory,
-                                           samples,
-                                           Some(&blend_modes[..]))?;
+        let blend_modes = [
+            BlendMode::Alpha,
+            BlendMode::Add,
+            BlendMode::Subtract,
+            BlendMode::Invert,
+            BlendMode::Multiply,
+            BlendMode::Replace,
+            BlendMode::Lighten,
+            BlendMode::Darken,
+        ];
+        let (shader, draw) = create_shader(
+            include_bytes!("shader/basic_150.glslv"),
+            include_bytes!("shader/basic_150.glslf"),
+            EmptyConst,
+            "Empty",
+            &mut encoder,
+            &mut factory,
+            samples,
+            Some(&blend_modes[..]),
+        )?;
 
-        let rect_inst_props = factory
-            .create_buffer(1,
-                           gfx::buffer::Role::Vertex,
-                           gfx::memory::Usage::Dynamic,
-                           gfx::SHADER_RESOURCE)?;
+        let rect_inst_props = factory.create_buffer(
+            1,
+            gfx::buffer::Role::Vertex,
+            gfx::memory::Usage::Dynamic,
+            gfx::SHADER_RESOURCE,
+        )?;
 
         let (quad_vertex_buffer, mut quad_slice) =
             factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
@@ -383,8 +395,8 @@ impl GraphicsContext {
 
         let globals_buffer = factory.create_constant_buffer(1);
         let mut samplers: SamplerCache<GlBackendSpec> = SamplerCache::new();
-        let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Bilinear,
-                                                     texture::WrapMode::Clamp);
+        let sampler_info =
+            texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
         let white_image =
             Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255])?;
@@ -469,7 +481,8 @@ impl GraphicsContext {
     /// the matrices on the top of the respective stacks and the projection
     /// matrix.
     fn calculate_transform_matrix(&mut self) {
-        let modelview = self.modelview_stack.last()
+        let modelview = self.modelview_stack
+            .last()
             .expect("Transform stack empty; should never happen");
         let mvp = self.projection * modelview;
         self.shader_globals.mvp_matrix = mvp.into();
@@ -491,8 +504,10 @@ impl GraphicsContext {
 
     /// Sets the current model-view transform matrix.
     fn set_transform(&mut self, t: Matrix4) {
-        assert!(self.modelview_stack.len() > 0,
-                "Tried to set a transform on an empty transform stack!");
+        assert!(
+            self.modelview_stack.len() > 0,
+            "Tried to set a transform on an empty transform stack!"
+        );
         let last = self.modelview_stack
             .last_mut()
             .expect("Transform stack empty; should never happen!");
@@ -501,8 +516,10 @@ impl GraphicsContext {
 
     /// Gets a copy of the current transform matrix.
     fn get_transform(&self) -> Matrix4 {
-        assert!(self.modelview_stack.len() > 0,
-                "Tried to get a transform on an empty transform stack!");
+        assert!(
+            self.modelview_stack.len() > 0,
+            "Tried to get a transform on an empty transform stack!"
+        );
         let last = self.modelview_stack
             .last()
             .expect("Transform stack empty; should never happen!");
@@ -553,12 +570,8 @@ impl GraphicsContext {
     fn set_projection_rect(&mut self, rect: Rect) {
         type Vec3 = na::Vector3<f32>;
         self.screen_rect = rect;
-        self.projection = Matrix4::new_orthographic(rect.x,
-                                                    rect.x + rect.w,
-                                                    rect.y,
-                                                    rect.y + rect.h,
-                                                    -1.0,
-                                                    1.0)
+        self.projection =
+            Matrix4::new_orthographic(rect.x, rect.x + rect.w, rect.y, rect.y + rect.h, -1.0, 1.0)
                 .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
     }
 
@@ -603,8 +616,11 @@ impl GraphicsContext {
     /// Also replaces gfx.data.out so it may cause squirrelliness to
     /// happen with canvases or other things that touch it.
     pub(crate) fn resize_viewport(&mut self) {
-        gfx_window_sdl::update_views(&self.window, &mut self.screen_render_target
-, &mut self.depth_view);
+        gfx_window_sdl::update_views(
+            &self.window,
+            &mut self.screen_render_target,
+            &mut self.depth_view,
+        );
     }
 }
 
@@ -616,8 +632,7 @@ impl GraphicsContext {
 pub fn clear(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
     let linear_color: types::LinearColor = gfx.background_color.into();
-    gfx.encoder
-        .clear(&gfx.data.out, linear_color.into());
+    gfx.encoder.clear(&gfx.data.out, linear_color.into());
 }
 
 /// Draws the given `Drawable` object to the screen by calling its
@@ -625,7 +640,6 @@ pub fn clear(ctx: &mut Context) {
 pub fn draw(ctx: &mut Context, drawable: &Drawable, dest: Point2, rotation: f32) -> GameResult<()> {
     drawable.draw(ctx, dest, rotation)
 }
-
 
 /// Draws the given `Drawable` object to the screen by calling its `draw_ex()` method.
 pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> GameResult<()> {
@@ -662,24 +676,26 @@ pub fn arc(_ctx: &mut Context,
 */
 
 /// Draw a circle.
-pub fn circle(ctx: &mut Context,
-              mode: DrawMode,
-              point: Point2,
-              radius: f32,
-              tolerance: f32)
-              -> GameResult<()> {
+pub fn circle(
+    ctx: &mut Context,
+    mode: DrawMode,
+    point: Point2,
+    radius: f32,
+    tolerance: f32,
+) -> GameResult<()> {
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
     m.draw(ctx, Point2::origin(), 0.0)
 }
 
 /// Draw an ellipse.
-pub fn ellipse(ctx: &mut Context,
-               mode: DrawMode,
-               point: Point2,
-               radius1: f32,
-               radius2: f32,
-               tolerance: f32)
-               -> GameResult<()> {
+pub fn ellipse(
+    ctx: &mut Context,
+    mode: DrawMode,
+    point: Point2,
+    radius1: f32,
+    radius2: f32,
+    tolerance: f32,
+) -> GameResult<()> {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
     m.draw(ctx, Point2::origin(), 0.0)
 }
@@ -717,17 +733,18 @@ pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameRe
 //     draw(ctx, &rendered_text, dest, 0.0)
 // }
 
-
 /// Draws a rectangle.
 pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
     let x1 = rect.x;
     let x2 = rect.x + rect.w;
     let y1 = rect.y;
     let y2 = rect.y + rect.h;
-    let pts = [Point2::new(x1, y1),
-               Point2::new(x2, y1),
-               Point2::new(x2, y2),
-               Point2::new(x1, y2)];
+    let pts = [
+        Point2::new(x1, y1),
+        Point2::new(x2, y1),
+        Point2::new(x2, y2),
+        Point2::new(x1, y2),
+    ];
     polygon(ctx, mode, &pts)
 }
 
@@ -759,12 +776,14 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 
     let gl = video.gl_attr();
 
-    Ok(format!("Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
-               ctx.gfx_context.backend_spec.major,
-               ctx.gfx_context.backend_spec.minor,
-               gl.context_major_version(),
-               gl.context_minor_version(),
-               gl.context_profile()))
+    Ok(format!(
+        "Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
+        ctx.gfx_context.backend_spec.major,
+        ctx.gfx_context.backend_spec.minor,
+        gl.context_major_version(),
+        gl.context_minor_version(),
+        gl.context_profile()
+    ))
 }
 
 /// Returns a rectangle defining the coordinate system of the screen.
@@ -798,8 +817,7 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
     let sampler_info = texture::SamplerInfo::new(new_mode, texture::WrapMode::Clamp);
     // We create the sampler now so we don't end up creating it at some
     // random-ass time while we're trying to draw stuff.
-    let _sampler = gfx.samplers
-        .get_or_insert(sampler_info, &mut *gfx.factory);
+    let _sampler = gfx.samplers.get_or_insert(sampler_info, &mut *gfx.factory);
     gfx.default_sampler_info = sampler_info;
 }
 
@@ -851,7 +869,8 @@ pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
     if let Some(t) = transform {
         gfx.push_transform(t);
     } else {
-        let copy = gfx.modelview_stack.last()
+        let copy = gfx.modelview_stack
+            .last()
             .expect("Matrix stack empty, should never happen")
             .clone();
         gfx.push_transform(copy);
@@ -917,9 +936,7 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult<()> {
 /// the screen or setting the screen coordinates viewport to some undefined value.
 /// It is recommended to call `set_screen_coordinates()` after changing the window
 /// size to make sure everything is what you want it to be.
-pub fn set_mode(context: &mut Context,
-                mode: WindowMode)
-                -> GameResult<()> {
+pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult<()> {
     {
         let gfx = &mut context.gfx_context;
         gfx.set_window_mode(mode)?;
@@ -984,7 +1001,6 @@ pub fn get_display_count(context: &Context) -> GameResult<i32> {
     video.num_video_displays().map_err(GameError::VideoError)
 }
 
-
 /// Returns a reference to the SDL window.
 /// Ideally you should not need to use this because ggez
 /// would provide all the functions you need without having
@@ -999,7 +1015,6 @@ pub fn get_window_mut(context: &mut Context) -> &mut sdl2::video::Window {
     let gfx = &mut context.gfx_context;
     &mut gfx.window
 }
-
 
 /// Returns the size of the window in pixels as (height, width).
 /// TODO: Make sure it's the CURRENT size!
@@ -1028,42 +1043,46 @@ pub fn get_device(context: &mut Context) -> &mut gfx_device_gl::Device {
 }
 
 /// EXPERIMENTAL function to get the gfx-rs `Encoder` object.
-pub fn get_encoder
-    (context: &mut Context)
-        -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
+pub fn get_encoder(
+    context: &mut Context,
+) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
     let gfx = &mut context.gfx_context;
     &mut gfx.encoder
 }
 
 /// EXPERIMENTAL function to get the gfx-rs depth view
-pub fn get_depth_view
-    (context: &mut Context)
-        -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
+pub fn get_depth_view(
+    context: &mut Context,
+) -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
     let gfx = &mut context.gfx_context;
     gfx.depth_view.clone()
 }
 
 /// EXPERIMENTAL function to get the gfx-rs color view
-pub fn get_screen_render_target(context: &Context)
-                        -> gfx::handle::RenderTargetView<gfx_device_gl::Resources,
-                                                        (gfx::format::R8_G8_B8_A8,
-                                                        gfx::format::Srgb)> {
+pub fn get_screen_render_target(
+    context: &Context,
+) -> gfx::handle::RenderTargetView<
+    gfx_device_gl::Resources,
+    (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
+> {
     let gfx = &context.gfx_context;
     gfx.data.out.clone()
 }
 
-
 /// EXPERIMENTAL function to get gfx-rs objects
 /// Getting them one by one is awkward 'cause it tends to create double-borrows
 /// on the Context object.
-pub fn get_gfx_objects(context: &mut Context) -> (
+pub fn get_gfx_objects(
+    context: &mut Context,
+) -> (
     &mut gfx_device_gl::Factory,
     &mut gfx_device_gl::Device,
     &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
     gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil>,
-    gfx::handle::RenderTargetView<gfx_device_gl::Resources,
-                                                        (gfx::format::R8_G8_B8_A8,
-                                                        gfx::format::Srgb)>,
+    gfx::handle::RenderTargetView<
+        gfx_device_gl::Resources,
+        (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
+    >,
 ) {
     let gfx = &mut context.gfx_context;
     let f = &mut gfx.factory;
@@ -1074,11 +1093,9 @@ pub fn get_gfx_objects(context: &mut Context) -> (
     (f, d, e, dv, cv)
 }
 
-
 // **********************************************************************
 // TYPES
 // **********************************************************************
-
 
 /// A struct containing all the necessary info for drawing a Drawable.
 ///
@@ -1129,26 +1146,27 @@ impl DrawParam {
         let axang = Vec3::z() * self.rotation;
         let rotation = Matrix4::new_rotation(axang);
         let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
-        let shear = Matrix4::new(1.0,
-                                 self.shear.x,
-                                 0.0,
-                                 0.0,
-                                 self.shear.y,
-                                 1.0,
-                                 0.0,
-                                 0.0,
-                                 0.0,
-                                 0.0,
-                                 1.0,
-                                 0.0,
-                                 0.0,
-                                 0.0,
-                                 0.0,
-                                 1.0);
+        let shear = Matrix4::new(
+            1.0,
+            self.shear.x,
+            0.0,
+            0.0,
+            self.shear.y,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+        );
         translate * offset * rotation * shear * scale * offset_inverse
     }
 }
-
 
 /// All types that can be drawn on the screen implement the `Drawable` trait.
 pub trait Drawable {
@@ -1167,12 +1185,14 @@ pub trait Drawable {
     /// * `rotation` - orientation of the graphic in radians.
     ///
     fn draw(&self, ctx: &mut Context, dest: Point2, rotation: f32) -> GameResult<()> {
-        self.draw_ex(ctx,
-                     DrawParam {
-                         dest: dest,
-                         rotation: rotation,
-                         ..Default::default()
-                     })
+        self.draw_ex(
+            ctx,
+            DrawParam {
+                dest: dest,
+                rotation: rotation,
+                ..Default::default()
+            },
+        )
     }
 
     /// Sets the blend mode to be used when drawing this drawable.
@@ -1188,7 +1208,8 @@ pub trait Drawable {
 /// Generic in-GPU-memory image data available to be drawn on the screen.
 #[derive(Clone)]
 pub struct ImageGeneric<R>
-    where R: gfx::Resources
+where
+    R: gfx::Resources,
 {
     texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
     sampler_info: gfx::texture::SamplerInfo,
@@ -1215,44 +1236,47 @@ impl Image {
     }
 
     /// Creates a new `Image` from the given buffer of `u8` RGBA values.
-    pub fn from_rgba8(context: &mut Context,
-                      width: u16,
-                      height: u16,
-                      rgba: &[u8])
-                      -> GameResult<Image> {
-        Image::make_raw(&mut context.gfx_context.factory,
-                        &context.gfx_context.default_sampler_info,
-                        width,
-                        height,
-                        rgba)
+    pub fn from_rgba8(
+        context: &mut Context,
+        width: u16,
+        height: u16,
+        rgba: &[u8],
+    ) -> GameResult<Image> {
+        Image::make_raw(
+            &mut context.gfx_context.factory,
+            &context.gfx_context.default_sampler_info,
+            width,
+            height,
+            rgba,
+        )
     }
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
-    fn make_raw(factory: &mut gfx_device_gl::Factory,
-                sampler_info: &texture::SamplerInfo,
-                width: u16,
-                height: u16,
-                rgba: &[u8])
-                -> GameResult<Image> {
-
+    fn make_raw(
+        factory: &mut gfx_device_gl::Factory,
+        sampler_info: &texture::SamplerInfo,
+        width: u16,
+        height: u16,
+        rgba: &[u8],
+    ) -> GameResult<Image> {
         if width == 0 || height == 0 {
-            let msg = format!("Tried to create a texture of size {}x{}, each dimension must
+            let msg = format!(
+                "Tried to create a texture of size {}x{}, each dimension must
                 be >0",
-                            width,
-                            height);
+                width, height
+            );
             return Err(GameError::ResourceLoadError(msg));
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        let (_, view) = factory
-            .create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
+        let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
         Ok(Image {
-               texture: view,
-               sampler_info: *sampler_info,
-               blend_mode: None,
-               width: width as u32,
-               height: height as u32,
-           })
+            texture: view,
+            sampler_info: *sampler_info,
+            blend_mode: None,
+            width: width as u32,
+            height: height as u32,
+        })
     }
 
     /// A little helper function that creates a new Image that is just
@@ -1307,19 +1331,19 @@ impl Image {
     }
 }
 
-
 impl fmt::Debug for Image {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-               "<Image: {}x{}, {:p}, texture address {:p}, sampler: {:?}>",
-               self.width(),
-               self.height(),
-               self,
-               &self.texture,
-               &self.sampler_info)
+        write!(
+            f,
+            "<Image: {}x{}, {:p}, texture address {:p}, sampler: {:?}>",
+            self.width(),
+            self.height(),
+            self,
+            &self.texture,
+            &self.sampler_info
+        )
     }
 }
-
 
 impl Drawable for Image {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
@@ -1328,8 +1352,10 @@ impl Drawable for Image {
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
-        let real_scale = Point2::new(src_width * param.scale.x * self.width as f32,
-                                     src_height * param.scale.y * self.height as f32);
+        let real_scale = Point2::new(
+            src_width * param.scale.x * self.width as f32,
+            src_height * param.scale.y * self.height as f32,
+        );
         let mut new_param = param;
         new_param.scale = real_scale;
         gfx.update_instance_properties(new_param)?;
@@ -1363,5 +1389,4 @@ impl Drawable for Image {
 }
 
 #[cfg(test)]
-mod tests {
-}
+mod tests {}

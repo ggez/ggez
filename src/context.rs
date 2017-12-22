@@ -15,7 +15,6 @@ use timer;
 use GameError;
 use GameResult;
 
-
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
 /// system, timers, and so on.  Generally this type is **not** thread-
@@ -70,11 +69,13 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
         // For some retarded reason.
         // Also SDL seems to have strange ideas of what
         // "RGBA" means.
-        let surface = surface::Surface::from_data(image_data,
-                                                  image.width(),
-                                                  image.height(),
-                                                  image.width() * 4,
-                                                  pixels::PixelFormatEnum::ABGR8888)?;
+        let surface = surface::Surface::from_data(
+            image_data,
+            image.width(),
+            image.height(),
+            image.width() * 4,
+            pixels::PixelFormatEnum::ABGR8888,
+        )?;
         let window = graphics::get_window_mut(context);
         window.set_icon(surface);
     };
@@ -92,10 +93,12 @@ impl Context {
         let timer_context = timer::TimeContext::new();
         let font = graphics::Font::default_font()?;
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
-        let graphics_context = graphics::GraphicsContext::new(video,
-                                                              &conf.window_setup,
-                                                              conf.window_mode,
-                                                              backend_spec)?;
+        let graphics_context = graphics::GraphicsContext::new(
+            video,
+            &conf.window_setup,
+            conf.window_mode,
+            backend_spec,
+        )?;
         let gamepad_context = input::GamepadContext::new(&sdl_context)?;
 
         let mut ctx = Context {
@@ -126,11 +129,11 @@ impl Context {
     /// module.  You can also always debug-print the
     /// `Context::filesystem` field to see what paths it is
     /// searching.
-    pub fn load_from_conf(game_id: &'static str,
-                          author: &'static str,
-                          default_config: conf::Conf)
-                          -> GameResult<Context> {
-
+    pub fn load_from_conf(
+        game_id: &'static str,
+        author: &'static str,
+        default_config: conf::Conf,
+    ) -> GameResult<Context> {
         let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(game_id, author)?;
 
@@ -148,11 +151,11 @@ impl Context {
     pub fn quit(&mut self) -> GameResult<()> {
         let now_dur = timer::get_time_since_start(self);
         let now = timer::duration_to_f64(now_dur);
-        let e = sdl2::event::Event::Quit { timestamp: now as u32 };
+        let e = sdl2::event::Event::Quit {
+            timestamp: now as u32,
+        };
         // println!("Pushing event {:?}", e);
-        self.event_context
-            .push_event(e)
-            .map_err(GameError::from)
+        self.event_context.push_event(e).map_err(GameError::from)
     }
 }
 
@@ -202,11 +205,11 @@ impl ContextBuilder {
         self
     }
 
-
     /// Add a new read-only filesystem path to the places to search
     /// for resources.
     pub fn add_resource_path<T>(mut self, path: T) -> Self
-        where T: Into<path::PathBuf>
+    where
+        T: Into<path::PathBuf>,
     {
         self.paths.push(path.into());
         self
