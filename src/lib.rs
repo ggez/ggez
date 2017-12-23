@@ -1,12 +1,17 @@
 //! # What is this?
-//! [![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez) [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez) [![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/svenstaro/ggez/blob/master/LICENSE) [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez) [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
+//! [![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez)
+//! [![Build status](https://ci.appveyor.com/api/projects/status/3v9lsq6n9li7kxim/branch/master?svg=true)](https://ci.appveyor.com/project/svenstaro/ggez/branch/master)
+//! [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez)
+//! [![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/svenstaro/ggez/blob/master/LICENSE)
+//! [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
+//! [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
 //!
 //! ggez is a Rust library to create a Good Game Easily.
 //!
 //! More specifically, ggez is a lightweight game framework for making
 //! 2D games with minimum friction.  It aims to implement an API based
 //! on (a Rustified version of) the [LÖVE](https://love2d.org/) game
-//! framework.  This means it will contain basic and portable 2D
+//! framework.  This means it contains basic and portable 2D
 //! drawing, sound, resource loading and event handling.
 //!
 //! ggez is not meant to be everything to everyone, but rather a good
@@ -27,6 +32,8 @@
 //! * Interface for handling keyboard and mouse events easily through callbacks
 //! * Config file for defining engine and game settings
 //! * Easy timing and FPS measurement functions.
+//! * Math integration with nalgebra
+//! * Some more advanced graphics options: shaders, sprite batches and render targets
 //!
 //! ## Usage
 //!
@@ -81,6 +88,17 @@
 //!
 //! The goal is to eventually have ggez be pure Rust, but we're not there
 //! yet.
+//!
+//! ## Help!
+//!
+//! Sources of information:
+//!
+//!  * The [FAQ](https://github.com/ggez/ggez/blob/master/docs/FAQ.md) has answers to common questions and problems.
+//!  * The [API docs](https://docs.rs/ggez/), a lot of design stuff is explained there.  
+//!  * Check out the [examples](https://github.com/ggez/ggez/tree/master/examples).
+//!
+//! If you still have problems, feel free to [open an issue](https://github.com/ggez/ggez/issues) or say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server.
+
 
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]

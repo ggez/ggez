@@ -8,3 +8,4 @@
  * rustfmt
  * clippy
  * Search for and remove all `expect()` and `unwrap()` calls
+ * Make sure readme is updated (should be the same as the top-level crate docs)

@@ -8,29 +8,32 @@
 
 ggez is a Rust library to create a Good Game Easily.
 
-More specifically, ggez is a lightweight game framework for making 2D
-games with minimum friction.  It aims to implement an API based on (a
-Rustified version of) the [LÖVE](https://love2d.org/)  game framework.  This means it will
-contain basic and portable 2D drawing, sound, resource loading and
-event handling.
+More specifically, ggez is a lightweight game framework for making
+2D games with minimum friction.  It aims to implement an API based
+on (a Rustified version of) the [LÖVE](https://love2d.org/) game
+framework.  This means it contains basic and portable 2D
+drawing, sound, resource loading and event handling.
 
-ggez is not meant to be everything to everyone, but rather a good base
-upon which to build.  Thus it takes a fairly batteries-included
-approach without needing a million additions and plugins for everything
-imaginable, but also does not dictate higher-level functionality such
-as physics engine or ECS.  Instead the goal is to allow you to use
-whichever libraries you want to provide these functions, or build your
-own libraries atop ggez.
+ggez is not meant to be everything to everyone, but rather a good
+base upon which to build.  Thus it takes a fairly
+batteries-included approach without needing a million additions
+and plugins for everything imaginable, but also does not dictate
+higher-level functionality such as physics engine or entity
+component system.  Instead the goal is to allow you to use
+whichever libraries you want to provide these functions, or build
+your own libraries atop ggez.
 
 ## Features
 
 * Filesystem abstraction that lets you load resources from folders or zip files
-* Hardware-accelerated rendering engine built on the `gfx-rs` graphics engine
-* Playing and loading .ogg, .wav and .flac files via the `rodio` crate
-* TTF font rendering with `rusttype`, as well as bitmap fonts
+* Hardware-accelerated 2D rendering built on the `gfx-rs` graphics engine
+* Loading and playing .ogg, .wav and .flac files via the `rodio` crate
+* TTF font rendering with `rusttype`, as well as bitmap fonts.
 * Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
-* Easy timing and FPS measurement functions
+* Easy timing and FPS measurement functions.
+* Math integration with nalgebra
+* Some more advanced graphics options: shaders, sprite batches and render targets
 
 ## Usage
 
@@ -39,43 +42,41 @@ crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```text
-ggez = "0.3"
+ggez = "0.4"
 ```
 
 However you also need to have the SDL2 libraries installed on your
 system.  The best way to do this is documented [by the SDL2
 crate](https://github.com/AngryLawyer/rust-sdl2#user-content-requirements).
 
-ggez consists of three main parts: A `Context` object which contains
-all the state required to interface with the computer's hardware, an
-`EventHandler` trait that the user implements to register callbacks for
-events, and various sub-modules such as `graphics` and `audio` that
-provide the functionality to actually get stuff done.
-
+ggez consists of three main parts: A `Context` object which
+contains all the state required to interface with the computer's
+hardware, an `EventHandler` trait that the user implements to
+register callbacks for events, and various sub-modules such as
+`graphics` and `audio` that provide the functionality to actually
+get stuff done.  The general pattern is to create a struct holding
+your game's data which implements the `EventHandler` trait.
+Create a new `Context` object with default objects from a `ContextBuilder`
+or `Conf` object, and then call `event::run()` with
+the `Context` and an instance of your `EventHandler` to run your game's
+main loop.
 
 ## Examples
 
-See the `examples/` directory in the source.  `hello_world` is exactly
-what it says.  `imageview` is a simple program that shows off a number
-of features such as sound and drawing.  `astroblasto` is a small
-but complete Asteroids-like game.
+See the `examples/` directory in the source.  Most examples show off
+a single feature of ggez, while `astroblasto` is a small  but
+complete Asteroids-like game.
 
-To run the examples, you have to tell your program where to find the
-`resources` directory included in the git repository.  The easy way is
-to enable `cargo-resource-root` flag to tell ggez to look for a
-`resources` directory next to your `Cargo.toml`, or copy or symlink
-the `resources` directory to a place the running game can find it
-(such as next to the game executable).
+To run the examples, just check out the source and execute `cargo run --example`
+in the root directory:
 
 ```text
-cargo run --example astroblasto --features=cargo-resource-root
+cargo run --example astroblasto
 ```
 
-Either way, if it can't find the resources it will give you an error
-along the lines of `ResourceNotFound("'resources' directory not
-found!  Should be in "/home/foo/src/ggez/target/debug/resources")`.
-Just copy or symlink the `resources/` directory to where the error says it's
-looking.
+If this doesn't work, see the
+[FAQ](https://github.com/ggez/ggez/blob/master/docs/FAQ.md) for solutions
+to common problems.
 
 ## Implementation details
 
@@ -86,9 +87,14 @@ entirely thread-safe outside of the basic event-handling loop, and
 portable to Windows, Linux and Mac.
 
 The goal is to eventually have ggez be pure Rust, but we're not there
-yet.  There's some blockers before we can drop SDL2 for
-`glutin`, see the issue tracker for more info.
+yet.
 
 ## Help!
 
-Check out `docs/FAQ.md`.  Check out the [module docs](https://docs.rs/ggez/), a lot of design stuff is explained there.  Check out the examples.  If you still have problems, feel free to [open an issue](https://github.com/ggez/ggez/issues) or say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server.
+Sources of information:
+
+ * The [FAQ](https://github.com/ggez/ggez/blob/master/docs/FAQ.md) has answers to common questions and problems.
+ * The [API docs](https://docs.rs/ggez/), a lot of design stuff is explained there.  
+ * Check out the [examples](https://github.com/ggez/ggez/tree/master/examples).
+
+If you still have problems, feel free to [open an issue](https://github.com/ggez/ggez/issues) or say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server.
