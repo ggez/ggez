@@ -69,6 +69,13 @@ impl SoundData {
     }
 }
 
+impl From<Arc<[u8]>> for SoundData {
+    #[inline]
+    fn from(arc: Arc<[u8]>) -> Self {
+        SoundData(arc)
+    }
+}
+
 impl From<Vec<u8>> for SoundData {
     fn from(v: Vec<u8>) -> Self {
         SoundData(Arc::from(v))
