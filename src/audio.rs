@@ -48,7 +48,7 @@ impl fmt::Debug for AudioContext {
 /// Static sound data stored in memory.
 /// It is Arc'ed, so cheap to clone.
 #[derive(Clone, Debug)]
-pub struct SoundData(Arc<Vec<u8>>);
+pub struct SoundData(Arc<Box<[u8]>>);
 
 impl SoundData {
     /// Copies the data in the given slice into a new SoundData object.
@@ -71,7 +71,7 @@ impl SoundData {
 
 impl From<Vec<u8>> for SoundData {
     fn from(v: Vec<u8>) -> Self {
-        SoundData(Arc::new(v))
+        SoundData(Arc::new(v.into_boxed_slice()))
     }
 }
 
