@@ -53,9 +53,7 @@ pub struct SoundData(Arc<Vec<u8>>);
 impl SoundData {
     /// Copies the data in the given slice into a new SoundData object.
     pub fn from_bytes(data: &[u8]) -> Self {
-        let mut buffer = Vec::with_capacity(data.len());
-        buffer.extend(data);
-        SoundData::from(buffer)
+        SoundData::from(Vec::from(data))
     }
 
     /// Creates a SoundData from any Read object; this involves
