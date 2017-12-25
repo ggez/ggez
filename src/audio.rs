@@ -89,8 +89,9 @@ impl From<Box<[u8]>> for SoundData {
 }
 
 impl AsRef<[u8]> for SoundData {
+    #[inline]
     fn as_ref(&self) -> &[u8] {
-        self.0.as_ref().as_ref()
+        self.0.as_ref()
     }
 }
 
