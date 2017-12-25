@@ -71,7 +71,13 @@ impl SoundData {
 
 impl From<Vec<u8>> for SoundData {
     fn from(v: Vec<u8>) -> Self {
-        SoundData(Arc::new(v.into_boxed_slice()))
+        v.into_boxed_slice().into()
+    }
+}
+
+impl From<Box<[u8]>> for SoundData {
+    fn from(b: Box<[u8]>) -> Self {
+        SoundData(Arc::new(b))
     }
 }
 
