@@ -39,10 +39,10 @@ wget https://raw.githubusercontent.com/ggez/ggez/0.3/resources/DejaVuSerif.ttf"
 Then edit your `Cargo.toml` with your favorite super duper editor and under `[dependencies]` add:
 
 ```
-ggez = "0.3"
+ggez = "0.4"
 ```
 
-Now run `cargo run --features=cargo-resource-root` and it should build
+Now run `cargo run` and it should build
 and run!  ...maybe.  It depends on what platform you're on and what
 libraries you have installed.  To make super-duper sure you have all
 the bits and pieces in the right places to make this always work, read
@@ -117,7 +117,7 @@ which should build and install SDL2, header files and any dependencies.
 
 # Windows
 
-All you need to install is the SDL2 libraries but it's a pain in the butt.  The instructions here are from the [sdl2](https://github.com/AngryLawyer/rust-sdl2#user-content-windows-msvc) crate for building with MSVC:
+All you need to install is the SDL2 libraries but it's a pain in the butt.  The instructions here are from the [sdl2](https://github.com/AngryLawyer/rust-sdl2#user-content-windows-msvc) crate for building with MSVC, which is what I've found to be simplest:
 
 1. Download MSVC development libraries from http://www.libsdl.org/ (SDL2-devel-2.0.x-VC.zip).
 2. Unpack SDL2-devel-2.0.x-VC.zip to a folder of your choosing (You can delete it afterwards).
@@ -147,7 +147,7 @@ However once this is done you should be good to go.
 
 ## Distributing
 
-Just copy SDL2.dll to the same directory that your compiled exe is in
+Just copy SDL2.dll to the same directory that your compiled exe is in and distribute it along with.
 
 # Android
 
