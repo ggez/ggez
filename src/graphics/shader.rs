@@ -403,8 +403,6 @@ where
 /// the previous shader is restored.
 #[derive(Debug, Clone)]
 pub struct ShaderLock {
-    // TODO: See if it's possible to clean up the Rc<Refcell<Option<T>>>
-    // It connects up to GraphicsContextGeneric.current_shader tho
     cell: Rc<RefCell<Option<ShaderId>>>,
     previous_shader: Option<ShaderId>,
 }

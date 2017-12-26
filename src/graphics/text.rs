@@ -128,12 +128,6 @@ impl Font {
         match *self {
             Font::BitmapFont { height, .. } => height,
             Font::TTFFont { scale, .. } => {
-                // let v_metrics = font.v_metrics(scale);
-                // v_metrics.
-                // TODO: Check and make sure this is right;
-                // shouldn't we be using v_metrics instead?
-                // if not you will have to change this in the
-                // ttf font rendering code as well.
                 scale.y.ceil() as usize
             }
         }

@@ -161,8 +161,6 @@ impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
         let curr_transform = gfx.get_transform();
         gfx.push_transform(param.into_matrix() * curr_transform);
         gfx.calculate_transform_matrix();
-        // BUGGO: No update_instance_properties here
-        // gfx.update_instance_properties(param);
         gfx.update_globals()?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.batch.blend_mode {
             let current_mode = gfx.get_blend_mode();
@@ -210,8 +208,6 @@ impl graphics::Drawable for SpriteBatch {
         let curr_transform = gfx.get_transform();
         gfx.push_transform(param.into_matrix() * curr_transform);
         gfx.calculate_transform_matrix();
-        // BUGGO: No update_instance_properties here
-        // gfx.update_instance_properties(param);
         gfx.update_globals()?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.get_blend_mode();

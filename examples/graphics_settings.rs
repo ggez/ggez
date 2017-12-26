@@ -165,7 +165,6 @@ impl event::EventHandler for MainState {
 
     fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
         println!("Resized screen to {}, {}", width, height);
-        // BUGGO: Should be able to return an actual error here!
         if self.window_settings.resize_projection {
             let new_rect = graphics::Rect::new(0.0,
                                             0.0,

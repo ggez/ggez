@@ -357,7 +357,7 @@ impl event::EventHandler for MainState {
                               rotation: 0.5,
                               ..Default::default()
                           })?;
-        graphics::draw(ctx, &self.text, Point2::new(200.0, 200.0), 0.0)?;
+        graphics::draw(ctx, &self.text, Point2::new(50.0, 200.0), 0.0)?;
 
         // First we draw our light and shadow maps
         let torch = self.torch;

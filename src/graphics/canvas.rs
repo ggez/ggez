@@ -97,12 +97,6 @@ impl Canvas {
 
 impl Drawable for Canvas {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
-        // We need to make sure we correct for the different coordinate systems
-        // BUGGO: Can this be removed now?
-        let mut param = param;
-        if ctx.gfx_context.screen_rect.h < 0.0 {
-            param.scale.y = -param.scale.y;
-        }
         self.image.draw_ex(ctx, param)
     }
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {

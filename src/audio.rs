@@ -186,5 +186,3 @@ impl fmt::Debug for Source {
         write!(f, "<Audio source: {:p}>", self)
     }
 }
-
-// TODO: global start, stop, volume?

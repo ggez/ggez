@@ -183,10 +183,10 @@ impl MeshBuilder {
                             normal: nv,
                         }
                     })
-                    // BUGGO: TODO: Remove the collect, iterate more nicely.
-                    // (Probably means collecting into chunks first, THEN 
+                    // Can we remove this collect?
+                    // Probably means collecting into chunks first, THEN 
                     // converting point types, since we can't chunk an iterator,
-                    // only a slice.)
+                    // only a slice.  Not sure that's an improvement.
                 .collect::<Vec<_>>();
             let tris = tris.chunks(3);
             let builder: &mut t::BuffersBuilder<_, _, _> =

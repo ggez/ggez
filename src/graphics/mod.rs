@@ -610,11 +610,6 @@ impl GraphicsContext {
     }
 
     /// Another helper method to set vsync.
-    /// This SHOULD go together with `set_window_mode()` above but cannot because it
-    /// needs the Sdl2 VideoSubsystem object, which we don't hang on to (because we can't????
-    /// Not so sure about that; BUGGO: investigate!)
-    /// TODO: We can get the video subsystem from
-    /// sdl2::video::Window::subsystem()
     fn set_vsync(video: &sdl2::VideoSubsystem, vsync: bool) {
         let vsync_int = if vsync { 1 } else { 0 };
         video.gl_set_swap_interval(vsync_int);

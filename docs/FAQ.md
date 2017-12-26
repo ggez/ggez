@@ -83,9 +83,9 @@ See the [build docs](https://github.com/ggez/ggez/blob/master/docs/BuildingForEv
 
 # Can I do 3D stuff?
 
-Yes, by drawing with `gfx-rs`; see the `cube` example.  HOWEVER, as of 0.3.3 this is not necessarily... uh, working.  When 0.4 is released there should be a full 3D drawing example.  TODO: Make sure this doc gets updated before 0.4 is released!
+Yes; ggez uses `gfx-rs` for its drawing, and you can access the underlying `gfx-rs` drawing functions to draw whatever you want without disrupting ggez's drawing state.  See the `cube` example.
 
-In general, ggez is designed to focus on 2D graphics.  We want it to be possible for you to create a 3D engine using ggez for everything EXCEPT drawing, but we don't really want to make a full 3D drawing engine.  If you want that, check out [Amethyst](https://crates.io/crates/amethyst).
+In general, ggez is designed to focus on 2D graphics.  We want it to be possible for you to create a 3D engine using ggez for everything EXCEPT drawing, but we don't really want to make a full 3D drawing engine.  If you want 3D drawing and don't feel like doing it yourself, check out [Amethyst](https://crates.io/crates/amethyst).
 
 # How do I make a GUI?
 

@@ -62,7 +62,7 @@ pub enum File {
 }
 
 impl fmt::Debug for File {
-    // TODO: Make this more useful.
+    // Make this more useful?
     // But we can't seem to get a filename out of a file,
     // soooooo.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
