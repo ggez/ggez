@@ -162,7 +162,7 @@ impl Source {
 
     /// Returns whether or not the source is stopped
     /// -- that is, has no more data to play.
-    pub fn stopped(&self) {
+    pub fn stopped(&self) -> bool {
         self.sink.empty()
     }
 
