@@ -17,6 +17,7 @@ use context::Context;
 use std::cmp;
 use std::time;
 use std::thread;
+use std::f64;
 
 /// A simple buffer that fills
 /// up to a limit and then holds the last
@@ -149,7 +150,7 @@ pub fn get_average_delta(ctx: &Context) -> time::Duration {
 /// of the `f64`.
 pub fn duration_to_f64(d: time::Duration) -> f64 {
     let seconds = d.as_secs() as f64;
-    let nanos = d.subsec_nanos() as f64;
+    let nanos = f64::from(d.subsec_nanos());
     seconds + (nanos * 1e-9)
 }
 
@@ -169,7 +170,7 @@ pub fn f64_to_duration(t: f64) -> time::Duration {
 ///
 /// Approximately.
 fn fps_as_duration(fps: u32) -> time::Duration {
-    let target_dt_seconds = 1.0 / (fps as f64);
+    let target_dt_seconds = 1.0 / f64::from(fps);
     f64_to_duration(target_dt_seconds)
 }
 

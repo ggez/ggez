@@ -535,7 +535,7 @@ where
                         InitError::UnorderedView => unordereds,
                         InitError::Sampler => samplers,
                         InitError::PixelExport => outputs,
-                    });
+                    })
                 }
             };
 

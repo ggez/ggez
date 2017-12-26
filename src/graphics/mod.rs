@@ -538,8 +538,9 @@ impl GraphicsContext {
     /// sends it to the graphics card at the front of the instance buffer.
     fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
         // This clone is cheap since draw_params is Copy
-        let mut new_draw_params = draw_params.clone();
-        new_draw_params.color = draw_params.color.or(Some(self.foreground_color));
+        let mut new_draw_params = draw_params;
+        let fg = Some(self.foreground_color);
+        new_draw_params.color = draw_params.color.or(fg);
         let properties = new_draw_params.into();
         self.encoder
             .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;
@@ -592,7 +593,7 @@ impl GraphicsContext {
 
     /// Gets a copy of the raw projection matrix.
     fn get_projection(&self) -> Matrix4 {
-        self.projection.clone()
+        self.projection
     }
 
     /// Just a helper method to set window mode from a WindowMode object.
@@ -877,10 +878,9 @@ pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
     if let Some(t) = transform {
         gfx.push_transform(t);
     } else {
-        let copy = gfx.modelview_stack
+        let copy = *gfx.modelview_stack
             .last()
-            .expect("Matrix stack empty, should never happen")
-            .clone();
+            .expect("Matrix stack empty, should never happen");
         gfx.push_transform(copy);
     }
 }
@@ -981,7 +981,7 @@ pub fn is_fullscreen(context: &mut Context) -> bool {
 /// Sets the window resolution based on the specified width and height
 ///
 pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameResult<()> {
-    let mut window_mode = context.conf.window_mode.clone();
+    let mut window_mode = context.conf.window_mode;
     window_mode.width = width;
     window_mode.height = height;
     set_mode(context, window_mode)
@@ -1082,12 +1082,12 @@ pub fn get_screen_render_target(
 pub fn get_gfx_objects(
     context: &mut Context,
 ) -> (
-    &mut gfx_device_gl::Factory,
-    &mut gfx_device_gl::Device,
-    &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
-    gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil>,
+    &mut <GlBackendSpec as BackendSpec>::Factory,
+    &mut <GlBackendSpec as BackendSpec>::Device,
+    &mut gfx::Encoder<<GlBackendSpec as BackendSpec>::Resources, <GlBackendSpec as BackendSpec>::CommandBuffer>,
+    gfx::handle::DepthStencilView<<GlBackendSpec as BackendSpec>::Resources, gfx::format::DepthStencil>,
     gfx::handle::RenderTargetView<
-        gfx_device_gl::Resources,
+        <GlBackendSpec as BackendSpec>::Resources,
         (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
     >,
 ) {
@@ -1288,8 +1288,8 @@ impl Image {
             texture: view,
             sampler_info: *sampler_info,
             blend_mode: None,
-            width: width as u32,
-            height: height as u32,
+            width: u32::from(width),
+            height: u32::from(height),
         })
     }
 

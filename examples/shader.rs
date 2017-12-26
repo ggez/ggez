@@ -39,7 +39,7 @@ impl event::EventHandler for MainState {
 
         {
             let _lock = graphics::use_shader(ctx, &self.shader);
-            self.shader.send(ctx, self.dim.clone())?;
+            self.shader.send(ctx, self.dim)?;
             graphics::circle(ctx, DrawMode::Fill, Point2::new(400.0, 300.0), 100.0, 2.0)?;
         }
 

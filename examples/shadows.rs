@@ -360,8 +360,8 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &self.text, Point2::new(200.0, 200.0), 0.0)?;
 
         // First we draw our light and shadow maps
-        let torch = self.torch.clone();
-        let light = self.static_light.clone();
+        let torch = self.torch;
+        let light = self.static_light;
         graphics::set_canvas(ctx, Some(&self.lights));
         graphics::clear(ctx);
         graphics::set_canvas(ctx, Some(&self.shadows));

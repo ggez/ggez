@@ -37,7 +37,7 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
 
         let time = (timer::duration_to_f64(timer::get_time_since_start(ctx)) * 1000.0) as u32;
-        let cycle = 10000;
+        let cycle = 10_000;
         for x in 0..150 {
             for y in 0..150 {
                 let x = x as f32;

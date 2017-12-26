@@ -305,7 +305,7 @@ impl Default for InputState {
 ///
 /// Our game objects are simply a vector for each actor type, and we
 /// probably mingle gameplay-state (like score) and hardware-state
-/// (like gui_dirty) a little more than we should, but for something
+/// (like `gui_dirty`) a little more than we should, but for something
 /// this small it hardly matters.
 /// **********************************************************************
 

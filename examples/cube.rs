@@ -14,6 +14,7 @@ use ggez::graphics;
 use ggez::nalgebra as na;
 use std::env;
 use std::path;
+use std::f32;
 
 type Isometry3 = na::Isometry3<f32>;
 type Point3 = na::Point3<f32>;
@@ -50,8 +51,8 @@ gfx_defines!{
 impl Vertex {
     fn new(p: [i8; 3], t: [i8; 2]) -> Vertex {
         Vertex {
-            pos: [p[0] as f32, p[1] as f32, p[2] as f32, 1.0],
-            tex_coord: [t[0] as f32, t[1] as f32],
+            pos: [f32::from(p[0]), f32::from(p[1]), f32::from(p[2]), 1.0],
+            tex_coord: [f32::from(t[0]), f32::from(t[1])],
         }
     }
 }
@@ -178,7 +179,7 @@ void main() {
             .unwrap();
 
         // Aspect ratio, FOV, znear, zfar
-        let proj = na::Perspective3::new(4.0 / 3.0, 3.14 / 4.0, 1.0, 10.0);
+        let proj = na::Perspective3::new(4.0 / 3.0, f32::consts::PI / 4.0, 1.0, 10.0);
         let transform = proj.as_matrix() * default_view().to_homogeneous();
 
         // Bundle all the data together.
@@ -214,9 +215,9 @@ impl event::EventHandler for MainState {
         // Do gfx-rs drawing
         {
             let (_factory, device, encoder, _depthview, _colorview) = graphics::get_gfx_objects(ctx);
-            encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0].into());
+            encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0]);
 
-            let rotation = na::Matrix4::from_scaled_axis(&na::Vector3::z() * self.rotation);
+            let rotation = na::Matrix4::from_scaled_axis(na::Vector3::z() * self.rotation);
 
 
             let locals = Locals { 

@@ -1,12 +1,12 @@
 //! This example demonstrates how to roll your own event loop,
-//! if for some reason you want to do that instead of using the EventHandler
+//! if for some reason you want to do that instead of using the `EventHandler`
 //! trait to do that for you.
 //!
-//! This is exactly how `ggez::event::run()` works though, it really is not
+//! This is exactly how `ggez::event::run()` works, it really is not
 //! doing anything magical.  But, if you want a bit more power over
 //! the control flow of your game, this is how you get it.
 //!
-//! It is functionally identical to the super_simple.rs example apart from that.
+//! It is functionally identical to the `super_simple.rs` example apart from that.
 
 extern crate ggez;
 use ggez::*;

@@ -204,7 +204,7 @@ impl Color {
         let rp = ((c & 0xFF00_0000u32) >> 24) as u8;
         let gp = ((c & 0x00FF_0000u32) >> 16) as u8;
         let bp = ((c & 0x0000_FF00u32) >> 8) as u8;
-        let ap = ((c & 0x0000_00FFu32) >> 0) as u8;
+        let ap = (c & 0x0000_00FFu32) as u8;
         Color::from((rp, gp, bp, ap))
     }
 
@@ -213,7 +213,7 @@ impl Color {
     pub fn from_rgb_u32(c: u32) -> Color {
         let rp = ((c & 0x00FF_0000u32) >> 16) as u8;
         let gp = ((c & 0x0000_FF00u32) >> 8) as u8;
-        let bp = ((c & 0x0000_00FFu32) >> 0) as u8;
+        let bp = (c & 0x0000_00FFu32) as u8;
         Color::from((rp, gp, bp))
     }
 
@@ -232,7 +232,7 @@ impl Color {
         let (r, g, b, _a): (u8, u8, u8, u8) = self.into();
         let rp = (u32::from(r)) << 16;
         let gp = (u32::from(g)) << 8;
-        let bp = (u32::from(b)) << 0;
+        let bp = u32::from(b);
         (rp | gp | bp)
     }
 }
