@@ -15,26 +15,6 @@ use gfx::Factory;
 use GameResult;
 use super::shader::BlendMode;
 
-// TODO:
-//
-// Owning the given Image is inconvenient because we might want, say,
-// the same Rc<Image> shared among many SpriteBatch'es.  (The Image might
-// also be from a resources system or such that stores an Rc<Image>.)
-//
-// But draw() doesn't handle that particularly well...
-//
-// The right way to fix this might be to have another object that implements
-// Drawable that is created from a SpriteBatch and an image reference.
-// BoundSpriteBatch or something.  That *feels* like the right way to go...
-//
-// Or just not implement Drawable and provide your own drawing functions, though
-// that's squirrelly.
-//
-// Oh, or maybe make it take a Cow<Image> ?  that might work.
-//
-// For now though, let's mess around with the gfx bits rather than the ggez bits.
-// We need to be able to, essentially, have an array of RectProperties.
-
 /// A SpriteBatch draws a number of copies of the same image, using a single draw call.
 ///
 /// This is generally faster than drawing the same sprite with many invocations of `draw()`,
@@ -42,11 +22,21 @@ use super::shader::BlendMode;
 /// in Debug mode because it spends a lot of time on array bounds checking and
 /// un-optimized math; you need to build with optimizations enabled to really get the
 /// speed boost.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SpriteBatch {
     image: graphics::Image,
     sprites: Vec<graphics::DrawParam>,
     blend_mode: Option<BlendMode>,
+}
+
+/// A drawable combination of a `SpriteBatch` and a specific `Image`.
+/// It is not always convenient for a `SpriteBatch` to own the image
+/// it is drawing, so this structure lets you override the image with
+/// a borrowed one.
+#[derive(Debug)]
+pub struct BoundSpriteBatch<'a> {
+    image: &'a graphics::Image,
+    batch: &'a mut SpriteBatch,
 }
 
 /// An index of a particular sprite in a StypepriteBatch.
@@ -87,7 +77,7 @@ impl SpriteBatch {
     ///
     /// Generally just calling `graphics::draw()` on the `SpriteBatch`
     /// will do this automaticassertally.
-    fn flush(&self, ctx: &mut Context, draw_color: Option<graphics::Color>) -> GameResult<()> {
+    fn flush(&self, ctx: &mut Context, image: &graphics::Image, draw_color: Option<graphics::Color>) -> GameResult<()> {
         // This is a little awkward but this is the right place
         // to do whatever transformations need to happen to DrawParam's.
         // We have a Context, and *everything* must pass through this
@@ -102,8 +92,8 @@ impl SpriteBatch {
                 let src_width = param.src.w;
                 let src_height = param.src.h;
                 let real_scale = graphics::Point2::new(
-                    src_width * param.scale.x * self.image.width as f32,
-                    src_height * param.scale.y * self.image.height as f32,
+                    src_width * param.scale.x * image.width as f32,
+                    src_height * param.scale.y * image.height as f32,
                 );
                 new_param.scale = real_scale;
                 // If we have no color, our color is white.
@@ -143,14 +133,71 @@ impl SpriteBatch {
         use std::mem;
         mem::replace(&mut self.image, image)
     }
+
+    /// Create an object which draws the current sprite batch with a different image.
+    pub fn with_image<'a>(&'a mut self, image: &'a graphics::Image) -> BoundSpriteBatch<'a> {
+        BoundSpriteBatch {
+            image: image,
+            batch: self,
+        }
+    }
 }
+
+
+impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
+    fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
+        // Awkwardly we must update values on all sprites and such.
+        // Also awkwardly we have this chain of colors with differing priorities.
+        let draw_color = param.color.or(Some(ctx.gfx_context.foreground_color));
+        self.batch.flush(ctx, self.image, draw_color)?;
+        let gfx = &mut ctx.gfx_context;
+        let sampler = gfx.samplers
+            .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
+        gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
+        gfx.data.tex = (self.image.texture.clone(), sampler);
+        let mut slice = gfx.quad_slice.clone();
+        slice.instances = Some((self.batch.sprites.len() as u32, 0));
+        let curr_transform = gfx.get_transform();
+        gfx.push_transform(param.into_matrix() * curr_transform);
+        gfx.calculate_transform_matrix();
+        // BUGGO: No update_instance_properties here
+        // gfx.update_instance_properties(param);
+        gfx.update_globals()?;
+        let previous_mode: Option<BlendMode> = if let Some(mode) = self.batch.blend_mode {
+            let current_mode = gfx.get_blend_mode();
+            if current_mode != mode {
+                gfx.set_blend_mode(mode)?;
+                Some(current_mode)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        gfx.draw(Some(&slice))?;
+        if let Some(mode) = previous_mode {
+            gfx.set_blend_mode(mode)?;
+        }
+        gfx.pop_transform();
+        gfx.calculate_transform_matrix();
+        gfx.update_globals()?;
+        Ok(())
+    }
+    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
+        self.batch.blend_mode = mode;
+    }
+    fn get_blend_mode(&self) -> Option<BlendMode> {
+        self.batch.blend_mode
+    }
+}
+
 
 impl graphics::Drawable for SpriteBatch {
     fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
         let draw_color = param.color.or(Some(ctx.gfx_context.foreground_color));
-        self.flush(ctx, draw_color)?;
+        self.flush(ctx, &self.image, draw_color)?;
         let gfx = &mut ctx.gfx_context;
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());

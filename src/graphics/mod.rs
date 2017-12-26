@@ -4,7 +4,7 @@
 //!
 //! This module also manages graphics state, coordinate systems, etc.
 //! The default coordinate system has the origin in the upper-left
-//! corner of the screen.
+//! corner of the screen, with Y increasing downwards.
 
 use std::fmt;
 use std::path;
