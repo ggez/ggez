@@ -91,7 +91,7 @@ impl Rect {
     }
 
     /// Checks whether the `Rect` contains a `Point`
-    pub fn contains(&self, point: &Point2) -> bool {
+    pub fn contains(&self, point: Point2) -> bool {
         point.x >= self.left() && point.x <= self.right() && point.y <= self.bottom()
             && point.y >= self.top()
     }
@@ -103,15 +103,15 @@ impl Rect {
     }
 
     /// Translates the `Rect` by an offset of (x, y)
-    pub fn translate(&mut self, x: f32, y: f32) {
-        self.x += x;
-        self.y += y;
+    pub fn translate(&mut self, offset: Vector2) {
+        self.x += offset.x;
+        self.y += offset.y;
     }
 
-    /// Moves the `Rect`'s center to (x, y)
-    pub fn move_to(&mut self, x: f32, y: f32) {
-        self.x = x;
-        self.y = y;
+    /// Moves the `Rect`'s origin to (x, y)
+    pub fn move_to(&mut self, destination: Point2) {
+        self.x = destination.x;
+        self.y = destination.y;
     }
 
     /// Scales the `Rect` by a factor of (sx, sy),
@@ -370,7 +370,7 @@ pub enum FilterMode {
     Nearest,
 }
 
-use gfx::texture;
+use gfx;
 use gfx::texture::FilterMethod;
 
 impl From<FilterMethod> for FilterMode {
@@ -392,7 +392,7 @@ impl From<FilterMode> for FilterMethod {
 }
 
 /// Specifies how to wrap textures.
-pub type WrapMode = texture::WrapMode;
+pub type WrapMode = gfx::texture::WrapMode;
 
 #[cfg(test)]
 mod tests {
@@ -443,10 +443,10 @@ mod tests {
         let r = Rect::new(0.0, 0.0, 128.0, 128.0);
         println!("{} {} {} {}", r.top(), r.bottom(), r.left(), r.right());
         let p = Point2::new(1.0, 1.0);
-        assert!(r.contains(&p));
+        assert!(r.contains(p));
 
         let p = Point2::new(500.0, 0.0);
-        assert!(!r.contains(&p));
+        assert!(!r.contains(p));
     }
 
     #[test]
@@ -466,7 +466,7 @@ mod tests {
     fn test_rect_transform() {
         let mut r1 = Rect::new(0.0, 0.0, 64.0, 64.0);
         let r2 = Rect::new(64.0, 64.0, 64.0, 64.0);
-        r1.translate(64.0, 64.0);
+        r1.translate(Vector2::new(64.0, 64.0));
         assert!(r1 == r2);
 
         let mut r1 = Rect::new(0.0, 0.0, 64.0, 64.0);
@@ -476,7 +476,7 @@ mod tests {
 
         let mut r1 = Rect::new(32.0, 32.0, 64.0, 64.0);
         let r2 = Rect::new(64.0, 64.0, 64.0, 64.0);
-        r1.move_to(64.0, 64.0);
+        r1.move_to(Point2::new(64.0, 64.0));
         assert!(r1 == r2);
     }
 }

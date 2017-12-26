@@ -127,7 +127,8 @@ gfx_defines!{
         uv: [f32; 2] = "a_Uv",
     }
 
-    /// Internal structure containing values that are different for each rect.
+    /// Internal structure containing values that are different for each
+    /// drawable object.
     vertex InstanceProperties {
         // the columns here are for the transform matrix;
         // you can't shove a full matrix into an instance
@@ -1024,7 +1025,6 @@ pub fn get_window_mut(context: &mut Context) -> &mut sdl2::video::Window {
 }
 
 /// Returns the size of the window in pixels as (height, width).
-/// TODO: Make sure it's the CURRENT size!
 pub fn get_size(context: &Context) -> (u32, u32) {
     let gfx = &context.gfx_context;
     gfx.window.size()
@@ -1076,7 +1076,7 @@ pub fn get_screen_render_target(
     gfx.data.out.clone()
 }
 
-/// EXPERIMENTAL function to get gfx-rs objects
+/// EXPERIMENTAL function to get gfx-rs objects.
 /// Getting them one by one is awkward 'cause it tends to create double-borrows
 /// on the Context object.
 pub fn get_gfx_objects(
@@ -1125,7 +1125,7 @@ pub struct DrawParam {
     pub scale: Point2,
     /// specifies an offset from the center for transform operations like scale/rotation,
     /// with `0,0` meaning the origin and `1,1` meaning the opposite corner from the origin.
-    /// By default these are done from the top-left corner, so to rotate something
+    /// By default these operations are done from the top-left corner, so to rotate something
     /// from the center specify `Point::new(0.5, 0.5)` here.
     pub offset: Point2,
     /// x/y shear factors expressed as a `Point2`.
@@ -1191,7 +1191,8 @@ pub trait Drawable {
 
     /// Draws the drawable onto the rendering target.
     ///
-    /// It just is a shortcut that calls `draw_ex()` with some sane defaults.
+    /// It just is a shortcut that calls `draw_ex()` with a default `DrawParam`
+    /// except for the destination and rotation.
     ///
     /// * `ctx` - The `Context` this graphic will be rendered to.
     /// * `dest` - the position to draw the graphic expressed as a `Point2`.

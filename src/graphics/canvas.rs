@@ -26,7 +26,10 @@ where
 
 /// A canvas that can be rendered to instead of the screen (sometimes referred
 /// to as "render target" or "render to texture"). Set the canvas with the
-/// `ggez::graphics::set_canvas()` function.
+/// `ggez::graphics::set_canvas()` function, and then anything you
+/// draw will be drawn to the canvas instead of the screen.  
+///
+/// Resume drawing to the screen by calling `ggez::graphics::set_canvas(None)`.
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 impl Canvas {

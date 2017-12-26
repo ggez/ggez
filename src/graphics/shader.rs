@@ -398,6 +398,10 @@ where
 
 /// A lock for RAII shader regions. The shader automatically gets cleared once
 /// the lock goes out of scope, restoring the previous shader (if any).
+///
+/// Essentially, binding a `Shader` will return one of these, and the shader
+/// will remain active as long as this object exists.  When this is dropped,
+/// the previous shader is restored.
 #[derive(Debug, Clone)]
 pub struct ShaderLock {
     // TODO: See if it's possible to clean up the Rc<Refcell<Option<T>>>
@@ -434,7 +438,10 @@ where
     *ctx.gfx_context.current_shader.borrow_mut() = Some(ps.id);
 }
 
-/// Clears the the current  shader for the Context making use the default
+/// Clears the the current shader for the Context, restoring the default shader.
+///
+/// However, calling this and then dropping a `ShaderLock` will still set the
+/// shader to whatever was set when the `ShaderLock` was created.
 pub fn clear_shader(ctx: &mut Context) {
     *ctx.gfx_context.current_shader.borrow_mut() = None;
 }

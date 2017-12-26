@@ -157,7 +157,8 @@ impl Font {
     }
 
     /// Breaks the given text into lines that will not exceed `wrap_limit` pixels
-    /// in length.  It accounts for newlines correctly but does not
+    /// in length when drawn with the given font.  
+    /// It accounts for newlines correctly but does not
     /// try to break words or handle hyphenated words; it just breaks
     /// at whitespace.  (It also doesn't preserve whitespace.)
     ///
@@ -411,7 +412,7 @@ impl Text {
     ///
     /// Note that this is relatively computationally expensive;
     /// if you want to draw text every frame you probably want to save
-    /// it and only update it when it changes.
+    /// it and only update it when the text changes.
     pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<Text> {
         match *font {
             Font::TTFFont {
