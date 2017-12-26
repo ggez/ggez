@@ -160,6 +160,12 @@ impl Source {
         self.sink.stop()
     }
 
+    /// Returns whether or not the source is stopped
+    /// -- that is, has no more data to play.
+    pub fn stopped(&self) {
+        self.sink.empty()
+    }
+
     /// Gets the current volume
     pub fn volume(&self) -> f32 {
         self.sink.volume()
@@ -175,9 +181,11 @@ impl Source {
         self.sink.is_paused()
     }
 
-    /// Get whether or not the source is playing
+
+    /// Get whether or not the source is playing (ie, not paused
+    /// and not stopped)
     pub fn playing(&self) -> bool {
-        !self.paused() // && !self.stopped()
+        !self.paused() && !self.stopped()
     }
 }
 
