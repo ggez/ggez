@@ -48,14 +48,12 @@ impl fmt::Debug for AudioContext {
 /// Static sound data stored in memory.
 /// It is Arc'ed, so cheap to clone.
 #[derive(Clone, Debug)]
-pub struct SoundData(Arc<Vec<u8>>);
+pub struct SoundData(Arc<[u8]>);
 
 impl SoundData {
     /// Copies the data in the given slice into a new SoundData object.
     pub fn from_bytes(data: &[u8]) -> Self {
-        let mut buffer = Vec::with_capacity(data.len());
-        buffer.extend(data);
-        SoundData::from(buffer)
+        SoundData(Arc::from(data))
     }
 
     /// Creates a SoundData from any Read object; this involves
@@ -71,15 +69,29 @@ impl SoundData {
     }
 }
 
+impl From<Arc<[u8]>> for SoundData {
+    #[inline]
+    fn from(arc: Arc<[u8]>) -> Self {
+        SoundData(arc)
+    }
+}
+
 impl From<Vec<u8>> for SoundData {
     fn from(v: Vec<u8>) -> Self {
-        SoundData(Arc::new(v))
+        SoundData(Arc::from(v))
+    }
+}
+
+impl From<Box<[u8]>> for SoundData {
+    fn from(b: Box<[u8]>) -> Self {
+        SoundData(Arc::from(b))
     }
 }
 
 impl AsRef<[u8]> for SoundData {
+    #[inline]
     fn as_ref(&self) -> &[u8] {
-        self.0.as_ref().as_ref()
+        self.0.as_ref()
     }
 }
 
