@@ -19,11 +19,11 @@ cd hello_world
 ```
 
 Now copy-paste the contents of
-<https://raw.githubusercontent.com/ggez/ggez/0.3/examples/hello_world.rs>
+<https://raw.githubusercontent.com/ggez/ggez/master/examples/hello_world.rs>
 into `hello_world/src/main.rs`, or just wget it:
 
 ```sh
-wget https://raw.githubusercontent.com/ggez/ggez/0.3/examples/hello_world.rs
+wget https://raw.githubusercontent.com/ggez/ggez/master/examples/hello_world.rs
 mv hello_world.rs src/main.rs
 ```
 
@@ -33,7 +33,7 @@ put it in a subdirectory called `resources` in your project root:
 ```sh
 mkdir resources
 cd resources
-wget https://raw.githubusercontent.com/ggez/ggez/0.3/resources/DejaVuSerif.ttf"
+wget https://raw.githubusercontent.com/ggez/ggez/master/resources/DejaVuSerif.ttf
 ```
 
 Then edit your `Cargo.toml` with your favorite super duper editor and under `[dependencies]` add:
