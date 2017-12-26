@@ -94,7 +94,7 @@ impl Context {
         let font = graphics::Font::default_font()?;
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
         let graphics_context = graphics::GraphicsContext::new(
-            video,
+            &video,
             &conf.window_setup,
             conf.window_mode,
             backend_spec,

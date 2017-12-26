@@ -229,7 +229,7 @@ pub fn sleep(duration: time::Duration) {
 
 /// Yields the current timeslice to the OS.
 ///
-/// This just calls std::thread::yield_now() but it's
+/// This just calls `std::thread::yield_now()` but it's
 /// handy to have here.
 pub fn yield_now() {
     thread::yield_now();
@@ -237,7 +237,7 @@ pub fn yield_now() {
 
 /// Gets the number of times the game has gone through its event loop.
 ///
-/// Specifically, the number of times that TimeContext::tick() has been
+/// Specifically, the number of times that `TimeContext::tick()` has been
 /// called by it.
 pub fn get_ticks(ctx: &Context) -> usize {
     ctx.timer_context.frame_count

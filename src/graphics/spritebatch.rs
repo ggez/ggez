@@ -1,4 +1,4 @@
-//! SpriteBatch type.  A SpriteBatch is a way to efficiently draw a large
+//! A `SpriteBatch` is a way to efficiently draw a large
 //! number of copies of the same image, or part of the same image.  It's
 //! useful for implementing tiled maps, spritesheets, particles, and
 //! other such things.
@@ -15,7 +15,7 @@ use gfx::Factory;
 use GameResult;
 use super::shader::BlendMode;
 
-/// A SpriteBatch draws a number of copies of the same image, using a single draw call.
+/// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
 ///
 /// This is generally faster than drawing the same sprite with many invocations of `draw()`,
 /// though it has a bit of overhead to set up the batch.  This makes it run very slowly
@@ -39,7 +39,7 @@ pub struct BoundSpriteBatch<'a> {
     batch: &'a mut SpriteBatch,
 }
 
-/// An index of a particular sprite in a StypepriteBatch.
+/// An index of a particular sprite in a `SpriteBatch`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SpriteIdx(usize);
 
@@ -57,7 +57,7 @@ impl SpriteBatch {
     ///
     /// Returns a handle with whictypeh to modify the sprite using `set()`
     pub fn add(&mut self, param: graphics::DrawParam) -> SpriteIdx {
-        self.sprites.push(param.into());
+        self.sprites.push(param);
         SpriteIdx(self.sprites.len() - 1)
     }
 
@@ -148,7 +148,8 @@ impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
     fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
-        let draw_color = param.color.or(Some(ctx.gfx_context.foreground_color));
+        let fg = Some(ctx.gfx_context.foreground_color);
+        let draw_color = param.color.or(fg);
         self.batch.flush(ctx, self.image, draw_color)?;
         let gfx = &mut ctx.gfx_context;
         let sampler = gfx.samplers
@@ -196,7 +197,8 @@ impl graphics::Drawable for SpriteBatch {
     fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
-        let draw_color = param.color.or(Some(ctx.gfx_context.foreground_color));
+        let fg = Some(ctx.gfx_context.foreground_color);
+        let draw_color = param.color.or(fg);
         self.flush(ctx, &self.image, draw_color)?;
         let gfx = &mut ctx.gfx_context;
         let sampler = gfx.samplers

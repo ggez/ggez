@@ -13,12 +13,19 @@ pub struct MeshBuilder {
     buffer: t::geometry_builder::VertexBuffers<Vertex>,
 }
 
+impl Default for MeshBuilder {
+    fn default() -> Self {
+        Self {
+            buffer: t::VertexBuffers::new(),
+        }
+
+    }
+}
+
 impl MeshBuilder {
     /// Create a new MeshBuilder.
     pub fn new() -> Self {
-        MeshBuilder {
-            buffer: t::VertexBuffers::new(),
-        }
+        Self::default()
     }
 
     /// Create a new mesh for a line of one or more connected segments.

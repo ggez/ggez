@@ -319,7 +319,7 @@ impl From<gfx::buffer::CreationError> for GameError {
                 u
             )),
             CreationError::Other => {
-                GameError::RenderError(format!("Could not create buffer: Unknown error"))
+                GameError::RenderError("Could not create buffer: Unknown error".to_owned())
             }
         }
     }
@@ -328,7 +328,7 @@ impl From<gfx::buffer::CreationError> for GameError {
 impl GraphicsContext {
     /// Create a new GraphicsContext
     pub(crate) fn new(
-        video: sdl2::VideoSubsystem,
+        video: &sdl2::VideoSubsystem,
         window_setup: &WindowSetup,
         window_mode: WindowMode,
         backend: GlBackendSpec,
@@ -357,7 +357,7 @@ impl GraphicsContext {
         let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
             gfx_window_sdl::init(window_builder)?;
 
-        GraphicsContext::set_vsync(&video, window_mode.vsync);
+        GraphicsContext::set_vsync(video, window_mode.vsync);
 
         let display_index = window.display_index()?;
         let dpi = window.subsystem().display_dpi(display_index)?;
@@ -513,7 +513,7 @@ impl GraphicsContext {
     /// Sets the current model-view transform matrix.
     fn set_transform(&mut self, t: Matrix4) {
         assert!(
-            self.modelview_stack.len() > 0,
+            !self.modelview_stack.is_empty(),
             "Tried to set a transform on an empty transform stack!"
         );
         let last = self.modelview_stack
@@ -525,13 +525,13 @@ impl GraphicsContext {
     /// Gets a copy of the current transform matrix.
     fn get_transform(&self) -> Matrix4 {
         assert!(
-            self.modelview_stack.len() > 0,
+            !self.modelview_stack.is_empty(),
             "Tried to get a transform on an empty transform stack!"
         );
         let last = self.modelview_stack
             .last()
             .expect("Transform stack empty; should never happen!");
-        last.clone()
+        *last
     }
 
     /// Converts the given `DrawParam` into an `InstanceProperties` object and

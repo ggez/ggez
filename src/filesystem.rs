@@ -42,7 +42,7 @@ use vfs::{self, VFS};
 
 pub use vfs::OpenOptions;
 
-const CONFIG_NAME: &'static str = "/conf.toml";
+const CONFIG_NAME: &str = "/conf.toml";
 
 /// A structure that contains the filesystem state and cache.
 #[derive(Debug)]
@@ -297,7 +297,7 @@ impl Filesystem {
     /// But it can be very nice for debugging and dev purposes, such as
     /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
     pub fn mount(&mut self, path: &path::Path, readonly: bool) {
-        let physfs = vfs::PhysicalFS::new(&path, readonly);
+        let physfs = vfs::PhysicalFS::new(path, readonly);
         self.vfs.push_back(Box::new(physfs));
     }
 

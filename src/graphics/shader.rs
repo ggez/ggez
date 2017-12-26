@@ -113,9 +113,9 @@ impl From<BlendMode> for Blend {
 /// dynamically. After chatting with @kvark on IRC and looking
 /// how he does it in three-rs, the best way to change blend
 /// modes is to just make multiple PSOs with respective blend modes baked in.
-/// The PsoSet struct is basically just a hash map for easily
+/// The `PsoSet` struct is basically just a hash map for easily
 /// storing each shader set's PSOs and then retrieving them based
-/// on a BlendMode.
+/// on a `BlendMode`.
 struct PsoSet<Spec, C>
 where
     Spec: graphics::BackendSpec,
@@ -198,11 +198,10 @@ where
 
     let mut psos = PsoSet::new(blend_modes.len());
     let name: String = name.into();
-    for mode in blend_modes.clone() {
-        let mode = mode.clone();
+    for mode in blend_modes {
         let init = ConstInit::<C>(
             graphics::pipe::Init {
-                out: ("Target0", MASK_ALL, mode.into()),
+                out: ("Target0", MASK_ALL, (*mode).into()),
                 ..graphics::pipe::new()
             },
             name.clone(),
@@ -223,13 +222,13 @@ where
         };
 
         let pso = factory.create_pipeline_state(&set, Primitive::TriangleList, rasterizer, init)?;
-        psos.insert_mode(mode, pso);
+        psos.insert_mode(*mode, pso);
     }
 
     let program = ShaderProgram {
         buffer: buffer.clone(),
         psos,
-        active_blend_mode: blend_modes[0].clone(),
+        active_blend_mode: blend_modes[0],
     };
     let draw: Box<ShaderHandle<Spec>> = Box::new(program);
 
@@ -421,8 +420,8 @@ pub fn use_shader<C>(ctx: &mut Context, ps: &Shader<C>) -> ShaderLock
 where
     C: Structure<ConstFormat>,
 {
-    let cell = ctx.gfx_context.current_shader.clone();
-    let previous_shader = (*cell.borrow()).clone();
+    let cell = Rc::clone(&ctx.gfx_context.current_shader);
+    let previous_shader = *cell.borrow();
     set_shader(ctx, ps);
     ShaderLock {
         cell,
@@ -467,7 +466,7 @@ where
         access: &mut AccessInfo<R>,
     ) {
         self.0.bake_to(out, &meta.0, man, access);
-        meta.1.bind_to(out, &self.1, man, access);
+        meta.1.bind_to(out, self.1, man, access);
     }
 }
 
@@ -542,7 +541,7 @@ where
 
             Ok(ConstMeta(meta0, meta1))
         } else {
-            Ok(ConstMeta(self.0.link_to(desc, &info)?, meta1))
+            Ok(ConstMeta(self.0.link_to(desc, info)?, meta1))
         }
     }
 }

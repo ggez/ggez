@@ -117,7 +117,7 @@ impl Drawable for Canvas {
 /// rendering to be done directly to the screen.
 pub fn set_canvas(ctx: &mut Context, target: Option<&Canvas>) {
     match target {
-        Some(ref surface) => {
+        Some(surface) => {
             ctx.gfx_context.data.out = surface.target.clone();
         }
         None => {

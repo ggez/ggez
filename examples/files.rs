@@ -36,14 +36,14 @@ pub fn main() {
         println!("   {:?}", itm);
     }
 
-    println!("");
+    println!();
     println!("Let's write to a file, it should end up in the user config dir");
 
     let test_file = path::Path::new("/testfile.txt");
-    let bytes = "test".as_bytes();
+    let bytes = b"test";
     {
         let mut file = ctx.filesystem.create(test_file).unwrap();
-        file.write(bytes).unwrap();
+        file.write_all(bytes).unwrap();
     }
     println!("Wrote to test file");
     {
@@ -52,7 +52,7 @@ pub fn main() {
         let mut file = ctx.filesystem
             .open_options(test_file, &options)
             .unwrap();
-        file.write(bytes).unwrap();
+        file.write_all(bytes).unwrap();
     }
     println!("Appended to test file");
     {
@@ -64,7 +64,7 @@ pub fn main() {
     }
 
 
-    println!("");
+    println!();
     println!("Let's read the default conf file");
     if let Ok(_conf) = ctx.filesystem.read_config() {
         println!("Found existing conf file, its contents are:");
@@ -82,7 +82,7 @@ pub fn main() {
         println!("Should now be a 'conf.toml' file under user config dir");
     }
 
-    println!("");
+    println!();
     println!("Now let's try to read a file that does not exist");
     {
         if let Err(e) = ctx.filesystem.open("/jfkdlasfjdsa") {

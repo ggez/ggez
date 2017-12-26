@@ -85,20 +85,9 @@ impl Error for GameError {
 
     fn cause(&self) -> Option<&Error> {
         match *self {
-            GameError::FilesystemError(ref _s) => None,
-            GameError::ConfigError(ref _s) => None,
-            GameError::SdlError(ref _s) => None,
-            GameError::IntegerError(ref _s) => None,
-            GameError::ResourceLoadError(ref _s) => None,
-            GameError::ResourceNotFound(ref _s, _) => None,
-            GameError::RenderError(ref _s) => None,
-            GameError::AudioError(ref _s) => None,
-            GameError::WindowError(ref _we) => None,
-            GameError::IOError(ref e) => Some(e),
-            GameError::FontError(ref _s) => None,
-            GameError::VideoError(ref _s) => None,
             GameError::ShaderProgramError(ref e) => Some(e),
-            GameError::UnknownError(ref _s) => None,
+            GameError::IOError(ref e) => Some(e),
+            _ => None,
         }
     }
 }
