@@ -1,3 +1,8 @@
+//! An example of how to play with various graphics modes settings,
+//! resize windows, etc.
+//!
+//! Prints instructions to the console.
+
 extern crate ggez;
 extern crate clap;
 use clap::{Arg, App};
@@ -93,6 +98,7 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &self.image, Point2::new(400.0, 300.0), 0.0)?;
         graphics::draw(ctx, &circle, Point2::new(400.0, 300.0), rotation as f32)?;
 
+        // Let's draw a grid so we can see where the window bounds are.
         const COUNT: i32 = 10;
         for x in -COUNT..COUNT {
             for y in -COUNT..COUNT {

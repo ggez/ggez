@@ -1,3 +1,5 @@
+//! The simplest possible example that does something.
+
 extern crate ggez;
 use ggez::*;
 use ggez::graphics::{DrawMode, Point2};

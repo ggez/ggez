@@ -10,6 +10,8 @@ use ggez::event::*;
 use ggez::{Context, ContextBuilder, GameResult};
 use ggez::graphics;
 use ggez::timer;
+use ggez::graphics::{Vector2, Point2};
+use ggez::nalgebra as na;
 
 use std::env;
 use std::path;
@@ -17,12 +19,8 @@ use std::path;
 /// *********************************************************************
 /// Basic stuff, make some helpers for vector functions.
 /// ggez includes the nalgebra math library to provide lots of
-/// math stuff, we just fill in a couple gaps.
+/// math stuff  We just add some helpers.
 /// **********************************************************************
-use ggez::graphics::{Vector2, Point2};
-use ggez::nalgebra as na;
-
-
 
 /// Create a unit vector representing the
 /// given angle (in radians)
@@ -61,7 +59,7 @@ struct Actor {
     pos: Point2,
     facing: f32,
     velocity: Vector2,
-    rvel: f32,
+    ang_vel: f32,
     bbox_size: f32,
 
     // I am going to lazily overload "life" with a
@@ -79,8 +77,10 @@ const PLAYER_BBOX: f32 = 12.0;
 const ROCK_BBOX: f32 = 12.0;
 const SHOT_BBOX: f32 = 6.0;
 
+const MAX_ROCK_VEL: f32 = 50.0;
+
 /// *********************************************************************
-/// Now we have some initializer functions for different game objects.
+/// Now we have some constructor functions for different game objects.
 /// **********************************************************************
 
 fn create_player() -> Actor {
@@ -89,7 +89,7 @@ fn create_player() -> Actor {
         pos: Point2::origin(),
         facing: 0.,
         velocity: na::zero(),
-        rvel: 0.,
+        ang_vel: 0.,
         bbox_size: PLAYER_BBOX,
         life: PLAYER_LIFE,
     }
@@ -101,7 +101,7 @@ fn create_rock() -> Actor {
         pos: Point2::origin(),
         facing: 0.,
         velocity: na::zero(),
-        rvel: 0.,
+        ang_vel: 0.,
         bbox_size: ROCK_BBOX,
         life: ROCK_LIFE,
     }
@@ -113,13 +113,11 @@ fn create_shot() -> Actor {
         pos: Point2::origin(),
         facing: 0.,
         velocity: na::zero(),
-        rvel: SHOT_RVEL,
+        ang_vel: SHOT_ANG_VEL,
         bbox_size: SHOT_BBOX,
         life: SHOT_LIFE,
     }
 }
-
-const MAX_ROCK_VEL: f32 = 50.0;
 
 /// Create the given number of rocks.
 /// Makes sure that none of them are within the
@@ -151,13 +149,13 @@ fn create_rocks(num: i32, exclusion: Point2, min_radius: f32, max_radius: f32) -
 /// **********************************************************************
 
 const SHOT_SPEED: f32 = 200.0;
-const SHOT_RVEL: f32 = 0.1;
+const SHOT_ANG_VEL: f32 = 0.1;
 const SPRITE_SIZE: u32 = 32;
 
-// Acceleration in pixels per second, more or less.
+// Acceleration in pixels per second.
 const PLAYER_THRUST: f32 = 100.0;
 // Rotation in radians per second.
-const PLAYER_TURN_RATE: f32 = 3.05;
+const PLAYER_TURN_RATE: f32 = 3.0;
 // Seconds between shots
 const PLAYER_SHOT_TIME: f32 = 0.5;
 
@@ -186,7 +184,7 @@ fn update_actor_position(actor: &mut Actor, dt: f32) {
     }
     let dv = actor.velocity * (dt);
     actor.pos += dv;
-    actor.facing += actor.rvel;
+    actor.facing += actor.ang_vel;
 }
 
 /// Takes an actor and wraps its position to the bounds of the

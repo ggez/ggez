@@ -1,5 +1,8 @@
 //! This examples shows the basics of how ggez's file handling
 //! works.
+//!
+//! It doesn't use an event loop, it just runs once and exits,
+//! printing a bunch of stuff to the console.
 
 extern crate ggez;
 use ggez::*;

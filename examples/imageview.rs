@@ -74,8 +74,6 @@ impl MainState {
             sound: sound,
         };
 
-
-
         Ok(s)
     }
 }

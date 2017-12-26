@@ -1,3 +1,5 @@
+//! A collection of semi-random shape and image drawing examples.
+
 extern crate ggez;
 use ggez::conf;
 use ggez::event;
@@ -66,7 +68,7 @@ impl event::EventHandler for MainState {
         // let src = graphics::Rect::one();
         let dst = graphics::Point2::new(20.0, 20.0);
         graphics::draw(ctx, &self.image1, dst, 0.0)?;
-        let dst = graphics::Point2::new(100.0, 100.0);
+        let dst = graphics::Point2::new(200.0, 100.0);
         let dst2 = graphics::Point2::new(400.0, 400.0);
         let scale = graphics::Point2::new(10.0, 10.0);
         // let shear = graphics::Point::new(self.zoomlevel, self.zoomlevel);
@@ -105,19 +107,6 @@ impl event::EventHandler for MainState {
         let mesh = build_mesh(ctx)?;
         graphics::set_color(ctx, (0, 0, 255).into())?;
         graphics::draw_ex(ctx, &mesh, Default::default())?;
-
-        {
-            // let mb = &mut graphics::MeshBuilder::new();
-            // mb.ellipse(DrawMode::Fill, Point2::new(0.0, 0.0), 50.0, 120.0, 1.0);
-            // graphics::set_color(ctx, (255, 255, 255).into())?;
-            // let mesh = mb.build(ctx)?;
-            graphics::draw_ex(ctx, &self.image2_nearest,
-                graphics::DrawParam {
-                    dest: Point2::new(400.0, 300.0),
-                    rotation: self.zoomlevel,
-                    .. Default::default()
-                })?;
-        }
 
         graphics::present(ctx);
         Ok(())

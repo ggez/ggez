@@ -1,3 +1,5 @@
+//! An example of how to render to images using the `Canvas` type.
+
 extern crate ggez;
 
 use ggez::*;

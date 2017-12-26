@@ -1,3 +1,5 @@
+//! Example that just prints out all the input events.
+
 extern crate ggez;
 
 use ggez::*;
@@ -29,12 +31,11 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        let rotation = timer::get_ticks(ctx);
         graphics::circle(ctx,
                          DrawMode::Fill,
                          Point2::new(self.pos_x as f32, self.pos_y as f32),
                          100.0,
-                         rotation as f32)?;
+                         1.0)?;
         graphics::present(ctx);
         Ok(())
     }

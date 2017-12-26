@@ -1,3 +1,5 @@
+//! How to draw a 3D cube in ggez.
+
 extern crate ggez;
 #[macro_use]
 extern crate gfx;
@@ -19,7 +21,7 @@ use std::f32;
 type Isometry3 = na::Isometry3<f32>;
 type Point3 = na::Point3<f32>;
 type Vector3 = na::Vector3<f32>;
-// ColorFormat and DepthFormat are kinda hardwired into ggez's drawing code,
+// ColorFormat and DepthFormat are hardwired into ggez's drawing code,
 // and there isn't a way to easily change them, so for the moment we just have
 // to know what they are and use the same settings.
 type ColorFormat = gfx::format::Srgba8;

@@ -1,3 +1,6 @@
+//! A more sophisticated example of how to use shaders
+//! and canvas's to do 2D GPU shadows.
+
 #[macro_use]
 extern crate gfx;
 extern crate ggez;

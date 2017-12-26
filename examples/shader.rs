@@ -1,3 +1,5 @@
+//! A very simple shader example.
+
 #[macro_use]
 extern crate gfx;
 extern crate ggez;
