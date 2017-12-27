@@ -150,7 +150,6 @@ fn create_rocks(num: i32, exclusion: Point2, min_radius: f32, max_radius: f32) -
 
 const SHOT_SPEED: f32 = 200.0;
 const SHOT_ANG_VEL: f32 = 0.1;
-const SPRITE_SIZE: u32 = 32;
 
 // Acceleration in pixels per second.
 const PLAYER_THRUST: f32 = 100.0;
@@ -194,16 +193,14 @@ fn wrap_actor_position(actor: &mut Actor, sx: f32, sy: f32) {
     // Wrap screen
     let screen_x_bounds = sx / 2.0;
     let screen_y_bounds = sy / 2.0;
-    let sprite_half_size = (SPRITE_SIZE / 2) as f32;
-    let actor_center = actor.pos - Vector2::new(-sprite_half_size, sprite_half_size);
-    if actor_center.x > screen_x_bounds {
+    if actor.pos.x > screen_x_bounds {
         actor.pos.x -= sx;
-    } else if actor_center.x < -screen_x_bounds {
+    } else if actor.pos.x < -screen_x_bounds {
         actor.pos.x += sx;
     };
-    if actor_center.y > screen_y_bounds {
+    if actor.pos.y > screen_y_bounds {
         actor.pos.y -= sy;
-    } else if actor_center.y < -screen_y_bounds {
+    } else if actor.pos.y < -screen_y_bounds {
         actor.pos.y += sy;
     }
 }
@@ -544,10 +541,10 @@ impl EventHandler for MainState {
 
 
         // And draw the GUI elements in the right places.
-        let level_dest = graphics::Point2::new((self.level_display.width() / 2) as f32 + 10.0,
-                                               (self.level_display.height() / 2) as f32 + 10.0);
-        let score_dest = graphics::Point2::new((self.score_display.width() / 2) as f32 + 200.0,
-                                               (self.score_display.height() / 2) as f32 + 10.0);
+        let level_dest = graphics::Point2::new(10.0,
+                                               10.0);
+        let score_dest = graphics::Point2::new(200.0,
+                                               10.0);
         graphics::draw(ctx, &self.level_display, level_dest, 0.0)?;
         graphics::draw(ctx, &self.score_display, score_dest, 0.0)?;
 
