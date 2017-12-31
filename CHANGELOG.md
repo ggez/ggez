@@ -1,4 +1,4 @@
-# 0.4.0 (IN PROGRESS)
+# 0.4.0
 
 ## Added
 
