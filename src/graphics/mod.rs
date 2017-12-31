@@ -844,12 +844,18 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<(
 
 /// Sets the raw projection matrix to the given homogeneous
 /// transformation matrix.
+///
+/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// these changes and recalculate the underlying MVP matrix.
 pub fn set_projection(context: &mut Context, proj: Matrix4) {
     let gfx = &mut context.gfx_context;
     gfx.set_projection(proj);
 }
 
 /// Premultiplies the given transformation matrix with the current projection matrix
+///
+/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// these changes and recalculate the underlying MVP matrix.
 pub fn transform_projection(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
     let curr = gfx.get_projection();
@@ -865,6 +871,9 @@ pub fn get_projection(context: &Context) -> Matrix4 {
 /// Pushes a homogeneous transform matrix to the top of the transform
 /// (model) matrix stack of the `Context`. If no matrix is given, then
 /// pushes a copy of the current transform matrix to the top of the stack.
+///
+/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// these changes and recalculate the underlying MVP matrix.
 ///
 /// A `DrawParam` can be converted into an appropriate transform
 /// matrix by calling `param.into_matrix()`.
@@ -882,6 +891,9 @@ pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
 
 /// Pops the transform matrix off the top of the transform
 /// (model) matrix stack of the `Context`.
+///
+/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// these changes and recalculate the underlying MVP matrix.
 pub fn pop_transform(context: &mut Context) {
     let gfx = &mut context.gfx_context;
     gfx.pop_transform();
@@ -889,6 +901,9 @@ pub fn pop_transform(context: &mut Context) {
 
 /// Sets the current model transformation to the given homogeneous
 /// transformation matrix.
+///
+/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// these changes and recalculate the underlying MVP matrix.
 ///
 /// A `DrawParam` can be converted into an appropriate transform
 /// matrix by calling `param.into_matrix()`.
@@ -905,6 +920,9 @@ pub fn get_transform(context: &Context) -> Matrix4 {
 
 /// Premultiplies the given transform with the current model transform.
 ///
+/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// these changes and recalculate the underlying MVP matrix.
+///
 /// A `DrawParam` can be converted into an appropriate transform
 /// matrix by calling `param.into_matrix()`.
 pub fn transform(context: &mut Context, transform: Matrix4) {
@@ -914,6 +932,9 @@ pub fn transform(context: &mut Context, transform: Matrix4) {
 }
 
 /// Sets the current model transform to the origin transform (no transformation)
+///
+/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// these changes and recalculate the underlying MVP matrix.
 pub fn origin(context: &mut Context) {
     let gfx = &mut context.gfx_context;
     gfx.set_transform(Matrix4::identity());
@@ -1145,7 +1166,7 @@ impl Default for DrawParam {
 }
 
 impl DrawParam {
-    fn into_matrix(self) -> Matrix4 {
+    pub fn into_matrix(self) -> Matrix4 {
         type Vec3 = na::Vector3<f32>;
         let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
         let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
