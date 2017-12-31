@@ -1166,6 +1166,8 @@ impl Default for DrawParam {
 }
 
 impl DrawParam {
+    /// Turn the DrawParam into a model matrix, combining
+    /// destination, rotation, scale, offset and shear.
     pub fn into_matrix(self) -> Matrix4 {
         type Vec3 = na::Vector3<f32>;
         let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
