@@ -652,6 +652,8 @@ pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> Gam
 
 /// Tells the graphics system to actually put everything on the screen.
 /// Call this at the end of your `EventHandler`'s `draw()` method.
+///
+/// Unsets any active canvas.
 pub fn present(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
     gfx.data.out = gfx.screen_render_target.clone();
@@ -662,6 +664,58 @@ pub fn present(ctx: &mut Context) {
     gfx.encoder.flush(&mut *gfx.device);
     gfx.window.gl_swap_window();
     gfx.device.cleanup();
+}
+
+/// Take a screenshot by outputting the current render surface
+/// (screen or selected canvas) to a PNG file.
+pub fn screenshot(ctx: &mut Context, path: &str) -> GameResult<()> {
+    use gfx::memory::Typed;
+    use gfx::format::Formatted;
+    use gfx::format::SurfaceTyped;
+    use gfx::traits::FactoryExt;
+    use ::image as image_crate;
+
+    let gfx = &mut ctx.gfx_context;
+    let (w, h, _, _) = gfx.data.out.get_dimensions();
+    type SurfaceData = <<ColorFormat as Formatted>::Surface as SurfaceTyped>::DataType;
+    // Note: In the GFX example, the download buffer is created ahead of time
+    // and updated on screen resize events. This may be preferable, but then
+    // the buffer also needs to be updated when we switch to/from a canvas.
+    // Unsure of the performance impact of creating this as it is needed.
+    let dl_buffer = gfx.factory.create_download_buffer::<SurfaceData>(w as usize * h as usize)?;
+    gfx.encoder.copy_texture_to_buffer_raw(
+        gfx.data.out.raw().get_texture(),
+        None,
+        gfx::texture::RawImageInfo {
+                    xoffset: 0,
+                    yoffset: 0,
+                    zoffset: 0,
+                    width: w,
+                    height: h,
+                    depth: 0,
+                    format: ColorFormat::get_format(),
+                    mipmap: 0,
+        },
+        dl_buffer.raw(),
+        0
+    )?;
+    gfx.encoder.flush(&mut *gfx.device);
+
+    let reader = gfx.factory.read_mapping(&dl_buffer)?;
+
+    // intermediary buffer to avoid casting
+    // and also to reverse the order in which we pass the rows
+    // so the screenshot isn't upside-down
+    let mut data = Vec::with_capacity(w as usize * h as usize * 4);
+    for row in reader.chunks(w as usize).rev() {
+        for pixel in row.iter() {
+            data.extend(pixel);
+        }
+    }
+    
+    image_crate::save_buffer(path, &data, u32::from(w), u32::from(h), image_crate::ColorType::RGBA(8))?;
+
+    Ok(())
 }
 
 /*

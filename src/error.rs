@@ -201,6 +201,20 @@ impl From<gfx::PipelineStateError<std::string::String>> for GameError {
     }
 }
 
+impl From<gfx::mapping::Error> for GameError {
+    fn from(e: gfx::mapping::Error) -> GameError {
+        let errstr = format!("Buffer mapping error: {:?}", e);
+        GameError::VideoError(errstr)
+    }
+}
+
+impl<S, D> From<gfx::CopyError<S, D>> for GameError where S: fmt::Debug, D: fmt::Debug {
+    fn from(e: gfx::CopyError<S, D>) -> GameError {
+        let errstr = format!("Memory copy error: {:?}", e);
+        GameError::VideoError(errstr)
+    }
+}
+
 impl From<gfx::CombinedError> for GameError {
     fn from(e: gfx::CombinedError) -> GameError {
         let errstr = format!("Texture+view load error: {}", e.description());
