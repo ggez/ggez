@@ -6,6 +6,7 @@ submit a PR, please!
  * <https://github.com/obsoke/rustris>
  * <https://rap2hpoutre.github.io/llamassacre-website/> 
  * <https://github.com/maccam912/thewizzerofoz>
+ * <https://github.com/Piripant/skii>
 
 # Examples/tutorial code
 
