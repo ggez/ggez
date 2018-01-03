@@ -2,10 +2,10 @@
 //! the screen.  This allows graphics to be rendered to images off-screen
 //! in order to do things like saving to an image file or creating cool effects.
 
-use gfx::{Factory, RENDER_TARGET, SHADER_RESOURCE};
+use gfx::{Factory};
 use gfx::format::{ChannelTyped, Srgb, Srgba8, Swizzle};
 use gfx::handle::RenderTargetView;
-use gfx::memory::Usage;
+use gfx::memory::{Bind, Usage};
 use gfx::texture::{AaMode, Kind};
 
 use Context;
@@ -52,7 +52,7 @@ impl Canvas {
         let tex = factory.create_texture(
             kind,
             levels,
-            SHADER_RESOURCE | RENDER_TARGET,
+            Bind::SHADER_RESOURCE | Bind::RENDER_TARGET,
             Usage::Data,
             Some(cty),
         )?;
