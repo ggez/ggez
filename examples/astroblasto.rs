@@ -243,10 +243,6 @@ impl Assets {
         let player_image = graphics::Image::new(ctx, "/player.png")?;
         let shot_image = graphics::Image::new(ctx, "/shot.png")?;
         let rock_image = graphics::Image::new(ctx, "/rock.png")?;
-        // let font_path = path::Path::new("/consolefont.png");
-        // let font_chars =
-        //"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!,.?;'\"";
-        // let font = graphics::Font::new_bitmap(ctx, font_path, font_chars)?;
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 18)?;
 
         let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
@@ -633,7 +629,6 @@ pub fn main() {
         println!("Not building from cargo?  Ok.");
     }
     
-    //let ctx = &mut Context::load_from_conf("astroblasto", "ggez", c).unwrap();
     let ctx = &mut cb.build().unwrap();
 
     match MainState::new(ctx) {
