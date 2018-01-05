@@ -576,7 +576,10 @@ impl EventHandler for MainState {
             }
             Keycode::Space => {
                 self.input.fire = true;
-            }
+            },
+            Keycode::P => {
+                graphics::screenshot(ctx, "screenshot.png");
+            },
             Keycode::Escape => ctx.quit().unwrap(),
             _ => (), // Do nothing
         }
