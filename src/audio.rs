@@ -117,26 +117,28 @@ impl AsRef<[u8]> for SoundData {
 pub struct Source {
     data: io::Cursor<SoundData>,
     sink: rodio::Sink,
+    repeat: bool,
 }
 
 impl Source {
     /// Create a new Source from the given file.
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P, repeat: bool) -> GameResult<Self> {
         let path = path.as_ref();
         let data = {
             let file = &mut context.filesystem.open(path)?;
             SoundData::from_read(file)?
         };
-        Source::from_data(context, data)
+        Source::from_data(context, data, repeat)
     }
 
     /// Creates a new Source using the given SoundData object.
-    pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
+    pub fn from_data(context: &mut Context, data: SoundData, repeat: bool) -> GameResult<Self> {
         let sink = rodio::Sink::new(&context.audio_context.endpoint);
         let cursor = io::Cursor::new(data);
         Ok(Source {
             data: cursor,
             sink: sink,
+            repeat,
         })
     }
 
@@ -146,10 +148,21 @@ impl Source {
         // since it may do checking and data-type detection that is
         // redundant, but it's not super expensive.
         // See https://github.com/ggez/ggez/issues/98 for discussion
+        use rodio::Source;
         let cursor = self.data.clone();
         let decoder = rodio::Decoder::new(cursor)?;
-        self.sink.append(decoder);
+        if self.repeat {
+            let repeating = decoder.repeat_infinite();
+            self.sink.append(repeating);
+        } else {
+            self.sink.append(decoder);
+        }
         Ok(())
+    }
+
+    /// Repeats playback infinitely on next play()
+    pub fn to_repeat(&mut self, repeat: bool) {
+        self.repeat = repeat;
     }
 
     /// Pauses playback
