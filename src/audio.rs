@@ -67,6 +67,13 @@ impl SoundData {
 
         Ok(SoundData::from(buffer))
     }
+
+    /// Create a new SoundData from the given file.
+    pub fn from_file<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+        let path = path.as_ref();
+        let file = &mut context.filesystem.open(path)?;
+        SoundData::from_read(file)
+    }
 }
 
 impl From<Arc<[u8]>> for SoundData {
