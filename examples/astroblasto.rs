@@ -245,8 +245,8 @@ impl Assets {
         let rock_image = graphics::Image::new(ctx, "/rock.png")?;
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 18)?;
 
-        let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
-        let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
+        let shot_sound = audio::Source::new(ctx, "/pew.ogg", false)?;
+        let hit_sound = audio::Source::new(ctx, "/boom.ogg", false)?;
         Ok(Assets {
                player_image: player_image,
                shot_image: shot_image,
