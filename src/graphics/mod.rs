@@ -155,7 +155,7 @@ gfx_defines!{
         globals: gfx::ConstantBuffer<Globals> = "Globals",
         rect_instance_properties: gfx::InstanceBuffer<InstanceProperties> = (),
         out: gfx::BlendTarget<ColorFormat> =
-          ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
+          ("Target0", gfx::state::ColorMask::all(), gfx::preset::blend::ALPHA),
     }
 }
 
@@ -293,7 +293,7 @@ fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
 
             print!("Requesting GL {}.{}... ", major, minor);
             let window_builder = video.window("so full of hate", 640, 480);
-            let result = gfx_window_sdl::init::<ColorFormat, DepthFormat>(window_builder);
+            let result = gfx_window_sdl::init::<ColorFormat, DepthFormat>(video, window_builder);
             match result {
                 Ok(_) => println!(
                     "Ok, got GL {}.{}.",
@@ -355,7 +355,7 @@ impl GraphicsContext {
             window_builder.allow_highdpi();
         }
         let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
-            gfx_window_sdl::init(window_builder)?;
+            gfx_window_sdl::init(video, window_builder)?;
 
         GraphicsContext::set_vsync(video, window_mode.vsync);
 
@@ -393,7 +393,7 @@ impl GraphicsContext {
             1,
             gfx::buffer::Role::Vertex,
             gfx::memory::Usage::Dynamic,
-            gfx::SHADER_RESOURCE,
+            gfx::memory::Bind::SHADER_RESOURCE,
         )?;
 
         let (quad_vertex_buffer, mut quad_slice) =
@@ -1301,7 +1301,7 @@ impl Image {
             return Err(GameError::ResourceLoadError(msg));
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, &[rgba])?;
+        let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, gfx::texture::Mipmap::Provided, &[rgba])?;
         Ok(Image {
             texture: view,
             sampler_info: *sampler_info,

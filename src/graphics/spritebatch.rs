@@ -110,7 +110,7 @@ impl SpriteBatch {
                 self.sprites.len(),
                 gfx::buffer::Role::Vertex,
                 gfx::memory::Usage::Dynamic,
-                gfx::TRANSFER_DST,
+                gfx::memory::Bind::TRANSFER_DST,
             )?;
         }
         gfx.encoder
