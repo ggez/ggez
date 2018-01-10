@@ -23,17 +23,18 @@ where
     image: Image,
 }
 
-/// The `Canvas` type allows creating render targets to be used instead of
-/// the screen.  This allows graphics to be rendered to images off-screen
-/// in order to do things like saving to an image file or creating cool effects.
-/// If you just want to draw multiple things efficiently, look at `SpriteBatch`.
-///
 /// A canvas that can be rendered to instead of the screen (sometimes referred
 /// to as "render target" or "render to texture"). Set the canvas with the
 /// `ggez::graphics::set_canvas()` function, and then anything you
 /// draw will be drawn to the canvas instead of the screen.  
 ///
 /// Resume drawing to the screen by calling `ggez::graphics::set_canvas(None)`.
+///
+/// A `Canvas` allows creating render targets to be used instead of
+/// the screen.  This allows graphics to be rendered to images off-screen
+/// in order to do things like saving to an image file or creating cool effects
+/// by using shaders that render to an image.
+/// If you just want to draw multiple things efficiently, look at `SpriteBatch`.
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 impl Canvas {
