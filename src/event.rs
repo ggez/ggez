@@ -61,7 +61,7 @@ pub trait EventHandler {
     /// Called to do the drawing of your game.
     /// You probably want to start this with
     /// `graphics::clear()` and end it with
-    /// `graphics::present()` and `timer::sleep_until_next_frame()`
+    /// `graphics::present()` and `timer::yield_now()`
     fn draw(&mut self, _ctx: &mut Context) -> GameResult<()>;
 
     /// A mouse button was pressed
