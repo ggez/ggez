@@ -1,5 +1,6 @@
 use ::*;
 use graphics::*;
+use gfx::traits::FactoryExt;
 use lyon::tessellation as t;
 
 /// A builder for creating `Mesh`es.
