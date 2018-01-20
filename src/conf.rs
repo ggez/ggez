@@ -145,8 +145,8 @@ impl WindowMode {
 ///
 /// ```rust,ignore
 /// WindowSetup {
-///     window_title: "An easy, good game",
-///     window_icon: "",
+///     title: "An easy, good game".to_owned(),
+///     icon: "".to_owned(),
 ///     resizable: false,
 ///     allow_highdpi: true,
 ///     samples: NumSamples::One,
