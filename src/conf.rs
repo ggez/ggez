@@ -60,7 +60,7 @@ impl From<FullscreenType> for SdlFullscreenType {
 ///     borderless: false,
 ///     fullscreen_type: FullscreenType::Off,
 ///     vsync: true,
-///     min width: 0,
+///     min_width: 0,
 ///     max_width: 0,
 ///     min_height: 0,
 ///     max_height: 0,
