@@ -451,6 +451,24 @@ impl Text {
     pub fn set_filter(&mut self, mode: FilterMode) {
         self.texture.set_filter(mode);
     }
+
+    /// Returns a reference to the `Image` contained
+    /// by the `Text` object.
+    pub fn get_image(&self) -> &Image {
+        &self.texture
+    }
+
+    /// Returns a mutable  reference to the `Image` contained
+    /// by the `Text` object.
+    pub fn get_image_mut(&mut self) -> &mut Image {
+        &mut self.texture
+    }
+
+    /// Unwraps the `Image` contained
+    /// by the `Text` object.
+    pub fn into_inner(self) -> Image {
+        self.texture
+    }
 }
 
 impl Drawable for Text {
