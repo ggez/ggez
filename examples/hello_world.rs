@@ -40,9 +40,9 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        // Drawables are drawn from their center.
-        let dest_point = graphics::Point2::new(self.text.width() as f32 / 2.0 + 10.0,
-                                               self.text.height() as f32 / 2.0 + 10.0);
+        // Drawables are drawn from their top-left corner
+        let dest_point = graphics::Point2::new(10.0,
+                                               10.0);
         graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         graphics::present(ctx);
         self.frames += 1;
