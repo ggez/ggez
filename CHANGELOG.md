@@ -1,3 +1,19 @@
+# 0.4.1
+
+## Added
+
+ * Added `Text::into_inner()` and related methods to get ahold of a `Text` object's underlying `Image`
+
+## Changed
+
+## Deprecated
+
+## Removed
+
+## Fixed
+
+ * Lots of small documentation fixes from a variety of awesome sharp-eyed contributors
+
 # 0.4.0
 
 ## Added
