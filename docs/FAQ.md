@@ -47,7 +47,7 @@ will work.
 # Image/sound loading and font rendering is slow!
 
 Are you running in debug or release mode?  Rust in general is very
-slow in debug mode. This causes problems because theres currently no
+slow in debug mode. This causes problems because there is currently no
 way to build ggez in debug mode but build all it's dependencies in
 release mode. So, things like `image` and `rusttype` end up doing a
 lot of very un-optimized number crunching.
@@ -75,6 +75,10 @@ opt-level = 3: 450 fps
 Rendering text to a bitmap is actually pretty computationally expensive.  If you call `Text::new()` every single frame it's going to take a relatively large amount of time, and larger bitmaps and more text will take longer.
 
 Ideally you'd be able to use a glyph cache to render letters to a texture once, and then just create a mesh that uses the bits of that texture to draw text.  There's a couple partial implementations, such as the [gfx_glyph crate](https://crates.io/crates/gfx_glyph).
+
+# Drawing a few hundred images or shapes is slow!
+
+Again, debug mode is slow.  Plus, each single draw call has some overhead.  If building in release mode still isn't fast enough, then look into using `SpriteBatch` to draw a bunch of chunks from a spritesheet (also known as an atlas).  If you're drawing geometry, instead of using `graphics::rectangle()` or `graphics::circle()` and such, which create a new `Mesh` on each call and then throw it away, create and store a `Mesh` and draw it many times, or use a `MeshBuilder` to build a single `Mesh` out of many small shapes.
 
 
 # How do I build on platform X?
