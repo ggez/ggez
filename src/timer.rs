@@ -191,7 +191,7 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
 
 /// This function will return true if the time since the
 /// last `update()` call has been equal to or greater to
-/// the update FPS indicated by the `desired_update_rate`.
+/// the update FPS indicated by the `target_fps`.
 /// It keeps track of fractional frames, so if you want
 /// 60 fps (16.67 ms/frame) and the game stutters so that
 /// there is 40 ms between `update()` calls, this will return
