@@ -97,7 +97,8 @@ pub trait EventHandler {
     ) {
     }
 
-    /// The mousewheel was clicked.
+    /// The mousewheel was scrolled, vertically (y, positive away from and negative toward the user)
+    /// or horizontally (x, positive to the right and negative to the left).
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: i32, _y: i32) {}
 
     /// A keyboard button was pressed.
