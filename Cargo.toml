@@ -45,7 +45,7 @@ toml = "0.4"
 lyon = "0.8"
 euclid = "0.15"
 smart-default = "0.2"
-nalgebra = "0.13"
+nalgebra = "0.14"
 
 [dev-dependencies]
 rand = "0.3"
