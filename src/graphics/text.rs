@@ -506,9 +506,8 @@ struct VariableFontCharIter<'a> {
     offset: usize,
 }
 
-impl<'a> Iterator for VariableFontCharIter<'a>{
-    // X basically just saying the Self is outlived by the refs it contains (the font will be around after the VariableFontCharIter is done).
-    type Item = (char, usize); //char, offset
+impl<'a> Iterator for VariableFontCharIter<'a>{ //iterates over each char in a line of text, finding the horizontal offsets at which they will appear on the screen, relative to the origin.
+    type Item = (char, usize, usize); //(letter, offset, letter_span)
     fn next(&mut self)-> Option<Self::Item> {
         if let Some(c) = self.iter.next() {
             let char_span = self.font.span_for(c);
@@ -527,7 +526,7 @@ impl<'a> Iterator for VariableFontCharIter<'a>{
             }
             let this_offset = self.offset;
             self.offset += char_span;
-            Some((c, this_offset))
+            Some((c, this_offset, char_span))
         }else{
             None
         }
@@ -541,7 +540,7 @@ impl<'a> VariableFontCharIter<'a> {
 }
 
 fn compute_dynamic_bitmap_width(text: &str, font: &DynamicBitmapFont)-> usize {
-    VariableFontCharIter::new(text, font).last().map(|(c, offset)| offset + font.span_for(c)).unwrap_or(0)
+    VariableFontCharIter::new(text, font).last().map(|(_, offset, span)| offset + span).unwrap_or(0)
 }
 
 fn render_dynamic_bitmap(
@@ -554,9 +553,9 @@ fn render_dynamic_bitmap(
     let buf_len = cmp::max(image_span * font.height * 4, 1);
     let mut dest_buf = Vec::with_capacity(buf_len);
     dest_buf.resize(buf_len, 0u8);
-    for (c, offset) in VariableFontCharIter::new(text, font) {
+    for (c, offset, cspan) in VariableFontCharIter::new(text, font) {
         if c != ' ' {
-            let (cspan, coffset) = font.glyphs.get(&c).map(|r| *r).unwrap_or((0,0));
+            let coffset = font.glyphs.get(&c).map(|r| r.1).unwrap_or(0);
             blit(
                 &mut dest_buf,
                 (image_span, font.height),
