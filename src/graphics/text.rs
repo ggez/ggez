@@ -6,6 +6,7 @@ use std::io::Read;
 
 use rusttype;
 use image;
+use image::RgbaImage;
 
 use super::*;
 
@@ -35,6 +36,37 @@ pub enum Font {
         /// Width of the glyph
         glyph_width: usize,
     },
+    /// A bitmap font where letter widths are infered
+    DynamicBitmapFontVariant(DynamicBitmapFont),
+}
+
+/// A bitmap font where letter widths are infered
+#[derive(Clone, Debug)]
+pub struct DynamicBitmapFont{
+    /// The original glyph image
+    bytes: Vec<u8>,
+    /// Width of the image
+    width: usize,
+    /// Height of the image (same as the height of a glyph)
+    height: usize,
+    /// Glyph to horizontal position (in pixels) and span (in pixels) (does not include space)
+    glyphs: BTreeMap<char, (usize, usize)>,
+    /// Width in pixels of the space
+    space_width: usize,
+    letter_separation: usize,
+}
+
+impl DynamicBitmapFont {
+    fn span_for(&self, c:char)-> usize {
+        if c == ' ' {
+            self.space_width
+        }else{
+            match self.glyphs.get(&c) {
+                Some(&(_, span))=> span,
+                None => 0, //the bitmap text rendering code considers the case where a glyph is missing to be an error, but I don't think it matters much, The dynamic code just renders the missing char as nothing, and moves on, and the user will see that and understand why it was happening, and if they don't, they will certainly feel silly when we tell them and ask them what they expected to happen when they told the system to render a char they never drew
+            }
+        }
+    }
 }
 
 impl Font {
@@ -106,6 +138,67 @@ impl Font {
             glyph_width: glyph_width,
         })
     }
+    
+    /// Creates a bitmap font from a long image. Letters are variable width.
+    /// The width of each letter is infered from letter boundaries.
+    /// Letters are expected to be separated by fully transparent columns of pixels.
+    pub fn new_dynamic_bitmap<P: AsRef<path::Path>>(
+      context: &mut Context, 
+      path: P,
+      glyphs: &str,
+      space_width: usize,
+      letter_separation: usize,
+    ) -> GameResult<Font> {
+      let img = {
+        let mut buf = Vec::new();
+        let mut reader = context.filesystem.open(path)?;
+        reader.read_to_end(&mut buf)?;
+        image::load_from_memory(&buf)?.to_rgba()
+      };
+      let (image_width, image_height) = img.dimensions();
+
+      let mut glyphs_map: BTreeMap<char, (usize, usize)> = BTreeMap::new();
+      let mut start = 0usize;
+      let mut glyphos = glyphs.chars().enumerate();
+      let column_has_content = |offset:usize, image:&RgbaImage|{ //iff any pixel herein has an alpha greater than 0
+        (0 .. image_height).any(|ir| image.get_pixel(offset as u32, ir).data[3] > 0 )
+      };
+      while start < image_width as usize {
+        if column_has_content(start, &img) {
+          let mut span = 0;
+          loop {
+            let nsp = span + 1;
+            if
+              start + nsp >= image_width as usize ||
+              !column_has_content(start + nsp, &img)
+            {
+              break;
+            }
+            span = nsp;
+          }
+          let next_char: char = glyphos.next().ok_or_else(
+            || GameError::FontError("I counted more glyphs in the font bitmap than there were chars in the glyphs string. Note, glyphs must not have gaps. A glyph with a transparent column in the middle will read as two glyphs.".into())
+          )?.1;
+          glyphs_map.insert(next_char, (start, span));
+          start += span;
+        }
+        start += 1;
+      }
+      
+      let (lb, _) = glyphos.size_hint();
+      if lb > 0 {
+        return Err(GameError::FontError("There were more chars in glyphs than I counted in the bitmap!".into()));
+      }
+      
+      Ok(Font::DynamicBitmapFontVariant(DynamicBitmapFont {
+        bytes: img.into_vec(),
+        width: image_width as usize,
+        height: image_height as usize,
+        glyphs: glyphs_map,
+        space_width,
+        letter_separation,
+      }))
+    }
 
     /// Returns a baked-in default font: currently DejaVuSerif.ttf
     /// Note it does create a new `Font` object with every call.
@@ -127,6 +220,7 @@ impl Font {
     pub fn get_height(&self) -> usize {
         match *self {
             Font::BitmapFont { height, .. } => height,
+            Font::DynamicBitmapFontVariant(DynamicBitmapFont { height, .. }) => height,
             Font::TTFFont { scale, .. } => {
                 scale.y.ceil() as usize
             }
@@ -138,6 +232,9 @@ impl Font {
     pub fn get_width(&self, text: &str) -> usize {
         match *self {
             Font::BitmapFont { width, .. } => width * text.len(),
+            Font::DynamicBitmapFontVariant(ref font) => {
+                compute_dynamic_bitmap_width(text, font)
+            },
             Font::TTFFont {
                 ref font, scale, ..
             } => {
@@ -209,6 +306,7 @@ impl fmt::Debug for Font {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Font::TTFFont { .. } => write!(f, "<TTFFont: {:p}>", &self),
+            Font::DynamicBitmapFontVariant(DynamicBitmapFont { .. }) => write!(f, "<DynamicBitmapFont: {:p}>", &self),
             Font::BitmapFont { .. } => write!(f, "<BitmapFont: {:p}>", &self),
         }
     }
@@ -362,7 +460,7 @@ fn render_bitmap(
     glyphs_map: &BTreeMap<char, usize>,
     glyph_width: usize,
 ) -> GameResult<Text> {
-    let text_length = text.len();
+    let text_length = text.chars().count();
     let glyph_height = height;
     // Same at-least-one-pixel-wide constraint here as with TTF fonts.
     let buf_len = cmp::max(text_length * glyph_width * glyph_height * 4, 1);
@@ -370,8 +468,8 @@ fn render_bitmap(
     dest_buf.resize(buf_len, 0u8);
     for (i, c) in text.chars().enumerate() {
         // println!("Rendering character {}: {}", i, c);
-        let error = GameError::FontError(format!("Character '{}' not in bitmap font!", c));
-        let source_offset = *glyphs_map.get(&c).ok_or(error)?;
+        let error = || GameError::FontError(format!("Character '{}' not in bitmap font!", c));
+        let source_offset = *glyphs_map.get(&c).ok_or_else(error)?;
         let dest_offset = glyph_width * i;
         // println!("Blitting {:?} to {:?}", source_offset, dest_offset);
         blit(
@@ -401,6 +499,92 @@ fn render_bitmap(
     })
 }
 
+struct VariableFontCharIter<'a> {
+    font: &'a DynamicBitmapFont,
+    iter: ::std::str::Chars<'a>,
+    char_was_space: bool,
+    offset: usize,
+}
+
+impl<'a> Iterator for VariableFontCharIter<'a>{
+    // X basically just saying the Self is outlived by the refs it contains (the font will be around after the VariableFontCharIter is done).
+    type Item = (char, usize); //char, offset
+    fn next(&mut self)-> Option<Self::Item> {
+        if let Some(c) = self.iter.next() {
+            let char_span = self.font.span_for(c);
+            //bump up the offset by letter_separation iff the last char was a letter. Record whether this char was a letter
+            if self.char_was_space {
+                if c != ' ' {
+                    self.char_was_space = false;
+                }
+            }else{
+                if c != ' ' {
+                    //then two letters in a row, need letter spacing
+                    self.offset += self.font.letter_separation;
+                }else{
+                    self.char_was_space = true;
+                }
+            }
+            let this_offset = self.offset;
+            self.offset += char_span;
+            Some((c, this_offset))
+        }else{
+            None
+        }
+    }
+}
+
+impl<'a> VariableFontCharIter<'a> {
+    fn new(text: &'a str, font:&'a DynamicBitmapFont)-> VariableFontCharIter<'a> {
+        VariableFontCharIter{ font, iter: text.chars(), char_was_space: true, offset: 0 }
+    }
+}
+
+fn compute_dynamic_bitmap_width(text: &str, font: &DynamicBitmapFont)-> usize {
+    VariableFontCharIter::new(text, font).last().map(|(c, offset)| offset + font.span_for(c)).unwrap_or(0)
+}
+
+fn render_dynamic_bitmap(
+    context: &mut Context,
+    text: &str,
+    font: &DynamicBitmapFont,
+)-> GameResult<Text> {
+    let image_span = compute_dynamic_bitmap_width(text, font);
+    // Same at-least-one-pixel-wide constraint here as with TTF fonts.
+    let buf_len = cmp::max(image_span * font.height * 4, 1);
+    let mut dest_buf = Vec::with_capacity(buf_len);
+    dest_buf.resize(buf_len, 0u8);
+    for (c, offset) in VariableFontCharIter::new(text, font) {
+        if c != ' ' {
+            let (cspan, coffset) = font.glyphs.get(&c).map(|r| *r).unwrap_or((0,0));
+            blit(
+                &mut dest_buf,
+                (image_span, font.height),
+                (offset, 0),
+                &font.bytes,
+                (font.width, font.height),
+                (coffset, 0),
+                (cspan, font.height),
+                4,
+            );
+        }
+    }
+    
+    let image = Image::from_rgba8(
+        context,
+        image_span as u16,
+        font.height as u16,
+        &dest_buf,
+    )?;
+    let text_string = text.to_string();
+
+    Ok(Text {
+        texture: image,
+        contents: text_string,
+        blend_mode: None,
+    })
+}
+
 impl Text {
     /// Renders a new `Text` from the given `Font`.
     ///
@@ -412,6 +596,7 @@ impl Text {
             Font::TTFFont {
                 font: ref f, scale, ..
             } => render_ttf(context, text, f, scale),
+            Font::DynamicBitmapFontVariant(ref font)=> render_dynamic_bitmap(context, text, font),
             Font::BitmapFont {
                 ref bytes,
                 width,
