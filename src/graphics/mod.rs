@@ -1252,6 +1252,10 @@ where
 
 /// In-GPU-memory image data available to be drawn on the screen,
 /// using the OpenGL backend.
+///
+/// Note that this is really just an `Arc`'ed texture handle and some metadata,
+/// so `clone()`'ing it is quite cheap since it doesn't need to actually
+/// copy the image data.
 pub type Image = ImageGeneric<gfx_device_gl::Resources>;
 
 impl Image {
