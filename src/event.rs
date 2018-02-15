@@ -225,7 +225,12 @@ where
                     xrel,
                     yrel,
                     ..
-                } => state.mouse_motion_event(ctx, mousestate, x, y, xrel, yrel),
+                } => {
+                    // TODO: This is a bit of a hack, see issue #283.
+                    use ::graphics::Point2;
+                    ctx.mouse_context.set_last_position(Point2::new(x as f32, y as f32));
+                    state.mouse_motion_event(ctx, mousestate, x, y, xrel, yrel);
+                }
                 MouseWheel { x, y, .. } => state.mouse_wheel_event(ctx, x, y),
                 ControllerButtonDown { button, which, .. } => {
                     state.controller_button_down_event(ctx, button, which)

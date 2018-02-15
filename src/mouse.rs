@@ -1,10 +1,29 @@
 //! Mouse utility functions.
 
-use sdl2::mouse;
 use context::Context;
 use error::GameResult;
 use graphics;
 use graphics::Point2;
+
+/// Stores state information for the mouse,
+/// what little of it there is.
+#[derive(Clone, Debug)]
+pub struct MouseContext {
+    last_position: Point2,
+}
+
+impl MouseContext {
+    /// Creates a new `MouseContext`.
+    pub fn new() -> Self {
+        Self {
+            last_position: Point2::origin(),
+        }
+    }
+
+    pub(crate) fn set_last_position(&mut self, p: Point2) {
+        self.last_position = p;
+    }
+}
 
 /// Get whether or not the mouse is "grabbed", ie, confined to the window.
 pub fn get_grabbed(ctx: &Context) -> bool {
@@ -31,13 +50,11 @@ pub fn set_relative_mode(ctx: &Context, mode: bool) {
 }
 
 /// Get the current position of the mouse cursor, in pixels.
+/// Complement to `set_position()`.
 /// Uses strictly window-only coordinates.
 pub fn get_position(ctx: &Context) -> GameResult<Point2> {
-    let event_pump = &ctx.sdl_context.event_pump()?;
-    let mouse = mouse::MouseState::new(event_pump);
-    let x = mouse.x() as f32;
-    let y = mouse.y() as f32;
-    Ok(Point2::new(x, y))
+    // TODO: Next time we can break the API, remove the GameResult here.
+    Ok(ctx.mouse_context.last_position)
 }
 
 /// Set the current position of the mouse cursor, in pixels.
