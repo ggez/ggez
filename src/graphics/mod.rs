@@ -680,6 +680,11 @@ pub fn arc(_ctx: &mut Context,
 */
 
 /// Draw a circle.
+///
+/// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
+/// you should create the `Mesh` yourself.
+///
+/// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
 pub fn circle(
     ctx: &mut Context,
     mode: DrawMode,
@@ -692,6 +697,11 @@ pub fn circle(
 }
 
 /// Draw an ellipse.
+///
+/// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
+/// you should create the `Mesh` yourself.
+///
+/// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
 pub fn ellipse(
     ctx: &mut Context,
     mode: DrawMode,
@@ -705,12 +715,18 @@ pub fn ellipse(
 }
 
 /// Draws a line of one or more connected segments.
+///
+/// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
+/// you should create the `Mesh` yourself.
 pub fn line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult<()> {
     let m = Mesh::new_line(ctx, points, width)?;
     m.draw(ctx, Point2::origin(), 0.0)
 }
 
 /// Draws points (as rectangles)
+///
+/// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
+/// you should create the `Mesh` yourself.
 pub fn points(ctx: &mut Context, points: &[Point2], point_size: f32) -> GameResult<()> {
     for p in points {
         let r = Rect::new(p.x, p.y, point_size, point_size);
@@ -720,6 +736,9 @@ pub fn points(ctx: &mut Context, points: &[Point2], point_size: f32) -> GameResu
 }
 
 /// Draws a closed polygon
+///
+/// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
+/// you should create the `Mesh` yourself.
 pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameResult<()> {
     let m = Mesh::new_polygon(ctx, mode, vertices)?;
     m.draw(ctx, Point2::origin(), 0.0)
@@ -738,6 +757,9 @@ pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameRe
 // }
 
 /// Draws a rectangle.
+///
+/// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
+/// you should create the `Mesh` yourself.
 pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
     let x1 = rect.x;
     let x2 = rect.x + rect.w;

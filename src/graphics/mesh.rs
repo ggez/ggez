@@ -34,6 +34,8 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a circle.
+    ///
+    /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
     pub fn circle(
         &mut self,
         mode: DrawMode,
@@ -74,6 +76,8 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for an ellipse.
+    ///
+    /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
     pub fn ellipse(
         &mut self,
         mode: DrawMode,
