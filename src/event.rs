@@ -187,6 +187,7 @@ where
         ctx.timer_context.tick();
 
         for event in event_pump.poll_iter() {
+            ctx.process_event(&event);
             match event {
                 Quit { .. } => {
                     continuing = state.quit_event(ctx);
@@ -226,9 +227,6 @@ where
                     yrel,
                     ..
                 } => {
-                    // TODO: This is a bit of a hack, see issue #283.
-                    use ::graphics::Point2;
-                    ctx.mouse_context.set_last_position(Point2::new(x as f32, y as f32));
                     state.mouse_motion_event(ctx, mousestate, x, y, xrel, yrel);
                 }
                 MouseWheel { x, y, .. } => state.mouse_wheel_event(ctx, x, y),
@@ -253,7 +251,6 @@ where
                     win_event: event::WindowEvent::Resized(w, h),
                     ..
                 } => {
-                    ctx.gfx_context.resize_viewport();
                     state.resize_event(ctx, w as u32, h as u32);
                 }
                 _ => {}

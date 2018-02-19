@@ -27,6 +27,7 @@ pub fn main() {
         ctx.timer_context.tick();
         // Handle events
         for event in events.poll() {
+            ctx.process_event(&event);
             match event {
                 event::Event::Quit { .. } |
                 event::Event::KeyDown { keycode: Some(event::Keycode::Escape), .. } => {

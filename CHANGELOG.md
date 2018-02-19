@@ -4,6 +4,7 @@
 
  * Added `Text::into_inner()` and related methods to get ahold of a `Text` object's underlying `Image`
  * Added `SoundData::new()` and `Source::set_repeat()`/`Source::get_repeat()` (thanks jupart!)
+ * Added `Context::process_event()` to smooth out a bump or two in the API for writing custom event loops.
 
 ## Changed
 
