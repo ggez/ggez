@@ -163,7 +163,7 @@ impl Source {
     }
 
     /// Gets whether or not the source is set to repeat.
-    pub fn repeat(&self) -> self {
+    pub fn repeat(&self) -> bool {
         self.repeat
     }
 
