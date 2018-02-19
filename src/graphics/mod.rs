@@ -668,15 +668,15 @@ pub fn present(ctx: &mut Context) {
 
 /// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to a PNG file with the given name,
-/// in the game's data directory.
+/// in the game's config directory.
 pub fn screenshot(ctx: &mut Context, name: &str) -> GameResult<()> {
     use std::path::PathBuf;
 
-    let mut full_path = PathBuf::from(ctx.filesystem.get_user_data_dir());
+    let mut full_path = PathBuf::from(ctx.filesystem.get_user_config_dir());
     full_path.push("screenshots");
     full_path.push(name);
-    println!("{}", full_path.to_string_lossy());
-    screenshot_to_path(ctx, &*full_path.to_string_lossy())
+    screenshot_to_path(ctx, &*full_path.to_string_lossy()).unwrap();
+    Ok(())
 }
 
 // TODO link screenshot fn in below doc
@@ -696,12 +696,18 @@ pub fn screenshot_to_path(ctx: &mut Context, path: &str) -> GameResult<()> {
     let gfx = &mut ctx.gfx_context;
     let (w, h, _, _) = gfx.data.out.get_dimensions();
     type SurfaceData = <<ColorFormat as Formatted>::Surface as SurfaceTyped>::DataType;
+
     // Note: In the GFX example, the download buffer is created ahead of time
     // and updated on screen resize events. This may be preferable, but then
     // the buffer also needs to be updated when we switch to/from a canvas.
     // Unsure of the performance impact of creating this as it is needed.
     let dl_buffer = gfx.factory.create_download_buffer::<SurfaceData>(w as usize * h as usize)?;
-    gfx.encoder.copy_texture_to_buffer_raw(
+
+    let mut local_encoder: gfx::Encoder<
+        gfx_device_gl::Resources,
+        gfx_device_gl::CommandBuffer> = gfx.factory.create_command_buffer().into();
+    
+    local_encoder.copy_texture_to_buffer_raw(
         gfx.data.out.raw().get_texture(),
         None,
         gfx::texture::RawImageInfo {
@@ -717,7 +723,7 @@ pub fn screenshot_to_path(ctx: &mut Context, path: &str) -> GameResult<()> {
         dl_buffer.raw(),
         0
     )?;
-    gfx.encoder.flush(&mut *gfx.device);
+    local_encoder.flush(&mut *gfx.device);
 
     let reader = gfx.factory.read_mapping(&dl_buffer)?;
 
