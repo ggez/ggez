@@ -436,7 +436,7 @@ impl GraphicsContext {
             projection: initial_projection,
             modelview_stack: vec![initial_transform],
             white_image: white_image,
-            screen_rect: Rect::new(left, top, (right - left), (bottom - top)),
+            screen_rect: Rect::new(left, top, right - left, bottom - top),
             dpi: dpi,
 
             backend_spec: backend,
