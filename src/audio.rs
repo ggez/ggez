@@ -51,6 +51,13 @@ impl fmt::Debug for AudioContext {
 pub struct SoundData(Arc<[u8]>);
 
 impl SoundData {
+    /// Create a new SoundData from the file at the given path.
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+        let path = path.as_ref();
+        let file = &mut context.filesystem.open(path)?;
+        SoundData::from_read(file)
+    }
+    
     /// Copies the data in the given slice into a new SoundData object.
     pub fn from_bytes(data: &[u8]) -> Self {
         SoundData(Arc::from(data))
@@ -66,13 +73,6 @@ impl SoundData {
         reader.read_to_end(&mut buffer)?;
 
         Ok(SoundData::from(buffer))
-    }
-
-    /// Create a new SoundData from the given file.
-    pub fn from_file<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
-        let path = path.as_ref();
-        let file = &mut context.filesystem.open(path)?;
-        SoundData::from_read(file)
     }
 }
 
@@ -122,23 +122,20 @@ pub struct Source {
 
 impl Source {
     /// Create a new Source from the given file.
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P, repeat: bool) -> GameResult<Self> {
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
-        let data = {
-            let file = &mut context.filesystem.open(path)?;
-            SoundData::from_read(file)?
-        };
-        Source::from_data(context, data, repeat)
+        let data = SoundData::new(context, path)?;
+        Source::from_data(context, data)
     }
 
     /// Creates a new Source using the given SoundData object.
-    pub fn from_data(context: &mut Context, data: SoundData, repeat: bool) -> GameResult<Self> {
+    pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
         let sink = rodio::Sink::new(&context.audio_context.endpoint);
         let cursor = io::Cursor::new(data);
         Ok(Source {
             data: cursor,
             sink: sink,
-            repeat,
+            repeat: false,
         })
     }
 
@@ -160,10 +157,16 @@ impl Source {
         Ok(())
     }
 
-    /// Repeats playback infinitely on next play()
-    pub fn to_repeat(&mut self, repeat: bool) {
+    /// Sets the source to repeat playback infinitely on next `play()`
+    pub fn set_repeat(&mut self, repeat: bool) {
         self.repeat = repeat;
     }
+
+    /// Gets whether or not the source is set to repeat.
+    pub fn repeat(&self) -> self {
+        self.repeat
+    }
+
 
     /// Pauses playback
     pub fn pause(&self) {
@@ -200,7 +203,6 @@ impl Source {
     pub fn paused(&self) -> bool {
         self.sink.is_paused()
     }
-
 
     /// Get whether or not the source is playing (ie, not paused
     /// and not stopped)

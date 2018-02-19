@@ -56,7 +56,7 @@ impl MainState {
         let bmpfont = graphics::Font::new_bitmap(ctx, "/arial.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
             .unwrap();
         let bmptext = graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
-        let sound = audio::Source::new(ctx, "/sound.ogg", false).unwrap();
+        let sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
 
         let _ = sound.play();
 
