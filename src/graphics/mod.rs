@@ -667,8 +667,26 @@ pub fn present(ctx: &mut Context) {
 }
 
 /// Take a screenshot by outputting the current render surface
+/// (screen or selected canvas) to a PNG file with the given name,
+/// in the game's data directory.
+pub fn screenshot(ctx: &mut Context, name: &str) -> GameResult<()> {
+    use std::path::PathBuf;
+
+    let mut full_path = PathBuf::from(ctx.filesystem.get_user_data_dir());
+    full_path.push("screenshots");
+    full_path.push(name);
+    println!("{}", full_path.to_string_lossy());
+    screenshot_to_path(ctx, &*full_path.to_string_lossy())
+}
+
+// TODO link screenshot fn in below doc
+
+/// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to a PNG file.
-pub fn screenshot(ctx: &mut Context, path: &str) -> GameResult<()> {
+/// 
+/// `screenshot` should be preferred if you do not need absolute control
+/// over where the screenshot will be placed.
+pub fn screenshot_to_path(ctx: &mut Context, path: &str) -> GameResult<()> {
     use gfx::memory::Typed;
     use gfx::format::Formatted;
     use gfx::format::SurfaceTyped;

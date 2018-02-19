@@ -578,7 +578,8 @@ impl EventHandler for MainState {
                 self.input.fire = true;
             },
             Keycode::P => {
-                graphics::screenshot(ctx, "screenshot.png");
+                // Because this is an example, we silently discard any error while screenshotting
+                let _ = graphics::screenshot(ctx, "screenshot.png");
             },
             Keycode::Escape => ctx.quit().unwrap(),
             _ => (), // Do nothing
