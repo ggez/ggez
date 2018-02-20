@@ -52,10 +52,10 @@ on!
 
 ## Debian
 
-Very easy, just install `libasound2` and `libsdl2` dev packages:
+Very easy, just install the required dev packages:
 
 ```sh
-apt install libasound2-dev libsdl2-dev
+apt install libasound2-dev libsdl2-dev pkg-config
 ```
 
 Then you should be able to build with `cargo run`
