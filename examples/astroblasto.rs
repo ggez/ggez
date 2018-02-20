@@ -576,7 +576,11 @@ impl EventHandler for MainState {
             }
             Keycode::Space => {
                 self.input.fire = true;
-            }
+            },
+            Keycode::P => {
+                // Because this is an example, we silently discard any error while screenshotting
+                let _ = graphics::screenshot(ctx, "screenshot.png");
+            },
             Keycode::Escape => ctx.quit().unwrap(),
             _ => (), // Do nothing
         }

@@ -57,7 +57,7 @@ impl Canvas {
         let tex = factory.create_texture(
             kind,
             levels,
-            Bind::SHADER_RESOURCE | Bind::RENDER_TARGET,
+            Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
             Usage::Data,
             Some(cty),
         )?;
