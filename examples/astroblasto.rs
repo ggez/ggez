@@ -578,9 +578,10 @@ impl EventHandler for MainState {
                 self.input.fire = true;
             },
             Keycode::P => {
-                // Because this is an example, we silently discard any error while screenshotting
-                let img = graphics::screenshot(ctx)?;
-                img.encode(ctx, graphics::ImageFormat::Png, "/screenshot.png")?;
+                let img = graphics::screenshot(ctx)
+                    .expect("Could not take screenshot");
+                img.encode(ctx, graphics::ImageFormat::Png, "/screenshot.png")
+                    .expect("Could not save screenshot");
             },
             Keycode::Escape => ctx.quit().unwrap(),
             _ => (), // Do nothing
