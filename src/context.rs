@@ -8,6 +8,7 @@ use std::io::Read;
 
 use audio;
 use conf;
+use event;
 use filesystem::Filesystem;
 use graphics;
 use input;
@@ -161,6 +162,32 @@ impl Context {
         };
         // println!("Pushing event {:?}", e);
         self.event_context.push_event(e).map_err(GameError::from)
+    }
+
+    /// Feeds an `Event` into the `Context` so it can update any internal
+    /// state it needs to, such as detecting window resizes.  If you are
+    /// rolling your own event loop, you should call this on the events
+    /// you receive before processing them yourself.
+    pub fn process_event(&mut self, event: &event::Event) {
+        match *event {
+            event::Event::MouseMotion {
+                x,
+                y,
+                ..
+            } => {
+                // Keeping the mouse state info in the Context is a bit of a hack, see issue #283.
+                // Seems the best workaround though.
+                use ::graphics::Point2;
+                self.mouse_context.set_last_position(Point2::new(x as f32, y as f32));
+            }
+            event::Event::Window {
+                win_event: sdl2::event::WindowEvent::Resized(_, _),
+                ..
+            } => {
+                self.gfx_context.resize_viewport();
+            }
+            _ => {}
+        }
     }
 }
 

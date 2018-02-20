@@ -51,6 +51,13 @@ impl fmt::Debug for AudioContext {
 pub struct SoundData(Arc<[u8]>);
 
 impl SoundData {
+    /// Create a new SoundData from the file at the given path.
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+        let path = path.as_ref();
+        let file = &mut context.filesystem.open(path)?;
+        SoundData::from_read(file)
+    }
+    
     /// Copies the data in the given slice into a new SoundData object.
     pub fn from_bytes(data: &[u8]) -> Self {
         SoundData(Arc::from(data))
@@ -110,16 +117,14 @@ impl AsRef<[u8]> for SoundData {
 pub struct Source {
     data: io::Cursor<SoundData>,
     sink: rodio::Sink,
+    repeat: bool,
 }
 
 impl Source {
     /// Create a new Source from the given file.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
-        let data = {
-            let file = &mut context.filesystem.open(path)?;
-            SoundData::from_read(file)?
-        };
+        let data = SoundData::new(context, path)?;
         Source::from_data(context, data)
     }
 
@@ -130,6 +135,7 @@ impl Source {
         Ok(Source {
             data: cursor,
             sink: sink,
+            repeat: false,
         })
     }
 
@@ -139,11 +145,28 @@ impl Source {
         // since it may do checking and data-type detection that is
         // redundant, but it's not super expensive.
         // See https://github.com/ggez/ggez/issues/98 for discussion
+        use rodio::Source;
         let cursor = self.data.clone();
         let decoder = rodio::Decoder::new(cursor)?;
-        self.sink.append(decoder);
+        if self.repeat {
+            let repeating = decoder.repeat_infinite();
+            self.sink.append(repeating);
+        } else {
+            self.sink.append(decoder);
+        }
         Ok(())
     }
+
+    /// Sets the source to repeat playback infinitely on next `play()`
+    pub fn set_repeat(&mut self, repeat: bool) {
+        self.repeat = repeat;
+    }
+
+    /// Gets whether or not the source is set to repeat.
+    pub fn repeat(&self) -> bool {
+        self.repeat
+    }
+
 
     /// Pauses playback
     pub fn pause(&self) {
@@ -180,7 +203,6 @@ impl Source {
     pub fn paused(&self) -> bool {
         self.sink.is_paused()
     }
-
 
     /// Get whether or not the source is playing (ie, not paused
     /// and not stopped)

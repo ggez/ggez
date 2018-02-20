@@ -7,31 +7,28 @@
 //! corner of the screen, with Y increasing downwards.
 
 use std::fmt;
-use std::path;
 use std::convert::From;
 use std::collections::HashMap;
-use std::io::Read;
 use std::u16;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use sdl2;
-use image;
 use gfx;
-use gfx::texture;
-use gfx::traits::Device;
-use gfx::traits::FactoryExt;
 use gfx_device_gl;
 use gfx_window_sdl;
+use gfx::texture;
+use gfx::Device;
 use gfx::Factory;
 
 use conf;
-use conf::{WindowMode, WindowSetup};
+use conf::WindowMode;
 use context::Context;
 use GameError;
 use GameResult;
 
 mod canvas;
+mod context;
+mod drawparam;
+mod image;
 mod mesh;
 mod shader;
 mod text;
@@ -41,6 +38,9 @@ use nalgebra as na;
 pub mod spritebatch;
 
 pub use self::canvas::*;
+pub(crate) use self::context::*;
+pub use self::drawparam::*;
+pub use self::image::*;
 pub use self::mesh::*;
 pub use self::shader::*;
 pub use self::text::*;
@@ -191,7 +191,7 @@ impl From<DrawParam> for InstanceProperties {
 
 /// A structure for conveniently storing Sampler's, based off
 /// their `SamplerInfo`.
-struct SamplerCache<B>
+pub(crate) struct SamplerCache<B>
 where
     B: BackendSpec,
 {
@@ -219,59 +219,6 @@ where
         sampler.clone()
     }
 }
-
-/// A structure that contains graphics state.
-/// For instance, background and foreground colors,
-/// window info, DPI, rendering pipeline state, etc.
-///
-/// As an end-user you shouldn't ever have to touch this.
-pub(crate) struct GraphicsContextGeneric<B>
-where
-    B: BackendSpec,
-{
-    foreground_color: Color,
-    background_color: Color,
-    shader_globals: Globals,
-    projection: Matrix4,
-    modelview_stack: Vec<Matrix4>,
-    white_image: Image,
-    screen_rect: Rect,
-    dpi: (f32, f32, f32),
-
-    backend_spec: B,
-    window: sdl2::video::Window,
-    multisample_samples: u8,
-    #[allow(dead_code)] gl_context: sdl2::video::GLContext,
-    device: Box<B::Device>,
-    factory: Box<B::Factory>,
-    encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
-    screen_render_target: gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
-    #[allow(dead_code)]
-    depth_view: gfx::handle::DepthStencilView<B::Resources, gfx::format::DepthStencil>,
-
-    data: pipe::Data<B::Resources>,
-    quad_slice: gfx::Slice<B::Resources>,
-    quad_vertex_buffer: gfx::handle::Buffer<B::Resources, Vertex>,
-
-    default_sampler_info: texture::SamplerInfo,
-    samplers: SamplerCache<B>,
-
-    default_shader: ShaderId,
-    current_shader: Rc<RefCell<Option<ShaderId>>>,
-    shaders: Vec<Box<ShaderHandle<B>>>,
-}
-
-impl<B> fmt::Debug for GraphicsContextGeneric<B>
-where
-    B: BackendSpec,
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "<GraphicsContext: {:p}>", self)
-    }
-}
-
-/// A concrete graphics context for GL rendering.
-pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec>;
 
 /// This can probably be removed but might be
 /// handy to keep around a bit longer.  Just in case something else
@@ -322,309 +269,6 @@ impl From<gfx::buffer::CreationError> for GameError {
                 GameError::RenderError("Could not create buffer: Unknown error".to_owned())
             }
         }
-    }
-}
-
-impl GraphicsContext {
-    /// Create a new GraphicsContext
-    pub(crate) fn new(
-        video: &sdl2::VideoSubsystem,
-        window_setup: &WindowSetup,
-        window_mode: WindowMode,
-        backend: GlBackendSpec,
-    ) -> GameResult<GraphicsContext> {
-        // WINDOW SETUP
-        let gl = video.gl_attr();
-        gl.set_context_version(backend.major, backend.minor);
-        gl.set_context_profile(sdl2::video::GLProfile::Core);
-        gl.set_red_size(5);
-        gl.set_green_size(5);
-        gl.set_blue_size(5);
-        gl.set_alpha_size(8);
-        let samples = window_setup.samples as u8;
-        if samples > 1 {
-            gl.set_multisample_buffers(1);
-            gl.set_multisample_samples(samples);
-        }
-        let mut window_builder =
-            video.window(&window_setup.title, window_mode.width, window_mode.height);
-        if window_setup.resizable {
-            window_builder.resizable();
-        }
-        if window_setup.allow_highdpi {
-            window_builder.allow_highdpi();
-        }
-        let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
-            gfx_window_sdl::init(video, window_builder)?;
-
-        GraphicsContext::set_vsync(video, window_mode.vsync);
-
-        let display_index = window.display_index()?;
-        let dpi = window.subsystem().display_dpi(display_index)?;
-
-        // GFX SETUP
-        let mut encoder: gfx::Encoder<
-            gfx_device_gl::Resources,
-            gfx_device_gl::CommandBuffer,
-        > = factory.create_command_buffer().into();
-
-        let blend_modes = [
-            BlendMode::Alpha,
-            BlendMode::Add,
-            BlendMode::Subtract,
-            BlendMode::Invert,
-            BlendMode::Multiply,
-            BlendMode::Replace,
-            BlendMode::Lighten,
-            BlendMode::Darken,
-        ];
-        let (shader, draw) = create_shader(
-            include_bytes!("shader/basic_150.glslv"),
-            include_bytes!("shader/basic_150.glslf"),
-            EmptyConst,
-            "Empty",
-            &mut encoder,
-            &mut factory,
-            samples,
-            Some(&blend_modes[..]),
-        )?;
-
-        let rect_inst_props = factory.create_buffer(
-            1,
-            gfx::buffer::Role::Vertex,
-            gfx::memory::Usage::Dynamic,
-            gfx::memory::Bind::SHADER_RESOURCE,
-        )?;
-
-        let (quad_vertex_buffer, mut quad_slice) =
-            factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
-
-        quad_slice.instances = Some((1, 0));
-
-        let globals_buffer = factory.create_constant_buffer(1);
-        let mut samplers: SamplerCache<GlBackendSpec> = SamplerCache::new();
-        let sampler_info =
-            texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
-        let sampler = samplers.get_or_insert(sampler_info, &mut factory);
-        let white_image =
-            Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255])?;
-        let texture = white_image.texture.clone();
-
-        let data = pipe::Data {
-            vbuf: quad_vertex_buffer.clone(),
-            tex: (texture, sampler),
-            rect_instance_properties: rect_inst_props,
-            globals: globals_buffer,
-            out: screen_render_target.clone(),
-        };
-
-        // Set initial uniform values
-        let left = 0.0;
-        let right = window_mode.width as f32;
-        let top = 0.0;
-        let bottom = window_mode.height as f32;
-        let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
-        let initial_transform = Matrix4::identity();
-        let globals = Globals {
-            mvp_matrix: initial_projection.into(),
-        };
-
-        let mut gfx = GraphicsContext {
-            foreground_color: types::WHITE,
-            background_color: Color::new(0.1, 0.2, 0.3, 1.0),
-            shader_globals: globals,
-            projection: initial_projection,
-            modelview_stack: vec![initial_transform],
-            white_image: white_image,
-            screen_rect: Rect::new(left, top, right - left, bottom - top),
-            dpi: dpi,
-
-            backend_spec: backend,
-            window: window,
-            multisample_samples: samples,
-            gl_context: gl_context,
-            device: Box::new(device),
-            factory: Box::new(factory),
-            encoder: encoder,
-            screen_render_target: screen_render_target,
-            depth_view: depth_view,
-
-            data: data,
-            quad_slice: quad_slice,
-            quad_vertex_buffer: quad_vertex_buffer,
-
-            default_sampler_info: sampler_info,
-            samplers: samplers,
-
-            default_shader: shader.shader_id(),
-            current_shader: Rc::new(RefCell::new(None)),
-            shaders: vec![draw],
-        };
-        gfx.set_window_mode(window_mode)?;
-
-        // Calculate and apply the actual initial projection matrix
-        let w = window_mode.width as f32;
-        let h = window_mode.height as f32;
-        let rect = Rect {
-            x: 0.0,
-            y: 0.0,
-            w,
-            h,
-        };
-        gfx.set_projection_rect(rect);
-        gfx.calculate_transform_matrix();
-        gfx.update_globals()?;
-        Ok(gfx)
-    }
-
-    /// Sends the current value of the graphics context's shader globals
-    /// to the graphics card.
-    fn update_globals(&mut self) -> GameResult<()> {
-        self.encoder
-            .update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
-        Ok(())
-    }
-
-    /// Recalculates the context's Model-View-Projection matrix based on
-    /// the matrices on the top of the respective stacks and the projection
-    /// matrix.
-    fn calculate_transform_matrix(&mut self) {
-        let modelview = self.modelview_stack
-            .last()
-            .expect("Transform stack empty; should never happen");
-        let mvp = self.projection * modelview;
-        self.shader_globals.mvp_matrix = mvp.into();
-    }
-
-    /// Pushes a homogeneous transform matrix to the top of the transform
-    /// (model) matrix stack.
-    fn push_transform(&mut self, t: Matrix4) {
-        self.modelview_stack.push(t);
-    }
-
-    /// Pops the current transform matrix off the top of the transform
-    /// (model) matrix stack.
-    fn pop_transform(&mut self) {
-        if self.modelview_stack.len() > 1 {
-            self.modelview_stack.pop();
-        }
-    }
-
-    /// Sets the current model-view transform matrix.
-    fn set_transform(&mut self, t: Matrix4) {
-        assert!(
-            !self.modelview_stack.is_empty(),
-            "Tried to set a transform on an empty transform stack!"
-        );
-        let last = self.modelview_stack
-            .last_mut()
-            .expect("Transform stack empty; should never happen!");
-        *last = t;
-    }
-
-    /// Gets a copy of the current transform matrix.
-    fn get_transform(&self) -> Matrix4 {
-        assert!(
-            !self.modelview_stack.is_empty(),
-            "Tried to get a transform on an empty transform stack!"
-        );
-        let last = self.modelview_stack
-            .last()
-            .expect("Transform stack empty; should never happen!");
-        *last
-    }
-
-    /// Converts the given `DrawParam` into an `InstanceProperties` object and
-    /// sends it to the graphics card at the front of the instance buffer.
-    fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
-        // This clone is cheap since draw_params is Copy
-        let mut new_draw_params = draw_params;
-        let fg = Some(self.foreground_color);
-        new_draw_params.color = draw_params.color.or(fg);
-        let properties = new_draw_params.into();
-        self.encoder
-            .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;
-        Ok(())
-    }
-
-    /// Draws with the current encoder, slice, and pixel shader. Prefer calling
-    /// this method from `Drawables` so that the pixel shader gets used
-    fn draw(&mut self, slice: Option<&gfx::Slice<gfx_device_gl::Resources>>) -> GameResult<()> {
-        let slice = slice.unwrap_or(&self.quad_slice);
-        let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
-        let shader_handle = &self.shaders[id];
-
-        shader_handle.draw(&mut self.encoder, slice, &self.data)?;
-        Ok(())
-    }
-
-    /// Sets the blend mode of the active shader
-    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()> {
-        let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
-        let shader_handle = &mut self.shaders[id];
-        shader_handle.set_blend_mode(mode)
-    }
-
-    /// Gets the current blend mode of the active shader
-    fn get_blend_mode(&self) -> BlendMode {
-        let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
-        let shader_handle = &self.shaders[id];
-        shader_handle.get_blend_mode()
-    }
-
-    /// Shortcut function to set the projection matrix to an
-    /// orthographic projection based on the given `Rect`.
-    ///
-    /// Call `update_globals()` to apply it after calling this.
-    fn set_projection_rect(&mut self, rect: Rect) {
-        type Vec3 = na::Vector3<f32>;
-        self.screen_rect = rect;
-        self.projection =
-            Matrix4::new_orthographic(rect.x, rect.x + rect.w, rect.y, rect.y + rect.h, -1.0, 1.0)
-                .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
-    }
-
-    /// Sets the raw projection matrix to the given Matrix.
-    ///
-    /// Call `update_globals()` to apply after calling this.
-    fn set_projection(&mut self, mat: Matrix4) {
-        self.projection = mat;
-    }
-
-    /// Gets a copy of the raw projection matrix.
-    fn get_projection(&self) -> Matrix4 {
-        self.projection
-    }
-
-    /// Just a helper method to set window mode from a WindowMode object.
-    fn set_window_mode(&mut self, mode: WindowMode) -> GameResult<()> {
-        let window = &mut self.window;
-        window.set_size(mode.width, mode.height)?;
-        // SDL sets "bordered" but Love2D does "not bordered";
-        // we use the Love2D convention.
-        window.set_bordered(!mode.borderless);
-        window.set_fullscreen(mode.fullscreen_type.into())?;
-        window.set_minimum_size(mode.min_width, mode.min_height)?;
-        window.set_maximum_size(mode.max_width, mode.max_height)?;
-        Ok(())
-    }
-
-    /// Another helper method to set vsync.
-    fn set_vsync(video: &sdl2::VideoSubsystem, vsync: bool) {
-        let vsync_int = if vsync { 1 } else { 0 };
-        video.gl_set_swap_interval(vsync_int);
-    }
-
-    /// Communicates changes in the viewport size between SDL and gfx.
-    ///
-    /// Also replaces gfx.data.out so it may cause squirrelliness to
-    /// happen with canvases or other things that touch it.
-    pub(crate) fn resize_viewport(&mut self) {
-        gfx_window_sdl::update_views(
-            &self.window,
-            &mut self.screen_render_target,
-            &mut self.depth_view,
-        );
     }
 }
 
@@ -1216,89 +860,6 @@ pub fn get_gfx_objects(
     (f, d, e, dv, cv)
 }
 
-// **********************************************************************
-// TYPES
-// **********************************************************************
-
-/// A struct containing all the necessary info for drawing a Drawable.
-///
-/// This struct implements the `Default` trait, so to set only some parameter
-/// you can just do:
-///
-/// ```rust,ignore
-/// graphics::draw_ex(ctx, drawable, DrawParam{ dest: my_dest, .. Default::default()} )
-/// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct DrawParam {
-    /// a portion of the drawable to clip, as a fraction of the whole image.
-    /// Defaults to the whole image (1.0) if omitted.
-    pub src: Rect,
-    /// the position to draw the graphic expressed as a `Point2`.
-    pub dest: Point2,
-    /// orientation of the graphic in radians.
-    pub rotation: f32,
-    /// x/y scale factors expressed as a `Point2`.
-    pub scale: Point2,
-    /// specifies an offset from the center for transform operations like scale/rotation,
-    /// with `0,0` meaning the origin and `1,1` meaning the opposite corner from the origin.
-    /// By default these operations are done from the top-left corner, so to rotate something
-    /// from the center specify `Point::new(0.5, 0.5)` here.
-    pub offset: Point2,
-    /// x/y shear factors expressed as a `Point2`.
-    pub shear: Point2,
-    /// A color to draw the target with.
-    /// If `None`, the color set by `graphics::set_color()` is used; default white.
-    pub color: Option<Color>,
-}
-
-impl Default for DrawParam {
-    fn default() -> Self {
-        DrawParam {
-            src: Rect::one(),
-            dest: Point2::origin(),
-            rotation: 0.0,
-            scale: Point2::new(1.0, 1.0),
-            offset: Point2::new(0.0, 0.0),
-            shear: Point2::new(0.0, 0.0),
-            color: None,
-        }
-    }
-}
-
-impl DrawParam {
-    /// Turn the DrawParam into a model matrix, combining
-    /// destination, rotation, scale, offset and shear.
-    pub fn into_matrix(self) -> Matrix4 {
-        type Vec3 = na::Vector3<f32>;
-        let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
-        let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
-        let offset_inverse =
-            Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
-        let axang = Vec3::z() * self.rotation;
-        let rotation = Matrix4::new_rotation(axang);
-        let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
-        let shear = Matrix4::new(
-            1.0,
-            self.shear.x,
-            0.0,
-            0.0,
-            self.shear.y,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-        );
-        translate * offset * rotation * shear * scale * offset_inverse
-    }
-}
-
 /// All types that can be drawn on the screen implement the `Drawable` trait.
 pub trait Drawable {
     /// Actually draws the object to the screen.
@@ -1337,192 +898,6 @@ pub trait Drawable {
     fn get_blend_mode(&self) -> Option<BlendMode>;
 }
 
-/// Generic in-GPU-memory image data available to be drawn on the screen.
-#[derive(Clone)]
-pub struct ImageGeneric<R>
-where
-    R: gfx::Resources,
-{
-    texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
-    sampler_info: gfx::texture::SamplerInfo,
-    blend_mode: Option<BlendMode>,
-    width: u32,
-    height: u32,
-}
-
-/// In-GPU-memory image data available to be drawn on the screen,
-/// using the OpenGL backend.
-///
-/// Note that this is really just an `Arc`'ed texture handle and some metadata,
-/// so `clone()`'ing it is quite cheap since it doesn't need to actually
-/// copy the image data.
-pub type Image = ImageGeneric<gfx_device_gl::Resources>;
-
-impl Image {
-    /// Load a new image from the file at the given path.
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Image> {
-        let img = {
-            let mut buf = Vec::new();
-            let mut reader = context.filesystem.open(path)?;
-            reader.read_to_end(&mut buf)?;
-            image::load_from_memory(&buf)?.to_rgba()
-        };
-        let (width, height) = img.dimensions();
-        Image::from_rgba8(context, width as u16, height as u16, &img)
-    }
-
-    /// Creates a new `Image` from the given buffer of `u8` RGBA values.
-    pub fn from_rgba8(
-        context: &mut Context,
-        width: u16,
-        height: u16,
-        rgba: &[u8],
-    ) -> GameResult<Image> {
-        Image::make_raw(
-            &mut context.gfx_context.factory,
-            &context.gfx_context.default_sampler_info,
-            width,
-            height,
-            rgba,
-        )
-    }
-    /// A helper function that just takes a factory directly so we can make an image
-    /// without needing the full context object, so we can create an Image while still
-    /// creating the GraphicsContext.
-    fn make_raw(
-        factory: &mut gfx_device_gl::Factory,
-        sampler_info: &texture::SamplerInfo,
-        width: u16,
-        height: u16,
-        rgba: &[u8],
-    ) -> GameResult<Image> {
-        if width == 0 || height == 0 {
-            let msg = format!(
-                "Tried to create a texture of size {}x{}, each dimension must
-                be >0",
-                width, height
-            );
-            return Err(GameError::ResourceLoadError(msg));
-        }
-        let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, gfx::texture::Mipmap::Provided, &[rgba])?;
-        Ok(Image {
-            texture: view,
-            sampler_info: *sampler_info,
-            blend_mode: None,
-            width: u32::from(width),
-            height: u32::from(height),
-        })
-    }
-
-    /// A little helper function that creates a new Image that is just
-    /// a solid square of the given size and color.  Mainly useful for
-    /// debugging.
-    pub fn solid(context: &mut Context, size: u16, color: Color) -> GameResult<Image> {
-        // let pixel_array: [u8; 4] = color.into();
-        let (r, g, b, a) = color.into();
-        let pixel_array: [u8; 4] = [r, g, b, a];
-        let size_squared = size as usize * size as usize;
-        let mut buffer = Vec::with_capacity(size_squared);
-        for _i in 0..size_squared {
-            buffer.extend(&pixel_array[..]);
-        }
-        Image::from_rgba8(context, size, size, &buffer)
-    }
-
-    /// Return the width of the image.
-    pub fn width(&self) -> u32 {
-        self.width
-    }
-
-    /// Return the height of the image.
-    pub fn height(&self) -> u32 {
-        self.height
-    }
-
-    /// Get the filter mode for the image.
-    pub fn get_filter(&self) -> FilterMode {
-        self.sampler_info.filter.into()
-    }
-
-    /// Set the filter mode for the image.
-    pub fn set_filter(&mut self, mode: FilterMode) {
-        self.sampler_info.filter = mode.into();
-    }
-
-    /// Returns the dimensions of the image.
-    pub fn get_dimensions(&self) -> Rect {
-        Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
-    }
-
-    /// Gets the `Image`'s `WrapMode` along the X and Y axes.
-    pub fn get_wrap(&self) -> (WrapMode, WrapMode) {
-        (self.sampler_info.wrap_mode.0, self.sampler_info.wrap_mode.1)
-    }
-
-    /// Sets the `Image`'s `WrapMode` along the X and Y axes.
-    pub fn set_wrap(&mut self, wrap_x: WrapMode, wrap_y: WrapMode) {
-        self.sampler_info.wrap_mode.0 = wrap_x;
-        self.sampler_info.wrap_mode.1 = wrap_y;
-    }
-}
-
-impl fmt::Debug for Image {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "<Image: {}x{}, {:p}, texture address {:p}, sampler: {:?}>",
-            self.width(),
-            self.height(),
-            self,
-            &self.texture,
-            &self.sampler_info
-        )
-    }
-}
-
-impl Drawable for Image {
-    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
-        let gfx = &mut ctx.gfx_context;
-        let src_width = param.src.w;
-        let src_height = param.src.h;
-        // We have to mess with the scale to make everything
-        // be its-unit-size-in-pixels.
-        let real_scale = Point2::new(
-            src_width * param.scale.x * self.width as f32,
-            src_height * param.scale.y * self.height as f32,
-        );
-        let mut new_param = param;
-        new_param.scale = real_scale;
-        gfx.update_instance_properties(new_param)?;
-        let sampler = gfx.samplers
-            .get_or_insert(self.sampler_info, gfx.factory.as_mut());
-        gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        gfx.data.tex = (self.texture.clone(), sampler);
-        let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
-            let current_mode = gfx.get_blend_mode();
-            if current_mode != mode {
-                gfx.set_blend_mode(mode)?;
-                Some(current_mode)
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-        gfx.draw(None)?;
-        if let Some(mode) = previous_mode {
-            gfx.set_blend_mode(mode)?;
-        }
-        Ok(())
-    }
-    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
-        self.blend_mode = mode;
-    }
-    fn get_blend_mode(&self) -> Option<BlendMode> {
-        self.blend_mode
-    }
-}
 
 #[cfg(test)]
 mod tests {}
