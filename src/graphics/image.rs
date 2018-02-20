@@ -17,7 +17,9 @@ pub struct ImageGeneric<R>
 where
     R: gfx::Resources,
 {
+    // TODO: Rename to shader_view or such.
     pub(crate) texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
+    pub(crate) texture_handle: gfx::handle::Texture<R, gfx::format::R8_G8_B8_A8>,
     pub(crate) sampler_info: gfx::texture::SamplerInfo,
     pub(crate) blend_mode: Option<BlendMode>,
     pub(crate) width: u32,
@@ -27,6 +29,13 @@ where
 /// In-GPU-memory image data available to be drawn on the screen,
 /// using the OpenGL backend.
 pub type Image = ImageGeneric<gfx_device_gl::Resources>;
+
+/// The supported formats for saving an image.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ImageFormat {
+    /// .png image format (defaults to RGBA with 8-bit channels.)
+    Png,
+}
 
 impl Image {
     /// Load a new image from the file at the given path.
@@ -56,6 +65,80 @@ impl Image {
             rgba,
         )
     }
+
+    /// Dumps the `Image`'s data to a `Vec` of `u8` RGBA values.
+    pub fn to_rgba8(&self, ctx: &mut Context) -> GameResult<Vec<u8>> {
+        use gfx::memory::Typed;
+        use gfx::format::Formatted;
+        use gfx::format::SurfaceTyped;
+        use gfx::traits::FactoryExt;
+
+        let gfx = &mut ctx.gfx_context;
+        let (w, h, _, _) = gfx.data.out.get_dimensions();
+        type SurfaceData = <<ColorFormat as Formatted>::Surface as SurfaceTyped>::DataType;
+
+        // Note: In the GFX example, the download buffer is created ahead of time
+        // and updated on screen resize events. This may be preferable, but then
+        // the buffer also needs to be updated when we switch to/from a canvas.
+        // Unsure of the performance impact of creating this as it is needed.
+        let dl_buffer = gfx.factory.create_download_buffer::<SurfaceData>(w as usize * h as usize)?;
+
+        let mut local_encoder: gfx::Encoder<
+            gfx_device_gl::Resources,
+            gfx_device_gl::CommandBuffer> = gfx.factory.create_command_buffer().into();
+        
+        local_encoder.copy_texture_to_buffer_raw(
+            self.texture_handle.raw(),
+            None,
+            gfx::texture::RawImageInfo {
+                        xoffset: 0,
+                        yoffset: 0,
+                        zoffset: 0,
+                        width: self.width as u16,
+                        height: self.height as u16,
+                        depth: 0,
+                        format: ColorFormat::get_format(),
+                        mipmap: 0,
+            },
+            dl_buffer.raw(),
+            0
+        )?;
+        local_encoder.flush(&mut *gfx.device);
+
+        let reader = gfx.factory.read_mapping(&dl_buffer)?;
+
+        // intermediary buffer to avoid casting
+        // and also to reverse the order in which we pass the rows
+        // so the screenshot isn't upside-down
+        let mut data = Vec::with_capacity(self.width as usize * self.height as usize * 4);
+        for row in reader.chunks(w as usize).rev() {
+            for pixel in row.iter() {
+                data.extend(pixel);
+            }
+        }
+        Ok(data)
+    }
+
+    /// Encode the `Image` to the given file format and 
+    /// write it out to the given path.
+    ///
+    /// See the `filesystem` module docs for where exactly
+    /// the file will end up.
+    pub fn encode<P: AsRef<path::Path>>(&self, ctx: &mut Context, format: ImageFormat, path: P) -> GameResult<()> {
+        use std::io;
+        let data = self.to_rgba8(ctx)?;
+        let f = ctx.filesystem.create(path)?;
+        let writer = &mut io::BufWriter::new(f);
+        let color_format = image::ColorType::RGBA(8);
+        match format {
+            ImageFormat::Png => {
+                image::png::PNGEncoder::new(writer)
+                    .encode(&data, self.width, self.height, color_format)
+                    .map_err(|e| e.into())
+            }
+        }
+    }
+
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
@@ -75,9 +158,10 @@ impl Image {
             return Err(GameError::ResourceLoadError(msg));
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        let (_, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, gfx::texture::Mipmap::Provided, &[rgba])?;
+        let (tex, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, gfx::texture::Mipmap::Provided, &[rgba])?;
         Ok(Image {
             texture: view,
+            texture_handle: tex,
             sampler_info: *sampler_info,
             blend_mode: None,
             width: u32::from(width),

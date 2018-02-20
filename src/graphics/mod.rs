@@ -310,80 +310,74 @@ pub fn present(ctx: &mut Context) {
     gfx.device.cleanup();
 }
 
-/// Take a screenshot by outputting the current render surface
-/// (screen or selected canvas) to a PNG file with the given name,
-/// in the game's config directory.
-pub fn screenshot(ctx: &mut Context, name: &str) -> GameResult<()> {
-    use std::path::PathBuf;
-
-    let mut full_path = PathBuf::from(ctx.filesystem.get_user_config_dir());
-    full_path.push("screenshots");
-    full_path.push(name);
-    screenshot_to_path(ctx, &*full_path.to_string_lossy()).unwrap();
-    Ok(())
-}
-
-// TODO link screenshot fn in below doc
 
 /// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to a PNG file.
 /// 
 /// `screenshot` should be preferred if you do not need absolute control
 /// over where the screenshot will be placed.
-pub fn screenshot_to_path(ctx: &mut Context, path: &str) -> GameResult<()> {
+pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     use gfx::memory::Typed;
     use gfx::format::Formatted;
-    use gfx::format::SurfaceTyped;
-    use gfx::traits::FactoryExt;
-    use ::image as image_crate;
 
     let gfx = &mut ctx.gfx_context;
-    let (w, h, _, _) = gfx.data.out.get_dimensions();
-    type SurfaceData = <<ColorFormat as Formatted>::Surface as SurfaceTyped>::DataType;
+    let (w, h, depth, aa) = gfx.data.out.get_dimensions();
+    let surface_format = <ColorFormat as Formatted>::get_format();
 
-    // Note: In the GFX example, the download buffer is created ahead of time
-    // and updated on screen resize events. This may be preferable, but then
-    // the buffer also needs to be updated when we switch to/from a canvas.
-    // Unsure of the performance impact of creating this as it is needed.
-    let dl_buffer = gfx.factory.create_download_buffer::<SurfaceData>(w as usize * h as usize)?;
+    // TODO: The bind and data settings here might be worth
+    // fiddling with...
+    let texture_kind = 
+        gfx::texture::Kind::D2(w, h, aa);
+    // The format here is the same as is defined in ColorFormat
+    let target_texture: gfx::handle::Texture<_, <ColorFormat as Formatted>::Surface> = gfx.factory.create_texture(
+        texture_kind,
+        1,
+        gfx::memory::Bind::empty(),
+        gfx::memory::Usage::Data,
+        Some(gfx::format::ChannelType::Srgb)
+    )?;
+    
+    let image_info = gfx::texture::ImageInfoCommon {
+        xoffset: 0,
+        yoffset: 0,
+        zoffset: 0,
+        width: w,
+        height: h,
+        depth: depth,
+        format: surface_format,
+        mipmap: 0,
+    };
 
     let mut local_encoder: gfx::Encoder<
         gfx_device_gl::Resources,
         gfx_device_gl::CommandBuffer> = gfx.factory.create_command_buffer().into();
     
-    local_encoder.copy_texture_to_buffer_raw(
+    local_encoder.copy_texture_to_texture_raw(
         gfx.data.out.raw().get_texture(),
         None,
-        gfx::texture::RawImageInfo {
-                    xoffset: 0,
-                    yoffset: 0,
-                    zoffset: 0,
-                    width: w,
-                    height: h,
-                    depth: 0,
-                    format: ColorFormat::get_format(),
-                    mipmap: 0,
-        },
-        dl_buffer.raw(),
-        0
+        image_info,
+        target_texture.raw(),
+        None,
+        image_info
     )?;
+
     local_encoder.flush(&mut *gfx.device);
 
-    let reader = gfx.factory.read_mapping(&dl_buffer)?;
+    let shader_resource = gfx.factory.view_texture_as_shader_resource::<gfx::format::Srgba8>(
+            &target_texture,
+            (0, 0),
+            gfx::format::Swizzle::new(),
+        )?;
+    let image = Image {
+        texture: shader_resource,
+        texture_handle: target_texture,
+        sampler_info: gfx.default_sampler_info,
+        blend_mode: None,
+        width: w as u32,
+        height: h as u32,
+    };
 
-    // intermediary buffer to avoid casting
-    // and also to reverse the order in which we pass the rows
-    // so the screenshot isn't upside-down
-    let mut data = Vec::with_capacity(w as usize * h as usize * 4);
-    for row in reader.chunks(w as usize).rev() {
-        for pixel in row.iter() {
-            data.extend(pixel);
-        }
-    }
-    
-    image_crate::save_buffer(path, &data, u32::from(w), u32::from(h), image_crate::ColorType::RGBA(8))?;
-
-    Ok(())
+    Ok(image)
 }
 
 /*

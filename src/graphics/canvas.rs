@@ -71,6 +71,7 @@ impl Canvas {
             target,
             image: Image {
                 texture: resource,
+                texture_handle: tex,
                 sampler_info: ctx.gfx_context.default_sampler_info,
                 blend_mode: None,
                 width,

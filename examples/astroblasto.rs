@@ -579,7 +579,8 @@ impl EventHandler for MainState {
             },
             Keycode::P => {
                 // Because this is an example, we silently discard any error while screenshotting
-                let _ = graphics::screenshot(ctx, "screenshot.png");
+                let img = graphics::screenshot(ctx)?;
+                img.encode(ctx, graphics::ImageFormat::Png, "/screenshot.png")?;
             },
             Keycode::Escape => ctx.quit().unwrap(),
             _ => (), // Do nothing
