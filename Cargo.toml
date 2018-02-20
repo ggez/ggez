@@ -32,7 +32,7 @@ cargo-resource-root = []
 [dependencies]
 rusttype = "0.3"
 zip = "0.2"
-app_dirs = "1.1"
+app_dirs = { git = "https://github.com/koute/app-dirs-rs" }
 gfx = "0.16"
 gfx_device_gl = "0.14"
 gfx_window_sdl = "0.7"
