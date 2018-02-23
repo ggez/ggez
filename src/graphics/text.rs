@@ -24,12 +24,12 @@ pub enum Font {
         scale: rusttype::Scale,
     },
     /// A bitmap font where letter widths are infered
-    DynamicBitmapFontVariant(DynamicBitmapFont),
+    BitmapFontVariant(BitmapFont),
 }
 
 /// A bitmap font where letter widths are infered
 #[derive(Clone, Debug)]
-pub struct DynamicBitmapFont{
+pub struct BitmapFont{
     /// The original glyph image
     bytes: Vec<u8>,
     /// Width of the image
@@ -43,7 +43,7 @@ pub struct DynamicBitmapFont{
     letter_separation: usize,
 }
 
-impl DynamicBitmapFont {
+impl BitmapFont {
     fn span_for(&self, c:char)-> usize {
         match self.glyphs.get(&c) {
             Some(&(_, span))=> span,
@@ -117,7 +117,7 @@ impl Font {
         for (i, c) in glyphs.chars().enumerate() {
             glyphs_map.insert(c, (i * glyph_width, glyph_width));
         }
-        Ok(Font::DynamicBitmapFontVariant(DynamicBitmapFont {
+        Ok(Font::BitmapFontVariant(BitmapFont {
             bytes: img.into_vec(),
             width: image_width as usize,
             height: image_height as usize,
@@ -174,7 +174,7 @@ impl Font {
             return Err(GameError::FontError("There were more chars in glyphs than I counted in the bitmap!".into()));
         }
 
-        Ok(Font::DynamicBitmapFontVariant(DynamicBitmapFont {
+        Ok(Font::BitmapFontVariant(BitmapFont {
             bytes: img.into_vec(),
             width: image_width as usize,
             height: image_height as usize,
@@ -203,7 +203,7 @@ impl Font {
     /// a line needs.
     pub fn get_height(&self) -> usize {
         match *self {
-            Font::DynamicBitmapFontVariant(DynamicBitmapFont { height, .. }) => height,
+            Font::BitmapFontVariant(BitmapFont { height, .. }) => height,
             Font::TTFFont { scale, .. } => {
                 scale.y.ceil() as usize
             }
@@ -214,7 +214,7 @@ impl Font {
     /// Does not handle line-breaks.
     pub fn get_width(&self, text: &str) -> usize {
         match *self {
-            Font::DynamicBitmapFontVariant(ref font) => {
+            Font::BitmapFontVariant(ref font) => {
                 compute_variable_bitmap_text_rendering_span(text, font)
             },
             Font::TTFFont {
@@ -288,7 +288,7 @@ impl fmt::Debug for Font {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Font::TTFFont { .. } => write!(f, "<TTFFont: {:p}>", &self),
-            Font::DynamicBitmapFontVariant(DynamicBitmapFont { .. }) => write!(f, "<DynamicBitmapFont: {:p}>", &self),
+            Font::BitmapFontVariant(BitmapFont { .. }) => write!(f, "<BitmapFont: {:p}>", &self),
         }
     }
 }
@@ -433,7 +433,7 @@ fn blit(
 }
 
 struct VariableFontCharIter<'a> {
-    font: &'a DynamicBitmapFont,
+    font: &'a BitmapFont,
     iter: ::std::str::Chars<'a>,
     offset: usize,
 }
@@ -453,19 +453,19 @@ impl<'a> Iterator for VariableFontCharIter<'a>{ //iterates over each char in a l
 }
 
 impl<'a> VariableFontCharIter<'a> {
-    fn new(text: &'a str, font:&'a DynamicBitmapFont)-> VariableFontCharIter<'a> {
+    fn new(text: &'a str, font:&'a BitmapFont)-> VariableFontCharIter<'a> {
         VariableFontCharIter{ font, iter: text.chars(), offset: 0 }
     }
 }
 
-fn compute_variable_bitmap_text_rendering_span(text: &str, font: &DynamicBitmapFont)-> usize {
+fn compute_variable_bitmap_text_rendering_span(text: &str, font: &BitmapFont)-> usize {
     VariableFontCharIter::new(text, font).last().map(|(_, offset, span)| offset + span).unwrap_or(0)
 }
 
 fn render_dynamic_bitmap(
     context: &mut Context,
     text: &str,
-    font: &DynamicBitmapFont,
+    font: &BitmapFont,
 )-> GameResult<Text> {
     let image_span = compute_variable_bitmap_text_rendering_span(text, font);
     // Same at-least-one-pixel-wide constraint here as with TTF fonts.
@@ -512,7 +512,7 @@ impl Text {
             Font::TTFFont {
                 font: ref f, scale, ..
             } => render_ttf(context, text, f, scale),
-            Font::DynamicBitmapFontVariant(ref font)=> render_dynamic_bitmap(context, text, font),
+            Font::BitmapFontVariant(ref font)=> render_dynamic_bitmap(context, text, font),
         }
     }
 
