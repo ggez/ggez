@@ -96,9 +96,9 @@ impl Font {
         })
     }
     
-    /// Creates a bitmap from an image where all of the letters are the same width.
-    /// The width of each char isassumed to be to be
-    ///  image(path).pixel_width/glyphs.chars().count()
+    /// Creates a bitmap font from a long image of its alphabet, specified by `path`.
+    /// The width of each individual chars is assumed to be to be
+    /// image(path).width/glyphs.chars().count()
     pub fn new_bitmap<P: AsRef<path::Path>>(
         context: &mut Context,
         path: P,
@@ -113,8 +113,6 @@ impl Font {
         let (image_width, image_height) = img.dimensions();
 
         let glyph_width = (image_width as usize) / glyphs.len();
-        // println!("Number of glyphs: {}, Glyph width: {}, image width: {}",
-        // glyphs.len(), glyph_width, image_width);
         let mut glyphs_map: BTreeMap<char, (usize, usize)> = BTreeMap::new();
         for (i, c) in glyphs.chars().enumerate() {
             glyphs_map.insert(c, (i * glyph_width, glyph_width));
@@ -129,9 +127,9 @@ impl Font {
         }))
     }
     
-    /// Creates a bitmap font from a long image. Letters are variable width.
-    /// The width of each letter is infered from letter boundaries.
-    /// Letters are expected to be separated by fully transparent columns of pixels.
+    /// Creates a bitmap font from a long image of its alphabet.
+    /// Each letter must be separated from the last by a fully transparent column of pixels.
+    /// The width of each letter is infered from these letter boundaries.
     pub fn new_variable_width_bitmap_font<P: AsRef<path::Path>>(
         context: &mut Context,
         path: P,
