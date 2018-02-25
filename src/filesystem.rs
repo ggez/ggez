@@ -147,12 +147,8 @@ impl Filesystem {
         // Writeable local dir, ~/.config/whatever/
         // Save game dir is read-write
         {
-            use std::path::Path;
-
             user_config_path = app_root(AppDataType::UserConfig, &app_info)?;
             let physfs = vfs::PhysicalFS::new(&user_config_path, false);
-            // Ensure the screenshots subdirectory exists
-            physfs.mkdir(Path::new("/screenshots"))?;
             overlay.push_back(Box::new(physfs));
         }
 
