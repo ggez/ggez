@@ -33,6 +33,10 @@ pub struct SpriteBatch {
 /// It is not always convenient for a `SpriteBatch` to own the image
 /// it is drawing, so this structure lets you override the image with
 /// a borrowed one.
+///
+/// This is now deprecated; an `Image` is cheap to clone and
+/// this was never terribly useful to begin with.
+#[deprecated]
 #[derive(Debug)]
 pub struct BoundSpriteBatch<'a> {
     image: &'a graphics::Image,
@@ -135,6 +139,7 @@ impl SpriteBatch {
     }
 
     /// Create an object which draws the current sprite batch with a different image.
+    #[deprecated]
     pub fn with_image<'a>(&'a mut self, image: &'a graphics::Image) -> BoundSpriteBatch<'a> {
         BoundSpriteBatch {
             image: image,
@@ -144,7 +149,9 @@ impl SpriteBatch {
 }
 
 
+#[deprecated]
 impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
+
     fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
@@ -182,14 +189,15 @@ impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
         gfx.update_globals()?;
         Ok(())
     }
+
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
         self.batch.blend_mode = mode;
     }
+
     fn get_blend_mode(&self) -> Option<BlendMode> {
         self.batch.blend_mode
     }
 }
-
 
 impl graphics::Drawable for SpriteBatch {
     fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {

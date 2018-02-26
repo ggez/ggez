@@ -28,6 +28,10 @@ where
 
 /// In-GPU-memory image data available to be drawn on the screen,
 /// using the OpenGL backend.
+///
+/// Under the hood this is just an `Arc`'ed texture handle and
+/// some metadata, so cloning it is fairly cheap; it doesn't
+/// make another copy of the underlying image data.
 pub type Image = ImageGeneric<gfx_device_gl::Resources>;
 
 /// The supported formats for saving an image.
