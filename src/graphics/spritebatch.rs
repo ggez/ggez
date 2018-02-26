@@ -140,6 +140,7 @@ impl SpriteBatch {
 
     /// Create an object which draws the current sprite batch with a different image.
     #[deprecated]
+    #[allow(deprecated)]
     pub fn with_image<'a>(&'a mut self, image: &'a graphics::Image) -> BoundSpriteBatch<'a> {
         BoundSpriteBatch {
             image: image,
@@ -150,8 +151,8 @@ impl SpriteBatch {
 
 
 #[deprecated]
+#[allow(deprecated)]
 impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
-
     fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.

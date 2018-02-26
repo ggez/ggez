@@ -12,6 +12,9 @@
 
 ## Deprecated
 
+ * Deprecated `BoundSpriteBatch`, since you can just clone an `Image`
+   relatively cheaply.
+
 ## Removed
 
 ## Fixed
