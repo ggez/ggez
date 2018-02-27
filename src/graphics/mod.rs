@@ -313,15 +313,12 @@ pub fn present(ctx: &mut Context) {
 
 /// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to a PNG file.
-/// 
-/// `screenshot` should be preferred if you do not need absolute control
-/// over where the screenshot will be placed.
 pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
-    use gfx::memory::Typed;
+    use gfx::memory::{Bind, Typed};
     use gfx::format::Formatted;
 
     let gfx = &mut ctx.gfx_context;
-    let (w, h, depth, aa) = gfx.data.out.get_dimensions();
+    let (w, h, _depth, aa) = gfx.data.out.get_dimensions();
     let surface_format = <ColorFormat as Formatted>::get_format();
 
     // TODO: The bind and data settings here might be worth
@@ -332,7 +329,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     let target_texture: gfx::handle::Texture<_, <ColorFormat as Formatted>::Surface> = gfx.factory.create_texture(
         texture_kind,
         1,
-        gfx::memory::Bind::empty(),
+        Bind::TRANSFER_SRC | Bind::TRANSFER_DST | Bind::SHADER_RESOURCE,
         gfx::memory::Usage::Data,
         Some(gfx::format::ChannelType::Srgb)
     )?;
@@ -343,7 +340,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         zoffset: 0,
         width: w,
         height: h,
-        depth: depth,
+        depth: 0,
         format: surface_format,
         mipmap: 0,
     };
