@@ -94,7 +94,7 @@ impl GraphicsContext {
         let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
             gfx_window_sdl::init(&video, window_builder)?;
 
-        GraphicsContext::set_vsync(video, window_mode.vsync);
+        GraphicsContext::set_vsync(video, window_mode.vsync)?;
 
         let display_index = window.display_index()?;
         let dpi = window.subsystem().display_dpi(display_index)?;
@@ -347,9 +347,14 @@ impl GraphicsContext {
     }
 
     /// Another helper method to set vsync.
-    pub(crate) fn set_vsync(video: &sdl2::VideoSubsystem, vsync: bool) {
+    pub(crate) fn set_vsync(video: &sdl2::VideoSubsystem, vsync: bool) -> GameResult<()> {
         let vsync_int = if vsync { 1 } else { 0 };
-        video.gl_set_swap_interval(vsync_int);
+        if video.gl_set_swap_interval(vsync_int) {
+            Ok(())
+        } else {
+            let err = sdl2::get_error();
+            Err(GameError::VideoError(err))
+        }
     }
 
     /// Communicates changes in the viewport size between SDL and gfx.
