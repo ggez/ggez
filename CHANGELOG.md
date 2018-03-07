@@ -5,10 +5,12 @@
  * Added `Text::into_inner()` and related methods to get ahold of a `Text` object's underlying `Image`
  * Added `SoundData::new()` and `Source::set_repeat()`/`Source::get_repeat()` (thanks jupart!)
  * Added `Context::process_event()` to smooth out a bump or two in the
-   API for writing custom event loops.
+   API for writing custom event loops.  This does change the API a little, but the old style should still work.
  * Added functions for taking screenshots and saving `Image`'s (thanks DenialAdams!)
 
 ## Changed
+
+ * Version-bumped `lyon` crate
 
 ## Deprecated
 

@@ -52,10 +52,12 @@ impl MeshBuilder {
                     // different types; one is GeometryBuilder<StrokeVertex> and the other is
                     // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let fill_options = t::FillOptions::default()
+                        .with_tolerance(tolerance);
                     t::basic_shapes::fill_circle(
                         t::math::point(point.x, point.y),
                         radius,
-                        tolerance,
+                        &fill_options,
                         builder,
                     );
                 }
@@ -89,15 +91,16 @@ impl MeshBuilder {
     ) -> &mut Self {
         {
             let buffers = &mut self.buffer;
-            use euclid::Length;
             match mode {
                 DrawMode::Fill => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let fill_options = t::FillOptions::default()
+                        .with_tolerance(tolerance);
                     t::basic_shapes::fill_ellipse(
                         t::math::point(point.x, point.y),
-                        t::math::vec2(radius1, radius2),
-                        Length::new(0.0),
-                        tolerance,
+                        t::math::vector(radius1, radius2),
+                        t::math::Angle{ radians: 0.0 },
+                        &fill_options,
                         builder,
                     );
                 }
@@ -108,8 +111,8 @@ impl MeshBuilder {
                         .with_tolerance(tolerance);
                     t::basic_shapes::stroke_ellipse(
                         t::math::point(point.x, point.y),
-                        t::math::vec2(radius1, radius2),
-                        Length::new(0.0),
+                        t::math::vector(radius1, radius2),
+                        t::math::Angle{ radians: 0.0 },
                         &options,
                         builder,
                     );
@@ -181,8 +184,8 @@ impl MeshBuilder {
                 .cloned()
                 .map(|p| {
                     // Gotta turn ggez Point2's into lyon FillVertex's
-                        let np = lyon::math::Point2D::new(p.x, p.y);
-                        let nv = lyon::math::Vector2D::new(p.x, p.y);
+                        let np = lyon::math::point(p.x, p.y);
+                        let nv = lyon::math::vector(p.x, p.y);
                         t::FillVertex {
                             position: np,
                             normal: nv,
