@@ -112,6 +112,24 @@ pub trait EventHandler {
     fn key_up_event(&mut self, _ctx: &mut Context, _keycode: Keycode, _keymod: Mod, _repeat: bool) {
     }
 
+    /// Candidate text is passed by the OS (via Input Method Editor).
+    /// Refer to:
+    /// https://wiki.libsdl.org/SDL_TextEditingEvent
+    /// https://wiki.libsdl.org/SDL_TextInputEvent
+    /// https://wiki.libsdl.org/Tutorials/TextInput
+    fn text_editing_event(&mut self, _ctx: &mut Context, _text: String, _start: i32, _length: i32) {
+
+    }
+
+    /// Resulting text (usually a unicode character) is passed by the OS (via Input Method Editor).
+    /// Refer to:
+    /// https://wiki.libsdl.org/SDL_TextEditingEvent
+    /// https://wiki.libsdl.org/SDL_TextInputEvent
+    /// https://wiki.libsdl.org/Tutorials/TextInput
+    fn text_input_event(&mut self, _ctx: &mut Context, _text: String) {
+
+    }
+
     /// A controller button was pressed; instance_id identifies which controller.
     fn controller_button_down_event(
         &mut self,
@@ -213,6 +231,16 @@ where
                         state.key_up_event(ctx, key, keymod, repeat)
                     }
                 }
+                TextEditing {
+                    text,
+                    start,
+                    length,
+                    ..
+                } => state.text_editing_event(ctx, text, start, length),
+                TextInput {
+                    text,
+                    ..
+                } => state.text_input_event(ctx, text),
                 MouseButtonDown {
                     mouse_btn, x, y, ..
                 } => state.mouse_button_down_event(ctx, mouse_btn, x, y),

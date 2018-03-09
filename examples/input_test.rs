@@ -90,6 +90,17 @@ impl event::EventHandler for MainState {
                  repeat);
     }
 
+    fn text_editing_event(&mut self, _ctx: &mut Context, text: String, start: i32, length: i32) {
+        println!("Text editing: {}, start {}, length: {}",
+                 text,
+                 start,
+                 length);
+    }
+
+    fn text_input_event(&mut self, _ctx: &mut Context, text: String) {
+        println!("Text input: {}", text);
+    }
+
     fn controller_button_down_event(&mut self, _ctx: &mut Context, btn: Button, instance_id: i32) {
         println!("Controller button pressed: {:?} Controller_Id: {}",
                  btn,
