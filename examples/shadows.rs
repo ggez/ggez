@@ -377,15 +377,17 @@ impl event::EventHandler for MainState {
         // Because of coordinate system annyoingness, we have to invert
         // the texture we draw, and draw it at the bottom-left corner.
         let draw_upright = DrawParam {
-            dest: Point2::new(0.0, size.1 as f32),
-            scale: Point2::new(1.0, -1.0),
+            dest: Point2::new(0.0, size.1 as f32 / 2.0),
+            // scale: Point2::new(1.0, -1.0),
             ..center
         };
+        // println!("{:#?}", draw_upright);
         graphics::set_canvas(ctx, None);
         graphics::set_color(ctx, graphics::WHITE)?;
         graphics::draw_ex(ctx, &self.background, center)?;
         graphics::draw_ex(ctx, &self.shadows, draw_upright)?;
-        graphics::draw_ex(ctx, &self.lights, draw_upright)?;
+        // graphics::draw_ex(ctx, &self.lights, draw_upright)?;
+        graphics::draw(ctx, &self.lights, Point2::new(300.0, -300.0), 0.0)?;
         // We switch the color to the shadow color before drawing the foreground objects
         // this has the same effect as applying this color in a multiply blend mode with
         // full opacity. We also reset the blend mode back to the default Alpha blend mode.

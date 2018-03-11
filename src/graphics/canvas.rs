@@ -103,7 +103,10 @@ impl Canvas {
 
 impl Drawable for Canvas {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
-        self.image.draw_ex(ctx, param)
+        let mut flipped_param = param;
+        flipped_param.scale.y *= -1.0;
+        flipped_param.dest.y += self.image.height() as f32 / 2.0;
+        self.image.draw_ex(ctx, flipped_param)
     }
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
         self.image.blend_mode = mode;

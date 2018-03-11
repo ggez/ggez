@@ -7,12 +7,15 @@ use ggez::graphics::*;
 
 struct MainState {
     canvas: Canvas,
+    text: Text,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let canvas = Canvas::with_window_size(ctx)?;
-        Ok(MainState { canvas })
+        let font = Font::default_font()?;
+        let text = Text::new(ctx, "Hello world!", &font)?;
+        Ok(MainState { canvas, text })
     }
 }
 
@@ -26,7 +29,7 @@ impl event::EventHandler for MainState {
         graphics::set_canvas(ctx, Some(&self.canvas));
         graphics::set_background_color(ctx, Color::new(0.1, 0.2, 0.3, 1.0));
         graphics::clear(ctx);
-        graphics::circle(ctx, DrawMode::Fill, Point2::new(400.0, 300.0), 100.0, 2.0)?;
+        graphics::draw(ctx, &self.text, Point2::new(400.0, 300.0), 0.0)?;
 
         // now lets render our scene once in the top right and in the bottom
         // right
@@ -34,6 +37,7 @@ impl event::EventHandler for MainState {
         let scale =
             Point2::new(0.5 * window_size.0 as f32 / self.canvas.get_image().width() as f32,
                         0.5 * window_size.1 as f32 / self.canvas.get_image().height() as f32);
+        // let scale = Point2::new(1.0, 1.0);
         graphics::set_canvas(ctx, None);
         graphics::set_background_color(ctx, Color::new(0.0, 0.0, 0.0, 1.0));
         graphics::clear(ctx);
