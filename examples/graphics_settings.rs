@@ -20,7 +20,7 @@ enum WindowToggle {
 }
 
 struct WindowSettings {
-    window_size_toggle: WindowToggle,
+    window_size_toggle: bool,
     toggle_fullscreen: bool,
     is_fullscreen: bool,
     num_of_resolutions: usize,
@@ -43,7 +43,7 @@ impl MainState {
             image: graphics::Image::new(ctx, "/tile.png")?,
             window_settings: WindowSettings {
                 toggle_fullscreen: false,
-                window_size_toggle: WindowToggle::NONE,
+                window_size_toggle: false,
                 is_fullscreen: false,
                 resolution_index: 0,
                 num_of_resolutions: 0,
@@ -70,16 +70,13 @@ impl event::EventHandler for MainState {
                 self.window_settings.toggle_fullscreen = false;
             }
 
-            match self.window_settings.window_size_toggle {
-                WindowToggle::FORWARD | WindowToggle::REVERSE => {
+            if self.window_settings.window_size_toggle {
                     let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
                     let (width, height) = resolutions[self.window_settings.resolution_index];
 
                     ggez::graphics::set_resolution(ctx, width, height)?;
 
-                    self.window_settings.window_size_toggle = WindowToggle::NONE;
-                }
-                _ => {}
+                    self.window_settings.window_size_toggle = false;
             }
         }
         Ok(())
@@ -118,6 +115,10 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
+    fn mouse_button_down_event(&mut self, _ctx: &mut Context, _btn: event::MouseButton, x: i32, y: i32) {
+        println!("Button clicked at: {} {}", x, y);
+    }
+
     fn key_up_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, repeat: bool) {
         if !repeat {
             match keycode {
@@ -126,14 +127,14 @@ impl event::EventHandler for MainState {
                     self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
                 }
                 Keycode::H => {
-                    self.window_settings.window_size_toggle = WindowToggle::FORWARD;
+                    self.window_settings.window_size_toggle = true;
                     self.window_settings.resolution_index += 1;
                     self.window_settings.resolution_index %=
                         self.window_settings.num_of_resolutions;
                 }
                 Keycode::G => {
                     if self.window_settings.resolution_index > 0 {
-                        self.window_settings.window_size_toggle = WindowToggle::REVERSE;
+                        self.window_settings.window_size_toggle = true;
                         self.window_settings.resolution_index -= 1;
                         self.window_settings.resolution_index %=
                             self.window_settings.num_of_resolutions;
@@ -184,7 +185,7 @@ impl event::EventHandler for MainState {
 fn print_help() {
     println!("GRAPHICS SETTING EXAMPLE:");
     println!("    F: toggle fullscreen");
-    println!("    H/G: Increase/decrease window sizes");
+    println!("    G/H: Increase/decrease window sizes");
     println!("    Up/Down: Zoom in/out");
     println!("    Spacebar: Toggle whether or not to resize the projection when the window is resized");
     println!("    ");
@@ -207,9 +208,11 @@ pub fn main() {
         .parse()
         .expect("Option msaa needs to be a number!");
     let mut c = conf::Conf::new();
+    c.window_mode.fullscreen_type = conf::FullscreenType::True;
     c.window_setup.samples =
         conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
     c.window_setup.resizable = true;
+    println!("{:?}", c);
 
     let ctx = &mut Context::load_from_conf("graphics_settings", "ggez", c).unwrap();
 
