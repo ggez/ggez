@@ -19,7 +19,6 @@ impl Default for MeshBuilder {
         Self {
             buffer: t::VertexBuffers::new(),
         }
-
     }
 }
 
@@ -52,8 +51,7 @@ impl MeshBuilder {
                     // different types; one is GeometryBuilder<StrokeVertex> and the other is
                     // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let fill_options = t::FillOptions::default()
-                        .with_tolerance(tolerance);
+                    let fill_options = t::FillOptions::default().with_tolerance(tolerance);
                     t::basic_shapes::fill_circle(
                         t::math::point(point.x, point.y),
                         radius,
@@ -94,12 +92,11 @@ impl MeshBuilder {
             match mode {
                 DrawMode::Fill => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let fill_options = t::FillOptions::default()
-                        .with_tolerance(tolerance);
+                    let fill_options = t::FillOptions::default().with_tolerance(tolerance);
                     t::basic_shapes::fill_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
-                        t::math::Angle{ radians: 0.0 },
+                        t::math::Angle { radians: 0.0 },
                         &fill_options,
                         builder,
                     );
@@ -112,7 +109,7 @@ impl MeshBuilder {
                     t::basic_shapes::stroke_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
-                        t::math::Angle{ radians: 0.0 },
+                        t::math::Angle { radians: 0.0 },
                         &options,
                         builder,
                     );
@@ -136,7 +133,8 @@ impl MeshBuilder {
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
                     // TODO: Removing this expect would be rather nice.
-                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder).expect("Could not fill polyline?");
+                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
+                        .expect("Could not fill polyline?");
                 }
                 DrawMode::Line(width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
@@ -161,7 +159,8 @@ impl MeshBuilder {
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
                     // TODO: Removing this expect would be rather nice.
-                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder).expect("Could not fill polygon?");
+                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
+                        .expect("Could not fill polygon?");
                 }
                 DrawMode::Line(width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);

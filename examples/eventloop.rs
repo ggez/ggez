@@ -29,8 +29,11 @@ pub fn main() {
         for event in events.poll() {
             ctx.process_event(&event);
             match event {
-                event::Event::Quit { .. } |
-                event::Event::KeyDown { keycode: Some(event::Keycode::Escape), .. } => {
+                event::Event::Quit { .. }
+                | event::Event::KeyDown {
+                    keycode: Some(event::Keycode::Escape),
+                    ..
+                } => {
                     println!("Quitting");
                     continuing = false
                 }
@@ -43,12 +46,13 @@ pub fn main() {
 
         // Draw
         graphics::clear(ctx);
-        graphics::circle(ctx,
-                         DrawMode::Fill,
-                         Point2::new(position, 380.0),
-                         100.0,
-                         2.0)
-                .unwrap();
+        graphics::circle(
+            ctx,
+            DrawMode::Fill,
+            Point2::new(position, 380.0),
+            100.0,
+            2.0,
+        ).unwrap();
         graphics::present(ctx);
         ggez::timer::yield_now();
     }

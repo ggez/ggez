@@ -16,7 +16,6 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-
         // The ttf file will be in your resources directory. Later, we
         // will mount that directory so we can omit it in the path here.
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
@@ -29,7 +28,6 @@ impl MainState {
         Ok(s)
     }
 }
-
 
 // Then we implement the `ggez:event::EventHandler` trait on it, which
 // requires callbacks for updating and drawing the game state each frame.

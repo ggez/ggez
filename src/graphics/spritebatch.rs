@@ -81,7 +81,12 @@ impl SpriteBatch {
     ///
     /// Generally just calling `graphics::draw()` on the `SpriteBatch`
     /// will do this automaticassertally.
-    fn flush(&self, ctx: &mut Context, image: &graphics::Image, draw_color: Option<graphics::Color>) -> GameResult<()> {
+    fn flush(
+        &self,
+        ctx: &mut Context,
+        image: &graphics::Image,
+        draw_color: Option<graphics::Color>,
+    ) -> GameResult<()> {
         // This is a little awkward but this is the right place
         // to do whatever transformations need to happen to DrawParam's.
         // We have a Context, and *everything* must pass through this
@@ -148,7 +153,6 @@ impl SpriteBatch {
         }
     }
 }
-
 
 #[deprecated]
 #[allow(deprecated)]

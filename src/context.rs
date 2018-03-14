@@ -170,15 +170,12 @@ impl Context {
     /// you receive before processing them yourself.
     pub fn process_event(&mut self, event: &event::Event) {
         match *event {
-            event::Event::MouseMotion {
-                x,
-                y,
-                ..
-            } => {
+            event::Event::MouseMotion { x, y, .. } => {
                 // Keeping the mouse state info in the Context is a bit of a hack, see issue #283.
                 // Seems the best workaround though.
-                use ::graphics::Point2;
-                self.mouse_context.set_last_position(Point2::new(x as f32, y as f32));
+                use graphics::Point2;
+                self.mouse_context
+                    .set_last_position(Point2::new(x as f32, y as f32));
             }
             event::Event::Window {
                 win_event: sdl2::event::WindowEvent::Resized(_, _),

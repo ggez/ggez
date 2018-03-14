@@ -85,27 +85,29 @@ impl Image {
         // and updated on screen resize events. This may be preferable, but then
         // the buffer also needs to be updated when we switch to/from a canvas.
         // Unsure of the performance impact of creating this as it is needed.
-        let dl_buffer = gfx.factory.create_download_buffer::<SurfaceData>(w as usize * h as usize)?;
+        let dl_buffer = gfx.factory
+            .create_download_buffer::<SurfaceData>(w as usize * h as usize)?;
 
         let mut local_encoder: gfx::Encoder<
             gfx_device_gl::Resources,
-            gfx_device_gl::CommandBuffer> = gfx.factory.create_command_buffer().into();
-        
+            gfx_device_gl::CommandBuffer,
+        > = gfx.factory.create_command_buffer().into();
+
         local_encoder.copy_texture_to_buffer_raw(
             self.texture_handle.raw(),
             None,
             gfx::texture::RawImageInfo {
-                        xoffset: 0,
-                        yoffset: 0,
-                        zoffset: 0,
-                        width: self.width as u16,
-                        height: self.height as u16,
-                        depth: 0,
-                        format: ColorFormat::get_format(),
-                        mipmap: 0,
+                xoffset: 0,
+                yoffset: 0,
+                zoffset: 0,
+                width: self.width as u16,
+                height: self.height as u16,
+                depth: 0,
+                format: ColorFormat::get_format(),
+                mipmap: 0,
             },
             dl_buffer.raw(),
-            0
+            0,
         )?;
         local_encoder.flush(&mut *gfx.device);
 
@@ -123,23 +125,26 @@ impl Image {
         Ok(data)
     }
 
-    /// Encode the `Image` to the given file format and 
+    /// Encode the `Image` to the given file format and
     /// write it out to the given path.
     ///
     /// See the `filesystem` module docs for where exactly
     /// the file will end up.
-    pub fn encode<P: AsRef<path::Path>>(&self, ctx: &mut Context, format: ImageFormat, path: P) -> GameResult<()> {
+    pub fn encode<P: AsRef<path::Path>>(
+        &self,
+        ctx: &mut Context,
+        format: ImageFormat,
+        path: P,
+    ) -> GameResult<()> {
         use std::io;
         let data = self.to_rgba8(ctx)?;
         let f = ctx.filesystem.create(path)?;
         let writer = &mut io::BufWriter::new(f);
         let color_format = image::ColorType::RGBA(8);
         match format {
-            ImageFormat::Png => {
-                image::png::PNGEncoder::new(writer)
-                    .encode(&data, self.width, self.height, color_format)
-                    .map_err(|e| e.into())
-            }
+            ImageFormat::Png => image::png::PNGEncoder::new(writer)
+                .encode(&data, self.width, self.height, color_format)
+                .map_err(|e| e.into()),
         }
     }
 
@@ -162,7 +167,11 @@ impl Image {
             return Err(GameError::ResourceLoadError(msg));
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        let (tex, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, gfx::texture::Mipmap::Provided, &[rgba])?;
+        let (tex, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(
+            kind,
+            gfx::texture::Mipmap::Provided,
+            &[rgba],
+        )?;
         Ok(Image {
             texture: view,
             texture_handle: tex,

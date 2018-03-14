@@ -23,7 +23,14 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let dim = Dim { rate: 0.5 };
-        let shader = graphics::Shader::new(ctx, "/basic_150.glslv", "/dimmer_150.glslf", dim, "Dim", None)?;
+        let shader = graphics::Shader::new(
+            ctx,
+            "/basic_150.glslv",
+            "/dimmer_150.glslf",
+            dim,
+            "Dim",
+            None,
+        )?;
         Ok(MainState { dim, shader })
     }
 }

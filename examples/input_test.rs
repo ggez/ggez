@@ -31,20 +31,18 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        graphics::circle(ctx,
-                         DrawMode::Fill,
-                         Point2::new(self.pos_x as f32, self.pos_y as f32),
-                         100.0,
-                         1.0)?;
+        graphics::circle(
+            ctx,
+            DrawMode::Fill,
+            Point2::new(self.pos_x as f32, self.pos_y as f32),
+            100.0,
+            1.0,
+        )?;
         graphics::present(ctx);
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self,
-                               _ctx: &mut Context,
-                               button: MouseButton,
-                               x: i32,
-                               y: i32) {
+    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: i32, y: i32) {
         self.mouse_down = true;
         println!("Mouse button pressed: {:?}, x: {}, y: {}", button, x, y);
     }
@@ -54,47 +52,47 @@ impl event::EventHandler for MainState {
         println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
     }
 
-    fn mouse_motion_event(&mut self,
-                          _ctx: &mut Context,
-                          _state: MouseState,
-                          x: i32,
-                          y: i32,
-                          xrel: i32,
-                          yrel: i32) {
+    fn mouse_motion_event(
+        &mut self,
+        _ctx: &mut Context,
+        _state: MouseState,
+        x: i32,
+        y: i32,
+        xrel: i32,
+        yrel: i32,
+    ) {
         if self.mouse_down {
             self.pos_x = x;
             self.pos_y = y;
         }
-        println!("Mouse motion, x: {}, y: {}, relative x: {}, relative y: {}",
-                 x,
-                 y,
-                 xrel,
-                 yrel);
+        println!(
+            "Mouse motion, x: {}, y: {}, relative x: {}, relative y: {}",
+            x, y, xrel, yrel
+        );
     }
 
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: i32, y: i32) {
         println!("Mousewheel event, x: {}, y: {}", x, y);
     }
 
-
     fn key_down_event(&mut self, _ctx: &mut Context, keycode: Keycode, keymod: Mod, repeat: bool) {
-        println!("Key pressed: {:?}, modifier {:?}, repeat: {}",
-                 keycode,
-                 keymod,
-                 repeat);
+        println!(
+            "Key pressed: {:?}, modifier {:?}, repeat: {}",
+            keycode, keymod, repeat
+        );
     }
     fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, keymod: Mod, repeat: bool) {
-        println!("Key released: {:?}, modifier {:?}, repeat: {}",
-                 keycode,
-                 keymod,
-                 repeat);
+        println!(
+            "Key released: {:?}, modifier {:?}, repeat: {}",
+            keycode, keymod, repeat
+        );
     }
 
     fn text_editing_event(&mut self, _ctx: &mut Context, text: String, start: i32, length: i32) {
-        println!("Text editing: {}, start {}, length: {}",
-                 text,
-                 start,
-                 length);
+        println!(
+            "Text editing: {}, start {}, length: {}",
+            text, start, length
+        );
     }
 
     fn text_input_event(&mut self, _ctx: &mut Context, text: String) {
@@ -102,28 +100,31 @@ impl event::EventHandler for MainState {
     }
 
     fn controller_button_down_event(&mut self, _ctx: &mut Context, btn: Button, instance_id: i32) {
-        println!("Controller button pressed: {:?} Controller_Id: {}",
-                 btn,
-                 instance_id);
+        println!(
+            "Controller button pressed: {:?} Controller_Id: {}",
+            btn, instance_id
+        );
     }
 
     fn controller_button_up_event(&mut self, _ctx: &mut Context, btn: Button, instance_id: i32) {
-        println!("Controller button released: {:?} Controller_Id: {}",
-                 btn,
-                 instance_id);
+        println!(
+            "Controller button released: {:?} Controller_Id: {}",
+            btn, instance_id
+        );
     }
 
-    fn controller_axis_event(&mut self,
-                             _ctx: &mut Context,
-                             axis: Axis,
-                             value: i16,
-                             instance_id: i32) {
-        println!("Axis Event: {:?} Value: {} Controller_Id: {}",
-                 axis,
-                 value,
-                 instance_id);
+    fn controller_axis_event(
+        &mut self,
+        _ctx: &mut Context,
+        axis: Axis,
+        value: i16,
+        instance_id: i32,
+    ) {
+        println!(
+            "Axis Event: {:?} Value: {} Controller_Id: {}",
+            axis, value, instance_id
+        );
     }
-
 
     fn focus_event(&mut self, _ctx: &mut Context, gained: bool) {
         if gained {

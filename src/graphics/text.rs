@@ -29,7 +29,7 @@ pub enum Font {
 
 /// A bitmap font where letter widths are infered
 #[derive(Clone, Debug)]
-pub struct BitmapFont{
+pub struct BitmapFont {
     /// The original glyph image
     bytes: Vec<u8>,
     /// Width of the image
@@ -44,17 +44,28 @@ pub struct BitmapFont{
 }
 
 impl BitmapFont {
-    fn span_for(&self, c:char)-> usize {
+    fn span_for(&self, c: char) -> usize {
         match self.glyphs.get(&c) {
-            Some(&(_, span))=> span,
+            Some(&(_, span)) => span,
             None => {
                 if c == ' ' {
                     self.space_width
-                }else{
+                } else {
                     0
-                    //No span is defined for this char. We could error here, but I don't see the point. We will just render the missing char as nothing and move on, and the user will see that there is a nothing and if they do not understand, they will certainly feel silly when we and ask them what they expected to happen when they told the system to render a char they never specified. I think I would kind of prefer an implementation that is guaranteed not to error for any string.
+                    //No span is defined for this char.
+                    // We could error here, but I don't see the point.
+                    // We will just render the missing char as nothing and move on,
+                    // and the user will see that there is a nothing and if they
+                    // do not understand, they will certainly feel silly when
+                    // we and ask them what they expected to happen when they
+                    // told the system to render a char they never specified. I t
+                    // hink I would kind of prefer an implementation that is
+                    // guaranteed not to error for any string.
+                    // TODO: While this is a perfectly valid preference, I would
+                    // prefer fail-noisily to fail-invisibly; we should possibly have
+                    // options for either behavior.
                 }
-            },
+            }
         }
     }
 }
@@ -95,7 +106,7 @@ impl Font {
             scale: scale,
         })
     }
-    
+
     /// Creates a bitmap font from a long image of its alphabet, specified by `path`.
     /// The width of each individual chars is assumed to be to be
     /// image(path).width/glyphs.chars().count()
@@ -126,7 +137,7 @@ impl Font {
             letter_separation: 0,
         }))
     }
-    
+
     /// Creates a bitmap font from a long image of its alphabet.
     /// Each letter must be separated from the last by a fully transparent column of pixels.
     /// The width of each letter is infered from these letter boundaries.
@@ -148,21 +159,23 @@ impl Font {
         let mut glyphs_map: BTreeMap<char, (usize, usize)> = BTreeMap::new();
         let mut start = 0usize;
         let mut glyphos = glyphs.chars().enumerate();
-        let column_has_content = |offset:usize, image:&RgbaImage|{ //iff any pixel herein has an alpha greater than 0
-            (0 .. image_height).any(|ir| image.get_pixel(offset as u32, ir).data[3] > 0 )
+        let column_has_content = |offset: usize, image: &RgbaImage| {
+            //iff any pixel herein has an alpha greater than 0
+            (0..image_height).any(|ir| image.get_pixel(offset as u32, ir).data[3] > 0)
         };
         while start < image_width as usize {
             if column_has_content(start, &img) {
                 let mut span = 1;
-                while 
-                    start + span < image_width as usize &&
-                    column_has_content(start + span, &img)
+                while start + span < image_width as usize && column_has_content(start + span, &img)
                 {
                     span += 1;
                 }
-                let next_char: char = glyphos.next().ok_or_else(
-                    || GameError::FontError("I counted more glyphs in the font bitmap than there were chars in the glyphs string. Note, glyphs must not have gaps. A glyph with a transparent column in the middle will read as two glyphs.".into())
-                )?.1;
+                let next_char: char = glyphos
+                    .next()
+                    .ok_or_else(|| {
+                        GameError::FontError("I counted more glyphs in the font bitmap than there were chars in the glyphs string. Note, glyphs must not have gaps. A glyph with a transparent column in the middle will read as two glyphs.".into())
+                    })?
+                    .1;
                 glyphs_map.insert(next_char, (start, span));
                 start += span;
             }
@@ -171,7 +184,9 @@ impl Font {
 
         let (lb, _) = glyphos.size_hint();
         if lb > 0 {
-            return Err(GameError::FontError("There were more chars in glyphs than I counted in the bitmap!".into()));
+            return Err(GameError::FontError(
+                "There were more chars in glyphs than I counted in the bitmap!".into(),
+            ));
         }
 
         Ok(Font::BitmapFontVariant(BitmapFont {
@@ -204,9 +219,7 @@ impl Font {
     pub fn get_height(&self) -> usize {
         match *self {
             Font::BitmapFontVariant(BitmapFont { height, .. }) => height,
-            Font::TTFFont { scale, .. } => {
-                scale.y.ceil() as usize
-            }
+            Font::TTFFont { scale, .. } => scale.y.ceil() as usize,
         }
     }
 
@@ -216,7 +229,7 @@ impl Font {
         match *self {
             Font::BitmapFontVariant(ref font) => {
                 compute_variable_bitmap_text_rendering_span(text, font)
-            },
+            }
             Font::TTFFont {
                 ref font, scale, ..
             } => {
@@ -230,7 +243,7 @@ impl Font {
     }
 
     /// Breaks the given text into lines that will not exceed `wrap_limit` pixels
-    /// in length when drawn with the given font.  
+    /// in length when drawn with the given font.
     /// It accounts for newlines correctly but does not
     /// try to break words or handle hyphenated words; it just breaks
     /// at whitespace.  (It also doesn't preserve whitespace.)
@@ -438,42 +451,47 @@ struct VariableFontCharIter<'a> {
     offset: usize,
 }
 
-impl<'a> Iterator for VariableFontCharIter<'a>{ //iterates over each char in a line of text, finding the horizontal offsets at which they will appear on the screen, relative to the origin.
+impl<'a> Iterator for VariableFontCharIter<'a> {
+    // iterates over each char in a line of text, finding the horizontal
+    // offsets at which they will appear on the screen, relative to the origin.
     type Item = (char, usize, usize); //(letter, offset, letter_render_span)
-    fn next(&mut self)-> Option<Self::Item> {
+    fn next(&mut self) -> Option<Self::Item> {
         if let Some(c) = self.iter.next() {
             let char_span = self.font.span_for(c);
             let this_offset = self.offset;
             self.offset += char_span + self.font.letter_separation;
             Some((c, this_offset, char_span))
-        }else{
+        } else {
             None
         }
     }
 }
 
 impl<'a> VariableFontCharIter<'a> {
-    fn new(text: &'a str, font:&'a BitmapFont)-> VariableFontCharIter<'a> {
-        VariableFontCharIter{ font, iter: text.chars(), offset: 0 }
+    fn new(text: &'a str, font: &'a BitmapFont) -> VariableFontCharIter<'a> {
+        VariableFontCharIter {
+            font,
+            iter: text.chars(),
+            offset: 0,
+        }
     }
 }
 
-fn compute_variable_bitmap_text_rendering_span(text: &str, font: &BitmapFont)-> usize {
-    VariableFontCharIter::new(text, font).last().map(|(_, offset, span)| offset + span).unwrap_or(0)
+fn compute_variable_bitmap_text_rendering_span(text: &str, font: &BitmapFont) -> usize {
+    VariableFontCharIter::new(text, font)
+        .last()
+        .map(|(_, offset, span)| offset + span)
+        .unwrap_or(0)
 }
 
-fn render_dynamic_bitmap(
-    context: &mut Context,
-    text: &str,
-    font: &BitmapFont,
-)-> GameResult<Text> {
+fn render_dynamic_bitmap(context: &mut Context, text: &str, font: &BitmapFont) -> GameResult<Text> {
     let image_span = compute_variable_bitmap_text_rendering_span(text, font);
     // Same at-least-one-pixel-wide constraint here as with TTF fonts.
     let buf_len = cmp::max(image_span * font.height * 4, 1);
     let mut dest_buf = Vec::with_capacity(buf_len);
     dest_buf.resize(buf_len, 0u8);
     for (c, offset, _) in VariableFontCharIter::new(text, font) {
-        let (coffset, cspan) = *font.glyphs.get(&c).unwrap_or(&(0,0));
+        let (coffset, cspan) = *font.glyphs.get(&c).unwrap_or(&(0, 0));
         blit(
             &mut dest_buf,
             (image_span, font.height),
@@ -485,13 +503,8 @@ fn render_dynamic_bitmap(
             4,
         );
     }
-    
-    let image = Image::from_rgba8(
-        context,
-        image_span as u16,
-        font.height as u16,
-        &dest_buf,
-    )?;
+
+    let image = Image::from_rgba8(context, image_span as u16, font.height as u16, &dest_buf)?;
     let text_string = text.to_string();
 
     Ok(Text {
@@ -512,7 +525,7 @@ impl Text {
             Font::TTFFont {
                 font: ref f, scale, ..
             } => render_ttf(context, text, f, scale),
-            Font::BitmapFontVariant(ref font)=> render_dynamic_bitmap(context, text, font),
+            Font::BitmapFontVariant(ref font) => render_dynamic_bitmap(context, text, font),
         }
     }
 

@@ -1,9 +1,9 @@
 //! How to draw a 3D cube in ggez.
 
-extern crate ggez;
 #[macro_use]
 extern crate gfx;
 extern crate gfx_device_gl;
+extern crate ggez;
 
 use gfx::texture;
 use gfx::traits::FactoryExt;
@@ -49,7 +49,6 @@ gfx_defines!{
     }
 }
 
-
 impl Vertex {
     fn new(p: [i8; 3], t: [i8; 2]) -> Vertex {
         Vertex {
@@ -61,9 +60,11 @@ impl Vertex {
 
 fn default_view() -> Isometry3 {
     // Eye location, target location, up-vector
-    Isometry3::look_at_rh(&Point3::new(1.5f32, -5.0, 3.0),
-                          &Point3::new(0f32, 0.0, 0.0),
-                          &Vector3::z_axis())
+    Isometry3::look_at_rh(
+        &Point3::new(1.5f32, -5.0, 3.0),
+        &Point3::new(0f32, 0.0, 0.0),
+        &Vector3::z_axis(),
+    )
 }
 
 struct MainState {
@@ -80,10 +81,11 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> Self {
-
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 18).unwrap();
         let text1 = graphics::Text::new(ctx, "You can mix ggez and gfx drawing;", &font).unwrap();
-        let text2 = graphics::Text::new(ctx, "it basically draws gfx stuff first, then ggez", &font).unwrap();
+        let text2 =
+            graphics::Text::new(ctx, "it basically draws gfx stuff first, then ggez", &font)
+                .unwrap();
 
         let color_view = graphics::get_screen_render_target(ctx);
         let depth_view = graphics::get_depth_view(ctx);
@@ -119,36 +121,38 @@ void main() {
 }"#;
 
         // Cube geometry
-        let vertex_data = [// top (0, 0, 1)
-                           Vertex::new([-1, -1, 1], [0, 0]),
-                           Vertex::new([1, -1, 1], [1, 0]),
-                           Vertex::new([1, 1, 1], [1, 1]),
-                           Vertex::new([-1, 1, 1], [0, 1]),
-                           // bottom (0, 0, -1)
-                           Vertex::new([-1, 1, -1], [1, 0]),
-                           Vertex::new([1, 1, -1], [0, 0]),
-                           Vertex::new([1, -1, -1], [0, 1]),
-                           Vertex::new([-1, -1, -1], [1, 1]),
-                           // right (1, 0, 0)
-                           Vertex::new([1, -1, -1], [0, 0]),
-                           Vertex::new([1, 1, -1], [1, 0]),
-                           Vertex::new([1, 1, 1], [1, 1]),
-                           Vertex::new([1, -1, 1], [0, 1]),
-                           // left (-1, 0, 0)
-                           Vertex::new([-1, -1, 1], [1, 0]),
-                           Vertex::new([-1, 1, 1], [0, 0]),
-                           Vertex::new([-1, 1, -1], [0, 1]),
-                           Vertex::new([-1, -1, -1], [1, 1]),
-                           // front (0, 1, 0)
-                           Vertex::new([1, 1, -1], [1, 0]),
-                           Vertex::new([-1, 1, -1], [0, 0]),
-                           Vertex::new([-1, 1, 1], [0, 1]),
-                           Vertex::new([1, 1, 1], [1, 1]),
-                           // back (0, -1, 0)
-                           Vertex::new([1, -1, 1], [0, 0]),
-                           Vertex::new([-1, -1, 1], [1, 0]),
-                           Vertex::new([-1, -1, -1], [1, 1]),
-                           Vertex::new([1, -1, -1], [0, 1])];
+        let vertex_data = [
+            // top (0, 0, 1)
+            Vertex::new([-1, -1, 1], [0, 0]),
+            Vertex::new([1, -1, 1], [1, 0]),
+            Vertex::new([1, 1, 1], [1, 1]),
+            Vertex::new([-1, 1, 1], [0, 1]),
+            // bottom (0, 0, -1)
+            Vertex::new([-1, 1, -1], [1, 0]),
+            Vertex::new([1, 1, -1], [0, 0]),
+            Vertex::new([1, -1, -1], [0, 1]),
+            Vertex::new([-1, -1, -1], [1, 1]),
+            // right (1, 0, 0)
+            Vertex::new([1, -1, -1], [0, 0]),
+            Vertex::new([1, 1, -1], [1, 0]),
+            Vertex::new([1, 1, 1], [1, 1]),
+            Vertex::new([1, -1, 1], [0, 1]),
+            // left (-1, 0, 0)
+            Vertex::new([-1, -1, 1], [1, 0]),
+            Vertex::new([-1, 1, 1], [0, 0]),
+            Vertex::new([-1, 1, -1], [0, 1]),
+            Vertex::new([-1, -1, -1], [1, 1]),
+            // front (0, 1, 0)
+            Vertex::new([1, 1, -1], [1, 0]),
+            Vertex::new([-1, 1, -1], [0, 0]),
+            Vertex::new([-1, 1, 1], [0, 1]),
+            Vertex::new([1, 1, 1], [1, 1]),
+            // back (0, -1, 0)
+            Vertex::new([1, -1, 1], [0, 0]),
+            Vertex::new([-1, -1, 1], [1, 0]),
+            Vertex::new([-1, -1, -1], [1, 1]),
+            Vertex::new([1, -1, -1], [0, 1]),
+        ];
 
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let index_data: &[u16] = &[
@@ -173,13 +177,11 @@ void main() {
             )
             .unwrap();
 
-        let sinfo = texture::SamplerInfo::new(texture::FilterMethod::Bilinear,
-                                              texture::WrapMode::Clamp);
+        let sinfo =
+            texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
 
         // Create pipeline state object
-        let pso = factory
-            .create_pipeline_simple(vs, fs, pipe::new())
-            .unwrap();
+        let pso = factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap();
 
         // Aspect ratio, FOV, znear, zfar
         let proj = na::Perspective3::new(4.0 / 3.0, f32::consts::PI / 4.0, 1.0, 10.0);
@@ -207,7 +209,6 @@ void main() {
     }
 }
 
-
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         self.rotation += 0.01;
@@ -217,13 +218,13 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         // Do gfx-rs drawing
         {
-            let (_factory, device, encoder, _depthview, _colorview) = graphics::get_gfx_objects(ctx);
+            let (_factory, device, encoder, _depthview, _colorview) =
+                graphics::get_gfx_objects(ctx);
             encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0]);
 
             let rotation = na::Matrix4::from_scaled_axis(na::Vector3::z() * self.rotation);
 
-
-            let locals = Locals { 
+            let locals = Locals {
                 transform: self.data.transform,
                 rotation: rotation.into(),
             };
@@ -235,10 +236,8 @@ impl event::EventHandler for MainState {
         }
 
         // Do ggez drawing
-        let dest_point1 = graphics::Point2::new(10.0,
-                                                210.0);
-        let dest_point2 = graphics::Point2::new(10.0,
-                                                250.0);
+        let dest_point1 = graphics::Point2::new(10.0, 210.0);
+        let dest_point2 = graphics::Point2::new(10.0, 250.0);
         graphics::draw(ctx, &self.text1, dest_point1, 0.0)?;
         graphics::draw(ctx, &self.text2, dest_point2, 0.0)?;
         graphics::present(ctx);

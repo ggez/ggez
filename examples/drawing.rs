@@ -37,19 +37,22 @@ impl MainState {
 fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
     let mb = &mut graphics::MeshBuilder::new();
 
-    mb.line(&[Point2::new(200.0, 200.0),
-              Point2::new(400.0, 200.0),
-              Point2::new(400.0, 400.0),
-              Point2::new(200.0, 400.0),
-              Point2::new(200.0, 300.0)],
-            4.0);
+    mb.line(
+        &[
+            Point2::new(200.0, 200.0),
+            Point2::new(400.0, 200.0),
+            Point2::new(400.0, 400.0),
+            Point2::new(200.0, 400.0),
+            Point2::new(200.0, 300.0),
+        ],
+        4.0,
+    );
 
     mb.ellipse(DrawMode::Fill, Point2::new(600.0, 200.0), 50.0, 120.0, 1.0);
 
     mb.circle(DrawMode::Fill, Point2::new(600.0, 380.0), 40.0, 1.0);
     mb.build(ctx)
 }
-
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
@@ -73,28 +76,32 @@ impl event::EventHandler for MainState {
         let scale = graphics::Point2::new(10.0, 10.0);
         // let shear = graphics::Point::new(self.zoomlevel, self.zoomlevel);
         // graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0));
-        graphics::draw_ex(ctx,
-                          &self.image2_linear,
-                          graphics::DrawParam {
-                              // src: src,
-                              dest: dst,
-                              rotation: self.zoomlevel,
-                              // offset: Point2::new(-16.0, 0.0),
-                              scale: scale,
-                              // shear: shear,
-                              ..Default::default()
-                          })?;
-        graphics::draw_ex(ctx,
-                          &self.image2_nearest,
-                          graphics::DrawParam {
-                              // src: src,
-                              dest: dst2,
-                              rotation: self.zoomlevel,
-                              offset: Point2::new(0.5, 0.5),
-                              scale: scale,
-                              // shear: shear,
-                              ..Default::default()
-                          })?;
+        graphics::draw_ex(
+            ctx,
+            &self.image2_linear,
+            graphics::DrawParam {
+                // src: src,
+                dest: dst,
+                rotation: self.zoomlevel,
+                // offset: Point2::new(-16.0, 0.0),
+                scale: scale,
+                // shear: shear,
+                ..Default::default()
+            },
+        )?;
+        graphics::draw_ex(
+            ctx,
+            &self.image2_nearest,
+            graphics::DrawParam {
+                // src: src,
+                dest: dst2,
+                rotation: self.zoomlevel,
+                offset: Point2::new(0.5, 0.5),
+                scale: scale,
+                // shear: shear,
+                ..Default::default()
+            },
+        )?;
 
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         graphics::rectangle(ctx, graphics::DrawMode::Fill, rect)?;
@@ -102,7 +109,6 @@ impl event::EventHandler for MainState {
         graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0))?;
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         graphics::rectangle(ctx, graphics::DrawMode::Line(1.0), rect)?;
-
 
         let mesh = build_mesh(ctx)?;
         graphics::set_color(ctx, (0, 0, 255).into())?;

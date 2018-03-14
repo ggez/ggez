@@ -126,9 +126,7 @@ pub trait EventHandler {
     /// https://wiki.libsdl.org/SDL_TextEditingEvent
     /// https://wiki.libsdl.org/SDL_TextInputEvent
     /// https://wiki.libsdl.org/Tutorials/TextInput
-    fn text_input_event(&mut self, _ctx: &mut Context, _text: String) {
-
-    }
+    fn text_input_event(&mut self, _ctx: &mut Context, _text: String) {}
 
     /// A controller button was pressed; instance_id identifies which controller.
     fn controller_button_down_event(
@@ -237,10 +235,7 @@ where
                     length,
                     ..
                 } => state.text_editing_event(ctx, text, start, length),
-                TextInput {
-                    text,
-                    ..
-                } => state.text_input_event(ctx, text),
+                TextInput { text, .. } => state.text_input_event(ctx, text),
                 MouseButtonDown {
                     mouse_btn, x, y, ..
                 } => state.mouse_button_down_event(ctx, mouse_btn, x, y),

@@ -52,9 +52,7 @@ pub fn main() {
     {
         let mut options = filesystem::OpenOptions::new();
         options.append(true);
-        let mut file = ctx.filesystem
-            .open_options(test_file, &options)
-            .unwrap();
+        let mut file = ctx.filesystem.open_options(test_file, &options).unwrap();
         file.write_all(bytes).unwrap();
     }
     println!("Appended to test file");
@@ -62,10 +60,11 @@ pub fn main() {
         let mut buffer = Vec::new();
         let mut file = ctx.filesystem.open(test_file).unwrap();
         file.read_to_end(&mut buffer).unwrap();
-        println!("Read from test file: {:?}",
-                 str::from_utf8(&buffer).unwrap());
+        println!(
+            "Read from test file: {:?}",
+            str::from_utf8(&buffer).unwrap()
+        );
     }
-
 
     println!();
     println!("Let's read the default conf file");
@@ -96,5 +95,4 @@ pub fn main() {
             println!("Wait, it does exist?  Weird.")
         }
     }
-
 }

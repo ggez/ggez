@@ -94,11 +94,10 @@
 //! Sources of information:
 //!
 //!  * The [FAQ](https://github.com/ggez/ggez/blob/master/docs/FAQ.md) has answers to common questions and problems.
-//!  * The [API docs](https://docs.rs/ggez/), a lot of design stuff is explained there.  
+//!  * The [API docs](https://docs.rs/ggez/), a lot of design stuff is explained there.
 //!  * Check out the [examples](https://github.com/ggez/ggez/tree/master/examples).
 //!
 //! If you still have problems, feel free to [open an issue](https://github.com/ggez/ggez/issues) or say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server.
-
 
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]

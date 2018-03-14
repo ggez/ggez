@@ -208,7 +208,11 @@ impl From<gfx::mapping::Error> for GameError {
     }
 }
 
-impl<S, D> From<gfx::CopyError<S, D>> for GameError where S: fmt::Debug, D: fmt::Debug {
+impl<S, D> From<gfx::CopyError<S, D>> for GameError
+where
+    S: fmt::Debug,
+    D: fmt::Debug,
+{
     fn from(e: gfx::CopyError<S, D>) -> GameError {
         let errstr = format!("Memory copy error: {:?}", e);
         GameError::VideoError(errstr)

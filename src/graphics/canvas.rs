@@ -1,7 +1,7 @@
 //! I guess these docs will never appear since we re-export the canvas
 //! module from graphics...
 
-use gfx::{Factory};
+use gfx::Factory;
 use gfx::format::{ChannelTyped, Srgb, Srgba8, Swizzle};
 use gfx::handle::RenderTargetView;
 use gfx::memory::{Bind, Usage};
@@ -26,7 +26,7 @@ where
 /// A canvas that can be rendered to instead of the screen (sometimes referred
 /// to as "render target" or "render to texture"). Set the canvas with the
 /// `ggez::graphics::set_canvas()` function, and then anything you
-/// draw will be drawn to the canvas instead of the screen.  
+/// draw will be drawn to the canvas instead of the screen.
 ///
 /// Resume drawing to the screen by calling `ggez::graphics::set_canvas(None)`.
 ///

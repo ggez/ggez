@@ -10,7 +10,7 @@ use ggez::event::*;
 use ggez::{Context, ContextBuilder, GameResult};
 use ggez::graphics;
 use ggez::timer;
-use ggez::graphics::{Vector2, Point2};
+use ggez::graphics::{Point2, Vector2};
 use ggez::nalgebra as na;
 
 use std::env;
@@ -36,7 +36,6 @@ fn random_vec(max_magnitude: f32) -> Vector2 {
     let mag = rand::random::<f32>() * max_magnitude;
     vec_from_angle(angle) * (mag)
 }
-
 
 /// *********************************************************************
 /// Now we define our Actor's.
@@ -158,7 +157,6 @@ const PLAYER_TURN_RATE: f32 = 3.0;
 // Seconds between shots
 const PLAYER_SHOT_TIME: f32 = 0.5;
 
-
 fn player_handle_input(actor: &mut Actor, input: &InputState, dt: f32) {
     actor.facing += dt * PLAYER_TURN_RATE * input.xaxis;
 
@@ -209,7 +207,6 @@ fn handle_timed_life(actor: &mut Actor, dt: f32) {
     actor.life -= dt;
 }
 
-
 /// Translates the world coordinate system, which
 /// has Y pointing up and the origin at the center,
 /// to the screen coordinate system, which has Y
@@ -248,13 +245,13 @@ impl Assets {
         let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
         let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
         Ok(Assets {
-               player_image: player_image,
-               shot_image: shot_image,
-               rock_image: rock_image,
-               font: font,
-               shot_sound: shot_sound,
-               hit_sound: hit_sound,
-           })
+            player_image: player_image,
+            shot_image: shot_image,
+            rock_image: rock_image,
+            font: font,
+            shot_sound: shot_sound,
+            hit_sound: hit_sound,
+        })
     }
 
     fn actor_image(&mut self, actor: &Actor) -> &mut graphics::Image {
@@ -315,7 +312,6 @@ struct MainState {
     level_display: graphics::Text,
 }
 
-
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.print_resource_stats();
@@ -366,8 +362,6 @@ impl MainState {
         let _ = self.assets.shot_sound.play();
     }
 
-
-
     fn clear_dead_stuff(&mut self) {
         self.shots.retain(|s| s.life > 0.0);
         self.rocks.retain(|r| r.life > 0.0);
@@ -412,7 +406,6 @@ impl MainState {
     }
 }
 
-
 /// **********************************************************************
 /// A couple of utility functions.
 /// **********************************************************************
@@ -426,12 +419,12 @@ fn print_instructions() {
     println!();
 }
 
-
-fn draw_actor(assets: &mut Assets,
-              ctx: &mut Context,
-              actor: &Actor,
-              world_coords: (u32, u32))
-              -> GameResult<()> {
+fn draw_actor(
+    assets: &mut Assets,
+    ctx: &mut Context,
+    actor: &Actor,
+    world_coords: (u32, u32),
+) -> GameResult<()> {
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, actor.pos);
     let image = assets.actor_image(actor);
@@ -439,10 +432,9 @@ fn draw_actor(assets: &mut Assets,
         dest: pos,
         rotation: actor.facing as f32,
         offset: graphics::Point2::new(0.5, 0.5),
-        .. Default::default()
+        ..Default::default()
     };
     graphics::draw_ex(ctx, image, drawparams)
-
 }
 
 /// **********************************************************************
@@ -467,9 +459,11 @@ impl EventHandler for MainState {
             // Update the physics for all actors.
             // First the player...
             update_actor_position(&mut self.player, seconds);
-            wrap_actor_position(&mut self.player,
-                                self.screen_width as f32,
-                                self.screen_height as f32);
+            wrap_actor_position(
+                &mut self.player,
+                self.screen_width as f32,
+                self.screen_height as f32,
+            );
 
             // Then the shots...
             for act in &mut self.shots {
@@ -535,12 +529,9 @@ impl EventHandler for MainState {
             }
         }
 
-
         // And draw the GUI elements in the right places.
-        let level_dest = graphics::Point2::new(10.0,
-                                               10.0);
-        let score_dest = graphics::Point2::new(200.0,
-                                               10.0);
+        let level_dest = graphics::Point2::new(10.0, 10.0);
+        let score_dest = graphics::Point2::new(200.0, 10.0);
         graphics::draw(ctx, &self.level_display, level_dest, 0.0)?;
         graphics::draw(ctx, &self.score_display, score_dest, 0.0)?;
 
@@ -559,11 +550,7 @@ impl EventHandler for MainState {
 
     // Handle key events.  These just map keyboard events
     // and alter our input state appropriately.
-    fn key_down_event(&mut self,
-                      ctx: &mut Context,
-                      keycode: Keycode,
-                      _keymod: Mod,
-                      _repeat: bool) {
+    fn key_down_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, _repeat: bool) {
         match keycode {
             Keycode::Up => {
                 self.input.yaxis = 1.0;
@@ -576,18 +563,16 @@ impl EventHandler for MainState {
             }
             Keycode::Space => {
                 self.input.fire = true;
-            },
+            }
             Keycode::P => {
-                let img = graphics::screenshot(ctx)
-                    .expect("Could not take screenshot");
+                let img = graphics::screenshot(ctx).expect("Could not take screenshot");
                 img.encode(ctx, graphics::ImageFormat::Png, "/screenshot.png")
                     .expect("Could not save screenshot");
-            },
+            }
             Keycode::Escape => ctx.quit().unwrap(),
             _ => (), // Do nothing
         }
     }
-
 
     fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, _keymod: Mod, _repeat: bool) {
         match keycode {
@@ -612,14 +597,8 @@ impl EventHandler for MainState {
 
 pub fn main() {
     let mut cb = ContextBuilder::new("astroblasto", "ggez")
-        .window_setup(conf::WindowSetup::default()
-                      .title("Astroblasto!")
-        )
-        .window_mode(conf::WindowMode::default()
-                     .dimensions(640, 480)
-        );
-
-
+        .window_setup(conf::WindowSetup::default().title("Astroblasto!"))
+        .window_mode(conf::WindowMode::default().dimensions(640, 480));
 
     // We add the CARGO_MANIFEST_DIR/resources to the filesystems paths so
     // we we look in the cargo project for files.
@@ -634,7 +613,7 @@ pub fn main() {
     } else {
         println!("Not building from cargo?  Ok.");
     }
-    
+
     let ctx = &mut cb.build().unwrap();
 
     match MainState::new(ctx) {

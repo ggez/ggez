@@ -310,7 +310,6 @@ pub fn present(ctx: &mut Context) {
     gfx.device.cleanup();
 }
 
-
 /// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to a PNG file.
 pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
@@ -323,17 +322,17 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
 
     // TODO: The bind and data settings here might be worth
     // fiddling with...
-    let texture_kind = 
-        gfx::texture::Kind::D2(w, h, aa);
+    let texture_kind = gfx::texture::Kind::D2(w, h, aa);
     // The format here is the same as is defined in ColorFormat
-    let target_texture: gfx::handle::Texture<_, <ColorFormat as Formatted>::Surface> = gfx.factory.create_texture(
-        texture_kind,
-        1,
-        Bind::TRANSFER_SRC | Bind::TRANSFER_DST | Bind::SHADER_RESOURCE,
-        gfx::memory::Usage::Data,
-        Some(gfx::format::ChannelType::Srgb)
-    )?;
-    
+    let target_texture: gfx::handle::Texture<_, <ColorFormat as Formatted>::Surface> = gfx.factory
+        .create_texture(
+            texture_kind,
+            1,
+            Bind::TRANSFER_SRC | Bind::TRANSFER_DST | Bind::SHADER_RESOURCE,
+            gfx::memory::Usage::Data,
+            Some(gfx::format::ChannelType::Srgb),
+        )?;
+
     let image_info = gfx::texture::ImageInfoCommon {
         xoffset: 0,
         yoffset: 0,
@@ -345,22 +344,22 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         mipmap: 0,
     };
 
-    let mut local_encoder: gfx::Encoder<
-        gfx_device_gl::Resources,
-        gfx_device_gl::CommandBuffer> = gfx.factory.create_command_buffer().into();
-    
+    let mut local_encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
+        gfx.factory.create_command_buffer().into();
+
     local_encoder.copy_texture_to_texture_raw(
         gfx.data.out.raw().get_texture(),
         None,
         image_info,
         target_texture.raw(),
         None,
-        image_info
+        image_info,
     )?;
 
     local_encoder.flush(&mut *gfx.device);
 
-    let shader_resource = gfx.factory.view_texture_as_shader_resource::<gfx::format::Srgba8>(
+    let shader_resource = gfx.factory
+        .view_texture_as_shader_resource::<gfx::format::Srgba8>(
             &target_texture,
             (0, 0),
             gfx::format::Swizzle::new(),
@@ -580,7 +579,7 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<(
 /// Sets the raw projection matrix to the given homogeneous
 /// transformation matrix.
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// You must call `apply_transformations(ctx)` after calling this to apply
 /// these changes and recalculate the underlying MVP matrix.
 pub fn set_projection(context: &mut Context, proj: Matrix4) {
     let gfx = &mut context.gfx_context;
@@ -589,7 +588,7 @@ pub fn set_projection(context: &mut Context, proj: Matrix4) {
 
 /// Premultiplies the given transformation matrix with the current projection matrix
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// You must call `apply_transformations(ctx)` after calling this to apply
 /// these changes and recalculate the underlying MVP matrix.
 pub fn transform_projection(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
@@ -607,7 +606,7 @@ pub fn get_projection(context: &Context) -> Matrix4 {
 /// (model) matrix stack of the `Context`. If no matrix is given, then
 /// pushes a copy of the current transform matrix to the top of the stack.
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// You must call `apply_transformations(ctx)` after calling this to apply
 /// these changes and recalculate the underlying MVP matrix.
 ///
 /// A `DrawParam` can be converted into an appropriate transform
@@ -627,7 +626,7 @@ pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
 /// Pops the transform matrix off the top of the transform
 /// (model) matrix stack of the `Context`.
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// You must call `apply_transformations(ctx)` after calling this to apply
 /// these changes and recalculate the underlying MVP matrix.
 pub fn pop_transform(context: &mut Context) {
     let gfx = &mut context.gfx_context;
@@ -637,7 +636,7 @@ pub fn pop_transform(context: &mut Context) {
 /// Sets the current model transformation to the given homogeneous
 /// transformation matrix.
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// You must call `apply_transformations(ctx)` after calling this to apply
 /// these changes and recalculate the underlying MVP matrix.
 ///
 /// A `DrawParam` can be converted into an appropriate transform
@@ -655,7 +654,7 @@ pub fn get_transform(context: &Context) -> Matrix4 {
 
 /// Premultiplies the given transform with the current model transform.
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// You must call `apply_transformations(ctx)` after calling this to apply
 /// these changes and recalculate the underlying MVP matrix.
 ///
 /// A `DrawParam` can be converted into an appropriate transform
@@ -668,7 +667,7 @@ pub fn transform(context: &mut Context, transform: Matrix4) {
 
 /// Sets the current model transform to the origin transform (no transformation)
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply 
+/// You must call `apply_transformations(ctx)` after calling this to apply
 /// these changes and recalculate the underlying MVP matrix.
 pub fn origin(context: &mut Context) {
     let gfx = &mut context.gfx_context;
@@ -834,8 +833,14 @@ pub fn get_gfx_objects(
 ) -> (
     &mut <GlBackendSpec as BackendSpec>::Factory,
     &mut <GlBackendSpec as BackendSpec>::Device,
-    &mut gfx::Encoder<<GlBackendSpec as BackendSpec>::Resources, <GlBackendSpec as BackendSpec>::CommandBuffer>,
-    gfx::handle::DepthStencilView<<GlBackendSpec as BackendSpec>::Resources, gfx::format::DepthStencil>,
+    &mut gfx::Encoder<
+        <GlBackendSpec as BackendSpec>::Resources,
+        <GlBackendSpec as BackendSpec>::CommandBuffer,
+    >,
+    gfx::handle::DepthStencilView<
+        <GlBackendSpec as BackendSpec>::Resources,
+        gfx::format::DepthStencil,
+    >,
     gfx::handle::RenderTargetView<
         <GlBackendSpec as BackendSpec>::Resources,
         (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
@@ -887,7 +892,6 @@ pub trait Drawable {
     /// Gets the blend mode to be used when drawing this drawable.
     fn get_blend_mode(&self) -> Option<BlendMode>;
 }
-
 
 #[cfg(test)]
 mod tests {}

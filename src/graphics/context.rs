@@ -34,7 +34,8 @@ where
     pub(crate) device: Box<B::Device>,
     pub(crate) factory: Box<B::Factory>,
     pub(crate) encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
-    pub(crate) screen_render_target: gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
+    pub(crate) screen_render_target:
+        gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
     #[allow(dead_code)]
     pub(crate) depth_view: gfx::handle::DepthStencilView<B::Resources, gfx::format::DepthStencil>,
 
@@ -286,7 +287,10 @@ impl GraphicsContext {
 
     /// Draws with the current encoder, slice, and pixel shader. Prefer calling
     /// this method from `Drawables` so that the pixel shader gets used
-    pub(crate) fn draw(&mut self, slice: Option<&gfx::Slice<gfx_device_gl::Resources>>) -> GameResult<()> {
+    pub(crate) fn draw(
+        &mut self,
+        slice: Option<&gfx::Slice<gfx_device_gl::Resources>>,
+    ) -> GameResult<()> {
         let slice = slice.unwrap_or(&self.quad_slice);
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
         let shader_handle = &self.shaders[id];

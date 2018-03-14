@@ -57,7 +57,7 @@ impl SoundData {
         let file = &mut context.filesystem.open(path)?;
         SoundData::from_read(file)
     }
-    
+
     /// Copies the data in the given slice into a new SoundData object.
     pub fn from_bytes(data: &[u8]) -> Self {
         SoundData(Arc::from(data))
@@ -166,7 +166,6 @@ impl Source {
     pub fn repeat(&self) -> bool {
         self.repeat
     }
-
 
     /// Pauses playback
     pub fn pause(&self) {

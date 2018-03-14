@@ -228,38 +228,53 @@ impl MainState {
         let mut lights = Canvas::with_window_size(ctx)?;
         // The light map will be drawn on top using the add blend mode
         lights.set_blend_mode(Some(BlendMode::Add));
-        let occlusions_shader =
-            Shader::from_u8(ctx, VERTEX_SHADER_SOURCE, OCCLUSIONS_SHADER_SOURCE, torch, "Light", None).unwrap();
-        let shadows_shader =
-            Shader::from_u8(ctx, VERTEX_SHADER_SOURCE, SHADOWS_SHADER_SOURCE, torch, "Light", None).unwrap();
-        let lights_shader = Shader::from_u8(ctx,
-                                                 VERTEX_SHADER_SOURCE,
-                                                 LIGHTS_SHADER_SOURCE,
-                                                 torch,
-                                                 "Light",
-                                                 Some(&[BlendMode::Add])).unwrap();
+        let occlusions_shader = Shader::from_u8(
+            ctx,
+            VERTEX_SHADER_SOURCE,
+            OCCLUSIONS_SHADER_SOURCE,
+            torch,
+            "Light",
+            None,
+        ).unwrap();
+        let shadows_shader = Shader::from_u8(
+            ctx,
+            VERTEX_SHADER_SOURCE,
+            SHADOWS_SHADER_SOURCE,
+            torch,
+            "Light",
+            None,
+        ).unwrap();
+        let lights_shader = Shader::from_u8(
+            ctx,
+            VERTEX_SHADER_SOURCE,
+            LIGHTS_SHADER_SOURCE,
+            torch,
+            "Light",
+            Some(&[BlendMode::Add]),
+        ).unwrap();
 
         Ok(MainState {
-               background,
-               tile,
-               text,
-               torch,
-               static_light,
-               foreground,
-               occlusions,
-               shadows,
-               lights,
-               occlusions_shader,
-               shadows_shader,
-               lights_shader,
-           })
+            background,
+            tile,
+            text,
+            torch,
+            static_light,
+            foreground,
+            occlusions,
+            shadows,
+            lights,
+            occlusions_shader,
+            shadows_shader,
+            lights_shader,
+        })
     }
-    fn render_light(&mut self,
-                    ctx: &mut Context,
-                    light: Light,
-                    origin: DrawParam,
-                    canvas_origin: DrawParam)
-                    -> GameResult<()> {
+    fn render_light(
+        &mut self,
+        ctx: &mut Context,
+        light: Light,
+        origin: DrawParam,
+        canvas_origin: DrawParam,
+    ) -> GameResult<()> {
         let size = graphics::get_size(ctx);
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
@@ -284,7 +299,6 @@ impl MainState {
             };
             self.shadows_shader.send(ctx, light)?;
             graphics::draw_ex(ctx, &self.occlusions, param)?;
-
         }
         graphics::set_canvas(ctx, Some(&self.lights));
         {
@@ -307,13 +321,12 @@ impl event::EventHandler for MainState {
             println!("Average FPS: {}", timer::get_fps(ctx));
         }
 
-        self.torch.glow = LIGHT_GLOW_FACTOR *
-                          ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
-        self.static_light.glow = LIGHT_GLOW_FACTOR *
-                                 ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE * 0.75).sin();
+        self.torch.glow =
+            LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
+        self.static_light.glow =
+            LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE * 0.75).sin();
         Ok(())
     }
-
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let size = graphics::get_size(ctx);
@@ -324,8 +337,10 @@ impl event::EventHandler for MainState {
         // for re-rendering canvases, we need to take the DPI into account
         let dpiscale = {
             let dsize = graphics::get_drawable_size(ctx);
-            Point2::new(size.0 as f32 / dsize.0 as f32,
-                        size.1 as f32 / dsize.1 as f32)
+            Point2::new(
+                size.0 as f32 / dsize.0 as f32,
+                size.1 as f32 / dsize.1 as f32,
+            )
         };
         let canvas_origin = DrawParam {
             scale: dpiscale,
@@ -340,25 +355,31 @@ impl event::EventHandler for MainState {
         graphics::set_canvas(ctx, Some(&self.foreground));
         graphics::set_background_color(ctx, [0.0; 4].into());
         graphics::clear(ctx);
-        graphics::draw_ex(ctx,
-                          &self.tile,
-                          DrawParam {
-                              dest: Point2::new(598.0, 124.0),
-                              ..Default::default()
-                          })?;
-        graphics::draw_ex(ctx,
-                          &self.tile,
-                          DrawParam {
-                              dest: Point2::new(92.0, 350.0),
-                              ..Default::default()
-                          })?;
-        graphics::draw_ex(ctx,
-                          &self.tile,
-                          DrawParam {
-                              dest: Point2::new(442.0, 468.0),
-                              rotation: 0.5,
-                              ..Default::default()
-                          })?;
+        graphics::draw_ex(
+            ctx,
+            &self.tile,
+            DrawParam {
+                dest: Point2::new(598.0, 124.0),
+                ..Default::default()
+            },
+        )?;
+        graphics::draw_ex(
+            ctx,
+            &self.tile,
+            DrawParam {
+                dest: Point2::new(92.0, 350.0),
+                ..Default::default()
+            },
+        )?;
+        graphics::draw_ex(
+            ctx,
+            &self.tile,
+            DrawParam {
+                dest: Point2::new(442.0, 468.0),
+                rotation: 0.5,
+                ..Default::default()
+            },
+        )?;
         graphics::draw(ctx, &self.text, Point2::new(50.0, 200.0), 0.0)?;
 
         // First we draw our light and shadow maps
@@ -395,13 +416,15 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn mouse_motion_event(&mut self,
-                          ctx: &mut Context,
-                          _state: MouseState,
-                          x: i32,
-                          y: i32,
-                          _xrel: i32,
-                          _yrel: i32) {
+    fn mouse_motion_event(
+        &mut self,
+        ctx: &mut Context,
+        _state: MouseState,
+        x: i32,
+        y: i32,
+        _xrel: i32,
+        _yrel: i32,
+    ) {
         let (w, h) = graphics::get_size(ctx);
         let (x, y) = (x as f32 / w as f32, 1.0 - y as f32 / h as f32);
         self.torch.pos = [x, y];

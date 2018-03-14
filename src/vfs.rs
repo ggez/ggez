@@ -344,7 +344,9 @@ impl VFS for PhysicalFS {
         // it and such by name.
         // So we build the paths ourself.
         let direntry_to_path = |entry: &fs::DirEntry| -> GameResult<PathBuf> {
-            let fname = entry.file_name().into_string()
+            let fname = entry
+                .file_name()
+                .into_string()
                 .expect("Non-unicode char in file path?  Should never happen, I hope!");
             let mut pathbuf = PathBuf::from(path);
             pathbuf.push(fname);
@@ -524,9 +526,13 @@ impl ZipFS {
         let f = fs::File::open(filename)?;
         let mut archive = zip::ZipArchive::new(f)?;
         let idx = (0..archive.len())
-            .map(|i| archive.by_index(i)
-                .expect("Should never happen!")
-                .name().to_string())
+            .map(|i| {
+                archive
+                    .by_index(i)
+                    .expect("Should never happen!")
+                    .name()
+                    .to_string()
+            })
             .collect();
         Ok(Self {
             source: filename.into(),
