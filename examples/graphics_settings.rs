@@ -13,12 +13,6 @@ use ggez::event::{Keycode, Mod};
 use std::env;
 use std::path;
 
-enum WindowToggle {
-    NONE,
-    FORWARD,
-    REVERSE,
-}
-
 struct WindowSettings {
     window_size_toggle: bool,
     toggle_fullscreen: bool,

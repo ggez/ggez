@@ -103,18 +103,12 @@ impl Canvas {
 
 impl Drawable for Canvas {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+        // Gotta flip the image on the Y axis here
+        // to account for OpenGL's origin being at the bottom-left.
         let mut flipped_param = param;
-        // flipped_param.scale.y *= -1.0;
-        // flipped_param.dest.y += self.image.height() as f32 / 2.0;
-        // let gfx = &mut ctx.gfx_context;
-        // use nalgebra as na;
-        // let curr_transform = ctx.gfx_context.get_transform();
-        // let scale: na::Similarity<f32, na::U3, na::Rotation3<_>> = na::Similarity::from_scaling(-1.0);
-        // let scale_matrix = scale.to_homogeneous();
-        // let new_transform = curr_transform * scale_matrix;
-        // ctx.gfx_context.push_transform(new_transform);
+        flipped_param.scale.y *= -1.0;
+        flipped_param.dest.y += self.image.height() as f32 * param.scale.y;
         self.image.draw_ex(ctx, flipped_param)?;
-        // ctx.gfx_context.pop_transform();
         Ok(())
     }
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
