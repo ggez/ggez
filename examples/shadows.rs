@@ -257,8 +257,8 @@ impl MainState {
     fn render_light(&mut self,
                     ctx: &mut Context,
                     light: Light,
-                    center: DrawParam,
-                    canvascenter: DrawParam)
+                    origin: DrawParam,
+                    canvas_origin: DrawParam)
                     -> GameResult<()> {
         let size = graphics::get_size(ctx);
         // Now we want to run the occlusions shader to calculate our 1D shadow
@@ -268,7 +268,7 @@ impl MainState {
             let _shader_lock = graphics::use_shader(ctx, &self.occlusions_shader);
 
             self.occlusions_shader.send(ctx, light)?;
-            graphics::draw_ex(ctx, &self.foreground, canvascenter)?;
+            graphics::draw_ex(ctx, &self.foreground, canvas_origin)?;
         }
 
         // Now we render our shadow map and light map into their respective
@@ -280,7 +280,7 @@ impl MainState {
 
             let param = DrawParam {
                 scale: Point2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), (size.1 as f32)),
-                ..center
+                ..origin
             };
             self.shadows_shader.send(ctx, light)?;
             graphics::draw_ex(ctx, &self.occlusions, param)?;
@@ -292,7 +292,7 @@ impl MainState {
 
             let param = DrawParam {
                 scale: Point2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), (size.1 as f32)),
-                ..center
+                ..origin
             };
             self.lights_shader.send(ctx, light)?;
             graphics::draw_ex(ctx, &self.occlusions, param)?;
@@ -317,8 +317,7 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let size = graphics::get_size(ctx);
-        let center = DrawParam {
-            // dest: Point2::new(size.0 as f32 / 2.0, size.1 as f32 / 2.0),
+        let origin = DrawParam {
             dest: Point2::new(0.0, 0.0),
             ..Default::default()
         };
@@ -328,9 +327,9 @@ impl event::EventHandler for MainState {
             Point2::new(size.0 as f32 / dsize.0 as f32,
                         size.1 as f32 / dsize.1 as f32)
         };
-        let canvascenter = DrawParam {
+        let canvas_origin = DrawParam {
             scale: dpiscale,
-            ..center
+            ..origin
         };
 
         // First thing we want to do it to render all the foreground items (that
@@ -369,37 +368,28 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
         graphics::set_canvas(ctx, Some(&self.shadows));
         graphics::clear(ctx);
-        self.render_light(ctx, torch, center, canvascenter)?;
-        self.render_light(ctx, light, center, canvascenter)?;
+        self.render_light(ctx, torch, origin, canvas_origin)?;
+        self.render_light(ctx, light, origin, canvas_origin)?;
 
         // Now lets finally render to screen starting with out background, then
         // the shadows and lights overtop and finally our foreground.
-        // Because of coordinate system annyoingness, we have to invert
-        // the texture we draw, and draw it at the bottom-left corner.
-        let draw_upright = DrawParam {
-            dest: Point2::new(0.0, size.1 as f32 / 2.0),
-            // scale: Point2::new(1.0, -1.0),
-            ..center
-        };
-        // println!("{:#?}", draw_upright);
         graphics::set_canvas(ctx, None);
         graphics::set_color(ctx, graphics::WHITE)?;
-        graphics::draw_ex(ctx, &self.background, center)?;
-        graphics::draw_ex(ctx, &self.shadows, draw_upright)?;
-        // graphics::draw_ex(ctx, &self.lights, draw_upright)?;
-        graphics::draw(ctx, &self.lights, Point2::new(300.0, -300.0), 0.0)?;
+        graphics::draw_ex(ctx, &self.background, origin)?;
+        graphics::draw_ex(ctx, &self.shadows, origin)?;
+        graphics::draw_ex(ctx, &self.lights, origin)?;
         // We switch the color to the shadow color before drawing the foreground objects
         // this has the same effect as applying this color in a multiply blend mode with
         // full opacity. We also reset the blend mode back to the default Alpha blend mode.
         graphics::set_color(ctx, AMBIENT_COLOR.into())?;
-        graphics::draw_ex(ctx, &self.foreground, draw_upright)?;
+        graphics::draw_ex(ctx, &self.foreground, origin)?;
 
         // Uncomment following two lines to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
         // the greyscale pixels are the half distances of the nearest shadows to
         // the mouse position (equally encoded in all color channels).
         // graphics::set_color(ctx, [1.0; 4].into())?;
-        // graphics::draw_ex(ctx, &self.occlusions, center)?;
+        // graphics::draw_ex(ctx, &self.occlusions, origin)?;
 
         graphics::present(ctx);
         Ok(())

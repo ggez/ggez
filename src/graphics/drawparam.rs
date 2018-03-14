@@ -54,8 +54,8 @@ impl DrawParam {
         let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
         let offset_inverse =
             Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
-        let axang = Vec3::z() * self.rotation;
-        let rotation = Matrix4::new_rotation(axang);
+        let axis_angle = Vec3::z() * self.rotation;
+        let rotation = Matrix4::new_rotation(axis_angle);
         let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
         let shear = Matrix4::new(
             1.0,

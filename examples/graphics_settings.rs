@@ -208,7 +208,7 @@ pub fn main() {
         .parse()
         .expect("Option msaa needs to be a number!");
     let mut c = conf::Conf::new();
-    c.window_mode.fullscreen_type = conf::FullscreenType::True;
+    c.window_mode.fullscreen_type = conf::FullscreenType::Off;
     c.window_setup.samples =
         conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
     c.window_setup.resizable = true;
