@@ -15,9 +15,9 @@ pub type Matrix4 = na::Matrix4<f32>;
 /// with x increasing to the right and y increasing down.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Rect {
-    /// X coordinate of the center of the rect.
+    /// X coordinate of the left edge of the rect.
     pub x: f32,
-    /// Y coordinate of the center of the rect.
+    /// Y coordinate of the top edge of the rect.
     pub y: f32,
     /// Total width of the rect
     pub w: f32,

@@ -1,3 +1,17 @@
+# 0.4.2
+
+## Added
+
+## Changed
+
+## Deprecated
+
+## Removed
+
+## Fixed
+
+ * Fixed more documentation bugs (https://github.com/ggez/ggez/issues/303).
+
 # 0.4.1
 
 ## Added
