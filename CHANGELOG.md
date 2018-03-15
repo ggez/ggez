@@ -23,6 +23,7 @@
 
  * Fixed bug in `mouse::get_position()`, see https://github.com/ggez/ggez/issues/283
  * Lots of small documentation fixes from a variety of awesome sharp-eyed contributors
+ * Fixed bug that was making canvas's render upside-down https://github.com/ggez/ggez/issues/252
 
 # 0.4.0
 

@@ -294,7 +294,7 @@ impl MainState {
             let _shader_lock = graphics::use_shader(ctx, &self.shadows_shader);
 
             let param = DrawParam {
-                scale: Point2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), (size.1 as f32)),
+                scale: Point2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), size.1 as f32),
                 ..origin
             };
             self.shadows_shader.send(ctx, light)?;

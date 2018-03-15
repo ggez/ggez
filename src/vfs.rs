@@ -617,7 +617,7 @@ impl ZipMetadata {
             Ok(zipfile) => {
                 let len = zipfile.size();
                 Some(ZipMetadata {
-                    len: len,
+                    len,
                     is_file: true,
                     is_dir: false, // mu
                 })
