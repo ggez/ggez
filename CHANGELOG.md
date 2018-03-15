@@ -19,6 +19,8 @@
 
 ## Removed
 
+ * Nothing
+
 ## Fixed
 
  * Fixed bug in `mouse::get_position()`, see https://github.com/ggez/ggez/issues/283
