@@ -18,8 +18,8 @@ where
     R: gfx::Resources,
 {
     // TODO: Rename to shader_view or such.
-    pub(crate) texture: gfx::handle::ShaderResourceView<R, [f32; 4]>,
-    pub(crate) texture_handle: gfx::handle::Texture<R, gfx::format::R8_G8_B8_A8>,
+    pub(crate) texture: gfx::handle::RawShaderResourceView<R>,
+    pub(crate) texture_handle: gfx::handle::RawTexture<R>,
     pub(crate) sampler_info: gfx::texture::SamplerInfo,
     pub(crate) blend_mode: Option<BlendMode>,
     pub(crate) width: u32,
@@ -94,7 +94,7 @@ impl Image {
         > = gfx.factory.create_command_buffer().into();
 
         local_encoder.copy_texture_to_buffer_raw(
-            self.texture_handle.raw(),
+            &self.texture_handle,
             None,
             gfx::texture::RawImageInfo {
                 xoffset: 0,
@@ -167,14 +167,19 @@ impl Image {
             return Err(GameError::ResourceLoadError(msg));
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
+        // BUGGO: Leaving this here as a placeholder since I don't want to copy-paste 25 lines
+        // from gfx-rs: https://docs.rs/gfx_core/0.8.0/src/gfx_core/factory.rs.html#227-517
         let (tex, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(
             kind,
             gfx::texture::Mipmap::Provided,
             &[rgba],
         )?;
+        // From kvark, the Typed trait is undocumented; it's kindasorta internal gfx-rs guts
+        // but should probably be exposed 'cause it's useful.
+        use gfx::memory::Typed;
         Ok(Image {
-            texture: view,
-            texture_handle: tex,
+            texture: view.raw().clone(),
+            texture_handle: tex.raw().clone(),
             sampler_info: *sampler_info,
             blend_mode: None,
             width: u32::from(width),
@@ -265,7 +270,9 @@ impl Drawable for Image {
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        gfx.data.tex = (self.texture.clone(), sampler);
+        // BUGGO: [f32;4] hardwired in here.
+        let typed_thingy: gfx::handle::ShaderResourceView<_, [f32;4]> = gfx::memory::Typed::new(self.texture.clone());
+        gfx.data.tex = (typed_thingy, sampler);
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.get_blend_mode();
             if current_mode != mode {

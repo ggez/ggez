@@ -26,6 +26,8 @@ where
     pub(crate) white_image: Image,
     pub(crate) screen_rect: Rect,
     pub(crate) dpi: (f32, f32, f32),
+    pub(crate) color_format: gfx::format::Format,
+    pub(crate) depth_format: gfx::format::Format,
 
     pub(crate) backend_spec: B,
     pub(crate) window: sdl2::video::Window,
@@ -35,9 +37,9 @@ where
     pub(crate) factory: Box<B::Factory>,
     pub(crate) encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
     pub(crate) screen_render_target:
-        gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
+        gfx::handle::RawRenderTargetView<B::Resources>,
     #[allow(dead_code)]
-    pub(crate) depth_view: gfx::handle::DepthStencilView<B::Resources, gfx::format::DepthStencil>,
+    pub(crate) depth_view: gfx::handle::RawDepthStencilView<B::Resources>,
 
     pub(crate) data: pipe::Data<B::Resources>,
     pub(crate) quad_slice: gfx::Slice<B::Resources>,
@@ -92,8 +94,10 @@ impl GraphicsContext {
         if window_setup.allow_highdpi {
             window_builder.allow_highdpi();
         }
+        let color_format = gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, gfx::format::ChannelType::Srgb);
+        let depth_format = gfx::format::Format(gfx::format::SurfaceType::D24_S8, gfx::format::ChannelType::Unorm);
         let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
-            gfx_window_sdl::init(&video, window_builder)?;
+            gfx_window_sdl::init_raw(&video, window_builder, color_format, depth_format)?;
 
         GraphicsContext::set_vsync(video, window_mode.vsync)?;
 
@@ -146,11 +150,14 @@ impl GraphicsContext {
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
         let white_image =
             Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255])?;
+
         let texture = white_image.texture.clone();
+        // BUGGO: Shader resource format hard-wired in here.
+        let typed_thingy: gfx::handle::ShaderResourceView<_, [f32;4]> = gfx::memory::Typed::new(texture);
 
         let data = pipe::Data {
             vbuf: quad_vertex_buffer.clone(),
-            tex: (texture, sampler),
+            tex: (typed_thingy, sampler),
             rect_instance_properties: rect_inst_props,
             globals: globals_buffer,
             out: screen_render_target.clone(),
@@ -176,6 +183,8 @@ impl GraphicsContext {
             white_image: white_image,
             screen_rect: Rect::new(left, top, right - left, bottom - top),
             dpi: dpi,
+            color_format: color_format,
+            depth_format: depth_format,
 
             backend_spec: backend,
             window: window,
@@ -366,10 +375,19 @@ impl GraphicsContext {
     /// Also replaces gfx.data.out so it may cause squirrelliness to
     /// happen with canvases or other things that touch it.
     pub(crate) fn resize_viewport(&mut self) {
-        gfx_window_sdl::update_views(
+        let dimensions = (
+            self.screen_rect.x as u16,
+            self.screen_rect.y as u16,
+            1, // BUGGO
+            gfx::texture::AaMode::Single // BUGGO
+        );
+        gfx_window_sdl::update_views_raw(
             &self.window,
-            &mut self.screen_render_target,
-            &mut self.depth_view,
+            dimensions,
+            self.color_format,
+            self.depth_format,
+            //&mut self.screen_render_target,
+            //&mut self.depth_view,
         );
     }
 }

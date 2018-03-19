@@ -167,7 +167,11 @@ impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        gfx.data.tex = (self.image.texture.clone(), sampler);
+        // BUGGO: Resource view format hard-wired in here.
+        let texture = self.image.texture.clone();
+        let typed_thingy: gfx::handle::ShaderResourceView<_, [f32;4]> = gfx::memory::Typed::new(texture);
+
+        gfx.data.tex = (typed_thingy, sampler);
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.batch.sprites.len() as u32, 0));
         let curr_transform = gfx.get_transform();
@@ -215,7 +219,11 @@ impl graphics::Drawable for SpriteBatch {
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        gfx.data.tex = (self.image.texture.clone(), sampler);
+        // BUGGO: Resource view format hard-wired in here.
+        let texture = self.image.texture.clone();
+        let typed_thingy: gfx::handle::ShaderResourceView<_, [f32;4]> = gfx::memory::Typed::new(texture);
+        gfx.data.tex = (typed_thingy, sampler);
+        
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.sprites.len() as u32, 0));
         let curr_transform = gfx.get_transform();

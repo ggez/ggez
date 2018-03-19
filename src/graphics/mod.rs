@@ -154,8 +154,8 @@ gfx_defines!{
         tex: gfx::TextureSampler<[f32; 4]> = "t_Texture",
         globals: gfx::ConstantBuffer<Globals> = "Globals",
         rect_instance_properties: gfx::InstanceBuffer<InstanceProperties> = (),
-        out: gfx::BlendTarget<ColorFormat> =
-          ("Target0", gfx::state::ColorMask::all(), gfx::preset::blend::ALPHA),
+        out: gfx::RawRenderTarget =
+          ("Target0", gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, gfx::format::ChannelType::Srgb), gfx::state::ColorMask::all(), Some(gfx::preset::blend::ALPHA)),
     }
 }
 
@@ -280,7 +280,9 @@ impl From<gfx::buffer::CreationError> for GameError {
 pub fn clear(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
     let linear_color: types::LinearColor = gfx.background_color.into();
-    gfx.encoder.clear(&gfx.data.out, linear_color.into());
+    // BUGGO: Srgba8 hardwired in here.
+    let typed_thingy: gfx::handle::RenderTargetView<_, gfx::format::Srgba8> = gfx::memory::Typed::new(gfx.data.out.clone());
+    gfx.encoder.clear(&typed_thingy, linear_color.into());
 }
 
 /// Draws the given `Drawable` object to the screen by calling its
@@ -348,7 +350,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         gfx.factory.create_command_buffer().into();
 
     local_encoder.copy_texture_to_texture_raw(
-        gfx.data.out.raw().get_texture(),
+        gfx.data.out.get_texture(),
         None,
         image_info,
         target_texture.raw(),
@@ -365,8 +367,8 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
             gfx::format::Swizzle::new(),
         )?;
     let image = Image {
-        texture: shader_resource,
-        texture_handle: target_texture,
+        texture: shader_resource.raw().clone(),
+        texture_handle: target_texture.raw().clone(),
         sampler_info: gfx.default_sampler_info,
         blend_mode: None,
         width: w as u32,
@@ -809,7 +811,7 @@ pub fn get_encoder(
 /// EXPERIMENTAL function to get the gfx-rs depth view
 pub fn get_depth_view(
     context: &mut Context,
-) -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
+) -> gfx::handle::RawDepthStencilView<gfx_device_gl::Resources> {
     let gfx = &mut context.gfx_context;
     gfx.depth_view.clone()
 }
@@ -817,9 +819,8 @@ pub fn get_depth_view(
 /// EXPERIMENTAL function to get the gfx-rs color view
 pub fn get_screen_render_target(
     context: &Context,
-) -> gfx::handle::RenderTargetView<
-    gfx_device_gl::Resources,
-    (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
+) -> gfx::handle::RawRenderTargetView<
+    gfx_device_gl::Resources
 > {
     let gfx = &context.gfx_context;
     gfx.data.out.clone()
@@ -837,13 +838,11 @@ pub fn get_gfx_objects(
         <GlBackendSpec as BackendSpec>::Resources,
         <GlBackendSpec as BackendSpec>::CommandBuffer,
     >,
-    gfx::handle::DepthStencilView<
-        <GlBackendSpec as BackendSpec>::Resources,
-        gfx::format::DepthStencil,
-    >,
-    gfx::handle::RenderTargetView<
-        <GlBackendSpec as BackendSpec>::Resources,
-        (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
+    gfx::handle::RawDepthStencilView<
+            <GlBackendSpec as BackendSpec>::Resources
+            >,
+    gfx::handle::RawRenderTargetView<
+        <GlBackendSpec as BackendSpec>::Resources
     >,
 ) {
     let gfx = &mut context.gfx_context;
