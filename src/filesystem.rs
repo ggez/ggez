@@ -102,7 +102,7 @@ impl Filesystem {
     pub fn new(id: &'static str, author: &'static str) -> GameResult<Filesystem> {
         let app_info = AppInfo {
             name: id,
-            author: author,
+            author,
         };
         let mut root_path = env::current_exe()?;
 
@@ -165,10 +165,10 @@ impl Filesystem {
 
         let fs = Filesystem {
             vfs: overlay,
-            resources_path: resources_path,
+            resources_path,
             zip_path: resources_zip_path,
-            user_config_path: user_config_path,
-            user_data_path: user_data_path,
+            user_config_path,
+            user_data_path,
         };
 
         Ok(fs)

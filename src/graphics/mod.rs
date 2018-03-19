@@ -79,8 +79,8 @@ impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
             conf::Backend::OpenGL { major, minor } => Self {
-                major: major,
-                minor: minor,
+                major,
+                minor,
             },
         }
     }
@@ -369,8 +369,8 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         texture_handle: target_texture,
         sampler_info: gfx.default_sampler_info,
         blend_mode: None,
-        width: w as u32,
-        height: h as u32,
+        width: u32::from(w),
+        height: u32::from(h),
     };
 
     Ok(image)
@@ -876,8 +876,8 @@ pub trait Drawable {
         self.draw_ex(
             ctx,
             DrawParam {
-                dest: dest,
-                rotation: rotation,
+                dest,
+                rotation,
                 ..Default::default()
             },
         )

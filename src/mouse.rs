@@ -25,6 +25,12 @@ impl MouseContext {
     }
 }
 
+impl Default for MouseContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Get whether or not the mouse is "grabbed", ie, confined to the window.
 pub fn get_grabbed(ctx: &Context) -> bool {
     graphics::get_window(ctx).grab()

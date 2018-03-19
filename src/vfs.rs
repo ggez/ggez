@@ -214,7 +214,7 @@ impl PhysicalFS {
     pub fn new(root: &Path, readonly: bool) -> Self {
         PhysicalFS {
             root: root.into(),
-            readonly: readonly,
+            readonly,
         }
     }
 

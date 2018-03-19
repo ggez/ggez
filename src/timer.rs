@@ -46,7 +46,7 @@ where
         v.resize(size, init_val);
         LogBuffer {
             head: 0,
-            size: size,
+            size,
             contents: v,
         }
     }

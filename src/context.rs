@@ -107,15 +107,15 @@ impl Context {
         let mouse_context = mouse::MouseContext::new();
 
         let mut ctx = Context {
-            conf: conf,
-            sdl_context: sdl_context,
+            conf,
+            sdl_context,
             filesystem: fs,
             gfx_context: graphics_context,
-            event_context: event_context,
-            timer_context: timer_context,
-            audio_context: audio_context,
-            gamepad_context: gamepad_context,
-            mouse_context: mouse_context,
+            event_context,
+            timer_context,
+            audio_context,
+            gamepad_context,
+            mouse_context,
 
             default_font: font,
         };
@@ -208,8 +208,8 @@ impl ContextBuilder {
     /// Create a new ContextBuilder
     pub fn new(game_id: &'static str, author: &'static str) -> Self {
         Self {
-            game_id: game_id,
-            author: author,
+            game_id,
+            author,
             conf: conf::Conf::default(),
             paths: vec![],
             load_conf_file: true,

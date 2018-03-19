@@ -51,7 +51,7 @@ impl SpriteBatch {
     /// Creates a new `SpriteBatch`, drawing with the given image.
     pub fn new(image: graphics::Image) -> Self {
         Self {
-            image: image,
+            image,
             sprites: vec![],
             blend_mode: None,
         }
@@ -148,7 +148,7 @@ impl SpriteBatch {
     #[allow(deprecated)]
     pub fn with_image<'a>(&'a mut self, image: &'a graphics::Image) -> BoundSpriteBatch<'a> {
         BoundSpriteBatch {
-            image: image,
+            image,
             batch: self,
         }
     }

@@ -245,12 +245,12 @@ impl Assets {
         let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
         let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
         Ok(Assets {
-            player_image: player_image,
-            shot_image: shot_image,
-            rock_image: rock_image,
-            font: font,
-            shot_sound: shot_sound,
-            hit_sound: hit_sound,
+            player_image,
+            shot_image,
+            rock_image,
+            font,
+            shot_sound,
+            hit_sound,
         })
     }
 
@@ -329,12 +329,12 @@ impl MainState {
         let rocks = create_rocks(5, player.pos, 100.0, 250.0);
 
         let s = MainState {
-            player: player,
+            player,
             shots: Vec::new(),
-            rocks: rocks,
+            rocks,
             level: 0,
             score: 0,
-            assets: assets,
+            assets,
             screen_width: ctx.conf.window_mode.width,
             screen_height: ctx.conf.window_mode.height,
             input: InputState::default(),

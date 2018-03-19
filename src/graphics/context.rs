@@ -93,7 +93,7 @@ impl GraphicsContext {
             window_builder.allow_highdpi();
         }
         let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
-            gfx_window_sdl::init(&video, window_builder)?;
+            gfx_window_sdl::init(video, window_builder)?;
 
         GraphicsContext::set_vsync(video, window_mode.vsync)?;
 
@@ -173,26 +173,26 @@ impl GraphicsContext {
             shader_globals: globals,
             projection: initial_projection,
             modelview_stack: vec![initial_transform],
-            white_image: white_image,
+            white_image,
             screen_rect: Rect::new(left, top, right - left, bottom - top),
-            dpi: dpi,
+            dpi,
 
             backend_spec: backend,
-            window: window,
+            window,
             multisample_samples: samples,
-            gl_context: gl_context,
+            gl_context,
             device: Box::new(device),
             factory: Box::new(factory),
-            encoder: encoder,
-            screen_render_target: screen_render_target,
-            depth_view: depth_view,
+            encoder,
+            screen_render_target,
+            depth_view,
 
-            data: data,
-            quad_slice: quad_slice,
-            quad_vertex_buffer: quad_vertex_buffer,
+            data,
+            quad_slice,
+            quad_vertex_buffer,
 
             default_sampler_info: sampler_info,
-            samplers: samplers,
+            samplers,
 
             default_shader: shader.shader_id(),
             current_shader: Rc::new(RefCell::new(None)),
