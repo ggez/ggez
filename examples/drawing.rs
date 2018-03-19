@@ -24,9 +24,9 @@ impl MainState {
         let mut image2_nearest = graphics::Image::new(ctx, "/shot.png")?;
         image2_nearest.set_filter(graphics::FilterMode::Nearest);
         let s = MainState {
-            image1: image1,
-            image2_linear: image2_linear,
-            image2_nearest: image2_nearest,
+            image1,
+            image2_linear,
+            image2_nearest,
             zoomlevel: 1.0,
         };
 
@@ -84,7 +84,7 @@ impl event::EventHandler for MainState {
                 dest: dst,
                 rotation: self.zoomlevel,
                 // offset: Point2::new(-16.0, 0.0),
-                scale: scale,
+                scale,
                 // shear: shear,
                 ..Default::default()
             },
@@ -97,7 +97,7 @@ impl event::EventHandler for MainState {
                 dest: dst2,
                 rotation: self.zoomlevel,
                 offset: Point2::new(0.5, 0.5),
-                scale: scale,
+                scale,
                 // shear: shear,
                 ..Default::default()
             },

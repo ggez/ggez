@@ -101,9 +101,9 @@ impl Font {
         let scale = display_independent_scale(points, x_dpi, y_dpi);
 
         Ok(Font::TTFFont {
-            font: font,
-            points: points,
-            scale: scale,
+            font,
+            points,
+            scale,
         })
     }
 

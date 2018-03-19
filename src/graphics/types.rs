@@ -29,10 +29,10 @@ impl Rect {
     /// Create a new rect.
     pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
         Rect {
-            x: x,
-            y: y,
-            w: w,
-            h: h,
+            x,
+            y,
+            w,
+            h,
         }
     }
 
@@ -136,7 +136,7 @@ impl From<Rect> for [f32; 4] {
     }
 }
 
-/// A RGBA color in the sRGB color space represented as `f32`'s in the range `[0.0-1.0]`
+/// A RGBA color in the `sRGB` color space represented as `f32`'s in the range `[0.0-1.0]`
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Color {
     /// Red component
@@ -169,10 +169,10 @@ impl Color {
     /// Create a new Color from four f32's in the range [0.0-1.0]
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color {
-            r: r,
-            g: g,
-            b: b,
-            a: a,
+            r,
+            g,
+            b,
+            a,
         }
     }
 
@@ -332,7 +332,7 @@ impl From<LinearColor> for Color {
     fn from(c: LinearColor) -> Self {
         fn f(component: f32) -> f32 {
             let a = 0.055;
-            if component <= 0.0031308 {
+            if component <= 0.003_130_8 {
                 component * 12.92
             } else {
                 (1.0 + a) * component.powf(1.0 / 2.4)

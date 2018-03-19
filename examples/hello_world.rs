@@ -22,7 +22,7 @@ impl MainState {
         let text = graphics::Text::new(ctx, "Hello world!", &font)?;
 
         let s = MainState {
-            text: text,
+            text,
             frames: 0,
         };
         Ok(s)

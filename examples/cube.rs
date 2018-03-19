@@ -189,7 +189,7 @@ void main() {
 
         // Bundle all the data together.
         let data = pipe::Data {
-            vbuf: vbuf,
+            vbuf,
             transform: transform.into(),
             locals: factory.create_constant_buffer(1),
             color: (texture_view, factory.create_sampler(sinfo)),
@@ -198,12 +198,12 @@ void main() {
         };
 
         MainState {
-            text1: text1,
-            text2: text2,
+            text1,
+            text2,
             frames: 0,
-            data: data,
-            pso: pso,
-            slice: slice,
+            data,
+            pso,
+            slice,
             rotation: 0.0,
         }
     }

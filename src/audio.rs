@@ -133,8 +133,8 @@ impl Source {
         let sink = rodio::Sink::new(&context.audio_context.endpoint);
         let cursor = io::Cursor::new(data);
         Ok(Source {
+            sink,
             data: cursor,
-            sink: sink,
             repeat: false,
         })
     }
