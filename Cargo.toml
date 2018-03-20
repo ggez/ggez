@@ -26,10 +26,12 @@ path = "src/lib.rs"
 # If this feature is enabled, it will add <cargo root dir>/resources/ to
 # the resource search path.
 cargo-resource-root = []
+bzip2 = ["zip/bzip2"]
+default = ["bzip2"]
 
 [dependencies]
 rusttype = "0.3"
-zip = "0.2"
+zip = { version = "0.2", default-features = false }
 app_dirs = "1"
 gfx = "0.17"
 gfx_device_gl = "0.15"
