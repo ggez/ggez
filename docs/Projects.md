@@ -11,6 +11,7 @@ submit a PR, please!
 # Examples/tutorial code
 
  * <https://github.com/Maplicant/purplerain>
+ * <https://github.com/termhn/ggez_snake>
 
 # Tools/add-ons
 
