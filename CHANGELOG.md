@@ -2,7 +2,11 @@
 
 ## Added
 
+ * Added a feature to enable or disable bzip2 zip file support
+
 ## Changed
+
+ * Version bumped the zip crate
 
 ## Deprecated
 

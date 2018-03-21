@@ -31,7 +31,7 @@ default = ["bzip2"]
 
 [dependencies]
 rusttype = "0.3"
-zip = { version = "0.2", default-features = false }
+zip = { version = "0.3", default-features = false }
 app_dirs = "1"
 gfx = "0.17"
 gfx_device_gl = "0.15"
