@@ -102,7 +102,7 @@
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 
-extern crate app_dirs;
+extern crate app_dirs2;
 #[macro_use]
 extern crate gfx;
 extern crate gfx_device_gl;

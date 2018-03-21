@@ -33,7 +33,7 @@ use std::fmt;
 use std::io;
 use std::path;
 
-use app_dirs::*;
+use app_dirs2::*;
 
 use GameError;
 use GameResult;

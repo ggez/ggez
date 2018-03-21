@@ -10,7 +10,7 @@ use gfx_window_sdl;
 use image;
 use rodio::decoder::DecoderError;
 use sdl2;
-use app_dirs::AppDirsError;
+use app_dirs2::AppDirsError;
 use toml;
 use zip;
 
