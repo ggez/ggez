@@ -2,6 +2,8 @@ use std::f32;
 use std::u32;
 use nalgebra as na;
 
+use super::{LineJoin, LineCap};
+
 /// A 2 dimensional point representing a location
 pub type Point2 = na::Point2<f32>;
 /// A 2 dimensional vector representing an offset of a location
@@ -358,7 +360,7 @@ impl From<LinearColor> for [f32; 4] {
 #[derive(Debug, Copy, Clone)]
 pub enum DrawMode {
     /// A stroked line with the given width
-    Line(f32),
+    Line(f32, LineJoin, LineCap),
     /// A filled shape.
     Fill,
 }
