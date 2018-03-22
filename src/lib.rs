@@ -128,7 +128,7 @@ pub mod event;
 pub mod filesystem;
 pub mod graphics;
 #[macro_use]
-mod log;
+pub mod logging;
 pub mod mouse;
 pub mod input;
 pub mod timer;
@@ -136,4 +136,3 @@ mod vfs;
 
 pub use context::{Context, ContextBuilder};
 pub use error::*;
-pub use log::feature_dependant as logging;
