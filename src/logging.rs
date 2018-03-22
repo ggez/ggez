@@ -1,17 +1,21 @@
-//! Provides drop-in replacements for macros from [`log`] crate.
+//! Provides opt-in replacements for macros from [`log`] crate.
 //!
-//! Default to wrapping [`println!`], or become equivalent to those found in [`log`] crate
-//! if `use-log-crate` feature is enabled.
+//! Macros default to wrapping [`println!`]; or, with `use-log-crate` feature enabled,
+//! expand into their equivalent macros from [`log`] crate.
 //!
 //! These are intended to be used throughout `ggez` and dependant libraries, allowing executables
-//! to opt-in for a [`log`]-dependant solution, or stick to the `std` macro wrapper.
+//! to opt-in for a [`log`]-dependant logging solution, or stick to the `std` [`println!`].
+//!
+//! Executables intending to use [`log`] crate (and `use-log-crate` feature) can (should)
+//! use the original macros.
 //!
 //! WITH `use-log-crate` feature: contains a fake re-export (a spoof) of [`log::Level`],
-//! to enable use of general `log!` macro (`ggez_log!` here) by dependant libraries.
+//! to enable use of general [`log!`] macro (`ggez_log!` here) by dependant libraries.
 //!
 //! WITHOUT `use-log-crate` feature: re-exports [`log::Level`].
 //!
 //! [`log`]: https://docs.rs/log/0.4.1/log/
+//! [`log!`]: https://docs.rs/log/0.4.1/log/macro.log.html
 //! [`log::Level`]: https://docs.rs/log/0.4.1/log/enum.Level.html
 //! [`println!`]: https://doc.rust-lang.org/std/macro.println.html
 
@@ -81,7 +85,17 @@ pub mod no_log_crate {
 #[cfg(not(feature = "use-log-crate"))]
 pub use self::no_log_crate::Level;
 
+#[cfg(feature = "use-log-crate")]
+extern crate log;
+#[cfg(feature = "use-log-crate")]
+pub use self::log::Level;
+
 #[cfg(not(feature = "use-log-crate"))]
+/// General logging macro.
+///
+/// Log with the specified `Level` and [`format!`] based argument list.
+///
+/// [`format!`]: https://doc.rust-lang.org/std/macro.format.html
 // TODO: properly implement.
 #[macro_export]
 macro_rules! ggez_log {
@@ -90,17 +104,56 @@ macro_rules! ggez_log {
 }
 
 #[cfg(feature = "use-log-crate")]
-extern crate log;
-#[cfg(feature = "use-log-crate")]
-pub use self::log::Level;
-
-#[cfg(feature = "use-log-crate")]
+/// General logging macro.
+///
+/// Log with the specified `Level` and [`format!`] based argument list.
+///
+/// [`format!`]: https://doc.rust-lang.org/std/macro.format.html
 #[macro_export]
 macro_rules! ggez_log {
     (target: $target:expr, $lvl:expr, $($arg:tt)+) => (log!(target: $target, $lvl, $($arg)+));
     ($lvl:expr, $($arg:tt)+) => (log!(target: module_path!(), $lvl, $($arg)+))
 }
 
+#[cfg(not(feature = "use-log-crate"))]
+/// In [`log`] crate, determines if a message logged at the specified level in that module will
+/// be logged. Without `use-log-crate` feature simply resolves to `true`.
+///
+/// This can be used to avoid expensive computation of log message arguments if
+/// the message would be ignored anyway.
+///
+/// [`log`]: https://docs.rs/log/0.4.1/log/
+#[macro_export]
+macro_rules! ggez_log_enabled {
+    (target: $target: expr, $lvl: expr) => {
+        true
+    };
+    ($lvl: expr) => {
+        true
+    };
+}
+
+#[cfg(feature = "use-log-crate")]
+/// In [`log`] crate, determines if a message logged at the specified level in that module will
+/// be logged. Without `use-log-crate` feature simply resolves to `true`.
+///
+/// This can be used to avoid expensive computation of log message arguments if
+/// the message would be ignored anyway.
+///
+/// [`log`]: https://docs.rs/log/0.4.1/log/
+#[macro_export]
+macro_rules! ggez_log_enabled {
+    (target: $target: expr, $lvl: expr) => {
+        log_enabled!(target: $target, $lvl)
+    };
+    ($lvl: expr) => {
+        log_enabled!(target: module_path!(), $lvl)
+    };
+}
+
+/// Logs a message at the error level. Argument list is identical to [`format!`].
+///
+/// [`format!`]: https://doc.rust-lang.org/std/macro.format.html
 #[macro_export]
 macro_rules! ggez_error {
     (target: $target:expr, $($arg:tt)*) => (
@@ -111,6 +164,9 @@ macro_rules! ggez_error {
     )
 }
 
+/// Logs a message at the warn level. Argument list is identical to [`format!`].
+///
+/// [`format!`]: https://doc.rust-lang.org/std/macro.format.html
 #[macro_export]
 macro_rules! ggez_warn {
     (target: $target:expr, $($arg:tt)*) => (
@@ -121,6 +177,9 @@ macro_rules! ggez_warn {
     )
 }
 
+/// Logs a message at the info level. Argument list is identical to [`format!`].
+///
+/// [`format!`]: https://doc.rust-lang.org/std/macro.format.html
 #[macro_export]
 macro_rules! ggez_info {
     (target: $target:expr, $($arg:tt)*) => (
@@ -131,6 +190,9 @@ macro_rules! ggez_info {
     )
 }
 
+/// Logs a message at the debug level. Argument list is identical to [`format!`].
+///
+/// [`format!`]: https://doc.rust-lang.org/std/macro.format.html
 #[macro_export]
 macro_rules! ggez_debug {
     (target: $target:expr, $($arg:tt)*) => (
@@ -141,6 +203,9 @@ macro_rules! ggez_debug {
     )
 }
 
+/// Logs a message at the trace level. Argument list is identical to [`format!`].
+///
+/// [`format!`]: https://doc.rust-lang.org/std/macro.format.html
 #[macro_export]
 macro_rules! ggez_trace {
     (target: $target:expr, $($arg:tt)*) => (
