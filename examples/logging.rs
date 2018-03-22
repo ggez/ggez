@@ -108,7 +108,12 @@ mod application {
         // `gfx_device_gl::factory` spam is filtered out by `level_for()`.
         fern::Dispatch::new()
             .format(|out, msg, rec| {
-                out.finish(format_args!("[{}][{}] {}", rec.target(), rec.level(), msg,))
+                out.finish(format_args!(
+                    "fern - {} says: {}! {}",
+                    rec.target(),
+                    rec.level(),
+                    msg,
+                ))
             })
             .level(log::LevelFilter::Debug)
             .level_for("gfx_device_gl::factory", log::LevelFilter::Warn)

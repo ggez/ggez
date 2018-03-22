@@ -1,7 +1,7 @@
 //! Provides opt-in replacements for macros from [`log`] crate.
 //!
-//! Macros default to wrapping [`println!`]; or, with `use-log-crate` feature enabled,
-//! expand into their equivalent macros from [`log`] crate.
+//! Macros default to expanding into [`println!`], formatted as `[target][LEVEL] message`.
+//! With `use-log-crate` feature they expand into their equivalent macros from [`log`] crate.
 //!
 //! These are intended to be used throughout `ggez` and dependant libraries, allowing executables
 //! to opt-in for a [`log`]-dependant logging solution, or stick to the `std` [`println!`].
@@ -96,10 +96,11 @@ pub use self::log::Level;
 /// Log with the specified `Level` and [`format!`] based argument list.
 ///
 /// [`format!`]: https://doc.rust-lang.org/std/macro.format.html
-// TODO: properly implement.
 #[macro_export]
 macro_rules! ggez_log {
-    (target: $target:expr, $lvl:expr, $($arg:tt)+) => (println!("{} {}", $target, $lvl));
+    (target: $target:expr, $lvl:expr, $($arg:tt)+) => (
+        println!("[{}][{}] {}", $target, $lvl, format!($($arg)*))
+    );
     ($lvl:expr, $($arg:tt)+) => (ggez_log!(target: module_path!(), $lvl, $($arg)+))
 }
 
