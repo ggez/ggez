@@ -108,6 +108,9 @@ extern crate gfx;
 extern crate gfx_device_gl;
 extern crate gfx_window_sdl;
 extern crate image;
+#[cfg(feature = "use-log-crate")]
+#[macro_use]
+extern crate log;
 extern crate lyon;
 extern crate rodio;
 extern crate rusttype;
@@ -120,6 +123,8 @@ pub extern crate nalgebra;
 extern crate toml;
 extern crate zip;
 
+#[macro_use]
+pub mod logging;
 pub mod audio;
 pub mod conf;
 mod context;
@@ -127,8 +132,6 @@ pub mod error;
 pub mod event;
 pub mod filesystem;
 pub mod graphics;
-#[macro_use]
-pub mod logging;
 pub mod mouse;
 pub mod input;
 pub mod timer;

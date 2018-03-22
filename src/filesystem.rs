@@ -38,6 +38,7 @@ use app_dirs2::*;
 use GameError;
 use GameResult;
 use conf;
+use logging;
 use vfs::{self, VFS};
 
 pub use vfs::OpenOptions;
@@ -276,12 +277,12 @@ impl Filesystem {
     /// Useful for debugging.
     pub fn print_all(&mut self) {
         for vfs in self.vfs.roots() {
-            println!("Source {:?}", vfs);
+            ggez_info!("Source {:?}", vfs);
             match vfs.read_dir(path::Path::new("/")) {
                 Ok(files) => for itm in files {
-                    println!("  {:?}", itm);
+                    ggez_info!("  {:?}", itm);
                 },
-                Err(e) => println!(" Could not read source: {:?}", e),
+                Err(e) => ggez_error!(" Could not read source: {:?}", e),
             }
         }
     }
