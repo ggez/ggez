@@ -82,6 +82,7 @@ pub mod no_log_crate {
 pub use self::no_log_crate::Level;
 
 #[cfg(not(feature = "use-log-crate"))]
+// TODO: properly implement.
 #[macro_export]
 macro_rules! ggez_log {
     (target: $target:expr, $lvl:expr, $($arg:tt)+) => (println!("{} {}", $target, $lvl));
@@ -107,5 +108,45 @@ macro_rules! ggez_error {
     );
     ($($arg:tt)*) => (
         ggez_log!(logging::Level::Error, $($arg)*);
+    )
+}
+
+#[macro_export]
+macro_rules! ggez_warn {
+    (target: $target:expr, $($arg:tt)*) => (
+        ggez_log!(target: $target, logging::Level::Warn, $($arg)*);
+    );
+    ($($arg:tt)*) => (
+        ggez_log!(logging::Level::Warn, $($arg)*);
+    )
+}
+
+#[macro_export]
+macro_rules! ggez_info {
+    (target: $target:expr, $($arg:tt)*) => (
+        ggez_log!(target: $target, logging::Level::Info, $($arg)*);
+    );
+    ($($arg:tt)*) => (
+        ggez_log!(logging::Level::Info, $($arg)*);
+    )
+}
+
+#[macro_export]
+macro_rules! ggez_debug {
+    (target: $target:expr, $($arg:tt)*) => (
+        ggez_log!(target: $target, logging::Level::Debug, $($arg)*);
+    );
+    ($($arg:tt)*) => (
+        ggez_log!(logging::Level::Debug, $($arg)*);
+    )
+}
+
+#[macro_export]
+macro_rules! ggez_trace {
+    (target: $target:expr, $($arg:tt)*) => (
+        ggez_log!(target: $target, logging::Level::Trace, $($arg)*);
+    );
+    ($($arg:tt)*) => (
+        ggez_log!(logging::Level::Trace, $($arg)*);
     )
 }
