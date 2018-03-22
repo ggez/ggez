@@ -18,7 +18,8 @@ struct MainState {
     text: graphics::Text,
     bmptext: graphics::Text,
     // Not actually dead, see BUGGO below
-    #[allow(dead_code)] sound: audio::Source,
+    #[allow(dead_code)]
+    sound: audio::Source,
 }
 
 impl MainState {

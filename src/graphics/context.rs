@@ -30,7 +30,8 @@ where
     pub(crate) backend_spec: B,
     pub(crate) window: sdl2::video::Window,
     pub(crate) multisample_samples: u8,
-    #[allow(dead_code)] gl_context: sdl2::video::GLContext,
+    #[allow(dead_code)]
+    gl_context: sdl2::video::GLContext,
     pub(crate) device: Box<B::Device>,
     pub(crate) factory: Box<B::Factory>,
     pub(crate) encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
