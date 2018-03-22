@@ -1,88 +1,159 @@
-//! Basic hello world example.
+//! An example showing off `use-log-crate` feature.
+//!
+//! Uses [`fern`] crate as frontend to [`log`] crate backend.
+//! For clarity, only immediately relevant bits are commented.
+//!
+//! Try running with and without `--features "use-log-crate"` to see effect.
+//!
+//! [`fern`]: https://docs.rs/fern/0.5.4/fern/
+//! [`log`]: https://docs.rs/log/0.4.1/log/
 
+// Importing macros, has to happen at root.
 #[macro_use]
 extern crate ggez;
-#[cfg(feature = "use-log-crate")]
 #[macro_use]
 extern crate log;
-use ggez::conf;
-use ggez::event;
-use ggez::{Context, GameResult};
-use ggez::graphics;
-use ggez::logging;
-use std::env;
-use std::path;
 
-// First we make a structure to contain the game's state
-struct MainState {
-    text: graphics::Text,
-    frames: usize,
-}
+// Represents a `ggez`-dependant library utilizing `ggez_*!` logging macros.
+mod mini_lib {
+    extern crate ggez;
+    use ggez::logging;
 
-impl MainState {
-    fn new(ctx: &mut Context) -> GameResult<MainState> {
-        // The ttf file will be in your resources directory. Later, we
-        // will mount that directory so we can omit it in the path here.
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
-        let text = graphics::Text::new(ctx, "Hello world!", &font)?;
-
-        let s = MainState { text, frames: 0 };
-        Ok(s)
+    // Fairly self-explanatory; refer to `ggez::logging` documentation for additional details.
+    pub fn print_some_logs(_x: i32, _y: i32) {
+        ggez_info!(
+            "I'm a mini_lib info-level log, here are your coords: {}-{}",
+            _x,
+            _y
+        );
+        ggez_log!(
+            logging::Level::Warn,
+            "I'm a mini_lib warning made by `ggez_log!` general macro; coords: {}-{}",
+            _x,
+            _y
+        );
     }
 }
 
-// Then we implement the `ggez:event::EventHandler` trait on it, which
-// requires callbacks for updating and drawing the game state each frame.
-//
-// The `EventHandler` trait also contains callbacks for event handling
-// that you can override if you wish, but the defaults are fine.
-impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
-        Ok(())
+// Represents a `ggez`- and `mini_lib`-depending application.
+mod application {
+    extern crate fern;
+    extern crate ggez;
+    extern crate log;
+    use self::ggez::conf;
+    use self::ggez::event;
+    use self::ggez::event::MouseButton;
+    use self::ggez::{Context, ContextBuilder, GameResult};
+    use self::ggez::graphics;
+    use std::env;
+    use std::io;
+    use std::path;
+
+    use mini_lib::print_some_logs;
+
+    struct MainState {
+        frames: usize,
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx);
+    impl MainState {
+        fn new(_ctx: &mut Context) -> GameResult<MainState> {
+            Ok(MainState { frames: 0 })
+        }
+    }
 
-        // Drawables are drawn from their top-left corner.
-        let dest_point = graphics::Point2::new(10.0, 10.0);
-        graphics::draw(ctx, &self.text, dest_point, 0.0)?;
-        graphics::present(ctx);
-
-        self.frames += 1;
-        if (self.frames % 100) == 0 {
-            ggez_info!("FPS: {}", ggez::timer::get_fps(ctx));
+    impl event::EventHandler for MainState {
+        fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+            Ok(())
         }
 
-        Ok(())
+        fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+            graphics::clear(ctx);
+            graphics::circle(
+                ctx,
+                graphics::DrawMode::Fill,
+                graphics::Point2::new(200.0, 300.0),
+                100.0,
+                0.1,
+            )?;
+            graphics::present(ctx);
+
+            self.frames += 1;
+            if (self.frames % 100) == 0 {
+                // `log` macro.
+                info!("FPS: {}", ggez::timer::get_fps(ctx));
+            }
+
+            Ok(())
+        }
+
+        fn mouse_button_down_event(
+            &mut self,
+            _ctx: &mut Context,
+            _button: MouseButton,
+            _x: i32,
+            _y: i32,
+        ) {
+            // `log` macro.
+            info!("Mouse button down: {:?} {}-{}", _button, _x, _y);
+            // Calls a function in `mini_lib`.
+            print_some_logs(_x, _y);
+        }
+    }
+
+    pub fn run_app() {
+        // `log` macro.
+        info!("Initializing!");
+
+        // This creates a `fern` logger that prints `log` crate `Record`s to `stdout`.
+        // `gfx_device_gl::factory` spam is filtered out by `level_for()`.
+        fern::Dispatch::new()
+            .format(|out, msg, rec| {
+                out.finish(format_args!("[{}][{}] {}", rec.target(), rec.level(), msg,))
+            })
+            .level(log::LevelFilter::Debug)
+            .level_for("gfx_device_gl::factory", log::LevelFilter::Warn)
+            .chain(io::stdout())
+            .apply()
+            .unwrap();
+
+        let ctx = &mut ContextBuilder::new("logging", "ggez")
+            .window_setup(
+                conf::WindowSetup::default()
+                    .title("Click me!")
+                    .resizable(true),
+            )
+            .window_mode(conf::WindowMode::default().dimensions(640, 480))
+            .build()
+            .unwrap();
+
+        if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+            let mut path = path::PathBuf::from(manifest_dir);
+            path.push("resources");
+            ctx.filesystem.mount(&path, true);
+        }
+
+        // `log` macro.
+        info!("Running!");
+
+        match MainState::new(ctx) {
+            Err(e) => {
+                // `log` macro.
+                error!("Could not initialize: {}", e);
+            }
+            Ok(ref mut app) => match event::run(ctx, app) {
+                Err(e) => {
+                    // `log` macro.
+                    error!("Could not exit cleanly: {}", e);
+                }
+                Ok(_) => {
+                    // `log` macro.
+                    info!("Exited cleanly.");
+                }
+            },
+        }
     }
 }
 
-// Now our main function, which does three things:
-//
-// * First, create a new `ggez::conf::Conf`
-// object which contains configuration info on things such
-// as screen resolution and window title.
-// * Second, create a `ggez::game::Game` object which will
-// do the work of creating our MainState and running our game.
-// * Then, just call `game.run()` which runs the `Game` mainloop.
 pub fn main() {
-    ggez_error!("Hello!");
-    let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
-
-    // We add the CARGO_MANIFEST_DIR/resources to the filesystem's path
-    // so that ggez will look in our cargo project directory for files.
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
-        let mut path = path::PathBuf::from(manifest_dir);
-        path.push("resources");
-        ctx.filesystem.mount(&path, true);
-    }
-
-    let state = &mut MainState::new(ctx).unwrap();
-    if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
-    } else {
-        println!("Game exited cleanly.");
-    }
+    application::run_app();
 }
