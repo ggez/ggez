@@ -116,9 +116,9 @@ extern crate sdl2;
 extern crate serde_derive;
 #[macro_use]
 extern crate smart_default;
+pub extern crate nalgebra;
 extern crate toml;
 extern crate zip;
-pub extern crate nalgebra;
 
 pub mod audio;
 pub mod conf;
@@ -127,6 +127,8 @@ pub mod error;
 pub mod event;
 pub mod filesystem;
 pub mod graphics;
+#[macro_use]
+mod log;
 pub mod mouse;
 pub mod input;
 pub mod timer;
@@ -134,3 +136,4 @@ mod vfs;
 
 pub use context::{Context, ContextBuilder};
 pub use error::*;
+pub use log::feature_dependant as logging;

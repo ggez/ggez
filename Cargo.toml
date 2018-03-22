@@ -27,6 +27,7 @@ path = "src/lib.rs"
 # the resource search path.
 cargo-resource-root = []
 bzip2 = ["zip/bzip2"]
+use-log-crate = ["log"]
 default = ["bzip2"]
 
 [dependencies]
@@ -43,6 +44,7 @@ serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
 lyon = "0.10"
+log = { version = "0.4", optional = true }
 smart-default = "0.2"
 nalgebra = "0.14"
 
