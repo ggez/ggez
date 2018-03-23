@@ -2,6 +2,18 @@ use sdl2::{self, Sdl};
 use sdl2::surface;
 use sdl2::pixels;
 use image::{self, GenericImage};
+#[cfg(feature = "logger")]
+use log::{LevelFilter, Record};
+#[cfg(feature = "logger")]
+use log4rs;
+#[cfg(feature = "logger")]
+use log4rs::append::console::ConsoleAppender;
+#[cfg(feature = "logger")]
+use log4rs::config::{Appender, Config, Logger, Root};
+#[cfg(feature = "logger")]
+use log4rs::encode::pattern::PatternEncoder;
+#[cfg(feature = "logger")]
+use log4rs::filter::{Filter, Response};
 
 use std::fmt;
 use std::io::Read;
@@ -90,6 +102,48 @@ impl Context {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by `Context::load_from_conf()`.
     fn from_conf(conf: conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context> {
+        #[cfg(feature = "logger")]
+        {
+            // Here should be the earliest common entry point to `ggez`.
+            // Putting logger init in filesystem init feels wrong.
+            // Refer to https://docs.rs/log4rs/ for details on how this works.
+            let config = Config::builder()
+                .appender(
+                    Appender::builder()
+                        .filter(Box::new({
+                            // gfx_device_gl::factory loves to announce buffer creation.
+                            #[derive(Debug)]
+                            struct FilterImpl;
+                            impl Filter for FilterImpl {
+                                fn filter(&self, record: &Record) -> Response {
+                                    if record.target() == "gfx_device_gl::factory"
+                                        && fmt::format(*record.args()).contains("Created buffer")
+                                    {
+                                        Response::Reject
+                                    } else {
+                                        Response::Neutral
+                                    }
+                                }
+                            }
+                            FilterImpl
+                        }))
+                        .build(
+                            "stdout",
+                            Box::new(
+                                ConsoleAppender::builder()
+                                    .encoder(Box::new(PatternEncoder::new(
+                                        "[{d(%H:%M:%S)}][{t}][{h({l})}] {m}{n}",
+                                    )))
+                                    .build(),
+                            ),
+                        ),
+                )
+                .logger(Logger::builder().build("ggez", LevelFilter::Debug))
+                .build(Root::builder().appender("stdout").build(LevelFilter::Debug))
+                .unwrap();
+            log4rs::init_config(config).unwrap();
+        }
+
         let video = sdl_context.video()?;
 
         let audio_context = audio::AudioContext::new()?;

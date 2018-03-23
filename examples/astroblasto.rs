@@ -413,12 +413,12 @@ impl MainState {
 /// **********************************************************************
 
 fn print_instructions() {
-    info!();
+    info!("");
     info!("Welcome to ASTROBLASTO!");
-    info!();
+    info!("");
     info!("How to play:");
     info!("L/R arrow keys rotate your ship, up thrusts, space bar fires");
-    info!();
+    info!("");
 }
 
 fn draw_actor(

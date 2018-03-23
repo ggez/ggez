@@ -41,7 +41,7 @@ pub fn main() {
         info!("   {:?}", itm);
     }
 
-    info!();
+    info!("");
     info!("Let's write to a file, it should end up in the user config dir");
 
     let test_file = path::Path::new("/testfile.txt");
@@ -68,7 +68,7 @@ pub fn main() {
         );
     }
 
-    info!();
+    info!("");
     info!("Let's read the default conf file");
     if let Ok(_conf) = ctx.filesystem.read_config() {
         info!("Found existing conf file, its contents are:");
@@ -86,7 +86,7 @@ pub fn main() {
         info!("Should now be a 'conf.toml' file under user config dir");
     }
 
-    info!();
+    info!("");
     info!("Now let's try to read a file that does not exist");
     {
         if let Err(e) = ctx.filesystem.open("/jfkdlasfjdsa") {

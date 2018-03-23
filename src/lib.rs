@@ -110,6 +110,8 @@ extern crate gfx_window_sdl;
 extern crate image;
 #[macro_use]
 extern crate log;
+#[cfg(feature = "logger")]
+extern crate log4rs;
 extern crate lyon;
 extern crate rodio;
 extern crate rusttype;
