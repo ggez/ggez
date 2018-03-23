@@ -1,6 +1,8 @@
 //! Basic hello world example.
 
 extern crate ggez;
+#[macro_use]
+extern crate log;
 use ggez::conf;
 use ggez::event;
 use ggez::{Context, GameResult};
@@ -46,7 +48,7 @@ impl event::EventHandler for MainState {
 
         self.frames += 1;
         if (self.frames % 100) == 0 {
-            println!("FPS: {}", ggez::timer::get_fps(ctx));
+            info!("FPS: {}", ggez::timer::get_fps(ctx));
         }
 
         Ok(())
@@ -75,8 +77,8 @@ pub fn main() {
 
     let state = &mut MainState::new(ctx).unwrap();
     if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
+        error!("Error encountered: {}", e);
     } else {
-        println!("Game exited cleanly.");
+        debug!("Game exited cleanly.");
     }
 }

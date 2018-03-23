@@ -276,12 +276,12 @@ impl Filesystem {
     /// Useful for debugging.
     pub fn print_all(&mut self) {
         for vfs in self.vfs.roots() {
-            println!("Source {:?}", vfs);
+            info!("Source {:?}", vfs);
             match vfs.read_dir(path::Path::new("/")) {
                 Ok(files) => for itm in files {
-                    println!("  {:?}", itm);
+                    info!("  {:?}", itm);
                 },
-                Err(e) => println!(" Could not read source: {:?}", e),
+                Err(e) => error!(" Could not read source: {:?}", e),
             }
         }
     }

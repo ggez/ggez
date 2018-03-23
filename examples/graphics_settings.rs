@@ -5,6 +5,8 @@
 
 extern crate clap;
 extern crate ggez;
+#[macro_use]
+extern crate log;
 use clap::{App, Arg};
 use ggez::*;
 use ggez::graphics::{DrawMode, Point2};
@@ -121,7 +123,7 @@ impl event::EventHandler for MainState {
         x: i32,
         y: i32,
     ) {
-        println!("Button clicked at: {} {}", x, y);
+        info!("Button clicked at: {} {}", x, y);
     }
 
     fn key_up_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, repeat: bool) {
@@ -147,7 +149,7 @@ impl event::EventHandler for MainState {
                 }
                 Keycode::Up => {
                     self.zoom += 0.1;
-                    println!("Zoom is now {}", self.zoom);
+                    info!("Zoom is now {}", self.zoom);
                     let (w, h) = graphics::get_size(ctx);
                     let new_rect =
                         graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
@@ -155,7 +157,7 @@ impl event::EventHandler for MainState {
                 }
                 Keycode::Down => {
                     self.zoom -= 0.1;
-                    println!("Zoom is now {}", self.zoom);
+                    info!("Zoom is now {}", self.zoom);
                     let (w, h) = graphics::get_size(ctx);
                     let new_rect =
                         graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
@@ -164,7 +166,7 @@ impl event::EventHandler for MainState {
                 Keycode::Space => {
                     self.window_settings.resize_projection =
                         !self.window_settings.resize_projection;
-                    println!(
+                    info!(
                         "Resizing the projection on window resize is now: {}",
                         self.window_settings.resize_projection
                     );
@@ -175,7 +177,7 @@ impl event::EventHandler for MainState {
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
-        println!("Resized screen to {}, {}", width, height);
+        info!("Resized screen to {}, {}", width, height);
         if self.window_settings.resize_projection {
             let new_rect = graphics::Rect::new(
                 0.0,
@@ -189,16 +191,16 @@ impl event::EventHandler for MainState {
 }
 
 fn print_help() {
-    println!("GRAPHICS SETTING EXAMPLE:");
-    println!("    F: toggle fullscreen");
-    println!("    G/H: Increase/decrease window sizes");
-    println!("    Up/Down: Zoom in/out");
-    println!(
+    info!("GRAPHICS SETTING EXAMPLE:");
+    info!("    F: toggle fullscreen");
+    info!("    G/H: Increase/decrease window sizes");
+    info!("    Up/Down: Zoom in/out");
+    info!(
         "    Spacebar: Toggle whether or not to resize the projection when the window is resized"
     );
-    println!("    ");
-    println!("    To see command-line options, run with `cargo run --example graphics_settings -- --help`");
-    println!("    ");
+    info!("    ");
+    info!("    To see command-line options, run with `cargo run --example graphics_settings -- --help`");
+    info!("    ");
 }
 
 pub fn main() {
@@ -222,7 +224,7 @@ pub fn main() {
     c.window_setup.samples =
         conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
     c.window_setup.resizable = true;
-    println!("{:?}", c);
+    info!("{:?}", c);
 
     let ctx = &mut Context::load_from_conf("graphics_settings", "ggez", c).unwrap();
 
@@ -232,9 +234,9 @@ pub fn main() {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
         ctx.filesystem.mount(&path, true);
-        println!("Adding path {:?}", path);
+        info!("Adding path {:?}", path);
     } else {
-        println!("not building with cargo?");
+        info!("not building with cargo?");
     }
 
     print_help();

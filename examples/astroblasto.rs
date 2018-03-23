@@ -3,6 +3,8 @@
 //! non-trivial enough to be interesting.
 
 extern crate ggez;
+#[macro_use]
+extern crate log;
 extern crate rand;
 use ggez::audio;
 use ggez::conf;
@@ -317,7 +319,7 @@ impl MainState {
         ctx.print_resource_stats();
         graphics::set_background_color(ctx, (0, 0, 0, 255).into());
 
-        println!("Game resource path: {:?}", ctx.filesystem);
+        debug!("Game resource path: {:?}", ctx.filesystem);
 
         print_instructions();
 
@@ -411,12 +413,12 @@ impl MainState {
 /// **********************************************************************
 
 fn print_instructions() {
-    println!();
-    println!("Welcome to ASTROBLASTO!");
-    println!();
-    println!("How to play:");
-    println!("L/R arrow keys rotate your ship, up thrusts, space bar fires");
-    println!();
+    info!();
+    info!("Welcome to ASTROBLASTO!");
+    info!();
+    info!("How to play:");
+    info!("L/R arrow keys rotate your ship, up thrusts, space bar fires");
+    info!();
 }
 
 fn draw_actor(
@@ -499,7 +501,7 @@ impl EventHandler for MainState {
             // I want to have a nice death screen eventually,
             // but for now we just quit.
             if self.player.life <= 0.0 {
-                println!("Game over!");
+                info!("Game over!");
                 let _ = ctx.quit();
             }
         }
@@ -605,28 +607,27 @@ pub fn main() {
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        println!("Adding path {:?}", path);
+        debug!("Adding path {:?}", path);
         // We need this re-assignment alas, see
         // https://aturon.github.io/ownership/builders.html
         // under "Consuming builders"
         cb = cb.add_resource_path(path);
     } else {
-        println!("Not building from cargo?  Ok.");
+        debug!("Not building from cargo?  Ok.");
     }
 
     let ctx = &mut cb.build().unwrap();
 
     match MainState::new(ctx) {
         Err(e) => {
-            println!("Could not load game!");
-            println!("Error: {}", e);
+            error!("Could not load game! Error: {}", e);
         }
         Ok(ref mut game) => {
             let result = run(ctx, game);
             if let Err(e) = result {
-                println!("Error encountered running game: {}", e);
+                error!("Error encountered running game: {}", e);
             } else {
-                println!("Game exited cleanly.");
+                debug!("Game exited cleanly.");
             }
         }
     }

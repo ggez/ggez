@@ -1,6 +1,8 @@
 //! Example that just prints out all the input events.
 
 extern crate ggez;
+#[macro_use]
+extern crate log;
 
 use ggez::*;
 use ggez::event::*;
@@ -44,12 +46,12 @@ impl event::EventHandler for MainState {
 
     fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: i32, y: i32) {
         self.mouse_down = true;
-        println!("Mouse button pressed: {:?}, x: {}, y: {}", button, x, y);
+        info!("Mouse button pressed: {:?}, x: {}, y: {}", button, x, y);
     }
 
     fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, x: i32, y: i32) {
         self.mouse_down = false;
-        println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
+        info!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
     }
 
     fn mouse_motion_event(
@@ -65,49 +67,49 @@ impl event::EventHandler for MainState {
             self.pos_x = x;
             self.pos_y = y;
         }
-        println!(
+        info!(
             "Mouse motion, x: {}, y: {}, relative x: {}, relative y: {}",
             x, y, xrel, yrel
         );
     }
 
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: i32, y: i32) {
-        println!("Mousewheel event, x: {}, y: {}", x, y);
+        info!("Mousewheel event, x: {}, y: {}", x, y);
     }
 
     fn key_down_event(&mut self, _ctx: &mut Context, keycode: Keycode, keymod: Mod, repeat: bool) {
-        println!(
+        info!(
             "Key pressed: {:?}, modifier {:?}, repeat: {}",
             keycode, keymod, repeat
         );
     }
     fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, keymod: Mod, repeat: bool) {
-        println!(
+        info!(
             "Key released: {:?}, modifier {:?}, repeat: {}",
             keycode, keymod, repeat
         );
     }
 
     fn text_editing_event(&mut self, _ctx: &mut Context, text: String, start: i32, length: i32) {
-        println!(
+        info!(
             "Text editing: {}, start {}, length: {}",
             text, start, length
         );
     }
 
     fn text_input_event(&mut self, _ctx: &mut Context, text: String) {
-        println!("Text input: {}", text);
+        info!("Text input: {}", text);
     }
 
     fn controller_button_down_event(&mut self, _ctx: &mut Context, btn: Button, instance_id: i32) {
-        println!(
+        info!(
             "Controller button pressed: {:?} Controller_Id: {}",
             btn, instance_id
         );
     }
 
     fn controller_button_up_event(&mut self, _ctx: &mut Context, btn: Button, instance_id: i32) {
-        println!(
+        info!(
             "Controller button released: {:?} Controller_Id: {}",
             btn, instance_id
         );
@@ -120,7 +122,7 @@ impl event::EventHandler for MainState {
         value: i16,
         instance_id: i32,
     ) {
-        println!(
+        info!(
             "Axis Event: {:?} Value: {} Controller_Id: {}",
             axis, value, instance_id
         );
@@ -128,9 +130,9 @@ impl event::EventHandler for MainState {
 
     fn focus_event(&mut self, _ctx: &mut Context, gained: bool) {
         if gained {
-            println!("Focus gained");
+            info!("Focus gained");
         } else {
-            println!("Focus lost");
+            info!("Focus lost");
         }
     }
 }
