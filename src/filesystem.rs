@@ -100,10 +100,7 @@ impl Filesystem {
     /// directory path.  This function is called automatically by
     /// ggez, the end user should never need to call it.
     pub fn new(id: &'static str, author: &'static str) -> GameResult<Filesystem> {
-        let app_info = AppInfo {
-            name: id,
-            author,
-        };
+        let app_info = AppInfo { name: id, author };
         let mut root_path = env::current_exe()?;
 
         // Ditch the filename (if any)

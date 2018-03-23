@@ -116,9 +116,9 @@ extern crate sdl2;
 extern crate serde_derive;
 #[macro_use]
 extern crate smart_default;
+pub extern crate nalgebra;
 extern crate toml;
 extern crate zip;
-pub extern crate nalgebra;
 
 pub mod audio;
 pub mod conf;

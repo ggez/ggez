@@ -28,12 +28,7 @@ pub struct Rect {
 impl Rect {
     /// Create a new rect.
     pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
-        Rect {
-            x,
-            y,
-            w,
-            h,
-        }
+        Rect { x, y, w, h }
     }
 
     /// Creates a new rect a la Love2D's love.graphics.newQuad,
@@ -168,12 +163,7 @@ pub const BLACK: Color = Color {
 impl Color {
     /// Create a new Color from four f32's in the range [0.0-1.0]
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
-        Color {
-            r,
-            g,
-            b,
-            a,
-        }
+        Color { r, g, b, a }
     }
 
     /// Create a new Color from four u8's in the range `[0-255]`

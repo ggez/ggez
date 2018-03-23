@@ -147,10 +147,7 @@ impl SpriteBatch {
     #[deprecated]
     #[allow(deprecated)]
     pub fn with_image<'a>(&'a mut self, image: &'a graphics::Image) -> BoundSpriteBatch<'a> {
-        BoundSpriteBatch {
-            image,
-            batch: self,
-        }
+        BoundSpriteBatch { image, batch: self }
     }
 }
 
