@@ -5,10 +5,13 @@
 
 extern crate clap;
 extern crate ggez;
+
 use clap::{App, Arg};
-use ggez::*;
-use ggez::graphics::{DrawMode, Point2};
-use ggez::event::{Keycode, Mod};
+use ggez::{Context, GameResult};
+use ggez::graphics::{self, DrawMode, Point2};
+use ggez::timer;
+use ggez::conf;
+use ggez::event::{self, Keycode, Mod};
 
 use std::env;
 use std::path;

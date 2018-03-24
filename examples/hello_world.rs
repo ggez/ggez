@@ -1,6 +1,7 @@
 //! Basic hello world example.
 
 extern crate ggez;
+
 use ggez::conf;
 use ggez::event;
 use ggez::{Context, GameResult};

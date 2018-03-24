@@ -1,6 +1,7 @@
 //! A collection of semi-random shape and image drawing examples.
 
 extern crate ggez;
+
 use ggez::conf;
 use ggez::event;
 use ggez::{Context, GameResult};

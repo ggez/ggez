@@ -1,8 +1,11 @@
 //! The simplest possible example that does something.
 
 extern crate ggez;
-use ggez::*;
-use ggez::graphics::{DrawMode, Point2};
+
+use ggez::{GameResult, Context};
+use ggez::graphics::{self, DrawMode, Point2};
+use ggez::conf;
+use ggez::event;
 
 struct MainState {
     pos_x: f32,
