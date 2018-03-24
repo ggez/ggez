@@ -35,6 +35,8 @@ your own libraries atop ggez.
 * Math integration with nalgebra
 * Some more advanced graphics options: shaders, sprite batches and render targets
 
+## [Who's using ggez?](docs/Projects.md)
+
 ## Usage
 
 ggez is built on the latest stable Rust compiler and distributed on
@@ -94,7 +96,7 @@ yet.
 Sources of information:
 
  * The [FAQ](https://github.com/ggez/ggez/blob/master/docs/FAQ.md) has answers to common questions and problems.
- * The [API docs](https://docs.rs/ggez/), a lot of design stuff is explained there.  
+ * The [API docs](https://docs.rs/ggez/), a lot of design stuff is explained there.
  * Check out the [examples](https://github.com/ggez/ggez/tree/master/examples).
 
 If you still have problems, feel free to [open an issue](https://github.com/ggez/ggez/issues) or say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server.
