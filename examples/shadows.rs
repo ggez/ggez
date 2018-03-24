@@ -7,9 +7,11 @@ extern crate ggez;
 #[macro_use]
 extern crate log;
 
-use ggez::*;
-use ggez::event::*;
-use ggez::graphics::*;
+use ggez::{GameResult, Context};
+use ggez::event::{self, MouseState};
+use ggez::graphics::{self, DrawParam, Shader, Canvas, Point2, BlendMode, Drawable};
+use ggez::timer;
+use ggez::conf;
 use std::env;
 use std::path;
 
@@ -161,9 +163,9 @@ void main() {
 ";
 
 struct MainState {
-    background: Image,
-    tile: Image,
-    text: Text,
+    background: graphics::Image,
+    tile: graphics::Image,
+    text: graphics::Text,
     torch: Light,
     static_light: Light,
     foreground: Canvas,
@@ -194,11 +196,11 @@ const LIGHT_GLOW_RATE: f32 = 50.0;
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let background = Image::new(ctx, "/bg_top.png")?;
-        let tile = Image::new(ctx, "/tile.png")?;
+        let background = graphics::Image::new(ctx, "/bg_top.png")?;
+        let tile = graphics::Image::new(ctx, "/tile.png")?;
         let text = {
-            let font = Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
-            Text::new(ctx, "SHADOWS...", &font)?
+            let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
+            graphics::Text::new(ctx, "SHADOWS...", &font)?
         };
         let screen_size = {
             let size = graphics::get_drawable_size(ctx);

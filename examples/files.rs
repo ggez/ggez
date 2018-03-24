@@ -7,7 +7,10 @@
 extern crate ggez;
 #[macro_use]
 extern crate log;
-use ggez::*;
+
+use ggez::{ContextBuilder};
+use ggez::filesystem;
+use ggez::conf;
 use std::env;
 use std::path;
 use std::io::{Read, Write};

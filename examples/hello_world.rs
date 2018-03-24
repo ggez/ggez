@@ -3,6 +3,7 @@
 extern crate ggez;
 #[macro_use]
 extern crate log;
+
 use ggez::conf;
 use ggez::event;
 use ggez::{Context, GameResult};

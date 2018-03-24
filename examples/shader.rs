@@ -4,8 +4,11 @@
 extern crate gfx;
 extern crate ggez;
 
-use ggez::*;
-use ggez::graphics::{DrawMode, Point2};
+use ggez::{Context, GameResult};
+use ggez::event;
+use ggez::timer;
+use ggez::conf;
+use ggez::graphics::{self, DrawMode, Point2};
 use std::env;
 use std::path;
 

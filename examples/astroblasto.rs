@@ -6,10 +6,11 @@ extern crate ggez;
 #[macro_use]
 extern crate log;
 extern crate rand;
+
+use ggez::{Context, ContextBuilder, GameResult};
 use ggez::audio;
 use ggez::conf;
-use ggez::event::*;
-use ggez::{Context, ContextBuilder, GameResult};
+use ggez::event::{self, Keycode, Mod, EventHandler};
 use ggez::graphics;
 use ggez::timer;
 use ggez::graphics::{Point2, Vector2};
@@ -623,7 +624,7 @@ pub fn main() {
             error!("Could not load game! Error: {}", e);
         }
         Ok(ref mut game) => {
-            let result = run(ctx, game);
+            let result = event::run(ctx, game);
             if let Err(e) = result {
                 error!("Error encountered running game: {}", e);
             } else {
