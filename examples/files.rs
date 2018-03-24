@@ -5,7 +5,10 @@
 //! printing a bunch of stuff to the console.
 
 extern crate ggez;
-use ggez::*;
+
+use ggez::{ContextBuilder};
+use ggez::filesystem;
+use ggez::conf;
 use std::env;
 use std::path;
 use std::io::{Read, Write};

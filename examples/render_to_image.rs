@@ -2,19 +2,21 @@
 
 extern crate ggez;
 
-use ggez::*;
-use ggez::graphics::*;
+use ggez::{Context, GameResult};
+use ggez::graphics::{self, DrawParam, Color, Point2};
+use ggez::conf;
+use ggez::event;
 
 struct MainState {
-    canvas: Canvas,
-    text: Text,
+    canvas: graphics::Canvas,
+    text: graphics::Text,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let canvas = Canvas::with_window_size(ctx)?;
-        let font = Font::default_font()?;
-        let text = Text::new(ctx, "Hello world!", &font)?;
+        let canvas = graphics::Canvas::with_window_size(ctx)?;
+        let font = graphics::Font::default_font()?;
+        let text = graphics::Text::new(ctx, "Hello world!", &font)?;
         Ok(MainState { canvas, text })
     }
 }

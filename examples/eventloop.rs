@@ -9,9 +9,10 @@
 //! It is functionally identical to the `super_simple.rs` example apart from that.
 
 extern crate ggez;
-use ggez::*;
+
+use ggez::{conf, Context};
 use ggez::event;
-use ggez::graphics::{DrawMode, Point2};
+use ggez::graphics::{self, DrawMode, Point2};
 
 pub fn main() {
     let c = conf::Conf::new();
