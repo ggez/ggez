@@ -15,7 +15,7 @@ submit a PR, please!
 
 # Tools/add-ons
 
- * <https://github.com/ggez/ggez-gooodies> (incomplete, and crashes rustc 1.18, but maybe useful to someone)
+ * <https://github.com/ggez/ggez-goodies> (incomplete, and crashes rustc 1.18, but maybe useful to someone)
 
 # Written things
 
