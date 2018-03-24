@@ -5,6 +5,7 @@
 [![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ggez/ggez/blob/master/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
 [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
+[![deps.rs status](https://deps.rs/repo/github/ggez/ggez/status.svg)](https://deps.rs/repo/github/ggez/ggez)
 
 ggez is a Rust library to create a Good Game Easily.
 
