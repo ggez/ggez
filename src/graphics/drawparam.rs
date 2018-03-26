@@ -22,7 +22,7 @@ pub struct DrawParam {
     /// specifies an offset from the center for transform operations like scale/rotation,
     /// with `0,0` meaning the origin and `1,1` meaning the opposite corner from the origin.
     /// By default these operations are done from the top-left corner, so to rotate something
-    /// from the center specify `Point::new(0.5, 0.5)` here.
+    /// from the center specify `Point2::new(0.5, 0.5)` here.
     pub offset: Point2,
     /// x/y shear factors expressed as a `Point2`.
     pub shear: Point2,
