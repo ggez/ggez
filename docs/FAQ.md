@@ -110,3 +110,14 @@ When you create a `Context` it will automatically look for a
 one, use that to override all the defaults you give it.
 
 The `files` example should demonstrate this, and more.
+
+# Resolution independence
+
+By default ggez uses a pixel coordinate system but you can change that
+by calling something like
+
+```rust
+graphics::set_screen_coordinates(&mut context, Rect::new(0.0, 0.0, 1.0, 1.0)).unwrap();
+```
+
+and scaling your `Image`s with `graphics::DrawParam`.
