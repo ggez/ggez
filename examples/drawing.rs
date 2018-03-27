@@ -1,6 +1,8 @@
 //! A collection of semi-random shape and image drawing examples.
 
 extern crate ggez;
+#[macro_use]
+extern crate log;
 
 use ggez::conf;
 use ggez::event;
@@ -132,11 +134,11 @@ pub fn main() {
         ctx.filesystem.mount(&path, true);
     }
 
-    println!("{}", graphics::get_renderer_info(ctx).unwrap());
+    info!("{}", graphics::get_renderer_info(ctx).unwrap());
     let state = &mut MainState::new(ctx).unwrap();
     if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
+        error!("Error encountered: {}", e);
     } else {
-        println!("Game exited cleanly.");
+        debug!("Game exited cleanly.");
     }
 }

@@ -3,6 +3,8 @@
 //! You really want to run this one in release mode.
 
 extern crate ggez;
+#[macro_use]
+extern crate log;
 extern crate rand;
 
 use ggez::conf;
@@ -29,8 +31,8 @@ impl MainState {
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         if timer::get_ticks(ctx) % 100 == 0 {
-            println!("Delta frame time: {:?} ", timer::get_delta(ctx));
-            println!("Average FPS: {}", timer::get_fps(ctx));
+            info!("Delta frame time: {:?} ", timer::get_delta(ctx));
+            info!("Average FPS: {}", timer::get_fps(ctx));
         }
         Ok(())
     }
@@ -88,7 +90,7 @@ impl event::EventHandler for MainState {
 // by creating an FS and then throwing it away; the costs are not huge.)
 pub fn main() {
     let c = conf::Conf::new();
-    println!("Starting with default config: {:#?}", c);
+    info!("Starting with default config: {:#?}", c);
     let ctx = &mut Context::load_from_conf("spritebatch", "ggez", c).unwrap();
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
@@ -101,8 +103,8 @@ pub fn main() {
 
     let state = &mut MainState::new(ctx).unwrap();
     if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
+        error!("Error encountered: {}", e);
     } else {
-        println!("Game exited cleanly.");
+        debug!("Game exited cleanly.");
     }
 }

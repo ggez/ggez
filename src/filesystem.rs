@@ -100,10 +100,7 @@ impl Filesystem {
     /// directory path.  This function is called automatically by
     /// ggez, the end user should never need to call it.
     pub fn new(id: &'static str, author: &'static str) -> GameResult<Filesystem> {
-        let app_info = AppInfo {
-            name: id,
-            author,
-        };
+        let app_info = AppInfo { name: id, author };
         let mut root_path = env::current_exe()?;
 
         // Ditch the filename (if any)
@@ -279,12 +276,12 @@ impl Filesystem {
     /// Useful for debugging.
     pub fn print_all(&mut self) {
         for vfs in self.vfs.roots() {
-            println!("Source {:?}", vfs);
+            debug!("Source {:?}", vfs);
             match vfs.read_dir(path::Path::new("/")) {
                 Ok(files) => for itm in files {
-                    println!("  {:?}", itm);
+                    debug!("  {:?}", itm);
                 },
-                Err(e) => println!(" Could not read source: {:?}", e),
+                Err(e) => error!(" Could not read source: {:?}", e),
             }
         }
     }

@@ -27,7 +27,10 @@ path = "src/lib.rs"
 # the resource search path.
 cargo-resource-root = []
 bzip2 = ["zip/bzip2"]
-default = ["bzip2"]
+# When enabled, `ggez` will create a `log4rs` console logger with Debug as lowest level.
+# Disable if console output in not needed, or if executable has own `log` frontend instance.
+logger = ["log4rs"]
+default = ["bzip2","logger"]
 
 [dependencies]
 rusttype = "0.3"
@@ -42,6 +45,8 @@ rodio = "0.5"
 serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
+log = "0.4"
+log4rs = { version = "0.8", optional = true }
 lyon = "0.10"
 smart-default = "0.2"
 nalgebra = "0.14"

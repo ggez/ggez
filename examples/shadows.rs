@@ -4,6 +4,8 @@
 #[macro_use]
 extern crate gfx;
 extern crate ggez;
+#[macro_use]
+extern crate log;
 
 use ggez::{GameResult, Context};
 use ggez::event::{self, MouseState};
@@ -320,7 +322,7 @@ impl MainState {
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         if timer::get_ticks(ctx) % 100 == 0 {
-            println!("Average FPS: {}", timer::get_fps(ctx));
+            info!("Average FPS: {}", timer::get_fps(ctx));
         }
 
         self.torch.glow =

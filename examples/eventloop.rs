@@ -9,6 +9,8 @@
 //! It is functionally identical to the `super_simple.rs` example apart from that.
 
 extern crate ggez;
+#[macro_use]
+extern crate log;
 
 use ggez::{conf, Context};
 use ggez::event;
@@ -35,10 +37,10 @@ pub fn main() {
                     keycode: Some(event::Keycode::Escape),
                     ..
                 } => {
-                    println!("Quitting");
+                    info!("Quitting");
                     continuing = false
                 }
-                x => println!("Event fired: {:?}", x),
+                x => info!("Event fired: {:?}", x),
             }
         }
 

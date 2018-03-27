@@ -86,6 +86,66 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
     Ok(())
 }
 
+#[cfg(feature = "logger")]
+/// Creates a [`log4rs`]-powered logger at Debug level.
+///
+/// Filters out buffer creation spam from `gfx_device_gl::factory`.
+/// Should be called by `ggez` once, as early as possible.
+/// Fails with a warning if a [`log`] frontend is already initialized.
+///
+/// [`log`]: https://docs.rs/log/
+/// [`log4rs`]: https://docs.rs/log4rs/
+fn init_default_logger() {
+    use log::{LevelFilter, Record};
+    use log4rs;
+    use log4rs::append::console::ConsoleAppender;
+    use log4rs::config::{Appender, Config, Logger, Root};
+    use log4rs::encode::pattern::PatternEncoder;
+    use log4rs::filter::{Filter, Response};
+
+    let filter = {
+        // gfx_device_gl::factory loves to announce buffer creation.
+        #[derive(Debug)]
+        struct FilterImpl;
+        impl Filter for FilterImpl {
+            fn filter(&self, record: &Record) -> Response {
+                if record.target() == "gfx_device_gl::factory"
+                    && fmt::format(*record.args()).contains("Created buffer")
+                {
+                    Response::Reject
+                } else {
+                    Response::Neutral
+                }
+            }
+        }
+        FilterImpl
+    };
+
+    let config = Config::builder()
+        .appender(
+            Appender::builder().filter(Box::new(filter)).build(
+                "stdout",
+                Box::new(
+                    ConsoleAppender::builder()
+                        .encoder(Box::new(PatternEncoder::new(
+                            "[{d(%H:%M:%S)}][{t}][{h({l})}] {m}{n}",
+                            // Formats as: "[time][target][LEVEL(color-coded)] message"
+                        )))
+                        .build(),
+                ),
+            ),
+        )
+        .logger(Logger::builder().build("ggez", LevelFilter::Debug))
+        .build(Root::builder().appender("stdout").build(LevelFilter::Debug));
+
+    match config {
+        Err(e) => error!("Default logger initialization failed: {}", e), // Just in case.
+        Ok(config) => if let Err(_) = log4rs::init_config(config) {
+            warn!("Disable 'logger' feature if already using a 'log' crate frontend.");
+        },
+    }
+}
+
 impl Context {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by `Context::load_from_conf()`.
@@ -140,6 +200,8 @@ impl Context {
         author: &'static str,
         default_config: conf::Conf,
     ) -> GameResult<Context> {
+        #[cfg(feature = "logger")]
+        init_default_logger();
         let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(game_id, author)?;
 
@@ -207,6 +269,8 @@ pub struct ContextBuilder {
 impl ContextBuilder {
     /// Create a new ContextBuilder
     pub fn new(game_id: &'static str, author: &'static str) -> Self {
+        #[cfg(feature = "logger")]
+        init_default_logger();
         Self {
             game_id,
             author,

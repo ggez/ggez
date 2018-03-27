@@ -71,17 +71,16 @@ pub trait BackendSpec: fmt::Debug {
 /// `Shader` depend on it.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
 pub struct GlBackendSpec {
-    #[default = r#"3"#] major: u8,
-    #[default = r#"2"#] minor: u8,
+    #[default = r#"3"#]
+    major: u8,
+    #[default = r#"2"#]
+    minor: u8,
 }
 
 impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL { major, minor } => Self {
-                major,
-                minor,
-            },
+            conf::Backend::OpenGL { major, minor } => Self { major, minor },
         }
     }
 }

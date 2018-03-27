@@ -4,6 +4,8 @@
 extern crate gfx;
 extern crate gfx_device_gl;
 extern crate ggez;
+#[macro_use]
+extern crate log;
 
 use gfx::texture;
 use gfx::traits::FactoryExt;
@@ -243,7 +245,7 @@ impl event::EventHandler for MainState {
         graphics::present(ctx);
         self.frames += 1;
         if (self.frames % 10) == 0 {
-            println!("FPS: {}", ggez::timer::get_fps(ctx));
+            info!("FPS: {}", ggez::timer::get_fps(ctx));
         }
         Ok(())
     }
@@ -263,8 +265,8 @@ pub fn main() {
 
     let state = &mut MainState::new(ctx);
     if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
+        error!("Error encountered: {}", e);
     } else {
-        println!("Game exited cleanly.");
+        debug!("Game exited cleanly.");
     }
 }
