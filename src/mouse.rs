@@ -45,6 +45,10 @@ pub fn get_relative_mode(ctx: &Context) -> bool {
 }
 
 /// Set whether or not the mouse is in relative mode.
+///
+/// In relative mode, the cursor is hidden and doesn't move when the mouse
+/// does, but relative motion events are still generated.  This is useful
+/// for things such as implementing mouselook in an FPS.
 pub fn set_relative_mode(ctx: &Context, mode: bool) {
     ctx.sdl_context.mouse().set_relative_mouse_mode(mode)
 }
