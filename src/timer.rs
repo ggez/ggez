@@ -221,6 +221,16 @@ pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
     }
 }
 
+/// Returns the total time not consumed by `check_update_time()`
+/// (the remainder or unhandled time).
+///
+/// The intention is for it to be called in your `draw()` callback
+/// to interpolate phyisics states for smooth rendering.
+/// (see <http://gafferongames.com/game-physics/fix-your-timestep/>)
+pub fn get_update_time(ctx: &mut Context) -> time::Duration {
+    ctx.timer_context.residual_update_dt
+}
+
 /// Pauses the current thread for the target duration.
 /// Just calls `std::thread::sleep()` so it's as accurate
 /// as that is (which is usually not very).
