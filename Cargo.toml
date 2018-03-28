@@ -48,5 +48,7 @@ smart-default = "0.2"
 nalgebra = "0.14"
 
 [dev-dependencies]
+chrono = "0.4"
+fern = "0.5"
 rand = "0.3"
 clap = "2"
