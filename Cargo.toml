@@ -27,6 +27,8 @@ path = "src/lib.rs"
 # the resource search path.
 cargo-resource-root = []
 bzip2 = ["zip/bzip2"]
+# If enabled, internal logging is done via `log` crate.
+use-log-crate = ["log"]
 default = ["bzip2"]
 
 [dependencies]
@@ -43,9 +45,14 @@ serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
 lyon = "0.10"
+log = { version = "0.4", optional = true }
 smart-default = "0.2"
 nalgebra = "0.14"
 
 [dev-dependencies]
 rand = "0.3"
 clap = "2"
+# Needed by "logging" example.
+fern = "0.5"
+# Needed by "logging" example.
+log = "0.4"

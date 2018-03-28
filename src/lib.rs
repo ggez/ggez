@@ -108,6 +108,9 @@ extern crate gfx;
 extern crate gfx_device_gl;
 extern crate gfx_window_sdl;
 extern crate image;
+#[cfg(feature = "use-log-crate")]
+#[macro_use]
+extern crate log;
 extern crate lyon;
 extern crate rodio;
 extern crate rusttype;
@@ -116,10 +119,12 @@ extern crate sdl2;
 extern crate serde_derive;
 #[macro_use]
 extern crate smart_default;
+pub extern crate nalgebra;
 extern crate toml;
 extern crate zip;
-pub extern crate nalgebra;
 
+#[macro_use]
+pub mod logging;
 pub mod audio;
 pub mod conf;
 mod context;

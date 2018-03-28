@@ -41,6 +41,7 @@ use sdl2::keyboard;
 
 use context::Context;
 use GameResult;
+use logging;
 
 pub use sdl2::keyboard::{CAPSMOD, LALTMOD, LCTRLMOD, LGUIMOD, LSHIFTMOD, MODEMOD, NOMOD, NUMMOD,
                          RALTMOD, RCTRLMOD, RESERVEDMOD, RGUIMOD, RSHIFTMOD};
@@ -154,7 +155,7 @@ pub trait EventHandler {
     /// Called upon a quit event.  If it returns true,
     /// the game does not exit.
     fn quit_event(&mut self, _ctx: &mut Context) -> bool {
-        println!("quit_event() callback called, quitting...");
+        ggez_debug!("quit_event() callback called, quitting...");
         false
     }
 
