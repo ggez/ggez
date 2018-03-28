@@ -221,13 +221,18 @@ pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
     }
 }
 
-/// Returns the total time not consumed by `check_update_time()`
-/// (the remainder or unhandled time).
+/// Returns the fractional amount of a frame not consumed
+/// by  `check_update_time()`.  For example, if the desired
+/// update frame time is 40 ms (25 fps), and 45 ms have 
+/// passed since the last frame, `check_update_time()` will
+/// return `true` and `get_remaining_update_time()` will 
+/// return 5 ms -- the amount of time "overflowing" from one
+/// frame to the next.
 ///
 /// The intention is for it to be called in your `draw()` callback
 /// to interpolate phyisics states for smooth rendering.
 /// (see <http://gafferongames.com/game-physics/fix-your-timestep/>)
-pub fn get_update_time(ctx: &mut Context) -> time::Duration {
+pub fn get_remaining_update_time(ctx: &mut Context) -> time::Duration {
     ctx.timer_context.residual_update_dt
 }
 

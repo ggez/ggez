@@ -3,10 +3,16 @@
 ## Added
 
  * Added a feature to enable or disable bzip2 zip file support
+ * Lots of small documentation fixes and improvements thanks to lovely contributors
+ * Added a `bzip2` feature to allow opening zip files compressed with bzip2 algorithm
+ * Added termhn's `ggez_snake` to the examples, 'cause it's awesome
+ * Added `timer::get_remaining_update_time()` to let you easily do sub-frame timing for interpolation and such.
+ * Many small improvements and cleanups
 
 ## Changed
 
  * Version bumped the zip crate
+ * Switched to the `app_dirs2` crate to avoid a bug in upcoming rustc change
 
 ## Deprecated
 
