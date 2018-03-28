@@ -166,6 +166,12 @@ impl Image {
             );
             return Err(GameError::ResourceLoadError(msg));
         }
+        // TODO: Check for overflow on 32-bit systems here
+        let expected_bytes = width as usize * height as usize * 4;
+        if expected_bytes != rgba.len() {
+            let msg = format!("Tried to create a texture of size {}x{}, but gave {} bytes of data (expected {})", width, height, rgba.len(), expected_bytes);
+            return Err(GameError::ResourceLoadError(msg));
+        }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
         let (tex, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(
             kind,
@@ -288,5 +294,19 @@ impl Drawable for Image {
     }
     fn get_blend_mode(&self) -> Option<BlendMode> {
         self.blend_mode
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    // We need to set up separate unit tests for CI vs non-CI environments; see issue #234
+    // #[test]
+    fn test_invalid_image_size() {
+        let c = conf::Conf::new();
+        let ctx = &mut Context::load_from_conf("unittest", "unittest", c).unwrap();
+        let _i = assert!(Image::from_rgba8(ctx, 0, 0, &vec![]).is_err());
+        let _i = assert!(Image::from_rgba8(ctx, 3432, 432, &vec![]).is_err());
+        let _i = Image::from_rgba8(ctx, 2, 2, &vec![99;16]).unwrap();
     }
 }
