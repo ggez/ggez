@@ -11,7 +11,7 @@
 
 ## Changed
 
- * Version bumped the zip crate
+ * Version bumped lots of dependencies: zip, rand, rodio, rusttype
  * Switched to the `app_dirs2` crate to avoid a bug in upcoming rustc change
 
 ## Deprecated
@@ -20,6 +20,7 @@
 
 ## Fixed
 
+ * Made `Image::from_rgba8` properly check that the array you pass it is the right size
  * Fixed more documentation bugs (https://github.com/ggez/ggez/issues/303).
 
 # 0.4.1

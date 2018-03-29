@@ -302,6 +302,7 @@ mod tests {
     use super::*;
     // We need to set up separate unit tests for CI vs non-CI environments; see issue #234
     // #[test]
+    #[allow(dead_code)]
     fn test_invalid_image_size() {
         let c = conf::Conf::new();
         let ctx = &mut Context::load_from_conf("unittest", "unittest", c).unwrap();
