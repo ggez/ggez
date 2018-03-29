@@ -89,13 +89,20 @@ impl Font {
 
     /// Loads a new TTF font from data copied out of the given buffer.
     pub fn from_bytes(name: &str, bytes: &[u8], points: u32, dpi: (f32, f32)) -> GameResult<Font> {
-        let collection = rusttype::FontCollection::from_bytes(bytes.to_vec());
-        let font_err = GameError::ResourceLoadError(format!(
+        let font_collection_err = &|_| GameError::ResourceLoadError(format!(
             "Could not load font collection for \
              font {:?}",
             name
         ));
-        let font = collection.into_font().ok_or(font_err)?;
+        let collection = rusttype::FontCollection::from_bytes(bytes.to_vec())
+            .map_err(font_collection_err)?;
+        let font_err = &|_| GameError::ResourceLoadError(format!(
+            "Could not retrieve font from collection for \
+             font {:?}",
+            name
+        ));
+        let font = collection.into_font()
+            .map_err(font_err)?;
         let (x_dpi, y_dpi) = dpi;
         // println!("DPI: {}, {}", x_dpi, y_dpi);
         let scale = display_independent_scale(points, x_dpi, y_dpi);

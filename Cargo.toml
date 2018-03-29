@@ -30,7 +30,7 @@ bzip2 = ["zip/bzip2"]
 default = ["bzip2"]
 
 [dependencies]
-rusttype = "0.3"
+rusttype = "0.5"
 zip = { version = "0.3", default-features = false }
 app_dirs2 = "2"
 gfx = "0.17"
@@ -47,5 +47,5 @@ smart-default = "0.2"
 nalgebra = "0.14"
 
 [dev-dependencies]
-rand = "0.3"
+rand = "0.4"
 clap = "2"
