@@ -3,10 +3,15 @@
 ## Added
 
  * Added a feature to enable or disable bzip2 zip file support
+ * Lots of small documentation fixes and improvements thanks to lovely contributors
+ * Added termhn's `ggez_snake` to the examples, 'cause it's awesome
+ * Added `timer::get_remaining_update_time()` to let you easily do sub-frame timing for interpolation and such.
+ * Many small improvements and cleanups
 
 ## Changed
 
- * Version bumped the zip crate
+ * Version bumped lots of dependencies: zip, rand, rodio, rusttype
+ * Switched to the `app_dirs2` crate to avoid a bug in upcoming rustc change
 
 ## Deprecated
 
@@ -14,6 +19,7 @@
 
 ## Fixed
 
+ * Made `Image::from_rgba8` properly check that the array you pass it is the right size
  * Fixed more documentation bugs (https://github.com/ggez/ggez/issues/303).
 
 # 0.4.1
