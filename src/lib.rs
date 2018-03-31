@@ -108,6 +108,8 @@ extern crate gfx;
 extern crate gfx_device_gl;
 extern crate gfx_window_sdl;
 extern crate image;
+#[macro_use]
+extern crate log;
 extern crate lyon;
 extern crate rodio;
 extern crate rusttype;
