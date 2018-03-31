@@ -9,6 +9,16 @@ use lyon::tessellation as t;
 /// many different complex pieces of geometry.  They don't
 /// have to be connected to each other, and will all be
 /// drawn at once.
+///
+/// The following example shows how to build a mesh containing a line and a circle:
+///
+/// ```rust,ignore
+/// let mesh: Mesh = MeshBuilder::new()
+///     .line(&[Point2::new(20.0, 20.0), Point2::new(40.0, 20.0)], 4.0)
+///     .circle(DrawMode::Fill, Point2::new(60.0, 38.0), 40.0, 1.0)
+///     .build(ctx)
+///     .unwrap();
+/// ```
 #[derive(Debug, Clone)]
 pub struct MeshBuilder {
     buffer: t::geometry_builder::VertexBuffers<Vertex>,
