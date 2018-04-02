@@ -34,6 +34,7 @@ rusttype = "0.5"
 zip = { version = "0.3", default-features = false }
 app_dirs2 = "2"
 gfx = "0.17"
+gfx_glyph = "0.10.1"
 gfx_device_gl = "0.15"
 gfx_window_sdl = "0.8"
 image = "0.18"
