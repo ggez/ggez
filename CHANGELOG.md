@@ -1,3 +1,17 @@
+# 0.X.X (in progress)
+
+## Added
+
+ * Added a feature flag to build nalgebra with the `mint` math library inter-operability layer [#344](https://github.com/ggez/ggez/issues/344)
+
+## Changed
+
+## Deprecated
+
+## Removed
+
+## Fixed
+
 # 0.4.2
 
 ## Added

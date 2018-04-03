@@ -28,6 +28,7 @@ path = "src/lib.rs"
 cargo-resource-root = []
 bzip2 = ["zip/bzip2"]
 default = ["bzip2"]
+mint = ["nalgebra/mint"]
 
 [dependencies]
 rusttype = "0.5"
