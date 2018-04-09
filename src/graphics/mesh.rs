@@ -9,6 +9,48 @@ use lyon::tessellation as t;
 /// many different complex pieces of geometry.  They don't
 /// have to be connected to each other, and will all be
 /// drawn at once.
+///
+/// The following example shows how to build a mesh containing a line and a circle:
+///
+/// ```rust,ignore
+/// let mesh: Mesh = MeshBuilder::new()
+///     .line(&[Point2::new(20.0, 20.0), Point2::new(40.0, 20.0)], 4.0)
+///     .circle(DrawMode::Fill, Point2::new(60.0, 38.0), 40.0, 1.0)
+///     .build(ctx)
+///     .unwrap();
+/// ```
+/// A more sophisticated example:
+///
+/// ```rust
+/// use ggez::{Context, GameResult};
+/// use ggez::graphics::{self, DrawMode, MeshBuilder, Point2};
+///
+/// fn draw_danger_signs(ctx: &mut Context) -> GameResult<()> {
+///     // Initialize a builder instance.
+///     let mesh = MeshBuilder::new()
+///         // Add vertices for 3 lines (in an approximate equilateral triangle).
+///         .line(
+///             &[
+///                 Point2::new(0.0, 0.0),
+///                 Point2::new(-30.0, 52.0),
+///                 Point2::new(30.0, 52.0),
+///                 Point2::new(0.0, 0.0),
+///             ],
+///             1.0,
+///         )
+///         // Add vertices for an exclamation mark!
+///         .ellipse(DrawMode::Fill, Point2::new(0.0, 25.0), 2.0, 15.0, 2.0)
+///         .circle(DrawMode::Fill, Point2::new(0.0, 45.0), 2.0, 2.0)
+///         // Finalize then unwrap. Unwrapping via `?` operator either yields the final `Mesh`,
+///         // or propagates the error (note return type).
+///         .build(ctx)?;
+///     // Draw 3 meshes in a line, 1st and 3rd tilted by 1 radian.
+///     graphics::draw(ctx, &mesh, Point2::new(50.0, 50.0), -1.0).unwrap();
+///     graphics::draw(ctx, &mesh, Point2::new(150.0, 50.0), 0.0).unwrap();
+///     graphics::draw(ctx, &mesh, Point2::new(250.0, 50.0), 1.0).unwrap();
+///     Ok(())
+/// }
+/// ```
 #[derive(Debug, Clone)]
 pub struct MeshBuilder {
     buffer: t::geometry_builder::VertexBuffers<Vertex>,

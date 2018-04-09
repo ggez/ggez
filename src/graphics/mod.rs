@@ -773,13 +773,13 @@ pub fn get_window_mut(context: &mut Context) -> &mut sdl2::video::Window {
     &mut gfx.window
 }
 
-/// Returns the size of the window in pixels as (height, width).
+/// Returns the size of the window in pixels as (width, height).
 pub fn get_size(context: &Context) -> (u32, u32) {
     let gfx = &context.gfx_context;
     gfx.window.size()
 }
 
-/// Returns the size of the window's underlying drawable in pixels as (height, width).
+/// Returns the size of the window's underlying drawable in pixels as (width, height).
 /// This may return a different value than `get_size()` when run on a platform with high-DPI support
 pub fn get_drawable_size(context: &Context) -> (u32, u32) {
     let gfx = &context.gfx_context;

@@ -150,6 +150,7 @@ impl Context {
 
     /// Prints out information on the resources subsystem.
     pub fn print_resource_stats(&mut self) {
+        // TODO: consider using logging macros.
         self.filesystem.print_all();
     }
 

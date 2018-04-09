@@ -22,7 +22,7 @@ Known bugs and feature requests are all in the [issue tracker](https://github.co
 * Create a new branch: git checkout -b my-branch-name
 * Make your changes
 > Ideally all commits will contain no use of `unwrap()`, no compiler warnings and all tests will pass.
-> It's advised to run [rustfmt](https://github.com/rust-lang-nursery/rustfmt) and [clippy](https://github.com/rust-lang-nursery/rust-clippy) before submitting a pull request
+> It's advised to run _latest_ [rustfmt](https://github.com/rust-lang-nursery/rustfmt) and [clippy](https://github.com/rust-lang-nursery/rust-clippy) before submitting a pull request
 * Push to your fork and [submit a pull request](https://github.com/ggez/ggez/compare) to the `devel` branch
 * Pat your self on the back and wait for your pull request to be reviewed.
 
