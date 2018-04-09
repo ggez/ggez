@@ -1,3 +1,4 @@
+[![ggez logo](docs/ggez-logo-maroon-full.svg)](http://ggez.rs/)
 # What is this?
 [![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez)
 [![Build status](https://ci.appveyor.com/api/projects/status/3v9lsq6n9li7kxim/branch/master?svg=true)](https://ci.appveyor.com/project/svenstaro/ggez/branch/master)
