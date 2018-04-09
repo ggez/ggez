@@ -11,3 +11,4 @@
  * Search for and remove all `expect()` and `unwrap()` calls
  * Search for and address all `TODO` and `BUGGO` comments
  * Make sure readme is updated (should be the same as the top-level crate docs)
+ * Make sure changelog is up to date, ideally including full links to issues or commits (not just github issue numbers)
