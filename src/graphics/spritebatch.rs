@@ -14,6 +14,7 @@ use gfx;
 use gfx::Factory;
 use GameResult;
 use super::shader::BlendMode;
+use super::types::FilterMode;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
 ///
@@ -141,6 +142,16 @@ impl SpriteBatch {
     pub fn set_image(&mut self, image: graphics::Image) -> graphics::Image {
         use std::mem;
         mem::replace(&mut self.image, image)
+    }
+
+    /// Get the filter mode for the SpriteBatch.
+    pub fn get_filter(&self) -> FilterMode {
+        self.image.get_filter()
+    }
+
+    /// Set the filter mode for the SpriteBatch.
+    pub fn set_filter(&mut self, mode: FilterMode) {
+        self.image.set_filter(mode);
     }
 
     /// Create an object which draws the current sprite batch with a different image.
