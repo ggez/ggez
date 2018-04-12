@@ -59,7 +59,7 @@ impl SpriteBatch {
 
     /// Adds a new sprite to the sprite batch.
     ///
-    /// Returns a handle with whictypeh to modify the sprite using `set()`
+    /// Returns a handle with which type to modify the sprite using `set()`
     pub fn add(&mut self, param: graphics::DrawParam) -> SpriteIdx {
         self.sprites.push(param);
         SpriteIdx(self.sprites.len() - 1)
