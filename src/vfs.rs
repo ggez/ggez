@@ -773,7 +773,10 @@ mod tests {
         let mut bf = io::BufReader::new(f);
         let mut s = String::new();
         bf.read_line(&mut s).unwrap();
-        assert_eq!(&s, "[package]\n");
+        // Trim whitespace from string 'cause it will
+        // potentially be different on Windows and Unix.
+        let trimmed_string = s.trim();
+        assert_eq!(trimmed_string, "[package]");
     }
 
     #[test]
