@@ -91,6 +91,7 @@
 
  * First off, there will be some switches in process: We're going to make the master branch STABLE, tracking the latest release,
    and create a devel branch that new work will be pushed to.  That way people don't check out master and get some WIP stuff.
+ * The coordinate system moved from origin-at-center, x-increasing-up to origin-at-top-left, x-increasing-down
  * Updated all dependencies to newer versions
  * Refactored EventHandler interface, again
  * Altered timestep functions to be nicer and made examples use them consistently
