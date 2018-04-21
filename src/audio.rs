@@ -33,8 +33,8 @@ impl AudioContext {
              some reason)",
         ));
 
-        let e = rodio::default_output_device().ok_or(error)?;
-        Ok(AudioContext { device: e })
+        let device = rodio::default_output_device().ok_or(error)?;
+        Ok(AudioContext { device: device })
     }
 }
 
