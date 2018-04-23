@@ -9,10 +9,10 @@
 
 ggez is a Rust library to create a Good Game Easily.
 
-More specifically, ggez is a lightweight game framework for making
-2D games with minimum friction.  It aims to implement an API based
-on (a Rustified version of) the [LÖVE](https://love2d.org/) game
-framework.  This means it contains basic and portable 2D
+More specifically, ggez is a lightweight cross-platform game framework 
+for making 2D games with minimum friction.  It aims to implement an 
+API based on (a Rustified version of) the [LÖVE](https://love2d.org/) 
+game framework.  This means it contains basic and portable 2D
 drawing, sound, resource loading and event handling.
 
 ggez is not meant to be everything to everyone, but rather a good
@@ -36,7 +36,18 @@ your own libraries atop ggez.
 * Math integration with nalgebra
 * Some more advanced graphics options: shaders, sprite batches and render targets
 
-## [Who's using ggez?](docs/Projects.md)
+
+## Supported platforms
+
+ * Fully supported: Windows, Linux, macOS
+ * Work in progress: Web/WASM/Emscripten
+ * Not officially supported yet (but maybe you can help!): Android, iOS
+
+For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
+
+## Who's using ggez?
+
+Check out the [projects list!](docs/Projects.md)
 
 ## Usage
 
@@ -80,6 +91,7 @@ cargo run --example astroblasto
 If this doesn't work, see the
 [FAQ](https://github.com/ggez/ggez/blob/master/docs/FAQ.md) for solutions
 to common problems.
+
 
 ## Implementation details
 
