@@ -139,7 +139,7 @@ impl Filesystem {
         // Per-user data dir,
         // ~/.local/share/whatever/
         {
-            user_data_path = app_root(AppDataType::UserData, &app_info)?;
+            user_data_path = get_app_root(AppDataType::UserData, &app_info)?;
             let physfs = vfs::PhysicalFS::new(&user_data_path, true);
             overlay.push_back(Box::new(physfs));
         }
@@ -147,7 +147,7 @@ impl Filesystem {
         // Writeable local dir, ~/.config/whatever/
         // Save game dir is read-write
         {
-            user_config_path = app_root(AppDataType::UserConfig, &app_info)?;
+            user_config_path = get_app_root(AppDataType::UserConfig, &app_info)?;
             let physfs = vfs::PhysicalFS::new(&user_config_path, false);
             overlay.push_back(Box::new(physfs));
         }

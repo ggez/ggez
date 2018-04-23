@@ -237,6 +237,20 @@ impl PhysicalFS {
             Err(GameError::FilesystemError(msg))
         }
     }
+
+    /// Creates the PhysicalFS's root directory if necessary.
+    /// Idempotent.
+    /// This way we can not create the directory until it's
+    /// actually used, though it IS a tiny bit of a performance
+    /// malus.
+    fn create_root(&self) -> GameResult<()> {
+        if !self.root.exists() {
+            fs::create_dir_all(&self.root)
+                .map_err(GameError::from)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl Debug for PhysicalFS {
@@ -258,6 +272,7 @@ impl VFS for PhysicalFS {
             );
             return Err(GameError::FilesystemError(msg));
         }
+        self.create_root()?;
         let p = self.get_absolute(path)?;
         open_options
             .to_fs_openoptions()
@@ -275,6 +290,7 @@ impl VFS for PhysicalFS {
                     .to_string(),
             ));
         }
+        self.create_root()?;
         let p = self.get_absolute(path)?;
         //println!("Creating {:?}", p);
         fs::DirBuilder::new()
@@ -290,7 +306,8 @@ impl VFS for PhysicalFS {
                 "Tried to remove file {} but FS is read-only".to_string(),
             ));
         }
-
+        
+        self.create_root()?;
         let p = self.get_absolute(path)?;
         if p.is_dir() {
             fs::remove_dir(p).map_err(GameError::from)
@@ -309,6 +326,7 @@ impl VFS for PhysicalFS {
             ));
         }
 
+        self.create_root()?;
         let p = self.get_absolute(path)?;
         if p.is_dir() {
             fs::remove_dir_all(p).map_err(GameError::from)
@@ -327,6 +345,7 @@ impl VFS for PhysicalFS {
 
     /// Get the file's metadata
     fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
+        self.create_root()?;
         let p = self.get_absolute(path)?;
         p.metadata()
             .map(|m| Box::new(PhysicalMetadata(m)) as Box<VMetadata>)
@@ -335,6 +354,7 @@ impl VFS for PhysicalFS {
 
     /// Retrieve the path entries in this path
     fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
+        self.create_root()?;
         let p = self.get_absolute(path)?;
         // This is inconvenient because path() returns the full absolute
         // path of the bloody file, which is NOT what we want!
