@@ -22,7 +22,7 @@ use GameResult;
 /// You generally don't have to create this yourself, it will be part
 /// of your `Context` object.
 pub struct AudioContext {
-    endpoint: rodio::Endpoint,
+    device: rodio::Device,
 }
 
 impl AudioContext {
@@ -32,10 +32,9 @@ impl AudioContext {
             "Could not initialize sound system (for \
              some reason)",
         ));
-        // This is deprecated in cpal but not in the most recent rodio (0.5.2) yet.
-        #[allow(deprecated)]
-        let e = rodio::get_default_endpoint().ok_or(error)?;
-        Ok(AudioContext { endpoint: e })
+
+        let device = rodio::default_output_device().ok_or(error)?;
+        Ok(AudioContext { device: device })
     }
 }
 
@@ -130,7 +129,7 @@ impl Source {
 
     /// Creates a new Source using the given SoundData object.
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
-        let sink = rodio::Sink::new(&context.audio_context.endpoint);
+        let sink = rodio::Sink::new(&context.audio_context.device);
         let cursor = io::Cursor::new(data);
         Ok(Source {
             sink,
