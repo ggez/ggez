@@ -6,11 +6,15 @@
 
 ## Changed
 
+ * Made it so that the configuration directories are only created on-demand, not whenever the Context is created: [#356](https://github.com/ggez/ggez/issues/356)
+ * Updated rodio to 0.7, which fixes a sample rate bug on Linux: [#359](https://github.com/ggez/ggez/issues/359)
+
 ## Deprecated
 
 ## Removed
 
 ## Fixed
+
 
 # 0.4.2
 
