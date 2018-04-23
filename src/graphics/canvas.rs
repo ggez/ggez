@@ -9,6 +9,7 @@ use gfx::texture::{AaMode, Kind};
 
 use Context;
 use conf::*;
+use context::DebugId;
 use error::*;
 use graphics::*;
 
@@ -21,6 +22,7 @@ where
 {
     target: RenderTargetView<Spec::Resources, Srgba8>,
     image: Image,
+    debug_id: DebugId,
 }
 
 /// A canvas that can be rendered to instead of the screen (sometimes referred
@@ -45,6 +47,7 @@ impl Canvas {
         height: u32,
         samples: NumSamples,
     ) -> GameResult<Canvas> {
+        let debug_id = DebugId::get(ctx);
         let (w, h) = (width as u16, height as u16);
         let aa = match samples {
             NumSamples::One => AaMode::Single,
@@ -76,7 +79,9 @@ impl Canvas {
                 blend_mode: None,
                 width,
                 height,
+                debug_id,
             },
+            debug_id,
         })
     }
 
@@ -103,6 +108,7 @@ impl Canvas {
 
 impl Drawable for Canvas {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+        self.debug_id.assert(ctx);
         // Gotta flip the image on the Y axis here
         // to account for OpenGL's origin being at the bottom-left.
         let mut flipped_param = param;
@@ -124,6 +130,7 @@ impl Drawable for Canvas {
 pub fn set_canvas(ctx: &mut Context, target: Option<&Canvas>) {
     match target {
         Some(surface) => {
+            surface.debug_id.assert(ctx);
             ctx.gfx_context.data.out = surface.target.clone();
         }
         None => {

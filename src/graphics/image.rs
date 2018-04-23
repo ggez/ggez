@@ -7,7 +7,7 @@ use image;
 
 use graphics::*;
 use graphics::shader::*;
-use context::Context;
+use context::{DebugId, Context};
 use GameResult;
 use GameError;
 
@@ -24,6 +24,8 @@ where
     pub(crate) blend_mode: Option<BlendMode>,
     pub(crate) width: u32,
     pub(crate) height: u32,
+
+    pub(crate) debug_id: DebugId,
 }
 
 /// In-GPU-memory image data available to be drawn on the screen,
@@ -61,12 +63,14 @@ impl Image {
         height: u16,
         rgba: &[u8],
     ) -> GameResult<Image> {
+        let debug_id = DebugId::get(context);
         Image::make_raw(
             &mut context.gfx_context.factory,
             &context.gfx_context.default_sampler_info,
             width,
             height,
             rgba,
+            debug_id,
         )
     }
 
@@ -157,6 +161,7 @@ impl Image {
         width: u16,
         height: u16,
         rgba: &[u8],
+        debug_id: DebugId,
     ) -> GameResult<Image> {
         if width == 0 || height == 0 {
             let msg = format!(
@@ -185,6 +190,7 @@ impl Image {
             blend_mode: None,
             width: u32::from(width),
             height: u32::from(height),
+            debug_id
         })
     }
 
@@ -256,6 +262,7 @@ impl fmt::Debug for Image {
 
 impl Drawable for Image {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+        self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;
         let src_width = param.src.w;
         let src_height = param.src.h;

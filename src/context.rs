@@ -17,6 +17,7 @@ use timer;
 use GameError;
 use GameResult;
 
+
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
 /// system, timers, and so on.  Generally this type is **not** thread-
@@ -48,6 +49,12 @@ pub struct Context {
     pub mouse_context: mouse::MouseContext,
     /// Default font
     pub default_font: graphics::Font,
+
+    /// Context-specific unique ID.
+    /// Compiles to nothing in release mode, and so
+    /// vanishes; meanwhile we get dead-code warnings.
+    #[allow(dead_code)]
+    debug_id: DebugId,
 }
 
 impl fmt::Debug for Context {
@@ -90,8 +97,8 @@ impl Context {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by `Context::load_from_conf()`.
     fn from_conf(conf: conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context> {
+        let debug_id = DebugId::new();
         let video = sdl_context.video()?;
-
         let audio_context = audio::AudioContext::new()?;
         let event_context = sdl_context.event()?;
         let timer_context = timer::TimeContext::new();
@@ -102,6 +109,7 @@ impl Context {
             &conf.window_setup,
             conf.window_mode,
             backend_spec,
+            debug_id,
         )?;
         let gamepad_context = input::GamepadContext::new(&sdl_context)?;
         let mouse_context = mouse::MouseContext::new();
@@ -118,6 +126,7 @@ impl Context {
             mouse_context,
 
             default_font: font,
+            debug_id,
         };
 
         set_window_icon(&mut ctx)?;
@@ -272,3 +281,63 @@ impl ContextBuilder {
         Context::from_conf(config, fs, sdl_context)
     }
 }
+
+
+
+#[cfg(debug_assertions)]
+use std::sync::atomic::{ATOMIC_USIZE_INIT, AtomicUsize, Ordering};
+#[cfg(debug_assertions)]
+static DEBUG_ID_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+
+/// This is a type that contains a unique ID for each Context and
+/// is contained in each thing created from the Context which contains
+/// data that becomes invalid when the Context goes away (ie, texture
+/// handles).  When compiling without assertions (ie in release mode) it
+/// is replaced with a zero-size type, compiles down to nothing, and
+/// since all comparisons with it will be true, should disappear entirely
+/// with a puff of logic.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg(debug_assertions)]
+pub(crate) struct DebugId(u32);
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg(not(debug_assertions))]
+pub(crate) struct DebugId;
+
+#[cfg(debug_assertions)]
+impl DebugId {
+    pub fn new() -> Self {
+        let id = DEBUG_ID_COUNTER.fetch_add(1, Ordering::SeqCst) as u32;
+        // fetch_add() wraps on overflow so we check for overflow explicitly.
+        // JUST IN CASE YOU TRY TO CREATE 2^32 CONTEXTS IN ONE PROGRAM!
+        assert!(DEBUG_ID_COUNTER.load(Ordering::SeqCst) as u32 > id);
+        DebugId(id)
+    }
+    
+    pub fn get(ctx: &Context) -> Self {
+        DebugId(ctx.debug_id.0)
+    }
+
+    pub fn assert(&self, ctx: &Context) {
+        if *self != ctx.debug_id {
+            panic!("Tried to use a resource with a Context that did not create it; this should never happen!");
+        }
+    }
+            
+}
+
+#[cfg(not(debug_assertions))]
+impl DebugId {
+    pub fn new() -> Self {
+        DebugId
+    }
+
+    
+    pub fn get(_ctx: &Context) -> Self {
+        DebugId
+    }
+
+    pub fn assert(&self, _ctx: &Context) {
+        // Do nothing.
+    }
+}
+

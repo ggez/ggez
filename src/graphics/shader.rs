@@ -19,6 +19,7 @@ use std::collections::HashMap;
 use gfx::preset::blend;
 
 use Context;
+use context::DebugId;
 use error::*;
 use graphics;
 
@@ -168,6 +169,7 @@ pub type ShaderId = usize;
 pub struct ShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
     id: ShaderId,
     buffer: Buffer<Spec::Resources, C>,
+    debug_id: DebugId,
 }
 
 /// A `Shader` represents a handle to a user-defined shader that can be used
@@ -183,6 +185,7 @@ pub(crate) fn create_shader<C, S, Spec>(
     factory: &mut Spec::Factory,
     multisample_samples: u8,
     blend_modes: Option<&[BlendMode]>,
+    debug_id: DebugId
 ) -> GameResult<(ShaderGeneric<Spec, C>, Box<ShaderHandle<Spec>>)>
 where
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
@@ -233,7 +236,7 @@ where
     let draw: Box<ShaderHandle<Spec>> = Box::new(program);
 
     let id = 0;
-    let shader = ShaderGeneric { id, buffer };
+    let shader = ShaderGeneric { id, buffer, debug_id };
 
     Ok((shader, draw))
 }
@@ -293,6 +296,7 @@ where
         name: S,
         blend_modes: Option<&[BlendMode]>,
     ) -> GameResult<Shader<C>> {
+        let debug_id = DebugId::get(ctx);
         let (mut shader, draw) = create_shader(
             vertex_source,
             pixel_source,
@@ -302,6 +306,7 @@ where
             &mut *ctx.gfx_context.factory,
             ctx.gfx_context.multisample_samples,
             blend_modes,
+            debug_id,
         )?;
         shader.id = ctx.gfx_context.shaders.len();
         ctx.gfx_context.shaders.push(draw);
@@ -418,6 +423,7 @@ pub fn use_shader<C>(ctx: &mut Context, ps: &Shader<C>) -> ShaderLock
 where
     C: Structure<ConstFormat>,
 {
+    ps.debug_id.assert(ctx);
     let cell = Rc::clone(&ctx.gfx_context.current_shader);
     let previous_shader = *cell.borrow();
     set_shader(ctx, ps);
@@ -432,6 +438,7 @@ pub fn set_shader<C>(ctx: &mut Context, ps: &Shader<C>)
 where
     C: Structure<ConstFormat>,
 {
+    ps.debug_id.assert(ctx);
     *ctx.gfx_context.current_shader.borrow_mut() = Some(ps.id);
 }
 

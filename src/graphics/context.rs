@@ -6,6 +6,7 @@ use gfx_window_sdl;
 use gfx::traits::FactoryExt;
 use gfx::Factory;
 
+use context::DebugId;
 use graphics::*;
 use conf::WindowSetup;
 
@@ -49,6 +50,7 @@ where
     default_shader: ShaderId,
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<ShaderHandle<B>>>,
+
 }
 
 impl<B> fmt::Debug for GraphicsContextGeneric<B>
@@ -70,6 +72,7 @@ impl GraphicsContext {
         window_setup: &WindowSetup,
         window_mode: WindowMode,
         backend: GlBackendSpec,
+        debug_id: DebugId,
     ) -> GameResult<GraphicsContext> {
         // WINDOW SETUP
         let gl = video.gl_attr();
@@ -125,6 +128,7 @@ impl GraphicsContext {
             &mut factory,
             samples,
             Some(&blend_modes[..]),
+            debug_id,
         )?;
 
         let rect_inst_props = factory.create_buffer(
@@ -145,7 +149,7 @@ impl GraphicsContext {
             texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
         let white_image =
-            Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255])?;
+            Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255], debug_id)?;
         let texture = white_image.texture.clone();
 
         let data = pipe::Data {

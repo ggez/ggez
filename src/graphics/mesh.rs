@@ -1,4 +1,5 @@
 use ::*;
+use context::DebugId;
 use graphics::*;
 use gfx::traits::FactoryExt;
 use lyon::tessellation as t;
@@ -269,6 +270,7 @@ impl MeshBuilder {
             buffer: vbuf,
             slice,
             blend_mode: None,
+            debug_id: DebugId::get(ctx),
         })
     }
 }
@@ -302,6 +304,7 @@ pub struct Mesh {
     buffer: gfx::handle::Buffer<gfx_device_gl::Resources, Vertex>,
     slice: gfx::Slice<gfx_device_gl::Resources>,
     blend_mode: Option<BlendMode>,
+    debug_id: DebugId,
 }
 
 impl Mesh {
@@ -363,6 +366,7 @@ impl Mesh {
 
 impl Drawable for Mesh {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+        self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;
         gfx.update_instance_properties(param)?;
 

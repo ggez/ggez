@@ -20,6 +20,7 @@ use gfx::Device;
 use gfx::Factory;
 
 use conf;
+use context::DebugId;
 use conf::WindowMode;
 use context::Context;
 use GameError;
@@ -315,6 +316,7 @@ pub fn present(ctx: &mut Context) {
 pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     use gfx::memory::{Bind, Typed};
     use gfx::format::Formatted;
+    let debug_id = DebugId::get(ctx);
 
     let gfx = &mut ctx.gfx_context;
     let (w, h, _depth, aa) = gfx.data.out.get_dimensions();
@@ -371,6 +373,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         blend_mode: None,
         width: u32::from(w),
         height: u32::from(h),
+        debug_id: debug_id,
     };
 
     Ok(image)
