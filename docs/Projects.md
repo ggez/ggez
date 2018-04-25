@@ -7,6 +7,7 @@ submit a PR, please!
 
  * <https://github.com/maccam912/thewizzerofoz>
  * <https://github.com/Piripant/skii>
+ * <https://github.com/aprokurov/spaceshooter>
 
 # Examples/tutorial code
 
