@@ -3,6 +3,7 @@
 ## Added
 
  * Added a feature flag to build nalgebra with the `mint` math library inter-operability layer [#344](https://github.com/ggez/ggez/issues/344)
+ * We got an awesome logo! [#327](https://github.com/ggez/ggez/issues/327)
 
 ## Changed
 
