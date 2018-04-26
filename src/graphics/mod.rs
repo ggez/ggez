@@ -33,6 +33,7 @@ mod image;
 mod mesh;
 mod shader;
 mod text;
+mod text_cached;
 mod types;
 use nalgebra as na;
 
@@ -45,6 +46,7 @@ pub use self::image::*;
 pub use self::mesh::*;
 pub use self::shader::*;
 pub use self::text::*;
+pub use self::text_cached::*;
 pub use self::types::*;
 
 /// A marker trait saying that something is a label for a particular backend,
