@@ -30,6 +30,8 @@ pub enum Font {
     GlyphFont {
         /// A handle to retrieve the font by
         font_id: FontId,
+        /// Scale information for the font
+        scale: rusttype::Scale,
     },
 }
 
@@ -213,15 +215,21 @@ impl Font {
     }
 
     /// Loads a new TrueType font from given file and into `GraphicsContext::glyph_brush`.
-    pub fn new_glyph_font<P>(context: &mut Context, path: P) -> GameResult<Self>
+    pub fn new_glyph_font<P>(context: &mut Context, path: P, points: u32) -> GameResult<Self>
         where
             P: AsRef<path::Path> + fmt::Debug {
         let mut stream = context.filesystem.open(path.as_ref())?;
         let mut buf = Vec::new();
         stream.read_to_end(&mut buf)?;
+
         let font_id = context.gfx_context.glyph_brush.add_font_bytes(buf);
+
+        let (_, x_dpi, y_dpi) = context.gfx_context.dpi;
+        let scale = display_independent_scale(points, x_dpi, y_dpi);
+
         Ok(Font::GlyphFont {
             font_id,
+            scale,
         })
     }
 
