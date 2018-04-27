@@ -153,7 +153,7 @@ impl Filesystem {
         // Save game dir is read-write
         {
             user_config_path = get_app_root(AppDataType::UserConfig, &app_info)?;
-            trace!("User-local configuration path: {:?}", user_data_path);
+            trace!("User-local configuration path: {:?}", user_config_path);
             let physfs = vfs::PhysicalFS::new(&user_config_path, false);
             overlay.push_back(Box::new(physfs));
         }
