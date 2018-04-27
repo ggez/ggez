@@ -33,7 +33,11 @@ struct FileLogger {
 
 impl FileLogger {
     /// Initializes a file writer. Needs an initialized `ggez::Context`, to use it's filesystem.
-    fn new(ctx: &mut Context, path: &str, receiver: mpsc::Receiver<String>) -> GameResult<FileLogger> {
+    fn new(
+        ctx: &mut Context,
+        path: &str,
+        receiver: mpsc::Receiver<String>,
+    ) -> GameResult<FileLogger> {
         // This (re)creates a file and opens it for appending.
         let file = ctx.filesystem.create(path::Path::new(path))?;
         debug!(

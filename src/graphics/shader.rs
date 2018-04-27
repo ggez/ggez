@@ -136,11 +136,18 @@ where
         }
     }
 
-    pub fn insert_mode(&mut self, mode: BlendMode, pso: PipelineState<Spec::Resources, ConstMeta<C>>) {
+    pub fn insert_mode(
+        &mut self,
+        mode: BlendMode,
+        pso: PipelineState<Spec::Resources, ConstMeta<C>>,
+    ) {
         self.psos.insert(mode, pso);
     }
 
-    pub fn get_mode(&self, mode: &BlendMode) -> GameResult<&PipelineState<Spec::Resources, ConstMeta<C>>> {
+    pub fn get_mode(
+        &self,
+        mode: &BlendMode,
+    ) -> GameResult<&PipelineState<Spec::Resources, ConstMeta<C>>> {
         match self.psos.get(mode) {
             Some(pso) => Ok(pso),
             None => Err(GameError::RenderError(
@@ -248,7 +255,14 @@ where
     /// used, you must include that blend mode as part of the
     /// `blend_modes` parameter at creation. If `None` is given, only the
     /// default `Alpha` blend mode is used.
-    pub fn new<P: AsRef<Path>, S: Into<String>>(ctx: &mut Context, vertex_path: P, pixel_path: P, consts: C, name: S, blend_modes: Option<&[BlendMode]>) -> GameResult<Shader<C>> {
+    pub fn new<P: AsRef<Path>, S: Into<String>>(
+        ctx: &mut Context,
+        vertex_path: P,
+        pixel_path: P,
+        consts: C,
+        name: S,
+        blend_modes: Option<&[BlendMode]>,
+    ) -> GameResult<Shader<C>> {
         let vertex_source = {
             let mut buf = Vec::new();
             let mut reader = ctx.filesystem.open(vertex_path)?;
@@ -278,7 +292,14 @@ where
     /// used, you must include that blend mode as part of the
     /// `blend_modes` parameter at creation. If `None` is given, only the
     /// default `Alpha` blend mode is used.
-    pub fn from_u8<S: Into<String>>(ctx: &mut Context, vertex_source: &[u8], pixel_source: &[u8], consts: C, name: S, blend_modes: Option<&[BlendMode]>) -> GameResult<Shader<C>> {
+    pub fn from_u8<S: Into<String>>(
+        ctx: &mut Context,
+        vertex_source: &[u8],
+        pixel_source: &[u8],
+        consts: C,
+        name: S,
+        blend_modes: Option<&[BlendMode]>,
+    ) -> GameResult<Shader<C>> {
         let debug_id = DebugId::get(ctx);
         let (mut shader, draw) = create_shader(
             vertex_source,
@@ -342,7 +363,12 @@ where
 /// Structure<ConstFormat> type of the constant data for drawing
 pub trait ShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
     /// Draw with the current Shader
-    fn draw(&self, &mut Encoder<Spec::Resources, Spec::CommandBuffer>, &Slice<Spec::Resources>, &graphics::pipe::Data<Spec::Resources>) -> GameResult<()>;
+    fn draw(
+        &self,
+        &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+        &Slice<Spec::Resources>,
+        &graphics::pipe::Data<Spec::Resources>,
+    ) -> GameResult<()>;
 
     /// Sets the shader program's blend mode
     fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()>;
@@ -356,7 +382,12 @@ where
     Spec: graphics::BackendSpec,
     C: Structure<ConstFormat>,
 {
-    fn draw(&self, encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>, slice: &Slice<Spec::Resources>, data: &graphics::pipe::Data<Spec::Resources>) -> GameResult<()> {
+    fn draw(
+        &self,
+        encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+        slice: &Slice<Spec::Resources>,
+        data: &graphics::pipe::Data<Spec::Resources>,
+    ) -> GameResult<()> {
         let pso = self.psos.get_mode(&self.active_blend_mode)?;
         encoder.draw(slice, pso, &ConstData(data, &self.buffer));
         Ok(())
@@ -436,7 +467,13 @@ where
 {
     type Meta = ConstMeta<C>;
 
-    fn bake_to(&self, out: &mut RawDataSet<R>, meta: &Self::Meta, man: &mut Manager<R>, access: &mut AccessInfo<R>) {
+    fn bake_to(
+        &self,
+        out: &mut RawDataSet<R>,
+        meta: &Self::Meta,
+        man: &mut Manager<R>,
+        access: &mut AccessInfo<R>,
+    ) {
         self.0.bake_to(out, &meta.0, man, access);
         meta.1.bind_to(out, self.1, man, access);
     }
@@ -451,7 +488,11 @@ where
 {
     type Meta = ConstMeta<C>;
 
-    fn link_to<'s>(&self, desc: &mut Descriptor, info: &'s ProgramInfo) -> Result<Self::Meta, InitError<&'s str>> {
+    fn link_to<'s>(
+        &self,
+        desc: &mut Descriptor,
+        info: &'s ProgramInfo,
+    ) -> Result<Self::Meta, InitError<&'s str>> {
         let mut meta1 = ConstantBuffer::<C>::new();
 
         let mut index = None;

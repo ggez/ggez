@@ -53,7 +53,15 @@ impl event::EventHandler for MainState {
         println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
     }
 
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, _state: MouseState, x: i32, y: i32, xrel: i32, yrel: i32) {
+    fn mouse_motion_event(
+        &mut self,
+        _ctx: &mut Context,
+        _state: MouseState,
+        x: i32,
+        y: i32,
+        xrel: i32,
+        yrel: i32,
+    ) {
         if self.mouse_down {
             self.pos_x = x;
             self.pos_y = y;
@@ -106,7 +114,13 @@ impl event::EventHandler for MainState {
         );
     }
 
-    fn controller_axis_event(&mut self, _ctx: &mut Context, axis: Axis, value: i16, instance_id: i32) {
+    fn controller_axis_event(
+        &mut self,
+        _ctx: &mut Context,
+        axis: Axis,
+        value: i16,
+        instance_id: i32,
+    ) {
         println!(
             "Axis Event: {:?} Value: {} Controller_Id: {}",
             axis, value, instance_id

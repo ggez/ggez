@@ -143,7 +143,11 @@ impl Context {
     /// module.  You can also always debug-print the
     /// `Context::filesystem` field to see what paths it is
     /// searching.
-    pub fn load_from_conf(game_id: &'static str, author: &'static str, default_config: conf::Conf) -> GameResult<Context> {
+    pub fn load_from_conf(
+        game_id: &'static str,
+        author: &'static str,
+        default_config: conf::Conf,
+    ) -> GameResult<Context> {
         let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(game_id, author)?;
 

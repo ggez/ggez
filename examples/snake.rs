@@ -422,7 +422,13 @@ impl event::EventHandler for GameState {
     }
 
     /// key_down_event gets fired when a key gets pressed.
-    fn key_down_event(&mut self, _ctx: &mut Context, keycode: Keycode, _keymod: event::Mod, _repeat: bool) {
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: Keycode,
+        _keymod: event::Mod,
+        _repeat: bool,
+    ) {
         // Here we attempt to convert the Keycode into a Direction using the helper
         // we defined earlier.
         if let Some(dir) = Direction::from_keycode(keycode) {

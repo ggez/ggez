@@ -264,7 +264,10 @@ impl Debug for PhysicalFS {
 impl VFS for PhysicalFS {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
-        if self.readonly && (open_options.write || open_options.create || open_options.append || open_options.truncate) {
+        if self.readonly
+            && (open_options.write || open_options.create || open_options.append
+                || open_options.truncate)
+        {
             let msg = format!(
                 "Cannot alter file {:?} in root {:?}, filesystem read-only",
                 path, self
@@ -661,7 +664,8 @@ impl VFS for ZipFS {
     fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
         // Zip is readonly
         let path = convenient_path_to_str(path)?;
-        if open_options.write || open_options.create || open_options.append || open_options.truncate {
+        if open_options.write || open_options.create || open_options.append || open_options.truncate
+        {
             let msg = format!(
                 "Cannot alter file {:?} in zipfile {:?}, filesystem read-only",
                 path, self

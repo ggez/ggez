@@ -89,12 +89,14 @@ impl Rect {
 
     /// Checks whether the `Rect` contains a `Point`
     pub fn contains(&self, point: Point2) -> bool {
-        point.x >= self.left() && point.x <= self.right() && point.y <= self.bottom() && point.y >= self.top()
+        point.x >= self.left() && point.x <= self.right() && point.y <= self.bottom()
+            && point.y >= self.top()
     }
 
     /// Checks whether the `Rect` overlaps another `Rect`
     pub fn overlaps(&self, other: &Rect) -> bool {
-        self.left() <= other.right() && self.right() >= other.left() && self.top() <= other.bottom() && self.bottom() >= other.top()
+        self.left() <= other.right() && self.right() >= other.left() && self.top() <= other.bottom()
+            && self.bottom() >= other.top()
     }
 
     /// Translates the `Rect` by an offset of (x, y)

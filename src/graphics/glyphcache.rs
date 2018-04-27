@@ -74,7 +74,9 @@ impl<'a> GlyphCache<'a> {
     /// probably some user will decide way to the DIY.
     ///
     /// At that time this function will be useful.
-    pub fn extract_glyph_brush(self) -> GlyphBrush<'a, gfx_device_gl::Resources, gfx_device_gl::Factory> {
+    pub fn extract_glyph_brush(
+        self,
+    ) -> GlyphBrush<'a, gfx_device_gl::Resources, gfx_device_gl::Factory> {
         self.glyph_brush
     }
 }

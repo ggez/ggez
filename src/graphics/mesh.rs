@@ -79,7 +79,13 @@ impl MeshBuilder {
     /// Create a new mesh for a circle.
     ///
     /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
-    pub fn circle(&mut self, mode: DrawMode, point: Point2, radius: f32, tolerance: f32) -> &mut Self {
+    pub fn circle(
+        &mut self,
+        mode: DrawMode,
+        point: Point2,
+        radius: f32,
+        tolerance: f32,
+    ) -> &mut Self {
         {
             let buffers = &mut self.buffer;
             match mode {
@@ -101,7 +107,12 @@ impl MeshBuilder {
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width)
                         .with_tolerance(tolerance);
-                    t::basic_shapes::stroke_circle(t::math::point(point.x, point.y), radius, &options, builder);
+                    t::basic_shapes::stroke_circle(
+                        t::math::point(point.x, point.y),
+                        radius,
+                        &options,
+                        builder,
+                    );
                 }
             };
         }
@@ -111,7 +122,14 @@ impl MeshBuilder {
     /// Create a new mesh for an ellipse.
     ///
     /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
-    pub fn ellipse(&mut self, mode: DrawMode, point: Point2, radius1: f32, radius2: f32, tolerance: f32) -> &mut Self {
+    pub fn ellipse(
+        &mut self,
+        mode: DrawMode,
+        point: Point2,
+        radius1: f32,
+        radius2: f32,
+        tolerance: f32,
+    ) -> &mut Self {
         {
             let buffers = &mut self.buffer;
             match mode {
@@ -158,7 +176,8 @@ impl MeshBuilder {
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
                     // TODO: Removing this expect would be rather nice.
-                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder).expect("Could not fill polyline?");
+                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
+                        .expect("Could not fill polyline?");
                 }
                 DrawMode::Line(width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
@@ -183,7 +202,8 @@ impl MeshBuilder {
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
                     // TODO: Removing this expect would be rather nice.
-                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder).expect("Could not fill polygon?");
+                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
+                        .expect("Could not fill polygon?");
                 }
                 DrawMode::Line(width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
@@ -219,7 +239,8 @@ impl MeshBuilder {
                     // only a slice.  Not sure that's an improvement.
                 .collect::<Vec<_>>();
             let tris = tris.chunks(3);
-            let builder: &mut t::BuffersBuilder<_, _, _> = &mut t::BuffersBuilder::new(&mut self.buffer, VertexBuilder);
+            let builder: &mut t::BuffersBuilder<_, _, _> =
+                &mut t::BuffersBuilder::new(&mut self.buffer, VertexBuilder);
             use lyon::tessellation::GeometryBuilder;
             builder.begin_geometry();
             for tri in tris {
@@ -295,14 +316,27 @@ impl Mesh {
     }
 
     /// Create a new mesh for a circle.
-    pub fn new_circle(ctx: &mut Context, mode: DrawMode, point: Point2, radius: f32, tolerance: f32) -> GameResult<Mesh> {
+    pub fn new_circle(
+        ctx: &mut Context,
+        mode: DrawMode,
+        point: Point2,
+        radius: f32,
+        tolerance: f32,
+    ) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.circle(mode, point, radius, tolerance);
         mb.build(ctx)
     }
 
     /// Create a new mesh for an ellipse.
-    pub fn new_ellipse(ctx: &mut Context, mode: DrawMode, point: Point2, radius1: f32, radius2: f32, tolerance: f32) -> GameResult<Mesh> {
+    pub fn new_ellipse(
+        ctx: &mut Context,
+        mode: DrawMode,
+        point: Point2,
+        radius1: f32,
+        radius2: f32,
+        tolerance: f32,
+    ) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.ellipse(mode, point, radius1, radius2, tolerance);
         mb.build(ctx)

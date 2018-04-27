@@ -42,7 +42,8 @@ use sdl2::keyboard;
 use context::Context;
 use GameResult;
 
-pub use sdl2::keyboard::{CAPSMOD, LALTMOD, LCTRLMOD, LGUIMOD, LSHIFTMOD, MODEMOD, NOMOD, NUMMOD, RALTMOD, RCTRLMOD, RESERVEDMOD, RGUIMOD, RSHIFTMOD};
+pub use sdl2::keyboard::{CAPSMOD, LALTMOD, LCTRLMOD, LGUIMOD, LSHIFTMOD, MODEMOD, NOMOD, NUMMOD,
+                         RALTMOD, RCTRLMOD, RESERVEDMOD, RGUIMOD, RSHIFTMOD};
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
@@ -64,14 +65,37 @@ pub trait EventHandler {
     fn draw(&mut self, _ctx: &mut Context) -> GameResult<()>;
 
     /// A mouse button was pressed
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, _button: mouse::MouseButton, _x: i32, _y: i32) {}
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: mouse::MouseButton,
+        _x: i32,
+        _y: i32,
+    ) {
+    }
 
     /// A mouse button was released
-    fn mouse_button_up_event(&mut self, _ctx: &mut Context, _button: mouse::MouseButton, _x: i32, _y: i32) {}
+    fn mouse_button_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: mouse::MouseButton,
+        _x: i32,
+        _y: i32,
+    ) {
+    }
 
     /// The mouse was moved; it provides both absolute x and y coordinates in the window,
     /// and relative x and y coordinates compared to its last position.
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, _state: mouse::MouseState, _x: i32, _y: i32, _xrel: i32, _yrel: i32) {}
+    fn mouse_motion_event(
+        &mut self,
+        _ctx: &mut Context,
+        _state: mouse::MouseState,
+        _x: i32,
+        _y: i32,
+        _xrel: i32,
+        _yrel: i32,
+    ) {
+    }
 
     /// The mousewheel was scrolled, vertically (y, positive away from and negative toward the user)
     /// or horizontally (x, positive to the right and negative to the left).
@@ -85,14 +109,16 @@ pub trait EventHandler {
     }
 
     /// A keyboard button was released.
-    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: Keycode, _keymod: Mod, _repeat: bool) {}
+    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: Keycode, _keymod: Mod, _repeat: bool) {
+    }
 
     /// Candidate text is passed by the OS (via Input Method Editor).
     /// Refer to:
     /// <https://wiki.libsdl.org/SDL_TextEditingEvent>
     /// <https://wiki.libsdl.org/SDL_TextInputEvent>
     /// <https://wiki.libsdl.org/Tutorials/TextInput>
-    fn text_editing_event(&mut self, _ctx: &mut Context, _text: String, _start: i32, _length: i32) {}
+    fn text_editing_event(&mut self, _ctx: &mut Context, _text: String, _start: i32, _length: i32) {
+    }
 
     /// Resulting text (usually a unicode character) is passed by the OS (via Input Method Editor).
     /// Refer to:
@@ -102,11 +128,24 @@ pub trait EventHandler {
     fn text_input_event(&mut self, _ctx: &mut Context, _text: String) {}
 
     /// A controller button was pressed; instance_id identifies which controller.
-    fn controller_button_down_event(&mut self, _ctx: &mut Context, _btn: Button, _instance_id: i32) {}
+    fn controller_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _btn: Button,
+        _instance_id: i32,
+    ) {
+    }
     /// A controller button was released.
     fn controller_button_up_event(&mut self, _ctx: &mut Context, _btn: Button, _instance_id: i32) {}
     /// A controller axis moved.
-    fn controller_axis_event(&mut self, _ctx: &mut Context, _axis: Axis, _value: i16, _instance_id: i32) {}
+    fn controller_axis_event(
+        &mut self,
+        _ctx: &mut Context,
+        _axis: Axis,
+        _value: i16,
+        _instance_id: i32,
+    ) {
+    }
 
     /// Called when the window is shown or hidden.
     fn focus_event(&mut self, _ctx: &mut Context, _gained: bool) {}
@@ -213,8 +252,12 @@ where
                     state.mouse_motion_event(ctx, mousestate, x, y, xrel, yrel);
                 }
                 MouseWheel { x, y, .. } => state.mouse_wheel_event(ctx, x, y),
-                ControllerButtonDown { button, which, .. } => state.controller_button_down_event(ctx, button, which),
-                ControllerButtonUp { button, which, .. } => state.controller_button_up_event(ctx, button, which),
+                ControllerButtonDown { button, which, .. } => {
+                    state.controller_button_down_event(ctx, button, which)
+                }
+                ControllerButtonUp { button, which, .. } => {
+                    state.controller_button_up_event(ctx, button, which)
+                }
                 ControllerAxisMotion {
                     axis, value, which, ..
                 } => state.controller_axis_event(ctx, axis, value, which),

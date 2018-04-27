@@ -52,7 +52,8 @@ impl DrawParam {
         type Vec3 = na::Vector3<f32>;
         let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
         let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
-        let offset_inverse = Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
+        let offset_inverse =
+            Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
         let axis_angle = Vec3::z() * self.rotation;
         let rotation = Matrix4::new_rotation(axis_angle);
         let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));

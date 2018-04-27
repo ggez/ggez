@@ -83,7 +83,13 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
         let rotation = timer::get_ticks(ctx) % 1000;
         graphics::set_color(ctx, graphics::WHITE)?;
-        let circle = graphics::Mesh::new_circle(ctx, DrawMode::Line(3.0), Point2::new(0.0, 0.0), 100.0, 4.0)?;
+        let circle = graphics::Mesh::new_circle(
+            ctx,
+            DrawMode::Line(3.0),
+            Point2::new(0.0, 0.0),
+            100.0,
+            4.0,
+        )?;
         graphics::draw(ctx, &self.image, Point2::new(400.0, 300.0), 0.0)?;
         graphics::draw(ctx, &circle, Point2::new(400.0, 300.0), rotation as f32)?;
 
@@ -111,7 +117,13 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, _btn: event::MouseButton, x: i32, y: i32) {
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _btn: event::MouseButton,
+        x: i32,
+        y: i32,
+    ) {
         println!("Button clicked at: {} {}", x, y);
     }
 
@@ -125,31 +137,36 @@ impl event::EventHandler for MainState {
                 Keycode::H => {
                     self.window_settings.window_size_toggle = true;
                     self.window_settings.resolution_index += 1;
-                    self.window_settings.resolution_index %= self.window_settings.num_of_resolutions;
+                    self.window_settings.resolution_index %=
+                        self.window_settings.num_of_resolutions;
                 }
                 Keycode::G => {
                     if self.window_settings.resolution_index > 0 {
                         self.window_settings.window_size_toggle = true;
                         self.window_settings.resolution_index -= 1;
-                        self.window_settings.resolution_index %= self.window_settings.num_of_resolutions;
+                        self.window_settings.resolution_index %=
+                            self.window_settings.num_of_resolutions;
                     }
                 }
                 Keycode::Up => {
                     self.zoom += 0.1;
                     println!("Zoom is now {}", self.zoom);
                     let (w, h) = graphics::get_size(ctx);
-                    let new_rect = graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
+                    let new_rect =
+                        graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                     graphics::set_screen_coordinates(ctx, new_rect).unwrap();
                 }
                 Keycode::Down => {
                     self.zoom -= 0.1;
                     println!("Zoom is now {}", self.zoom);
                     let (w, h) = graphics::get_size(ctx);
-                    let new_rect = graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
+                    let new_rect =
+                        graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                     graphics::set_screen_coordinates(ctx, new_rect).unwrap();
                 }
                 Keycode::Space => {
-                    self.window_settings.resize_projection = !self.window_settings.resize_projection;
+                    self.window_settings.resize_projection =
+                        !self.window_settings.resize_projection;
                     println!(
                         "Resizing the projection on window resize is now: {}",
                         self.window_settings.resize_projection
@@ -179,7 +196,9 @@ fn print_help() {
     println!("    F: toggle fullscreen");
     println!("    G/H: Increase/decrease window sizes");
     println!("    Up/Down: Zoom in/out");
-    println!("    Spacebar: Toggle whether or not to resize the projection when the window is resized");
+    println!(
+        "    Spacebar: Toggle whether or not to resize the projection when the window is resized"
+    );
     println!("    ");
     println!("    To see command-line options, run with `cargo run --example graphics_settings -- --help`");
     println!("    ");
@@ -203,7 +222,8 @@ pub fn main() {
         .expect("Option msaa needs to be a number!");
     let mut c = conf::Conf::new();
     c.window_mode.fullscreen_type = conf::FullscreenType::Off;
-    c.window_setup.samples = conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
+    c.window_setup.samples =
+        conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
     c.window_setup.resizable = true;
     println!("{:?}", c);
 
