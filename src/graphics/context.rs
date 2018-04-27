@@ -97,11 +97,32 @@ impl GraphicsContext {
         }
         let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
             gfx_window_sdl::init(video, window_builder)?;
-
-        GraphicsContext::set_vsync(video, window_mode.vsync)?;
-
+        
         let display_index = window.display_index()?;
         let dpi = window.subsystem().display_dpi(display_index)?;
+        
+        GraphicsContext::set_vsync(video, window_mode.vsync)?;
+        {
+            // Log a bunch of debug info
+            let vsync = video.gl_get_swap_interval();
+            let gl_attr = video.gl_attr();
+            let (major, minor) = gl_attr.context_version();
+            let profile = gl_attr.context_profile();
+            let (w, h) = window.size();
+            let (dw, dh) = window.drawable_size();
+            let info = device.get_info();
+            // gfx doesn't allow us to get the OpenGL vendor string
+            // and SDL can't do it unless we create a renderer, which
+            // is precluded by us wanting to manage our own OpenGL state.  Hmmmm.
+            debug!("Window created.");
+            debug!("  Asked for     OpenGL {}.{} Core, vsync: {}", backend.major, backend.minor, window_mode.vsync);
+            debug!("  Actually got: OpenGL {}.{} {:?}, vsync: {:?}", major, minor, profile, vsync);
+            debug!("  Window size: {}x{}, drawable size: {}x{}, DPI: {:?}", w, h, dw, dh, dpi);
+            debug!("  Driver vendor: {}, renderer {}, version {:?}, shading language {:?}", 
+                   info.platform_name.vendor,
+                   info.platform_name.renderer,
+                   info.version, info.shading_language);
+        }
 
         // GFX SETUP
         let mut encoder: gfx::Encoder<

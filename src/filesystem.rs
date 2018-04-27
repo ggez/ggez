@@ -122,6 +122,7 @@ impl Filesystem {
         {
             resources_path = root_path.clone();
             resources_path.push("resources");
+            trace!("Resources path: {:?}", resources_path);
             let physfs = vfs::PhysicalFS::new(&resources_path, true);
             overlay.push_back(Box::new(physfs));
         }
@@ -131,8 +132,11 @@ impl Filesystem {
             resources_zip_path = root_path.clone();
             resources_zip_path.push("resources.zip");
             if resources_zip_path.exists() {
+                trace!("Resources zip file: {:?}", resources_zip_path);
                 let zipfs = vfs::ZipFS::new(&resources_zip_path)?;
                 overlay.push_back(Box::new(zipfs));
+            } else {
+                trace!("No resources zip file found");
             }
         }
 
@@ -140,6 +144,7 @@ impl Filesystem {
         // ~/.local/share/whatever/
         {
             user_data_path = get_app_root(AppDataType::UserData, &app_info)?;
+            trace!("User-local data path: {:?}", user_data_path);
             let physfs = vfs::PhysicalFS::new(&user_data_path, true);
             overlay.push_back(Box::new(physfs));
         }
@@ -148,6 +153,7 @@ impl Filesystem {
         // Save game dir is read-write
         {
             user_config_path = get_app_root(AppDataType::UserConfig, &app_info)?;
+            trace!("User-local configuration path: {:?}", user_data_path);
             let physfs = vfs::PhysicalFS::new(&user_config_path, false);
             overlay.push_back(Box::new(physfs));
         }
@@ -158,6 +164,7 @@ impl Filesystem {
             if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
                 let mut path = path::PathBuf::from(manifest_dir);
                 path.push("resources");
+                trace!("Cargo manifest resource path: {:?}", user_data_path);
                 let physfs = vfs::PhysicalFS::new(&path, true);
                 overlay.push_back(Box::new(physfs));
             }
@@ -289,6 +296,25 @@ impl Filesystem {
         }
     }
 
+    /// Outputs the contents of all data directories,
+    /// using the "info" log level of the `log` crate.
+    /// Useful for debugging.
+    ///
+    /// See the `logging` example for how to collect
+    /// log information.
+    pub fn log_all(&mut self) {
+        for vfs in self.vfs.roots() {
+            info!("Source {:?}", vfs);
+            match vfs.read_dir(path::Path::new("/")) {
+                Ok(files) => for itm in files {
+                    info!("  {:?}", itm);
+                },
+                Err(e) => warn!(" Could not read source: {:?}", e),
+            }
+        }
+    }
+
+
     /// Adds the given (absolute) path to the list of directories
     /// it will search to look for resources.
     ///
@@ -298,6 +324,7 @@ impl Filesystem {
     /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
     pub fn mount(&mut self, path: &path::Path, readonly: bool) {
         let physfs = vfs::PhysicalFS::new(path, readonly);
+        trace!("Mounting new path: {:?}", physfs);
         self.vfs.push_back(Box::new(physfs));
     }
 

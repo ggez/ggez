@@ -152,7 +152,17 @@ impl Context {
         let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(game_id, author)?;
 
-        let config = fs.read_config().unwrap_or(default_config);
+        
+        let config = match fs.read_config() {
+            Ok(config) => {
+                info!("Loading conf.toml");
+                config
+            },
+            Err(e) => {
+                info!("Could not load conf.toml, using default: {:?}", e);
+                default_config
+            }
+        };
 
         Context::from_conf(config, fs, sdl_context)
     }
@@ -160,6 +170,7 @@ impl Context {
     /// Prints out information on the resources subsystem.
     pub fn print_resource_stats(&mut self) {
         // TODO: consider using logging macros.
+        // ACTUALLY TODO: Deprecate this in favor of filesystem.log_all()
         self.filesystem.print_all();
     }
 
@@ -293,9 +304,8 @@ static DEBUG_ID_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 /// is contained in each thing created from the Context which contains
 /// data that becomes invalid when the Context goes away (ie, texture
 /// handles).  When compiling without assertions (ie in release mode) it
-/// is replaced with a zero-size type, compiles down to nothing, and
-/// since all comparisons with it will be true, should disappear entirely
-/// with a puff of logic.
+/// is replaced with a zero-size type, compiles down to nothing, 
+/// and should disappear entirely with a puff of optimization logic.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg(debug_assertions)]
 pub(crate) struct DebugId(u32);

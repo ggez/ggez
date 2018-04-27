@@ -243,6 +243,7 @@ fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
             print!("Requesting GL {}.{}... ", major, minor);
             let window_builder = video.window("so full of hate", 640, 480);
             let result = gfx_window_sdl::init::<ColorFormat, DepthFormat>(video, window_builder);
+            // This is actually wrong, it needs to re-fetch the GLAttr
             match result {
                 Ok(_) => println!(
                     "Ok, got GL {}.{}.",
