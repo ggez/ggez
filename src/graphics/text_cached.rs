@@ -1,8 +1,7 @@
 use super::*;
 
 use graphics::text::Font;
-use gfx_glyph::{GlyphBrush, GlyphBrushBuilder, Section};
-pub use gfx_glyph::FontId;
+use gfx_glyph::{FontId, Scale, Section};
 use rusttype::Font as TTFFont;
 
 /// TODO: doc me
@@ -31,13 +30,19 @@ impl TextCached {
 
 impl Drawable for TextCached {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
-        let coords = param.dest.coords;
+        let (coords, color) = (
+            param.dest.coords,
+            match param.color{
+                Some(color) => color,
+                None => get_color(ctx),
+            },
+        );
         ctx.gfx_context.glyph_brush.queue(Section {
             text: &self.contents,
             screen_position: (coords[0], coords[1]),
             //bounds: (f32, f32),
             //scale: Scale,
-            //color: [f32; 4],
+            color: <[f32; 4]>::from(color),
             //z: f32,
             //layout: Layout<BuiltInLineBreaker>,
             font_id: self.font_id,

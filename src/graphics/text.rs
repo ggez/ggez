@@ -4,6 +4,7 @@ use std::path;
 use std::collections::BTreeMap;
 use std::io::Read;
 
+use gfx_glyph::FontId;
 use rusttype;
 use image;
 use image::RgbaImage;
