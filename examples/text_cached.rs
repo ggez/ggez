@@ -21,8 +21,8 @@ impl MainState {
         let font = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 40)?;
         let font_too = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 50)?;
 
-        let text = graphics::TextCached::new(ctx, "Hello", font)?;
-        let text_too = graphics::TextCached::new(ctx, "World!", font_too)?;
+        let text = graphics::TextCached::new(ctx, "Hello", &font)?;
+        let text_too = graphics::TextCached::new(ctx, "World!", &font_too)?;
 
         let s = MainState {
             text,

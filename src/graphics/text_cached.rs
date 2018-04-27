@@ -7,17 +7,19 @@ use rusttype::Font as TTFFont;
 /// TODO: doc me
 #[derive(Clone, Debug)]
 pub struct TextCached {
-    font: Font,
+    font_id: FontId,
+    scale: Scale,
     contents: String,
     blend_mode: Option<BlendMode>,
 }
 
 impl TextCached {
     /// TODO: doc me
-    pub fn new(context: &mut Context, text: &str, font: Font) -> GameResult<TextCached> {
-        if let Font::GlyphFont { .. } = font {
+    pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<TextCached> {
+        if let &Font::GlyphFont { font_id, scale } = font {
             return Ok(TextCached {
-                font,
+                font_id,
+                scale,
                 contents: text.to_string(),
                 blend_mode: None,
             });
@@ -37,19 +39,18 @@ impl Drawable for TextCached {
                 None => get_color(ctx),
             },
         );
-        if let Font::GlyphFont { font_id, scale, .. } = self.font {
-            ctx.gfx_context.glyph_brush.queue(Section {
-                text: &self.contents,
-                screen_position: (coords[0], coords[1]),
-                //bounds: (f32, f32),
-                scale,
-                color: <[f32; 4]>::from(color),
-                //z: f32,
-                //layout: Layout<BuiltInLineBreaker>,
-                font_id,
-                ..Section::default()
-            });
-        }
+        let (font_id, scale) = (self.font_id, self.scale);
+        ctx.gfx_context.glyph_brush.queue(Section {
+            text: &self.contents,
+            screen_position: (coords[0], coords[1]),
+            //bounds: (f32, f32),
+            scale,
+            color: <[f32; 4]>::from(color),
+            //z: f32,
+            //layout: Layout<BuiltInLineBreaker>,
+            font_id,
+            ..Section::default()
+        });
         let (encoder, render_tgt, depth_view) = (
             &mut ctx.gfx_context.encoder,
             &ctx.gfx_context.screen_render_target,
