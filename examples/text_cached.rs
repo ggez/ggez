@@ -6,29 +6,33 @@ extern crate ggez;
 use ggez::conf;
 use ggez::event;
 use ggez::{Context, GameResult};
-use ggez::graphics;
+use ggez::graphics::{self, Point2};
 use std::env;
 use std::path;
 
 struct MainState {
     text: graphics::TextCached,
+    text_too: graphics::TextCached,
     frames: usize,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
-        let font_too = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
-        graphics::TextCached::load_fonts(ctx, &[font, font_too])?;
-        let text = graphics::TextCached::new(ctx, "Hello!", graphics::FontId(0))?;
+        let font = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf")?;
+        let font_too = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf")?;
+        //graphics::TextCached::load_fonts(ctx, &[font, font_too])?;
+        let text = graphics::TextCached::new(ctx, "Hello", font)?;
+        let text_too = graphics::TextCached::new(ctx, "World!", font_too)?;
 
         let s = MainState {
             text,
+            text_too,
             frames: 0,
         };
         Ok(s)
     }
 }
+
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         Ok(())
@@ -37,8 +41,8 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        let dest_point = graphics::Point2::new(10.0, 10.0);
-        graphics::draw(ctx, &self.text, dest_point, 0.0)?;
+        graphics::draw(ctx, &self.text, Point2::new(10.0, 10.0), 0.0)?;
+        graphics::draw(ctx, &self.text_too, Point2::new(50.0, 10.0), 0.0)?;
         graphics::present(ctx);
 
         self.frames += 1;

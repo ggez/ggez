@@ -13,40 +13,19 @@ pub struct TextCached {
     blend_mode: Option<BlendMode>,
 }
 
-/// TODO: doc me
-fn unpack_font_enum(font: &Font) -> GameResult<&TTFFont<'static>> {
-    match *font {
-        Font::TTFFont { ref font, .. } => Ok(font),
-        Font::BitmapFontVariant(_) => {
-            return Err(GameError::FontError(
-                "Only TTF fonts can be used with TextCached!".into(),
-            ))
-        }
-    }
-}
-
 impl TextCached {
     /// TODO: doc me
-    pub fn load_fonts(context: &mut Context, fonts: &[Font]) -> GameResult<()> {
-        let mut fonts = fonts.iter();
-        let first = unpack_font_enum(fonts.next().unwrap())?;
-        let mut brush_builder = GlyphBrushBuilder::using_font(first.clone());
-        for font in fonts {
-            let font = unpack_font_enum(font)?;
-            brush_builder.add_font(font.clone());
+    pub fn new(context: &mut Context, text: &str, font: Font) -> GameResult<TextCached> {
+        if let Font::GlyphFont { font_id } = font {
+            return Ok(TextCached {
+                font_id,
+                contents: text.to_string(),
+                blend_mode: None,
+            })
         }
-        let factory = *context.gfx_context.factory.clone();
-        context.gfx_context.glyph_brush = brush_builder.build(factory);
-        Ok(())
-    }
-
-    /// TODO: doc me
-    pub fn new(context: &mut Context, text: &str, font_id: FontId) -> GameResult<TextCached> {
-        Ok(TextCached {
-            font_id: font_id.clone(),
-            contents: text.to_string(),
-            blend_mode: None,
-        })
+        Err(GameError::FontError(
+            "`TextCached` can only be used with a `Font::GlyphFont`!".into(),
+        ))
     }
 }
 

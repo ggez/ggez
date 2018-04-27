@@ -25,6 +25,11 @@ pub enum Font {
     },
     /// A bitmap font where letter widths are infered
     BitmapFontVariant(BitmapFont),
+    /// A TrueType font stored in `GraphicsContext::glyph_brush`
+    GlyphFont {
+        /// A handle to retrieve the font by
+        font_id: FontId,
+    },
 }
 
 /// A bitmap font where letter widths are infered
@@ -206,6 +211,19 @@ impl Font {
         }))
     }
 
+    /// Loads a new TrueType font from given file and into `GraphicsContext::glyph_brush`.
+    pub fn new_glyph_font<P>(context: &mut Context, path: P) -> GameResult<Self>
+        where
+            P: AsRef<path::Path> + fmt::Debug {
+        let mut stream = context.filesystem.open(path.as_ref())?;
+        let mut buf = Vec::new();
+        stream.read_to_end(&mut buf)?;
+        let font_id = context.gfx_context.glyph_brush.add_font_bytes(buf);
+        Ok(Font::GlyphFont {
+            font_id,
+        })
+    }
+
     /// Returns a baked-in default font: currently DejaVuSerif.ttf
     /// Note it does create a new `Font` object with every call.
     pub fn default_font() -> GameResult<Self> {
@@ -227,6 +245,7 @@ impl Font {
         match *self {
             Font::BitmapFontVariant(BitmapFont { height, .. }) => height,
             Font::TTFFont { scale, .. } => scale.y.ceil() as usize,
+            Font::GlyphFont { .. } => 0,
         }
     }
 
@@ -246,6 +265,7 @@ impl Font {
                     font.layout(text, scale, offset).collect();
                 text_width(&glyphs) as usize
             }
+            Font::GlyphFont { .. } => 0
         }
     }
 
@@ -309,6 +329,7 @@ impl fmt::Debug for Font {
         match *self {
             Font::TTFFont { .. } => write!(f, "<TTFFont: {:p}>", &self),
             Font::BitmapFontVariant(BitmapFont { .. }) => write!(f, "<BitmapFont: {:p}>", &self),
+            Font::GlyphFont { .. } => write!(f, "<GlyphFont: {:p}>", &self),
         }
     }
 }
@@ -533,6 +554,9 @@ impl Text {
                 font: ref f, scale, ..
             } => render_ttf(context, text, f, scale),
             Font::BitmapFontVariant(ref font) => render_dynamic_bitmap(context, text, font),
+            Font::GlyphFont { .. } => Err(GameError::FontError(
+                "`Text` can't be created with a `Font::GlyphFont` (yet)!".into(),
+            )),
         }
     }
 
