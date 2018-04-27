@@ -89,20 +89,22 @@ impl Font {
 
     /// Loads a new TTF font from data copied out of the given buffer.
     pub fn from_bytes(name: &str, bytes: &[u8], points: u32, dpi: (f32, f32)) -> GameResult<Font> {
-        let font_collection_err = &|_| GameError::ResourceLoadError(format!(
-            "Could not load font collection for \
-             font {:?}",
-            name
-        ));
-        let collection = rusttype::FontCollection::from_bytes(bytes.to_vec())
-            .map_err(font_collection_err)?;
-        let font_err = &|_| GameError::ResourceLoadError(format!(
-            "Could not retrieve font from collection for \
-             font {:?}",
-            name
-        ));
-        let font = collection.into_font()
-            .map_err(font_err)?;
+        let font_collection_err = &|_| {
+            GameError::ResourceLoadError(format!(
+                "Could not load font collection for \
+                 font {:?}",
+                name
+            ))
+        };
+        let collection = rusttype::FontCollection::from_bytes(bytes.to_vec()).map_err(font_collection_err)?;
+        let font_err = &|_| {
+            GameError::ResourceLoadError(format!(
+                "Could not retrieve font from collection for \
+                 font {:?}",
+                name
+            ))
+        };
+        let font = collection.into_font().map_err(font_err)?;
         let (x_dpi, y_dpi) = dpi;
         // println!("DPI: {}, {}", x_dpi, y_dpi);
         let scale = display_independent_scale(points, x_dpi, y_dpi);
@@ -117,11 +119,7 @@ impl Font {
     /// Creates a bitmap font from a long image of its alphabet, specified by `path`.
     /// The width of each individual chars is assumed to be to be
     /// image(path).width/glyphs.chars().count()
-    pub fn new_bitmap<P: AsRef<path::Path>>(
-        context: &mut Context,
-        path: P,
-        glyphs: &str,
-    ) -> GameResult<Font> {
+    pub fn new_bitmap<P: AsRef<path::Path>>(context: &mut Context, path: P, glyphs: &str) -> GameResult<Font> {
         let img = {
             let mut buf = Vec::new();
             let mut reader = context.filesystem.open(path)?;
@@ -173,8 +171,7 @@ impl Font {
         while start < image_width as usize {
             if column_has_content(start, &img) {
                 let mut span = 1;
-                while start + span < image_width as usize && column_has_content(start + span, &img)
-                {
+                while start + span < image_width as usize && column_has_content(start + span, &img) {
                     span += 1;
                 }
                 let next_char: char = glyphos
@@ -234,16 +231,13 @@ impl Font {
     /// Does not handle line-breaks.
     pub fn get_width(&self, text: &str) -> usize {
         match *self {
-            Font::BitmapFontVariant(ref font) => {
-                compute_variable_bitmap_text_rendering_span(text, font)
-            }
+            Font::BitmapFontVariant(ref font) => compute_variable_bitmap_text_rendering_span(text, font),
             Font::TTFFont {
                 ref font, scale, ..
             } => {
                 let v_metrics = font.v_metrics(scale);
                 let offset = rusttype::point(0.0, v_metrics.ascent);
-                let glyphs: Vec<rusttype::PositionedGlyph> =
-                    font.layout(text, scale, offset).collect();
+                let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
                 text_width(&glyphs) as usize
             }
         }
@@ -350,12 +344,7 @@ fn text_width(glyphs: &[rusttype::PositionedGlyph]) -> f32 {
         .unwrap_or(0.0)
 }
 
-fn render_ttf(
-    context: &mut Context,
-    text: &str,
-    font: &rusttype::Font<'static>,
-    scale: rusttype::Scale,
-) -> GameResult<Text> {
+fn render_ttf(context: &mut Context, text: &str, font: &rusttype::Font<'static>, scale: rusttype::Scale) -> GameResult<Text> {
     // Ripped almost wholesale from
     // https://github.com/dylanede/rusttype/blob/master/examples/simple.rs
 
@@ -386,8 +375,7 @@ fn render_ttf(
                 let x = x as i32 + bb.min.x;
                 let y = y as i32 + bb.min.y;
                 // There's still a possibility that the glyph clips the boundaries of the bitmap
-                if x >= 0 && x < text_width_pixels as i32 && y >= 0 && y < text_height_pixels as i32
-                {
+                if x >= 0 && x < text_width_pixels as i32 && y >= 0 && y < text_height_pixels as i32 {
                     let x = x as usize * bytes_per_pixel;
                     let y = y as usize;
                     pixel_data[(x + y * pitch)] = 255;
@@ -421,16 +409,7 @@ fn render_ttf(
 /// Does no bounds checking or anything; if you feed it invalid bounds it will just panic.
 /// Generally, you shouldn't need to use this directly.
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
-fn blit(
-    dst: &mut [u8],
-    dst_dims: (usize, usize),
-    dst_point: (usize, usize),
-    src: &[u8],
-    src_dims: (usize, usize),
-    src_point: (usize, usize),
-    rect_size: (usize, usize),
-    pitch: usize,
-) {
+fn blit(dst: &mut [u8], dst_dims: (usize, usize), dst_point: (usize, usize), src: &[u8], src_dims: (usize, usize), src_point: (usize, usize), rect_size: (usize, usize), pitch: usize) {
     // The rect properties are all f32's; we truncate them down to integers.
     let area_row_width = rect_size.0 * pitch;
     let src_row_width = src_dims.0 * pitch;
@@ -614,11 +593,9 @@ mod tests {
     fn test_blit() {
         let dst = &mut [0; 125][..];
         let src = &[
-            1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9, 1, 9, 9, 9, 9, 9,
-            9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9, 1, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+            9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0,
         ][..];
         assert_eq!(src.len(), 25 * 5);
 
@@ -686,8 +663,7 @@ mod tests {
     fn test_wrapping() {
         use conf;
         let c = conf::Conf::new();
-        let ctx = &mut Context::load_from_conf("test_wrapping", "ggez", c)
-            .expect("Could not create context?");
+        let ctx = &mut Context::load_from_conf("test_wrapping", "ggez", c).expect("Could not create context?");
         let font = Font::default_font().expect("Could not get default font");
         let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff \
                             other cat's butt and hang jaw half open thereafter for give attitude. \

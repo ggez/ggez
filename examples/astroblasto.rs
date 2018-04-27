@@ -8,7 +8,7 @@ extern crate rand;
 use ggez::{Context, ContextBuilder, GameResult};
 use ggez::audio;
 use ggez::conf;
-use ggez::event::{self, Keycode, Mod, EventHandler};
+use ggez::event::{self, EventHandler, Keycode, Mod};
 use ggez::graphics;
 use ggez::timer;
 use ggez::graphics::{Point2, Vector2};
@@ -420,12 +420,7 @@ fn print_instructions() {
     println!();
 }
 
-fn draw_actor(
-    assets: &mut Assets,
-    ctx: &mut Context,
-    actor: &Actor,
-    world_coords: (u32, u32),
-) -> GameResult<()> {
+fn draw_actor(assets: &mut Assets, ctx: &mut Context, actor: &Actor, world_coords: (u32, u32)) -> GameResult<()> {
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, actor.pos);
     let image = assets.actor_image(actor);

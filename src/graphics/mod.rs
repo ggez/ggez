@@ -73,17 +73,16 @@ pub trait BackendSpec: fmt::Debug {
 /// `Shader` depend on it.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
 pub struct GlBackendSpec {
-    #[default = r#"3"#] major: u8,
-    #[default = r#"2"#] minor: u8,
+    #[default = r#"3"#]
+    major: u8,
+    #[default = r#"2"#]
+    minor: u8,
 }
 
 impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL { major, minor } => Self {
-                major,
-                minor,
-            },
+            conf::Backend::OpenGL { major, minor } => Self { major, minor },
         }
     }
 }
@@ -210,11 +209,7 @@ where
         }
     }
 
-    fn get_or_insert(
-        &mut self,
-        info: texture::SamplerInfo,
-        factory: &mut B::Factory,
-    ) -> gfx::handle::Sampler<B::Resources> {
+    fn get_or_insert(&mut self, info: texture::SamplerInfo, factory: &mut B::Factory) -> gfx::handle::Sampler<B::Resources> {
         let sampler = self.samplers
             .entry(info)
             .or_insert_with(|| factory.create_sampler(info));
@@ -268,9 +263,7 @@ impl From<gfx::buffer::CreationError> for GameError {
                 "Could not create buffer: Unsupported Usage ({:?})",
                 u
             )),
-            CreationError::Other => {
-                GameError::RenderError("Could not create buffer: Unknown error".to_owned())
-            }
+            CreationError::Other => GameError::RenderError("Could not create buffer: Unknown error".to_owned()),
         }
     }
 }
@@ -328,14 +321,13 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     // fiddling with...
     let texture_kind = gfx::texture::Kind::D2(w, h, aa);
     // The format here is the same as is defined in ColorFormat
-    let target_texture: gfx::handle::Texture<_, <ColorFormat as Formatted>::Surface> = gfx.factory
-        .create_texture(
-            texture_kind,
-            1,
-            Bind::TRANSFER_SRC | Bind::TRANSFER_DST | Bind::SHADER_RESOURCE,
-            gfx::memory::Usage::Data,
-            Some(gfx::format::ChannelType::Srgb),
-        )?;
+    let target_texture: gfx::handle::Texture<_, <ColorFormat as Formatted>::Surface> = gfx.factory.create_texture(
+        texture_kind,
+        1,
+        Bind::TRANSFER_SRC | Bind::TRANSFER_DST | Bind::SHADER_RESOURCE,
+        gfx::memory::Usage::Data,
+        Some(gfx::format::ChannelType::Srgb),
+    )?;
 
     let image_info = gfx::texture::ImageInfoCommon {
         xoffset: 0,
@@ -348,8 +340,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         mipmap: 0,
     };
 
-    let mut local_encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
-        gfx.factory.create_command_buffer().into();
+    let mut local_encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> = gfx.factory.create_command_buffer().into();
 
     local_encoder.copy_texture_to_texture_raw(
         gfx.data.out.raw().get_texture(),
@@ -363,11 +354,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     local_encoder.flush(&mut *gfx.device);
 
     let shader_resource = gfx.factory
-        .view_texture_as_shader_resource::<gfx::format::Srgba8>(
-            &target_texture,
-            (0, 0),
-            gfx::format::Swizzle::new(),
-        )?;
+        .view_texture_as_shader_resource::<gfx::format::Srgba8>(&target_texture, (0, 0), gfx::format::Swizzle::new())?;
     let image = Image {
         texture: shader_resource,
         texture_handle: target_texture,
@@ -402,13 +389,7 @@ pub fn arc(_ctx: &mut Context,
 /// you should create the `Mesh` yourself.
 ///
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
-pub fn circle(
-    ctx: &mut Context,
-    mode: DrawMode,
-    point: Point2,
-    radius: f32,
-    tolerance: f32,
-) -> GameResult<()> {
+pub fn circle(ctx: &mut Context, mode: DrawMode, point: Point2, radius: f32, tolerance: f32) -> GameResult<()> {
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
     m.draw(ctx, Point2::origin(), 0.0)
 }
@@ -419,14 +400,7 @@ pub fn circle(
 /// you should create the `Mesh` yourself.
 ///
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
-pub fn ellipse(
-    ctx: &mut Context,
-    mode: DrawMode,
-    point: Point2,
-    radius1: f32,
-    radius2: f32,
-    tolerance: f32,
-) -> GameResult<()> {
+pub fn ellipse(ctx: &mut Context, mode: DrawMode, point: Point2, radius1: f32, radius2: f32, tolerance: f32) -> GameResult<()> {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
     m.draw(ctx, Point2::origin(), 0.0)
 }
@@ -804,28 +778,19 @@ pub fn get_device(context: &mut Context) -> &mut gfx_device_gl::Device {
 }
 
 /// EXPERIMENTAL function to get the gfx-rs `Encoder` object.
-pub fn get_encoder(
-    context: &mut Context,
-) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
+pub fn get_encoder(context: &mut Context) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
     let gfx = &mut context.gfx_context;
     &mut gfx.encoder
 }
 
 /// EXPERIMENTAL function to get the gfx-rs depth view
-pub fn get_depth_view(
-    context: &mut Context,
-) -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
+pub fn get_depth_view(context: &mut Context) -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
     let gfx = &mut context.gfx_context;
     gfx.depth_view.clone()
 }
 
 /// EXPERIMENTAL function to get the gfx-rs color view
-pub fn get_screen_render_target(
-    context: &Context,
-) -> gfx::handle::RenderTargetView<
-    gfx_device_gl::Resources,
-    (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
-> {
+pub fn get_screen_render_target(context: &Context) -> gfx::handle::RenderTargetView<gfx_device_gl::Resources, (gfx::format::R8_G8_B8_A8, gfx::format::Srgb)> {
     let gfx = &context.gfx_context;
     gfx.data.out.clone()
 }
@@ -838,18 +803,9 @@ pub fn get_gfx_objects(
 ) -> (
     &mut <GlBackendSpec as BackendSpec>::Factory,
     &mut <GlBackendSpec as BackendSpec>::Device,
-    &mut gfx::Encoder<
-        <GlBackendSpec as BackendSpec>::Resources,
-        <GlBackendSpec as BackendSpec>::CommandBuffer,
-    >,
-    gfx::handle::DepthStencilView<
-        <GlBackendSpec as BackendSpec>::Resources,
-        gfx::format::DepthStencil,
-    >,
-    gfx::handle::RenderTargetView<
-        <GlBackendSpec as BackendSpec>::Resources,
-        (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
-    >,
+    &mut gfx::Encoder<<GlBackendSpec as BackendSpec>::Resources, <GlBackendSpec as BackendSpec>::CommandBuffer>,
+    gfx::handle::DepthStencilView<<GlBackendSpec as BackendSpec>::Resources, gfx::format::DepthStencil>,
+    gfx::handle::RenderTargetView<<GlBackendSpec as BackendSpec>::Resources, (gfx::format::R8_G8_B8_A8, gfx::format::Srgb)>,
 ) {
     let gfx = &mut context.gfx_context;
     let f = &mut gfx.factory;

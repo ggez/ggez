@@ -37,7 +37,9 @@ impl MainState {
         Ok(MainState {
             frames: 0,
             text_base: String::new(),
-            text_src: "Lorem ipsum dolor sit amet, ferri simul omittantur eam eu, no debet doming dolorem ius.".chars().collect(),
+            text_src: "Lorem ipsum dolor sit amet, ferri simul omittantur eam eu, no debet doming dolorem ius."
+                .chars()
+                .collect(),
             glyph_brush,
             window_w,
             window_h,

@@ -83,9 +83,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> Self {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 18).unwrap();
         let text1 = graphics::Text::new(ctx, "You can mix ggez and gfx drawing;", &font).unwrap();
-        let text2 =
-            graphics::Text::new(ctx, "it basically draws gfx stuff first, then ggez", &font)
-                .unwrap();
+        let text2 = graphics::Text::new(ctx, "it basically draws gfx stuff first, then ggez", &font).unwrap();
 
         let color_view = graphics::get_screen_render_target(ctx);
         let depth_view = graphics::get_depth_view(ctx);
@@ -177,8 +175,7 @@ void main() {
             )
             .unwrap();
 
-        let sinfo =
-            texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
+        let sinfo = texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
 
         // Create pipeline state object
         let pso = factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap();
@@ -218,8 +215,7 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         // Do gfx-rs drawing
         {
-            let (_factory, device, encoder, _depthview, _colorview) =
-                graphics::get_gfx_objects(ctx);
+            let (_factory, device, encoder, _depthview, _colorview) = graphics::get_gfx_objects(ctx);
             encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0]);
 
             let rotation = na::Matrix4::from_scaled_axis(na::Vector3::z() * self.rotation);

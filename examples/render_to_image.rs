@@ -3,7 +3,7 @@
 extern crate ggez;
 
 use ggez::{Context, GameResult};
-use ggez::graphics::{self, DrawParam, Color, Point2};
+use ggez::graphics::{self, Color, DrawParam, Point2};
 use ggez::conf;
 use ggez::event;
 

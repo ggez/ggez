@@ -17,7 +17,6 @@ use timer;
 use GameError;
 use GameResult;
 
-
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
 /// system, timers, and so on.  Generally this type is **not** thread-
@@ -144,20 +143,15 @@ impl Context {
     /// module.  You can also always debug-print the
     /// `Context::filesystem` field to see what paths it is
     /// searching.
-    pub fn load_from_conf(
-        game_id: &'static str,
-        author: &'static str,
-        default_config: conf::Conf,
-    ) -> GameResult<Context> {
+    pub fn load_from_conf(game_id: &'static str, author: &'static str, default_config: conf::Conf) -> GameResult<Context> {
         let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(game_id, author)?;
 
-        
         let config = match fs.read_config() {
             Ok(config) => {
                 info!("Loading conf.toml");
                 config
-            },
+            }
             Err(e) => {
                 info!("Could not load conf.toml, using default: {:?}", e);
                 default_config
@@ -293,10 +287,8 @@ impl ContextBuilder {
     }
 }
 
-
-
 #[cfg(debug_assertions)]
-use std::sync::atomic::{ATOMIC_USIZE_INIT, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 #[cfg(debug_assertions)]
 static DEBUG_ID_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
@@ -304,7 +296,7 @@ static DEBUG_ID_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 /// is contained in each thing created from the Context which contains
 /// data that becomes invalid when the Context goes away (ie, texture
 /// handles).  When compiling without assertions (ie in release mode) it
-/// is replaced with a zero-size type, compiles down to nothing, 
+/// is replaced with a zero-size type, compiles down to nothing,
 /// and should disappear entirely with a puff of optimization logic.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg(debug_assertions)]
@@ -322,7 +314,7 @@ impl DebugId {
         assert!(DEBUG_ID_COUNTER.load(Ordering::SeqCst) as u32 > id);
         DebugId(id)
     }
-    
+
     pub fn get(ctx: &Context) -> Self {
         DebugId(ctx.debug_id.0)
     }
@@ -332,7 +324,6 @@ impl DebugId {
             panic!("Tried to use a resource with a Context that did not create it; this should never happen!");
         }
     }
-            
 }
 
 #[cfg(not(debug_assertions))]
@@ -341,7 +332,6 @@ impl DebugId {
         DebugId
     }
 
-    
     pub fn get(_ctx: &Context) -> Self {
         DebugId
     }
@@ -350,4 +340,3 @@ impl DebugId {
         // Do nothing.
     }
 }
-

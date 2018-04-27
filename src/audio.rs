@@ -29,9 +29,9 @@ impl AudioContext {
     /// Create new AudioContext.
     pub fn new() -> GameResult<AudioContext> {
         let device = rodio::default_output_device().ok_or_else(|| {
-            GameError::AudioError(
-                String::from("Could not initialize sound system (for some reason)",
-                ))
+            GameError::AudioError(String::from(
+                "Could not initialize sound system (for some reason)",
+            ))
         })?;
         Ok(AudioContext { device: device })
     }

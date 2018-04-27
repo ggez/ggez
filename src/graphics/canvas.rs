@@ -41,12 +41,7 @@ pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 impl Canvas {
     /// Create a new canvas with the given size and number of samples.
-    pub fn new(
-        ctx: &mut Context,
-        width: u32,
-        height: u32,
-        samples: NumSamples,
-    ) -> GameResult<Canvas> {
+    pub fn new(ctx: &mut Context, width: u32, height: u32, samples: NumSamples) -> GameResult<Canvas> {
         let debug_id = DebugId::get(ctx);
         let (w, h) = (width as u16, height as u16);
         let aa = match samples {
@@ -64,11 +59,7 @@ impl Canvas {
             Usage::Data,
             Some(cty),
         )?;
-        let resource = factory.view_texture_as_shader_resource::<Srgba8>(
-            &tex,
-            (0, levels - 1),
-            Swizzle::new(),
-        )?;
+        let resource = factory.view_texture_as_shader_resource::<Srgba8>(&tex, (0, levels - 1), Swizzle::new())?;
         let target = factory.view_texture_as_render_target(&tex, 0, None)?;
         Ok(Canvas {
             target,

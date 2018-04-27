@@ -100,10 +100,7 @@ impl Filesystem {
     /// directory path.  This function is called automatically by
     /// ggez, the end user should never need to call it.
     pub fn new(id: &'static str, author: &'static str) -> GameResult<Filesystem> {
-        let app_info = AppInfo {
-            name: id,
-            author,
-        };
+        let app_info = AppInfo { name: id, author };
         let mut root_path = env::current_exe()?;
 
         // Ditch the filename (if any)
@@ -190,11 +187,7 @@ impl Filesystem {
     /// Opens a file in the user directory with the given `filesystem::OpenOptions`.
     /// Note that even if you open a file read-only, it can only access
     /// files in the user directory.
-    pub fn open_options<P: AsRef<path::Path>>(
-        &mut self,
-        path: P,
-        options: &OpenOptions,
-    ) -> GameResult<File> {
+    pub fn open_options<P: AsRef<path::Path>>(&mut self, path: P, options: &OpenOptions) -> GameResult<File> {
         self.vfs
             .open_options(path.as_ref(), options)
             .map(|f| File::VfsFile(f))
@@ -272,13 +265,10 @@ impl Filesystem {
     /// in no particular order.
     ///
     /// Lists the base directory if an empty path is given.
-    pub fn read_dir<P: AsRef<path::Path>>(
-        &mut self,
-        path: P,
-    ) -> GameResult<Box<Iterator<Item = path::PathBuf>>> {
-        let itr = self.vfs.read_dir(path.as_ref())?.map(|fname| {
-            fname.expect("Could not read file in read_dir()?  Should never happen, I hope!")
-        });
+    pub fn read_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<Box<Iterator<Item = path::PathBuf>>> {
+        let itr = self.vfs
+            .read_dir(path.as_ref())?
+            .map(|fname| fname.expect("Could not read file in read_dir()?  Should never happen, I hope!"));
         Ok(Box::new(itr))
     }
 
@@ -313,7 +303,6 @@ impl Filesystem {
             }
         }
     }
-
 
     /// Adds the given (absolute) path to the list of directories
     /// it will search to look for resources.

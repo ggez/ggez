@@ -122,12 +122,8 @@ impl From<sdl2::IntegerOrSdlError> for GameError {
 impl From<sdl2::filesystem::PrefPathError> for GameError {
     fn from(e: sdl2::filesystem::PrefPathError) -> GameError {
         let msg = match e {
-            sdl2::filesystem::PrefPathError::InvalidOrganizationName(e) => {
-                format!("Invalid organization name, {}", e)
-            }
-            sdl2::filesystem::PrefPathError::InvalidApplicationName(e) => {
-                format!("Invalid application name, {}", e)
-            }
+            sdl2::filesystem::PrefPathError::InvalidOrganizationName(e) => format!("Invalid organization name, {}", e),
+            sdl2::filesystem::PrefPathError::InvalidApplicationName(e) => format!("Invalid application name, {}", e),
             sdl2::filesystem::PrefPathError::SdlError(e) => e,
         };
         GameError::ConfigError(msg)
@@ -259,6 +255,3 @@ impl From<gfx::shade::ProgramError> for GameError {
         GameError::ShaderProgramError(e)
     }
 }
-
-
-

@@ -31,12 +31,12 @@ where
     pub(crate) backend_spec: B,
     pub(crate) window: sdl2::video::Window,
     pub(crate) multisample_samples: u8,
-    #[allow(dead_code)] gl_context: sdl2::video::GLContext,
+    #[allow(dead_code)]
+    gl_context: sdl2::video::GLContext,
     pub(crate) device: Box<B::Device>,
     pub(crate) factory: Box<B::Factory>,
     pub(crate) encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
-    pub(crate) screen_render_target:
-        gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
+    pub(crate) screen_render_target: gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
     #[allow(dead_code)]
     pub(crate) depth_view: gfx::handle::DepthStencilView<B::Resources, gfx::format::DepthStencil>,
 
@@ -50,7 +50,6 @@ where
     default_shader: ShaderId,
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<ShaderHandle<B>>>,
-
 }
 
 impl<B> fmt::Debug for GraphicsContextGeneric<B>
@@ -67,13 +66,7 @@ pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec>;
 
 impl GraphicsContext {
     /// Create a new GraphicsContext
-    pub(crate) fn new(
-        video: &sdl2::VideoSubsystem,
-        window_setup: &WindowSetup,
-        window_mode: WindowMode,
-        backend: GlBackendSpec,
-        debug_id: DebugId,
-    ) -> GameResult<GraphicsContext> {
+    pub(crate) fn new(video: &sdl2::VideoSubsystem, window_setup: &WindowSetup, window_mode: WindowMode, backend: GlBackendSpec, debug_id: DebugId) -> GameResult<GraphicsContext> {
         // WINDOW SETUP
         let gl = video.gl_attr();
         gl.set_context_version(backend.major, backend.minor);
@@ -87,20 +80,18 @@ impl GraphicsContext {
             gl.set_multisample_buffers(1);
             gl.set_multisample_samples(samples);
         }
-        let mut window_builder =
-            video.window(&window_setup.title, window_mode.width, window_mode.height);
+        let mut window_builder = video.window(&window_setup.title, window_mode.width, window_mode.height);
         if window_setup.resizable {
             window_builder.resizable();
         }
         if window_setup.allow_highdpi {
             window_builder.allow_highdpi();
         }
-        let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
-            gfx_window_sdl::init(video, window_builder)?;
-        
+        let (window, gl_context, device, mut factory, screen_render_target, depth_view) = gfx_window_sdl::init(video, window_builder)?;
+
         let display_index = window.display_index()?;
         let dpi = window.subsystem().display_dpi(display_index)?;
-        
+
         GraphicsContext::set_vsync(video, window_mode.vsync)?;
         {
             // Log a bunch of debug info
@@ -115,20 +106,26 @@ impl GraphicsContext {
             // and SDL can't do it unless we create a renderer, which
             // is precluded by us wanting to manage our own OpenGL state.  Hmmmm.
             debug!("Window created.");
-            debug!("  Asked for     OpenGL {}.{} Core, vsync: {}", backend.major, backend.minor, window_mode.vsync);
-            debug!("  Actually got: OpenGL {}.{} {:?}, vsync: {:?}", major, minor, profile, vsync);
-            debug!("  Window size: {}x{}, drawable size: {}x{}, DPI: {:?}", w, h, dw, dh, dpi);
-            debug!("  Driver vendor: {}, renderer {}, version {:?}, shading language {:?}", 
-                   info.platform_name.vendor,
-                   info.platform_name.renderer,
-                   info.version, info.shading_language);
+            debug!(
+                "  Asked for     OpenGL {}.{} Core, vsync: {}",
+                backend.major, backend.minor, window_mode.vsync
+            );
+            debug!(
+                "  Actually got: OpenGL {}.{} {:?}, vsync: {:?}",
+                major, minor, profile, vsync
+            );
+            debug!(
+                "  Window size: {}x{}, drawable size: {}x{}, DPI: {:?}",
+                w, h, dw, dh, dpi
+            );
+            debug!(
+                "  Driver vendor: {}, renderer {}, version {:?}, shading language {:?}",
+                info.platform_name.vendor, info.platform_name.renderer, info.version, info.shading_language
+            );
         }
 
         // GFX SETUP
-        let mut encoder: gfx::Encoder<
-            gfx_device_gl::Resources,
-            gfx_device_gl::CommandBuffer,
-        > = factory.create_command_buffer().into();
+        let mut encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> = factory.create_command_buffer().into();
 
         let blend_modes = [
             BlendMode::Alpha,
@@ -159,18 +156,22 @@ impl GraphicsContext {
             gfx::memory::Bind::SHADER_RESOURCE,
         )?;
 
-        let (quad_vertex_buffer, mut quad_slice) =
-            factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
+        let (quad_vertex_buffer, mut quad_slice) = factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
 
         quad_slice.instances = Some((1, 0));
 
         let globals_buffer = factory.create_constant_buffer(1);
         let mut samplers: SamplerCache<GlBackendSpec> = SamplerCache::new();
-        let sampler_info =
-            texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
+        let sampler_info = texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
-        let white_image =
-            Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255], debug_id)?;
+        let white_image = Image::make_raw(
+            &mut factory,
+            &sampler_info,
+            1,
+            1,
+            &[255, 255, 255, 255],
+            debug_id,
+        )?;
         let texture = white_image.texture.clone();
 
         let data = pipe::Data {
@@ -312,10 +313,7 @@ impl GraphicsContext {
 
     /// Draws with the current encoder, slice, and pixel shader. Prefer calling
     /// this method from `Drawables` so that the pixel shader gets used
-    pub(crate) fn draw(
-        &mut self,
-        slice: Option<&gfx::Slice<gfx_device_gl::Resources>>,
-    ) -> GameResult<()> {
+    pub(crate) fn draw(&mut self, slice: Option<&gfx::Slice<gfx_device_gl::Resources>>) -> GameResult<()> {
         let slice = slice.unwrap_or(&self.quad_slice);
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
         let shader_handle = &self.shaders[id];
@@ -345,9 +343,7 @@ impl GraphicsContext {
     pub(crate) fn set_projection_rect(&mut self, rect: Rect) {
         type Vec3 = na::Vector3<f32>;
         self.screen_rect = rect;
-        self.projection =
-            Matrix4::new_orthographic(rect.x, rect.x + rect.w, rect.y, rect.y + rect.h, -1.0, 1.0)
-                .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
+        self.projection = Matrix4::new_orthographic(rect.x, rect.x + rect.w, rect.y, rect.y + rect.h, -1.0, 1.0).append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
     }
 
     /// Sets the raw projection matrix to the given Matrix.

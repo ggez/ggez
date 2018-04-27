@@ -7,7 +7,7 @@ use image;
 
 use graphics::*;
 use graphics::shader::*;
-use context::{DebugId, Context};
+use context::{Context, DebugId};
 use GameResult;
 use GameError;
 
@@ -57,12 +57,7 @@ impl Image {
     }
 
     /// Creates a new `Image` from the given buffer of `u8` RGBA values.
-    pub fn from_rgba8(
-        context: &mut Context,
-        width: u16,
-        height: u16,
-        rgba: &[u8],
-    ) -> GameResult<Image> {
+    pub fn from_rgba8(context: &mut Context, width: u16, height: u16, rgba: &[u8]) -> GameResult<Image> {
         let debug_id = DebugId::get(context);
         Image::make_raw(
             &mut context.gfx_context.factory,
@@ -92,10 +87,7 @@ impl Image {
         let dl_buffer = gfx.factory
             .create_download_buffer::<SurfaceData>(w as usize * h as usize)?;
 
-        let mut local_encoder: gfx::Encoder<
-            gfx_device_gl::Resources,
-            gfx_device_gl::CommandBuffer,
-        > = gfx.factory.create_command_buffer().into();
+        let mut local_encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> = gfx.factory.create_command_buffer().into();
 
         local_encoder.copy_texture_to_buffer_raw(
             self.texture_handle.raw(),
@@ -134,12 +126,7 @@ impl Image {
     ///
     /// See the `filesystem` module docs for where exactly
     /// the file will end up.
-    pub fn encode<P: AsRef<path::Path>>(
-        &self,
-        ctx: &mut Context,
-        format: ImageFormat,
-        path: P,
-    ) -> GameResult<()> {
+    pub fn encode<P: AsRef<path::Path>>(&self, ctx: &mut Context, format: ImageFormat, path: P) -> GameResult<()> {
         use std::io;
         let data = self.to_rgba8(ctx)?;
         let f = ctx.filesystem.create(path)?;
@@ -155,14 +142,7 @@ impl Image {
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
-    pub(crate) fn make_raw(
-        factory: &mut gfx_device_gl::Factory,
-        sampler_info: &texture::SamplerInfo,
-        width: u16,
-        height: u16,
-        rgba: &[u8],
-        debug_id: DebugId,
-    ) -> GameResult<Image> {
+    pub(crate) fn make_raw(factory: &mut gfx_device_gl::Factory, sampler_info: &texture::SamplerInfo, width: u16, height: u16, rgba: &[u8], debug_id: DebugId) -> GameResult<Image> {
         if width == 0 || height == 0 {
             let msg = format!(
                 "Tried to create a texture of size {}x{}, each dimension must
@@ -174,15 +154,17 @@ impl Image {
         // TODO: Check for overflow on 32-bit systems here
         let expected_bytes = width as usize * height as usize * 4;
         if expected_bytes != rgba.len() {
-            let msg = format!("Tried to create a texture of size {}x{}, but gave {} bytes of data (expected {})", width, height, rgba.len(), expected_bytes);
+            let msg = format!(
+                "Tried to create a texture of size {}x{}, but gave {} bytes of data (expected {})",
+                width,
+                height,
+                rgba.len(),
+                expected_bytes
+            );
             return Err(GameError::ResourceLoadError(msg));
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        let (tex, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(
-            kind,
-            gfx::texture::Mipmap::Provided,
-            &[rgba],
-        )?;
+        let (tex, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(kind, gfx::texture::Mipmap::Provided, &[rgba])?;
         Ok(Image {
             texture: view,
             texture_handle: tex,
@@ -190,7 +172,7 @@ impl Image {
             blend_mode: None,
             width: u32::from(width),
             height: u32::from(height),
-            debug_id
+            debug_id,
         })
     }
 
@@ -315,6 +297,6 @@ mod tests {
         let ctx = &mut Context::load_from_conf("unittest", "unittest", c).unwrap();
         let _i = assert!(Image::from_rgba8(ctx, 0, 0, &vec![]).is_err());
         let _i = assert!(Image::from_rgba8(ctx, 3432, 432, &vec![]).is_err());
-        let _i = Image::from_rgba8(ctx, 2, 2, &vec![99;16]).unwrap();
+        let _i = Image::from_rgba8(ctx, 2, 2, &vec![99; 16]).unwrap();
     }
 }

@@ -5,9 +5,9 @@
 extern crate gfx;
 extern crate ggez;
 
-use ggez::{GameResult, Context};
+use ggez::{Context, GameResult};
 use ggez::event::{self, MouseState};
-use ggez::graphics::{self, DrawParam, Shader, Canvas, Point2, BlendMode, Drawable};
+use ggez::graphics::{self, BlendMode, Canvas, DrawParam, Drawable, Point2, Shader};
 use ggez::timer;
 use ggez::conf;
 use std::env;
@@ -270,13 +270,7 @@ impl MainState {
             lights_shader,
         })
     }
-    fn render_light(
-        &mut self,
-        ctx: &mut Context,
-        light: Light,
-        origin: DrawParam,
-        canvas_origin: DrawParam,
-    ) -> GameResult<()> {
+    fn render_light(&mut self, ctx: &mut Context, light: Light, origin: DrawParam, canvas_origin: DrawParam) -> GameResult<()> {
         let size = graphics::get_size(ctx);
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
@@ -323,10 +317,8 @@ impl event::EventHandler for MainState {
             println!("Average FPS: {}", timer::get_fps(ctx));
         }
 
-        self.torch.glow =
-            LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
-        self.static_light.glow =
-            LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE * 0.75).sin();
+        self.torch.glow = LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
+        self.static_light.glow = LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE * 0.75).sin();
         Ok(())
     }
 
@@ -418,15 +410,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn mouse_motion_event(
-        &mut self,
-        ctx: &mut Context,
-        _state: MouseState,
-        x: i32,
-        y: i32,
-        _xrel: i32,
-        _yrel: i32,
-    ) {
+    fn mouse_motion_event(&mut self, ctx: &mut Context, _state: MouseState, x: i32, y: i32, _xrel: i32, _yrel: i32) {
         let (w, h) = graphics::get_size(ctx);
         let (x, y) = (x as f32 / w as f32, 1.0 - y as f32 / h as f32);
         self.torch.pos = [x, y];
