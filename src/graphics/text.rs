@@ -250,17 +250,23 @@ impl Font {
         }
     }
 
-    /// Returns a baked-in default font: currently DejaVuSerif.ttf
-    /// Note it does create a new `Font` object with every call.
-    pub fn default_font() -> GameResult<Self> {
-        let size = 16;
-        let buf = include_bytes!(concat!(
+    /// Returns the baked-in bytes of default font (currently DejaVuSerif.ttf).
+    pub(crate) fn default_font_bytes() -> &'static [u8] {
+        include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/resources/DejaVuSerif.ttf"
-        ));
+        ))
+    }
+
+    /// Returns baked-in default font (currently DejaVuSerif.ttf).
+    /// Note it does create a new `Font` object with every call;
+    /// although the actual data should be shared.
+    pub fn default_font() -> GameResult<Self> {
+        let size = 16;
         // BUGGO: fix DPI.  Get from Context?  If we do that we can basically
         // just make Context always keep the default Font itself... hmm.
-        Font::from_bytes("default", &buf[..], size, (75.0, 75.0))
+        // TODO: ^^^ is that still relevant?..
+        Font::from_bytes("default", Font::default_font_bytes(), size, (75.0, 75.0))
     }
 
     /// Get the height of the Font in pixels.

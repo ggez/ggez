@@ -167,11 +167,7 @@ impl GraphicsContext {
             debug_id,
         )?;
 
-        let buf = include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/resources/DejaVuSerif.ttf"
-        ));
-        let glyph_brush = GlyphBrushBuilder::using_font_bytes(buf.to_vec())
+        let glyph_brush = GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec())
             .build(factory.clone());
 
         let rect_inst_props = factory.create_buffer(
