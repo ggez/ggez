@@ -22,11 +22,11 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let font = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 30)?;
         let font_too = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 40)?;
-        let fps_font = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 8)?;
+        let default_font = graphics::Font::get_glyph_font_by_id(ctx, 0, 8)?;
 
         let text = graphics::TextCached::new(ctx, "Hello", &font)?;
         let text_too = graphics::TextCached::new(ctx, "World!", &font_too)?;
-        let fps_display = graphics::TextCached::new(ctx, "World!", &fps_font)?;
+        let fps_display = graphics::TextCached::new(ctx, "World!", &default_font)?;
 
         Ok(MainState {
             anima: 0.0,
@@ -49,8 +49,9 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        self.fps_display
-            .set_contents(&format!("FPS: {}", timer::get_fps(ctx)));
+        let default_font = graphics::Font::get_glyph_font_by_id(ctx, 0, 8)?;
+        let fps = timer::get_fps(ctx);
+        self.fps_display = graphics::TextCached::new(ctx, &format!("FPS: {}", fps), &default_font)?;
 
         graphics::draw(ctx, &self.text, Point2::new(200.0, 250.0), self.anima)?;
         graphics::draw_ex(

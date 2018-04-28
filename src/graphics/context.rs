@@ -167,14 +167,11 @@ impl GraphicsContext {
             debug_id,
         )?;
 
-        let font = if let Font::TTFFont { font, .. } = Font::default_font()? {
-            font
-        } else {
-            return Err(GameError::FontError(
-                "Couldn't acquire default font during graphics context initialization.".into(),
-            ));
-        };
-        let glyph_brush = GlyphBrushBuilder::using_font(font)
+        let buf = include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/resources/DejaVuSerif.ttf"
+        ));
+        let glyph_brush = GlyphBrushBuilder::using_font_bytes(buf.to_vec())
             .build(factory.clone());
 
         let rect_inst_props = factory.create_buffer(

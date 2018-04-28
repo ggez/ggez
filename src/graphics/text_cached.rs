@@ -2,9 +2,8 @@ use super::*;
 
 use graphics::text::Font;
 use gfx_glyph::{FontId, Scale, Section};
-use rusttype::Font as TTFFont;
 
-/// TODO: doc me
+/// Efficient drawable text using a `Font::GlyphFont`.
 #[derive(Clone, Debug)]
 pub struct TextCached {
     font_id: FontId,
@@ -14,7 +13,8 @@ pub struct TextCached {
 }
 
 impl TextCached {
-    /// TODO: doc me
+    /// Creates a `TextCached` with given `Font::GlyphFont`.
+    /// Can be relatively efficiently re-created every frame.
     pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<TextCached> {
         if let &Font::GlyphFont { font_id, scale } = font {
             return Ok(TextCached {
@@ -27,11 +27,6 @@ impl TextCached {
         Err(GameError::FontError(
             "`TextCached` can only be used with a `Font::GlyphFont`!".into(),
         ))
-    }
-
-    /// TODO: doc me
-    pub fn set_contents(&mut self, text: &str) {
-        self.contents = text.to_string();
     }
 }
 
@@ -90,16 +85,14 @@ impl Drawable for TextCached {
             0.0,
         ));
 
-        use graphics;
-        let (projection, encoder, render_tgt, depth_view) = (
-            graphics::get_projection(ctx),
+        let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_scale * m_shear
+            * m_aspect_inv * m_offset_inv;
+
+        let (encoder, render_tgt, depth_view) = (
             &mut ctx.gfx_context.encoder,
             &ctx.gfx_context.screen_render_target,
             &ctx.gfx_context.depth_view,
         );
-
-        let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_scale * m_shear
-            * m_aspect_inv * m_offset_inv;
 
         ctx.gfx_context.glyph_brush.draw_queued_with_transform(
             m_transform.into(),

@@ -236,6 +236,20 @@ impl Font {
         })
     }
 
+    /// Retrieves a loaded font from `GraphicsContext::glyph_brush`.
+    pub fn get_glyph_font_by_id(context: &mut Context, id: usize, points: u32) -> GameResult<Self> {
+        let id = FontId(id);
+        if context.gfx_context.glyph_brush.fonts().contains_key(&id) {
+            let (_, x_dpi, y_dpi) = context.gfx_context.dpi;
+            let scale = display_independent_scale(points, x_dpi, y_dpi);
+            Ok(Font::GlyphFont { font_id: id, scale })
+        } else {
+            Err(GameError::FontError(
+                format!("Font {:?} not found!", id).into(),
+            ))
+        }
+    }
+
     /// Returns a baked-in default font: currently DejaVuSerif.ttf
     /// Note it does create a new `Font` object with every call.
     pub fn default_font() -> GameResult<Self> {
