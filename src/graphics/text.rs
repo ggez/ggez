@@ -277,7 +277,7 @@ impl Font {
         match *self {
             Font::BitmapFontVariant(BitmapFont { height, .. }) => height,
             Font::TTFFont { scale, .. } => scale.y.ceil() as usize,
-            Font::GlyphFont { .. } => 0,
+            Font::GlyphFont { scale, .. } => scale.y.ceil() as usize,
         }
     }
 
@@ -297,6 +297,7 @@ impl Font {
                     font.layout(text, scale, offset).collect();
                 text_width(&glyphs) as usize
             }
+            // TODO: figure out if this is needed, and how to do it without a context.
             Font::GlyphFont { .. } => 0
         }
     }
