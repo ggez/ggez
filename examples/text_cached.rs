@@ -3,60 +3,91 @@
 
 extern crate ggez;
 
-use ggez::conf;
+use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
-use ggez::{Context, GameResult};
+use ggez::{Context, ContextBuilder, GameResult};
 use ggez::graphics::{self, Point2};
+use ggez::timer;
 use std::env;
 use std::path;
 
 struct MainState {
+    anima: f32,
     text: graphics::TextCached,
     text_too: graphics::TextCached,
-    frames: usize,
+    fps_display: graphics::TextCached,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let font = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 40)?;
-        let font_too = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 50)?;
+        let font = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 30)?;
+        let font_too = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 40)?;
+        let fps_font = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 8)?;
 
         let text = graphics::TextCached::new(ctx, "Hello", &font)?;
         let text_too = graphics::TextCached::new(ctx, "World!", &font_too)?;
+        let fps_display = graphics::TextCached::new(ctx, "World!", &fps_font)?;
 
-        let s = MainState {
+        Ok(MainState {
+            anima: 0.0,
             text,
             text_too,
-            frames: 0,
-        };
-        Ok(s)
+            fps_display,
+        })
     }
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        const DESIRED_FPS: u32 = 60;
+        while timer::check_update_time(ctx, DESIRED_FPS) {
+            self.anima += 0.02;
+        }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        graphics::draw(ctx, &self.text, Point2::new(10.0, 20.0), 0.0)?;
-        graphics::draw(ctx, &self.text_too, Point2::new(150.0, 20.0), 0.0)?;
+        self.fps_display
+            .set_contents(&format!("FPS: {}", timer::get_fps(ctx)));
+
+        graphics::draw(ctx, &self.text, Point2::new(200.0, 250.0), self.anima)?;
+        graphics::draw_ex(
+            ctx,
+            &self.text_too,
+            graphics::DrawParam {
+                dest: Point2::new(400.0, 250.0),
+                shear: Point2::new(0.0, self.anima.sin()),
+                ..Default::default()
+            },
+        )?;
+        graphics::draw(ctx, &self.fps_display, Point2::new(0.0, 0.0), 0.0)?;
+
         graphics::present(ctx);
 
-        self.frames += 1;
-        if (self.frames % 100) == 0 {
-            println!("FPS: {}", ggez::timer::get_fps(ctx));
-        }
-
+        timer::yield_now();
         Ok(())
+    }
+
+    fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
+        graphics::set_screen_coordinates(
+            ctx,
+            graphics::Rect::new(0.0, 0.0, width as f32, height as f32),
+        ).unwrap();
     }
 }
 
 pub fn main() {
-    let conf = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("text_cached", "ggez", conf).unwrap();
+    let ctx = &mut ContextBuilder::new("text_cached", "ggez")
+        .window_setup(
+            WindowSetup::default()
+                .title("Cached text example!")
+                .resizable(true),
+        )
+        .window_mode(WindowMode::default().dimensions(640, 480))
+        .build()
+        .unwrap();
 
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
