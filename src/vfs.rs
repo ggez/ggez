@@ -2,11 +2,12 @@
 //! "file systems" with various backing stores, then merge them
 //! together.
 //!
-//! Basically a re-implementation of `PhysFS`.  The `vfs` crate
-//! does something similar but has a couple design decisions that make
-//! it kind of incompatible with this use case: the relevant trait
-//! for it has generic methods so we can't use it as a trait object,
-//! and its path abstraction is not the most convenient.
+//! Basically a re-implementation of the C library `PhysFS`.  The
+//! `vfs` crate does something similar but has a couple design
+//! decisions that make it kind of incompatible with this use case:
+//! the relevant trait for it has generic methods so we can't use it
+//! as a trait object, and its path abstraction is not the most
+//! convenient.
 
 use std::cell::RefCell;
 use std::collections::VecDeque;
@@ -20,9 +21,10 @@ use zip;
 use {GameError, GameResult};
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
-    let errmessage = format!("Invalid path format for resource: {:?}", path);
-    let error = GameError::FilesystemError(errmessage);
-    path.to_str().ok_or(error)
+    path.to_str().ok_or_else(|| {
+        let errmessage = format!("Invalid path format for resource: {:?}", path);
+        GameError::FilesystemError(errmessage)
+    })
 }
 
 pub trait VFile: Read + Write + Seek + Debug {}
@@ -139,7 +141,8 @@ pub trait VFS: Debug {
 
 pub trait VMetadata {
     /// Returns whether or not it is a directory.
-    /// Note that zip files don't actually have directories, awkwardly.
+    /// Note that zip files don't actually have directories, awkwardly,
+    /// just files with very long names.
     fn is_dir(&self) -> bool;
     /// Returns whether or not it is a file.
     fn is_file(&self) -> bool;
@@ -151,7 +154,8 @@ pub trait VMetadata {
 /// A VFS that points to a directory and uses it as the root of its
 /// file hierarchy.
 ///
-/// It IS allowed to have symlinks in it!  For now.
+/// It IS allowed to have symlinks in it!  They're surprisingly
+/// difficult to get rid of.
 #[derive(Clone)]
 pub struct PhysicalFS {
     root: PathBuf,
@@ -223,7 +227,6 @@ impl PhysicalFS {
     /// absolute path you get when appending it
     /// to this filesystem's root.
     fn get_absolute(&self, p: &Path) -> GameResult<PathBuf> {
-        //let p = path::Path::new(p);
         if let Some(safe_path) = sanitize_path(p) {
             let mut root_path = self.root.clone();
             root_path.push(safe_path);
@@ -245,8 +248,7 @@ impl PhysicalFS {
     /// malus.
     fn create_root(&self) -> GameResult<()> {
         if !self.root.exists() {
-            fs::create_dir_all(&self.root)
-                .map_err(GameError::from)
+            fs::create_dir_all(&self.root).map_err(GameError::from)
         } else {
             Ok(())
         }
@@ -306,7 +308,7 @@ impl VFS for PhysicalFS {
                 "Tried to remove file {} but FS is read-only".to_string(),
             ));
         }
-        
+
         self.create_root()?;
         let p = self.get_absolute(path)?;
         if p.is_dir() {
@@ -533,7 +535,7 @@ pub struct ZipFS {
     //
     // ALSO THE SEMANTICS OF ZIPARCHIVE AND HAVING ZIPFILES BORROW IT IS
     // HORRIFICALLY BROKEN BY DESIGN SO WE'RE JUST GONNA REFCELL IT AND COPY
-    // ALL CONTENTS OUT OF IT.
+    // ALL CONTENTS OUT OF IT AAAAA.
     source: PathBuf,
     archive: RefCell<zip::ZipArchive<fs::File>>,
     // We keep an index of what files are in the zip file
@@ -715,10 +717,9 @@ impl VFS for ZipFS {
 
     fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
         let path = convenient_path_to_str(path)?;
-        let mut stupid_archive_borrow =
-            self.archive
-                .try_borrow_mut()
-                .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen! Report a bug at https://github.com/ggez/ggez/");
+        let mut stupid_archive_borrow = self.archive
+            .try_borrow_mut()
+            .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen! Report a bug at https://github.com/ggez/ggez/");
         match ZipMetadata::new(path, &mut stupid_archive_borrow) {
             None => Err(GameError::FilesystemError(format!(
                 "Metadata not found in zip file for {}",

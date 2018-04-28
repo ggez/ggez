@@ -8,7 +8,7 @@ extern crate rand;
 use ggez::{Context, ContextBuilder, GameResult};
 use ggez::audio;
 use ggez::conf;
-use ggez::event::{self, Keycode, Mod, EventHandler};
+use ggez::event::{self, EventHandler, Keycode, Mod};
 use ggez::graphics;
 use ggez::timer;
 use ggez::graphics::{Point2, Vector2};

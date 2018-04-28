@@ -32,7 +32,8 @@ where
     pub(crate) backend_spec: B,
     pub(crate) window: sdl2::video::Window,
     pub(crate) multisample_samples: u8,
-    #[allow(dead_code)] gl_context: sdl2::video::GLContext,
+    #[allow(dead_code)]
+    gl_context: sdl2::video::GLContext,
     pub(crate) device: Box<B::Device>,
     pub(crate) factory: Box<B::Factory>,
     pub(crate) encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
@@ -51,7 +52,7 @@ where
     default_shader: ShaderId,
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<ShaderHandle<B>>>,
-
+  
     pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
 }
 
@@ -100,10 +101,43 @@ impl GraphicsContext {
         let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
             gfx_window_sdl::init(video, window_builder)?;
 
-        GraphicsContext::set_vsync(video, window_mode.vsync)?;
-
         let display_index = window.display_index()?;
         let dpi = window.subsystem().display_dpi(display_index)?;
+
+        GraphicsContext::set_vsync(video, window_mode.vsync)?;
+        {
+            // Log a bunch of debug info
+            let vsync = video.gl_get_swap_interval();
+            let gl_attr = video.gl_attr();
+            let (major, minor) = gl_attr.context_version();
+            let profile = gl_attr.context_profile();
+            let (w, h) = window.size();
+            let (dw, dh) = window.drawable_size();
+            let info = device.get_info();
+            // gfx doesn't allow us to get the OpenGL vendor string
+            // and SDL can't do it unless we create a renderer, which
+            // is precluded by us wanting to manage our own OpenGL state.  Hmmmm.
+            debug!("Window created.");
+            debug!(
+                "  Asked for     OpenGL {}.{} Core, vsync: {}",
+                backend.major, backend.minor, window_mode.vsync
+            );
+            debug!(
+                "  Actually got: OpenGL {}.{} {:?}, vsync: {:?}",
+                major, minor, profile, vsync
+            );
+            debug!(
+                "  Window size: {}x{}, drawable size: {}x{}, DPI: {:?}",
+                w, h, dw, dh, dpi
+            );
+            debug!(
+                "  Driver vendor: {}, renderer {}, version {:?}, shading language {:?}",
+                info.platform_name.vendor,
+                info.platform_name.renderer,
+                info.version,
+                info.shading_language
+            );
+        }
 
         // GFX SETUP
         let mut encoder: gfx::Encoder<
@@ -160,8 +194,14 @@ impl GraphicsContext {
         let sampler_info =
             texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
-        let white_image =
-            Image::make_raw(&mut factory, &sampler_info, 1, 1, &[255, 255, 255, 255], debug_id)?;
+        let white_image = Image::make_raw(
+            &mut factory,
+            &sampler_info,
+            1,
+            1,
+            &[255, 255, 255, 255],
+            debug_id,
+        )?;
         let texture = white_image.texture.clone();
 
         let data = pipe::Data {

@@ -15,7 +15,7 @@ extern crate log;
 use ggez::{Context, ContextBuilder, GameResult};
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event::{EventHandler, Keycode, Mod};
-use ggez::filesystem::{File};
+use ggez::filesystem::File;
 use ggez::graphics;
 use ggez::timer;
 use std::io::Write;
@@ -40,7 +40,11 @@ impl FileLogger {
     ) -> GameResult<FileLogger> {
         // This (re)creates a file and opens it for appending.
         let file = ctx.filesystem.create(path::Path::new(path))?;
-        debug!("Created log file {:?} in {:?}", path, ctx.filesystem.get_user_config_dir());
+        debug!(
+            "Created log file {:?} in {:?}",
+            path,
+            ctx.filesystem.get_user_config_dir()
+        );
         Ok(FileLogger { file, receiver })
     }
 
@@ -68,7 +72,9 @@ struct App {
 impl App {
     /// Creates an instance, takes ownership of passed FileLogger.
     fn new(_ctx: &mut Context, logger: FileLogger) -> GameResult<App> {
-        Ok(App { file_logger: logger })
+        Ok(App {
+            file_logger: logger,
+        })
     }
 }
 
@@ -96,7 +102,10 @@ impl EventHandler for App {
     /// Called when `ggez` catches a keyboard key being pressed.
     fn key_down_event(&mut self, ctx: &mut Context, keycode: Keycode, keymod: Mod, repeat: bool) {
         // Log the keypress to info channel!
-        info!("Key down event: {}, modifiers: {:?}, repeat: {}", keycode, keymod, repeat);
+        info!(
+            "Key down event: {}, modifiers: {:?}, repeat: {}",
+            keycode, keymod, repeat
+        );
         if keycode == Keycode::Escape {
             // Escape key closes the app.
             if let Err(e) = ctx.quit() {
@@ -128,20 +137,20 @@ pub fn main() {
 
     // This sets up a `fern` logger and initializes `log`.
     fern::Dispatch::new()
-        // Formats logs.
-        .format(|out, msg, rec| {
+        // Formats logs
+        .format(|out, message, record| {
             out.finish(format_args!(
-                "[{}][{}][{}] {}",
-                chrono::Local::now().format("%H:%M:%S"),
-                rec.target(),
-                rec.level(),
-                msg,
+                "[{}][{:<5}][{}] {}",                                                                         
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),                                              
+                record.level().to_string(),
+                record.target(),
+                message
             ))
         })
-        // Sets global log level.
-        .level(log::LevelFilter::Trace)
-        // `gfx_device_gl` is very verbose, on info channel too, so let's filter most of that out.
+        // `gfx_device_gl` is very chatty on info loglevel, so
+        // filter that a bit more strictly.
         .level_for("gfx_device_gl", log::LevelFilter::Warn)
+        .level(log::LevelFilter::Trace)
         // Hooks up console output.
         .chain(std::io::stdout())
         // Hooks up the channel.
@@ -152,6 +161,7 @@ pub fn main() {
     // Note, even though our file logger hasn't been initialized in any way yet, logs starting
     // from here will still appear in the log file.
     debug!("I am logged!");
+    info!("I am too!");
 
     trace!("Creating ggez context.");
 
@@ -177,16 +187,14 @@ pub fn main() {
         Err(e) => {
             error!("Could not initialize: {}", e);
         }
-        Ok(ref mut app) => {
-            match ggez::event::run(ctx, app) {
-                Err(e) => {
-                    error!("Error occurred: {}", e);
-                }
-                Ok(_) => {
-                    debug!("Exited cleanly.");
-                }
+        Ok(ref mut app) => match ggez::event::run(ctx, app) {
+            Err(e) => {
+                error!("Error occurred: {}", e);
             }
-        }
+            Ok(_) => {
+                debug!("Exited cleanly.");
+            }
+        },
     }
 
     trace!("Since file logger is dropped with App, this line will cause an error in fern!");

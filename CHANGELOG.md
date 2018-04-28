@@ -3,6 +3,9 @@
 ## Added
 
  * Added a feature flag to build nalgebra with the `mint` math library inter-operability layer [#344](https://github.com/ggez/ggez/issues/344)
+ * We got an awesome logo! [#327](https://github.com/ggez/ggez/issues/327)
+ * Added hooks to the `log` crate, so we will now output some logging data via it that clients may use.
+ [#311](https://github.com/ggez/ggez/pull/331)
 
 ## Changed
 

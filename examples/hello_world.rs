@@ -22,10 +22,7 @@ impl MainState {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
         let text = graphics::Text::new(ctx, "Hello world!", &font)?;
 
-        let s = MainState {
-            text,
-            frames: 0,
-        };
+        let s = MainState { text, frames: 0 };
         Ok(s)
     }
 }

@@ -12,16 +12,16 @@ extern crate rand;
 
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
-use ggez::{event, graphics, GameResult, Context};
+use ggez::{event, graphics, Context, GameResult};
 use ggez::event::Keycode;
 
 // We'll bring in some things from `std` to help us in the future.
 use std::collections::LinkedList;
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 // And finally bring the `Rng` trait into scope so that we can generate
-// some random numbers later. 
-use rand::{Rng};
+// some random numbers later.
+use rand::Rng;
 
 // The first thing we want to do is set up some constants that will help us out later.
 
@@ -33,12 +33,14 @@ const GRID_CELL_SIZE: (i16, i16) = (32, 32);
 
 // Next we define how large we want our actual window to be by multiplying
 // the components of our grid size by its corresponding pixel size.
-const SCREEN_SIZE: (u32, u32) = (GRID_SIZE.0 as u32 * GRID_CELL_SIZE.0 as u32,
-                                 GRID_SIZE.1 as u32 * GRID_CELL_SIZE.1 as u32);
+const SCREEN_SIZE: (u32, u32) = (
+    GRID_SIZE.0 as u32 * GRID_CELL_SIZE.0 as u32,
+    GRID_SIZE.1 as u32 * GRID_CELL_SIZE.1 as u32,
+);
 
 // Here we're defining how many quickly we want our game to update. This will be
 // important later so that we don't have our snake fly across the screen because
-// it's moving a full tile every frame. 
+// it's moving a full tile every frame.
 const UPDATES_PER_SECOND: f32 = 8.0;
 // And we get the milliseconds of delay that this update rate corresponds to.
 const MILLIS_PER_UPDATE: u64 = (1.0 / UPDATES_PER_SECOND * 1000.0) as u64;
@@ -67,7 +69,8 @@ trait ModuloSigned {
 /// that we need in order to implement a modulus function that works for negative numbers
 /// as well.
 impl<T> ModuloSigned for T
-    where T: std::ops::Add<Output = T> + std::ops::Rem<Output = T> + Clone
+where
+    T: std::ops::Add<Output = T> + std::ops::Rem<Output = T> + Clone,
 {
     fn modulo(&self, n: T) -> T {
         // Because of our trait bounds, we can now apply these operators.
@@ -88,8 +91,10 @@ impl GridPosition {
         let mut rng = rand::thread_rng();
         // We can use `.into()` to convert from `(i16, i16)` to a `GridPosition` since
         // we implement `From<(i16, i16)>` for `GridPosition` below.
-        (rng.gen_range::<i16>(0, max_x), 
-         rng.gen_range::<i16>(0, max_y)).into() 
+        (
+            rng.gen_range::<i16>(0, max_x),
+            rng.gen_range::<i16>(0, max_y),
+        ).into()
     }
 
     /// We'll make another helper function that takes one grid position and returns a new one after
@@ -113,8 +118,12 @@ impl GridPosition {
 /// `Rect` that represents that grid cell.
 impl From<GridPosition> for graphics::Rect {
     fn from(pos: GridPosition) -> Self {
-        graphics::Rect::new_i32(pos.x as i32 * GRID_CELL_SIZE.0 as i32, pos.y as i32 * GRID_CELL_SIZE.1 as i32,
-                                GRID_CELL_SIZE.0 as i32, GRID_CELL_SIZE.1 as i32)
+        graphics::Rect::new_i32(
+            pos.x as i32 * GRID_CELL_SIZE.0 as i32,
+            pos.y as i32 * GRID_CELL_SIZE.1 as i32,
+            GRID_CELL_SIZE.0 as i32,
+            GRID_CELL_SIZE.1 as i32,
+        )
     }
 }
 
@@ -159,7 +168,7 @@ impl Direction {
             Keycode::Down => Some(Direction::Down),
             Keycode::Left => Some(Direction::Left),
             Keycode::Right => Some(Direction::Right),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -181,7 +190,7 @@ impl Segment {
 /// This is again an abstraction over a `GridPosition` that represents
 /// a piece of food the snake can eat. It can draw itself.
 struct Food {
-    pos: GridPosition
+    pos: GridPosition,
 }
 
 impl Food {
@@ -189,7 +198,7 @@ impl Food {
         Food { pos }
     }
 
-    /// Here is the first time we see what drawing looks like with ggez. 
+    /// Here is the first time we see what drawing looks like with ggez.
     /// We have a function that takes in a `&mut ggez::Context` which we use
     /// with the helpers in `ggez::graphics` to do drawing. We also return a
     /// `ggez::GameResult` so that we can use the `?` operator to bubble up
@@ -381,7 +390,7 @@ impl event::EventHandler for GameState {
                         Ate::Food => {
                             let new_food_pos = GridPosition::random(GRID_SIZE.0, GRID_SIZE.1);
                             self.food.pos = new_food_pos;
-                        },
+                        }
                         // If it ate itself, we set our gameover state to true.
                         Ate::Itself => {
                             self.gameover = true;
@@ -413,7 +422,13 @@ impl event::EventHandler for GameState {
     }
 
     /// key_down_event gets fired when a key gets pressed.
-    fn key_down_event(&mut self, _ctx: &mut Context, keycode: Keycode, _keymod: event::Mod, _repeat: bool) {
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: Keycode,
+        _keymod: event::Mod,
+        _repeat: bool,
+    ) {
         // Here we attempt to convert the Keycode into a Direction using the helper
         // we defined earlier.
         if let Some(dir) = Direction::from_keycode(keycode) {
@@ -447,6 +462,6 @@ fn main() {
         // If we encounter an error, we print it before exiting
         Err(e) => println!("Error encountered running game: {}", e),
         // And if not, we print a message saying we ran cleanly. Hooray!
-        Ok(_) => println!("Game exited cleanly!")
+        Ok(_) => println!("Game exited cleanly!"),
     }
 }

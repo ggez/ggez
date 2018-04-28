@@ -28,12 +28,11 @@ pub struct AudioContext {
 impl AudioContext {
     /// Create new AudioContext.
     pub fn new() -> GameResult<AudioContext> {
-        let error = GameError::AudioError(String::from(
-            "Could not initialize sound system (for \
-             some reason)",
-        ));
-
-        let device = rodio::default_output_device().ok_or(error)?;
+        let device = rodio::default_output_device().ok_or_else(|| {
+            GameError::AudioError(String::from(
+                "Could not initialize sound system (for some reason)",
+            ))
+        })?;
         Ok(AudioContext { device: device })
     }
 }

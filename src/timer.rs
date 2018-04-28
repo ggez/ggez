@@ -223,9 +223,9 @@ pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
 
 /// Returns the fractional amount of a frame not consumed
 /// by  `check_update_time()`.  For example, if the desired
-/// update frame time is 40 ms (25 fps), and 45 ms have 
+/// update frame time is 40 ms (25 fps), and 45 ms have
 /// passed since the last frame, `check_update_time()` will
-/// return `true` and `get_remaining_update_time()` will 
+/// return `true` and `get_remaining_update_time()` will
 /// return 5 ms -- the amount of time "overflowing" from one
 /// frame to the next.
 ///

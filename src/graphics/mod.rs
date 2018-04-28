@@ -37,6 +37,7 @@ mod text_cached;
 mod types;
 use nalgebra as na;
 
+pub mod glyphcache;
 pub mod spritebatch;
 
 pub use self::canvas::*;
@@ -74,17 +75,16 @@ pub trait BackendSpec: fmt::Debug {
 /// `Shader` depend on it.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
 pub struct GlBackendSpec {
-    #[default = r#"3"#] major: u8,
-    #[default = r#"2"#] minor: u8,
+    #[default = r#"3"#]
+    major: u8,
+    #[default = r#"2"#]
+    minor: u8,
 }
 
 impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL { major, minor } => Self {
-                major,
-                minor,
-            },
+            conf::Backend::OpenGL { major, minor } => Self { major, minor },
         }
     }
 }
@@ -244,6 +244,7 @@ fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
             print!("Requesting GL {}.{}... ", major, minor);
             let window_builder = video.window("so full of hate", 640, 480);
             let result = gfx_window_sdl::init::<ColorFormat, DepthFormat>(video, window_builder);
+            // This is actually wrong, it needs to re-fetch the GLAttr
             match result {
                 Ok(_) => println!(
                     "Ok, got GL {}.{}.",

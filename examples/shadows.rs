@@ -5,9 +5,9 @@
 extern crate gfx;
 extern crate ggez;
 
-use ggez::{GameResult, Context};
+use ggez::{Context, GameResult};
 use ggez::event::{self, MouseState};
-use ggez::graphics::{self, DrawParam, Shader, Canvas, Point2, BlendMode, Drawable};
+use ggez::graphics::{self, BlendMode, Canvas, DrawParam, Drawable, Point2, Shader};
 use ggez::timer;
 use ggez::conf;
 use std::env;

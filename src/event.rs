@@ -118,7 +118,6 @@ pub trait EventHandler {
     /// <https://wiki.libsdl.org/SDL_TextInputEvent>
     /// <https://wiki.libsdl.org/Tutorials/TextInput>
     fn text_editing_event(&mut self, _ctx: &mut Context, _text: String, _start: i32, _length: i32) {
-
     }
 
     /// Resulting text (usually a unicode character) is passed by the OS (via Input Method Editor).

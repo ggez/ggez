@@ -112,6 +112,7 @@ extern crate image;
 #[macro_use]
 extern crate log;
 extern crate lyon;
+pub extern crate nalgebra;
 extern crate rodio;
 extern crate rusttype;
 extern crate sdl2;
@@ -121,7 +122,6 @@ extern crate serde_derive;
 extern crate smart_default;
 extern crate toml;
 extern crate zip;
-pub extern crate nalgebra;
 
 pub mod audio;
 pub mod conf;

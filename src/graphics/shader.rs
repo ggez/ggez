@@ -185,7 +185,7 @@ pub(crate) fn create_shader<C, S, Spec>(
     factory: &mut Spec::Factory,
     multisample_samples: u8,
     blend_modes: Option<&[BlendMode]>,
-    debug_id: DebugId
+    debug_id: DebugId,
 ) -> GameResult<(ShaderGeneric<Spec, C>, Box<ShaderHandle<Spec>>)>
 where
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
@@ -236,7 +236,11 @@ where
     let draw: Box<ShaderHandle<Spec>> = Box::new(program);
 
     let id = 0;
-    let shader = ShaderGeneric { id, buffer, debug_id };
+    let shader = ShaderGeneric {
+        id,
+        buffer,
+        debug_id,
+    };
 
     Ok((shader, draw))
 }
