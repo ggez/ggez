@@ -7,8 +7,8 @@ use gfx::handle::RenderTargetView;
 use gfx::memory::{Bind, Usage};
 use gfx::texture::{AaMode, Kind};
 
+use conf;
 use Context;
-use conf::*;
 use context::DebugId;
 use error::*;
 use graphics::*;
@@ -45,12 +45,12 @@ impl Canvas {
         ctx: &mut Context,
         width: u32,
         height: u32,
-        samples: NumSamples,
+        samples: conf::NumSamples,
     ) -> GameResult<Canvas> {
         let debug_id = DebugId::get(ctx);
         let (w, h) = (width as u16, height as u16);
         let aa = match samples {
-            NumSamples::One => AaMode::Single,
+            conf::NumSamples::One => AaMode::Single,
             s => AaMode::Multi(s as u8),
         };
         let kind = Kind::D2(w, h, aa);
@@ -90,7 +90,7 @@ impl Canvas {
         use graphics;
         let (w, h) = graphics::get_drawable_size(ctx);
         // Default to no multisampling
-        Canvas::new(ctx, w, h, NumSamples::One)
+        Canvas::new(ctx, w, h, conf::NumSamples::One)
     }
 
     /// Gets the backend `Image` that is being rendered to.

@@ -1,7 +1,7 @@
-use ::*;
 use context::DebugId;
 use graphics::*;
 use gfx::traits::FactoryExt;
+use lyon;
 use lyon::tessellation as t;
 
 /// A builder for creating `Mesh`es.
