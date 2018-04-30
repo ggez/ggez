@@ -11,6 +11,7 @@ submit a PR, please!
 
 # Examples/tutorial code
 
+ * <https://github.com/ggez/game-template> -- a general-purpose getting-started template integrating warmy, specs, and some other useful tools.
  * <https://github.com/termhn/ggez_snake>
 
 # Tools/add-ons
