@@ -121,3 +121,9 @@ graphics::set_screen_coordinates(&mut context, Rect::new(0.0, 0.0, 1.0, 1.0)).un
 ```
 
 and scaling your `Image`s with `graphics::DrawParam`.
+
+# Can I use `specs` or another entity-component system?
+
+Sure!  ggez doesn't include such a thing itself, since it's more or less out of scope for this, but it is specifically
+designed to make it easy to Lego together with other tools.  The [game template](https://github.com/ggez/game-template) repo
+demonstrates how to use ggez with `specs` for ECS, `warmy` for resource loading, and other nice crates.
