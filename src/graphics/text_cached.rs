@@ -61,7 +61,7 @@ pub struct TextParam {
     pub color: Option<Color>,
     /// Text's font ID, defaults to 0 (`Text::default_font()`).
     pub font_id: Option<FontId>,
-    /// Text's scale, defaults to uniform 16px.
+    /// Text's scale, defaults to uniform 16px(?).
     pub scale: Option<Scale>,
 }
 
@@ -78,57 +78,41 @@ impl Default for TextParam {
     }
 }
 
-/// Builder for constructing a non-monolithic formatted `TextCached`.
-#[derive(Debug)]
-pub struct TextCachedBuilder {
-    fragments: Vec<TextFragment>,
-}
-
-impl TextCachedBuilder {
-    /// Appends a fragment with optional color, font, and/or scale overrides.
-    pub fn fragment<T>(mut self, fragment: T) -> TextCachedBuilder
-    where
-        T: Into<TextFragment>,
-    {
-        self.fragments.push(fragment.into());
-        self
-    }
-
-    /// Finalizes and returns constructed `TextCached`.
-    pub fn build(self) -> GameResult<TextCached> {
-        Ok(TextCached {
-            fragments: self.fragments,
-            blend_mode: None,
-        })
-    }
-}
-
 /// Drawable text.
 /// Can be either monolithic, or consist of differently-formatted fragments.
 #[derive(Clone, Debug)]
 pub struct TextCached {
     fragments: Vec<TextFragment>,
-    /*font_id: FontId,
-    font_scale: Scale,
-    contents: String,*/
     blend_mode: Option<BlendMode>,
 }
 
 impl TextCached {
-    /// Creates a `TextCached` with a monolithic text (a single `TextFragment`).
-    pub fn new<T>(context: &mut Context, contents: T) -> GameResult<TextCached>
+    /// Creates an empty `TextCached`.
+    pub fn new_empty(context: &mut Context) -> GameResult<TextCached>
+    {
+        Ok(TextCached {
+            fragments: Vec::new(),
+            blend_mode: None,
+        })
+    }
+
+    /// Creates a `TextCached` from a `TextFragment`.
+    pub fn new<T>(context: &mut Context, fragment: T) -> GameResult<TextCached>
     where
         T: Into<TextFragment>,
     {
-        TextCached::builder().fragment(contents).build()
+        let mut text = TextCached::new_empty(context)?;
+        text.add_fragment(fragment);
+        Ok(text)
     }
 
-    /// Returns a `TextCachedBuilder` for constructing `TextCached` from
-    /// diversely formatted fragments.
-    pub fn builder() -> TextCachedBuilder {
-        TextCachedBuilder {
-            fragments: Vec::new(),
-        }
+    /// Adds another `TextFragment`; can be chained.
+    pub fn add_fragment<T>(&mut self, fragment: T) -> &mut TextCached
+    where
+        T: Into<TextFragment>,
+    {
+        self.fragments.push(fragment.into());
+        self
     }
 
     /// Queues the `TextCached` to be drawn by `draw_queued()`.

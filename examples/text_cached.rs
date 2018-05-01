@@ -2,38 +2,61 @@
 //! Powered by `gfx_glyph` crate.
 
 extern crate ggez;
+extern crate rand;
 
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::{Context, ContextBuilder, GameResult};
-use ggez::graphics::{self, Color, Point2};
+use ggez::graphics::{self, Point2, TextCached, TextFragment};
 use ggez::timer;
 use std::env;
 use std::path;
 
 struct MainState {
     anima: f32,
-    text: graphics::TextCached,
-    text_too: graphics::TextCached,
-    fps_display: graphics::TextCached,
+    text: TextCached,
+    text_too: TextCached,
+    fps_display: TextCached,
+    chroma: TextCached,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let font = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 30)?;
-        let font_too = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 40)?;
-        let default_font = graphics::Font::get_glyph_font_by_id(ctx, 0, 8)?;
+        let text = TextCached::new(
+            ctx,
+            TextFragment {
+                text: "Hello".to_string(),
+                color: Some(graphics::Color::new(1.0, 0.0, 0.0, 1.0)),
+                scale: Some(graphics::Scale::uniform(30.0)),
+                ..TextFragment::default()
+            },
+        )?;
 
-        let text =
-            graphics::TextCached::new(ctx, ("Hello".to_string(), Color::new(1.0, 0.0, 0.0, 1.0)))?;
-        let text_too = graphics::TextCached::new(ctx, "World!".to_string())?;
-        let fps_display = graphics::TextCached::new(ctx, "World!".to_string())?;
+        let text_too = TextCached::new(ctx, "World!".to_string())?;
+
+        let fps_display = TextCached::new(ctx, "FPS!".to_string())?;
+
+        let chroma_string = "Not quite a rainbow".to_string();
+        let mut chroma = TextCached::new_empty(ctx)?;
+        for ch in chroma_string.chars() {
+            chroma.add_fragment(TextFragment {
+                text: ch.to_string(),
+                color: Some(graphics::Color::new(
+                    rand::random::<f32>(),
+                    rand::random::<f32>(),
+                    rand::random::<f32>(),
+                    1.0,
+                )),
+                ..TextFragment::default()
+            });
+        }
 
         Ok(MainState {
             anima: 0.0,
             text,
             text_too,
             fps_display,
+            chroma,
         })
     }
 }
@@ -52,9 +75,8 @@ impl event::EventHandler for MainState {
 
         let default_font = graphics::Font::get_glyph_font_by_id(ctx, 0, 8)?;
         let fps = timer::get_fps(ctx);
-        self.fps_display = graphics::TextCached::new(ctx, format!("FPS: {}", fps).to_string())?;
+        self.fps_display = TextCached::new(ctx, format!("FPS: {}", fps).to_string())?;
 
-        //graphics::draw(ctx, &self.text, Point2::new(200.0, 250.0), self.anima)?;
         graphics::draw_ex(
             ctx,
             &self.text,
@@ -75,6 +97,8 @@ impl event::EventHandler for MainState {
             },
         )?;
         graphics::draw(ctx, &self.fps_display, Point2::new(0.0, 0.0), 0.0)?;
+
+        graphics::draw(ctx, &self.chroma, Point2::new(50.0, 50.0), 0.0)?;
 
         graphics::present(ctx);
 
