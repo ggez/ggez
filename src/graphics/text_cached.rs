@@ -52,6 +52,7 @@ impl From<(String, Color)> for TextFragment {
 /// Optional parameters for `TextCached.queue()`.
 #[derive(Clone, Debug)]
 pub struct TextParam {
+    // TODO: figure out how to use font metrics to make it behave as `DrawParam::offset` does.
     /// Offset for transformations, like scale or rotation, in screen coordinates.
     /// This is different from `DrawParam::offset`!
     pub offset: Point2,
@@ -83,6 +84,7 @@ impl Default for TextParam {
 #[derive(Clone, Debug)]
 pub struct TextCached {
     fragments: Vec<TextFragment>,
+    // TODO: make it do something, maybe.
     blend_mode: Option<BlendMode>,
 }
 

@@ -7,7 +7,7 @@ extern crate rand;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::{Context, ContextBuilder, GameResult};
-use ggez::graphics::{self, Point2, TextCached, TextFragment};
+use ggez::graphics::{self, Point2, TextCached, TextFragment, TextParam};
 use ggez::timer;
 use std::env;
 use std::path;
@@ -18,6 +18,7 @@ struct MainState {
     text_too: TextCached,
     fps_display: TextCached,
     chroma: TextCached,
+    wonky: TextCached,
 }
 
 impl MainState {
@@ -51,12 +52,23 @@ impl MainState {
             });
         }
 
+        let wonky_string = "So, so wonky.".to_string();
+        let mut wonky = TextCached::new_empty(ctx)?;
+        for ch in wonky_string.chars() {
+            wonky.add_fragment(TextFragment {
+                text: ch.to_string(),
+                scale: Some(graphics::Scale::uniform(10.0 + 24.0 * rand::random::<f32>())),
+                ..TextFragment::default()
+            });
+        }
+
         Ok(MainState {
             anima: 0.0,
             text,
             text_too,
             fps_display,
             chroma,
+            wonky,
         })
     }
 }
@@ -96,12 +108,77 @@ impl event::EventHandler for MainState {
                 ..Default::default()
             },
         )?;
-        graphics::draw(ctx, &self.fps_display, Point2::new(0.0, 0.0), 0.0)?;
 
+        self.fps_display.queue(ctx, TextParam {
+            offset: Point2::new(0.0, 0.0),
+            ..TextParam::default()
+        });
+        self.chroma.queue(ctx, TextParam {
+            offset: Point2::new(50.0, 50.0),
+            ..TextParam::default()
+        });
+        self.wonky.queue(ctx, TextParam {
+            offset: Point2::new(50.0, 450.0),
+            ..TextParam::default()
+        });
+        TextCached::draw_queued(ctx, graphics::DrawParam::default())?;
+
+        /*graphics::draw(ctx, &self.fps_display, Point2::new(0.0, 0.0), 0.0)?;
         graphics::draw(ctx, &self.chroma, Point2::new(50.0, 50.0), 0.0)?;
+        graphics::draw(ctx, &self.wonky, Point2::new(50.0, 450.0), 0.0)?;*/
+
+
+        let wobble_string = "WOBBLE".to_string();
+        let mut wobble = TextCached::new_empty(ctx)?;
+        for ch in wobble_string.chars() {
+            wobble.add_fragment(TextFragment {
+                text: ch.to_string(),
+                scale: Some(graphics::Scale::uniform(10.0 + 6.0 * rand::random::<f32>())),
+                ..TextFragment::default()
+            });
+        }
+        graphics::draw(ctx, &wobble, Point2::new(50.0, 400.0), 0.0)?;
+
+
+        TextCached::new(ctx, "word1".to_string())?.queue(ctx, TextParam {
+            offset: Point2::new(-50.0, 5.0),
+            color: Some(graphics::Color::new(
+                rand::random::<f32>(),
+                rand::random::<f32>(),
+                rand::random::<f32>(),
+                1.0,
+            )),
+            ..TextParam::default()
+        });
+        TextCached::new(ctx, "word2".to_string())?.queue(ctx, TextParam {
+            offset: Point2::new(0.0, -5.0),
+            color: Some(graphics::Color::new(
+                rand::random::<f32>(),
+                rand::random::<f32>(),
+                rand::random::<f32>(),
+                1.0,
+            )),
+            ..TextParam::default()
+        });
+        TextCached::new(ctx, "word3".to_string())?.queue(ctx, TextParam {
+            offset: Point2::new(50.0, 0.0),
+            color: Some(graphics::Color::new(
+                rand::random::<f32>(),
+                rand::random::<f32>(),
+                rand::random::<f32>(),
+                1.0,
+            )),
+            ..TextParam::default()
+        });
+        TextCached::draw_queued(ctx, graphics::DrawParam {
+            dest: Point2::new(600.0, 300.0),
+            rotation: 0.3,
+            shear: Point2::new(0.5, 0.0),
+            ..graphics::DrawParam::default()
+        })?;
+
 
         graphics::present(ctx);
-
         timer::yield_now();
         Ok(())
     }
