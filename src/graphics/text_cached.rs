@@ -10,15 +10,21 @@ use gfx_glyph::{Section, SectionText, VariedSection};
 pub struct TextFragment {
     /// Text string itself.
     pub text: String,
-    /// Optional parameters.
-    pub param: TextFragmentParam,
+    /// Fragment's color, defaults to text's color.
+    pub color: Option<Color>,
+    /// Fragment's font ID, defaults to text's font ID.
+    pub font_id: Option<FontId>,
+    /// Fragment's scale, defaults to text's scale.
+    pub scale: Option<Scale>,
 }
 
 impl Default for TextFragment {
     fn default() -> Self {
         TextFragment {
             text: "".into(),
-            param: TextFragmentParam::default(),
+            color: None,
+            font_id: None,
+            scale: None,
         }
     }
 }
@@ -27,7 +33,7 @@ impl From<String> for TextFragment {
     fn from(text: String) -> TextFragment {
         TextFragment {
             text,
-            param: TextFragmentParam::default(),
+            ..TextFragment::default()
         }
     }
 }
@@ -37,31 +43,8 @@ impl From<(String, Color)> for TextFragment {
     fn from(tuple: (String, Color)) -> TextFragment {
         TextFragment {
             text: tuple.0,
-            param: TextFragmentParam {
-                color: Some(tuple.1),
-                ..TextFragmentParam::default()
-            },
-        }
-    }
-}
-
-/// Optional parameters for `TextFragment`.
-#[derive(Clone, Debug)]
-pub struct TextFragmentParam {
-    /// Fragment's color, defaults to text's color.
-    pub color: Option<Color>,
-    /// Fragment's font ID, defaults to text's font ID.
-    pub font_id: Option<FontId>,
-    /// Fragment's scale, defaults to text's scale.
-    pub scale: Option<Scale>,
-}
-
-impl Default for TextFragmentParam {
-    fn default() -> Self {
-        TextFragmentParam {
-            color: None,
-            font_id: None,
-            scale: None,
+            color: Some(tuple.1),
+            ..TextFragment::default()
         }
     }
 }
@@ -155,26 +138,26 @@ impl TextCached {
     pub fn queue(&self, context: &mut Context, param: TextParam) {
         let mut sections = Vec::new();
         for fragment in self.fragments.iter() {
-            let color = match fragment.param.color {
+            let color = match fragment.color {
                 Some(color) => color,
                 None => match param.color {
                     Some(color) => color,
                     None => get_color(context),
-                }
+                },
             };
-            let font_id = match fragment.param.font_id {
+            let font_id = match fragment.font_id {
                 Some(font_id) => font_id,
                 None => match param.font_id {
                     Some(font_id) => font_id,
                     None => FontId::default(),
-                }
+                },
             };
-            let scale = match fragment.param.scale {
+            let scale = match fragment.scale {
                 Some(scale) => scale,
                 None => match param.scale {
                     Some(scale) => scale,
                     None => Scale::uniform(16.0),
-                }
+                },
             };
             sections.push(SectionText {
                 text: &fragment.text,
@@ -256,10 +239,13 @@ impl TextCached {
 
 impl Drawable for TextCached {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
-        self.queue(ctx, TextParam {
-            offset: param.offset,
-            ..TextParam::default()
-        });
+        self.queue(
+            ctx,
+            TextParam {
+                offset: param.offset,
+                ..TextParam::default()
+            },
+        );
         TextCached::draw_queued(ctx, param)
     }
 

@@ -6,7 +6,7 @@ extern crate ggez;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::{Context, ContextBuilder, GameResult};
-use ggez::graphics::{self, Point2};
+use ggez::graphics::{self, Color, Point2};
 use ggez::timer;
 use std::env;
 use std::path;
@@ -24,7 +24,8 @@ impl MainState {
         let font_too = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 40)?;
         let default_font = graphics::Font::get_glyph_font_by_id(ctx, 0, 8)?;
 
-        let text = graphics::TextCached::new(ctx, "Hello".to_string())?;
+        let text =
+            graphics::TextCached::new(ctx, ("Hello".to_string(), Color::new(1.0, 0.0, 0.0, 1.0)))?;
         let text_too = graphics::TextCached::new(ctx, "World!".to_string())?;
         let fps_display = graphics::TextCached::new(ctx, "World!".to_string())?;
 
@@ -53,7 +54,17 @@ impl event::EventHandler for MainState {
         let fps = timer::get_fps(ctx);
         self.fps_display = graphics::TextCached::new(ctx, format!("FPS: {}", fps).to_string())?;
 
-        graphics::draw(ctx, &self.text, Point2::new(200.0, 250.0), self.anima)?;
+        //graphics::draw(ctx, &self.text, Point2::new(200.0, 250.0), self.anima)?;
+        graphics::draw_ex(
+            ctx,
+            &self.text,
+            graphics::DrawParam {
+                dest: Point2::new(200.0, 250.0),
+                rotation: self.anima,
+                offset: Point2::new(-20.0, -8.0),
+                ..Default::default()
+            },
+        )?;
         graphics::draw_ex(
             ctx,
             &self.text_too,
