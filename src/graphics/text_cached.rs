@@ -1,58 +1,200 @@
 use super::*;
 
 use graphics::text::Font;
-use gfx_glyph::{FontId, Scale, Section};
+pub use gfx_glyph::{FontId, Scale};
+use gfx_glyph::{Section, SectionText, VariedSection};
 
-/// Efficient drawable text using a `Font::GlyphFont`.
+/// A piece of text with optional color, font and scale information.
+/// Can be implicitly constructed from `String` and `(String, Color)`.
+#[derive(Clone, Debug)]
+pub struct TextFragment {
+    /// Text string itself.
+    pub text: String,
+    /// Optional parameters.
+    pub param: TextFragmentParam,
+}
+
+impl Default for TextFragment {
+    fn default() -> Self {
+        TextFragment {
+            text: "".into(),
+            param: TextFragmentParam::default(),
+        }
+    }
+}
+
+impl From<String> for TextFragment {
+    fn from(text: String) -> TextFragment {
+        TextFragment {
+            text,
+            param: TextFragmentParam::default(),
+        }
+    }
+}
+
+// TODO: consider even more convenience conversions.
+impl From<(String, Color)> for TextFragment {
+    fn from(tuple: (String, Color)) -> TextFragment {
+        TextFragment {
+            text: tuple.0,
+            param: TextFragmentParam {
+                color: Some(tuple.1),
+                ..TextFragmentParam::default()
+            },
+        }
+    }
+}
+
+/// Optional parameters for `TextFragment`.
+#[derive(Clone, Debug)]
+pub struct TextFragmentParam {
+    /// Fragment's color, defaults to text's color.
+    pub color: Option<Color>,
+    /// Fragment's font ID, defaults to text's font ID.
+    pub font_id: Option<FontId>,
+    /// Fragment's scale, defaults to text's scale.
+    pub scale: Option<Scale>,
+}
+
+impl Default for TextFragmentParam {
+    fn default() -> Self {
+        TextFragmentParam {
+            color: None,
+            font_id: None,
+            scale: None,
+        }
+    }
+}
+
+/// Optional parameters for `TextCached.queue()`.
+#[derive(Clone, Debug)]
+pub struct TextParam {
+    /// Offset for transformations, like scale or rotation, in screen coordinates.
+    /// This is different from `DrawParam::offset`!
+    pub offset: Point2,
+    /// Dimensions of the rectangle to try and fit (by wrapping) the text into.
+    pub bounds: Point2,
+    /// Text's color, defaults to white (`graphics::get_color()`).
+    pub color: Option<Color>,
+    /// Text's font ID, defaults to 0 (`Text::default_font()`).
+    pub font_id: Option<FontId>,
+    /// Text's scale, defaults to uniform 16px.
+    pub scale: Option<Scale>,
+}
+
+impl Default for TextParam {
+    fn default() -> Self {
+        use std::f32;
+        TextParam {
+            offset: Point2::origin(),
+            bounds: Point2::new(f32::INFINITY, f32::INFINITY),
+            color: None,
+            font_id: None,
+            scale: None,
+        }
+    }
+}
+
+/// Builder for constructing a non-monolithic formatted `TextCached`.
+#[derive(Debug)]
+pub struct TextCachedBuilder {
+    fragments: Vec<TextFragment>,
+}
+
+impl TextCachedBuilder {
+    /// Appends a fragment with optional color, font, and/or scale overrides.
+    pub fn fragment<T>(mut self, fragment: T) -> TextCachedBuilder
+    where
+        T: Into<TextFragment>,
+    {
+        self.fragments.push(fragment.into());
+        self
+    }
+
+    /// Finalizes and returns constructed `TextCached`.
+    pub fn build(self) -> GameResult<TextCached> {
+        Ok(TextCached {
+            fragments: self.fragments,
+            blend_mode: None,
+        })
+    }
+}
+
+/// Drawable text.
+/// Can be either monolithic, or consist of differently-formatted fragments.
 #[derive(Clone, Debug)]
 pub struct TextCached {
-    font_id: FontId,
+    fragments: Vec<TextFragment>,
+    /*font_id: FontId,
     font_scale: Scale,
-    contents: String,
+    contents: String,*/
     blend_mode: Option<BlendMode>,
 }
 
 impl TextCached {
-    /// Creates a `TextCached` with given `Font::GlyphFont`.
-    /// Can be relatively efficiently re-created every frame.
-    pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<TextCached> {
-        if let &Font::GlyphFont { font_id, scale } = font {
-            return Ok(TextCached {
-                font_id,
-                font_scale: scale,
-                contents: text.to_string(),
-                blend_mode: None,
-            });
+    /// Creates a `TextCached` with a monolithic text (a single `TextFragment`).
+    pub fn new<T>(context: &mut Context, contents: T) -> GameResult<TextCached>
+    where
+        T: Into<TextFragment>,
+    {
+        TextCached::builder().fragment(contents).build()
+    }
+
+    /// Returns a `TextCachedBuilder` for constructing `TextCached` from
+    /// diversely formatted fragments.
+    pub fn builder() -> TextCachedBuilder {
+        TextCachedBuilder {
+            fragments: Vec::new(),
         }
-        Err(GameError::FontError(
-            "`TextCached` can only be used with a `Font::GlyphFont`!".into(),
-        ))
     }
 
     /// Queues the `TextCached` to be drawn by `draw_queued()`.
     /// This is much more efficient than using `graphics::draw()` or equivalent.
     /// Note, any `TextCached` drawn via `graphics::draw()` will also draw the queue,
     /// if it hasn't been drawn by `draw_queued()` yet.
-    pub fn queue(&self, context: &mut Context) {
-        /*let color = match param.color {
-            Some(color) => color,
-            None => get_color(ctx),
-        };*/
-        let (font_id, font_scale) = (self.font_id, self.font_scale);
-        context.gfx_context.glyph_brush.queue(Section {
-            text: &self.contents,
-            //screen_position: (dest.x, dest.y),
-            //bounds: (f32, f32),
-            scale: self.font_scale,
-            //  color: <[f32; 4]>::from(color),
+    pub fn queue(&self, context: &mut Context, param: TextParam) {
+        let mut sections = Vec::new();
+        for fragment in self.fragments.iter() {
+            let color = match fragment.param.color {
+                Some(color) => color,
+                None => match param.color {
+                    Some(color) => color,
+                    None => get_color(context),
+                }
+            };
+            let font_id = match fragment.param.font_id {
+                Some(font_id) => font_id,
+                None => match param.font_id {
+                    Some(font_id) => font_id,
+                    None => FontId::default(),
+                }
+            };
+            let scale = match fragment.param.scale {
+                Some(scale) => scale,
+                None => match param.scale {
+                    Some(scale) => scale,
+                    None => Scale::uniform(16.0),
+                }
+            };
+            sections.push(SectionText {
+                text: &fragment.text,
+                color: <[f32; 4]>::from(color),
+                font_id,
+                scale,
+            });
+        }
+        context.gfx_context.glyph_brush.queue(VariedSection {
+            screen_position: (param.offset.x, param.offset.y),
+            bounds: (param.bounds.x, param.bounds.x),
             //z: f32,
             //layout: Layout<BuiltInLineBreaker>,
-            font_id: self.font_id,
-            ..Section::default()
+            text: sections,
+            ..VariedSection::default()
         });
     }
 
-    /// Draws all of queued `TextCached`.
+    /// Draws all of queued `TextCached`; `DrawParam` apply to everything in the queue.
+    /// `DrawParam::offset` is ignored - specify it when queueing instead (in screen coords).
     /// This is much more efficient than using `graphics::draw()` or equivalent.
     pub fn draw_queued(context: &mut Context, param: DrawParam) -> GameResult<()> {
         type Mat4 = na::Matrix4<f32>;
@@ -114,7 +256,10 @@ impl TextCached {
 
 impl Drawable for TextCached {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
-        self.queue(ctx);
+        self.queue(ctx, TextParam {
+            offset: param.offset,
+            ..TextParam::default()
+        });
         TextCached::draw_queued(ctx, param)
     }
 

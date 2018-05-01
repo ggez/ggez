@@ -24,9 +24,9 @@ impl MainState {
         let font_too = graphics::Font::new_glyph_font(ctx, "/DejaVuSerif.ttf", 40)?;
         let default_font = graphics::Font::get_glyph_font_by_id(ctx, 0, 8)?;
 
-        let text = graphics::TextCached::new(ctx, "Hello", &font)?;
-        let text_too = graphics::TextCached::new(ctx, "World!", &font_too)?;
-        let fps_display = graphics::TextCached::new(ctx, "World!", &default_font)?;
+        let text = graphics::TextCached::new(ctx, "Hello".to_string())?;
+        let text_too = graphics::TextCached::new(ctx, "World!".to_string())?;
+        let fps_display = graphics::TextCached::new(ctx, "World!".to_string())?;
 
         Ok(MainState {
             anima: 0.0,
@@ -51,7 +51,7 @@ impl event::EventHandler for MainState {
 
         let default_font = graphics::Font::get_glyph_font_by_id(ctx, 0, 8)?;
         let fps = timer::get_fps(ctx);
-        self.fps_display = graphics::TextCached::new(ctx, &format!("FPS: {}", fps), &default_font)?;
+        self.fps_display = graphics::TextCached::new(ctx, format!("FPS: {}", fps).to_string())?;
 
         graphics::draw(ctx, &self.text, Point2::new(200.0, 250.0), self.anima)?;
         graphics::draw_ex(
