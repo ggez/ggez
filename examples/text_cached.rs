@@ -57,7 +57,9 @@ impl MainState {
         for ch in wonky_string.chars() {
             wonky.add_fragment(TextFragment {
                 text: ch.to_string(),
-                scale: Some(graphics::Scale::uniform(10.0 + 24.0 * rand::random::<f32>())),
+                scale: Some(graphics::Scale::uniform(
+                    10.0 + 24.0 * rand::random::<f32>(),
+                )),
                 ..TextFragment::default()
             });
         }
@@ -109,24 +111,10 @@ impl event::EventHandler for MainState {
             },
         )?;
 
-        self.fps_display.queue(ctx, TextParam {
-            offset: Point2::new(0.0, 0.0),
-            ..TextParam::default()
-        });
-        self.chroma.queue(ctx, TextParam {
-            offset: Point2::new(50.0, 50.0),
-            ..TextParam::default()
-        });
-        self.wonky.queue(ctx, TextParam {
-            offset: Point2::new(50.0, 450.0),
-            ..TextParam::default()
-        });
+        self.fps_display.queue(ctx, Point2::new(0.0, 0.0));
+        self.chroma.queue(ctx, Point2::new(50.0, 50.0));
+        self.wonky.queue(ctx, Point2::new(50.0, 450.0));
         TextCached::draw_queued(ctx, graphics::DrawParam::default())?;
-
-        /*graphics::draw(ctx, &self.fps_display, Point2::new(0.0, 0.0), 0.0)?;
-        graphics::draw(ctx, &self.chroma, Point2::new(50.0, 50.0), 0.0)?;
-        graphics::draw(ctx, &self.wonky, Point2::new(50.0, 450.0), 0.0)?;*/
-
 
         let wobble_string = "WOBBLE".to_string();
         let mut wobble = TextCached::new_empty(ctx)?;
@@ -137,46 +125,64 @@ impl event::EventHandler for MainState {
                 ..TextFragment::default()
             });
         }
-        graphics::draw(ctx, &wobble, Point2::new(50.0, 400.0), 0.0)?;
-
-
-        TextCached::new(ctx, "word1".to_string())?.queue(ctx, TextParam {
-            offset: Point2::new(-50.0, 5.0),
-            color: Some(graphics::Color::new(
-                rand::random::<f32>(),
-                rand::random::<f32>(),
-                rand::random::<f32>(),
-                1.0,
-            )),
-            ..TextParam::default()
-        });
-        TextCached::new(ctx, "word2".to_string())?.queue(ctx, TextParam {
-            offset: Point2::new(0.0, -5.0),
-            color: Some(graphics::Color::new(
-                rand::random::<f32>(),
-                rand::random::<f32>(),
-                rand::random::<f32>(),
-                1.0,
-            )),
-            ..TextParam::default()
-        });
-        TextCached::new(ctx, "word3".to_string())?.queue(ctx, TextParam {
-            offset: Point2::new(50.0, 0.0),
-            color: Some(graphics::Color::new(
-                rand::random::<f32>(),
-                rand::random::<f32>(),
-                rand::random::<f32>(),
-                1.0,
-            )),
-            ..TextParam::default()
-        });
+        let wobble_param = TextParam::from(Point2::new(0.0, 0.0));
+        let wobble_width = wobble.width(ctx, wobble_param.clone());
+        wobble.queue(ctx, wobble_param);
+        TextCached::new(ctx, format!("width: {}", wobble_width))?
+            .queue(ctx, Point2::new(0.0, 20.0));
         TextCached::draw_queued(ctx, graphics::DrawParam {
-            dest: Point2::new(600.0, 300.0),
-            rotation: 0.3,
-            shear: Point2::new(0.5, 0.0),
+            dest: Point2::new(50.0, 400.0),
             ..graphics::DrawParam::default()
         })?;
 
+        TextCached::new(ctx, "word1".to_string())?.queue(
+            ctx,
+            TextParam {
+                offset: Point2::new(-50.0, 5.0),
+                color: Some(graphics::Color::new(
+                    rand::random::<f32>(),
+                    rand::random::<f32>(),
+                    rand::random::<f32>(),
+                    1.0,
+                )),
+                ..TextParam::default()
+            },
+        );
+        TextCached::new(ctx, "word2".to_string())?.queue(
+            ctx,
+            TextParam {
+                offset: Point2::new(0.0, -5.0),
+                color: Some(graphics::Color::new(
+                    rand::random::<f32>(),
+                    rand::random::<f32>(),
+                    rand::random::<f32>(),
+                    1.0,
+                )),
+                ..TextParam::default()
+            },
+        );
+        TextCached::new(ctx, "word3".to_string())?.queue(
+            ctx,
+            TextParam {
+                offset: Point2::new(50.0, 0.0),
+                color: Some(graphics::Color::new(
+                    rand::random::<f32>(),
+                    rand::random::<f32>(),
+                    rand::random::<f32>(),
+                    1.0,
+                )),
+                ..TextParam::default()
+            },
+        );
+        TextCached::draw_queued(
+            ctx,
+            graphics::DrawParam {
+                dest: Point2::new(600.0, 300.0),
+                rotation: 0.3,
+                shear: Point2::new(0.5, 0.0),
+                ..graphics::DrawParam::default()
+            },
+        )?;
 
         graphics::present(ctx);
         timer::yield_now();

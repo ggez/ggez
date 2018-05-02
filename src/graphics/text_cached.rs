@@ -3,6 +3,10 @@ use super::*;
 use graphics::text::Font;
 pub use gfx_glyph::{FontId, Scale};
 use gfx_glyph::{Section, SectionText, VariedSection};
+use rusttype::{point, PositionedGlyph};
+
+/// Default scale, used as `Scale::uniform(DEFAULT_FONT_SCALE)` when no explicit scale is given.
+pub const DEFAULT_FONT_SCALE: f32 = 16.0;
 
 /// A piece of text with optional color, font and scale information.
 /// Can be implicitly constructed from `String` and `(String, Color)`.
@@ -66,6 +70,10 @@ pub struct TextParam {
     pub scale: Option<Scale>,
 }
 
+impl TextParam {
+    //pub fn offset_
+}
+
 impl Default for TextParam {
     fn default() -> Self {
         use std::f32;
@@ -75,6 +83,15 @@ impl Default for TextParam {
             color: None,
             font_id: None,
             scale: None,
+        }
+    }
+}
+
+impl From<Point2> for TextParam {
+    fn from(offset: Point2) -> TextParam {
+        TextParam {
+            offset,
+            ..TextParam::default()
         }
     }
 }
@@ -90,8 +107,7 @@ pub struct TextCached {
 
 impl TextCached {
     /// Creates an empty `TextCached`.
-    pub fn new_empty(context: &mut Context) -> GameResult<TextCached>
-    {
+    pub fn new_empty(context: &mut Context) -> GameResult<TextCached> {
         Ok(TextCached {
             fragments: Vec::new(),
             blend_mode: None,
@@ -117,11 +133,61 @@ impl TextCached {
         self
     }
 
+    /// Returns the string that the text represents, by concatenating fragments' strings.
+    pub fn contents(&self) -> String {
+        self.fragments
+            .iter()
+            .fold("".to_string(), |acc, frg| format!("{}{}", acc, frg.text))
+    }
+
+    // TODO: doc better, make use of bounds.
+    /// Calculates the width
+    pub fn width(&self, context: &Context, param: TextParam) -> u32 {
+        let mut width = 0.0;
+        let fonts = context.gfx_context.glyph_brush.fonts();
+        for fragment in self.fragments.iter() {
+            let font_id = match fragment.font_id {
+                Some(font_id) => font_id,
+                None => match param.font_id {
+                    Some(font_id) => font_id,
+                    None => FontId::default(),
+                },
+            };
+            let scale = match fragment.scale {
+                Some(scale) => scale,
+                None => match param.scale {
+                    Some(scale) => scale,
+                    None => Scale::uniform(DEFAULT_FONT_SCALE),
+                },
+            };
+            let font = fonts
+                .get(&font_id)
+                .expect(&format!("Could not fetch {:?} from glyph brush!", font_id));
+            let v_metrics = font.v_metrics(scale);
+            let offset = point(0.0, v_metrics.ascent);
+            let glyphs: Vec<PositionedGlyph> = font.layout(&fragment.text, scale, offset).collect();
+            width += glyphs
+                .iter()
+                .rev()
+                .filter_map(|g| {
+                    g.pixel_bounding_box()
+                        .map(|b| b.min.x as f32 + g.unpositioned().h_metrics().advance_width)
+                })
+                .next()
+                .unwrap_or(0.0);
+        }
+        width as u32
+    }
+
     /// Queues the `TextCached` to be drawn by `draw_queued()`.
     /// This is much more efficient than using `graphics::draw()` or equivalent.
     /// Note, any `TextCached` drawn via `graphics::draw()` will also draw the queue,
     /// if it hasn't been drawn by `draw_queued()` yet.
-    pub fn queue(&self, context: &mut Context, param: TextParam) {
+    pub fn queue<T>(&self, context: &mut Context, param: T)
+    where
+        T: Into<TextParam>,
+    {
+        let param = param.into();
         let mut sections = Vec::new();
         for fragment in self.fragments.iter() {
             let color = match fragment.color {
@@ -142,7 +208,7 @@ impl TextCached {
                 Some(scale) => scale,
                 None => match param.scale {
                     Some(scale) => scale,
-                    None => Scale::uniform(16.0),
+                    None => Scale::uniform(DEFAULT_FONT_SCALE),
                 },
             };
             sections.push(SectionText {
