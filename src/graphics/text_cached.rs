@@ -1,14 +1,14 @@
 use super::*;
 
-use graphics::text::Font;
 pub use gfx_glyph::{FontId, Scale};
-use gfx_glyph::{Section, SectionText, VariedSection};
+use gfx_glyph::{SectionText, VariedSection};
 use rusttype::{point, PositionedGlyph};
 
 /// Default scale, used as `Scale::uniform(DEFAULT_FONT_SCALE)` when no explicit scale is given.
 pub const DEFAULT_FONT_SCALE: f32 = 16.0;
 
-/// A piece of text with optional color, font and scale information.
+/// A piece of text with optional color, font and font scale information.
+/// These options take precedence over any similar field/argument.
 /// Can be implicitly constructed from `String` and `(String, Color)`.
 #[derive(Clone, Debug)]
 pub struct TextFragment {
@@ -53,49 +53,6 @@ impl From<(String, Color)> for TextFragment {
     }
 }
 
-/// Optional parameters for `TextCached.queue()`.
-#[derive(Clone, Debug)]
-pub struct TextParam {
-    // TODO: figure out how to use font metrics to make it behave as `DrawParam::offset` does.
-    /// Offset for transformations, like scale or rotation, in screen coordinates.
-    /// This is different from `DrawParam::offset`!
-    pub offset: Point2,
-    /// Dimensions of the rectangle to try and fit (by wrapping) the text into.
-    pub bounds: Point2,
-    /// Text's color, defaults to white (`graphics::get_color()`).
-    pub color: Option<Color>,
-    /// Text's font ID, defaults to 0 (`Text::default_font()`).
-    pub font_id: Option<FontId>,
-    /// Text's scale, defaults to uniform 16px(?).
-    pub scale: Option<Scale>,
-}
-
-impl TextParam {
-    //pub fn offset_
-}
-
-impl Default for TextParam {
-    fn default() -> Self {
-        use std::f32;
-        TextParam {
-            offset: Point2::origin(),
-            bounds: Point2::new(f32::INFINITY, f32::INFINITY),
-            color: None,
-            font_id: None,
-            scale: None,
-        }
-    }
-}
-
-impl From<Point2> for TextParam {
-    fn from(offset: Point2) -> TextParam {
-        TextParam {
-            offset,
-            ..TextParam::default()
-        }
-    }
-}
-
 /// Drawable text.
 /// Can be either monolithic, or consist of differently-formatted fragments.
 #[derive(Clone, Debug)]
@@ -103,34 +60,59 @@ pub struct TextCached {
     fragments: Vec<TextFragment>,
     // TODO: make it do something, maybe.
     blend_mode: Option<BlendMode>,
+    bounds: Point2,
+    font_id: FontId,
+    font_scale: Scale,
+}
+
+impl Default for TextCached {
+    fn default() -> Self {
+        use std::f32;
+        TextCached {
+            fragments: Vec::new(),
+            blend_mode: None,
+            bounds: Point2::new(f32::INFINITY, f32::INFINITY),
+            font_id: FontId::default(),
+            font_scale: Scale::uniform(DEFAULT_FONT_SCALE),
+        }
+    }
 }
 
 impl TextCached {
-    /// Creates an empty `TextCached`.
-    pub fn new_empty(context: &mut Context) -> GameResult<TextCached> {
-        Ok(TextCached {
-            fragments: Vec::new(),
-            blend_mode: None,
-        })
-    }
-
+    // TODO: consider ditching context. It's here for consistency's sake, that's it.
     /// Creates a `TextCached` from a `TextFragment`.
     pub fn new<T>(context: &mut Context, fragment: T) -> GameResult<TextCached>
-    where
-        T: Into<TextFragment>,
+        where
+            T: Into<TextFragment>,
     {
         let mut text = TextCached::new_empty(context)?;
         text.add_fragment(fragment);
         Ok(text)
     }
 
-    /// Adds another `TextFragment`; can be chained.
+    /// Creates an empty `TextCached`.
+    pub fn new_empty(context: &mut Context) -> GameResult<TextCached> {
+        Ok(TextCached::default())
+    }
+
+    /// Adds another `TextFragment`. Can be chained. Useful for looped construction.
     pub fn add_fragment<T>(&mut self, fragment: T) -> &mut TextCached
     where
         T: Into<TextFragment>,
     {
         self.fragments.push(fragment.into());
         self
+    }
+
+    /// Specifies rectangular dimensions to try and fit contents inside of, by wrapping.
+    pub fn set_bounds(&mut self, bounds: Point2) {
+        self.bounds = bounds;
+    }
+
+    /// Specifies text's font and font scale; used for fragments that don't have their own.
+    pub fn set_font(&mut self, font_id: FontId, font_scale: Scale) {
+        self.font_id = font_id;
+        self.font_scale = font_scale
     }
 
     /// Returns the string that the text represents, by concatenating fragments' strings.
@@ -142,23 +124,17 @@ impl TextCached {
 
     // TODO: doc better, make use of bounds.
     /// Calculates the width
-    pub fn width(&self, context: &Context, param: TextParam) -> u32 {
+    pub fn width(&self, context: &Context) -> u32 {
         let mut width = 0.0;
         let fonts = context.gfx_context.glyph_brush.fonts();
         for fragment in self.fragments.iter() {
             let font_id = match fragment.font_id {
                 Some(font_id) => font_id,
-                None => match param.font_id {
-                    Some(font_id) => font_id,
-                    None => FontId::default(),
-                },
+                None => self.font_id,
             };
             let scale = match fragment.scale {
                 Some(scale) => scale,
-                None => match param.scale {
-                    Some(scale) => scale,
-                    None => Scale::uniform(DEFAULT_FONT_SCALE),
-                },
+                None => self.font_scale,
             };
             let font = fonts
                 .get(&font_id)
@@ -179,37 +155,46 @@ impl TextCached {
         width as u32
     }
 
+    // TODO: doc better, make use of bounds.
+    /// Calculates the height
+    pub fn height(&self, context: &Context) -> u32 {
+        self.fragments
+            .iter()
+            .fold(Scale::uniform(0.0), |mut acc, frg| {
+                let scale = match frg.scale {
+                    Some(scale) => scale,
+                    None => self.font_scale,
+                };
+                if scale.y.ceil() > acc.y.ceil() {
+                    acc = scale
+                }
+                acc
+            })
+            .y
+            .ceil() as u32
+    }
+
+    // TODO: figure out how to use font metrics to make it behave as `DrawParam::offset` does.
     /// Queues the `TextCached` to be drawn by `draw_queued()`.
     /// This is much more efficient than using `graphics::draw()` or equivalent.
-    /// Note, any `TextCached` drawn via `graphics::draw()` will also draw the queue,
-    /// if it hasn't been drawn by `draw_queued()` yet.
-    pub fn queue<T>(&self, context: &mut Context, param: T)
-    where
-        T: Into<TextParam>,
-    {
-        let param = param.into();
+    /// Note, any `TextCached` drawn via `graphics::draw()` will also draw the queue.
+    pub fn queue(&self, context: &mut Context, offset: Point2, color: Option<Color>) {
         let mut sections = Vec::new();
         for fragment in self.fragments.iter() {
             let color = match fragment.color {
-                Some(color) => color,
-                None => match param.color {
-                    Some(color) => color,
+                Some(c) => c,
+                None => match color {
+                    Some(c) => c,
                     None => get_color(context),
                 },
             };
             let font_id = match fragment.font_id {
                 Some(font_id) => font_id,
-                None => match param.font_id {
-                    Some(font_id) => font_id,
-                    None => FontId::default(),
-                },
+                None => self.font_id,
             };
             let scale = match fragment.scale {
                 Some(scale) => scale,
-                None => match param.scale {
-                    Some(scale) => scale,
-                    None => Scale::uniform(DEFAULT_FONT_SCALE),
-                },
+                None => self.font_scale,
             };
             sections.push(SectionText {
                 text: &fragment.text,
@@ -219,8 +204,8 @@ impl TextCached {
             });
         }
         context.gfx_context.glyph_brush.queue(VariedSection {
-            screen_position: (param.offset.x, param.offset.y),
-            bounds: (param.bounds.x, param.bounds.x),
+            screen_position: (offset.x, offset.y),
+            bounds: (self.bounds.x, self.bounds.x),
             //z: f32,
             //layout: Layout<BuiltInLineBreaker>,
             text: sections,
@@ -229,7 +214,7 @@ impl TextCached {
     }
 
     /// Draws all of queued `TextCached`; `DrawParam` apply to everything in the queue.
-    /// `DrawParam::offset` is ignored - specify it when queueing instead (in screen coords).
+    /// Offset and color are ignored - specify them when queueing instead.
     /// This is much more efficient than using `graphics::draw()` or equivalent.
     pub fn draw_queued(context: &mut Context, param: DrawParam) -> GameResult<()> {
         type Mat4 = na::Matrix4<f32>;
@@ -291,13 +276,7 @@ impl TextCached {
 
 impl Drawable for TextCached {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
-        self.queue(
-            ctx,
-            TextParam {
-                offset: param.offset,
-                ..TextParam::default()
-            },
-        );
+        self.queue(ctx, param.offset, param.color);
         TextCached::draw_queued(ctx, param)
     }
 
