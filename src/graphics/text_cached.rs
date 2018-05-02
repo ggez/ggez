@@ -1,15 +1,19 @@
 use super::*;
 
 pub use gfx_glyph::{FontId, Scale};
-use gfx_glyph::{SectionText, VariedSection};
+use gfx_glyph::{self, BuiltInLineBreaker, GlyphPositioner, SectionText, VariedSection};
 use rusttype::{point, PositionedGlyph};
+use std::borrow::Cow;
+
+/// Aliased type from `gfx_glyph`.
+pub type Layout = gfx_glyph::Layout<BuiltInLineBreaker>;
 
 /// Default scale, used as `Scale::uniform(DEFAULT_FONT_SCALE)` when no explicit scale is given.
 pub const DEFAULT_FONT_SCALE: f32 = 16.0;
 
 /// A piece of text with optional color, font and font scale information.
 /// These options take precedence over any similar field/argument.
-/// Can be implicitly constructed from `String` and `(String, Color)`.
+/// Can be implicitly constructed from `String`, `(String, Color)`, and `(String, FontId, Scale)`.
 #[derive(Clone, Debug)]
 pub struct TextFragment {
     /// Text string itself.
@@ -36,19 +40,69 @@ impl Default for TextFragment {
 impl From<String> for TextFragment {
     fn from(text: String) -> TextFragment {
         TextFragment {
-            text,
-            ..TextFragment::default()
+            text: text,
+            ..Default::default()
         }
     }
 }
 
-// TODO: consider even more convenience conversions.
 impl From<(String, Color)> for TextFragment {
     fn from(tuple: (String, Color)) -> TextFragment {
         TextFragment {
             text: tuple.0,
             color: Some(tuple.1),
-            ..TextFragment::default()
+            ..Default::default()
+        }
+    }
+}
+
+impl From<(String, FontId, Scale)> for TextFragment {
+    fn from(tuple: (String, FontId, Scale)) -> TextFragment {
+        TextFragment {
+            text: tuple.0,
+            font_id: Some(tuple.1),
+            scale: Some(tuple.2),
+            ..Default::default()
+        }
+    }
+}
+
+impl<'a> From<&'a str> for TextFragment {
+    fn from(text: &'a str) -> TextFragment {
+        TextFragment {
+            text: text.to_string(),
+            ..Default::default()
+        }
+    }
+}
+
+impl<'a> From<(&'a str, Color)> for TextFragment {
+    fn from(tuple: (&'a str, Color)) -> TextFragment {
+        TextFragment {
+            text: tuple.0.to_string(),
+            color: Some(tuple.1),
+            ..Default::default()
+        }
+    }
+}
+
+impl<'a> From<(&'a str, FontId, Scale)> for TextFragment {
+    fn from(tuple: (&'a str, FontId, Scale)) -> TextFragment {
+        TextFragment {
+            text: tuple.0.to_string(),
+            font_id: Some(tuple.1),
+            scale: Some(tuple.2),
+            ..Default::default()
+        }
+    }
+}
+
+impl From<(Point2, f32)> for DrawParam {
+    fn from(tuple: (Point2, f32)) -> DrawParam {
+        DrawParam {
+            dest: tuple.0,
+            rotation: tuple.1,
+            ..Default::default()
         }
     }
 }
@@ -61,6 +115,7 @@ pub struct TextCached {
     // TODO: make it do something, maybe.
     blend_mode: Option<BlendMode>,
     bounds: Point2,
+    layout: Layout,
     font_id: FontId,
     font_scale: Scale,
 }
@@ -72,6 +127,7 @@ impl Default for TextCached {
             fragments: Vec::new(),
             blend_mode: None,
             bounds: Point2::new(f32::INFINITY, f32::INFINITY),
+            layout: Layout::default(),
             font_id: FontId::default(),
             font_scale: Scale::uniform(DEFAULT_FONT_SCALE),
         }
@@ -79,11 +135,11 @@ impl Default for TextCached {
 }
 
 impl TextCached {
-    // TODO: consider ditching context. It's here for consistency's sake, that's it.
+    // TODO: consider ditching context - it's here for consistency's sake, that's it.
     /// Creates a `TextCached` from a `TextFragment`.
-    pub fn new<T>(context: &mut Context, fragment: T) -> GameResult<TextCached>
-        where
-            T: Into<TextFragment>,
+    pub fn new<F>(context: &mut Context, fragment: F) -> GameResult<TextCached>
+    where
+        F: Into<TextFragment>,
     {
         let mut text = TextCached::new_empty(context)?;
         text.add_fragment(fragment);
@@ -95,24 +151,30 @@ impl TextCached {
         Ok(TextCached::default())
     }
 
-    /// Adds another `TextFragment`. Can be chained. Useful for looped construction.
-    pub fn add_fragment<T>(&mut self, fragment: T) -> &mut TextCached
+    /// Appends a `TextFragment`.
+    pub fn add_fragment<F>(&mut self, fragment: F) -> &mut TextCached
     where
-        T: Into<TextFragment>,
+        F: Into<TextFragment>,
     {
         self.fragments.push(fragment.into());
         self
     }
 
     /// Specifies rectangular dimensions to try and fit contents inside of, by wrapping.
-    pub fn set_bounds(&mut self, bounds: Point2) {
+    /// Alignment within bounds can be changed by passing a `Layout`; defaults to top left corner.
+    pub fn set_bounds(&mut self, bounds: Point2, layout: Option<Layout>) -> &mut TextCached {
         self.bounds = bounds;
+        if let Some(layout) = layout {
+            self.layout = layout;
+        }
+        self
     }
 
     /// Specifies text's font and font scale; used for fragments that don't have their own.
-    pub fn set_font(&mut self, font_id: FontId, font_scale: Scale) {
+    pub fn set_font(&mut self, font_id: FontId, font_scale: Scale) -> &mut TextCached {
         self.font_id = font_id;
-        self.font_scale = font_scale
+        self.font_scale = font_scale;
+        self
     }
 
     /// Returns the string that the text represents, by concatenating fragments' strings.
@@ -207,16 +269,34 @@ impl TextCached {
             screen_position: (offset.x, offset.y),
             bounds: (self.bounds.x, self.bounds.x),
             //z: f32,
-            //layout: Layout<BuiltInLineBreaker>,
+            layout: self.layout,
             text: sections,
-            ..VariedSection::default()
+            ..Default::default()
         });
+    }
+
+    /// Exposes `gfx_glyph`'s `GlyphBrush::queue()` and `GlyphBrush::queue_custom_layout()`,
+    /// in case `ggez`' API is insufficient.
+    pub fn queue_raw<'a, S, G>(context: &mut Context, section: S, custom_layout: Option<&G>)
+    where
+        S: Into<Cow<'a, VariedSection<'a>>>,
+        G: GlyphPositioner,
+    {
+        let brush = &mut context.gfx_context.glyph_brush;
+        match custom_layout {
+            Some(layout) => brush.queue_custom_layout(section, layout),
+            None => brush.queue(section),
+        }
     }
 
     /// Draws all of queued `TextCached`; `DrawParam` apply to everything in the queue.
     /// Offset and color are ignored - specify them when queueing instead.
     /// This is much more efficient than using `graphics::draw()` or equivalent.
-    pub fn draw_queued(context: &mut Context, param: DrawParam) -> GameResult<()> {
+    pub fn draw_queued<D>(context: &mut Context, param: D) -> GameResult<()>
+    where
+        D: Into<DrawParam>,
+    {
+        let param: DrawParam = param.into();
         type Mat4 = na::Matrix4<f32>;
         type Vec3 = na::Vector3<f32>;
 
