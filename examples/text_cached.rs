@@ -7,7 +7,8 @@ extern crate rand;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::{Context, ContextBuilder, GameResult};
-use ggez::graphics::{self, Color, DrawParam, Point2, Scale, TextCached, TextFragment};
+use ggez::graphics::{self, Color, DrawParam, FontId, HorizontalAlign as HAlign, Layout, Point2,
+                     Scale, TextCached, TextFragment, VerticalAlign as VAlign};
 use ggez::timer;
 use std::env;
 use std::path;
@@ -177,15 +178,25 @@ impl event::EventHandler for MainState {
             .add_fragment("simple fragment ")
             .add_fragment(("always yellow fragment", Color::new(1.0, 1.0, 0.0, 1.0)))
             .add_fragment(" another simple fragment")
+            .add_fragment((" larger fragment", FontId::default(), Scale::uniform(10.0)))
             .queue(ctx, Point2::origin(), Some(Color::new(1.0, 0.0, 0.0, 1.0)));
-        TextCached::draw_queued(
-            ctx,
-            DrawParam {
-                dest: Point2::new(500.0, 400.0),
-                scale: Point2::new(2.0, 2.0),
-                ..Default::default()
-            },
-        )?;
+        TextCached::new_empty(ctx)?
+            .set_font(FontId::default(), Scale::uniform(18.0))
+            .set_bounds(
+                Point2::new(200.0, std::f32::INFINITY),
+                Some(Layout::default().h_align(HAlign::Right)),
+            )
+            .add_fragment("simple fragment ")
+            .add_fragment(("always green fragment", Color::new(0.0, 1.0, 0.0, 1.0)))
+            .add_fragment(" another simple fragment")
+            .add_fragment((" smaller fragment", FontId::default(), Scale::uniform(10.0)))
+            .replace_fragment(1, ("psyche it's red", Color::new(1.0, 0.0, 0.0, 1.0)))
+            .queue(
+                ctx,
+                Point2::new(100.0, 100.0),
+                Some(Color::new(1.0, 0.0, 1.0, 1.0)),
+            );
+        TextCached::draw_queued(ctx, (Point2::new(500.0, 400.0), 0.0))?;
 
         graphics::present(ctx);
         timer::yield_now();

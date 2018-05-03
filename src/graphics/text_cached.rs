@@ -1,12 +1,12 @@
 use super::*;
 
-pub use gfx_glyph::{FontId, Scale};
-use gfx_glyph::{self, BuiltInLineBreaker, GlyphPositioner, SectionText, VariedSection};
+pub use gfx_glyph::{FontId, HorizontalAlign, Scale, VerticalAlign};
+use gfx_glyph::{self, GlyphPositioner, SectionText, VariedSection};
 use rusttype::{point, PositionedGlyph};
 use std::borrow::Cow;
 
 /// Aliased type from `gfx_glyph`.
-pub type Layout = gfx_glyph::Layout<BuiltInLineBreaker>;
+pub type Layout = gfx_glyph::Layout<gfx_glyph::BuiltInLineBreaker>;
 
 /// Default scale, used as `Scale::uniform(DEFAULT_FONT_SCALE)` when no explicit scale is given.
 pub const DEFAULT_FONT_SCALE: f32 = 16.0;
@@ -40,7 +40,7 @@ impl Default for TextFragment {
 impl From<String> for TextFragment {
     fn from(text: String) -> TextFragment {
         TextFragment {
-            text: text,
+            text,
             ..Default::default()
         }
     }
@@ -160,6 +160,16 @@ impl TextCached {
         self
     }
 
+    /// Replaces a `TextFragment` without having to rebuild the entire `TextCached`.
+    /// Useful for things like animating specific words, or highlighting them on mouseover.
+    pub fn replace_fragment<F>(&mut self, old_index: usize, new_fragment: F) -> &mut TextCached
+    where
+        F: Into<TextFragment>,
+    {
+        self.fragments[old_index] = new_fragment.into();
+        self
+    }
+
     /// Specifies rectangular dimensions to try and fit contents inside of, by wrapping.
     /// Alignment within bounds can be changed by passing a `Layout`; defaults to top left corner.
     pub fn set_bounds(&mut self, bounds: Point2, layout: Option<Layout>) -> &mut TextCached {
@@ -189,7 +199,7 @@ impl TextCached {
     pub fn width(&self, context: &Context) -> u32 {
         let mut width = 0.0;
         let fonts = context.gfx_context.glyph_brush.fonts();
-        for fragment in self.fragments.iter() {
+        for fragment in &self.fragments {
             let font_id = match fragment.font_id {
                 Some(font_id) => font_id,
                 None => self.font_id,
@@ -242,7 +252,7 @@ impl TextCached {
     /// Note, any `TextCached` drawn via `graphics::draw()` will also draw the queue.
     pub fn queue(&self, context: &mut Context, offset: Point2, color: Option<Color>) {
         let mut sections = Vec::new();
-        for fragment in self.fragments.iter() {
+        for fragment in &self.fragments {
             let color = match fragment.color {
                 Some(c) => c,
                 None => match color {
@@ -267,7 +277,7 @@ impl TextCached {
         }
         context.gfx_context.glyph_brush.queue(VariedSection {
             screen_position: (offset.x, offset.y),
-            bounds: (self.bounds.x, self.bounds.x),
+            bounds: (self.bounds.x, self.bounds.y), // <-- that was shameful
             //z: f32,
             layout: self.layout,
             text: sections,
@@ -344,13 +354,13 @@ impl TextCached {
             &context.gfx_context.screen_render_target,
             &context.gfx_context.depth_view,
         );
-
-        Ok(context.gfx_context.glyph_brush.draw_queued_with_transform(
+        context.gfx_context.glyph_brush.draw_queued_with_transform(
             m_transform.into(),
             encoder,
             render_tgt,
             depth_view,
-        )?)
+        )?;
+        Ok(())
     }
 }
 
