@@ -17,6 +17,7 @@ struct MainState {
     image: graphics::Image,
     text: graphics::Text,
     bmptext: graphics::Text,
+    pixel_sized_text: graphics::Text,
     // Not actually dead, see BUGGO below
     #[allow(dead_code)]
     sound: audio::Source,
@@ -58,6 +59,9 @@ impl MainState {
         let bmptext = graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
         let sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
 
+        let pixel_font = graphics::Font::new_px(ctx, "/DejaVuSerif.ttf", 32).unwrap();
+        let pixel_sized_text = graphics::Text::new(ctx, "This text is 32 pixels high", &pixel_font).unwrap(); 
+
         let _ = sound.play();
 
         let s = MainState {
@@ -66,6 +70,7 @@ impl MainState {
             image,
             text,
             bmptext,
+            pixel_sized_text,
             // BUGGO: We never use sound again,
             // but we have to hang on to it, Or Else!
             // The optimizer will decide we don't need it
@@ -103,6 +108,13 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         let dest_point = graphics::Point2::new(100.0, 50.0);
         graphics::draw(ctx, &self.bmptext, dest_point, 0.0)?;
+
+
+        let dest_point2 = graphics::Point2::new(0.0, 256.0);
+        graphics::set_color(ctx, Color::from((0, 0, 0, 255)))?;
+        graphics::rectangle(ctx, graphics::DrawMode::Fill, graphics::Rect::new(0.0, 256.0, 500.0, 32.0))?;
+        graphics::set_color(ctx, Color::from((255, 255, 255, 255)))?;
+        graphics::draw(ctx, &self.pixel_sized_text, dest_point2, 0.0)?;
 
         self.draw_crazy_lines(ctx)?;
         graphics::present(ctx);

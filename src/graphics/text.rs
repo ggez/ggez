@@ -99,7 +99,7 @@ impl Font {
 
         let name = format!("{:?}", path);
 
-        Font::from_bytes_px:(&name, &buf, pixels)
+        Font::from_bytes_px(&name, &buf, pixels)
     }
 
 
@@ -156,8 +156,8 @@ impl Font {
         let scale = rusttype::Scale { x: pixels as f32, y: pixels as f32};
 
         Ok(Font::TTFFont {
+            points: 0, // Pretty sure points is unused apart from display, so
             font,
-            0, // Pretty sure points is unused apart from display, so
             scale,
         })
     }
