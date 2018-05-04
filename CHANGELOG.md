@@ -6,6 +6,8 @@
  * We got an awesome logo! [#327](https://github.com/ggez/ggez/issues/327)
  * Added hooks to the `log` crate, so we will now output some logging data via it that clients may use.
  [#311](https://github.com/ggez/ggez/pull/331)
+ * Added `Font::new_px()` and `Font::from_bytes_px()` functions to create fonts that are specific pixel sizes 
+ [#268](https://github.com/ggez/ggez/issues/268)
 
 ## Changed
 
