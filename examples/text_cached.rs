@@ -7,11 +7,43 @@ extern crate rand;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::{Context, ContextBuilder, GameResult};
-use ggez::graphics::{self, Color, DrawParam, FontId, HorizontalAlign as HAlign, Layout, Point2,
-                     Scale, TextCached, TextFragment, VerticalAlign as VAlign};
+use ggez::graphics::{self, Color, DrawParam, Drawable, FontId, HorizontalAlign as HAlign, Layout,
+                     Point2, Scale, TextCached, TextFragment};
 use ggez::timer;
 use std::env;
 use std::path;
+
+struct FramedText {
+    text: TextCached,
+    frame: graphics::Mesh,
+}
+
+impl FramedText {
+    fn recalculate_frame(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let (width, height) = (self.text.width(ctx) as f32, self.text.height(ctx) as f32);
+        self.frame = graphics::MeshBuilder::new()
+            .line(
+                &[
+                    Point2::new(0.0, 0.0),
+                    Point2::new(width, 0.0),
+                    Point2::new(width, height),
+                    Point2::new(0.0, height),
+                    Point2::new(0.0, 0.0),
+                ],
+                1.0,
+            )
+            .build(ctx)?;
+        Ok(())
+    }
+
+    fn queue_text(&mut self, ctx: &mut Context, relative_dest: Point2, color: Option<Color>) {
+        self.text.queue(ctx, relative_dest, color);
+    }
+
+    fn draw_frame(&mut self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+        self.frame.draw_ex(ctx, param)
+    }
+}
 
 struct MainState {
     anima: f32,
@@ -20,6 +52,7 @@ struct MainState {
     fps_display: TextCached,
     chroma: TextCached,
     wonky: TextCached,
+    framed_text: FramedText,
 }
 
 impl MainState {
@@ -62,6 +95,16 @@ impl MainState {
             });
         }
 
+        let mut framed_text_text = TextCached::new_empty(ctx)?;
+        framed_text_text
+            .set_bounds(Point2::new(60.0, 600.0), None)
+            .add_fragment("I've been framed!");
+        let mut framed_text = FramedText {
+            text: framed_text_text,
+            frame: graphics::MeshBuilder::new().build(ctx)?,
+        };
+        framed_text.recalculate_frame(ctx)?;
+
         Ok(MainState {
             anima: 0.0,
             text,
@@ -69,6 +112,7 @@ impl MainState {
             fps_display,
             chroma,
             wonky,
+            framed_text,
         })
     }
 }
@@ -88,7 +132,7 @@ impl event::EventHandler for MainState {
         let fps = timer::get_fps(ctx);
         self.fps_display = TextCached::new(ctx, format!("FPS: {}", fps))?;
 
-        graphics::draw_ex(
+        /*graphics::draw_ex(
             ctx,
             &self.text,
             DrawParam {
@@ -97,7 +141,7 @@ impl event::EventHandler for MainState {
                 offset: Point2::new(-20.0, -8.0),
                 ..Default::default()
             },
-        )?;
+        )?;*/
         graphics::draw_ex(
             ctx,
             &self.text_too,
@@ -123,13 +167,13 @@ impl event::EventHandler for MainState {
             });
         }
         let wobble_offset = Point2::new(0.0, 0.0);
-        let wobble_width = wobble.width(ctx);
-        let wobble_height = wobble.height(ctx);
+        //let wobble_width = wobble.width(ctx);
+        //let wobble_height = wobble.height(ctx);
         wobble.queue(ctx, wobble_offset, None);
-        TextCached::new(
+        /*TextCached::new(
             ctx,
             format!("width: {}\nheight: {}", wobble_width, wobble_height),
-        )?.queue(ctx, Point2::new(0.0, 20.0), None);
+        )?.queue(ctx, Point2::new(0.0, 20.0), None);*/
         TextCached::draw_queued(ctx, (Point2::new(50.0, 400.0), 0.0))?;
 
         TextCached::new(ctx, "word1")?.queue(
@@ -180,11 +224,12 @@ impl event::EventHandler for MainState {
             .add_fragment(" another simple fragment")
             .add_fragment((" larger fragment", FontId::default(), Scale::uniform(10.0)))
             .queue(ctx, Point2::origin(), Some(Color::new(1.0, 0.0, 0.0, 1.0)));
-        TextCached::new_empty(ctx)?
+        let mut excerpt = TextCached::new_empty(ctx)?;
+        excerpt
             .set_font(FontId::default(), Scale::uniform(18.0))
             .set_bounds(
                 Point2::new(200.0, std::f32::INFINITY),
-                Some(Layout::default().h_align(HAlign::Right)),
+                Some(Layout::default().h_align(HAlign::Center)),
             )
             .add_fragment("simple fragment ")
             .add_fragment(("always green fragment", Color::new(0.0, 1.0, 0.0, 1.0)))
@@ -196,7 +241,25 @@ impl event::EventHandler for MainState {
                 Point2::new(100.0, 100.0),
                 Some(Color::new(1.0, 0.0, 1.0, 1.0)),
             );
+        /*let excerpt_dims = (excerpt.width(ctx), excerpt.height(ctx));
+        TextCached::new(
+            ctx,
+            format!("width: {}\nheight: {}", excerpt_dims.0, excerpt_dims.1),
+        )?.queue(ctx, Point2::new(0.0, 100.0), None);*/
         TextCached::draw_queued(ctx, (Point2::new(500.0, 400.0), 0.0))?;
+
+        let framed_draw_params = DrawParam {
+            dest: Point2::new(100.0, 200.0),
+            shear: Point2::new(0.5 * self.anima.sin(), 0.0),
+            //rotation: 0.71 * self.anima,
+            offset: Point2::new(0.0, 0.0),
+            ..Default::default()
+        };
+        self.framed_text
+            .queue_text(ctx, Point2::new(0.0, 0.0), None);
+        self.framed_text
+            .draw_frame(ctx, framed_draw_params.clone())?;
+        TextCached::draw_queued(ctx, framed_draw_params)?;
 
         graphics::present(ctx);
         timer::yield_now();
@@ -208,6 +271,31 @@ impl event::EventHandler for MainState {
             ctx,
             graphics::Rect::new(0.0, 0.0, width as f32, height as f32),
         ).unwrap();
+    }
+
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        _keycode: event::Keycode,
+        _keymod: event::Mod,
+        _repeat: bool,
+    ) {
+        match _keycode {
+            event::Keycode::Escape => ctx.quit().expect("Should never fail"),
+            event::Keycode::Space => {
+                self.framed_text.text.add_fragment((
+                    " random color ",
+                    Color::new(
+                        rand::random::<f32>(),
+                        rand::random::<f32>(),
+                        rand::random::<f32>(),
+                        1.0,
+                    ),
+                ));
+                self.framed_text.recalculate_frame(ctx);
+            }
+            _ => (),
+        }
     }
 }
 
