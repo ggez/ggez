@@ -87,6 +87,22 @@ impl Font {
         Font::from_bytes(&name, &buf, points, (x_dpi, y_dpi))
     }
 
+    /// Load a new TTF font from the given file, returning a font that draws
+    /// lines that are the given number of pixels high.
+    pub fn new_px<P>(context: &mut Context, path: P, pixels: u32) -> GameResult<Font>
+    where
+        P: AsRef<path::Path> + fmt::Debug,
+    {
+        let mut stream = context.filesystem.open(path.as_ref())?;
+        let mut buf = Vec::new();
+        stream.read_to_end(&mut buf)?;
+
+        let name = format!("{:?}", path);
+
+        Font::from_bytes_px:(&name, &buf, pixels)
+    }
+
+
     /// Loads a new TTF font from data copied out of the given buffer.
     pub fn from_bytes(name: &str, bytes: &[u8], points: u32, dpi: (f32, f32)) -> GameResult<Font> {
         let font_collection_err = &|_| {
@@ -113,6 +129,35 @@ impl Font {
         Ok(Font::TTFFont {
             font,
             points,
+            scale,
+        })
+    }
+
+
+    /// Loads a new TTF font from data copied out of the given buffer, taking font size in pixels
+    pub fn from_bytes_px(name: &str, bytes: &[u8], pixels: u32) -> GameResult<Font> {
+        let font_collection_err = &|_| {
+            GameError::ResourceLoadError(format!(
+                "Could not load font collection for \
+                 font {:?}",
+                name
+            ))
+        };
+        let collection =
+            rusttype::FontCollection::from_bytes(bytes.to_vec()).map_err(font_collection_err)?;
+        let font_err = &|_| {
+            GameError::ResourceLoadError(format!(
+                "Could not retrieve font from collection for \
+                 font {:?}",
+                name
+            ))
+        };
+        let font = collection.into_font().map_err(font_err)?;
+        let scale = rusttype::Scale { x: pixels as f32, y: pixels as f32};
+
+        Ok(Font::TTFFont {
+            font,
+            0, // Pretty sure points is unused apart from display, so
             scale,
         })
     }
