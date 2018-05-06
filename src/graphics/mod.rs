@@ -51,6 +51,8 @@ pub use self::types::*;
 /// A marker trait saying that something is a label for a particular backend,
 /// with associated gfx-rs types for that backend.
 pub trait BackendSpec: fmt::Debug {
+    /// Color space type
+    type ColorType: gfx::format::RenderChannel;
     /// gfx resource type
     type Resources: gfx::Resources;
     /// gfx factory type
@@ -88,6 +90,7 @@ impl From<conf::Backend> for GlBackendSpec {
 }
 
 impl BackendSpec for GlBackendSpec {
+    type ColorType = gfx::format::Srgb;
     type Resources = gfx_device_gl::Resources;
     type Factory = gfx_device_gl::Factory;
     type CommandBuffer = gfx_device_gl::CommandBuffer;

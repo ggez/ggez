@@ -7,6 +7,8 @@
  * Added hooks to the `log` crate, so we will now output some logging data via it that clients may use.
  [#311](https://github.com/ggez/ggez/pull/331)
  * There's now a functional and reasonably ergonomic [game template](https://github.com/ggez/game-template) repo that demonstrates how to use `ggez` with `specs`, `warmy`, `failure`, `log` and other useful tools.
+ * Added `Font::new_px()` and `Font::from_bytes_px()` functions to create fonts that are specific pixel sizes 
+ [#268](https://github.com/ggez/ggez/issues/268)
 
 ## Changed
 

@@ -15,9 +15,10 @@ use conf::WindowSetup;
 /// window info, DPI, rendering pipeline state, etc.
 ///
 /// As an end-user you shouldn't ever have to touch this.
-pub(crate) struct GraphicsContextGeneric<B>
+pub(crate) struct GraphicsContextGeneric<B, C>
 where
-    B: BackendSpec,
+    B: BackendSpec<ColorType=C>,
+    C: gfx::format::RenderChannel,
 {
     pub(crate) foreground_color: Color,
     pub(crate) background_color: Color,
@@ -37,7 +38,7 @@ where
     pub(crate) factory: Box<B::Factory>,
     pub(crate) encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
     pub(crate) screen_render_target:
-        gfx::handle::RenderTargetView<B::Resources, gfx::format::Srgba8>,
+        gfx::handle::RenderTargetView<B::Resources, (gfx::format::R8_G8_B8_A8, C)>,
     #[allow(dead_code)]
     pub(crate) depth_view: gfx::handle::DepthStencilView<B::Resources, gfx::format::DepthStencil>,
 
@@ -53,9 +54,10 @@ where
     pub(crate) shaders: Vec<Box<ShaderHandle<B>>>,
 }
 
-impl<B> fmt::Debug for GraphicsContextGeneric<B>
+impl<B, C> fmt::Debug for GraphicsContextGeneric<B, C>
 where
-    B: BackendSpec,
+    B: BackendSpec<ColorType=C>,
+    C: gfx::format::RenderChannel,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<GraphicsContext: {:p}>", self)
@@ -63,7 +65,7 @@ where
 }
 
 /// A concrete graphics context for GL rendering.
-pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec>;
+pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec, gfx::format::Srgb>;
 
 impl GraphicsContext {
     /// Create a new GraphicsContext
