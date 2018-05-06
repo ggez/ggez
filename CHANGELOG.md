@@ -6,6 +6,7 @@
  * We got an awesome logo! [#327](https://github.com/ggez/ggez/issues/327)
  * Added hooks to the `log` crate, so we will now output some logging data via it that clients may use.
  [#311](https://github.com/ggez/ggez/pull/331)
+ * There's now a functional and reasonably ergonomic [game template](https://github.com/ggez/game-template) repo that demonstrates how to use `ggez` with `specs`, `warmy`, `failure`, `log` and other useful tools.
 
 ## Changed
 

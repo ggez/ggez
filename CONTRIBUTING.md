@@ -47,3 +47,13 @@ release gets made from `master`.  If we then discover and fix a bug in `devel`, 
 ### Code and other contributions
 
 Contributions to ggez (via pull request or otherwise) must be licensed under the same license as ggez
+
+### Submitting examples
+
+The purpose of the example code is to be documentation of ggez's features.  Unfortunately, examples are also a maintenance burden, so we
+don't want to just include every cool little program we write.  Examples that just use features that already are shown off by other examples should be
+kept to a minimum... though this doesn't mean we can't refactor several example programs into one, or vice versa, or that there has to be no
+duplication at all.
+
+If you've written something cool and want to show it off, but it doesn't fulfill the listed guidelines, consider making it its own project
+and submitting a PR to add it to the `docs/Projects.md` file!
