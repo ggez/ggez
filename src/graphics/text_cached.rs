@@ -2,9 +2,9 @@ use super::*;
 
 pub use gfx_glyph::{FontId, HorizontalAlign, Scale, VerticalAlign};
 use gfx_glyph::{self, GlyphPositioner, SectionText, VariedSection};
-use rusttype::{point, PositionedGlyph};
 use std::borrow::Cow;
 use std::f32;
+use std::sync::{Arc, RwLock};
 
 /// Aliased type from `gfx_glyph`.
 pub type Layout = gfx_glyph::Layout<gfx_glyph::BuiltInLineBreaker>;
@@ -108,6 +108,23 @@ impl From<(Point2, f32)> for DrawParam {
     }
 }
 
+#[derive(Clone, Debug)]
+struct CachedMetrics {
+    string: Option<String>,
+    width: Option<u32>,
+    height: Option<u32>,
+}
+
+impl Default for CachedMetrics {
+    fn default() -> CachedMetrics {
+        CachedMetrics {
+            string: None,
+            width: None,
+            height: None,
+        }
+    }
+}
+
 /// Drawable text.
 /// Can be either monolithic, or consist of differently-formatted fragments.
 #[derive(Clone, Debug)]
@@ -119,9 +136,7 @@ pub struct TextCached {
     layout: Layout,
     font_id: FontId,
     font_scale: Scale,
-    cached_string: Option<String>,
-    cached_width: Option<u32>,
-    cached_height: Option<u32>,
+    cached_metrics: Arc<RwLock<CachedMetrics>>,
 }
 
 impl Default for TextCached {
@@ -133,9 +148,7 @@ impl Default for TextCached {
             layout: Layout::default(),
             font_id: FontId::default(),
             font_scale: Scale::uniform(DEFAULT_FONT_SCALE),
-            cached_string: None,
-            cached_width: None,
-            cached_height: None,
+            cached_metrics: Arc::new(RwLock::new(CachedMetrics::default())),
         }
     }
 }
@@ -163,7 +176,7 @@ impl TextCached {
         F: Into<TextFragment>,
     {
         self.fragments.push(fragment.into());
-        self.invalidate_caches();
+        self.invalidate_cached_metrics();
         self
     }
 
@@ -174,7 +187,7 @@ impl TextCached {
         F: Into<TextFragment>,
     {
         self.fragments[old_index] = new_fragment.into();
-        self.invalidate_caches();
+        self.invalidate_cached_metrics();
         self
     }
 
@@ -190,7 +203,7 @@ impl TextCached {
                 self.layout = layout;
             }
         }
-        self.invalidate_caches();
+        self.invalidate_cached_metrics();
         self
     }
 
@@ -198,10 +211,11 @@ impl TextCached {
     pub fn set_font(&mut self, font_id: FontId, font_scale: Scale) -> &mut TextCached {
         self.font_id = font_id;
         self.font_scale = font_scale;
-        self.invalidate_caches();
+        self.invalidate_cached_metrics();
         self
     }
 
+    /// Converts `TextCached` to a type `gfx_glyph` can understand and queue.
     fn generate_varied_section<'a>(
         &'a self,
         context: &Context,
@@ -260,13 +274,32 @@ impl TextCached {
         }
     }
 
-    fn invalidate_caches(&mut self) {
-        self.cached_string = None;
-        self.cached_width = None;
-        self.cached_height = None;
+    fn invalidate_cached_metrics(&mut self) {
+        if let Ok(mut metrics) = self.cached_metrics.write() {
+            *metrics = CachedMetrics::default();
+            return ();
+        }
+        warn!("Cached metrics RwLock has been poisoned.");
+        self.cached_metrics = Arc::new(RwLock::new(CachedMetrics::default()));
     }
 
-    fn calculate_dimensions(&mut self, context: &Context) -> (u32, u32) {
+    /// Returns the string that the text represents.
+    pub fn contents(&self) -> String {
+        if let Ok(metrics) = self.cached_metrics.read() {
+            if let Some(ref string) = metrics.string {
+                return string.clone();
+            }
+        }
+        let text_string = self.fragments
+            .iter()
+            .fold("".to_string(), |acc, frg| format!("{}{}", acc, frg.text));
+        if let Ok(mut metrics) = self.cached_metrics.write() {
+            metrics.string = Some(text_string.clone());
+        }
+        text_string
+    }
+
+    fn calculate_dimensions(&self, context: &Context) -> (u32, u32) {
         let mut max_width = 0;
         let mut max_height = 0;
         {
@@ -289,42 +322,33 @@ impl TextCached {
             }
         }
         let (width, height) = (max_width as u32, max_height as u32);
-        self.cached_width = Some(width);
-        self.cached_height = Some(height);
+        if let Ok(mut metrics) = self.cached_metrics.write() {
+            metrics.width = Some(width);
+            metrics.height = Some(height);
+        }
         (width, height)
     }
 
-    // TODO: doc better
-    /// Calculates the width
-    pub fn width(&mut self, context: &Context) -> u32 {
-        match self.cached_width {
-            Some(w) => w,
-            None => self.calculate_dimensions(context).0,
+    /// Returns the width of formatted and wrapped text.
+    pub fn width(&self, context: &Context) -> u32 {
+        if let Ok(metrics) = self.cached_metrics.read() {
+            if let Some(width) = metrics.width {
+                return width;
+            }
         }
+        self.calculate_dimensions(context).0
     }
 
-    // TODO: doc better
-    /// Calculates the height
-    pub fn height(&mut self, context: &Context) -> u32 {
-        match self.cached_height {
-            Some(h) => h,
-            None => self.calculate_dimensions(context).1,
+    /// Returns the height of formatted and wrapped text.
+    pub fn height(&self, context: &Context) -> u32 {
+        if let Ok(metrics) = self.cached_metrics.read() {
+            if let Some(height) = metrics.height {
+                return height;
+            }
         }
+        self.calculate_dimensions(context).1
     }
 
-    /// Returns the string that the text represents.
-    pub fn contents(&mut self) -> String {
-        if let Some(ref string) = self.cached_string {
-            return string.clone();
-        }
-        let string = self.fragments
-            .iter()
-            .fold("".to_string(), |acc, frg| format!("{}{}", acc, frg.text));
-        self.cached_string = Some(string.clone());
-        string
-    }
-
-    // TODO: figure out how to use font metrics to make it behave as `DrawParam::offset` does.
     /// Queues the `TextCached` to be drawn by `draw_queued()`.
     /// This is much more efficient than using `graphics::draw()` or equivalent.
     /// `relative_dest` is relative to the `DrawParam::dest` passed to `draw_queued()`.
@@ -350,8 +374,8 @@ impl TextCached {
 
     /// Draws all of `queue()`d `TextCached`.
     /// This is much more efficient than using `graphics::draw()` or equivalent.
-    /// `DrawParam` apply to everything in the queue.
-    /// Offset and color are ignored - specify them in `queue()` instead.
+    /// `DrawParam` apply to everything in the queue; offset is in screen coordinates;
+    /// color is ignored - specify it when `queue()`ing instead.
     pub fn draw_queued<D>(context: &mut Context, param: D) -> GameResult<()>
     where
         D: Into<DrawParam>,
@@ -360,10 +384,13 @@ impl TextCached {
         type Mat4 = na::Matrix4<f32>;
         type Vec3 = na::Vector3<f32>;
 
-        let (offset_x, offset_y) = (-1.0, 1.0);
         let (screen_w, screen_h) = (
             context.gfx_context.screen_rect.w,
             context.gfx_context.screen_rect.h,
+        );
+        let (offset_x, offset_y) = (
+            -1.0 + 2.0 * param.offset.x / screen_w,
+            1.0 - 2.0 * param.offset.y / screen_h,
         );
         let (aspect, aspect_inv) = (screen_h / screen_w, screen_w / screen_h);
         let m_aspect = Mat4::new_nonuniform_scaling(&Vec3::new(1.0, aspect_inv, 1.0));
@@ -395,6 +422,11 @@ impl TextCached {
             2.0 * -param.dest.y / screen_h,
             0.0,
         ));
+        /*let m_translate = Mat4::new_translation(&Vec3::new(
+            2.0 * (param.dest.x - param.offset.x) / screen_w,
+            2.0 * (-param.dest.y + param.offset.y) / screen_h,
+            0.0,
+        ));*/
 
         let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_scale * m_shear
             * m_aspect_inv * m_offset_inv;
@@ -416,7 +448,12 @@ impl TextCached {
 
 impl Drawable for TextCached {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
-        self.queue(ctx, param.offset, param.color);
+        let offset = Point2::new(
+            param.offset.x * self.width(ctx) as f32,
+            param.offset.y * self.height(ctx) as f32,
+        );
+        let param = DrawParam { offset, ..param };
+        self.queue(ctx, Point2::new(0.0, 0.0), param.color);
         TextCached::draw_queued(ctx, param)
     }
 

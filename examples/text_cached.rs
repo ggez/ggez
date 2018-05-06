@@ -33,15 +33,15 @@ impl FramedText {
                 1.0,
             )
             .build(ctx)?;
+        /*self.frame = graphics::Mesh::new_ellipse(
+            ctx,
+            graphics::DrawMode::Line(1.0),
+            Point2::new(0.0, 0.0),
+            width,
+            height,
+            0.5,
+        )?;*/
         Ok(())
-    }
-
-    fn queue_text(&mut self, ctx: &mut Context, relative_dest: Point2, color: Option<Color>) {
-        self.text.queue(ctx, relative_dest, color);
-    }
-
-    fn draw_frame(&mut self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
-        self.frame.draw_ex(ctx, param)
     }
 }
 
@@ -146,7 +146,7 @@ impl event::EventHandler for MainState {
             ctx,
             &self.text_too,
             DrawParam {
-                dest: Point2::new(400.0, 250.0),
+                dest: Point2::new(400.0, 200.0),
                 shear: Point2::new(0.0, self.anima.sin()),
                 ..Default::default()
             },
@@ -174,7 +174,7 @@ impl event::EventHandler for MainState {
             ctx,
             format!("width: {}\nheight: {}", wobble_width, wobble_height),
         )?.queue(ctx, Point2::new(0.0, 20.0), None);*/
-        TextCached::draw_queued(ctx, (Point2::new(50.0, 400.0), 0.0))?;
+        TextCached::draw_queued(ctx, (Point2::new(100.0, 300.0), 0.0))?;
 
         TextCached::new(ctx, "word1")?.queue(
             ctx,
@@ -209,7 +209,7 @@ impl event::EventHandler for MainState {
         TextCached::draw_queued(
             ctx,
             DrawParam {
-                dest: Point2::new(600.0, 300.0),
+                dest: Point2::new(400.0, 100.0),
                 rotation: 0.3,
                 shear: Point2::new(0.5, 0.0),
                 ..Default::default()
@@ -246,19 +246,25 @@ impl event::EventHandler for MainState {
             ctx,
             format!("width: {}\nheight: {}", excerpt_dims.0, excerpt_dims.1),
         )?.queue(ctx, Point2::new(0.0, 100.0), None);*/
-        TextCached::draw_queued(ctx, (Point2::new(500.0, 400.0), 0.0))?;
+        TextCached::draw_queued(ctx, (Point2::new(250.0, 200.0), 0.0))?;
 
+        let (width, height) = (
+            self.framed_text.text.width(ctx) as f32,
+            self.framed_text.text.height(ctx) as f32,
+        );
         let framed_draw_params = DrawParam {
-            dest: Point2::new(100.0, 200.0),
-            shear: Point2::new(0.5 * self.anima.sin(), 0.0),
-            //rotation: 0.71 * self.anima,
-            offset: Point2::new(0.0, 0.0),
+            dest: Point2::new(80.0, 150.0),
+            //shear: Point2::new(0.5 * self.anima.sin(), 0.0),
+            //scale: Point2::new(0.5 + self.anima.sin().abs(), 1.0),
+            rotation: 0.71 * self.anima,
+            offset: Point2::new(width, height),
             ..Default::default()
         };
         self.framed_text
-            .queue_text(ctx, Point2::new(0.0, 0.0), None);
-        self.framed_text
-            .draw_frame(ctx, framed_draw_params.clone())?;
+            .text
+            .queue(ctx, Point2::new(0.0, 0.0), None);
+        graphics::draw_ex(ctx, &self.framed_text.frame, framed_draw_params)?;
+        //graphics::draw_ex(ctx, &self.framed_text.text, framed_draw_params)?;
         TextCached::draw_queued(ctx, framed_draw_params)?;
 
         graphics::present(ctx);
@@ -292,7 +298,7 @@ impl event::EventHandler for MainState {
                         1.0,
                     ),
                 ));
-                self.framed_text.recalculate_frame(ctx);
+                self.framed_text.recalculate_frame(ctx).unwrap();
             }
             _ => (),
         }
