@@ -6,6 +6,8 @@ use std::borrow::Cow;
 use std::f32;
 use std::sync::{Arc, RwLock};
 
+// TODO: consider adding bits from example to docs.
+
 /// Aliased type from `gfx_glyph`.
 pub type Layout = gfx_glyph::Layout<gfx_glyph::BuiltInLineBreaker>;
 
@@ -142,7 +144,7 @@ impl Default for CachedMetrics {
 
 /// Drawable text.
 /// Can be either monolithic, or consist of differently-formatted fragments.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct TextCached {
     fragments: Vec<TextFragment>,
     // TODO: make it do something, maybe.
@@ -152,6 +154,21 @@ pub struct TextCached {
     font_id: FontId,
     font_scale: Scale,
     cached_metrics: Arc<RwLock<CachedMetrics>>,
+}
+
+// This has to be explicit. Derived `Clone` clones the `Arc`, so clones end up sharing the metrics.
+impl Clone for TextCached {
+    fn clone(&self) -> Self {
+        TextCached {
+            fragments: self.fragments.clone(),
+            blend_mode: self.blend_mode.clone(),
+            bounds: self.bounds.clone(),
+            layout: self.layout.clone(),
+            font_id: self.font_id.clone(),
+            font_scale: self.font_scale.clone(),
+            cached_metrics: Arc::new(RwLock::new(CachedMetrics::default())),
+        }
+    }
 }
 
 impl Default for TextCached {
@@ -206,6 +223,11 @@ impl TextCached {
         self
     }
 
+    /// Returns a slice with all fragments, for reading.
+    pub fn fragments(&self) -> &[TextFragment] {
+        &self.fragments
+    }
+
     /// Specifies rectangular dimensions to try and fit contents inside of, by wrapping.
     /// Alignment within bounds can be changed by passing a `Layout`; defaults to top left corner.
     pub fn set_bounds(&mut self, bounds: Point2, layout: Option<Layout>) -> &mut TextCached {
@@ -213,10 +235,8 @@ impl TextCached {
         if self.bounds.x == f32::INFINITY {
             // Layouts don't make any sense if we don't wrap text at all.
             self.layout = Layout::default();
-        } else {
-            if let Some(layout) = layout {
-                self.layout = layout;
-            }
+        } else if let Some(layout) = layout {
+            self.layout = layout;
         }
         self.invalidate_cached_metrics();
         self
@@ -369,7 +389,6 @@ impl TextCached {
     }
 
     /// Queues the `TextCached` to be drawn by `draw_queued()`.
-    /// This is much more efficient than using `graphics::draw()` or equivalent.
     /// `relative_dest` is relative to the `DrawParam::dest` passed to `draw_queued()`.
     /// Note, any `TextCached` drawn via `graphics::draw()` will also draw the queue.
     pub fn queue(&self, context: &mut Context, relative_dest: Point2, color: Option<Color>) {
@@ -392,7 +411,6 @@ impl TextCached {
     }
 
     /// Draws all of `queue()`d `TextCached`.
-    /// This is much more efficient than using `graphics::draw()` or equivalent.
     /// `DrawParam` apply to everything in the queue; offset is in screen coordinates;
     /// color is ignored - specify it when `queue()`ing instead.
     pub fn draw_queued<D>(context: &mut Context, param: D) -> GameResult<()>
@@ -403,6 +421,7 @@ impl TextCached {
         type Mat4 = na::Matrix4<f32>;
         type Vec3 = na::Vector3<f32>;
 
+        // TODO: fix non-pixel screen coordinates.
         let screen_rect = get_screen_coordinates(context);
         let (screen_w, screen_h) = (screen_rect.w, screen_rect.h);
         let (offset_x, offset_y) = (
@@ -439,11 +458,6 @@ impl TextCached {
             2.0 * -param.dest.y / screen_h,
             0.0,
         ));
-        /*let m_translate = Mat4::new_translation(&Vec3::new(
-            2.0 * (param.dest.x - param.offset.x) / screen_w,
-            2.0 * (-param.dest.y + param.offset.y) / screen_h,
-            0.0,
-        ));*/
 
         let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_shear * m_scale
             * m_aspect_inv * m_offset_inv;
