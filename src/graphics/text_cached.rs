@@ -57,11 +57,14 @@ impl From<(String, Color)> for TextFragment {
     }
 }
 
-impl From<(String, FontId, Scale)> for TextFragment {
-    fn from(tuple: (String, FontId, Scale)) -> TextFragment {
+impl<FI> From<(String, FI, Scale)> for TextFragment
+where
+    FI: Into<FontId>,
+{
+    fn from(tuple: (String, FI, Scale)) -> TextFragment {
         TextFragment {
             text: tuple.0,
-            font_id: Some(tuple.1),
+            font_id: Some(tuple.1.into()),
             scale: Some(tuple.2),
             ..Default::default()
         }
@@ -87,11 +90,14 @@ impl<'a> From<(&'a str, Color)> for TextFragment {
     }
 }
 
-impl<'a> From<(&'a str, FontId, Scale)> for TextFragment {
-    fn from(tuple: (&'a str, FontId, Scale)) -> TextFragment {
+impl<'a, FI> From<(&'a str, FI, Scale)> for TextFragment
+where
+    FI: Into<FontId>,
+{
+    fn from(tuple: (&'a str, FI, Scale)) -> TextFragment {
         TextFragment {
             text: tuple.0.to_string(),
-            font_id: Some(tuple.1),
+            font_id: Some(tuple.1.into()),
             scale: Some(tuple.2),
             ..Default::default()
         }
@@ -105,6 +111,15 @@ impl From<(Point2, f32)> for DrawParam {
             rotation: tuple.1,
             ..Default::default()
         }
+    }
+}
+
+impl Into<FontId> for Font {
+    fn into(self) -> FontId {
+        if let Font::GlyphFont(font_id) = self {
+            return font_id;
+        }
+        FontId(0)
     }
 }
 
@@ -208,8 +223,11 @@ impl TextCached {
     }
 
     /// Specifies text's font and font scale; used for fragments that don't have their own.
-    pub fn set_font(&mut self, font_id: FontId, font_scale: Scale) -> &mut TextCached {
-        self.font_id = font_id;
+    pub fn set_font<FI>(&mut self, font_id: FI, font_scale: Scale) -> &mut TextCached
+    where
+        FI: Into<FontId>,
+    {
+        self.font_id = font_id.into();
         self.font_scale = font_scale;
         self.invalidate_cached_metrics();
         self
@@ -299,6 +317,7 @@ impl TextCached {
         text_string
     }
 
+    /// Calculates, caches, and returns width and height of formatted and wrapped text.
     fn calculate_dimensions(&self, context: &Context) -> (u32, u32) {
         let mut max_width = 0;
         let mut max_height = 0;
@@ -329,7 +348,7 @@ impl TextCached {
         (width, height)
     }
 
-    /// Returns the width of formatted and wrapped text.
+    /// Returns the width of formatted and wrapped text, in screen coordinates.
     pub fn width(&self, context: &Context) -> u32 {
         if let Ok(metrics) = self.cached_metrics.read() {
             if let Some(width) = metrics.width {
@@ -339,7 +358,7 @@ impl TextCached {
         self.calculate_dimensions(context).0
     }
 
-    /// Returns the height of formatted and wrapped text.
+    /// Returns the height of formatted and wrapped text, in screen coordinates.
     pub fn height(&self, context: &Context) -> u32 {
         if let Ok(metrics) = self.cached_metrics.read() {
             if let Some(height) = metrics.height {
@@ -384,10 +403,8 @@ impl TextCached {
         type Mat4 = na::Matrix4<f32>;
         type Vec3 = na::Vector3<f32>;
 
-        let (screen_w, screen_h) = (
-            context.gfx_context.screen_rect.w,
-            context.gfx_context.screen_rect.h,
-        );
+        let screen_rect = get_screen_coordinates(context);
+        let (screen_w, screen_h) = (screen_rect.w, screen_rect.h);
         let (offset_x, offset_y) = (
             -1.0 + 2.0 * param.offset.x / screen_w,
             1.0 - 2.0 * param.offset.y / screen_h,
@@ -428,7 +445,7 @@ impl TextCached {
             0.0,
         ));*/
 
-        let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_scale * m_shear
+        let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_shear * m_scale
             * m_aspect_inv * m_offset_inv;
 
         let (encoder, render_tgt, depth_view) = (
@@ -448,6 +465,7 @@ impl TextCached {
 
 impl Drawable for TextCached {
     fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+        // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
         let offset = Point2::new(
             param.offset.x * self.width(ctx) as f32,
             param.offset.y * self.height(ctx) as f32,

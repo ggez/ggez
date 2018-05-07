@@ -27,12 +27,7 @@ pub enum Font {
     /// A bitmap font where letter widths are infered
     BitmapFontVariant(BitmapFont),
     /// A TrueType font stored in `GraphicsContext::glyph_brush`
-    GlyphFont {
-        /// A handle to retrieve the font by
-        font_id: FontId,
-        /// Scale information for the font
-        scale: rusttype::Scale,
-    },
+    GlyphFont(FontId),
 }
 
 /// A bitmap font where letter widths are infered
@@ -218,7 +213,7 @@ impl Font {
     }
 
     /// Loads a new TrueType font from given file and into `GraphicsContext::glyph_brush`.
-    pub fn new_glyph_font<P>(context: &mut Context, path: P, points: u32) -> GameResult<Self>
+    pub fn new_glyph_font<P>(context: &mut Context, path: P) -> GameResult<Self>
         where
             P: AsRef<path::Path> + fmt::Debug {
         let mut stream = context.filesystem.open(path.as_ref())?;
@@ -227,25 +222,16 @@ impl Font {
 
         let font_id = context.gfx_context.glyph_brush.add_font_bytes(buf);
 
-        let (_, x_dpi, y_dpi) = context.gfx_context.dpi;
-        let scale = display_independent_scale(points, x_dpi, y_dpi);
-
-        Ok(Font::GlyphFont {
-            font_id,
-            scale,
-        })
+        Ok(Font::GlyphFont(font_id))
     }
 
     /// Retrieves a loaded font from `GraphicsContext::glyph_brush`.
-    pub fn get_glyph_font_by_id(context: &mut Context, id: usize, points: u32) -> GameResult<Self> {
-        let id = FontId(id);
-        if context.gfx_context.glyph_brush.fonts().contains_key(&id) {
-            let (_, x_dpi, y_dpi) = context.gfx_context.dpi;
-            let scale = display_independent_scale(points, x_dpi, y_dpi);
-            Ok(Font::GlyphFont { font_id: id, scale })
+    pub fn get_glyph_font_by_id(context: &mut Context, font_id: FontId) -> GameResult<Self> {
+        if context.gfx_context.glyph_brush.fonts().contains_key(&font_id) {
+            Ok(Font::GlyphFont(font_id))
         } else {
             Err(GameError::FontError(
-                format!("Font {:?} not found!", id).into(),
+                format!("Font {:?} not found!", font_id).into(),
             ))
         }
     }
@@ -277,7 +263,7 @@ impl Font {
         match *self {
             Font::BitmapFontVariant(BitmapFont { height, .. }) => height,
             Font::TTFFont { scale, .. } => scale.y.ceil() as usize,
-            Font::GlyphFont { scale, .. } => scale.y.ceil() as usize,
+            Font::GlyphFont(_) => 0,
         }
     }
 
@@ -297,8 +283,7 @@ impl Font {
                     font.layout(text, scale, offset).collect();
                 text_width(&glyphs) as usize
             }
-            // TODO: figure out if this is needed, and how to do it without a context.
-            Font::GlyphFont { .. } => 0
+            Font::GlyphFont(_) => 0
         }
     }
 
@@ -587,7 +572,7 @@ impl Text {
                 font: ref f, scale, ..
             } => render_ttf(context, text, f, scale),
             Font::BitmapFontVariant(ref font) => render_dynamic_bitmap(context, text, font),
-            Font::GlyphFont { .. } => Err(GameError::FontError(
+            Font::GlyphFont(_) => Err(GameError::FontError(
                 "`Text` can't be created with a `Font::GlyphFont` (yet)!".into(),
             )),
         }

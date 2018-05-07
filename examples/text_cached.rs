@@ -97,7 +97,10 @@ impl MainState {
 
         let mut framed_text_text = TextCached::new_empty(ctx)?;
         framed_text_text
-            .set_bounds(Point2::new(60.0, 600.0), None)
+            .set_bounds(
+                Point2::new(60.0, 600.0),
+                Some(Layout::default().h_align(HAlign::Right)),
+            )
             .add_fragment("I've been framed!");
         let mut framed_text = FramedText {
             text: framed_text_text,
@@ -254,9 +257,9 @@ impl event::EventHandler for MainState {
         );
         let framed_draw_params = DrawParam {
             dest: Point2::new(80.0, 150.0),
-            //shear: Point2::new(0.5 * self.anima.sin(), 0.0),
-            //scale: Point2::new(0.5 + self.anima.sin().abs(), 1.0),
-            rotation: 0.71 * self.anima,
+            shear: Point2::new(0.5 * self.anima.sin(), 0.0),
+            scale: Point2::new(0.5 + self.anima.sin().abs(), 1.0),
+            rotation: self.anima,
             offset: Point2::new(width, height),
             ..Default::default()
         };
