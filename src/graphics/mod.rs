@@ -708,8 +708,10 @@ pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult<()> {
     }
     {
         let video = &mut context.sdl_context.video()?;
-        GraphicsContext::set_vsync(video, mode.vsync)
+        GraphicsContext::set_vsync(video, mode.vsync)?;
     }
+    context.gfx_context.resize_viewport();
+    Ok(())
 }
 
 /// Toggles the fullscreen state of the window subsystem
