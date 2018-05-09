@@ -105,7 +105,7 @@ impl GraphicsContext {
 
         GraphicsContext::set_vsync(video, window_mode.vsync)?;
         {
-            // Log a bunch of debug info
+            // Log a bunch of OpenGL state info pulled out of SDL and gfx
             let vsync = video.gl_get_swap_interval();
             let gl_attr = video.gl_attr();
             let (major, minor) = gl_attr.context_version();
@@ -113,9 +113,6 @@ impl GraphicsContext {
             let (w, h) = window.size();
             let (dw, dh) = window.drawable_size();
             let info = device.get_info();
-            // gfx doesn't allow us to get the OpenGL vendor string
-            // and SDL can't do it unless we create a renderer, which
-            // is precluded by us wanting to manage our own OpenGL state.  Hmmmm.
             debug!("Window created.");
             debug!(
                 "  Asked for     OpenGL {}.{} Core, vsync: {}",
