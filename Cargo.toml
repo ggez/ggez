@@ -29,6 +29,7 @@ cargo-resource-root = []
 bzip2 = ["zip/bzip2"]
 default = ["bzip2"]
 mint = ["nalgebra/mint"]
+multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 
 [dependencies]
 rusttype = "0.5"
@@ -38,8 +39,8 @@ gfx = "0.17"
 gfx_glyph = "0.10.1"
 gfx_device_gl = "0.15"
 gfx_window_sdl = "0.8"
-image = {version = "0.19", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm", "tga", "tiff", "webp", "bmp",] }
-#image = "0.18"
+image = {version = "0.19", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
+"tga", "tiff", "webp", "bmp", "dxt", ] }
 sdl2 = "0.31"
 rodio = "0.7"
 serde = "1.0"
