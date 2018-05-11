@@ -10,6 +10,8 @@ environment:
           CHANNEL: beta
         - TARGET: x86_64-pc-windows-msvc
           CHANNEL: nightly
+        - TARGET: x86_64-pc-windows-msvc
+          CHANNEL: 1.21.0
 
 install:
     - curl -sSf -o rustup-init.exe https://win.rustup.rs

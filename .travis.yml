@@ -4,12 +4,13 @@ rust:
   - stable
   - beta
   - nightly
+  - 1.21.0
 os:
   - linux
   - osx
-# matrix:
-#   allow_failures:
-#     - rust: nightly
+matrix:
+  allow_failures:
+    - rust: nightly
 
 before_install:
   - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then
