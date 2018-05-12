@@ -4,6 +4,7 @@ use std::path;
 use std::collections::BTreeMap;
 use std::io::Read;
 
+use gfx_glyph::FontId;
 use rusttype;
 use image;
 use image::RgbaImage;
@@ -25,6 +26,8 @@ pub enum Font {
     },
     /// A bitmap font where letter widths are infered
     BitmapFontVariant(BitmapFont),
+    /// A TrueType font stored in `GraphicsContext::glyph_brush`
+    GlyphFont(FontId),
 }
 
 /// A bitmap font where letter widths are infered
@@ -254,17 +257,47 @@ impl Font {
         }))
     }
 
-    /// Returns a baked-in default font: currently DejaVuSerif.ttf
-    /// Note it does create a new `Font` object with every call.
-    pub fn default_font() -> GameResult<Self> {
-        let size = 16;
-        let buf = include_bytes!(concat!(
+    /// Loads a new TrueType font from given file and into `GraphicsContext::glyph_brush`.
+    pub fn new_glyph_font<P>(context: &mut Context, path: P) -> GameResult<Self>
+        where
+            P: AsRef<path::Path> + fmt::Debug {
+        let mut stream = context.filesystem.open(path.as_ref())?;
+        let mut buf = Vec::new();
+        stream.read_to_end(&mut buf)?;
+
+        let font_id = context.gfx_context.glyph_brush.add_font_bytes(buf);
+
+        Ok(Font::GlyphFont(font_id))
+    }
+
+    /// Retrieves a loaded font from `GraphicsContext::glyph_brush`.
+    pub fn get_glyph_font_by_id(context: &mut Context, font_id: FontId) -> GameResult<Self> {
+        if context.gfx_context.glyph_brush.fonts().contains_key(&font_id) {
+            Ok(Font::GlyphFont(font_id))
+        } else {
+            Err(GameError::FontError(
+                format!("Font {:?} not found!", font_id).into(),
+            ))
+        }
+    }
+
+    /// Returns the baked-in bytes of default font (currently DejaVuSerif.ttf).
+    pub(crate) fn default_font_bytes() -> &'static [u8] {
+        include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/resources/DejaVuSerif.ttf"
-        ));
+        ))
+    }
+
+    /// Returns baked-in default font (currently DejaVuSerif.ttf).
+    /// Note it does create a new `Font` object with every call;
+    /// although the actual data should be shared.
+    pub fn default_font() -> GameResult<Self> {
+        let size = 16;
         // BUGGO: fix DPI.  Get from Context?  If we do that we can basically
         // just make Context always keep the default Font itself... hmm.
-        Font::from_bytes("default", &buf[..], size, (75.0, 75.0))
+        // TODO: ^^^ is that still relevant?..
+        Font::from_bytes("default", Font::default_font_bytes(), size, (75.0, 75.0))
     }
 
     /// Get the height of the Font in pixels.
@@ -275,6 +308,7 @@ impl Font {
         match *self {
             Font::BitmapFontVariant(BitmapFont { height, .. }) => height,
             Font::TTFFont { scale, .. } => scale.y.ceil() as usize,
+            Font::GlyphFont(_) => 0,
         }
     }
 
@@ -294,6 +328,7 @@ impl Font {
                     font.layout(text, scale, offset).collect();
                 text_width(&glyphs) as usize
             }
+            Font::GlyphFont(_) => 0
         }
     }
 
@@ -357,6 +392,7 @@ impl fmt::Debug for Font {
         match *self {
             Font::TTFFont { .. } => write!(f, "<TTFFont: {:p}>", &self),
             Font::BitmapFontVariant(BitmapFont { .. }) => write!(f, "<BitmapFont: {:p}>", &self),
+            Font::GlyphFont { .. } => write!(f, "<GlyphFont: {:p}>", &self),
         }
     }
 }
@@ -581,6 +617,9 @@ impl Text {
                 font: ref f, scale, ..
             } => render_ttf(context, text, f, scale),
             Font::BitmapFontVariant(ref font) => render_dynamic_bitmap(context, text, font),
+            Font::GlyphFont(_) => Err(GameError::FontError(
+                "`Text` can't be created with a `Font::GlyphFont` (yet)!".into(),
+            )),
         }
     }
 

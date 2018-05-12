@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use gfx_device_gl;
+use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
 use gfx_window_sdl;
 use gfx::traits::FactoryExt;
 use gfx::Factory;
@@ -52,6 +53,8 @@ where
     default_shader: ShaderId,
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<ShaderHandle<B>>>,
+  
+    pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
 }
 
 impl<B, C> fmt::Debug for GraphicsContextGeneric<B, C>
@@ -163,6 +166,9 @@ impl GraphicsContext {
             debug_id,
         )?;
 
+        let glyph_brush = GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec())
+            .build(factory.clone());
+
         let rect_inst_props = factory.create_buffer(
             1,
             gfx::buffer::Role::Vertex,
@@ -239,6 +245,8 @@ impl GraphicsContext {
             default_shader: shader.shader_id(),
             current_shader: Rc::new(RefCell::new(None)),
             shaders: vec![draw],
+
+            glyph_brush,
         };
         gfx.set_window_mode(window_mode)?;
 
