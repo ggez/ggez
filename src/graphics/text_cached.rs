@@ -188,17 +188,17 @@ impl Default for TextCached {
 impl TextCached {
     // TODO: consider ditching context - it's here for consistency's sake, that's it.
     /// Creates a `TextCached` from a `TextFragment`.
-    pub fn new<F>(context: &mut Context, fragment: F) -> GameResult<TextCached>
+    pub fn new<F>(fragment: F) -> GameResult<TextCached>
     where
         F: Into<TextFragment>,
     {
-        let mut text = TextCached::new_empty(context)?;
+        let mut text = TextCached::new_empty()?;
         text.add_fragment(fragment);
         Ok(text)
     }
 
     /// Creates an empty `TextCached`.
-    pub fn new_empty(context: &mut Context) -> GameResult<TextCached> {
+    pub fn new_empty() -> GameResult<TextCached> {
         Ok(TextCached::default())
     }
 

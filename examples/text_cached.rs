@@ -38,7 +38,7 @@ impl App {
         // This is the simplest way to create a drawable text;
         // the color, font, and scale will be default: white, DejaVuSerif, 16px unform.
         // Note that you don't even have to load a font: DejaVuSerif is baked into `ggez` itself.
-        let text = TextCached::new(ctx, "Hello, World!")?;
+        let text = TextCached::new("Hello, World!")?;
         // Store the text in `App`s hashmap, for drawing in main loop.
         texts.insert("0_hello", text);
 
@@ -46,7 +46,6 @@ impl App {
         // converted into a `TextFragment`. There are several "convenience consructors"
         // like this, refer to `TextFragment` docs for a list.
         let mut text = TextCached::new(
-            ctx,
             TextFragment {
                 // `TextFragment` stores a string, and optional parameters which will override those
                 // of `TextCached` itself. This allows inlining differently formatted lines, words,
@@ -105,14 +104,14 @@ impl App {
         // These methods can be combined to easily create a variety of simple effects.
         let chroma_string = "Not quite a rainbow.";
         // `new_empty()` exists pretty much specifically for this usecase.
-        let mut chroma_text = TextCached::new_empty(ctx)?;
+        let mut chroma_text = TextCached::new_empty()?;
         for ch in chroma_string.chars() {
             chroma_text.add_fragment((ch.to_string(), random_color()));
         }
         texts.insert("2_rainbow", chroma_text);
 
         let wonky_string = "So, so wonky.";
-        let mut wonky_text = TextCached::new_empty(ctx)?;
+        let mut wonky_text = TextCached::new_empty()?;
         for ch in wonky_string.chars() {
             wonky_text.add_fragment(TextFragment {
                 text: ch.to_string(),
@@ -140,7 +139,7 @@ impl event::EventHandler for App {
         // in most cases, and horrifically less efficient in a few select ones
         // (using `.width()` or `.height()`, for example).
         let fps = timer::get_fps(ctx);
-        let fps_display = TextCached::new(ctx, format!("FPS: {}", fps))?;
+        let fps_display = TextCached::new(format!("FPS: {}", fps))?;
         // When drawing through these calls, `DrawParam` will work as they are documented.
         graphics::draw(ctx, &fps_display, Point2::new(200.0, 0.0), 0.0)?;
 
@@ -166,7 +165,7 @@ impl event::EventHandler for App {
 
         // Another animation example. Note, this is very inefficient as-is.
         let wobble_string = "WOBBLE";
-        let mut wobble = TextCached::new_empty(ctx)?;
+        let mut wobble = TextCached::new_empty()?;
         for ch in wobble_string.chars() {
             wobble.add_fragment(TextFragment {
                 text: ch.to_string(),
@@ -182,7 +181,6 @@ impl event::EventHandler for App {
             Some(Color::new(0.0, 1.0, 1.0, 1.0)),
         );
         TextCached::new(
-            ctx,
             format!("width: {}\nheight: {}", wobble_width, wobble_height),
         )?.queue(ctx, Point2::new(0.0, 20.0), None);
         TextCached::draw_queued(
