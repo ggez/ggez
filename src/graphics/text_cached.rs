@@ -1,3 +1,10 @@
+//! This module is an **experimental** integration of the `gfx_glyph`
+//! text cache crate.  This should offer both much higher performance than
+//! `ggez::graphics::Text`, and also more features.  Use it, enjoy it,
+//! experiment with it, and offer suggestions for improving the API.
+//! Hopefully this will be the default method of rendering text for
+//! ggez 0.5.0.
+
 use super::*;
 
 pub use gfx_glyph::{FontId, HorizontalAlign, Scale, VerticalAlign};
@@ -186,7 +193,6 @@ impl Default for TextCached {
 }
 
 impl TextCached {
-    // TODO: consider ditching context - it's here for consistency's sake, that's it.
     /// Creates a `TextCached` from a `TextFragment`.
     pub fn new<F>(fragment: F) -> GameResult<TextCached>
     where
@@ -315,7 +321,9 @@ impl TextCached {
     fn invalidate_cached_metrics(&mut self) {
         if let Ok(mut metrics) = self.cached_metrics.write() {
             *metrics = CachedMetrics::default();
-            return ();
+            // Returning early avoids a double-borrow in the "else"
+            // part.
+            return;
         }
         warn!("Cached metrics RwLock has been poisoned.");
         self.cached_metrics = Arc::new(RwLock::new(CachedMetrics::default()));
