@@ -796,18 +796,21 @@ pub fn get_drawable_size(context: &Context) -> (u32, u32) {
 }
 
 /// EXPERIMENTAL function to get the gfx-rs `Factory` object.
+#[deprecated]
 pub fn get_factory(context: &mut Context) -> &mut gfx_device_gl::Factory {
     let gfx = &mut context.gfx_context;
     &mut gfx.factory
 }
 
 /// EXPERIMENTAL function to get the gfx-rs `Device` object.
+#[deprecated]
 pub fn get_device(context: &mut Context) -> &mut gfx_device_gl::Device {
     let gfx = &mut context.gfx_context;
     gfx.device.as_mut()
 }
 
 /// EXPERIMENTAL function to get the gfx-rs `Encoder` object.
+#[deprecated]
 pub fn get_encoder(
     context: &mut Context,
 ) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
@@ -816,6 +819,7 @@ pub fn get_encoder(
 }
 
 /// EXPERIMENTAL function to get the gfx-rs depth view
+#[deprecated]
 pub fn get_depth_view(
     context: &mut Context,
 ) -> gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> {
@@ -824,6 +828,7 @@ pub fn get_depth_view(
 }
 
 /// EXPERIMENTAL function to get the gfx-rs color view
+#[deprecated]
 pub fn get_screen_render_target(
     context: &Context,
 ) -> gfx::handle::RenderTargetView<
@@ -834,8 +839,11 @@ pub fn get_screen_render_target(
     gfx.data.out.clone()
 }
 
-/// EXPERIMENTAL function to get gfx-rs objects.
-/// Getting them one by one is awkward 'cause it tends to create double-borrows
+/// Returns raw `gfx-rs` state objects, if you want to use `gfx-rs` to write
+/// your own graphics pipeline then this gets you the interfaces you need
+/// to do so.
+/// Returns all the relevant objects at once;
+/// getting them one by one is awkward 'cause it tends to create double-borrows
 /// on the Context object.
 pub fn get_gfx_objects(
     context: &mut Context,
