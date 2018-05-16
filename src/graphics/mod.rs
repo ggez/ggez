@@ -37,7 +37,6 @@ mod text_cached;
 mod types;
 use nalgebra as na;
 
-pub mod glyphcache;
 pub mod spritebatch;
 
 pub use self::canvas::*;
