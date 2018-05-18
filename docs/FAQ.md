@@ -127,3 +127,30 @@ and scaling your `Image`s with `graphics::DrawParam`.
 Sure!  ggez doesn't include such a thing itself, since it's more or less out of scope for this, but it is specifically
 designed to make it easy to Lego together with other tools.  The [game template](https://github.com/ggez/game-template) repo
 demonstrates how to use ggez with `specs` for ECS, `warmy` for resource loading, and other nice crates.
+
+# If I write X, will you include it in ggez?
+
+Maybe, if it's something that fits in with ggez's goals: a simple and flexible 2D game framework with a LÖVE-ish API, 
+which provides all the basics you need in one package without dictating too much about the more complicated tools.
+
+Examples of things that would be included:
+
+ * Sprite batches -- extension of existing functionality, follows LÖVE's example, large performance win
+ * Glyph cache -- replaces existing functionality with a more capable version, large performance win
+ * Sound mixer -- Follows LÖVE's example, fundamental functionality that should be provided, not tool-specific
+
+Examples of things that would not be included:
+
+ * Map loader for the Tiled map editor -- No reason we should force a user into a particular tool format
+ * Sprite animation engine -- Makes assumptions about the sort of game the user will create, easily made its own crate
+ * GUI library -- A large and complicated problem, and it doesn't need to be part of ggez to solve the problem
+
+Part of the goal of this sort of setup is to make it easy for people to write more sophisticated tools atop ggez!  By all
+means, write your Tiled map loader or your aseprite sprite loader!  Submit a PR to add it to the `docs/Projects.md` file!
+We'd love to have an ecosystem of awesome tools.
+
+One favor to ask: If you're making a crate to do `foo`, please don't name it `ggez-foo`.  It makes it harder to search for
+ggez on crates.io and get things that are officially supported by the maintainers, such as `ggez-goodies`.  For an
+example, search for `gfx` on `crates.io` and see how messy the results are.
+
+For a fuller discussion of this, see [issue #373](https://github.com/ggez/ggez/issues/373).
