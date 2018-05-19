@@ -82,14 +82,15 @@ impl Image {
         use gfx::traits::FactoryExt;
 
         let gfx = &mut ctx.gfx_context;
-        let (w, h, _, _) = gfx.data.out.get_dimensions();
+        let w = self.width;
+        let h = self.height;
         type SurfaceData = <<ColorFormat as Formatted>::Surface as SurfaceTyped>::DataType;
 
         // Note: In the GFX example, the download buffer is created ahead of time
         // and updated on screen resize events. This may be preferable, but then
         // the buffer also needs to be updated when we switch to/from a canvas.
-        // Unsure of the performance impact of creating this as it is needed.
         let dl_buffer = gfx.factory
+        // Unsure of the performance impact of creating this as it is needed.
             .create_download_buffer::<SurfaceData>(w as usize * h as usize)?;
 
         let mut local_encoder: gfx::Encoder<
@@ -104,8 +105,8 @@ impl Image {
                 xoffset: 0,
                 yoffset: 0,
                 zoffset: 0,
-                width: self.width as u16,
-                height: self.height as u16,
+                width: w as u16,
+                height: h as u16,
                 depth: 0,
                 format: ColorFormat::get_format(),
                 mipmap: 0,
@@ -184,11 +185,34 @@ impl Image {
             return Err(GameError::ResourceLoadError(msg));
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        let (tex, view) = factory.create_texture_immutable_u8::<gfx::format::Srgba8>(
-            kind,
-            gfx::texture::Mipmap::Provided,
-            &[rgba],
-        )?;
+        use gfx::memory::Bind;
+            // BUGGO: TODO: Make this pull from the defined graphics format
+        let channel_type = gfx::format::ChannelType::Srgb;
+        let surface_format = gfx::format::SurfaceType::R8_G8_B8_A8;
+        let texinfo = gfx::texture::Info {
+            kind: kind,
+            levels: 1,
+            format: surface_format,
+            bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
+            usage: gfx::memory::Usage::Data,
+        };
+        let raw_tex = factory.create_texture_raw(texinfo, Some(channel_type), 
+            Some((&[rgba], gfx::texture::Mipmap::Provided)))?;
+        let resource_desc = gfx::texture::ResourceDesc {
+            channel: channel_type,
+            layer: None,
+            min: 0,
+            max: raw_tex.get_info().levels - 1,
+            swizzle: gfx::format::Swizzle::new(), 
+        };
+        let raw_view = factory.view_texture_as_shader_resource_raw(&raw_tex, resource_desc)?;
+        // gfx::memory::Typed is UNDOCUMENTED, aiee!
+        // However there doesn't seem to be an official way to turn a raw tex/view into a typed
+        // one; this API oversight would probably get fixed, except gfx is moving to a new
+        // API model.  So, that also fortunately means that undocumented features like this 
+        // probably won't go away on pre-ll gfx...
+        let tex = gfx::memory::Typed::new(raw_tex);
+        let view = gfx::memory::Typed::new(raw_view);
         Ok(Image {
             texture: view,
             texture_handle: tex,
