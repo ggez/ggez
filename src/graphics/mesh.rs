@@ -371,7 +371,11 @@ impl Drawable for Mesh {
         gfx.update_instance_properties(param)?;
 
         gfx.data.vbuf = self.buffer.clone();
-        gfx.data.tex.0 = gfx.white_image.texture.clone();
+        // BUGGO: Resource view format hard-wired in here.
+        let texture = gfx.white_image.texture.clone();
+        let typed_thingy: gfx::handle::ShaderResourceView<_, [f32;4]> = gfx::memory::Typed::new(texture);
+
+        gfx.data.tex.0 = typed_thingy;
 
         gfx.draw(Some(&self.slice))?;
 

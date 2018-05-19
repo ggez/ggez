@@ -475,11 +475,17 @@ impl TextCached {
             &context.gfx_context.screen_render_target,
             &context.gfx_context.depth_view,
         );
+
+        // Typed() is an Undocumented Feature of gfx
+        // TODO: Remove hardwired Srgba8!
+        let typed_render_target: gfx::handle::RenderTargetView<gfx_device_gl::Resources, gfx::format::Srgba8> = gfx::memory::Typed::new(render_tgt.clone());
+
+        let typed_depth_target: gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> = gfx::memory::Typed::new(depth_view.clone());
         context.gfx_context.glyph_brush.draw_queued_with_transform(
             m_transform.into(),
             encoder,
-            render_tgt,
-            depth_view,
+            &typed_render_target,
+            &typed_depth_target,
         )?;
         Ok(())
     }

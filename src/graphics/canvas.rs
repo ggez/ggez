@@ -3,7 +3,7 @@
 
 use gfx::Factory;
 use gfx::format::{ChannelTyped, Srgb, Srgba8, Swizzle};
-use gfx::handle::RenderTargetView;
+use gfx::handle::RawRenderTargetView;
 use gfx::memory::{Bind, Usage};
 use gfx::texture::{AaMode, Kind};
 
@@ -20,7 +20,7 @@ pub struct CanvasGeneric<Spec>
 where
     Spec: BackendSpec,
 {
-    target: RenderTargetView<Spec::Resources, Srgba8>,
+    target: RawRenderTargetView<Spec::Resources>,
     image: Image,
     debug_id: DebugId,
 }
@@ -54,22 +54,37 @@ impl Canvas {
             s => AaMode::Multi(s as u8),
         };
         let kind = Kind::D2(w, h, aa);
-        let cty = Srgb::get_channel_type();
         let levels = 1;
         let factory = &mut ctx.gfx_context.factory;
-        let tex = factory.create_texture(
-            kind,
-            levels,
-            Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
-            Usage::Data,
-            Some(cty),
+        let texture_create_info = gfx::texture::Info {
+            kind: kind,
+            levels: levels,
+            format: ctx.gfx_context.color_format.0,
+            bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
+            usage: Usage::Data,
+        };
+        let tex = factory.create_texture_raw(
+            texture_create_info,
+            Some(ctx.gfx_context.color_format.1),
+            None
         )?;
-        let resource = factory.view_texture_as_shader_resource::<Srgba8>(
+        let resource_desc = gfx::texture::ResourceDesc {
+            channel: ctx.gfx_context.color_format.1,
+            layer: None,
+            min: 0,
+            max: levels - 1,
+            swizzle: Swizzle::new()
+        };
+        let resource = factory.view_texture_as_shader_resource_raw(
             &tex,
-            (0, levels - 1),
-            Swizzle::new(),
+            resource_desc
         )?;
-        let target = factory.view_texture_as_render_target(&tex, 0, None)?;
+        let render_desc = gfx::texture::RenderDesc {
+            channel: ctx.gfx_context.color_format.1,
+            level: 0,
+            layer: None
+        };
+        let target = factory.view_texture_as_render_target_raw(&tex, render_desc)?;
         Ok(Canvas {
             target,
             image: Image {
