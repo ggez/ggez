@@ -477,8 +477,8 @@ impl TextCached {
         );
 
         // Typed() is an Undocumented Feature of gfx
-        // TODO: Remove hardwired Srgba8!
-        let typed_render_target: gfx::handle::RenderTargetView<gfx_device_gl::Resources, gfx::format::Srgba8> = gfx::memory::Typed::new(render_tgt.clone());
+        type ColorFormat = <GlBackendSpec as BackendSpec>::SurfaceType;
+        let typed_render_target: gfx::handle::RenderTargetView<gfx_device_gl::Resources, ColorFormat> = gfx::memory::Typed::new(render_tgt.clone());
 
         let typed_depth_target: gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> = gfx::memory::Typed::new(depth_view.clone());
         context.gfx_context.glyph_brush.draw_queued_with_transform(

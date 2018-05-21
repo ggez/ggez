@@ -92,7 +92,7 @@ impl GraphicsContext {
         debug_id: DebugId,
     ) -> GameResult<GraphicsContext> {
 
-        let color_format = gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, gfx::format::ChannelType::Srgb);
+        let color_format = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::get_format();
         let depth_format = gfx::format::Format(gfx::format::SurfaceType::D24_S8, gfx::format::ChannelType::Unorm);
         
         // WINDOW SETUP

@@ -204,7 +204,7 @@ where
     for mode in blend_modes {
         let init = ConstInit::<C>(
             graphics::pipe::Init {
-                out: ("Target0", format::Format(format::SurfaceType::R8_G8_B8_A8, format::ChannelType::Srgb),
+                out: ("Target0", graphics::GraphicsContext::get_format(), 
                       ColorMask::all(), Some((*mode).into())),
                 ..graphics::pipe::new()
             },

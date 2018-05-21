@@ -173,7 +173,7 @@ impl Default for InstanceProperties {
 impl From<DrawParam> for InstanceProperties {
     fn from(p: DrawParam) -> Self {
         let mat: [[f32; 4]; 4] = p.into_matrix().into();
-        // BUGGO: Only convert if the color format is srgb!
+        // SRGB BUGGO: Only convert if the color format is srgb!
         let linear_color: types::LinearColor = p.color
             .expect("Converting DrawParam to InstanceProperties had None for a color; this should never happen!")
             .into();
@@ -248,10 +248,10 @@ trait TransformRawRenderTargetViewToRenderTargetView<F: gfx::format::Formatted> 
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
-    //let gfx::format::Format(surface_type, channel_type) = gfx.color_format;
+    // SRGB BUGGO: Only convert when drawing on srgb surface
     let linear_color: types::LinearColor = gfx.background_color.into();
-    // BUGGO: Srgba8 hardwired in here.
-    let typed_render_target: gfx::handle::RenderTargetView<_, <GlBackendSpec as BackendSpec>::SurfaceType> = gfx::memory::Typed::new(gfx.data.out.clone());
+    type ColorFormat = GlBackendSpec as BackendSpec>::SurfaceType;
+    let typed_render_target: gfx::handle::RenderTargetView<_, ColorFormat> = gfx::memory::Typed::new(gfx.data.out.clone());
     gfx.encoder.clear(&typed_render_target, linear_color.into());
 }
 
@@ -286,7 +286,6 @@ pub fn present(ctx: &mut Context) {
 /// (screen or selected canvas) to a PNG file.
 pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     use gfx::memory::{Bind};
-    use gfx::format::Formatted;
     let debug_id = DebugId::get(ctx);
 
     let gfx = &mut ctx.gfx_context;

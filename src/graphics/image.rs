@@ -2,6 +2,7 @@ use std::path;
 use std::io::Read;
 
 use gfx;
+use gfx::format::{SurfaceTyped, ChannelTyped};
 use gfx_device_gl;
 use image;
 
@@ -78,7 +79,6 @@ impl Image {
     pub fn to_rgba8(&self, ctx: &mut Context) -> GameResult<Vec<u8>> {
         use gfx::memory::Typed;
         use gfx::format::Formatted;
-        use gfx::format::SurfaceTyped;
         use gfx::traits::FactoryExt;
 
         let gfx = &mut ctx.gfx_context;
@@ -186,9 +186,10 @@ impl Image {
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
         use gfx::memory::Bind;
-            // BUGGO: TODO: Make this pull from the defined graphics format
-        let channel_type = gfx::format::ChannelType::Srgb;
-        let surface_format = gfx::format::SurfaceType::R8_G8_B8_A8;
+        type SurfaceType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::Surface;
+        type ChannelType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::Channel;
+        let channel_type = ChannelType::get_channel_type();
+        let surface_format = SurfaceType::get_surface_type();
         let texinfo = gfx::texture::Info {
             kind: kind,
             levels: 1,
