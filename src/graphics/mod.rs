@@ -51,8 +51,8 @@ pub use self::types::*;
 /// A marker trait saying that something is a label for a particular backend,
 /// with associated gfx-rs types for that backend.
 pub trait BackendSpec: fmt::Debug {
-    /// Color space type
-    type ColorType: gfx::format::RenderChannel;
+    /// Surface type
+    type SurfaceType: gfx::format::Formatted;
     /// gfx resource type
     type Resources: gfx::Resources;
     /// gfx factory type
@@ -90,7 +90,7 @@ impl From<conf::Backend> for GlBackendSpec {
 }
 
 impl BackendSpec for GlBackendSpec {
-    type ColorType = gfx::format::Srgb;
+    type SurfaceType = gfx::format::Srgba8;
     type Resources = gfx_device_gl::Resources;
     type Factory = gfx_device_gl::Factory;
     type CommandBuffer = gfx_device_gl::CommandBuffer;
@@ -117,12 +117,6 @@ const QUAD_VERTS: [Vertex; 4] = [
 ];
 
 const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
-
-type ColorFormat = gfx::format::Srgba8;
-// I don't know why this gives a dead code warning
-// since this type is definitely used... oh well.
-#[allow(dead_code)]
-type DepthFormat = gfx::format::DepthStencil;
 
 gfx_defines!{
     /// Internal structure containing vertex data.
@@ -159,7 +153,7 @@ gfx_defines!{
         globals: gfx::ConstantBuffer<Globals> = "Globals",
         rect_instance_properties: gfx::InstanceBuffer<InstanceProperties> = (),
         out: gfx::RawRenderTarget =
-          ("Target0", gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, gfx::format::ChannelType::Srgb), gfx::state::ColorMask::all(), Some(gfx::preset::blend::ALPHA)),
+          ("Target0", GraphicsContext::get_format(), gfx::state::ColorMask::all(), Some(gfx::preset::blend::ALPHA)),
     }
 }
 
@@ -179,6 +173,7 @@ impl Default for InstanceProperties {
 impl From<DrawParam> for InstanceProperties {
     fn from(p: DrawParam) -> Self {
         let mat: [[f32; 4]; 4] = p.into_matrix().into();
+        // BUGGO: Only convert if the color format is srgb!
         let linear_color: types::LinearColor = p.color
             .expect("Converting DrawParam to InstanceProperties had None for a color; this should never happen!")
             .into();
@@ -247,13 +242,17 @@ impl From<gfx::buffer::CreationError> for GameError {
 // DRAWING
 // **********************************************************************
 
+
+trait TransformRawRenderTargetViewToRenderTargetView<F: gfx::format::Formatted> { type Result; }
+
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
+    //let gfx::format::Format(surface_type, channel_type) = gfx.color_format;
     let linear_color: types::LinearColor = gfx.background_color.into();
     // BUGGO: Srgba8 hardwired in here.
-    let typed_thingy: gfx::handle::RenderTargetView<_, gfx::format::Srgba8> = gfx::memory::Typed::new(gfx.data.out.clone());
-    gfx.encoder.clear(&typed_thingy, linear_color.into());
+    let typed_render_target: gfx::handle::RenderTargetView<_, <GlBackendSpec as BackendSpec>::SurfaceType> = gfx::memory::Typed::new(gfx.data.out.clone());
+    gfx.encoder.clear(&typed_render_target, linear_color.into());
 }
 
 /// Draws the given `Drawable` object to the screen by calling its
@@ -292,8 +291,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
 
     let gfx = &mut ctx.gfx_context;
     let (w, h, _depth, aa) = gfx.data.out.get_dimensions();
-    // TODO: Get the format from the context
-    let surface_format = <ColorFormat as Formatted>::get_format();
+    let surface_format = gfx.color_format;
     let gfx::format::Format(surface_type, channel_type) = surface_format;
 
     let texture_kind = gfx::texture::Kind::D2(w, h, aa);

@@ -18,8 +18,8 @@ use conf::WindowSetup;
 /// As an end-user you shouldn't ever have to touch this.
 pub(crate) struct GraphicsContextGeneric<B, C>
 where
-    B: BackendSpec<ColorType=C>,
-    C: gfx::format::RenderChannel,
+    B: BackendSpec<SurfaceType=C>,
+    C: gfx::format::Formatted,
 {
     pub(crate) foreground_color: Color,
     pub(crate) background_color: Color,
@@ -59,10 +59,20 @@ where
     pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
 }
 
+impl<B, C> GraphicsContextGeneric<B, C> 
+    where
+        B: BackendSpec<SurfaceType=C>,
+    C: gfx::format::Formatted {
+
+    pub(crate) fn get_format() -> gfx::format::Format {
+        C::get_format()
+    }
+}
+
 impl<B, C> fmt::Debug for GraphicsContextGeneric<B, C>
 where
-    B: BackendSpec<ColorType=C>,
-    C: gfx::format::RenderChannel,
+    B: BackendSpec<SurfaceType=C>,
+    C: gfx::format::Formatted,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<GraphicsContext: {:p}>", self)
@@ -70,9 +80,9 @@ where
 }
 
 /// A concrete graphics context for GL rendering.
-pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec, gfx::format::Srgb>;
+pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec, gfx::format::Srgba8>;
 
-impl GraphicsContext {
+impl GraphicsContext {    
     /// Create a new GraphicsContext
     pub(crate) fn new(
         video: &sdl2::VideoSubsystem,

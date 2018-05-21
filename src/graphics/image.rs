@@ -84,7 +84,7 @@ impl Image {
         let gfx = &mut ctx.gfx_context;
         let w = self.width;
         let h = self.height;
-        type SurfaceData = <<ColorFormat as Formatted>::Surface as SurfaceTyped>::DataType;
+        type SurfaceData = <<<GlBackendSpec as BackendSpec>::SurfaceType as Formatted>::Surface as SurfaceTyped>::DataType;
 
         // Note: In the GFX example, the download buffer is created ahead of time
         // and updated on screen resize events. This may be preferable, but then
@@ -108,7 +108,7 @@ impl Image {
                 width: w as u16,
                 height: h as u16,
                 depth: 0,
-                format: ColorFormat::get_format(),
+                format: SurfaceData::get_format(),
                 mipmap: 0,
             },
             dl_buffer.raw(),
