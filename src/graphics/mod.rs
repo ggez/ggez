@@ -250,7 +250,7 @@ pub fn clear(ctx: &mut Context) {
     let gfx = &mut ctx.gfx_context;
     // SRGB BUGGO: Only convert when drawing on srgb surface
     let linear_color: types::LinearColor = gfx.background_color.into();
-    type ColorFormat = GlBackendSpec as BackendSpec>::SurfaceType;
+    type ColorFormat = <GlBackendSpec as BackendSpec>::SurfaceType;
     let typed_render_target: gfx::handle::RenderTargetView<_, ColorFormat> = gfx::memory::Typed::new(gfx.data.out.clone());
     gfx.encoder.clear(&typed_render_target, linear_color.into());
 }
