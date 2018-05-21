@@ -193,8 +193,11 @@ void main() {
             transform: transform.into(),
             locals: factory.create_constant_buffer(1),
             color: (texture_view, factory.create_sampler(sinfo)),
-            out_color: color_view,
-            out_depth: depth_view,
+            // We use the (undocumented-but-useful) gfx::memory::Typed here
+            // to convert ggez's raw render and depth buffers into ones with
+            // compile-time type information.
+            out_color: gfx::memory::Typed::new(color_view),
+            out_depth: gfx::memory::Typed::new(depth_view),
         };
 
         MainState {
