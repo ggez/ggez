@@ -2,7 +2,7 @@
 //! module from graphics...
 
 use gfx::Factory;
-use gfx::format::{ChannelTyped, Srgb, Srgba8, Swizzle};
+use gfx::format::{Swizzle};
 use gfx::handle::RawRenderTargetView;
 use gfx::memory::{Bind, Usage};
 use gfx::texture::{AaMode, Kind};

@@ -14,7 +14,6 @@ use std::u16;
 use sdl2;
 use gfx;
 use gfx_device_gl;
-use gfx_window_sdl;
 use gfx::texture;
 use gfx::Device;
 use gfx::Factory;
@@ -225,40 +224,6 @@ where
     }
 }
 
-/// This can probably be removed but might be
-/// handy to keep around a bit longer.  Just in case something else
-/// crazy happens.
-#[allow(unused)]
-fn test_opengl_versions(video: &sdl2::VideoSubsystem) {
-    let mut major_versions = [4u8, 3u8, 2u8, 1u8];
-    let minor_versions = [5u8, 4u8, 3u8, 2u8, 1u8, 0u8];
-    major_versions.reverse();
-    for major in &major_versions {
-        for minor in &minor_versions {
-            let gl = video.gl_attr();
-            gl.set_context_version(*major, *minor);
-            gl.set_context_profile(sdl2::video::GLProfile::Core);
-            gl.set_red_size(5);
-            gl.set_green_size(5);
-            gl.set_blue_size(5);
-            gl.set_alpha_size(8);
-
-            print!("Requesting GL {}.{}... ", major, minor);
-            let window_builder = video.window("so full of hate", 640, 480);
-            let result = gfx_window_sdl::init::<ColorFormat, DepthFormat>(video, window_builder);
-            // This is actually wrong, it needs to re-fetch the GLAttr
-            match result {
-                Ok(_) => println!(
-                    "Ok, got GL {}.{}.",
-                    gl.context_major_version(),
-                    gl.context_minor_version()
-                ),
-                Err(res) => println!("Request failed: {:?}", res),
-            }
-        }
-    }
-}
-
 impl From<gfx::buffer::CreationError> for GameError {
     fn from(e: gfx::buffer::CreationError) -> Self {
         use gfx::buffer::CreationError;
@@ -321,27 +286,29 @@ pub fn present(ctx: &mut Context) {
 /// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to a PNG file.
 pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
-    use gfx::memory::{Bind, Typed};
+    use gfx::memory::{Bind};
     use gfx::format::Formatted;
     let debug_id = DebugId::get(ctx);
 
     let gfx = &mut ctx.gfx_context;
     let (w, h, _depth, aa) = gfx.data.out.get_dimensions();
+    // TODO: Get the format from the context
     let surface_format = <ColorFormat as Formatted>::get_format();
+    let gfx::format::Format(surface_type, channel_type) = surface_format;
 
-    // TODO: The bind and data settings here might be worth
-    // fiddling with...
     let texture_kind = gfx::texture::Kind::D2(w, h, aa);
-    // The format here is the same as is defined in ColorFormat
-    let target_texture: gfx::handle::Texture<_, <ColorFormat as Formatted>::Surface> = gfx.factory
-        .create_texture(
-            texture_kind,
-            1,
-            Bind::TRANSFER_SRC | Bind::TRANSFER_DST | Bind::SHADER_RESOURCE,
-            gfx::memory::Usage::Data,
-            Some(gfx::format::ChannelType::Srgb),
+    let texture_info = gfx::texture::Info {
+        kind: texture_kind,
+        levels: 1,
+        format: surface_type,
+        bind: Bind::TRANSFER_SRC | Bind::TRANSFER_DST | Bind::SHADER_RESOURCE,
+        usage: gfx::memory::Usage::Data,
+    };
+    let target_texture = gfx.factory.create_texture_raw(
+        texture_info,
+        Some(channel_type),
+        None
         )?;
-
     let image_info = gfx::texture::ImageInfoCommon {
         xoffset: 0,
         yoffset: 0,
@@ -360,22 +327,27 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         gfx.data.out.get_texture(),
         None,
         image_info,
-        target_texture.raw(),
+        &target_texture,
         None,
         image_info,
     )?;
 
     local_encoder.flush(&mut *gfx.device);
 
-    let shader_resource = gfx.factory
-        .view_texture_as_shader_resource::<gfx::format::Srgba8>(
-            &target_texture,
-            (0, 0),
-            gfx::format::Swizzle::new(),
+    let resource_desc = gfx::texture::ResourceDesc{
+        channel: channel_type,
+        layer: None,
+        min: 0,
+        max: 0,
+        swizzle: gfx::format::Swizzle::new(),
+    };
+    let shader_resource = gfx.factory.view_texture_as_shader_resource_raw(
+        &target_texture,
+        resource_desc
         )?;
     let image = Image {
-        texture: shader_resource.raw().clone(),
-        texture_handle: target_texture.raw().clone(),
+        texture: shader_resource,
+        texture_handle: target_texture,
         sampler_info: gfx.default_sampler_info,
         blend_mode: None,
         width: u32::from(w),
