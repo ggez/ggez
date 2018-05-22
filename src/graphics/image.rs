@@ -309,8 +309,12 @@ impl Drawable for Image {
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        // BUGGO: [f32;4] hardwired in here.
-        let typed_thingy: gfx::handle::ShaderResourceView<_, [f32;4]> = gfx::memory::Typed::new(self.texture.clone());
+        // TODO: We use this get-shader-resource-type idiom in like six different
+        // places, refactor!
+        use graphics::{BackendSpec, GlBackendSpec};
+        type ShaderType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::View;
+
+        let typed_thingy: gfx::handle::ShaderResourceView<_, ShaderType> = gfx::memory::Typed::new(self.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.get_blend_mode();

@@ -50,6 +50,10 @@ pub struct SpriteIdx(usize);
 
 impl SpriteBatch {
     /// Creates a new `SpriteBatch`, drawing with the given image.
+    ///
+    /// Takes ownership of the `Image`, but cloning an `Image` is
+    /// cheap since they have an internal `Arc` containing the actual
+    /// image data.
     pub fn new(image: graphics::Image) -> Self {
         Self {
             image,
@@ -175,9 +179,13 @@ impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        // BUGGO: Resource view format hard-wired in here.
+        
+        // Do some trait-type-lookup to get the right color format for the shader.
+        // This is generally just [f32;4], but in principle depends on the surface format.
         let texture = self.image.texture.clone();
-        let typed_thingy: gfx::handle::ShaderResourceView<_, [f32;4]> = gfx::memory::Typed::new(texture);
+        use graphics::{BackendSpec, GlBackendSpec};
+        type ShaderType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::View;
+        let typed_thingy: gfx::handle::ShaderResourceView<_, ShaderType> = gfx::memory::Typed::new(texture.clone());
 
         gfx.data.tex = (typed_thingy, sampler);
         let mut slice = gfx.quad_slice.clone();
@@ -227,9 +235,12 @@ impl graphics::Drawable for SpriteBatch {
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        // BUGGO: Resource view format hard-wired in here.
         let texture = self.image.texture.clone();
-        let typed_thingy: gfx::handle::ShaderResourceView<_, [f32;4]> = gfx::memory::Typed::new(texture);
+        // Do some trait-type-lookup to get the right color format for the shader.
+        // This is generally just [f32;4], but in principle depends on the surface format.
+        use graphics::{BackendSpec, GlBackendSpec};
+        type ShaderType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::View;
+        let typed_thingy: gfx::handle::ShaderResourceView<_, ShaderType> = gfx::memory::Typed::new(texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
         
         let mut slice = gfx.quad_slice.clone();

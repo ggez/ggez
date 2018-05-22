@@ -80,7 +80,7 @@ where
 }
 
 /// A concrete graphics context for GL rendering.
-pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec, gfx::format::Srgba8>;
+pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec, <GlBackendSpec as BackendSpec>::SurfaceType>;
 
 impl GraphicsContext {    
     /// Create a new GraphicsContext
@@ -213,8 +213,10 @@ impl GraphicsContext {
             debug_id,
         )?;
         let texture = white_image.texture.clone();
-        // BUGGO: Shader resource format hard-wired in here.
-        let typed_thingy: gfx::handle::ShaderResourceView<_, [f32;4]> = gfx::memory::Typed::new(texture);
+        use graphics::{BackendSpec, GlBackendSpec};
+        type ShaderType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::View;
+
+        let typed_thingy: gfx::handle::ShaderResourceView<_, ShaderType> = gfx::memory::Typed::new(texture);
 
         let data = pipe::Data {
             vbuf: quad_vertex_buffer.clone(),
