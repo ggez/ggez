@@ -1,15 +1,15 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use gfx::Factory;
+use gfx::traits::FactoryExt;
 use gfx_device_gl;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
 use gfx_window_sdl;
-use gfx::traits::FactoryExt;
-use gfx::Factory;
 
+use conf::WindowSetup;
 use context::DebugId;
 use graphics::*;
-use conf::WindowSetup;
 
 /// A structure that contains graphics state.
 /// For instance, background and foreground colors,
@@ -18,7 +18,7 @@ use conf::WindowSetup;
 /// As an end-user you shouldn't ever have to touch this.
 pub(crate) struct GraphicsContextGeneric<B, C>
 where
-    B: BackendSpec<SurfaceType=C>,
+    B: BackendSpec<SurfaceType = C>,
     C: gfx::format::Formatted,
 {
     pub(crate) foreground_color: Color,
@@ -40,8 +40,7 @@ where
     pub(crate) device: Box<B::Device>,
     pub(crate) factory: Box<B::Factory>,
     pub(crate) encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
-    pub(crate) screen_render_target:
-        gfx::handle::RawRenderTargetView<B::Resources>,
+    pub(crate) screen_render_target: gfx::handle::RawRenderTargetView<B::Resources>,
     #[allow(dead_code)]
     pub(crate) depth_view: gfx::handle::RawDepthStencilView<B::Resources>,
 
@@ -55,15 +54,15 @@ where
     default_shader: ShaderId,
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<ShaderHandle<B>>>,
-  
+
     pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
 }
 
-impl<B, C> GraphicsContextGeneric<B, C> 
-    where
-        B: BackendSpec<SurfaceType=C>,
-    C: gfx::format::Formatted {
-
+impl<B, C> GraphicsContextGeneric<B, C>
+where
+    B: BackendSpec<SurfaceType = C>,
+    C: gfx::format::Formatted,
+{
     pub(crate) fn get_format() -> gfx::format::Format {
         C::get_format()
     }
@@ -71,7 +70,7 @@ impl<B, C> GraphicsContextGeneric<B, C>
 
 impl<B, C> fmt::Debug for GraphicsContextGeneric<B, C>
 where
-    B: BackendSpec<SurfaceType=C>,
+    B: BackendSpec<SurfaceType = C>,
     C: gfx::format::Formatted,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -80,9 +79,10 @@ where
 }
 
 /// A concrete graphics context for GL rendering.
-pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec, <GlBackendSpec as BackendSpec>::SurfaceType>;
+pub(crate) type GraphicsContext =
+    GraphicsContextGeneric<GlBackendSpec, <GlBackendSpec as BackendSpec>::SurfaceType>;
 
-impl GraphicsContext {    
+impl GraphicsContext {
     /// Create a new GraphicsContext
     pub(crate) fn new(
         video: &sdl2::VideoSubsystem,
@@ -91,10 +91,13 @@ impl GraphicsContext {
         backend: GlBackendSpec,
         debug_id: DebugId,
     ) -> GameResult<GraphicsContext> {
+        let color_format =
+            <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::get_format();
+        let depth_format = gfx::format::Format(
+            gfx::format::SurfaceType::D24_S8,
+            gfx::format::ChannelType::Unorm,
+        );
 
-        let color_format = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::get_format();
-        let depth_format = gfx::format::Format(gfx::format::SurfaceType::D24_S8, gfx::format::ChannelType::Unorm);
-        
         // WINDOW SETUP
         let gl = video.gl_attr();
         gl.set_context_version(backend.major, backend.minor);
@@ -213,10 +216,7 @@ impl GraphicsContext {
             debug_id,
         )?;
         let texture = white_image.texture.clone();
-        use graphics::{BackendSpec, GlBackendSpec};
-        type ShaderType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::View;
-
-        let typed_thingy: gfx::handle::ShaderResourceView<_, ShaderType> = gfx::memory::Typed::new(texture);
+        let typed_thingy = super::GlBackendSpec::raw_to_typed_shader_resource(texture);
 
         let data = pipe::Data {
             vbuf: quad_vertex_buffer.clone(),
@@ -443,8 +443,8 @@ impl GraphicsContext {
         let dimensions = (
             self.screen_rect.x as u16,
             self.screen_rect.y as u16,
-            1, // BUGGO
-            gfx::texture::AaMode::Single // BUGGO
+            1,                            // BUGGO
+            gfx::texture::AaMode::Single, // BUGGO
         );
         gfx_window_sdl::update_views_raw(
             &self.window,

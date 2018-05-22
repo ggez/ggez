@@ -12,8 +12,8 @@ extern crate rand;
 
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
-use ggez::{event, graphics, Context, GameResult};
 use ggez::event::Keycode;
+use ggez::{event, graphics, Context, GameResult};
 
 // We'll bring in some things from `std` to help us in the future.
 use std::collections::LinkedList;

@@ -359,11 +359,11 @@ impl Filesystem {
 
 #[cfg(test)]
 mod tests {
+    use conf;
     use error::*;
     use filesystem::*;
-    use std::path;
     use std::io::{Read, Write};
-    use conf;
+    use std::path;
 
     fn get_dummy_fs_for_tests() -> Filesystem {
         let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));

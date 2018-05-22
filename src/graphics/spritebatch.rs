@@ -7,14 +7,15 @@
 //! a large amount of location/position data in a buffer, then feed it
 //! to the graphics card all in one go.
 
+use super::shader::BlendMode;
+use super::types::FilterMode;
+use GameResult;
+use graphics::{BackendSpec, GlBackendSpec};
 use context::Context;
-use graphics;
 use error;
 use gfx;
 use gfx::Factory;
-use GameResult;
-use super::shader::BlendMode;
-use super::types::FilterMode;
+use graphics;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
 ///
@@ -179,14 +180,8 @@ impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        
-        // Do some trait-type-lookup to get the right color format for the shader.
-        // This is generally just [f32;4], but in principle depends on the surface format.
-        let texture = self.image.texture.clone();
-        use graphics::{BackendSpec, GlBackendSpec};
-        type ShaderType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::View;
-        let typed_thingy: gfx::handle::ShaderResourceView<_, ShaderType> = gfx::memory::Typed::new(texture.clone());
 
+        let typed_thingy = GlBackendSpec::raw_to_typed_shader_resource(self.image.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.batch.sprites.len() as u32, 0));
@@ -235,14 +230,9 @@ impl graphics::Drawable for SpriteBatch {
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        let texture = self.image.texture.clone();
-        // Do some trait-type-lookup to get the right color format for the shader.
-        // This is generally just [f32;4], but in principle depends on the surface format.
-        use graphics::{BackendSpec, GlBackendSpec};
-        type ShaderType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::View;
-        let typed_thingy: gfx::handle::ShaderResourceView<_, ShaderType> = gfx::memory::Typed::new(texture.clone());
+        let typed_thingy = GlBackendSpec::raw_to_typed_shader_resource(self.image.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
-        
+
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.sprites.len() as u32, 0));
         let curr_transform = gfx.get_transform();

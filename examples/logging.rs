@@ -12,12 +12,12 @@ extern crate ggez;
 #[macro_use]
 extern crate log;
 
-use ggez::{Context, ContextBuilder, GameResult};
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event::{EventHandler, Keycode, Mod};
 use ggez::filesystem::File;
 use ggez::graphics;
 use ggez::timer;
+use ggez::{Context, ContextBuilder, GameResult};
 use std::io::Write;
 use std::path;
 use std::sync::mpsc;

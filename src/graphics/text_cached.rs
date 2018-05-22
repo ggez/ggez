@@ -7,8 +7,8 @@
 
 use super::*;
 
-pub use gfx_glyph::{FontId, HorizontalAlign, Scale, VerticalAlign};
 use gfx_glyph::{self, GlyphPositioner, SectionText, VariedSection};
+pub use gfx_glyph::{FontId, HorizontalAlign, Scale, VerticalAlign};
 use std::borrow::Cow;
 use std::f32;
 use std::sync::{Arc, RwLock};
@@ -478,9 +478,15 @@ impl TextCached {
 
         // Typed() is an Undocumented Feature of gfx
         type ColorFormat = <GlBackendSpec as BackendSpec>::SurfaceType;
-        let typed_render_target: gfx::handle::RenderTargetView<gfx_device_gl::Resources, ColorFormat> = gfx::memory::Typed::new(render_tgt.clone());
+        let typed_render_target: gfx::handle::RenderTargetView<
+            gfx_device_gl::Resources,
+            ColorFormat,
+        > = gfx::memory::Typed::new(render_tgt.clone());
 
-        let typed_depth_target: gfx::handle::DepthStencilView<gfx_device_gl::Resources, gfx::format::DepthStencil> = gfx::memory::Typed::new(depth_view.clone());
+        let typed_depth_target: gfx::handle::DepthStencilView<
+            gfx_device_gl::Resources,
+            gfx::format::DepthStencil,
+        > = gfx::memory::Typed::new(depth_view.clone());
         context.gfx_context.glyph_brush.draw_queued_with_transform(
             m_transform.into(),
             encoder,

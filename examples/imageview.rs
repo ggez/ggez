@@ -4,10 +4,10 @@ extern crate rand;
 use ggez::audio;
 use ggez::conf;
 use ggez::event;
-use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::graphics::Color;
 use ggez::timer;
+use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
@@ -60,7 +60,8 @@ impl MainState {
         let sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
 
         let pixel_font = graphics::Font::new_px(ctx, "/DejaVuSerif.ttf", 32).unwrap();
-        let pixel_sized_text = graphics::Text::new(ctx, "This text is 32 pixels high", &pixel_font).unwrap(); 
+        let pixel_sized_text =
+            graphics::Text::new(ctx, "This text is 32 pixels high", &pixel_font).unwrap();
 
         let _ = sound.play();
 
@@ -109,10 +110,13 @@ impl event::EventHandler for MainState {
         let dest_point = graphics::Point2::new(100.0, 50.0);
         graphics::draw(ctx, &self.bmptext, dest_point, 0.0)?;
 
-
         let dest_point2 = graphics::Point2::new(0.0, 256.0);
         graphics::set_color(ctx, Color::from((0, 0, 0, 255)))?;
-        graphics::rectangle(ctx, graphics::DrawMode::Fill, graphics::Rect::new(0.0, 256.0, 500.0, 32.0))?;
+        graphics::rectangle(
+            ctx,
+            graphics::DrawMode::Fill,
+            graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
+        )?;
         graphics::set_color(ctx, Color::from((255, 255, 255, 255)))?;
         graphics::draw(ctx, &self.pixel_sized_text, dest_point2, 0.0)?;
 

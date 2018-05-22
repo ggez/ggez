@@ -2,10 +2,10 @@
 
 extern crate ggez;
 
-use ggez::{Context, GameResult};
-use ggez::graphics::{self, DrawMode, Point2};
 use ggez::conf;
 use ggez::event;
+use ggez::graphics::{self, DrawMode, Point2};
+use ggez::{Context, GameResult};
 
 struct MainState {
     pos_x: f32,

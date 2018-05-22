@@ -13,9 +13,9 @@ use std::sync::Arc;
 
 use rodio;
 
-use context::Context;
 use GameError;
 use GameResult;
+use context::Context;
 
 /// A struct that contains all information for tracking sound info.
 ///

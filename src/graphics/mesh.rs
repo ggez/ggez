@@ -1,6 +1,6 @@
 use context::DebugId;
-use graphics::*;
 use gfx::traits::FactoryExt;
+use graphics::*;
 use lyon;
 use lyon::tessellation as t;
 
@@ -372,11 +372,8 @@ impl Drawable for Mesh {
 
         gfx.data.vbuf = self.buffer.clone();
         let texture = gfx.white_image.texture.clone();
-        
-        use graphics::{BackendSpec, GlBackendSpec};
-        type ShaderType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::View;
-        let typed_thingy: gfx::handle::ShaderResourceView<_, ShaderType> = gfx::memory::Typed::new(texture);
 
+        let typed_thingy = super::GlBackendSpec::raw_to_typed_shader_resource(texture);
         gfx.data.tex.0 = typed_thingy;
 
         gfx.draw(Some(&self.slice))?;

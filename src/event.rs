@@ -25,22 +25,22 @@ pub use sdl2::mouse::MouseButton;
 /// A struct containing the mouse state at a given instant.
 pub use sdl2::mouse::MouseState;
 
-/// A controller button.
-pub use sdl2::controller::Button;
 /// A controller axis.
 pub use sdl2::controller::Axis;
+/// A controller button.
+pub use sdl2::controller::Button;
 
+pub use sdl2::event::Event;
 /// The event iterator
 pub use sdl2::event::EventPollIterator;
-pub use sdl2::event::Event;
 
-use sdl2::event::Event::*;
 use sdl2::event;
-use sdl2::mouse;
+use sdl2::event::Event::*;
 use sdl2::keyboard;
+use sdl2::mouse;
 
-use context::Context;
 use GameResult;
+use context::Context;
 
 pub use sdl2::keyboard::{CAPSMOD, LALTMOD, LCTRLMOD, LGUIMOD, LSHIFTMOD, MODEMOD, NOMOD, NUMMOD,
                          RALTMOD, RCTRLMOD, RESERVEDMOD, RGUIMOD, RSHIFTMOD};

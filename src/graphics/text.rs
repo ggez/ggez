@@ -1,13 +1,13 @@
 use std::cmp;
-use std::fmt;
-use std::path;
 use std::collections::BTreeMap;
+use std::fmt;
 use std::io::Read;
+use std::path;
 
 use gfx_glyph::FontId;
-use rusttype;
 use image;
 use image::RgbaImage;
+use rusttype;
 
 use super::*;
 
@@ -105,7 +105,6 @@ impl Font {
         Font::from_bytes_px(&name, &buf, pixels)
     }
 
-
     /// Loads a new TTF font from data copied out of the given buffer.
     pub fn from_bytes(name: &str, bytes: &[u8], points: u32, dpi: (f32, f32)) -> GameResult<Font> {
         let font_collection_err = &|_| {
@@ -136,7 +135,6 @@ impl Font {
         })
     }
 
-
     /// Loads a new TTF font from data copied out of the given buffer, taking font size in pixels
     pub fn from_bytes_px(name: &str, bytes: &[u8], pixels: u32) -> GameResult<Font> {
         let font_collection_err = &|_| {
@@ -156,7 +154,10 @@ impl Font {
             ))
         };
         let font = collection.into_font().map_err(font_err)?;
-        let scale = rusttype::Scale { x: pixels as f32, y: pixels as f32};
+        let scale = rusttype::Scale {
+            x: pixels as f32,
+            y: pixels as f32,
+        };
 
         Ok(Font::TTFFont {
             points: 0, // Pretty sure points is unused apart from display, so
@@ -259,8 +260,9 @@ impl Font {
 
     /// Loads a new TrueType font from given file and into `GraphicsContext::glyph_brush`.
     pub fn new_glyph_font<P>(context: &mut Context, path: P) -> GameResult<Self>
-        where
-            P: AsRef<path::Path> + fmt::Debug {
+    where
+        P: AsRef<path::Path> + fmt::Debug,
+    {
         let mut stream = context.filesystem.open(path.as_ref())?;
         let mut buf = Vec::new();
         stream.read_to_end(&mut buf)?;
@@ -272,7 +274,12 @@ impl Font {
 
     /// Retrieves a loaded font from `GraphicsContext::glyph_brush`.
     pub fn get_glyph_font_by_id(context: &mut Context, font_id: FontId) -> GameResult<Self> {
-        if context.gfx_context.glyph_brush.fonts().contains_key(&font_id) {
+        if context
+            .gfx_context
+            .glyph_brush
+            .fonts()
+            .contains_key(&font_id)
+        {
             Ok(Font::GlyphFont(font_id))
         } else {
             Err(GameError::FontError(
@@ -328,7 +335,7 @@ impl Font {
                     font.layout(text, scale, offset).collect();
                 text_width(&glyphs) as usize
             }
-            Font::GlyphFont(_) => 0
+            Font::GlyphFont(_) => 0,
         }
     }
 

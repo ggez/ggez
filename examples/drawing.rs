@@ -4,10 +4,10 @@ extern crate ggez;
 
 use ggez::conf;
 use ggez::event;
-use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::graphics::{DrawMode, Point2};
 use ggez::timer;
+use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 

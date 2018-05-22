@@ -6,14 +6,14 @@ extern crate rand;
 
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
-use ggez::{Context, ContextBuilder, GameResult};
 use ggez::graphics::{self, Color, DrawParam, Font, FontId, HorizontalAlign as HAlign, Layout,
                      Point2, Scale, TextCached, TextFragment};
 use ggez::timer;
+use ggez::{Context, ContextBuilder, GameResult};
+use std::collections::BTreeMap;
 use std::env;
 use std::f32;
 use std::path;
-use std::collections::BTreeMap;
 
 /// Creates a random RGB color.
 fn random_color() -> Color {
@@ -45,21 +45,19 @@ impl App {
         // This is what actually happens in `TextCached::new()`: the `&str` gets automatically
         // converted into a `TextFragment`. There are several "convenience consructors"
         // like this, refer to `TextFragment` docs for a list.
-        let mut text = TextCached::new(
-            TextFragment {
-                // `TextFragment` stores a string, and optional parameters which will override those
-                // of `TextCached` itself. This allows inlining differently formatted lines, words,
-                // or even individual letters, into the same block of text.
-                text: "Small red fragment".to_string(),
-                color: Some(Color::new(1.0, 0.0, 0.0, 1.0)),
-                // `FontId` is a handle to a loaded TTF, stored inside the context.
-                // `FontId::default()` always exists and maps to DejaVuSerif.
-                font_id: Some(FontId::default()),
-                scale: Some(Scale::uniform(10.0)),
-                // This doesn't do anything at this point; can be used to omit fields in declarations.
-                ..Default::default()
-            },
-        )?;
+        let mut text = TextCached::new(TextFragment {
+            // `TextFragment` stores a string, and optional parameters which will override those
+            // of `TextCached` itself. This allows inlining differently formatted lines, words,
+            // or even individual letters, into the same block of text.
+            text: "Small red fragment".to_string(),
+            color: Some(Color::new(1.0, 0.0, 0.0, 1.0)),
+            // `FontId` is a handle to a loaded TTF, stored inside the context.
+            // `FontId::default()` always exists and maps to DejaVuSerif.
+            font_id: Some(FontId::default()),
+            scale: Some(Scale::uniform(10.0)),
+            // This doesn't do anything at this point; can be used to omit fields in declarations.
+            ..Default::default()
+        })?;
 
         // More fragments can be appended at any time.
         text.add_fragment(" default fragment, should be long enough to showcase everything")
@@ -180,9 +178,10 @@ impl event::EventHandler for App {
             Point2::new(0.0, 0.0),
             Some(Color::new(0.0, 1.0, 1.0, 1.0)),
         );
-        TextCached::new(
-            format!("width: {}\nheight: {}", wobble_width, wobble_height),
-        )?.queue(ctx, Point2::new(0.0, 20.0), None);
+        TextCached::new(format!(
+            "width: {}\nheight: {}",
+            wobble_width, wobble_height
+        ))?.queue(ctx, Point2::new(0.0, 20.0), None);
         TextCached::draw_queued(
             ctx,
             DrawParam {

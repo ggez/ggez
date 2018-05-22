@@ -1,6 +1,6 @@
+use nalgebra as na;
 use std::f32;
 use std::u32;
-use nalgebra as na;
 
 /// A 2 dimensional point representing a location
 pub type Point2 = na::Point2<f32>;

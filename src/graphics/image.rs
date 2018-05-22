@@ -1,16 +1,16 @@
-use std::path;
 use std::io::Read;
+use std::path;
 
 use gfx;
-use gfx::format::{SurfaceTyped, ChannelTyped};
+use gfx::format::{ChannelTyped, SurfaceTyped};
 use gfx_device_gl;
 use image;
 
-use graphics::*;
-use graphics::shader::*;
-use context::{Context, DebugId};
-use GameResult;
 use GameError;
+use GameResult;
+use context::{Context, DebugId};
+use graphics::shader::*;
+use graphics::*;
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
 #[derive(Clone)]
@@ -77,8 +77,8 @@ impl Image {
 
     /// Dumps the `Image`'s data to a `Vec` of `u8` RGBA values.
     pub fn to_rgba8(&self, ctx: &mut Context) -> GameResult<Vec<u8>> {
-        use gfx::memory::Typed;
         use gfx::format::Formatted;
+        use gfx::memory::Typed;
         use gfx::traits::FactoryExt;
 
         let gfx = &mut ctx.gfx_context;
@@ -186,8 +186,10 @@ impl Image {
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
         use gfx::memory::Bind;
-        type SurfaceType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::Surface;
-        type ChannelType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::Channel;
+        type SurfaceType =
+            <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::Surface;
+        type ChannelType =
+            <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::Channel;
         let channel_type = ChannelType::get_channel_type();
         let surface_format = SurfaceType::get_surface_type();
         let texinfo = gfx::texture::Info {
@@ -197,20 +199,23 @@ impl Image {
             bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
             usage: gfx::memory::Usage::Data,
         };
-        let raw_tex = factory.create_texture_raw(texinfo, Some(channel_type), 
-            Some((&[rgba], gfx::texture::Mipmap::Provided)))?;
+        let raw_tex = factory.create_texture_raw(
+            texinfo,
+            Some(channel_type),
+            Some((&[rgba], gfx::texture::Mipmap::Provided)),
+        )?;
         let resource_desc = gfx::texture::ResourceDesc {
             channel: channel_type,
             layer: None,
             min: 0,
             max: raw_tex.get_info().levels - 1,
-            swizzle: gfx::format::Swizzle::new(), 
+            swizzle: gfx::format::Swizzle::new(),
         };
         let raw_view = factory.view_texture_as_shader_resource_raw(&raw_tex, resource_desc)?;
         // gfx::memory::Typed is UNDOCUMENTED, aiee!
         // However there doesn't seem to be an official way to turn a raw tex/view into a typed
         // one; this API oversight would probably get fixed, except gfx is moving to a new
-        // API model.  So, that also fortunately means that undocumented features like this 
+        // API model.  So, that also fortunately means that undocumented features like this
         // probably won't go away on pre-ll gfx...
         // let tex = gfx::memory::Typed::new(raw_tex);
         // let view = gfx::memory::Typed::new(raw_view);
@@ -309,12 +314,7 @@ impl Drawable for Image {
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        // TODO: We use this get-shader-resource-type idiom in like six different
-        // places, refactor!
-        use graphics::{BackendSpec, GlBackendSpec};
-        type ShaderType = <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::View;
-
-        let typed_thingy: gfx::handle::ShaderResourceView<_, ShaderType> = gfx::memory::Typed::new(self.texture.clone());
+        let typed_thingy = super::GlBackendSpec::raw_to_typed_shader_resource(self.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.get_blend_mode();

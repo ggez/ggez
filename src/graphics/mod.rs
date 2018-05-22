@@ -6,24 +6,24 @@
 //! The default coordinate system has the origin in the upper-left
 //! corner of the screen, with Y increasing downwards.
 
-use std::fmt;
-use std::convert::From;
 use std::collections::HashMap;
+use std::convert::From;
+use std::fmt;
 use std::u16;
 
-use sdl2;
 use gfx;
-use gfx_device_gl;
-use gfx::texture;
 use gfx::Device;
 use gfx::Factory;
+use gfx::texture;
+use gfx_device_gl;
+use sdl2;
 
-use conf;
-use context::DebugId;
-use conf::WindowMode;
-use context::Context;
 use GameError;
 use GameResult;
+use conf;
+use conf::WindowMode;
+use context::Context;
+use context::DebugId;
 
 mod canvas;
 mod context;
@@ -61,6 +61,21 @@ pub trait BackendSpec: fmt::Debug {
     type CommandBuffer: gfx::CommandBuffer<Self::Resources>;
     /// gfx device type
     type Device: gfx::Device<Resources = Self::Resources, CommandBuffer = Self::CommandBuffer>;
+
+    /// A helper function to take a RawShaderResourceView and turn it into a typed one based on
+    /// the surface type defined in a `BackendSpec`
+    fn raw_to_typed_shader_resource(
+        texture_view: gfx::handle::RawShaderResourceView<Self::Resources>,
+    ) -> gfx::handle::ShaderResourceView<
+        <Self as BackendSpec>::Resources,
+        <<Self as BackendSpec>::SurfaceType as gfx::format::Formatted>::View,
+    > {
+        let typed_view: gfx::handle::ShaderResourceView<
+            _,
+            <<Self as BackendSpec>::SurfaceType as gfx::format::Formatted>::View,
+        > = gfx::memory::Typed::new(texture_view);
+        typed_view
+    }
 }
 
 /// A backend specification for OpenGL.
@@ -242,8 +257,9 @@ impl From<gfx::buffer::CreationError> for GameError {
 // DRAWING
 // **********************************************************************
 
-
-trait TransformRawRenderTargetViewToRenderTargetView<F: gfx::format::Formatted> { type Result; }
+trait TransformRawRenderTargetViewToRenderTargetView<F: gfx::format::Formatted> {
+    type Result;
+}
 
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context) {
@@ -251,7 +267,8 @@ pub fn clear(ctx: &mut Context) {
     // SRGB BUGGO: Only convert when drawing on srgb surface
     let linear_color: types::LinearColor = gfx.background_color.into();
     type ColorFormat = <GlBackendSpec as BackendSpec>::SurfaceType;
-    let typed_render_target: gfx::handle::RenderTargetView<_, ColorFormat> = gfx::memory::Typed::new(gfx.data.out.clone());
+    let typed_render_target: gfx::handle::RenderTargetView<_, ColorFormat> =
+        gfx::memory::Typed::new(gfx.data.out.clone());
     gfx.encoder.clear(&typed_render_target, linear_color.into());
 }
 
@@ -285,7 +302,7 @@ pub fn present(ctx: &mut Context) {
 /// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to a PNG file.
 pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
-    use gfx::memory::{Bind};
+    use gfx::memory::Bind;
     let debug_id = DebugId::get(ctx);
 
     let gfx = &mut ctx.gfx_context;
@@ -301,11 +318,8 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         bind: Bind::TRANSFER_SRC | Bind::TRANSFER_DST | Bind::SHADER_RESOURCE,
         usage: gfx::memory::Usage::Data,
     };
-    let target_texture = gfx.factory.create_texture_raw(
-        texture_info,
-        Some(channel_type),
-        None
-        )?;
+    let target_texture = gfx.factory
+        .create_texture_raw(texture_info, Some(channel_type), None)?;
     let image_info = gfx::texture::ImageInfoCommon {
         xoffset: 0,
         yoffset: 0,
@@ -331,17 +345,15 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
 
     local_encoder.flush(&mut *gfx.device);
 
-    let resource_desc = gfx::texture::ResourceDesc{
+    let resource_desc = gfx::texture::ResourceDesc {
         channel: channel_type,
         layer: None,
         min: 0,
         max: 0,
         swizzle: gfx::format::Swizzle::new(),
     };
-    let shader_resource = gfx.factory.view_texture_as_shader_resource_raw(
-        &target_texture,
-        resource_desc
-        )?;
+    let shader_resource = gfx.factory
+        .view_texture_as_shader_resource_raw(&target_texture, resource_desc)?;
     let image = Image {
         texture: shader_resource,
         texture_handle: target_texture,
@@ -801,9 +813,7 @@ pub fn get_depth_view(
 #[deprecated]
 pub fn get_screen_render_target(
     context: &Context,
-) -> gfx::handle::RawRenderTargetView<
-    gfx_device_gl::Resources
-> {
+) -> gfx::handle::RawRenderTargetView<gfx_device_gl::Resources> {
     let gfx = &context.gfx_context;
     gfx.data.out.clone()
 }
@@ -823,12 +833,8 @@ pub fn get_gfx_objects(
         <GlBackendSpec as BackendSpec>::Resources,
         <GlBackendSpec as BackendSpec>::CommandBuffer,
     >,
-    gfx::handle::RawDepthStencilView<
-            <GlBackendSpec as BackendSpec>::Resources
-            >,
-    gfx::handle::RawRenderTargetView<
-        <GlBackendSpec as BackendSpec>::Resources
-    >,
+    gfx::handle::RawDepthStencilView<<GlBackendSpec as BackendSpec>::Resources>,
+    gfx::handle::RawRenderTargetView<<GlBackendSpec as BackendSpec>::Resources>,
 ) {
     let gfx = &mut context.gfx_context;
     let f = &mut gfx.factory;

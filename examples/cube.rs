@@ -5,18 +5,18 @@ extern crate gfx;
 extern crate gfx_device_gl;
 extern crate ggez;
 
+use gfx::Factory;
 use gfx::texture;
 use gfx::traits::FactoryExt;
-use gfx::Factory;
 
 use ggez::conf;
 use ggez::event;
-use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::nalgebra as na;
+use ggez::{Context, GameResult};
 use std::env;
-use std::path;
 use std::f32;
+use std::path;
 
 type Isometry3 = na::Isometry3<f32>;
 type Point3 = na::Point3<f32>;

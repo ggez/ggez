@@ -2,13 +2,13 @@
 //! module from graphics...
 
 use gfx::Factory;
-use gfx::format::{Swizzle};
+use gfx::format::Swizzle;
 use gfx::handle::RawRenderTargetView;
 use gfx::memory::{Bind, Usage};
 use gfx::texture::{AaMode, Kind};
 
-use conf;
 use Context;
+use conf;
 use context::DebugId;
 use error::*;
 use graphics::*;
@@ -66,23 +66,20 @@ impl Canvas {
         let tex = factory.create_texture_raw(
             texture_create_info,
             Some(ctx.gfx_context.color_format.1),
-            None
+            None,
         )?;
         let resource_desc = gfx::texture::ResourceDesc {
             channel: ctx.gfx_context.color_format.1,
             layer: None,
             min: 0,
             max: levels - 1,
-            swizzle: Swizzle::new()
+            swizzle: Swizzle::new(),
         };
-        let resource = factory.view_texture_as_shader_resource_raw(
-            &tex,
-            resource_desc
-        )?;
+        let resource = factory.view_texture_as_shader_resource_raw(&tex, resource_desc)?;
         let render_desc = gfx::texture::RenderDesc {
             channel: ctx.gfx_context.color_format.1,
             level: 0,
-            layer: None
+            layer: None,
         };
         let target = factory.view_texture_as_render_target_raw(&tex, render_desc)?;
         Ok(Canvas {

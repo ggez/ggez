@@ -7,10 +7,10 @@ extern crate rand;
 
 use ggez::conf;
 use ggez::event;
-use ggez::{Context, GameResult};
 use ggez::graphics;
-use ggez::timer;
 use ggez::nalgebra as na;
+use ggez::timer;
+use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
@@ -28,9 +28,9 @@ impl MainState {
         let canvas = graphics::Canvas::with_window_size(ctx)?;
         let draw_pt = na::origin();
         let draw_vec = na::Vector2::new(1.0, 1.0);
-        let s = MainState { 
-            spritebatch, 
-            canvas ,
+        let s = MainState {
+            spritebatch,
+            canvas,
             draw_pt,
             draw_vec,
         };
@@ -87,7 +87,6 @@ impl MainState {
         graphics::set_canvas(ctx, None);
         Ok(())
     }
-
 }
 
 impl event::EventHandler for MainState {
@@ -98,13 +97,15 @@ impl event::EventHandler for MainState {
         }
 
         // Bounce the rect if necessary
-        let (w, h) = graphics::get_size(ctx); 
+        let (w, h) = graphics::get_size(ctx);
         if self.draw_pt.x + (w as f32 / 2.0) > (w as f32) || self.draw_pt.x < 0.0 {
             self.draw_vec.x *= -1.0;
         }
         // println!("{:?}", self.draw_pt);
         // BUGGO: The height bounds are hella wrong!
-        if self.draw_pt.y + (h as f32 / 2.0) > (h as f32 / 2.0) || self.draw_pt.y < -(h as f32 / 2.0) {
+        if self.draw_pt.y + (h as f32 / 2.0) > (h as f32 / 2.0)
+            || self.draw_pt.y < -(h as f32 / 2.0)
+        {
             self.draw_vec.y *= -1.0;
         }
         self.draw_pt += self.draw_vec;
@@ -118,12 +119,15 @@ impl event::EventHandler for MainState {
         let dims = self.canvas.get_image().get_dimensions();
         let src_x = self.draw_pt.x / dims.w;
         let src_y = self.draw_pt.y / dims.h;
-        graphics::draw_ex(ctx, &self.canvas, 
+        graphics::draw_ex(
+            ctx,
+            &self.canvas,
             graphics::DrawParam {
                 dest: self.draw_pt,
                 src: graphics::Rect::new(src_x, -src_y, 0.5, 0.5),
-                .. Default::default()
-                })?;
+                ..Default::default()
+            },
+        )?;
         graphics::present(ctx);
         Ok(())
     }

@@ -15,9 +15,9 @@
 use context::Context;
 
 use std::cmp;
-use std::time;
-use std::thread;
 use std::f64;
+use std::thread;
+use std::time;
 
 /// A simple buffer that fills
 /// up to a limit and then holds the last

@@ -7,9 +7,9 @@ extern crate rand;
 
 use ggez::conf;
 use ggez::event;
-use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::timer;
+use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 

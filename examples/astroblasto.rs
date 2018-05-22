@@ -5,14 +5,14 @@
 extern crate ggez;
 extern crate rand;
 
-use ggez::{Context, ContextBuilder, GameResult};
 use ggez::audio;
 use ggez::conf;
 use ggez::event::{self, EventHandler, Keycode, Mod};
 use ggez::graphics;
-use ggez::timer;
 use ggez::graphics::{Point2, Vector2};
 use ggez::nalgebra as na;
+use ggez::timer;
+use ggez::{Context, ContextBuilder, GameResult};
 
 use std::env;
 use std::path;

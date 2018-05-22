@@ -2,21 +2,21 @@
 //! with ggez for cool and spooky effects. See the `shader` and `shadows`
 //! examples for a taste.
 
-use gfx::*;
 use gfx::handle::*;
-use gfx::pso::*;
+use gfx::preset::blend;
 use gfx::pso::buffer::*;
+use gfx::pso::*;
 use gfx::shade::*;
 use gfx::state::*;
 use gfx::traits::{FactoryExt, Pod};
+use gfx::*;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fmt;
 use std::io::prelude::*;
 use std::marker::PhantomData;
 use std::path::Path;
 use std::rc::Rc;
-use std::collections::HashMap;
-use gfx::preset::blend;
 
 use Context;
 use context::DebugId;
@@ -204,8 +204,12 @@ where
     for mode in blend_modes {
         let init = ConstInit::<C>(
             graphics::pipe::Init {
-                out: ("Target0", graphics::GraphicsContext::get_format(), 
-                      ColorMask::all(), Some((*mode).into())),
+                out: (
+                    "Target0",
+                    graphics::GraphicsContext::get_format(),
+                    ColorMask::all(),
+                    Some((*mode).into()),
+                ),
                 ..graphics::pipe::new()
             },
             name.clone(),

@@ -10,9 +10,9 @@
 
 extern crate ggez;
 
-use ggez::{conf, Context};
 use ggez::event;
 use ggez::graphics::{self, DrawMode, Point2};
+use ggez::{conf, Context};
 
 pub fn main() {
     let c = conf::Conf::new();

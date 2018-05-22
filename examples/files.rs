@@ -7,11 +7,11 @@
 extern crate ggez;
 
 use ggez::ContextBuilder;
-use ggez::filesystem;
 use ggez::conf;
+use ggez::filesystem;
 use std::env;
-use std::path;
 use std::io::{Read, Write};
+use std::path;
 use std::str;
 
 pub fn main() {

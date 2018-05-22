@@ -11,10 +11,10 @@
 
 use std::cell::RefCell;
 use std::collections::VecDeque;
-use std::path::{self, Path, PathBuf};
-use std::fs;
 use std::fmt::{self, Debug};
+use std::fs;
 use std::io::{self, Read, Seek, Write};
+use std::path::{self, Path, PathBuf};
 
 use zip;
 
@@ -748,8 +748,8 @@ impl VFS for ZipFS {
 
 #[cfg(test)]
 mod tests {
-    use std::io::{self, BufRead};
     use super::*;
+    use std::io::{self, BufRead};
 
     #[test]
     fn test_path_filtering() {
