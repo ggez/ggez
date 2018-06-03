@@ -207,34 +207,35 @@ where
                         WindowEvent::CloseRequested => {
                             continuing = state.quit_event(ctx);
                         }
+                        WindowEvent::Focused(gained) => {
+                            state.focus_event(ctx, gained);
+                        }
                         WindowEvent::KeyboardInput {
                             input: winit::KeyboardInput {
                                 state,
-                                virtual_keycode,
+                                virtual_keycode: Some(keycode),
                                 modifiers,
                                 ..
                             },
                             ..
                         } => {
-                            if let Some(keycode) = virtual_keycode {
-                                match state {
-                                    Pressed => {
-                                        let repeat = last_pressed == Some(keycode);
-                                        state.key_down_event(ctx, keycode, modifiers, repeat);
-                                        last_pressed = Some(keycode);
+                            match state {
+                                ElementState::Pressed => {
+                                    let repeat = last_pressed == Some(keycode);
+                                    state.key_down_event(ctx, keycode, modifiers, repeat);
+                                    last_pressed = Some(keycode);
+                                }
+                                ElementState::Released => {
+                                    if last_pressed == Some(keycode) {
+                                        last_pressed = None;
                                     }
-                                    Released => {
-                                        if last_pressed == Some(keycode) {
-                                            last_pressed = None;
-                                        }
-                                        state.key_up_event(ctx, keycode, modifiers);
-                                    }
+                                    state.key_up_event(ctx, keycode, modifiers);
                                 }
                             }
                         }
                         WindowEvent::MouseInput { state, button, .. } => {
                             match state {
-                                Pressed => {
+                                ElementState::Pressed => {
                                     state.mouse_button_down_event(
                                         ctx,
                                         button,
@@ -242,7 +243,7 @@ where
                                         cursor_location.1,
                                     )
                                 }
-                                Released => {
+                                ElementState::Released => {
                                     state.mouse_button_up_event(
                                         ctx,
                                         button,
@@ -262,6 +263,7 @@ where
                                 mouse_delta.1,
                             );
                         }
+                        _ => (),
                     }
                 }
                 Event::DeviceEvent { event, .. } => {
@@ -294,14 +296,6 @@ where
                 ControllerAxisMotion {
                     axis, value, which, ..
                 } => state.controller_axis_event(ctx, axis, value, which),
-                Window {
-                    win_event: event::WindowEvent::FocusGained,
-                    ..
-                } => state.focus_event(ctx, true),
-                Window {
-                    win_event: event::WindowEvent::FocusLost,
-                    ..
-                } => state.focus_event(ctx, false),
                 Window {
                     win_event: event::WindowEvent::Resized(w, h),
                     ..
