@@ -1,7 +1,5 @@
 use image::{self, GenericImage};
-use sdl2::pixels;
-use sdl2::surface;
-use sdl2::{self, Sdl};
+use winit;
 
 use std::fmt;
 use std::io::Read;
@@ -69,25 +67,9 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
     // This clone is a little annoying, but, borrowing is inconvenient.
     let icon = &context.conf.window_setup.icon.clone();
     if !icon.is_empty() {
-        let mut f = context.filesystem.open(icon)?;
-        let mut buf = Vec::new();
-        f.read_to_end(&mut buf)?;
-        let image = image::load_from_memory(&buf)?;
-        let image_data = &mut image.to_rgba();
-        // The "pitch" parameter here is not the count
-        // between pixels, but the count between rows.
-        // For some retarded reason.
-        // Also SDL seems to have strange ideas of what
-        // "RGBA" means.
-        let surface = surface::Surface::from_data(
-            image_data,
-            image.width(),
-            image.height(),
-            image.width() * 4,
-            pixels::PixelFormatEnum::ABGR8888,
-        )?;
-        let window = graphics::get_window_mut(context);
-        window.set_icon(surface);
+        let icon = winit::Icon::from_path(icon)?;
+        let window = graphics::get_window(context);
+        window.set_window_icon(Some(icon));
     };
     Ok(())
 }
