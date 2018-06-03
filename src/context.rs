@@ -11,7 +11,6 @@ use conf;
 use event;
 use filesystem::Filesystem;
 use graphics;
-use input;
 use mouse;
 use timer;
 
@@ -38,8 +37,6 @@ pub struct Context {
     pub timer_context: timer::TimeContext,
     /// Audio context
     pub audio_context: audio::AudioContext,
-    /// Gamepad context
-    pub gamepad_context: input::GamepadContext,
     /// Mouse context
     pub mouse_context: mouse::MouseContext,
     /// Default font
@@ -89,7 +86,6 @@ impl Context {
             backend_spec,
             debug_id,
         )?;
-        let gamepad_context = input::GamepadContext::new(&sdl_context)?;
         let mouse_context = mouse::MouseContext::new();
 
         let mut ctx = Context {
@@ -99,7 +95,6 @@ impl Context {
             events_loop,
             timer_context,
             audio_context,
-            gamepad_context,
             mouse_context,
 
             default_font: font,
