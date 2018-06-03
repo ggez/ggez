@@ -107,7 +107,8 @@ extern crate app_dirs2;
 extern crate gfx;
 extern crate gfx_device_gl;
 extern crate gfx_glyph;
-extern crate gfx_window_sdl;
+extern crate gfx_window_glutin;
+extern crate glutin;
 extern crate image;
 #[macro_use]
 extern crate log;
@@ -115,13 +116,13 @@ extern crate lyon;
 pub extern crate nalgebra;
 extern crate rodio;
 extern crate rusttype;
-extern crate sdl2;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate smart_default;
 extern crate toml;
 extern crate zip;
+extern crate winit;
 
 pub mod audio;
 pub mod conf;
