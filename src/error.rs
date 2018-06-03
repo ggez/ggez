@@ -5,12 +5,12 @@ use std::error::Error;
 use std::fmt;
 
 use gfx;
-use gfx_window_sdl;
+use glutin;
+use winit;
 
 use app_dirs2::AppDirsError;
 use image;
 use rodio::decoder::DecoderError;
-use sdl2;
 use toml;
 use zip;
 
@@ -21,11 +21,9 @@ pub enum GameError {
     FilesystemError(String),
     /// An error in the config file
     ConfigError(String),
-    /// An error in some part of the underlying SDL library.
-    SdlError(String),
-    /// An error saying that a an integer overflow/underflow occured
-    /// in an underlying library.
-    IntegerError(String),
+    /// Happens when an `EventsLoopProxy` attempts to
+    /// wake up an `EventsLoop` that no longer exists.
+    EventLoopError(String),
     /// An error trying to parse a resource
     ResourceLoadError(String),
     /// Unable to find a resource; the Vec is the paths it searched for and associated errors
@@ -35,7 +33,7 @@ pub enum GameError {
     /// Something went wrong in the audio playback
     AudioError(String),
     /// Something went wrong trying to create a window
-    WindowError(gfx_window_sdl::InitError),
+    WindowError(glutin::CreationError),
     /// Something went wrong trying to read from a file
     IOError(std::io::Error),
     /// Something went wrong trying to load/render a font
@@ -51,13 +49,14 @@ pub enum GameError {
 impl fmt::Display for GameError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            GameError::ConfigError(ref s) => write!(f, "Config error: {}", s),
+            GameError::ResourceLoadError(ref s) => write!(f, "Error loading resource: {}", s),
             GameError::ResourceNotFound(ref s, ref paths) => write!(
                 f,
                 "Resource not found: {}, searched in paths {:?}",
                 s, paths
             ),
-            GameError::ConfigError(ref s) => write!(f, "Config error: {}", s),
-            GameError::ResourceLoadError(ref s) => write!(f, "Error loading resource: {}", s),
+            GameError::WindowError(ref e) => write!(f, "Window creation error: {}", e),
             _ => write!(f, "GameError {:?}", self),
         }
     }
@@ -68,8 +67,7 @@ impl Error for GameError {
         match *self {
             GameError::FilesystemError(_) => "Filesystem error",
             GameError::ConfigError(_) => "Config file error",
-            GameError::SdlError(_) => "SDL error",
-            GameError::IntegerError(_) => "Integer error",
+            GameError::EventLoopError(_) => "Event loop error",
             GameError::ResourceLoadError(_) => "Resource load error",
             GameError::ResourceNotFound(_, _) => "Resource not found",
             GameError::RenderError(_) => "Render error",
@@ -85,8 +83,9 @@ impl Error for GameError {
 
     fn cause(&self) -> Option<&Error> {
         match *self {
-            GameError::ShaderProgramError(ref e) => Some(e),
+            GameError::WindowError(ref e) => Some(e),
             GameError::IOError(ref e) => Some(e),
+            GameError::ShaderProgramError(ref e) => Some(e),
             _ => None,
         }
     }
@@ -98,46 +97,6 @@ pub type GameResult<T> = Result<T, GameError>;
 impl From<String> for GameError {
     fn from(s: String) -> GameError {
         GameError::UnknownError(s)
-    }
-}
-
-impl From<gfx_window_sdl::InitError> for GameError {
-    fn from(s: gfx_window_sdl::InitError) -> GameError {
-        GameError::WindowError(s)
-    }
-}
-
-impl From<sdl2::IntegerOrSdlError> for GameError {
-    fn from(e: sdl2::IntegerOrSdlError) -> GameError {
-        match e {
-            sdl2::IntegerOrSdlError::IntegerOverflows(s, i) => {
-                let message = format!("Integer overflow: {}, str {}", i, s);
-                GameError::IntegerError(message)
-            }
-            sdl2::IntegerOrSdlError::SdlError(s) => GameError::SdlError(s),
-        }
-    }
-}
-
-impl From<sdl2::filesystem::PrefPathError> for GameError {
-    fn from(e: sdl2::filesystem::PrefPathError) -> GameError {
-        let msg = match e {
-            sdl2::filesystem::PrefPathError::InvalidOrganizationName(e) => {
-                format!("Invalid organization name, {}", e)
-            }
-            sdl2::filesystem::PrefPathError::InvalidApplicationName(e) => {
-                format!("Invalid application name, {}", e)
-            }
-            sdl2::filesystem::PrefPathError::SdlError(e) => e,
-        };
-        GameError::ConfigError(msg)
-    }
-}
-
-impl From<sdl2::render::TextureValueError> for GameError {
-    fn from(e: sdl2::render::TextureValueError) -> GameError {
-        let msg = e.description();
-        GameError::ResourceLoadError(msg.to_owned())
     }
 }
 
@@ -257,5 +216,19 @@ where
 impl From<gfx::shade::ProgramError> for GameError {
     fn from(e: gfx::shade::ProgramError) -> GameError {
         GameError::ShaderProgramError(e)
+    }
+}
+
+impl From<winit::EventsLoopClosed> for GameError {
+    fn from(_: glutin::EventsLoopClosed) -> GameError {
+        let e = "An event loop proxy attempted to wake up an event loop that no longer exists."
+            .to_owned();
+        GameError::EventLoopError(e)
+    }
+}
+
+impl From<glutin::CreationError> for GameError {
+    fn from(s: glutin::CreationError) -> GameError {
+        GameError::WindowError(s)
     }
 }
