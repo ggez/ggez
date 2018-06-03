@@ -5,9 +5,10 @@ use gfx::Factory;
 use gfx::traits::FactoryExt;
 use gfx_device_gl;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
-use gfx_window_sdl;
+use gfx_window_glutin;
+use glutin;
 
-use conf::WindowSetup;
+use conf::{WindowMode, WindowSetup};
 use context::DebugId;
 use graphics::*;
 
@@ -28,15 +29,12 @@ where
     pub(crate) modelview_stack: Vec<Matrix4>,
     pub(crate) white_image: Image,
     pub(crate) screen_rect: Rect,
-    pub(crate) dpi: (f32, f32, f32),
     pub(crate) color_format: gfx::format::Format,
     pub(crate) depth_format: gfx::format::Format,
 
     pub(crate) backend_spec: B,
-    pub(crate) window: sdl2::video::Window,
+    pub(crate) window: glutin::GlWindow,
     pub(crate) multisample_samples: u8,
-    #[allow(dead_code)]
-    gl_context: sdl2::video::GLContext,
     pub(crate) device: Box<B::Device>,
     pub(crate) factory: Box<B::Factory>,
     pub(crate) encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
@@ -85,7 +83,7 @@ pub(crate) type GraphicsContext =
 impl GraphicsContext {
     /// Create a new GraphicsContext
     pub(crate) fn new(
-        video: &sdl2::VideoSubsystem,
+        events_loop: &glutin::EventsLoop,
         window_setup: &WindowSetup,
         window_mode: WindowMode,
         backend: GlBackendSpec,
@@ -99,36 +97,43 @@ impl GraphicsContext {
         );
 
         // WINDOW SETUP
-        let gl = video.gl_attr();
-        gl.set_context_version(backend.major, backend.minor);
-        gl.set_context_profile(sdl2::video::GLProfile::Core);
-        gl.set_red_size(5);
-        gl.set_green_size(5);
-        gl.set_blue_size(5);
-        gl.set_alpha_size(8);
-        let samples = window_setup.samples as u8;
-        if samples > 1 {
-            gl.set_multisample_buffers(1);
-            gl.set_multisample_samples(samples);
+        let gl_builder = glutin::ContextBuilder::new();
+        {
+            use glutin::*;
+            //GlRequest::Specific(Api::OpenGl, (backend.major, backend.minor))
+            gl_builder.with_gl(GlRequest::Latest);
+            gl_builder.with_gl_profile(GlProfile::Core);
+            let samples = window_setup.samples as u16;
+            gl_builder.with_multisampling(samples);
+            gl_builder.with_pixel_format(5, 8);
         }
-        let mut window_builder =
-            video.window(&window_setup.title, window_mode.width, window_mode.height);
-        if window_setup.resizable {
+        let window_builder = glutin::WindowBuilder::new();
+        window_builder.with_dimensions(window_mode.width, window_mode.height);
+        window_builder.with_title(window_setup.title);
+
+        // TODO: see winit #540.
+        /*if window_setup.resizable {
             window_builder.resizable();
-        }
-        if window_setup.allow_highdpi {
-            window_builder.allow_highdpi();
-        }
-        let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
-            gfx_window_sdl::init_raw(&video, window_builder, color_format, depth_format)?;
+        }*/
+
+        let (window, device, mut factory, screen_render_target, depth_view) =
+            gfx_window_glutin::init_raw(
+                window_builder,
+                gl_builder,
+                &events_loop,
+                color_format,
+                depth_format
+            );
 
         GraphicsContext::set_vsync(video, window_mode.vsync)?;
 
-        let display_index = window.display_index()?;
-        let dpi = window.subsystem().display_dpi(display_index)?;
+        // TODO: see winit #548; this will likely be useless with `gfx_glyph` anyway.
+        //let dpi = window.subsystem().display_dpi(display_index)?;
 
+        // TODO: should this be called here, again?
         GraphicsContext::set_vsync(video, window_mode.vsync)?;
         {
+            // TODO: fix
             // Log a bunch of OpenGL state info pulled out of SDL and gfx
             let vsync = video.gl_get_swap_interval();
             let gl_attr = video.gl_attr();
@@ -252,7 +257,6 @@ impl GraphicsContext {
             backend_spec: backend,
             window,
             multisample_samples: samples,
-            gl_context,
             device: Box::new(device),
             factory: Box::new(factory),
             encoder,

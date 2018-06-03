@@ -28,14 +28,12 @@ use timer;
 pub struct Context {
     /// The Conf object the Context was created with
     pub conf: conf::Conf,
-    /// SDL context
-    pub sdl_context: Sdl,
     /// Filesystem state
     pub filesystem: Filesystem,
     /// Graphics state
     pub(crate) gfx_context: graphics::GraphicsContext,
-    /// Event context
-    pub event_context: sdl2::EventSubsystem,
+    /// `winit` events loop; can be given a closure to process input events with.
+    pub events_loop: winit::EventsLoop,
     /// Timer state
     pub timer_context: timer::TimeContext,
     /// Audio context
@@ -77,16 +75,15 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
 impl Context {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by `Context::load_from_conf()`.
-    fn from_conf(conf: conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context> {
+    fn from_conf(conf: conf::Conf, fs: Filesystem) -> GameResult<Context> {
         let debug_id = DebugId::new();
-        let video = sdl_context.video()?;
         let audio_context = audio::AudioContext::new()?;
-        let event_context = sdl_context.event()?;
+        let events_loop = winit::EventsLoop::new();
         let timer_context = timer::TimeContext::new();
         let font = graphics::Font::default_font()?;
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
         let graphics_context = graphics::GraphicsContext::new(
-            &video,
+            &events_loop,
             &conf.window_setup,
             conf.window_mode,
             backend_spec,
@@ -97,10 +94,9 @@ impl Context {
 
         let mut ctx = Context {
             conf,
-            sdl_context,
             filesystem: fs,
             gfx_context: graphics_context,
-            event_context,
+            events_loop,
             timer_context,
             audio_context,
             gamepad_context,
@@ -130,7 +126,6 @@ impl Context {
         author: &'static str,
         default_config: conf::Conf,
     ) -> GameResult<Context> {
-        let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(game_id, author)?;
 
         let config = match fs.read_config() {
@@ -144,7 +139,7 @@ impl Context {
             }
         };
 
-        Context::from_conf(config, fs, sdl_context)
+        Context::from_conf(config, fs)
     }
 
     /// Prints out information on the resources subsystem.
@@ -256,7 +251,6 @@ impl ContextBuilder {
 
     /// Build the Context.
     pub fn build(self) -> GameResult<Context> {
-        let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(self.game_id, self.author)?;
 
         let config = if self.load_conf_file {
@@ -269,7 +263,7 @@ impl ContextBuilder {
             fs.mount(path, true);
         }
 
-        Context::from_conf(config, fs, sdl_context)
+        Context::from_conf(config, fs)
     }
 }
 

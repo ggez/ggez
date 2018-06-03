@@ -16,7 +16,6 @@ use gfx::Device;
 use gfx::Factory;
 use gfx::texture;
 use gfx_device_gl;
-use sdl2;
 
 use GameError;
 use GameResult;
