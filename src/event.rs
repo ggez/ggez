@@ -13,37 +13,31 @@
 //!
 //! See the `eventloop` example for an implementation.
 
-use sdl2;
+use winit;
 
 /// A key code.
-pub use sdl2::keyboard::Keycode;
+pub use winit::VirtualKeyCode as Keycode;
 
-/// A struct that holds the state of modifier buttons such as ctrl or shift.
-pub use sdl2::keyboard::Mod;
-/// A mouse button press.
-pub use sdl2::mouse::MouseButton;
-/// A struct containing the mouse state at a given instant.
-pub use sdl2::mouse::MouseState;
+/// A struct that holds the state of keyboard modifier buttons such as ctrl or shift.
+pub use winit::ModifiersState as KeyboardModifiers;
+/// A mouse button.
+pub use winit::MouseButton;
 
-/// A controller axis.
-pub use sdl2::controller::Axis;
-/// A controller button.
-pub use sdl2::controller::Button;
+/// An analog axis of some device (controller, joystick...).
+pub use winit::AxisId as Axis;
+/// A button of some device (controller, joystick...).
+pub use winit::ButtonId as Button;
 
-pub use sdl2::event::Event;
-/// The event iterator
-pub use sdl2::event::EventPollIterator;
-
-use sdl2::event;
-use sdl2::event::Event::*;
-use sdl2::keyboard;
-use sdl2::mouse;
+/// `winit` events; nested in a module for re-export neatness.
+pub mod winit_event {
+    pub use super::winit::{Event, WindowEvent, DeviceEvent, KeyboardInput, ElementState};
+}
+use self::winit_event::*;
+/// `winit` event loop.
+pub use winit::EventsLoop;
 
 use GameResult;
 use context::Context;
-
-pub use sdl2::keyboard::{CAPSMOD, LALTMOD, LCTRLMOD, LGUIMOD, LSHIFTMOD, MODEMOD, NOMOD, NUMMOD,
-                         RALTMOD, RCTRLMOD, RESERVEDMOD, RGUIMOD, RSHIFTMOD};
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
@@ -68,7 +62,7 @@ pub trait EventHandler {
     fn mouse_button_down_event(
         &mut self,
         _ctx: &mut Context,
-        _button: mouse::MouseButton,
+        _button: MouseButton,
         _x: i32,
         _y: i32,
     ) {
@@ -78,7 +72,7 @@ pub trait EventHandler {
     fn mouse_button_up_event(
         &mut self,
         _ctx: &mut Context,
-        _button: mouse::MouseButton,
+        _button: MouseButton,
         _x: i32,
         _y: i32,
     ) {
@@ -86,15 +80,7 @@ pub trait EventHandler {
 
     /// The mouse was moved; it provides both absolute x and y coordinates in the window,
     /// and relative x and y coordinates compared to its last position.
-    fn mouse_motion_event(
-        &mut self,
-        _ctx: &mut Context,
-        _state: mouse::MouseState,
-        _x: i32,
-        _y: i32,
-        _xrel: i32,
-        _yrel: i32,
-    ) {
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: i32, _y: i32, _xrel: i32, _yrel: i32) {
     }
 
     /// The mousewheel was scrolled, vertically (y, positive away from and negative toward the user)
@@ -102,14 +88,20 @@ pub trait EventHandler {
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: i32, _y: i32) {}
 
     /// A keyboard button was pressed.
-    fn key_down_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, _repeat: bool) {
-        if keycode == keyboard::Keycode::Escape {
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: Keycode,
+        _keymods: KeyboardModifiers,
+        _repeat: bool,
+    ) {
+        if keycode == Keycode::Escape {
             ctx.quit().expect("Should never fail");
         }
     }
 
     /// A keyboard button was released.
-    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: Keycode, _keymod: Mod, _repeat: bool) {
+    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: Keycode, _keymods: KeyboardModifiers) {
     }
 
     /// Candidate text is passed by the OS (via Input Method Editor).
@@ -164,9 +156,10 @@ pub trait EventHandler {
 }
 
 /// A handle to access the OS's event pump.
-pub struct Events(sdl2::EventPump);
+// TODO: Do we need this?..
+pub struct Events<'a>(&'a EventsLoop);
 
-use std::fmt;
+/*use std::fmt;
 impl fmt::Debug for Events {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Events: {:p}>", self)
@@ -184,7 +177,7 @@ impl Events {
     pub fn poll(&mut self) -> EventPollIterator {
         self.0.poll_iter()
     }
-}
+}*/
 
 /// Runs the game's main loop, calling event callbacks on the given state
 /// object as events occur.
@@ -195,39 +188,95 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
 where
     S: EventHandler,
 {
-    let mut event_pump = ctx.sdl_context.event_pump()?;
-
+    let mut events_loop = EventsLoop::new();
     let mut continuing = true;
+
+    let mut mouse_delta = (0, 0);
+    let mut cursor_location = (0, 0);
+    // Tracks last pressed key to figure out if it's a repeated keystroke.
+    let mut last_pressed = None;
+
     while continuing {
         ctx.timer_context.tick();
 
-        for event in event_pump.poll_iter() {
+        events_loop.poll_events(|event| {
             ctx.process_event(&event);
             match event {
-                Quit { .. } => {
-                    continuing = state.quit_event(ctx);
-                    // println!("Quit event: {:?}", t);
-                }
-                KeyDown {
-                    keycode,
-                    keymod,
-                    repeat,
-                    ..
-                } => {
-                    if let Some(key) = keycode {
-                        state.key_down_event(ctx, key, keymod, repeat)
+                Event::WindowEvent { event, .. } => {
+                    match event {
+                        WindowEvent::CloseRequested => {
+                            continuing = state.quit_event(ctx);
+                        }
+                        WindowEvent::KeyboardInput {
+                            input: winit::KeyboardInput {
+                                state,
+                                virtual_keycode,
+                                modifiers,
+                                ..
+                            },
+                            ..
+                        } => {
+                            if let Some(keycode) = virtual_keycode {
+                                match state {
+                                    Pressed => {
+                                        let repeat = last_pressed == Some(keycode);
+                                        state.key_down_event(ctx, keycode, modifiers, repeat);
+                                        last_pressed = Some(keycode);
+                                    }
+                                    Released => {
+                                        if last_pressed == Some(keycode) {
+                                            last_pressed = None;
+                                        }
+                                        state.key_up_event(ctx, keycode, modifiers);
+                                    }
+                                }
+                            }
+                        }
+                        WindowEvent::MouseInput { state, button, .. } => {
+                            match state {
+                                Pressed => {
+                                    state.mouse_button_down_event(
+                                        ctx,
+                                        button,
+                                        cursor_location.0,
+                                        cursor_location.1,
+                                    )
+                                }
+                                Released => {
+                                    state.mouse_button_up_event(
+                                        ctx,
+                                        button,
+                                        cursor_location.0,
+                                        cursor_location.1,
+                                    )
+                                }
+                            }
+                        }
+                        WindowEvent::CursorMoved { position, .. } => {
+                            cursor_location = position as (i32, i32);
+                            state.mouse_motion_event(
+                                ctx,
+                                cursor_location.0,
+                                cursor_location.1,
+                                mouse_delta.0,
+                                mouse_delta.1,
+                            );
+                        }
                     }
                 }
-                KeyUp {
-                    keycode,
-                    keymod,
-                    repeat,
-                    ..
-                } => {
-                    if let Some(key) = keycode {
-                        state.key_up_event(ctx, key, keymod, repeat)
+                Event::DeviceEvent { event, .. } => {
+                    match event {
+                        DeviceEvent::MouseMotion { delta } => {
+                            mouse_delta = delta as (i32, i32);
+                        }
+                        _ => (),
                     }
                 }
+                Event::Awakened => unimplemented!(),
+                Event::Suspended(_) => unimplemented!(),
+            }
+        });
+        /*{
                 TextEditing {
                     text,
                     start,
@@ -235,22 +284,6 @@ where
                     ..
                 } => state.text_editing_event(ctx, text, start, length),
                 TextInput { text, .. } => state.text_input_event(ctx, text),
-                MouseButtonDown {
-                    mouse_btn, x, y, ..
-                } => state.mouse_button_down_event(ctx, mouse_btn, x, y),
-                MouseButtonUp {
-                    mouse_btn, x, y, ..
-                } => state.mouse_button_up_event(ctx, mouse_btn, x, y),
-                MouseMotion {
-                    mousestate,
-                    x,
-                    y,
-                    xrel,
-                    yrel,
-                    ..
-                } => {
-                    state.mouse_motion_event(ctx, mousestate, x, y, xrel, yrel);
-                }
                 MouseWheel { x, y, .. } => state.mouse_wheel_event(ctx, x, y),
                 ControllerButtonDown { button, which, .. } => {
                     state.controller_button_down_event(ctx, button, which)
@@ -276,8 +309,7 @@ where
                     state.resize_event(ctx, w as u32, h as u32);
                 }
                 _ => {}
-            }
-        }
+            }*/
         state.update(ctx)?;
         state.draw(ctx)?;
     }
