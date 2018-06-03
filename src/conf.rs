@@ -27,27 +27,6 @@ pub enum FullscreenType {
     Desktop,
 }
 
-use sdl2::video::FullscreenType as SdlFullscreenType;
-impl From<SdlFullscreenType> for FullscreenType {
-    fn from(other: SdlFullscreenType) -> Self {
-        match other {
-            SdlFullscreenType::Off => FullscreenType::Off,
-            SdlFullscreenType::True => FullscreenType::True,
-            SdlFullscreenType::Desktop => FullscreenType::Desktop,
-        }
-    }
-}
-
-impl From<FullscreenType> for SdlFullscreenType {
-    fn from(other: FullscreenType) -> Self {
-        match other {
-            FullscreenType::Off => SdlFullscreenType::Off,
-            FullscreenType::True => SdlFullscreenType::True,
-            FullscreenType::Desktop => SdlFullscreenType::Desktop,
-        }
-    }
-}
-
 /// A builder structure containing window settings
 /// that can be set at runtime and changed with `graphics::set_mode()`
 ///
