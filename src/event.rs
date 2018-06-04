@@ -188,14 +188,14 @@ where
                         }
                         WindowEvent::KeyboardInput {
                             input: winit::KeyboardInput {
-                                state,
+                                state: element_state,
                                 virtual_keycode: Some(keycode),
                                 modifiers,
                                 ..
                             },
                             ..
                         } => {
-                            match state {
+                            match element_state {
                                 ElementState::Pressed => {
                                     let repeat = keyboard::is_repeated(ctx, keycode);
                                     state.key_down_event(ctx, keycode, modifiers, repeat);
@@ -205,9 +205,9 @@ where
                                 }
                             }
                         }
-                        WindowEvent::MouseInput { state, button, .. } => {
+                        WindowEvent::MouseInput { state: element_state, button, .. } => {
                             let position = mouse::get_position(ctx);
-                            match state {
+                            match element_state {
                                 ElementState::Pressed => {
                                     state.mouse_button_down_event(
                                         ctx,

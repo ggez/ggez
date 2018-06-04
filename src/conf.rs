@@ -12,8 +12,10 @@
 
 use std::io;
 use toml;
+use winit;
 
 use GameResult;
+use GameError;
 
 /// Possible fullscreen modes.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -21,10 +23,53 @@ pub enum FullscreenType {
     /// Windowed mode
     Off,
     /// Real fullscreen
-    True,
+    True(MonitorId),
     /// Windowed fullscreen, generally preferred over real fullscreen
     /// these days 'cause it plays nicer with multiple monitors.
-    Desktop,
+    Desktop(MonitorId),
+}
+
+/// Identifies a monitor connected to the system.
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum MonitorId {
+    /// Monitor the window is currently in.
+    Current,
+    /// Monitor retrieved by it's index in the system.
+    Index(usize),
+}
+
+use super::context::Context;
+impl MonitorId {
+    pub(crate) fn into_winit_id(self, ctx: &Context) -> GameResult<winit::MonitorId> {
+        match self {
+            MonitorId::Current => Ok(ctx.gfx_context.window.get_current_monitor()),
+            MonitorId::Index(i) => {
+                let monitor = ctx.events_loop.get_available_monitors().nth(i);
+                if let Some(monitor) = monitor {
+                    Ok(monitor)
+                } else {
+                    return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
+                }
+            }
+        }
+    }
+
+    pub(crate) fn into_winit_id_init(
+        self,
+        events_loop: &winit::EventsLoop,
+    ) -> GameResult<winit::MonitorId> {
+        match self {
+            MonitorId::Current => Ok(events_loop.get_primary_monitor()),
+            MonitorId::Index(i) => {
+                let monitor = events_loop.get_available_monitors().nth(i);
+                if let Some(monitor) = monitor {
+                    Ok(monitor)
+                } else {
+                    return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
+                }
+            }
+        }
+    }
 }
 
 /// A builder structure containing window settings
@@ -45,23 +90,26 @@ pub enum FullscreenType {
 ///     max_height: 0,
 /// }
 /// ```
-#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowMode {
+    /// The window title.
+    #[default = r#""An easy, good game".to_owned()"#]
+    pub title: String,
     /// Window width
     #[default = r#"800"#]
     pub width: u32,
     /// Window height
     #[default = r#"600"#]
     pub height: u32,
-    /// Whether or not to show window decorations
+    /// Whether or not to maximize the window
     #[default = r#"false"#]
-    pub borderless: bool,
+    pub maximized: bool,
     /// Fullscreen type
     #[default = r#"FullscreenType::Off"#]
     pub fullscreen_type: FullscreenType,
-    /// Whether or not to enable vsync
-    #[default = r#"true"#]
-    pub vsync: bool,
+    /// Whether or not to show window decorations
+    #[default = r#"false"#]
+    pub borderless: bool,
     /// Minimum width for resizable windows; 0 means no limit
     #[default = r#"0"#]
     pub min_width: u32,
@@ -74,12 +122,30 @@ pub struct WindowMode {
     /// Maximum height for resizable windows; 0 means no limit
     #[default = r#"0"#]
     pub max_height: u32,
+    /// A file path to the window's icon.
+    /// It is rooted in the `resources` directory (see the `filesystem` module for details),
+    /// and an empty string results in a blank/default icon.
+    #[default = r#""".to_owned()"#]
+    pub icon: String,
 }
 
 impl WindowMode {
-    /// Set borderless
-    pub fn borderless(mut self, borderless: bool) -> Self {
-        self.borderless = borderless;
+    /// Set window title
+    pub fn title(mut self, title: &str) -> Self {
+        self.title = title.to_owned();
+        self
+    }
+
+    /// Set default window size, or screen resolution in true fullscreen mode
+    pub fn dimensions(mut self, width: u32, height: u32) -> Self {
+        self.width = width;
+        self.height = height;
+        self
+    }
+
+    /// Set if window should be maximized
+    pub fn maximized(mut self, maximized: bool) -> Self {
+        self.maximized = maximized;
         self
     }
 
@@ -89,16 +155,9 @@ impl WindowMode {
         self
     }
 
-    /// Set vsync
-    pub fn vsync(mut self, vsync: bool) -> Self {
-        self.vsync = vsync;
-        self
-    }
-
-    /// Set default window size, or screen resolution in fullscreen mode
-    pub fn dimensions(mut self, width: u32, height: u32) -> Self {
-        self.width = width;
-        self.height = height;
+    /// Set borderless
+    pub fn borderless(mut self, borderless: bool) -> Self {
+        self.borderless = borderless;
         self
     }
 
@@ -113,6 +172,12 @@ impl WindowMode {
     pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
         self.max_width = width;
         self.max_height = height;
+        self
+    }
+
+    /// Set the window's icon.
+    pub fn icon(mut self, icon: &str) -> Self {
+        self.icon = icon.to_owned();
         self
     }
 }
@@ -131,48 +196,28 @@ impl WindowMode {
 ///     samples: NumSamples::One,
 /// }
 /// ```
-#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowSetup {
-    /// The window title.
-    #[default = r#""An easy, good game".to_owned()"#]
-    pub title: String,
-    /// A file path to the window's icon.
-    /// It is rooted in the `resources` directory (see the `filesystem` module for details),
-    /// and an empty string results in a blank/default icon.
-    #[default = r#""".to_owned()"#]
-    pub icon: String,
-    /// Whether or not the window is resizable
+    /*/// Whether or not the window is resizable
     #[default = r#"false"#]
-    pub resizable: bool,
+    pub resizable: bool,*/ // TODO: winit #540
     /// Number of samples for multisample anti-aliasing
     #[default = r#"NumSamples::One"#]
     pub samples: NumSamples,
+    /// Whether or not to enable vsync
+    #[default = r#"true"#]
+    pub vsync: bool,
+    /// Whether or not should the window's background be transparent
+    #[default = r#"false"#]
+    pub transparent: bool,
 }
 
 impl WindowSetup {
-    /// Set window title
-    pub fn title(mut self, title: &str) -> Self {
-        self.title = title.to_owned();
-        self
-    }
-
-    /// Set the window's icon.
-    pub fn icon(mut self, icon: &str) -> Self {
-        self.icon = icon.to_owned();
-        self
-    }
-
-    /// Set resizable
+    /*/// Set resizable
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
         self
-    }
-
-    /// Set allow_highdpi
-    pub fn allow_highdpi(mut self, allow: bool) -> Self {
-        self.allow_highdpi = allow;
-        self
-    }
+    }*/ // TODO: winit #540
 
     /// Set number of samples
     ///
@@ -186,6 +231,18 @@ impl WindowSetup {
             }
             None => None,
         }
+    }
+
+    /// Set if vsync is enabled.
+    pub fn vsync(mut self, vsync: bool) -> Self {
+        self.vsync = vsync;
+        self
+    }
+
+    /// Set if window background should be transparent.
+    pub fn transparent(mut self, transparent: bool) -> Self {
+        self.transparent = transparent;
+        self
     }
 }
 

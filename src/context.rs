@@ -59,20 +59,6 @@ impl fmt::Debug for Context {
     }
 }
 
-/// Sets the window icon from the Conf `window_icon` field.
-/// An empty string in the conf's `window_icon`
-/// means to do nothing.
-fn set_window_icon(context: &mut Context) -> GameResult<()> {
-    // This clone is a little annoying, but, borrowing is inconvenient.
-    let icon = &context.conf.window_setup.icon.clone();
-    if !icon.is_empty() {
-        let icon = winit::Icon::from_path(icon)?;
-        let window = graphics::get_window(context);
-        window.set_window_icon(Some(icon));
-    };
-    Ok(())
-}
-
 impl Context {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by `Context::load_from_conf()`.
@@ -107,8 +93,6 @@ impl Context {
             default_font: font,
             debug_id,
         };
-
-        set_window_icon(&mut ctx)?;
 
         Ok(ctx)
     }
@@ -179,7 +163,7 @@ impl Context {
                     } => {
                         if state == winit_event::ElementState::Released {
                             if keyboard::get_last_held(self) == virtual_keycode {
-                                self.keyboard_context.set_last_pressed(None);
+                                self.keyboard_context.set_last_pressed(virtual_keycode);
                             }
                         }
                     }

@@ -43,7 +43,7 @@ pub fn get_grabbed(ctx: &Context) -> bool {
 
 /// Set whether or not the mouse is "grabbed", ie, confined to the window.
 pub fn set_grabbed(ctx: &mut Context, grabbed: bool) {
-    graphics::get_window_mut(ctx).set_grab(grabbed)
+    graphics::get_window(ctx).set_grab(grabbed)
 }
 
 /// Get whether or not the mouse is in relative mode.

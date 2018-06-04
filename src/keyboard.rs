@@ -19,7 +19,7 @@ impl KeyboardContext {
         }
     }
 
-    pub(crate) fn set_last_pressed(&mut self, key: Keycode) {
+    pub(crate) fn set_last_pressed(&mut self, key: Option<Keycode>) {
         self.last_pressed = key;
     }
 }
