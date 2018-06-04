@@ -175,8 +175,11 @@ where
             match event {
                 Event::WindowEvent { event, .. } => {
                     match event {
+                        WindowEvent::Resized(width, height) => {
+                            state.resize_event(ctx, width, height);
+                        }
                         WindowEvent::CloseRequested => {
-                            if state.quit_event(ctx) {
+                            if !state.quit_event(ctx) {
                                 ctx.quit();
                             }
                         }
@@ -264,12 +267,6 @@ where
                 ControllerAxisMotion {
                     axis, value, which, ..
                 } => state.controller_axis_event(ctx, axis, value, which),
-                Window {
-                    win_event: event::WindowEvent::Resized(w, h),
-                    ..
-                } => {
-                    state.resize_event(ctx, w as u32, h as u32);
-                }
                 _ => {}
             }*/
         state.update(ctx)?;

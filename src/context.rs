@@ -145,6 +145,9 @@ impl Context {
         match event {
             winit_event::Event::WindowEvent { event, .. } => {
                 match event {
+                    winit_event::WindowEvent::Resized(_, _) => {
+                        self.gfx_context.resize_viewport();
+                    }
                     winit_event::WindowEvent::CursorMoved { position: (x, y), .. } => {
                         self.mouse_context.set_last_position(
                             Point2::new(*x as f32, *y as f32),
@@ -174,15 +177,6 @@ impl Context {
             }
             _ => (),
         }
-       /* match *event {
-            event::Event::Window {
-                win_event: sdl2::event::WindowEvent::Resized(_, _),
-                ..
-            } => {
-                self.gfx_context.resize_viewport();
-            }
-            _ => {}
-        }*/
     }
 }
 

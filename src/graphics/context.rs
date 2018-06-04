@@ -428,42 +428,8 @@ impl GraphicsContext {
     /// Sets window mode from a WindowMode object.
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult<()> {
         let window = &self.window;
+
         window.set_maximized(mode.maximized);
-        match mode.fullscreen_type {
-            FullscreenType::Off => {
-                window.set_decorations(!mode.borderless);
-                window.set_inner_size(mode.width, mode.height);
-                window.set_fullscreen(None);
-            }
-            FullscreenType::True(monitor) => {
-                let monitor = match monitor {
-                    MonitorId::Current => window.get_current_monitor(),
-                    MonitorId::Index(i) => if i < self.available_monitors.len() {
-                        self.available_monitors[i].clone()
-                    } else {
-                        return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
-                    }
-                };
-                window.set_inner_size(mode.width, mode.height);
-                window.set_fullscreen(Some(monitor));
-            }
-            FullscreenType::Desktop(monitor) => {
-                let monitor = match monitor {
-                    MonitorId::Current => window.get_current_monitor(),
-                    MonitorId::Index(i) => if i < self.available_monitors.len() {
-                        self.available_monitors[i].clone()
-                    } else {
-                        return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
-                    }
-                };
-                let position = monitor.get_position();
-                let dimensions = monitor.get_dimensions();
-                window.set_fullscreen(None);
-                window.set_decorations(false);
-                window.set_position(position.0, position.1);
-                window.set_inner_size(dimensions.0, dimensions.1);
-            }
-        }
 
         // TODO: find out if single-dimension constraints are possible.
         let mut min_dimensions = None;
@@ -478,6 +444,41 @@ impl GraphicsContext {
         }
         window.set_max_dimensions(max_dimensions);
 
+        match mode.fullscreen_type {
+            FullscreenType::Off => {
+                window.set_fullscreen(None);
+                window.set_decorations(!mode.borderless);
+                window.set_inner_size(mode.width, mode.height);
+            }
+            FullscreenType::True(monitor) => {
+                let monitor = match monitor {
+                    MonitorId::Current => window.get_current_monitor(),
+                    MonitorId::Index(i) => if i < self.available_monitors.len() {
+                        self.available_monitors[i].clone()
+                    } else {
+                        return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
+                    }
+                };
+                window.set_fullscreen(Some(monitor));
+                window.set_inner_size(mode.width, mode.height);
+            }
+            FullscreenType::Desktop(monitor) => {
+                let monitor = match monitor {
+                    MonitorId::Current => window.get_current_monitor(),
+                    MonitorId::Index(i) => if i < self.available_monitors.len() {
+                        self.available_monitors[i].clone()
+                    } else {
+                        return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
+                    }
+                };
+                let position = monitor.get_position();
+                let dimensions = monitor.get_dimensions();
+                window.set_fullscreen(None);
+                window.set_decorations(false);
+                window.set_inner_size(dimensions.0, dimensions.1);
+                window.set_position(position.0, position.1);
+            }
+        }
         Ok(())
     }
 
