@@ -1,13 +1,11 @@
 use winit;
 
 use std::fmt;
-use std::io::Read;
 
-use GameError;
 use GameResult;
 use audio;
 use conf;
-use event::{self, winit_event};
+use event::winit_event;
 use filesystem::Filesystem;
 use graphics::{self, Point2};
 use keyboard;
@@ -171,7 +169,7 @@ impl Context {
                 }
             }
             winit_event::Event::DeviceEvent { event: winit_event::DeviceEvent::MouseMotion { delta: (x, y) }, .. } => {
-                self.mouse_context.set_last_position(
+                self.mouse_context.set_last_delta(
                     Point2::new(*x as f32, *y as f32),
                 );
             }

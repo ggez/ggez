@@ -232,3 +232,9 @@ impl From<glutin::CreationError> for GameError {
         GameError::WindowError(s)
     }
 }
+
+impl From<glutin::ContextError> for GameError {
+    fn from(s: glutin::ContextError) -> GameError {
+        GameError::RenderError(format!("OpenGL context error: {}", s))
+    }
+}

@@ -1,9 +1,7 @@
 //! Keyboard utility functions.
 
 use context::Context;
-use error::GameResult;
 use event::Keycode;
-use graphics;
 
 /// Tracks last key pressed, to distinguish if the system
 /// is sending repeat events when a key is held down.

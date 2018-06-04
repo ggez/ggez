@@ -12,10 +12,8 @@
 
 use std::io;
 use toml;
-use winit;
 
 use GameResult;
-use GameError;
 
 /// Possible fullscreen modes.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]

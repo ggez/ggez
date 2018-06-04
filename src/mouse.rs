@@ -3,6 +3,7 @@
 use context::Context;
 use graphics;
 use graphics::Point2;
+use GameResult;
 pub use winit::{CursorState, MouseCursor};
 
 /// Stores state information for the mouse,
@@ -57,9 +58,9 @@ pub fn get_cursor_state(ctx: &Context) -> CursorState {
 }
 
 /// Set whether or not the mouse is grabbed (confined to the window) or hidden (invisible).
-pub fn set_cursor_state(ctx: &mut Context, state: CursorState) {
+pub fn set_cursor_state(ctx: &mut Context, state: CursorState) -> GameResult<()> {
     ctx.mouse_context.cursor_state = state;
-    graphics::get_window(ctx).set_cursor_state(state);
+    graphics::get_window(ctx).set_cursor_state(state).map_err(|e| e.into())
 }
 
 /// Get the current position of the mouse cursor, in pixels.
@@ -76,7 +77,10 @@ pub fn get_delta(ctx: &Context) -> Point2 {
 
 /// Set the current position of the mouse cursor, in pixels.
 /// Uses strictly window-only coordinates.
-pub fn set_position(ctx: &mut Context, point: Point2) {
+pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
     ctx.mouse_context.last_position = point;
-    graphics::get_window(ctx).set_cursor_position(point.x as i32, point.y as i32);
+    if graphics::get_window(ctx).set_cursor_position(point.x as i32, point.y as i32).is_err() {
+        return Err("Couldn't set mouse cursor position!".to_owned().into());
+    }
+    Ok(())
 }

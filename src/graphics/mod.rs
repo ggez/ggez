@@ -287,7 +287,7 @@ pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> Gam
 /// Call this at the end of your `EventHandler`'s `draw()` method.
 ///
 /// Unsets any active canvas.
-pub fn present(ctx: &mut Context) {
+pub fn present(ctx: &mut Context) -> GameResult<()> {
     let gfx = &mut ctx.gfx_context;
     gfx.data.out = gfx.screen_render_target.clone();
     // We might want to give the user more control over when the
@@ -295,8 +295,9 @@ pub fn present(ctx: &mut Context) {
     // to do their own gfx drawing.  HOWEVER, the whole pipeline type
     // thing is a bigger hurdle, so this is fine for now.
     gfx.encoder.flush(&mut *gfx.device);
-    gfx.window.swap_buffers();
+    gfx.window.swap_buffers()?;
     gfx.device.cleanup();
+    Ok(())
 }
 
 /// Take a screenshot by outputting the current render surface
@@ -361,7 +362,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         blend_mode: None,
         width: u32::from(w),
         height: u32::from(h),
-        debug_id: debug_id,
+        debug_id,
     };
 
     Ok(image)

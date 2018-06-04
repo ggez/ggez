@@ -35,6 +35,7 @@ where
     pub(crate) color_format: gfx::format::Format,
     pub(crate) depth_format: gfx::format::Format,
 
+    // TODO: is this needed?
     pub(crate) backend_spec: B,
     pub(crate) window: glutin::GlWindow,
     pub(crate) multisample_samples: u8,
@@ -259,8 +260,8 @@ impl GraphicsContext {
             modelview_stack: vec![initial_transform],
             white_image,
             screen_rect: Rect::new(left, top, right - left, bottom - top),
-            color_format: color_format,
-            depth_format: depth_format,
+            color_format,
+            depth_format,
 
             backend_spec: backend,
             window,
