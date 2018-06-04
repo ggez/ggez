@@ -38,45 +38,6 @@ pub enum MonitorId {
     Index(usize),
 }
 
-impl MonitorId {
-    // TODO: improve, once winit/glutin has appropriate functions
-    // (ability to get available/primary monitors from a window reference)
-    pub(crate) fn into_winit_id(
-        self,
-        window: &winit::Window,
-        events_loop: &winit::EventsLoop,
-    ) -> GameResult<winit::MonitorId> {
-        match self {
-            MonitorId::Current => Ok(window.get_current_monitor()),
-            MonitorId::Index(i) => {
-                let monitor = events_loop.get_available_monitors().nth(i);
-                if let Some(monitor) = monitor {
-                    Ok(monitor)
-                } else {
-                    return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
-                }
-            }
-        }
-    }
-
-    pub(crate) fn into_winit_id_init(
-        self,
-        events_loop: &winit::EventsLoop,
-    ) -> GameResult<winit::MonitorId> {
-        match self {
-            MonitorId::Current => Ok(events_loop.get_primary_monitor()),
-            MonitorId::Index(i) => {
-                let monitor = events_loop.get_available_monitors().nth(i);
-                if let Some(monitor) = monitor {
-                    Ok(monitor)
-                } else {
-                    return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
-                }
-            }
-        }
-    }
-}
-
 /// A builder structure containing window settings
 /// that can be set at runtime and changed with `graphics::set_mode()`
 ///

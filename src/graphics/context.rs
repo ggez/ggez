@@ -57,6 +57,11 @@ where
     pub(crate) shaders: Vec<Box<ShaderHandle<B>>>,
 
     pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
+
+    // TODO: there are temporary: need more winit functionality.
+    // winit needs ability to get available/primary monitors from a window reference,
+    // without having a reference to events loop.
+    available_monitors: Vec<glutin::MonitorId>,
 }
 
 impl<B, C> GraphicsContextGeneric<B, C>
@@ -127,10 +132,12 @@ impl GraphicsContext {
             gfx_window_glutin::init_raw(
                 window_builder,
                 gl_builder,
-                &events_loop,
+                events_loop,
                 color_format,
                 depth_format
             );
+
+        let available_monitors = events_loop.get_available_monitors().collect();
 
         // TODO: see winit #548 about DPI.
         /*{
@@ -276,8 +283,10 @@ impl GraphicsContext {
             shaders: vec![draw],
 
             glyph_brush,
+
+            available_monitors,
         };
-        gfx.set_window_mode(events_loop, window_mode)?;
+        gfx.set_window_mode(window_mode)?;
 
         // Calculate and apply the actual initial projection matrix
         let w = window_mode.width as f32;
@@ -417,11 +426,7 @@ impl GraphicsContext {
     }
 
     /// Sets window mode from a WindowMode object.
-    pub(crate) fn set_window_mode(
-        &mut self,
-        events_loop: &glutin::EventsLoop,
-        mode: WindowMode,
-    ) -> GameResult<()> {
+    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult<()> {
         let window = &self.window;
         window.set_maximized(mode.maximized);
         match mode.fullscreen_type {
@@ -431,12 +436,26 @@ impl GraphicsContext {
                 window.set_fullscreen(None);
             }
             FullscreenType::True(monitor) => {
-                let monitor = monitor.into_winit_id(&self.window, events_loop)?;
+                let monitor = match monitor {
+                    MonitorId::Current => window.get_current_monitor(),
+                    MonitorId::Index(i) => if i < self.available_monitors.len() {
+                        self.available_monitors[i].clone()
+                    } else {
+                        return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
+                    }
+                };
                 window.set_inner_size(mode.width, mode.height);
                 window.set_fullscreen(Some(monitor));
             }
             FullscreenType::Desktop(monitor) => {
-                let monitor = monitor.into_winit_id(&self.window, events_loop)?;
+                let monitor = match monitor {
+                    MonitorId::Current => window.get_current_monitor(),
+                    MonitorId::Index(i) => if i < self.available_monitors.len() {
+                        self.available_monitors[i].clone()
+                    } else {
+                        return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
+                    }
+                };
                 let position = monitor.get_position();
                 let dimensions = monitor.get_dimensions();
                 window.set_fullscreen(None);
@@ -445,9 +464,20 @@ impl GraphicsContext {
                 window.set_inner_size(dimensions.0, dimensions.1);
             }
         }
-        // TODO: verify if single-dimension constraints are possible.
-        window.set_min_dimensions(Some((mode.min_width, mode.min_height)));
-        window.set_max_dimensions(Some((mode.max_width, mode.max_height)));
+
+        // TODO: find out if single-dimension constraints are possible.
+        let mut min_dimensions = None;
+        if mode.min_width > 0 && mode.min_height > 0 {
+            min_dimensions = Some((mode.min_width, mode.min_height));
+        }
+        window.set_min_dimensions(min_dimensions);
+
+        let mut max_dimensions = None;
+        if mode.max_width > 0 && mode.max_height > 0 {
+            max_dimensions = Some((mode.max_width, mode.max_height));
+        }
+        window.set_max_dimensions(max_dimensions);
+
         Ok(())
     }
 

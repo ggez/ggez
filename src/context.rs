@@ -31,8 +31,6 @@ pub struct Context {
     pub filesystem: Filesystem,
     /// Graphics state
     pub(crate) gfx_context: graphics::GraphicsContext,
-    /// `winit` events loop; can be given a closure to process input events with.
-    pub events_loop: winit::EventsLoop,
     /// Controls whether or not the events loop should be running.
     pub continuing: bool,
     /// Timer state
@@ -62,7 +60,7 @@ impl fmt::Debug for Context {
 impl Context {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by `Context::load_from_conf()`.
-    fn from_conf(conf: conf::Conf, fs: Filesystem) -> GameResult<Context> {
+    fn from_conf(conf: conf::Conf, fs: Filesystem) -> GameResult<(Context, winit::EventsLoop)> {
         let debug_id = DebugId::new();
         let audio_context = audio::AudioContext::new()?;
         let events_loop = winit::EventsLoop::new();
@@ -83,7 +81,6 @@ impl Context {
             conf,
             filesystem: fs,
             gfx_context: graphics_context,
-            events_loop,
             continuing: true,
             timer_context,
             audio_context,
@@ -94,7 +91,7 @@ impl Context {
             debug_id,
         };
 
-        Ok(ctx)
+        Ok((ctx, events_loop))
     }
 
     /// Tries to create a new Context by loading a config
@@ -111,7 +108,7 @@ impl Context {
         game_id: &'static str,
         author: &'static str,
         default_config: conf::Conf,
-    ) -> GameResult<Context> {
+    ) -> GameResult<(Context, winit::EventsLoop)> {
         let mut fs = Filesystem::new(game_id, author)?;
 
         let config = match fs.read_config() {
@@ -145,12 +142,12 @@ impl Context {
     /// rolling your own event loop, you should call this on the events
     /// you receive before processing them yourself.
     pub fn process_event(&mut self, event: &winit::Event) {
-        match *event {
+        match event {
             winit_event::Event::WindowEvent { event, .. } => {
                 match event {
                     winit_event::WindowEvent::CursorMoved { position: (x, y), .. } => {
                         self.mouse_context.set_last_position(
-                            Point2::new(x as f32, y as f32),
+                            Point2::new(*x as f32, *y as f32),
                         );
                     }
                     winit_event::WindowEvent::KeyboardInput {
@@ -161,9 +158,9 @@ impl Context {
                         },
                         ..
                     } => {
-                        if state == winit_event::ElementState::Released {
-                            if keyboard::get_last_held(self) == virtual_keycode {
-                                self.keyboard_context.set_last_pressed(virtual_keycode);
+                        if *state == winit_event::ElementState::Released {
+                            if keyboard::get_last_held(self) == *virtual_keycode {
+                                self.keyboard_context.set_last_pressed(*virtual_keycode);
                             }
                         }
                     }
@@ -172,7 +169,7 @@ impl Context {
             }
             winit_event::Event::DeviceEvent { event: winit_event::DeviceEvent::MouseMotion { delta: (x, y) }, .. } => {
                 self.mouse_context.set_last_position(
-                    Point2::new(x as f32, y as f32),
+                    Point2::new(*x as f32, *y as f32),
                 );
             }
             _ => (),
@@ -255,7 +252,7 @@ impl ContextBuilder {
     }
 
     /// Build the Context.
-    pub fn build(self) -> GameResult<Context> {
+    pub fn build(self) -> GameResult<(Context, winit::EventsLoop)> {
         let mut fs = Filesystem::new(self.game_id, self.author)?;
 
         let config = if self.load_conf_file {

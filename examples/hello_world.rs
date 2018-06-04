@@ -64,7 +64,7 @@ impl event::EventHandler for MainState {
 // * Then, just call `game.run()` which runs the `Game` mainloop.
 pub fn main() {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
+    let (ctx, event_loop) = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
 
     // We add the CARGO_MANIFEST_DIR/resources to the filesystem's path
     // so that ggez will look in our cargo project directory for files.
@@ -75,7 +75,7 @@ pub fn main() {
     }
 
     let state = &mut MainState::new(ctx).unwrap();
-    if let Err(e) = event::run(ctx, state) {
+    if let Err(e) = event::run(ctx, event_loop, state) {
         println!("Error encountered: {}", e);
     } else {
         println!("Game exited cleanly.");

@@ -687,7 +687,7 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult<()> {
 /// size to make sure everything is what you want it to be.
 pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
-    gfx.set_window_mode(&context.events_loop, mode)
+    gfx.set_window_mode(mode)
 }
 
 /// Sets the window to fullscreen or back.
@@ -707,6 +707,7 @@ pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameRes
 
 use std::path::Path;
 use winit::Icon;
+/// Sets the window icon.
 pub fn set_window_icon<P: AsRef<Path>>(context: &Context, path: Option<P>) -> GameResult<()> {
     let icon = match path {
         Some(path) => Some(Icon::from_path(path)?),
@@ -716,6 +717,7 @@ pub fn set_window_icon<P: AsRef<Path>>(context: &Context, path: Option<P>) -> Ga
     Ok(())
 }
 
+/// Sets the window title.
 pub fn set_window_title(context: &Context, title: &str) {
     context.gfx_context.window.set_title(title);
 }

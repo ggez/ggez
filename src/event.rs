@@ -161,18 +161,15 @@ pub trait EventHandler {
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the `timer` module for more info.
-pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
+pub fn run<S>(ctx: &mut Context, events_loop: &mut EventsLoop, state: &mut S) -> GameResult<()>
 where
     S: EventHandler,
 {
     use keyboard;
     use mouse;
 
-    let mut events_loop = &ctx.events_loop;
-
     while ctx.continuing {
         ctx.timer_context.tick();
-
         events_loop.poll_events(|event| {
             ctx.process_event(&event);
             match event {
@@ -226,7 +223,7 @@ where
                                 }
                             }
                         }
-                        WindowEvent::CursorMoved { position, .. } => {
+                        WindowEvent::CursorMoved { .. } => {
                             let position = mouse::get_position(ctx);
                             let delta = mouse::get_delta(ctx);
                             state.mouse_motion_event(
