@@ -1,4 +1,3 @@
-use image::{self, GenericImage};
 use winit;
 
 use std::fmt;
@@ -8,9 +7,10 @@ use GameError;
 use GameResult;
 use audio;
 use conf;
-use event;
+use event::{self, winit_event};
 use filesystem::Filesystem;
-use graphics;
+use graphics::{self, Point2};
+use keyboard;
 use mouse;
 use timer;
 
@@ -33,10 +33,14 @@ pub struct Context {
     pub(crate) gfx_context: graphics::GraphicsContext,
     /// `winit` events loop; can be given a closure to process input events with.
     pub events_loop: winit::EventsLoop,
+    /// Controls whether or not the events loop should be running.
+    pub continuing: bool,
     /// Timer state
     pub timer_context: timer::TimeContext,
     /// Audio context
     pub audio_context: audio::AudioContext,
+    /// Keyboard context
+    pub keyboard_context: keyboard::KeyboardContext,
     /// Mouse context
     pub mouse_context: mouse::MouseContext,
     /// Default font
@@ -87,14 +91,17 @@ impl Context {
             debug_id,
         )?;
         let mouse_context = mouse::MouseContext::new();
+        let keyboard_context = keyboard::KeyboardContext::new();
 
         let mut ctx = Context {
             conf,
             filesystem: fs,
             gfx_context: graphics_context,
             events_loop,
+            continuing: true,
             timer_context,
             audio_context,
+            keyboard_context,
             mouse_context,
 
             default_font: font,
@@ -144,30 +151,48 @@ impl Context {
         self.filesystem.print_all();
     }
 
-    /// Triggers a Quit event.
-    pub fn quit(&mut self) -> GameResult<()> {
-        let now_dur = timer::get_time_since_start(self);
-        let now = timer::duration_to_f64(now_dur);
-        let e = sdl2::event::Event::Quit {
-            timestamp: now as u32,
-        };
-        // println!("Pushing event {:?}", e);
-        self.event_context.push_event(e).map_err(GameError::from)
+    /// Terminates `ggez::run()` loop by setting `Context::continuing` to `false`.
+    pub fn quit(&mut self) {
+        self.continuing = false;
     }
 
     /// Feeds an `Event` into the `Context` so it can update any internal
     /// state it needs to, such as detecting window resizes.  If you are
     /// rolling your own event loop, you should call this on the events
     /// you receive before processing them yourself.
-    pub fn process_event(&mut self, event: &event::Event) {
+    pub fn process_event(&mut self, event: &winit::Event) {
         match *event {
-            event::Event::MouseMotion { x, y, .. } => {
-                // Keeping the mouse state info in the Context is a bit of a hack, see issue #283.
-                // Seems the best workaround though.
-                use graphics::Point2;
-                self.mouse_context
-                    .set_last_position(Point2::new(x as f32, y as f32));
+            winit_event::Event::WindowEvent { event, .. } => {
+                match event {
+                    winit_event::WindowEvent::CursorMoved { position: (x, y), .. } => {
+                        self.mouse_context.set_last_position(
+                            Point2::new(x as f32, y as f32),
+                        );
+                    }
+                    winit_event::WindowEvent::KeyboardInput {
+                        input: winit_event::KeyboardInput {
+                            state,
+                            virtual_keycode,
+                            ..
+                        },
+                        ..
+                    } => {
+                        if state == winit_event::ElementState::Released {
+                            if keyboard::get_last_held(self) == virtual_keycode {
+                                self.keyboard_context.set_last_pressed(None);
+                            }
+                        }
+                    }
+                    _ => (),
+                }
             }
+            winit_event::Event::DeviceEvent { event: winit_event::DeviceEvent::MouseMotion { delta: (x, y) }, .. } => {
+                self.mouse_context.set_last_position(
+                    Point2::new(x as f32, y as f32),
+                );
+            }
+        }
+       /* match *event {
             event::Event::Window {
                 win_event: sdl2::event::WindowEvent::Resized(_, _),
                 ..
@@ -175,7 +200,7 @@ impl Context {
                 self.gfx_context.resize_viewport();
             }
             _ => {}
-        }
+        }*/
     }
 }
 

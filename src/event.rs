@@ -24,6 +24,7 @@ pub use winit::ModifiersState as KeyboardModifiers;
 pub use winit::MouseButton;
 
 /// An analog axis of some device (controller, joystick...).
+// TODO: verify.
 pub use winit::AxisId as Axis;
 /// A button of some device (controller, joystick...).
 pub use winit::ButtonId as Button;
@@ -63,8 +64,8 @@ pub trait EventHandler {
         &mut self,
         _ctx: &mut Context,
         _button: MouseButton,
-        _x: i32,
-        _y: i32,
+        _x: f32,
+        _y: f32,
     ) {
     }
 
@@ -73,19 +74,19 @@ pub trait EventHandler {
         &mut self,
         _ctx: &mut Context,
         _button: MouseButton,
-        _x: i32,
-        _y: i32,
+        _x: f32,
+        _y: f32,
     ) {
     }
 
     /// The mouse was moved; it provides both absolute x and y coordinates in the window,
     /// and relative x and y coordinates compared to its last position.
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: i32, _y: i32, _xrel: i32, _yrel: i32) {
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32, _xrel: f32, _yrel: f32) {
     }
 
     /// The mousewheel was scrolled, vertically (y, positive away from and negative toward the user)
     /// or horizontally (x, positive to the right and negative to the left).
-    fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: i32, _y: i32) {}
+    fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32) {}
 
     /// A keyboard button was pressed.
     fn key_down_event(
@@ -96,7 +97,7 @@ pub trait EventHandler {
         _repeat: bool,
     ) {
         if keycode == Keycode::Escape {
-            ctx.quit().expect("Should never fail");
+            ctx.quit();
         }
     }
 
@@ -155,30 +156,6 @@ pub trait EventHandler {
     fn resize_event(&mut self, _ctx: &mut Context, _width: u32, _height: u32) {}
 }
 
-/// A handle to access the OS's event pump.
-// TODO: Do we need this?..
-pub struct Events<'a>(&'a EventsLoop);
-
-/*use std::fmt;
-impl fmt::Debug for Events {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<Events: {:p}>", self)
-    }
-}
-
-impl Events {
-    /// Create a new Events object.
-    pub fn new(ctx: &Context) -> GameResult<Events> {
-        let e = ctx.sdl_context.event_pump()?;
-        Ok(Events(e))
-    }
-
-    /// Get an iterator for all events.
-    pub fn poll(&mut self) -> EventPollIterator {
-        self.0.poll_iter()
-    }
-}*/
-
 /// Runs the game's main loop, calling event callbacks on the given state
 /// object as events occur.
 ///
@@ -188,15 +165,12 @@ pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
 where
     S: EventHandler,
 {
-    let mut events_loop = EventsLoop::new();
-    let mut continuing = true;
+    use keyboard;
+    use mouse;
 
-    let mut mouse_delta = (0, 0);
-    let mut cursor_location = (0, 0);
-    // Tracks last pressed key to figure out if it's a repeated keystroke.
-    let mut last_pressed = None;
+    let mut events_loop = &ctx.events_loop;
 
-    while continuing {
+    while ctx.continuing {
         ctx.timer_context.tick();
 
         events_loop.poll_events(|event| {
@@ -205,7 +179,9 @@ where
                 Event::WindowEvent { event, .. } => {
                     match event {
                         WindowEvent::CloseRequested => {
-                            continuing = state.quit_event(ctx);
+                            if state.quit_event(ctx) {
+                                ctx.quit();
+                            }
                         }
                         WindowEvent::Focused(gained) => {
                             state.focus_event(ctx, gained);
@@ -221,46 +197,44 @@ where
                         } => {
                             match state {
                                 ElementState::Pressed => {
-                                    let repeat = last_pressed == Some(keycode);
+                                    let repeat = keyboard::is_repeated(ctx, keycode);
                                     state.key_down_event(ctx, keycode, modifiers, repeat);
-                                    last_pressed = Some(keycode);
                                 }
                                 ElementState::Released => {
-                                    if last_pressed == Some(keycode) {
-                                        last_pressed = None;
-                                    }
                                     state.key_up_event(ctx, keycode, modifiers);
                                 }
                             }
                         }
                         WindowEvent::MouseInput { state, button, .. } => {
+                            let position = mouse::get_position(ctx);
                             match state {
                                 ElementState::Pressed => {
                                     state.mouse_button_down_event(
                                         ctx,
                                         button,
-                                        cursor_location.0,
-                                        cursor_location.1,
+                                        position.x,
+                                        position.y,
                                     )
                                 }
                                 ElementState::Released => {
                                     state.mouse_button_up_event(
                                         ctx,
                                         button,
-                                        cursor_location.0,
-                                        cursor_location.1,
+                                        position.x,
+                                        position.y,
                                     )
                                 }
                             }
                         }
                         WindowEvent::CursorMoved { position, .. } => {
-                            cursor_location = position as (i32, i32);
+                            let position = mouse::get_position(ctx);
+                            let delta = mouse::get_delta(ctx);
                             state.mouse_motion_event(
                                 ctx,
-                                cursor_location.0,
-                                cursor_location.1,
-                                mouse_delta.0,
-                                mouse_delta.1,
+                                position.x,
+                                position.y,
+                                delta.x,
+                                delta.y,
                             );
                         }
                         _ => (),
@@ -268,9 +242,6 @@ where
                 }
                 Event::DeviceEvent { event, .. } => {
                     match event {
-                        DeviceEvent::MouseMotion { delta } => {
-                            mouse_delta = delta as (i32, i32);
-                        }
                         _ => (),
                     }
                 }

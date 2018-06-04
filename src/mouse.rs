@@ -10,17 +10,22 @@ use graphics::Point2;
 #[derive(Clone, Debug)]
 pub struct MouseContext {
     last_position: Point2,
+    last_delta: Point2,
 }
 
 impl MouseContext {
-    /// Creates a new `MouseContext`.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             last_position: Point2::origin(),
+            last_delta: Point2::origin(),
         }
     }
 
     pub(crate) fn set_last_position(&mut self, p: Point2) {
+        self.last_position = p;
+    }
+
+    pub(crate) fn set_last_delta(&mut self, p: Point2) {
         self.last_position = p;
     }
 }
@@ -62,9 +67,13 @@ pub fn set_relative_mode(ctx: &Context, mode: bool) {
 /// Get the current position of the mouse cursor, in pixels.
 /// Complement to `set_position()`.
 /// Uses strictly window-only coordinates.
-pub fn get_position(ctx: &Context) -> GameResult<Point2> {
-    // TODO: Next time we can break the API, remove the GameResult here.
-    Ok(ctx.mouse_context.last_position)
+pub fn get_position(ctx: &Context) -> Point2 {
+    ctx.mouse_context.last_position
+}
+
+/// Get the distance the cursor was moved during last frame, in pixels.
+pub fn get_delta(ctx: &Context) -> Point2 {
+    ctx.mouse_context.last_delta
 }
 
 /// Set the current position of the mouse cursor, in pixels.
