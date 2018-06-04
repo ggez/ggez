@@ -79,7 +79,7 @@ impl Context {
         let mouse_context = mouse::MouseContext::new();
         let keyboard_context = keyboard::KeyboardContext::new();
 
-        let mut ctx = Context {
+        let ctx = Context {
             conf,
             filesystem: fs,
             gfx_context: graphics_context,
@@ -175,6 +175,7 @@ impl Context {
                     Point2::new(x as f32, y as f32),
                 );
             }
+            _ => (),
         }
        /* match *event {
             event::Event::Window {

@@ -1,9 +1,9 @@
 //! Mouse utility functions.
 
 use context::Context;
-use error::GameResult;
 use graphics;
 use graphics::Point2;
+pub use winit::{CursorState, MouseCursor};
 
 /// Stores state information for the mouse,
 /// what little of it there is.
@@ -11,6 +11,8 @@ use graphics::Point2;
 pub struct MouseContext {
     last_position: Point2,
     last_delta: Point2,
+    cursor_type: MouseCursor,
+    cursor_state: CursorState,
 }
 
 impl MouseContext {
@@ -18,6 +20,8 @@ impl MouseContext {
         Self {
             last_position: Point2::origin(),
             last_delta: Point2::origin(),
+            cursor_type: MouseCursor::Default,
+            cursor_state: CursorState::Normal,
         }
     }
 
@@ -36,32 +40,26 @@ impl Default for MouseContext {
     }
 }
 
-/// Get whether or not the mouse is "grabbed", ie, confined to the window.
-pub fn get_grabbed(ctx: &Context) -> bool {
-    graphics::get_window(ctx).grab()
+/// Returns the current mouse cursor type of the window.
+pub fn get_cursor_type(ctx: &Context) -> MouseCursor {
+    ctx.mouse_context.cursor_type
 }
 
-/// Set whether or not the mouse is "grabbed", ie, confined to the window.
-pub fn set_grabbed(ctx: &mut Context, grabbed: bool) {
-    graphics::get_window(ctx).set_grab(grabbed)
+/// Modifies the mouse cursor type of the window.
+pub fn set_cursor_type(ctx: &mut Context, cursor_type: MouseCursor) {
+    ctx.mouse_context.cursor_type = cursor_type;
+    graphics::get_window(ctx).set_cursor(cursor_type);
 }
 
-/// Get whether or not the mouse is in relative mode.
-///
-/// In relative mode, the cursor is hidden and doesn't move when the mouse
-/// does, but relative motion events are still generated.  This is useful
-/// for things such as implementing mouselook in an FPS.
-pub fn get_relative_mode(ctx: &Context) -> bool {
-    ctx.sdl_context.mouse().relative_mouse_mode()
+/// Set whether or not the mouse is grabbed (confined to the window) or hidden (invisible).
+pub fn get_cursor_state(ctx: &Context) -> CursorState {
+    ctx.mouse_context.cursor_state
 }
 
-/// Set whether or not the mouse is in relative mode.
-///
-/// In relative mode, the cursor is hidden and doesn't move when the mouse
-/// does, but relative motion events are still generated.  This is useful
-/// for things such as implementing mouselook in an FPS.
-pub fn set_relative_mode(ctx: &Context, mode: bool) {
-    ctx.sdl_context.mouse().set_relative_mouse_mode(mode)
+/// Set whether or not the mouse is grabbed (confined to the window) or hidden (invisible).
+pub fn set_cursor_state(ctx: &mut Context, state: CursorState) {
+    ctx.mouse_context.cursor_state = state;
+    graphics::get_window(ctx).set_cursor_state(state);
 }
 
 /// Get the current position of the mouse cursor, in pixels.
@@ -78,9 +76,7 @@ pub fn get_delta(ctx: &Context) -> Point2 {
 
 /// Set the current position of the mouse cursor, in pixels.
 /// Uses strictly window-only coordinates.
-pub fn set_position(ctx: &Context, point: Point2) {
-    let window = graphics::get_window(ctx);
-    ctx.sdl_context
-        .mouse()
-        .warp_mouse_in_window(window, point.x as i32, point.y as i32)
+pub fn set_position(ctx: &mut Context, point: Point2) {
+    ctx.mouse_context.last_position = point;
+    graphics::get_window(ctx).set_cursor_position(point.x as i32, point.y as i32);
 }

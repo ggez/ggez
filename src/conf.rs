@@ -38,13 +38,18 @@ pub enum MonitorId {
     Index(usize),
 }
 
-use super::context::Context;
 impl MonitorId {
-    pub(crate) fn into_winit_id(self, ctx: &Context) -> GameResult<winit::MonitorId> {
+    // TODO: improve, once winit/glutin has appropriate functions
+    // (ability to get available/primary monitors from a window reference)
+    pub(crate) fn into_winit_id(
+        self,
+        window: &winit::Window,
+        events_loop: &winit::EventsLoop,
+    ) -> GameResult<winit::MonitorId> {
         match self {
-            MonitorId::Current => Ok(ctx.gfx_context.window.get_current_monitor()),
+            MonitorId::Current => Ok(window.get_current_monitor()),
             MonitorId::Index(i) => {
-                let monitor = ctx.events_loop.get_available_monitors().nth(i);
+                let monitor = events_loop.get_available_monitors().nth(i);
                 if let Some(monitor) = monitor {
                     Ok(monitor)
                 } else {
@@ -90,11 +95,8 @@ impl MonitorId {
 ///     max_height: 0,
 /// }
 /// ```
-#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowMode {
-    /// The window title.
-    #[default = r#""An easy, good game".to_owned()"#]
-    pub title: String,
     /// Window width
     #[default = r#"800"#]
     pub width: u32,
@@ -122,20 +124,9 @@ pub struct WindowMode {
     /// Maximum height for resizable windows; 0 means no limit
     #[default = r#"0"#]
     pub max_height: u32,
-    /// A file path to the window's icon.
-    /// It is rooted in the `resources` directory (see the `filesystem` module for details),
-    /// and an empty string results in a blank/default icon.
-    #[default = r#""".to_owned()"#]
-    pub icon: String,
 }
 
 impl WindowMode {
-    /// Set window title
-    pub fn title(mut self, title: &str) -> Self {
-        self.title = title.to_owned();
-        self
-    }
-
     /// Set default window size, or screen resolution in true fullscreen mode
     pub fn dimensions(mut self, width: u32, height: u32) -> Self {
         self.width = width;
@@ -174,12 +165,6 @@ impl WindowMode {
         self.max_height = height;
         self
     }
-
-    /// Set the window's icon.
-    pub fn icon(mut self, icon: &str) -> Self {
-        self.icon = icon.to_owned();
-        self
-    }
 }
 
 /// A builder structure containing window settings
@@ -196,8 +181,11 @@ impl WindowMode {
 ///     samples: NumSamples::One,
 /// }
 /// ```
-#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowSetup {
+    /// The window title.
+    #[default = r#""An easy, good game".to_owned()"#]
+    pub title: String,
     /*/// Whether or not the window is resizable
     #[default = r#"false"#]
     pub resizable: bool,*/ // TODO: winit #540
@@ -210,9 +198,20 @@ pub struct WindowSetup {
     /// Whether or not should the window's background be transparent
     #[default = r#"false"#]
     pub transparent: bool,
+    /// A file path to the window's icon.
+    /// It is rooted in the `resources` directory (see the `filesystem` module for details),
+    /// and an empty string results in a blank/default icon.
+    #[default = r#""".to_owned()"#]
+    pub icon: String,
 }
 
 impl WindowSetup {
+    /// Set window title
+    pub fn title(mut self, title: &str) -> Self {
+        self.title = title.to_owned();
+        self
+    }
+
     /*/// Set resizable
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
@@ -242,6 +241,12 @@ impl WindowSetup {
     /// Set if window background should be transparent.
     pub fn transparent(mut self, transparent: bool) -> Self {
         self.transparent = transparent;
+        self
+    }
+
+    /// Set the window's icon.
+    pub fn icon(mut self, icon: &str) -> Self {
+        self.icon = icon.to_owned();
         self
     }
 }

@@ -687,7 +687,7 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult<()> {
 /// size to make sure everything is what you want it to be.
 pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult<()> {
     let gfx = &mut context.gfx_context;
-    gfx.set_window_mode(context, mode)
+    gfx.set_window_mode(&context.events_loop, mode)
 }
 
 /// Sets the window to fullscreen or back.
@@ -705,6 +705,21 @@ pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameRes
     set_mode(context, window_mode)
 }
 
+use std::path::Path;
+use winit::Icon;
+pub fn set_window_icon<P: AsRef<Path>>(context: &Context, path: Option<P>) -> GameResult<()> {
+    let icon = match path {
+        Some(path) => Some(Icon::from_path(path)?),
+        None => None,
+    };
+    context.gfx_context.window.set_window_icon(icon);
+    Ok(())
+}
+
+pub fn set_window_title(context: &Context, title: &str) {
+    context.gfx_context.window.set_title(title);
+}
+
 /*/// Returns the number of connected displays.
 pub fn get_display_count(context: &Context) -> GameResult<i32> {
     let video = context.sdl_context.video()?;
@@ -720,17 +735,19 @@ pub fn get_window(context: &Context) -> &glutin::Window {
     &gfx.window
 }
 
-/// Returns the size of the window in pixels as (width, height).
+/// Returns the size of the window in pixels as (width, height),
+/// including borders, titlebar, etc.
+/// Returns zeros if window doesn't exist.
 pub fn get_size(context: &Context) -> (u32, u32) {
     let gfx = &context.gfx_context;
-    gfx.window.size()
+    gfx.window.get_outer_size().unwrap_or((0, 0))
 }
 
 /// Returns the size of the window's underlying drawable in pixels as (width, height).
-/// This may return a different value than `get_size()` when run on a platform with high-DPI support
+/// Returns zeros if window doesn't exist.
 pub fn get_drawable_size(context: &Context) -> (u32, u32) {
     let gfx = &context.gfx_context;
-    gfx.window.drawable_size()
+    gfx.window.get_inner_size().unwrap_or((0, 0))
 }
 
 /// EXPERIMENTAL function to get the gfx-rs `Factory` object.

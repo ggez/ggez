@@ -100,48 +100,23 @@ impl GraphicsContext {
         );
 
         // WINDOW SETUP
-        let gl_builder = glutin::ContextBuilder::new();
-        {
-            use glutin::*;
+        let gl_builder = glutin::ContextBuilder::new()
             //GlRequest::Specific(Api::OpenGl, (backend.major, backend.minor))
-            gl_builder.with_gl(GlRequest::Latest);
-            gl_builder.with_gl_profile(GlProfile::Core);
-            let samples = window_setup.samples as u16;
-            gl_builder.with_multisampling(samples);
-            gl_builder.with_pixel_format(5, 8);
-            gl_builder.with_vsync(window_setup.vsync);
-        }
+            .with_gl(glutin::GlRequest::Latest)
+            .with_gl_profile(glutin::GlProfile::Core)
+            .with_multisampling(window_setup.samples as u16)
+            .with_pixel_format(5, 8)
+            .with_vsync(window_setup.vsync);
 
-        let window_builder = glutin::WindowBuilder::new();
-        // This should be cross-referenced with `GraphicsContext::set_window_mode()`.
-        window_builder.with_title(window_mode.title);
-        window_builder.with_maximized(window_mode.maximized);
-        window_builder.with_decorations(!window_mode.borderless);
-        match window_mode.fullscreen_type {
-            FullscreenType::Off => {
-                window_builder.with_dimensions(window_mode.width, window_mode.height);
-                window_builder.with_fullscreen(None);
-            },
-            FullscreenType::True(monitor) => {
-                let monitor = monitor.into_winit_id_init(events_loop)?;
-                window_builder.with_dimensions(window_mode.width, window_mode.height);
-                window_builder.with_fullscreen(Some(MonitorId::Current));
-            },
-            FullscreenType::Desktop(monitor) => {
-                let monitor = monitor.into_winit_id_init(events_loop)?;
-                let dimensions = monitor.get_dimensions();
-                let position = monitor.get_position();
-                window_builder.with_fullscreen(None);
-                window_builder.with_decorations(false);
-                window_builder.with_position(monitor.0, monitor.1);
-                window_builder.with_dimensions(dimensions.0, dimensions.1);
-            }
-        }
-        window_builder.with_min_dimensions(window_mode.min_width, window_mode.min_height);
-        window_builder.with_max_dimensions(window_mode.max_width, window_mode.max_height);
-        window_builder.with_window_icon(window_mode.icon);
-
-        window_builder.with_transparency(window_setup.transparent);
+        let mut window_builder = glutin::WindowBuilder::new()
+            .with_title(window_setup.title.clone())
+            .with_transparency(window_setup.transparent);
+        window_builder = if !window_setup.icon.is_empty() {
+            use winit::Icon;
+            window_builder.with_window_icon(Some(Icon::from_path(&window_setup.icon)?))
+        } else {
+            window_builder
+        };
 
         // TODO: see winit #540 about disabling resizing.
         /*if window_setup.resizable {
@@ -302,7 +277,7 @@ impl GraphicsContext {
 
             glyph_brush,
         };
-        gfx.set_window_mode(window_mode)?;
+        gfx.set_window_mode(events_loop, window_mode)?;
 
         // Calculate and apply the actual initial projection matrix
         let w = window_mode.width as f32;
@@ -442,34 +417,37 @@ impl GraphicsContext {
     }
 
     /// Sets window mode from a WindowMode object.
-    pub(crate) fn set_window_mode(&mut self, ctx: &Context, mode: WindowMode) -> GameResult<()> {
+    pub(crate) fn set_window_mode(
+        &mut self,
+        events_loop: &glutin::EventsLoop,
+        mode: WindowMode,
+    ) -> GameResult<()> {
         let window = &self.window;
-        window.set_title(mode.title);
         window.set_maximized(mode.maximized);
-        match mode.fullscreen {
+        match mode.fullscreen_type {
             FullscreenType::Off => {
                 window.set_decorations(!mode.borderless);
                 window.set_inner_size(mode.width, mode.height);
                 window.set_fullscreen(None);
             }
             FullscreenType::True(monitor) => {
-                let monitor = monitor.into_winit_id(ctx);
+                let monitor = monitor.into_winit_id(&self.window, events_loop)?;
                 window.set_inner_size(mode.width, mode.height);
                 window.set_fullscreen(Some(monitor));
             }
             FullscreenType::Desktop(monitor) => {
-                let monitor = monitor.into_winit_id(ctx);
-                let dimensions = monitor.get_dimensions();
+                let monitor = monitor.into_winit_id(&self.window, events_loop)?;
                 let position = monitor.get_position();
+                let dimensions = monitor.get_dimensions();
                 window.set_fullscreen(None);
                 window.set_decorations(false);
-                window.set_position(monitor.0, monitor.1);
+                window.set_position(position.0, position.1);
                 window.set_inner_size(dimensions.0, dimensions.1);
             }
         }
-        window.set_min_dimensions(mode.min_width, mode.min_height);
-        window.set_max_dimensions(mode.max_width, mode.max_height);
-        window.set_window_icon(mode.icon);
+        // TODO: verify if single-dimension constraints are possible.
+        window.set_min_dimensions(Some((mode.min_width, mode.min_height)));
+        window.set_max_dimensions(Some((mode.max_width, mode.max_height)));
         Ok(())
     }
 
