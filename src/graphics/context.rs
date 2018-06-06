@@ -437,26 +437,21 @@ impl GraphicsContext {
 
     /// Communicates changes in the viewport size between SDL and gfx.
     ///
-    /// Also replaces gfx.data.out so it may cause squirrelliness to
+    /// Also replaces gfx.screen_render_target and gfx.depth_view,
+    /// so it may cause squirrelliness to
     /// happen with canvases or other things that touch it.
     pub(crate) fn resize_viewport(&mut self) {
-        // let aa_mode = if self.multisample_samples == 1 {
-        //     gfx::texture::AaMode::Single
-        // } else {
-        //     gfx::texture::AaMode::Multi(self.multisample_samples)
-        // };
-        // let dimensions = (
-        //     self.screen_rect.x as u16,
-        //     self.screen_rect.y as u16,
-        //     1,                            // BUGGO
-        //     aa_mode
-        // );
-        let dimensions = self.screen_render_target.get_dimensions();
-        gfx_window_sdl::update_views_raw(
-            &self.window,
-            dimensions,
+        // Basically taken from the definition of 
+        // gfx_window_sdl::update_views()
+        let dim = self.screen_render_target.get_dimensions();
+        assert_eq!(dim, self.depth_view.get_dimensions());
+        if let Some((cv, dv)) = gfx_window_sdl::update_views_raw(
+            &self.window, 
+            dim, 
             self.color_format,
-            self.depth_format,
-        );
+            self.depth_format) {
+            self.screen_render_target = cv;
+            self.depth_view = dv;
+        }
     }
 }
