@@ -7,16 +7,13 @@
 
 use super::*;
 
-use gfx_glyph::{self, GlyphPositioner, SectionText, VariedSection};
-pub use gfx_glyph::{FontId, HorizontalAlign, Scale, VerticalAlign};
+use gfx_glyph::{self, GlyphPositioner, Layout, SectionText, VariedSection};
+pub use gfx_glyph::{FontId, HorizontalAlign as Align, Scale};
 use std::borrow::Cow;
 use std::f32;
 use std::sync::{Arc, RwLock};
 
 // TODO: consider adding bits from example to docs.
-
-/// Aliased type from `gfx_glyph`.
-pub type Layout = gfx_glyph::Layout<gfx_glyph::BuiltInLineBreaker>;
 
 /// Default scale, used as `Scale::uniform(DEFAULT_FONT_SCALE)` when no explicit scale is given.
 pub const DEFAULT_FONT_SCALE: f32 = 16.0;
@@ -47,77 +44,53 @@ impl Default for TextFragment {
     }
 }
 
-impl From<String> for TextFragment {
-    fn from(text: String) -> TextFragment {
-        TextFragment {
-            text,
-            ..Default::default()
-        }
+impl TextFragment {
+    /// Creates a new fragment from `String` or `&str`.
+    pub fn new<T: Into<Self>>(text: T) -> Self {
+        text.into()
     }
-}
 
-impl From<(String, Color)> for TextFragment {
-    fn from(tuple: (String, Color)) -> TextFragment {
-        TextFragment {
-            text: tuple.0,
-            color: Some(tuple.1),
-            ..Default::default()
-        }
+    /// Set fragment's color, overrides text's color.
+    pub fn set_color(mut self, color: Color) -> TextFragment {
+        self.color = Some(color);
+        self
     }
-}
 
-impl<FI> From<(String, FI, Scale)> for TextFragment
-where
-    FI: Into<FontId>,
-{
-    fn from(tuple: (String, FI, Scale)) -> TextFragment {
-        TextFragment {
-            text: tuple.0,
-            font_id: Some(tuple.1.into()),
-            scale: Some(tuple.2),
-            ..Default::default()
-        }
+    /// Set fragment's font, overrides text's font.
+    pub fn set_font<T: Into<FontId>>(mut self, font_id: T) -> TextFragment {
+        self.font_id = Some(font_id.into());
+        self
+    }
+
+    /// Set fragment's scale, overrides text's scale.
+    pub fn set_scale(mut self, scale: Scale) -> TextFragment {
+        self.scale = Some(scale);
+        self
     }
 }
 
 impl<'a> From<&'a str> for TextFragment {
     fn from(text: &'a str) -> TextFragment {
         TextFragment {
-            text: text.to_string(),
+            text: text.to_owned(),
             ..Default::default()
         }
     }
 }
 
-impl<'a> From<(&'a str, Color)> for TextFragment {
-    fn from(tuple: (&'a str, Color)) -> TextFragment {
+impl From<char> for TextFragment {
+    fn from(ch: char) -> TextFragment {
         TextFragment {
-            text: tuple.0.to_string(),
-            color: Some(tuple.1),
+            text: ch.to_string(),
             ..Default::default()
         }
     }
 }
 
-impl<'a, FI> From<(&'a str, FI, Scale)> for TextFragment
-where
-    FI: Into<FontId>,
-{
-    fn from(tuple: (&'a str, FI, Scale)) -> TextFragment {
+impl From<String> for TextFragment {
+    fn from(text: String) -> TextFragment {
         TextFragment {
-            text: tuple.0.to_string(),
-            font_id: Some(tuple.1.into()),
-            scale: Some(tuple.2),
-            ..Default::default()
-        }
-    }
-}
-
-impl From<(Point2, f32)> for DrawParam {
-    fn from(tuple: (Point2, f32)) -> DrawParam {
-        DrawParam {
-            dest: tuple.0,
-            rotation: tuple.1,
+            text,
             ..Default::default()
         }
     }
@@ -157,7 +130,7 @@ pub struct TextCached {
     // TODO: make it do something, maybe.
     blend_mode: Option<BlendMode>,
     bounds: Point2,
-    layout: Layout,
+    layout: Layout<gfx_glyph::BuiltInLineBreaker>,
     font_id: FontId,
     font_scale: Scale,
     cached_metrics: Arc<RwLock<CachedMetrics>>,
@@ -218,31 +191,25 @@ impl TextCached {
         self
     }
 
-    /// Replaces a `TextFragment` without having to rebuild the entire `TextCached`.
-    /// Useful for things like animating specific words, or highlighting them on mouseover.
-    pub fn replace_fragment<F>(&mut self, old_index: usize, new_fragment: F) -> &mut TextCached
-    where
-        F: Into<TextFragment>,
-    {
-        self.fragments[old_index] = new_fragment.into();
-        self.invalidate_cached_metrics();
-        self
-    }
-
     /// Returns a slice with all fragments, for reading.
     pub fn fragments(&self) -> &[TextFragment] {
         &self.fragments
     }
 
-    /// Specifies rectangular dimensions to try and fit contents inside of, by wrapping.
-    /// Alignment within bounds can be changed by passing a `Layout`; defaults to top left corner.
-    pub fn set_bounds(&mut self, bounds: Point2, layout: Option<Layout>) -> &mut TextCached {
+    /// Returns a mutable slice with all fragments.
+    pub fn fragments_mut(&mut self) -> &mut [TextFragment] {
+        &mut self.fragments
+    }
+
+    /// Specifies rectangular dimensions to try and fit contents inside of,
+    /// by wrapping, and alignment within the bounds.
+    pub fn set_bounds(&mut self, bounds: Point2, alignment: Align) -> &mut TextCached {
         self.bounds = bounds;
         if self.bounds.x == f32::INFINITY {
             // Layouts don't make any sense if we don't wrap text at all.
             self.layout = Layout::default();
-        } else if let Some(layout) = layout {
-            self.layout = layout;
+        } else {
+            self.layout = self.layout.h_align(alignment);
         }
         self.invalidate_cached_metrics();
         self
@@ -298,8 +265,8 @@ impl TextCached {
                     use gfx_glyph::Layout::Wrap;
                     if let Wrap { h_align, .. } = self.layout {
                         match h_align {
-                            HorizontalAlign::Center => dest_x += self.bounds.x * 0.5,
-                            HorizontalAlign::Right => dest_x += self.bounds.x,
+                            Align::Center => dest_x += self.bounds.x * 0.5,
+                            Align::Right => dest_x += self.bounds.x,
                             _ => (),
                         }
                     }
@@ -336,7 +303,8 @@ impl TextCached {
                 return string.clone();
             }
         }
-        let text_string = self.fragments
+        let text_string = self
+            .fragments
             .iter()
             .fold("".to_string(), |acc, frg| format!("{}{}", acc, frg.text));
         if let Ok(mut metrics) = self.cached_metrics.write() {
@@ -351,7 +319,8 @@ impl TextCached {
         let mut max_height = 0;
         {
             let varied_section = self.generate_varied_section(context, Point2::new(0.0, 0.0), None);
-            let glyphed_section_texts = self.layout
+            let glyphed_section_texts = self
+                .layout
                 .calculate_glyphs(context.gfx_context.glyph_brush.fonts(), &varied_section);
             for glyphed_section_text in &glyphed_section_texts {
                 let &gfx_glyph::GlyphedSectionText(ref positioned_glyphs, ..) =
@@ -467,8 +436,14 @@ impl TextCached {
             0.0,
         ));
 
-        let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_shear * m_scale
-            * m_aspect_inv * m_offset_inv;
+        let m_transform = m_translate
+            * m_offset
+            * m_aspect
+            * m_rotation
+            * m_shear
+            * m_scale
+            * m_aspect_inv
+            * m_offset_inv;
 
         let (encoder, render_tgt, depth_view) = (
             &mut context.gfx_context.encoder,
