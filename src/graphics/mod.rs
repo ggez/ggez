@@ -777,22 +777,19 @@ pub fn get_drawable_size(context: &Context) -> (u32, u32) {
     gfx.window.drawable_size()
 }
 
-/// EXPERIMENTAL function to get the gfx-rs `Factory` object.
-#[deprecated]
+/// Returns the gfx-rs `Factory` object for ggez's rendering context.
 pub fn get_factory(context: &mut Context) -> &mut gfx_device_gl::Factory {
     let gfx = &mut context.gfx_context;
     &mut gfx.factory
 }
 
-/// EXPERIMENTAL function to get the gfx-rs `Device` object.
-#[deprecated]
+/// Returns the gfx-rs `Device` object for ggez's rendering context.
 pub fn get_device(context: &mut Context) -> &mut gfx_device_gl::Device {
     let gfx = &mut context.gfx_context;
     gfx.device.as_mut()
 }
 
-/// EXPERIMENTAL function to get the gfx-rs `Encoder` object.
-#[deprecated]
+/// Returns the gfx-rs `Encoder` object for ggez's rendering context.
 pub fn get_encoder(
     context: &mut Context,
 ) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
@@ -800,8 +797,7 @@ pub fn get_encoder(
     &mut gfx.encoder
 }
 
-/// EXPERIMENTAL function to get the gfx-rs depth view
-#[deprecated]
+/// Returns the gfx-rs depth target object for ggez's rendering context.
 pub fn get_depth_view(
     context: &mut Context,
 ) -> gfx::handle::RawDepthStencilView<gfx_device_gl::Resources> {
@@ -809,8 +805,7 @@ pub fn get_depth_view(
     gfx.depth_view.clone()
 }
 
-/// EXPERIMENTAL function to get the gfx-rs color view
-#[deprecated]
+/// Returns the gfx-rs color target object for ggez's rendering context.
 pub fn get_screen_render_target(
     context: &Context,
 ) -> gfx::handle::RawRenderTargetView<gfx_device_gl::Resources> {

@@ -24,9 +24,6 @@
 
 ## Deprecated
 
- * `ggez::graphics::get_factory`, `get_encoder` and friends have been deprecated in favor of
-   `ggez::graphics::get_gfx_objects()`, which is more convenient to use anyway.
-
 ## Removed
 
 ## Fixed
