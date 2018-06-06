@@ -440,19 +440,23 @@ impl GraphicsContext {
     /// Also replaces gfx.data.out so it may cause squirrelliness to
     /// happen with canvases or other things that touch it.
     pub(crate) fn resize_viewport(&mut self) {
-        let dimensions = (
-            self.screen_rect.x as u16,
-            self.screen_rect.y as u16,
-            1,                            // BUGGO
-            gfx::texture::AaMode::Single, // BUGGO
-        );
+        // let aa_mode = if self.multisample_samples == 1 {
+        //     gfx::texture::AaMode::Single
+        // } else {
+        //     gfx::texture::AaMode::Multi(self.multisample_samples)
+        // };
+        // let dimensions = (
+        //     self.screen_rect.x as u16,
+        //     self.screen_rect.y as u16,
+        //     1,                            // BUGGO
+        //     aa_mode
+        // );
+        let dimensions = self.screen_render_target.get_dimensions();
         gfx_window_sdl::update_views_raw(
             &self.window,
             dimensions,
             self.color_format,
             self.depth_format,
-            //&mut self.screen_render_target,
-            //&mut self.depth_view,
         );
     }
 }
