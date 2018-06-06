@@ -1,8 +1,8 @@
 //! Misc. input functions, currently just for handling gamepads.
 
+pub use sdl2::controller::GameController;
 use sdl2::GameControllerSubsystem;
 use sdl2::Sdl;
-pub use sdl2::controller::GameController;
 use std::collections::HashMap;
 use std::fmt;
 

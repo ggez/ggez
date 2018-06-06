@@ -9,13 +9,13 @@
 
 use super::shader::BlendMode;
 use super::types::FilterMode;
-use GameResult;
-use graphics::{BackendSpec, GlBackendSpec};
 use context::Context;
 use error;
 use gfx;
 use gfx::Factory;
 use graphics;
+use graphics::{BackendSpec, GlBackendSpec};
+use GameResult;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
 ///

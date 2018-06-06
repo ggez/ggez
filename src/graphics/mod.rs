@@ -12,18 +12,18 @@ use std::fmt;
 use std::u16;
 
 use gfx;
+use gfx::texture;
 use gfx::Device;
 use gfx::Factory;
-use gfx::texture;
 use gfx_device_gl;
 use sdl2;
 
-use GameError;
-use GameResult;
 use conf;
 use conf::WindowMode;
 use context::Context;
 use context::DebugId;
+use GameError;
+use GameResult;
 
 mod canvas;
 mod context;

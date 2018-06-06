@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use gfx::Factory;
 use gfx::traits::FactoryExt;
+use gfx::Factory;
 use gfx_device_gl;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
 use gfx_window_sdl;

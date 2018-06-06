@@ -39,8 +39,8 @@ use sdl2::event::Event::*;
 use sdl2::keyboard;
 use sdl2::mouse;
 
-use GameResult;
 use context::Context;
+use GameResult;
 
 pub use sdl2::keyboard::{CAPSMOD, LALTMOD, LCTRLMOD, LGUIMOD, LSHIFTMOD, MODEMOD, NOMOD, NUMMOD,
                          RALTMOD, RCTRLMOD, RESERVEDMOD, RGUIMOD, RSHIFTMOD};

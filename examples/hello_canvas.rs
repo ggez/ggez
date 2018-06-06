@@ -4,8 +4,8 @@ extern crate ggez;
 
 use ggez::conf;
 use ggez::event;
-use ggez::{Context, GameResult};
 use ggez::graphics;
+use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
@@ -24,7 +24,12 @@ impl MainState {
         let text = graphics::Text::new(ctx, "Hello world!", &font)?;
         let canvas = graphics::Canvas::with_window_size(ctx)?;
 
-        let s = MainState { text, canvas, draw_with_canvas: false, frames: 0 };
+        let s = MainState {
+            text,
+            canvas,
+            draw_with_canvas: false,
+            frames: 0,
+        };
         Ok(s)
     }
 }
@@ -37,7 +42,6 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let dest_point = graphics::Point2::new(10.0, 10.0);
 
-
         if self.draw_with_canvas {
             println!("Drawing with canvas");
             graphics::set_background_color(ctx, graphics::Color::from((64, 0, 0, 0)));
@@ -45,33 +49,44 @@ impl event::EventHandler for MainState {
 
             graphics::set_canvas(ctx, Some(&self.canvas));
             graphics::set_background_color(ctx, graphics::Color::from((255, 255, 255, 128)));
-            graphics::clear(ctx);        
+            graphics::clear(ctx);
 
-            graphics::draw_ex(ctx, &self.text, graphics::DrawParam {
-                dest: dest_point, 
-                color: Some(graphics::Color::from((0, 0, 0, 255))),
-                .. Default::default()
-            } )?;
+            graphics::draw_ex(
+                ctx,
+                &self.text,
+                graphics::DrawParam {
+                    dest: dest_point,
+                    color: Some(graphics::Color::from((0, 0, 0, 255))),
+                    ..Default::default()
+                },
+            )?;
             graphics::set_canvas(ctx, None);
 
             // graphics::draw(ctx, &self.canvas, graphics::Point2::new(0.0, 0.0), 0.0)?;
 
-            graphics::draw_ex(ctx, &self.canvas, graphics::DrawParam {
-                color: Some(graphics::Color::from((255, 255, 255, 128))),
-                .. Default::default()
-            } )?;
-
+            graphics::draw_ex(
+                ctx,
+                &self.canvas,
+                graphics::DrawParam {
+                    color: Some(graphics::Color::from((255, 255, 255, 128))),
+                    ..Default::default()
+                },
+            )?;
         } else {
             println!("Drawing without canvas");
             graphics::set_canvas(ctx, None);
             graphics::set_background_color(ctx, graphics::Color::from((64, 0, 0, 255)));
             graphics::clear(ctx);
 
-            graphics::draw_ex(ctx, &self.text, graphics::DrawParam {
-                dest: dest_point, 
-                color: Some(graphics::Color::from((192, 128, 64, 255))),
-                .. Default::default()
-            } )?;
+            graphics::draw_ex(
+                ctx,
+                &self.text,
+                graphics::DrawParam {
+                    dest: dest_point,
+                    color: Some(graphics::Color::from((192, 128, 64, 255))),
+                    ..Default::default()
+                },
+            )?;
         }
 
         graphics::present(ctx);
@@ -86,15 +101,16 @@ impl event::EventHandler for MainState {
     }
 
     fn key_down_event(
-        &mut self, 
-        _ctx: &mut Context, 
-        _keycode: ggez::event::Keycode, 
-        _keymod: ggez::event::Mod, 
-        repeat: bool) {
-            if !repeat {
-                self.draw_with_canvas = !self.draw_with_canvas;
-                println!("Canvas on: {}", self.draw_with_canvas);
-            }
+        &mut self,
+        _ctx: &mut Context,
+        _keycode: ggez::event::Keycode,
+        _keymod: ggez::event::Mod,
+        repeat: bool,
+    ) {
+        if !repeat {
+            self.draw_with_canvas = !self.draw_with_canvas;
+            println!("Canvas on: {}", self.draw_with_canvas);
+        }
     }
 }
 
@@ -104,7 +120,7 @@ pub fn main() {
             samples: conf::NumSamples::Two,
             ..Default::default()
         },
-        .. Default::default()
+        ..Default::default()
     };
     let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
 

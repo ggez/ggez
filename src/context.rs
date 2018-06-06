@@ -6,8 +6,6 @@ use sdl2::{self, Sdl};
 use std::fmt;
 use std::io::Read;
 
-use GameError;
-use GameResult;
 use audio;
 use conf;
 use event;
@@ -16,6 +14,8 @@ use graphics;
 use input;
 use mouse;
 use timer;
+use GameError;
+use GameResult;
 
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio

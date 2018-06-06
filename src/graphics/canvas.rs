@@ -1,17 +1,17 @@
 //! I guess these docs will never appear since we re-export the canvas
 //! module from graphics...
 
-use gfx::Factory;
 use gfx::format::Swizzle;
 use gfx::handle::RawRenderTargetView;
 use gfx::memory::{Bind, Usage};
 use gfx::texture::{AaMode, Kind};
+use gfx::Factory;
 
-use Context;
 use conf;
 use context::DebugId;
 use error::*;
 use graphics::*;
+use Context;
 
 /// A generic canvas independent of graphics backend. This type should probably
 /// never be used directly; use `ggez::graphics::Canvas` instead.

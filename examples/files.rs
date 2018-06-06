@@ -6,9 +6,9 @@
 
 extern crate ggez;
 
-use ggez::ContextBuilder;
 use ggez::conf;
 use ggez::filesystem;
+use ggez::ContextBuilder;
 use std::env;
 use std::io::{Read, Write};
 use std::path;

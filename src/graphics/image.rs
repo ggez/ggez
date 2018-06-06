@@ -6,11 +6,11 @@ use gfx::format::{ChannelTyped, SurfaceTyped};
 use gfx_device_gl;
 use image;
 
-use GameError;
-use GameResult;
 use context::{Context, DebugId};
 use graphics::shader::*;
 use graphics::*;
+use GameError;
+use GameResult;
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
 #[derive(Clone)]
