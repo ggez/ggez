@@ -3,17 +3,12 @@
 ## Added
 
  * Added a feature flag to build nalgebra with the `mint` math library inter-operability layer [#344](https://github.com/ggez/ggez/issues/344)
- * Updated `image` to 0.19 which lets us add another feature flag selecting whether or not to use multithreaded libraries
-   when loading images.  [#377](https://github.com/ggez/ggez/issues/377)
+ * Updated `image` to 0.19 which lets us add another feature flag selecting whether or not to use multithreaded libraries when loading images.  [#377](https://github.com/ggez/ggez/issues/377)
  * We got more awesome logos!  Thanks ozkriff and termhn! [#327](https://github.com/ggez/ggez/issues/327)
- * Added hooks to the `log` crate, so we will now output some logging data via it that clients may use.
- [#311](https://github.com/ggez/ggez/pull/331)
+ * Added hooks to the `log` crate, so we will now output some logging data via it that clients may use.  [#311](https://github.com/ggez/ggez/pull/331)
  * There's now a functional and reasonably ergonomic [game template](https://github.com/ggez/game-template) repo that demonstrates how to use `ggez` with `specs`, `warmy`, `failure`, `log` and other useful tools.
- * Added `Font::new_px()` and `Font::from_bytes_px()` functions to create fonts that are specific pixel sizes 
- [#268](https://github.com/ggez/ggez/issues/268)
- * Added Ratysz's glyph cache implementation integrating the awesome `gfx_glyph` crate!  This gives us faster text drawing
-   as well as more features; if it works out well it should replace all text rendering in another version or two.
-[#132](https://github.com/ggez/ggez/issues/132)
+ * Added `Font::new_px()` and `Font::from_bytes_px()` functions to create fonts that are specific pixel sizes  [#268](https://github.com/ggez/ggez/issues/268)
+ * Added Ratysz's glyph cache implementation integrating the awesome `gfx_glyph` crate!  This gives us faster text drawing as well as more features; if it works out well it should replace all text rendering in another version or two.  [#132](https://github.com/ggez/ggez/issues/132)
 
 ## Changed
 

@@ -303,7 +303,8 @@ impl Font {
         let size = 16;
         // BUGGO: fix DPI.  Get from Context?  If we do that we can basically
         // just make Context always keep the default Font itself... hmm.
-        // TODO: ^^^ is that still relevant?..
+        // TODO: ^^^ is that still relevant?  Nah, it will probably be replaced by
+        // the `gfx_glyph` interation.
         Font::from_bytes("default", Font::default_font_bytes(), size, (75.0, 75.0))
     }
 
