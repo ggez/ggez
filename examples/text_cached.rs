@@ -6,8 +6,9 @@ extern crate rand;
 
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
-use ggez::graphics::{self, Color, DrawParam, Font, FontId, HorizontalAlign as HAlign, Layout,
-                     Point2, Scale, TextCached, TextFragment};
+use ggez::graphics::{
+    self, Align, Color, DrawParam, Font, FontId, Point2, Scale, TextCached, TextFragment,
+};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use std::collections::BTreeMap;
@@ -39,12 +40,11 @@ impl App {
         // the color, font, and scale will be default: white, DejaVuSerif, 16px unform.
         // Note that you don't even have to load a font: DejaVuSerif is baked into `ggez` itself.
         let text = TextCached::new("Hello, World!")?;
-        // Store the text in `App`s hashmap, for drawing in main loop.
+        // Store the text in `App`s map, for drawing in main loop.
         texts.insert("0_hello", text);
 
-        // This is what actually happens in `TextCached::new()`: the `&str` gets automatically
-        // converted into a `TextFragment`. There are several "convenience consructors"
-        // like this, refer to `TextFragment` docs for a list.
+        // This is what actually happens in `TextCached::new()`: the `&str` gets
+        // automatically converted into a `TextFragment`.
         let mut text = TextCached::new(TextFragment {
             // `TextFragment` stores a string, and optional parameters which will override those
             // of `TextCached` itself. This allows inlining differently formatted lines, words,
@@ -62,7 +62,9 @@ impl App {
         // More fragments can be appended at any time.
         text.add_fragment(" default fragment, should be long enough to showcase everything")
             // `add_fragment()` can be chained, along with most `TextCached` methods.
-            .add_fragment((" magenta fragment", Color::new(1.0, 0.0, 1.0, 1.0)))
+            .add_fragment(
+                TextFragment::new(" magenta fragment")
+                    .set_color(Color::new(1.0, 0.0, 1.0, 1.0)))
             .add_fragment(" another default fragment, to really drive the point home");
 
         // This loads a new TrueType font into the context and returns a
@@ -71,21 +73,21 @@ impl App {
         let fancy_font = Font::new_glyph_font(ctx, "/Tangerine_Regular.ttf")?;
 
         // `Font::GlyphFont` is really only a handle, and can be cloned around.
-        text.add_fragment((" fancy fragment", fancy_font.clone(), Scale::uniform(25.0)))
-            .add_fragment(" and a default one, for symmetry");
+        text.add_fragment(
+            TextFragment::new(" fancy fragment")
+                .set_font(fancy_font.clone())
+                .set_scale(Scale::uniform(25.0)),
+        ).add_fragment(" and a default one, for symmetry");
         // Store a copy of the built text, retain original for further modifications.
         texts.insert("1_demo_text_1", text.clone());
 
         // Text can be wrapped by setting it's bounds, in screen coordinates;
         // vertical bound will cut off the extra off the bottom.
-        text.set_bounds(Point2::new(400.0, f32::INFINITY), None);
+        // Alignment within the bounds can be set by `Align` enum.
+        text.set_bounds(Point2::new(400.0, f32::INFINITY), Align::Left);
         texts.insert("1_demo_text_2", text.clone());
 
-        // Alignment within the bounds can be set by optional `Layout`; refer to `gfx_glyph` docs.
-        text.set_bounds(
-            Point2::new(500.0, f32::INFINITY),
-            Some(Layout::default().h_align(HAlign::Right)),
-        );
+        text.set_bounds(Point2::new(500.0, f32::INFINITY), Align::Right);
         texts.insert("1_demo_text_3", text.clone());
 
         // This can be used to set the font and scale unformatted fragments will use.
@@ -93,10 +95,7 @@ impl App {
         // Side note: TrueType fonts aren't very consistent between themselves in terms
         // of apparent scale - this font with default scale will appear too small.
         text.set_font(fancy_font.clone(), Scale::uniform(16.0))
-            .set_bounds(
-                Point2::new(300.0, f32::INFINITY),
-                Some(Layout::default().h_align(HAlign::Center)),
-            );
+            .set_bounds(Point2::new(300.0, f32::INFINITY), Align::Center);
         texts.insert("1_demo_text_4", text);
 
         // These methods can be combined to easily create a variety of simple effects.
@@ -104,18 +103,17 @@ impl App {
         // `new_empty()` exists pretty much specifically for this usecase.
         let mut chroma_text = TextCached::new_empty()?;
         for ch in chroma_string.chars() {
-            chroma_text.add_fragment((ch.to_string(), random_color()));
+            chroma_text.add_fragment(TextFragment::new(ch).set_color(random_color()));
         }
         texts.insert("2_rainbow", chroma_text);
 
         let wonky_string = "So, so wonky.";
         let mut wonky_text = TextCached::new_empty()?;
         for ch in wonky_string.chars() {
-            wonky_text.add_fragment(TextFragment {
-                text: ch.to_string(),
-                scale: Some(Scale::uniform(10.0 + 24.0 * rand::random::<f32>())),
-                ..Default::default()
-            });
+            wonky_text.add_fragment(
+                TextFragment::new(ch)
+                    .set_scale(Scale::uniform(10.0 + 24.0 * rand::random::<f32>())),
+            );
         }
         texts.insert("3_wonky", wonky_text);
 
@@ -155,21 +153,18 @@ impl event::EventHandler for App {
         // Individual fragments within the `TextCached` can be replaced;
         // this can be used for inlining animated sentences, words, etc.
         if let Some(text) = self.texts.get_mut("1_demo_text_3") {
-            // `.fragments()` returns a slice of contained fragments.
-            let string = text.fragments()[3].text.clone();
-            // Fragments are indexed in order of their creation, starting at 0 (of course).
-            text.replace_fragment(3, (string, random_color()));
+            // `.fragments_mut()` returns a mutable slice of contained fragments.
+            // Fragments are indexed in order of their addition, starting at 0 (of course).
+            text.fragments_mut()[3].color = Some(random_color());
         }
 
         // Another animation example. Note, this is very inefficient as-is.
         let wobble_string = "WOBBLE";
         let mut wobble = TextCached::new_empty()?;
         for ch in wobble_string.chars() {
-            wobble.add_fragment(TextFragment {
-                text: ch.to_string(),
-                scale: Some(Scale::uniform(10.0 + 6.0 * rand::random::<f32>())),
-                ..Default::default()
-            });
+            wobble.add_fragment(
+                TextFragment::new(ch).set_scale(Scale::uniform(10.0 + 6.0 * rand::random::<f32>())),
+            );
         }
         let wobble_width = wobble.width(ctx);
         let wobble_height = wobble.height(ctx);
