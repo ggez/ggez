@@ -53,6 +53,11 @@ impl Default for DrawParam {
 }
 
 impl DrawParam {
+    /// Create a new DrawParam with default values.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Turn the DrawParam into a model matrix, combining
     /// destination, rotation, scale, offset and shear.
     pub fn into_matrix(self) -> Matrix4 {

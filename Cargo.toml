@@ -49,9 +49,9 @@ toml = "0.4"
 log = "0.4"
 lyon = "0.10"
 smart-default = "0.2"
-nalgebra = {version = "0.14", features = ["mint"] }
+nalgebra = {version = "0.15", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here...
-mint = "0.4"
+mint = "0.5"
 
 [dev-dependencies]
 chrono = "0.4"

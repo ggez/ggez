@@ -419,7 +419,7 @@ fn print_instructions() {
     println!("L/R arrow keys rotate your ship, up thrusts, space bar fires");
     println!();
 }
-
+extern crate mint;
 fn draw_actor(
     assets: &mut Assets,
     ctx: &mut Context,
@@ -429,12 +429,16 @@ fn draw_actor(
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, actor.pos);
     let image = assets.actor_image(actor);
-    let drawparams = graphics::DrawParam {
-        dest: pos,
-        rotation: actor.facing as f32,
-        offset: graphics::Point2::new(0.5, 0.5),
-        ..Default::default()
-    };
+    let drawparams = graphics::DrawParam::new()
+        .dest(mint::Point2{x:pos.x, y: pos.y})
+        .rotation(actor.facing as f32)
+        .offset(mint::Point2{ x: 0.5, y: 0.5});
+    //  {
+    //     dest: pos,
+    //     rotation: actor.facing as f32,
+    //     offset: graphics::Point2::new(0.5, 0.5),
+    //     ..Default::default()
+    // };
     graphics::draw_ex(ctx, image, drawparams)
 }
 
