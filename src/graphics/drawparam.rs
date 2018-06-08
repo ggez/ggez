@@ -1,5 +1,7 @@
 use graphics::*;
 
+use mint;
+
 /// A struct containing all the necessary info for drawing a Drawable.
 ///
 /// This struct implements the `Default` trait, so to set only some parameter
@@ -29,6 +31,9 @@ pub struct DrawParam {
     /// A color to draw the target with.
     /// If `None`, the color set by `graphics::set_color()` is used; default white.
     pub color: Option<Color>,
+
+    /// The transform matrix for the DrawParams
+    pub matrix: Matrix4,
 }
 
 impl Default for DrawParam {
@@ -41,6 +46,8 @@ impl Default for DrawParam {
             offset: Point2::new(0.0, 0.0),
             shear: Point2::new(0.0, 0.0),
             color: None,
+
+            matrix: na::one(),
         }
     }
 }
@@ -76,5 +83,65 @@ impl DrawParam {
             1.0,
         );
         translate * offset * rotation * shear * scale * offset_inverse
+    }
+
+    /// Set the source rect
+    pub fn src(mut self, src: Rect) -> Self {
+        self.src = src;
+        self
+    }
+
+
+    /// Set the dest point
+    pub fn dest<T>(mut self, dest: T) -> Self where T: Into<mint::Point2<f32>> {
+        let p: mint::Point2<f32> = dest.into();
+        // BUGGO: Should be able to just do Point2::from(),
+        // see https://github.com/sebcrozet/nalgebra/issues/352
+        self.dest = Point2::new(p.x, p.y);
+        self
+    }
+
+    /// TODO
+    pub fn color<T>(mut self, color: T) -> Self where T: Into<Color> {
+        self.color = Some(color.into());
+        self
+    }
+
+    /// TODO
+    pub fn rotation(mut self, rotation: f32) -> Self {
+        self.rotation = rotation;
+        self
+    }
+
+    /// TODO
+    pub fn scale<T>(mut self, scale: T) -> Self where T: Into<mint::Point2<f32>> {
+        let p: mint::Point2<f32> = scale.into();
+        // BUGGO
+        self.scale = Point2::new(p.x, p.y);
+        self
+    }
+
+    /// TODO
+    pub fn offset<T>(mut self, offset: T) -> Self where T: Into<mint::Point2<f32>> {
+        let p: mint::Point2<f32> = offset.into();
+        // BUGGO
+        self.offset = Point2::new(p.x, p.y);
+        self
+    }
+
+    /// TODO
+    pub fn shear<T>(mut self, shear: T) -> Self where T: Into<mint::Point2<f32>> {
+        let p: mint::Point2<f32> = shear.into();
+        // BUGGO
+        self.shear = Point2::new(p.x, p.y);
+        self
+    }
+
+    /// Set the full transform matrix for the `DrawParam`, replacing 
+    /// anything already there.
+    pub fn matrix<T>(mut self, matrix: T) -> Self where T: Into<mint::ColumnMatrix4<f32>> {
+        let m: mint::ColumnMatrix4<f32> = matrix.into();
+        self.matrix = Matrix4::from(m);
+        self
     }
 }

@@ -106,6 +106,7 @@ extern crate image;
 #[macro_use]
 extern crate log;
 extern crate lyon;
+extern crate mint;
 pub extern crate nalgebra;
 extern crate rodio;
 extern crate rusttype;

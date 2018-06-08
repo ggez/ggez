@@ -28,7 +28,7 @@ path = "src/lib.rs"
 cargo-resource-root = []
 bzip2 = ["zip/bzip2"]
 default = ["bzip2"]
-mint = ["nalgebra/mint"]
+#mint = ["nalgebra/mint"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 
 [dependencies]
@@ -49,7 +49,9 @@ toml = "0.4"
 log = "0.4"
 lyon = "0.10"
 smart-default = "0.2"
-nalgebra = "0.14"
+nalgebra = {version = "0.14", features = ["mint"] }
+# Has to be the same version of mint that nalgebra uses here...
+mint = "0.4"
 
 [dev-dependencies]
 chrono = "0.4"
