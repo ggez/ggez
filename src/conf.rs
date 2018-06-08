@@ -202,14 +202,9 @@ impl WindowSetup {
     ///
     /// Returns None if given an invalid value
     /// (valid values are powers of 2 from 1 to 16)
-    pub fn samples(mut self, samples: u32) -> Option<Self> {
-        match NumSamples::from_u32(samples) {
-            Some(s) => {
-                self.samples = s;
-                Some(self)
-            }
-            None => None,
-        }
+    pub fn samples(mut self, samples: NumSamples) -> Self {
+        self.samples = samples;
+        self
     }
 }
 
