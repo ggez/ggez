@@ -16,10 +16,10 @@
 use winit;
 
 /// A key code.
-pub use winit::VirtualKeyCode as Keycode;
+pub use winit::VirtualKeyCode as KeyCode;
 
 /// A struct that holds the state of keyboard modifier buttons such as ctrl or shift.
-pub use winit::ModifiersState as KeyboardModifiers;
+pub use winit::ModifiersState as KeyMods;
 /// A mouse button.
 pub use winit::MouseButton;
 
@@ -92,17 +92,17 @@ pub trait EventHandler {
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        keycode: Keycode,
-        _keymods: KeyboardModifiers,
+        keycode: KeyCode,
+        _keymods: KeyMods,
         _repeat: bool,
     ) {
-        if keycode == Keycode::Escape {
+        if keycode == KeyCode::Escape {
             ctx.quit();
         }
     }
 
     /// A keyboard button was released.
-    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: Keycode, _keymods: KeyboardModifiers) {
+    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: KeyCode, _keymods: KeyMods) {
     }
 
     /// Candidate text is passed by the OS (via Input Method Editor).
