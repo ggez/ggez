@@ -36,7 +36,7 @@
 //! line to your `Cargo.toml` file:
 //!
 //! ```text
-//! ggez = "0.4"
+//! ggez = "0.5"
 //! ```
 //!
 //! However you also need to have the SDL2 libraries installed on your

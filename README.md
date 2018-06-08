@@ -51,12 +51,12 @@ Check out the [projects list!](docs/Projects.md)
 
 ## Usage
 
-ggez is requires rustc >= 1.23.0 and distributed on
+ggez is requires rustc >= 1.26 and distributed on
 crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```text
-ggez = "0.4"
+ggez = "0.5"
 ```
 
 However you also need to have the SDL2 libraries installed on your
