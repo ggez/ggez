@@ -430,9 +430,9 @@ fn draw_actor(
     let pos = world_to_screen_coords(screen_w, screen_h, actor.pos);
     let image = assets.actor_image(actor);
     let drawparams = graphics::DrawParam::new()
-        .dest(mint::Point2{x:pos.x, y: pos.y})
+        .dest(pos)
         .rotation(actor.facing as f32)
-        .offset(mint::Point2{ x: 0.5, y: 0.5});
+        .offset(graphics::Point2::new(0.5, 0.5));
     //  {
     //     dest: pos,
     //     rotation: actor.facing as f32,
