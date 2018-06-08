@@ -205,7 +205,7 @@ impl event::EventHandler for App {
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult<()> {
     let ctx = &mut ContextBuilder::new("text_cached", "ggez")
         .window_setup(
             WindowSetup::default()
@@ -213,8 +213,7 @@ pub fn main() {
                 .resizable(true),
         )
         .window_mode(WindowMode::default().dimensions(640, 480))
-        .build()
-        .unwrap();
+        .build()?;
 
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
@@ -222,10 +221,6 @@ pub fn main() {
         ctx.filesystem.mount(&path, true);
     }
 
-    let state = &mut App::new(ctx).unwrap();
-    if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
-    } else {
-        println!("Game exited cleanly.");
-    }
+    let state = &mut App::new(ctx)?;
+    event::run(ctx, state)
 }

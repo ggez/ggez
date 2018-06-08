@@ -30,6 +30,7 @@ use GameResult;
 pub struct Context {
     /// The Conf object the Context was created with
     pub conf: conf::Conf,
+
     /// SDL context
     pub sdl_context: Sdl,
     /// Filesystem state

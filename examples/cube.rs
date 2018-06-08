@@ -252,9 +252,9 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult<()> {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("cube", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("cube", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -265,9 +265,5 @@ pub fn main() {
     }
 
     let state = &mut MainState::new(ctx);
-    if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
-    } else {
-        println!("Game exited cleanly.");
-    }
+    event::run(ctx, state)
 }

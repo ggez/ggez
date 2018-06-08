@@ -596,7 +596,7 @@ impl EventHandler for MainState {
 /// `ggez::event::run()` with our `EventHandler` type.
 /// **********************************************************************
 
-pub fn main() {
+pub fn main() -> GameResult<()> {
     let mut cb = ContextBuilder::new("astroblasto", "ggez")
         .window_setup(conf::WindowSetup::default().title("Astroblasto!"))
         .window_mode(conf::WindowMode::default().dimensions(640, 480));
@@ -615,20 +615,8 @@ pub fn main() {
         println!("Not building from cargo?  Ok.");
     }
 
-    let ctx = &mut cb.build().unwrap();
+    let ctx = &mut cb.build()?;
 
-    match MainState::new(ctx) {
-        Err(e) => {
-            println!("Could not load game!");
-            println!("Error: {}", e);
-        }
-        Ok(ref mut game) => {
-            let result = event::run(ctx, game);
-            if let Err(e) = result {
-                println!("Error encountered running game: {}", e);
-            } else {
-                println!("Game exited cleanly.");
-            }
-        }
-    }
+    let game = &mut MainState::new(ctx)?;
+    event::run(ctx, game)
 }

@@ -38,9 +38,9 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult<()> {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("super_simple", "ggez", c).unwrap();
-    let state = &mut MainState::new(ctx).unwrap();
-    event::run(ctx, state).unwrap();
+    let ctx = &mut Context::load_from_conf("super_simple", "ggez", c)?;
+    let state = &mut MainState::new(ctx);
+    event::run(ctx, state)
 }

@@ -136,9 +136,9 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult<()> {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("input_test", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("input_test", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -149,5 +149,5 @@ pub fn main() {
     }
 
     let state = &mut MainState::new();
-    event::run(ctx, state).unwrap();
+    event::run(ctx, state)
 }

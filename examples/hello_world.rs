@@ -62,9 +62,15 @@ impl event::EventHandler for MainState {
 // * Second, create a `ggez::game::Game` object which will
 // do the work of creating our MainState and running our game.
 // * Then, just call `game.run()` which runs the `Game` mainloop.
-pub fn main() {
-    let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
+pub fn main() -> GameResult<()> {
+    let c = conf::Conf {
+        window_setup: conf::WindowSetup {
+            samples: conf::NumSamples::Eight,
+            ..Default::default()
+        },
+        .. Default::default()
+    };
+    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources to the filesystem's path
     // so that ggez will look in our cargo project directory for files.
@@ -74,10 +80,6 @@ pub fn main() {
         ctx.filesystem.mount(&path, true);
     }
 
-    let state = &mut MainState::new(ctx).unwrap();
-    if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
-    } else {
-        println!("Game exited cleanly.");
-    }
+    let state = &mut MainState::new(ctx)?;
+    event::run(ctx, state)
 }

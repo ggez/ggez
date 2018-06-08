@@ -6,15 +6,13 @@
 
 extern crate ggez;
 
-use ggez::conf;
-use ggez::filesystem;
-use ggez::ContextBuilder;
+use ggez::{GameResult, ContextBuilder, conf, filesystem};
 use std::env;
 use std::io::{Read, Write};
 use std::path;
 use std::str;
 
-pub fn main() {
+pub fn main() -> GameResult<()> {
     let mut cb = ContextBuilder::new("ggez_files_example", "ggez");
 
     // We add the CARGO_MANIFEST_DIR/resources to the filesystems paths so
@@ -29,14 +27,14 @@ pub fn main() {
         cb = cb.add_resource_path(path);
     }
 
-    let ctx = &mut cb.build().unwrap();
+    let ctx = &mut cb.build()?;
 
     println!("Full filesystem info: {:#?}", ctx.filesystem);
 
     println!("Resource stats:");
     ctx.print_resource_stats();
 
-    let dir_contents: Vec<_> = ctx.filesystem.read_dir("/").unwrap().collect();
+    let dir_contents: Vec<_> = ctx.filesystem.read_dir("/")?.collect();
     println!("Directory has {} things in it:", dir_contents.len());
     for itm in dir_contents {
         println!("   {:?}", itm);
@@ -48,21 +46,21 @@ pub fn main() {
     let test_file = path::Path::new("/testfile.txt");
     let bytes = b"test";
     {
-        let mut file = ctx.filesystem.create(test_file).unwrap();
-        file.write_all(bytes).unwrap();
+        let mut file = ctx.filesystem.create(test_file)?;
+        file.write_all(bytes)?;
     }
     println!("Wrote to test file");
     {
         let mut options = filesystem::OpenOptions::new();
         options.append(true);
-        let mut file = ctx.filesystem.open_options(test_file, &options).unwrap();
-        file.write_all(bytes).unwrap();
+        let mut file = ctx.filesystem.open_options(test_file, &options)?;
+        file.write_all(bytes)?;
     }
     println!("Appended to test file");
     {
         let mut buffer = Vec::new();
-        let mut file = ctx.filesystem.open(test_file).unwrap();
-        file.read_to_end(&mut buffer).unwrap();
+        let mut file = ctx.filesystem.open(test_file)?;
+        file.read_to_end(&mut buffer)?;
         println!(
             "Read from test file: {:?}",
             str::from_utf8(&buffer).unwrap()
@@ -73,17 +71,17 @@ pub fn main() {
     println!("Let's read the default conf file");
     if let Ok(_conf) = ctx.filesystem.read_config() {
         println!("Found existing conf file, its contents are:");
-        let mut file = ctx.filesystem.open("/conf.toml").unwrap();
+        let mut file = ctx.filesystem.open("/conf.toml")?;
         let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer).unwrap();
+        file.read_to_end(&mut buffer)?;
         println!("{}", str::from_utf8(&buffer).unwrap());
 
         println!("Now deleting it, re-run the example to recreate it.");
-        ctx.filesystem.delete("/conf.toml").unwrap();
+        ctx.filesystem.delete("/conf.toml")?;
     } else {
         println!("No existing conf file found, saving one out");
         let c = conf::Conf::new();
-        ctx.filesystem.write_config(&c).unwrap();
+        ctx.filesystem.write_config(&c)?;
         println!("Should now be a 'conf.toml' file under user config dir");
     }
 
@@ -98,4 +96,5 @@ pub fn main() {
             println!("Wait, it does exist?  Weird.")
         }
     }
+    Ok(())
 }

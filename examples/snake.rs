@@ -442,7 +442,7 @@ impl event::EventHandler for GameState {
     }
 }
 
-fn main() {
+fn main() -> GameResult<()> {
     // Here we use a ContextBuilder to setup metadata about our game. First the title and author
     let ctx = &mut ggez::ContextBuilder::new("snake", "Gray Olson")
         // Next we set up the window. This title will be displayed in the title bar of the window.
@@ -451,17 +451,12 @@ fn main() {
         .window_mode(ggez::conf::WindowMode::default().dimensions(SCREEN_SIZE.0, SCREEN_SIZE.1))
         // And finally we attempt to build the context and create the window. If it fails, we panic with the message
         // "Failed to build ggez context"
-        .build().expect("Failed to build ggez context");
+        .build()?;
 
     // We set the background color of our Context to a nice (well, maybe pretty glaring ;)) green
     graphics::set_background_color(ctx, [0.0, 1.0, 0.0, 1.0].into());
     // Next we create a new instance of our GameState struct, which implements EventHandler
     let state = &mut GameState::new();
     // And finally we actually run our game, passing in our context and state.
-    match event::run(ctx, state) {
-        // If we encounter an error, we print it before exiting
-        Err(e) => println!("Error encountered running game: {}", e),
-        // And if not, we print a message saying we ran cleanly. Hooray!
-        Ok(_) => println!("Game exited cleanly!"),
-    }
+    event::run(ctx, state)
 }

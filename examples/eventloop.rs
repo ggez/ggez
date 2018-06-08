@@ -12,12 +12,12 @@ extern crate ggez;
 
 use ggez::event;
 use ggez::graphics::{self, DrawMode, Point2};
-use ggez::{conf, Context};
+use ggez::{conf, Context, GameResult};
 
-pub fn main() {
+pub fn main() -> GameResult<()> {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("eventloop", "ggez", c).unwrap();
-    let mut events = event::Events::new(ctx).unwrap();
+    let ctx = &mut Context::load_from_conf("eventloop", "ggez", c)?;
+    let mut events = event::Events::new(ctx)?;
     let mut continuing = true;
 
     let mut position: f32 = 1.0;
@@ -53,8 +53,9 @@ pub fn main() {
             Point2::new(position, 380.0),
             100.0,
             2.0,
-        ).unwrap();
+        )?;
         graphics::present(ctx);
         ggez::timer::yield_now();
     }
+    Ok(())
 }

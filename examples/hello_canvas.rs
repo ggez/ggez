@@ -114,7 +114,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult<()> {
     let c = conf::Conf {
         window_setup: conf::WindowSetup {
             samples: conf::NumSamples::Two,
@@ -122,7 +122,7 @@ pub fn main() {
         },
         ..Default::default()
     };
-    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c)?;
 
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
@@ -130,10 +130,6 @@ pub fn main() {
         ctx.filesystem.mount(&path, true);
     }
 
-    let state = &mut MainState::new(ctx).unwrap();
-    if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
-    } else {
-        println!("Game exited cleanly.");
-    }
+    let state = &mut MainState::new(ctx)?;
+    event::run(ctx, state)
 }

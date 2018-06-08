@@ -126,7 +126,7 @@ impl EventHandler for App {
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult<()> {
     // This creates a channel that can be used to asynchronously pass things between parts of the
     // app. There's some overhead, so using it somewhere that doesn't need async (read: threads)
     // is suboptimal. But, `fern`'s arbitrary logging requires a channel.
@@ -173,12 +173,11 @@ pub fn main() {
                 .resizable(true),
         )
         .window_mode(WindowMode::default().dimensions(640, 480))
-        .build()
-        .unwrap();
+        .build()?;
 
     trace!("Context created, creating a file logger.");
 
-    let file_logger = FileLogger::new(ctx, "/out.log", log_rx).unwrap();
+    let file_logger = FileLogger::new(ctx, "/out.log", log_rx)?;
 
     trace!("File logger created, starting loop.");
 
@@ -198,4 +197,5 @@ pub fn main() {
     }
 
     trace!("Since file logger is dropped with App, this line will cause an error in fern!");
+    Ok(())
 }
