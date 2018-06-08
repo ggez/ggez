@@ -118,13 +118,13 @@ pub trait VFS: Debug {
         )
     }
     /// Create a directory at the location by this path
-    fn mkdir(&self, path: &Path) -> GameResult<()>;
+    fn mkdir(&self, path: &Path) -> GameResult;
 
     /// Remove a file or an empty directory.
-    fn rm(&self, path: &Path) -> GameResult<()>;
+    fn rm(&self, path: &Path) -> GameResult;
 
     /// Remove a file or directory and all its contents
-    fn rmrf(&self, path: &Path) -> GameResult<()>;
+    fn rmrf(&self, path: &Path) -> GameResult;
 
     /// Check if the file exists
     fn exists(&self, path: &Path) -> bool;
@@ -246,7 +246,7 @@ impl PhysicalFS {
     /// This way we can not create the directory until it's
     /// actually used, though it IS a tiny bit of a performance
     /// malus.
-    fn create_root(&self) -> GameResult<()> {
+    fn create_root(&self) -> GameResult {
         if !self.root.exists() {
             fs::create_dir_all(&self.root).map_err(GameError::from)
         } else {
@@ -284,7 +284,7 @@ impl VFS for PhysicalFS {
     }
 
     /// Create a directory at the location by this path
-    fn mkdir(&self, path: &Path) -> GameResult<()> {
+    fn mkdir(&self, path: &Path) -> GameResult {
         if self.readonly {
             return Err(GameError::FilesystemError(
                 "Tried to make directory {} but FS is \
@@ -302,7 +302,7 @@ impl VFS for PhysicalFS {
     }
 
     /// Remove a file
-    fn rm(&self, path: &Path) -> GameResult<()> {
+    fn rm(&self, path: &Path) -> GameResult {
         if self.readonly {
             return Err(GameError::FilesystemError(
                 "Tried to remove file {} but FS is read-only".to_string(),
@@ -319,7 +319,7 @@ impl VFS for PhysicalFS {
     }
 
     /// Remove a file or directory and all its contents
-    fn rmrf(&self, path: &Path) -> GameResult<()> {
+    fn rmrf(&self, path: &Path) -> GameResult {
         if self.readonly {
             return Err(GameError::FilesystemError(
                 "Tried to remove file/dir {} but FS is \
@@ -440,7 +440,7 @@ impl VFS for OverlayFS {
     }
 
     /// Create a directory at the location by this path
-    fn mkdir(&self, path: &Path) -> GameResult<()> {
+    fn mkdir(&self, path: &Path) -> GameResult {
         for vfs in &self.roots {
             match vfs.mkdir(path) {
                 Err(_) => (),
@@ -454,7 +454,7 @@ impl VFS for OverlayFS {
     }
 
     /// Remove a file
-    fn rm(&self, path: &Path) -> GameResult<()> {
+    fn rm(&self, path: &Path) -> GameResult {
         for vfs in &self.roots {
             match vfs.rm(path) {
                 Err(_) => (),
@@ -468,7 +468,7 @@ impl VFS for OverlayFS {
     }
 
     /// Remove a file or directory and all its contents
-    fn rmrf(&self, path: &Path) -> GameResult<()> {
+    fn rmrf(&self, path: &Path) -> GameResult {
         for vfs in &self.roots {
             match vfs.rmrf(path) {
                 Err(_) => (),
@@ -680,7 +680,7 @@ impl VFS for ZipFS {
         Ok(Box::new(zipfile) as Box<VFile>)
     }
 
-    fn mkdir(&self, path: &Path) -> GameResult<()> {
+    fn mkdir(&self, path: &Path) -> GameResult {
         let msg = format!(
             "Cannot mkdir {:?} in zipfile {:?}, filesystem read-only",
             path, self
@@ -688,7 +688,7 @@ impl VFS for ZipFS {
         Err(GameError::FilesystemError(msg))
     }
 
-    fn rm(&self, path: &Path) -> GameResult<()> {
+    fn rm(&self, path: &Path) -> GameResult {
         let msg = format!(
             "Cannot rm {:?} in zipfile {:?}, filesystem read-only",
             path, self
@@ -696,7 +696,7 @@ impl VFS for ZipFS {
         Err(GameError::FilesystemError(msg))
     }
 
-    fn rmrf(&self, path: &Path) -> GameResult<()> {
+    fn rmrf(&self, path: &Path) -> GameResult {
         let msg = format!(
             "Cannot rmrf {:?} in zipfile {:?}, filesystem read-only",
             path, self

@@ -140,7 +140,7 @@ impl Image {
         ctx: &mut Context,
         format: ImageFormat,
         path: P,
-    ) -> GameResult<()> {
+    ) -> GameResult {
         use std::io;
         let data = self.to_rgba8(ctx)?;
         let f = ctx.filesystem.create(path)?;
@@ -297,7 +297,7 @@ impl fmt::Debug for Image {
 }
 
 impl Drawable for Image {
-    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;
         let src_width = param.src.w;

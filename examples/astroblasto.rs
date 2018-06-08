@@ -425,7 +425,7 @@ fn draw_actor(
     ctx: &mut Context,
     actor: &Actor,
     world_coords: (u32, u32),
-) -> GameResult<()> {
+) -> GameResult {
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, actor.pos);
     let image = assets.actor_image(actor);
@@ -444,7 +444,7 @@ fn draw_actor(
 /// handling input events.
 /// **********************************************************************
 impl EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
 
         while timer::check_update_time(ctx, DESIRED_FPS) {
@@ -508,7 +508,7 @@ impl EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Our drawing is quite simple.
         // Just clear the screen...
         graphics::clear(ctx);

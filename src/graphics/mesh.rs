@@ -26,7 +26,7 @@ use lyon::tessellation as t;
 /// use ggez::{Context, GameResult};
 /// use ggez::graphics::{self, DrawMode, MeshBuilder, Point2};
 ///
-/// fn draw_danger_signs(ctx: &mut Context) -> GameResult<()> {
+/// fn draw_danger_signs(ctx: &mut Context) -> GameResult {
 ///     // Initialize a builder instance.
 ///     let mesh = MeshBuilder::new()
 ///         // Add vertices for 3 lines (in an approximate equilateral triangle).
@@ -365,7 +365,7 @@ impl Mesh {
 }
 
 impl Drawable for Mesh {
-    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;
         gfx.update_instance_properties(param)?;

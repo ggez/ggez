@@ -291,7 +291,7 @@ impl GraphicsContext {
 
     /// Sends the current value of the graphics context's shader globals
     /// to the graphics card.
-    pub(crate) fn update_globals(&mut self) -> GameResult<()> {
+    pub(crate) fn update_globals(&mut self) -> GameResult {
         self.encoder
             .update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
         Ok(())
@@ -348,7 +348,7 @@ impl GraphicsContext {
 
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
     /// sends it to the graphics card at the front of the instance buffer.
-    pub(crate) fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
+    pub(crate) fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult {
         // This clone is cheap since draw_params is Copy
         let mut new_draw_params = draw_params;
         let fg = Some(self.foreground_color);
@@ -364,7 +364,7 @@ impl GraphicsContext {
     pub(crate) fn draw(
         &mut self,
         slice: Option<&gfx::Slice<gfx_device_gl::Resources>>,
-    ) -> GameResult<()> {
+    ) -> GameResult {
         let slice = slice.unwrap_or(&self.quad_slice);
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
         let shader_handle = &self.shaders[id];
@@ -374,7 +374,7 @@ impl GraphicsContext {
     }
 
     /// Sets the blend mode of the active shader
-    pub(crate) fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()> {
+    pub(crate) fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult {
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
         let shader_handle = &mut self.shaders[id];
         shader_handle.set_blend_mode(mode)
@@ -412,7 +412,7 @@ impl GraphicsContext {
     }
 
     /// Just a helper method to set window mode from a WindowMode object.
-    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult<()> {
+    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
         let window = &mut self.window;
         window.set_size(mode.width, mode.height)?;
         // SDL sets "bordered" but Love2D does "not bordered";
@@ -425,7 +425,7 @@ impl GraphicsContext {
     }
 
     /// Another helper method to set vsync.
-    pub(crate) fn set_vsync(video: &sdl2::VideoSubsystem, vsync: bool) -> GameResult<()> {
+    pub(crate) fn set_vsync(video: &sdl2::VideoSubsystem, vsync: bool) -> GameResult {
         let vsync_int = if vsync { 1 } else { 0 };
         if video.gl_set_swap_interval(vsync_int) {
             Ok(())

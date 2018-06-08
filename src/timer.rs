@@ -202,7 +202,7 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
 /// in your `update()` callback:
 ///
 /// ```rust,ignore
-/// fn update(&mut self, ctx: &mut Context) -> GameResult<()>
+/// fn update(&mut self, ctx: &mut Context) -> GameResult
 ///     while(timer::check_update_time(ctx, 60)) {
 ///         update_game_physics()?;
 ///     }

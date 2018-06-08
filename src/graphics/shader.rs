@@ -324,7 +324,7 @@ where
     }
 
     /// Send data to the GPU for use with the `Shader`
-    pub fn send(&self, ctx: &mut Context, consts: C) -> GameResult<()> {
+    pub fn send(&self, ctx: &mut Context, consts: C) -> GameResult {
         ctx.gfx_context
             .encoder
             .update_buffer(&self.buffer, &[consts], 0)?;
@@ -373,10 +373,10 @@ pub trait ShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
         &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
         &Slice<Spec::Resources>,
         &graphics::pipe::Data<Spec::Resources>,
-    ) -> GameResult<()>;
+    ) -> GameResult;
 
     /// Sets the shader program's blend mode
-    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()>;
+    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult;
 
     /// Gets the shader program's current blend mode
     fn get_blend_mode(&self) -> BlendMode;
@@ -392,13 +392,13 @@ where
         encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
         slice: &Slice<Spec::Resources>,
         data: &graphics::pipe::Data<Spec::Resources>,
-    ) -> GameResult<()> {
+    ) -> GameResult {
         let pso = self.psos.get_mode(&self.active_blend_mode)?;
         encoder.draw(slice, pso, &ConstData(data, &self.buffer));
         Ok(())
     }
 
-    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()> {
+    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult {
         self.psos.get_mode(&mode)?;
         self.active_blend_mode = mode;
         Ok(())

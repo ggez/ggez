@@ -66,7 +66,7 @@ impl fmt::Debug for Context {
 /// Sets the window icon from the Conf `window_icon` field.
 /// An empty string in the conf's `window_icon`
 /// means to do nothing.
-fn set_window_icon(context: &mut Context) -> GameResult<()> {
+fn set_window_icon(context: &mut Context) -> GameResult {
     // This clone is a little annoying, but, borrowing is inconvenient.
     let icon = &context.conf.window_setup.icon.clone();
     if !icon.is_empty() {
@@ -174,7 +174,7 @@ impl Context {
     }
 
     /// Triggers a Quit event.
-    pub fn quit(&mut self) -> GameResult<()> {
+    pub fn quit(&mut self) -> GameResult {
         let now_dur = timer::get_time_since_start(self);
         let now = timer::duration_to_f64(now_dur);
         let e = sdl2::event::Event::Quit {

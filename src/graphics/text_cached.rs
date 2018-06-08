@@ -421,7 +421,7 @@ impl TextCached {
     /// Draws all of `queue()`d `TextCached`.
     /// `DrawParam` apply to everything in the queue; offset is in screen coordinates;
     /// color is ignored - specify it when `queue()`ing instead.
-    pub fn draw_queued<D>(context: &mut Context, param: D) -> GameResult<()>
+    pub fn draw_queued<D>(context: &mut Context, param: D) -> GameResult
     where
         D: Into<DrawParam>,
     {
@@ -498,7 +498,7 @@ impl TextCached {
 }
 
 impl Drawable for TextCached {
-    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
         let offset = Point2::new(
             param.offset.x * self.width(ctx) as f32,

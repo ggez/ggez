@@ -56,13 +56,13 @@ pub use sdl2::keyboard::{CAPSMOD, LALTMOD, LCTRLMOD, LGUIMOD, LSHIFTMOD, MODEMOD
 pub trait EventHandler {
     /// Called upon each physics update to the game.
     /// This should be where the game's logic takes place.
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()>;
+    fn update(&mut self, _ctx: &mut Context) -> GameResult;
 
     /// Called to do the drawing of your game.
     /// You probably want to start this with
     /// `graphics::clear()` and end it with
     /// `graphics::present()` and `timer::yield_now()`
-    fn draw(&mut self, _ctx: &mut Context) -> GameResult<()>;
+    fn draw(&mut self, _ctx: &mut Context) -> GameResult;
 
     /// A mouse button was pressed
     fn mouse_button_down_event(
@@ -191,7 +191,7 @@ impl Events {
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the `timer` module for more info.
-pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
+pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult
 where
     S: EventHandler,
 {

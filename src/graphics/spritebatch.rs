@@ -72,7 +72,7 @@ impl SpriteBatch {
     }
 
     /// Alters a sprite in the batch to use the given draw params
-    pub fn set(&mut self, handle: SpriteIdx, param: graphics::DrawParam) -> GameResult<()> {
+    pub fn set(&mut self, handle: SpriteIdx, param: graphics::DrawParam) -> GameResult {
         if handle.0 < self.sprites.len() {
             self.sprites[handle.0] = param;
             Ok(())
@@ -92,7 +92,7 @@ impl SpriteBatch {
         ctx: &mut Context,
         image: &graphics::Image,
         draw_color: Option<graphics::Color>,
-    ) -> GameResult<()> {
+    ) -> GameResult {
         // This is a little awkward but this is the right place
         // to do whatever transformations need to happen to DrawParam's.
         // We have a Context, and *everything* must pass through this
@@ -170,7 +170,7 @@ impl SpriteBatch {
 #[deprecated]
 #[allow(deprecated)]
 impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
-    fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
         let fg = Some(ctx.gfx_context.foreground_color);
@@ -220,7 +220,7 @@ impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
 }
 
 impl graphics::Drawable for SpriteBatch {
-    fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
         let fg = Some(ctx.gfx_context.foreground_color);

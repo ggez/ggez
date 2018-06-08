@@ -138,7 +138,7 @@ impl Source {
     }
 
     /// Plays the Source.
-    pub fn play(&self) -> GameResult<()> {
+    pub fn play(&self) -> GameResult {
         // Creating a new Decoder each time seems a little messy,
         // since it may do checking and data-type detection that is
         // redundant, but it's not super expensive.
