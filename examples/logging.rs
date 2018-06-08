@@ -93,7 +93,7 @@ impl EventHandler for App {
 
     /// Draws the screen. We don't really have anything to draw.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx);
+        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         graphics::present(ctx);
         timer::yield_now();
         Ok(())

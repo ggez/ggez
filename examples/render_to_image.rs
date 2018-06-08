@@ -29,8 +29,7 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // first lets render to our canvas
         graphics::set_canvas(ctx, Some(&self.canvas));
-        graphics::set_background_color(ctx, Color::new(0.1, 0.2, 0.3, 1.0));
-        graphics::clear(ctx);
+        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         graphics::draw(ctx, &self.text, Point2::new(400.0, 300.0), 0.0)?;
 
         // now lets render our scene once in the top right and in the bottom
@@ -42,8 +41,7 @@ impl event::EventHandler for MainState {
         );
         // let scale = Point2::new(1.0, 1.0);
         graphics::set_canvas(ctx, None);
-        graphics::set_background_color(ctx, Color::new(0.0, 0.0, 0.0, 1.0));
-        graphics::clear(ctx);
+        graphics::clear(ctx, Color::new(0.0, 0.0, 0.0, 1.0));
         graphics::draw_ex(
             ctx,
             &self.canvas,

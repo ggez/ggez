@@ -316,7 +316,6 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.print_resource_stats();
-        graphics::set_background_color(ctx, (0, 0, 0, 255).into());
 
         println!("Game resource path: {:?}", ctx.filesystem);
 
@@ -515,7 +514,7 @@ impl EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Our drawing is quite simple.
         // Just clear the screen...
-        graphics::clear(ctx);
+        graphics::clear(ctx, graphics::BLACK);
 
         // Loop over all objects drawing them...
         {

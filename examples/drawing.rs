@@ -66,8 +66,7 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx);
-        graphics::set_color(ctx, graphics::WHITE)?;
+        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         // let src = graphics::Rect::new(0.25, 0.25, 0.5, 0.5);
         // let src = graphics::Rect::one();
         let dst = graphics::Point2::new(20.0, 20.0);
@@ -107,12 +106,14 @@ impl event::EventHandler for MainState {
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         graphics::rectangle(ctx, graphics::DrawMode::Fill, rect)?;
 
-        graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0))?;
+        // TODO: Fix
+        // graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0))?;
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         graphics::rectangle(ctx, graphics::DrawMode::Line(1.0), rect)?;
 
         let mesh = build_mesh(ctx)?;
-        graphics::set_color(ctx, (0, 0, 255).into())?;
+        // TODO: Fix
+        // graphics::set_color(ctx, (0, 0, 255).into())?;
         graphics::draw_ex(ctx, &mesh, Default::default())?;
 
         graphics::present(ctx);

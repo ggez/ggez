@@ -355,8 +355,7 @@ impl event::EventHandler for MainState {
         //  - run the occlusions shader to determine where the shadows are
         //  - render to screen once all the shadows are calculated and rendered
         graphics::set_canvas(ctx, Some(&self.foreground));
-        graphics::set_background_color(ctx, [0.0; 4].into());
-        graphics::clear(ctx);
+        graphics::clear(ctx, graphics::BLACK);
         graphics::draw_ex(
             ctx,
             &self.tile,
@@ -388,29 +387,32 @@ impl event::EventHandler for MainState {
         let torch = self.torch;
         let light = self.static_light;
         graphics::set_canvas(ctx, Some(&self.lights));
-        graphics::clear(ctx);
+        graphics::clear(ctx, graphics::BLACK);
         graphics::set_canvas(ctx, Some(&self.shadows));
-        graphics::clear(ctx);
+        graphics::clear(ctx, graphics::BLACK);
         self.render_light(ctx, torch, origin, canvas_origin)?;
         self.render_light(ctx, light, origin, canvas_origin)?;
 
         // Now lets finally render to screen starting with out background, then
         // the shadows and lights overtop and finally our foreground.
+        // TODO: Clean up color
         graphics::set_canvas(ctx, None);
-        graphics::set_color(ctx, graphics::WHITE)?;
+        // graphics::set_color(ctx, graphics::WHITE)?;
         graphics::draw_ex(ctx, &self.background, origin)?;
         graphics::draw_ex(ctx, &self.shadows, origin)?;
         graphics::draw_ex(ctx, &self.lights, origin)?;
         // We switch the color to the shadow color before drawing the foreground objects
         // this has the same effect as applying this color in a multiply blend mode with
         // full opacity. We also reset the blend mode back to the default Alpha blend mode.
-        graphics::set_color(ctx, AMBIENT_COLOR.into())?;
-        graphics::draw_ex(ctx, &self.foreground, origin)?;
+        // TODO: Clean up color
+        // graphics::set_color(ctx, AMBIENT_COLOR.into())?;
+        graphics::draw_ex(ctx, &self.foreground, origin.color(AMBIENT_COLOR))?;
 
         // Uncomment following two lines to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
         // the greyscale pixels are the half distances of the nearest shadows to
         // the mouse position (equally encoded in all color channels).
+        // TODO: Clean up color
         // graphics::set_color(ctx, [1.0; 4].into())?;
         // graphics::draw_ex(ctx, &self.occlusions, origin)?;
 
