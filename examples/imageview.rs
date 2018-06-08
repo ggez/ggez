@@ -39,9 +39,7 @@ impl MainState {
             let x = (rand::random::<i32>() % 50) as f32;
             let y = (rand::random::<i32>() % 50) as f32;
             let point = graphics::Point2::new(last_point.x + x, last_point.y + y);
-            // TODO: Fix colors
-            // graphics::set_color(ctx, color)?;
-            graphics::line(ctx, &[last_point, point], 3.0)?;
+            graphics::line(ctx, color, &[last_point, point], 3.0)?;
             last_point = point;
         }
 
@@ -113,9 +111,9 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &self.bmptext, dest_point, 0.0)?;
 
         let dest_point2 = graphics::Point2::new(0.0, 256.0);
-        // graphics::set_color(ctx, Color::from((0, 0, 0, 255)))?;
         graphics::rectangle(
             ctx,
+            Color::from((0, 0, 0, 255)),
             graphics::DrawMode::Fill,
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
         )?;

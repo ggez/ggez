@@ -103,10 +103,9 @@ impl event::EventHandler for MainState {
                 let b = (y as f32) / (COUNT as f32);
                 // println!("R: {}", r);
                 let color = graphics::Color::new(r, 0.0, b, 1.0);
-                // TODO: Fix colors
-                // graphics::set_color(ctx, color)?;
                 graphics::rectangle(
                     ctx,
+                    color,
                     graphics::DrawMode::Fill,
                     graphics::Rect::new(fx, fy, 5.0, 5.0),
                 )?

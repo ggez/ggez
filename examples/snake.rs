@@ -204,14 +204,13 @@ impl Food {
     /// `ggez::GameResult` so that we can use the `?` operator to bubble up
     /// failure of drawing.
     fn draw(&self, ctx: &mut Context) -> GameResult {
-        // First we set the color to draw with, in this case all food will be
+        // First we choose the color to draw with, in this case all food will be
         // colored blue.
-        // TODO: Fix colors
-        // graphics::set_color(ctx, [0.0, 0.0, 1.0, 1.0].into())?;
+        let color = [0.0, 0.0, 1.0, 1.0].into();
         // Then we draw a rectangle with the Fill draw mode, and we convert the
         // Food's position into a `ggez::Rect` using `.into()` which we can do
         // since we implemented `From<GridPosition>` for `Rect` earlier.
-        graphics::rectangle(ctx, graphics::DrawMode::Fill, self.pos.into())
+        graphics::rectangle(ctx, color, graphics::DrawMode::Fill, self.pos.into())
     }
 }
 
@@ -324,14 +323,13 @@ impl Snake {
         for seg in self.body.iter() {
             // Again we set the color (in this case an orangey color)
             // TODO: Fix colors
-            // graphics::set_color(ctx, [1.0, 0.5, 0.0, 1.0].into())?;
+            // graphics::set_color(ctx, )?;
             // and then draw the Rect that we convert that Segment's position into
-            graphics::rectangle(ctx, graphics::DrawMode::Fill, seg.pos.into())?;
+            graphics::rectangle(ctx, [1.0, 0.5, 0.0, 1.0].into(), graphics::DrawMode::Fill, seg.pos.into())?;
         }
         // And then we do the same for the head, instead making it fully red to distinguish it.
         // TODO: Fix colors
-        // graphics::set_color(ctx, [1.0, 0.0, 0.0, 1.0].into())?;
-        graphics::rectangle(ctx, graphics::DrawMode::Fill, self.head.pos.into())?;
+        graphics::rectangle(ctx, [1.0, 0.0, 0.0, 1.0].into(), graphics::DrawMode::Fill, self.head.pos.into())?;
         Ok(())
     }
 }

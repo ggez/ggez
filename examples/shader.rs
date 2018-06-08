@@ -47,15 +47,15 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
-        graphics::circle(ctx, DrawMode::Fill, Point2::new(100.0, 300.0), 100.0, 2.0)?;
+        graphics::circle(ctx, graphics::WHITE, DrawMode::Fill, Point2::new(100.0, 300.0), 100.0, 2.0)?;
 
         {
             let _lock = graphics::use_shader(ctx, &self.shader);
             self.shader.send(ctx, self.dim)?;
-            graphics::circle(ctx, DrawMode::Fill, Point2::new(400.0, 300.0), 100.0, 2.0)?;
+            graphics::circle(ctx, graphics::WHITE, DrawMode::Fill, Point2::new(400.0, 300.0), 100.0, 2.0)?;
         }
 
-        graphics::circle(ctx, DrawMode::Fill, Point2::new(700.0, 300.0), 100.0, 2.0)?;
+        graphics::circle(ctx, graphics::WHITE, DrawMode::Fill, Point2::new(700.0, 300.0), 100.0, 2.0)?;
 
         graphics::present(ctx);
         Ok(())

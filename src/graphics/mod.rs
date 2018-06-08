@@ -382,6 +382,8 @@ pub fn arc(_ctx: &mut Context,
 }
 */
 
+// TODO: Make all of these take Into<Color>???
+
 /// Draw a circle.
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
@@ -390,14 +392,17 @@ pub fn arc(_ctx: &mut Context,
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
 pub fn circle(
     ctx: &mut Context,
+    color: Color, 
     mode: DrawMode,
     point: Point2,
     radius: f32,
     tolerance: f32,
 ) -> GameResult {
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
-    m.draw(ctx, Point2::origin(), 0.0)
+    m.draw_ex(ctx, DrawParam::new()
+        .color(color))
 }
+
 
 /// Draw an ellipse.
 ///
@@ -407,6 +412,7 @@ pub fn circle(
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
 pub fn ellipse(
     ctx: &mut Context,
+    color: Color, 
     mode: DrawMode,
     point: Point2,
     radius1: f32,
@@ -414,26 +420,28 @@ pub fn ellipse(
     tolerance: f32,
 ) -> GameResult {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
-    m.draw(ctx, Point2::origin(), 0.0)
+    m.draw_ex(ctx, DrawParam::new()
+        .color(color))
 }
 
 /// Draws a line of one or more connected segments.
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult {
+pub fn line(ctx: &mut Context, color: Color, points: &[Point2], width: f32) -> GameResult {
     let m = Mesh::new_line(ctx, points, width)?;
-    m.draw(ctx, Point2::origin(), 0.0)
+    m.draw_ex(ctx, DrawParam::new()
+        .color(color))
 }
 
 /// Draws points (as rectangles)
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn points(ctx: &mut Context, points: &[Point2], point_size: f32) -> GameResult {
+pub fn points(ctx: &mut Context, color: Color, points: &[Point2], point_size: f32) -> GameResult {
     for p in points {
         let r = Rect::new(p.x, p.y, point_size, point_size);
-        rectangle(ctx, DrawMode::Fill, r)?;
+        rectangle(ctx, color, DrawMode::Fill, r)?;
     }
     Ok(())
 }
@@ -442,9 +450,10 @@ pub fn points(ctx: &mut Context, points: &[Point2], point_size: f32) -> GameResu
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameResult {
+pub fn polygon(ctx: &mut Context, color: Color, mode: DrawMode, vertices: &[Point2]) -> GameResult {
     let m = Mesh::new_polygon(ctx, mode, vertices)?;
-    m.draw(ctx, Point2::origin(), 0.0)
+    m.draw_ex(ctx, DrawParam::new()
+        .color(color))
 }
 
 // Renders text with the default font.
@@ -463,7 +472,7 @@ pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameRe
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult {
+pub fn rectangle(ctx: &mut Context, color: Color, mode: DrawMode, rect: Rect) -> GameResult {
     let x1 = rect.x;
     let x2 = rect.x + rect.w;
     let y1 = rect.y;
@@ -474,7 +483,7 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult {
         Point2::new(x2, y2),
         Point2::new(x1, y2),
     ];
-    polygon(ctx, mode, &pts)
+    polygon(ctx, color, mode, &pts)
 }
 
 // **********************************************************************
