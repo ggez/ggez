@@ -56,7 +56,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         while timer::check_update_time(ctx, DESIRED_FPS) {
             self.angle += 0.01;
@@ -78,7 +78,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::set_background_color(ctx, graphics::BLACK);
         graphics::clear(ctx);
         let rotation = timer::get_ticks(ctx) % 1000;
@@ -204,7 +204,7 @@ fn print_help() {
     println!("    ");
 }
 
-pub fn main() -> GameResult<()> {
+pub fn main() -> GameResult {
     let matches = App::new("ggez graphics settings example")
         .arg(
             Arg::with_name("msaa")

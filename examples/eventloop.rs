@@ -14,7 +14,7 @@ use ggez::event;
 use ggez::graphics::{self, DrawMode, Point2};
 use ggez::{conf, Context, GameResult};
 
-pub fn main() -> GameResult<()> {
+pub fn main() -> GameResult {
     let c = conf::Conf::new();
     let ctx = &mut Context::load_from_conf("eventloop", "ggez", c)?;
     let mut events = event::Events::new(ctx)?;

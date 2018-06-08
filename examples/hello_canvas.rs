@@ -35,11 +35,11 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let dest_point = graphics::Point2::new(10.0, 10.0);
 
         if self.draw_with_canvas {
@@ -114,7 +114,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult<()> {
+pub fn main() -> GameResult {
     let c = conf::Conf {
         window_setup: conf::WindowSetup {
             samples: conf::NumSamples::Two,

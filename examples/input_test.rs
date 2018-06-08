@@ -26,11 +26,11 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx);
         graphics::circle(
             ctx,
@@ -136,7 +136,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult<()> {
+pub fn main() -> GameResult {
     let c = conf::Conf::new();
     let ctx = &mut Context::load_from_conf("input_test", "ggez", c)?;
 

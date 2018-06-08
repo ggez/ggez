@@ -56,7 +56,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
 
         while timer::check_update_time(ctx, DESIRED_FPS) {
@@ -65,7 +65,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx);
         graphics::set_color(ctx, graphics::WHITE)?;
         // let src = graphics::Rect::new(0.25, 0.25, 0.5, 0.5);
@@ -120,9 +120,9 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult<()> {
+pub fn main() -> GameResult {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("drawing", "ggez", c);
+    let ctx = &mut Context::load_from_conf("drawing", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.

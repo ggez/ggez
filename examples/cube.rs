@@ -213,12 +213,12 @@ void main() {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         self.rotation += 0.01;
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Do gfx-rs drawing
         {
             let (_factory, device, encoder, _depthview, _colorview) =
@@ -252,7 +252,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult<()> {
+pub fn main() -> GameResult {
     let c = conf::Conf::new();
     let ctx = &mut Context::load_from_conf("cube", "ggez", c)?;
 

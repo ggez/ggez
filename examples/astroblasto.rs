@@ -596,7 +596,7 @@ impl EventHandler for MainState {
 /// `ggez::event::run()` with our `EventHandler` type.
 /// **********************************************************************
 
-pub fn main() -> GameResult<()> {
+pub fn main() -> GameResult {
     let mut cb = ContextBuilder::new("astroblasto", "ggez")
         .window_setup(conf::WindowSetup::default().title("Astroblasto!"))
         .window_mode(conf::WindowMode::default().dimensions(640, 480));

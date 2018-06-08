@@ -124,13 +124,13 @@ impl App {
 }
 
 impl event::EventHandler for App {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         while timer::check_update_time(ctx, DESIRED_FPS) {}
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx);
 
         // `TextCached` can be used in "immediate mode", but it's slightly less efficient
@@ -205,7 +205,7 @@ impl event::EventHandler for App {
     }
 }
 
-pub fn main() -> GameResult<()> {
+pub fn main() -> GameResult {
     let ctx = &mut ContextBuilder::new("text_cached", "ggez")
         .window_setup(
             WindowSetup::default()

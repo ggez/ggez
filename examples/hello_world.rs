@@ -33,11 +33,11 @@ impl MainState {
 // The `EventHandler` trait also contains callbacks for event handling
 // that you can override if you wish, but the defaults are fine.
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx);
 
         // Drawables are drawn from their top-left corner.
@@ -62,7 +62,7 @@ impl event::EventHandler for MainState {
 // * Second, create a `ggez::game::Game` object which will
 // do the work of creating our MainState and running our game.
 // * Then, just call `game.run()` which runs the `Game` mainloop.
-pub fn main() -> GameResult<()> {
+pub fn main() -> GameResult {
     let c = conf::Conf {
         window_setup: conf::WindowSetup {
             samples: conf::NumSamples::Eight,

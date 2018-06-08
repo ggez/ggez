@@ -12,7 +12,7 @@ use std::io::{Read, Write};
 use std::path;
 use std::str;
 
-pub fn main() -> GameResult<()> {
+pub fn main() -> GameResult {
     let mut cb = ContextBuilder::new("ggez_files_example", "ggez");
 
     // We add the CARGO_MANIFEST_DIR/resources to the filesystems paths so

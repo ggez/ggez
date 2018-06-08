@@ -203,7 +203,7 @@ impl Food {
     /// with the helpers in `ggez::graphics` to do drawing. We also return a
     /// `ggez::GameResult` so that we can use the `?` operator to bubble up
     /// failure of drawing.
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&self, ctx: &mut Context) -> GameResult {
         // First we set the color to draw with, in this case all food will be
         // colored blue.
         graphics::set_color(ctx, [0.0, 0.0, 1.0, 1.0].into())?;
@@ -318,7 +318,7 @@ impl Snake {
 
     /// Here we have the Snake draw itself. This is very similar to how we saw the Food
     /// draw itself earlier.
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&self, ctx: &mut Context) -> GameResult {
         // We first iterate through the body segments and draw them.
         for seg in self.body.iter() {
             // Again we set the color (in this case an orangey color)
@@ -372,7 +372,7 @@ impl GameState {
 impl event::EventHandler for GameState {
     /// Update will happen on every frame before it is drawn. This is where we update
     /// our game state to react to whatever is happening in the game world.
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         // First we check to see if enough time has elapsed since our last update based on
         // the update rate we defined at the top.
         if Instant::now() - self.last_update >= Duration::from_millis(MILLIS_PER_UPDATE) {
@@ -406,7 +406,7 @@ impl event::EventHandler for GameState {
     }
 
     /// draw is where we should actually render the game's current state.
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // First we clear the screen
         graphics::clear(ctx);
         // Then we tell the snake and the food to draw themselves
@@ -442,7 +442,7 @@ impl event::EventHandler for GameState {
     }
 }
 
-fn main() -> GameResult<()> {
+fn main() -> GameResult {
     // Here we use a ContextBuilder to setup metadata about our game. First the title and author
     let ctx = &mut ggez::ContextBuilder::new("snake", "Gray Olson")
         // Next we set up the window. This title will be displayed in the title bar of the window.

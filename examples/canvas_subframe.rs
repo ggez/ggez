@@ -39,7 +39,7 @@ impl MainState {
 }
 
 impl MainState {
-    fn draw_spritebatch(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw_spritebatch(&mut self, ctx: &mut Context) -> GameResult {
         graphics::set_canvas(ctx, Some(&self.canvas));
         graphics::set_background_color(ctx, graphics::WHITE);
         graphics::clear(ctx);
@@ -90,7 +90,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         if timer::get_ticks(ctx) % 100 == 0 {
             println!("Delta frame time: {:?} ", timer::get_delta(ctx));
             println!("Average FPS: {}", timer::get_fps(ctx));
@@ -112,7 +112,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::set_background_color(ctx, [0.1, 0.2, 0.3, 1.0].into());
         graphics::clear(ctx);
         self.draw_spritebatch(ctx)?;
@@ -137,7 +137,7 @@ impl event::EventHandler for MainState {
 // Creating a context depends on loading a config file.
 // Loading a config file depends on having FS (or we can just fake our way around it
 // by creating an FS and then throwing it away; the costs are not huge.)
-pub fn main() -> GameResult<()> {
+pub fn main() -> GameResult {
     let c = conf::Conf::new();
     println!("Starting with default config: {:#?}", c);
     let ctx = &mut Context::load_from_conf("spritebatch", "ggez", c)?;
