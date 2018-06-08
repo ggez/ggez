@@ -12,18 +12,18 @@ use std::fmt;
 use std::u16;
 
 use gfx;
+use gfx::texture;
 use gfx::Device;
 use gfx::Factory;
-use gfx::texture;
 use gfx_device_gl;
 use glutin::{self, GlContext};
 
-use GameError;
-use GameResult;
 use conf;
 use conf::WindowMode;
 use context::Context;
 use context::DebugId;
+use GameError;
+use GameResult;
 
 mod canvas;
 mod context;
@@ -274,12 +274,12 @@ pub fn clear(ctx: &mut Context) {
 
 /// Draws the given `Drawable` object to the screen by calling its
 /// `draw()` method.
-pub fn draw(ctx: &mut Context, drawable: &Drawable, dest: Point2, rotation: f32) -> GameResult<()> {
+pub fn draw(ctx: &mut Context, drawable: &Drawable, dest: Point2, rotation: f32) -> GameResult {
     drawable.draw(ctx, dest, rotation)
 }
 
 /// Draws the given `Drawable` object to the screen by calling its `draw_ex()` method.
-pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> GameResult<()> {
+pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> GameResult {
     drawable.draw_ex(ctx, params)
 }
 
@@ -378,7 +378,7 @@ pub fn arc(_ctx: &mut Context,
            _angle1: f32,
            _angle2: f32,
            _segments: u32)
-           -> GameResult<()> {
+           -> GameResult {
     unimplemented!();
 }
 */
@@ -395,7 +395,7 @@ pub fn circle(
     point: Point2,
     radius: f32,
     tolerance: f32,
-) -> GameResult<()> {
+) -> GameResult {
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
     m.draw(ctx, Point2::origin(), 0.0)
 }
@@ -413,7 +413,7 @@ pub fn ellipse(
     radius1: f32,
     radius2: f32,
     tolerance: f32,
-) -> GameResult<()> {
+) -> GameResult {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
     m.draw(ctx, Point2::origin(), 0.0)
 }
@@ -422,7 +422,7 @@ pub fn ellipse(
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult<()> {
+pub fn line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult {
     let m = Mesh::new_line(ctx, points, width)?;
     m.draw(ctx, Point2::origin(), 0.0)
 }
@@ -431,7 +431,7 @@ pub fn line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult<()> 
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn points(ctx: &mut Context, points: &[Point2], point_size: f32) -> GameResult<()> {
+pub fn points(ctx: &mut Context, points: &[Point2], point_size: f32) -> GameResult {
     for p in points {
         let r = Rect::new(p.x, p.y, point_size, point_size);
         rectangle(ctx, DrawMode::Fill, r)?;
@@ -443,7 +443,7 @@ pub fn points(ctx: &mut Context, points: &[Point2], point_size: f32) -> GameResu
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameResult<()> {
+pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameResult {
     let m = Mesh::new_polygon(ctx, mode, vertices)?;
     m.draw(ctx, Point2::origin(), 0.0)
 }
@@ -452,7 +452,7 @@ pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameRe
 // Not terribly efficient as it re-renders the text with each call,
 // but good enough for debugging.
 // Doesn't actually work, double-borrow on ctx.  Bah.
-// pub fn print(ctx: &mut Context, dest: Point, text: &str) -> GameResult<()> {
+// pub fn print(ctx: &mut Context, dest: Point, text: &str) -> GameResult {
 //     let rendered_text = {
 //         let font = &ctx.default_font;
 //         text::Text::new(ctx, text, font)?
@@ -464,7 +464,7 @@ pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameRe
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult<()> {
+pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult {
     let x1 = rect.x;
     let x2 = rect.x + rect.w;
     let y1 = rect.y;
@@ -532,7 +532,7 @@ pub fn set_background_color(ctx: &mut Context, color: Color) {
 
 /// Sets the foreground color, which will be used for drawing
 /// rectangles, lines, etc.  Default: white.
-pub fn set_color(ctx: &mut Context, color: Color) -> GameResult<()> {
+pub fn set_color(ctx: &mut Context, color: Color) -> GameResult {
     let gfx = &mut ctx.gfx_context;
     gfx.foreground_color = color;
     Ok(())
@@ -561,7 +561,7 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
 ///
 /// The `Rect`'s x and y will define the top-left corner of the screen,
 /// and that plus its w and h will define the bottom-right corner.
-pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<()> {
+pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
     gfx.calculate_transform_matrix();
@@ -576,6 +576,27 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult<(
 pub fn set_projection(context: &mut Context, proj: Matrix4) {
     let gfx = &mut context.gfx_context;
     gfx.set_projection(proj);
+}
+
+
+/// Sets the line join style
+pub fn set_line_join(context: &mut Context, line_join: LineJoin) {
+    context.gfx_context.line_join = line_join;
+}
+
+/// Gets the line join style
+pub fn get_line_join(context: &Context) -> LineJoin {
+    context.gfx_context.line_join
+}
+
+/// Sets the line cap style
+pub fn set_line_cap(context: &mut Context, line_cap: LineCap) {
+    context.gfx_context.line_cap = line_cap;
+}
+
+/// Gets the line cap style
+pub fn get_line_cap(context: &Context) -> LineCap {
+    context.gfx_context.line_cap
 }
 
 /// Premultiplies the given transformation matrix with the current projection matrix
@@ -669,14 +690,14 @@ pub fn origin(context: &mut Context) {
 /// Calculates the new total transformation (Model-View-Projection) matrix
 /// based on the matrices at the top of the transform and view matrix stacks
 /// and sends it to the graphics card.
-pub fn apply_transformations(context: &mut Context) -> GameResult<()> {
+pub fn apply_transformations(context: &mut Context) -> GameResult {
     let gfx = &mut context.gfx_context;
     gfx.calculate_transform_matrix();
     gfx.update_globals()
 }
 
 /// Sets the blend mode of the currently active shader program
-pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult<()> {
+pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
     ctx.gfx_context.set_blend_mode(mode)
 }
 
@@ -686,20 +707,20 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult<()> {
 /// the screen or setting the screen coordinates viewport to some undefined value.
 /// It is recommended to call `set_screen_coordinates()` after changing the window
 /// size to make sure everything is what you want it to be.
-pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult<()> {
+pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult {
     let gfx = &mut context.gfx_context;
     gfx.set_window_mode(mode)
 }
 
 /// Sets the window to fullscreen or back.
-pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -> GameResult<()> {
+pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -> GameResult {
     let mut window_mode = context.conf.window_mode;
     window_mode.fullscreen_type = fullscreen;
     set_mode(context, window_mode)
 }
 
 /// Sets the window resolution based on the specified width and height.
-pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameResult<()> {
+pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameResult {
     let mut window_mode = context.conf.window_mode;
     window_mode.width = width;
     window_mode.height = height;
@@ -753,22 +774,19 @@ pub fn get_drawable_size(context: &Context) -> (u32, u32) {
     gfx.window.get_inner_size().unwrap_or((0, 0))
 }
 
-/// EXPERIMENTAL function to get the gfx-rs `Factory` object.
-#[deprecated]
+/// Returns the gfx-rs `Factory` object for ggez's rendering context.
 pub fn get_factory(context: &mut Context) -> &mut gfx_device_gl::Factory {
     let gfx = &mut context.gfx_context;
     &mut gfx.factory
 }
 
-/// EXPERIMENTAL function to get the gfx-rs `Device` object.
-#[deprecated]
+/// Returns the gfx-rs `Device` object for ggez's rendering context.
 pub fn get_device(context: &mut Context) -> &mut gfx_device_gl::Device {
     let gfx = &mut context.gfx_context;
     gfx.device.as_mut()
 }
 
-/// EXPERIMENTAL function to get the gfx-rs `Encoder` object.
-#[deprecated]
+/// Returns the gfx-rs `Encoder` object for ggez's rendering context.
 pub fn get_encoder(
     context: &mut Context,
 ) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
@@ -776,8 +794,7 @@ pub fn get_encoder(
     &mut gfx.encoder
 }
 
-/// EXPERIMENTAL function to get the gfx-rs depth view
-#[deprecated]
+/// Returns the gfx-rs depth target object for ggez's rendering context.
 pub fn get_depth_view(
     context: &mut Context,
 ) -> gfx::handle::RawDepthStencilView<gfx_device_gl::Resources> {
@@ -785,8 +802,7 @@ pub fn get_depth_view(
     gfx.depth_view.clone()
 }
 
-/// EXPERIMENTAL function to get the gfx-rs color view
-#[deprecated]
+/// Returns the gfx-rs color target object for ggez's rendering context.
 pub fn get_screen_render_target(
     context: &Context,
 ) -> gfx::handle::RawRenderTargetView<gfx_device_gl::Resources> {
@@ -827,7 +843,7 @@ pub trait Drawable {
     ///
     /// This is the most general version of the operation, which is all that
     /// is required for implementing this trait.
-    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()>;
+    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult;
 
     /// Draws the drawable onto the rendering target.
     ///
@@ -838,7 +854,7 @@ pub trait Drawable {
     /// * `dest` - the position to draw the graphic expressed as a `Point2`.
     /// * `rotation` - orientation of the graphic in radians.
     ///
-    fn draw(&self, ctx: &mut Context, dest: Point2, rotation: f32) -> GameResult<()> {
+    fn draw(&self, ctx: &mut Context, dest: Point2, rotation: f32) -> GameResult {
         self.draw_ex(
             ctx,
             DrawParam {

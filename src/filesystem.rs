@@ -35,10 +35,10 @@ use std::path;
 
 use app_dirs2::*;
 
-use GameError;
-use GameResult;
 use conf;
 use vfs::{self, VFS};
+use GameError;
+use GameResult;
 
 pub use vfs::OpenOptions;
 
@@ -213,18 +213,18 @@ impl Filesystem {
     /// Create an empty directory in the user dir
     /// with the given name.  Any parents to that directory
     /// that do not exist will be created.
-    pub fn create_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
+    pub fn create_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult {
         self.vfs.mkdir(path.as_ref())
     }
 
     /// Deletes the specified file in the user dir.
-    pub fn delete<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
+    pub fn delete<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult {
         self.vfs.rm(path.as_ref())
     }
 
     /// Deletes the specified directory in the user dir,
     /// and all its contents!
-    pub fn delete_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<()> {
+    pub fn delete_dir<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult {
         self.vfs.rmrf(path.as_ref())
     }
 
@@ -342,7 +342,7 @@ impl Filesystem {
 
     /// Takes a `conf::Conf` object and saves it to the user directory,
     /// overwriting any file already there.
-    pub fn write_config(&mut self, conf: &conf::Conf) -> GameResult<()> {
+    pub fn write_config(&mut self, conf: &conf::Conf) -> GameResult {
         let conf_path = path::Path::new(CONFIG_NAME);
         let mut file = self.create(conf_path)?;
         conf.to_toml_file(&mut file)?;

@@ -39,12 +39,12 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         self.dim.rate = 0.5 + (((timer::get_ticks(ctx) as f32) / 100.0).cos() / 2.0);
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx);
 
         graphics::circle(ctx, DrawMode::Fill, Point2::new(100.0, 300.0), 100.0, 2.0)?;
@@ -62,9 +62,9 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("shader", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("shader", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -74,6 +74,6 @@ pub fn main() {
         ctx.filesystem.mount(&path, true);
     }
 
-    let state = &mut MainState::new(ctx).unwrap();
-    event::run(ctx, state).unwrap();
+    let state = &mut MainState::new(ctx)?;
+    event::run(ctx, state)
 }

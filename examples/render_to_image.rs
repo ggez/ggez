@@ -22,11 +22,11 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // first lets render to our canvas
         graphics::set_canvas(ctx, Some(&self.canvas));
         graphics::set_background_color(ctx, Color::new(0.1, 0.2, 0.3, 1.0));
@@ -73,10 +73,10 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult {
     let mut c = conf::Conf::new();
     c.window_setup.resizable = true;
-    let ctx = &mut Context::load_from_conf("super_simple", "ggez", c).unwrap();
-    let state = &mut MainState::new(ctx).unwrap();
-    event::run(ctx, state).unwrap();
+    let ctx = &mut Context::load_from_conf("super_simple", "ggez", c)?;
+    let state = &mut MainState::new(ctx)?;
+    event::run(ctx, state)
 }

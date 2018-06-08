@@ -51,7 +51,7 @@ impl FileLogger {
     /// Reads pending messages from the channel and writes them to the file.
     /// Intended to be called in `EventHandler::update()`, to avoid using threads.
     /// (which you totally shouldn't actively avoid, Rust is perfect for concurrency)
-    fn update(&mut self) -> GameResult<()> {
+    fn update(&mut self) -> GameResult {
         // try_recv() doesn't block, it returns Err if there's no message to pop.
         while let Ok(msg) = self.receiver.try_recv() {
             // std::io::Write::write_all() takes a byte array.
@@ -81,7 +81,7 @@ impl App {
 /// Where the app meets the `ggez`.
 impl EventHandler for App {
     /// This is where the logic should happen.
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         // This tries to throttle updates to desired value.
         while timer::check_update_time(ctx, DESIRED_FPS) {
@@ -92,7 +92,7 @@ impl EventHandler for App {
     }
 
     /// Draws the screen. We don't really have anything to draw.
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx);
         graphics::present(ctx);
         timer::yield_now();
@@ -126,7 +126,7 @@ impl EventHandler for App {
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult {
     // This creates a channel that can be used to asynchronously pass things between parts of the
     // app. There's some overhead, so using it somewhere that doesn't need async (read: threads)
     // is suboptimal. But, `fern`'s arbitrary logging requires a channel.
@@ -173,12 +173,11 @@ pub fn main() {
                 .resizable(true),
         )
         .window_mode(WindowMode::default().dimensions(640, 480))
-        .build()
-        .unwrap();
+        .build()?;
 
     trace!("Context created, creating a file logger.");
 
-    let file_logger = FileLogger::new(ctx, "/out.log", log_rx).unwrap();
+    let file_logger = FileLogger::new(ctx, "/out.log", log_rx)?;
 
     trace!("File logger created, starting loop.");
 
@@ -198,4 +197,5 @@ pub fn main() {
     }
 
     trace!("Since file logger is dropped with App, this line will cause an error in fern!");
+    Ok(())
 }

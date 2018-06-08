@@ -27,7 +27,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         if timer::get_ticks(ctx) % 100 == 0 {
             println!("Delta frame time: {:?} ", timer::get_delta(ctx));
             println!("Average FPS: {}", timer::get_fps(ctx));
@@ -35,7 +35,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx);
 
         let time = (timer::duration_to_f64(timer::get_time_since_start(ctx)) * 1000.0) as u32;
@@ -86,10 +86,10 @@ impl event::EventHandler for MainState {
 // Creating a context depends on loading a config file.
 // Loading a config file depends on having FS (or we can just fake our way around it
 // by creating an FS and then throwing it away; the costs are not huge.)
-pub fn main() {
+pub fn main() -> GameResult {
     let c = conf::Conf::new();
     println!("Starting with default config: {:#?}", c);
-    let ctx = &mut Context::load_from_conf("spritebatch", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("spritebatch", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -99,10 +99,6 @@ pub fn main() {
         ctx.filesystem.mount(&path, true);
     }
 
-    let state = &mut MainState::new(ctx).unwrap();
-    if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
-    } else {
-        println!("Game exited cleanly.");
-    }
+    let state = &mut MainState::new(ctx)?;
+    event::run(ctx, state)
 }

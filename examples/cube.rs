@@ -5,9 +5,9 @@ extern crate gfx;
 extern crate gfx_device_gl;
 extern crate ggez;
 
-use gfx::Factory;
 use gfx::texture;
 use gfx::traits::FactoryExt;
+use gfx::Factory;
 
 use ggez::conf;
 use ggez::event;
@@ -213,12 +213,12 @@ void main() {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         self.rotation += 0.01;
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Do gfx-rs drawing
         {
             let (_factory, device, encoder, _depthview, _colorview) =
@@ -252,9 +252,9 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("cube", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("cube", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -265,9 +265,5 @@ pub fn main() {
     }
 
     let state = &mut MainState::new(ctx);
-    if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
-    } else {
-        println!("Game exited cleanly.");
-    }
+    event::run(ctx, state)
 }

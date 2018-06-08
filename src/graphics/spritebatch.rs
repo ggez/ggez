@@ -9,13 +9,13 @@
 
 use super::shader::BlendMode;
 use super::types::FilterMode;
-use GameResult;
-use graphics::{BackendSpec, GlBackendSpec};
 use context::Context;
 use error;
 use gfx;
 use gfx::Factory;
 use graphics;
+use graphics::{BackendSpec, GlBackendSpec};
+use GameResult;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
 ///
@@ -29,20 +29,6 @@ pub struct SpriteBatch {
     image: graphics::Image,
     sprites: Vec<graphics::DrawParam>,
     blend_mode: Option<BlendMode>,
-}
-
-/// A drawable combination of a `SpriteBatch` and a specific `Image`.
-/// It is not always convenient for a `SpriteBatch` to own the image
-/// it is drawing, so this structure lets you override the image with
-/// a borrowed one.
-///
-/// This is now deprecated; an `Image` is cheap to clone and
-/// this was never terribly useful to begin with.
-#[deprecated]
-#[derive(Debug)]
-pub struct BoundSpriteBatch<'a> {
-    image: &'a graphics::Image,
-    batch: &'a mut SpriteBatch,
 }
 
 /// An index of a particular sprite in a `SpriteBatch`.
@@ -72,7 +58,7 @@ impl SpriteBatch {
     }
 
     /// Alters a sprite in the batch to use the given draw params
-    pub fn set(&mut self, handle: SpriteIdx, param: graphics::DrawParam) -> GameResult<()> {
+    pub fn set(&mut self, handle: SpriteIdx, param: graphics::DrawParam) -> GameResult {
         if handle.0 < self.sprites.len() {
             self.sprites[handle.0] = param;
             Ok(())
@@ -92,7 +78,7 @@ impl SpriteBatch {
         ctx: &mut Context,
         image: &graphics::Image,
         draw_color: Option<graphics::Color>,
-    ) -> GameResult<()> {
+    ) -> GameResult {
         // This is a little awkward but this is the right place
         // to do whatever transformations need to happen to DrawParam's.
         // We have a Context, and *everything* must pass through this
@@ -158,69 +144,11 @@ impl SpriteBatch {
     pub fn set_filter(&mut self, mode: FilterMode) {
         self.image.set_filter(mode);
     }
-
-    /// Create an object which draws the current sprite batch with a different image.
-    #[deprecated]
-    #[allow(deprecated)]
-    pub fn with_image<'a>(&'a mut self, image: &'a graphics::Image) -> BoundSpriteBatch<'a> {
-        BoundSpriteBatch { image, batch: self }
-    }
 }
 
-#[deprecated]
-#[allow(deprecated)]
-impl<'a> graphics::Drawable for BoundSpriteBatch<'a> {
-    fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
-        // Awkwardly we must update values on all sprites and such.
-        // Also awkwardly we have this chain of colors with differing priorities.
-        let fg = Some(ctx.gfx_context.foreground_color);
-        let draw_color = param.color.or(fg);
-        self.batch.flush(ctx, self.image, draw_color)?;
-        let gfx = &mut ctx.gfx_context;
-        let sampler = gfx.samplers
-            .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
-        gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-
-        let typed_thingy = GlBackendSpec::raw_to_typed_shader_resource(self.image.texture.clone());
-        gfx.data.tex = (typed_thingy, sampler);
-        let mut slice = gfx.quad_slice.clone();
-        slice.instances = Some((self.batch.sprites.len() as u32, 0));
-        let curr_transform = gfx.get_transform();
-        gfx.push_transform(param.into_matrix() * curr_transform);
-        gfx.calculate_transform_matrix();
-        gfx.update_globals()?;
-        let previous_mode: Option<BlendMode> = if let Some(mode) = self.batch.blend_mode {
-            let current_mode = gfx.get_blend_mode();
-            if current_mode != mode {
-                gfx.set_blend_mode(mode)?;
-                Some(current_mode)
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-        gfx.draw(Some(&slice))?;
-        if let Some(mode) = previous_mode {
-            gfx.set_blend_mode(mode)?;
-        }
-        gfx.pop_transform();
-        gfx.calculate_transform_matrix();
-        gfx.update_globals()?;
-        Ok(())
-    }
-
-    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
-        self.batch.blend_mode = mode;
-    }
-
-    fn get_blend_mode(&self) -> Option<BlendMode> {
-        self.batch.blend_mode
-    }
-}
 
 impl graphics::Drawable for SpriteBatch {
-    fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
         let fg = Some(ctx.gfx_context.foreground_color);

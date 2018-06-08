@@ -1,17 +1,17 @@
 //! I guess these docs will never appear since we re-export the canvas
 //! module from graphics...
 
-use gfx::Factory;
 use gfx::format::Swizzle;
 use gfx::handle::RawRenderTargetView;
 use gfx::memory::{Bind, Usage};
 use gfx::texture::{AaMode, Kind};
+use gfx::Factory;
 
-use Context;
 use conf;
 use context::DebugId;
 use error::*;
 use graphics::*;
+use Context;
 
 /// A generic canvas independent of graphics backend. This type should probably
 /// never be used directly; use `ggez::graphics::Canvas` instead.
@@ -119,7 +119,7 @@ impl Canvas {
 }
 
 impl Drawable for Canvas {
-    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
         // Gotta flip the image on the Y axis here
         // to account for OpenGL's origin being at the bottom-left.

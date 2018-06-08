@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use gfx::Factory;
 use gfx::traits::FactoryExt;
+use gfx::Factory;
 use gfx_device_gl;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
 use gfx_window_glutin;
@@ -25,6 +25,9 @@ where
     B: BackendSpec<SurfaceType = C>,
     C: gfx::format::Formatted,
 {
+    pub(crate) line_join: LineJoin,
+    pub(crate) line_cap: LineCap,
+
     pub(crate) foreground_color: Color,
     pub(crate) background_color: Color,
     shader_globals: Globals,
@@ -253,6 +256,9 @@ impl GraphicsContext {
         };
 
         let mut gfx = GraphicsContext {
+            line_join: LineJoin::Miter,
+            line_cap: LineCap::Butt,
+
             foreground_color: types::WHITE,
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             shader_globals: globals,
@@ -306,7 +312,7 @@ impl GraphicsContext {
 
     /// Sends the current value of the graphics context's shader globals
     /// to the graphics card.
-    pub(crate) fn update_globals(&mut self) -> GameResult<()> {
+    pub(crate) fn update_globals(&mut self) -> GameResult {
         self.encoder
             .update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
         Ok(())
@@ -363,7 +369,7 @@ impl GraphicsContext {
 
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
     /// sends it to the graphics card at the front of the instance buffer.
-    pub(crate) fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult<()> {
+    pub(crate) fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult {
         // This clone is cheap since draw_params is Copy
         let mut new_draw_params = draw_params;
         let fg = Some(self.foreground_color);
@@ -379,7 +385,7 @@ impl GraphicsContext {
     pub(crate) fn draw(
         &mut self,
         slice: Option<&gfx::Slice<gfx_device_gl::Resources>>,
-    ) -> GameResult<()> {
+    ) -> GameResult {
         let slice = slice.unwrap_or(&self.quad_slice);
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
         let shader_handle = &self.shaders[id];
@@ -389,7 +395,7 @@ impl GraphicsContext {
     }
 
     /// Sets the blend mode of the active shader
-    pub(crate) fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()> {
+    pub(crate) fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult {
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
         let shader_handle = &mut self.shaders[id];
         shader_handle.set_blend_mode(mode)
@@ -427,7 +433,7 @@ impl GraphicsContext {
     }
 
     /// Sets window mode from a WindowMode object.
-    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult<()> {
+    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
         let window = &self.window;
 
         window.set_maximized(mode.maximized);
@@ -485,22 +491,21 @@ impl GraphicsContext {
 
     /// Communicates changes in the viewport size between SDL and gfx.
     ///
-    /// Also replaces gfx.data.out so it may cause squirrelliness to
+    /// Also replaces gfx.screen_render_target and gfx.depth_view,
+    /// so it may cause squirrelliness to
     /// happen with canvases or other things that touch it.
     pub(crate) fn resize_viewport(&mut self) {
-        let dimensions = (
-            self.screen_rect.x as u16,
-            self.screen_rect.y as u16,
-            1,                            // BUGGO
-            gfx::texture::AaMode::Single, // BUGGO
-        );
-        gfx_window_glutin::update_views_raw(
+        // Basically taken from the definition of
+        // gfx_window_sdl::update_views()
+        let dim = self.screen_render_target.get_dimensions();
+        assert_eq!(dim, self.depth_view.get_dimensions());
+        if let Some((cv, dv)) = gfx_window_glutin::update_views_raw(
             &self.window,
-            dimensions,
+            dim,
             self.color_format,
-            self.depth_format,
-            //&mut self.screen_render_target,
-            //&mut self.depth_view,
-        );
+            self.depth_format) {
+            self.screen_render_target = cv;
+            self.depth_view = dv;
+        }
     }
 }

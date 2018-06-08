@@ -181,14 +181,9 @@ impl WindowSetup {
     ///
     /// Returns None if given an invalid value
     /// (valid values are powers of 2 from 1 to 16)
-    pub fn samples(mut self, samples: u32) -> Option<Self> {
-        match NumSamples::from_u32(samples) {
-            Some(s) => {
-                self.samples = s;
-                Some(self)
-            }
-            None => None,
-        }
+    pub fn samples(mut self, samples: NumSamples) -> Self {
+        self.samples = samples;
+        self
     }
 
     /// Set if vsync is enabled.
@@ -298,7 +293,7 @@ impl Conf {
 
     /// Saves the `Conf` to the given `Write` object,
     /// formatted as TOML.
-    pub fn to_toml_file<W: io::Write>(&self, file: &mut W) -> GameResult<()> {
+    pub fn to_toml_file<W: io::Write>(&self, file: &mut W) -> GameResult {
         let s = toml::to_vec(self)?;
         file.write_all(&s)?;
         Ok(())

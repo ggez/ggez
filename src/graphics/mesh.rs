@@ -4,6 +4,8 @@ use graphics::*;
 use lyon;
 use lyon::tessellation as t;
 
+pub use self::t::{LineJoin, LineCap};
+
 /// A builder for creating `Mesh`es.
 ///
 /// This allows you to easily make one `Mesh` containing
@@ -26,7 +28,7 @@ use lyon::tessellation as t;
 /// use ggez::{Context, GameResult};
 /// use ggez::graphics::{self, DrawMode, MeshBuilder, Point2};
 ///
-/// fn draw_danger_signs(ctx: &mut Context) -> GameResult<()> {
+/// fn draw_danger_signs(ctx: &mut Context) -> GameResult {
 ///     // Initialize a builder instance.
 ///     let mesh = MeshBuilder::new()
 ///         // Add vertices for 3 lines (in an approximate equilateral triangle).
@@ -72,8 +74,8 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a line of one or more connected segments.
-    pub fn line(&mut self, points: &[Point2], width: f32) -> &mut Self {
-        self.polyline(DrawMode::Line(width), points)
+    pub fn line(&mut self, points: &[Point2], width: f32, join: LineJoin, cap: LineCap) -> &mut Self {
+        self.polyline(DrawMode::Line(width, join, cap), points)
     }
 
     /// Create a new mesh for a circle.
@@ -102,10 +104,12 @@ impl MeshBuilder {
                         builder,
                     );
                 }
-                DrawMode::Line(line_width) => {
+                DrawMode::Line(line_width, line_join, line_cap) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width)
+                        .with_line_join(line_join)
+                        .with_line_cap(line_cap)
                         .with_tolerance(tolerance);
                     t::basic_shapes::stroke_circle(
                         t::math::point(point.x, point.y),
@@ -144,10 +148,12 @@ impl MeshBuilder {
                         builder,
                     );
                 }
-                DrawMode::Line(line_width) => {
+                DrawMode::Line(line_width, line_join, line_cap) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width)
+                        .with_line_join(line_join)
+                        .with_line_cap(line_cap)
                         .with_tolerance(tolerance);
                     t::basic_shapes::stroke_ellipse(
                         t::math::point(point.x, point.y),
@@ -179,9 +185,9 @@ impl MeshBuilder {
                     t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
                         .expect("Could not fill polyline?");
                 }
-                DrawMode::Line(width) => {
+                DrawMode::Line(width, join, cap) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let options = t::StrokeOptions::default().with_line_width(width);
+                    let options = t::StrokeOptions::default().with_line_width(width).with_line_join(join).with_line_cap(cap);
                     t::basic_shapes::stroke_polyline(points, false, &options, builder);
                 }
             };
@@ -205,9 +211,9 @@ impl MeshBuilder {
                     t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
                         .expect("Could not fill polygon?");
                 }
-                DrawMode::Line(width) => {
+                DrawMode::Line(width, join, cap) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let options = t::StrokeOptions::default().with_line_width(width);
+                    let options = t::StrokeOptions::default().with_line_width(width).with_line_width(width).with_line_join(join).with_line_cap(cap);
                     t::basic_shapes::stroke_polyline(points, true, &options, builder);
                 }
             };
@@ -234,7 +240,7 @@ impl MeshBuilder {
                         }
                     })
                     // Can we remove this collect?
-                    // Probably means collecting into chunks first, THEN 
+                    // Probably means collecting into chunks first, THEN
                     // converting point types, since we can't chunk an iterator,
                     // only a slice.  Not sure that's an improvement.
                 .collect::<Vec<_>>();
@@ -311,7 +317,7 @@ impl Mesh {
     /// Create a new mesh for a line of one or more connected segments.
     pub fn new_line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
-        mb.polyline(DrawMode::Line(width), points);
+        mb.polyline(DrawMode::Line(width, ctx.gfx_context.line_join, ctx.gfx_context.line_cap), points);
         mb.build(ctx)
     }
 
@@ -365,7 +371,7 @@ impl Mesh {
 }
 
 impl Drawable for Mesh {
-    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult<()> {
+    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;
         gfx.update_instance_properties(param)?;

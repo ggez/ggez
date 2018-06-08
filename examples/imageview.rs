@@ -24,7 +24,7 @@ struct MainState {
 }
 
 impl MainState {
-    fn draw_crazy_lines(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw_crazy_lines(&self, ctx: &mut Context) -> GameResult {
         let num_lines = 100;
         let mut colors = Vec::new();
         for _ in 0..num_lines {
@@ -85,7 +85,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         while timer::check_update_time(ctx, DESIRED_FPS) {
             self.a += self.direction;
@@ -99,7 +99,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let c = self.a as u8;
         graphics::set_color(ctx, Color::from((c, c, c, 255)))?;
         graphics::clear(ctx);
@@ -132,10 +132,10 @@ impl event::EventHandler for MainState {
 // Creating a context depends on loading a config file.
 // Loading a config file depends on having FS (or we can just fake our way around it
 // by creating an FS and then throwing it away; the costs are not huge.)
-pub fn main() {
+pub fn main() -> GameResult {
     let c = conf::Conf::new();
     println!("Starting with default config: {:#?}", c);
-    let ctx = &mut Context::load_from_conf("imageview", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("imageview", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -145,10 +145,6 @@ pub fn main() {
         ctx.filesystem.mount(&path, true);
     }
 
-    let state = &mut MainState::new(ctx).unwrap();
-    if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
-    } else {
-        println!("Game exited cleanly.");
-    }
+    let state = &mut MainState::new(ctx)?;
+    event::run(ctx, state)
 }

@@ -276,7 +276,7 @@ impl MainState {
         light: Light,
         origin: DrawParam,
         canvas_origin: DrawParam,
-    ) -> GameResult<()> {
+    ) -> GameResult {
         let size = graphics::get_size(ctx);
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
@@ -318,7 +318,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         if timer::get_ticks(ctx) % 100 == 0 {
             println!("Average FPS: {}", timer::get_fps(ctx));
         }
@@ -330,7 +330,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let size = graphics::get_size(ctx);
         let origin = DrawParam {
             dest: Point2::new(0.0, 0.0),
@@ -433,9 +433,9 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("shadows", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("shadows", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -445,6 +445,6 @@ pub fn main() {
         ctx.filesystem.mount(&path, true);
     }
 
-    let state = &mut MainState::new(ctx).unwrap();
-    event::run(ctx, state).unwrap();
+    let state = &mut MainState::new(ctx)?;
+    event::run(ctx, state)
 }

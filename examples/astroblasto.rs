@@ -425,7 +425,7 @@ fn draw_actor(
     ctx: &mut Context,
     actor: &Actor,
     world_coords: (u32, u32),
-) -> GameResult<()> {
+) -> GameResult {
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, actor.pos);
     let image = assets.actor_image(actor);
@@ -444,7 +444,7 @@ fn draw_actor(
 /// handling input events.
 /// **********************************************************************
 impl EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
 
         while timer::check_update_time(ctx, DESIRED_FPS) {
@@ -508,7 +508,7 @@ impl EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Our drawing is quite simple.
         // Just clear the screen...
         graphics::clear(ctx);
@@ -596,7 +596,7 @@ impl EventHandler for MainState {
 /// `ggez::event::run()` with our `EventHandler` type.
 /// **********************************************************************
 
-pub fn main() {
+pub fn main() -> GameResult {
     let mut cb = ContextBuilder::new("astroblasto", "ggez")
         .window_setup(conf::WindowSetup::default().title("Astroblasto!"))
         .window_mode(conf::WindowMode::default().dimensions(640, 480));
@@ -615,20 +615,8 @@ pub fn main() {
         println!("Not building from cargo?  Ok.");
     }
 
-    let ctx = &mut cb.build().unwrap();
+    let ctx = &mut cb.build()?;
 
-    match MainState::new(ctx) {
-        Err(e) => {
-            println!("Could not load game!");
-            println!("Error: {}", e);
-        }
-        Ok(ref mut game) => {
-            let result = event::run(ctx, game);
-            if let Err(e) = result {
-                println!("Error encountered running game: {}", e);
-            } else {
-                println!("Game exited cleanly.");
-            }
-        }
-    }
+    let game = &mut MainState::new(ctx)?;
+    event::run(ctx, game)
 }
