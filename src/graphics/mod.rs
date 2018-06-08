@@ -577,6 +577,27 @@ pub fn set_projection(context: &mut Context, proj: Matrix4) {
     gfx.set_projection(proj);
 }
 
+
+/// Sets the line join style
+pub fn set_line_join(context: &mut Context, line_join: LineJoin) {
+    context.gfx_context.line_join = line_join;
+}
+
+/// Gets the line join style
+pub fn get_line_join(context: &Context) -> LineJoin {
+    context.gfx_context.line_join
+}
+
+/// Sets the line cap style
+pub fn set_line_cap(context: &mut Context, line_cap: LineCap) {
+    context.gfx_context.line_cap = line_cap;
+}
+
+/// Gets the line cap style
+pub fn get_line_cap(context: &Context) -> LineCap {
+    context.gfx_context.line_cap
+}
+
 /// Premultiplies the given transformation matrix with the current projection matrix
 ///
 /// You must call `apply_transformations(ctx)` after calling this to apply
