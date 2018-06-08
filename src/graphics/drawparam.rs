@@ -29,8 +29,8 @@ pub struct DrawParam {
     /// x/y shear factors expressed as a `Point2`.
     pub shear: Point2,
     /// A color to draw the target with.
-    /// If `None`, the color set by `graphics::set_color()` is used; default white.
-    pub color: Option<Color>,
+    /// Default: white.
+    pub color: Color,
 
     /// The transform matrix for the DrawParams
     pub matrix: Matrix4,
@@ -45,7 +45,7 @@ impl Default for DrawParam {
             scale: Point2::new(1.0, 1.0),
             offset: Point2::new(0.0, 0.0),
             shear: Point2::new(0.0, 0.0),
-            color: None,
+            color: WHITE,
 
             matrix: na::one(),
         }
@@ -108,7 +108,7 @@ impl DrawParam {
 
     /// TODO
     pub fn color<T>(mut self, color: T) -> Self where T: Into<Color> {
-        self.color = Some(color.into());
+        self.color = color.into();
         self
     }
 

@@ -190,7 +190,6 @@ impl From<DrawParam> for InstanceProperties {
         let mat: [[f32; 4]; 4] = p.into_matrix().into();
         // SRGB BUGGO: Only convert if the color format is srgb!
         let linear_color: types::LinearColor = p.color
-            .expect("Converting DrawParam to InstanceProperties had None for a color; this should never happen!")
             .into();
         Self {
             src: p.src.into(),
@@ -262,10 +261,11 @@ trait TransformRawRenderTargetViewToRenderTargetView<F: gfx::format::Formatted> 
 }
 
 /// Clear the screen to the background color.
-pub fn clear(ctx: &mut Context) {
+/// TODO: Into<Color> ?
+pub fn clear(ctx: &mut Context, color: Color) {
     let gfx = &mut ctx.gfx_context;
     // SRGB BUGGO: Only convert when drawing on srgb surface
-    let linear_color: types::LinearColor = gfx.background_color.into();
+    let linear_color: types::LinearColor = color.into();
     type ColorFormat = <GlBackendSpec as BackendSpec>::SurfaceType;
     let typed_render_target: gfx::handle::RenderTargetView<_, ColorFormat> =
         gfx::memory::Typed::new(gfx.data.out.clone());
@@ -481,16 +481,6 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult {
 // GRAPHICS STATE
 // **********************************************************************
 
-/// Returns the current background color.
-pub fn get_background_color(ctx: &Context) -> Color {
-    ctx.gfx_context.background_color
-}
-
-/// Returns the current foreground color.
-pub fn get_color(ctx: &Context) -> Color {
-    ctx.gfx_context.foreground_color
-}
-
 /// Get the default filter mode for new images.
 pub fn get_default_filter(ctx: &Context) -> FilterMode {
     let gfx = &ctx.gfx_context;
@@ -522,19 +512,6 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 /// will be negative.
 pub fn get_screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
-}
-
-/// Sets the background color.  Default: blue.
-pub fn set_background_color(ctx: &mut Context, color: Color) {
-    ctx.gfx_context.background_color = color;
-}
-
-/// Sets the foreground color, which will be used for drawing
-/// rectangles, lines, etc.  Default: white.
-pub fn set_color(ctx: &mut Context, color: Color) -> GameResult {
-    let gfx = &mut ctx.gfx_context;
-    gfx.foreground_color = color;
-    Ok(())
 }
 
 /// Sets the default filter mode used to scale images.

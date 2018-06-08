@@ -76,15 +76,14 @@ impl SpriteBatch {
     fn flush(
         &self,
         ctx: &mut Context,
-        image: &graphics::Image,
-        draw_color: Option<graphics::Color>,
+        image: &graphics::Image
     ) -> GameResult {
+        // TODO: Can we clean up now?
         // This is a little awkward but this is the right place
         // to do whatever transformations need to happen to DrawParam's.
         // We have a Context, and *everything* must pass through this
         // function to be drawn, so.
         // Though we do awkwardly have to allocate a new vector.
-        assert!(draw_color.is_some());
         let new_sprites = self.sprites
             .iter()
             .map(|param| {
@@ -100,7 +99,7 @@ impl SpriteBatch {
                 // If we have no color, our color is white.
                 // This is fine because coloring the whole spritebatch is possible
                 // with graphics::set_color(); this just inherits from that.
-                new_param.color = new_param.color.or(draw_color);
+                new_param.color = new_param.color;
                 graphics::InstanceProperties::from(new_param)
             })
             .collect::<Vec<_>>();
@@ -151,9 +150,7 @@ impl graphics::Drawable for SpriteBatch {
     fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
-        let fg = Some(ctx.gfx_context.foreground_color);
-        let draw_color = param.color.or(fg);
-        self.flush(ctx, &self.image, draw_color)?;
+        self.flush(ctx, &self.image)?;
         let gfx = &mut ctx.gfx_context;
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
