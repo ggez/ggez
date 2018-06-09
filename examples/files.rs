@@ -27,7 +27,7 @@ pub fn main() -> GameResult {
         cb = cb.add_resource_path(path);
     }
 
-    let ctx = &mut cb.build()?;
+    let (ctx, _) = &mut cb.build()?;
 
     println!("Full filesystem info: {:#?}", ctx.filesystem);
 

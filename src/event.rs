@@ -187,7 +187,7 @@ where
                             state.focus_event(ctx, gained);
                         }
                         WindowEvent::KeyboardInput {
-                            input: winit::KeyboardInput {
+                            input: KeyboardInput {
                                 state: element_state,
                                 virtual_keycode: Some(keycode),
                                 modifiers,
