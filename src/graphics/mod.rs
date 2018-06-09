@@ -822,11 +822,9 @@ pub trait Drawable {
     fn draw(&self, ctx: &mut Context, dest: Point2, rotation: f32) -> GameResult {
         self.draw_ex(
             ctx,
-            DrawParam {
-                dest,
-                rotation,
-                ..Default::default()
-            },
+            DrawParam::new()
+                .dest(dest)
+                .rotation(rotation)
         )
     }
 

@@ -305,11 +305,10 @@ impl Drawable for Image {
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
         let real_scale = Point2::new(
-            src_width * param.scale.x * self.width as f32,
-            src_height * param.scale.y * self.height as f32,
+            src_width * self.width as f32,
+            src_height * self.height as f32,
         );
-        let mut new_param = param;
-        new_param.scale = real_scale;
+        let new_param = param.scale(real_scale);
         gfx.update_instance_properties(new_param)?;
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());

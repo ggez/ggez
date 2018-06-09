@@ -478,7 +478,7 @@ impl Drawable for TextCached {
             param.offset.x * self.width(ctx) as f32,
             param.offset.y * self.height(ctx) as f32,
         );
-        let param = DrawParam { offset, ..param };
+        let param = param.offset(offset);
         self.queue(ctx, Point2::new(0.0, 0.0), Some(param.color));
         TextCached::draw_queued(ctx, param)
     }

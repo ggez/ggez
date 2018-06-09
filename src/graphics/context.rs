@@ -12,7 +12,6 @@ use conf::{WindowMode, WindowSetup, FullscreenType, MonitorId};
 use context::DebugId;
 use graphics::*;
 
-use GameError;
 use GameResult;
 
 /// A structure that contains graphics state.
@@ -34,6 +33,7 @@ where
     pub(crate) depth_format: gfx::format::Format,
 
     // TODO: is this needed?
+    #[allow(unused)]
     pub(crate) backend_spec: B,
     pub(crate) window: glutin::GlWindow,
     pub(crate) multisample_samples: u8,

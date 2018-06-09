@@ -10,7 +10,6 @@ use graphics::{self, Point2};
 use keyboard;
 use mouse;
 use timer;
-use GameError;
 use GameResult;
 
 /// A `Context` is an object that holds on to global resources.
