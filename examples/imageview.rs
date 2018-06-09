@@ -121,7 +121,7 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &self.pixel_sized_text, dest_point2, 0.0)?;
 
         self.draw_crazy_lines(ctx)?;
-        graphics::present(ctx);
+        graphics::present(ctx)?;
 
         timer::yield_now();
         Ok(())
@@ -135,7 +135,7 @@ impl event::EventHandler for MainState {
 pub fn main() -> GameResult {
     let c = conf::Conf::new();
     println!("Starting with default config: {:#?}", c);
-    let ctx = &mut Context::load_from_conf("imageview", "ggez", c)?;
+    let (ctx, events_loop) = &mut Context::load_from_conf("imageview", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -146,5 +146,5 @@ pub fn main() -> GameResult {
     }
 
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, state)
+    event::run(ctx, events_loop, state)
 }

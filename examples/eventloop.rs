@@ -46,11 +46,11 @@ pub fn main() -> GameResult {
 
                         _ => (),
                     },
-
-                    _ => (),
+                    // `CloseRequested` and `KeyboardInput` events won't appear here.
+                    x => println!("Other window event fired: {:?}", x),
                 },
 
-                x => println!("Event fired: {:?}", x),
+                x => println!("Device event fired: {:?}", x),
             }
         });
 

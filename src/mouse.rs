@@ -31,7 +31,7 @@ impl MouseContext {
     }
 
     pub(crate) fn set_last_delta(&mut self, p: Point2) {
-        self.last_position = p;
+        self.last_delta = p;
     }
 }
 

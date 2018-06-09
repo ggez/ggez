@@ -24,15 +24,18 @@ pub use winit::ModifiersState as KeyMods;
 pub use winit::MouseButton;
 
 /// An analog axis of some device (controller, joystick...).
-// TODO: verify.
+// TODO: verify. (probably useless; investigate `gilrs`)
 pub use winit::AxisId as Axis;
 /// A button of some device (controller, joystick...).
 pub use winit::ButtonId as Button;
 
 /// `winit` events; nested in a module for re-export neatness.
 pub mod winit_event {
-    pub use super::winit::{Event, WindowEvent, DeviceEvent, KeyboardInput, ElementState};
+    pub use super::winit::{
+        DeviceEvent, ElementState, Event, KeyboardInput, MouseScrollDelta, TouchPhase, WindowEvent,
+    };
 }
+
 use self::winit_event::*;
 /// `winit` event loop.
 pub use winit::EventsLoop;
@@ -105,20 +108,9 @@ pub trait EventHandler {
     fn key_up_event(&mut self, _ctx: &mut Context, _keycode: KeyCode, _keymods: KeyMods) {
     }
 
-    /// Candidate text is passed by the OS (via Input Method Editor).
-    /// Refer to:
-    /// <https://wiki.libsdl.org/SDL_TextEditingEvent>
-    /// <https://wiki.libsdl.org/SDL_TextInputEvent>
-    /// <https://wiki.libsdl.org/Tutorials/TextInput>
-    fn text_editing_event(&mut self, _ctx: &mut Context, _text: String, _start: i32, _length: i32) {
-    }
-
-    /// Resulting text (usually a unicode character) is passed by the OS (via Input Method Editor).
-    /// Refer to:
-    /// <https://wiki.libsdl.org/SDL_TextEditingEvent>
-    /// <https://wiki.libsdl.org/SDL_TextInputEvent>
-    /// <https://wiki.libsdl.org/Tutorials/TextInput>
-    fn text_input_event(&mut self, _ctx: &mut Context, _text: String) {}
+    /// A unicode character was received, usually from keyboard input.
+    /// This is the intended way of facilitating text input.
+    fn text_input_event(&mut self, _ctx: &mut Context, _character: char) {}
 
     /// A controller button was pressed; instance_id identifies which controller.
     fn controller_button_down_event(
@@ -128,8 +120,10 @@ pub trait EventHandler {
         _instance_id: i32,
     ) {
     }
+
     /// A controller button was released.
     fn controller_button_up_event(&mut self, _ctx: &mut Context, _btn: Button, _instance_id: i32) {}
+
     /// A controller axis moved.
     fn controller_axis_event(
         &mut self,
@@ -186,6 +180,9 @@ where
                         WindowEvent::Focused(gained) => {
                             state.focus_event(ctx, gained);
                         }
+                        WindowEvent::ReceivedCharacter(ch) => {
+                            state.text_input_event(ctx, ch);
+                        }
                         WindowEvent::KeyboardInput {
                             input: KeyboardInput {
                                 state: element_state,
@@ -204,6 +201,13 @@ where
                                     state.key_up_event(ctx, keycode, modifiers);
                                 }
                             }
+                        }
+                        WindowEvent::MouseWheel { delta, ..} => {
+                            let (x, y) = match delta {
+                                MouseScrollDelta::LineDelta(x, y) => (x, y),
+                                MouseScrollDelta::PixelDelta(x, y) => (x, y)
+                            };
+                            state.mouse_wheel_event(ctx, x, y);
                         }
                         WindowEvent::MouseInput { state: element_state, button, .. } => {
                             let position = mouse::get_position(ctx);
@@ -249,15 +253,7 @@ where
                 Event::Suspended(_) => unimplemented!(),
             }
         });
-        /*{ // TODO: finish implementing events.
-                TextEditing {
-                    text,
-                    start,
-                    length,
-                    ..
-                } => state.text_editing_event(ctx, text, start, length),
-                TextInput { text, .. } => state.text_input_event(ctx, text),
-                MouseWheel { x, y, .. } => state.mouse_wheel_event(ctx, x, y),
+        /*{ // TODO: Investigate `gilrs` for gamepad support.
                 ControllerButtonDown { button, which, .. } => {
                     state.controller_button_down_event(ctx, button, which)
                 }
