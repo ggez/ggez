@@ -115,14 +115,14 @@ impl event::EventHandler for MainState {
         graphics::set_color(ctx, (0, 0, 255).into())?;
         graphics::draw_ex(ctx, &mesh, Default::default())?;
 
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         Ok(())
     }
 }
 
 pub fn main() -> GameResult {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("drawing", "ggez", c)?;
+    let (ctx, events_loop) = &mut Context::load_from_conf("drawing", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -134,5 +134,5 @@ pub fn main() -> GameResult {
 
     println!("{}", graphics::get_renderer_info(ctx)?);
     let state = &mut MainState::new(ctx).unwrap();
-    event::run(ctx, state)
+    event::run(ctx, events_loop, state)
 }

@@ -13,7 +13,7 @@ extern crate ggez;
 extern crate log;
 
 use ggez::conf::{WindowMode, WindowSetup};
-use ggez::event::{EventHandler, Keycode, Mod};
+use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::filesystem::File;
 use ggez::graphics;
 use ggez::timer;
@@ -94,23 +94,27 @@ impl EventHandler for App {
     /// Draws the screen. We don't really have anything to draw.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx);
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         timer::yield_now();
         Ok(())
     }
 
     /// Called when `ggez` catches a keyboard key being pressed.
-    fn key_down_event(&mut self, ctx: &mut Context, keycode: Keycode, keymod: Mod, repeat: bool) {
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: KeyCode,
+        keymod: KeyMods,
+        repeat: bool,
+    ) {
         // Log the keypress to info channel!
         info!(
-            "Key down event: {}, modifiers: {:?}, repeat: {}",
+            "Key down event: {:?}, modifiers: {:?}, repeat: {}",
             keycode, keymod, repeat
         );
-        if keycode == Keycode::Escape {
+        if keycode == KeyCode::Escape {
             // Escape key closes the app.
-            if let Err(e) = ctx.quit() {
-                error!("Context::quit() failed, somehow: {}", e);
-            }
+            ctx.quit();
         }
     }
 
@@ -166,11 +170,11 @@ pub fn main() -> GameResult {
     trace!("Creating ggez context.");
 
     // This sets up `ggez` guts (including filesystem) and creates a window.
-    let ctx = &mut ContextBuilder::new("logging", "ggez")
+    let (ctx, events_loop) = &mut ContextBuilder::new("logging", "ggez")
         .window_setup(
             WindowSetup::default()
                 .title("Pretty console output!")
-                .resizable(true),
+                //.resizable(true), TODO: this.
         )
         .window_mode(WindowMode::default().dimensions(640, 480))
         .build()?;
@@ -186,7 +190,7 @@ pub fn main() -> GameResult {
         Err(e) => {
             error!("Could not initialize: {}", e);
         }
-        Ok(ref mut app) => match ggez::event::run(ctx, app) {
+        Ok(ref mut app) => match ggez::event::run(ctx, events_loop, app) {
             Err(e) => {
                 error!("Error occurred: {}", e);
             }
