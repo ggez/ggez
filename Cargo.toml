@@ -49,8 +49,7 @@ toml = "0.4"
 log = "0.4"
 lyon = "0.10"
 smart-default = "0.2"
-#nalgebra = {version = "0.15", features = ["mint"] }
-nalgebra = {git = "https://github.com/icefoxen/nalgebra.git", branch = "feat/mint_point_conversions", features = ["mint"] }
+nalgebra = {version = "^0.15.2", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here...
 mint = "0.5"
 
