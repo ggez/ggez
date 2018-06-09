@@ -187,7 +187,7 @@ impl event::EventHandler for App {
             },
         )?;
 
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         timer::yield_now();
         Ok(())
     }
@@ -201,11 +201,11 @@ impl event::EventHandler for App {
 }
 
 pub fn main() -> GameResult {
-    let ctx = &mut ContextBuilder::new("text_cached", "ggez")
+    let (ctx, events_loop) = &mut ContextBuilder::new("text_cached", "ggez")
         .window_setup(
             WindowSetup::default()
                 .title("Cached text example!")
-                .resizable(true),
+                //.resizable(true), TODO: this.
         )
         .window_mode(WindowMode::default().dimensions(640, 480))
         .build()?;
@@ -217,5 +217,5 @@ pub fn main() -> GameResult {
     }
 
     let state = &mut App::new(ctx)?;
-    event::run(ctx, state)
+    event::run(ctx, events_loop, state)
 }

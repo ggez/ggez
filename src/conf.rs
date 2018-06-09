@@ -21,31 +21,19 @@ pub enum FullscreenType {
     /// Windowed mode
     Off,
     /// Real fullscreen
-    True,
+    True(MonitorId),
     /// Windowed fullscreen, generally preferred over real fullscreen
     /// these days 'cause it plays nicer with multiple monitors.
-    Desktop,
+    Desktop(MonitorId),
 }
 
-use sdl2::video::FullscreenType as SdlFullscreenType;
-impl From<SdlFullscreenType> for FullscreenType {
-    fn from(other: SdlFullscreenType) -> Self {
-        match other {
-            SdlFullscreenType::Off => FullscreenType::Off,
-            SdlFullscreenType::True => FullscreenType::True,
-            SdlFullscreenType::Desktop => FullscreenType::Desktop,
-        }
-    }
-}
-
-impl From<FullscreenType> for SdlFullscreenType {
-    fn from(other: FullscreenType) -> Self {
-        match other {
-            FullscreenType::Off => SdlFullscreenType::Off,
-            FullscreenType::True => SdlFullscreenType::True,
-            FullscreenType::Desktop => SdlFullscreenType::Desktop,
-        }
-    }
+/// Identifies a monitor connected to the system.
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum MonitorId {
+    /// Monitor the window is currently in.
+    Current,
+    /// Monitor retrieved by it's index in the system.
+    Index(usize),
 }
 
 /// A builder structure containing window settings
@@ -74,15 +62,15 @@ pub struct WindowMode {
     /// Window height
     #[default = r#"600"#]
     pub height: u32,
-    /// Whether or not to show window decorations
+    /// Whether or not to maximize the window
     #[default = r#"false"#]
-    pub borderless: bool,
+    pub maximized: bool,
     /// Fullscreen type
     #[default = r#"FullscreenType::Off"#]
     pub fullscreen_type: FullscreenType,
-    /// Whether or not to enable vsync
-    #[default = r#"true"#]
-    pub vsync: bool,
+    /// Whether or not to show window decorations
+    #[default = r#"false"#]
+    pub borderless: bool,
     /// Minimum width for resizable windows; 0 means no limit
     #[default = r#"0"#]
     pub min_width: u32,
@@ -98,9 +86,16 @@ pub struct WindowMode {
 }
 
 impl WindowMode {
-    /// Set borderless
-    pub fn borderless(mut self, borderless: bool) -> Self {
-        self.borderless = borderless;
+    /// Set default window size, or screen resolution in true fullscreen mode
+    pub fn dimensions(mut self, width: u32, height: u32) -> Self {
+        self.width = width;
+        self.height = height;
+        self
+    }
+
+    /// Set if window should be maximized
+    pub fn maximized(mut self, maximized: bool) -> Self {
+        self.maximized = maximized;
         self
     }
 
@@ -110,16 +105,9 @@ impl WindowMode {
         self
     }
 
-    /// Set vsync
-    pub fn vsync(mut self, vsync: bool) -> Self {
-        self.vsync = vsync;
-        self
-    }
-
-    /// Set default window size, or screen resolution in fullscreen mode
-    pub fn dimensions(mut self, width: u32, height: u32) -> Self {
-        self.width = width;
-        self.height = height;
+    /// Set borderless
+    pub fn borderless(mut self, borderless: bool) -> Self {
+        self.borderless = borderless;
         self
     }
 
@@ -157,20 +145,23 @@ pub struct WindowSetup {
     /// The window title.
     #[default = r#""An easy, good game".to_owned()"#]
     pub title: String,
+    /*/// Whether or not the window is resizable
+    #[default = r#"false"#]
+    pub resizable: bool,*/ // TODO: winit #540
+    /// Number of samples for multisample anti-aliasing
+    #[default = r#"NumSamples::One"#]
+    pub samples: NumSamples,
+    /// Whether or not to enable vsync
+    #[default = r#"true"#]
+    pub vsync: bool,
+    /// Whether or not should the window's background be transparent
+    #[default = r#"false"#]
+    pub transparent: bool,
     /// A file path to the window's icon.
     /// It is rooted in the `resources` directory (see the `filesystem` module for details),
     /// and an empty string results in a blank/default icon.
     #[default = r#""".to_owned()"#]
     pub icon: String,
-    /// Whether or not the window is resizable
-    #[default = r#"false"#]
-    pub resizable: bool,
-    /// Whether or not to allow high DPI mode when creating the window
-    #[default = r#"true"#]
-    pub allow_highdpi: bool,
-    /// Number of samples for multisample anti-aliasing
-    #[default = r#"NumSamples::One"#]
-    pub samples: NumSamples,
 }
 
 impl WindowSetup {
@@ -180,23 +171,11 @@ impl WindowSetup {
         self
     }
 
-    /// Set the window's icon.
-    pub fn icon(mut self, icon: &str) -> Self {
-        self.icon = icon.to_owned();
-        self
-    }
-
-    /// Set resizable
+    /*/// Set resizable
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
         self
-    }
-
-    /// Set allow_highdpi
-    pub fn allow_highdpi(mut self, allow: bool) -> Self {
-        self.allow_highdpi = allow;
-        self
-    }
+    }*/ // TODO: winit #540
 
     /// Set number of samples
     ///
@@ -204,6 +183,24 @@ impl WindowSetup {
     /// (valid values are powers of 2 from 1 to 16)
     pub fn samples(mut self, samples: NumSamples) -> Self {
         self.samples = samples;
+        self
+    }
+
+    /// Set if vsync is enabled.
+    pub fn vsync(mut self, vsync: bool) -> Self {
+        self.vsync = vsync;
+        self
+    }
+
+    /// Set if window background should be transparent.
+    pub fn transparent(mut self, transparent: bool) -> Self {
+        self.transparent = transparent;
+        self
+    }
+
+    /// Set the window's icon.
+    pub fn icon(mut self, icon: &str) -> Self {
+        self.icon = icon.to_owned();
         self
     }
 }

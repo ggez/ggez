@@ -16,7 +16,7 @@ use gfx::texture;
 use gfx::Device;
 use gfx::Factory;
 use gfx_device_gl;
-use sdl2;
+use glutin::{self, GlContext};
 
 use conf;
 use conf::WindowMode;
@@ -287,7 +287,7 @@ pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> Gam
 /// Call this at the end of your `EventHandler`'s `draw()` method.
 ///
 /// Unsets any active canvas.
-pub fn present(ctx: &mut Context) {
+pub fn present(ctx: &mut Context) -> GameResult<()> {
     let gfx = &mut ctx.gfx_context;
     gfx.data.out = gfx.screen_render_target.clone();
     // We might want to give the user more control over when the
@@ -295,8 +295,9 @@ pub fn present(ctx: &mut Context) {
     // to do their own gfx drawing.  HOWEVER, the whole pipeline type
     // thing is a bigger hurdle, so this is fine for now.
     gfx.encoder.flush(&mut *gfx.device);
-    gfx.window.gl_swap_window();
+    gfx.window.swap_buffers()?;
     gfx.device.cleanup();
+    Ok(())
 }
 
 /// Take a screenshot by outputting the current render surface
@@ -361,7 +362,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         blend_mode: None,
         width: u32::from(w),
         height: u32::from(h),
-        debug_id: debug_id,
+        debug_id,
     };
 
     Ok(image)
@@ -497,7 +498,7 @@ pub fn get_default_filter(ctx: &Context) -> FilterMode {
     gfx.default_sampler_info.filter.into()
 }
 
-/// Returns a string that tells a little about the obtained rendering mode.
+/*/// Returns a string that tells a little about the obtained rendering mode.
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
 pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
@@ -513,7 +514,7 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
         gl.context_minor_version(),
         gl.context_profile()
     ))
-}
+}*/
 
 /// Returns a rectangle defining the coordinate system of the screen.
 /// It will be `Rect { x: left, y: top, w: width, h: height }`
@@ -686,40 +687,18 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
 /// It is recommended to call `set_screen_coordinates()` after changing the window
 /// size to make sure everything is what you want it to be.
 pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult {
-    {
-        let gfx = &mut context.gfx_context;
-        gfx.set_window_mode(mode)?;
-    }
-    {
-        let video = &mut context.sdl_context.video()?;
-        GraphicsContext::set_vsync(video, mode.vsync)
-    }
-}
-
-/// Toggles the fullscreen state of the window subsystem
-///
-pub fn set_fullscreen(context: &mut Context, fullscreen: bool) -> GameResult {
-    let fs_type = if fullscreen {
-        sdl2::video::FullscreenType::True
-    } else {
-        sdl2::video::FullscreenType::Off
-    };
     let gfx = &mut context.gfx_context;
-    gfx.window.set_fullscreen(fs_type)?;
-
-    Ok(())
+    gfx.set_window_mode(mode)
 }
 
-/// Queries the fullscreen state of the window subsystem.
-/// If true, then the game is running in fullscreen mode.
-///
-pub fn is_fullscreen(context: &mut Context) -> bool {
-    let gfx = &context.gfx_context;
-    gfx.window.fullscreen_state() == sdl2::video::FullscreenType::True
+/// Sets the window to fullscreen or back.
+pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -> GameResult {
+    let mut window_mode = context.conf.window_mode;
+    window_mode.fullscreen_type = fullscreen;
+    set_mode(context, window_mode)
 }
 
-/// Sets the window resolution based on the specified width and height
-///
+/// Sets the window resolution based on the specified width and height.
 pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameResult {
     let mut window_mode = context.conf.window_mode;
     window_mode.width = width;
@@ -727,54 +706,51 @@ pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameRes
     set_mode(context, window_mode)
 }
 
-/// Returns a `Vec` of `(width, height)` tuples describing what
-/// fullscreen resolutions are available for the given display.
-pub fn get_fullscreen_modes(context: &Context, display_idx: i32) -> GameResult<Vec<(u32, u32)>> {
-    let video = context.sdl_context.video()?;
-    let display_count = video.num_video_displays()?;
-    assert!(display_idx < display_count);
-
-    let num_modes = video.num_display_modes(display_idx)?;
-
-    (0..num_modes)
-        .map(|i| video.display_mode(display_idx, i))
-        .map(|ires| ires.map_err(GameError::VideoError))
-        .map(|gres| gres.map(|dispmode| (dispmode.w as u32, dispmode.h as u32)))
-        .collect()
+use std::path::Path;
+use winit::Icon;
+/// Sets the window icon.
+pub fn set_window_icon<P: AsRef<Path>>(context: &Context, path: Option<P>) -> GameResult<()> {
+    let icon = match path {
+        Some(path) => Some(Icon::from_path(path)?),
+        None => None,
+    };
+    context.gfx_context.window.set_window_icon(icon);
+    Ok(())
 }
 
-/// Returns the number of connected displays.
+/// Sets the window title.
+pub fn set_window_title(context: &Context, title: &str) {
+    context.gfx_context.window.set_title(title);
+}
+
+/*/// Returns the number of connected displays.
 pub fn get_display_count(context: &Context) -> GameResult<i32> {
     let video = context.sdl_context.video()?;
     video.num_video_displays().map_err(GameError::VideoError)
-}
+}*/
 
 /// Returns a reference to the SDL window.
 /// Ideally you should not need to use this because ggez
 /// would provide all the functions you need without having
 /// to dip into SDL itself.  But life isn't always ideal.
-pub fn get_window(context: &Context) -> &sdl2::video::Window {
+pub fn get_window(context: &Context) -> &glutin::Window {
     let gfx = &context.gfx_context;
     &gfx.window
 }
 
-/// Returns a mutable reference to the SDL window.
-pub fn get_window_mut(context: &mut Context) -> &mut sdl2::video::Window {
-    let gfx = &mut context.gfx_context;
-    &mut gfx.window
-}
-
-/// Returns the size of the window in pixels as (width, height).
+/// Returns the size of the window in pixels as (width, height),
+/// including borders, titlebar, etc.
+/// Returns zeros if window doesn't exist.
 pub fn get_size(context: &Context) -> (u32, u32) {
     let gfx = &context.gfx_context;
-    gfx.window.size()
+    gfx.window.get_outer_size().unwrap_or((0, 0))
 }
 
 /// Returns the size of the window's underlying drawable in pixels as (width, height).
-/// This may return a different value than `get_size()` when run on a platform with high-DPI support
+/// Returns zeros if window doesn't exist.
 pub fn get_drawable_size(context: &Context) -> (u32, u32) {
     let gfx = &context.gfx_context;
-    gfx.window.drawable_size()
+    gfx.window.get_inner_size().unwrap_or((0, 0))
 }
 
 /// Returns the gfx-rs `Factory` object for ggez's rendering context.

@@ -43,7 +43,7 @@ impl event::EventHandler for MainState {
         // Drawables are drawn from their top-left corner.
         let dest_point = graphics::Point2::new(10.0, 10.0);
         graphics::draw(ctx, &self.text, dest_point, 0.0)?;
-        graphics::present(ctx);
+        graphics::present(ctx)?;
 
         self.frames += 1;
         if (self.frames % 100) == 0 {
@@ -70,7 +70,7 @@ pub fn main() -> GameResult {
         },
         .. Default::default()
     };
-    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c)?;
+    let (ctx, event_loop) = &mut Context::load_from_conf("helloworld", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources to the filesystem's path
     // so that ggez will look in our cargo project directory for files.
@@ -81,5 +81,5 @@ pub fn main() -> GameResult {
     }
 
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, state)
+    event::run(ctx, event_loop, state)
 }
