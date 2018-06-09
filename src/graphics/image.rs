@@ -349,7 +349,7 @@ mod tests {
     #[allow(dead_code)]
     fn test_invalid_image_size() {
         let c = conf::Conf::new();
-        let ctx = &mut Context::load_from_conf("unittest", "unittest", c).unwrap();
+        let (ctx, _) = &mut Context::load_from_conf("unittest", "unittest", c).unwrap();
         let _i = assert!(Image::from_rgba8(ctx, 0, 0, &vec![]).is_err());
         let _i = assert!(Image::from_rgba8(ctx, 3432, 432, &vec![]).is_err());
         let _i = Image::from_rgba8(ctx, 2, 2, &vec![99; 16]).unwrap();

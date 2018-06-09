@@ -780,7 +780,7 @@ mod tests {
     fn test_wrapping() {
         use conf;
         let c = conf::Conf::new();
-        let ctx = &mut Context::load_from_conf("test_wrapping", "ggez", c)
+        let (ctx, _) = &mut Context::load_from_conf("test_wrapping", "ggez", c)
             .expect("Could not create context?");
         let font = Font::default_font().expect("Could not get default font");
         let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff \

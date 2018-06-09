@@ -368,7 +368,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     Ok(image)
 }
 
-/*
+/* // TODO: consider implementing.
 // Draw an arc.
 // Punting on this until later.
 pub fn arc(_ctx: &mut Context,
@@ -448,6 +448,7 @@ pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameRe
     m.draw(ctx, Point2::origin(), 0.0)
 }
 
+// TODO: consider removing - it's commented out on devel.
 // Renders text with the default font.
 // Not terribly efficient as it re-renders the text with each call,
 // but good enough for debugging.
@@ -498,23 +499,18 @@ pub fn get_default_filter(ctx: &Context) -> FilterMode {
     gfx.default_sampler_info.filter.into()
 }
 
-/*/// Returns a string that tells a little about the obtained rendering mode.
+// TODO: consider putting more stuff here;
+// actual GL version will likely require new glutin features.
+/// Returns a string that tells a little about the obtained rendering mode.
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
 pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
-    let video = ctx.sdl_context.video()?;
-
-    let gl = video.gl_attr();
-
     Ok(format!(
-        "Requested GL {}.{} Core profile, actually got GL {}.{} {:?} profile.",
+        "Requested GL {}.{} Core profile, actually got GL ?.? ? profile.",
         ctx.gfx_context.backend_spec.major,
         ctx.gfx_context.backend_spec.minor,
-        gl.context_major_version(),
-        gl.context_minor_version(),
-        gl.context_profile()
     ))
-}*/
+}
 
 /// Returns a rectangle defining the coordinate system of the screen.
 /// It will be `Rect { x: left, y: top, w: width, h: height }`
@@ -723,6 +719,7 @@ pub fn set_window_title(context: &Context, title: &str) {
     context.gfx_context.window.set_title(title);
 }
 
+// TODO: rewrite, possibly expand; see winit #555
 /*/// Returns the number of connected displays.
 pub fn get_display_count(context: &Context) -> GameResult<i32> {
     let video = context.sdl_context.video()?;

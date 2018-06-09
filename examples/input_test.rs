@@ -3,23 +3,23 @@
 extern crate ggez;
 
 use ggez::conf;
-use ggez::event::{self, Axis, Button, Keycode, Mod, MouseButton, MouseState};
+use ggez::event::{self, Axis, Button, KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, DrawMode, Point2};
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
 struct MainState {
-    pos_x: i32,
-    pos_y: i32,
+    pos_x: f32,
+    pos_y: f32,
     mouse_down: bool,
 }
 
 impl MainState {
     fn new() -> MainState {
         MainState {
-            pos_x: 100,
-            pos_y: 100,
+            pos_x: 100.0,
+            pos_y: 100.0,
             mouse_down: false,
         }
     }
@@ -39,29 +39,21 @@ impl event::EventHandler for MainState {
             100.0,
             1.0,
         )?;
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: i32, y: i32) {
+    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         self.mouse_down = true;
         println!("Mouse button pressed: {:?}, x: {}, y: {}", button, x, y);
     }
 
-    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, x: i32, y: i32) {
+    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         self.mouse_down = false;
         println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
     }
 
-    fn mouse_motion_event(
-        &mut self,
-        _ctx: &mut Context,
-        _state: MouseState,
-        x: i32,
-        y: i32,
-        xrel: i32,
-        yrel: i32,
-    ) {
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, xrel: f32, yrel: f32) {
         if self.mouse_down {
             self.pos_x = x;
             self.pos_y = y;
@@ -72,32 +64,32 @@ impl event::EventHandler for MainState {
         );
     }
 
-    fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: i32, y: i32) {
+    fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) {
         println!("Mousewheel event, x: {}, y: {}", x, y);
     }
 
-    fn key_down_event(&mut self, _ctx: &mut Context, keycode: Keycode, keymod: Mod, repeat: bool) {
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: KeyCode,
+        keymod: KeyMods,
+        repeat: bool,
+    ) {
         println!(
             "Key pressed: {:?}, modifier {:?}, repeat: {}",
             keycode, keymod, repeat
         );
     }
-    fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, keymod: Mod, repeat: bool) {
+
+    fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, keymod: KeyMods) {
         println!(
-            "Key released: {:?}, modifier {:?}, repeat: {}",
-            keycode, keymod, repeat
+            "Key released: {:?}, modifier {:?}",
+            keycode, keymod
         );
     }
 
-    fn text_editing_event(&mut self, _ctx: &mut Context, text: String, start: i32, length: i32) {
-        println!(
-            "Text editing: {}, start {}, length: {}",
-            text, start, length
-        );
-    }
-
-    fn text_input_event(&mut self, _ctx: &mut Context, text: String) {
-        println!("Text input: {}", text);
+    fn text_input_event(&mut self, _ctx: &mut Context, ch: char) {
+        println!("Text input: {}", ch);
     }
 
     fn controller_button_down_event(&mut self, _ctx: &mut Context, btn: Button, instance_id: i32) {
@@ -138,7 +130,7 @@ impl event::EventHandler for MainState {
 
 pub fn main() -> GameResult {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("input_test", "ggez", c)?;
+    let (ctx, events_loop) = &mut Context::load_from_conf("input_test", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -149,5 +141,5 @@ pub fn main() -> GameResult {
     }
 
     let state = &mut MainState::new();
-    event::run(ctx, state)
+    event::run(ctx, events_loop, state)
 }

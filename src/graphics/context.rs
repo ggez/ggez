@@ -59,9 +59,7 @@ where
 
     pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
 
-    // TODO: there are temporary: need more winit functionality.
-    // winit needs ability to get available/primary monitors from a window reference,
-    // without having a reference to events loop.
+    // TODO: this is temporary: see winit #555.
     available_monitors: Vec<glutin::MonitorId>,
 }
 
@@ -141,28 +139,27 @@ impl GraphicsContext {
         let available_monitors = events_loop.get_available_monitors().collect();
 
         // TODO: see winit #548 about DPI.
-        /*{
-            // TODO: fix
+        {
+            // TODO: improve.
             // Log a bunch of OpenGL state info pulled out of SDL and gfx
-            let vsync = video.gl_get_swap_interval();
-            let gl_attr = video.gl_attr();
-            let (major, minor) = gl_attr.context_version();
-            let profile = gl_attr.context_profile();
-            let (w, h) = window.size();
-            let (dw, dh) = window.drawable_size();
+            let api = window.get_api();
+            let (w, h) = window.get_outer_size()
+                .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
+            let (dw, dh) = window.get_inner_size()
+                .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
             let info = device.get_info();
             debug!("Window created.");
             debug!(
                 "  Asked for     OpenGL {}.{} Core, vsync: {}",
-                backend.major, backend.minor, window_mode.vsync
+                backend.major, backend.minor, window_setup.vsync
             );
             debug!(
-                "  Actually got: OpenGL {}.{} {:?}, vsync: {:?}",
-                major, minor, profile, vsync
+                "  Actually got: OpenGL ?.? {:?}, vsync: ?",
+                api
             );
             debug!(
-                "  Window size: {}x{}, drawable size: {}x{}, DPI: {:?}",
-                w, h, dw, dh, dpi
+                "  Window size: {}x{}, drawable size: {}x{}",
+                w, h, dw, dh
             );
             debug!(
                 "  Driver vendor: {}, renderer {}, version {:?}, shading language {:?}",
@@ -171,7 +168,7 @@ impl GraphicsContext {
                 info.version,
                 info.shading_language
             );
-        }*/
+        }
 
         // GFX SETUP
         let mut encoder: gfx::Encoder<

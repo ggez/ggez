@@ -12,7 +12,7 @@ extern crate rand;
 
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
-use ggez::event::Keycode;
+use ggez::event::{KeyCode, KeyMods};
 use ggez::{event, graphics, Context, GameResult};
 
 // We'll bring in some things from `std` to help us in the future.
@@ -162,12 +162,12 @@ impl Direction {
     /// `ggez` `Keycode` and the `Direction` that it represents. Of course,
     /// not every keycode represents a direction, so we return `None` if this
     /// is the case.
-    pub fn from_keycode(key: Keycode) -> Option<Direction> {
+    pub fn from_keycode(key: KeyCode) -> Option<Direction> {
         match key {
-            Keycode::Up => Some(Direction::Up),
-            Keycode::Down => Some(Direction::Down),
-            Keycode::Left => Some(Direction::Left),
-            Keycode::Right => Some(Direction::Right),
+            KeyCode::Up => Some(Direction::Up),
+            KeyCode::Down => Some(Direction::Down),
+            KeyCode::Left => Some(Direction::Left),
+            KeyCode::Right => Some(Direction::Right),
             _ => None,
         }
     }
@@ -414,7 +414,7 @@ impl event::EventHandler for GameState {
         self.food.draw(ctx)?;
         // Finally we call graphics::present to cycle the gpu's framebuffer and display
         // the new frame we just drew.
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         // We yield the current thread until the next update
         ggez::timer::yield_now();
         // And return success.
@@ -425,8 +425,8 @@ impl event::EventHandler for GameState {
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
-        keycode: Keycode,
-        _keymod: event::Mod,
+        keycode: KeyCode,
+        _keymod: KeyMods,
         _repeat: bool,
     ) {
         // Here we attempt to convert the Keycode into a Direction using the helper
@@ -444,7 +444,7 @@ impl event::EventHandler for GameState {
 
 fn main() -> GameResult {
     // Here we use a ContextBuilder to setup metadata about our game. First the title and author
-    let ctx = &mut ggez::ContextBuilder::new("snake", "Gray Olson")
+    let (ctx, events_loop) = &mut ggez::ContextBuilder::new("snake", "Gray Olson")
         // Next we set up the window. This title will be displayed in the title bar of the window.
         .window_setup(ggez::conf::WindowSetup::default().title("Snake!"))
         // Now we get to set the size of the window, which we use our SCREEN_SIZE constant from earlier to help with
@@ -458,5 +458,5 @@ fn main() -> GameResult {
     // Next we create a new instance of our GameState struct, which implements EventHandler
     let state = &mut GameState::new();
     // And finally we actually run our game, passing in our context and state.
-    event::run(ctx, state)
+    event::run(ctx, events_loop, state)
 }

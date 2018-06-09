@@ -142,38 +142,37 @@ impl Context {
     /// you receive before processing them yourself.
     pub fn process_event(&mut self, event: &winit::Event) {
         match event {
-            winit_event::Event::WindowEvent { event, .. } => {
-                match event {
-                    winit_event::WindowEvent::Resized(_, _) => {
-                        self.gfx_context.resize_viewport();
-                    }
-                    winit_event::WindowEvent::CursorMoved { position: (x, y), .. } => {
-                        self.mouse_context.set_last_position(
-                            Point2::new(*x as f32, *y as f32),
-                        );
-                    }
-                    winit_event::WindowEvent::KeyboardInput {
-                        input: winit_event::KeyboardInput {
-                            state,
-                            virtual_keycode,
-                            ..
-                        },
-                        ..
-                    } => {
-                        if *state == winit_event::ElementState::Released {
-                            if keyboard::get_last_held(self) == *virtual_keycode {
-                                self.keyboard_context.set_last_pressed(*virtual_keycode);
-                            }
+            winit_event::Event::WindowEvent { event, .. } => match event {
+                winit_event::WindowEvent::Resized(_, _) => {
+                    self.gfx_context.resize_viewport();
+                }
+                winit_event::WindowEvent::CursorMoved {
+                    position: (x, y), ..
+                } => {
+                    self.mouse_context
+                        .set_last_position(Point2::new(*x as f32, *y as f32));
+                }
+                _ => (),
+            },
+            winit_event::Event::DeviceEvent { event, .. } => match event {
+                winit_event::DeviceEvent::MouseMotion { delta: (x, y) } => {
+                    self.mouse_context
+                        .set_last_delta(Point2::new(*x as f32, *y as f32));
+                }
+                winit_event::DeviceEvent::Key(winit_event::KeyboardInput {
+                                                  state,
+                                                  virtual_keycode,
+                                                  ..
+                                              }) => {
+                    if *state == winit_event::ElementState::Released {
+                        if keyboard::get_last_held(self) == *virtual_keycode {
+                            self.keyboard_context.set_last_pressed(None);
                         }
                     }
-                    _ => (),
                 }
-            }
-            winit_event::Event::DeviceEvent { event: winit_event::DeviceEvent::MouseMotion { delta: (x, y) }, .. } => {
-                self.mouse_context.set_last_delta(
-                    Point2::new(*x as f32, *y as f32),
-                );
-            }
+                _ => (),
+            },
+
             _ => (),
         }
     }

@@ -33,14 +33,14 @@ impl event::EventHandler for MainState {
             100.0,
             2.0,
         )?;
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         Ok(())
     }
 }
 
 pub fn main() -> GameResult {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("super_simple", "ggez", c)?;
+    let (ctx, events_loop) = &mut Context::load_from_conf("super_simple", "ggez", c)?;
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, state)
+    event::run(ctx, events_loop, state)
 }
