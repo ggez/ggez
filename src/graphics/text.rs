@@ -85,9 +85,8 @@ impl Font {
 
         let name = format!("{:?}", path);
 
-        // Get the proper DPI to scale font size accordingly
-        let (_diag_dpi, x_dpi, y_dpi) = context.gfx_context.dpi;
-        Font::from_bytes(&name, &buf, points, (x_dpi, y_dpi))
+        // TODO: consider ditching DPI here; wait for winit #548.
+        Font::from_bytes(&name, &buf, points, (75.0, 75.0))
     }
 
     /// Load a new TTF font from the given file, returning a font that draws

@@ -13,37 +13,32 @@
 //!
 //! See the `eventloop` example for an implementation.
 
-use sdl2;
+use winit;
 
 /// A key code.
-pub use sdl2::keyboard::Keycode;
+pub use winit::VirtualKeyCode as KeyCode;
 
-/// A struct that holds the state of modifier buttons such as ctrl or shift.
-pub use sdl2::keyboard::Mod;
-/// A mouse button press.
-pub use sdl2::mouse::MouseButton;
-/// A struct containing the mouse state at a given instant.
-pub use sdl2::mouse::MouseState;
+/// A struct that holds the state of keyboard modifier buttons such as ctrl or shift.
+pub use winit::ModifiersState as KeyMods;
+/// A mouse button.
+pub use winit::MouseButton;
 
-/// A controller axis.
-pub use sdl2::controller::Axis;
-/// A controller button.
-pub use sdl2::controller::Button;
+/// An analog axis of some device (controller, joystick...).
+// TODO: verify.
+pub use winit::AxisId as Axis;
+/// A button of some device (controller, joystick...).
+pub use winit::ButtonId as Button;
 
-pub use sdl2::event::Event;
-/// The event iterator
-pub use sdl2::event::EventPollIterator;
-
-use sdl2::event;
-use sdl2::event::Event::*;
-use sdl2::keyboard;
-use sdl2::mouse;
+/// `winit` events; nested in a module for re-export neatness.
+pub mod winit_event {
+    pub use super::winit::{Event, WindowEvent, DeviceEvent, KeyboardInput, ElementState};
+}
+use self::winit_event::*;
+/// `winit` event loop.
+pub use winit::EventsLoop;
 
 use context::Context;
 use GameResult;
-
-pub use sdl2::keyboard::{CAPSMOD, LALTMOD, LCTRLMOD, LGUIMOD, LSHIFTMOD, MODEMOD, NOMOD, NUMMOD,
-                         RALTMOD, RCTRLMOD, RESERVEDMOD, RGUIMOD, RSHIFTMOD};
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
@@ -68,9 +63,9 @@ pub trait EventHandler {
     fn mouse_button_down_event(
         &mut self,
         _ctx: &mut Context,
-        _button: mouse::MouseButton,
-        _x: i32,
-        _y: i32,
+        _button: MouseButton,
+        _x: f32,
+        _y: f32,
     ) {
     }
 
@@ -78,38 +73,36 @@ pub trait EventHandler {
     fn mouse_button_up_event(
         &mut self,
         _ctx: &mut Context,
-        _button: mouse::MouseButton,
-        _x: i32,
-        _y: i32,
+        _button: MouseButton,
+        _x: f32,
+        _y: f32,
     ) {
     }
 
     /// The mouse was moved; it provides both absolute x and y coordinates in the window,
     /// and relative x and y coordinates compared to its last position.
-    fn mouse_motion_event(
-        &mut self,
-        _ctx: &mut Context,
-        _state: mouse::MouseState,
-        _x: i32,
-        _y: i32,
-        _xrel: i32,
-        _yrel: i32,
-    ) {
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32, _xrel: f32, _yrel: f32) {
     }
 
     /// The mousewheel was scrolled, vertically (y, positive away from and negative toward the user)
     /// or horizontally (x, positive to the right and negative to the left).
-    fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: i32, _y: i32) {}
+    fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32) {}
 
     /// A keyboard button was pressed.
-    fn key_down_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, _repeat: bool) {
-        if keycode == keyboard::Keycode::Escape {
-            ctx.quit().expect("Should never fail");
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: KeyCode,
+        _keymods: KeyMods,
+        _repeat: bool,
+    ) {
+        if keycode == KeyCode::Escape {
+            ctx.quit();
         }
     }
 
     /// A keyboard button was released.
-    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: Keycode, _keymod: Mod, _repeat: bool) {
+    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: KeyCode, _keymods: KeyMods) {
     }
 
     /// Candidate text is passed by the OS (via Input Method Editor).
@@ -163,71 +156,100 @@ pub trait EventHandler {
     fn resize_event(&mut self, _ctx: &mut Context, _width: u32, _height: u32) {}
 }
 
-/// A handle to access the OS's event pump.
-pub struct Events(sdl2::EventPump);
-
-use std::fmt;
-impl fmt::Debug for Events {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<Events: {:p}>", self)
-    }
-}
-
-impl Events {
-    /// Create a new Events object.
-    pub fn new(ctx: &Context) -> GameResult<Events> {
-        let e = ctx.sdl_context.event_pump()?;
-        Ok(Events(e))
-    }
-
-    /// Get an iterator for all events.
-    pub fn poll(&mut self) -> EventPollIterator {
-        self.0.poll_iter()
-    }
-}
-
 /// Runs the game's main loop, calling event callbacks on the given state
 /// object as events occur.
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the `timer` module for more info.
-pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult
+pub fn run<S>(ctx: &mut Context, events_loop: &mut EventsLoop, state: &mut S) -> GameResult
 where
     S: EventHandler,
 {
-    let mut event_pump = ctx.sdl_context.event_pump()?;
+    use keyboard;
+    use mouse;
 
-    let mut continuing = true;
-    while continuing {
+    while ctx.continuing {
         ctx.timer_context.tick();
-
-        for event in event_pump.poll_iter() {
+        events_loop.poll_events(|event| {
             ctx.process_event(&event);
             match event {
-                Quit { .. } => {
-                    continuing = state.quit_event(ctx);
-                    // println!("Quit event: {:?}", t);
-                }
-                KeyDown {
-                    keycode,
-                    keymod,
-                    repeat,
-                    ..
-                } => {
-                    if let Some(key) = keycode {
-                        state.key_down_event(ctx, key, keymod, repeat)
+                Event::WindowEvent { event, .. } => {
+                    match event {
+                        WindowEvent::Resized(width, height) => {
+                            state.resize_event(ctx, width, height);
+                        }
+                        WindowEvent::CloseRequested => {
+                            if !state.quit_event(ctx) {
+                                ctx.quit();
+                            }
+                        }
+                        WindowEvent::Focused(gained) => {
+                            state.focus_event(ctx, gained);
+                        }
+                        WindowEvent::KeyboardInput {
+                            input: winit::KeyboardInput {
+                                state: element_state,
+                                virtual_keycode: Some(keycode),
+                                modifiers,
+                                ..
+                            },
+                            ..
+                        } => {
+                            match element_state {
+                                ElementState::Pressed => {
+                                    let repeat = keyboard::is_repeated(ctx, keycode);
+                                    state.key_down_event(ctx, keycode, modifiers, repeat);
+                                }
+                                ElementState::Released => {
+                                    state.key_up_event(ctx, keycode, modifiers);
+                                }
+                            }
+                        }
+                        WindowEvent::MouseInput { state: element_state, button, .. } => {
+                            let position = mouse::get_position(ctx);
+                            match element_state {
+                                ElementState::Pressed => {
+                                    state.mouse_button_down_event(
+                                        ctx,
+                                        button,
+                                        position.x,
+                                        position.y,
+                                    )
+                                }
+                                ElementState::Released => {
+                                    state.mouse_button_up_event(
+                                        ctx,
+                                        button,
+                                        position.x,
+                                        position.y,
+                                    )
+                                }
+                            }
+                        }
+                        WindowEvent::CursorMoved { .. } => {
+                            let position = mouse::get_position(ctx);
+                            let delta = mouse::get_delta(ctx);
+                            state.mouse_motion_event(
+                                ctx,
+                                position.x,
+                                position.y,
+                                delta.x,
+                                delta.y,
+                            );
+                        }
+                        _ => (),
                     }
                 }
-                KeyUp {
-                    keycode,
-                    keymod,
-                    repeat,
-                    ..
-                } => {
-                    if let Some(key) = keycode {
-                        state.key_up_event(ctx, key, keymod, repeat)
+                Event::DeviceEvent { event, .. } => {
+                    match event {
+                        _ => (),
                     }
                 }
+                Event::Awakened => unimplemented!(),
+                Event::Suspended(_) => unimplemented!(),
+            }
+        });
+        /*{
                 TextEditing {
                     text,
                     start,
@@ -235,22 +257,6 @@ where
                     ..
                 } => state.text_editing_event(ctx, text, start, length),
                 TextInput { text, .. } => state.text_input_event(ctx, text),
-                MouseButtonDown {
-                    mouse_btn, x, y, ..
-                } => state.mouse_button_down_event(ctx, mouse_btn, x, y),
-                MouseButtonUp {
-                    mouse_btn, x, y, ..
-                } => state.mouse_button_up_event(ctx, mouse_btn, x, y),
-                MouseMotion {
-                    mousestate,
-                    x,
-                    y,
-                    xrel,
-                    yrel,
-                    ..
-                } => {
-                    state.mouse_motion_event(ctx, mousestate, x, y, xrel, yrel);
-                }
                 MouseWheel { x, y, .. } => state.mouse_wheel_event(ctx, x, y),
                 ControllerButtonDown { button, which, .. } => {
                     state.controller_button_down_event(ctx, button, which)
@@ -261,23 +267,8 @@ where
                 ControllerAxisMotion {
                     axis, value, which, ..
                 } => state.controller_axis_event(ctx, axis, value, which),
-                Window {
-                    win_event: event::WindowEvent::FocusGained,
-                    ..
-                } => state.focus_event(ctx, true),
-                Window {
-                    win_event: event::WindowEvent::FocusLost,
-                    ..
-                } => state.focus_event(ctx, false),
-                Window {
-                    win_event: event::WindowEvent::Resized(w, h),
-                    ..
-                } => {
-                    state.resize_event(ctx, w as u32, h as u32);
-                }
                 _ => {}
-            }
-        }
+            }*/
         state.update(ctx)?;
         state.draw(ctx)?;
     }

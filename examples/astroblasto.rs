@@ -7,7 +7,7 @@ extern crate rand;
 
 use ggez::audio;
 use ggez::conf;
-use ggez::event::{self, EventHandler, Keycode, Mod};
+use ggez::event::{self, EventHandler, KeyCode, KeyMods};
 use ggez::graphics;
 use ggez::graphics::{Point2, Vector2};
 use ggez::nalgebra as na;
@@ -540,7 +540,7 @@ impl EventHandler for MainState {
         graphics::draw(ctx, &self.score_display, score_dest, 0.0)?;
 
         // Then we flip the screen...
-        graphics::present(ctx);
+        graphics::present(ctx)?;
 
         // And yield the timeslice
         // This tells the OS that we're done using the CPU but it should
@@ -554,39 +554,50 @@ impl EventHandler for MainState {
 
     // Handle key events.  These just map keyboard events
     // and alter our input state appropriately.
-    fn key_down_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, _repeat: bool) {
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: KeyCode,
+        _keymod: KeyMods,
+        _repeat: bool,
+    ) {
         match keycode {
-            Keycode::Up => {
+            KeyCode::Up => {
                 self.input.yaxis = 1.0;
             }
-            Keycode::Left => {
+            KeyCode::Left => {
                 self.input.xaxis = -1.0;
             }
-            Keycode::Right => {
+            KeyCode::Right => {
                 self.input.xaxis = 1.0;
             }
-            Keycode::Space => {
+            KeyCode::Space => {
                 self.input.fire = true;
             }
-            Keycode::P => {
+            KeyCode::P => {
                 let img = graphics::screenshot(ctx).expect("Could not take screenshot");
                 img.encode(ctx, graphics::ImageFormat::Png, "/screenshot.png")
                     .expect("Could not save screenshot");
             }
-            Keycode::Escape => ctx.quit().unwrap(),
+            KeyCode::Escape => ctx.quit(),
             _ => (), // Do nothing
         }
     }
 
-    fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, _keymod: Mod, _repeat: bool) {
+    fn key_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: KeyCode,
+        _keymod: KeyMods,
+    ) {
         match keycode {
-            Keycode::Up => {
+            KeyCode::Up => {
                 self.input.yaxis = 0.0;
             }
-            Keycode::Left | Keycode::Right => {
+            KeyCode::Left | KeyCode::Right => {
                 self.input.xaxis = 0.0;
             }
-            Keycode::Space => {
+            KeyCode::Space => {
                 self.input.fire = false;
             }
             _ => (), // Do nothing
@@ -618,8 +629,8 @@ pub fn main() -> GameResult {
         println!("Not building from cargo?  Ok.");
     }
 
-    let ctx = &mut cb.build()?;
+    let (ctx, events_loop) = &mut cb.build()?;
 
     let game = &mut MainState::new(ctx)?;
-    event::run(ctx, game)
+    event::run(ctx, events_loop, game)
 }

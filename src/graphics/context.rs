@@ -5,11 +5,15 @@ use gfx::traits::FactoryExt;
 use gfx::Factory;
 use gfx_device_gl;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
-use gfx_window_sdl;
+use gfx_window_glutin;
+use glutin;
 
-use conf::WindowSetup;
+use conf::{WindowMode, WindowSetup, FullscreenType, MonitorId};
 use context::DebugId;
 use graphics::*;
+
+use GameError;
+use GameResult;
 
 /// A structure that contains graphics state.
 /// For instance, 
@@ -26,15 +30,13 @@ where
     pub(crate) modelview_stack: Vec<Matrix4>,
     pub(crate) white_image: Image,
     pub(crate) screen_rect: Rect,
-    pub(crate) dpi: (f32, f32, f32),
     pub(crate) color_format: gfx::format::Format,
     pub(crate) depth_format: gfx::format::Format,
 
+    // TODO: is this needed?
     pub(crate) backend_spec: B,
-    pub(crate) window: sdl2::video::Window,
+    pub(crate) window: glutin::GlWindow,
     pub(crate) multisample_samples: u8,
-    #[allow(dead_code)]
-    gl_context: sdl2::video::GLContext,
     pub(crate) device: Box<B::Device>,
     pub(crate) factory: Box<B::Factory>,
     pub(crate) encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
@@ -54,6 +56,11 @@ where
     pub(crate) shaders: Vec<Box<ShaderHandle<B>>>,
 
     pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
+
+    // TODO: there are temporary: need more winit functionality.
+    // winit needs ability to get available/primary monitors from a window reference,
+    // without having a reference to events loop.
+    available_monitors: Vec<glutin::MonitorId>,
 }
 
 impl<B, C> GraphicsContextGeneric<B, C>
@@ -83,7 +90,7 @@ pub(crate) type GraphicsContext =
 impl GraphicsContext {
     /// Create a new GraphicsContext
     pub(crate) fn new(
-        video: &sdl2::VideoSubsystem,
+        events_loop: &glutin::EventsLoop,
         window_setup: &WindowSetup,
         window_mode: WindowMode,
         backend: GlBackendSpec,
@@ -97,36 +104,43 @@ impl GraphicsContext {
         );
 
         // WINDOW SETUP
-        let gl = video.gl_attr();
-        gl.set_context_version(backend.major, backend.minor);
-        gl.set_context_profile(sdl2::video::GLProfile::Core);
-        gl.set_red_size(5);
-        gl.set_green_size(5);
-        gl.set_blue_size(5);
-        gl.set_alpha_size(8);
-        let samples = window_setup.samples as u8;
-        if samples > 1 {
-            gl.set_multisample_buffers(1);
-            gl.set_multisample_samples(samples);
-        }
-        let mut window_builder =
-            video.window(&window_setup.title, window_mode.width, window_mode.height);
-        if window_setup.resizable {
+        let gl_builder = glutin::ContextBuilder::new()
+            //GlRequest::Specific(Api::OpenGl, (backend.major, backend.minor))
+            .with_gl(glutin::GlRequest::Latest)
+            .with_gl_profile(glutin::GlProfile::Core)
+            .with_multisampling(window_setup.samples as u16)
+            .with_pixel_format(5, 8)
+            .with_vsync(window_setup.vsync);
+
+        let mut window_builder = glutin::WindowBuilder::new()
+            .with_title(window_setup.title.clone())
+            .with_transparency(window_setup.transparent);
+        window_builder = if !window_setup.icon.is_empty() {
+            use winit::Icon;
+            window_builder.with_window_icon(Some(Icon::from_path(&window_setup.icon)?))
+        } else {
+            window_builder
+        };
+
+        // TODO: see winit #540 about disabling resizing.
+        /*if window_setup.resizable {
             window_builder.resizable();
-        }
-        if window_setup.allow_highdpi {
-            window_builder.allow_highdpi();
-        }
-        let (window, gl_context, device, mut factory, screen_render_target, depth_view) =
-            gfx_window_sdl::init_raw(&video, window_builder, color_format, depth_format)?;
+        }*/
 
-        GraphicsContext::set_vsync(video, window_mode.vsync)?;
+        let (window, device, mut factory, screen_render_target, depth_view) =
+            gfx_window_glutin::init_raw(
+                window_builder,
+                gl_builder,
+                events_loop,
+                color_format,
+                depth_format
+            );
 
-        let display_index = window.display_index()?;
-        let dpi = window.subsystem().display_dpi(display_index)?;
+        let available_monitors = events_loop.get_available_monitors().collect();
 
-        GraphicsContext::set_vsync(video, window_mode.vsync)?;
-        {
+        // TODO: see winit #548 about DPI.
+        /*{
+            // TODO: fix
             // Log a bunch of OpenGL state info pulled out of SDL and gfx
             let vsync = video.gl_get_swap_interval();
             let gl_attr = video.gl_attr();
@@ -155,7 +169,7 @@ impl GraphicsContext {
                 info.version,
                 info.shading_language
             );
-        }
+        }*/
 
         // GFX SETUP
         let mut encoder: gfx::Encoder<
@@ -173,6 +187,7 @@ impl GraphicsContext {
             BlendMode::Lighten,
             BlendMode::Darken,
         ];
+        let multisample_samples = window_setup.samples as u8;
         let (shader, draw) = create_shader(
             include_bytes!("shader/basic_150.glslv"),
             include_bytes!("shader/basic_150.glslf"),
@@ -180,7 +195,7 @@ impl GraphicsContext {
             "Empty",
             &mut encoder,
             &mut factory,
-            samples,
+            multisample_samples,
             Some(&blend_modes[..]),
             debug_id,
         )?;
@@ -241,14 +256,12 @@ impl GraphicsContext {
             modelview_stack: vec![initial_transform],
             white_image,
             screen_rect: Rect::new(left, top, right - left, bottom - top),
-            dpi: dpi,
-            color_format: color_format,
-            depth_format: depth_format,
+            color_format,
+            depth_format,
 
             backend_spec: backend,
             window,
-            multisample_samples: samples,
-            gl_context,
+            multisample_samples,
             device: Box::new(device),
             factory: Box::new(factory),
             encoder,
@@ -267,6 +280,8 @@ impl GraphicsContext {
             shaders: vec![draw],
 
             glyph_brush,
+
+            available_monitors,
         };
         gfx.set_window_mode(window_mode)?;
 
@@ -407,28 +422,61 @@ impl GraphicsContext {
         self.projection
     }
 
-    /// Just a helper method to set window mode from a WindowMode object.
+    /// Sets window mode from a WindowMode object.
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
-        let window = &mut self.window;
-        window.set_size(mode.width, mode.height)?;
-        // SDL sets "bordered" but Love2D does "not bordered";
-        // we use the Love2D convention.
-        window.set_bordered(!mode.borderless);
-        window.set_fullscreen(mode.fullscreen_type.into())?;
-        window.set_minimum_size(mode.min_width, mode.min_height)?;
-        window.set_maximum_size(mode.max_width, mode.max_height)?;
-        Ok(())
-    }
+        let window = &self.window;
 
-    /// Another helper method to set vsync.
-    pub(crate) fn set_vsync(video: &sdl2::VideoSubsystem, vsync: bool) -> GameResult {
-        let vsync_int = if vsync { 1 } else { 0 };
-        if video.gl_set_swap_interval(vsync_int) {
-            Ok(())
-        } else {
-            let err = sdl2::get_error();
-            Err(GameError::VideoError(err))
+        window.set_maximized(mode.maximized);
+
+        // TODO: find out if single-dimension constraints are possible.
+        let mut min_dimensions = None;
+        if mode.min_width > 0 && mode.min_height > 0 {
+            min_dimensions = Some((mode.min_width, mode.min_height));
         }
+        window.set_min_dimensions(min_dimensions);
+
+        let mut max_dimensions = None;
+        if mode.max_width > 0 && mode.max_height > 0 {
+            max_dimensions = Some((mode.max_width, mode.max_height));
+        }
+        window.set_max_dimensions(max_dimensions);
+
+        match mode.fullscreen_type {
+            FullscreenType::Off => {
+                window.set_fullscreen(None);
+                window.set_decorations(!mode.borderless);
+                window.set_inner_size(mode.width, mode.height);
+            }
+            FullscreenType::True(monitor) => {
+                let monitor = match monitor {
+                    MonitorId::Current => window.get_current_monitor(),
+                    MonitorId::Index(i) => if i < self.available_monitors.len() {
+                        self.available_monitors[i].clone()
+                    } else {
+                        return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
+                    }
+                };
+                window.set_fullscreen(Some(monitor));
+                window.set_inner_size(mode.width, mode.height);
+            }
+            FullscreenType::Desktop(monitor) => {
+                let monitor = match monitor {
+                    MonitorId::Current => window.get_current_monitor(),
+                    MonitorId::Index(i) => if i < self.available_monitors.len() {
+                        self.available_monitors[i].clone()
+                    } else {
+                        return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
+                    }
+                };
+                let position = monitor.get_position();
+                let dimensions = monitor.get_dimensions();
+                window.set_fullscreen(None);
+                window.set_decorations(false);
+                window.set_inner_size(dimensions.0, dimensions.1);
+                window.set_position(position.0, position.1);
+            }
+        }
+        Ok(())
     }
 
     /// Communicates changes in the viewport size between SDL and gfx.
@@ -437,13 +485,13 @@ impl GraphicsContext {
     /// so it may cause squirrelliness to
     /// happen with canvases or other things that touch it.
     pub(crate) fn resize_viewport(&mut self) {
-        // Basically taken from the definition of 
+        // Basically taken from the definition of
         // gfx_window_sdl::update_views()
         let dim = self.screen_render_target.get_dimensions();
         assert_eq!(dim, self.depth_view.get_dimensions());
-        if let Some((cv, dv)) = gfx_window_sdl::update_views_raw(
-            &self.window, 
-            dim, 
+        if let Some((cv, dv)) = gfx_window_glutin::update_views_raw(
+            &self.window,
+            dim,
             self.color_format,
             self.depth_format) {
             self.screen_render_target = cv;

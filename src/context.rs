@@ -1,17 +1,13 @@
-use image::{self, GenericImage};
-use sdl2::pixels;
-use sdl2::surface;
-use sdl2::{self, Sdl};
+use winit;
 
 use std::fmt;
-use std::io::Read;
 
 use audio;
 use conf;
-use event;
+use event::winit_event;
 use filesystem::Filesystem;
-use graphics;
-use input;
+use graphics::{self, Point2};
+use keyboard;
 use mouse;
 use timer;
 use GameError;
@@ -30,21 +26,18 @@ use GameResult;
 pub struct Context {
     /// The Conf object the Context was created with
     pub conf: conf::Conf,
-
-    /// SDL context
-    pub sdl_context: Sdl,
     /// Filesystem state
     pub filesystem: Filesystem,
     /// Graphics state
     pub(crate) gfx_context: graphics::GraphicsContext,
-    /// Event context
-    pub event_context: sdl2::EventSubsystem,
+    /// Controls whether or not the events loop should be running.
+    pub continuing: bool,
     /// Timer state
     pub timer_context: timer::TimeContext,
     /// Audio context
     pub audio_context: audio::AudioContext,
-    /// Gamepad context
-    pub gamepad_context: input::GamepadContext,
+    /// Keyboard context
+    pub keyboard_context: keyboard::KeyboardContext,
     /// Mouse context
     pub mouse_context: mouse::MouseContext,
     /// Default font
@@ -63,75 +56,41 @@ impl fmt::Debug for Context {
     }
 }
 
-/// Sets the window icon from the Conf `window_icon` field.
-/// An empty string in the conf's `window_icon`
-/// means to do nothing.
-fn set_window_icon(context: &mut Context) -> GameResult {
-    // This clone is a little annoying, but, borrowing is inconvenient.
-    let icon = &context.conf.window_setup.icon.clone();
-    if !icon.is_empty() {
-        let mut f = context.filesystem.open(icon)?;
-        let mut buf = Vec::new();
-        f.read_to_end(&mut buf)?;
-        let image = image::load_from_memory(&buf)?;
-        let image_data = &mut image.to_rgba();
-        // The "pitch" parameter here is not the count
-        // between pixels, but the count between rows.
-        // For some retarded reason.
-        // Also SDL seems to have strange ideas of what
-        // "RGBA" means.
-        let surface = surface::Surface::from_data(
-            image_data,
-            image.width(),
-            image.height(),
-            image.width() * 4,
-            pixels::PixelFormatEnum::ABGR8888,
-        )?;
-        let window = graphics::get_window_mut(context);
-        window.set_icon(surface);
-    };
-    Ok(())
-}
-
 impl Context {
     /// Tries to create a new Context using settings from the given config file.
     /// Usually called by `Context::load_from_conf()`.
-    fn from_conf(conf: conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context> {
+    fn from_conf(conf: conf::Conf, fs: Filesystem) -> GameResult<(Context, winit::EventsLoop)> {
         let debug_id = DebugId::new();
-        let video = sdl_context.video()?;
         let audio_context = audio::AudioContext::new()?;
-        let event_context = sdl_context.event()?;
+        let events_loop = winit::EventsLoop::new();
         let timer_context = timer::TimeContext::new();
         let font = graphics::Font::default_font()?;
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
         let graphics_context = graphics::GraphicsContext::new(
-            &video,
+            &events_loop,
             &conf.window_setup,
             conf.window_mode,
             backend_spec,
             debug_id,
         )?;
-        let gamepad_context = input::GamepadContext::new(&sdl_context)?;
         let mouse_context = mouse::MouseContext::new();
+        let keyboard_context = keyboard::KeyboardContext::new();
 
-        let mut ctx = Context {
+        let ctx = Context {
             conf,
-            sdl_context,
             filesystem: fs,
             gfx_context: graphics_context,
-            event_context,
+            continuing: true,
             timer_context,
             audio_context,
-            gamepad_context,
+            keyboard_context,
             mouse_context,
 
             default_font: font,
             debug_id,
         };
 
-        set_window_icon(&mut ctx)?;
-
-        Ok(ctx)
+        Ok((ctx, events_loop))
     }
 
     /// Tries to create a new Context by loading a config
@@ -148,8 +107,7 @@ impl Context {
         game_id: &'static str,
         author: &'static str,
         default_config: conf::Conf,
-    ) -> GameResult<Context> {
-        let sdl_context = sdl2::init()?;
+    ) -> GameResult<(Context, winit::EventsLoop)> {
         let mut fs = Filesystem::new(game_id, author)?;
 
         let config = match fs.read_config() {
@@ -163,7 +121,7 @@ impl Context {
             }
         };
 
-        Context::from_conf(config, fs, sdl_context)
+        Context::from_conf(config, fs)
     }
 
     /// Prints out information on the resources subsystem.
@@ -173,37 +131,50 @@ impl Context {
         self.filesystem.print_all();
     }
 
-    /// Triggers a Quit event.
-    pub fn quit(&mut self) -> GameResult {
-        let now_dur = timer::get_time_since_start(self);
-        let now = timer::duration_to_f64(now_dur);
-        let e = sdl2::event::Event::Quit {
-            timestamp: now as u32,
-        };
-        // println!("Pushing event {:?}", e);
-        self.event_context.push_event(e).map_err(GameError::from)
+    /// Terminates `ggez::run()` loop by setting `Context::continuing` to `false`.
+    pub fn quit(&mut self) {
+        self.continuing = false;
     }
 
     /// Feeds an `Event` into the `Context` so it can update any internal
     /// state it needs to, such as detecting window resizes.  If you are
     /// rolling your own event loop, you should call this on the events
     /// you receive before processing them yourself.
-    pub fn process_event(&mut self, event: &event::Event) {
-        match *event {
-            event::Event::MouseMotion { x, y, .. } => {
-                // Keeping the mouse state info in the Context is a bit of a hack, see issue #283.
-                // Seems the best workaround though.
-                use graphics::Point2;
-                self.mouse_context
-                    .set_last_position(Point2::new(x as f32, y as f32));
+    pub fn process_event(&mut self, event: &winit::Event) {
+        match event {
+            winit_event::Event::WindowEvent { event, .. } => {
+                match event {
+                    winit_event::WindowEvent::Resized(_, _) => {
+                        self.gfx_context.resize_viewport();
+                    }
+                    winit_event::WindowEvent::CursorMoved { position: (x, y), .. } => {
+                        self.mouse_context.set_last_position(
+                            Point2::new(*x as f32, *y as f32),
+                        );
+                    }
+                    winit_event::WindowEvent::KeyboardInput {
+                        input: winit_event::KeyboardInput {
+                            state,
+                            virtual_keycode,
+                            ..
+                        },
+                        ..
+                    } => {
+                        if *state == winit_event::ElementState::Released {
+                            if keyboard::get_last_held(self) == *virtual_keycode {
+                                self.keyboard_context.set_last_pressed(*virtual_keycode);
+                            }
+                        }
+                    }
+                    _ => (),
+                }
             }
-            event::Event::Window {
-                win_event: sdl2::event::WindowEvent::Resized(_, _),
-                ..
-            } => {
-                self.gfx_context.resize_viewport();
+            winit_event::Event::DeviceEvent { event: winit_event::DeviceEvent::MouseMotion { delta: (x, y) }, .. } => {
+                self.mouse_context.set_last_delta(
+                    Point2::new(*x as f32, *y as f32),
+                );
             }
-            _ => {}
+            _ => (),
         }
     }
 }
@@ -274,8 +245,7 @@ impl ContextBuilder {
     }
 
     /// Build the Context.
-    pub fn build(self) -> GameResult<Context> {
-        let sdl_context = sdl2::init()?;
+    pub fn build(self) -> GameResult<(Context, winit::EventsLoop)> {
         let mut fs = Filesystem::new(self.game_id, self.author)?;
 
         let config = if self.load_conf_file {
@@ -288,7 +258,7 @@ impl ContextBuilder {
             fs.mount(path, true);
         }
 
-        Context::from_conf(config, fs, sdl_context)
+        Context::from_conf(config, fs)
     }
 }
 

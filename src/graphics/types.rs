@@ -2,6 +2,8 @@ use nalgebra as na;
 use std::f32;
 use std::u32;
 
+use super::{FillOptions, StrokeOptions};
+
 /// A 2 dimensional point representing a location
 pub type Point2 = na::Point2<f32>;
 /// A 2 dimensional vector representing an offset of a location
@@ -347,10 +349,14 @@ impl From<LinearColor> for [f32; 4] {
 /// filled or as an outline.
 #[derive(Debug, Copy, Clone)]
 pub enum DrawMode {
-    /// A stroked line with the given width
+    /// A stroked line with the given width.
     Line(f32),
     /// A filled shape.
     Fill,
+    /// A stroked line with given parameters, see `StrokeOptions` documentation.
+    CustomLine(StrokeOptions),
+    /// A filled shape with given parameters, see `FillOptions` documentation.
+    CustomFill(FillOptions),
 }
 
 /// Specifies what blending method to use when scaling up/down images.
