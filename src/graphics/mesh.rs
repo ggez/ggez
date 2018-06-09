@@ -4,7 +4,7 @@ use graphics::*;
 use lyon;
 use lyon::tessellation as t;
 
-pub use self::t::{LineJoin, LineCap};
+pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 
 /// A builder for creating `Mesh`es.
 ///
@@ -74,8 +74,8 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a line of one or more connected segments.
-    pub fn line(&mut self, points: &[Point2], width: f32, join: LineJoin, cap: LineCap) -> &mut Self {
-        self.polyline(DrawMode::Line(width, join, cap), points)
+    pub fn line(&mut self, points: &[Point2], width: f32) -> &mut Self {
+        self.polyline(DrawMode::Line(width), points)
     }
 
     /// Create a new mesh for a circle.
@@ -104,17 +104,33 @@ impl MeshBuilder {
                         builder,
                     );
                 }
-                DrawMode::Line(line_width, line_join, line_cap) => {
+                DrawMode::Line(line_width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width)
-                        .with_line_join(line_join)
-                        .with_line_cap(line_cap)
                         .with_tolerance(tolerance);
                     t::basic_shapes::stroke_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &options,
+                        builder,
+                    );
+                }
+                DrawMode::CustomFill(fill_options) => {
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    t::basic_shapes::fill_circle(
+                        t::math::point(point.x, point.y),
+                        radius,
+                        &fill_options.with_tolerance(tolerance),
+                        builder,
+                    );
+                }
+                DrawMode::CustomLine(options) => {
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    t::basic_shapes::stroke_circle(
+                        t::math::point(point.x, point.y),
+                        radius,
+                        &options.with_tolerance(tolerance),
                         builder,
                     );
                 }
@@ -148,18 +164,36 @@ impl MeshBuilder {
                         builder,
                     );
                 }
-                DrawMode::Line(line_width, line_join, line_cap) => {
+                DrawMode::Line(line_width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width)
-                        .with_line_join(line_join)
-                        .with_line_cap(line_cap)
                         .with_tolerance(tolerance);
                     t::basic_shapes::stroke_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
                         t::math::Angle { radians: 0.0 },
                         &options,
+                        builder,
+                    );
+                }
+                DrawMode::CustomFill(fill_options) => {
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    t::basic_shapes::fill_ellipse(
+                        t::math::point(point.x, point.y),
+                        t::math::vector(radius1, radius2),
+                        t::math::Angle { radians: 0.0 },
+                        &fill_options.with_tolerance(tolerance),
+                        builder,
+                    );
+                }
+                DrawMode::CustomLine(options) => {
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    t::basic_shapes::stroke_ellipse(
+                        t::math::point(point.x, point.y),
+                        t::math::vector(radius1, radius2),
+                        t::math::Angle { radians: 0.0 },
+                        &options.with_tolerance(tolerance),
                         builder,
                     );
                 }
@@ -170,6 +204,15 @@ impl MeshBuilder {
 
     /// Create a new mesh for a series of connected lines.
     pub fn polyline(&mut self, mode: DrawMode, points: &[Point2]) -> &mut Self {
+        self.polyline_inner(mode, points, false)
+    }
+
+    /// Create a new mesh for a closed polygon.
+    pub fn polygon(&mut self, mode: DrawMode, points: &[Point2]) -> &mut Self {
+        self.polyline_inner(mode, points, true)
+    }
+
+    fn polyline_inner(&mut self, mode: DrawMode, points: &[Point2], is_closed: bool) -> &mut Self {
         {
             assert!(points.len() > 1);
             let buffers = &mut self.buffer;
@@ -183,38 +226,23 @@ impl MeshBuilder {
                     let options = t::FillOptions::default();
                     // TODO: Removing this expect would be rather nice.
                     t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
-                        .expect("Could not fill polyline?");
+                        .expect("Could not fill polygon?");
                 }
-                DrawMode::Line(width, join, cap) => {
+                DrawMode::Line(width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let options = t::StrokeOptions::default().with_line_width(width).with_line_join(join).with_line_cap(cap);
-                    t::basic_shapes::stroke_polyline(points, false, &options, builder);
+                    let options = t::StrokeOptions::default().with_line_width(width);
+                    t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
                 }
-            };
-        }
-        self
-    }
-
-    /// Create a new mesh for a closed polygon
-    pub fn polygon(&mut self, mode: DrawMode, points: &[Point2]) -> &mut Self {
-        {
-            let buffers = &mut self.buffer;
-            let points = points
-                .into_iter()
-                .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
-            match mode {
-                DrawMode::Fill => {
+                DrawMode::CustomFill(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let tessellator = &mut t::FillTessellator::new();
-                    let options = t::FillOptions::default();
                     // TODO: Removing this expect would be rather nice.
                     t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
                         .expect("Could not fill polygon?");
                 }
-                DrawMode::Line(width, join, cap) => {
+                DrawMode::CustomLine(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let options = t::StrokeOptions::default().with_line_width(width).with_line_width(width).with_line_join(join).with_line_cap(cap);
-                    t::basic_shapes::stroke_polyline(points, true, &options, builder);
+                    t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
                 }
             };
         }
@@ -317,7 +345,7 @@ impl Mesh {
     /// Create a new mesh for a line of one or more connected segments.
     pub fn new_line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
-        mb.polyline(DrawMode::Line(width, ctx.gfx_context.line_join, ctx.gfx_context.line_cap), points);
+        mb.polyline(DrawMode::Line(width), points);
         mb.build(ctx)
     }
 
@@ -348,14 +376,14 @@ impl Mesh {
         mb.build(ctx)
     }
 
-    /// Create a new mesh for series of connected lines
+    /// Create a new mesh for series of connected lines.
     pub fn new_polyline(ctx: &mut Context, mode: DrawMode, points: &[Point2]) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.polyline(mode, points);
         mb.build(ctx)
     }
 
-    /// Create a new mesh for closed polygon
+    /// Create a new mesh for closed polygon.
     pub fn new_polygon(ctx: &mut Context, mode: DrawMode, points: &[Point2]) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         mb.polygon(mode, points);

@@ -21,9 +21,6 @@ where
     B: BackendSpec<SurfaceType = C>,
     C: gfx::format::Formatted,
 {
-    pub(crate) line_join: LineJoin,
-    pub(crate) line_cap: LineCap,
-
     pub(crate) foreground_color: Color,
     pub(crate) background_color: Color,
     shader_globals: Globals,
@@ -241,9 +238,6 @@ impl GraphicsContext {
         };
 
         let mut gfx = GraphicsContext {
-            line_join: LineJoin::Miter,
-            line_cap: LineCap::Butt,
-
             foreground_color: types::WHITE,
             background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             shader_globals: globals,
