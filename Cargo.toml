@@ -46,7 +46,7 @@ serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
 log = "0.4"
-lyon = "0.10"
+lyon = "^0.10.2"
 smart-default = "0.2"
 nalgebra = {git = "https://github.com/icefoxen/nalgebra.git", branch = "feat/mint_point_conversions", features = ["mint"] }
 winit = { version = "0.15", features = ["icon_loading"] }
