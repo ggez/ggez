@@ -60,7 +60,7 @@ impl event::EventHandler for MainState {
                 ..Default::default()
             },
         )?;
-        graphics::present(ctx);
+        graphics::present(ctx)?;
 
         Ok(())
     }
@@ -73,8 +73,8 @@ impl event::EventHandler for MainState {
 
 pub fn main() -> GameResult {
     let mut c = conf::Conf::new();
-    c.window_setup.resizable = true;
-    let ctx = &mut Context::load_from_conf("super_simple", "ggez", c)?;
+    //c.window_setup.resizable = true; TODO: this.
+    let (ctx, events_loop) = &mut Context::load_from_conf("super_simple", "ggez", c)?;
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, state)
+    event::run(ctx, events_loop, state)
 }

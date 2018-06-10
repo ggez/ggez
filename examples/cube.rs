@@ -243,7 +243,7 @@ impl event::EventHandler for MainState {
         let dest_point2 = graphics::Point2::new(10.0, 250.0);
         graphics::draw(ctx, &self.text1, dest_point1, 0.0)?;
         graphics::draw(ctx, &self.text2, dest_point2, 0.0)?;
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         self.frames += 1;
         if (self.frames % 10) == 0 {
             println!("FPS: {}", ggez::timer::get_fps(ctx));
@@ -254,7 +254,7 @@ impl event::EventHandler for MainState {
 
 pub fn main() -> GameResult {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("cube", "ggez", c)?;
+    let (ctx, events_loop) = &mut Context::load_from_conf("cube", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -265,5 +265,5 @@ pub fn main() -> GameResult {
     }
 
     let state = &mut MainState::new(ctx);
-    event::run(ctx, state)
+    event::run(ctx, events_loop, state)
 }

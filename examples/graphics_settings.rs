@@ -8,7 +8,7 @@ extern crate ggez;
 
 use clap::{App, Arg};
 use ggez::conf;
-use ggez::event::{self, Keycode, Mod};
+use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode, Point2};
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -48,6 +48,7 @@ impl MainState {
             },
         };
 
+        // TODO: see method in graphics module.
         let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
         s.window_settings.num_of_resolutions = resolutions.len();
 
@@ -111,7 +112,7 @@ impl event::EventHandler for MainState {
                 )?
             }
         }
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         Ok(())
     }
 
@@ -119,26 +120,25 @@ impl event::EventHandler for MainState {
         &mut self,
         _ctx: &mut Context,
         _btn: event::MouseButton,
-        x: i32,
-        y: i32,
+        x: f32,
+        y: f32,
     ) {
         println!("Button clicked at: {} {}", x, y);
     }
 
-    fn key_up_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, repeat: bool) {
-        if !repeat {
+    fn key_up_event(&mut self, ctx: &mut Context, keycode: KeyCode, _keymod: KeyMods) {
             match keycode {
-                Keycode::F => {
+                KeyCode::F => {
                     self.window_settings.toggle_fullscreen = true;
                     self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
                 }
-                Keycode::H => {
+                KeyCode::H => {
                     self.window_settings.window_size_toggle = true;
                     self.window_settings.resolution_index += 1;
                     self.window_settings.resolution_index %=
                         self.window_settings.num_of_resolutions;
                 }
-                Keycode::G => {
+                KeyCode::G => {
                     if self.window_settings.resolution_index > 0 {
                         self.window_settings.window_size_toggle = true;
                         self.window_settings.resolution_index -= 1;
@@ -146,7 +146,7 @@ impl event::EventHandler for MainState {
                             self.window_settings.num_of_resolutions;
                     }
                 }
-                Keycode::Up => {
+                KeyCode::Up => {
                     self.zoom += 0.1;
                     println!("Zoom is now {}", self.zoom);
                     let (w, h) = graphics::get_size(ctx);
@@ -154,7 +154,7 @@ impl event::EventHandler for MainState {
                         graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                     graphics::set_screen_coordinates(ctx, new_rect).unwrap();
                 }
-                Keycode::Down => {
+                KeyCode::Down => {
                     self.zoom -= 0.1;
                     println!("Zoom is now {}", self.zoom);
                     let (w, h) = graphics::get_size(ctx);
@@ -162,7 +162,7 @@ impl event::EventHandler for MainState {
                         graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                     graphics::set_screen_coordinates(ctx, new_rect).unwrap();
                 }
-                Keycode::Space => {
+                KeyCode::Space => {
                     self.window_settings.resize_projection =
                         !self.window_settings.resize_projection;
                     println!(
@@ -172,7 +172,6 @@ impl event::EventHandler for MainState {
                 }
                 _ => {}
             }
-        }
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
@@ -225,7 +224,7 @@ pub fn main() -> GameResult {
     c.window_setup.resizable = true;
     println!("{:?}", c);
 
-    let ctx = &mut Context::load_from_conf("graphics_settings", "ggez", c)?;
+    let (ctx, events_loop) = &mut Context::load_from_conf("graphics_settings", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -240,5 +239,5 @@ pub fn main() -> GameResult {
 
     print_help();
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, state)
+    event::run(ctx, events_loop, state)
 }

@@ -35,6 +35,7 @@ pub fn get_last_held(ctx: &Context) -> Option<KeyCode> {
 
 /// Checks if the system is sending repeat events of the keystroke,
 /// like when a key is held down.
+/// Also sneakily updates with the queried key.
 pub fn is_repeated(ctx: &mut Context, key: KeyCode) -> bool {
     let key = Some(key);
     let result = ctx.keyboard_context.last_pressed == key;

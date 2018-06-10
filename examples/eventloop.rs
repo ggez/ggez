@@ -11,36 +11,48 @@
 extern crate ggez;
 
 use ggez::event;
+use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
 use ggez::graphics::{self, DrawMode, Point2};
 use ggez::{conf, Context, GameResult};
 
 pub fn main() -> GameResult {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("eventloop", "ggez", c)?;
-    let mut events = event::Events::new(ctx)?;
-    let mut continuing = true;
+    let (ctx, events_loop) = &mut Context::load_from_conf("eventloop", "ggez", c)?;
 
     let mut position: f32 = 1.0;
 
-    while continuing {
+    // This is also used in the loop inside `::run()` - it can be flipped off with `ctx.quit()`
+    while ctx.continuing {
         // Tell the timer stuff a frame has happened.
         // Without this the FPS timer functions and such won't work.
         ctx.timer_context.tick();
-        // Handle events
-        for event in events.poll() {
+        // Handle events. Refer to `winit` docs for more information.
+        events_loop.poll_events(|event| {
+            // This tells `ggez` to update it's internal states, should the event require that.
+            // These include cursor position, view updating on resize, etc.
             ctx.process_event(&event);
             match event {
-                event::Event::Quit { .. }
-                | event::Event::KeyDown {
-                    keycode: Some(event::Keycode::Escape),
-                    ..
-                } => {
-                    println!("Quitting");
-                    continuing = false
-                }
-                x => println!("Event fired: {:?}", x),
+                Event::WindowEvent { event, .. } => match event {
+                    WindowEvent::CloseRequested => ctx.quit(),
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                virtual_keycode: Some(keycode),
+                                ..
+                            },
+                        ..
+                    } => match keycode {
+                        event::KeyCode::Escape => ctx.quit(),
+
+                        _ => (),
+                    },
+                    // `CloseRequested` and `KeyboardInput` events won't appear here.
+                    x => println!("Other window event fired: {:?}", x),
+                },
+
+                x => println!("Device event fired: {:?}", x),
             }
-        }
+        });
 
         // Update
         position += 1.0;
@@ -55,7 +67,7 @@ pub fn main() -> GameResult {
             100.0,
             2.0,
         )?;
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         ggez::timer::yield_now();
     }
     Ok(())

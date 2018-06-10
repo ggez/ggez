@@ -86,7 +86,7 @@ impl event::EventHandler for MainState {
             )?;
         }
 
-        graphics::present(ctx);
+        graphics::present(ctx)?;
 
         // Drawables are drawn from their top-left corner.
         self.frames += 1;
@@ -100,8 +100,8 @@ impl event::EventHandler for MainState {
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
-        _keycode: ggez::event::Keycode,
-        _keymod: ggez::event::Mod,
+        _keycode: ggez::event::KeyCode,
+        _keymod: ggez::event::KeyMods,
         repeat: bool,
     ) {
         if !repeat {
@@ -119,7 +119,7 @@ pub fn main() -> GameResult {
         },
         ..Default::default()
     };
-    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c)?;
+    let (ctx, event_loop) = &mut Context::load_from_conf("helloworld", "ggez", c)?;
 
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
@@ -128,5 +128,5 @@ pub fn main() -> GameResult {
     }
 
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, state)
+    event::run(ctx, event_loop, state)
 }

@@ -6,7 +6,7 @@ extern crate gfx;
 extern crate ggez;
 
 use ggez::conf;
-use ggez::event::{self, MouseState};
+use ggez::event;
 use ggez::graphics::{self, BlendMode, Canvas, DrawParam, Drawable, Point2, Shader};
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -416,28 +416,27 @@ impl event::EventHandler for MainState {
         // graphics::set_color(ctx, [1.0; 4].into())?;
         // graphics::draw_ex(ctx, &self.occlusions, origin)?;
 
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         Ok(())
     }
 
     fn mouse_motion_event(
         &mut self,
         ctx: &mut Context,
-        _state: MouseState,
-        x: i32,
-        y: i32,
-        _xrel: i32,
-        _yrel: i32,
+        x: f32,
+        y: f32,
+        _xrel: f32,
+        _yrel: f32,
     ) {
         let (w, h) = graphics::get_size(ctx);
-        let (x, y) = (x as f32 / w as f32, 1.0 - y as f32 / h as f32);
+        let (x, y) = (x / w as f32, 1.0 - y / h as f32);
         self.torch.pos = [x, y];
     }
 }
 
 pub fn main() -> GameResult {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("shadows", "ggez", c)?;
+    let (ctx, events_loop) = &mut Context::load_from_conf("shadows", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -448,5 +447,5 @@ pub fn main() -> GameResult {
     }
 
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, state)
+    event::run(ctx, events_loop, state)
 }

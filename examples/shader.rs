@@ -57,14 +57,14 @@ impl event::EventHandler for MainState {
 
         graphics::circle(ctx, graphics::WHITE, DrawMode::Fill, Point2::new(700.0, 300.0), 100.0, 2.0)?;
 
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         Ok(())
     }
 }
 
 pub fn main() -> GameResult {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("shader", "ggez", c)?;
+    let (ctx, events_loop) = &mut Context::load_from_conf("shader", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
     // we we look in the cargo project for files.
@@ -75,5 +75,5 @@ pub fn main() -> GameResult {
     }
 
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, state)
+    event::run(ctx, events_loop, state)
 }
