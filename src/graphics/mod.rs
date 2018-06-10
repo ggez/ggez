@@ -187,7 +187,8 @@ impl Default for InstanceProperties {
 
 impl From<DrawParam> for InstanceProperties {
     fn from(p: DrawParam) -> Self {
-        let mat: [[f32; 4]; 4] = p.into_matrix().into();
+        let p: PrimitiveDrawParam = p.into();
+        let mat: [[f32; 4]; 4] = p.matrix.into();
         // SRGB BUGGO: Only convert if the color format is srgb!
         let linear_color: types::LinearColor = p.color
             .into();

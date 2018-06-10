@@ -161,7 +161,8 @@ impl graphics::Drawable for SpriteBatch {
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.sprites.len() as u32, 0));
         let curr_transform = gfx.get_transform();
-        gfx.push_transform(param.into_matrix() * curr_transform);
+        let prim_param: graphics::PrimitiveDrawParam = param.into();
+        gfx.push_transform(prim_param.matrix * curr_transform);
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
