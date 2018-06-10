@@ -129,7 +129,7 @@ impl event::EventHandler for App {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx);
+        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         // `TextCached` can be used in "immediate mode", but it's slightly less efficient
         // in most cases, and horrifically less efficient in a few select ones

@@ -316,7 +316,6 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.print_resource_stats();
-        graphics::set_background_color(ctx, (0, 0, 0, 255).into());
 
         println!("Game resource path: {:?}", ctx.filesystem);
 
@@ -419,7 +418,7 @@ fn print_instructions() {
     println!("L/R arrow keys rotate your ship, up thrusts, space bar fires");
     println!();
 }
-
+extern crate mint;
 fn draw_actor(
     assets: &mut Assets,
     ctx: &mut Context,
@@ -429,12 +428,16 @@ fn draw_actor(
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, actor.pos);
     let image = assets.actor_image(actor);
-    let drawparams = graphics::DrawParam {
-        dest: pos,
-        rotation: actor.facing as f32,
-        offset: graphics::Point2::new(0.5, 0.5),
-        ..Default::default()
-    };
+    let drawparams = graphics::DrawParam::new()
+        .dest(pos)
+        .rotation(actor.facing as f32)
+        .offset(graphics::Point2::new(0.5, 0.5));
+    //  {
+    //     dest: pos,
+    //     rotation: actor.facing as f32,
+    //     offset: graphics::Point2::new(0.5, 0.5),
+    //     ..Default::default()
+    // };
     graphics::draw_ex(ctx, image, drawparams)
 }
 
@@ -511,7 +514,7 @@ impl EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Our drawing is quite simple.
         // Just clear the screen...
-        graphics::clear(ctx);
+        graphics::clear(ctx, graphics::BLACK);
 
         // Loop over all objects drawing them...
         {

@@ -80,10 +80,8 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::set_background_color(ctx, graphics::BLACK);
-        graphics::clear(ctx);
+        graphics::clear(ctx, graphics::BLACK);
         let rotation = timer::get_ticks(ctx) % 1000;
-        graphics::set_color(ctx, graphics::WHITE)?;
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::Line(3.0),
@@ -106,9 +104,9 @@ impl event::EventHandler for MainState {
                 let b = (y as f32) / (COUNT as f32);
                 // println!("R: {}", r);
                 let color = graphics::Color::new(r, 0.0, b, 1.0);
-                graphics::set_color(ctx, color)?;
                 graphics::rectangle(
                     ctx,
+                    color,
                     graphics::DrawMode::Fill,
                     graphics::Rect::new(fx, fy, 5.0, 5.0),
                 )?

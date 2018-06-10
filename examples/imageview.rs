@@ -39,8 +39,7 @@ impl MainState {
             let x = (rand::random::<i32>() % 50) as f32;
             let y = (rand::random::<i32>() % 50) as f32;
             let point = graphics::Point2::new(last_point.x + x, last_point.y + y);
-            graphics::set_color(ctx, color)?;
-            graphics::line(ctx, &[last_point, point], 3.0)?;
+            graphics::line(ctx, color, &[last_point, point], 3.0)?;
             last_point = point;
         }
 
@@ -101,9 +100,10 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let c = self.a as u8;
-        graphics::set_color(ctx, Color::from((c, c, c, 255)))?;
-        graphics::clear(ctx);
+        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
+        // TODO: Fix set_color's
+        // graphics::set_color(ctx, Color::from((c, c, c, 255)))?;
         let dest_point = graphics::Point2::new(0.0, 0.0);
         graphics::draw(ctx, &self.image, dest_point, 0.0)?;
         graphics::draw(ctx, &self.text, dest_point, 0.0)?;
@@ -111,13 +111,13 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &self.bmptext, dest_point, 0.0)?;
 
         let dest_point2 = graphics::Point2::new(0.0, 256.0);
-        graphics::set_color(ctx, Color::from((0, 0, 0, 255)))?;
         graphics::rectangle(
             ctx,
+            Color::from((0, 0, 0, 255)),
             graphics::DrawMode::Fill,
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
         )?;
-        graphics::set_color(ctx, Color::from((255, 255, 255, 255)))?;
+        // graphics::set_color(ctx, Color::from((255, 255, 255, 255)))?;
         graphics::draw(ctx, &self.pixel_sized_text, dest_point2, 0.0)?;
 
         self.draw_crazy_lines(ctx)?;

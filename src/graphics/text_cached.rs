@@ -229,7 +229,6 @@ impl TextCached {
     /// Converts `TextCached` to a type `gfx_glyph` can understand and queue.
     fn generate_varied_section<'a>(
         &'a self,
-        context: &Context,
         relative_dest: Point2,
         color: Option<Color>,
     ) -> VariedSection<'a> {
@@ -239,7 +238,7 @@ impl TextCached {
                 Some(c) => c,
                 None => match color {
                     Some(c) => c,
-                    None => get_color(context),
+                    None => WHITE,
                 },
             };
             let font_id = match fragment.font_id {
@@ -318,7 +317,7 @@ impl TextCached {
         let mut max_width = 0;
         let mut max_height = 0;
         {
-            let varied_section = self.generate_varied_section(context, Point2::new(0.0, 0.0), None);
+            let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
             let glyphed_section_texts = self
                 .layout
                 .calculate_glyphs(context.gfx_context.glyph_brush.fonts(), &varied_section);
@@ -369,7 +368,7 @@ impl TextCached {
     /// `relative_dest` is relative to the `DrawParam::dest` passed to `draw_queued()`.
     /// Note, any `TextCached` drawn via `graphics::draw()` will also draw the queue.
     pub fn queue(&self, context: &mut Context, relative_dest: Point2, color: Option<Color>) {
-        let varied_section = self.generate_varied_section(context, relative_dest, color);
+        let varied_section = self.generate_varied_section(relative_dest, color);
         context.gfx_context.glyph_brush.queue(varied_section);
     }
 
@@ -479,8 +478,8 @@ impl Drawable for TextCached {
             param.offset.x * self.width(ctx) as f32,
             param.offset.y * self.height(ctx) as f32,
         );
-        let param = DrawParam { offset, ..param };
-        self.queue(ctx, Point2::new(0.0, 0.0), param.color);
+        let param = param.offset(offset);
+        self.queue(ctx, Point2::new(0.0, 0.0), Some(param.color));
         TextCached::draw_queued(ctx, param)
     }
 

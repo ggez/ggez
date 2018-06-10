@@ -204,13 +204,13 @@ impl Food {
     /// `ggez::GameResult` so that we can use the `?` operator to bubble up
     /// failure of drawing.
     fn draw(&self, ctx: &mut Context) -> GameResult {
-        // First we set the color to draw with, in this case all food will be
+        // First we choose the color to draw with, in this case all food will be
         // colored blue.
-        graphics::set_color(ctx, [0.0, 0.0, 1.0, 1.0].into())?;
+        let color = [0.0, 0.0, 1.0, 1.0].into();
         // Then we draw a rectangle with the Fill draw mode, and we convert the
         // Food's position into a `ggez::Rect` using `.into()` which we can do
         // since we implemented `From<GridPosition>` for `Rect` earlier.
-        graphics::rectangle(ctx, graphics::DrawMode::Fill, self.pos.into())
+        graphics::rectangle(ctx, color, graphics::DrawMode::Fill, self.pos.into())
     }
 }
 
@@ -322,13 +322,14 @@ impl Snake {
         // We first iterate through the body segments and draw them.
         for seg in self.body.iter() {
             // Again we set the color (in this case an orangey color)
-            graphics::set_color(ctx, [1.0, 0.5, 0.0, 1.0].into())?;
+            // TODO: Fix colors
+            // graphics::set_color(ctx, )?;
             // and then draw the Rect that we convert that Segment's position into
-            graphics::rectangle(ctx, graphics::DrawMode::Fill, seg.pos.into())?;
+            graphics::rectangle(ctx, [1.0, 0.5, 0.0, 1.0].into(), graphics::DrawMode::Fill, seg.pos.into())?;
         }
         // And then we do the same for the head, instead making it fully red to distinguish it.
-        graphics::set_color(ctx, [1.0, 0.0, 0.0, 1.0].into())?;
-        graphics::rectangle(ctx, graphics::DrawMode::Fill, self.head.pos.into())?;
+        // TODO: Fix colors
+        graphics::rectangle(ctx, [1.0, 0.0, 0.0, 1.0].into(), graphics::DrawMode::Fill, self.head.pos.into())?;
         Ok(())
     }
 }
@@ -407,8 +408,8 @@ impl event::EventHandler for GameState {
 
     /// draw is where we should actually render the game's current state.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        // First we clear the screen
-        graphics::clear(ctx);
+        // First we clear the screen to a nice (well, maybe pretty glaring ;)) green
+        graphics::clear(ctx, [0.0, 1.0, 0.0, 1.0].into());
         // Then we tell the snake and the food to draw themselves
         self.snake.draw(ctx)?;
         self.food.draw(ctx)?;
@@ -453,8 +454,6 @@ fn main() -> GameResult {
         // "Failed to build ggez context"
         .build()?;
 
-    // We set the background color of our Context to a nice (well, maybe pretty glaring ;)) green
-    graphics::set_background_color(ctx, [0.0, 1.0, 0.0, 1.0].into());
     // Next we create a new instance of our GameState struct, which implements EventHandler
     let state = &mut GameState::new();
     // And finally we actually run our game, passing in our context and state.

@@ -41,8 +41,7 @@ impl MainState {
 impl MainState {
     fn draw_spritebatch(&mut self, ctx: &mut Context) -> GameResult {
         graphics::set_canvas(ctx, Some(&self.canvas));
-        graphics::set_background_color(ctx, graphics::WHITE);
-        graphics::clear(ctx);
+        graphics::clear(ctx, graphics::WHITE);
 
         // Freeze the animation so things are easier to see.
         // let time = (timer::duration_to_f64(timer::get_time_since_start(ctx)) * 1000.0) as u32;
@@ -113,8 +112,7 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::set_background_color(ctx, [0.1, 0.2, 0.3, 1.0].into());
-        graphics::clear(ctx);
+        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         self.draw_spritebatch(ctx)?;
         let dims = self.canvas.get_image().get_dimensions();
         let src_x = self.draw_pt.x / dims.w;

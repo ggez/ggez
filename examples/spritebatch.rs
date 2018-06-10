@@ -36,7 +36,7 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx);
+        graphics::clear(ctx, graphics::BLACK);
 
         let time = (timer::duration_to_f64(timer::get_time_since_start(ctx)) * 1000.0) as u32;
         let cycle = 10_000;

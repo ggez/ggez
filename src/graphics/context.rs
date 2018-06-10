@@ -12,11 +12,10 @@ use conf::{WindowMode, WindowSetup, FullscreenType, MonitorId};
 use context::DebugId;
 use graphics::*;
 
-use GameError;
 use GameResult;
 
 /// A structure that contains graphics state.
-/// For instance, background and foreground colors,
+/// For instance, 
 /// window info, DPI, rendering pipeline state, etc.
 ///
 /// As an end-user you shouldn't ever have to touch this.
@@ -25,8 +24,6 @@ where
     B: BackendSpec<SurfaceType = C>,
     C: gfx::format::Formatted,
 {
-    pub(crate) foreground_color: Color,
-    pub(crate) background_color: Color,
     shader_globals: Globals,
     projection: Matrix4,
     pub(crate) modelview_stack: Vec<Matrix4>,
@@ -36,6 +33,7 @@ where
     pub(crate) depth_format: gfx::format::Format,
 
     // TODO: is this needed?
+    #[allow(unused)]
     pub(crate) backend_spec: B,
     pub(crate) window: glutin::GlWindow,
     pub(crate) multisample_samples: u8,
@@ -250,8 +248,6 @@ impl GraphicsContext {
         };
 
         let mut gfx = GraphicsContext {
-            foreground_color: types::WHITE,
-            background_color: Color::new(0.1, 0.2, 0.3, 1.0),
             shader_globals: globals,
             projection: initial_projection,
             modelview_stack: vec![initial_transform],
@@ -362,9 +358,9 @@ impl GraphicsContext {
     /// sends it to the graphics card at the front of the instance buffer.
     pub(crate) fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult {
         // This clone is cheap since draw_params is Copy
+        // TODO: Clean up
         let mut new_draw_params = draw_params;
-        let fg = Some(self.foreground_color);
-        new_draw_params.color = draw_params.color.or(fg);
+        new_draw_params.color = draw_params.color;
         let properties = new_draw_params.into();
         self.encoder
             .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;

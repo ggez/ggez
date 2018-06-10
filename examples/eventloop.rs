@@ -58,9 +58,10 @@ pub fn main() -> GameResult {
         position += 1.0;
 
         // Draw
-        graphics::clear(ctx);
+        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         graphics::circle(
             ctx,
+            graphics::WHITE,
             DrawMode::Fill,
             Point2::new(position, 380.0),
             100.0,

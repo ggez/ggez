@@ -44,19 +44,17 @@ impl event::EventHandler for MainState {
 
         if self.draw_with_canvas {
             println!("Drawing with canvas");
-            graphics::set_background_color(ctx, graphics::Color::from((64, 0, 0, 0)));
-            graphics::clear(ctx);
+            graphics::clear(ctx, graphics::Color::from((64, 0, 0, 0)));
 
             graphics::set_canvas(ctx, Some(&self.canvas));
-            graphics::set_background_color(ctx, graphics::Color::from((255, 255, 255, 128)));
-            graphics::clear(ctx);
+            graphics::clear(ctx, graphics::Color::from((255, 255, 255, 128)));
 
             graphics::draw_ex(
                 ctx,
                 &self.text,
                 graphics::DrawParam {
                     dest: dest_point,
-                    color: Some(graphics::Color::from((0, 0, 0, 255))),
+                    color: graphics::Color::from((0, 0, 0, 255)),
                     ..Default::default()
                 },
             )?;
@@ -68,22 +66,21 @@ impl event::EventHandler for MainState {
                 ctx,
                 &self.canvas,
                 graphics::DrawParam {
-                    color: Some(graphics::Color::from((255, 255, 255, 128))),
+                    color: graphics::Color::from((255, 255, 255, 128)),
                     ..Default::default()
                 },
             )?;
         } else {
             println!("Drawing without canvas");
             graphics::set_canvas(ctx, None);
-            graphics::set_background_color(ctx, graphics::Color::from((64, 0, 0, 255)));
-            graphics::clear(ctx);
+            graphics::clear(ctx, [0.25, 0.0, 0.0, 1.0].into());
 
             graphics::draw_ex(
                 ctx,
                 &self.text,
                 graphics::DrawParam {
                     dest: dest_point,
-                    color: Some(graphics::Color::from((192, 128, 64, 255))),
+                    color: graphics::Color::from((192, 128, 64, 255)),
                     ..Default::default()
                 },
             )?;

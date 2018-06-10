@@ -96,6 +96,9 @@
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 
+// TODO: Enable this.
+// #![deny(unused_results)]
+
 extern crate app_dirs2;
 #[macro_use]
 extern crate gfx;
@@ -107,6 +110,7 @@ extern crate image;
 #[macro_use]
 extern crate log;
 extern crate lyon;
+extern crate mint;
 pub extern crate nalgebra;
 extern crate rodio;
 extern crate rusttype;

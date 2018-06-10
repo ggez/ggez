@@ -187,10 +187,10 @@ impl Default for InstanceProperties {
 
 impl From<DrawParam> for InstanceProperties {
     fn from(p: DrawParam) -> Self {
-        let mat: [[f32; 4]; 4] = p.into_matrix().into();
+        let p: PrimitiveDrawParam = p.into();
+        let mat: [[f32; 4]; 4] = p.matrix.into();
         // SRGB BUGGO: Only convert if the color format is srgb!
         let linear_color: types::LinearColor = p.color
-            .expect("Converting DrawParam to InstanceProperties had None for a color; this should never happen!")
             .into();
         Self {
             src: p.src.into(),
@@ -262,10 +262,11 @@ trait TransformRawRenderTargetViewToRenderTargetView<F: gfx::format::Formatted> 
 }
 
 /// Clear the screen to the background color.
-pub fn clear(ctx: &mut Context) {
+/// TODO: Into<Color> ?
+pub fn clear(ctx: &mut Context, color: Color) {
     let gfx = &mut ctx.gfx_context;
     // SRGB BUGGO: Only convert when drawing on srgb surface
-    let linear_color: types::LinearColor = gfx.background_color.into();
+    let linear_color: types::LinearColor = color.into();
     type ColorFormat = <GlBackendSpec as BackendSpec>::SurfaceType;
     let typed_render_target: gfx::handle::RenderTargetView<_, ColorFormat> =
         gfx::memory::Typed::new(gfx.data.out.clone());
@@ -383,6 +384,8 @@ pub fn arc(_ctx: &mut Context,
 }
 */
 
+// TODO: Make all of these take Into<Color>???
+
 /// Draw a circle.
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
@@ -391,14 +394,17 @@ pub fn arc(_ctx: &mut Context,
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
 pub fn circle(
     ctx: &mut Context,
+    color: Color, 
     mode: DrawMode,
     point: Point2,
     radius: f32,
     tolerance: f32,
 ) -> GameResult {
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
-    m.draw(ctx, Point2::origin(), 0.0)
+    m.draw_ex(ctx, DrawParam::new()
+        .color(color))
 }
+
 
 /// Draw an ellipse.
 ///
@@ -408,6 +414,7 @@ pub fn circle(
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
 pub fn ellipse(
     ctx: &mut Context,
+    color: Color, 
     mode: DrawMode,
     point: Point2,
     radius1: f32,
@@ -415,26 +422,28 @@ pub fn ellipse(
     tolerance: f32,
 ) -> GameResult {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
-    m.draw(ctx, Point2::origin(), 0.0)
+    m.draw_ex(ctx, DrawParam::new()
+        .color(color))
 }
 
 /// Draws a line of one or more connected segments.
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult {
+pub fn line(ctx: &mut Context, color: Color, points: &[Point2], width: f32) -> GameResult {
     let m = Mesh::new_line(ctx, points, width)?;
-    m.draw(ctx, Point2::origin(), 0.0)
+    m.draw_ex(ctx, DrawParam::new()
+        .color(color))
 }
 
 /// Draws points (as rectangles)
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn points(ctx: &mut Context, points: &[Point2], point_size: f32) -> GameResult {
+pub fn points(ctx: &mut Context, color: Color, points: &[Point2], point_size: f32) -> GameResult {
     for p in points {
         let r = Rect::new(p.x, p.y, point_size, point_size);
-        rectangle(ctx, DrawMode::Fill, r)?;
+        rectangle(ctx, color, DrawMode::Fill, r)?;
     }
     Ok(())
 }
@@ -443,9 +452,10 @@ pub fn points(ctx: &mut Context, points: &[Point2], point_size: f32) -> GameResu
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameResult {
+pub fn polygon(ctx: &mut Context, color: Color, mode: DrawMode, vertices: &[Point2]) -> GameResult {
     let m = Mesh::new_polygon(ctx, mode, vertices)?;
-    m.draw(ctx, Point2::origin(), 0.0)
+    m.draw_ex(ctx, DrawParam::new()
+        .color(color))
 }
 
 // TODO: consider removing - it's commented out on devel.
@@ -465,7 +475,7 @@ pub fn polygon(ctx: &mut Context, mode: DrawMode, vertices: &[Point2]) -> GameRe
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult {
+pub fn rectangle(ctx: &mut Context, color: Color, mode: DrawMode, rect: Rect) -> GameResult {
     let x1 = rect.x;
     let x2 = rect.x + rect.w;
     let y1 = rect.y;
@@ -476,22 +486,12 @@ pub fn rectangle(ctx: &mut Context, mode: DrawMode, rect: Rect) -> GameResult {
         Point2::new(x2, y2),
         Point2::new(x1, y2),
     ];
-    polygon(ctx, mode, &pts)
+    polygon(ctx, color, mode, &pts)
 }
 
 // **********************************************************************
 // GRAPHICS STATE
 // **********************************************************************
-
-/// Returns the current background color.
-pub fn get_background_color(ctx: &Context) -> Color {
-    ctx.gfx_context.background_color
-}
-
-/// Returns the current foreground color.
-pub fn get_color(ctx: &Context) -> Color {
-    ctx.gfx_context.foreground_color
-}
 
 /// Get the default filter mode for new images.
 pub fn get_default_filter(ctx: &Context) -> FilterMode {
@@ -519,19 +519,6 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 /// will be negative.
 pub fn get_screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
-}
-
-/// Sets the background color.  Default: blue.
-pub fn set_background_color(ctx: &mut Context, color: Color) {
-    ctx.gfx_context.background_color = color;
-}
-
-/// Sets the foreground color, which will be used for drawing
-/// rectangles, lines, etc.  Default: white.
-pub fn set_color(ctx: &mut Context, color: Color) -> GameResult {
-    let gfx = &mut ctx.gfx_context;
-    gfx.foreground_color = color;
-    Ok(())
 }
 
 /// Sets the default filter mode used to scale images.
@@ -833,11 +820,9 @@ pub trait Drawable {
     fn draw(&self, ctx: &mut Context, dest: Point2, rotation: f32) -> GameResult {
         self.draw_ex(
             ctx,
-            DrawParam {
-                dest,
-                rotation,
-                ..Default::default()
-            },
+            DrawParam::new()
+                .dest(dest)
+                .rotation(rotation)
         )
     }
 

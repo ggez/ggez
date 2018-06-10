@@ -28,6 +28,7 @@ path = "src/lib.rs"
 cargo-resource-root = []
 bzip2 = ["zip/bzip2"]
 default = ["bzip2"]
+#mint = ["nalgebra/mint"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 
 [dependencies]
@@ -48,8 +49,10 @@ toml = "0.4"
 log = "0.4"
 lyon = "^0.10.2"
 smart-default = "0.2"
-nalgebra = {git = "https://github.com/icefoxen/nalgebra.git", branch = "feat/mint_point_conversions", features = ["mint"] }
-winit = { version = "0.15", features = ["icon_loading"] }
+nalgebra = {version = "^0.15.2", features = ["mint"] }
+# Has to be the same version of mint that nalgebra uses here.
+mint = "0.5"
+winit = { version = "0.15", features = ["icon_loading"] } 
 
 [dev-dependencies]
 chrono = "0.4"
