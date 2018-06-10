@@ -6,9 +6,8 @@ extern crate rand;
 
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
-use ggez::graphics::{
-    self, Align, Color, DrawParam, Font, FontId, Point2, Scale, TextCached, TextFragment,
-};
+use ggez::graphics::{self, Align, Color, DrawParam, Font, FontId, Point2, Scale, TextCached,
+                     TextFragment};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use std::collections::BTreeMap;
@@ -203,9 +202,7 @@ impl event::EventHandler for App {
 pub fn main() -> GameResult {
     let (ctx, events_loop) = &mut ContextBuilder::new("text_cached", "ggez")
         .window_setup(
-            WindowSetup::default()
-                .title("Cached text example!")
-                //.resizable(true), TODO: this.
+            WindowSetup::default().title("Cached text example!"), //.resizable(true), TODO: this.
         )
         .window_mode(WindowMode::default().dimensions(640, 480))
         .build()?;

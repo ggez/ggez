@@ -1,7 +1,7 @@
 //! Basic hello world example.
 
-extern crate ggez;
 extern crate cgmath;
+extern crate ggez;
 
 use ggez::conf;
 use ggez::event;
@@ -69,7 +69,7 @@ pub fn main() -> GameResult {
             samples: conf::NumSamples::Eight,
             ..Default::default()
         },
-        .. Default::default()
+        ..Default::default()
     };
     let (ctx, event_loop) = &mut Context::load_from_conf("helloworld", "ggez", c)?;
 

@@ -83,10 +83,7 @@ impl event::EventHandler for MainState {
     }
 
     fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, keymod: KeyMods) {
-        println!(
-            "Key released: {:?}, modifier {:?}",
-            keycode, keymod
-        );
+        println!("Key released: {:?}, modifier {:?}", keycode, keymod);
     }
 
     fn text_input_event(&mut self, _ctx: &mut Context, ch: char) {

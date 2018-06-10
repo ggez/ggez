@@ -5,9 +5,9 @@ extern crate gfx;
 extern crate gfx_device_gl;
 extern crate ggez;
 
+use gfx::Factory;
 use gfx::texture;
 use gfx::traits::FactoryExt;
-use gfx::Factory;
 
 use ggez::conf;
 use ggez::event;

@@ -1,21 +1,21 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use gfx::traits::FactoryExt;
 use gfx::Factory;
+use gfx::traits::FactoryExt;
 use gfx_device_gl;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
 use gfx_window_glutin;
 use glutin;
 
-use conf::{WindowMode, WindowSetup, FullscreenType, MonitorId};
+use conf::{FullscreenType, MonitorId, WindowMode, WindowSetup};
 use context::DebugId;
 use graphics::*;
 
 use GameResult;
 
 /// A structure that contains graphics state.
-/// For instance, 
+/// For instance,
 /// window info, DPI, rendering pipeline state, etc.
 ///
 /// As an end-user you shouldn't ever have to touch this.
@@ -131,7 +131,7 @@ impl GraphicsContext {
                 gl_builder,
                 events_loop,
                 color_format,
-                depth_format
+                depth_format,
             );
 
         let available_monitors = events_loop.get_available_monitors().collect();
@@ -141,9 +141,11 @@ impl GraphicsContext {
             // TODO: improve.
             // Log a bunch of OpenGL state info pulled out of SDL and gfx
             let api = window.get_api();
-            let (w, h) = window.get_outer_size()
+            let (w, h) = window
+                .get_outer_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            let (dw, dh) = window.get_inner_size()
+            let (dw, dh) = window
+                .get_inner_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
             let info = device.get_info();
             debug!("Window created.");
@@ -151,14 +153,8 @@ impl GraphicsContext {
                 "  Asked for     OpenGL {}.{} Core, vsync: {}",
                 backend.major, backend.minor, window_setup.vsync
             );
-            debug!(
-                "  Actually got: OpenGL ?.? {:?}, vsync: ?",
-                api
-            );
-            debug!(
-                "  Window size: {}x{}, drawable size: {}x{}",
-                w, h, dw, dh
-            );
+            debug!("  Actually got: OpenGL ?.? {:?}, vsync: ?", api);
+            debug!("  Window size: {}x{}, drawable size: {}x{}", w, h, dw, dh);
             debug!(
                 "  Driver vendor: {}, renderer {}, version {:?}, shading language {:?}",
                 info.platform_name.vendor,
@@ -451,7 +447,7 @@ impl GraphicsContext {
                         self.available_monitors[i].clone()
                     } else {
                         return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
-                    }
+                    },
                 };
                 window.set_fullscreen(Some(monitor));
                 window.set_inner_size(mode.width, mode.height);
@@ -463,7 +459,7 @@ impl GraphicsContext {
                         self.available_monitors[i].clone()
                     } else {
                         return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
-                    }
+                    },
                 };
                 let position = monitor.get_position();
                 let dimensions = monitor.get_dimensions();
@@ -490,7 +486,8 @@ impl GraphicsContext {
             &self.window,
             dim,
             self.color_format,
-            self.depth_format) {
+            self.depth_format,
+        ) {
             self.screen_render_target = cv;
             self.depth_view = dv;
         }

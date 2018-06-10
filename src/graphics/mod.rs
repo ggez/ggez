@@ -12,18 +12,18 @@ use std::fmt;
 use std::u16;
 
 use gfx;
-use gfx::texture;
 use gfx::Device;
 use gfx::Factory;
+use gfx::texture;
 use gfx_device_gl;
 use glutin::{self, GlContext};
 
+use GameError;
+use GameResult;
 use conf;
 use conf::WindowMode;
 use context::Context;
 use context::DebugId;
-use GameError;
-use GameResult;
 
 mod canvas;
 mod context;
@@ -34,8 +34,8 @@ mod shader;
 mod text;
 mod text_cached;
 mod types;
-use nalgebra as na;
 use mint;
+use nalgebra as na;
 
 pub mod spritebatch;
 
@@ -191,8 +191,7 @@ impl From<DrawParam> for InstanceProperties {
         let p: PrimitiveDrawParam = p.into();
         let mat: [[f32; 4]; 4] = p.matrix.into();
         // SRGB BUGGO: Only convert if the color format is srgb!
-        let linear_color: types::LinearColor = p.color
-            .into();
+        let linear_color: types::LinearColor = p.color.into();
         Self {
             src: p.src.into(),
             col1: mat[0],
@@ -276,8 +275,10 @@ pub fn clear(ctx: &mut Context, color: Color) {
 
 /// Draws the given `Drawable` object to the screen by calling its
 /// `draw()` method.
-pub fn draw<T>(ctx: &mut Context, drawable: &Drawable, params: T) -> GameResult 
-    where T: Into<DrawParam> {
+pub fn draw<T>(ctx: &mut Context, drawable: &Drawable, params: T) -> GameResult
+where
+    T: Into<DrawParam>,
+{
     drawable.draw_ex(ctx, params.into())
 }
 
@@ -396,17 +397,18 @@ pub fn arc(_ctx: &mut Context,
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
 pub fn circle<P>(
     ctx: &mut Context,
-    color: Color, 
+    color: Color,
     mode: DrawMode,
     point: P,
     radius: f32,
     tolerance: f32,
-) -> GameResult where P: Into<mint::Point2<f32>> {
+) -> GameResult
+where
+    P: Into<mint::Point2<f32>>,
+{
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
-    m.draw_ex(ctx, DrawParam::new()
-        .color(color))
+    m.draw_ex(ctx, DrawParam::new().color(color))
 }
-
 
 /// Draw an ellipse.
 ///
@@ -416,39 +418,41 @@ pub fn circle<P>(
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
 pub fn ellipse<P>(
     ctx: &mut Context,
-    color: Color, 
+    color: Color,
     mode: DrawMode,
     point: P,
     radius1: f32,
     radius2: f32,
     tolerance: f32,
 ) -> GameResult
- where P: Into<mint::Point2<f32>> {
+where
+    P: Into<mint::Point2<f32>>,
+{
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
-    m.draw_ex(ctx, DrawParam::new()
-        .color(color))
+    m.draw_ex(ctx, DrawParam::new().color(color))
 }
 
 /// Draws a line of one or more connected segments.
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn line<P>(ctx: &mut Context, color: Color, points: &[P], width: f32) -> GameResult 
- where P: Into<mint::Point2<f32>> + Clone {
+pub fn line<P>(ctx: &mut Context, color: Color, points: &[P], width: f32) -> GameResult
+where
+    P: Into<mint::Point2<f32>> + Clone,
+{
     let m = Mesh::new_line(ctx, points, width)?;
-    m.draw_ex(ctx, DrawParam::new()
-        .color(color))
+    m.draw_ex(ctx, DrawParam::new().color(color))
 }
 
 /// Draws points (as rectangles)
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn points<P>(ctx: &mut Context, color: Color, points: &[P], point_size: f32) -> GameResult where P: Into<mint::Point2<f32>> + Clone {
-    let points = points
-        .into_iter()
-        .cloned()
-        .map(P::into);
+pub fn points<P>(ctx: &mut Context, color: Color, points: &[P], point_size: f32) -> GameResult
+where
+    P: Into<mint::Point2<f32>> + Clone,
+{
+    let points = points.into_iter().cloned().map(P::into);
     for p in points {
         let r = Rect::new(p.x, p.y, point_size, point_size);
         rectangle(ctx, color, DrawMode::Fill, r)?;
@@ -460,10 +464,12 @@ pub fn points<P>(ctx: &mut Context, color: Color, points: &[P], point_size: f32)
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn polygon<P>(ctx: &mut Context, color: Color, mode: DrawMode, vertices: &[P]) -> GameResult where P: Into<mint::Point2<f32>> + Clone  {
+pub fn polygon<P>(ctx: &mut Context, color: Color, mode: DrawMode, vertices: &[P]) -> GameResult
+where
+    P: Into<mint::Point2<f32>> + Clone,
+{
     let m = Mesh::new_polygon(ctx, mode, vertices)?;
-    m.draw_ex(ctx, DrawParam::new()
-        .color(color))
+    m.draw_ex(ctx, DrawParam::new().color(color))
 }
 
 // TODO: consider removing - it's commented out on devel.
@@ -515,8 +521,7 @@ pub fn get_default_filter(ctx: &Context) -> FilterMode {
 pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
     Ok(format!(
         "Requested GL {}.{} Core profile, actually got GL ?.? ? profile.",
-        ctx.gfx_context.backend_spec.major,
-        ctx.gfx_context.backend_spec.minor,
+        ctx.gfx_context.backend_spec.major, ctx.gfx_context.backend_spec.minor,
     ))
 }
 
@@ -829,12 +834,7 @@ pub trait Drawable {
     /// made generic on T where T: Into<DrawParam> because we treat
     /// Drawable's as trait objects.
     fn draw(&self, ctx: &mut Context, dest: Point2, rotation: f32) -> GameResult {
-        self.draw_ex(
-            ctx,
-            DrawParam::new()
-                .dest(dest)
-                .rotation(rotation)
-        )
+        self.draw_ex(ctx, DrawParam::new().dest(dest).rotation(rotation))
     }
 
     /// Sets the blend mode to be used when drawing this drawable.

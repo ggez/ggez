@@ -5,7 +5,7 @@ extern crate ggez;
 use ggez::conf;
 use ggez::event;
 use ggez::graphics;
-use ggez::graphics::{DrawMode, Point2, DrawParam};
+use ggez::graphics::{DrawMode, DrawParam, Point2};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
@@ -107,12 +107,19 @@ impl event::EventHandler for MainState {
         graphics::rectangle(ctx, graphics::WHITE, graphics::DrawMode::Fill, rect)?;
 
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
-        graphics::rectangle(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0), graphics::DrawMode::Line(1.0), rect)?;
+        graphics::rectangle(
+            ctx,
+            graphics::Color::new(1.0, 0.0, 0.0, 1.0),
+            graphics::DrawMode::Line(1.0),
+            rect,
+        )?;
 
         let mesh = build_mesh(ctx)?;
-        graphics::draw_ex(ctx, &mesh, DrawParam::new()
-            .color(graphics::Color::from((0, 0, 255)))
-            )?;
+        graphics::draw_ex(
+            ctx,
+            &mesh,
+            DrawParam::new().color(graphics::Color::from((0, 0, 255))),
+        )?;
 
         graphics::present(ctx)?;
         Ok(())

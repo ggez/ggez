@@ -35,10 +35,10 @@ use std::path;
 
 use app_dirs2::*;
 
-use conf;
-use vfs::{self, VFS};
 use GameError;
 use GameResult;
+use conf;
+use vfs::{self, VFS};
 
 pub use vfs::OpenOptions;
 

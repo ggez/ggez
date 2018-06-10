@@ -127,51 +127,49 @@ impl event::EventHandler for MainState {
     }
 
     fn key_up_event(&mut self, ctx: &mut Context, keycode: KeyCode, _keymod: KeyMods) {
-            match keycode {
-                KeyCode::F => {
-                    self.window_settings.toggle_fullscreen = true;
-                    self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
-                }
-                KeyCode::H => {
+        match keycode {
+            KeyCode::F => {
+                self.window_settings.toggle_fullscreen = true;
+                self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
+            }
+            KeyCode::H => {
+                self.window_settings.window_size_toggle = true;
+                self.window_settings.resolution_index += 1;
+                self.window_settings.resolution_index %= self.window_settings.num_of_resolutions;
+            }
+            KeyCode::G => {
+                if self.window_settings.resolution_index > 0 {
                     self.window_settings.window_size_toggle = true;
-                    self.window_settings.resolution_index += 1;
+                    self.window_settings.resolution_index -= 1;
                     self.window_settings.resolution_index %=
                         self.window_settings.num_of_resolutions;
                 }
-                KeyCode::G => {
-                    if self.window_settings.resolution_index > 0 {
-                        self.window_settings.window_size_toggle = true;
-                        self.window_settings.resolution_index -= 1;
-                        self.window_settings.resolution_index %=
-                            self.window_settings.num_of_resolutions;
-                    }
-                }
-                KeyCode::Up => {
-                    self.zoom += 0.1;
-                    println!("Zoom is now {}", self.zoom);
-                    let (w, h) = graphics::get_size(ctx);
-                    let new_rect =
-                        graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
-                    graphics::set_screen_coordinates(ctx, new_rect).unwrap();
-                }
-                KeyCode::Down => {
-                    self.zoom -= 0.1;
-                    println!("Zoom is now {}", self.zoom);
-                    let (w, h) = graphics::get_size(ctx);
-                    let new_rect =
-                        graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
-                    graphics::set_screen_coordinates(ctx, new_rect).unwrap();
-                }
-                KeyCode::Space => {
-                    self.window_settings.resize_projection =
-                        !self.window_settings.resize_projection;
-                    println!(
-                        "Resizing the projection on window resize is now: {}",
-                        self.window_settings.resize_projection
-                    );
-                }
-                _ => {}
             }
+            KeyCode::Up => {
+                self.zoom += 0.1;
+                println!("Zoom is now {}", self.zoom);
+                let (w, h) = graphics::get_size(ctx);
+                let new_rect =
+                    graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
+                graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+            }
+            KeyCode::Down => {
+                self.zoom -= 0.1;
+                println!("Zoom is now {}", self.zoom);
+                let (w, h) = graphics::get_size(ctx);
+                let new_rect =
+                    graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
+                graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+            }
+            KeyCode::Space => {
+                self.window_settings.resize_projection = !self.window_settings.resize_projection;
+                println!(
+                    "Resizing the projection on window resize is now: {}",
+                    self.window_settings.resize_projection
+                );
+            }
+            _ => {}
+        }
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {

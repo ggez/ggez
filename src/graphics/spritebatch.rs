@@ -9,13 +9,13 @@
 
 use super::shader::BlendMode;
 use super::types::FilterMode;
+use GameResult;
 use context::Context;
 use error;
 use gfx;
 use gfx::Factory;
 use graphics;
 use graphics::{BackendSpec, GlBackendSpec};
-use GameResult;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
 ///
@@ -73,11 +73,7 @@ impl SpriteBatch {
     ///
     /// Generally just calling `graphics::draw()` on the `SpriteBatch`
     /// will do this automaticassertally.
-    fn flush(
-        &self,
-        ctx: &mut Context,
-        image: &graphics::Image
-    ) -> GameResult {
+    fn flush(&self, ctx: &mut Context, image: &graphics::Image) -> GameResult {
         // TODO: Can we clean up now?
         // This is a little awkward but this is the right place
         // to do whatever transformations need to happen to DrawParam's.
@@ -144,7 +140,6 @@ impl SpriteBatch {
         self.image.set_filter(mode);
     }
 }
-
 
 impl graphics::Drawable for SpriteBatch {
     fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult {

@@ -6,7 +6,7 @@
 
 extern crate ggez;
 
-use ggez::{GameResult, ContextBuilder, conf, filesystem};
+use ggez::{conf, filesystem, ContextBuilder, GameResult};
 use std::env;
 use std::io::{Read, Write};
 use std::path;

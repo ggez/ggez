@@ -302,8 +302,7 @@ impl TextCached {
                 return string.clone();
             }
         }
-        let text_string = self
-            .fragments
+        let text_string = self.fragments
             .iter()
             .fold("".to_string(), |acc, frg| format!("{}{}", acc, frg.text));
         if let Ok(mut metrics) = self.cached_metrics.write() {
@@ -318,8 +317,7 @@ impl TextCached {
         let mut max_height = 0;
         {
             let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
-            let glyphed_section_texts = self
-                .layout
+            let glyphed_section_texts = self.layout
                 .calculate_glyphs(context.gfx_context.glyph_brush.fonts(), &varied_section);
             for glyphed_section_text in &glyphed_section_texts {
                 let &gfx_glyph::GlyphedSectionText(ref positioned_glyphs, ..) =
@@ -435,14 +433,8 @@ impl TextCached {
             0.0,
         ));
 
-        let m_transform = m_translate
-            * m_offset
-            * m_aspect
-            * m_rotation
-            * m_shear
-            * m_scale
-            * m_aspect_inv
-            * m_offset_inv;
+        let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_shear * m_scale
+            * m_aspect_inv * m_offset_inv;
 
         let (encoder, render_tgt, depth_view) = (
             &mut context.gfx_context.encoder,

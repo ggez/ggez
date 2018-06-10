@@ -1,4 +1,4 @@
-//! # What is this? 
+//! # What is this?
 //!
 //! ggez is a Rust library to create a Good Game Easily.
 //!
@@ -119,8 +119,8 @@ extern crate serde_derive;
 #[macro_use]
 extern crate smart_default;
 extern crate toml;
-extern crate zip;
 extern crate winit;
+extern crate zip;
 
 pub mod audio;
 pub mod conf;

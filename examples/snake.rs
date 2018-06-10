@@ -325,11 +325,21 @@ impl Snake {
             // TODO: Fix colors
             // graphics::set_color(ctx, )?;
             // and then draw the Rect that we convert that Segment's position into
-            graphics::rectangle(ctx, [1.0, 0.5, 0.0, 1.0].into(), graphics::DrawMode::Fill, seg.pos.into())?;
+            graphics::rectangle(
+                ctx,
+                [1.0, 0.5, 0.0, 1.0].into(),
+                graphics::DrawMode::Fill,
+                seg.pos.into(),
+            )?;
         }
         // And then we do the same for the head, instead making it fully red to distinguish it.
         // TODO: Fix colors
-        graphics::rectangle(ctx, [1.0, 0.0, 0.0, 1.0].into(), graphics::DrawMode::Fill, self.head.pos.into())?;
+        graphics::rectangle(
+            ctx,
+            [1.0, 0.0, 0.0, 1.0].into(),
+            graphics::DrawMode::Fill,
+            self.head.pos.into(),
+        )?;
         Ok(())
     }
 }

@@ -2,6 +2,7 @@ use winit;
 
 use std::fmt;
 
+use GameResult;
 use audio;
 use conf;
 use event::winit_event;
@@ -10,7 +11,6 @@ use graphics::{self, Point2};
 use keyboard;
 use mouse;
 use timer;
-use GameResult;
 
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
@@ -159,10 +159,10 @@ impl Context {
                         .set_last_delta(Point2::new(*x as f32, *y as f32));
                 }
                 winit_event::DeviceEvent::Key(winit_event::KeyboardInput {
-                                                  state,
-                                                  virtual_keycode,
-                                                  ..
-                                              }) => {
+                    state,
+                    virtual_keycode,
+                    ..
+                }) => {
                     if *state == winit_event::ElementState::Released {
                         if keyboard::get_last_held(self) == *virtual_keycode {
                             self.keyboard_context.set_last_pressed(None);

@@ -34,7 +34,6 @@ pub struct DrawParam {
     /// A color to draw the target with.
     /// Default: white.
     pub(crate) color: Color,
-
 }
 
 impl Default for DrawParam {
@@ -63,16 +62,21 @@ impl DrawParam {
         self
     }
 
-
     /// Set the dest point
-    pub fn dest<P>(mut self, dest: P) -> Self where P: Into<mint::Point2<f32>> {
+    pub fn dest<P>(mut self, dest: P) -> Self
+    where
+        P: Into<mint::Point2<f32>>,
+    {
         let p: mint::Point2<f32> = dest.into();
         self.dest = Point2::from(p);
         self
     }
 
     /// TODO
-    pub fn color<C>(mut self, color: C) -> Self where C: Into<Color> {
+    pub fn color<C>(mut self, color: C) -> Self
+    where
+        C: Into<Color>,
+    {
         self.color = color.into();
         self
     }
@@ -84,21 +88,30 @@ impl DrawParam {
     }
 
     /// TODO
-    pub fn scale<V>(mut self, scale: V) -> Self where V: Into<mint::Vector2<f32>> {
+    pub fn scale<V>(mut self, scale: V) -> Self
+    where
+        V: Into<mint::Vector2<f32>>,
+    {
         let p: mint::Vector2<f32> = scale.into();
         self.scale = Vector2::from(p);
         self
     }
 
     /// TODO
-    pub fn offset<P>(mut self, offset: P) -> Self where P: Into<mint::Point2<f32>> {
+    pub fn offset<P>(mut self, offset: P) -> Self
+    where
+        P: Into<mint::Point2<f32>>,
+    {
         let p: mint::Point2<f32> = offset.into();
         self.offset = Point2::from(p);
         self
     }
 
     /// TODO
-    pub fn shear<P>(mut self, shear: P) -> Self where P: Into<mint::Point2<f32>> {
+    pub fn shear<P>(mut self, shear: P) -> Self
+    where
+        P: Into<mint::Point2<f32>>,
+    {
         let p: mint::Point2<f32> = shear.into();
         self.shear = Point2::from(p);
         self
@@ -108,28 +121,32 @@ impl DrawParam {
 }
 
 /// Create a DrawParam from a location
-impl<P> From<(P,)> for DrawParam where P: Into<mint::Point2<f32>> {
+impl<P> From<(P,)> for DrawParam
+where
+    P: Into<mint::Point2<f32>>,
+{
     fn from(location: (P,)) -> Self {
-        DrawParam::new()
-            .dest(location.0)
+        DrawParam::new().dest(location.0)
     }
 }
-
 
 /// Create a DrawParam from a location and color
-impl<P, C> From<(P, C)> for DrawParam where P: Into<mint::Point2<f32>>,
-C: Into<Color> {
+impl<P, C> From<(P, C)> for DrawParam
+where
+    P: Into<mint::Point2<f32>>,
+    C: Into<Color>,
+{
     fn from((location, color): (P, C)) -> Self {
-        DrawParam::new()
-            .dest(location)
-            .color(color)
+        DrawParam::new().dest(location).color(color)
     }
 }
 
-
 /// Create a DrawParam from a location, rotation and color
-impl<P, C> From<(P, f32, C)> for DrawParam where P: Into<mint::Point2<f32>>,
-C: Into<Color> {
+impl<P, C> From<(P, f32, C)> for DrawParam
+where
+    P: Into<mint::Point2<f32>>,
+    C: Into<Color>,
+{
     fn from((location, rotation, color): (P, f32, C)) -> Self {
         DrawParam::new()
             .dest(location)
@@ -139,8 +156,11 @@ C: Into<Color> {
 }
 
 /// Create a DrawParam from a location, rotation, offset and color
-impl<P, C> From<(P, f32, P, C)> for DrawParam where P: Into<mint::Point2<f32>>,
-C: Into<Color> {
+impl<P, C> From<(P, f32, P, C)> for DrawParam
+where
+    P: Into<mint::Point2<f32>>,
+    C: Into<Color>,
+{
     fn from((location, rotation, offset, color): (P, f32, P, C)) -> Self {
         DrawParam::new()
             .dest(location)
@@ -150,11 +170,13 @@ C: Into<Color> {
     }
 }
 
-
 /// Create a DrawParam from a location, rotation, offset, scale and color
-impl<P, V, C> From<(P, f32, P, V, C)> for DrawParam where P: Into<mint::Point2<f32>>,
+impl<P, V, C> From<(P, f32, P, V, C)> for DrawParam
+where
+    P: Into<mint::Point2<f32>>,
     V: Into<mint::Vector2<f32>>,
-    C: Into<Color> {
+    C: Into<Color>,
+{
     fn from((location, rotation, offset, scale, color): (P, f32, P, V, C)) -> Self {
         DrawParam::new()
             .dest(location)
@@ -169,7 +191,6 @@ impl<P, V, C> From<(P, f32, P, V, C)> for DrawParam where P: Into<mint::Point2<f
 /// Useful for doing matrix-based coordiante transformations, I hope.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PrimitiveDrawParam {
-
     /// The transform matrix for the DrawParams
     pub matrix: Matrix4,
     /// a portion of the drawable to clip, as a fraction of the whole image.

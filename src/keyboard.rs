@@ -12,9 +12,7 @@ pub struct KeyboardContext {
 
 impl KeyboardContext {
     pub(crate) fn new() -> Self {
-        Self {
-            last_pressed: None,
-        }
+        Self { last_pressed: None }
     }
 
     pub(crate) fn set_last_pressed(&mut self, key: Option<KeyCode>) {

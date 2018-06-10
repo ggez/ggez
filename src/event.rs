@@ -31,17 +31,16 @@ pub use winit::ButtonId as Button;
 
 /// `winit` events; nested in a module for re-export neatness.
 pub mod winit_event {
-    pub use super::winit::{
-        DeviceEvent, ElementState, Event, KeyboardInput, MouseScrollDelta, TouchPhase, WindowEvent,
-    };
+    pub use super::winit::{DeviceEvent, ElementState, Event, KeyboardInput, MouseScrollDelta,
+                           TouchPhase, WindowEvent};
 }
 
 use self::winit_event::*;
 /// `winit` event loop.
 pub use winit::EventsLoop;
 
-use context::Context;
 use GameResult;
+use context::Context;
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
@@ -105,8 +104,7 @@ pub trait EventHandler {
     }
 
     /// A keyboard button was released.
-    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: KeyCode, _keymods: KeyMods) {
-    }
+    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: KeyCode, _keymods: KeyMods) {}
 
     /// A unicode character was received, usually from keyboard input.
     /// This is the intended way of facilitating text input.
@@ -167,88 +165,71 @@ where
         events_loop.poll_events(|event| {
             ctx.process_event(&event);
             match event {
-                Event::WindowEvent { event, .. } => {
-                    match event {
-                        WindowEvent::Resized(width, height) => {
-                            state.resize_event(ctx, width, height);
+                Event::WindowEvent { event, .. } => match event {
+                    WindowEvent::Resized(width, height) => {
+                        state.resize_event(ctx, width, height);
+                    }
+                    WindowEvent::CloseRequested => {
+                        if !state.quit_event(ctx) {
+                            ctx.quit();
                         }
-                        WindowEvent::CloseRequested => {
-                            if !state.quit_event(ctx) {
-                                ctx.quit();
-                            }
-                        }
-                        WindowEvent::Focused(gained) => {
-                            state.focus_event(ctx, gained);
-                        }
-                        WindowEvent::ReceivedCharacter(ch) => {
-                            state.text_input_event(ctx, ch);
-                        }
-                        WindowEvent::KeyboardInput {
-                            input: KeyboardInput {
+                    }
+                    WindowEvent::Focused(gained) => {
+                        state.focus_event(ctx, gained);
+                    }
+                    WindowEvent::ReceivedCharacter(ch) => {
+                        state.text_input_event(ctx, ch);
+                    }
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
                                 state: element_state,
                                 virtual_keycode: Some(keycode),
                                 modifiers,
                                 ..
                             },
-                            ..
-                        } => {
-                            match element_state {
-                                ElementState::Pressed => {
-                                    let repeat = keyboard::is_repeated(ctx, keycode);
-                                    state.key_down_event(ctx, keycode, modifiers, repeat);
-                                }
-                                ElementState::Released => {
-                                    state.key_up_event(ctx, keycode, modifiers);
-                                }
+                        ..
+                    } => match element_state {
+                        ElementState::Pressed => {
+                            let repeat = keyboard::is_repeated(ctx, keycode);
+                            state.key_down_event(ctx, keycode, modifiers, repeat);
+                        }
+                        ElementState::Released => {
+                            state.key_up_event(ctx, keycode, modifiers);
+                        }
+                    },
+                    WindowEvent::MouseWheel { delta, .. } => {
+                        let (x, y) = match delta {
+                            MouseScrollDelta::LineDelta(x, y) => (x, y),
+                            MouseScrollDelta::PixelDelta(x, y) => (x, y),
+                        };
+                        state.mouse_wheel_event(ctx, x, y);
+                    }
+                    WindowEvent::MouseInput {
+                        state: element_state,
+                        button,
+                        ..
+                    } => {
+                        let position = mouse::get_position(ctx);
+                        match element_state {
+                            ElementState::Pressed => {
+                                state.mouse_button_down_event(ctx, button, position.x, position.y)
+                            }
+                            ElementState::Released => {
+                                state.mouse_button_up_event(ctx, button, position.x, position.y)
                             }
                         }
-                        WindowEvent::MouseWheel { delta, ..} => {
-                            let (x, y) = match delta {
-                                MouseScrollDelta::LineDelta(x, y) => (x, y),
-                                MouseScrollDelta::PixelDelta(x, y) => (x, y)
-                            };
-                            state.mouse_wheel_event(ctx, x, y);
-                        }
-                        WindowEvent::MouseInput { state: element_state, button, .. } => {
-                            let position = mouse::get_position(ctx);
-                            match element_state {
-                                ElementState::Pressed => {
-                                    state.mouse_button_down_event(
-                                        ctx,
-                                        button,
-                                        position.x,
-                                        position.y,
-                                    )
-                                }
-                                ElementState::Released => {
-                                    state.mouse_button_up_event(
-                                        ctx,
-                                        button,
-                                        position.x,
-                                        position.y,
-                                    )
-                                }
-                            }
-                        }
-                        WindowEvent::CursorMoved { .. } => {
-                            let position = mouse::get_position(ctx);
-                            let delta = mouse::get_delta(ctx);
-                            state.mouse_motion_event(
-                                ctx,
-                                position.x,
-                                position.y,
-                                delta.x,
-                                delta.y,
-                            );
-                        }
-                        _ => (),
                     }
-                }
-                Event::DeviceEvent { event, .. } => {
-                    match event {
-                        _ => (),
+                    WindowEvent::CursorMoved { .. } => {
+                        let position = mouse::get_position(ctx);
+                        let delta = mouse::get_delta(ctx);
+                        state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                     }
-                }
+                    _ => (),
+                },
+                Event::DeviceEvent { event, .. } => match event {
+                    _ => (),
+                },
                 Event::Awakened => unimplemented!(),
                 Event::Suspended(_) => unimplemented!(),
             }

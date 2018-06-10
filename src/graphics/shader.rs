@@ -18,10 +18,10 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::rc::Rc;
 
+use Context;
 use context::DebugId;
 use error::*;
 use graphics;
-use Context;
 
 /// A type for empty shader data for shaders that do not require any additional
 /// data to be sent to the GPU
