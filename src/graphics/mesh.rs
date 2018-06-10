@@ -74,21 +74,24 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a line of one or more connected segments.
-    pub fn line(&mut self, points: &[Point2], width: f32) -> &mut Self {
+    pub fn line<P>(&mut self, points: &[P], width: f32) -> &mut Self
+     where P: Into<mint::Point2<f32>> + Clone {
         self.polyline(DrawMode::Line(width), points)
     }
 
     /// Create a new mesh for a circle.
     ///
     /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
-    pub fn circle(
+    pub fn circle<P>(
         &mut self,
         mode: DrawMode,
-        point: Point2,
+        point: P,
         radius: f32,
         tolerance: f32,
-    ) -> &mut Self {
+    ) -> &mut Self
+     where P: Into<mint::Point2<f32>> {
         {
+            let point = point.into();
             let buffers = &mut self.buffer;
             match mode {
                 DrawMode::Fill => {
@@ -142,16 +145,18 @@ impl MeshBuilder {
     /// Create a new mesh for an ellipse.
     ///
     /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
-    pub fn ellipse(
+    pub fn ellipse<P>(
         &mut self,
         mode: DrawMode,
-        point: Point2,
+        point: P,
         radius1: f32,
         radius2: f32,
         tolerance: f32,
-    ) -> &mut Self {
+    ) -> &mut Self
+     where P: Into<mint::Point2<f32>> {
         {
             let buffers = &mut self.buffer;
+            let point = point.into();
             match mode {
                 DrawMode::Fill => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
@@ -203,22 +208,28 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a series of connected lines.
-    pub fn polyline(&mut self, mode: DrawMode, points: &[Point2]) -> &mut Self {
+    pub fn polyline<P>(&mut self, mode: DrawMode, points: &[P]) -> &mut Self 
+     where P: Into<mint::Point2<f32>> + Clone {
         self.polyline_inner(mode, points, false)
     }
 
     /// Create a new mesh for a closed polygon.
-    pub fn polygon(&mut self, mode: DrawMode, points: &[Point2]) -> &mut Self {
+    pub fn polygon<P>(&mut self, mode: DrawMode, points: &[P]) -> &mut Self 
+     where P: Into<mint::Point2<f32>> + Clone {
         self.polyline_inner(mode, points, true)
     }
 
-    fn polyline_inner(&mut self, mode: DrawMode, points: &[Point2], is_closed: bool) -> &mut Self {
+    fn polyline_inner<P>(&mut self, mode: DrawMode, points: &[P], is_closed: bool) -> &mut Self where P: Into<mint::Point2<f32>> + Clone {
         {
             assert!(points.len() > 1);
             let buffers = &mut self.buffer;
             let points = points
                 .into_iter()
-                .map(|ggezpoint| t::math::point(ggezpoint.x, ggezpoint.y));
+                .cloned()
+                .map(|p| {
+                    let mint_point: mint::Point2<f32> = p.into();
+                    t::math::point(mint_point.x, mint_point.y)
+                });
             match mode {
                 DrawMode::Fill => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
@@ -252,7 +263,8 @@ impl MeshBuilder {
     /// Create a new `Mesh` from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
-    pub fn triangles(&mut self, triangles: &[Point2]) -> &mut Self {
+    pub fn triangles<P>(&mut self, triangles: &[P]) -> &mut Self 
+    where P: Into<mint::Point2<f32>> + Clone {
         {
             assert_eq!(triangles.len() % 3, 0);
             let tris = triangles
@@ -260,8 +272,9 @@ impl MeshBuilder {
                 .cloned()
                 .map(|p| {
                     // Gotta turn ggez Point2's into lyon FillVertex's
-                        let np = lyon::math::point(p.x, p.y);
-                        let nv = lyon::math::vector(p.x, p.y);
+                        let mint_point = p.into();
+                        let np = lyon::math::point(mint_point.x, mint_point.y);
+                        let nv = lyon::math::vector(mint_point.x, mint_point.y);
                         t::FillVertex {
                             position: np,
                             normal: nv,
@@ -343,55 +356,61 @@ pub struct Mesh {
 
 impl Mesh {
     /// Create a new mesh for a line of one or more connected segments.
-    pub fn new_line(ctx: &mut Context, points: &[Point2], width: f32) -> GameResult<Mesh> {
+    pub fn new_line<P>(ctx: &mut Context, points: &[P], width: f32) -> GameResult<Mesh> 
+    where P: Into<mint::Point2<f32>> + Clone {
         let mut mb = MeshBuilder::new();
         mb.polyline(DrawMode::Line(width), points);
         mb.build(ctx)
     }
 
     /// Create a new mesh for a circle.
-    pub fn new_circle(
+    pub fn new_circle<P>(
         ctx: &mut Context,
         mode: DrawMode,
-        point: Point2,
+        point: P,
         radius: f32,
         tolerance: f32,
-    ) -> GameResult<Mesh> {
+    ) -> GameResult<Mesh> 
+    where P: Into<mint::Point2<f32>> {
         let mut mb = MeshBuilder::new();
         mb.circle(mode, point, radius, tolerance);
         mb.build(ctx)
     }
 
     /// Create a new mesh for an ellipse.
-    pub fn new_ellipse(
+    pub fn new_ellipse<P>(
         ctx: &mut Context,
         mode: DrawMode,
-        point: Point2,
+        point: P,
         radius1: f32,
         radius2: f32,
         tolerance: f32,
-    ) -> GameResult<Mesh> {
+    ) -> GameResult<Mesh> 
+    where P: Into<mint::Point2<f32>> {
         let mut mb = MeshBuilder::new();
         mb.ellipse(mode, point, radius1, radius2, tolerance);
         mb.build(ctx)
     }
 
     /// Create a new mesh for series of connected lines.
-    pub fn new_polyline(ctx: &mut Context, mode: DrawMode, points: &[Point2]) -> GameResult<Mesh> {
+    pub fn new_polyline<P>(ctx: &mut Context, mode: DrawMode, points: &[P]) -> GameResult<Mesh>
+    where P: Into<mint::Point2<f32>> + Clone {
         let mut mb = MeshBuilder::new();
         mb.polyline(mode, points);
         mb.build(ctx)
     }
 
     /// Create a new mesh for closed polygon.
-    pub fn new_polygon(ctx: &mut Context, mode: DrawMode, points: &[Point2]) -> GameResult<Mesh> {
+    pub fn new_polygon<P>(ctx: &mut Context, mode: DrawMode, points: &[P]) -> GameResult<Mesh> 
+    where P: Into<mint::Point2<f32>> + Clone {
         let mut mb = MeshBuilder::new();
         mb.polygon(mode, points);
         mb.build(ctx)
     }
 
     /// Create a new `Mesh` from a raw list of triangles.
-    pub fn from_triangles(ctx: &mut Context, triangles: &[Point2]) -> GameResult<Mesh> {
+    pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P]) -> GameResult<Mesh> 
+    where P: Into<mint::Point2<f32>> + Clone + Clone {
         let mut mb = MeshBuilder::new();
         mb.triangles(triangles);
         mb.build(ctx)

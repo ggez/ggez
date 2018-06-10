@@ -304,7 +304,7 @@ impl Drawable for Image {
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
-        let real_scale = Point2::new(
+        let real_scale = Vector2::new(
             src_width * self.width as f32,
             src_height * self.height as f32,
         );

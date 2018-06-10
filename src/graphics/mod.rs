@@ -35,6 +35,7 @@ mod text;
 mod text_cached;
 mod types;
 use nalgebra as na;
+use mint;
 
 pub mod spritebatch;
 
@@ -393,14 +394,14 @@ pub fn arc(_ctx: &mut Context,
 /// you should create the `Mesh` yourself.
 ///
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
-pub fn circle(
+pub fn circle<P>(
     ctx: &mut Context,
     color: Color, 
     mode: DrawMode,
-    point: Point2,
+    point: P,
     radius: f32,
     tolerance: f32,
-) -> GameResult {
+) -> GameResult where P: Into<mint::Point2<f32>> {
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
     m.draw_ex(ctx, DrawParam::new()
         .color(color))
@@ -413,15 +414,16 @@ pub fn circle(
 /// you should create the `Mesh` yourself.
 ///
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
-pub fn ellipse(
+pub fn ellipse<P>(
     ctx: &mut Context,
     color: Color, 
     mode: DrawMode,
-    point: Point2,
+    point: P,
     radius1: f32,
     radius2: f32,
     tolerance: f32,
-) -> GameResult {
+) -> GameResult
+ where P: Into<mint::Point2<f32>> {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
     m.draw_ex(ctx, DrawParam::new()
         .color(color))
@@ -431,7 +433,8 @@ pub fn ellipse(
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn line(ctx: &mut Context, color: Color, points: &[Point2], width: f32) -> GameResult {
+pub fn line<P>(ctx: &mut Context, color: Color, points: &[P], width: f32) -> GameResult 
+ where P: Into<mint::Point2<f32>> + Clone {
     let m = Mesh::new_line(ctx, points, width)?;
     m.draw_ex(ctx, DrawParam::new()
         .color(color))
@@ -441,7 +444,11 @@ pub fn line(ctx: &mut Context, color: Color, points: &[Point2], width: f32) -> G
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn points(ctx: &mut Context, color: Color, points: &[Point2], point_size: f32) -> GameResult {
+pub fn points<P>(ctx: &mut Context, color: Color, points: &[P], point_size: f32) -> GameResult where P: Into<mint::Point2<f32>> + Clone {
+    let points = points
+        .into_iter()
+        .cloned()
+        .map(P::into);
     for p in points {
         let r = Rect::new(p.x, p.y, point_size, point_size);
         rectangle(ctx, color, DrawMode::Fill, r)?;
@@ -453,7 +460,7 @@ pub fn points(ctx: &mut Context, color: Color, points: &[Point2], point_size: f3
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
 /// you should create the `Mesh` yourself.
-pub fn polygon(ctx: &mut Context, color: Color, mode: DrawMode, vertices: &[Point2]) -> GameResult {
+pub fn polygon<P>(ctx: &mut Context, color: Color, mode: DrawMode, vertices: &[P]) -> GameResult where P: Into<mint::Point2<f32>> + Clone  {
     let m = Mesh::new_polygon(ctx, mode, vertices)?;
     m.draw_ex(ctx, DrawParam::new()
         .color(color))

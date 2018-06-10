@@ -21,14 +21,15 @@ pub struct DrawParam {
     pub(crate) dest: Point2,
     /// orientation of the graphic in radians.
     pub(crate) rotation: f32,
-    /// x/y scale factors expressed as a `Point2`.
-    pub(crate) scale: Point2,
+    /// x/y scale factors expressed as a `Vector2`.
+    pub(crate) scale: Vector2,
     /// specifies an offset from the center for transform operations like scale/rotation,
     /// with `0,0` meaning the origin and `1,1` meaning the opposite corner from the origin.
     /// By default these operations are done from the top-left corner, so to rotate something
     /// from the center specify `Point2::new(0.5, 0.5)` here.
     pub(crate) offset: Point2,
     /// x/y shear factors expressed as a `Point2`.
+    /// TODO: Should it be a Vector2?
     pub(crate) shear: Point2,
     /// A color to draw the target with.
     /// Default: white.
@@ -42,7 +43,7 @@ impl Default for DrawParam {
             src: Rect::one(),
             dest: Point2::origin(),
             rotation: 0.0,
-            scale: Point2::new(1.0, 1.0),
+            scale: Vector2::new(1.0, 1.0),
             offset: Point2::new(0.0, 0.0),
             shear: Point2::new(0.0, 0.0),
             color: WHITE,
@@ -64,14 +65,14 @@ impl DrawParam {
 
 
     /// Set the dest point
-    pub fn dest<T>(mut self, dest: T) -> Self where T: Into<mint::Point2<f32>> {
+    pub fn dest<P>(mut self, dest: P) -> Self where P: Into<mint::Point2<f32>> {
         let p: mint::Point2<f32> = dest.into();
         self.dest = Point2::from(p);
         self
     }
 
     /// TODO
-    pub fn color<T>(mut self, color: T) -> Self where T: Into<Color> {
+    pub fn color<C>(mut self, color: C) -> Self where C: Into<Color> {
         self.color = color.into();
         self
     }
@@ -83,21 +84,21 @@ impl DrawParam {
     }
 
     /// TODO
-    pub fn scale<T>(mut self, scale: T) -> Self where T: Into<mint::Point2<f32>> {
-        let p: mint::Point2<f32> = scale.into();
-        self.scale = Point2::from(p);
+    pub fn scale<V>(mut self, scale: V) -> Self where V: Into<mint::Vector2<f32>> {
+        let p: mint::Vector2<f32> = scale.into();
+        self.scale = Vector2::from(p);
         self
     }
 
     /// TODO
-    pub fn offset<T>(mut self, offset: T) -> Self where T: Into<mint::Point2<f32>> {
+    pub fn offset<P>(mut self, offset: P) -> Self where P: Into<mint::Point2<f32>> {
         let p: mint::Point2<f32> = offset.into();
         self.offset = Point2::from(p);
         self
     }
 
     /// TODO
-    pub fn shear<T>(mut self, shear: T) -> Self where T: Into<mint::Point2<f32>> {
+    pub fn shear<P>(mut self, shear: P) -> Self where P: Into<mint::Point2<f32>> {
         let p: mint::Point2<f32> = shear.into();
         self.shear = Point2::from(p);
         self
@@ -116,8 +117,9 @@ impl<P> From<(P,)> for DrawParam where P: Into<mint::Point2<f32>> {
 
 
 /// Create a DrawParam from a location and color
-impl<P> From<(P, Color)> for DrawParam where P: Into<mint::Point2<f32>> {
-    fn from((location, color): (P, Color)) -> Self {
+impl<P, C> From<(P, C)> for DrawParam where P: Into<mint::Point2<f32>>,
+C: Into<Color> {
+    fn from((location, color): (P, C)) -> Self {
         DrawParam::new()
             .dest(location)
             .color(color)
@@ -126,8 +128,9 @@ impl<P> From<(P, Color)> for DrawParam where P: Into<mint::Point2<f32>> {
 
 
 /// Create a DrawParam from a location, rotation and color
-impl<P> From<(P, f32, Color)> for DrawParam where P: Into<mint::Point2<f32>> {
-    fn from((location, rotation, color): (P, f32, Color)) -> Self {
+impl<P, C> From<(P, f32, C)> for DrawParam where P: Into<mint::Point2<f32>>,
+C: Into<Color> {
+    fn from((location, rotation, color): (P, f32, C)) -> Self {
         DrawParam::new()
             .dest(location)
             .rotation(rotation)
@@ -136,8 +139,9 @@ impl<P> From<(P, f32, Color)> for DrawParam where P: Into<mint::Point2<f32>> {
 }
 
 /// Create a DrawParam from a location, rotation, offset and color
-impl<P> From<(P, f32, P, Color)> for DrawParam where P: Into<mint::Point2<f32>> {
-    fn from((location, rotation, offset, color): (P, f32, P, Color)) -> Self {
+impl<P, C> From<(P, f32, P, C)> for DrawParam where P: Into<mint::Point2<f32>>,
+C: Into<Color> {
+    fn from((location, rotation, offset, color): (P, f32, P, C)) -> Self {
         DrawParam::new()
             .dest(location)
             .rotation(rotation)
@@ -148,8 +152,10 @@ impl<P> From<(P, f32, P, Color)> for DrawParam where P: Into<mint::Point2<f32>> 
 
 
 /// Create a DrawParam from a location, rotation, offset, scale and color
-impl<P> From<(P, f32, P, P, Color)> for DrawParam where P: Into<mint::Point2<f32>> {
-    fn from((location, rotation, offset, scale, color): (P, f32, P, P, Color)) -> Self {
+impl<P, V, C> From<(P, f32, P, V, C)> for DrawParam where P: Into<mint::Point2<f32>>,
+    V: Into<mint::Vector2<f32>>,
+    C: Into<Color> {
+    fn from((location, rotation, offset, scale, color): (P, f32, P, V, C)) -> Self {
         DrawParam::new()
             .dest(location)
             .rotation(rotation)

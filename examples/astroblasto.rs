@@ -4,18 +4,21 @@
 
 extern crate ggez;
 extern crate rand;
+extern crate nalgebra;
 
 use ggez::audio;
 use ggez::conf;
 use ggez::event::{self, EventHandler, KeyCode, KeyMods};
 use ggez::graphics;
-use ggez::graphics::{Point2, Vector2};
 use ggez::nalgebra as na;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 
 use std::env;
 use std::path;
+
+type Point2 = nalgebra::Point2<f32>;
+type Vector2 = nalgebra::Vector2<f32>;
 
 /// *********************************************************************
 /// Basic stuff, make some helpers for vector functions.
@@ -431,7 +434,7 @@ fn draw_actor(
     let drawparams = graphics::DrawParam::new()
         .dest(pos)
         .rotation(actor.facing as f32)
-        .offset(graphics::Point2::new(0.5, 0.5));
+        .offset(Point2::new(0.5, 0.5));
     //  {
     //     dest: pos,
     //     rotation: actor.facing as f32,
@@ -534,10 +537,10 @@ impl EventHandler for MainState {
         }
 
         // And draw the GUI elements in the right places.
-        let level_dest = graphics::Point2::new(10.0, 10.0);
-        let score_dest = graphics::Point2::new(200.0, 10.0);
-        graphics::draw(ctx, &self.level_display, level_dest, 0.0)?;
-        graphics::draw(ctx, &self.score_display, score_dest, 0.0)?;
+        let level_dest = Point2::new(10.0, 10.0);
+        let score_dest = Point2::new(200.0, 10.0);
+        graphics::draw(ctx, &self.level_display, (level_dest, 0.0, graphics::WHITE))?;
+        graphics::draw(ctx, &self.score_display, (score_dest, 0.0, graphics::WHITE))?;
 
         // Then we flip the screen...
         graphics::present(ctx)?;
