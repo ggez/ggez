@@ -1,6 +1,7 @@
 //! Basic hello world example.
 
 extern crate ggez;
+extern crate cgmath;
 
 use ggez::conf;
 use ggez::event;
@@ -41,8 +42,8 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         // Drawables are drawn from their top-left corner.
-        let dest_point = graphics::Point2::new(10.0, 10.0);
-        graphics::draw(ctx, &self.text, dest_point, 0.0)?;
+        let dest_point = cgmath::Point2::new(10.0, 10.0);
+        graphics::draw(ctx, &self.text, (dest_point,))?;
         graphics::present(ctx)?;
 
         self.frames += 1;

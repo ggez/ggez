@@ -66,10 +66,7 @@ impl DrawParam {
     /// Set the dest point
     pub fn dest<T>(mut self, dest: T) -> Self where T: Into<mint::Point2<f32>> {
         let p: mint::Point2<f32> = dest.into();
-        // // BUGGO: Should be able to just do Point2::from(),
-        // // see https://github.com/sebcrozet/nalgebra/issues/352
-        self.dest = Point2::new(p.x, p.y);
-        // self.translation_matrix = Matrix4::new_translation(&Vec3::new(p.x, p.y, 0.0));
+        self.dest = Point2::from(p);
         self
     }
 
@@ -81,8 +78,6 @@ impl DrawParam {
 
     /// TODO
     pub fn rotation(mut self, rotation: f32) -> Self {
-        // let axis_angle = Vec3::z() * rotation;
-        // self.rotation_matrix = Matrix4::new_rotation(axis_angle);
         self.rotation = rotation;
         self
     }
@@ -90,52 +85,79 @@ impl DrawParam {
     /// TODO
     pub fn scale<T>(mut self, scale: T) -> Self where T: Into<mint::Point2<f32>> {
         let p: mint::Point2<f32> = scale.into();
-        // BUGGO
-        self.scale = Point2::new(p.x, p.y);
-        // self.scale_matrix = Matrix4::new_nonuniform_scaling(&Vec3::new(p.x, p.y, 1.0));
+        self.scale = Point2::from(p);
         self
     }
 
     /// TODO
     pub fn offset<T>(mut self, offset: T) -> Self where T: Into<mint::Point2<f32>> {
         let p: mint::Point2<f32> = offset.into();
-        // BUGGO
-
-        // self.offset_matrix = Matrix4::new_translation(&Vec3::new(p.x, p.y, 0.0));
-        // self.offset_inverse_matrix =
-        //     Matrix4::new_translation(&Vec3::new(-p.x, -p.y, 0.0));
-        self.offset = Point2::new(p.x, p.y);
+        self.offset = Point2::from(p);
         self
     }
 
     /// TODO
     pub fn shear<T>(mut self, shear: T) -> Self where T: Into<mint::Point2<f32>> {
         let p: mint::Point2<f32> = shear.into();
-        // BUGGO
-        self.shear = Point2::new(p.x, p.y);
-        // self.shear_matrix = Matrix4::new(
-        //     1.0,
-        //     p.x,
-        //     0.0,
-        //     0.0,
-        //     p.y,
-        //     1.0,
-        //     0.0,
-        //     0.0,
-        //     0.0,
-        //     0.0,
-        //     1.0,
-        //     0.0,
-        //     0.0,
-        //     0.0,
-        //     0.0,
-        //     1.0,
-        // );
+        self.shear = Point2::from(p);
         self
     }
 
+    // TODO: Easy mirror functions for X and Y axis might be nice.
 }
 
+/// Create a DrawParam from a location
+impl<P> From<(P,)> for DrawParam where P: Into<mint::Point2<f32>> {
+    fn from(location: (P,)) -> Self {
+        DrawParam::new()
+            .dest(location.0)
+    }
+}
+
+
+/// Create a DrawParam from a location and color
+impl<P> From<(P, Color)> for DrawParam where P: Into<mint::Point2<f32>> {
+    fn from((location, color): (P, Color)) -> Self {
+        DrawParam::new()
+            .dest(location)
+            .color(color)
+    }
+}
+
+
+/// Create a DrawParam from a location, rotation and color
+impl<P> From<(P, f32, Color)> for DrawParam where P: Into<mint::Point2<f32>> {
+    fn from((location, rotation, color): (P, f32, Color)) -> Self {
+        DrawParam::new()
+            .dest(location)
+            .rotation(rotation)
+            .color(color)
+    }
+}
+
+/// Create a DrawParam from a location, rotation, offset and color
+impl<P> From<(P, f32, P, Color)> for DrawParam where P: Into<mint::Point2<f32>> {
+    fn from((location, rotation, offset, color): (P, f32, P, Color)) -> Self {
+        DrawParam::new()
+            .dest(location)
+            .rotation(rotation)
+            .offset(offset)
+            .color(color)
+    }
+}
+
+
+/// Create a DrawParam from a location, rotation, offset, scale and color
+impl<P> From<(P, f32, P, P, Color)> for DrawParam where P: Into<mint::Point2<f32>> {
+    fn from((location, rotation, offset, scale, color): (P, f32, P, P, Color)) -> Self {
+        DrawParam::new()
+            .dest(location)
+            .rotation(rotation)
+            .offset(offset)
+            .scale(scale)
+            .color(color)
+    }
+}
 
 /// A `DrawParam` that has been crunched down to a single matrix.
 /// Useful for doing matrix-based coordiante transformations, I hope.

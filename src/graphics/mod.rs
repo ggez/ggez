@@ -275,8 +275,9 @@ pub fn clear(ctx: &mut Context, color: Color) {
 
 /// Draws the given `Drawable` object to the screen by calling its
 /// `draw()` method.
-pub fn draw(ctx: &mut Context, drawable: &Drawable, dest: Point2, rotation: f32) -> GameResult {
-    drawable.draw(ctx, dest, rotation)
+pub fn draw<T>(ctx: &mut Context, drawable: &Drawable, params: T) -> GameResult 
+    where T: Into<DrawParam> {
+    drawable.draw_ex(ctx, params.into())
 }
 
 /// Draws the given `Drawable` object to the screen by calling its `draw_ex()` method.
@@ -817,6 +818,9 @@ pub trait Drawable {
     /// * `dest` - the position to draw the graphic expressed as a `Point2`.
     /// * `rotation` - orientation of the graphic in radians.
     ///
+    /// TODO: This should probably be removed, but can't actually be
+    /// made generic on T where T: Into<DrawParam> because we treat
+    /// Drawable's as trait objects.
     fn draw(&self, ctx: &mut Context, dest: Point2, rotation: f32) -> GameResult {
         self.draw_ex(
             ctx,

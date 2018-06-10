@@ -59,3 +59,4 @@ chrono = "0.4"
 fern = "0.5"
 rand = "0.5"
 clap = "2"
+cgmath = { version = "0.16", features = ["mint"]}
