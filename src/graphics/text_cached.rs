@@ -9,6 +9,7 @@ use super::*;
 
 use gfx_glyph::{self, GlyphPositioner, Layout, SectionText, VariedSection};
 pub use gfx_glyph::{FontId, HorizontalAlign as Align, Scale};
+use mint;
 use std::borrow::Cow;
 use std::f32;
 use std::sync::{Arc, RwLock};
@@ -203,8 +204,9 @@ impl TextCached {
 
     /// Specifies rectangular dimensions to try and fit contents inside of,
     /// by wrapping, and alignment within the bounds.
-    pub fn set_bounds(&mut self, bounds: Point2, alignment: Align) -> &mut TextCached {
-        self.bounds = bounds;
+    pub fn set_bounds<P>(&mut self, bounds: P, alignment: Align) -> &mut TextCached 
+        where P: Into<mint::Point2<f32>> {
+        self.bounds = Point2::from(bounds.into());
         if self.bounds.x == f32::INFINITY {
             // Layouts don't make any sense if we don't wrap text at all.
             self.layout = Layout::default();
@@ -256,24 +258,22 @@ impl TextCached {
                 scale,
             });
         }
-        let relative_dest = (
-            {
-                // This positions text within bounds with relative_dest being to the left, always.
-                let mut dest_x = relative_dest.x;
-                if self.bounds.x != f32::INFINITY {
-                    use gfx_glyph::Layout::Wrap;
-                    if let Wrap { h_align, .. } = self.layout {
-                        match h_align {
-                            Align::Center => dest_x += self.bounds.x * 0.5,
-                            Align::Right => dest_x += self.bounds.x,
-                            _ => (),
-                        }
+        let relative_dest_x = {
+            // This positions text within bounds with relative_dest being to the left, always.
+            let mut dest_x = relative_dest.x;
+            if self.bounds.x != f32::INFINITY {
+                use gfx_glyph::Layout::Wrap;
+                if let Wrap { h_align, .. } = self.layout {
+                    match h_align {
+                        Align::Center => dest_x += self.bounds.x * 0.5,
+                        Align::Right => dest_x += self.bounds.x,
+                        _ => (),
                     }
                 }
-                dest_x
-            },
-            relative_dest.y,
-        );
+            }
+            dest_x
+        };
+        let relative_dest = (relative_dest_x, relative_dest.y);
         VariedSection {
             screen_position: relative_dest,
             bounds: (self.bounds.x, self.bounds.y),
@@ -302,13 +302,14 @@ impl TextCached {
                 return string.clone();
             }
         }
-        let text_string = self.fragments
-            .iter()
-            .fold("".to_string(), |acc, frg| format!("{}{}", acc, frg.text));
-        if let Ok(mut metrics) = self.cached_metrics.write() {
-            metrics.string = Some(text_string.clone());
+        let mut string_accm = String::new();
+        for frg in &self.fragments {
+            string_accm += &frg.text;
         }
-        text_string
+        if let Ok(mut metrics) = self.cached_metrics.write() {
+            metrics.string = Some(string_accm.clone());
+        }
+        string_accm
     }
 
     /// Calculates, caches, and returns width and height of formatted and wrapped text.
@@ -365,8 +366,10 @@ impl TextCached {
     /// Queues the `TextCached` to be drawn by `draw_queued()`.
     /// `relative_dest` is relative to the `DrawParam::dest` passed to `draw_queued()`.
     /// Note, any `TextCached` drawn via `graphics::draw()` will also draw the queue.
-    pub fn queue(&self, context: &mut Context, relative_dest: Point2, color: Option<Color>) {
-        let varied_section = self.generate_varied_section(relative_dest, color);
+    pub fn queue<P>(&self, context: &mut Context, relative_dest: P, color: Option<Color>) 
+    where P: Into<mint::Point2<f32>> {
+        let p = Point2::from(relative_dest.into());
+        let varied_section = self.generate_varied_section(p, color);
         context.gfx_context.glyph_brush.queue(varied_section);
     }
 

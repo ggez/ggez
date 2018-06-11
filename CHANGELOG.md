@@ -2,11 +2,27 @@
 
 ## Added
 
+ * Added line cap and join options
+
 ## Changed
+
+ * Updated versions of lots of dependencies.
+ * Minimum rustc version is now 1.26
+ * We now use `winit` instead of `sdl2` for window creation and events!  This involves lots of minor
+   changes, the full extent of which is still being explored.
+ * `DrawParam` now uses the builder pattern instead of being a bare struct, which allows...
+ * All public-facing API's that take `Point2`, `Vector2` or `Matrix4` should now take
+   `Into<mint::...>` for the appropriate type from the `mint` crate.  This should let users use
+   whatever math library they care to that supports `mint`; currently both `nalgebra` and `cgmath`
+   are options, and `euclid` should be soon.
 
 ## Deprecated
 
 ## Removed
+
+ * The foreground and background colors and associated functions have beeen removed; all colors are
+   now specified purely where they are used for drawing
+ * Removed deprecated `BoundSpriteBatch` type.
 
 ## Fixed
 
