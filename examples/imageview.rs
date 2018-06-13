@@ -48,7 +48,7 @@ impl MainState {
     }
 
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.print_resource_stats();
+        filesystem::print_resource_stats(ctx);
 
         let image = graphics::Image::new(ctx, "/dragon1.png").unwrap();
 
@@ -103,23 +103,21 @@ impl event::EventHandler for MainState {
         let c = self.a as u8;
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
-        // TODO: Fix set_color's
-        // graphics::set_color(ctx, Color::from((c, c, c, 255)))?;
-        let dest_point = graphics::Point2::new(0.0, 0.0);
-        graphics::draw(ctx, &self.image, dest_point, 0.0)?;
-        graphics::draw(ctx, &self.text, dest_point, 0.0)?;
+        let color = Color::from((c, c, c, 255));
+        let dest_point = graphics::Point2::new(0.0, 0.0,);
+        graphics::draw(ctx, &self.image, (dest_point, 0.0, color))?;
+        graphics::draw(ctx, &self.text, (dest_point, 0.0, color))?;
         let dest_point = graphics::Point2::new(100.0, 50.0);
-        graphics::draw(ctx, &self.bmptext, dest_point, 0.0)?;
+        graphics::draw(ctx, &self.bmptext, (dest_point, 0.0, color))?;
 
-        let dest_point2 = graphics::Point2::new(0.0, 256.0);
+        let dest_point2 = cgmath::Point2::new(0.0, 256.0);
         graphics::rectangle(
             ctx,
             Color::from((0, 0, 0, 255)),
             graphics::DrawMode::Fill,
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
         )?;
-        // graphics::set_color(ctx, Color::from((255, 255, 255, 255)))?;
-        graphics::draw(ctx, &self.pixel_sized_text, dest_point2, 0.0)?;
+        graphics::draw(ctx, &self.pixel_sized_text, (dest_point2, 0.0, graphics::WHITE))?;
 
         self.draw_crazy_lines(ctx)?;
         graphics::present(ctx)?;

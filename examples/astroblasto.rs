@@ -318,8 +318,6 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.print_resource_stats();
-
         println!("Game resource path: {:?}", ctx.filesystem);
 
         print_instructions();

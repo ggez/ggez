@@ -39,11 +39,11 @@ impl FileLogger {
         receiver: mpsc::Receiver<String>,
     ) -> GameResult<FileLogger> {
         // This (re)creates a file and opens it for appending.
-        let file = ctx.filesystem.create(path::Path::new(path))?;
+        let file = filesystem::create(ctx, path::Path::new(path))?;
         debug!(
             "Created log file {:?} in {:?}",
             path,
-            ctx.filesystem.get_user_config_dir()
+            filesystem::get_user_config_dir(ctx)
         );
         Ok(FileLogger { file, receiver })
     }

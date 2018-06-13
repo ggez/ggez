@@ -1,6 +1,7 @@
 //! An example of how to render to images using the `Canvas` type.
 
 extern crate ggez;
+extern crate cgmath;
 
 use ggez::conf;
 use ggez::event;
