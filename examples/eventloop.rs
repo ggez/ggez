@@ -12,6 +12,7 @@ extern crate ggez;
 
 use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
+use ggez::filesystem;
 use ggez::graphics::{self, DrawMode, Point2};
 use ggez::{conf, Context, GameResult};
 

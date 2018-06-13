@@ -8,6 +8,7 @@ extern crate rand;
 use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
+use ggez::filesystem;
 use ggez::graphics::{self, Align, Color, DrawParam, Font, FontId, Scale, TextCached, TextFragment};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
@@ -213,7 +214,7 @@ pub fn main() -> GameResult {
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        ctx.filesystem.mount(&path, true);
+        filesystem::mount(ctx, &path, true);
     }
 
     let state = &mut App::new(ctx)?;

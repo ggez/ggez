@@ -4,6 +4,7 @@ extern crate ggez;
 
 use ggez::conf;
 use ggez::event;
+use ggez::filesystem;
 use ggez::graphics::{self, Color, DrawParam, Point2};
 use ggez::{Context, GameResult};
 

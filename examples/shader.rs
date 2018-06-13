@@ -6,6 +6,7 @@ extern crate ggez;
 
 use ggez::conf;
 use ggez::event;
+use ggez::filesystem;
 use ggez::graphics::{self, DrawMode, Point2};
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -92,7 +93,7 @@ pub fn main() -> GameResult {
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        ctx.filesystem.mount(&path, true);
+        filesystem::mount(ctx, &path, true);
     }
 
     let state = &mut MainState::new(ctx)?;

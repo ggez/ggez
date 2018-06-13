@@ -9,6 +9,7 @@ extern crate ggez;
 use clap::{App, Arg};
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
+use ggez::filesystem;
 use ggez::graphics::{self, DrawMode, Point2};
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -229,7 +230,7 @@ pub fn main() -> GameResult {
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        ctx.filesystem.mount(&path, true);
+        filesystem::mount(ctx, &path, true);
         println!("Adding path {:?}", path);
     } else {
         println!("not building with cargo?");

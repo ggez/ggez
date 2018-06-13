@@ -14,7 +14,7 @@ extern crate log;
 
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event::{EventHandler, KeyCode, KeyMods};
-use ggez::filesystem::File;
+use ggez::filesystem::{self, File};
 use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
