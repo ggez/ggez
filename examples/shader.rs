@@ -3,11 +3,12 @@
 #[macro_use]
 extern crate gfx;
 extern crate ggez;
+extern crate cgmath;
 
 use ggez::conf;
 use ggez::event;
 use ggez::filesystem;
-use ggez::graphics::{self, DrawMode, Point2};
+use ggez::graphics::{self, DrawMode};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
@@ -52,7 +53,7 @@ impl event::EventHandler for MainState {
             ctx,
             graphics::WHITE,
             DrawMode::Fill,
-            Point2::new(100.0, 300.0),
+            cgmath::Point2::new(100.0, 300.0),
             100.0,
             2.0,
         )?;
@@ -64,7 +65,7 @@ impl event::EventHandler for MainState {
                 ctx,
                 graphics::WHITE,
                 DrawMode::Fill,
-                Point2::new(400.0, 300.0),
+                cgmath::Point2::new(400.0, 300.0),
                 100.0,
                 2.0,
             )?;
@@ -74,7 +75,7 @@ impl event::EventHandler for MainState {
             ctx,
             graphics::WHITE,
             DrawMode::Fill,
-            Point2::new(700.0, 300.0),
+            cgmath::Point2::new(700.0, 300.0),
             100.0,
             2.0,
         )?;

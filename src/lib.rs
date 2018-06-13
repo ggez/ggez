@@ -113,7 +113,6 @@ extern crate lyon;
 extern crate mint;
 pub extern crate nalgebra;
 extern crate rodio;
-extern crate rusttype;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]

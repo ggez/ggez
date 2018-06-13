@@ -242,8 +242,8 @@ impl event::EventHandler for MainState {
         // Do ggez drawing
         let dest_point1 = graphics::Point2::new(10.0, 210.0);
         let dest_point2 = graphics::Point2::new(10.0, 250.0);
-        graphics::draw(ctx, &self.text1, dest_point1, 0.0)?;
-        graphics::draw(ctx, &self.text2, dest_point2, 0.0)?;
+        graphics::draw(ctx, &self.text1, (dest_point1,))?;
+        graphics::draw(ctx, &self.text2, (dest_point2,))?;
         graphics::present(ctx)?;
         self.frames += 1;
         if (self.frames % 10) == 0 {

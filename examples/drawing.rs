@@ -6,11 +6,12 @@ use ggez::conf;
 use ggez::event;
 use ggez::filesystem;
 use ggez::graphics;
-use ggez::graphics::{DrawMode, DrawParam, Point2};
+use ggez::graphics::{DrawMode, DrawParam};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
+use ggez::nalgebra::Point2;
 
 struct MainState {
     image1: graphics::Image,
