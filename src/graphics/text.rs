@@ -15,15 +15,6 @@ use super::*;
 /// Can be created from a .ttf file or from an image (bitmap fonts).
 #[derive(Clone)]
 pub enum Font {
-    /// A truetype font
-    TTFFont {
-        /// The actual font data
-        font: rusttype::Font<'static>,
-        /// The size of the font
-        points: u32,
-        /// Scale information for the font
-        scale: rusttype::Scale,
-    },
     /// A bitmap font where letter widths are infered
     BitmapFontVariant(BitmapFont),
     /// A TrueType font stored in `GraphicsContext::glyph_brush`
@@ -79,18 +70,16 @@ impl Font {
     where
         P: AsRef<path::Path> + fmt::Debug,
     {
-        let mut stream = context.filesystem.open(path.as_ref())?;
-        let mut buf = Vec::new();
-        stream.read_to_end(&mut buf)?;
-
         let name = format!("{:?}", path);
 
         // TODO: consider ditching DPI here; wait for winit #548.
-        Font::from_bytes(&name, &buf, points, (75.0, 75.0))
+        Font::new_glyph_font(context, path)
     }
 
+/*
     /// Load a new TTF font from the given file, returning a font that draws
     /// lines that are the given number of pixels high.
+    /// TODO: figure out how to make this better with GlyphBrush
     pub fn new_px<P>(context: &mut Context, path: P, pixels: u32) -> GameResult<Font>
     where
         P: AsRef<path::Path> + fmt::Debug,
@@ -103,67 +92,7 @@ impl Font {
 
         Font::from_bytes_px(&name, &buf, pixels)
     }
-
-    /// Loads a new TTF font from data copied out of the given buffer.
-    pub fn from_bytes(name: &str, bytes: &[u8], points: u32, dpi: (f32, f32)) -> GameResult<Font> {
-        let font_collection_err = &|_| {
-            GameError::ResourceLoadError(format!(
-                "Could not load font collection for \
-                 font {:?}",
-                name
-            ))
-        };
-        let collection =
-            rusttype::FontCollection::from_bytes(bytes.to_vec()).map_err(font_collection_err)?;
-        let font_err = &|_| {
-            GameError::ResourceLoadError(format!(
-                "Could not retrieve font from collection for \
-                 font {:?}",
-                name
-            ))
-        };
-        let font = collection.into_font().map_err(font_err)?;
-        let (x_dpi, y_dpi) = dpi;
-        // println!("DPI: {}, {}", x_dpi, y_dpi);
-        let scale = display_independent_scale(points, x_dpi, y_dpi);
-
-        Ok(Font::TTFFont {
-            font,
-            points,
-            scale,
-        })
-    }
-
-    /// Loads a new TTF font from data copied out of the given buffer, taking font size in pixels
-    pub fn from_bytes_px(name: &str, bytes: &[u8], pixels: u32) -> GameResult<Font> {
-        let font_collection_err = &|_| {
-            GameError::ResourceLoadError(format!(
-                "Could not load font collection for \
-                 font {:?}",
-                name
-            ))
-        };
-        let collection =
-            rusttype::FontCollection::from_bytes(bytes.to_vec()).map_err(font_collection_err)?;
-        let font_err = &|_| {
-            GameError::ResourceLoadError(format!(
-                "Could not retrieve font from collection for \
-                 font {:?}",
-                name
-            ))
-        };
-        let font = collection.into_font().map_err(font_err)?;
-        let scale = rusttype::Scale {
-            x: pixels as f32,
-            y: pixels as f32,
-        };
-
-        Ok(Font::TTFFont {
-            points: 0, // Pretty sure points is unused apart from display, so
-            font,
-            scale,
-        })
-    }
+*/
 
     /// Creates a bitmap font from a long image of its alphabet, specified by `path`.
     /// The width of each individual chars is assumed to be to be
@@ -257,6 +186,16 @@ impl Font {
         }))
     }
 
+    /// Loads a new TrueType font from given bytes and into `GraphicsContext::glyph_brush`.
+    pub fn new_glyph_font_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self>
+    {
+        // TODO: Take a Cow here to avoid this clone where unnecessary?
+        let v = bytes.to_vec();
+        let font_id = context.gfx_context.glyph_brush.add_font_bytes(v);
+
+        Ok(Font::GlyphFont(font_id))
+    }
+
     /// Loads a new TrueType font from given file and into `GraphicsContext::glyph_brush`.
     pub fn new_glyph_font<P>(context: &mut Context, path: P) -> GameResult<Self>
     where
@@ -266,9 +205,7 @@ impl Font {
         let mut buf = Vec::new();
         stream.read_to_end(&mut buf)?;
 
-        let font_id = context.gfx_context.glyph_brush.add_font_bytes(buf);
-
-        Ok(Font::GlyphFont(font_id))
+        Font::new_glyph_font_bytes(context, &buf)
     }
 
     /// Retrieves a loaded font from `GraphicsContext::glyph_brush`.
@@ -298,42 +235,33 @@ impl Font {
     /// Returns baked-in default font (currently DejaVuSerif.ttf).
     /// Note it does create a new `Font` object with every call;
     /// although the actual data should be shared.
-    pub fn default_font() -> GameResult<Self> {
-        let size = 16;
+    pub fn default_font(context: &mut Context) -> GameResult<Self> {
         // BUGGO: fix DPI.  Get from Context?  If we do that we can basically
         // just make Context always keep the default Font itself... hmm.
         // TODO: ^^^ is that still relevant?  Nah, it will probably be replaced by
         // the `gfx_glyph` interation.
-        Font::from_bytes("default", Font::default_font_bytes(), size, (75.0, 75.0))
+        Font::new_glyph_font_bytes(context, Font::default_font_bytes())
     }
 
     /// Get the height of the Font in pixels.
     ///
     /// The height of the font includes any spacing, it will be the total height
     /// a line needs.
+    /// TODO: Probably made obsolete by GlyphFont
     pub fn get_height(&self) -> usize {
         match *self {
             Font::BitmapFontVariant(BitmapFont { height, .. }) => height,
-            Font::TTFFont { scale, .. } => scale.y.ceil() as usize,
             Font::GlyphFont(_) => 0,
         }
     }
 
     /// Returns the width a line of text needs, in pixels.
     /// Does not handle line-breaks.
+    /// TODO: Probably made obsolete by GlyphFont
     pub fn get_width(&self, text: &str) -> usize {
         match *self {
             Font::BitmapFontVariant(ref font) => {
                 compute_variable_bitmap_text_rendering_span(text, font)
-            }
-            Font::TTFFont {
-                ref font, scale, ..
-            } => {
-                let v_metrics = font.v_metrics(scale);
-                let offset = rusttype::point(0.0, v_metrics.ascent);
-                let glyphs: Vec<rusttype::PositionedGlyph> =
-                    font.layout(text, scale, offset).collect();
-                text_width(&glyphs) as usize
             }
             Font::GlyphFont(_) => 0,
         }
@@ -346,6 +274,7 @@ impl Font {
     /// at whitespace.  (It also doesn't preserve whitespace.)
     ///
     /// Returns a tuple of maximum line width and a `Vec` of wrapped `String`s.
+    /// TODO: Probably made obsolete by GlyphFont
     pub fn get_wrap(&self, text: &str, wrap_limit: usize) -> (usize, Vec<String>) {
         let mut broken_lines = Vec::new();
         for line in text.lines() {
@@ -397,7 +326,6 @@ impl Font {
 impl fmt::Debug for Font {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Font::TTFFont { .. } => write!(f, "<TTFFont: {:p}>", &self),
             Font::BitmapFontVariant(BitmapFont { .. }) => write!(f, "<BitmapFont: {:p}>", &self),
             Font::GlyphFont { .. } => write!(f, "<GlyphFont: {:p}>", &self),
         }
@@ -620,9 +548,6 @@ impl Text {
     /// it and only update it when the text changes.
     pub fn new(context: &mut Context, text: &str, font: &Font) -> GameResult<Text> {
         match *font {
-            Font::TTFFont {
-                font: ref f, scale, ..
-            } => render_ttf(context, text, f, scale),
             Font::BitmapFontVariant(ref font) => render_dynamic_bitmap(context, text, font),
             Font::GlyphFont(_) => Err(GameError::FontError(
                 "`Text` can't be created with a `Font::GlyphFont` (yet)!".into(),

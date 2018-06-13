@@ -63,9 +63,8 @@ impl Context {
         let audio_context = audio::AudioContext::new()?;
         let events_loop = winit::EventsLoop::new();
         let timer_context = timer::TimeContext::new();
-        let font = graphics::Font::default_font()?;
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
-        let graphics_context = graphics::GraphicsContext::new(
+        let mut graphics_context = graphics::GraphicsContext::new(
             &events_loop,
             &conf.window_setup,
             conf.window_mode,
@@ -74,6 +73,15 @@ impl Context {
         )?;
         let mouse_context = mouse::MouseContext::new();
         let keyboard_context = keyboard::KeyboardContext::new();
+
+        // TODO: Clean up the bytes here a bit.
+        let font_id = graphics_context.glyph_brush.add_font_bytes(
+            &include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+            "/resources/DejaVuSerif.ttf"
+            ))[..]
+        );
+        let default_font = graphics::Font::GlyphFont(font_id);
 
         let ctx = Context {
             conf,
@@ -85,7 +93,7 @@ impl Context {
             keyboard_context,
             mouse_context,
 
-            default_font: font,
+            default_font: default_font,
             debug_id,
         };
 

@@ -15,15 +15,18 @@
    `Into<mint::...>` for the appropriate type from the `mint` crate.  This should let users use
    whatever math library they care to that supports `mint`; currently both `nalgebra` and `cgmath`
    are options, and `euclid` should be soon.
+ * Moved all the `FilesystemContext` methods into top-level functions in the `filesystem` module,
+   to be consistent with the rest of the API.
 
 ## Deprecated
 
 ## Removed
 
  * The foreground and background colors and associated functions have beeen removed; all colors are
-   now specified purely where they are used for drawing
+   now specified purely where they are used for drawing.
  * Removed deprecated `BoundSpriteBatch` type.
- * Removed `Context::print_resource_stats()` in favor of `filesystem::log_all()`
+ * Removed `Context::print_resource_stats()` in favor of `filesystem::print_all()`.
+ * Removed `TTFFont` font type in favor of `GlyphBrush`. [#132](https://github.com/ggez/ggez/issues/132)
 
 ## Fixed
 
