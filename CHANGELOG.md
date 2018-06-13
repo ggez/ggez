@@ -23,6 +23,7 @@
  * The foreground and background colors and associated functions have beeen removed; all colors are
    now specified purely where they are used for drawing
  * Removed deprecated `BoundSpriteBatch` type.
+ * Removed `Context::print_resource_stats()` in favor of `filesystem::log_all()`
 
 ## Fixed
 

@@ -1,17 +1,16 @@
 //! This example demonstrates how to use `TextCached` to draw TrueType font texts efficiently.
 //! Powered by `gfx_glyph` crate.
 
+extern crate cgmath;
 extern crate ggez;
 extern crate rand;
-extern crate cgmath;
 
+use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
-use ggez::graphics::{self, Align, Color, DrawParam, Font, FontId, Scale, TextCached,
-                     TextFragment};
+use ggez::graphics::{self, Align, Color, DrawParam, Font, FontId, Scale, TextCached, TextFragment};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
-use cgmath::Point2;
 use std::collections::BTreeMap;
 use std::env;
 use std::f32;
@@ -138,7 +137,11 @@ impl event::EventHandler for App {
         let fps = timer::get_fps(ctx);
         let fps_display = TextCached::new(format!("FPS: {}", fps))?;
         // When drawing through these calls, `DrawParam` will work as they are documented.
-        graphics::draw(ctx, &fps_display, (Point2::new(200.0, 0.0), graphics::WHITE))?;
+        graphics::draw(
+            ctx,
+            &fps_display,
+            (Point2::new(200.0, 0.0), graphics::WHITE),
+        )?;
 
         let mut height = 0.0;
         for (_key, text) in &self.texts {
@@ -183,7 +186,7 @@ impl event::EventHandler for App {
             DrawParam::new()
                 .dest(Point2::new(500.0, 300.0))
                 .shear(Point2::new(-0.3, 0.0))
-                .rotation(-0.5)
+                .rotation(-0.5),
         )?;
 
         graphics::present(ctx)?;

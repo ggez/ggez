@@ -176,7 +176,7 @@ impl WindowSetup {
         self.resizable = resizable;
         self
     }*/
- // TODO: winit #540
+    // TODO: winit #540
 
     /// Set number of samples
     ///

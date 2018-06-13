@@ -16,6 +16,7 @@ use rodio;
 use GameError;
 use GameResult;
 use context::Context;
+use filesystem;
 
 /// A struct that contains all information for tracking sound info.
 ///
@@ -52,7 +53,7 @@ impl SoundData {
     /// Create a new SoundData from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
-        let file = &mut context.filesystem.open(path)?;
+        let file = &mut filesystem::open(context, path)?;
         SoundData::from_read(file)
     }
 

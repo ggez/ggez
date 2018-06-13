@@ -204,8 +204,10 @@ impl TextCached {
 
     /// Specifies rectangular dimensions to try and fit contents inside of,
     /// by wrapping, and alignment within the bounds.
-    pub fn set_bounds<P>(&mut self, bounds: P, alignment: Align) -> &mut TextCached 
-        where P: Into<mint::Point2<f32>> {
+    pub fn set_bounds<P>(&mut self, bounds: P, alignment: Align) -> &mut TextCached
+    where
+        P: Into<mint::Point2<f32>>,
+    {
         self.bounds = Point2::from(bounds.into());
         if self.bounds.x == f32::INFINITY {
             // Layouts don't make any sense if we don't wrap text at all.
@@ -366,8 +368,10 @@ impl TextCached {
     /// Queues the `TextCached` to be drawn by `draw_queued()`.
     /// `relative_dest` is relative to the `DrawParam::dest` passed to `draw_queued()`.
     /// Note, any `TextCached` drawn via `graphics::draw()` will also draw the queue.
-    pub fn queue<P>(&self, context: &mut Context, relative_dest: P, color: Option<Color>) 
-    where P: Into<mint::Point2<f32>> {
+    pub fn queue<P>(&self, context: &mut Context, relative_dest: P, color: Option<Color>)
+    where
+        P: Into<mint::Point2<f32>>,
+    {
         let p = Point2::from(relative_dest.into());
         let varied_section = self.generate_varied_section(p, color);
         context.gfx_context.glyph_brush.queue(varied_section);

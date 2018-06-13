@@ -123,13 +123,6 @@ impl Context {
         Context::from_conf(config, fs)
     }
 
-    /// Prints out information on the resources subsystem.
-    pub fn print_resource_stats(&mut self) {
-        // TODO: consider using logging macros.
-        // ACTUALLY TODO: Deprecate this in favor of filesystem.log_all()
-        self.filesystem.print_all();
-    }
-
     /// Terminates `ggez::run()` loop by setting `Context::continuing` to `false`.
     pub fn quit(&mut self) {
         self.continuing = false;
