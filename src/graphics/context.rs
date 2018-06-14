@@ -120,10 +120,7 @@ impl GraphicsContext {
             window_builder
         };
 
-        // TODO: see winit #540 about disabling resizing.
-        /*if window_setup.resizable {
-            window_builder.resizable();
-        }*/
+        window_builder = window_builder.with_resizable(window_setup.resizable);
 
         let (window, device, mut factory, screen_render_target, depth_view) =
             gfx_window_glutin::init_raw(

@@ -145,9 +145,9 @@ pub struct WindowSetup {
     /// The window title.
     #[default = r#""An easy, good game".to_owned()"#]
     pub title: String,
-    /*/// Whether or not the window is resizable
+    /// Whether or not the window is resizable
     #[default = r#"false"#]
-    pub resizable: bool,*/ // TODO: winit #540
+    pub resizable: bool,
     /// Number of samples for multisample anti-aliasing
     #[default = r#"NumSamples::One"#]
     pub samples: NumSamples,
@@ -171,12 +171,11 @@ impl WindowSetup {
         self
     }
 
-    /*/// Set resizable
+    /// Set resizable
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
         self
-    }*/
-    // TODO: winit #540
+    }
 
     /// Set number of samples
     ///
