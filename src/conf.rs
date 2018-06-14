@@ -37,22 +37,25 @@ pub enum MonitorId {
 }
 
 /// A builder structure containing window settings
-/// that can be set at runtime and changed with `graphics::set_mode()`
+/// that can be set at runtime and changed with `graphics::set_mode()`.
 ///
 /// Defaults:
 ///
-/// ```rust,ignore
-/// WindowMode {
-///     width: 800,
-///     height: 600,
-///     borderless: false,
-///     fullscreen_type: FullscreenType::Off,
-///     vsync: true,
-///     min_width: 0,
-///     max_width: 0,
-///     min_height: 0,
-///     max_height: 0,
-/// }
+/// ```rust
+///use ggez::conf::{FullscreenType, WindowMode};
+///assert_eq!(
+///    WindowMode::default(),
+///    WindowMode {
+///        dimensions: (800, 600),
+///        min_dimensions: None,
+///        max_dimensions: None,
+///        fullscreen_type: FullscreenType::Off,
+///        maximized: false,
+///        hidden: false,
+///        borderless: false,
+///        always_on_top: false,
+///    },
+///);
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowMode {
@@ -133,18 +136,23 @@ impl WindowMode {
 }
 
 /// A builder structure containing window settings
-/// that must be set at init time and cannot be changed afterwards.
+/// that must be set at init time and (mostly) cannot be changed afterwards.
 ///
 /// Defaults:
 ///
-/// ```rust,ignore
-/// WindowSetup {
-///     title: "An easy, good game".to_owned(),
-///     icon: "".to_owned(),
-///     resizable: false,
-///     allow_highdpi: true,
-///     samples: NumSamples::One,
-/// }
+/// ```rust
+///use ggez::conf::{NumSamples, WindowSetup};
+///assert_eq!(
+///    WindowSetup::default(),
+///    WindowSetup {
+///        title: "An easy, good game".to_owned(),
+///        icon: "".to_owned(),
+///        resizable: false,
+///        transparent: false,
+///        vsync: true,
+///        samples: NumSamples::One,
+///    },
+///);
 /// ```
 #[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowSetup {
