@@ -56,72 +56,78 @@ pub enum MonitorId {
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowMode {
-    /// Window width
-    #[default = r#"800"#]
-    pub width: u32,
-    /// Window height
-    #[default = r#"600"#]
-    pub height: u32,
-    /// Whether or not to maximize the window
-    #[default = r#"false"#]
-    pub maximized: bool,
-    /// Fullscreen type
+    /// Window's inner dimensions (drawable area).
+    #[default = r#"(800, 600)"#]
+    pub dimensions: (u32, u32),
+    /// Window's minimum dimensions; `None` is no limit.
+    #[default = r#"None"#]
+    pub min_dimensions: Option<(u32, u32)>,
+    /// Window's maximum dimensions; `None` is no limit.
+    #[default = r#"None"#]
+    pub max_dimensions: Option<(u32, u32)>,
+    /// Fullscreen type.
     #[default = r#"FullscreenType::Off"#]
     pub fullscreen_type: FullscreenType,
-    /// Whether or not to show window decorations
+    /// Whether or not to maximize the window.
+    #[default = r#"false"#]
+    pub maximized: bool,
+    /// Whether or not the window is hidden.
+    #[default = r#"false"#]
+    pub hidden: bool,
+    /// Whether or not to show window decorations.
     #[default = r#"false"#]
     pub borderless: bool,
-    /// Minimum width for resizable windows; 0 means no limit
-    #[default = r#"0"#]
-    pub min_width: u32,
-    /// Minimum height for resizable windows; 0 means no limit
-    #[default = r#"0"#]
-    pub min_height: u32,
-    /// Maximum width for resizable windows; 0 means no limit
-    #[default = r#"0"#]
-    pub max_width: u32,
-    /// Maximum height for resizable windows; 0 means no limit
-    #[default = r#"0"#]
-    pub max_height: u32,
+    /// Whether or not the window is pinned to always be on top of other windows.
+    #[default = r#"false"#]
+    pub always_on_top: bool,
 }
 
 impl WindowMode {
-    /// Set default window size, or screen resolution in true fullscreen mode
+    /// Set default window size, or screen resolution in true fullscreen mode.
     pub fn dimensions(mut self, width: u32, height: u32) -> Self {
-        self.width = width;
-        self.height = height;
+        self.dimensions = (width, height);
         self
     }
 
-    /// Set if window should be maximized
-    pub fn maximized(mut self, maximized: bool) -> Self {
-        self.maximized = maximized;
+    /// Set minimum window dimensions for windowed mode.
+    pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.min_dimensions = Some((width, height));
         self
     }
 
-    /// Set the fullscreen type
+    /// Set maximum window dimensions for windowed mode.
+    pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.max_dimensions = Some((width, height));
+        self
+    }
+
+    /// Set the fullscreen type.
     pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
         self.fullscreen_type = fullscreen_type;
         self
     }
 
-    /// Set borderless
+    /// Set if window should be maximized.
+    pub fn maximized(mut self, maximized: bool) -> Self {
+        self.maximized = maximized;
+        self
+    }
+
+    /// Set if window should be hidden.
+    pub fn hidden(mut self, hidden: bool) -> Self {
+        self.hidden = hidden;
+        self
+    }
+
+    /// Set whether or not to show window decorations.
     pub fn borderless(mut self, borderless: bool) -> Self {
         self.borderless = borderless;
         self
     }
 
-    /// Set minimum window dimensions for windowed mode
-    pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.min_width = width;
-        self.min_height = height;
-        self
-    }
-
-    /// Set maximum window dimensions for windowed mode
-    pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.max_width = width;
-        self.max_height = height;
+    /// Set if window should pinned to always be on top of other windows.
+    pub fn always_on_top(mut self, always_on_top: bool) -> Self {
+        self.always_on_top = always_on_top;
         self
     }
 }
@@ -145,44 +151,47 @@ pub struct WindowSetup {
     /// The window title.
     #[default = r#""An easy, good game".to_owned()"#]
     pub title: String,
-    /// Whether or not the window is resizable
-    #[default = r#"false"#]
-    pub resizable: bool,
-    /// Number of samples for multisample anti-aliasing
-    #[default = r#"NumSamples::One"#]
-    pub samples: NumSamples,
-    /// Whether or not to enable vsync
-    #[default = r#"true"#]
-    pub vsync: bool,
-    /// Whether or not should the window's background be transparent
-    #[default = r#"false"#]
-    pub transparent: bool,
     /// A file path to the window's icon.
     /// It is rooted in the `resources` directory (see the `filesystem` module for details),
     /// and an empty string results in a blank/default icon.
     #[default = r#""".to_owned()"#]
     pub icon: String,
+    /// Whether or not the window is resizable.
+    #[default = r#"false"#]
+    pub resizable: bool,
+    /// Whether or not should the window's background be transparent.
+    #[default = r#"false"#]
+    pub transparent: bool,
+    /// Whether or not to enable vsync (vertical synchronization).
+    #[default = r#"true"#]
+    pub vsync: bool,
+    /// Number of samples for multisample anti-aliasing.
+    #[default = r#"NumSamples::One"#]
+    pub samples: NumSamples,
 }
 
 impl WindowSetup {
-    /// Set window title
+    /// Set window's title.
     pub fn title(mut self, title: &str) -> Self {
         self.title = title.to_owned();
         self
     }
 
-    /// Set resizable
+    /// Set the window's icon.
+    pub fn icon(mut self, icon: &str) -> Self {
+        self.icon = icon.to_owned();
+        self
+    }
+
+    /// Set whether or not the window is resizable.
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
         self
     }
 
-    /// Set number of samples
-    ///
-    /// Returns None if given an invalid value
-    /// (valid values are powers of 2 from 1 to 16)
-    pub fn samples(mut self, samples: NumSamples) -> Self {
-        self.samples = samples;
+    /// Set if window's background should be transparent.
+    pub fn transparent(mut self, transparent: bool) -> Self {
+        self.transparent = transparent;
         self
     }
 
@@ -192,15 +201,9 @@ impl WindowSetup {
         self
     }
 
-    /// Set if window background should be transparent.
-    pub fn transparent(mut self, transparent: bool) -> Self {
-        self.transparent = transparent;
-        self
-    }
-
-    /// Set the window's icon.
-    pub fn icon(mut self, icon: &str) -> Self {
-        self.icon = icon.to_owned();
+    /// Set number of samples for multisample anti-aliasing.
+    pub fn samples(mut self, samples: NumSamples) -> Self {
+        self.samples = samples;
         self
     }
 }
