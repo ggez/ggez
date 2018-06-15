@@ -18,8 +18,7 @@ use winit;
 /// A key code.
 pub use winit::VirtualKeyCode as KeyCode;
 
-/// A struct that holds the state of keyboard modifier buttons such as ctrl or shift.
-pub use winit::ModifiersState as KeyMods;
+pub use keyboard::KeyMods;
 /// A mouse button.
 pub use winit::MouseButton;
 
@@ -31,16 +30,18 @@ pub use winit::ButtonId as Button;
 
 /// `winit` events; nested in a module for re-export neatness.
 pub mod winit_event {
-    pub use super::winit::{DeviceEvent, ElementState, Event, KeyboardInput, MouseScrollDelta,
-                           TouchPhase, WindowEvent};
+    pub use super::winit::{
+        DeviceEvent, ElementState, Event, KeyboardInput, ModifiersState, MouseScrollDelta,
+        TouchPhase, WindowEvent,
+    };
 }
 
 use self::winit_event::*;
 /// `winit` event loop.
 pub use winit::EventsLoop;
 
-use GameResult;
 use context::Context;
+use GameResult;
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
@@ -192,10 +193,10 @@ where
                     } => match element_state {
                         ElementState::Pressed => {
                             let repeat = keyboard::is_repeated(ctx, keycode);
-                            state.key_down_event(ctx, keycode, modifiers, repeat);
+                            state.key_down_event(ctx, keycode, modifiers.into(), repeat);
                         }
                         ElementState::Released => {
-                            state.key_up_event(ctx, keycode, modifiers);
+                            state.key_up_event(ctx, keycode, modifiers.into());
                         }
                     },
                     WindowEvent::MouseWheel { delta, .. } => {

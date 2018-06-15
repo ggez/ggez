@@ -99,6 +99,8 @@
 // TODO: Enable this.
 // #![deny(unused_results)]
 
+#[macro_use]
+extern crate bitflags;
 extern crate app_dirs2;
 #[macro_use]
 extern crate gfx;
