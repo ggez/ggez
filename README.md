@@ -112,4 +112,7 @@ Sources of information:
  * The [API docs](https://docs.rs/ggez/), a lot of design stuff is explained there.
  * Check out the [examples](https://github.com/ggez/ggez/tree/master/examples).
 
-If you still have problems, feel free to [open an issue](https://github.com/ggez/ggez/issues) or say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server.
+If you still have problems, feel free to [open an issue](https://github.com/ggez/ggez/issues) or
+say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server.  There is also a
+`#gamedev` channel on the unofficial Rust [Discord server](https://discord.me/rust-lang), which
+tends to have a number of people using ggez.
