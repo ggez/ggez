@@ -13,8 +13,8 @@
 //!
 //! See the `eventloop` example for an implementation.
 
-use winit;
 use gilrs;
+use winit;
 
 /// A key code.
 pub use winit::VirtualKeyCode as KeyCode;
@@ -39,8 +39,8 @@ use self::winit_event::*;
 /// `winit` event loop.
 pub use winit::EventsLoop;
 
-use GameResult;
 use context::Context;
+use GameResult;
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
@@ -110,27 +110,14 @@ pub trait EventHandler {
     /// This is the intended way of facilitating text input.
     fn text_input_event(&mut self, _ctx: &mut Context, _character: char) {}
 
-    /// A controller button was pressed; instance_id identifies which controller.
-    fn controller_button_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        _btn: Button,
-        _id: usize,
-    ) {
-    }
+    /// A controller button was pressed; id identifies which controller.
+    fn controller_button_down_event(&mut self, _ctx: &mut Context, _btn: Button, _id: usize) {}
 
     /// A controller button was released.
     fn controller_button_up_event(&mut self, _ctx: &mut Context, _btn: Button, _id: usize) {}
 
     /// A controller axis moved.
-    fn controller_axis_event(
-        &mut self,
-        _ctx: &mut Context,
-        _axis: Axis,
-        _value: f32,
-        _id: usize,
-    ) {
-    }
+    fn controller_axis_event(&mut self, _ctx: &mut Context, _axis: Axis, _value: f32, _id: usize) {}
 
     /// Called when the window is shown or hidden.
     fn focus_event(&mut self, _ctx: &mut Context, _gained: bool) {}
@@ -234,7 +221,7 @@ where
                 Event::Suspended(_) => unimplemented!(),
             }
         });
-        while let Some(gilrs::Event{id, event,..}) = ctx.gamepad_context.gilrs.next_event() {
+        while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.gilrs.next_event() {
             match event {
                 gilrs::EventType::ButtonPressed(button, _) => {
                     state.controller_button_down_event(ctx, button, id);
