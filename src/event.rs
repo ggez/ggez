@@ -192,7 +192,7 @@ where
                         ..
                     } => match element_state {
                         ElementState::Pressed => {
-                            let repeat = keyboard::is_repeated(ctx, keycode);
+                            let repeat = keyboard::is_key_repeated(ctx);
                             state.key_down_event(ctx, keycode, modifiers.into(), repeat);
                         }
                         ElementState::Released => {
