@@ -175,12 +175,18 @@ pub struct WindowSetup {
     /// Whether or not should the window's background be transparent.
     #[default = r#"false"#]
     pub transparent: bool,
+    /// Whether or not should the GL compatibility profile be used.
+    #[default = r#"false"#]
+    pub use_compatibility_profile: bool,
     /// Whether or not to enable vsync (vertical synchronization).
     #[default = r#"true"#]
     pub vsync: bool,
     /// Number of samples for multisample anti-aliasing.
     #[default = r#"NumSamples::One"#]
     pub samples: NumSamples,
+    /// Whether or not to enable sRGB.
+    #[default = r#"false"#]
+    pub srgb: bool,
 }
 
 impl WindowSetup {
@@ -208,6 +214,12 @@ impl WindowSetup {
         self
     }
 
+    /// Set if the GL compatibility profile should be used.
+    pub fn use_compatibility_profile(mut self, use_compatibility_profile: bool) -> Self {
+        self.use_compatibility_profile = use_compatibility_profile;
+        self
+    }
+
     /// Set if vsync is enabled.
     pub fn vsync(mut self, vsync: bool) -> Self {
         self.vsync = vsync;
@@ -217,6 +229,12 @@ impl WindowSetup {
     /// Set number of samples for multisample anti-aliasing.
     pub fn samples(mut self, samples: NumSamples) -> Self {
         self.samples = samples;
+        self
+    }
+
+    /// Set if sRGB should be enabled.
+    pub fn srgb(mut self, srgb: bool) -> Self {
+        self.srgb = srgb;
         self
     }
 }

@@ -32,7 +32,6 @@ where
     pub(crate) color_format: gfx::format::Format,
     pub(crate) depth_format: gfx::format::Format,
 
-    // TODO: is this needed?
     #[allow(unused)]
     pub(crate) backend_spec: B,
     pub(crate) window: glutin::GlWindow,
@@ -103,12 +102,19 @@ impl GraphicsContext {
 
         // WINDOW SETUP
         let gl_builder = glutin::ContextBuilder::new()
-            //GlRequest::Specific(Api::OpenGl, (backend.major, backend.minor))
-            .with_gl(glutin::GlRequest::Latest)
-            .with_gl_profile(glutin::GlProfile::Core)
+            .with_gl(glutin::GlRequest::Specific(
+                glutin::Api::OpenGl,
+                (backend.major, backend.minor),
+            ))
+            .with_gl_profile(if window_setup.use_compatibility_profile {
+                glutin::GlProfile::Compatibility
+            } else {
+                glutin::GlProfile::Core
+            })
+            .with_vsync(window_setup.vsync)
             .with_multisampling(window_setup.samples as u16)
             .with_pixel_format(5, 8)
-            .with_vsync(window_setup.vsync);
+            .with_srgb(window_setup.srgb);
 
         let icon = if !window_setup.icon.is_empty() {
             use winit::Icon;
