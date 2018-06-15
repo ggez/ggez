@@ -43,9 +43,8 @@ pub enum GameError {
     VideoError(String),
     /// Something went wrong compiling shaders
     ShaderProgramError(gfx::shade::ProgramError),
-    // TODO: Document this better
     /// Something went wrong with Gilrs
-    GilrsError(gilrs::Error),
+    GilrsError(String),
     /// Something else happened; this is generally a bug.
     UnknownError(String),
 }
@@ -81,7 +80,7 @@ impl Error for GameError {
             GameError::FontError(_) => "Font error",
             GameError::VideoError(_) => "Video error",
             GameError::ShaderProgramError(_) => "Shader program error",
-            GameError::GilrsError(_) => "Gilrs error",
+            GameError::GilrsError(_) => "Gamepad error",
             GameError::UnknownError(_) => "Unknown error",
         }
     }
@@ -249,6 +248,7 @@ impl From<glutin::ContextError> for GameError {
 impl From<gilrs::Error> for GameError {
     // TODO: Better error type?
     fn from(s: gilrs::Error) -> GameError {
-        GameError::GilrsError(s)
+        let errstr = format!("Gamepad error: {}", s);
+        GameError::GilrsError(errstr)
     }
 }
