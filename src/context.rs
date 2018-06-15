@@ -165,15 +165,13 @@ impl Context {
                     modifiers,
                     ..
                 }) => {
+                    let pressed = match *state {
+                        winit_event::ElementState::Pressed => true,
+                        winit_event::ElementState::Released => false,
+                    };
                     self.keyboard_context
                         .set_modifiers(keyboard::KeyMods::from(*modifiers));
-                    self.keyboard_context.set_key(
-                        *keycode,
-                        match *state {
-                            winit_event::ElementState::Pressed => true,
-                            winit_event::ElementState::Released => false,
-                        },
-                    );
+                    self.keyboard_context.set_key(*keycode, pressed);
                 }
                 _ => (),
             },

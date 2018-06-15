@@ -1,4 +1,67 @@
-//! Keyboard utility functions.
+//! Keyboard utility functions; allow querying state of keyboard keys and modifiers.
+//!
+//! Example:
+//!
+//! ```rust, no-run
+//! use ggez::event::{EventHandler, KeyCode, KeyMods};
+//! use ggez::{graphics, keyboard, nalgebra as na, timer};
+//! use ggez::{Context, GameResult};
+//!
+//! struct MainState {
+//!     position_x: f32,
+//! }
+//!
+//! impl EventHandler for MainState {
+//!     fn update(&mut self, ctx: &mut Context) -> GameResult {
+//!         // Increase or decrease `position_x` by 0.5, or by 5.0 if Shift is held.
+//!         if keyboard::is_key_pressed(ctx, KeyCode::Right) {
+//!             if keyboard::is_mod_active(ctx, KeyMods::SHIFT) {
+//!                 self.position_x += 4.5;
+//!             }
+//!             self.position_x += 0.5;
+//!         } else if keyboard::is_key_pressed(ctx, KeyCode::Left) {
+//!             if keyboard::is_mod_active(ctx, KeyMods::SHIFT) {
+//!                 self.position_x -= 4.5;
+//!             }
+//!             self.position_x -= 0.5;
+//!         }
+//!         Ok(())
+//!     }
+//!
+//!     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+//!         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+//!         // Draw a circle at `position_x`.
+//!         graphics::circle(
+//!             ctx,
+//!             graphics::WHITE,
+//!             graphics::DrawMode::Fill,
+//!             na::Point2::new(self.position_x, 380.0),
+//!             100.0,
+//!             2.0,
+//!         )?;
+//!         graphics::present(ctx)?;
+//!         timer::yield_now();
+//!         Ok(())
+//!     }
+//!
+//!     fn key_down_event(&mut self, ctx: &mut Context, key: KeyCode, mods: KeyMods, _: bool) {
+//!         match key {
+//!             // Quit if Shift+Ctrl+Q is pressed.
+//!             KeyCode::Q => {
+//!                 if mods.contains(KeyMods::SHIFT | KeyMods::CTRL) {
+//!                     println!("Terminating!");
+//!                     ctx.quit();
+//!                 } else if mods.contains(KeyMods::SHIFT) || mods.contains(KeyMods::CTRL) {
+//!                     println!("You need to hold both Shift and Control to quit.");
+//!                 } else {
+//!                     println!("Now you're not even trying!");
+//!                 }
+//!             }
+//!             _ => (),
+//!         }
+//!     }
+//! }
+//! ```
 
 use context::Context;
 use event::winit_event::ModifiersState;
@@ -97,6 +160,15 @@ impl KeyboardContext {
             }
 
             self.last_pressed.clear();
+
+            // This ensures `active_modifiers` are correct in repeated keystroke edge cases.
+            match key {
+                KeyCode::LShift | KeyCode::RShift => self.active_modifiers -= KeyMods::SHIFT,
+                KeyCode::LControl | KeyCode::RControl => self.active_modifiers -= KeyMods::CTRL,
+                KeyCode::LAlt | KeyCode::RAlt => self.active_modifiers -= KeyMods::ALT,
+                KeyCode::LWin | KeyCode::RWin => self.active_modifiers -= KeyMods::LOGO,
+                _ => (),
+            }
         }
     }
 
