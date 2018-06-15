@@ -59,10 +59,6 @@ line to your `Cargo.toml` file:
 ggez = "0.5"
 ```
 
-However you also need to have the SDL2 libraries installed on your
-system.  The best way to do this is documented [by the SDL2
-crate](https://github.com/AngryLawyer/rust-sdl2#user-content-requirements).
-
 ggez consists of three main parts: A `Context` object which
 contains all the state required to interface with the computer's
 hardware, an `EventHandler` trait that the user implements to
@@ -95,14 +91,13 @@ to common problems.
 
 ## Implementation details
 
-ggez is built upon SDL2 for windowing and events, `rodio` for sound,
+ggez is built upon `winit` for windowing and events, `rodio` for sound,
 and a 2D drawing engine implemented in `gfx` using the OpenGL backend
 (which currently defaults to use OpenGL 3.2).  It *should* be
 entirely thread-safe outside of the basic event-handling loop, and
 portable to Windows, Linux and Mac.
 
-The goal is to eventually have ggez be pure Rust, but we're not there
-yet.
+ggez is Pure Rust(tm).
 
 ## Help!
 
