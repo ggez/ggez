@@ -215,7 +215,7 @@ pub fn is_key_repeated(ctx: &Context) -> bool {
     ctx.keyboard_context.is_key_repeated()
 }
 
-/// Returns a slice with currently held keys.
+/// Returns a slice with currently pressed down keys.
 pub fn get_pressed_keys(ctx: &Context) -> &[KeyCode] {
     ctx.keyboard_context.get_pressed_keys()
 }
@@ -319,12 +319,16 @@ mod tests {
     fn pressed_keys_tracking() {
         let mut keyboard = KeyboardContext::new();
         assert_eq!(keyboard.get_pressed_keys(), &[]);
+        assert!(!keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
         assert_eq!(keyboard.get_pressed_keys(), &[KeyCode::A]);
+        assert!(keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, false);
         assert_eq!(keyboard.get_pressed_keys(), &[]);
+        assert!(!keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
         assert_eq!(keyboard.get_pressed_keys(), &[KeyCode::A]);
+        assert!(keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
         assert_eq!(keyboard.get_pressed_keys(), &[KeyCode::A]);
         keyboard.set_key(KeyCode::B, true);
