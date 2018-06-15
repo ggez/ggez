@@ -7,7 +7,6 @@ use std::path;
 use gfx_glyph::FontId;
 use image;
 use image::RgbaImage;
-use rusttype;
 
 use super::*;
 
@@ -340,102 +339,6 @@ pub struct Text {
     blend_mode: Option<BlendMode>,
 }
 
-/// Compute a scale for a font of a given size.
-// This basically does the points->pixels unit conversion,
-// taking the display DPI into account.
-fn display_independent_scale(points: u32, dpi_w: f32, dpi_h: f32) -> rusttype::Scale {
-    // Calculate pixels per point
-    let points = points as f32;
-    let points_per_inch = 72.0;
-    let pixels_per_point_w = dpi_w * (1.0 / points_per_inch);
-    let pixels_per_point_h = dpi_h * (1.0 / points_per_inch);
-
-    // rusttype::Scale is in units of pixels, so.
-    rusttype::Scale {
-        x: pixels_per_point_w * points,
-        y: pixels_per_point_h * points,
-    }
-}
-
-fn text_width(glyphs: &[rusttype::PositionedGlyph]) -> f32 {
-    glyphs
-        .iter()
-        .rev()
-        .filter_map(|g| {
-            g.pixel_bounding_box()
-                .map(|b| b.min.x as f32 + g.unpositioned().h_metrics().advance_width)
-        })
-        .next()
-        .unwrap_or(0.0)
-}
-
-fn render_ttf(
-    context: &mut Context,
-    text: &str,
-    font: &rusttype::Font<'static>,
-    scale: rusttype::Scale,
-) -> GameResult<Text> {
-    // Ripped almost wholesale from
-    // https://github.com/dylanede/rusttype/blob/master/examples/simple.rs
-
-    let text_height_pixels = scale.y.ceil() as usize;
-    let v_metrics = font.v_metrics(scale);
-    let offset = rusttype::point(0.0, v_metrics.ascent);
-    // Then turn them into an array of positioned glyphs...
-    // `layout()` turns an abstract glyph, which contains no concrete
-    // size or position information, into a PositionedGlyph, which does.
-    let glyphs: Vec<rusttype::PositionedGlyph> = font.layout(text, scale, offset).collect();
-    // If the string is empty or only whitespace, we end up trying to create a 0-width
-    // texture which is invalid.  Instead we create a texture 1 texel wide, with everything
-    // set to zero, which probably isn't ideal but is 100% consistent and doesn't require
-    // special-casing things like get_filter().
-    // See issue #109
-    let text_width_pixels = cmp::max(text_width(&glyphs).ceil() as usize, 1);
-    let bytes_per_pixel = 4;
-    let mut pixel_data = vec![0; text_width_pixels * text_height_pixels * bytes_per_pixel];
-    let pitch = text_width_pixels * bytes_per_pixel;
-
-    // Now we actually render the glyphs to a bitmap...
-    for g in glyphs {
-        if let Some(bb) = g.pixel_bounding_box() {
-            // v is the amount of the pixel covered
-            // by the glyph, in the range 0.0 to 1.0
-            g.draw(|x, y, v| {
-                let c = (v * 255.0) as u8;
-                let x = x as i32 + bb.min.x;
-                let y = y as i32 + bb.min.y;
-                // There's still a possibility that the glyph clips the boundaries of the bitmap
-                if x >= 0 && x < text_width_pixels as i32 && y >= 0 && y < text_height_pixels as i32
-                {
-                    let x = x as usize * bytes_per_pixel;
-                    let y = y as usize;
-                    pixel_data[(x + y * pitch)] = 255;
-                    pixel_data[(x + y * pitch + 1)] = 255;
-                    pixel_data[(x + y * pitch + 2)] = 255;
-                    pixel_data[(x + y * pitch + 3)] = c;
-                }
-            })
-        }
-    }
-
-    // Copy the bitmap into an image, and we're basically done!
-    assert!(text_width_pixels < u16::MAX as usize);
-    assert!(text_height_pixels < u16::MAX as usize);
-    let image = Image::from_rgba8(
-        context,
-        text_width_pixels as u16,
-        text_height_pixels as u16,
-        &pixel_data,
-    )?;
-
-    let text_string = text.to_string();
-    Ok(Text {
-        texture: image,
-        contents: text_string,
-        blend_mode: None,
-    })
-}
-
 /// Treats src and dst as row-major 2D arrays, and blits the given rect from src to dst.
 /// Does no bounds checking or anything; if you feed it invalid bounds it will just panic.
 /// Generally, you shouldn't need to use this directly.
@@ -656,7 +559,7 @@ mod tests {
         blit(dst, rect_dims, (0, 0), src, rect_dims, (0, 0), (5, 5), 5);
         assert_eq!(dst, src);
     }
-
+/*
     #[test]
     fn test_metrics() {
         let f = Font::default_font().expect("Could not get default font");
@@ -728,4 +631,5 @@ mod tests {
             assert!(t.width() as usize <= wrap_length);
         }
     }
+    */
 }

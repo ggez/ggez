@@ -64,7 +64,12 @@ impl event::EventHandler for MainState {
             self.angle += 0.01;
 
             if self.window_settings.toggle_fullscreen {
-                ggez::graphics::set_fullscreen(ctx, self.window_settings.is_fullscreen)?;
+                let fullscreen_type = if self.window_settings.is_fullscreen {
+                    conf::FullscreenType::Desktop(conf::MonitorId::Current)
+                } else {
+                    conf::FullscreenType::Off;
+                };
+                ggez::graphics::set_fullscreen(ctx, self.window_settings.is_fullscreen == FullscreenType::Windowed)?;
                 self.window_settings.toggle_fullscreen = false;
             }
 

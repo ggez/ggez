@@ -4,8 +4,9 @@ extern crate ggez;
 
 use ggez::conf;
 use ggez::event;
-use ggez::graphics::{self, DrawMode, Point2};
+use ggez::graphics::{self, DrawMode};
 use ggez::{Context, GameResult};
+use ggez::nalgebra as na;
 
 struct MainState {
     pos_x: f32,
@@ -30,7 +31,7 @@ impl event::EventHandler for MainState {
             ctx,
             graphics::WHITE,
             DrawMode::Fill,
-            Point2::new(self.pos_x, 380.0),
+            na::Point2::new(self.pos_x, 380.0),
             100.0,
             2.0,
         )?;

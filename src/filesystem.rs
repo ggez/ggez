@@ -249,22 +249,6 @@ impl Filesystem {
             .unwrap_or(false)
     }
 
-    /// Return the full path to the user data directory
-    pub(crate) fn get_user_data_dir(&self) -> &path::Path {
-        &self.user_data_path
-    }
-
-    /// Return the full path to the user config directory
-    pub(crate) fn get_user_config_dir(&self) -> &path::Path {
-        &self.user_config_path
-    }
-
-    /// Returns the full path to the resource directory
-    /// (even if it doesn't exist)
-    pub(crate) fn get_resources_dir(&self) -> &path::Path {
-        &self.resources_path
-    }
-
     /// Returns a list of all files and directories in the resource directory,
     /// in no particular order.
     ///
@@ -453,15 +437,7 @@ pub fn print_all(ctx: &mut Context) {
 /// See the `logging` example for how to collect
 /// log information.
 pub fn log_all(ctx: &mut Context) {
-    for vfs in ctx.filesystem.vfs.roots() {
-        info!("Source {:?}", vfs);
-        match vfs.read_dir(path::Path::new("/")) {
-            Ok(files) => for itm in files {
-                info!("  {:?}", itm);
-            },
-            Err(e) => warn!(" Could not read source: {:?}", e),
-        }
-    }
+    ctx.filesystem.log_all()
 }
 
 /// Adds the given (absolute) path to the list of directories
@@ -485,17 +461,7 @@ pub fn read_config(ctx: &mut Context) -> GameResult<conf::Conf> {
 /// Takes a `conf::Conf` object and saves it to the user directory,
 /// overwriting any file already there.
 pub fn write_config(ctx: &mut Context, conf: &conf::Conf) -> GameResult {
-    let conf_path = path::Path::new(CONFIG_NAME);
-    let mut file = create(ctx, conf_path)?;
-    conf.to_toml_file(&mut file)?;
-    if is_file(ctx, conf_path) {
-        Ok(())
-    } else {
-        Err(GameError::ConfigError(format!(
-            "Failed to write config file at {}",
-            conf_path.to_string_lossy()
-        )))
-    }
+    ctx.filesystem.write_config(conf)
 }
 
 #[cfg(test)]

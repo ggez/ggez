@@ -1,11 +1,12 @@
 //! Example that just prints out all the input events.
 
 extern crate ggez;
+extern crate cgmath;
 
 use ggez::conf;
 use ggez::event::{self, Axis, Button, KeyCode, KeyMods, MouseButton};
 use ggez::filesystem;
-use ggez::graphics::{self, DrawMode, Point2};
+use ggez::graphics::{self, DrawMode};
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
@@ -37,7 +38,7 @@ impl event::EventHandler for MainState {
             ctx,
             graphics::WHITE,
             DrawMode::Fill,
-            Point2::new(self.pos_x as f32, self.pos_y as f32),
+            cgmath::Point2::new(self.pos_x as f32, self.pos_y as f32),
             100.0,
             1.0,
         )?;

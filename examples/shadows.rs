@@ -4,15 +4,17 @@
 #[macro_use]
 extern crate gfx;
 extern crate ggez;
+extern crate cgmath;
 
 use ggez::conf;
 use ggez::event;
 use ggez::filesystem;
-use ggez::graphics::{self, BlendMode, Canvas, DrawParam, Drawable, Point2, Shader};
+use ggez::graphics::{self, BlendMode, Canvas, DrawParam, Drawable, Shader};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
+use cgmath::{Point2, Vector2};
 
 gfx_defines!{
     /// Constants used by the shaders to calculate stuff
@@ -296,10 +298,8 @@ impl MainState {
         {
             let _shader_lock = graphics::use_shader(ctx, &self.shadows_shader);
 
-            let param = DrawParam {
-                scale: Point2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), size.1 as f32),
-                ..origin
-            };
+            let param = origin
+                .scale(Vector2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), size.1 as f32));
             self.shadows_shader.send(ctx, light)?;
             graphics::draw_ex(ctx, &self.occlusions, param)?;
         }
@@ -307,10 +307,8 @@ impl MainState {
         {
             let _shader_lock = graphics::use_shader(ctx, &self.lights_shader);
 
-            let param = DrawParam {
-                scale: Point2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), size.1 as f32),
-                ..origin
-            };
+            let param = origin
+                .scale(Vector2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), size.1 as f32));
             self.lights_shader.send(ctx, light)?;
             graphics::draw_ex(ctx, &self.occlusions, param)?;
         }
@@ -333,22 +331,18 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let size = graphics::get_size(ctx);
-        let origin = DrawParam {
-            dest: Point2::new(0.0, 0.0),
-            ..Default::default()
-        };
+        let origin = DrawParam::new()
+            .dest(Point2::new(0.0, 0.0));
         // for re-rendering canvases, we need to take the DPI into account
         let dpiscale = {
             let dsize = graphics::get_drawable_size(ctx);
-            Point2::new(
+            Vector2::new(
                 size.0 as f32 / dsize.0 as f32,
                 size.1 as f32 / dsize.1 as f32,
             )
         };
-        let canvas_origin = DrawParam {
-            scale: dpiscale,
-            ..origin
-        };
+        let canvas_origin = DrawParam::new()
+            .scale(dpiscale);
 
         // First thing we want to do it to render all the foreground items (that
         // will have shadows) onto their own Canvas (off-screen render). We will
@@ -360,29 +354,23 @@ impl event::EventHandler for MainState {
         graphics::draw_ex(
             ctx,
             &self.tile,
-            DrawParam {
-                dest: Point2::new(598.0, 124.0),
-                ..Default::default()
-            },
+            DrawParam::new()
+                .dest(Point2::new(598.0, 124.0))
         )?;
         graphics::draw_ex(
             ctx,
             &self.tile,
-            DrawParam {
-                dest: Point2::new(92.0, 350.0),
-                ..Default::default()
-            },
+            DrawParam::new()
+                .dest(Point2::new(92.0, 350.0))
         )?;
         graphics::draw_ex(
             ctx,
             &self.tile,
-            DrawParam {
-                dest: Point2::new(442.0, 468.0),
-                rotation: 0.5,
-                ..Default::default()
-            },
+            DrawParam::new()
+                .dest(Point2::new(442.0, 468.0))
+                .rotation(0.5)
         )?;
-        graphics::draw(ctx, &self.text, Point2::new(50.0, 200.0), 0.0)?;
+        graphics::draw(ctx, &self.text, (Point2::new(50.0, 200.0),))?;
 
         // First we draw our light and shadow maps
         let torch = self.torch;
