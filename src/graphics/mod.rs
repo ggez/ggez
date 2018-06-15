@@ -696,8 +696,8 @@ pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -
 
 /// Sets the window resolution based on the specified width and height.
 pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameResult {
-    let mut window_mode = context.conf.window_mode;
-    window_mode.dimensions = (width, height);
+    let window_mode = context.conf.window_mode;
+    window_mode.dimensions(width, height);
     set_mode(context, window_mode)
 }
 

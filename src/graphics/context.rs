@@ -116,7 +116,7 @@ impl GraphicsContext {
         } else {
             None
         };
-        let mut window_builder = glutin::WindowBuilder::new()
+        let window_builder = glutin::WindowBuilder::new()
             .with_title(window_setup.title.clone())
             .with_window_icon(icon)
             .with_transparency(window_setup.transparent)
