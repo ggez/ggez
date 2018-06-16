@@ -32,6 +32,7 @@ default = ["bzip2"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 
 [dependencies]
+bitflags = "1.0"
 zip = { version = "0.4", default-features = false }
 app_dirs2 = "2"
 gfx = "0.17"

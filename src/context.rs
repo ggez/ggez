@@ -83,7 +83,7 @@ impl Context {
             &include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/resources/DejaVuSerif.ttf"
-            ))[..]
+            ))[..],
         );
         let default_font = graphics::Font::GlyphFont(font_id);
 
@@ -166,14 +166,17 @@ impl Context {
                 }
                 winit_event::DeviceEvent::Key(winit_event::KeyboardInput {
                     state,
-                    virtual_keycode,
+                    virtual_keycode: Some(keycode),
+                    modifiers,
                     ..
                 }) => {
-                    if *state == winit_event::ElementState::Released {
-                        if keyboard::get_last_held(self) == *virtual_keycode {
-                            self.keyboard_context.set_last_pressed(None);
-                        }
-                    }
+                    let pressed = match *state {
+                        winit_event::ElementState::Pressed => true,
+                        winit_event::ElementState::Released => false,
+                    };
+                    self.keyboard_context
+                        .set_modifiers(keyboard::KeyMods::from(*modifiers));
+                    self.keyboard_context.set_key(*keycode, pressed);
                 }
                 _ => (),
             },
