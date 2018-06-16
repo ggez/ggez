@@ -9,6 +9,7 @@ use glutin;
 use winit;
 
 use app_dirs2::AppDirsError;
+use gilrs;
 use image;
 use rodio::decoder::DecoderError;
 use toml;
@@ -40,8 +41,10 @@ pub enum GameError {
     FontError(String),
     /// Something went wrong applying video settings.
     VideoError(String),
-    /// Something went compiling shaders
+    /// Something went wrong compiling shaders
     ShaderProgramError(gfx::shade::ProgramError),
+    /// Something went wrong with Gilrs
+    GamepadError(String),
     /// Something else happened; this is generally a bug.
     UnknownError(String),
 }
@@ -77,6 +80,7 @@ impl Error for GameError {
             GameError::FontError(_) => "Font error",
             GameError::VideoError(_) => "Video error",
             GameError::ShaderProgramError(_) => "Shader program error",
+            GameError::GamepadError(_) => "Gamepad error",
             GameError::UnknownError(_) => "Unknown error",
         }
     }
@@ -238,5 +242,13 @@ impl From<glutin::CreationError> for GameError {
 impl From<glutin::ContextError> for GameError {
     fn from(s: glutin::ContextError) -> GameError {
         GameError::RenderError(format!("OpenGL context error: {}", s))
+    }
+}
+
+impl From<gilrs::Error> for GameError {
+    // TODO: Better error type?
+    fn from(s: gilrs::Error) -> GameError {
+        let errstr = format!("Gamepad error: {}", s);
+        GameError::GamepadError(errstr)
     }
 }

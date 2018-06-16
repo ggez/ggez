@@ -6,6 +6,7 @@ use audio;
 use conf;
 use event::winit_event;
 use filesystem::Filesystem;
+use gamepad;
 use graphics::{self, Point2};
 use keyboard;
 use mouse;
@@ -39,6 +40,8 @@ pub struct Context {
     pub keyboard_context: keyboard::KeyboardContext,
     /// Mouse context
     pub mouse_context: mouse::MouseContext,
+    /// Gamepad context
+    pub gamepad_context: gamepad::GamepadContext,
     /// Default font
     pub default_font: graphics::Font,
 
@@ -73,6 +76,7 @@ impl Context {
         )?;
         let mouse_context = mouse::MouseContext::new();
         let keyboard_context = keyboard::KeyboardContext::new();
+        let gamepad_context = gamepad::GamepadContext::new()?;
 
         // TODO: Clean up the bytes here a bit.
         let font_id = graphics_context.glyph_brush.add_font_bytes(
@@ -91,6 +95,7 @@ impl Context {
             timer_context,
             audio_context,
             keyboard_context,
+            gamepad_context,
             mouse_context,
 
             default_font: default_font,

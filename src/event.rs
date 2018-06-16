@@ -13,6 +13,7 @@
 //!
 //! See the `eventloop` example for an implementation.
 
+use gilrs;
 use winit;
 
 /// A key code.
@@ -23,10 +24,9 @@ pub use keyboard::KeyMods;
 pub use winit::MouseButton;
 
 /// An analog axis of some device (controller, joystick...).
-// TODO: verify. (probably useless; investigate `gilrs`)
-pub use winit::AxisId as Axis;
+pub use gilrs::Axis;
 /// A button of some device (controller, joystick...).
-pub use winit::ButtonId as Button;
+pub use gilrs::Button;
 
 /// `winit` events; nested in a module for re-export neatness.
 pub mod winit_event {
@@ -111,27 +111,14 @@ pub trait EventHandler {
     /// This is the intended way of facilitating text input.
     fn text_input_event(&mut self, _ctx: &mut Context, _character: char) {}
 
-    /// A controller button was pressed; instance_id identifies which controller.
-    fn controller_button_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        _btn: Button,
-        _instance_id: i32,
-    ) {
-    }
+    /// A controller button was pressed; id identifies which controller.
+    fn controller_button_down_event(&mut self, _ctx: &mut Context, _btn: Button, _id: usize) {}
 
     /// A controller button was released.
-    fn controller_button_up_event(&mut self, _ctx: &mut Context, _btn: Button, _instance_id: i32) {}
+    fn controller_button_up_event(&mut self, _ctx: &mut Context, _btn: Button, _id: usize) {}
 
     /// A controller axis moved.
-    fn controller_axis_event(
-        &mut self,
-        _ctx: &mut Context,
-        _axis: Axis,
-        _value: i16,
-        _instance_id: i32,
-    ) {
-    }
+    fn controller_axis_event(&mut self, _ctx: &mut Context, _axis: Axis, _value: f32, _id: usize) {}
 
     /// Called when the window is shown or hidden.
     fn focus_event(&mut self, _ctx: &mut Context, _gained: bool) {}
@@ -235,18 +222,20 @@ where
                 Event::Suspended(_) => unimplemented!(),
             }
         });
-        /*{ // TODO: Investigate `gilrs` for gamepad support.
-                ControllerButtonDown { button, which, .. } => {
-                    state.controller_button_down_event(ctx, button, which)
+        while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.gilrs.next_event() {
+            match event {
+                gilrs::EventType::ButtonPressed(button, _) => {
+                    state.controller_button_down_event(ctx, button, id);
                 }
-                ControllerButtonUp { button, which, .. } => {
-                    state.controller_button_up_event(ctx, button, which)
+                gilrs::EventType::ButtonReleased(button, _) => {
+                    state.controller_button_up_event(ctx, button, id);
                 }
-                ControllerAxisMotion {
-                    axis, value, which, ..
-                } => state.controller_axis_event(ctx, axis, value, which),
+                gilrs::EventType::AxisChanged(axis, value, _) => {
+                    state.controller_axis_event(ctx, axis, value, id);
+                }
                 _ => {}
-            }*/
+            }
+        }
         state.update(ctx)?;
         state.draw(ctx)?;
     }

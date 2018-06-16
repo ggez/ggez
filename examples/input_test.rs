@@ -92,17 +92,17 @@ impl event::EventHandler for MainState {
         println!("Text input: {}", ch);
     }
 
-    fn controller_button_down_event(&mut self, _ctx: &mut Context, btn: Button, instance_id: i32) {
+    fn controller_button_down_event(&mut self, _ctx: &mut Context, btn: Button, id: usize) {
         println!(
             "Controller button pressed: {:?} Controller_Id: {}",
-            btn, instance_id
+            btn, id
         );
     }
 
-    fn controller_button_up_event(&mut self, _ctx: &mut Context, btn: Button, instance_id: i32) {
+    fn controller_button_up_event(&mut self, _ctx: &mut Context, btn: Button, id: usize) {
         println!(
             "Controller button released: {:?} Controller_Id: {}",
-            btn, instance_id
+            btn, id
         );
     }
 
@@ -110,12 +110,12 @@ impl event::EventHandler for MainState {
         &mut self,
         _ctx: &mut Context,
         axis: Axis,
-        value: i16,
-        instance_id: i32,
+        value: f32,
+        id: usize,
     ) {
         println!(
             "Axis Event: {:?} Value: {} Controller_Id: {}",
-            axis, value, instance_id
+            axis, value, id
         );
     }
 
