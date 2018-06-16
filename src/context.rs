@@ -2,15 +2,16 @@ use winit;
 
 use std::fmt;
 
-use GameResult;
 use audio;
 use conf;
 use event::winit_event;
 use filesystem::Filesystem;
+use gamepad;
 use graphics::{self, Point2};
 use keyboard;
 use mouse;
 use timer;
+use GameResult;
 
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
@@ -39,6 +40,8 @@ pub struct Context {
     pub keyboard_context: keyboard::KeyboardContext,
     /// Mouse context
     pub mouse_context: mouse::MouseContext,
+    /// Gamepad context
+    pub gamepad_context: gamepad::GamepadContext,
     /// Default font
     pub default_font: graphics::Font,
 
@@ -73,12 +76,13 @@ impl Context {
         )?;
         let mouse_context = mouse::MouseContext::new();
         let keyboard_context = keyboard::KeyboardContext::new();
+        let gamepad_context = gamepad::GamepadContext::new()?;
 
         // TODO: Clean up the bytes here a bit.
         let font_id = graphics_context.glyph_brush.add_font_bytes(
             &include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-            "/resources/DejaVuSerif.ttf"
+                "/resources/DejaVuSerif.ttf"
             ))[..]
         );
         let default_font = graphics::Font::GlyphFont(font_id);
@@ -91,6 +95,7 @@ impl Context {
             timer_context,
             audio_context,
             keyboard_context,
+            gamepad_context,
             mouse_context,
 
             default_font: default_font,

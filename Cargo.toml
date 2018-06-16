@@ -52,6 +52,7 @@ nalgebra = {version = "^0.15.2", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here.
 mint = "0.5"
 winit = { version = "0.15", features = ["icon_loading"] } 
+gilrs = "0.6"
 
 [dev-dependencies]
 chrono = "0.4"

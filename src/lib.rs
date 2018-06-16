@@ -117,6 +117,7 @@ extern crate rodio;
 extern crate serde_derive;
 #[macro_use]
 extern crate smart_default;
+extern crate gilrs;
 extern crate toml;
 extern crate winit;
 extern crate zip;
@@ -127,6 +128,7 @@ mod context;
 pub mod error;
 pub mod event;
 pub mod filesystem;
+pub mod gamepad;
 pub mod graphics;
 pub mod keyboard;
 pub mod mouse;
