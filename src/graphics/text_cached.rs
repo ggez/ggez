@@ -474,8 +474,7 @@ impl TextCached {
 }
 
 impl Drawable for TextCached {
-    fn draw_primitive<D>(&self, ctx: &mut Context, param: D) -> GameResult where D: Into<PrimitiveDrawParam> {
-        let param = param.into();
+    fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
         // TODO: Fix for PrimitiveDrawParam
         // let offset = Point2::new(

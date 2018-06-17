@@ -508,7 +508,7 @@ impl Text {
 }
 
 impl Drawable for Text {
-    fn draw_primitive<D>(&self, ctx: &mut Context, param: D) -> GameResult where D: Into<PrimitiveDrawParam> {
+    fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
         draw_primitive(ctx, &self.texture, param)
     }
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {

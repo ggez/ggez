@@ -186,22 +186,6 @@ impl Default for InstanceProperties {
     }
 }
 
-impl From<DrawParam> for InstanceProperties {
-    fn from(p: DrawParam) -> Self {
-        let p: PrimitiveDrawParam = p.into();
-        let mat: [[f32; 4]; 4] = p.matrix.into();
-        // SRGB BUGGO: Only convert if the color format is srgb!
-        let linear_color: types::LinearColor = p.color.into();
-        Self {
-            src: p.src.into(),
-            col1: mat[0],
-            col2: mat[1],
-            col3: mat[2],
-            col4: mat[3],
-            color: linear_color.into(),
-        }
-    }
-}
 
 
 impl From<PrimitiveDrawParam> for InstanceProperties {
@@ -293,15 +277,15 @@ where
     D: Drawable,
     T: Into<DrawParam>,
 {
-    drawable.draw_primitive(ctx, params.into())
+    let params = params.into();
+    drawable.draw_primitive(ctx, PrimitiveDrawParam::from(params))
 }
 
 /// Draws the given `Drawable` object to the screen by calling its `draw_ex()` method.
-pub fn draw_primitive<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult 
+pub fn draw_primitive<D>(ctx: &mut Context, drawable: &D, params: PrimitiveDrawParam) -> GameResult 
 where 
-    D: Drawable,
-    T: Into<PrimitiveDrawParam> {
-    drawable.draw_primitive(ctx, params.into())
+    D: Drawable{
+    drawable.draw_primitive(ctx, params)
 }
 
 /// Tells the graphics system to actually put everything on the screen.
@@ -424,7 +408,7 @@ where
     P: Into<mint::Point2<f32>>,
 {
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
-    m.draw_primitive(ctx, DrawParam::new().color(color))
+    m.draw(ctx, DrawParam::new().color(color))
 }
 
 /// Draw an ellipse.
@@ -446,7 +430,7 @@ where
     P: Into<mint::Point2<f32>>,
 {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
-    m.draw_primitive(ctx, DrawParam::new().color(color))
+    m.draw(ctx, DrawParam::new().color(color))
 }
 
 /// Draws a line of one or more connected segments.
@@ -458,7 +442,7 @@ where
     P: Into<mint::Point2<f32>> + Clone,
 {
     let m = Mesh::new_line(ctx, points, width)?;
-    m.draw_primitive(ctx, DrawParam::new().color(color))
+    m.draw(ctx, DrawParam::new().color(color))
 }
 
 /// Draws points (as rectangles)
@@ -486,7 +470,7 @@ where
     P: Into<mint::Point2<f32>> + Clone,
 {
     let m = Mesh::new_polygon(ctx, mode, vertices)?;
-    m.draw_primitive(ctx, DrawParam::new().color(color))
+    m.draw(ctx, DrawParam::new().color(color))
 }
 
 // TODO: consider removing - it's commented out on devel.
@@ -838,7 +822,7 @@ pub trait Drawable {
     /// is required for implementing this trait.
     /// 
     /// TODO: We could use a better name here.
-    fn draw_primitive<D>(&self, ctx: &mut Context, param: D) -> GameResult where D: Into<PrimitiveDrawParam>;
+    fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult;
 
     /// Draws the drawable onto the rendering target.
     ///
@@ -854,7 +838,7 @@ pub trait Drawable {
     /// Drawable's as trait objects.
     /// ALSO TODO: Fix docs
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult where D: Into<DrawParam> {
-        self.draw_primitive(ctx, param.into())
+        self.draw_primitive(ctx, (param.into()).into())
     }
 
     /// Sets the blend mode to be used when drawing this drawable.
