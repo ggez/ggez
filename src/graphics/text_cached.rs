@@ -396,9 +396,11 @@ impl TextCached {
     /// color is ignored - specify it when `queue()`ing instead.
     pub fn draw_queued<D>(context: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawParam>,
+        D: Into<PrimitiveDrawParam>,
     {
-        let param: DrawParam = param.into();
+        let param: PrimitiveDrawParam = param.into();
+        // TODO: Fix allllll this crap...
+        /*
         type Mat4 = na::Matrix4<f32>;
         type Vec3 = na::Vector3<f32>;
 
@@ -442,6 +444,7 @@ impl TextCached {
 
         let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_shear * m_scale
             * m_aspect_inv * m_offset_inv;
+        */
 
         let (encoder, render_tgt, depth_view) = (
             &mut context.gfx_context.encoder,
@@ -461,7 +464,7 @@ impl TextCached {
             gfx::format::DepthStencil,
         > = gfx::memory::Typed::new(depth_view.clone());
         context.gfx_context.glyph_brush.draw_queued_with_transform(
-            m_transform.into(),
+            param.matrix.into(),
             encoder,
             &typed_render_target,
             &typed_depth_target,
@@ -471,13 +474,15 @@ impl TextCached {
 }
 
 impl Drawable for TextCached {
-    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
+    fn draw_primitive<D>(&self, ctx: &mut Context, param: D) -> GameResult where D: Into<PrimitiveDrawParam> {
+        let param = param.into();
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
-        let offset = Point2::new(
-            param.offset.x * self.width(ctx) as f32,
-            param.offset.y * self.height(ctx) as f32,
-        );
-        let param = param.offset(offset);
+        // TODO: Fix for PrimitiveDrawParam
+        // let offset = Point2::new(
+        //     param.offset.x * self.width(ctx) as f32,
+        //     param.offset.y * self.height(ctx) as f32,
+        // );
+        // let param = param.offset(offset);
         self.queue(ctx, Point2::new(0.0, 0.0), Some(param.color));
         TextCached::draw_queued(ctx, param)
     }

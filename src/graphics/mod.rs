@@ -203,6 +203,23 @@ impl From<DrawParam> for InstanceProperties {
     }
 }
 
+
+impl From<PrimitiveDrawParam> for InstanceProperties {
+    fn from(p: PrimitiveDrawParam) -> Self {
+        let mat: [[f32; 4]; 4] = p.matrix.into();
+        // SRGB BUGGO: Only convert if the color format is srgb!
+        let linear_color: types::LinearColor = p.color.into();
+        Self {
+            src: p.src.into(),
+            col1: mat[0],
+            col2: mat[1],
+            col3: mat[2],
+            col4: mat[3],
+            color: linear_color.into(),
+        }
+    }
+}
+
 /// A structure for conveniently storing Sampler's, based off
 /// their `SamplerInfo`.
 pub(crate) struct SamplerCache<B>
@@ -257,10 +274,6 @@ impl From<gfx::buffer::CreationError> for GameError {
 // DRAWING
 // **********************************************************************
 
-trait TransformRawRenderTargetViewToRenderTargetView<F: gfx::format::Formatted> {
-    type Result;
-}
-
 /// Clear the screen to the background color.
 /// TODO: Into<Color> ?
 pub fn clear(ctx: &mut Context, color: Color) {
@@ -275,16 +288,20 @@ pub fn clear(ctx: &mut Context, color: Color) {
 
 /// Draws the given `Drawable` object to the screen by calling its
 /// `draw()` method.
-pub fn draw<T>(ctx: &mut Context, drawable: &Drawable, params: T) -> GameResult
+pub fn draw<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult
 where
+    D: Drawable,
     T: Into<DrawParam>,
 {
-    drawable.draw_ex(ctx, params.into())
+    drawable.draw_primitive(ctx, params.into())
 }
 
 /// Draws the given `Drawable` object to the screen by calling its `draw_ex()` method.
-pub fn draw_ex(ctx: &mut Context, drawable: &Drawable, params: DrawParam) -> GameResult {
-    drawable.draw_ex(ctx, params)
+pub fn draw_primitive<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult 
+where 
+    D: Drawable,
+    T: Into<PrimitiveDrawParam> {
+    drawable.draw_primitive(ctx, params.into())
 }
 
 /// Tells the graphics system to actually put everything on the screen.
@@ -407,7 +424,7 @@ where
     P: Into<mint::Point2<f32>>,
 {
     let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
-    m.draw_ex(ctx, DrawParam::new().color(color))
+    m.draw_primitive(ctx, DrawParam::new().color(color))
 }
 
 /// Draw an ellipse.
@@ -429,7 +446,7 @@ where
     P: Into<mint::Point2<f32>>,
 {
     let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
-    m.draw_ex(ctx, DrawParam::new().color(color))
+    m.draw_primitive(ctx, DrawParam::new().color(color))
 }
 
 /// Draws a line of one or more connected segments.
@@ -441,7 +458,7 @@ where
     P: Into<mint::Point2<f32>> + Clone,
 {
     let m = Mesh::new_line(ctx, points, width)?;
-    m.draw_ex(ctx, DrawParam::new().color(color))
+    m.draw_primitive(ctx, DrawParam::new().color(color))
 }
 
 /// Draws points (as rectangles)
@@ -469,7 +486,7 @@ where
     P: Into<mint::Point2<f32>> + Clone,
 {
     let m = Mesh::new_polygon(ctx, mode, vertices)?;
-    m.draw_ex(ctx, DrawParam::new().color(color))
+    m.draw_primitive(ctx, DrawParam::new().color(color))
 }
 
 // TODO: consider removing - it's commented out on devel.
@@ -819,7 +836,9 @@ pub trait Drawable {
     ///
     /// This is the most general version of the operation, which is all that
     /// is required for implementing this trait.
-    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult;
+    /// 
+    /// TODO: We could use a better name here.
+    fn draw_primitive<D>(&self, ctx: &mut Context, param: D) -> GameResult where D: Into<PrimitiveDrawParam>;
 
     /// Draws the drawable onto the rendering target.
     ///
@@ -833,8 +852,9 @@ pub trait Drawable {
     /// TODO: This should probably be removed, but can't actually be
     /// made generic on T where T: Into<DrawParam> because we treat
     /// Drawable's as trait objects.
-    fn draw(&self, ctx: &mut Context, dest: Point2, rotation: f32) -> GameResult {
-        self.draw_ex(ctx, DrawParam::new().dest(dest).rotation(rotation))
+    /// ALSO TODO: Fix docs
+    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult where D: Into<DrawParam> {
+        self.draw_primitive(ctx, param.into())
     }
 
     /// Sets the blend mode to be used when drawing this drawable.

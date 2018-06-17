@@ -142,7 +142,7 @@ impl SpriteBatch {
 }
 
 impl graphics::Drawable for SpriteBatch {
-    fn draw_ex(&self, ctx: &mut Context, param: graphics::DrawParam) -> GameResult {
+    fn draw_primitive<D>(&self, ctx: &mut Context, param: D) -> GameResult where D: Into<graphics::PrimitiveDrawParam> {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
         self.flush(ctx, &self.image)?;
@@ -156,7 +156,7 @@ impl graphics::Drawable for SpriteBatch {
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.sprites.len() as u32, 0));
         let curr_transform = gfx.get_transform();
-        let prim_param: graphics::PrimitiveDrawParam = param.into();
+        let prim_param = param.into();
         gfx.push_transform(prim_param.matrix * curr_transform);
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
