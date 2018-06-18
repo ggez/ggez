@@ -4,7 +4,7 @@
 //! A `Conf` struct is used to specify hardware setup stuff used to create
 //! the window and other context information.
 //!
-//! By default a ggez game will search its resource paths for a `/conf.toml`
+//! By default a `ggez` game will search its resource paths for a `/conf.toml`
 //! file and load values from it when the `Context` is created.  This file
 //! must be complete (ie you cannot just fill in some fields and have the
 //! rest be default) and provides a nice way to specify settings that
@@ -16,8 +16,7 @@ use toml;
 use GameResult;
 
 /// Possible fullscreen modes.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(tag = "type")]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum FullscreenType {
     /// Windowed mode.
     Off,
@@ -29,8 +28,7 @@ pub enum FullscreenType {
 }
 
 /// Identifies a monitor connected to the system.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(tag = "id", content = "index")]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MonitorId {
     /// Monitor the window is currently in.
     Current,
@@ -59,8 +57,20 @@ pub enum MonitorId {
 ///    },
 ///);
 /// ```
-#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, SmartDefault, PartialEq, Eq)]
 pub struct WindowMode {
+    /// Window's inner dimensions (drawable area).
+    #[default = r#"(800, 600)"#]
+    pub dimensions: (u32, u32),
+    /// Window's minimum dimensions; `None` is no limit.
+    #[default = r#"None"#]
+    pub min_dimensions: Option<(u32, u32)>,
+    /// Window's maximum dimensions; `None` is no limit.
+    #[default = r#"None"#]
+    pub max_dimensions: Option<(u32, u32)>,
+    /// Fullscreen type.
+    #[default = r#"FullscreenType::Off"#]
+    pub fullscreen_type: FullscreenType,
     /// Whether or not to maximize the window.
     #[default = r#"false"#]
     pub maximized: bool,
@@ -73,21 +83,6 @@ pub struct WindowMode {
     /// Whether or not the window is pinned to always be on top of other windows.
     #[default = r#"false"#]
     pub always_on_top: bool,
-    /// Window's inner dimensions (drawable area); `None` will use system default.
-    #[default = r#"(800, 600)"#]
-    #[serde(with = "dimensions_serde")]
-    pub dimensions: (u32, u32),
-    /// Window's minimum dimensions; `None` is no limit.
-    #[default = r#"None"#]
-    #[serde(with = "dimensions_serde::option")]
-    pub min_dimensions: Option<(u32, u32)>,
-    /// Window's maximum dimensions; `None` is no limit.
-    #[default = r#"None"#]
-    #[serde(with = "dimensions_serde::option")]
-    pub max_dimensions: Option<(u32, u32)>,
-    /// Fullscreen type.
-    #[default = r#"FullscreenType::Off"#]
-    pub fullscreen_type: FullscreenType,
 }
 
 impl WindowMode {
@@ -140,6 +135,155 @@ impl WindowMode {
     }
 }
 
+mod window_mode_ser_de {
+    use super::*;
+    use serde::de::{Deserialize, Deserializer};
+    use serde::ser::{Serialize, Serializer};
+
+    #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+    struct DimensionsToml {
+        width: u32,
+        height: u32,
+    }
+
+    impl Into<(u32, u32)> for DimensionsToml {
+        fn into(self) -> (u32, u32) {
+            (self.width, self.height)
+        }
+    }
+
+    impl From<(u32, u32)> for DimensionsToml {
+        fn from(tuple: (u32, u32)) -> DimensionsToml {
+            DimensionsToml {
+                width: tuple.0,
+                height: tuple.1,
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+    enum FullscreenTomlType {
+        True,
+        Desktop,
+    }
+
+    #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+    struct FullscreenToml {
+        #[serde(rename = "type")]
+        fullscreen_type: FullscreenTomlType,
+        monitor: Option<usize>,
+    }
+
+    impl Into<FullscreenType> for Option<FullscreenToml> {
+        fn into(self) -> FullscreenType {
+            if let Some(fs_type) = self {
+                let monitor = match fs_type.monitor {
+                    Some(i) => MonitorId::Index(i),
+                    None => MonitorId::Current,
+                };
+                match fs_type.fullscreen_type {
+                    FullscreenTomlType::True => FullscreenType::True(monitor),
+                    FullscreenTomlType::Desktop => FullscreenType::Desktop(monitor),
+                }
+            } else {
+                FullscreenType::Off
+            }
+        }
+    }
+
+    impl From<FullscreenType> for Option<FullscreenToml> {
+        fn from(fs_type: FullscreenType) -> Option<FullscreenToml> {
+            match fs_type {
+                FullscreenType::Off => None,
+                FullscreenType::True(monitor) => Some(FullscreenToml {
+                    fullscreen_type: FullscreenTomlType::True,
+                    monitor: match monitor {
+                        MonitorId::Index(i) => Some(i),
+                        MonitorId::Current => None,
+                    },
+                }),
+                FullscreenType::Desktop(monitor) => Some(FullscreenToml {
+                    fullscreen_type: FullscreenTomlType::Desktop,
+                    monitor: match monitor {
+                        MonitorId::Index(i) => Some(i),
+                        MonitorId::Current => None,
+                    },
+                }),
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+    struct WindowModeToml {
+        maximized: Option<bool>,
+        hidden: Option<bool>,
+        borderless: Option<bool>,
+        always_on_top: Option<bool>,
+        dimensions: Option<DimensionsToml>,
+        min_dimensions: Option<DimensionsToml>,
+        max_dimensions: Option<DimensionsToml>,
+        fullscreen: Option<FullscreenToml>,
+    }
+
+    impl Into<WindowMode> for WindowModeToml {
+        fn into(self) -> WindowMode {
+            let def = WindowMode::default();
+            WindowMode {
+                dimensions: self.dimensions.map_or(def.dimensions, |dim| dim.into()),
+                min_dimensions: self.min_dimensions.map(|dim| dim.into()),
+                max_dimensions: self.max_dimensions.map(|dim| dim.into()),
+                fullscreen_type: self.fullscreen.into(),
+                maximized: self.maximized.unwrap_or(def.maximized),
+                hidden: self.hidden.unwrap_or(def.hidden),
+                borderless: self.borderless.unwrap_or(def.borderless),
+                always_on_top: self.always_on_top.unwrap_or(def.always_on_top),
+            }
+        }
+    }
+
+    /// Helper function to filter out defaults.
+    fn some_if_ne<T: PartialEq>(result: T, cmp: T) -> Option<T> {
+        match result == cmp {
+            false => Some(result),
+            true => None,
+        }
+    }
+
+    impl From<WindowMode> for WindowModeToml {
+        fn from(win_mode: WindowMode) -> Self {
+            let def = WindowMode::default();
+            WindowModeToml {
+                maximized: some_if_ne(win_mode.maximized, def.maximized),
+                hidden: some_if_ne(win_mode.hidden, def.hidden),
+                borderless: some_if_ne(win_mode.borderless, def.borderless),
+                always_on_top: some_if_ne(win_mode.always_on_top, def.always_on_top),
+                dimensions: some_if_ne(win_mode.dimensions, def.dimensions).map(|d| d.into()),
+                min_dimensions: win_mode.min_dimensions.map(|dim| dim.into()),
+                max_dimensions: win_mode.max_dimensions.map(|dim| dim.into()),
+                fullscreen: win_mode.fullscreen_type.into(),
+            }
+        }
+    }
+
+    impl Serialize for WindowMode {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            WindowModeToml::from(*self).serialize(serializer)
+        }
+    }
+
+    impl<'de> Deserialize<'de> for WindowMode {
+        fn deserialize<D>(deserializer: D) -> Result<WindowMode, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            WindowModeToml::deserialize(deserializer).map(|w| w.into())
+        }
+    }
+}
+
 /// A builder structure containing window settings
 /// that must be set at init time and (mostly) cannot be changed afterwards.
 ///
@@ -154,8 +298,10 @@ impl WindowMode {
 ///        icon: "".to_owned(),
 ///        resizable: false,
 ///        transparent: false,
+///        use_compatibility_profile: false,
 ///        vsync: true,
 ///        samples: NumSamples::One,
+///        srgb: false,
 ///    },
 ///);
 /// ```
@@ -334,82 +480,6 @@ impl Conf {
     }
 }
 
-/// Custom serialization for `(u32, u32)` and `Option<(u32, u32)>`,
-/// to allow using these with `toml` crate.
-mod dimensions_serde {
-    use serde::de::{Deserialize, Deserializer};
-    use serde::ser::{Serialize, Serializer};
-
-    #[derive(Deserialize, Serialize)]
-    #[serde(tag = "option")]
-    enum Dim {
-        Some { width: u32, height: u32 },
-        None,
-    }
-
-    pub(crate) fn serialize<S>(dimensions: &(u32, u32), serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let dim = Dim::Some {
-            width: dimensions.0,
-            height: dimensions.1,
-        };
-        dim.serialize(serializer)
-    }
-
-    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<(u32, u32), D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let result = Dim::deserialize(deserializer).map(|dim| {
-            if let Dim::Some { width, height } = dim {
-                (width, height)
-            } else {
-                super::WindowMode::default().dimensions
-            }
-        });
-        result
-    }
-
-    pub(crate) mod option {
-        use super::*;
-
-        pub(crate) fn serialize<S>(
-            dimensions: &Option<(u32, u32)>,
-            serializer: S,
-        ) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-        {
-            match dimensions {
-                Some(dimensions) => {
-                    let dim = Dim::Some {
-                        width: dimensions.0,
-                        height: dimensions.1,
-                    };
-                    dim.serialize(serializer)
-                }
-                None => Dim::None.serialize(serializer),
-            }
-        }
-
-        pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Option<(u32, u32)>, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            let result = Dim::deserialize(deserializer).map(|dim| {
-                if let Dim::Some { width, height } = dim {
-                    Some((width, height))
-                } else {
-                    None
-                }
-            });
-            result
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -417,89 +487,41 @@ mod tests {
     use std::cmp::PartialEq;
     use std::fmt::Debug;
 
-    #[derive(Default, Debug, Serialize, Deserialize, PartialEq)]
-    struct Test {
-        #[serde(with = "dimensions_serde")]
-        dims: (u32, u32),
-    }
-
-    #[derive(Default, Debug, Serialize, Deserialize, PartialEq)]
-    struct TestOption {
-        #[serde(with = "dimensions_serde::option")]
-        dims_opt: Option<(u32, u32)>,
-    }
-
-    #[derive(Default, Debug, Serialize, Deserialize, PartialEq)]
-    struct TestBunch {
-        #[serde(with = "dimensions_serde::option")]
-        dims_opt1: Option<(u32, u32)>,
-        #[serde(with = "dimensions_serde")]
-        dims: (u32, u32),
-        #[serde(with = "dimensions_serde::option")]
-        dims_opt2: Option<(u32, u32)>,
-        #[serde(with = "dimensions_serde::option")]
-        dims_opt3: Option<(u32, u32)>,
-        #[serde(with = "dimensions_serde::option")]
-        dims_opt4: Option<(u32, u32)>,
-    }
-
-    #[derive(SmartDefault, Debug, Serialize, Deserialize, PartialEq)]
-    struct TestMix {
-        a_bool: bool,
-        #[default = r#"FullscreenType::Off"#]
-        fs_type: FullscreenType,
-        #[serde(with = "dimensions_serde")]
-        dims: (u32, u32),
-        #[serde(with = "dimensions_serde::option")]
-        dims_opt: Option<(u32, u32)>,
-    }
-
-    fn round_trip_str<T>(thing: T)
+    fn round_trip_str<T>(thing: &T)
     where
         T: PartialEq + Debug + serde::Serialize + serde::de::DeserializeOwned,
     {
         let string = toml::to_string(&thing).unwrap();
-        //println!("-----\n{:?}\n\n{}", thing, string);
-        assert_eq!(toml::from_str::<T>(&string).unwrap(), thing);
+        println!("-----\n{:?}\n\n{}", thing, string);
+        assert_eq!(&toml::from_str::<T>(&string).unwrap(), thing);
     }
 
-    #[test]
-    fn encode_individual_types() {
-        round_trip_str(FullscreenType::Off);
-        round_trip_str(FullscreenType::Desktop(MonitorId::Current));
-        round_trip_str(FullscreenType::Desktop(MonitorId::Index(1)));
-        round_trip_str(Test::default());
-        round_trip_str(TestOption::default());
-        round_trip_str(TestOption {
-            dims_opt: Some((1, 2)),
-        });
-        round_trip_str(TestBunch::default());
-        round_trip_str(TestBunch {
-            dims_opt1: Some((1, 2)),
-            dims: (3, 4),
-            dims_opt2: Some((5, 6)),
-            dims_opt3: None,
-            dims_opt4: Some((7, 8)),
-        });
-        round_trip_str(TestMix::default());
-        round_trip_str(TestMix {
-            a_bool: true,
-            fs_type: FullscreenType::Desktop(MonitorId::Index(1)),
-            dims: (1, 2),
-            dims_opt: Some((3, 4)),
-        });
-    }
-
-    /// Tries to encode and decode a `Conf` object
-    /// and makes sure it gets the same result it had.
-    #[test]
-    fn encode_round_trip() {
-        round_trip_str(Conf::new());
-        let c1 = Conf::new();
+    fn round_trip_file(conf: &Conf) {
         let mut writer = Vec::new();
-        let _c = c1.to_toml_file(&mut writer).unwrap();
+        conf.to_toml_file(&mut writer).unwrap();
         let mut reader = writer.as_slice();
-        let c2 = Conf::from_toml_file(&mut reader).unwrap();
-        assert_eq!(c1, c2);
+        assert_eq!(&Conf::from_toml_file(&mut reader).unwrap(), conf);
+    }
+
+    #[test]
+    fn encode_round_trip_conf() {
+        let mut conf = Conf::new();
+        round_trip_str(&conf);
+        round_trip_file(&conf);
+        conf.window_mode.maximized = true;
+        round_trip_str(&conf);
+        round_trip_file(&conf);
+        conf.window_mode.fullscreen_type = FullscreenType::True(MonitorId::Current);
+        round_trip_str(&conf);
+        round_trip_file(&conf);
+        conf.window_mode.fullscreen_type = FullscreenType::Desktop(MonitorId::Index(1));
+        round_trip_str(&conf);
+        round_trip_file(&conf);
+        conf.window_mode.dimensions = (640, 480);
+        round_trip_str(&conf);
+        round_trip_file(&conf);
+        conf.window_mode.max_dimensions = Some((640, 480));
+        round_trip_str(&conf);
+        round_trip_file(&conf);
     }
 }
