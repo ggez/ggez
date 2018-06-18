@@ -1,14 +1,68 @@
-//! The `conf` module contains functions for loading and saving game
-//! configurations.
+//! Functions for loading and saving engine configurations.
 //!
 //! A `Conf` struct is used to specify hardware setup stuff used to create
 //! the window and other context information.
 //!
-//! By default a `ggez` game will search its resource paths for a `/conf.toml`
-//! file and load values from it when the `Context` is created.  This file
-//! must be complete (ie you cannot just fill in some fields and have the
-//! rest be default) and provides a nice way to specify settings that
-//! can be tweaked such as window resolution, multisampling options, etc.
+//! By default, a `ggez` game will search it's resource paths for a `/conf.toml`
+//! file, and load values from it on `Context` creation; this file
+//! doesn't have to be complete (you can fill in some fields and have the
+//! rest be default).
+//!
+//! Conversely, when writing `Conf` to a TOML file (via `Conf::to_toml_file()`),
+//! fields with default values will not appear in the output.
+//!
+//! Default values can be found in documentation of
+//! structs of the module.
+//!
+//! Here's an example config and it's equivalent TOML:
+//!
+//! ```rust
+//! extern crate ggez;
+//! extern crate toml;
+//! use ggez::conf::*;
+//! assert_eq!(
+//!     Conf {
+//!         window_mode: WindowMode::default()
+//!             .always_on_top(true)
+//!             .dimensions(640, 480)
+//!             .min_dimensions(640, 480)
+//!             .fullscreen_type(FullscreenType::Desktop(MonitorId::Index(1))),
+//!         window_setup: WindowSetup::default()
+//!             .title("Testing, testing, one, two")
+//!             .samples(NumSamples::Four)
+//!             .vsync(false),
+//!         backend: Backend::OpenGL(4, 5),
+//!     },
+//!     toml::from_str::<Conf>(
+//!         r#"
+//!         [window_mode]
+//!         always_on_top = true
+//!
+//!         [window_mode.dimensions]
+//!         width = 640
+//!         height = 480
+//!
+//!         [window_mode.min_dimensions]
+//!         width = 640
+//!         height = 480
+//!
+//!         [window_mode.fullscreen]
+//!         type = "Desktop"
+//!         monitor = 1
+//!
+//!         [window_setup]
+//!         title = "Testing, testing, one, two"
+//!         samples = "Four"
+//!         vsync = false
+//!
+//!         [backend]
+//!         type = "OpenGL"
+//!         version_major = 4
+//!         version_minor = 5
+//!         "#
+//!     ).unwrap(),
+//! );
+//! ```
 
 use std::io;
 use toml;
@@ -16,6 +70,43 @@ use toml;
 use GameResult;
 
 /// Possible fullscreen modes.
+///
+/// ```rust
+/// extern crate ggez;
+/// extern crate toml;
+/// use ggez::conf::*;
+///
+/// // True fullscreen on monitor #1.
+/// assert_eq!(
+///     Conf {
+///         window_mode: WindowMode::default()
+///             .fullscreen_type(FullscreenType::True(MonitorId::Index(1))),
+///         ..Default::default()
+///     },
+///     toml::from_str::<Conf>(
+///         r#"
+///         [window_mode.fullscreen]
+///         type = "True"
+///         monitor = 1
+///         "#
+///     ).unwrap(),
+/// );
+///
+/// // Borderless window fullscreen on current monitor.
+/// assert_eq!(
+///     Conf {
+///         window_mode: WindowMode::default()
+///             .fullscreen_type(FullscreenType::Desktop(MonitorId::Current)),
+///         ..Default::default()
+///     },
+///     toml::from_str::<Conf>(
+///         r#"
+///         [window_mode.fullscreen]
+///         type = "Desktop"
+///         "#
+///     ).unwrap(),
+/// );
+/// ```
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum FullscreenType {
     /// Windowed mode.
@@ -28,6 +119,9 @@ pub enum FullscreenType {
 }
 
 /// Identifies a monitor connected to the system.
+///
+/// This enum is not serialized directly. Refer to `FullscreenType`
+/// documentation for ways to express this in TOML.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MonitorId {
     /// Monitor the window is currently in.
@@ -42,6 +136,7 @@ pub enum MonitorId {
 /// Defaults:
 ///
 /// ```rust
+/// extern crate ggez;
 /// use ggez::conf::{FullscreenType, WindowMode};
 /// assert_eq!(
 ///     WindowMode::default(),
@@ -86,30 +181,6 @@ pub struct WindowMode {
 }
 
 impl WindowMode {
-    /// Set if window should be maximized.
-    pub fn maximized(mut self, maximized: bool) -> Self {
-        self.maximized = maximized;
-        self
-    }
-
-    /// Set if window should be hidden.
-    pub fn hidden(mut self, hidden: bool) -> Self {
-        self.hidden = hidden;
-        self
-    }
-
-    /// Set whether or not to show window decorations.
-    pub fn borderless(mut self, borderless: bool) -> Self {
-        self.borderless = borderless;
-        self
-    }
-
-    /// Set if window should pinned to always be on top of other windows.
-    pub fn always_on_top(mut self, always_on_top: bool) -> Self {
-        self.always_on_top = always_on_top;
-        self
-    }
-
     /// Set default window size, or screen resolution in true fullscreen mode.
     pub fn dimensions(mut self, width: u32, height: u32) -> Self {
         self.dimensions = (width, height);
@@ -133,14 +204,41 @@ impl WindowMode {
         self.fullscreen_type = fullscreen_type;
         self
     }
+    /// Set if window should be maximized.
+    pub fn maximized(mut self, maximized: bool) -> Self {
+        self.maximized = maximized;
+        self
+    }
+
+    /// Set if window should be hidden.
+    pub fn hidden(mut self, hidden: bool) -> Self {
+        self.hidden = hidden;
+        self
+    }
+
+    /// Set whether or not to show window decorations.
+    pub fn borderless(mut self, borderless: bool) -> Self {
+        self.borderless = borderless;
+        self
+    }
+
+    /// Set if window should pinned to always be on top of other windows.
+    pub fn always_on_top(mut self, always_on_top: bool) -> Self {
+        self.always_on_top = always_on_top;
+        self
+    }
 }
 
-/// A builder structure containing window settings
-/// that must be set at init time and (mostly) cannot be changed afterwards.
+/// A builder structure containing window settings that must be
+/// set at init time and (mostly) cannot be changed afterwards.
+///
+/// Functions of `graphics` module allow changing some of these
+/// values (ie, title and icon) at runtime.
 ///
 /// Defaults:
 ///
 /// ```rust
+/// extern crate ggez;
 /// use ggez::conf::{NumSamples, WindowSetup};
 /// assert_eq!(
 ///     WindowSetup::default(),
@@ -158,7 +256,7 @@ impl WindowMode {
 /// ```
 #[derive(Debug, Clone, SmartDefault, PartialEq, Eq)]
 pub struct WindowSetup {
-    /// The window title.
+    /// Window title.
     #[default = r#""An easy, good game".to_owned()"#]
     pub title: String,
     /// A file path to the window's icon.
@@ -236,8 +334,8 @@ impl WindowSetup {
     }
 }
 
-/// Possible backends.
-/// Currently, only OpenGL Core spec is supported,
+/// Possible graphics backends.
+/// Currently, only OpenGL itself is supported,
 /// but this lets you specify the version numbers.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Backend {
@@ -245,18 +343,18 @@ pub enum Backend {
     OpenGL(u8, u8),
 }
 
-/// The possible number of samples for multisample anti-aliasing
+/// The possible number of samples for multi-sampled anti-aliasing.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum NumSamples {
-    /// One sample
+    /// One sample.
     One = 1,
-    /// Two samples
+    /// Two samples.
     Two = 2,
-    /// Four samples
+    /// Four samples.
     Four = 4,
-    /// Eight samples
+    /// Eight samples.
     Eight = 8,
-    /// Sixteen samples
+    /// Sixteen samples.
     Sixteen = 16,
 }
 
@@ -275,12 +373,12 @@ impl NumSamples {
     }
 }
 
-/// A structure containing configuration data
-/// for the game engine.
+/// Structure containing configuration data for the engine.
 ///
 /// Defaults:
 ///
 /// ```rust
+/// extern crate ggez;
 /// use ggez::conf::{Backend, Conf, WindowMode, WindowSetup};
 /// assert_eq!(
 ///     Conf::default(),
@@ -293,17 +391,17 @@ impl NumSamples {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, SmartDefault)]
 pub struct Conf {
-    /// Window setting information that can be set at runtime
+    /// Window setting information that can be set at runtime.
     pub window_mode: WindowMode,
-    /// Window setting information that must be set at init-time
+    /// Window setting information that must be set at init-time.
     pub window_setup: WindowSetup,
-    /// Backend configuration
+    /// Graphics backend.
     #[default = r#"Backend::OpenGL(3, 2)"#]
     pub backend: Backend,
 }
 
 impl Conf {
-    /// Same as Conf::default()
+    /// Creates a new default config. Identical to `Conf::default()`.
     pub fn new() -> Self {
         Self::default()
     }
@@ -318,7 +416,7 @@ impl Conf {
     }
 
     /// Saves the `Conf` to the given `Write` object,
-    /// formatted as TOML.
+    /// formatted as valid TOML.
     pub fn to_toml_file<W: io::Write>(&self, file: &mut W) -> GameResult {
         let s = toml::to_vec(self)?;
         file.write_all(&s)?;
