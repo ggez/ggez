@@ -42,20 +42,20 @@ pub enum MonitorId {
 /// Defaults:
 ///
 /// ```rust
-///use ggez::conf::{FullscreenType, WindowMode};
-///assert_eq!(
-///    WindowMode::default(),
-///    WindowMode {
-///        dimensions: (800, 600),
-///        min_dimensions: None,
-///        max_dimensions: None,
-///        fullscreen_type: FullscreenType::Off,
-///        maximized: false,
-///        hidden: false,
-///        borderless: false,
-///        always_on_top: false,
-///    },
-///);
+/// use ggez::conf::{FullscreenType, WindowMode};
+/// assert_eq!(
+///     WindowMode::default(),
+///     WindowMode {
+///         dimensions: (800, 600),
+///         min_dimensions: None,
+///         max_dimensions: None,
+///         fullscreen_type: FullscreenType::Off,
+///         maximized: false,
+///         hidden: false,
+///         borderless: false,
+///         always_on_top: false,
+///     },
+/// );
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, PartialEq, Eq)]
 pub struct WindowMode {
@@ -141,20 +141,20 @@ impl WindowMode {
 /// Defaults:
 ///
 /// ```rust
-///use ggez::conf::{NumSamples, WindowSetup};
-///assert_eq!(
-///    WindowSetup::default(),
-///    WindowSetup {
-///        title: "An easy, good game".to_owned(),
-///        icon: "".to_owned(),
-///        resizable: false,
-///        transparent: false,
-///        use_compatibility_profile: false,
-///        vsync: true,
-///        samples: NumSamples::One,
-///        srgb: false,
-///    },
-///);
+/// use ggez::conf::{NumSamples, WindowSetup};
+/// assert_eq!(
+///     WindowSetup::default(),
+///     WindowSetup {
+///         title: "An easy, good game".to_owned(),
+///         icon: "".to_owned(),
+///         resizable: false,
+///         transparent: false,
+///         compatibility_profile: false,
+///         vsync: true,
+///         samples: NumSamples::One,
+///         srgb: false,
+///     },
+/// );
 /// ```
 #[derive(Debug, Clone, SmartDefault, PartialEq, Eq)]
 pub struct WindowSetup {
@@ -280,14 +280,18 @@ impl NumSamples {
 ///
 /// Defaults:
 ///
-/// ```rust,ignore
-/// Conf {
-///     window_mode: WindowMode::default(),
-///     window_setup: WindowSetup::default(),
-///     backend: Backend::OpenGL(3, 2),
-/// }
+/// ```rust
+/// use ggez::conf::{Backend, Conf, WindowMode, WindowSetup};
+/// assert_eq!(
+///     Conf::default(),
+///     Conf {
+///         window_mode: WindowMode::default(),
+///         window_setup: WindowSetup::default(),
+///         backend: Backend::OpenGL(3, 2),
+///     },
+/// );
 /// ```
-#[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault)]
+#[derive(Debug, Clone, PartialEq, Eq, SmartDefault)]
 pub struct Conf {
     /// Window setting information that can be set at runtime
     pub window_mode: WindowMode,
@@ -613,6 +617,58 @@ mod custom_ser_de {
                 D: Deserializer<'de>,
             {
                 BackendToml::deserialize(deserializer).map(|w| w.into())
+            }
+        }
+    }
+
+    /// Custom serialization/deserialization for `Conf`.
+    mod conf_ser_de {
+        use super::*;
+
+        #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+        struct ConfToml {
+            window_mode: Option<WindowMode>,
+            window_setup: Option<WindowSetup>,
+            backend: Option<Backend>,
+        }
+
+        impl Into<Conf> for ConfToml {
+            fn into(self) -> Conf {
+                let def = Conf::default();
+                Conf {
+                    window_mode: self.window_mode.unwrap_or(def.window_mode),
+                    window_setup: self.window_setup.unwrap_or(def.window_setup),
+                    backend: self.backend.unwrap_or(def.backend),
+                }
+            }
+        }
+
+        impl From<Conf> for ConfToml {
+            fn from(conf: Conf) -> Self {
+                let def = Conf::default();
+                ConfToml {
+                    window_mode: some_if_ne(conf.window_mode, def.window_mode),
+                    window_setup: some_if_ne(conf.window_setup, def.window_setup),
+                    backend: some_if_ne(conf.backend, def.backend),
+                }
+            }
+        }
+
+        impl Serialize for Conf {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+            {
+                ConfToml::from(self.clone()).serialize(serializer)
+            }
+        }
+
+        impl<'de> Deserialize<'de> for Conf {
+            fn deserialize<D>(deserializer: D) -> Result<Conf, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                ConfToml::deserialize(deserializer).map(|w| w.into())
             }
         }
     }
