@@ -135,155 +135,6 @@ impl WindowMode {
     }
 }
 
-mod window_mode_ser_de {
-    use super::*;
-    use serde::de::{Deserialize, Deserializer};
-    use serde::ser::{Serialize, Serializer};
-
-    #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-    struct DimensionsToml {
-        width: u32,
-        height: u32,
-    }
-
-    impl Into<(u32, u32)> for DimensionsToml {
-        fn into(self) -> (u32, u32) {
-            (self.width, self.height)
-        }
-    }
-
-    impl From<(u32, u32)> for DimensionsToml {
-        fn from(tuple: (u32, u32)) -> DimensionsToml {
-            DimensionsToml {
-                width: tuple.0,
-                height: tuple.1,
-            }
-        }
-    }
-
-    #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-    enum FullscreenTomlType {
-        True,
-        Desktop,
-    }
-
-    #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-    struct FullscreenToml {
-        #[serde(rename = "type")]
-        fullscreen_type: FullscreenTomlType,
-        monitor: Option<usize>,
-    }
-
-    impl Into<FullscreenType> for Option<FullscreenToml> {
-        fn into(self) -> FullscreenType {
-            if let Some(fs_type) = self {
-                let monitor = match fs_type.monitor {
-                    Some(i) => MonitorId::Index(i),
-                    None => MonitorId::Current,
-                };
-                match fs_type.fullscreen_type {
-                    FullscreenTomlType::True => FullscreenType::True(monitor),
-                    FullscreenTomlType::Desktop => FullscreenType::Desktop(monitor),
-                }
-            } else {
-                FullscreenType::Off
-            }
-        }
-    }
-
-    impl From<FullscreenType> for Option<FullscreenToml> {
-        fn from(fs_type: FullscreenType) -> Option<FullscreenToml> {
-            match fs_type {
-                FullscreenType::Off => None,
-                FullscreenType::True(monitor) => Some(FullscreenToml {
-                    fullscreen_type: FullscreenTomlType::True,
-                    monitor: match monitor {
-                        MonitorId::Index(i) => Some(i),
-                        MonitorId::Current => None,
-                    },
-                }),
-                FullscreenType::Desktop(monitor) => Some(FullscreenToml {
-                    fullscreen_type: FullscreenTomlType::Desktop,
-                    monitor: match monitor {
-                        MonitorId::Index(i) => Some(i),
-                        MonitorId::Current => None,
-                    },
-                }),
-            }
-        }
-    }
-
-    #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-    struct WindowModeToml {
-        maximized: Option<bool>,
-        hidden: Option<bool>,
-        borderless: Option<bool>,
-        always_on_top: Option<bool>,
-        dimensions: Option<DimensionsToml>,
-        min_dimensions: Option<DimensionsToml>,
-        max_dimensions: Option<DimensionsToml>,
-        fullscreen: Option<FullscreenToml>,
-    }
-
-    impl Into<WindowMode> for WindowModeToml {
-        fn into(self) -> WindowMode {
-            let def = WindowMode::default();
-            WindowMode {
-                dimensions: self.dimensions.map_or(def.dimensions, |dim| dim.into()),
-                min_dimensions: self.min_dimensions.map(|dim| dim.into()),
-                max_dimensions: self.max_dimensions.map(|dim| dim.into()),
-                fullscreen_type: self.fullscreen.into(),
-                maximized: self.maximized.unwrap_or(def.maximized),
-                hidden: self.hidden.unwrap_or(def.hidden),
-                borderless: self.borderless.unwrap_or(def.borderless),
-                always_on_top: self.always_on_top.unwrap_or(def.always_on_top),
-            }
-        }
-    }
-
-    /// Helper function to filter out defaults.
-    fn some_if_ne<T: PartialEq>(result: T, cmp: T) -> Option<T> {
-        match result == cmp {
-            false => Some(result),
-            true => None,
-        }
-    }
-
-    impl From<WindowMode> for WindowModeToml {
-        fn from(win_mode: WindowMode) -> Self {
-            let def = WindowMode::default();
-            WindowModeToml {
-                maximized: some_if_ne(win_mode.maximized, def.maximized),
-                hidden: some_if_ne(win_mode.hidden, def.hidden),
-                borderless: some_if_ne(win_mode.borderless, def.borderless),
-                always_on_top: some_if_ne(win_mode.always_on_top, def.always_on_top),
-                dimensions: some_if_ne(win_mode.dimensions, def.dimensions).map(|d| d.into()),
-                min_dimensions: win_mode.min_dimensions.map(|dim| dim.into()),
-                max_dimensions: win_mode.max_dimensions.map(|dim| dim.into()),
-                fullscreen: win_mode.fullscreen_type.into(),
-            }
-        }
-    }
-
-    impl Serialize for WindowMode {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-        {
-            WindowModeToml::from(*self).serialize(serializer)
-        }
-    }
-
-    impl<'de> Deserialize<'de> for WindowMode {
-        fn deserialize<D>(deserializer: D) -> Result<WindowMode, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            WindowModeToml::deserialize(deserializer).map(|w| w.into())
-        }
-    }
-}
-
 /// A builder structure containing window settings
 /// that must be set at init time and (mostly) cannot be changed afterwards.
 ///
@@ -305,7 +156,7 @@ mod window_mode_ser_de {
 ///    },
 ///);
 /// ```
-#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, SmartDefault, PartialEq, Eq)]
 pub struct WindowSetup {
     /// The window title.
     #[default = r#""An easy, good game".to_owned()"#]
@@ -323,7 +174,7 @@ pub struct WindowSetup {
     pub transparent: bool,
     /// Whether or not should the GL compatibility profile be used.
     #[default = r#"false"#]
-    pub use_compatibility_profile: bool,
+    pub compatibility_profile: bool,
     /// Whether or not to enable vsync (vertical synchronization).
     #[default = r#"true"#]
     pub vsync: bool,
@@ -361,8 +212,8 @@ impl WindowSetup {
     }
 
     /// Set if the GL compatibility profile should be used.
-    pub fn use_compatibility_profile(mut self, use_compatibility_profile: bool) -> Self {
-        self.use_compatibility_profile = use_compatibility_profile;
+    pub fn compatibility_profile(mut self, compatibility_profile: bool) -> Self {
+        self.compatibility_profile = compatibility_profile;
         self
     }
 
@@ -477,6 +328,236 @@ impl Conf {
         let s = toml::to_vec(self)?;
         file.write_all(&s)?;
         Ok(())
+    }
+}
+
+/// Custom serialization/deserialization.
+mod custom_ser_de {
+    use super::*;
+    use serde::de::{Deserialize, Deserializer};
+    use serde::ser::{Serialize, Serializer};
+
+    /// Helper function to filter out defaults.
+    fn some_if_ne<T: PartialEq>(result: T, cmp: T) -> Option<T> {
+        match result == cmp {
+            false => Some(result),
+            true => None,
+        }
+    }
+
+    /// Custom serialization/deserialization for `WindowMode`.
+    mod window_mode_ser_de {
+        use super::*;
+
+        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+        struct DimensionsToml {
+            width: u32,
+            height: u32,
+        }
+
+        impl Into<(u32, u32)> for DimensionsToml {
+            fn into(self) -> (u32, u32) {
+                (self.width, self.height)
+            }
+        }
+
+        impl From<(u32, u32)> for DimensionsToml {
+            fn from(tuple: (u32, u32)) -> DimensionsToml {
+                DimensionsToml {
+                    width: tuple.0,
+                    height: tuple.1,
+                }
+            }
+        }
+
+        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+        enum FullscreenTomlType {
+            True,
+            Desktop,
+        }
+
+        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+        struct FullscreenToml {
+            #[serde(rename = "type")]
+            fullscreen_type: FullscreenTomlType,
+            monitor: Option<usize>,
+        }
+
+        impl Into<FullscreenType> for Option<FullscreenToml> {
+            fn into(self) -> FullscreenType {
+                if let Some(fs_type) = self {
+                    let monitor = match fs_type.monitor {
+                        Some(i) => MonitorId::Index(i),
+                        None => MonitorId::Current,
+                    };
+                    match fs_type.fullscreen_type {
+                        FullscreenTomlType::True => FullscreenType::True(monitor),
+                        FullscreenTomlType::Desktop => FullscreenType::Desktop(monitor),
+                    }
+                } else {
+                    FullscreenType::Off
+                }
+            }
+        }
+
+        impl From<FullscreenType> for Option<FullscreenToml> {
+            fn from(fs_type: FullscreenType) -> Option<FullscreenToml> {
+                match fs_type {
+                    FullscreenType::Off => None,
+                    FullscreenType::True(monitor) => Some(FullscreenToml {
+                        fullscreen_type: FullscreenTomlType::True,
+                        monitor: match monitor {
+                            MonitorId::Index(i) => Some(i),
+                            MonitorId::Current => None,
+                        },
+                    }),
+                    FullscreenType::Desktop(monitor) => Some(FullscreenToml {
+                        fullscreen_type: FullscreenTomlType::Desktop,
+                        monitor: match monitor {
+                            MonitorId::Index(i) => Some(i),
+                            MonitorId::Current => None,
+                        },
+                    }),
+                }
+            }
+        }
+
+        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+        struct WindowModeToml {
+            maximized: Option<bool>,
+            hidden: Option<bool>,
+            borderless: Option<bool>,
+            always_on_top: Option<bool>,
+            dimensions: Option<DimensionsToml>,
+            min_dimensions: Option<DimensionsToml>,
+            max_dimensions: Option<DimensionsToml>,
+            fullscreen: Option<FullscreenToml>,
+        }
+
+        impl Into<WindowMode> for WindowModeToml {
+            fn into(self) -> WindowMode {
+                let def = WindowMode::default();
+                WindowMode {
+                    dimensions: self.dimensions.map_or(def.dimensions, |dim| dim.into()),
+                    min_dimensions: self.min_dimensions.map(|dim| dim.into()),
+                    max_dimensions: self.max_dimensions.map(|dim| dim.into()),
+                    fullscreen_type: self.fullscreen.into(),
+                    maximized: self.maximized.unwrap_or(def.maximized),
+                    hidden: self.hidden.unwrap_or(def.hidden),
+                    borderless: self.borderless.unwrap_or(def.borderless),
+                    always_on_top: self.always_on_top.unwrap_or(def.always_on_top),
+                }
+            }
+        }
+
+        /// Helper function to filter out defaults.
+        fn some_if_ne<T: PartialEq>(result: T, cmp: T) -> Option<T> {
+            match result == cmp {
+                false => Some(result),
+                true => None,
+            }
+        }
+
+        impl From<WindowMode> for WindowModeToml {
+            fn from(win_mode: WindowMode) -> Self {
+                let def = WindowMode::default();
+                WindowModeToml {
+                    maximized: some_if_ne(win_mode.maximized, def.maximized),
+                    hidden: some_if_ne(win_mode.hidden, def.hidden),
+                    borderless: some_if_ne(win_mode.borderless, def.borderless),
+                    always_on_top: some_if_ne(win_mode.always_on_top, def.always_on_top),
+                    dimensions: some_if_ne(win_mode.dimensions, def.dimensions).map(|d| d.into()),
+                    min_dimensions: win_mode.min_dimensions.map(|dim| dim.into()),
+                    max_dimensions: win_mode.max_dimensions.map(|dim| dim.into()),
+                    fullscreen: win_mode.fullscreen_type.into(),
+                }
+            }
+        }
+
+        impl Serialize for WindowMode {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: Serializer,
+            {
+                WindowModeToml::from(*self).serialize(serializer)
+            }
+        }
+
+        impl<'de> Deserialize<'de> for WindowMode {
+            fn deserialize<D>(deserializer: D) -> Result<WindowMode, D::Error>
+                where
+                    D: Deserializer<'de>,
+            {
+                WindowModeToml::deserialize(deserializer).map(|w| w.into())
+            }
+        }
+    }
+
+    /// Custom serialization/deserialization for `WindowSetup`.
+    mod window_setup_ser_de {
+        use super::*;
+
+        #[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+        struct WindowSetupToml {
+            title: Option<String>,
+            icon: Option<String>,
+            resizable: Option<bool>,
+            transparent: Option<bool>,
+            compat: Option<bool>,
+            vsync: Option<bool>,
+            samples: Option<NumSamples>,
+            srgb: Option<bool>,
+        }
+
+        impl Into<WindowSetup> for WindowSetupToml {
+            fn into(self) -> WindowSetup {
+                let def = WindowSetup::default();
+                WindowSetup {
+                    title: self.title.unwrap_or(def.title),
+                    icon: self.icon.unwrap_or(def.icon),
+                    resizable: self.resizable.unwrap_or(def.resizable),
+                    transparent: self.transparent.unwrap_or(def.transparent),
+                    compatibility_profile: self.compat.unwrap_or(def.compatibility_profile),
+                    vsync: self.vsync.unwrap_or(def.vsync),
+                    samples: self.samples.unwrap_or(def.samples),
+                    srgb: self.srgb.unwrap_or(def.srgb),
+                }
+            }
+        }
+
+        impl From<WindowSetup> for WindowSetupToml {
+            fn from(win_setup: WindowSetup) -> Self {
+                let def = WindowSetup::default();
+                WindowSetupToml {
+                    title: some_if_ne(win_setup.title, def.title),
+                    icon: some_if_ne(win_setup.icon, def.icon),
+                    resizable: some_if_ne(win_setup.resizable, def.resizable),
+                    transparent: some_if_ne(win_setup.transparent, def.transparent),
+                    compat: some_if_ne(win_setup.compatibility_profile, def.compatibility_profile),
+                    vsync: some_if_ne(win_setup.vsync, def.vsync),
+                    samples: some_if_ne(win_setup.samples, def.samples),
+                    srgb: some_if_ne(win_setup.srgb, def.srgb),
+                }
+            }
+        }
+
+        impl Serialize for WindowSetup {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: Serializer,
+            {
+                WindowSetupToml::from(self.clone()).serialize(serializer)
+            }
+        }
+
+        impl<'de> Deserialize<'de> for WindowSetup {
+            fn deserialize<D>(deserializer: D) -> Result<WindowSetup, D::Error>
+                where
+                    D: Deserializer<'de>,
+            {
+                WindowSetupToml::deserialize(deserializer).map(|w| w.into())
+            }
+        }
     }
 }
 

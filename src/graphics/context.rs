@@ -106,7 +106,7 @@ impl GraphicsContext {
                 glutin::Api::OpenGl,
                 (backend.major, backend.minor),
             ))
-            .with_gl_profile(if window_setup.use_compatibility_profile {
+            .with_gl_profile(if window_setup.compatibility_profile {
                 glutin::GlProfile::Compatibility
             } else {
                 glutin::GlProfile::Core
