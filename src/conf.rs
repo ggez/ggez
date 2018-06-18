@@ -239,20 +239,10 @@ impl WindowSetup {
 /// Possible backends.
 /// Currently, only OpenGL Core spec is supported,
 /// but this lets you specify the version numbers.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, SmartDefault)]
-#[serde(tag = "type")]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Backend {
-    /// Defaults to OpenGL 3.2, which is supported by basically
-    /// every machine since 2009 or so (apart from the ones that don't)
-    #[default]
-    OpenGL {
-        /// OpenGL major version
-        #[default = r#"3"#]
-        major: u8,
-        /// OpenGL minor version
-        #[default = r#"2"#]
-        minor: u8,
-    },
+    /// Classical OpenGL, available on Windows, Linux, OS/X.
+    OpenGL(u8, u8),
 }
 
 /// The possible number of samples for multisample anti-aliasing
@@ -304,6 +294,7 @@ pub struct Conf {
     /// Window setting information that must be set at init-time
     pub window_setup: WindowSetup,
     /// Backend configuration
+    #[default = r#"Backend::OpenGL(3, 2)"#]
     pub backend: Backend,
 }
 
@@ -424,8 +415,8 @@ mod custom_ser_de {
 
         impl Serialize for FullscreenType {
             fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                where
-                    S: Serializer,
+            where
+                S: Serializer,
             {
                 <Option<FullscreenToml>>::from(*self).serialize(serializer)
             }
@@ -433,8 +424,8 @@ mod custom_ser_de {
 
         impl<'de> Deserialize<'de> for FullscreenType {
             fn deserialize<D>(deserializer: D) -> Result<FullscreenType, D::Error>
-                where
-                    D: Deserializer<'de>,
+            where
+                D: Deserializer<'de>,
             {
                 <Option<FullscreenToml>>::deserialize(deserializer).map(|w| w.into())
             }
@@ -486,8 +477,8 @@ mod custom_ser_de {
 
         impl Serialize for WindowMode {
             fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                where
-                    S: Serializer,
+            where
+                S: Serializer,
             {
                 WindowModeToml::from(*self).serialize(serializer)
             }
@@ -495,8 +486,8 @@ mod custom_ser_de {
 
         impl<'de> Deserialize<'de> for WindowMode {
             fn deserialize<D>(deserializer: D) -> Result<WindowMode, D::Error>
-                where
-                    D: Deserializer<'de>,
+            where
+                D: Deserializer<'de>,
             {
                 WindowModeToml::deserialize(deserializer).map(|w| w.into())
             }
@@ -507,7 +498,7 @@ mod custom_ser_de {
     mod window_setup_ser_de {
         use super::*;
 
-        #[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+        #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
         struct WindowSetupToml {
             title: Option<String>,
             icon: Option<String>,
@@ -553,8 +544,8 @@ mod custom_ser_de {
 
         impl Serialize for WindowSetup {
             fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                where
-                    S: Serializer,
+            where
+                S: Serializer,
             {
                 WindowSetupToml::from(self.clone()).serialize(serializer)
             }
@@ -562,10 +553,66 @@ mod custom_ser_de {
 
         impl<'de> Deserialize<'de> for WindowSetup {
             fn deserialize<D>(deserializer: D) -> Result<WindowSetup, D::Error>
-                where
-                    D: Deserializer<'de>,
+            where
+                D: Deserializer<'de>,
             {
                 WindowSetupToml::deserialize(deserializer).map(|w| w.into())
+            }
+        }
+    }
+
+    /// Custom serialization/deserialization for `Backend`.
+    mod backend_ser_de {
+        use super::*;
+
+        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+        enum BackendType {
+            OpenGL,
+        }
+
+        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+        struct BackendToml {
+            #[serde(rename = "type")]
+            backend_type: BackendType,
+            version_major: u8,
+            version_minor: u8,
+        }
+
+        impl Into<Backend> for BackendToml {
+            fn into(self) -> Backend {
+                match self.backend_type {
+                    BackendType::OpenGL => Backend::OpenGL(self.version_major, self.version_minor),
+                }
+            }
+        }
+
+        impl From<Backend> for BackendToml {
+            fn from(backend: Backend) -> BackendToml {
+                match backend {
+                    Backend::OpenGL(major, minor) => BackendToml {
+                        backend_type: BackendType::OpenGL,
+                        version_major: major,
+                        version_minor: minor,
+                    },
+                }
+            }
+        }
+
+        impl Serialize for Backend {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+            {
+                BackendToml::from(*self).serialize(serializer)
+            }
+        }
+
+        impl<'de> Deserialize<'de> for Backend {
+            fn deserialize<D>(deserializer: D) -> Result<Backend, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                BackendToml::deserialize(deserializer).map(|w| w.into())
             }
         }
     }
@@ -612,6 +659,15 @@ mod tests {
         round_trip_str(&conf);
         round_trip_file(&conf);
         conf.window_mode.max_dimensions = Some((640, 480));
+        round_trip_str(&conf);
+        round_trip_file(&conf);
+        conf.window_setup.title = "Testing, testing, one, two".to_owned();
+        round_trip_str(&conf);
+        round_trip_file(&conf);
+        conf.window_setup.samples = NumSamples::Sixteen;
+        round_trip_str(&conf);
+        round_trip_file(&conf);
+        conf.backend = Backend::OpenGL(4, 5);
         round_trip_str(&conf);
         round_trip_file(&conf);
     }

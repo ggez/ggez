@@ -100,7 +100,7 @@ pub struct GlBackendSpec {
 impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL { major, minor } => Self { major, minor },
+            conf::Backend::OpenGL(major, minor) => Self { major, minor },
         }
     }
 }
