@@ -298,7 +298,7 @@ impl fmt::Debug for Image {
 }
 
 impl Drawable for Image {
-    fn draw_ex(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
+    fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
         self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;
         let src_width = param.src.w;
@@ -309,7 +309,9 @@ impl Drawable for Image {
             src_width * self.width as f32,
             src_height * self.height as f32,
         );
-        let new_param = param.scale(real_scale);
+        // TODO: FIX PrimitiveDrawParam!
+        // let new_param = param.scale(real_scale);
+        let new_param = param;
         gfx.update_instance_properties(new_param)?;
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());

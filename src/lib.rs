@@ -99,6 +99,8 @@
 // TODO: Enable this.
 // #![deny(unused_results)]
 
+#[macro_use]
+extern crate bitflags;
 extern crate app_dirs2;
 #[macro_use]
 extern crate gfx;
@@ -118,6 +120,7 @@ extern crate serde;
 extern crate serde_derive;
 #[macro_use]
 extern crate smart_default;
+extern crate gilrs;
 extern crate toml;
 extern crate winit;
 extern crate zip;
@@ -128,6 +131,7 @@ mod context;
 pub mod error;
 pub mod event;
 pub mod filesystem;
+pub mod gamepad;
 pub mod graphics;
 pub mod keyboard;
 pub mod mouse;

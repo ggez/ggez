@@ -32,6 +32,7 @@ default = ["bzip2"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 
 [dependencies]
+bitflags = "1.0"
 zip = { version = "0.4", default-features = false }
 app_dirs2 = "2"
 gfx = "0.17"
@@ -52,6 +53,7 @@ nalgebra = {version = "^0.15.2", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here.
 mint = "0.5"
 winit = { version = "^0.15.1", features = ["icon_loading"] }
+gilrs = "0.6"
 
 [dev-dependencies]
 chrono = "0.4"

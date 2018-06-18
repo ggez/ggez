@@ -189,6 +189,8 @@ where
 
 /// A `DrawParam` that has been crunched down to a single matrix.
 /// Useful for doing matrix-based coordiante transformations, I hope.
+/// 
+/// TODO: This needs a better name.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PrimitiveDrawParam {
     /// The transform matrix for the DrawParams
