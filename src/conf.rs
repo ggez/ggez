@@ -422,6 +422,24 @@ mod custom_ser_de {
             }
         }
 
+        impl Serialize for FullscreenType {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: Serializer,
+            {
+                <Option<FullscreenToml>>::from(*self).serialize(serializer)
+            }
+        }
+
+        impl<'de> Deserialize<'de> for FullscreenType {
+            fn deserialize<D>(deserializer: D) -> Result<FullscreenType, D::Error>
+                where
+                    D: Deserializer<'de>,
+            {
+                <Option<FullscreenToml>>::deserialize(deserializer).map(|w| w.into())
+            }
+        }
+
         #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
         struct WindowModeToml {
             maximized: Option<bool>,
@@ -431,7 +449,7 @@ mod custom_ser_de {
             dimensions: Option<DimensionsToml>,
             min_dimensions: Option<DimensionsToml>,
             max_dimensions: Option<DimensionsToml>,
-            fullscreen: Option<FullscreenToml>,
+            fullscreen: Option<FullscreenType>,
         }
 
         impl Into<WindowMode> for WindowModeToml {
@@ -441,20 +459,12 @@ mod custom_ser_de {
                     dimensions: self.dimensions.map_or(def.dimensions, |dim| dim.into()),
                     min_dimensions: self.min_dimensions.map(|dim| dim.into()),
                     max_dimensions: self.max_dimensions.map(|dim| dim.into()),
-                    fullscreen_type: self.fullscreen.into(),
+                    fullscreen_type: self.fullscreen.unwrap_or(def.fullscreen_type),
                     maximized: self.maximized.unwrap_or(def.maximized),
                     hidden: self.hidden.unwrap_or(def.hidden),
                     borderless: self.borderless.unwrap_or(def.borderless),
                     always_on_top: self.always_on_top.unwrap_or(def.always_on_top),
                 }
-            }
-        }
-
-        /// Helper function to filter out defaults.
-        fn some_if_ne<T: PartialEq>(result: T, cmp: T) -> Option<T> {
-            match result == cmp {
-                false => Some(result),
-                true => None,
             }
         }
 
@@ -469,7 +479,7 @@ mod custom_ser_de {
                     dimensions: some_if_ne(win_mode.dimensions, def.dimensions).map(|d| d.into()),
                     min_dimensions: win_mode.min_dimensions.map(|dim| dim.into()),
                     max_dimensions: win_mode.max_dimensions.map(|dim| dim.into()),
-                    fullscreen: win_mode.fullscreen_type.into(),
+                    fullscreen: some_if_ne(win_mode.fullscreen_type, def.fullscreen_type),
                 }
             }
         }
