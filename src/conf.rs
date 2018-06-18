@@ -1,18 +1,18 @@
 //! Functions for loading and saving engine configurations.
 //!
-//! A `Conf` struct is used to specify hardware setup stuff used to create
-//! the window and other context information.
+//! `Conf` struct specifies the hardware setup stuff needed
+//! to create the window, graphics context, etc.
 //!
 //! By default, a `ggez` game will search it's resource paths for a `/conf.toml`
 //! file, and load values from it on `Context` creation; this file
-//! doesn't have to be complete (you can fill in some fields and have the
-//! rest be default).
+//! doesn't have to be complete - you can fill in some fields and have the
+//! rest be default.
 //!
 //! Conversely, when writing `Conf` to a TOML file (via `Conf::to_toml_file()`),
 //! fields with default values will not appear in the output.
 //!
-//! Default values can be found in documentation of
-//! structs of the module.
+//! Default values (and more TOML snippets) can be found in documentation
+//! of module's types.
 //!
 //! Here's an example config and it's equivalent TOML:
 //!
@@ -20,6 +20,7 @@
 //! extern crate ggez;
 //! extern crate toml;
 //! use ggez::conf::*;
+//!
 //! assert_eq!(
 //!     Conf {
 //!         window_mode: WindowMode::default()
@@ -31,7 +32,7 @@
 //!             .title("Testing, testing, one, two")
 //!             .samples(NumSamples::Four)
 //!             .vsync(false),
-//!         backend: Backend::OpenGL(4, 5),
+//!         backend: Backend::OpenGL(4, 6),
 //!     },
 //!     toml::from_str::<Conf>(
 //!         r#"
@@ -58,7 +59,7 @@
 //!         [backend]
 //!         type = "OpenGL"
 //!         version_major = 4
-//!         version_minor = 5
+//!         version_minor = 6
 //!         "#
 //!     ).unwrap(),
 //! );
@@ -130,14 +131,15 @@ pub enum MonitorId {
     Index(usize),
 }
 
-/// A builder structure containing window settings
-/// that can be set at runtime and changed with `graphics::set_mode()`.
+/// A builder structure containing window settings that can be
+/// changed at runtime via `graphics::set_mode()`.
 ///
 /// Defaults:
 ///
 /// ```rust
 /// extern crate ggez;
 /// use ggez::conf::{FullscreenType, WindowMode};
+///
 /// assert_eq!(
 ///     WindowMode::default(),
 ///     WindowMode {
@@ -232,14 +234,15 @@ impl WindowMode {
 /// A builder structure containing window settings that must be
 /// set at init time and (mostly) cannot be changed afterwards.
 ///
-/// Functions of `graphics` module allow changing some of these
-/// values (ie, title and icon) at runtime.
+/// `graphics::set_window_icon()` and `graphics::set_window_title()`
+/// allow setting window title and icon at runtime.
 ///
 /// Defaults:
 ///
 /// ```rust
 /// extern crate ggez;
 /// use ggez::conf::{NumSamples, WindowSetup};
+///
 /// assert_eq!(
 ///     WindowSetup::default(),
 ///     WindowSetup {
@@ -335,15 +338,59 @@ impl WindowSetup {
 }
 
 /// Possible graphics backends.
+///
 /// Currently, only OpenGL itself is supported,
 /// but this lets you specify the version numbers.
+///
+/// ```rust
+/// extern crate ggez;
+/// extern crate toml;
+/// use ggez::conf::*;
+///
+/// // Request OpenGL 4.6.
+/// assert_eq!(
+///     Conf {
+///         backend: Backend::OpenGL(4, 6),
+///         ..Default::default()
+///     },
+///     toml::from_str::<Conf>(
+///         r#"
+///         [backend]
+///         type = "OpenGL"
+///         version_major = 4
+///         version_minor = 6
+///         "#
+///     ).unwrap(),
+/// );
+/// ```
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Backend {
     /// Classical OpenGL, available on Windows, Linux, OS/X.
     OpenGL(u8, u8),
 }
 
-/// The possible number of samples for multi-sampled anti-aliasing.
+/// Possible number of samples for multisample anti-aliasing (MSAA).
+///
+/// ```rust
+/// extern crate ggez;
+/// extern crate toml;
+/// use ggez::conf::*;
+///
+/// // Request 8x MSAA.
+/// assert_eq!(
+///     Conf {
+///         window_setup: WindowSetup::default()
+///             .samples(NumSamples::Eight),
+///         ..Default::default()
+///     },
+///     toml::from_str::<Conf>(
+///         r#"
+///         [window_setup]
+///         samples = "Eight"
+///         "#
+///     ).unwrap(),
+/// );
+/// ```
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum NumSamples {
     /// One sample.
@@ -360,7 +407,7 @@ pub enum NumSamples {
 
 impl NumSamples {
     /// Create a NumSamples from a number.
-    /// Returns None if i is invalid.
+    /// Returns None if `i` is invalid.
     pub fn from_u32(i: u32) -> Option<NumSamples> {
         match i {
             1 => Some(NumSamples::One),
@@ -380,6 +427,7 @@ impl NumSamples {
 /// ```rust
 /// extern crate ggez;
 /// use ggez::conf::{Backend, Conf, WindowMode, WindowSetup};
+///
 /// assert_eq!(
 ///     Conf::default(),
 ///     Conf {
@@ -821,7 +869,7 @@ mod tests {
         conf.window_setup.samples = NumSamples::Sixteen;
         round_trip_str(&conf);
         round_trip_file(&conf);
-        conf.backend = Backend::OpenGL(4, 5);
+        conf.backend = Backend::OpenGL(4, 6);
         round_trip_str(&conf);
         round_trip_file(&conf);
     }
