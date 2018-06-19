@@ -14,6 +14,7 @@ submit a PR, please!
 
  * <https://github.com/ggez/game-template> -- a general-purpose getting-started template integrating warmy, specs, and some other useful tools.
  * <https://github.com/termhn/ggez_snake>
+ * <https://github.com/rafaeldelboni/ggez-specs-hello-world> -- A simple hello world project using ggez and specs.
 
 # Tools/add-ons
 
