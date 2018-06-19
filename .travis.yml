@@ -17,14 +17,3 @@ before_install:
       sudo apt-get -qq update
       && sudo apt-get install -y libasound2-dev;
     fi
-
-install:
-  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then
-      wget http://libsdl.org/release/SDL2-2.0.5.tar.gz
-      && tar -xzvf SDL2-2.0.5.tar.gz
-      && pushd SDL2-2.0.5 && ./configure --prefix=/usr && make && sudo make install && popd;
-    fi
-  - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then
-      brew update
-      && brew install sdl2;
-    fi

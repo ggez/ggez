@@ -20,13 +20,6 @@ install:
     - rustc -Vv
     - cargo -V
 
-before_test:
-    - cd %TEMP%
-    - appveyor DownloadFile https://www.libsdl.org/release/SDL2-devel-2.0.5-VC.zip
-    - 7z x SDL2-devel-2.0.5-VC.zip > nul
-    - xcopy SDL2-2.0.5\lib\x64\* %APPVEYOR_BUILD_FOLDER% > nul
-    - cd %APPVEYOR_BUILD_FOLDER%
-
 test_script:
     - cargo build --verbose
     - cargo test --verbose
@@ -38,6 +31,6 @@ build: false
 
 # For now disable the AppVeyor cache since it seems to be causing build problems
 # but should eventually be re-enabled once the issues get resolved.
-# cache:
-#     - target
-#     - C:\Users\appveyor\.cargo\registry
+cache:
+    - C:\Users\appveyor\.cargo\registry
+    # - target
