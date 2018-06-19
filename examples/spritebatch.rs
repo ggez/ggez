@@ -71,7 +71,7 @@ impl event::EventHandler for MainState {
             ))
             .rotation((time % cycle) as f32 / cycle as f32 * 6.28)
             .offset(Point2::new(750.0, 750.0));
-        graphics::draw_ex(ctx, &self.spritebatch, param)?;
+        graphics::draw(ctx, &self.spritebatch, param)?;
         self.spritebatch.clear();
 
         graphics::present(ctx)?;

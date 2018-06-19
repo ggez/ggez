@@ -288,7 +288,7 @@ impl MainState {
             let _shader_lock = graphics::use_shader(ctx, &self.occlusions_shader);
 
             self.occlusions_shader.send(ctx, light)?;
-            graphics::draw_ex(ctx, &self.foreground, canvas_origin)?;
+            graphics::draw(ctx, &self.foreground, canvas_origin)?;
         }
 
         // Now we render our shadow map and light map into their respective
@@ -301,7 +301,7 @@ impl MainState {
             let param = origin
                 .scale(Vector2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), size.1 as f32));
             self.shadows_shader.send(ctx, light)?;
-            graphics::draw_ex(ctx, &self.occlusions, param)?;
+            graphics::draw(ctx, &self.occlusions, param)?;
         }
         graphics::set_canvas(ctx, Some(&self.lights));
         {
@@ -310,7 +310,7 @@ impl MainState {
             let param = origin
                 .scale(Vector2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), size.1 as f32));
             self.lights_shader.send(ctx, light)?;
-            graphics::draw_ex(ctx, &self.occlusions, param)?;
+            graphics::draw(ctx, &self.occlusions, param)?;
         }
         Ok(())
     }
@@ -351,19 +351,19 @@ impl event::EventHandler for MainState {
         //  - render to screen once all the shadows are calculated and rendered
         graphics::set_canvas(ctx, Some(&self.foreground));
         graphics::clear(ctx, graphics::BLACK);
-        graphics::draw_ex(
+        graphics::draw(
             ctx,
             &self.tile,
             DrawParam::new()
                 .dest(Point2::new(598.0, 124.0))
         )?;
-        graphics::draw_ex(
+        graphics::draw(
             ctx,
             &self.tile,
             DrawParam::new()
                 .dest(Point2::new(92.0, 350.0))
         )?;
-        graphics::draw_ex(
+        graphics::draw(
             ctx,
             &self.tile,
             DrawParam::new()
@@ -387,15 +387,15 @@ impl event::EventHandler for MainState {
         // TODO: Clean up color
         graphics::set_canvas(ctx, None);
         // graphics::set_color(ctx, graphics::WHITE)?;
-        graphics::draw_ex(ctx, &self.background, origin)?;
-        graphics::draw_ex(ctx, &self.shadows, origin)?;
-        graphics::draw_ex(ctx, &self.lights, origin)?;
+        graphics::draw(ctx, &self.background, origin)?;
+        graphics::draw(ctx, &self.shadows, origin)?;
+        graphics::draw(ctx, &self.lights, origin)?;
         // We switch the color to the shadow color before drawing the foreground objects
         // this has the same effect as applying this color in a multiply blend mode with
         // full opacity. We also reset the blend mode back to the default Alpha blend mode.
         // TODO: Clean up color
         // graphics::set_color(ctx, AMBIENT_COLOR.into())?;
-        graphics::draw_ex(ctx, &self.foreground, origin.color(AMBIENT_COLOR))?;
+        graphics::draw(ctx, &self.foreground, origin.color(AMBIENT_COLOR))?;
 
         // Uncomment following two lines to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
@@ -403,7 +403,7 @@ impl event::EventHandler for MainState {
         // the mouse position (equally encoded in all color channels).
         // TODO: Clean up color
         // graphics::set_color(ctx, [1.0; 4].into())?;
-        // graphics::draw_ex(ctx, &self.occlusions, origin)?;
+        // graphics::draw(ctx, &self.occlusions, origin)?;
 
         graphics::present(ctx)?;
         Ok(())
