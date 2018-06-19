@@ -305,13 +305,14 @@ impl Drawable for Image {
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
-        let real_scale = Vector2::new(
+        use nalgebra;
+        let real_scale = nalgebra::Vector3::new(
             src_width * self.width as f32,
             src_height * self.height as f32,
+            1.0,
         );
-        // TODO: FIX PrimitiveDrawParam!
-        // let new_param = param.scale(real_scale);
-        let new_param = param;
+        let new_param = param.mul(Matrix4::new_nonuniform_scaling(&real_scale));
+        
         gfx.update_instance_properties(new_param)?;
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());

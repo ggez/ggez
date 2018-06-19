@@ -248,3 +248,16 @@ impl From<DrawParam> for PrimitiveDrawParam {
         }
     }
 }
+
+impl PrimitiveDrawParam {
+    /// Returns a new `PrimitiveDrawParam` with its matrix multiplied
+    /// by the given one.
+    /// 
+    /// TODO: Make some way to implement `matrix * self.matrix`, or just implement `Mul`...
+    pub fn mul(self, matrix: Matrix4) -> Self {
+        PrimitiveDrawParam {
+            matrix: self.matrix * matrix,
+            .. self
+        }
+    }
+}

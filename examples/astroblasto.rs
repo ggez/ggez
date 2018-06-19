@@ -433,13 +433,7 @@ fn draw_actor(
         .dest(pos)
         .rotation(actor.facing as f32)
         .offset(Point2::new(0.5, 0.5));
-    //  {
-    //     dest: pos,
-    //     rotation: actor.facing as f32,
-    //     offset: graphics::Point2::new(0.5, 0.5),
-    //     ..Default::default()
-    // };
-    graphics::draw_ex(ctx, image, drawparams)
+    graphics::draw(ctx, image, drawparams)
 }
 
 /// **********************************************************************

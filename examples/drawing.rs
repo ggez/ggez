@@ -1,6 +1,7 @@
 //! A collection of semi-random shape and image drawing examples.
 
 extern crate ggez;
+extern crate cgmath;
 
 use ggez::conf;
 use ggez::event;
@@ -71,38 +72,34 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         // let src = graphics::Rect::new(0.25, 0.25, 0.5, 0.5);
         // let src = graphics::Rect::one();
-        let dst = graphics::Point2::new(20.0, 20.0);
-        graphics::draw(ctx, &self.image1, dst, 0.0)?;
-        let dst = graphics::Point2::new(200.0, 100.0);
-        let dst2 = graphics::Point2::new(400.0, 400.0);
-        let scale = graphics::Point2::new(10.0, 10.0);
+        let dst = cgmath::Point2::new(20.0, 20.0);
+        graphics::draw(ctx, &self.image1, (dst,))?;
+        let dst = cgmath::Point2::new(200.0, 100.0);
+        let dst2 = cgmath::Point2::new(400.0, 400.0);
+        let scale = cgmath::Vector2::new(10.0, 10.0);
         // let shear = graphics::Point::new(self.zoomlevel, self.zoomlevel);
         // graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0));
-        graphics::draw_ex(
+        graphics::draw(
             ctx,
             &self.image2_linear,
-            graphics::DrawParam {
+            graphics::DrawParam::new()
                 // src: src,
-                dest: dst,
-                rotation: self.zoomlevel,
+                .dest(dst)
+                .rotation(self.zoomlevel)
                 // offset: Point2::new(-16.0, 0.0),
-                scale,
+                .scale(scale)
                 // shear: shear,
-                ..Default::default()
-            },
         )?;
-        graphics::draw_ex(
+        graphics::draw(
             ctx,
             &self.image2_nearest,
-            graphics::DrawParam {
+            graphics::DrawParam::new()
                 // src: src,
-                dest: dst2,
-                rotation: self.zoomlevel,
-                offset: Point2::new(0.5, 0.5),
-                scale,
+                .dest(dst2)
+                .rotation(self.zoomlevel)
+                .offset(Point2::new(0.5, 0.5))
+                .scale(scale)
                 // shear: shear,
-                ..Default::default()
-            },
         )?;
 
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
@@ -117,10 +114,10 @@ impl event::EventHandler for MainState {
         )?;
 
         let mesh = build_mesh(ctx)?;
-        graphics::draw_ex(
+        graphics::draw(
             ctx,
             &mesh,
-            DrawParam::new().color(graphics::Color::from((0, 0, 255))),
+            DrawParam::new().color((0, 0, 255)),
         )?;
 
         graphics::present(ctx)?;
