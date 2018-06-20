@@ -32,6 +32,7 @@ where
     pub(crate) color_format: gfx::format::Format,
     pub(crate) depth_format: gfx::format::Format,
 
+    // TODO: is this needed?
     #[allow(unused)]
     pub(crate) backend_spec: B,
     pub(crate) window: glutin::GlWindow,
@@ -102,31 +103,27 @@ impl GraphicsContext {
 
         // WINDOW SETUP
         let gl_builder = glutin::ContextBuilder::new()
-            .with_gl(glutin::GlRequest::Specific(
-                glutin::Api::OpenGl,
-                (backend.major, backend.minor),
-            ))
-            .with_gl_profile(if window_setup.compatibility_profile {
-                glutin::GlProfile::Compatibility
-            } else {
-                glutin::GlProfile::Core
-            })
-            .with_vsync(window_setup.vsync)
+            //GlRequest::Specific(Api::OpenGl, (backend.major, backend.minor))
+            .with_gl(glutin::GlRequest::Latest)
+            .with_gl_profile(glutin::GlProfile::Core)
             .with_multisampling(window_setup.samples as u16)
             .with_pixel_format(5, 8)
-            .with_srgb(window_setup.srgb);
+            .with_vsync(window_setup.vsync);
 
-        let icon = if !window_setup.icon.is_empty() {
-            use winit::Icon;
-            Some(Icon::from_path(&window_setup.icon)?)
-        } else {
-            None
-        };
-        let window_builder = glutin::WindowBuilder::new()
+        let mut window_builder = glutin::WindowBuilder::new()
             .with_title(window_setup.title.clone())
-            .with_window_icon(icon)
-            .with_transparency(window_setup.transparent)
-            .with_resizable(window_setup.resizable);
+            .with_transparency(window_setup.transparent);
+        window_builder = if !window_setup.icon.is_empty() {
+            use winit::Icon;
+            window_builder.with_window_icon(Some(Icon::from_path(&window_setup.icon)?))
+        } else {
+            window_builder
+        };
+
+        // TODO: see winit #540 about disabling resizing.
+        /*if window_setup.resizable {
+            window_builder.resizable();
+        }*/
 
         let (window, device, mut factory, screen_render_target, depth_view) =
             gfx_window_glutin::init_raw(
@@ -137,7 +134,6 @@ impl GraphicsContext {
                 depth_format,
             );
 
-        // TODO: this is temporary: see winit #555.
         let available_monitors = events_loop.get_available_monitors().collect();
 
         // TODO: see winit #548 about DPI.
@@ -238,9 +234,9 @@ impl GraphicsContext {
 
         // Set initial uniform values
         let left = 0.0;
+        let right = window_mode.width as f32;
         let top = 0.0;
-        let (right, bottom) = window_mode.dimensions;
-        let (right, bottom) = (right as f32, bottom as f32);
+        let bottom = window_mode.height as f32;
         let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
         let initial_transform = Matrix4::identity();
         let globals = Globals {
@@ -283,12 +279,13 @@ impl GraphicsContext {
         gfx.set_window_mode(window_mode)?;
 
         // Calculate and apply the actual initial projection matrix
-        let (w, h) = window_mode.dimensions;
+        let w = window_mode.width as f32;
+        let h = window_mode.height as f32;
         let rect = Rect {
             x: 0.0,
             y: 0.0,
-            w: w as f32,
-            h: h as f32,
+            w,
+            h,
         };
         gfx.set_projection_rect(rect);
         gfx.calculate_transform_matrix();
@@ -422,22 +419,26 @@ impl GraphicsContext {
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
         let window = &self.window;
 
-        window.set_min_dimensions(mode.min_dimensions);
-        window.set_max_dimensions(mode.max_dimensions);
         window.set_maximized(mode.maximized);
-        if mode.hidden {
-            window.hide();
-        } else {
-            window.show();
+
+        // TODO: find out if single-dimension constraints are possible.
+        let mut min_dimensions = None;
+        if mode.min_width > 0 && mode.min_height > 0 {
+            min_dimensions = Some((mode.min_width, mode.min_height));
         }
-        window.set_always_on_top(mode.always_on_top);
+        window.set_min_dimensions(min_dimensions);
+
+        let mut max_dimensions = None;
+        if mode.max_width > 0 && mode.max_height > 0 {
+            max_dimensions = Some((mode.max_width, mode.max_height));
+        }
+        window.set_max_dimensions(max_dimensions);
 
         match mode.fullscreen_type {
             FullscreenType::Off => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
-                let (width, height) = mode.dimensions;
-                window.set_inner_size(width, height);
+                window.set_inner_size(mode.width, mode.height);
             }
             FullscreenType::True(monitor) => {
                 let monitor = match monitor {
@@ -448,9 +449,8 @@ impl GraphicsContext {
                         return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
                     },
                 };
-                let (width, height) = mode.dimensions;
-                window.set_inner_size(width, height);
                 window.set_fullscreen(Some(monitor));
+                window.set_inner_size(mode.width, mode.height);
             }
             FullscreenType::Desktop(monitor) => {
                 let monitor = match monitor {

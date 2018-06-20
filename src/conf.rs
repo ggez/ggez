@@ -1,69 +1,14 @@
-//! Functions for loading and saving engine configurations.
+//! The `conf` module contains functions for loading and saving game
+//! configurations.
 //!
-//! `Conf` struct specifies the hardware setup stuff needed
-//! to create the window, graphics context, etc.
+//! A `Conf` struct is used to specify hardware setup stuff used to create
+//! the window and other context information.
 //!
-//! By default, a `ggez` game will search it's resource paths for a `/conf.toml`
-//! file, and load values from it on `Context` creation; this file
-//! doesn't have to be complete - you can fill in some fields and have the
-//! rest be default.
-//!
-//! Conversely, when writing `Conf` to a TOML file (via `Conf::to_toml_file()`),
-//! fields with default values will not appear in the output.
-//!
-//! Default values (and more TOML snippets) can be found in documentation
-//! of module's types.
-//!
-//! Here's an example config and it's equivalent TOML:
-//!
-//! ```rust
-//! extern crate ggez;
-//! extern crate toml;
-//! use ggez::conf::*;
-//!
-//! assert_eq!(
-//!     Conf {
-//!         window_mode: WindowMode::default()
-//!             .always_on_top(true)
-//!             .dimensions(640, 480)
-//!             .min_dimensions(640, 480)
-//!             .fullscreen_type(FullscreenType::Desktop(MonitorId::Index(1))),
-//!         window_setup: WindowSetup::default()
-//!             .title("Testing, testing, one, two")
-//!             .samples(NumSamples::Four)
-//!             .vsync(false),
-//!         backend: Backend::OpenGL(4, 6),
-//!     },
-//!     toml::from_str::<Conf>(
-//!         r#"
-//!         [window_mode]
-//!         always_on_top = true
-//!
-//!         [window_mode.dimensions]
-//!         width = 640
-//!         height = 480
-//!
-//!         [window_mode.min_dimensions]
-//!         width = 640
-//!         height = 480
-//!
-//!         [window_mode.fullscreen]
-//!         type = "Desktop"
-//!         monitor = 1
-//!
-//!         [window_setup]
-//!         title = "Testing, testing, one, two"
-//!         samples = "Four"
-//!         vsync = false
-//!
-//!         [backend]
-//!         type = "OpenGL"
-//!         version_major = 4
-//!         version_minor = 6
-//!         "#
-//!     ).unwrap(),
-//! );
-//! ```
+//! By default a ggez game will search its resource paths for a `/conf.toml`
+//! file and load values from it when the `Context` is created.  This file
+//! must be complete (ie you cannot just fill in some fields and have the
+//! rest be default) and provides a nice way to specify settings that
+//! can be tweaked such as window resolution, multisampling options, etc.
 
 use std::io;
 use toml;
@@ -71,48 +16,11 @@ use toml;
 use GameResult;
 
 /// Possible fullscreen modes.
-///
-/// ```rust
-/// extern crate ggez;
-/// extern crate toml;
-/// use ggez::conf::*;
-///
-/// // True fullscreen on monitor #1.
-/// assert_eq!(
-///     Conf {
-///         window_mode: WindowMode::default()
-///             .fullscreen_type(FullscreenType::True(MonitorId::Index(1))),
-///         ..Default::default()
-///     },
-///     toml::from_str::<Conf>(
-///         r#"
-///         [window_mode.fullscreen]
-///         type = "True"
-///         monitor = 1
-///         "#
-///     ).unwrap(),
-/// );
-///
-/// // Borderless window fullscreen on current monitor.
-/// assert_eq!(
-///     Conf {
-///         window_mode: WindowMode::default()
-///             .fullscreen_type(FullscreenType::Desktop(MonitorId::Current)),
-///         ..Default::default()
-///     },
-///     toml::from_str::<Conf>(
-///         r#"
-///         [window_mode.fullscreen]
-///         type = "Desktop"
-///         "#
-///     ).unwrap(),
-/// );
-/// ```
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum FullscreenType {
-    /// Windowed mode.
+    /// Windowed mode
     Off,
-    /// Real fullscreen.
+    /// Real fullscreen
     True(MonitorId),
     /// Windowed fullscreen, generally preferred over real fullscreen
     /// these days 'cause it plays nicer with multiple monitors.
@@ -120,10 +28,7 @@ pub enum FullscreenType {
 }
 
 /// Identifies a monitor connected to the system.
-///
-/// This enum is not serialized directly. Refer to `FullscreenType`
-/// documentation for ways to express this in TOML.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum MonitorId {
     /// Monitor the window is currently in.
     Current,
@@ -131,190 +36,154 @@ pub enum MonitorId {
     Index(usize),
 }
 
-/// A builder structure containing window settings that can be
-/// changed at runtime via `graphics::set_mode()`.
+/// A builder structure containing window settings
+/// that can be set at runtime and changed with `graphics::set_mode()`
 ///
 /// Defaults:
 ///
-/// ```rust
-/// extern crate ggez;
-/// use ggez::conf::{FullscreenType, WindowMode};
-///
-/// assert_eq!(
-///     WindowMode::default(),
-///     WindowMode {
-///         dimensions: (800, 600),
-///         min_dimensions: None,
-///         max_dimensions: None,
-///         fullscreen_type: FullscreenType::Off,
-///         maximized: false,
-///         hidden: false,
-///         borderless: false,
-///         always_on_top: false,
-///     },
-/// );
+/// ```rust,ignore
+/// WindowMode {
+///     width: 800,
+///     height: 600,
+///     borderless: false,
+///     fullscreen_type: FullscreenType::Off,
+///     vsync: true,
+///     min_width: 0,
+///     max_width: 0,
+///     min_height: 0,
+///     max_height: 0,
+/// }
 /// ```
-#[derive(Debug, Copy, Clone, SmartDefault, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowMode {
-    /// Window's inner dimensions (drawable area).
-    #[default = r#"(800, 600)"#]
-    pub dimensions: (u32, u32),
-    /// Window's minimum dimensions; `None` is no limit.
-    #[default = r#"None"#]
-    pub min_dimensions: Option<(u32, u32)>,
-    /// Window's maximum dimensions; `None` is no limit.
-    #[default = r#"None"#]
-    pub max_dimensions: Option<(u32, u32)>,
-    /// Fullscreen type.
-    #[default = r#"FullscreenType::Off"#]
-    pub fullscreen_type: FullscreenType,
-    /// Whether or not to maximize the window.
+    /// Window width
+    #[default = r#"800"#]
+    pub width: u32,
+    /// Window height
+    #[default = r#"600"#]
+    pub height: u32,
+    /// Whether or not to maximize the window
     #[default = r#"false"#]
     pub maximized: bool,
-    /// Whether or not the window is hidden.
-    #[default = r#"false"#]
-    pub hidden: bool,
-    /// Whether or not to show window decorations.
+    /// Fullscreen type
+    #[default = r#"FullscreenType::Off"#]
+    pub fullscreen_type: FullscreenType,
+    /// Whether or not to show window decorations
     #[default = r#"false"#]
     pub borderless: bool,
-    /// Whether or not the window is pinned to always be on top of other windows.
-    #[default = r#"false"#]
-    pub always_on_top: bool,
+    /// Minimum width for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub min_width: u32,
+    /// Minimum height for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub min_height: u32,
+    /// Maximum width for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub max_width: u32,
+    /// Maximum height for resizable windows; 0 means no limit
+    #[default = r#"0"#]
+    pub max_height: u32,
 }
 
 impl WindowMode {
-    /// Set default window size, or screen resolution in true fullscreen mode.
+    /// Set default window size, or screen resolution in true fullscreen mode
     pub fn dimensions(mut self, width: u32, height: u32) -> Self {
-        self.dimensions = (width, height);
+        self.width = width;
+        self.height = height;
         self
     }
 
-    /// Set minimum window dimensions for windowed mode.
-    pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.min_dimensions = Some((width, height));
-        self
-    }
-
-    /// Set maximum window dimensions for windowed mode.
-    pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
-        self.max_dimensions = Some((width, height));
-        self
-    }
-
-    /// Set the fullscreen type.
-    pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
-        self.fullscreen_type = fullscreen_type;
-        self
-    }
-    /// Set if window should be maximized.
+    /// Set if window should be maximized
     pub fn maximized(mut self, maximized: bool) -> Self {
         self.maximized = maximized;
         self
     }
 
-    /// Set if window should be hidden.
-    pub fn hidden(mut self, hidden: bool) -> Self {
-        self.hidden = hidden;
+    /// Set the fullscreen type
+    pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
+        self.fullscreen_type = fullscreen_type;
         self
     }
 
-    /// Set whether or not to show window decorations.
+    /// Set borderless
     pub fn borderless(mut self, borderless: bool) -> Self {
         self.borderless = borderless;
         self
     }
 
-    /// Set if window should pinned to always be on top of other windows.
-    pub fn always_on_top(mut self, always_on_top: bool) -> Self {
-        self.always_on_top = always_on_top;
+    /// Set minimum window dimensions for windowed mode
+    pub fn min_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.min_width = width;
+        self.min_height = height;
+        self
+    }
+
+    /// Set maximum window dimensions for windowed mode
+    pub fn max_dimensions(mut self, width: u32, height: u32) -> Self {
+        self.max_width = width;
+        self.max_height = height;
         self
     }
 }
 
-/// A builder structure containing window settings that must be
-/// set at init time and (mostly) cannot be changed afterwards.
-///
-/// `graphics::set_window_icon()` and `graphics::set_window_title()`
-/// allow setting window title and icon at runtime.
+/// A builder structure containing window settings
+/// that must be set at init time and cannot be changed afterwards.
 ///
 /// Defaults:
 ///
-/// ```rust
-/// extern crate ggez;
-/// use ggez::conf::{NumSamples, WindowSetup};
-///
-/// assert_eq!(
-///     WindowSetup::default(),
-///     WindowSetup {
-///         title: "An easy, good game".to_owned(),
-///         icon: "".to_owned(),
-///         resizable: false,
-///         transparent: false,
-///         compatibility_profile: false,
-///         vsync: true,
-///         samples: NumSamples::One,
-///         srgb: false,
-///     },
-/// );
+/// ```rust,ignore
+/// WindowSetup {
+///     title: "An easy, good game".to_owned(),
+///     icon: "".to_owned(),
+///     resizable: false,
+///     allow_highdpi: true,
+///     samples: NumSamples::One,
+/// }
 /// ```
-#[derive(Debug, Clone, SmartDefault, PartialEq, Eq)]
+#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowSetup {
-    /// Window title.
+    /// The window title.
     #[default = r#""An easy, good game".to_owned()"#]
     pub title: String,
+    /*/// Whether or not the window is resizable
+    #[default = r#"false"#]
+    pub resizable: bool,*/ // TODO: winit #540
+    /// Number of samples for multisample anti-aliasing
+    #[default = r#"NumSamples::One"#]
+    pub samples: NumSamples,
+    /// Whether or not to enable vsync
+    #[default = r#"true"#]
+    pub vsync: bool,
+    /// Whether or not should the window's background be transparent
+    #[default = r#"false"#]
+    pub transparent: bool,
     /// A file path to the window's icon.
     /// It is rooted in the `resources` directory (see the `filesystem` module for details),
     /// and an empty string results in a blank/default icon.
     #[default = r#""".to_owned()"#]
     pub icon: String,
-    /// Whether or not the window is resizable.
-    #[default = r#"false"#]
-    pub resizable: bool,
-    /// Whether or not should the window's background be transparent.
-    #[default = r#"false"#]
-    pub transparent: bool,
-    /// Whether or not should the GL compatibility profile be used.
-    #[default = r#"false"#]
-    pub compatibility_profile: bool,
-    /// Whether or not to enable vsync (vertical synchronization).
-    #[default = r#"true"#]
-    pub vsync: bool,
-    /// Number of samples for multisample anti-aliasing.
-    #[default = r#"NumSamples::One"#]
-    pub samples: NumSamples,
-    /// Whether or not to enable sRGB.
-    #[default = r#"false"#]
-    pub srgb: bool,
 }
 
 impl WindowSetup {
-    /// Set window's title.
+    /// Set window title
     pub fn title(mut self, title: &str) -> Self {
         self.title = title.to_owned();
         self
     }
 
-    /// Set the window's icon.
-    pub fn icon(mut self, icon: &str) -> Self {
-        self.icon = icon.to_owned();
-        self
-    }
-
-    /// Set whether or not the window is resizable.
+    /*/// Set resizable
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
         self
-    }
+    }*/
+    // TODO: winit #540
 
-    /// Set if window's background should be transparent.
-    pub fn transparent(mut self, transparent: bool) -> Self {
-        self.transparent = transparent;
-        self
-    }
-
-    /// Set if the GL compatibility profile should be used.
-    pub fn compatibility_profile(mut self, compatibility_profile: bool) -> Self {
-        self.compatibility_profile = compatibility_profile;
+    /// Set number of samples
+    ///
+    /// Returns None if given an invalid value
+    /// (valid values are powers of 2 from 1 to 16)
+    pub fn samples(mut self, samples: NumSamples) -> Self {
+        self.samples = samples;
         self
     }
 
@@ -324,90 +193,56 @@ impl WindowSetup {
         self
     }
 
-    /// Set number of samples for multisample anti-aliasing.
-    pub fn samples(mut self, samples: NumSamples) -> Self {
-        self.samples = samples;
+    /// Set if window background should be transparent.
+    pub fn transparent(mut self, transparent: bool) -> Self {
+        self.transparent = transparent;
         self
     }
 
-    /// Set if sRGB should be enabled.
-    pub fn srgb(mut self, srgb: bool) -> Self {
-        self.srgb = srgb;
+    /// Set the window's icon.
+    pub fn icon(mut self, icon: &str) -> Self {
+        self.icon = icon.to_owned();
         self
     }
 }
 
-/// Possible graphics backends.
-///
-/// Currently, only OpenGL itself is supported,
+/// Possible backends.
+/// Currently, only OpenGL Core spec is supported,
 /// but this lets you specify the version numbers.
-///
-/// ```rust
-/// extern crate ggez;
-/// extern crate toml;
-/// use ggez::conf::*;
-///
-/// // Request OpenGL 4.6.
-/// assert_eq!(
-///     Conf {
-///         backend: Backend::OpenGL(4, 6),
-///         ..Default::default()
-///     },
-///     toml::from_str::<Conf>(
-///         r#"
-///         [backend]
-///         type = "OpenGL"
-///         version_major = 4
-///         version_minor = 6
-///         "#
-///     ).unwrap(),
-/// );
-/// ```
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, SmartDefault)]
+#[serde(tag = "type")]
 pub enum Backend {
-    /// Classical OpenGL, available on Windows, Linux, OS/X.
-    OpenGL(u8, u8),
+    /// Defaults to OpenGL 3.2, which is supported by basically
+    /// every machine since 2009 or so (apart from the ones that don't)
+    #[default]
+    OpenGL {
+        /// OpenGL major version
+        #[default = r#"3"#]
+        major: u8,
+        /// OpenGL minor version
+        #[default = r#"2"#]
+        minor: u8,
+    },
 }
 
-/// Possible number of samples for multisample anti-aliasing (MSAA).
-///
-/// ```rust
-/// extern crate ggez;
-/// extern crate toml;
-/// use ggez::conf::*;
-///
-/// // Request 8x MSAA.
-/// assert_eq!(
-///     Conf {
-///         window_setup: WindowSetup::default()
-///             .samples(NumSamples::Eight),
-///         ..Default::default()
-///     },
-///     toml::from_str::<Conf>(
-///         r#"
-///         [window_setup]
-///         samples = "Eight"
-///         "#
-///     ).unwrap(),
-/// );
-/// ```
+/// The possible number of samples for multisample anti-aliasing
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum NumSamples {
-    /// One sample.
+    /// One sample
     One = 1,
-    /// Two samples.
+    /// Two samples
     Two = 2,
-    /// Four samples.
+    /// Four samples
     Four = 4,
-    /// Eight samples.
+    /// Eight samples
     Eight = 8,
-    /// Sixteen samples.
+    /// Sixteen samples
     Sixteen = 16,
 }
 
 impl NumSamples {
     /// Create a NumSamples from a number.
-    /// Returns None if `i` is invalid.
+    /// Returns None if i is invalid.
     pub fn from_u32(i: u32) -> Option<NumSamples> {
         match i {
             1 => Some(NumSamples::One),
@@ -420,36 +255,30 @@ impl NumSamples {
     }
 }
 
-/// Structure containing configuration data for the engine.
+/// A structure containing configuration data
+/// for the game engine.
 ///
 /// Defaults:
 ///
-/// ```rust
-/// extern crate ggez;
-/// use ggez::conf::{Backend, Conf, WindowMode, WindowSetup};
-///
-/// assert_eq!(
-///     Conf::default(),
-///     Conf {
-///         window_mode: WindowMode::default(),
-///         window_setup: WindowSetup::default(),
-///         backend: Backend::OpenGL(3, 2),
-///     },
-/// );
+/// ```rust,ignore
+/// Conf {
+///     window_mode: WindowMode::default(),
+///     window_setup: WindowSetup::default(),
+///     backend: Backend::OpenGL(3, 2),
+/// }
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, SmartDefault)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault)]
 pub struct Conf {
-    /// Window setting information that can be set at runtime.
+    /// Window setting information that can be set at runtime
     pub window_mode: WindowMode,
-    /// Window setting information that must be set at init-time.
+    /// Window setting information that must be set at init-time
     pub window_setup: WindowSetup,
-    /// Graphics backend.
-    #[default = r#"Backend::OpenGL(3, 2)"#]
+    /// Backend configuration
     pub backend: Backend,
 }
 
 impl Conf {
-    /// Creates a new default config. Identical to `Conf::default()`.
+    /// Same as Conf::default()
     pub fn new() -> Self {
         Self::default()
     }
@@ -464,7 +293,7 @@ impl Conf {
     }
 
     /// Saves the `Conf` to the given `Write` object,
-    /// formatted as valid TOML.
+    /// formatted as TOML.
     pub fn to_toml_file<W: io::Write>(&self, file: &mut W) -> GameResult {
         let s = toml::to_vec(self)?;
         file.write_all(&s)?;
@@ -472,405 +301,19 @@ impl Conf {
     }
 }
 
-/// Custom serialization/deserialization.
-mod custom_ser_de {
-    use super::*;
-    use serde::de::{Deserialize, Deserializer};
-    use serde::ser::{Serialize, Serializer};
-
-    /// Helper function to filter out defaults.
-    fn some_if_ne<T: PartialEq>(result: T, cmp: T) -> Option<T> {
-        match result == cmp {
-            false => Some(result),
-            true => None,
-        }
-    }
-
-    /// Custom serialization/deserialization for `WindowMode`.
-    mod window_mode_ser_de {
-        use super::*;
-
-        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-        struct DimensionsToml {
-            width: u32,
-            height: u32,
-        }
-
-        impl Into<(u32, u32)> for DimensionsToml {
-            fn into(self) -> (u32, u32) {
-                (self.width, self.height)
-            }
-        }
-
-        impl From<(u32, u32)> for DimensionsToml {
-            fn from(tuple: (u32, u32)) -> DimensionsToml {
-                DimensionsToml {
-                    width: tuple.0,
-                    height: tuple.1,
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-        enum FullscreenTomlType {
-            True,
-            Desktop,
-        }
-
-        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-        struct FullscreenToml {
-            #[serde(rename = "type")]
-            fullscreen_type: FullscreenTomlType,
-            monitor: Option<usize>,
-        }
-
-        impl Into<FullscreenType> for Option<FullscreenToml> {
-            fn into(self) -> FullscreenType {
-                if let Some(fs_type) = self {
-                    let monitor = match fs_type.monitor {
-                        Some(i) => MonitorId::Index(i),
-                        None => MonitorId::Current,
-                    };
-                    match fs_type.fullscreen_type {
-                        FullscreenTomlType::True => FullscreenType::True(monitor),
-                        FullscreenTomlType::Desktop => FullscreenType::Desktop(monitor),
-                    }
-                } else {
-                    FullscreenType::Off
-                }
-            }
-        }
-
-        impl From<FullscreenType> for Option<FullscreenToml> {
-            fn from(fs_type: FullscreenType) -> Option<FullscreenToml> {
-                match fs_type {
-                    FullscreenType::Off => None,
-                    FullscreenType::True(monitor) => Some(FullscreenToml {
-                        fullscreen_type: FullscreenTomlType::True,
-                        monitor: match monitor {
-                            MonitorId::Index(i) => Some(i),
-                            MonitorId::Current => None,
-                        },
-                    }),
-                    FullscreenType::Desktop(monitor) => Some(FullscreenToml {
-                        fullscreen_type: FullscreenTomlType::Desktop,
-                        monitor: match monitor {
-                            MonitorId::Index(i) => Some(i),
-                            MonitorId::Current => None,
-                        },
-                    }),
-                }
-            }
-        }
-
-        impl Serialize for FullscreenType {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
-            {
-                <Option<FullscreenToml>>::from(*self).serialize(serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for FullscreenType {
-            fn deserialize<D>(deserializer: D) -> Result<FullscreenType, D::Error>
-            where
-                D: Deserializer<'de>,
-            {
-                <Option<FullscreenToml>>::deserialize(deserializer).map(|w| w.into())
-            }
-        }
-
-        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-        struct WindowModeToml {
-            maximized: Option<bool>,
-            hidden: Option<bool>,
-            borderless: Option<bool>,
-            always_on_top: Option<bool>,
-            dimensions: Option<DimensionsToml>,
-            min_dimensions: Option<DimensionsToml>,
-            max_dimensions: Option<DimensionsToml>,
-            fullscreen: Option<FullscreenType>,
-        }
-
-        impl Into<WindowMode> for WindowModeToml {
-            fn into(self) -> WindowMode {
-                let def = WindowMode::default();
-                WindowMode {
-                    dimensions: self.dimensions.map_or(def.dimensions, |dim| dim.into()),
-                    min_dimensions: self.min_dimensions.map(|dim| dim.into()),
-                    max_dimensions: self.max_dimensions.map(|dim| dim.into()),
-                    fullscreen_type: self.fullscreen.unwrap_or(def.fullscreen_type),
-                    maximized: self.maximized.unwrap_or(def.maximized),
-                    hidden: self.hidden.unwrap_or(def.hidden),
-                    borderless: self.borderless.unwrap_or(def.borderless),
-                    always_on_top: self.always_on_top.unwrap_or(def.always_on_top),
-                }
-            }
-        }
-
-        impl From<WindowMode> for WindowModeToml {
-            fn from(win_mode: WindowMode) -> Self {
-                let def = WindowMode::default();
-                WindowModeToml {
-                    maximized: some_if_ne(win_mode.maximized, def.maximized),
-                    hidden: some_if_ne(win_mode.hidden, def.hidden),
-                    borderless: some_if_ne(win_mode.borderless, def.borderless),
-                    always_on_top: some_if_ne(win_mode.always_on_top, def.always_on_top),
-                    dimensions: some_if_ne(win_mode.dimensions, def.dimensions).map(|d| d.into()),
-                    min_dimensions: win_mode.min_dimensions.map(|dim| dim.into()),
-                    max_dimensions: win_mode.max_dimensions.map(|dim| dim.into()),
-                    fullscreen: some_if_ne(win_mode.fullscreen_type, def.fullscreen_type),
-                }
-            }
-        }
-
-        impl Serialize for WindowMode {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
-            {
-                WindowModeToml::from(*self).serialize(serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for WindowMode {
-            fn deserialize<D>(deserializer: D) -> Result<WindowMode, D::Error>
-            where
-                D: Deserializer<'de>,
-            {
-                WindowModeToml::deserialize(deserializer).map(|w| w.into())
-            }
-        }
-    }
-
-    /// Custom serialization/deserialization for `WindowSetup`.
-    mod window_setup_ser_de {
-        use super::*;
-
-        #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-        struct WindowSetupToml {
-            title: Option<String>,
-            icon: Option<String>,
-            resizable: Option<bool>,
-            transparent: Option<bool>,
-            compat: Option<bool>,
-            vsync: Option<bool>,
-            samples: Option<NumSamples>,
-            srgb: Option<bool>,
-        }
-
-        impl Into<WindowSetup> for WindowSetupToml {
-            fn into(self) -> WindowSetup {
-                let def = WindowSetup::default();
-                WindowSetup {
-                    title: self.title.unwrap_or(def.title),
-                    icon: self.icon.unwrap_or(def.icon),
-                    resizable: self.resizable.unwrap_or(def.resizable),
-                    transparent: self.transparent.unwrap_or(def.transparent),
-                    compatibility_profile: self.compat.unwrap_or(def.compatibility_profile),
-                    vsync: self.vsync.unwrap_or(def.vsync),
-                    samples: self.samples.unwrap_or(def.samples),
-                    srgb: self.srgb.unwrap_or(def.srgb),
-                }
-            }
-        }
-
-        impl From<WindowSetup> for WindowSetupToml {
-            fn from(win_setup: WindowSetup) -> Self {
-                let def = WindowSetup::default();
-                WindowSetupToml {
-                    title: some_if_ne(win_setup.title, def.title),
-                    icon: some_if_ne(win_setup.icon, def.icon),
-                    resizable: some_if_ne(win_setup.resizable, def.resizable),
-                    transparent: some_if_ne(win_setup.transparent, def.transparent),
-                    compat: some_if_ne(win_setup.compatibility_profile, def.compatibility_profile),
-                    vsync: some_if_ne(win_setup.vsync, def.vsync),
-                    samples: some_if_ne(win_setup.samples, def.samples),
-                    srgb: some_if_ne(win_setup.srgb, def.srgb),
-                }
-            }
-        }
-
-        impl Serialize for WindowSetup {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
-            {
-                WindowSetupToml::from(self.clone()).serialize(serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for WindowSetup {
-            fn deserialize<D>(deserializer: D) -> Result<WindowSetup, D::Error>
-            where
-                D: Deserializer<'de>,
-            {
-                WindowSetupToml::deserialize(deserializer).map(|w| w.into())
-            }
-        }
-    }
-
-    /// Custom serialization/deserialization for `Backend`.
-    mod backend_ser_de {
-        use super::*;
-
-        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-        enum BackendType {
-            OpenGL,
-        }
-
-        #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-        struct BackendToml {
-            #[serde(rename = "type")]
-            backend_type: BackendType,
-            version_major: u8,
-            version_minor: u8,
-        }
-
-        impl Into<Backend> for BackendToml {
-            fn into(self) -> Backend {
-                match self.backend_type {
-                    BackendType::OpenGL => Backend::OpenGL(self.version_major, self.version_minor),
-                }
-            }
-        }
-
-        impl From<Backend> for BackendToml {
-            fn from(backend: Backend) -> BackendToml {
-                match backend {
-                    Backend::OpenGL(major, minor) => BackendToml {
-                        backend_type: BackendType::OpenGL,
-                        version_major: major,
-                        version_minor: minor,
-                    },
-                }
-            }
-        }
-
-        impl Serialize for Backend {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
-            {
-                BackendToml::from(*self).serialize(serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for Backend {
-            fn deserialize<D>(deserializer: D) -> Result<Backend, D::Error>
-            where
-                D: Deserializer<'de>,
-            {
-                BackendToml::deserialize(deserializer).map(|w| w.into())
-            }
-        }
-    }
-
-    /// Custom serialization/deserialization for `Conf`.
-    mod conf_ser_de {
-        use super::*;
-
-        #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-        struct ConfToml {
-            window_mode: Option<WindowMode>,
-            window_setup: Option<WindowSetup>,
-            backend: Option<Backend>,
-        }
-
-        impl Into<Conf> for ConfToml {
-            fn into(self) -> Conf {
-                let def = Conf::default();
-                Conf {
-                    window_mode: self.window_mode.unwrap_or(def.window_mode),
-                    window_setup: self.window_setup.unwrap_or(def.window_setup),
-                    backend: self.backend.unwrap_or(def.backend),
-                }
-            }
-        }
-
-        impl From<Conf> for ConfToml {
-            fn from(conf: Conf) -> Self {
-                let def = Conf::default();
-                ConfToml {
-                    window_mode: some_if_ne(conf.window_mode, def.window_mode),
-                    window_setup: some_if_ne(conf.window_setup, def.window_setup),
-                    backend: some_if_ne(conf.backend, def.backend),
-                }
-            }
-        }
-
-        impl Serialize for Conf {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
-            {
-                ConfToml::from(self.clone()).serialize(serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for Conf {
-            fn deserialize<D>(deserializer: D) -> Result<Conf, D::Error>
-            where
-                D: Deserializer<'de>,
-            {
-                ConfToml::deserialize(deserializer).map(|w| w.into())
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use serde;
-    use std::cmp::PartialEq;
-    use std::fmt::Debug;
+    use conf;
 
-    fn round_trip_str<T>(thing: &T)
-    where
-        T: PartialEq + Debug + serde::Serialize + serde::de::DeserializeOwned,
-    {
-        let string = toml::to_string(&thing).unwrap();
-        println!("-----\n{:?}\n\n{}", thing, string);
-        assert_eq!(&toml::from_str::<T>(&string).unwrap(), thing);
-    }
-
-    fn round_trip_file(conf: &Conf) {
-        let mut writer = Vec::new();
-        conf.to_toml_file(&mut writer).unwrap();
-        let mut reader = writer.as_slice();
-        assert_eq!(&Conf::from_toml_file(&mut reader).unwrap(), conf);
-    }
-
+    /// Tries to encode and decode a `Conf` object
+    /// and makes sure it gets the same result it had.
     #[test]
-    fn encode_round_trip_conf() {
-        let mut conf = Conf::new();
-        round_trip_str(&conf);
-        round_trip_file(&conf);
-        conf.window_mode.maximized = true;
-        round_trip_str(&conf);
-        round_trip_file(&conf);
-        conf.window_mode.fullscreen_type = FullscreenType::True(MonitorId::Current);
-        round_trip_str(&conf);
-        round_trip_file(&conf);
-        conf.window_mode.fullscreen_type = FullscreenType::Desktop(MonitorId::Index(1));
-        round_trip_str(&conf);
-        round_trip_file(&conf);
-        conf.window_mode.dimensions = (640, 480);
-        round_trip_str(&conf);
-        round_trip_file(&conf);
-        conf.window_mode.max_dimensions = Some((640, 480));
-        round_trip_str(&conf);
-        round_trip_file(&conf);
-        conf.window_setup.title = "Testing, testing, one, two".to_owned();
-        round_trip_str(&conf);
-        round_trip_file(&conf);
-        conf.window_setup.samples = NumSamples::Sixteen;
-        round_trip_str(&conf);
-        round_trip_file(&conf);
-        conf.backend = Backend::OpenGL(4, 6);
-        round_trip_str(&conf);
-        round_trip_file(&conf);
+    fn encode_round_trip() {
+        let c1 = conf::Conf::new();
+        let mut writer = Vec::new();
+        let _c = c1.to_toml_file(&mut writer).unwrap();
+        let mut reader = writer.as_slice();
+        let c2 = conf::Conf::from_toml_file(&mut reader).unwrap();
+        assert_eq!(c1, c2);
     }
 }
