@@ -100,7 +100,7 @@ pub struct GlBackendSpec {
 impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL(major, minor) => Self { major, minor },
+            conf::Backend::OpenGL { major, minor } => Self { major, minor },
         }
     }
 }
@@ -697,8 +697,9 @@ pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -
 
 /// Sets the window resolution based on the specified width and height.
 pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameResult {
-    let window_mode = context.conf.window_mode;
-    window_mode.dimensions(width, height);
+    let mut window_mode = context.conf.window_mode;
+    window_mode.width = width;
+    window_mode.height = height;
     set_mode(context, window_mode)
 }
 
