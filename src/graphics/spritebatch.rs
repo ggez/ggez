@@ -52,6 +52,8 @@ impl SpriteBatch {
     /// Adds a new sprite to the sprite batch.
     ///
     /// Returns a handle with which type to modify the sprite using `set()`
+    /// 
+    /// TODO: Into<DrawParam> and such
     pub fn add(&mut self, param: graphics::DrawParam) -> SpriteIdx {
         self.sprites.push(param);
         SpriteIdx(self.sprites.len() - 1)
@@ -120,7 +122,7 @@ impl SpriteBatch {
         self.sprites.clear();
     }
 
-    /// Unwraps the contained `Image`
+    /// Unwraps and returns the contained `Image`
     pub fn into_inner(self) -> graphics::Image {
         self.image
     }

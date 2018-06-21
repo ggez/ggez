@@ -5,6 +5,23 @@
 //! Hopefully this will be the default method of rendering text for
 //! ggez 0.5.0.
 
+
+/*
+Hokay, we want to rename queue() to add() for symmetry with SpriteBatch
+Similarly, draw_queued() should probably just become draw().
+
+Then we need a global TextBatch (I think?) that stores immediate drawing
+state, and some draw_text() functions that expose it.  Text basically stops
+being its own Drawable, unless we want to fill that role with TextFragment
+I suppose.  ...that might actually work perfectly.
+
+I think FOR NOW we really should just pull bitmap fonts out entirely
+and see how things look without them.  We REALLY SHOULD be able to add
+things to rusttype's cache or gfx_glyph to handle them easily, since it's
+doing the same damn thing.
+Can always re-implement our own using SpriteBatch, which might be simplest!
+*/
+
 use super::*;
 
 use gfx_glyph::{self, GlyphPositioner, Layout, SectionText, VariedSection};

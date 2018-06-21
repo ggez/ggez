@@ -1,5 +1,5 @@
 use std::cmp;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::io::Read;
 use std::path;
@@ -34,6 +34,39 @@ pub struct BitmapFont {
     /// Width in pixels of the space
     space_width: usize,
     letter_separation: usize,
+}
+
+/// A mapping from character to glyph location for bitmap fonts.
+/// All coordinates are stored in the span `[0-1]`.
+#[derive(Debug, Clone)]
+pub struct BitmapFontLayout {
+    /// The layout information for each character.
+    pub mapping: HashMap<char, Rect>,
+}
+
+impl BitmapFontLayout {
+    /// Creates a new `BitmapFontLayout` by assuming that
+    /// the characters form a uniform grid with the glyphs
+    /// given by the string going from left to right, top to bottom,
+    /// and the size of a grid cell is given by `rect` (in the span
+    /// `[0-1]`)
+    /// 
+    /// Because the grid cells are in `[0-1]` this doesn't need to know
+    /// how big the actual image is.
+    /// 
+    /// TODO: This coordinate system is inconsistent with SpriteBatch.  :-/
+    fn uniform(s: &str, rect: Rect) {
+        // TODO
+    }
+
+    /// Takes a something implementing `IntoIterator` and creates a
+    /// `BitmapFontLayout` with the items it yields.
+    /// 
+    /// TODO: Implement FromIterator?
+    fn from_specification<T>(iter: T)
+    where T: IntoIterator<Item=(char, Rect)> {
+        // TODO
+    }
 }
 
 impl BitmapFont {
