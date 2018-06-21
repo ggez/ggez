@@ -1,4 +1,4 @@
-//! This example demonstrates how to use `TextCached` to draw TrueType font texts efficiently.
+//! This example demonstrates how to use `TextBatch` to draw TrueType font texts efficiently.
 //! Powered by `gfx_glyph` crate.
 
 extern crate cgmath;
@@ -9,7 +9,8 @@ use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::filesystem;
-use ggez::graphics::{self, Align, Color, DrawParam, Font, FontId, Scale, TextCached, TextFragment};
+use ggez::graphics::{self, DrawParam, Color, Font, };
+use ggez::graphics::textbatch::{self, Align, FontId, Scale, TextBatch, TextFragment};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use std::collections::BTreeMap;
@@ -30,7 +31,7 @@ fn random_color() -> Color {
 struct App {
     // Doesn't have to be a `BTreeMap`; it's handy if you care about specific elements,
     // want to retrieve them by trivial handles, and have to preserve ordering.
-    texts: BTreeMap<&'static str, TextCached>,
+    texts: BTreeMap<&'static str, TextBatch>,
 }
 
 impl App {
@@ -40,15 +41,15 @@ impl App {
         // This is the simplest way to create a drawable text;
         // the color, font, and scale will be default: white, DejaVuSerif, 16px unform.
         // Note that you don't even have to load a font: DejaVuSerif is baked into `ggez` itself.
-        let text = TextCached::new("Hello, World!")?;
+        let text = TextBatch::new("Hello, World!");
         // Store the text in `App`s map, for drawing in main loop.
         texts.insert("0_hello", text);
 
-        // This is what actually happens in `TextCached::new()`: the `&str` gets
+        // This is what actually happens in `TextBatch::new()`: the `&str` gets
         // automatically converted into a `TextFragment`.
-        let mut text = TextCached::new(TextFragment {
+        let mut text = TextBatch::new(TextFragment {
             // `TextFragment` stores a string, and optional parameters which will override those
-            // of `TextCached` itself. This allows inlining differently formatted lines, words,
+            // of `TextBatch` itself. This allows inlining differently formatted lines, words,
             // or even individual letters, into the same block of text.
             text: "Small red fragment".to_string(),
             color: Some(Color::new(1.0, 0.0, 0.0, 1.0)),
@@ -58,11 +59,11 @@ impl App {
             scale: Some(Scale::uniform(10.0)),
             // This doesn't do anything at this point; can be used to omit fields in declarations.
             ..Default::default()
-        })?;
+        });
 
         // More fragments can be appended at any time.
         text.add_fragment(" default fragment, should be long enough to showcase everything")
-            // `add_fragment()` can be chained, along with most `TextCached` methods.
+            // `add_fragment()` can be chained, along with most `TextBatch` methods.
             .add_fragment(
                 TextFragment::new(" magenta fragment")
                     .set_color(Color::new(1.0, 0.0, 1.0, 1.0)))
@@ -70,7 +71,7 @@ impl App {
 
         // This loads a new TrueType font into the context and returns a
         // `Font::GlyphFont`, which can be used interchangeably with the
-        // `FontId` it contains throughout most of `TextCached` interface.
+        // `FontId` it contains throughout most of `TextBatch` interface.
         let fancy_font = Font::new_glyph_font(ctx, "/Tangerine_Regular.ttf")?;
 
         // `Font::GlyphFont` is really only a handle, and can be cloned around.
@@ -102,14 +103,14 @@ impl App {
         // These methods can be combined to easily create a variety of simple effects.
         let chroma_string = "Not quite a rainbow.";
         // `new_empty()` exists pretty much specifically for this usecase.
-        let mut chroma_text = TextCached::new_empty()?;
+        let mut chroma_text = TextBatch::new_empty();
         for ch in chroma_string.chars() {
             chroma_text.add_fragment(TextFragment::new(ch).set_color(random_color()));
         }
         texts.insert("2_rainbow", chroma_text);
 
         let wonky_string = "So, so wonky.";
-        let mut wonky_text = TextCached::new_empty()?;
+        let mut wonky_text = TextBatch::new_empty();
         for ch in wonky_string.chars() {
             wonky_text.add_fragment(
                 TextFragment::new(ch)
@@ -132,11 +133,11 @@ impl event::EventHandler for App {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
-        // `TextCached` can be used in "immediate mode", but it's slightly less efficient
+        // `TextBatch` can be used in "immediate mode", but it's slightly less efficient
         // in most cases, and horrifically less efficient in a few select ones
         // (using `.width()` or `.height()`, for example).
         let fps = timer::get_fps(ctx);
-        let fps_display = TextCached::new(format!("FPS: {}", fps))?;
+        let fps_display = TextBatch::new(format!("FPS: {}", fps));
         // When drawing through these calls, `DrawParam` will work as they are documented.
         graphics::draw(
             ctx,
@@ -153,9 +154,9 @@ impl event::EventHandler for App {
         }
         // When drawing via `draw_queued()`, `.offset` in `DrawParam` will be
         // in screen coordinates, and `.color` will be ignored.
-        TextCached::draw_queued(ctx, DrawParam::default())?;
+        TextBatch::draw_queued(ctx, DrawParam::default())?;
 
-        // Individual fragments within the `TextCached` can be replaced;
+        // Individual fragments within the `TextBatch` can be replaced;
         // this can be used for inlining animated sentences, words, etc.
         if let Some(text) = self.texts.get_mut("1_demo_text_3") {
             // `.fragments_mut()` returns a mutable slice of contained fragments.
@@ -165,7 +166,7 @@ impl event::EventHandler for App {
 
         // Another animation example. Note, this is very inefficient as-is.
         let wobble_string = "WOBBLE";
-        let mut wobble = TextCached::new_empty()?;
+        let mut wobble = TextBatch::new_empty();
         for ch in wobble_string.chars() {
             wobble.add_fragment(
                 TextFragment::new(ch).set_scale(Scale::uniform(10.0 + 6.0 * rand::random::<f32>())),
@@ -178,11 +179,11 @@ impl event::EventHandler for App {
             Point2::new(0.0, 0.0),
             Some(Color::new(0.0, 1.0, 1.0, 1.0)),
         );
-        TextCached::new(format!(
+        TextBatch::new(format!(
             "width: {}\nheight: {}",
             wobble_width, wobble_height
-        ))?.queue(ctx, Point2::new(0.0, 20.0), None);
-        TextCached::draw_queued(
+        )).queue(ctx, Point2::new(0.0, 20.0), None);
+        TextBatch::draw_queued(
             ctx,
             DrawParam::new()
                 .dest(Point2::new(500.0, 300.0))

@@ -1,12 +1,14 @@
 //! Basic hello world example.
 
 extern crate ggez;
+extern crate nalgebra;
 
 use ggez::conf;
 use ggez::event;
 use ggez::filesystem;
 use ggez::graphics;
 use ggez::{Context, GameResult};
+use nalgebra as na;
 use std::env;
 use std::path;
 
@@ -41,7 +43,7 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let dest_point = graphics::Point2::new(10.0, 10.0);
+        let dest_point = na::Point2::new(10.0, 10.0);
 
         if self.draw_with_canvas {
             println!("Drawing with canvas");
@@ -50,40 +52,34 @@ impl event::EventHandler for MainState {
             graphics::set_canvas(ctx, Some(&self.canvas));
             graphics::clear(ctx, graphics::Color::from((255, 255, 255, 128)));
 
-            graphics::draw_ex(
+            graphics::draw(
                 ctx,
                 &self.text,
-                graphics::DrawParam {
-                    dest: dest_point,
-                    color: graphics::Color::from((0, 0, 0, 255)),
-                    ..Default::default()
-                },
+                graphics::DrawParam::new()
+                    .dest(dest_point)
+                    .color((0, 0, 0, 255))
             )?;
             graphics::set_canvas(ctx, None);
 
-            // graphics::draw(ctx, &self.canvas, graphics::Point2::new(0.0, 0.0), 0.0)?;
+            // graphics::draw(ctx, &self.canvas, na::Point2::new(0.0, 0.0), 0.0)?;
 
-            graphics::draw_ex(
+            graphics::draw(
                 ctx,
                 &self.canvas,
-                graphics::DrawParam {
-                    color: graphics::Color::from((255, 255, 255, 128)),
-                    ..Default::default()
-                },
+                graphics::DrawParam::new()
+                    .color((255, 255, 255, 128))
             )?;
         } else {
             println!("Drawing without canvas");
             graphics::set_canvas(ctx, None);
             graphics::clear(ctx, [0.25, 0.0, 0.0, 1.0].into());
 
-            graphics::draw_ex(
+            graphics::draw(
                 ctx,
                 &self.text,
-                graphics::DrawParam {
-                    dest: dest_point,
-                    color: graphics::Color::from((192, 128, 64, 255)),
-                    ..Default::default()
-                },
+                graphics::DrawParam::new()
+                    .dest(dest_point)
+                    .color((192, 128, 64, 255))
             )?;
         }
 

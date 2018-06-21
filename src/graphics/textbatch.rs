@@ -126,7 +126,7 @@ impl Default for CachedMetrics {
 /// Drawable text.
 /// Can be either monolithic, or consist of differently-formatted fragments.
 #[derive(Debug)]
-pub struct TextCached {
+pub struct TextBatch {
     fragments: Vec<TextFragment>,
     // TODO: make it do something, maybe.
     blend_mode: Option<BlendMode>,
@@ -138,9 +138,10 @@ pub struct TextCached {
 }
 
 // This has to be explicit. Derived `Clone` clones the `Arc`, so clones end up sharing the metrics.
-impl Clone for TextCached {
+impl Clone for TextBatch {
     fn clone(&self) -> Self {
-        TextCached {
+        TextBatch
+     {
             fragments: self.fragments.clone(),
             blend_mode: self.blend_mode.clone(),
             bounds: self.bounds.clone(),
@@ -152,9 +153,10 @@ impl Clone for TextCached {
     }
 }
 
-impl Default for TextCached {
+impl Default for TextBatch {
     fn default() -> Self {
-        TextCached {
+        TextBatch
+     {
             fragments: Vec::new(),
             blend_mode: None,
             bounds: Point2::new(f32::INFINITY, f32::INFINITY),
@@ -166,24 +168,33 @@ impl Default for TextCached {
     }
 }
 
-impl TextCached {
-    /// Creates a `TextCached` from a `TextFragment`.
-    pub fn new<F>(fragment: F) -> GameResult<TextCached>
+impl TextBatch {
+    /// Creates a `TextBatch
+    ///` from a `TextFragment`.
+    pub fn new<F>(fragment: F) -> TextBatch
+
     where
         F: Into<TextFragment>,
     {
-        let mut text = TextCached::new_empty()?;
+        let mut text = TextBatch
+    ::new_empty();
         text.add_fragment(fragment);
-        Ok(text)
+        text
     }
 
-    /// Creates an empty `TextCached`.
-    pub fn new_empty() -> GameResult<TextCached> {
-        Ok(TextCached::default())
+    /// Creates an empty `TextBatch
+    ///`.
+    /// 
+    /// TODO: Same as Default?
+    pub fn new_empty() -> TextBatch
+ {
+        TextBatch
+    ::default()
     }
 
     /// Appends a `TextFragment`.
-    pub fn add_fragment<F>(&mut self, fragment: F) -> &mut TextCached
+    pub fn add_fragment<F>(&mut self, fragment: F) -> &mut TextBatch
+
     where
         F: Into<TextFragment>,
     {
@@ -204,7 +215,8 @@ impl TextCached {
 
     /// Specifies rectangular dimensions to try and fit contents inside of,
     /// by wrapping, and alignment within the bounds.
-    pub fn set_bounds<P>(&mut self, bounds: P, alignment: Align) -> &mut TextCached
+    pub fn set_bounds<P>(&mut self, bounds: P, alignment: Align) -> &mut TextBatch
+
     where
         P: Into<mint::Point2<f32>>,
     {
@@ -220,7 +232,8 @@ impl TextCached {
     }
 
     /// Specifies text's font and font scale; used for fragments that don't have their own.
-    pub fn set_font<FI>(&mut self, font_id: FI, font_scale: Scale) -> &mut TextCached
+    pub fn set_font<FI>(&mut self, font_id: FI, font_scale: Scale) -> &mut TextBatch
+
     where
         FI: Into<FontId>,
     {
@@ -230,7 +243,8 @@ impl TextCached {
         self
     }
 
-    /// Converts `TextCached` to a type `gfx_glyph` can understand and queue.
+    /// Converts `TextBatch
+    ///` to a type `gfx_glyph` can understand and queue.
     fn generate_varied_section<'a>(
         &'a self,
         relative_dest: Point2,
@@ -295,6 +309,7 @@ impl TextCached {
         }
         warn!("Cached metrics RwLock has been poisoned.");
         self.cached_metrics = Arc::new(RwLock::new(CachedMetrics::default()));
+        
     }
 
     /// Returns the string that the text represents.
@@ -345,6 +360,9 @@ impl TextCached {
         (width, height)
     }
 
+    // TODO: Do we want a dimensions() function as well that returns
+    // both width and height?
+
     /// Returns the width of formatted and wrapped text, in screen coordinates.
     pub fn width(&self, context: &Context) -> u32 {
         if let Ok(metrics) = self.cached_metrics.read() {
@@ -365,9 +383,11 @@ impl TextCached {
         self.calculate_dimensions(context).1
     }
 
-    /// Queues the `TextCached` to be drawn by `draw_queued()`.
+    /// Queues the `TextBatch
+    ///` to be drawn by `draw_queued()`.
     /// `relative_dest` is relative to the `DrawParam::dest` passed to `draw_queued()`.
-    /// Note, any `TextCached` drawn via `graphics::draw()` will also draw the queue.
+    /// Note, any `TextBatch
+    ///` drawn via `graphics::draw()` will also draw the queue.
     pub fn queue<P>(&self, context: &mut Context, relative_dest: P, color: Option<Color>)
     where
         P: Into<mint::Point2<f32>>,
@@ -391,7 +411,8 @@ impl TextCached {
         }
     }
 
-    /// Draws all of `queue()`d `TextCached`.
+    /// Draws all of `queue()`d `TextBatch
+    ///`.
     /// `DrawParam` apply to everything in the queue; offset is in screen coordinates;
     /// color is ignored - specify it when `queue()`ing instead.
     pub fn draw_queued<D>(context: &mut Context, param: D) -> GameResult
@@ -473,7 +494,7 @@ impl TextCached {
     }
 }
 
-impl Drawable for TextCached {
+impl Drawable for TextBatch {
     fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
         // TODO: Fix for PrimitiveDrawParam
@@ -483,7 +504,8 @@ impl Drawable for TextCached {
         // );
         // let param = param.offset(offset);
         self.queue(ctx, Point2::new(0.0, 0.0), Some(param.color));
-        TextCached::draw_queued(ctx, param)
+        TextBatch
+    ::draw_queued(ctx, param)
     }
 
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {

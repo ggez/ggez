@@ -32,12 +32,12 @@ mod image;
 mod mesh;
 mod shader;
 mod text;
-mod text_cached;
 mod types;
 use mint;
 use nalgebra as na;
 
 pub mod spritebatch;
+pub mod textbatch;
 
 pub use self::canvas::*;
 pub(crate) use self::context::*;
@@ -46,7 +46,6 @@ pub use self::image::*;
 pub use self::mesh::*;
 pub use self::shader::*;
 pub use self::text::*;
-pub use self::text_cached::*;
 pub use self::types::*;
 
 /// A marker trait saying that something is a label for a particular backend,
