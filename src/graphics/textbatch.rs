@@ -522,26 +522,37 @@ impl TextBatch {
             * m_aspect_inv * m_offset_inv;
         */
 
-        let projection = context.gfx_context.projection;
-        let modelview = context.gfx_context.get_transform();
-        let mvp = projection * modelview;
-        let m_translate1 = Mat4::new_translation(&Vec3::new(
-            2.0 / screen_w,
-            -2.0 / screen_h,
-            0.0,
-        ));
-        let m_translate2 = Mat4::new_nonuniform_scaling(&Vec3::new(
-            2.0 / screen_w,
-            -2.0 / screen_h,
-            0.0,
-        ));
-        let mut final_matrix = param.matrix;
+
+
         // This is what REALLY needs to happen,
         // how the heck do I make it happen nicely?
-        final_matrix[12] *= 2.0 / screen_w;
-        final_matrix[13] *= -2.0 / screen_h;
-        println!("Param: {:#?}", param.matrix);
-        println!("Final: {:#?}", final_matrix);
+        // final_matrix[12] *= 2.0 / screen_w;
+        // final_matrix[13] *= -2.0 / screen_h;
+        //
+        // Like this, which is arguably not an improvement:
+        let m_translate = Mat4::new_translation(&Vec3::new(
+            2.0 / screen_w,
+            -2.0 / screen_h,
+            0.0,
+        ));
+
+        let m_scale_inv = Mat4::new_nonuniform_scaling(&Vec3::new(
+            1.0 / (2.0 / screen_w),
+            -1.0 / (2.0 / screen_h),
+            0.0
+        ));
+
+        let m_scale = Mat4::new_nonuniform_scaling(&Vec3::new(
+            (2.0 / screen_w),
+            -(2.0 / screen_h),
+            0.0
+        ));
+        let mut final_matrix = m_scale * param.matrix * m_translate * m_scale_inv;
+        // If we do everything in terms of nalgebra isometry types then it might
+        // not be too difficult or inefficient
+        // but for now, ugh.
+
+        // println!("Final: {:#?}", final_matrix);
 
         // TODO: Does this not handle color?
 
