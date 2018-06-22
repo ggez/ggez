@@ -8,7 +8,7 @@ pub use winit::{CursorState, MouseCursor};
 
 /// Stores state information for the mouse,
 /// what little of it there is.
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct MouseContext {
     last_position: Point2,
     last_delta: Point2,

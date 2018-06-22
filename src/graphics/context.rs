@@ -53,7 +53,7 @@ where
 
     default_shader: ShaderId,
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
-    pub(crate) shaders: Vec<Box<ShaderHandle<B>>>,
+    pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
     pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
 

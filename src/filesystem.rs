@@ -57,7 +57,7 @@ pub struct Filesystem {
 /// or whatever.
 pub enum File {
     /// A wrapper for a VFile trait object.
-    VfsFile(Box<vfs::VFile>),
+    VfsFile(Box<dyn vfs::VFile>),
 }
 
 impl fmt::Debug for File {
@@ -256,7 +256,7 @@ impl Filesystem {
     pub(crate) fn read_dir<P: AsRef<path::Path>>(
         &mut self,
         path: P,
-    ) -> GameResult<Box<Iterator<Item = path::PathBuf>>> {
+    ) -> GameResult<Box<dyn Iterator<Item = path::PathBuf>>> {
         let itr = self.vfs.read_dir(path.as_ref())?.map(|fname| {
             fname.expect("Could not read file in read_dir()?  Should never happen, I hope!")
         });
@@ -420,7 +420,7 @@ pub fn get_resources_dir(ctx: &Context) -> &path::Path {
 pub fn read_dir<P: AsRef<path::Path>>(
     ctx: &mut Context,
     path: P,
-) -> GameResult<Box<Iterator<Item = path::PathBuf>>> {
+) -> GameResult<Box<dyn Iterator<Item = path::PathBuf>>> {
     ctx.filesystem.read_dir(path)
 }
 

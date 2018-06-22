@@ -95,6 +95,8 @@
 
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
+#![warn(bare_trait_objects)]
+#![warn(missing_copy_implementations)]
 
 // TODO: Enable this.
 // #![deny(unused_results)]

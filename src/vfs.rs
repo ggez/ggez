@@ -98,20 +98,20 @@ impl OpenOptions {
 
 pub trait VFS: Debug {
     /// Open the file at this path with the given options
-    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>>;
+    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<dyn VFile>>;
     /// Open the file at this path for reading
-    fn open(&self, path: &Path) -> GameResult<Box<VFile>> {
+    fn open(&self, path: &Path) -> GameResult<Box<dyn VFile>> {
         self.open_options(path, OpenOptions::new().read(true))
     }
     /// Open the file at this path for writing, truncating it if it exists already
-    fn create(&self, path: &Path) -> GameResult<Box<VFile>> {
+    fn create(&self, path: &Path) -> GameResult<Box<dyn VFile>> {
         self.open_options(
             path,
             OpenOptions::new().write(true).create(true).truncate(true),
         )
     }
     /// Open the file at this path for appending, creating it if necessary
-    fn append(&self, path: &Path) -> GameResult<Box<VFile>> {
+    fn append(&self, path: &Path) -> GameResult<Box<dyn VFile>> {
         self.open_options(
             path,
             OpenOptions::new().write(true).create(true).append(true),
@@ -130,10 +130,10 @@ pub trait VFS: Debug {
     fn exists(&self, path: &Path) -> bool;
 
     /// Get the file's metadata
-    fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>>;
+    fn metadata(&self, path: &Path) -> GameResult<Box<dyn VMetadata>>;
 
     /// Retrieve all file and directory entries in the given directory.
-    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>>;
+    fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>>;
 
     /// Retrieve the actual location of the VFS root, if available.
     fn to_path_buf(&self) -> Option<PathBuf>;
@@ -263,7 +263,7 @@ impl Debug for PhysicalFS {
 
 impl VFS for PhysicalFS {
     /// Open the file at this path with the given options
-    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
+    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<dyn VFile>> {
         if self.readonly
             && (open_options.write || open_options.create || open_options.append
                 || open_options.truncate)
@@ -279,7 +279,7 @@ impl VFS for PhysicalFS {
         open_options
             .to_fs_openoptions()
             .open(p)
-            .map(|x| Box::new(x) as Box<VFile>)
+            .map(|x| Box::new(x) as Box<dyn VFile>)
             .map_err(GameError::from)
     }
 
@@ -346,16 +346,16 @@ impl VFS for PhysicalFS {
     }
 
     /// Get the file's metadata
-    fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
+    fn metadata(&self, path: &Path) -> GameResult<Box<dyn VMetadata>> {
         self.create_root()?;
         let p = self.get_absolute(path)?;
         p.metadata()
-            .map(|m| Box::new(PhysicalMetadata(m)) as Box<VMetadata>)
+            .map(|m| Box::new(PhysicalMetadata(m)) as Box<dyn VMetadata>)
             .map_err(GameError::from)
     }
 
     /// Retrieve the path entries in this path
-    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
+    fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
         self.create_root()?;
         let p = self.get_absolute(path)?;
         // This is inconvenient because path() returns the full absolute
@@ -390,7 +390,7 @@ impl VFS for PhysicalFS {
 /// A structure that joins several VFS's together in order.
 #[derive(Debug)]
 pub struct OverlayFS {
-    roots: VecDeque<Box<VFS>>,
+    roots: VecDeque<Box<dyn VFS>>,
 }
 
 impl OverlayFS {
@@ -404,23 +404,23 @@ impl OverlayFS {
     /// Currently unused, I suppose, but good to
     /// have at least for tests.
     #[allow(dead_code)]
-    pub fn push_front(&mut self, fs: Box<VFS>) {
+    pub fn push_front(&mut self, fs: Box<dyn VFS>) {
         self.roots.push_front(fs);
     }
 
     /// Adds a new VFS to the end of the list.
-    pub fn push_back(&mut self, fs: Box<VFS>) {
+    pub fn push_back(&mut self, fs: Box<dyn VFS>) {
         self.roots.push_back(fs);
     }
 
-    pub fn roots(&self) -> &VecDeque<Box<VFS>> {
+    pub fn roots(&self) -> &VecDeque<Box<dyn VFS>> {
         &self.roots
     }
 }
 
 impl VFS for OverlayFS {
     /// Open the file at this path with the given options
-    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
+    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<dyn VFile>> {
         let mut tried: Vec<(PathBuf, GameError)> = vec![];
 
         for vfs in &self.roots {
@@ -493,7 +493,7 @@ impl VFS for OverlayFS {
     }
 
     /// Get the file's metadata
-    fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
+    fn metadata(&self, path: &Path) -> GameResult<Box<dyn VMetadata>> {
         for vfs in &self.roots {
             match vfs.metadata(path) {
                 Err(_) => (),
@@ -507,7 +507,7 @@ impl VFS for OverlayFS {
     }
 
     /// Retrieve the path entries in this path
-    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
+    fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
         // This is tricky 'cause we have to actually merge iterators together...
         // Doing it the simple and stupid way works though.
         let mut v = Vec::new();
@@ -661,7 +661,7 @@ impl VMetadata for ZipMetadata {
 }
 
 impl VFS for ZipFS {
-    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<VFile>> {
+    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<dyn VFile>> {
         // Zip is readonly
         let path = convenient_path_to_str(path)?;
         if open_options.write || open_options.create || open_options.append || open_options.truncate
@@ -677,7 +677,7 @@ impl VFS for ZipFS {
             .expect("Couldn't borrow ZipArchive in ZipFS::open_options(); should never happen! Report a bug at https://github.com/ggez/ggez/");
         let mut f = stupid_archive_borrow.by_name(path)?;
         let zipfile = ZipFileWrapper::new(&mut f)?;
-        Ok(Box::new(zipfile) as Box<VFile>)
+        Ok(Box::new(zipfile) as Box<dyn VFile>)
     }
 
     fn mkdir(&self, path: &Path) -> GameResult {
@@ -715,7 +715,7 @@ impl VFS for ZipFS {
         }
     }
 
-    fn metadata(&self, path: &Path) -> GameResult<Box<VMetadata>> {
+    fn metadata(&self, path: &Path) -> GameResult<Box<dyn VMetadata>> {
         let path = convenient_path_to_str(path)?;
         let mut stupid_archive_borrow = self.archive
             .try_borrow_mut()
@@ -725,13 +725,13 @@ impl VFS for ZipFS {
                 "Metadata not found in zip file for {}",
                 path
             ))),
-            Some(md) => Ok(Box::new(md) as Box<VMetadata>),
+            Some(md) => Ok(Box::new(md) as Box<dyn VMetadata>),
         }
     }
 
     /// Zip files don't have real directories, so we (incorrectly) hack it by
     /// just looking for a path prefix for now.
-    fn read_dir(&self, path: &Path) -> GameResult<Box<Iterator<Item = GameResult<PathBuf>>>> {
+    fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
         let path = convenient_path_to_str(path)?;
         let itr = self.index
             .iter()

@@ -85,7 +85,7 @@ impl Error for GameError {
         }
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         match *self {
             GameError::WindowError(ref e) => Some(e),
             GameError::IOError(ref e) => Some(e),
