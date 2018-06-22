@@ -25,7 +25,7 @@ where
     C: gfx::format::Formatted,
 {
     shader_globals: Globals,
-    projection: Matrix4,
+    pub(crate) projection: Matrix4,
     pub(crate) modelview_stack: Vec<Matrix4>,
     pub(crate) white_image: Image,
     pub(crate) screen_rect: Rect,
@@ -56,6 +56,7 @@ where
     pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
     pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
+    pub(crate) default_text_batch: textbatch::TextBatch,
 
     // TODO: this is temporary: see winit #555.
     available_monitors: Vec<glutin::MonitorId>,
@@ -195,6 +196,7 @@ impl GraphicsContext {
 
         let glyph_brush = GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec())
             .build(factory.clone());
+        let default_text_batch = textbatch::TextBatch::default();
 
         let rect_inst_props = factory.create_buffer(
             1,
@@ -273,6 +275,7 @@ impl GraphicsContext {
             shaders: vec![draw],
 
             glyph_brush,
+            default_text_batch,
 
             available_monitors,
         };

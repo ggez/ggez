@@ -114,6 +114,44 @@ impl From<String> for TextFragment {
     }
 }
 
+// TODO:
+// https://doc.rust-lang.org/std/borrow/trait.ToOwned.html#tymethod.to_owned
+impl<'a, T> From<&'a T> for TextFragment where T: Into<TextFragment> + Clone {
+    fn from(text: &'a T) -> TextFragment {
+        text.clone().into()
+    }
+}
+
+impl Drawable for TextFragment {
+    fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
+        // TODO: This is nasty; we pull the translation out of the PrimitiveDrawParam's
+        // matrix directly.
+        // Translation vector =
+        // [1 0 tx]
+        // [0 1 ty]
+        // [0 0 0 ]
+        //
+        // ...wait, is that just done by draw_queued()?  Looks like it.
+        // let tx = param.matrix[2, 0];
+        // let ty = param.matrix[2, 1];
+        // let offset = Point2::new(tx, ty);
+        let origin: Point2 = na::origin();
+        let b = &mut TextBatch::new(self);
+        b.queue(ctx, origin, Some(param.color));
+        TextBatch::draw_queued(ctx, param)
+    }
+
+    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
+        // TODO
+        unimplemented!()
+    }
+    fn get_blend_mode(&self) -> Option<BlendMode> {
+        // TODO
+        unimplemented!()
+    }
+
+}
+
 impl Into<FontId> for Font {
     fn into(self) -> FontId {
         if let Font::GlyphFont(font_id) = self {
@@ -191,11 +229,11 @@ impl TextBatch {
     pub fn new<F>(fragment: F) -> TextBatch
 
     where
-        F: Into<TextFragment>,
+        F: Into<TextFragment> + Clone,
     {
         let mut text = TextBatch
     ::new_empty();
-        text.add_fragment(fragment);
+        text.add_fragment(&fragment);
         text
     }
 
@@ -210,10 +248,10 @@ impl TextBatch {
     }
 
     /// Appends a `TextFragment`.
-    pub fn add_fragment<F>(&mut self, fragment: F) -> &mut TextBatch
+    pub fn add_fragment<F>(&mut self, fragment: &F) -> &mut TextBatch
 
     where
-        F: Into<TextFragment>,
+        F: Into<TextFragment> + Clone,
     {
         self.fragments.push(fragment.into());
         self.invalidate_cached_metrics();
@@ -437,14 +475,14 @@ impl TextBatch {
         D: Into<PrimitiveDrawParam>,
     {
         let param: PrimitiveDrawParam = param.into();
-        // TODO: Fix allllll this crap...
-        /*
         type Mat4 = na::Matrix4<f32>;
         type Vec3 = na::Vector3<f32>;
-
-        // TODO: fix non-pixel screen coordinates.
         let screen_rect = get_screen_coordinates(context);
         let (screen_w, screen_h) = (screen_rect.w, screen_rect.h);
+        // TODO: Fix allllll this crap...
+        /*
+
+        // TODO: fix non-pixel screen coordinates.
         let (offset_x, offset_y) = (
             -1.0 + 2.0 * param.offset.x / screen_w,
             1.0 - 2.0 * param.offset.y / screen_h,
@@ -484,6 +522,29 @@ impl TextBatch {
             * m_aspect_inv * m_offset_inv;
         */
 
+        let projection = context.gfx_context.projection;
+        let modelview = context.gfx_context.get_transform();
+        let mvp = projection * modelview;
+        let m_translate1 = Mat4::new_translation(&Vec3::new(
+            2.0 / screen_w,
+            -2.0 / screen_h,
+            0.0,
+        ));
+        let m_translate2 = Mat4::new_nonuniform_scaling(&Vec3::new(
+            2.0 / screen_w,
+            -2.0 / screen_h,
+            0.0,
+        ));
+        let mut final_matrix = param.matrix;
+        // This is what REALLY needs to happen,
+        // how the heck do I make it happen nicely?
+        final_matrix[12] *= 2.0 / screen_w;
+        final_matrix[13] *= -2.0 / screen_h;
+        println!("Param: {:#?}", param.matrix);
+        println!("Final: {:#?}", final_matrix);
+
+        // TODO: Does this not handle color?
+
         let (encoder, render_tgt, depth_view) = (
             &mut context.gfx_context.encoder,
             &context.gfx_context.screen_render_target,
@@ -502,7 +563,7 @@ impl TextBatch {
             gfx::format::DepthStencil,
         > = gfx::memory::Typed::new(depth_view.clone());
         context.gfx_context.glyph_brush.draw_queued_with_transform(
-            param.matrix.into(),
+            final_matrix.into(),
             encoder,
             &typed_render_target,
             &typed_depth_target,

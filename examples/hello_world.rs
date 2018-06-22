@@ -6,14 +6,14 @@ extern crate ggez;
 use ggez::conf;
 use ggez::event;
 use ggez::filesystem;
-use ggez::graphics;
+use ggez::graphics::{self, textbatch};
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
 // First we make a structure to contain the game's state
 struct MainState {
-    text: graphics::Text,
+    // text: graphics::Text,
     frames: usize,
 }
 
@@ -21,10 +21,10 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         // The ttf file will be in your resources directory. Later, we
         // will mount that directory so we can omit it in the path here.
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
-        let text = graphics::Text::new(ctx, "Hello world!", &font)?;
+        // let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
+        // let text = graphics::Text::new(ctx, "Hello world!", &font)?;
 
-        let s = MainState { text, frames: 0 };
+        let s = MainState { frames: 0 };
         Ok(s)
     }
 }
@@ -43,8 +43,11 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         // Drawables are drawn from their top-left corner.
-        let dest_point = cgmath::Point2::new(10.0, 10.0);
-        graphics::draw(ctx, &self.text, (dest_point,))?;
+        let offset = self.frames as f32 / 10.0;
+        let dest_point = cgmath::Point2::new(offset, offset);
+        // let dest_point = cgmath::Point2::new(0.5, -0.5);
+        let text = textbatch::TextFragment::new("Hello world!");
+        graphics::draw(ctx, &text, (dest_point,))?;
         graphics::present(ctx)?;
 
         self.frames += 1;

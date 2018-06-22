@@ -300,6 +300,8 @@ impl fmt::Debug for Image {
 impl Drawable for Image {
     fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
         self.debug_id.assert(ctx);
+
+        println!("Matrix: {:#?}", param.matrix);
         let gfx = &mut ctx.gfx_context;
         let src_width = param.src.w;
         let src_height = param.src.h;
@@ -330,15 +332,18 @@ impl Drawable for Image {
         } else {
             None
         };
+
         gfx.draw(None)?;
         if let Some(mode) = previous_mode {
             gfx.set_blend_mode(mode)?;
         }
         Ok(())
     }
+
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
         self.blend_mode = mode;
     }
+
     fn get_blend_mode(&self) -> Option<BlendMode> {
         self.blend_mode
     }
