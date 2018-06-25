@@ -79,9 +79,9 @@ impl Context {
         let gamepad_context = gamepad::GamepadContext::new()?;
 
         // TODO: Clean up the bytes here a bit.
-        let font_id = graphics_context.glyph_brush.add_font_bytes(
-            graphics::Font::default_font_bytes()
-        );
+        let font_id = graphics_context
+            .glyph_brush
+            .add_font_bytes(graphics::Font::default_font_bytes());
         let default_font = graphics::Font::GlyphFont(font_id);
 
         let ctx = Context {
@@ -98,8 +98,6 @@ impl Context {
             default_font: default_font,
             debug_id,
         };
-
-        
 
         Ok((ctx, events_loop))
     }

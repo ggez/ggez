@@ -9,11 +9,11 @@ use ggez::conf;
 use ggez::event;
 use ggez::filesystem;
 use ggez::graphics;
+use ggez::nalgebra::{Point2, Vector2};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
-use ggez::nalgebra::{Point2, Vector2};
 
 struct MainState {
     spritebatch: graphics::spritebatch::SpriteBatch,

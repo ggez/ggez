@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use gfx::Factory;
 use gfx::traits::FactoryExt;
+use gfx::Factory;
 use gfx_device_gl;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
 use gfx_window_glutin;
@@ -355,7 +355,10 @@ impl GraphicsContext {
 
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
     /// sends it to the graphics card at the front of the instance buffer.
-    pub(crate) fn update_instance_properties(&mut self, draw_params: PrimitiveDrawParam) -> GameResult {
+    pub(crate) fn update_instance_properties(
+        &mut self,
+        draw_params: PrimitiveDrawParam,
+    ) -> GameResult {
         // This clone is cheap since draw_params is Copy
         // TODO: Clean up
         let mut new_draw_params = draw_params;

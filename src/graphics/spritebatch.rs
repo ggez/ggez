@@ -9,13 +9,13 @@
 
 use super::shader::BlendMode;
 use super::types::FilterMode;
-use GameResult;
 use context::Context;
 use error;
 use gfx;
 use gfx::Factory;
 use graphics;
 use graphics::{BackendSpec, GlBackendSpec};
+use GameResult;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
 ///
@@ -52,7 +52,7 @@ impl SpriteBatch {
     /// Adds a new sprite to the sprite batch.
     ///
     /// Returns a handle with which type to modify the sprite using `set()`
-    /// 
+    ///
     /// TODO: Into<DrawParam> and such
     pub fn add(&mut self, param: graphics::DrawParam) -> SpriteIdx {
         self.sprites.push(param);

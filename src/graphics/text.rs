@@ -83,8 +83,7 @@ impl Font {
     }
 
     /// Loads a new TrueType font from given bytes and into `GraphicsContext::glyph_brush`.
-    pub fn new_glyph_font_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self>
-    {
+    pub fn new_glyph_font_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
         // TODO: Take a Cow here to avoid this clone where unnecessary?
         let v = bytes.to_vec();
         let font_id = context.gfx_context.glyph_brush.add_font_bytes(v);
@@ -116,7 +115,7 @@ impl Font {
     /// Note it does create a new `Font` object with every call;
     /// although the actual data should be shared.
     pub fn default_font(context: &Context) -> Self {
-        // BUGGO: fix DPI.  
+        // BUGGO: fix DPI.
         context.default_font.clone()
     }
 
@@ -300,7 +299,7 @@ impl fmt::Debug for Text {
 #[cfg(test)]
 mod tests {
     use super::*;
-/*
+    /*
     #[test]
     fn test_metrics() {
         let f = Font::default_font().expect("Could not get default font");

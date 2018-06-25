@@ -1,18 +1,18 @@
 //! A collection of semi-random shape and image drawing examples.
 
-extern crate ggez;
 extern crate cgmath;
+extern crate ggez;
 
 use ggez::conf;
 use ggez::event;
 use ggez::filesystem;
 use ggez::graphics;
 use ggez::graphics::{DrawMode, DrawParam};
+use ggez::nalgebra::Point2;
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
-use ggez::nalgebra::Point2;
 
 struct MainState {
     image1: graphics::Image,
@@ -74,6 +74,7 @@ impl event::EventHandler for MainState {
         // let src = graphics::Rect::one();
         let dst = cgmath::Point2::new(20.0, 20.0);
         graphics::draw(ctx, &self.image1, (dst,))?;
+        /*
         let dst = cgmath::Point2::new(200.0, 100.0);
         let dst2 = cgmath::Point2::new(400.0, 400.0);
         let scale = cgmath::Vector2::new(10.0, 10.0);
@@ -119,6 +120,7 @@ impl event::EventHandler for MainState {
             &mesh,
             DrawParam::new().color((0, 0, 255)),
         )?;
+        */
 
         graphics::present(ctx)?;
         Ok(())

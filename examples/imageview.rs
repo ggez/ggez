@@ -1,6 +1,6 @@
+extern crate cgmath;
 extern crate ggez;
 extern crate rand;
-extern crate cgmath;
 
 use ggez::audio;
 use ggez::conf;
@@ -105,7 +105,7 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         let color = Color::from((c, c, c, 255));
-        let dest_point = cgmath::Point2::new(0.0, 0.0,);
+        let dest_point = cgmath::Point2::new(0.0, 0.0);
         graphics::draw(ctx, &self.image, (dest_point, 0.0, color))?;
         graphics::draw(ctx, &self.text, (dest_point, 0.0, color))?;
         let dest_point = cgmath::Point2::new(100.0, 50.0);
@@ -118,7 +118,11 @@ impl event::EventHandler for MainState {
             graphics::DrawMode::Fill,
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
         )?;
-        graphics::draw(ctx, &self.pixel_sized_text, (dest_point2, 0.0, graphics::WHITE))?;
+        graphics::draw(
+            ctx,
+            &self.pixel_sized_text,
+            (dest_point2, 0.0, graphics::WHITE),
+        )?;
 
         self.draw_crazy_lines(ctx)?;
         graphics::present(ctx)?;

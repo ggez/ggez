@@ -5,7 +5,6 @@
 //! Hopefully this will be the default method of rendering text for
 //! ggez 0.5.0.
 
-
 /*
 Hokay, we want to rename queue() to add() for symmetry with SpriteBatch
 Similarly, draw_queued() should probably just become draw().
@@ -116,7 +115,10 @@ impl From<String> for TextFragment {
 
 // TODO:
 // https://doc.rust-lang.org/std/borrow/trait.ToOwned.html#tymethod.to_owned
-impl<'a, T> From<&'a T> for TextFragment where T: Into<TextFragment> + Clone {
+impl<'a, T> From<&'a T> for TextFragment
+where
+    T: Into<TextFragment> + Clone,
+{
     fn from(text: &'a T) -> TextFragment {
         text.clone().into()
     }
@@ -149,7 +151,6 @@ impl Drawable for TextFragment {
         // TODO
         unimplemented!()
     }
-
 }
 
 impl Into<FontId> for Font {
@@ -193,8 +194,7 @@ pub struct TextBatch {
 // This has to be explicit. Derived `Clone` clones the `Arc`, so clones end up sharing the metrics.
 impl Clone for TextBatch {
     fn clone(&self) -> Self {
-        TextBatch
-     {
+        TextBatch {
             fragments: self.fragments.clone(),
             blend_mode: self.blend_mode.clone(),
             bounds: self.bounds.clone(),
@@ -208,8 +208,7 @@ impl Clone for TextBatch {
 
 impl Default for TextBatch {
     fn default() -> Self {
-        TextBatch
-     {
+        TextBatch {
             fragments: Vec::new(),
             blend_mode: None,
             bounds: Point2::new(f32::INFINITY, f32::INFINITY),
@@ -225,29 +224,24 @@ impl TextBatch {
     /// Creates a `TextBatch
     ///` from a `TextFragment`.
     pub fn new<F>(fragment: F) -> TextBatch
-
     where
         F: Into<TextFragment> + Clone,
     {
-        let mut text = TextBatch
-    ::new_empty();
+        let mut text = TextBatch::new_empty();
         text.add_fragment(&fragment);
         text
     }
 
     /// Creates an empty `TextBatch
     ///`.
-    /// 
+    ///
     /// TODO: Same as Default?
-    pub fn new_empty() -> TextBatch
- {
-        TextBatch
-    ::default()
+    pub fn new_empty() -> TextBatch {
+        TextBatch::default()
     }
 
     /// Appends a `TextFragment`.
     pub fn add_fragment<F>(&mut self, fragment: &F) -> &mut TextBatch
-
     where
         F: Into<TextFragment> + Clone,
     {
@@ -269,7 +263,6 @@ impl TextBatch {
     /// Specifies rectangular dimensions to try and fit contents inside of,
     /// by wrapping, and alignment within the bounds.
     pub fn set_bounds<P>(&mut self, bounds: P, alignment: Align) -> &mut TextBatch
-
     where
         P: Into<mint::Point2<f32>>,
     {
@@ -286,7 +279,6 @@ impl TextBatch {
 
     /// Specifies text's font and font scale; used for fragments that don't have their own.
     pub fn set_font<FI>(&mut self, font_id: FI, font_scale: Scale) -> &mut TextBatch
-
     where
         FI: Into<FontId>,
     {
@@ -362,7 +354,6 @@ impl TextBatch {
         }
         warn!("Cached metrics RwLock has been poisoned.");
         self.cached_metrics = Arc::new(RwLock::new(CachedMetrics::default()));
-        
     }
 
     /// Returns the string that the text represents.
@@ -520,31 +511,22 @@ impl TextBatch {
             * m_aspect_inv * m_offset_inv;
         */
 
-
-
         // This is what REALLY needs to happen,
         // how the heck do I make it happen nicely?
         // final_matrix[12] *= 2.0 / screen_w;
         // final_matrix[13] *= -2.0 / screen_h;
         //
         // Like this, which is arguably not an improvement:
-        let m_translate = Mat4::new_translation(&Vec3::new(
-            2.0 / screen_w,
-            -2.0 / screen_h,
-            0.0,
-        ));
+        let m_translate = Mat4::new_translation(&Vec3::new(2.0 / screen_w, -2.0 / screen_h, 0.0));
 
         let m_scale_inv = Mat4::new_nonuniform_scaling(&Vec3::new(
             1.0 / (2.0 / screen_w),
             -1.0 / (2.0 / screen_h),
-            0.0
+            0.0,
         ));
 
-        let m_scale = Mat4::new_nonuniform_scaling(&Vec3::new(
-            (2.0 / screen_w),
-            -(2.0 / screen_h),
-            0.0
-        ));
+        let m_scale =
+            Mat4::new_nonuniform_scaling(&Vec3::new((2.0 / screen_w), -(2.0 / screen_h), 0.0));
         // println!("ggez projection is: {:#?}", context.gfx_context.projection);
         let mut final_matrix = m_scale * param.matrix * m_translate * m_scale_inv;
         // If we do everything in terms of nalgebra isometry types then it might
@@ -552,7 +534,10 @@ impl TextBatch {
         // but for now, ugh.
 
         println!("Final: {:#?}", final_matrix);
-        println!("Projected matrix: {:#?}", param.matrix * context.gfx_context.projection);
+        println!(
+            "Projected matrix: {:#?}",
+            param.matrix * context.gfx_context.projection
+        );
 
         // TODO: Does this not handle color?
 
@@ -593,8 +578,7 @@ impl Drawable for TextBatch {
         // );
         // let param = param.offset(offset);
         self.queue(ctx, Point2::new(0.0, 0.0), Some(param.color));
-        TextBatch
-    ::draw_queued(ctx, param)
+        TextBatch::draw_queued(ctx, param)
     }
 
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {

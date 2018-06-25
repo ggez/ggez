@@ -69,7 +69,10 @@ impl event::EventHandler for MainState {
                 } else {
                     conf::FullscreenType::Off;
                 };
-                ggez::graphics::set_fullscreen(ctx, self.window_settings.is_fullscreen == FullscreenType::Windowed)?;
+                ggez::graphics::set_fullscreen(
+                    ctx,
+                    self.window_settings.is_fullscreen == FullscreenType::Windowed,
+                )?;
                 self.window_settings.toggle_fullscreen = false;
             }
 

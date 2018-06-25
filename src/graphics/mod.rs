@@ -12,18 +12,18 @@ use std::fmt;
 use std::u16;
 
 use gfx;
+use gfx::texture;
 use gfx::Device;
 use gfx::Factory;
-use gfx::texture;
 use gfx_device_gl;
 use glutin::{self, GlContext};
 
-use GameError;
-use GameResult;
 use conf;
 use conf::WindowMode;
 use context::Context;
 use context::DebugId;
+use GameError;
+use GameResult;
 
 mod canvas;
 mod context;
@@ -185,8 +185,6 @@ impl Default for InstanceProperties {
     }
 }
 
-
-
 impl From<PrimitiveDrawParam> for InstanceProperties {
     fn from(p: PrimitiveDrawParam) -> Self {
         let mat: [[f32; 4]; 4] = p.matrix.into();
@@ -281,9 +279,10 @@ where
 }
 
 /// Draws the given `Drawable` object to the screen by calling its `draw_ex()` method.
-pub fn draw_primitive<D>(ctx: &mut Context, drawable: &D, params: PrimitiveDrawParam) -> GameResult 
-where 
-    D: Drawable{
+pub fn draw_primitive<D>(ctx: &mut Context, drawable: &D, params: PrimitiveDrawParam) -> GameResult
+where
+    D: Drawable,
+{
     drawable.draw_primitive(ctx, params)
 }
 
@@ -819,7 +818,7 @@ pub trait Drawable {
     ///
     /// This is the most general version of the operation, which is all that
     /// is required for implementing this trait.
-    /// 
+    ///
     /// TODO: We could use a better name here.
     fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult;
 
@@ -836,7 +835,10 @@ pub trait Drawable {
     /// made generic on T where T: Into<DrawParam> because we treat
     /// Drawable's as trait objects.
     /// ALSO TODO: Fix docs
-    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult where D: Into<DrawParam> {
+    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
+    where
+        D: Into<DrawParam>,
+    {
         self.draw_primitive(ctx, (param.into()).into())
     }
 

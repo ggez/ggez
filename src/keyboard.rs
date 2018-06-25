@@ -133,8 +133,7 @@ impl KeyboardContext {
                 self.last_pressed.pop_front();
             }
         } else {
-            if let Some(i) = self
-                .pressed_keys
+            if let Some(i) = self.pressed_keys
                 .iter()
                 .enumerate()
                 .find(|(_i, pressed_key)| **pressed_key == key)

@@ -2,8 +2,8 @@
 
 #[macro_use]
 extern crate gfx;
-extern crate ggez;
 extern crate cgmath;
+extern crate ggez;
 
 use ggez::conf;
 use ggez::event;

@@ -6,12 +6,12 @@ use gfx::format::{ChannelTyped, SurfaceTyped};
 use gfx_device_gl;
 use image;
 
-use GameError;
-use GameResult;
 use context::{Context, DebugId};
 use filesystem;
 use graphics::shader::*;
 use graphics::*;
+use GameError;
+use GameResult;
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
 #[derive(Clone)]
@@ -314,7 +314,7 @@ impl Drawable for Image {
             1.0,
         );
         let new_param = param.mul(Matrix4::new_nonuniform_scaling(&real_scale));
-        
+
         gfx.update_instance_properties(new_param)?;
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());

@@ -1,7 +1,7 @@
 //! Example that just prints out all the input events.
 
-extern crate ggez;
 extern crate cgmath;
+extern crate ggez;
 
 use ggez::conf;
 use ggez::event::{self, Axis, Button, KeyCode, KeyMods, MouseButton};
@@ -93,10 +93,7 @@ impl event::EventHandler for MainState {
     }
 
     fn controller_button_down_event(&mut self, _ctx: &mut Context, btn: Button, id: usize) {
-        println!(
-            "Controller button pressed: {:?} Controller_Id: {}",
-            btn, id
-        );
+        println!("Controller button pressed: {:?} Controller_Id: {}", btn, id);
     }
 
     fn controller_button_up_event(&mut self, _ctx: &mut Context, btn: Button, id: usize) {
@@ -106,13 +103,7 @@ impl event::EventHandler for MainState {
         );
     }
 
-    fn controller_axis_event(
-        &mut self,
-        _ctx: &mut Context,
-        axis: Axis,
-        value: f32,
-        id: usize,
-    ) {
+    fn controller_axis_event(&mut self, _ctx: &mut Context, axis: Axis, value: f32, id: usize) {
         println!(
             "Axis Event: {:?} Value: {} Controller_Id: {}",
             axis, value, id

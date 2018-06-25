@@ -177,7 +177,6 @@ impl Filesystem {
         Ok(fs)
     }
 
-
     /// Opens the given path and returns the resulting `File`
     /// in read-only mode.
     pub(crate) fn open<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {

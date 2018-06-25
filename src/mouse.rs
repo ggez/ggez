@@ -1,10 +1,10 @@
 //! Mouse utility functions.
 
-use GameResult;
 use context::Context;
 use graphics;
 use graphics::Point2;
 pub use winit::{CursorState, MouseCursor};
+use GameResult;
 
 /// Stores state information for the mouse,
 /// what little of it there is.

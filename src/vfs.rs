@@ -265,7 +265,9 @@ impl VFS for PhysicalFS {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<dyn VFile>> {
         if self.readonly
-            && (open_options.write || open_options.create || open_options.append
+            && (open_options.write
+                || open_options.create
+                || open_options.append
                 || open_options.truncate)
         {
             let msg = format!(

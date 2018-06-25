@@ -189,7 +189,7 @@ where
 
 /// A `DrawParam` that has been crunched down to a single matrix.
 /// Useful for doing matrix-based coordiante transformations, I hope.
-/// 
+///
 /// TODO: This needs a better name.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PrimitiveDrawParam {
@@ -252,12 +252,12 @@ impl From<DrawParam> for PrimitiveDrawParam {
 impl PrimitiveDrawParam {
     /// Returns a new `PrimitiveDrawParam` with its matrix multiplied
     /// by the given one.
-    /// 
+    ///
     /// TODO: Make some way to implement `matrix * self.matrix`, or just implement `Mul`...
     pub fn mul(self, matrix: Matrix4) -> Self {
         PrimitiveDrawParam {
             matrix: self.matrix * matrix,
-            .. self
+            ..self
         }
     }
 }
