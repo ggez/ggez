@@ -37,7 +37,6 @@ use mint;
 use nalgebra as na;
 
 pub mod spritebatch;
-pub mod textbatch;
 
 pub use self::canvas::*;
 pub(crate) use self::context::*;

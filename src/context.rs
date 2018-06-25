@@ -82,7 +82,7 @@ impl Context {
         let font_id = graphics_context
             .glyph_brush
             .add_font_bytes(graphics::Font::default_font_bytes());
-        let default_font = graphics::Font::GlyphFont(font_id);
+        let default_font = graphics::Font(font_id);
 
         let ctx = Context {
             conf,
