@@ -80,10 +80,7 @@ impl Context {
 
         // TODO: Clean up the bytes here a bit.
         let font_id = graphics_context.glyph_brush.add_font_bytes(
-            &include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/resources/DejaVuSerif.ttf"
-            ))[..],
+            graphics::Font::default_font_bytes()
         );
         let default_font = graphics::Font::GlyphFont(font_id);
 
@@ -101,6 +98,8 @@ impl Context {
             default_font: default_font,
             debug_id,
         };
+
+        
 
         Ok((ctx, events_loop))
     }

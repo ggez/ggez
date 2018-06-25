@@ -154,10 +154,8 @@ impl Drawable for TextFragment {
 
 impl Into<FontId> for Font {
     fn into(self) -> FontId {
-        if let Font::GlyphFont(font_id) = self {
-            return font_id;
-        }
-        FontId(0)
+        let Font::GlyphFont(font_id) = self;
+        font_id
     }
 }
 
@@ -547,12 +545,14 @@ impl TextBatch {
             -(2.0 / screen_h),
             0.0
         ));
+        // println!("ggez projection is: {:#?}", context.gfx_context.projection);
         let mut final_matrix = m_scale * param.matrix * m_translate * m_scale_inv;
         // If we do everything in terms of nalgebra isometry types then it might
         // not be too difficult or inefficient
         // but for now, ugh.
 
-        // println!("Final: {:#?}", final_matrix);
+        println!("Final: {:#?}", final_matrix);
+        println!("Projected matrix: {:#?}", param.matrix * context.gfx_context.projection);
 
         // TODO: Does this not handle color?
 
