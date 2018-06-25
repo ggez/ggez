@@ -149,12 +149,12 @@ impl event::EventHandler for App {
         for (_key, text) in &self.texts {
             // Calling `.queue()` for all bits of text that can share a `DrawParam`,
             // followed with `::draw_queued()` with said params, is the intended way.
-            text.queue(ctx, Point2::new(20.0, 20.0 + height), None);
+            graphics::textbatch::queue(ctx, text, Point2::new(20.0, 20.0 + height), None);
             height += 20.0 + text.height(ctx) as f32;
         }
         // When drawing via `draw_queued()`, `.offset` in `DrawParam` will be
         // in screen coordinates, and `.color` will be ignored.
-        TextBatch::draw_queued(ctx, DrawParam::default())?;
+        graphics::textbatch::draw_queued(ctx, DrawParam::default())?;
 
         // Individual fragments within the `TextBatch` can be replaced;
         // this can be used for inlining animated sentences, words, etc.
@@ -174,16 +174,18 @@ impl event::EventHandler for App {
         }
         let wobble_width = wobble.width(ctx);
         let wobble_height = wobble.height(ctx);
-        wobble.queue(
+        graphics::textbatch::queue(
             ctx,
+            &wobble,
             Point2::new(0.0, 0.0),
             Some(Color::new(0.0, 1.0, 1.0, 1.0)),
         );
-        TextBatch::new(format!(
+        let t = TextBatch::new(format!(
             "width: {}\nheight: {}",
             wobble_width, wobble_height
-        )).queue(ctx, Point2::new(0.0, 20.0), None);
-        TextBatch::draw_queued(
+        ));
+        graphics::textbatch::queue(ctx, &t, Point2::new(0.0, 20.0), None);
+        graphics::textbatch::draw_queued(
             ctx,
             DrawParam::new()
                 .dest(Point2::new(500.0, 300.0))

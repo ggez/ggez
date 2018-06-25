@@ -46,7 +46,7 @@ impl event::EventHandler for MainState {
         let offset = self.frames as f32 / 10.0;
         let dest_point = cgmath::Point2::new(offset, offset);
         // let dest_point = cgmath::Point2::new(0.5, -0.5);
-        let text = textbatch::TextFragment::new("Hello world!");
+        let text = textbatch::TextBatch::new("Hello world!");
         graphics::draw(ctx, &text, (dest_point,))?;
         graphics::present(ctx)?;
 

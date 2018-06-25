@@ -95,6 +95,7 @@ impl<'a> From<&'a str> for TextFragment {
     }
 }
 
+
 impl From<char> for TextFragment {
     fn from(ch: char) -> TextFragment {
         TextFragment {
@@ -113,17 +114,21 @@ impl From<String> for TextFragment {
     }
 }
 
+
 // TODO:
 // https://doc.rust-lang.org/std/borrow/trait.ToOwned.html#tymethod.to_owned
-impl<'a, T> From<&'a T> for TextFragment
+/*
+impl<T, O> From<T> for TextFragment
 where
-    T: Into<TextFragment> + Clone,
+    T: ToOwned<Owned=O>,
+    O: Into<TextFragment>
 {
-    fn from(text: &'a T) -> TextFragment {
-        text.clone().into()
+    fn from(text: T) -> TextFragment {
+        text.to_owned().into()
     }
 }
-
+*/
+/*
 impl Drawable for TextFragment {
     fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
         // TODO: This is nasty; we pull the translation out of the PrimitiveDrawParam's
@@ -152,6 +157,7 @@ impl Drawable for TextFragment {
         unimplemented!()
     }
 }
+*/
 
 impl Into<FontId> for Font {
     fn into(self) -> FontId {
@@ -221,19 +227,17 @@ impl Default for TextBatch {
 }
 
 impl TextBatch {
-    /// Creates a `TextBatch
-    ///` from a `TextFragment`.
+    /// Creates a `TextBatch` from a `TextFragment`.
     pub fn new<F>(fragment: F) -> TextBatch
     where
-        F: Into<TextFragment> + Clone,
+        F: Into<TextFragment>,
     {
         let mut text = TextBatch::new_empty();
-        text.add_fragment(&fragment);
+        text.add_fragment(fragment);
         text
     }
 
-    /// Creates an empty `TextBatch
-    ///`.
+    /// Creates an empty `TextBatch`.
     ///
     /// TODO: Same as Default?
     pub fn new_empty() -> TextBatch {
@@ -241,9 +245,9 @@ impl TextBatch {
     }
 
     /// Appends a `TextFragment`.
-    pub fn add_fragment<F>(&mut self, fragment: &F) -> &mut TextBatch
+    pub fn add_fragment<F>(&mut self, fragment: F) -> &mut TextBatch
     where
-        F: Into<TextFragment> + Clone,
+        F: Into<TextFragment>,
     {
         self.fragments.push(fragment.into());
         self.invalidate_cached_metrics();
@@ -427,145 +431,147 @@ impl TextBatch {
         self.calculate_dimensions(context).1
     }
 
-    /// Queues the `TextBatch
-    ///` to be drawn by `draw_queued()`.
-    /// `relative_dest` is relative to the `DrawParam::dest` passed to `draw_queued()`.
-    /// Note, any `TextBatch
-    ///` drawn via `graphics::draw()` will also draw the queue.
-    pub fn queue<P>(&self, context: &mut Context, relative_dest: P, color: Option<Color>)
-    where
-        P: Into<mint::Point2<f32>>,
-    {
-        let p = Point2::from(relative_dest.into());
-        let varied_section = self.generate_varied_section(p, color);
-        context.gfx_context.glyph_brush.queue(varied_section);
+}
+
+
+/// Queues the `TextBatch`
+/// to be drawn by `draw_queued()`.
+/// `relative_dest` is relative to the `DrawParam::dest` passed to `draw_queued()`.
+/// Note, any `TextBatch`
+/// drawn via `graphics::draw()` will also draw the queue.
+pub fn queue<P>(context: &mut Context, batch: &TextBatch, relative_dest: P, color: Option<Color>)
+where
+    P: Into<mint::Point2<f32>>,
+{
+    let p = Point2::from(relative_dest.into());
+    let varied_section = batch.generate_varied_section(p, color);
+    context.gfx_context.glyph_brush.queue(varied_section);
+}
+
+/// Exposes `gfx_glyph`'s `GlyphBrush::queue()` and `GlyphBrush::queue_custom_layout()`,
+/// in case `ggez`' API is insufficient.
+pub fn queue_raw<'a, S, G>(context: &mut Context, section: S, custom_layout: Option<&G>)
+where
+    S: Into<Cow<'a, VariedSection<'a>>>,
+    G: GlyphPositioner,
+{
+    let brush = &mut context.gfx_context.glyph_brush;
+    match custom_layout {
+        Some(layout) => brush.queue_custom_layout(section, layout),
+        None => brush.queue(section),
     }
+}
 
-    /// Exposes `gfx_glyph`'s `GlyphBrush::queue()` and `GlyphBrush::queue_custom_layout()`,
-    /// in case `ggez`' API is insufficient.
-    pub fn queue_raw<'a, S, G>(context: &mut Context, section: S, custom_layout: Option<&G>)
-    where
-        S: Into<Cow<'a, VariedSection<'a>>>,
-        G: GlyphPositioner,
-    {
-        let brush = &mut context.gfx_context.glyph_brush;
-        match custom_layout {
-            Some(layout) => brush.queue_custom_layout(section, layout),
-            None => brush.queue(section),
-        }
-    }
+/// Draws all of `queue()`d `TextBatch`es.
+///
+/// `DrawParam` apply to everything in the queue; offset is in screen coordinates;
+/// color is ignored - specify it when `queue()`ing instead.
+pub fn draw_queued<D>(context: &mut Context, param: D) -> GameResult
+where
+    D: Into<PrimitiveDrawParam>,
+{
+    let param: PrimitiveDrawParam = param.into();
+    type Mat4 = na::Matrix4<f32>;
+    type Vec3 = na::Vector3<f32>;
+    let screen_rect = get_screen_coordinates(context);
+    let (screen_w, screen_h) = (screen_rect.w, screen_rect.h);
+    // TODO: Fix allllll this crap...
+    /*
 
-    /// Draws all of `queue()`d `TextBatch
-    ///`.
-    /// `DrawParam` apply to everything in the queue; offset is in screen coordinates;
-    /// color is ignored - specify it when `queue()`ing instead.
-    pub fn draw_queued<D>(context: &mut Context, param: D) -> GameResult
-    where
-        D: Into<PrimitiveDrawParam>,
-    {
-        let param: PrimitiveDrawParam = param.into();
-        type Mat4 = na::Matrix4<f32>;
-        type Vec3 = na::Vector3<f32>;
-        let screen_rect = get_screen_coordinates(context);
-        let (screen_w, screen_h) = (screen_rect.w, screen_rect.h);
-        // TODO: Fix allllll this crap...
-        /*
+    // TODO: fix non-pixel screen coordinates.
+    let (offset_x, offset_y) = (
+        -1.0 + 2.0 * param.offset.x / screen_w,
+        1.0 - 2.0 * param.offset.y / screen_h,
+    );
+    let (aspect, aspect_inv) = (screen_h / screen_w, screen_w / screen_h);
+    let m_aspect = Mat4::new_nonuniform_scaling(&Vec3::new(1.0, aspect_inv, 1.0));
+    let m_aspect_inv = Mat4::new_nonuniform_scaling(&Vec3::new(1.0, aspect, 1.0));
+    let m_scale = Mat4::new_nonuniform_scaling(&Vec3::new(param.scale.x, param.scale.y, 1.0));
+    let m_shear = Mat4::new(
+        1.0,
+        -param.shear.x,
+        0.0,
+        0.0,
+        -param.shear.y,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+    );
+    let m_rotation = Mat4::new_rotation(-param.rotation * Vec3::z());
+    let m_offset = Mat4::new_translation(&Vec3::new(offset_x, offset_y, 0.0));
+    let m_offset_inv = Mat4::new_translation(&Vec3::new(-offset_x, -offset_y, 0.0));
+    let m_translate = Mat4::new_translation(&Vec3::new(
+        2.0 * param.dest.x / screen_w,
+        2.0 * -param.dest.y / screen_h,
+        0.0,
+    ));
 
-        // TODO: fix non-pixel screen coordinates.
-        let (offset_x, offset_y) = (
-            -1.0 + 2.0 * param.offset.x / screen_w,
-            1.0 - 2.0 * param.offset.y / screen_h,
-        );
-        let (aspect, aspect_inv) = (screen_h / screen_w, screen_w / screen_h);
-        let m_aspect = Mat4::new_nonuniform_scaling(&Vec3::new(1.0, aspect_inv, 1.0));
-        let m_aspect_inv = Mat4::new_nonuniform_scaling(&Vec3::new(1.0, aspect, 1.0));
-        let m_scale = Mat4::new_nonuniform_scaling(&Vec3::new(param.scale.x, param.scale.y, 1.0));
-        let m_shear = Mat4::new(
-            1.0,
-            -param.shear.x,
-            0.0,
-            0.0,
-            -param.shear.y,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-        );
-        let m_rotation = Mat4::new_rotation(-param.rotation * Vec3::z());
-        let m_offset = Mat4::new_translation(&Vec3::new(offset_x, offset_y, 0.0));
-        let m_offset_inv = Mat4::new_translation(&Vec3::new(-offset_x, -offset_y, 0.0));
-        let m_translate = Mat4::new_translation(&Vec3::new(
-            2.0 * param.dest.x / screen_w,
-            2.0 * -param.dest.y / screen_h,
-            0.0,
-        ));
+    let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_shear * m_scale
+        * m_aspect_inv * m_offset_inv;
+    */
 
-        let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_shear * m_scale
-            * m_aspect_inv * m_offset_inv;
-        */
+    // This is what REALLY needs to happen,
+    // how the heck do I make it happen nicely?
+    // final_matrix[12] *= 2.0 / screen_w;
+    // final_matrix[13] *= -2.0 / screen_h;
+    //
+    // Like this, which is arguably not an improvement:
+    let m_translate = Mat4::new_translation(&Vec3::new(2.0 / screen_w, -2.0 / screen_h, 0.0));
 
-        // This is what REALLY needs to happen,
-        // how the heck do I make it happen nicely?
-        // final_matrix[12] *= 2.0 / screen_w;
-        // final_matrix[13] *= -2.0 / screen_h;
-        //
-        // Like this, which is arguably not an improvement:
-        let m_translate = Mat4::new_translation(&Vec3::new(2.0 / screen_w, -2.0 / screen_h, 0.0));
+    let m_scale_inv = Mat4::new_nonuniform_scaling(&Vec3::new(
+        1.0 / (2.0 / screen_w),
+        -1.0 / (2.0 / screen_h),
+        0.0,
+    ));
 
-        let m_scale_inv = Mat4::new_nonuniform_scaling(&Vec3::new(
-            1.0 / (2.0 / screen_w),
-            -1.0 / (2.0 / screen_h),
-            0.0,
-        ));
+    let m_scale =
+        Mat4::new_nonuniform_scaling(&Vec3::new(2.0 / screen_w, -(2.0 / screen_h), 0.0));
+    // println!("ggez projection is: {:#?}", context.gfx_context.projection);
+    let final_matrix = m_scale * param.matrix * m_translate * m_scale_inv;
+    // If we do everything in terms of nalgebra isometry types then it might
+    // not be too difficult or inefficient
+    // but for now, ugh.
 
-        let m_scale =
-            Mat4::new_nonuniform_scaling(&Vec3::new((2.0 / screen_w), -(2.0 / screen_h), 0.0));
-        // println!("ggez projection is: {:#?}", context.gfx_context.projection);
-        let mut final_matrix = m_scale * param.matrix * m_translate * m_scale_inv;
-        // If we do everything in terms of nalgebra isometry types then it might
-        // not be too difficult or inefficient
-        // but for now, ugh.
+    // println!("Final: {:#?}", final_matrix);
+    // println!(
+    //     "Projected matrix: {:#?}",
+    //     param.matrix * context.gfx_context.projection
+    // );
 
-        println!("Final: {:#?}", final_matrix);
-        println!(
-            "Projected matrix: {:#?}",
-            param.matrix * context.gfx_context.projection
-        );
+    // TODO: Does this not handle color?
 
-        // TODO: Does this not handle color?
+    let (encoder, render_tgt, depth_view) = (
+        &mut context.gfx_context.encoder,
+        &context.gfx_context.screen_render_target,
+        &context.gfx_context.depth_view,
+    );
 
-        let (encoder, render_tgt, depth_view) = (
-            &mut context.gfx_context.encoder,
-            &context.gfx_context.screen_render_target,
-            &context.gfx_context.depth_view,
-        );
+    // Typed() is an Undocumented Feature of gfx
+    type ColorFormat = <GlBackendSpec as BackendSpec>::SurfaceType;
+    let typed_render_target: gfx::handle::RenderTargetView<
+        gfx_device_gl::Resources,
+        ColorFormat,
+    > = gfx::memory::Typed::new(render_tgt.clone());
 
-        // Typed() is an Undocumented Feature of gfx
-        type ColorFormat = <GlBackendSpec as BackendSpec>::SurfaceType;
-        let typed_render_target: gfx::handle::RenderTargetView<
-            gfx_device_gl::Resources,
-            ColorFormat,
-        > = gfx::memory::Typed::new(render_tgt.clone());
-
-        let typed_depth_target: gfx::handle::DepthStencilView<
-            gfx_device_gl::Resources,
-            gfx::format::DepthStencil,
-        > = gfx::memory::Typed::new(depth_view.clone());
-        context.gfx_context.glyph_brush.draw_queued_with_transform(
-            final_matrix.into(),
-            encoder,
-            &typed_render_target,
-            &typed_depth_target,
-        )?;
-        Ok(())
-    }
+    let typed_depth_target: gfx::handle::DepthStencilView<
+        gfx_device_gl::Resources,
+        gfx::format::DepthStencil,
+    > = gfx::memory::Typed::new(depth_view.clone());
+    context.gfx_context.glyph_brush.draw_queued_with_transform(
+        final_matrix.into(),
+        encoder,
+        &typed_render_target,
+        &typed_depth_target,
+    )?;
+    Ok(())
 }
 
 impl Drawable for TextBatch {
@@ -577,8 +583,8 @@ impl Drawable for TextBatch {
         //     param.offset.y * self.height(ctx) as f32,
         // );
         // let param = param.offset(offset);
-        self.queue(ctx, Point2::new(0.0, 0.0), Some(param.color));
-        TextBatch::draw_queued(ctx, param)
+        queue(ctx, self, Point2::new(0.0, 0.0), Some(param.color));
+        draw_queued(ctx, param)
     }
 
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
