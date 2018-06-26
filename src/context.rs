@@ -23,7 +23,7 @@ use GameResult;
 /// drawing things, playing sounds, or loading resources (which then
 /// need to be transformed into a format the hardware likes) will need
 /// to access the `Context`.
-pub struct Context {
+pub struct Context{
     /// The Conf object the Context was created with
     pub conf: conf::Conf,
     /// Filesystem state

@@ -117,6 +117,10 @@ pub trait BackendSpec: fmt::Debug {
             Self::Resources,
             Self::CommandBuffer,
         >;
+
+    fn resize_viewport(color_view: gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: gfx::handle::RawDepthStencilView<Self::Resources>, window: glutin::GlWindow) ->
+        Option<(gfx::handle::RawRenderTargetView<Self::Resources>, 
+        gfx::handle::RawDepthStencilView<Self::Resources>)>;
 }
 
 /// A backend specification for OpenGL.
@@ -192,8 +196,31 @@ impl BackendSpec for GlBackendSpec {
             Self::Resources,
             Self::CommandBuffer,
         >  {
-            factory.create_command_buffer().into()
+       factory.create_command_buffer().into()
+    }
+
+
+    fn resize_viewport(color_view: gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: gfx::handle::RawDepthStencilView<Self::Resources>, window: glutin::GlWindow) ->
+        Option<(gfx::handle::RawRenderTargetView<Self::Resources>, 
+        gfx::handle::RawDepthStencilView<Self::Resources>)> {
+        // Basically taken from the definition of
+        // gfx_window_glutin::update_views()
+        let dim = color_view.get_dimensions();
+        assert_eq!(dim, depth_view.get_dimensions());
+        let color_format = Self::color_format();
+        let depth_format = Self::depth_format();
+        use gfx_window_glutin;
+        if let Some((cv, dv)) = gfx_window_glutin::update_views_raw(
+            &window,
+            dim,
+            color_format,
+            depth_format,
+        ) {
+            Some((cv, dv))
+        } else {
+            None
         }
+    }
 }
 
 /*

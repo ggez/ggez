@@ -27,7 +27,7 @@ where
     shader_globals: Globals,
     pub(crate) projection: Matrix4,
     pub(crate) modelview_stack: Vec<Matrix4>,
-    pub(crate) white_image: Image,
+    pub(crate) white_image: ImageGeneric<B::Resources>,
     pub(crate) screen_rect: Rect,
     pub(crate) color_format: gfx::format::Format,
     pub(crate) depth_format: gfx::format::Format,
@@ -89,10 +89,13 @@ pub(crate) type GraphicsContext =
 pub(crate) type GraphicsContextRgb =
     GraphicsContextGeneric<GlBackendSpecRgb, <GlBackendSpecRgb as BackendSpec>::SurfaceType>;
 */
+
+trait GraphicsBackend {}
+
 impl<B, C> GraphicsContextGeneric<B, C>
 where
-    B: BackendSpec<SurfaceType = C>,
-    C: gfx::format::Formatted, {
+    B: BackendSpec<SurfaceType = C> + 'static,
+    C: gfx::format::Formatted<View=[<gfx::format::Float as gfx::format::ChannelTyped>::ShaderType; 4]> {
     /// Create a new GraphicsContext
     pub(crate) fn new(
         events_loop: &glutin::EventsLoop,
@@ -100,7 +103,7 @@ where
         window_mode: WindowMode,
         backend: B,
         debug_id: DebugId,
-    ) -> GameResult<GraphicsContext> {
+    ) -> GameResult<Self> {
         let color_format = B::color_format();
             // <<B as BackendSpec>::SurfaceType as gfx::format::Formatted>::get_format();
         // let depth_format = gfx::format::Format(
@@ -213,7 +216,7 @@ where
         let sampler_info =
             texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
-        let white_image = Image::make_raw(
+        let white_image = Image::make_raw::<B>(
             &mut factory,
             &sampler_info,
             1,
@@ -475,22 +478,15 @@ where
         Ok(())
     }
 
-    /// Communicates changes in the viewport size between SDL and gfx.
+    /// Communicates changes in the viewport size between glutin and gfx.
     ///
     /// Also replaces gfx.screen_render_target and gfx.depth_view,
     /// so it may cause squirrelliness to
     /// happen with canvases or other things that touch it.
     pub(crate) fn resize_viewport(&mut self) {
         // Basically taken from the definition of
-        // gfx_window_sdl::update_views()
-        let dim = self.screen_render_target.get_dimensions();
-        assert_eq!(dim, self.depth_view.get_dimensions());
-        if let Some((cv, dv)) = gfx_window_glutin::update_views_raw(
-            &self.window,
-            dim,
-            self.color_format,
-            self.depth_format,
-        ) {
+        // gfx_window_glutin::update_views()
+        if let Some((cv, dv)) = B::resize_viewport(self.screen_render_target, self.depth_view, self.window) {
             self.screen_render_target = cv;
             self.depth_view = dv;
         }

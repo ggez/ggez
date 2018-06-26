@@ -157,14 +157,15 @@ impl Image {
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
-    pub(crate) fn make_raw(
-        factory: &mut gfx_device_gl::Factory,
+    pub(crate) fn make_raw<B>(
+        factory: &mut B::Factory,
         sampler_info: &texture::SamplerInfo,
         width: u16,
         height: u16,
         rgba: &[u8],
         debug_id: DebugId,
-    ) -> GameResult<Image> {
+    ) -> GameResult<ImageGeneric<B::Resources>>
+        where B: BackendSpec {
         if width == 0 || height == 0 {
             let msg = format!(
                 "Tried to create a texture of size {}x{}, each dimension must

@@ -250,8 +250,9 @@ where
     Ok((shader, draw))
 }
 
-impl<C> Shader<C>
+impl<Spec, C> ShaderGeneric<Spec, C>
 where
+    Spec: graphics::BackendSpec,
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
 {
     /// Create a new `Shader` given a gfx pipeline object
