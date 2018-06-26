@@ -15,13 +15,13 @@ use GameResult;
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
 #[derive(Clone)]
-pub struct ImageGeneric<R>
+pub struct ImageGeneric<B>
 where
-    R: gfx::Resources,
+    B: BackendSpec,
 {
     // TODO: Rename to shader_view or such.
-    pub(crate) texture: gfx::handle::RawShaderResourceView<R>,
-    pub(crate) texture_handle: gfx::handle::RawTexture<R>,
+    pub(crate) texture: gfx::handle::RawShaderResourceView<B::Resources>,
+    pub(crate) texture_handle: gfx::handle::RawTexture<B::Resources>,
     pub(crate) sampler_info: gfx::texture::SamplerInfo,
     pub(crate) blend_mode: Option<BlendMode>,
     pub(crate) width: u32,
@@ -36,7 +36,7 @@ where
 /// Under the hood this is just an `Arc`'ed texture handle and
 /// some metadata, so cloning it is fairly cheap; it doesn't
 /// make another copy of the underlying image data.
-pub type Image = ImageGeneric<gfx_device_gl::Resources>;
+pub type Image = ImageGeneric<GlBackendSpec>;
 
 /// The supported formats for saving an image.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -45,9 +45,14 @@ pub enum ImageFormat {
     Png,
 }
 
-impl Image {
+impl<B> ImageGeneric<B> 
+where
+    B: BackendSpec, {
+
+    /* TODO: Needs generic Context to work.
+    
     /// Load a new image from the file at the given path.
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Image> {
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let img = {
             let mut buf = Vec::new();
             let mut reader = context.filesystem.open(path)?;
@@ -55,7 +60,7 @@ impl Image {
             image::load_from_memory(&buf)?.to_rgba()
         };
         let (width, height) = img.dimensions();
-        Image::from_rgba8(context, width as u16, height as u16, &img)
+        Self::from_rgba8(context, width as u16, height as u16, &img)
     }
 
     /// Creates a new `Image` from the given buffer of `u8` RGBA values.
@@ -64,9 +69,9 @@ impl Image {
         width: u16,
         height: u16,
         rgba: &[u8],
-    ) -> GameResult<Image> {
+    ) -> GameResult<Self> {
         let debug_id = DebugId::get(context);
-        Image::make_raw(
+        Self::make_raw(
             &mut context.gfx_context.factory,
             &context.gfx_context.default_sampler_info,
             width,
@@ -85,7 +90,7 @@ impl Image {
         let gfx = &mut ctx.gfx_context;
         let w = self.width;
         let h = self.height;
-        type SurfaceData = <<<GlBackendSpec as BackendSpec>::SurfaceType as Formatted>::Surface as SurfaceTyped>::DataType;
+        type SurfaceData = <<B::SurfaceType as Formatted>::Surface as SurfaceTyped>::DataType;
 
         // Note: In the GFX example, the download buffer is created ahead of time
         // and updated on screen resize events. This may be preferable, but then
@@ -94,10 +99,7 @@ impl Image {
         // Unsure of the performance impact of creating this as it is needed.
             .create_download_buffer::<SurfaceData>(w as usize * h as usize)?;
 
-        let mut local_encoder: gfx::Encoder<
-            gfx_device_gl::Resources,
-            gfx_device_gl::CommandBuffer,
-        > = gfx.factory.create_command_buffer().into();
+        let mut local_encoder: B::get_encoder();
 
         local_encoder.copy_texture_to_buffer_raw(
             &self.texture_handle,
@@ -153,19 +155,19 @@ impl Image {
                 .map_err(|e| e.into()),
         }
     }
+    */
 
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
-    pub(crate) fn make_raw<B>(
+    pub(crate) fn make_raw(
         factory: &mut B::Factory,
         sampler_info: &texture::SamplerInfo,
         width: u16,
         height: u16,
         rgba: &[u8],
         debug_id: DebugId,
-    ) -> GameResult<ImageGeneric<B::Resources>>
-        where B: BackendSpec {
+    ) -> GameResult<Self> {
         if width == 0 || height == 0 {
             let msg = format!(
                 "Tried to create a texture of size {}x{}, each dimension must
@@ -221,7 +223,7 @@ impl Image {
         // probably won't go away on pre-ll gfx...
         // let tex = gfx::memory::Typed::new(raw_tex);
         // let view = gfx::memory::Typed::new(raw_view);
-        Ok(Image {
+        Ok(Self {
             texture: raw_view,
             texture_handle: raw_tex,
             sampler_info: *sampler_info,
@@ -232,10 +234,12 @@ impl Image {
         })
     }
 
+    /* TODO: Needs generic context
+
     /// A little helper function that creates a new Image that is just
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
-    pub fn solid(context: &mut Context, size: u16, color: Color) -> GameResult<Image> {
+    pub fn solid(context: &mut Context, size: u16, color: Color) -> GameResult<Self> {
         // let pixel_array: [u8; 4] = color.into();
         let (r, g, b, a) = color.into();
         let pixel_array: [u8; 4] = [r, g, b, a];
@@ -246,6 +250,7 @@ impl Image {
         }
         Image::from_rgba8(context, size, size, &buffer)
     }
+    */
 
     /// Return the width of the image.
     pub fn width(&self) -> u32 {

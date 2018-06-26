@@ -27,7 +27,7 @@ where
     shader_globals: Globals,
     pub(crate) projection: Matrix4,
     pub(crate) modelview_stack: Vec<Matrix4>,
-    pub(crate) white_image: ImageGeneric<B::Resources>,
+    pub(crate) white_image: ImageGeneric<B>,
     pub(crate) screen_rect: Rect,
     pub(crate) color_format: gfx::format::Format,
     pub(crate) depth_format: gfx::format::Format,
@@ -171,7 +171,7 @@ where
         }
 
         // GFX SETUP
-        let mut encoder = B::get_encoder(&factory);
+        let mut encoder = B::get_encoder(&mut factory);
 
         let blend_modes = [
             BlendMode::Alpha,
@@ -216,7 +216,7 @@ where
         let sampler_info =
             texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
-        let white_image = Image::make_raw::<B>(
+        let white_image = ImageGeneric::make_raw(
             &mut factory,
             &sampler_info,
             1,
@@ -486,7 +486,7 @@ where
     pub(crate) fn resize_viewport(&mut self) {
         // Basically taken from the definition of
         // gfx_window_glutin::update_views()
-        if let Some((cv, dv)) = B::resize_viewport(self.screen_render_target, self.depth_view, self.window) {
+        if let Some((cv, dv)) = B::resize_viewport(&self.screen_render_target, &self.depth_view, &self.window) {
             self.screen_render_target = cv;
             self.depth_view = dv;
         }

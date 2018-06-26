@@ -113,12 +113,14 @@ pub trait BackendSpec: fmt::Debug {
         gfx::handle::RawDepthStencilView<Self::Resources>
     );
 
-    fn get_encoder(factory: &Self::Factory) -> gfx::Encoder<
+    /// Create an Encoder for the backend.
+    fn get_encoder(factory: &mut Self::Factory) -> gfx::Encoder<
             Self::Resources,
             Self::CommandBuffer,
         >;
 
-    fn resize_viewport(color_view: gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: gfx::handle::RawDepthStencilView<Self::Resources>, window: glutin::GlWindow) ->
+    /// Resizes the viewport for the backend. (right now assumes a Glutin window...)
+    fn resize_viewport(color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>, window: &glutin::GlWindow)  ->
         Option<(gfx::handle::RawRenderTargetView<Self::Resources>, 
         gfx::handle::RawDepthStencilView<Self::Resources>)>;
 }
@@ -192,7 +194,7 @@ impl BackendSpec for GlBackendSpec {
         )
     }
 
-    fn get_encoder(factory: &Self::Factory) -> gfx::Encoder<
+    fn get_encoder(factory: &mut Self::Factory) -> gfx::Encoder<
             Self::Resources,
             Self::CommandBuffer,
         >  {
@@ -200,7 +202,7 @@ impl BackendSpec for GlBackendSpec {
     }
 
 
-    fn resize_viewport(color_view: gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: gfx::handle::RawDepthStencilView<Self::Resources>, window: glutin::GlWindow) ->
+    fn resize_viewport(color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>, window: &glutin::GlWindow) ->
         Option<(gfx::handle::RawRenderTargetView<Self::Resources>, 
         gfx::handle::RawDepthStencilView<Self::Resources>)> {
         // Basically taken from the definition of
@@ -211,7 +213,7 @@ impl BackendSpec for GlBackendSpec {
         let depth_format = Self::depth_format();
         use gfx_window_glutin;
         if let Some((cv, dv)) = gfx_window_glutin::update_views_raw(
-            &window,
+            window,
             dim,
             color_format,
             depth_format,

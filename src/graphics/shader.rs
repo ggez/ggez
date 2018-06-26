@@ -324,6 +324,8 @@ where
         Ok(shader)
     }
 
+    /* TODO: Needs generic graphics context to work.
+
     /// Send data to the GPU for use with the `Shader`
     pub fn send(&self, ctx: &mut Context, consts: C) -> GameResult {
         ctx.gfx_context
@@ -331,6 +333,7 @@ where
             .update_buffer(&self.buffer, &[consts], 0)?;
         Ok(())
     }
+    */
 
     /// Gets the shader ID for the `Shader` which is used by the
     /// `GraphicsContext` for identifying shaders in its cache
