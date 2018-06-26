@@ -17,6 +17,7 @@
    are options, and `euclid` should be soon.
  * Moved all the `FilesystemContext` methods into top-level functions in the `filesystem` module,
    to be consistent with the rest of the API.
+ * What used to be the `TextCached` module is now the `Text` module, replacing all the old text stuff.  This *dramatically* changes the text API, as well as being faster and more powerful.
 
 ## Deprecated
 
@@ -27,6 +28,7 @@
  * Removed deprecated `BoundSpriteBatch` type.
  * Removed `Context::print_resource_stats()` in favor of `filesystem::print_all()`.
  * Removed `TTFFont` font type in favor of `GlyphBrush`. [#132](https://github.com/ggez/ggez/issues/132)
+ * Removed bitmap fonts; better support deserves to exist, and there's no reason it can't be its own crate.
 
 ## Fixed
 

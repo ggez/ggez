@@ -85,28 +85,38 @@ where
 pub(crate) type GraphicsContext =
     GraphicsContextGeneric<GlBackendSpec, <GlBackendSpec as BackendSpec>::SurfaceType>;
 
-impl GraphicsContext {
+/*
+pub(crate) type GraphicsContextRgb =
+    GraphicsContextGeneric<GlBackendSpecRgb, <GlBackendSpecRgb as BackendSpec>::SurfaceType>;
+*/
+impl<B, C> GraphicsContextGeneric<B, C>
+where
+    B: BackendSpec<SurfaceType = C>,
+    C: gfx::format::Formatted, {
     /// Create a new GraphicsContext
     pub(crate) fn new(
         events_loop: &glutin::EventsLoop,
         window_setup: &WindowSetup,
         window_mode: WindowMode,
-        backend: GlBackendSpec,
+        backend: B,
         debug_id: DebugId,
     ) -> GameResult<GraphicsContext> {
-        let color_format =
-            <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::get_format();
-        let depth_format = gfx::format::Format(
-            gfx::format::SurfaceType::D24_S8,
-            gfx::format::ChannelType::Unorm,
-        );
+        let color_format = B::color_format();
+            // <<B as BackendSpec>::SurfaceType as gfx::format::Formatted>::get_format();
+        // let depth_format = gfx::format::Format(
+        //     gfx::format::SurfaceType::D24_S8,
+        //     gfx::format::ChannelType::Unorm,
+        // );
+        let depth_format = B::depth_format();
 
         // WINDOW SETUP
         let gl_builder = glutin::ContextBuilder::new()
             //GlRequest::Specific(Api::OpenGl, (backend.major, backend.minor))
+            // TODO: Fix the "Latest" here.
             .with_gl(glutin::GlRequest::Latest)
             .with_gl_profile(glutin::GlProfile::Core)
             .with_multisampling(window_setup.samples as u16)
+            // TODO: Better pixel format here?
             .with_pixel_format(5, 8)
             .with_vsync(window_setup.vsync);
 
@@ -126,12 +136,10 @@ impl GraphicsContext {
         }*/
 
         let (window, device, mut factory, screen_render_target, depth_view) =
-            gfx_window_glutin::init_raw(
+            B::init(
                 window_builder,
                 gl_builder,
                 events_loop,
-                color_format,
-                depth_format,
             );
 
         let available_monitors = events_loop.get_available_monitors().collect();
@@ -147,28 +155,20 @@ impl GraphicsContext {
             let (dw, dh) = window
                 .get_inner_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            let info = device.get_info();
             debug!("Window created.");
+            let (major, minor) = backend.version_tuple();
             debug!(
                 "  Asked for     OpenGL {}.{} Core, vsync: {}",
-                backend.major, backend.minor, window_setup.vsync
+                major, minor, window_setup.vsync
             );
             debug!("  Actually got: OpenGL ?.? {:?}, vsync: ?", api);
             debug!("  Window size: {}x{}, drawable size: {}x{}", w, h, dw, dh);
-            debug!(
-                "  Driver vendor: {}, renderer {}, version {:?}, shading language {:?}",
-                info.platform_name.vendor,
-                info.platform_name.renderer,
-                info.version,
-                info.shading_language
-            );
+            let device_info = backend.get_info(&device);
+            debug!("  {}", device_info);
         }
 
         // GFX SETUP
-        let mut encoder: gfx::Encoder<
-            gfx_device_gl::Resources,
-            gfx_device_gl::CommandBuffer,
-        > = factory.create_command_buffer().into();
+        let mut encoder = B::get_encoder(&factory);
 
         let blend_modes = [
             BlendMode::Alpha,
@@ -209,7 +209,7 @@ impl GraphicsContext {
         quad_slice.instances = Some((1, 0));
 
         let globals_buffer = factory.create_constant_buffer(1);
-        let mut samplers: SamplerCache<GlBackendSpec> = SamplerCache::new();
+        let mut samplers: SamplerCache<B> = SamplerCache::new();
         let sampler_info =
             texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
@@ -222,7 +222,7 @@ impl GraphicsContext {
             debug_id,
         )?;
         let texture = white_image.texture.clone();
-        let typed_thingy = super::GlBackendSpec::raw_to_typed_shader_resource(texture);
+        let typed_thingy = B::raw_to_typed_shader_resource(texture);
 
         let data = pipe::Data {
             vbuf: quad_vertex_buffer.clone(),
@@ -243,7 +243,7 @@ impl GraphicsContext {
             mvp_matrix: initial_projection.into(),
         };
 
-        let mut gfx = GraphicsContext {
+        let mut gfx = Self {
             shader_globals: globals,
             projection: initial_projection,
             modelview_stack: vec![initial_transform],
@@ -255,8 +255,8 @@ impl GraphicsContext {
             backend_spec: backend,
             window,
             multisample_samples,
-            device: Box::new(device),
-            factory: Box::new(factory),
+            device: Box::new(device as B::Device),
+            factory: Box::new(factory as B::Factory),
             encoder,
             screen_render_target,
             depth_view,
@@ -370,7 +370,7 @@ impl GraphicsContext {
     /// this method from `Drawables` so that the pixel shader gets used
     pub(crate) fn draw(
         &mut self,
-        slice: Option<&gfx::Slice<gfx_device_gl::Resources>>,
+        slice: Option<&gfx::Slice<B::Resources>>,
     ) -> GameResult {
         let slice = slice.unwrap_or(&self.quad_slice);
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);

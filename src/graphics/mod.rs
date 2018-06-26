@@ -55,7 +55,7 @@ pub trait BackendSpec: fmt::Debug {
     /// gfx resource type
     type Resources: gfx::Resources;
     /// gfx factory type
-    type Factory: gfx::Factory<Self::Resources>;
+    type Factory: gfx::Factory<Self::Resources> + Clone;
     /// gfx command buffer type
     type CommandBuffer: gfx::CommandBuffer<Self::Resources>;
     /// gfx device type
@@ -75,6 +75,48 @@ pub trait BackendSpec: fmt::Debug {
         > = gfx::memory::Typed::new(texture_view);
         typed_view
     }
+
+    /// Returns the color format used by textures for this backend.
+    fn color_format() -> gfx::format::Format {
+        let color_format =
+            <Self::SurfaceType as gfx::format::Formatted>::get_format();
+        color_format
+    }
+
+    /// Returns the depth  format used by the backend.
+    /// For now this is always the same for every backend.
+    fn depth_format() -> gfx::format::Format {
+        let depth_format = gfx::format::Format(
+            gfx::format::SurfaceType::D24_S8,
+            gfx::format::ChannelType::Unorm,
+        );
+        depth_format
+    }
+
+    /// Returns the version of the backend, `(major, minor)`.
+    /// 
+    /// So for instance if the backend is using OpenGL version 3.2,
+    /// it would return `(3, 2)`.
+    fn version_tuple(&self) -> (u8, u8);
+
+    /// Returns a string containing some backend-dependent info.
+    fn get_info(&self, device: &Self::Device) -> String;
+
+    /// TODO:
+    /// Color and depth format are defined by this trait, in fact,
+    /// but for the moment we'll 
+    fn init<'a>(window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop) -> (
+        glutin::GlWindow, 
+        Self::Device, 
+        Self::Factory, 
+        gfx::handle::RawRenderTargetView<Self::Resources>, 
+        gfx::handle::RawDepthStencilView<Self::Resources>
+    );
+
+    fn get_encoder(factory: &Self::Factory) -> gfx::Encoder<
+            Self::Resources,
+            Self::CommandBuffer,
+        >;
 }
 
 /// A backend specification for OpenGL.
@@ -109,7 +151,75 @@ impl BackendSpec for GlBackendSpec {
     type Factory = gfx_device_gl::Factory;
     type CommandBuffer = gfx_device_gl::CommandBuffer;
     type Device = gfx_device_gl::Device;
+
+    fn version_tuple(&self) -> (u8, u8) {
+        (self.major, self.minor)
+    }
+
+    fn init<'a>(window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop) -> (
+        glutin::GlWindow, 
+        Self::Device, 
+        Self::Factory, 
+        gfx::handle::RawRenderTargetView<Self::Resources>, 
+        gfx::handle::RawDepthStencilView<Self::Resources>
+    ) {
+        let color_format = Self::color_format();
+        let depth_format = Self::depth_format();
+        use gfx_window_glutin;
+        let (window, device, mut factory, screen_render_target, depth_view) =
+            gfx_window_glutin::init_raw(
+                window_builder,
+                gl_builder,
+                events_loop,
+                color_format,
+                depth_format,
+            );
+        (window, device, factory, screen_render_target, depth_view)
+    }
+
+    fn get_info(&self, device: &Self::Device) -> String {
+        let info = device.get_info();
+        format!(
+            "  Driver vendor: {}, renderer {}, version {:?}, shading language {:?}",
+            info.platform_name.vendor,
+            info.platform_name.renderer,
+            info.version,
+            info.shading_language
+        )
+    }
+
+    fn get_encoder(factory: &Self::Factory) -> gfx::Encoder<
+            Self::Resources,
+            Self::CommandBuffer,
+        >  {
+            factory.create_command_buffer().into()
+        }
 }
+
+/*
+/// Same as `GlBackendSpec` but specifies a RGB framebuffer
+/// instead of sRGB.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
+pub struct GlBackendSpecRgb {
+    #[default = r#"3"#]
+    major: u8,
+    #[default = r#"2"#]
+    minor: u8,
+}
+
+
+impl BackendSpec for GlBackendSpecRgb {
+    type SurfaceType = gfx::format::Rgba8;
+    type Resources = gfx_device_gl::Resources;
+    type Factory = gfx_device_gl::Factory;
+    type CommandBuffer = gfx_device_gl::CommandBuffer;
+    type Device = gfx_device_gl::Device;
+
+    fn version_tuple(&self) -> (u8, u8) {
+        (self.major, self.minor)
+    }
+}
+*/
 
 const QUAD_VERTS: [Vertex; 4] = [
     Vertex {
@@ -268,7 +378,7 @@ pub fn clear(ctx: &mut Context, color: Color) {
 
 /// Draws the given `Drawable` object to the screen by calling its
 /// `draw()` method.
-pub fn draw<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult
+pub fn draw<D, T>(ctx: &mut Context, drawable: D, params: T) -> GameResult
 where
     D: Drawable,
     T: Into<DrawParam>,
@@ -833,6 +943,13 @@ pub trait Drawable {
     /// TODO: This should probably be removed, but can't actually be
     /// made generic on T where T: Into<DrawParam> because we treat
     /// Drawable's as trait objects.
+    /// 
+    /// We can fix that by getting rid of this entirely and just using
+    /// graphics::draw() to do the polymorphism, and then `draw_primitive()`
+    /// to do the actual concrete stuff.  Excessive polymorphism concerns me 
+    /// a little 'cause it's a large change to how ggez does things,
+    /// so I'd like to keep it to a minimum.
+    /// 
     /// ALSO TODO: Fix docs
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
