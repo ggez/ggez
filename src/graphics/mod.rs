@@ -396,7 +396,7 @@ pub fn clear(ctx: &mut Context, color: Color) {
 
 /// Draws the given `Drawable` object to the screen by calling its
 /// `draw()` method.
-pub fn draw<D, T>(ctx: &mut Context, drawable: D, params: T) -> GameResult
+pub fn draw<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult
 where
     D: Drawable,
     T: Into<DrawParam>,

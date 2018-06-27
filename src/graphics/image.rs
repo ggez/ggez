@@ -68,12 +68,7 @@ impl<B> ImageGeneric<B>  where B: BackendSpec{
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
         use gfx::memory::Bind;
-        type SurfaceType =
-            <super::BuggoSurfaceFormat as gfx::format::Formatted>::Surface;
-        type ChannelType =
-            <super::BuggoSurfaceFormat as gfx::format::Formatted>::Channel;
-        let channel_type = ChannelType::get_channel_type();
-        let surface_format = SurfaceType::get_surface_type();
+        let gfx::format::Format(surface_format, channel_type) = B::color_format();
         let texinfo = gfx::texture::Info {
             kind: kind,
             levels: 1,
