@@ -174,7 +174,7 @@ pub struct ShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFormat>>
 
 /// A `Shader` represents a handle to a user-defined shader that can be used
 /// with a ggez graphics context
-pub type Shader<C> = ShaderGeneric<graphics::GlBackendSpec, C>;
+pub type Shader<C> = ShaderGeneric<graphics::GlBackendSpecSrgb, C>;
 
 pub(crate) fn create_shader<C, S, Spec>(
     vertex_source: &[u8],

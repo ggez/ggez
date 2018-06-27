@@ -125,6 +125,9 @@ pub trait BackendSpec: fmt::Debug {
         gfx::handle::RawDepthStencilView<Self::Resources>)>;
 }
 
+use std::marker::PhantomData;
+use std::fmt::Debug;
+
 /// A backend specification for OpenGL.
 /// This is different from `conf::Backend` because
 /// this needs to be its own struct to implement traits upon,
@@ -136,23 +139,28 @@ pub trait BackendSpec: fmt::Debug {
 /// but it has to be exported cause generic types like
 /// `Shader` depend on it.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
-pub struct GlBackendSpec {
+pub struct GlBackendSpec<C> where C: gfx::format::Formatted {
     #[default = r#"3"#]
     major: u8,
     #[default = r#"2"#]
     minor: u8,
+    color: PhantomData<C>,
 }
 
-impl From<conf::Backend> for GlBackendSpec {
+impl<C> From<conf::Backend> for GlBackendSpec<C> where C: gfx::format::Formatted {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL { major, minor } => Self { major, minor },
+            conf::Backend::OpenGL { major, minor } => Self { 
+                major, 
+                minor, 
+                color: PhantomData,
+            },
         }
     }
 }
 
-impl BackendSpec for GlBackendSpec {
-    type SurfaceType = gfx::format::Srgba8;
+impl<C> BackendSpec for GlBackendSpec<C> where C: gfx::format::Formatted + Debug {
+    type SurfaceType = C;
     type Resources = gfx_device_gl::Resources;
     type Factory = gfx_device_gl::Factory;
     type CommandBuffer = gfx_device_gl::CommandBuffer;
@@ -224,6 +232,8 @@ impl BackendSpec for GlBackendSpec {
         }
     }
 }
+
+type GlBackendSpecSrgb = GlBackendSpec<gfx::format::Srgba8>;
 
 /*
 /// Same as `GlBackendSpec` but specifies a RGB framebuffer
@@ -399,7 +409,7 @@ pub fn clear(ctx: &mut Context, color: Color) {
     let gfx = &mut ctx.gfx_context;
     // SRGB BUGGO: Only convert when drawing on srgb surface
     let linear_color: types::LinearColor = color.into();
-    type ColorFormat = <GlBackendSpec as BackendSpec>::SurfaceType;
+    type ColorFormat = <GlBackendSpecSrgb as BackendSpec>::SurfaceType;
     let typed_render_target: gfx::handle::RenderTargetView<_, ColorFormat> =
         gfx::memory::Typed::new(gfx.data.out.clone());
     gfx.encoder.clear(&typed_render_target, linear_color.into());
@@ -932,14 +942,14 @@ pub fn get_screen_render_target(
 pub fn get_gfx_objects(
     context: &mut Context,
 ) -> (
-    &mut <GlBackendSpec as BackendSpec>::Factory,
-    &mut <GlBackendSpec as BackendSpec>::Device,
+    &mut <GlBackendSpecSrgb as BackendSpec>::Factory,
+    &mut <GlBackendSpecSrgb as BackendSpec>::Device,
     &mut gfx::Encoder<
-        <GlBackendSpec as BackendSpec>::Resources,
-        <GlBackendSpec as BackendSpec>::CommandBuffer,
+        <GlBackendSpecSrgb as BackendSpec>::Resources,
+        <GlBackendSpecSrgb as BackendSpec>::CommandBuffer,
     >,
-    gfx::handle::RawDepthStencilView<<GlBackendSpec as BackendSpec>::Resources>,
-    gfx::handle::RawRenderTargetView<<GlBackendSpec as BackendSpec>::Resources>,
+    gfx::handle::RawDepthStencilView<<GlBackendSpecSrgb as BackendSpec>::Resources>,
+    gfx::handle::RawRenderTargetView<<GlBackendSpecSrgb as BackendSpec>::Resources>,
 ) {
     let gfx = &mut context.gfx_context;
     let f = &mut gfx.factory;

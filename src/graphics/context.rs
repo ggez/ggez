@@ -3,9 +3,7 @@ use std::rc::Rc;
 
 use gfx::traits::FactoryExt;
 use gfx::Factory;
-use gfx_device_gl;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
-use gfx_window_glutin;
 use glutin;
 
 use conf::{FullscreenType, MonitorId, WindowMode, WindowSetup};
@@ -30,6 +28,8 @@ where
     pub(crate) white_image: ImageGeneric<B>,
     pub(crate) screen_rect: Rect,
     pub(crate) color_format: gfx::format::Format,
+    // TODO: is this needed?
+    #[allow(unused)]
     pub(crate) depth_format: gfx::format::Format,
 
     // TODO: is this needed?
@@ -83,12 +83,8 @@ where
 
 /// A concrete graphics context for GL rendering.
 pub(crate) type GraphicsContext =
-    GraphicsContextGeneric<GlBackendSpec, <GlBackendSpec as BackendSpec>::SurfaceType>;
+    GraphicsContextGeneric<GlBackendSpecSrgb, <GlBackendSpecSrgb as BackendSpec>::SurfaceType>;
 
-/*
-pub(crate) type GraphicsContextRgb =
-    GraphicsContextGeneric<GlBackendSpecRgb, <GlBackendSpecRgb as BackendSpec>::SurfaceType>;
-*/
 
 trait GraphicsBackend {}
 

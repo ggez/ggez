@@ -37,7 +37,7 @@ where
 /// in order to do things like saving to an image file or creating cool effects
 /// by using shaders that render to an image.
 /// If you just want to draw multiple things efficiently, look at `SpriteBatch`.
-pub type Canvas = CanvasGeneric<GlBackendSpec>;
+pub type Canvas = CanvasGeneric<GlBackendSpecSrgb>;
 
 impl Canvas {
     /// Create a new canvas with the given size and number of samples.

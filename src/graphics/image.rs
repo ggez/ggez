@@ -36,7 +36,7 @@ where
 /// Under the hood this is just an `Arc`'ed texture handle and
 /// some metadata, so cloning it is fairly cheap; it doesn't
 /// make another copy of the underlying image data.
-pub type Image = ImageGeneric<GlBackendSpec>;
+pub type Image = ImageGeneric<GlBackendSpecSrgb>;
 
 /// The supported formats for saving an image.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -50,7 +50,7 @@ where
     B: BackendSpec, {
 
     /* TODO: Needs generic Context to work.
-    
+
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let img = {
@@ -191,9 +191,9 @@ where
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
         use gfx::memory::Bind;
         type SurfaceType =
-            <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::Surface;
+            <<GlBackendSpecSrgb as BackendSpec>::SurfaceType as gfx::format::Formatted>::Surface;
         type ChannelType =
-            <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::Channel;
+            <<GlBackendSpecSrgb as BackendSpec>::SurfaceType as gfx::format::Formatted>::Channel;
         let channel_type = ChannelType::get_channel_type();
         let surface_format = SurfaceType::get_surface_type();
         let texinfo = gfx::texture::Info {
@@ -325,7 +325,7 @@ impl Drawable for Image {
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        let typed_thingy = super::GlBackendSpec::raw_to_typed_shader_resource(self.texture.clone());
+        let typed_thingy = super::GlBackendSpecSrgb::raw_to_typed_shader_resource(self.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.get_blend_mode();
