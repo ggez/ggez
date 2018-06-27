@@ -13,6 +13,8 @@ use mouse;
 use timer;
 use GameResult;
 
+
+use gfx;
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
 /// system, timers, and so on.  Generally this type is **not** thread-
@@ -23,13 +25,13 @@ use GameResult;
 /// drawing things, playing sounds, or loading resources (which then
 /// need to be transformed into a format the hardware likes) will need
 /// to access the `Context`.
-pub struct Context{
+pub struct Context {
     /// The Conf object the Context was created with
     pub conf: conf::Conf,
     /// Filesystem state
     pub filesystem: Filesystem,
     /// Graphics state
-    pub(crate) gfx_context: graphics::GraphicsContext,
+    pub(crate) gfx_context: graphics::GraphicsContext<gfx::format::Srgba8>,
     /// Controls whether or not the events loop should be running.
     pub continuing: bool,
     /// Timer state

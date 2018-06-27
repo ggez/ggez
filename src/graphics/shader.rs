@@ -2,6 +2,7 @@
 //! with ggez for cool and spooky effects. See the `shader` and `shadows`
 //! examples for a taste.
 
+use gfx::format;
 use gfx::handle::*;
 use gfx::preset::blend;
 use gfx::pso::buffer::*;
@@ -206,7 +207,7 @@ where
             graphics::pipe::Init {
                 out: (
                     "Target0",
-                    graphics::GraphicsContext::get_format(),
+                    Spec::color_format(),
                     ColorMask::all(),
                     Some((*mode).into()),
                 ),

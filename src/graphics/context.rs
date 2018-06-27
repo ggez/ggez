@@ -61,15 +61,6 @@ where
     available_monitors: Vec<glutin::MonitorId>,
 }
 
-impl<B, C> GraphicsContextGeneric<B, C>
-where
-    B: BackendSpec<SurfaceType = C>,
-    C: gfx::format::Formatted,
-{
-    pub(crate) fn get_format() -> gfx::format::Format {
-        C::get_format()
-    }
-}
 
 impl<B, C> fmt::Debug for GraphicsContextGeneric<B, C>
 where
@@ -82,8 +73,8 @@ where
 }
 
 /// A concrete graphics context for GL rendering.
-pub(crate) type GraphicsContext =
-    GraphicsContextGeneric<GlBackendSpecSrgb, <GlBackendSpecSrgb as BackendSpec>::SurfaceType>;
+pub(crate) type GraphicsContext<C> =
+    GraphicsContextGeneric<GlBackendSpec<C>, <GlBackendSpec<C> as BackendSpec>::SurfaceType>;
 
 
 trait GraphicsBackend {}
@@ -92,6 +83,13 @@ impl<B, C> GraphicsContextGeneric<B, C>
 where
     B: BackendSpec<SurfaceType = C> + 'static,
     C: gfx::format::Formatted<View=[<gfx::format::Float as gfx::format::ChannelTyped>::ShaderType; 4]> {
+
+
+    pub(crate) fn get_format() -> gfx::format::Format {
+        C::get_format()
+    }
+
+
     /// Create a new GraphicsContext
     pub(crate) fn new(
         events_loop: &glutin::EventsLoop,

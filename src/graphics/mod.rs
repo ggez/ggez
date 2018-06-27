@@ -234,31 +234,8 @@ impl<C> BackendSpec for GlBackendSpec<C> where C: gfx::format::Formatted + Debug
 }
 
 type GlBackendSpecSrgb = GlBackendSpec<gfx::format::Srgba8>;
+type GlBackendSpecRgb = GlBackendSpec<gfx::format::Rgba8>;
 
-/*
-/// Same as `GlBackendSpec` but specifies a RGB framebuffer
-/// instead of sRGB.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
-pub struct GlBackendSpecRgb {
-    #[default = r#"3"#]
-    major: u8,
-    #[default = r#"2"#]
-    minor: u8,
-}
-
-
-impl BackendSpec for GlBackendSpecRgb {
-    type SurfaceType = gfx::format::Rgba8;
-    type Resources = gfx_device_gl::Resources;
-    type Factory = gfx_device_gl::Factory;
-    type CommandBuffer = gfx_device_gl::CommandBuffer;
-    type Device = gfx_device_gl::Device;
-
-    fn version_tuple(&self) -> (u8, u8) {
-        (self.major, self.minor)
-    }
-}
-*/
 
 const QUAD_VERTS: [Vertex; 4] = [
     Vertex {
@@ -315,8 +292,14 @@ gfx_defines!{
         tex: gfx::TextureSampler<[f32; 4]> = "t_Texture",
         globals: gfx::ConstantBuffer<Globals> = "Globals",
         rect_instance_properties: gfx::InstanceBuffer<InstanceProperties> = (),
+        // The default values here are overwritten by the
+        // pipeline init values in `shader::create_shader()`.
         out: gfx::RawRenderTarget =
-          ("Target0", GraphicsContext::get_format(), gfx::state::ColorMask::all(), Some(gfx::preset::blend::ALPHA)),
+          ("Target0", 
+           gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, gfx::format::ChannelType::Srgb), 
+           gfx::state::ColorMask::all(), Some(gfx::preset::blend::ALPHA)
+          ),
+        // out: gfx::RawRenderTarget = "Target0",
     }
 }
 
