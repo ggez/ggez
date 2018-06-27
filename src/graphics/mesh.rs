@@ -264,6 +264,57 @@ impl MeshBuilder {
         self
     }
 
+
+    /// Create a new mesh for a rectangle.
+    pub fn rectangle(&mut self, mode: DrawMode, bounds: Rect) -> &mut Self
+    {
+        {
+            let buffers = &mut self.buffer;
+            let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
+            match mode {
+                DrawMode::Fill => {
+                    // These builders have to be in separate match arms 'cause they're actually
+                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
+                    // GeometryBuilder<FillVertex>
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let fill_options = t::FillOptions::default();
+                    t::basic_shapes::fill_rectangle(
+                        &rect,
+                        &fill_options,
+                        builder,
+                    );
+                }
+                DrawMode::Line(line_width) => {
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let options = t::StrokeOptions::default()
+                        .with_line_width(line_width);
+                    t::basic_shapes::stroke_rectangle(
+                        &rect,
+                        &options,
+                        builder,
+                    );
+                }
+                DrawMode::CustomFill(fill_options) => {
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    t::basic_shapes::fill_rectangle(
+                        &rect,
+                        &fill_options,
+                        builder,
+                    );
+                }
+                DrawMode::CustomLine(options) => {
+                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    t::basic_shapes::stroke_rectangle(
+                        &rect,
+                        &options,
+                        builder,
+                    );
+                }
+            };
+        }
+        self
+    }
+
     /// Create a new `Mesh` from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
@@ -423,6 +474,15 @@ impl Mesh {
         mb.polygon(mode, points);
         mb.build(ctx)
     }
+
+    /// Create a new mesh for a rectangle
+    pub fn new_rectangle(ctx: &mut Context, mode: DrawMode, bounds: Rect) -> GameResult<Mesh>
+    {
+        let mut mb = MeshBuilder::new();
+        mb.rectangle(mode, bounds);
+        mb.build(ctx)
+    }
+
 
     /// Create a new `Mesh` from a raw list of triangles.
     pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P]) -> GameResult<Mesh>
