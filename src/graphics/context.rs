@@ -17,10 +17,9 @@ use GameResult;
 /// window info, DPI, rendering pipeline state, etc.
 ///
 /// As an end-user you shouldn't ever have to touch this.
-pub(crate) struct GraphicsContextGeneric<B, C>
+pub(crate) struct GraphicsContextGeneric<B>
 where
-    B: BackendSpec<SurfaceType = C>,
-    C: gfx::format::Formatted,
+    B: BackendSpec,
 {
     shader_globals: Globals,
     pub(crate) projection: Matrix4,
@@ -62,10 +61,9 @@ where
 }
 
 
-impl<B, C> fmt::Debug for GraphicsContextGeneric<B, C>
+impl<B> fmt::Debug for GraphicsContextGeneric<B>
 where
-    B: BackendSpec<SurfaceType = C>,
-    C: gfx::format::Formatted,
+    B: BackendSpec,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<GraphicsContext: {:p}>", self)
@@ -73,20 +71,28 @@ where
 }
 
 /// A concrete graphics context for GL rendering.
-pub(crate) type GraphicsContext<C> =
-    GraphicsContextGeneric<GlBackendSpec<C>, <GlBackendSpec<C> as BackendSpec>::SurfaceType>;
+pub(crate) type GraphicsContext =
+    GraphicsContextGeneric<GlBackendSpec>;
 
 
-trait GraphicsBackend {}
 
-impl<B, C> GraphicsContextGeneric<B, C>
+impl<B> GraphicsContextGeneric<B>
 where
-    B: BackendSpec<SurfaceType = C> + 'static,
-    C: gfx::format::Formatted<View=[<gfx::format::Float as gfx::format::ChannelTyped>::ShaderType; 4]> {
+    B: BackendSpec + 'static {
 
 
-    pub(crate) fn get_format() -> gfx::format::Format {
-        C::get_format()
+    /// TODO: This is redundant with Backend::color_format() or whatever.
+    pub(crate) fn get_format(&self) -> gfx::format::Format {
+        B::color_format()
+    }
+
+    /// TODO: This is sorta redundant too...?
+    pub(crate) fn new_encoder(&mut self) -> gfx::Encoder<
+            B::Resources,
+            B::CommandBuffer,
+        >  {
+        let factory = &mut *self.factory;
+        B::get_encoder(factory)
     }
 
 
@@ -99,11 +105,6 @@ where
         debug_id: DebugId,
     ) -> GameResult<Self> {
         let color_format = B::color_format();
-            // <<B as BackendSpec>::SurfaceType as gfx::format::Formatted>::get_format();
-        // let depth_format = gfx::format::Format(
-        //     gfx::format::SurfaceType::D24_S8,
-        //     gfx::format::ChannelType::Unorm,
-        // );
         let depth_format = B::depth_format();
 
         // WINDOW SETUP
@@ -219,7 +220,7 @@ where
             debug_id,
         )?;
         let texture = white_image.texture.clone();
-        let typed_thingy = B::raw_to_typed_shader_resource(texture);
+        let typed_thingy = backend.raw_to_typed_shader_resource(texture);
 
         let data = pipe::Data {
             vbuf: quad_vertex_buffer.clone(),

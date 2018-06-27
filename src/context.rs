@@ -31,7 +31,7 @@ pub struct Context {
     /// Filesystem state
     pub filesystem: Filesystem,
     /// Graphics state
-    pub(crate) gfx_context: graphics::GraphicsContext<gfx::format::Srgba8>,
+    pub(crate) gfx_context: graphics::GraphicsContext,
     /// Controls whether or not the events loop should be running.
     pub continuing: bool,
     /// Timer state

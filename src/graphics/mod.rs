@@ -47,11 +47,11 @@ pub use self::shader::*;
 pub use self::text::*;
 pub use self::types::*;
 
+type BuggoSurfaceFormat = gfx::format::Srgba8;
+
 /// A marker trait saying that something is a label for a particular backend,
 /// with associated gfx-rs types for that backend.
 pub trait BackendSpec: fmt::Debug {
-    /// Surface type
-    type SurfaceType: gfx::format::Formatted;
     /// gfx resource type
     type Resources: gfx::Resources;
     /// gfx factory type
@@ -63,25 +63,24 @@ pub trait BackendSpec: fmt::Debug {
 
     /// A helper function to take a RawShaderResourceView and turn it into a typed one based on
     /// the surface type defined in a `BackendSpec`
-    fn raw_to_typed_shader_resource(
+    /// 
+    /// SRGB BUGGO: We need to be able to not use this function at all and have everything
+    /// be entirely raw
+    fn raw_to_typed_shader_resource(&self,
         texture_view: gfx::handle::RawShaderResourceView<Self::Resources>,
     ) -> gfx::handle::ShaderResourceView<
         <Self as BackendSpec>::Resources,
-        <<Self as BackendSpec>::SurfaceType as gfx::format::Formatted>::View,
+        <BuggoSurfaceFormat as gfx::format::Formatted>::View,
     > {
         let typed_view: gfx::handle::ShaderResourceView<
             _,
-            <<Self as BackendSpec>::SurfaceType as gfx::format::Formatted>::View,
+            <BuggoSurfaceFormat as gfx::format::Formatted>::View,
         > = gfx::memory::Typed::new(texture_view);
         typed_view
     }
 
     /// Returns the color format used by textures for this backend.
-    fn color_format() -> gfx::format::Format {
-        let color_format =
-            <Self::SurfaceType as gfx::format::Formatted>::get_format();
-        color_format
-    }
+    fn color_format() -> gfx::format::Format;
 
     /// Returns the depth  format used by the backend.
     /// For now this is always the same for every backend.
@@ -102,9 +101,7 @@ pub trait BackendSpec: fmt::Debug {
     /// Returns a string containing some backend-dependent info.
     fn get_info(&self, device: &Self::Device) -> String;
 
-    /// TODO:
-    /// Color and depth format are defined by this trait, in fact,
-    /// but for the moment we'll 
+    /// Creates the window.
     fn init<'a>(window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop) -> (
         glutin::GlWindow, 
         Self::Device, 
@@ -125,9 +122,6 @@ pub trait BackendSpec: fmt::Debug {
         gfx::handle::RawDepthStencilView<Self::Resources>)>;
 }
 
-use std::marker::PhantomData;
-use std::fmt::Debug;
-
 /// A backend specification for OpenGL.
 /// This is different from `conf::Backend` because
 /// this needs to be its own struct to implement traits upon,
@@ -139,28 +133,25 @@ use std::fmt::Debug;
 /// but it has to be exported cause generic types like
 /// `Shader` depend on it.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
-pub struct GlBackendSpec<C> where C: gfx::format::Formatted {
+pub struct GlBackendSpec {
     #[default = r#"3"#]
     major: u8,
     #[default = r#"2"#]
     minor: u8,
-    color: PhantomData<C>,
 }
 
-impl<C> From<conf::Backend> for GlBackendSpec<C> where C: gfx::format::Formatted {
+impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
             conf::Backend::OpenGL { major, minor } => Self { 
                 major, 
                 minor, 
-                color: PhantomData,
             },
         }
     }
 }
 
-impl<C> BackendSpec for GlBackendSpec<C> where C: gfx::format::Formatted + Debug {
-    type SurfaceType = C;
+impl BackendSpec for GlBackendSpec {
     type Resources = gfx_device_gl::Resources;
     type Factory = gfx_device_gl::Factory;
     type CommandBuffer = gfx_device_gl::CommandBuffer;
@@ -209,6 +200,12 @@ impl<C> BackendSpec for GlBackendSpec<C> where C: gfx::format::Formatted + Debug
        factory.create_command_buffer().into()
     }
 
+    /// SRGB BUGGO: Currently hardcoded.
+    fn color_format() -> gfx::format::Format {
+        gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, gfx::format::ChannelType::Srgb)
+    }
+    
+
 
     fn resize_viewport(color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>, window: &glutin::GlWindow) ->
         Option<(gfx::handle::RawRenderTargetView<Self::Resources>, 
@@ -232,10 +229,6 @@ impl<C> BackendSpec for GlBackendSpec<C> where C: gfx::format::Formatted + Debug
         }
     }
 }
-
-type GlBackendSpecSrgb = GlBackendSpec<gfx::format::Srgba8>;
-type GlBackendSpecRgb = GlBackendSpec<gfx::format::Rgba8>;
-
 
 const QUAD_VERTS: [Vertex; 4] = [
     Vertex {
@@ -392,7 +385,9 @@ pub fn clear(ctx: &mut Context, color: Color) {
     let gfx = &mut ctx.gfx_context;
     // SRGB BUGGO: Only convert when drawing on srgb surface
     let linear_color: types::LinearColor = color.into();
-    type ColorFormat = <GlBackendSpecSrgb as BackendSpec>::SurfaceType;
+    // SRGB BUGGO: Need a clear_raw() method here, which I don't think
+    // gfx-rs has.  So for now we wing it.
+    type ColorFormat = gfx::format::Srgba8;
     let typed_render_target: gfx::handle::RenderTargetView<_, ColorFormat> =
         gfx::memory::Typed::new(gfx.data.out.clone());
     gfx.encoder.clear(&typed_render_target, linear_color.into());
@@ -925,14 +920,14 @@ pub fn get_screen_render_target(
 pub fn get_gfx_objects(
     context: &mut Context,
 ) -> (
-    &mut <GlBackendSpecSrgb as BackendSpec>::Factory,
-    &mut <GlBackendSpecSrgb as BackendSpec>::Device,
+    &mut <GlBackendSpec as BackendSpec>::Factory,
+    &mut <GlBackendSpec as BackendSpec>::Device,
     &mut gfx::Encoder<
-        <GlBackendSpecSrgb as BackendSpec>::Resources,
-        <GlBackendSpecSrgb as BackendSpec>::CommandBuffer,
+        <GlBackendSpec as BackendSpec>::Resources,
+        <GlBackendSpec as BackendSpec>::CommandBuffer,
     >,
-    gfx::handle::RawDepthStencilView<<GlBackendSpecSrgb as BackendSpec>::Resources>,
-    gfx::handle::RawRenderTargetView<<GlBackendSpecSrgb as BackendSpec>::Resources>,
+    gfx::handle::RawDepthStencilView<<GlBackendSpec as BackendSpec>::Resources>,
+    gfx::handle::RawRenderTargetView<<GlBackendSpec as BackendSpec>::Resources>,
 ) {
     let gfx = &mut context.gfx_context;
     let f = &mut gfx.factory;
