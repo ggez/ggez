@@ -79,8 +79,6 @@ pub(crate) type GraphicsContext =
 impl<B> GraphicsContextGeneric<B>
 where
     B: BackendSpec + 'static {
-
-
     /// TODO: This is redundant with Backend::color_format() or whatever.
     pub(crate) fn get_format(&self) -> gfx::format::Format {
         B::color_format()

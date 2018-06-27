@@ -48,6 +48,7 @@ pub use self::text::*;
 pub use self::types::*;
 
 type BuggoSurfaceFormat = gfx::format::Srgba8;
+type ShaderResourceType = [f32;4];
 
 /// A marker trait saying that something is a label for a particular backend,
 /// with associated gfx-rs types for that backend.
@@ -70,11 +71,11 @@ pub trait BackendSpec: fmt::Debug {
         texture_view: gfx::handle::RawShaderResourceView<Self::Resources>,
     ) -> gfx::handle::ShaderResourceView<
         <Self as BackendSpec>::Resources,
-        <BuggoSurfaceFormat as gfx::format::Formatted>::View,
+        ShaderResourceType,
     > {
         let typed_view: gfx::handle::ShaderResourceView<
             _,
-            <BuggoSurfaceFormat as gfx::format::Formatted>::View,
+            ShaderResourceType,
         > = gfx::memory::Typed::new(texture_view);
         typed_view
     }
