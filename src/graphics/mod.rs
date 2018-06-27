@@ -63,10 +63,10 @@ pub trait BackendSpec: fmt::Debug {
     type Device: gfx::Device<Resources = Self::Resources, CommandBuffer = Self::CommandBuffer>;
 
     /// A helper function to take a RawShaderResourceView and turn it into a typed one based on
-    /// the surface type defined in a `BackendSpec`
+    /// the surface type defined in a `BackendSpec`.
     /// 
-    /// SRGB BUGGO: We need to be able to not use this function at all and have everything
-    /// be entirely raw
+    /// But right now we only allow surfaces that use [f32;4] colors, so we can freely
+    /// hardcode this in the `ShaderResourceType` type.
     fn raw_to_typed_shader_resource(&self,
         texture_view: gfx::handle::RawShaderResourceView<Self::Resources>,
     ) -> gfx::handle::ShaderResourceView<
@@ -81,11 +81,28 @@ pub trait BackendSpec: fmt::Debug {
     }
 
     /// Returns the color format used by textures for this backend.
-    fn color_format() -> gfx::format::Format;
+    fn color_format(&self) -> gfx::format::Format;
+
+    
+    ///         ''',
+    ///      o_)O \)____)"
+    ///       \_        )
+    ///  woof!  '',,,,,,
+    ///           ||  ||
+    ///          "--'"--'
+    /// 
+    /// BUGGO: Docs
+    fn is_heckin_srgb(&self) -> bool {
+        if let gfx::format::Format(_, gfx::format::ChannelType::Srgb) = self.color_format() {
+            true
+        } else {
+            false
+        }
+    }
 
     /// Returns the depth  format used by the backend.
     /// For now this is always the same for every backend.
-    fn depth_format() -> gfx::format::Format {
+    fn depth_format(&self) -> gfx::format::Format {
         let depth_format = gfx::format::Format(
             gfx::format::SurfaceType::D24_S8,
             gfx::format::ChannelType::Unorm,
@@ -103,7 +120,7 @@ pub trait BackendSpec: fmt::Debug {
     fn get_info(&self, device: &Self::Device) -> String;
 
     /// Creates the window.
-    fn init<'a>(window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop) -> (
+    fn init<'a>(&self, window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop) -> (
         glutin::GlWindow, 
         Self::Device, 
         Self::Factory, 
@@ -118,7 +135,7 @@ pub trait BackendSpec: fmt::Debug {
         >;
 
     /// Resizes the viewport for the backend. (right now assumes a Glutin window...)
-    fn resize_viewport(color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>, window: &glutin::GlWindow)  ->
+    fn resize_viewport(&self, color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>, window: &glutin::GlWindow)  ->
         Option<(gfx::handle::RawRenderTargetView<Self::Resources>, 
         gfx::handle::RawDepthStencilView<Self::Resources>)>;
 }
@@ -139,14 +156,17 @@ pub struct GlBackendSpec {
     major: u8,
     #[default = r#"2"#]
     minor: u8,
+    #[default = r#"true"#]
+    srgb: bool,
 }
 
 impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL { major, minor } => Self { 
+            conf::Backend::OpenGL { major, minor, srgb } => Self { 
                 major, 
                 minor, 
+                srgb: srgb,
             },
         }
     }
@@ -162,15 +182,15 @@ impl BackendSpec for GlBackendSpec {
         (self.major, self.minor)
     }
 
-    fn init<'a>(window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop) -> (
+    fn init<'a>(&self, window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop) -> (
         glutin::GlWindow, 
         Self::Device, 
         Self::Factory, 
         gfx::handle::RawRenderTargetView<Self::Resources>, 
         gfx::handle::RawDepthStencilView<Self::Resources>
     ) {
-        let color_format = Self::color_format();
-        let depth_format = Self::depth_format();
+        let color_format = self.color_format();
+        let depth_format = self.depth_format();
         use gfx_window_glutin;
         let (window, device, mut factory, screen_render_target, depth_view) =
             gfx_window_glutin::init_raw(
@@ -201,22 +221,26 @@ impl BackendSpec for GlBackendSpec {
        factory.create_command_buffer().into()
     }
 
-    /// SRGB BUGGO: Currently hardcoded.
-    fn color_format() -> gfx::format::Format {
-        gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, gfx::format::ChannelType::Srgb)
+    fn color_format(&self) -> gfx::format::Format {
+        let channeltype = if self.srgb {
+            gfx::format::ChannelType::Srgb
+        } else {
+            gfx::format::ChannelType::Unorm
+        };
+        gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, channeltype)
     }
     
 
 
-    fn resize_viewport(color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>, window: &glutin::GlWindow) ->
+    fn resize_viewport(&self, color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>, window: &glutin::GlWindow) ->
         Option<(gfx::handle::RawRenderTargetView<Self::Resources>, 
         gfx::handle::RawDepthStencilView<Self::Resources>)> {
         // Basically taken from the definition of
         // gfx_window_glutin::update_views()
         let dim = color_view.get_dimensions();
         assert_eq!(dim, depth_view.get_dimensions());
-        let color_format = Self::color_format();
-        let depth_format = Self::depth_format();
+        let color_format = self.color_format();
+        let depth_format = self.depth_format();
         use gfx_window_glutin;
         if let Some((cv, dv)) = gfx_window_glutin::update_views_raw(
             window,
@@ -310,22 +334,6 @@ impl Default for InstanceProperties {
     }
 }
 
-impl From<PrimitiveDrawParam> for InstanceProperties {
-    fn from(p: PrimitiveDrawParam) -> Self {
-        let mat: [[f32; 4]; 4] = p.matrix.into();
-        // SRGB BUGGO: Only convert if the color format is srgb!
-        let linear_color: types::LinearColor = p.color.into();
-        Self {
-            src: p.src.into(),
-            col1: mat[0],
-            col2: mat[1],
-            col3: mat[2],
-            col4: mat[3],
-            color: linear_color.into(),
-        }
-    }
-}
-
 /// A structure for conveniently storing Sampler's, based off
 /// their `SamplerInfo`.
 pub(crate) struct SamplerCache<B>
@@ -388,7 +396,7 @@ pub fn clear(ctx: &mut Context, color: Color) {
     let linear_color: types::LinearColor = color.into();
     // SRGB BUGGO: Need a clear_raw() method here, which I don't think
     // gfx-rs has.  So for now we wing it.
-    type ColorFormat = gfx::format::Srgba8;
+    type ColorFormat = BuggoSurfaceFormat;
     let typed_render_target: gfx::handle::RenderTargetView<_, ColorFormat> =
         gfx::memory::Typed::new(gfx.data.out.clone());
     gfx.encoder.clear(&typed_render_target, linear_color.into());

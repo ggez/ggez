@@ -222,6 +222,9 @@ pub enum Backend {
         /// OpenGL minor version
         #[default = r#"2"#]
         minor: u8,
+        /// Whether or not to enable sRGB (gamma corrected color)
+        #[default = r#"true"#]
+        srgb: bool,
     },
 }
 
@@ -264,7 +267,7 @@ impl NumSamples {
 /// Conf {
 ///     window_mode: WindowMode::default(),
 ///     window_setup: WindowSetup::default(),
-///     backend: Backend::OpenGL(3, 2),
+///     backend: Backend::OpenGL{ major: 3, minor: 2, srgb: true},
 /// }
 /// ```
 #[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault)]

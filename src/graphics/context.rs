@@ -81,7 +81,7 @@ where
     B: BackendSpec + 'static {
     /// TODO: This is redundant with Backend::color_format() or whatever.
     pub(crate) fn get_format(&self) -> gfx::format::Format {
-        B::color_format()
+        self.backend_spec.color_format()
     }
 
     /// TODO: This is sorta redundant too...?
@@ -102,8 +102,8 @@ where
         backend: B,
         debug_id: DebugId,
     ) -> GameResult<Self> {
-        let color_format = B::color_format();
-        let depth_format = B::depth_format();
+        let color_format = backend.color_format();
+        let depth_format = backend.depth_format();
 
         // WINDOW SETUP
         let gl_builder = glutin::ContextBuilder::new()
@@ -132,7 +132,7 @@ where
         }*/
 
         let (window, device, mut factory, screen_render_target, depth_view) =
-            B::init(
+            backend.init(
                 window_builder,
                 gl_builder,
                 events_loop,
@@ -186,6 +186,7 @@ where
             &mut factory,
             multisample_samples,
             Some(&blend_modes[..]),
+            color_format,
             debug_id,
         )?;
 
@@ -215,6 +216,7 @@ where
             1,
             1,
             &[255, 255, 255, 255],
+            color_format,
             debug_id,
         )?;
         let texture = white_image.texture.clone();
@@ -356,7 +358,7 @@ where
         // TODO: Clean up
         let mut new_draw_params = draw_params;
         new_draw_params.color = draw_params.color;
-        let properties = new_draw_params.into();
+        let properties = new_draw_params.to_instance_properties(self.backend_spec.is_heckin_srgb());
         self.encoder
             .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;
         Ok(())
@@ -479,7 +481,7 @@ where
     pub(crate) fn resize_viewport(&mut self) {
         // Basically taken from the definition of
         // gfx_window_glutin::update_views()
-        if let Some((cv, dv)) = B::resize_viewport(&self.screen_render_target, &self.depth_view, &self.window) {
+        if let Some((cv, dv)) = self.backend_spec.resize_viewport(&self.screen_render_target, &self.depth_view, &self.window) {
             self.screen_render_target = cv;
             self.depth_view = dv;
         }

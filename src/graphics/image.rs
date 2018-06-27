@@ -44,6 +44,7 @@ impl<B> ImageGeneric<B>  where B: BackendSpec{
         width: u16,
         height: u16,
         rgba: &[u8],
+        color_format: gfx::format::Format,
         debug_id: DebugId,
     ) -> GameResult<Self> {
         if width == 0 || height == 0 {
@@ -68,7 +69,7 @@ impl<B> ImageGeneric<B>  where B: BackendSpec{
         }
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
         use gfx::memory::Bind;
-        let gfx::format::Format(surface_format, channel_type) = B::color_format();
+        let gfx::format::Format(surface_format, channel_type) = color_format;
         let texinfo = gfx::texture::Info {
             kind: kind,
             levels: 1,
@@ -155,6 +156,7 @@ impl Image {
             width,
             height,
             rgba,
+            context.gfx_context.backend_spec.color_format(),
             debug_id,
         )
     }
