@@ -358,16 +358,13 @@ impl Text {
             let glyphed_section_texts = self.layout
                 .calculate_glyphs(context.gfx_context.glyph_brush.fonts(), &varied_section);
             for glyphed_section_text in &glyphed_section_texts {
-                let &gfx_glyph::GlyphedSectionText(ref positioned_glyphs, ..) =
-                    glyphed_section_text;
-                for positioned_glyph in positioned_glyphs {
-                    if let Some(rect) = positioned_glyph.pixel_bounding_box() {
-                        if rect.max.x > max_width {
-                            max_width = rect.max.x;
-                        }
-                        if rect.max.y > max_height {
-                            max_height = rect.max.y;
-                        }
+                let (ref positioned_glyph, ..) = glyphed_section_text;
+                if let Some(rect) = positioned_glyph.pixel_bounding_box() {
+                    if rect.max.x > max_width {
+                        max_width = rect.max.x;
+                    }
+                    if rect.max.y > max_height {
+                        max_height = rect.max.y;
                     }
                 }
             }
@@ -593,22 +590,13 @@ where
         &context.gfx_context.depth_view,
     );
 
-    // Typed() is an Undocumented Feature of gfx
-    type ColorFormat = super::BuggoSurfaceFormat;
-    let typed_render_target: gfx::handle::RenderTargetView<
-        gfx_device_gl::Resources,
-        ColorFormat,
-    > = gfx::memory::Typed::new(render_tgt.clone());
-
-    let typed_depth_target: gfx::handle::DepthStencilView<
-        gfx_device_gl::Resources,
-        gfx::format::DepthStencil,
-    > = gfx::memory::Typed::new(depth_view.clone());
+    let color_format = context.gfx_context.backend_spec.color_format();
+    let depth_format = context.gfx_context.backend_spec.depth_format();
     context.gfx_context.glyph_brush.draw_queued_with_transform(
         final_matrix.into(),
         encoder,
-        &typed_render_target,
-        &typed_depth_target,
+        &(render_tgt, color_format),
+        &(depth_view, depth_format),
     )?;
     Ok(())
 }

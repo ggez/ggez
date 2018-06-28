@@ -228,6 +228,35 @@ pub enum Backend {
     },
 }
 
+
+impl Backend {
+    /// Set OpenGL backend and version.
+    pub fn opengl(self, new_major: u8, new_minor: u8) -> Self {
+        match self {
+            Backend::OpenGL {srgb, ..} => {
+                Backend::OpenGL {
+                    major: new_major,
+                    minor: new_minor,
+                    srgb: srgb,
+                }
+            }
+        }
+    }
+
+    /// Sets sRGB color mode.
+    pub fn srgb(self, new_srgb: bool) -> Self {
+        match self {
+            Backend::OpenGL {major, minor, ..} => {
+                Backend::OpenGL {
+                    major: major,
+                    minor: minor,
+                    srgb: new_srgb,
+                }
+            }
+        }
+    }
+}
+
 /// The possible number of samples for multisample anti-aliasing
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum NumSamples {
