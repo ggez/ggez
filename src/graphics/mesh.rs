@@ -504,7 +504,7 @@ impl Drawable for Mesh {
         gfx.data.vbuf = self.buffer.clone();
         let texture = gfx.white_image.texture.clone();
 
-        let typed_thingy = super::GlBackendSpec::raw_to_typed_shader_resource(texture);
+        let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(texture);
         gfx.data.tex.0 = typed_thingy;
 
         gfx.draw(Some(&self.slice))?;

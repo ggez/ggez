@@ -2,6 +2,7 @@
 //! with ggez for cool and spooky effects. See the `shader` and `shadows`
 //! examples for a taste.
 
+use gfx::format;
 use gfx::handle::*;
 use gfx::preset::blend;
 use gfx::pso::buffer::*;
@@ -185,6 +186,7 @@ pub(crate) fn create_shader<C, S, Spec>(
     factory: &mut Spec::Factory,
     multisample_samples: u8,
     blend_modes: Option<&[BlendMode]>,
+    color_format: format::Format,
     debug_id: DebugId,
 ) -> GameResult<(ShaderGeneric<Spec, C>, Box<dyn ShaderHandle<Spec>>)>
 where
@@ -206,7 +208,7 @@ where
             graphics::pipe::Init {
                 out: (
                     "Target0",
-                    graphics::GraphicsContext::get_format(),
+                    color_format,
                     ColorMask::all(),
                     Some((*mode).into()),
                 ),
@@ -307,6 +309,7 @@ where
         blend_modes: Option<&[BlendMode]>,
     ) -> GameResult<Shader<C>> {
         let debug_id = DebugId::get(ctx);
+        use graphics::BackendSpec;
         let (mut shader, draw) = create_shader(
             vertex_source,
             pixel_source,
@@ -316,6 +319,7 @@ where
             &mut *ctx.gfx_context.factory,
             ctx.gfx_context.multisample_samples,
             blend_modes,
+            ctx.gfx_context.backend_spec.color_format(),
             debug_id,
         )?;
         shader.id = ctx.gfx_context.shaders.len();
@@ -324,21 +328,24 @@ where
         Ok(shader)
     }
 
-    /* TODO: Needs generic graphics context to work.
+    /// Gets the shader ID for the `Shader` which is used by the
+    /// `GraphicsContext` for identifying shaders in its cache
+    pub fn shader_id(&self) -> ShaderId {
+        self.id
+    }
+}
 
+
+impl<C> Shader<C>
+where
+    C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
+{
     /// Send data to the GPU for use with the `Shader`
     pub fn send(&self, ctx: &mut Context, consts: C) -> GameResult {
         ctx.gfx_context
             .encoder
             .update_buffer(&self.buffer, &[consts], 0)?;
         Ok(())
-    }
-    */
-
-    /// Gets the shader ID for the `Shader` which is used by the
-    /// `GraphicsContext` for identifying shaders in its cache
-    pub fn shader_id(&self) -> ShaderId {
-        self.id
     }
 }
 

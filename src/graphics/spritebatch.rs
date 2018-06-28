@@ -99,7 +99,7 @@ impl SpriteBatch {
                 // with graphics::set_color(); this just inherits from that.
                 new_param.color = new_param.color;
                 let primitive_param = graphics::PrimitiveDrawParam::from(new_param);
-                graphics::InstanceProperties::from(primitive_param)
+                primitive_param.to_instance_properties(ctx.gfx_context.backend_spec.is_heckin_srgb())
             })
             .collect::<Vec<_>>();
 
@@ -153,7 +153,7 @@ impl graphics::Drawable for SpriteBatch {
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        let typed_thingy = GlBackendSpec::raw_to_typed_shader_resource(self.image.texture.clone());
+        let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(self.image.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
 
         let mut slice = gfx.quad_slice.clone();

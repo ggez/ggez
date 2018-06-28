@@ -30,6 +30,86 @@ where
     pub(crate) debug_id: DebugId,
 }
 
+impl<B> ImageGeneric<B>  where B: BackendSpec{
+
+    /// A helper function that just takes a factory directly so we can make an image
+    /// without needing the full context object, so we can create an Image while still
+    /// creating the GraphicsContext.
+    /// 
+    /// BUGGO TODO: It really doesn't seem to be able to put two and two together regarding
+    /// the gfx_device_gl::Factory equalling its factory...
+    pub(crate) fn make_raw(
+        factory: &mut <B as BackendSpec>::Factory,
+        sampler_info: &texture::SamplerInfo,
+        width: u16,
+        height: u16,
+        rgba: &[u8],
+        color_format: gfx::format::Format,
+        debug_id: DebugId,
+    ) -> GameResult<Self> {
+        if width == 0 || height == 0 {
+            let msg = format!(
+                "Tried to create a texture of size {}x{}, each dimension must
+                be >0",
+                width, height
+            );
+            return Err(GameError::ResourceLoadError(msg));
+        }
+        // TODO: Check for overflow on 32-bit systems here
+        let expected_bytes = width as usize * height as usize * 4;
+        if expected_bytes != rgba.len() {
+            let msg = format!(
+                "Tried to create a texture of size {}x{}, but gave {} bytes of data (expected {})",
+                width,
+                height,
+                rgba.len(),
+                expected_bytes
+            );
+            return Err(GameError::ResourceLoadError(msg));
+        }
+        let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
+        use gfx::memory::Bind;
+        let gfx::format::Format(surface_format, channel_type) = color_format;
+        let texinfo = gfx::texture::Info {
+            kind: kind,
+            levels: 1,
+            format: surface_format,
+            bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
+            usage: gfx::memory::Usage::Data,
+        };
+        let raw_tex = factory.create_texture_raw(
+            texinfo,
+            Some(channel_type),
+            Some((&[rgba], gfx::texture::Mipmap::Provided)),
+        )?;
+        let resource_desc = gfx::texture::ResourceDesc {
+            channel: channel_type,
+            layer: None,
+            min: 0,
+            max: raw_tex.get_info().levels - 1,
+            swizzle: gfx::format::Swizzle::new(),
+        };
+        let raw_view = factory.view_texture_as_shader_resource_raw(&raw_tex, resource_desc)?;
+        // gfx::memory::Typed is UNDOCUMENTED, aiee!
+        // However there doesn't seem to be an official way to turn a raw tex/view into a typed
+        // one; this API oversight would probably get fixed, except gfx is moving to a new
+        // API model.  So, that also fortunately means that undocumented features like this
+        // probably won't go away on pre-ll gfx...
+        // let tex = gfx::memory::Typed::new(raw_tex);
+        // let view = gfx::memory::Typed::new(raw_view);
+        Ok(Self {
+            texture: raw_view,
+            texture_handle: raw_tex,
+            sampler_info: *sampler_info,
+            blend_mode: None,
+            width: u32::from(width),
+            height: u32::from(height),
+            debug_id,
+        })
+    }
+
+}
+
 /// In-GPU-memory image data available to be drawn on the screen,
 /// using the OpenGL backend.
 ///
@@ -45,12 +125,11 @@ pub enum ImageFormat {
     Png,
 }
 
-impl<B> ImageGeneric<B> 
-where
-    B: BackendSpec, {
+impl Image {
 
     /* TODO: Needs generic Context to work.
-    
+    */
+
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let img = {
@@ -72,11 +151,12 @@ where
     ) -> GameResult<Self> {
         let debug_id = DebugId::get(context);
         Self::make_raw(
-            &mut context.gfx_context.factory,
+            &mut *context.gfx_context.factory,
             &context.gfx_context.default_sampler_info,
             width,
             height,
             rgba,
+            context.gfx_context.backend_spec.color_format(),
             debug_id,
         )
     }
@@ -90,17 +170,17 @@ where
         let gfx = &mut ctx.gfx_context;
         let w = self.width;
         let h = self.height;
-        type SurfaceData = <<B::SurfaceType as Formatted>::Surface as SurfaceTyped>::DataType;
 
         // Note: In the GFX example, the download buffer is created ahead of time
         // and updated on screen resize events. This may be preferable, but then
         // the buffer also needs to be updated when we switch to/from a canvas.
         let dl_buffer = gfx.factory
         // Unsure of the performance impact of creating this as it is needed.
-            .create_download_buffer::<SurfaceData>(w as usize * h as usize)?;
+            .create_download_buffer::<[u8; 4]>(w as usize * h as usize)?;
 
-        let mut local_encoder: B::get_encoder();
+        let mut local_encoder = gfx.new_encoder();
 
+        // let gfx::format::Format(color_format, _) = gfx.get_format();
         local_encoder.copy_texture_to_buffer_raw(
             &self.texture_handle,
             None,
@@ -111,7 +191,7 @@ where
                 width: w as u16,
                 height: h as u16,
                 depth: 0,
-                format: SurfaceData::get_format(),
+                format: gfx.get_format(),
                 mipmap: 0,
             },
             dl_buffer.raw(),
@@ -154,84 +234,6 @@ where
                 .encode(&data, self.width, self.height, color_format)
                 .map_err(|e| e.into()),
         }
-    }
-    */
-
-    /// A helper function that just takes a factory directly so we can make an image
-    /// without needing the full context object, so we can create an Image while still
-    /// creating the GraphicsContext.
-    pub(crate) fn make_raw(
-        factory: &mut B::Factory,
-        sampler_info: &texture::SamplerInfo,
-        width: u16,
-        height: u16,
-        rgba: &[u8],
-        debug_id: DebugId,
-    ) -> GameResult<Self> {
-        if width == 0 || height == 0 {
-            let msg = format!(
-                "Tried to create a texture of size {}x{}, each dimension must
-                be >0",
-                width, height
-            );
-            return Err(GameError::ResourceLoadError(msg));
-        }
-        // TODO: Check for overflow on 32-bit systems here
-        let expected_bytes = width as usize * height as usize * 4;
-        if expected_bytes != rgba.len() {
-            let msg = format!(
-                "Tried to create a texture of size {}x{}, but gave {} bytes of data (expected {})",
-                width,
-                height,
-                rgba.len(),
-                expected_bytes
-            );
-            return Err(GameError::ResourceLoadError(msg));
-        }
-        let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        use gfx::memory::Bind;
-        type SurfaceType =
-            <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::Surface;
-        type ChannelType =
-            <<GlBackendSpec as BackendSpec>::SurfaceType as gfx::format::Formatted>::Channel;
-        let channel_type = ChannelType::get_channel_type();
-        let surface_format = SurfaceType::get_surface_type();
-        let texinfo = gfx::texture::Info {
-            kind: kind,
-            levels: 1,
-            format: surface_format,
-            bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
-            usage: gfx::memory::Usage::Data,
-        };
-        let raw_tex = factory.create_texture_raw(
-            texinfo,
-            Some(channel_type),
-            Some((&[rgba], gfx::texture::Mipmap::Provided)),
-        )?;
-        let resource_desc = gfx::texture::ResourceDesc {
-            channel: channel_type,
-            layer: None,
-            min: 0,
-            max: raw_tex.get_info().levels - 1,
-            swizzle: gfx::format::Swizzle::new(),
-        };
-        let raw_view = factory.view_texture_as_shader_resource_raw(&raw_tex, resource_desc)?;
-        // gfx::memory::Typed is UNDOCUMENTED, aiee!
-        // However there doesn't seem to be an official way to turn a raw tex/view into a typed
-        // one; this API oversight would probably get fixed, except gfx is moving to a new
-        // API model.  So, that also fortunately means that undocumented features like this
-        // probably won't go away on pre-ll gfx...
-        // let tex = gfx::memory::Typed::new(raw_tex);
-        // let view = gfx::memory::Typed::new(raw_view);
-        Ok(Self {
-            texture: raw_view,
-            texture_handle: raw_tex,
-            sampler_info: *sampler_info,
-            blend_mode: None,
-            width: u32::from(width),
-            height: u32::from(height),
-            debug_id,
-        })
     }
 
     /* TODO: Needs generic context
@@ -307,7 +309,7 @@ impl Drawable for Image {
     fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
         self.debug_id.assert(ctx);
 
-        println!("Matrix: {:#?}", param.matrix);
+        // println!("Matrix: {:#?}", param.matrix);
         let gfx = &mut ctx.gfx_context;
         let src_width = param.src.w;
         let src_height = param.src.h;
@@ -325,7 +327,7 @@ impl Drawable for Image {
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        let typed_thingy = super::GlBackendSpec::raw_to_typed_shader_resource(self.texture.clone());
+        let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(self.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.get_blend_mode();

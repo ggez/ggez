@@ -128,7 +128,10 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let c = conf::Conf::new();
+    let mut c = conf::Conf::new();
+    c.backend = conf::Backend::OpenGL {
+        major: 3, minor: 2, srgb: false
+    };
     let (ctx, events_loop) = &mut Context::load_from_conf("drawing", "ggez", c)?;
 
     // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
