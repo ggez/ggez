@@ -3,7 +3,7 @@
 use context::Context;
 use graphics;
 use graphics::Point2;
-pub use winit::{CursorState, MouseCursor};
+pub use winit::MouseCursor;
 use GameResult;
 
 /// Stores state information for the mouse,
@@ -13,7 +13,8 @@ pub struct MouseContext {
     last_position: Point2,
     last_delta: Point2,
     cursor_type: MouseCursor,
-    cursor_state: CursorState,
+    cursor_grabbed: bool,
+    cursor_hidden: bool,
 }
 
 impl MouseContext {
@@ -22,7 +23,8 @@ impl MouseContext {
             last_position: Point2::origin(),
             last_delta: Point2::origin(),
             cursor_type: MouseCursor::Default,
-            cursor_state: CursorState::Normal,
+            cursor_grabbed: false,
+            cursor_hidden: false,
         }
     }
 
@@ -52,16 +54,29 @@ pub fn set_cursor_type(ctx: &mut Context, cursor_type: MouseCursor) {
     graphics::get_window(ctx).set_cursor(cursor_type);
 }
 
-/// Set whether or not the mouse is grabbed (confined to the window) or hidden (invisible).
-pub fn get_cursor_state(ctx: &Context) -> CursorState {
-    ctx.mouse_context.cursor_state
+/// Check whether or not the mouse cursor is hidden (invisible).
+pub fn is_cursor_hidden(ctx: &Context) -> bool {
+    ctx.mouse_context.cursor_hidden
 }
 
-/// Set whether or not the mouse is grabbed (confined to the window) or hidden (invisible).
-pub fn set_cursor_state(ctx: &mut Context, state: CursorState) -> GameResult<()> {
-    ctx.mouse_context.cursor_state = state;
+/// Set whether or not the mouse cursor is hidden (invisible).
+pub fn hide_cursor(ctx: &mut Context, hidden: bool) -> GameResult<()> {
+    ctx.mouse_context.cursor_hidden = hidden;
     graphics::get_window(ctx)
-        .set_cursor_state(state)
+        .hide_cursor(hidden)
+        .map_err(|e| e.into())
+}
+
+/// Check whether or not the mouse cursor is grabbed (confined to the window).
+pub fn is_cursor_grabbed(ctx: &Context) -> bool {
+    ctx.mouse_context.cursor_grabbed
+}
+
+/// Set whether or not the mouse cursor is grabbed (confined to the window).
+pub fn grab_cursor(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
+    ctx.mouse_context.cursor_grabbed = grabbed;
+    graphics::get_window(ctx)
+        .grab_cursor(grabbed)
         .map_err(|e| e.into())
 }
 
