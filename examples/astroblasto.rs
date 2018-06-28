@@ -244,7 +244,7 @@ impl Assets {
         let player_image = graphics::Image::new(ctx, "/player.png")?;
         let shot_image = graphics::Image::new(ctx, "/shot.png")?;
         let rock_image = graphics::Image::new(ctx, "/rock.png")?;
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 18)?;
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
 
         let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
         let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
@@ -296,7 +296,7 @@ impl Default for InputState {
 ///
 /// Our game objects are simply a vector for each actor type, and we
 /// probably mingle gameplay-state (like score) and hardware-state
-/// (like `gui_dirty`) a little more than we should, but for something
+/// (like `input`) a little more than we should, but for something
 /// this small it hardly matters.
 /// **********************************************************************
 
@@ -311,9 +311,6 @@ struct MainState {
     screen_height: u32,
     input: InputState,
     player_shot_timeout: f32,
-    gui_dirty: bool,
-    score_display: graphics::Text,
-    level_display: graphics::Text,
 }
 
 impl MainState {
@@ -323,8 +320,8 @@ impl MainState {
         print_instructions();
 
         let assets = Assets::new(ctx)?;
-        let score_disp = graphics::Text::new(ctx, "score", &assets.font)?;
-        let level_disp = graphics::Text::new(ctx, "level", &assets.font)?;
+        // let score_disp = graphics::Text::new(ctx, "score", &assets.font)?;
+        // let level_disp = graphics::Text::new(ctx, "level", &assets.font)?;
 
         let player = create_player();
         let rocks = create_rocks(5, player.pos, 100.0, 250.0);
@@ -340,9 +337,6 @@ impl MainState {
             screen_height: ctx.conf.window_mode.height,
             input: InputState::default(),
             player_shot_timeout: 0.0,
-            gui_dirty: true,
-            score_display: score_disp,
-            level_display: level_disp,
         };
 
         Ok(s)
@@ -380,7 +374,6 @@ impl MainState {
                     shot.life = 0.0;
                     rock.life = 0.0;
                     self.score += 1;
-                    self.gui_dirty = true;
                     let _ = self.assets.hit_sound.play();
                 }
             }
@@ -390,21 +383,20 @@ impl MainState {
     fn check_for_level_respawn(&mut self) {
         if self.rocks.is_empty() {
             self.level += 1;
-            self.gui_dirty = true;
             let r = create_rocks(self.level + 5, self.player.pos, 100.0, 250.0);
             self.rocks.extend(r);
         }
     }
 
-    fn update_ui(&mut self, ctx: &mut Context) {
-        let score_str = format!("Score: {}", self.score);
-        let level_str = format!("Level: {}", self.level);
-        let score_text = graphics::Text::new(ctx, &score_str, &self.assets.font).unwrap();
-        let level_text = graphics::Text::new(ctx, &level_str, &self.assets.font).unwrap();
+    // fn update_ui(&mut self, ctx: &mut Context) {
+    //     let score_str = format!("Score: {}", self.score);
+    //     let level_str = format!("Level: {}", self.level);
+    //     let score_text = graphics::Text::new(ctx, &score_str, &self.assets.font).unwrap();
+    //     let level_text = graphics::Text::new(ctx, &level_str, &self.assets.font).unwrap();
 
-        self.score_display = score_text;
-        self.level_display = level_text;
-    }
+    //     self.score_display = score_text;
+    //     self.level_display = level_text;
+    // }
 }
 
 /// **********************************************************************
@@ -487,13 +479,6 @@ impl EventHandler for MainState {
 
             self.check_for_level_respawn();
 
-            // Using a gui_dirty flag here is a little
-            // messy but fine here.
-            if self.gui_dirty {
-                self.update_ui(ctx);
-                self.gui_dirty = false;
-            }
-
             // Finally we check for our end state.
             // I want to have a nice death screen eventually,
             // but for now we just quit.
@@ -531,8 +516,13 @@ impl EventHandler for MainState {
         // And draw the GUI elements in the right places.
         let level_dest = Point2::new(10.0, 10.0);
         let score_dest = Point2::new(200.0, 10.0);
-        graphics::draw(ctx, &self.level_display, (level_dest, 0.0, graphics::WHITE))?;
-        graphics::draw(ctx, &self.score_display, (score_dest, 0.0, graphics::WHITE))?;
+
+        let level_str = format!("Level: {}", self.level);
+        let score_str = format!("Score: {}", self.score);
+        let level_display = graphics::Text::new((level_str, self.assets.font, 32.0));
+        let score_display = graphics::Text::new((score_str, self.assets.font, 32.0));
+        graphics::draw(ctx, &level_display, (level_dest, 0.0, graphics::WHITE))?;
+        graphics::draw(ctx, &score_display, (score_dest, 0.0, graphics::WHITE))?;
 
         // Then we flip the screen...
         graphics::present(ctx)?;

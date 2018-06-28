@@ -2,8 +2,6 @@ use std::io::Read;
 use std::path;
 
 use gfx;
-use gfx::format::{ChannelTyped, SurfaceTyped};
-use gfx_device_gl;
 use image;
 
 use context::{Context, DebugId};
@@ -163,7 +161,6 @@ impl Image {
 
     /// Dumps the `Image`'s data to a `Vec` of `u8` RGBA values.
     pub fn to_rgba8(&self, ctx: &mut Context) -> GameResult<Vec<u8>> {
-        use gfx::format::Formatted;
         use gfx::memory::Typed;
         use gfx::traits::FactoryExt;
 
@@ -174,13 +171,14 @@ impl Image {
         // Note: In the GFX example, the download buffer is created ahead of time
         // and updated on screen resize events. This may be preferable, but then
         // the buffer also needs to be updated when we switch to/from a canvas.
-        let dl_buffer = gfx.factory
         // Unsure of the performance impact of creating this as it is needed.
+        // Probably okay for now though, since this probably won't be a super
+        // common operation.
+        let dl_buffer = gfx.factory
             .create_download_buffer::<[u8; 4]>(w as usize * h as usize)?;
 
         let mut local_encoder = gfx.new_encoder();
 
-        // let gfx::format::Format(color_format, _) = gfx.get_format();
         local_encoder.copy_texture_to_buffer_raw(
             &self.texture_handle,
             None,

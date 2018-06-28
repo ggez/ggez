@@ -14,7 +14,6 @@ use timer;
 use GameResult;
 
 
-use gfx;
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
 /// system, timers, and so on.  Generally this type is **not** thread-

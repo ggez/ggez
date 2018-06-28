@@ -192,7 +192,7 @@ impl BackendSpec for GlBackendSpec {
         let color_format = self.color_format();
         let depth_format = self.depth_format();
         use gfx_window_glutin;
-        let (window, device, mut factory, screen_render_target, depth_view) =
+        let (window, device, factory, screen_render_target, depth_view) =
             gfx_window_glutin::init_raw(
                 window_builder,
                 gl_builder,

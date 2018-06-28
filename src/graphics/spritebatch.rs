@@ -14,7 +14,7 @@ use error;
 use gfx;
 use gfx::Factory;
 use graphics;
-use graphics::{BackendSpec, GlBackendSpec};
+use graphics::{BackendSpec};
 use GameResult;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.

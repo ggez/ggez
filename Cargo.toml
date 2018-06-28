@@ -38,7 +38,7 @@ app_dirs2 = "2"
 gfx = "0.17"
 gfx_device_gl = "0.15"
 #gfx_glyph = "0.11"
-gfx_glyph = {git = "https://github.com/alexheretic/gfx-glyph.git", branch = "raw-gfx-views"}
+gfx_glyph = {git = "https://github.com/alexheretic/gfx-glyph.git" }
 gfx_window_glutin = "0.24"
 glutin = "0.16"
 image = {version = "0.19", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",

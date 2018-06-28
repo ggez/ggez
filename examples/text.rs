@@ -6,7 +6,7 @@ extern crate ggez;
 extern crate rand;
 
 use cgmath::Point2;
-use ggez::conf::{WindowMode, WindowSetup, Backend};
+use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::filesystem;
 use ggez::graphics::{self, 
