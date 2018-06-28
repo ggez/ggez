@@ -654,8 +654,9 @@ pub fn get_default_filter(ctx: &Context) -> FilterMode {
 /// information out of it!
 pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
     Ok(format!(
-        "Requested GL {}.{} Core profile, actually got GL ?.? ? profile.",
+        "Requested GL {}.{} Core profile with sRGB {}, actually got GL ?.? ? profile with sRGB {:?}.",
         ctx.gfx_context.backend_spec.major, ctx.gfx_context.backend_spec.minor,
+        ctx.gfx_context.backend_spec.srgb, ctx.gfx_context.backend_spec.color_format()
     ))
 }
 

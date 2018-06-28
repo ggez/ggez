@@ -309,7 +309,7 @@ impl Drawable for Image {
     fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
         self.debug_id.assert(ctx);
 
-        println!("Matrix: {:#?}", param.matrix);
+        // println!("Matrix: {:#?}", param.matrix);
         let gfx = &mut ctx.gfx_context;
         let src_width = param.src.w;
         let src_height = param.src.h;
