@@ -52,7 +52,7 @@ smart-default = "0.2"
 nalgebra = {version = "^0.15.2", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here.
 mint = "0.5"
-winit = { version = "0.16", features = ["icon_loading"] }
+winit = { version = "0.15", features = ["icon_loading"] } 
 gilrs = "0.6"
 
 [dev-dependencies]
