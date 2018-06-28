@@ -42,9 +42,9 @@ gfx_window_glutin = "0.24"
 glutin = "0.16"
 image = {version = "0.19", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
-rodio = "0.7"
-serde = "1.0"
-serde_derive = "1.0"
+rodio = "0.8"
+serde = "1"
+serde_derive = "1"
 toml = "0.4"
 log = "0.4"
 lyon = "^0.10.2"
