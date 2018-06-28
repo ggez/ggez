@@ -594,7 +594,7 @@ where
     );
 
     // Typed() is an Undocumented Feature of gfx
-    type ColorFormat = <GlBackendSpec as BackendSpec>::SurfaceType;
+    type ColorFormat = super::BuggoSurfaceFormat;
     let typed_render_target: gfx::handle::RenderTargetView<
         gfx_device_gl::Resources,
         ColorFormat,

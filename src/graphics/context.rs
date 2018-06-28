@@ -3,9 +3,7 @@ use std::rc::Rc;
 
 use gfx::traits::FactoryExt;
 use gfx::Factory;
-use gfx_device_gl;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
-use gfx_window_glutin;
 use glutin;
 
 use conf::{FullscreenType, MonitorId, WindowMode, WindowSetup};
@@ -19,10 +17,9 @@ use GameResult;
 /// window info, DPI, rendering pipeline state, etc.
 ///
 /// As an end-user you shouldn't ever have to touch this.
-pub(crate) struct GraphicsContextGeneric<B, C>
+pub(crate) struct GraphicsContextGeneric<B>
 where
-    B: BackendSpec<SurfaceType = C>,
-    C: gfx::format::Formatted,
+    B: BackendSpec,
 {
     shader_globals: Globals,
     pub(crate) projection: Matrix4,
@@ -30,6 +27,8 @@ where
     pub(crate) white_image: ImageGeneric<B>,
     pub(crate) screen_rect: Rect,
     pub(crate) color_format: gfx::format::Format,
+    // TODO: is this needed?
+    #[allow(unused)]
     pub(crate) depth_format: gfx::format::Format,
 
     // TODO: is this needed?
@@ -61,20 +60,10 @@ where
     available_monitors: Vec<glutin::MonitorId>,
 }
 
-impl<B, C> GraphicsContextGeneric<B, C>
-where
-    B: BackendSpec<SurfaceType = C>,
-    C: gfx::format::Formatted,
-{
-    pub(crate) fn get_format() -> gfx::format::Format {
-        C::get_format()
-    }
-}
 
-impl<B, C> fmt::Debug for GraphicsContextGeneric<B, C>
+impl<B> fmt::Debug for GraphicsContextGeneric<B>
 where
-    B: BackendSpec<SurfaceType = C>,
-    C: gfx::format::Formatted,
+    B: BackendSpec,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "<GraphicsContext: {:p}>", self)
@@ -83,19 +72,28 @@ where
 
 /// A concrete graphics context for GL rendering.
 pub(crate) type GraphicsContext =
-    GraphicsContextGeneric<GlBackendSpec, <GlBackendSpec as BackendSpec>::SurfaceType>;
+    GraphicsContextGeneric<GlBackendSpec>;
 
-/*
-pub(crate) type GraphicsContextRgb =
-    GraphicsContextGeneric<GlBackendSpecRgb, <GlBackendSpecRgb as BackendSpec>::SurfaceType>;
-*/
 
-trait GraphicsBackend {}
 
-impl<B, C> GraphicsContextGeneric<B, C>
+impl<B> GraphicsContextGeneric<B>
 where
-    B: BackendSpec<SurfaceType = C> + 'static,
-    C: gfx::format::Formatted<View=[<gfx::format::Float as gfx::format::ChannelTyped>::ShaderType; 4]> {
+    B: BackendSpec + 'static {
+    /// TODO: This is redundant with Backend::color_format() or whatever.
+    pub(crate) fn get_format(&self) -> gfx::format::Format {
+        self.backend_spec.color_format()
+    }
+
+    /// TODO: This is sorta redundant too...?
+    pub(crate) fn new_encoder(&mut self) -> gfx::Encoder<
+            B::Resources,
+            B::CommandBuffer,
+        >  {
+        let factory = &mut *self.factory;
+        B::get_encoder(factory)
+    }
+
+
     /// Create a new GraphicsContext
     pub(crate) fn new(
         events_loop: &glutin::EventsLoop,
@@ -104,13 +102,8 @@ where
         backend: B,
         debug_id: DebugId,
     ) -> GameResult<Self> {
-        let color_format = B::color_format();
-            // <<B as BackendSpec>::SurfaceType as gfx::format::Formatted>::get_format();
-        // let depth_format = gfx::format::Format(
-        //     gfx::format::SurfaceType::D24_S8,
-        //     gfx::format::ChannelType::Unorm,
-        // );
-        let depth_format = B::depth_format();
+        let color_format = backend.color_format();
+        let depth_format = backend.depth_format();
 
         // WINDOW SETUP
         let gl_builder = glutin::ContextBuilder::new()
@@ -139,7 +132,7 @@ where
         }*/
 
         let (window, device, mut factory, screen_render_target, depth_view) =
-            B::init(
+            backend.init(
                 window_builder,
                 gl_builder,
                 events_loop,
@@ -193,6 +186,7 @@ where
             &mut factory,
             multisample_samples,
             Some(&blend_modes[..]),
+            color_format,
             debug_id,
         )?;
 
@@ -222,10 +216,11 @@ where
             1,
             1,
             &[255, 255, 255, 255],
+            color_format,
             debug_id,
         )?;
         let texture = white_image.texture.clone();
-        let typed_thingy = B::raw_to_typed_shader_resource(texture);
+        let typed_thingy = backend.raw_to_typed_shader_resource(texture);
 
         let data = pipe::Data {
             vbuf: quad_vertex_buffer.clone(),
@@ -363,7 +358,7 @@ where
         // TODO: Clean up
         let mut new_draw_params = draw_params;
         new_draw_params.color = draw_params.color;
-        let properties = new_draw_params.into();
+        let properties = new_draw_params.to_instance_properties(self.backend_spec.is_heckin_srgb());
         self.encoder
             .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;
         Ok(())
@@ -486,7 +481,7 @@ where
     pub(crate) fn resize_viewport(&mut self) {
         // Basically taken from the definition of
         // gfx_window_glutin::update_views()
-        if let Some((cv, dv)) = B::resize_viewport(&self.screen_render_target, &self.depth_view, &self.window) {
+        if let Some((cv, dv)) = self.backend_spec.resize_viewport(&self.screen_render_target, &self.depth_view, &self.window) {
             self.screen_render_target = cv;
             self.depth_view = dv;
         }
