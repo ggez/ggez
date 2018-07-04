@@ -581,14 +581,14 @@ where
 
     // TODO: Does this not handle color?
 
+    let color_format = context.gfx_context.color_format();
+    let depth_format = context.gfx_context.depth_format();
     let (encoder, render_tgt, depth_view) = (
         &mut context.gfx_context.encoder,
         &context.gfx_context.screen_render_target,
         &context.gfx_context.depth_view,
     );
 
-    let color_format = context.gfx_context.backend_spec.color_format();
-    let depth_format = context.gfx_context.backend_spec.depth_format();
     context.gfx_context.glyph_brush.draw_queued_with_transform(
         final_matrix.into(),
         encoder,

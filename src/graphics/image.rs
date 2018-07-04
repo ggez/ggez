@@ -148,13 +148,14 @@ impl Image {
         rgba: &[u8],
     ) -> GameResult<Self> {
         let debug_id = DebugId::get(context);
+        let color_format = context.gfx_context.color_format();
         Self::make_raw(
             &mut *context.gfx_context.factory,
             &context.gfx_context.default_sampler_info,
             width,
             height,
             rgba,
-            context.gfx_context.backend_spec.color_format(),
+            color_format,
             debug_id,
         )
     }
@@ -189,7 +190,7 @@ impl Image {
                 width: w as u16,
                 height: h as u16,
                 depth: 0,
-                format: gfx.get_format(),
+                format: gfx.color_format(),
                 mipmap: 0,
             },
             dl_buffer.raw(),

@@ -309,7 +309,7 @@ where
         blend_modes: Option<&[BlendMode]>,
     ) -> GameResult<Shader<C>> {
         let debug_id = DebugId::get(ctx);
-        use graphics::BackendSpec;
+        let color_format = ctx.gfx_context.color_format();
         let (mut shader, draw) = create_shader(
             vertex_source,
             pixel_source,
@@ -319,7 +319,7 @@ where
             &mut *ctx.gfx_context.factory,
             ctx.gfx_context.multisample_samples,
             blend_modes,
-            ctx.gfx_context.backend_spec.color_format(),
+            color_format,
             debug_id,
         )?;
         shader.id = ctx.gfx_context.shaders.len();

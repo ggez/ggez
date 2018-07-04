@@ -55,21 +55,22 @@ impl Canvas {
         };
         let kind = Kind::D2(w, h, aa);
         let levels = 1;
+        let color_format = ctx.gfx_context.color_format();
         let factory = &mut ctx.gfx_context.factory;
         let texture_create_info = gfx::texture::Info {
             kind: kind,
             levels: levels,
-            format: ctx.gfx_context.color_format.0,
+            format: color_format.0,
             bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
             usage: Usage::Data,
         };
         let tex = factory.create_texture_raw(
             texture_create_info,
-            Some(ctx.gfx_context.color_format.1),
+            Some(color_format.1),
             None,
         )?;
         let resource_desc = gfx::texture::ResourceDesc {
-            channel: ctx.gfx_context.color_format.1,
+            channel: color_format.1,
             layer: None,
             min: 0,
             max: levels - 1,
@@ -77,7 +78,7 @@ impl Canvas {
         };
         let resource = factory.view_texture_as_shader_resource_raw(&tex, resource_desc)?;
         let render_desc = gfx::texture::RenderDesc {
-            channel: ctx.gfx_context.color_format.1,
+            channel: color_format.1,
             level: 0,
             layer: None,
         };

@@ -154,6 +154,10 @@ pub struct WindowSetup {
     /// and an empty string results in a blank/default icon.
     #[default = r#""".to_owned()"#]
     pub icon: String,
+    /// Whether or not to enable sRGB (gamma corrected color)
+    /// handling on the display.
+    #[default = r#"true"#]
+    pub srgb: bool,
 }
 
 impl WindowSetup {
@@ -198,6 +202,12 @@ impl WindowSetup {
         self.icon = icon.to_owned();
         self
     }
+
+    /// Set sRGB color mode.
+    pub fn srgb(mut self, active: bool) -> Self {
+        self.srgb = active;
+        self
+    }
 }
 
 /// Possible backends.
@@ -216,12 +226,6 @@ pub enum Backend {
         /// OpenGL minor version
         #[default = r#"2"#]
         minor: u8,
-        /// Whether or not to enable sRGB (gamma corrected color)
-        /// handling on the display.
-        /// 
-        /// TODO: Move to WindowSetup
-        #[default = r#"true"#]
-        srgb: bool,
     },
 }
 
@@ -230,24 +234,10 @@ impl Backend {
     /// Set OpenGL backend and version.
     pub fn opengl(self, new_major: u8, new_minor: u8) -> Self {
         match self {
-            Backend::OpenGL {srgb, ..} => {
+            Backend::OpenGL {..} => {
                 Backend::OpenGL {
                     major: new_major,
                     minor: new_minor,
-                    srgb: srgb,
-                }
-            }
-        }
-    }
-
-    /// Sets sRGB color mode.
-    pub fn srgb(self, new_srgb: bool) -> Self {
-        match self {
-            Backend::OpenGL {major, minor, ..} => {
-                Backend::OpenGL {
-                    major: major,
-                    minor: minor,
-                    srgb: new_srgb,
                 }
             }
         }

@@ -99,7 +99,7 @@ impl SpriteBatch {
                 // with graphics::set_color(); this just inherits from that.
                 new_param.color = new_param.color;
                 let primitive_param = graphics::PrimitiveDrawParam::from(new_param);
-                primitive_param.to_instance_properties(ctx.gfx_context.backend_spec.is_heckin_srgb())
+                primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
             })
             .collect::<Vec<_>>();
 

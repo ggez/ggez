@@ -26,10 +26,9 @@ where
     pub(crate) modelview_stack: Vec<Matrix4>,
     pub(crate) white_image: ImageGeneric<B>,
     pub(crate) screen_rect: Rect,
-    pub(crate) color_format: gfx::format::Format,
-    // TODO: is this needed?
-    #[allow(unused)]
-    pub(crate) depth_format: gfx::format::Format,
+    color_format: gfx::format::Format,
+    depth_format: gfx::format::Format,
+    srgb: bool,
 
     // TODO: is this needed?
     #[allow(unused)]
@@ -76,12 +75,8 @@ pub(crate) type GraphicsContext =
 impl<B> GraphicsContextGeneric<B>
 where
     B: BackendSpec + 'static {
-    /// TODO: This is redundant with Backend::color_format() or whatever.
-    pub(crate) fn get_format(&self) -> gfx::format::Format {
-        self.backend_spec.color_format()
-    }
 
-    /// TODO: This is sorta redundant too...?
+    /// TODO: This is sorta redundant with BackendSpec too...?
     pub(crate) fn new_encoder(&mut self) -> gfx::Encoder<
             B::Resources,
             B::CommandBuffer,
@@ -99,8 +94,23 @@ where
         backend: B,
         debug_id: DebugId,
     ) -> GameResult<Self> {
-        let color_format = backend.color_format();
-        let depth_format = backend.depth_format();
+        let srgb = window_setup.srgb;
+        let color_format = if srgb {
+            gfx::format::Format(
+                gfx::format::SurfaceType::R8_G8_B8_A8,
+                gfx::format::ChannelType::Srgb
+            )
+        } else {
+            gfx::format::Format(
+                gfx::format::SurfaceType::R8_G8_B8_A8,
+                gfx::format::ChannelType::Unorm
+            )
+        };
+        let depth_format = gfx::format::Format(
+            gfx::format::SurfaceType::D24_S8,
+            gfx::format::ChannelType::Unorm,
+        );
+        
 
         // WINDOW SETUP
         let gl_builder = glutin::ContextBuilder::new()
@@ -133,6 +143,8 @@ where
                 window_builder,
                 gl_builder,
                 events_loop,
+                color_format,
+                depth_format,
             );
 
         // TODO: see winit #548 about DPI.
@@ -244,6 +256,7 @@ where
             screen_rect: Rect::new(left, top, right - left, bottom - top),
             color_format,
             depth_format,
+            srgb,
 
             backend_spec: backend,
             window,
@@ -351,7 +364,7 @@ where
         // TODO: Clean up
         let mut new_draw_params = draw_params;
         new_draw_params.color = draw_params.color;
-        let properties = new_draw_params.to_instance_properties(self.backend_spec.is_heckin_srgb());
+        let properties = new_draw_params.to_instance_properties(self.srgb);
         self.encoder
             .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;
         Ok(())
@@ -459,9 +472,33 @@ where
     pub(crate) fn resize_viewport(&mut self) {
         // Basically taken from the definition of
         // gfx_window_glutin::update_views()
-        if let Some((cv, dv)) = self.backend_spec.resize_viewport(&self.screen_render_target, &self.depth_view, &self.window) {
+        if let Some((cv, dv)) = self.backend_spec.resize_viewport(&self.screen_render_target, &self.depth_view,
+        self.color_format(), self.depth_format(), &self.window) {
             self.screen_render_target = cv;
             self.depth_view = dv;
+        }
+    }
+
+
+    /// Returns the screen color format used by the context.
+    pub(crate) fn color_format(&self) -> gfx::format::Format {
+        self.color_format
+    }
+    
+
+    /// Returns the screen depth format used by the context.
+    /// 
+    pub(crate) fn depth_format(&self) -> gfx::format::Format {
+        self.depth_format
+    }
+    
+    /// Simple shortcut to check whether the context's color
+    /// format is SRGB or not.
+    pub(crate) fn is_srgb(&self) -> bool {
+        if let gfx::format::Format(_, gfx::format::ChannelType::Srgb) = self.color_format() {
+            true
+        } else {
+            false
         }
     }
 }

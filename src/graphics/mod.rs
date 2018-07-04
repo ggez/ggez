@@ -80,35 +80,6 @@ pub trait BackendSpec: fmt::Debug {
         typed_view
     }
 
-    /// Returns the color format used by textures for this backend.
-    fn color_format(&self) -> gfx::format::Format;
-
-    
-    ///         ''',
-    ///      o_)O \)____)"
-    ///       \_        )
-    ///  woof!  '',,,,,,
-    ///           ||  ||
-    ///          "--'"--'
-    /// 
-    /// BUGGO: Docs
-    fn is_heckin_srgb(&self) -> bool {
-        if let gfx::format::Format(_, gfx::format::ChannelType::Srgb) = self.color_format() {
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Returns the depth  format used by the backend.
-    /// For now this is always the same for every backend.
-    fn depth_format(&self) -> gfx::format::Format {
-        let depth_format = gfx::format::Format(
-            gfx::format::SurfaceType::D24_S8,
-            gfx::format::ChannelType::Unorm,
-        );
-        depth_format
-    }
 
     /// Returns the version of the backend, `(major, minor)`.
     /// 
@@ -120,7 +91,8 @@ pub trait BackendSpec: fmt::Debug {
     fn get_info(&self, device: &Self::Device) -> String;
 
     /// Creates the window.
-    fn init<'a>(&self, window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop) -> (
+    fn init<'a>(&self, window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop,
+    color_format: gfx::format::Format, depth_format: gfx::format::Format) -> (
         glutin::GlWindow, 
         Self::Device, 
         Self::Factory, 
@@ -135,7 +107,9 @@ pub trait BackendSpec: fmt::Debug {
         >;
 
     /// Resizes the viewport for the backend. (right now assumes a Glutin window...)
-    fn resize_viewport(&self, color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>, window: &glutin::GlWindow)  ->
+    fn resize_viewport(&self, color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
+    color_format: gfx::format::Format, depth_format: gfx::format::Format,
+    window: &glutin::GlWindow)  ->
         Option<(gfx::handle::RawRenderTargetView<Self::Resources>, 
         gfx::handle::RawDepthStencilView<Self::Resources>)>;
 }
@@ -156,17 +130,14 @@ pub struct GlBackendSpec {
     major: u8,
     #[default = r#"2"#]
     minor: u8,
-    #[default = r#"true"#]
-    srgb: bool,
 }
 
 impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL { major, minor, srgb } => Self { 
+            conf::Backend::OpenGL { major, minor } => Self { 
                 major, 
-                minor, 
-                srgb: srgb,
+                minor,
             },
         }
     }
@@ -182,15 +153,14 @@ impl BackendSpec for GlBackendSpec {
         (self.major, self.minor)
     }
 
-    fn init<'a>(&self, window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop) -> (
+    fn init<'a>(&self, window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop,
+    color_format: gfx::format::Format, depth_format: gfx::format::Format) -> (
         glutin::GlWindow, 
         Self::Device, 
         Self::Factory, 
         gfx::handle::RawRenderTargetView<Self::Resources>, 
         gfx::handle::RawDepthStencilView<Self::Resources>
     ) {
-        let color_format = self.color_format();
-        let depth_format = self.depth_format();
         use gfx_window_glutin;
         let (window, device, factory, screen_render_target, depth_view) =
             gfx_window_glutin::init_raw(
@@ -221,26 +191,16 @@ impl BackendSpec for GlBackendSpec {
        factory.create_command_buffer().into()
     }
 
-    fn color_format(&self) -> gfx::format::Format {
-        let channeltype = if self.srgb {
-            gfx::format::ChannelType::Srgb
-        } else {
-            gfx::format::ChannelType::Unorm
-        };
-        gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, channeltype)
-    }
-    
 
-
-    fn resize_viewport(&self, color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>, window: &glutin::GlWindow) ->
+    fn resize_viewport(&self, color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
+    color_format: gfx::format::Format, depth_format: gfx::format::Format,
+    window: &glutin::GlWindow) ->
         Option<(gfx::handle::RawRenderTargetView<Self::Resources>, 
         gfx::handle::RawDepthStencilView<Self::Resources>)> {
         // Basically taken from the definition of
         // gfx_window_glutin::update_views()
         let dim = color_view.get_dimensions();
         assert_eq!(dim, depth_view.get_dimensions());
-        let color_format = self.color_format();
-        let depth_format = self.depth_format();
         use gfx_window_glutin;
         if let Some((cv, dv)) = gfx_window_glutin::update_views_raw(
             window,
@@ -446,7 +406,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
 
     let gfx = &mut ctx.gfx_context;
     let (w, h, _depth, aa) = gfx.data.out.get_dimensions();
-    let surface_format = gfx.color_format;
+    let surface_format = gfx.color_format();
     let gfx::format::Format(surface_type, channel_type) = surface_format;
 
     let texture_kind = gfx::texture::Kind::D2(w, h, aa);
@@ -649,6 +609,7 @@ pub fn get_default_filter(ctx: &Context) -> FilterMode {
 
 // TODO: consider putting more stuff here;
 // actual GL version will likely require new glutin features.
+// ALSO TODO: Query actual GL profile stuff
 /// Returns a string that tells a little about the obtained rendering mode.
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
@@ -656,7 +617,7 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
     Ok(format!(
         "Requested GL {}.{} Core profile with sRGB {}, actually got GL ?.? ? profile with sRGB {:?}.",
         ctx.gfx_context.backend_spec.major, ctx.gfx_context.backend_spec.minor,
-        ctx.gfx_context.backend_spec.srgb, ctx.gfx_context.backend_spec.color_format()
+        ctx.gfx_context.is_srgb(), ctx.gfx_context.color_format()
     ))
 }
 
