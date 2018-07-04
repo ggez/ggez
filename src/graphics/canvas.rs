@@ -43,17 +43,16 @@ impl Canvas {
     /// Create a new canvas with the given size and number of samples.
     pub fn new(
         ctx: &mut Context,
-        width: u32,
-        height: u32,
+        width: u16,
+        height: u16,
         samples: conf::NumSamples,
     ) -> GameResult<Canvas> {
         let debug_id = DebugId::get(ctx);
-        let (w, h) = (width as u16, height as u16);
         let aa = match samples {
             conf::NumSamples::One => AaMode::Single,
             s => AaMode::Multi(s as u8),
         };
-        let kind = Kind::D2(w, h, aa);
+        let kind = Kind::D2(width, height, aa);
         let levels = 1;
         let color_format = ctx.gfx_context.color_format();
         let factory = &mut ctx.gfx_context.factory;
@@ -103,7 +102,8 @@ impl Canvas {
         use graphics;
         let (w, h) = graphics::get_drawable_size(ctx);
         // Default to no multisampling
-        Canvas::new(ctx, w, h, conf::NumSamples::One)
+        // TODO: Use winit's into() to translate f64's more accurately
+        Canvas::new(ctx, w as u16, h as u16, conf::NumSamples::One)
     }
 
     /// Gets the backend `Image` that is being rendered to.

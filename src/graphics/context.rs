@@ -5,6 +5,7 @@ use gfx::traits::FactoryExt;
 use gfx::Factory;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
 use glutin;
+use winit::dpi;
 
 use conf::{FullscreenType, WindowMode, WindowSetup};
 use context::DebugId;
@@ -152,10 +153,10 @@ where
             // TODO: improve.
             // Log a bunch of OpenGL state info pulled out of SDL and gfx
             let api = window.get_api();
-            let (w, h) = window
+            let dpi::LogicalSize{width: w, height: h} = window
                 .get_outer_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            let (dw, dh) = window
+            let dpi::LogicalSize{width: dw, height: dh} = window
                 .get_inner_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
             debug!("Window created.");
@@ -430,14 +431,20 @@ where
 
         // TODO: find out if single-dimension constraints are possible.
         let mut min_dimensions = None;
-        if mode.min_width > 0 && mode.min_height > 0 {
-            min_dimensions = Some((mode.min_width, mode.min_height));
+        if mode.min_width > 0.0 && mode.min_height > 0.0 {
+            min_dimensions = Some(dpi::LogicalSize {
+                width: mode.min_width, 
+                height: mode.min_height,
+            });
         }
         window.set_min_dimensions(min_dimensions);
 
         let mut max_dimensions = None;
-        if mode.max_width > 0 && mode.max_height > 0 {
-            max_dimensions = Some((mode.max_width, mode.max_height));
+        if mode.max_width > 0.0 && mode.max_height > 0.0 {
+            max_dimensions = Some(dpi::LogicalSize {
+                width: mode.max_width, 
+                height: mode.max_height
+            });
         }
         window.set_max_dimensions(max_dimensions);
 
@@ -446,19 +453,26 @@ where
             FullscreenType::Off => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
-                window.set_inner_size(mode.width, mode.height);
+                window.set_inner_size(dpi::LogicalSize {
+                    width: mode.width, 
+                    height: mode.height,
+                });
             }
             FullscreenType::True => {
                 window.set_fullscreen(Some(monitor));
-                window.set_inner_size(mode.width, mode.height);
+                window.set_inner_size(dpi::LogicalSize {
+                    width: mode.width, 
+                    height: mode.height,
+                });
             }
             FullscreenType::Desktop => {
                 let position = monitor.get_position();
                 let dimensions = monitor.get_dimensions();
                 window.set_fullscreen(None);
                 window.set_decorations(false);
-                window.set_inner_size(dimensions.0, dimensions.1);
-                window.set_position(position.0, position.1);
+                // BUGGO: Need to find and store dpi_size
+                window.set_inner_size(dimensions.to_logical(1.0));
+                window.set_position(position.to_logical(1.0));
             }
         }
         Ok(())

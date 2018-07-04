@@ -22,8 +22,8 @@ where
     pub(crate) texture_handle: gfx::handle::RawTexture<B::Resources>,
     pub(crate) sampler_info: gfx::texture::SamplerInfo,
     pub(crate) blend_mode: Option<BlendMode>,
-    pub(crate) width: u32,
-    pub(crate) height: u32,
+    pub(crate) width: u16,
+    pub(crate) height: u16,
 
     pub(crate) debug_id: DebugId,
 }
@@ -100,8 +100,8 @@ impl<B> ImageGeneric<B>  where B: BackendSpec{
             texture_handle: raw_tex,
             sampler_info: *sampler_info,
             blend_mode: None,
-            width: u32::from(width),
-            height: u32::from(height),
+            width: width,
+            height: height,
             debug_id,
         })
     }
@@ -230,7 +230,7 @@ impl Image {
         let color_format = image::ColorType::RGBA(8);
         match format {
             ImageFormat::Png => image::png::PNGEncoder::new(writer)
-                .encode(&data, self.width, self.height, color_format)
+                .encode(&data, self.width as u32, self.height as u32, color_format)
                 .map_err(|e| e.into()),
         }
     }
@@ -254,12 +254,12 @@ impl Image {
     */
 
     /// Return the width of the image.
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> u16 {
         self.width
     }
 
     /// Return the height of the image.
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> u16 {
         self.height
     }
 

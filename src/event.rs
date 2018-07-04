@@ -17,6 +17,7 @@
 
 use gilrs;
 use winit;
+use winit::dpi;
 
 /// A key code.
 pub use winit::VirtualKeyCode as KeyCode;
@@ -86,12 +87,12 @@ pub trait EventHandler {
 
     /// The mouse was moved; it provides both absolute x and y coordinates in the window,
     /// and relative x and y coordinates compared to its last position.
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32, _dx: f32, _dy: f32) {
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f64, _y: f64, _dx: f32, _dy: f32) {
     }
 
     /// The mousewheel was scrolled, vertically (y, positive away from and negative toward the user)
     /// or horizontally (x, positive to the right and negative to the left).
-    fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32) {}
+    fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: f64, _y: f64) {}
 
     /// A keyboard button was pressed.
     fn key_down_event(
@@ -136,7 +137,7 @@ pub trait EventHandler {
     /// Is not called when you resize it yourself with
     /// `graphics::set_mode()` though.
     /// TODO: CHECK!
-    fn resize_event(&mut self, _ctx: &mut Context, _width: u32, _height: u32) {}
+    fn resize_event(&mut self, _ctx: &mut Context, _width: f64, _height: f64) {}
 }
 
 /// Runs the game's main loop, calling event callbacks on the given state
@@ -157,7 +158,7 @@ where
             ctx.process_event(&event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::Resized(width, height) => {
+                    WindowEvent::Resized(dpi::LogicalSize{width, height}) => {
                         state.resize_event(ctx, width, height);
                     }
                     WindowEvent::CloseRequested => {
@@ -198,8 +199,8 @@ where
                     },
                     WindowEvent::MouseWheel { delta, .. } => {
                         let (x, y) = match delta {
-                            MouseScrollDelta::LineDelta(x, y) => (x, y),
-                            MouseScrollDelta::PixelDelta(x, y) => (x, y),
+                            MouseScrollDelta::LineDelta(x, y) => (x as f64, y as f64),
+                            MouseScrollDelta::PixelDelta(dpi::LogicalPosition{x, y}) => (x, y),
                         };
                         state.mouse_wheel_event(ctx, x, y);
                     }
@@ -221,7 +222,8 @@ where
                     WindowEvent::CursorMoved { .. } => {
                         let position = mouse::get_position(ctx);
                         let delta = mouse::get_delta(ctx);
-                        state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
+                        // BUGGO: Smooth out winit-related f32 vs f64 stuff!
+                        state.mouse_motion_event(ctx, position.x as f64, position.y as f64, delta.x, delta.y);
                     }
                     _ => (),
                 },

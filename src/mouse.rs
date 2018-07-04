@@ -1,9 +1,11 @@
 //! Mouse utility functions.
 
+use GameError;
 use context::Context;
 use graphics;
 use graphics::Point2;
-pub use winit::{CursorState, MouseCursor};
+pub use winit::{MouseCursor};
+use winit::dpi;
 use GameResult;
 
 /// Stores state information for the mouse,
@@ -13,7 +15,8 @@ pub struct MouseContext {
     last_position: Point2,
     last_delta: Point2,
     cursor_type: MouseCursor,
-    cursor_state: CursorState,
+    cursor_grabbed: bool,
+    cursor_hidden: bool
 }
 
 impl MouseContext {
@@ -22,7 +25,8 @@ impl MouseContext {
             last_position: Point2::origin(),
             last_delta: Point2::origin(),
             cursor_type: MouseCursor::Default,
-            cursor_state: CursorState::Normal,
+            cursor_grabbed: false,
+            cursor_hidden: false,
         }
     }
 
@@ -52,17 +56,29 @@ pub fn set_cursor_type(ctx: &mut Context, cursor_type: MouseCursor) {
     graphics::get_window(ctx).set_cursor(cursor_type);
 }
 
-/// Set whether or not the mouse is grabbed (confined to the window) or hidden (invisible).
-pub fn get_cursor_state(ctx: &Context) -> CursorState {
-    ctx.mouse_context.cursor_state
+/// Get whether or not the mouse is grabbed (confined to the window)
+pub fn get_cursor_grabbed(ctx: &Context) -> bool {
+    ctx.mouse_context.cursor_grabbed
 }
 
-/// Set whether or not the mouse is grabbed (confined to the window) or hidden (invisible).
-pub fn set_cursor_state(ctx: &mut Context, state: CursorState) -> GameResult<()> {
-    ctx.mouse_context.cursor_state = state;
+/// Set whether or not the mouse is grabbed (confined to the window)
+pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
+    ctx.mouse_context.cursor_grabbed = grabbed;
     graphics::get_window(ctx)
-        .set_cursor_state(state)
-        .map_err(|e| e.into())
+        .grab_cursor(grabbed)
+        .map_err(GameError::from)
+}
+
+/// Set whether or not the mouse is hidden (invisible)
+pub fn get_cursor_hidden(ctx: &Context) -> bool {
+    ctx.mouse_context.cursor_hidden
+}
+
+/// Set whether or not the mouse is hidden (invisible).
+pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
+    ctx.mouse_context.cursor_hidden = hidden;
+    graphics::get_window(ctx)
+        .hide_cursor(hidden)
 }
 
 /// Get the current position of the mouse cursor, in pixels.
@@ -81,11 +97,10 @@ pub fn get_delta(ctx: &Context) -> Point2 {
 /// Uses strictly window-only coordinates.
 pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
     ctx.mouse_context.last_position = point;
-    if graphics::get_window(ctx)
-        .set_cursor_position(point.x as i32, point.y as i32)
-        .is_err()
-    {
-        return Err("Couldn't set mouse cursor position!".to_owned().into());
-    }
-    Ok(())
+    graphics::get_window(ctx)
+        .set_cursor_position(dpi::LogicalPosition {
+            x: point.x as f64, 
+            y: point.y as f64,
+        })
+        .map_err(|_| "Couldn't set mouse cursor position!".to_owned().into())
 }

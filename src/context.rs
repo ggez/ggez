@@ -1,4 +1,5 @@
 use winit;
+use winit::dpi;
 
 use std::fmt;
 
@@ -139,11 +140,11 @@ impl Context {
     pub fn process_event(&mut self, event: &winit::Event) {
         match event {
             winit_event::Event::WindowEvent { event, .. } => match event {
-                winit_event::WindowEvent::Resized(_, _) => {
+                winit_event::WindowEvent::Resized(_) => {
                     self.gfx_context.resize_viewport();
                 }
                 winit_event::WindowEvent::CursorMoved {
-                    position: (x, y), ..
+                    position: dpi::LogicalPosition{x, y}, ..
                 } => {
                     self.mouse_context
                         .set_last_position(Point2::new(*x as f32, *y as f32));

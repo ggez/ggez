@@ -458,8 +458,8 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         texture_handle: target_texture,
         sampler_info: gfx.default_sampler_info,
         blend_mode: None,
-        width: u32::from(w),
-        height: u32::from(h),
+        width: w,
+        height: h,
         debug_id,
     };
 
@@ -791,7 +791,7 @@ pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -
 }
 
 /// Sets the window resolution based on the specified width and height.
-pub fn set_resolution(context: &mut Context, width: u32, height: u32) -> GameResult {
+pub fn set_resolution(context: &mut Context, width: f64, height: f64) -> GameResult {
     let mut window_mode = context.conf.window_mode;
     window_mode.width = width;
     window_mode.height = height;
@@ -815,13 +815,6 @@ pub fn set_window_title(context: &Context, title: &str) {
     context.gfx_context.window.set_title(title);
 }
 
-// TODO: rewrite, possibly expand; see winit #555
-/*/// Returns the number of connected displays.
-pub fn get_display_count(context: &Context) -> GameResult<i32> {
-    let video = context.sdl_context.video()?;
-    video.num_video_displays().map_err(GameError::VideoError)
-}*/
-
 /// Returns a reference to the SDL window.
 /// Ideally you should not need to use this because ggez
 /// would provide all the functions you need without having
@@ -834,16 +827,22 @@ pub fn get_window(context: &Context) -> &glutin::Window {
 /// Returns the size of the window in pixels as (width, height),
 /// including borders, titlebar, etc.
 /// Returns zeros if window doesn't exist.
-pub fn get_size(context: &Context) -> (u32, u32) {
+/// TODO: Rename, since get_drawable_size is usually what we
+/// actually want
+pub fn get_size(context: &Context) -> (f64, f64) {
     let gfx = &context.gfx_context;
-    gfx.window.get_outer_size().unwrap_or((0, 0))
+    gfx.window.get_outer_size()
+        .map(|logical_size| (logical_size.width, logical_size.height))
+        .unwrap_or((0.0, 0.0))
 }
 
 /// Returns the size of the window's underlying drawable in pixels as (width, height).
 /// Returns zeros if window doesn't exist.
-pub fn get_drawable_size(context: &Context) -> (u32, u32) {
+pub fn get_drawable_size(context: &Context) -> (f64, f64) {
     let gfx = &context.gfx_context;
-    gfx.window.get_inner_size().unwrap_or((0, 0))
+    gfx.window.get_inner_size()
+        .map(|logical_size| (logical_size.width, logical_size.height))
+        .unwrap_or((0.0, 0.0))
 }
 
 /// Returns the gfx-rs `Factory` object for ggez's rendering context.
