@@ -64,9 +64,10 @@
 //! ```
 
 use context::Context;
-use event::winit_event::ModifiersState;
-use event::KeyCode;
-use std::collections::VecDeque;
+
+/// A key code.
+pub use winit::VirtualKeyCode as KeyCode;
+use winit::ModifiersState;
 
 bitflags! {
     /// Bitflags describing state of keyboard modifiers, such as Control or Shift.
@@ -104,47 +105,53 @@ impl From<ModifiersState> for KeyMods {
     }
 }
 
+
 /// Tracks held down keyboard keys, active keyboard modifiers,
 /// and figures out if the system is sending repeat keystrokes.
 #[derive(Clone, Debug)]
 pub struct KeyboardContext {
     active_modifiers: KeyMods,
-    pressed_keys: Vec<KeyCode>,
-    last_pressed: VecDeque<KeyCode>,
+    /// A simple mapping of which key code has been pressed.
+    /// KeyCode's are a c-like enum, and so can be converted to/from
+    /// simple integers.
+    /// As of winit 0.16 this is Big Enough For Anyone; assertions
+    /// will check if that assumption gets violated
+    pressed_keys: Vec<bool>,
+    last_pressed: Option<KeyCode>,
 }
 
 impl KeyboardContext {
     pub(crate) fn new() -> Self {
+        // We reserve a fixed-size vec because we never want to have
+        // to bother resizing it, but it is not easy to ask
+        // Rust what an enum's max member is and a Sufficiently Big
+        // fixed-size array `[bool; MAX_KEY_IDX]` doesn't implement
+        // nice things like Debug.  :|
+        const MAX_KEY_IDX: usize = 256;
+        let mut key_vec =  Vec::with_capacity(MAX_KEY_IDX);
+        key_vec.resize(MAX_KEY_IDX, false);
         Self {
             active_modifiers: KeyMods::empty(),
-            pressed_keys: Vec::with_capacity(16),
-            last_pressed: VecDeque::with_capacity(3),
+            pressed_keys: key_vec,
+            last_pressed: None,
         }
     }
 
+
+    // TODO: Set modifiers correctly
+    // and in general cmake sure this is hooked up correctly
+    // from Context::process_event().
+    // Looks like it is, but, not 100% sure.
     pub(crate) fn set_key(&mut self, key: KeyCode, pressed: bool) {
+        let key_idx = key as usize;
+        assert!(key_idx < self.pressed_keys.len());
+        self.pressed_keys[key_idx] = pressed;
         if pressed {
-            if !self.pressed_keys.contains(&key) {
-                self.pressed_keys.push(key);
-            }
-
-            self.last_pressed.push_back(key);
-            if self.last_pressed.len() > 2 {
-                let _ = self.last_pressed.pop_front();
-            }
+            self.last_pressed = Some(key);
         } else {
-            if let Some(i) = self.pressed_keys
-                .iter()
-                .enumerate()
-                .find(|(_i, pressed_key)| **pressed_key == key)
-                .map(|(i, _)| i)
-            {
-                let _ = self.pressed_keys.swap_remove(i);
-            }
-
-            self.last_pressed.clear();
-
-            // This ensures `active_modifiers` are correct in repeated keystroke edge cases.
+            // Double check that this edge handling is necessary;
+            // winit sounds like it should do this for us,
+            // see https://docs.rs/winit/0.16.1/winit/struct.KeyboardInput.html#structfield.modifiers
             match key {
                 KeyCode::LShift | KeyCode::RShift => self.active_modifiers -= KeyMods::SHIFT,
                 KeyCode::LControl | KeyCode::RControl => self.active_modifiers -= KeyMods::CTRL,
@@ -155,25 +162,44 @@ impl KeyboardContext {
         }
     }
 
+    // TODO: Merge into set_key?
     pub(crate) fn set_modifiers(&mut self, keymods: KeyMods) {
         self.active_modifiers = keymods;
     }
 
     pub(crate) fn is_key_pressed(&self, key: KeyCode) -> bool {
-        self.pressed_keys.contains(&key)
+        let key_idx = key as usize;
+        assert!(key_idx < self.pressed_keys.len());
+        self.pressed_keys[key_idx]
     }
 
     pub(crate) fn is_key_repeated(&self) -> bool {
-        if let Some(key1) = self.last_pressed.get(0) {
-            if let Some(key2) = self.last_pressed.get(1) {
-                return key1 == key2;
-            }
+        if let Some(key) = self.last_pressed {
+            self.is_key_pressed(key)
+        } else {
+            false
         }
-        false
     }
 
-    pub(crate) fn get_pressed_keys(&self) -> &[KeyCode] {
-        &self.pressed_keys
+    pub(crate) fn get_pressed_keys(&self) -> Vec<KeyCode> {
+        self.pressed_keys.iter()
+            .enumerate()
+            .filter_map(|(key_idx, b)| {
+                if *b {
+                    // Sigh
+                    // Horrible unsafe pointer cast to turn a number
+                    // into the matching KeyCode, because Rust's support
+                    // for C-like numeric enums is UTTER GARBAGE.
+                    // TODO: Can we protect this with an assertion somehow?
+                    let keycode: &KeyCode = unsafe { 
+                        &*(&key_idx as *const usize as *const KeyCode) 
+                    };
+                    Some(*keycode)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub(crate) fn get_active_mods(&self) -> KeyMods {
@@ -199,7 +225,7 @@ pub fn is_key_repeated(ctx: &Context) -> bool {
 }
 
 /// Returns a slice with currently pressed down keys.
-pub fn get_pressed_keys(ctx: &Context) -> &[KeyCode] {
+pub fn get_pressed_keys(ctx: &Context) -> Vec<KeyCode> {
     ctx.keyboard_context.get_pressed_keys()
 }
 

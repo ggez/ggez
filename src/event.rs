@@ -19,10 +19,7 @@ use gilrs;
 use winit;
 use winit::dpi;
 
-/// A key code.
-pub use winit::VirtualKeyCode as KeyCode;
-
-pub use keyboard::KeyMods;
+pub use keyboard::{KeyCode, KeyMods};
 /// A mouse button.
 pub use winit::MouseButton;
 
