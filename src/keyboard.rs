@@ -127,6 +127,8 @@ impl KeyboardContext {
         // Rust what an enum's max member is and a Sufficiently Big
         // fixed-size array `[bool; MAX_KEY_IDX]` doesn't implement
         // nice things like Debug.  :|
+        // We have an assert everywhere pressed_keys is accessed so 
+        // we know if this assumption is broken.
         const MAX_KEY_IDX: usize = 256;
         let mut key_vec =  Vec::with_capacity(MAX_KEY_IDX);
         key_vec.resize(MAX_KEY_IDX, false);
@@ -144,7 +146,7 @@ impl KeyboardContext {
     // Looks like it is, but, not 100% sure.
     pub(crate) fn set_key(&mut self, key: KeyCode, pressed: bool) {
         let key_idx = key as usize;
-        assert!(key_idx < self.pressed_keys.len());
+        assert!(key_idx < self.pressed_keys.len(), "Impossible KeyCode detected!");
         self.pressed_keys[key_idx] = pressed;
         if pressed {
             self.last_pressed = Some(key);
@@ -169,7 +171,7 @@ impl KeyboardContext {
 
     pub(crate) fn is_key_pressed(&self, key: KeyCode) -> bool {
         let key_idx = key as usize;
-        assert!(key_idx < self.pressed_keys.len());
+        assert!(key_idx < self.pressed_keys.len(), "Impossible KeyCode detected!");
         self.pressed_keys[key_idx]
     }
 
@@ -224,7 +226,7 @@ pub fn is_key_repeated(ctx: &Context) -> bool {
     ctx.keyboard_context.is_key_repeated()
 }
 
-/// Returns a slice with currently pressed down keys.
+/// Returns a Vec with currently pressed keys.
 pub fn get_pressed_keys(ctx: &Context) -> Vec<KeyCode> {
     ctx.keyboard_context.get_pressed_keys()
 }
