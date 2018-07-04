@@ -93,7 +93,7 @@ impl WindowMode {
         self
     }
 
-    /// Set if window should be maximized
+    /// Set whether the window should be maximized
     pub fn maximized(mut self, maximized: bool) -> Self {
         self.maximized = maximized;
         self
@@ -194,6 +194,8 @@ impl WindowSetup {
     }
 
     /// Set if window background should be transparent.
+    /// 
+    /// TODO: Is this necessary?  Do we ever want this?
     pub fn transparent(mut self, transparent: bool) -> Self {
         self.transparent = transparent;
         self
@@ -223,6 +225,9 @@ pub enum Backend {
         #[default = r#"2"#]
         minor: u8,
         /// Whether or not to enable sRGB (gamma corrected color)
+        /// handling on the display.
+        /// 
+        /// TODO: Move to WindowSetup
         #[default = r#"true"#]
         srgb: bool,
     },

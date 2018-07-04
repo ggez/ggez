@@ -10,6 +10,8 @@
 //! different versions of ggez (for instance, we may someday get rid of SDL2),
 //! but trying to wrap it
 //! up more conveniently really ends up with the exact same interface.
+//! 
+//! TODO: UPDATE DOCS!
 //!
 //! See the `eventloop` example for an implementation.
 
@@ -49,10 +51,10 @@ use GameResult;
 /// `event::run()` to run the game's mainloop.
 ///
 /// The default event handlers do nothing, apart from
-/// `key_down_event()`, which will by default exit the game if escape
-/// is pressed.  Just override the methods you want to do things with.
+/// `key_down_event()`, which will by default exit the game if the escape
+/// key is pressed.  Just override the methods you want to do things with.
 pub trait EventHandler {
-    /// Called upon each physics update to the game.
+    /// Called upon each logic update to the game.
     /// This should be where the game's logic takes place.
     fn update(&mut self, _ctx: &mut Context) -> GameResult;
 
@@ -84,7 +86,7 @@ pub trait EventHandler {
 
     /// The mouse was moved; it provides both absolute x and y coordinates in the window,
     /// and relative x and y coordinates compared to its last position.
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32, _xrel: f32, _yrel: f32) {
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32, _dx: f32, _dy: f32) {
     }
 
     /// The mousewheel was scrolled, vertically (y, positive away from and negative toward the user)
@@ -133,6 +135,7 @@ pub trait EventHandler {
     /// Called when the user resizes the window.
     /// Is not called when you resize it yourself with
     /// `graphics::set_mode()` though.
+    /// TODO: CHECK!
     fn resize_event(&mut self, _ctx: &mut Context, _width: u32, _height: u32) {}
 }
 
@@ -171,20 +174,27 @@ where
                     WindowEvent::KeyboardInput {
                         input:
                             KeyboardInput {
-                                state: element_state,
+                                state: ElementState::Pressed,
                                 virtual_keycode: Some(keycode),
                                 modifiers,
                                 ..
                             },
                         ..
-                    } => match element_state {
-                        ElementState::Pressed => {
-                            let repeat = keyboard::is_key_repeated(ctx);
-                            state.key_down_event(ctx, keycode, modifiers.into(), repeat);
-                        }
-                        ElementState::Released => {
-                            state.key_up_event(ctx, keycode, modifiers.into());
-                        }
+                    } => {
+                        let repeat = keyboard::is_key_repeated(ctx);
+                        state.key_down_event(ctx, keycode, modifiers.into(), repeat);
+                    }
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: ElementState::Released,
+                                virtual_keycode: Some(keycode),
+                                modifiers,
+                                ..
+                            },
+                        ..
+                    } => {
+                        state.key_up_event(ctx, keycode, modifiers.into());
                     },
                     WindowEvent::MouseWheel { delta, .. } => {
                         let (x, y) = match delta {
@@ -218,8 +228,8 @@ where
                 Event::DeviceEvent { event, .. } => match event {
                     _ => (),
                 },
-                Event::Awakened => unimplemented!(),
-                Event::Suspended(_) => unimplemented!(),
+                Event::Awakened => (),
+                Event::Suspended(_) => (),
             }
         });
         while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.gilrs.next_event() {

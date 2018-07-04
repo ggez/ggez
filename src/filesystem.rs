@@ -13,20 +13,17 @@
 //! `Context::load_from_conf()`; some platforms such as Windows also
 //! incorporate the `author` string into the path.
 //!
-//! Files will be searched for in these locations in order, and the first one
+//! These locations will be searched in order for files, and the first file
 //! found used.  That allows game assets to be easily distributed as an archive
 //! file, but locally overridden for testing or modding simply by putting
-//! altered copies of them in the game's `resources/` directory.
+//! altered copies of them in the game's `resources/` directory.  It
+//! is loosely based off of the `PhysicsFS` library.
 //!
 //! See the source of the `files` example for more details.
 //!
 //! Note that the file lookups WILL follow symlinks!  It is
 //! more for convenience than absolute security, so don't treat it as
 //! being secure.
-//!
-//! If you build `ggez` with the `cargo-resource-root` feature flag, it will
-//! also look for a `resources/` subdirectory in the same directory as your
-//! `Cargo.toml`, which can be very convenient for development.
 
 use std::env;
 use std::fmt;
@@ -152,18 +149,6 @@ impl Filesystem {
             trace!("User-local configuration path: {:?}", user_config_path);
             let physfs = vfs::PhysicalFS::new(&user_config_path, false);
             overlay.push_back(Box::new(physfs));
-        }
-
-        // Cargo manifest dir!
-        #[cfg(feature = "cargo-resource-root")]
-        {
-            if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
-                let mut path = path::PathBuf::from(manifest_dir);
-                path.push("resources");
-                trace!("Cargo manifest resource path: {:?}", user_data_path);
-                let physfs = vfs::PhysicalFS::new(&path, true);
-                overlay.push_back(Box::new(physfs));
-            }
         }
 
         let fs = Filesystem {

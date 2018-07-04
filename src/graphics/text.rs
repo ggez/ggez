@@ -459,6 +459,12 @@ impl Font {
     }
 }
 
+impl Default for Font {
+    fn default() -> Self {
+        Font(FontId(0))
+    }
+}
+
 
 
 /// Queues the `Text`
@@ -487,15 +493,6 @@ where
         Some(layout) => brush.queue_custom_layout(section, layout),
         None => brush.queue(section),
     }
-}
-
-
-/// Returns baked-in default font (currently DejaVuSerif.ttf).
-/// Note it does create a new `Font` object with every call;
-/// although the actual data should be shared.
-pub fn default_font(context: &Context) -> Font {
-    // BUGGO: fix DPI.
-    context.default_font
 }
 
 /// Draws all of `queue()`d `Text`es.

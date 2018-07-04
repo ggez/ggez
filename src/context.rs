@@ -25,14 +25,10 @@ use GameResult;
 /// need to be transformed into a format the hardware likes) will need
 /// to access the `Context`.
 pub struct Context {
-    /// The Conf object the Context was created with
-    pub conf: conf::Conf,
     /// Filesystem state
     pub filesystem: Filesystem,
     /// Graphics state
     pub(crate) gfx_context: graphics::GraphicsContext,
-    /// Controls whether or not the events loop should be running.
-    pub continuing: bool,
     /// Timer state
     pub timer_context: timer::TimeContext,
     /// Audio context
@@ -43,8 +39,11 @@ pub struct Context {
     pub mouse_context: mouse::MouseContext,
     /// Gamepad context
     pub gamepad_context: gamepad::GamepadContext,
-    /// Default font
-    pub default_font: graphics::Font,
+
+    /// The Conf object the Context was created with
+    pub conf: conf::Conf,
+    /// Controls whether or not the event loop should be running.
+    pub continuing: bool,
 
     /// Context-specific unique ID.
     /// Compiles to nothing in release mode, and so
@@ -68,7 +67,7 @@ impl Context {
         let events_loop = winit::EventsLoop::new();
         let timer_context = timer::TimeContext::new();
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
-        let mut graphics_context = graphics::GraphicsContext::new(
+        let graphics_context = graphics::GraphicsContext::new(
             &events_loop,
             &conf.window_setup,
             conf.window_mode,
@@ -79,11 +78,6 @@ impl Context {
         let keyboard_context = keyboard::KeyboardContext::new();
         let gamepad_context = gamepad::GamepadContext::new()?;
 
-        // TODO: Clean up the bytes here a bit.
-        let font_id = graphics_context
-            .glyph_brush
-            .add_font_bytes(graphics::Font::default_font_bytes());
-        let default_font = graphics::Font(font_id);
 
         let ctx = Context {
             conf,
@@ -96,7 +90,6 @@ impl Context {
             gamepad_context,
             mouse_context,
 
-            default_font: default_font,
             debug_id,
         };
 
@@ -273,11 +266,11 @@ use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 static DEBUG_ID_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
 /// This is a type that contains a unique ID for each Context and
-/// is contained in each thing created from the Context which contains
-/// data that becomes invalid when the Context goes away (ie, texture
-/// handles).  When compiling without assertions (ie in release mode) it
-/// is replaced with a zero-size type, compiles down to nothing,
-/// and should disappear entirely with a puff of optimization logic.
+/// is contained in each thing created from the Context which
+/// becomes invalid when the Context goes away (for example, Image because
+/// it contains texture handles).  When compiling without assertions 
+/// (in release mode) it is replaced with a zero-size type, compiles
+/// down to nothing, disappears entirely with a puff of optimization logic.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg(debug_assertions)]
 pub(crate) struct DebugId(u32);
