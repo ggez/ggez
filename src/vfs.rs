@@ -795,7 +795,7 @@ mod tests {
         let f = fs.open(Path::new("/Cargo.toml")).unwrap();
         let mut bf = io::BufReader::new(f);
         let mut s = String::new();
-        bf.read_line(&mut s).unwrap();
+        let _ = bf.read_line(&mut s).unwrap();
         // Trim whitespace from string 'cause it will
         // potentially be different on Windows and Unix.
         let trimmed_string = s.trim();
@@ -841,12 +841,12 @@ mod tests {
         fs.mkdir(testdir).unwrap();
         {
             let mut f = fs.append(f1).unwrap();
-            f.write(test_string.as_bytes()).unwrap();
+            let _ = f.write(test_string.as_bytes()).unwrap();
         }
         {
             let mut buf = Vec::new();
             let mut f = fs.open(f1).unwrap();
-            f.read_to_end(&mut buf).unwrap();
+            let _ = f.read_to_end(&mut buf).unwrap();
             assert_eq!(&buf[..], test_string.as_bytes());
         }
 

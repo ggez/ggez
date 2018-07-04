@@ -502,12 +502,12 @@ mod tests {
 
         {
             let mut file = fs.create(test_file).unwrap();
-            file.write(bytes).unwrap();
+            let _ = file.write(bytes).unwrap();
         }
         {
             let mut buffer = Vec::new();
             let mut file = fs.open(test_file).unwrap();
-            file.read_to_end(&mut buffer).unwrap();
+            let _ = file.read_to_end(&mut buffer).unwrap();
             assert_eq!(bytes, buffer.as_slice());
         }
 

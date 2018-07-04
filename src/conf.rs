@@ -21,20 +21,12 @@ pub enum FullscreenType {
     /// Windowed mode
     Off,
     /// Real fullscreen
-    True(MonitorId),
+    True,
     /// Windowed fullscreen, generally preferred over real fullscreen
     /// these days 'cause it plays nicer with multiple monitors.
-    Desktop(MonitorId),
+    Desktop,
 }
 
-/// Identifies a monitor connected to the system.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum MonitorId {
-    /// Monitor the window is currently in.
-    Current,
-    /// Monitor retrieved by it's index in the system.
-    Index(usize),
-}
 
 /// A builder structure containing window settings
 /// that can be set at runtime and changed with `graphics::set_mode()`

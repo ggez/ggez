@@ -6,7 +6,7 @@ use gfx::Factory;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
 use glutin;
 
-use conf::{FullscreenType, MonitorId, WindowMode, WindowSetup};
+use conf::{FullscreenType, WindowMode, WindowSetup};
 use context::DebugId;
 use graphics::*;
 
@@ -55,9 +55,6 @@ where
     pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
     pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
-
-    // TODO: this is temporary: see winit #555.
-    available_monitors: Vec<glutin::MonitorId>,
 }
 
 
@@ -137,8 +134,6 @@ where
                 gl_builder,
                 events_loop,
             );
-
-        let available_monitors = events_loop.get_available_monitors().collect();
 
         // TODO: see winit #548 about DPI.
         {
@@ -271,8 +266,6 @@ where
             shaders: vec![draw],
 
             glyph_brush,
-
-            available_monitors,
         };
         gfx.set_window_mode(window_mode)?;
 
@@ -435,33 +428,18 @@ where
         }
         window.set_max_dimensions(max_dimensions);
 
+        let monitor = window.get_current_monitor();
         match mode.fullscreen_type {
             FullscreenType::Off => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
                 window.set_inner_size(mode.width, mode.height);
             }
-            FullscreenType::True(monitor) => {
-                let monitor = match monitor {
-                    MonitorId::Current => window.get_current_monitor(),
-                    MonitorId::Index(i) => if i < self.available_monitors.len() {
-                        self.available_monitors[i].clone()
-                    } else {
-                        return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
-                    },
-                };
+            FullscreenType::True => {
                 window.set_fullscreen(Some(monitor));
                 window.set_inner_size(mode.width, mode.height);
             }
-            FullscreenType::Desktop(monitor) => {
-                let monitor = match monitor {
-                    MonitorId::Current => window.get_current_monitor(),
-                    MonitorId::Index(i) => if i < self.available_monitors.len() {
-                        self.available_monitors[i].clone()
-                    } else {
-                        return Err(GameError::VideoError(format!("No monitor #{} found!", i)));
-                    },
-                };
+            FullscreenType::Desktop => {
                 let position = monitor.get_position();
                 let dimensions = monitor.get_dimensions();
                 window.set_fullscreen(None);
