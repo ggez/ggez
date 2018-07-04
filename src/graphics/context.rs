@@ -320,7 +320,7 @@ where
     /// (model) matrix stack.
     pub(crate) fn pop_transform(&mut self) {
         if self.modelview_stack.len() > 1 {
-            self.modelview_stack.pop();
+            let _ = self.modelview_stack.pop();
         }
     }
 

@@ -86,7 +86,7 @@ impl OpenOptions {
 
     fn to_fs_openoptions(&self) -> fs::OpenOptions {
         let mut opt = fs::OpenOptions::new();
-        opt.read(self.read)
+        let _ = opt.read(self.read)
             .write(self.write)
             .create(self.create)
             .append(self.append)
@@ -583,7 +583,7 @@ pub struct ZipFileWrapper {
 impl ZipFileWrapper {
     fn new(z: &mut zip::read::ZipFile) -> GameResult<Self> {
         let mut b = Vec::new();
-        z.read_to_end(&mut b)?;
+        let _ = z.read_to_end(&mut b)?;
         Ok(Self {
             buffer: io::Cursor::new(b),
         })

@@ -208,7 +208,7 @@ impl Text {
         F: Into<TextFragment>,
     {
         let mut text = Text::default();
-        text.add(fragment);
+        let _ = text.add(fragment);
         text
     }
 
@@ -435,7 +435,7 @@ impl Font {
         use filesystem;
         let mut stream = filesystem::open(context, path.as_ref())?;
         let mut buf = Vec::new();
-        stream.read_to_end(&mut buf)?;
+        let _ = stream.read_to_end(&mut buf)?;
 
         // TODO: DPI; see winit #548.  Also need point size, pixels, etc...
         Font::new_glyph_font_bytes(context, &buf)

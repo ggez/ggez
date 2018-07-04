@@ -101,7 +101,7 @@ impl Filesystem {
 
         // Ditch the filename (if any)
         if root_path.file_name().is_some() {
-            root_path.pop();
+            let _ = root_path.pop();
         }
 
         // Set up VFS to merge resource path, root path, and zip path.

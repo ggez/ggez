@@ -142,7 +142,7 @@ where
         mode: BlendMode,
         pso: PipelineState<Spec::Resources, ConstMeta<C>>,
     ) {
-        self.psos.insert(mode, pso);
+        let _ = self.psos.insert(mode, pso);
     }
 
     pub fn get_mode(
@@ -274,13 +274,13 @@ where
         let vertex_source = {
             let mut buf = Vec::new();
             let mut reader = ctx.filesystem.open(vertex_path)?;
-            reader.read_to_end(&mut buf)?;
+            let _ = reader.read_to_end(&mut buf)?;
             buf
         };
         let pixel_source = {
             let mut buf = Vec::new();
             let mut reader = ctx.filesystem.open(pixel_path)?;
-            reader.read_to_end(&mut buf)?;
+            let _ = reader.read_to_end(&mut buf)?;
             buf
         };
         Shader::from_u8(
@@ -410,7 +410,7 @@ where
     }
 
     fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult {
-        self.psos.get_mode(&mode)?;
+        let _ = self.psos.get_mode(&mode)?;
         self.active_blend_mode = mode;
         Ok(())
     }
@@ -529,7 +529,7 @@ where
             // create a local clone of the program info so that we can remove
             // the var we found from the `constant_buffer`
             let mut program_info = info.clone();
-            program_info.constant_buffers.remove(index);
+            let _ = program_info.constant_buffers.remove(index);
 
             let meta0 = match self.0.link_to(desc, &program_info) {
                 Ok(m) => m,

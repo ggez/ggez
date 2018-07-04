@@ -133,7 +133,7 @@ impl Image {
         let img = {
             let mut buf = Vec::new();
             let mut reader = context.filesystem.open(path)?;
-            reader.read_to_end(&mut buf)?;
+            let _ = reader.read_to_end(&mut buf)?;
             image::load_from_memory(&buf)?.to_rgba()
         };
         let (width, height) = img.dimensions();

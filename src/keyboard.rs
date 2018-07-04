@@ -130,7 +130,7 @@ impl KeyboardContext {
 
             self.last_pressed.push_back(key);
             if self.last_pressed.len() > 2 {
-                self.last_pressed.pop_front();
+                let _ = self.last_pressed.pop_front();
             }
         } else {
             if let Some(i) = self.pressed_keys
@@ -139,7 +139,7 @@ impl KeyboardContext {
                 .find(|(_i, pressed_key)| **pressed_key == key)
                 .map(|(i, _)| i)
             {
-                self.pressed_keys.swap_remove(i);
+                let _ = self.pressed_keys.swap_remove(i);
             }
 
             self.last_pressed.clear();

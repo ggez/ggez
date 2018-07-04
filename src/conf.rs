@@ -324,7 +324,7 @@ impl Conf {
     /// a `Conf` from it.
     pub fn from_toml_file<R: io::Read>(file: &mut R) -> GameResult<Conf> {
         let mut s = String::new();
-        file.read_to_string(&mut s)?;
+        let _ = file.read_to_string(&mut s)?;
         let decoded = toml::from_str(&s)?;
         Ok(decoded)
     }

@@ -29,6 +29,7 @@
  * Removed `Context::print_resource_stats()` in favor of `filesystem::print_all()`.
  * Removed `TTFFont` font type in favor of `GlyphBrush`. [#132](https://github.com/ggez/ggez/issues/132)
  * Removed bitmap fonts; better support deserves to exist, and there's no reason it can't be its own crate.
+ * Removed the `cargo-resource-root` feature flag; just use `filesystem::mount()` instead.
 
 ## Fixed
 

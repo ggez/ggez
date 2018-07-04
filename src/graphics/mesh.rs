@@ -98,7 +98,7 @@ impl MeshBuilder {
                     // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let fill_options = t::FillOptions::default().with_tolerance(tolerance);
-                    t::basic_shapes::fill_circle(
+                    let _ = t::basic_shapes::fill_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &fill_options,
@@ -110,7 +110,7 @@ impl MeshBuilder {
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width)
                         .with_tolerance(tolerance);
-                    t::basic_shapes::stroke_circle(
+                    let _ = t::basic_shapes::stroke_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &options,
@@ -119,7 +119,7 @@ impl MeshBuilder {
                 }
                 DrawMode::CustomFill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::fill_circle(
+                    let _ = t::basic_shapes::fill_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &fill_options.with_tolerance(tolerance),
@@ -128,7 +128,7 @@ impl MeshBuilder {
                 }
                 DrawMode::CustomLine(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::stroke_circle(
+                    let _ = t::basic_shapes::stroke_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &options.with_tolerance(tolerance),
@@ -161,7 +161,7 @@ impl MeshBuilder {
                 DrawMode::Fill => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let fill_options = t::FillOptions::default().with_tolerance(tolerance);
-                    t::basic_shapes::fill_ellipse(
+                    let _ = t::basic_shapes::fill_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
                         t::math::Angle { radians: 0.0 },
@@ -174,7 +174,7 @@ impl MeshBuilder {
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width)
                         .with_tolerance(tolerance);
-                    t::basic_shapes::stroke_ellipse(
+                    let _ = t::basic_shapes::stroke_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
                         t::math::Angle { radians: 0.0 },
@@ -184,7 +184,7 @@ impl MeshBuilder {
                 }
                 DrawMode::CustomFill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::fill_ellipse(
+                    let _ = t::basic_shapes::fill_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
                         t::math::Angle { radians: 0.0 },
@@ -194,7 +194,7 @@ impl MeshBuilder {
                 }
                 DrawMode::CustomLine(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::stroke_ellipse(
+                    let _ = t::basic_shapes::stroke_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
                         t::math::Angle { radians: 0.0 },
@@ -240,24 +240,24 @@ impl MeshBuilder {
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
                     // TODO: Removing this expect would be rather nice.
-                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
+                    let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
                         .expect("Could not fill polygon?");
                 }
                 DrawMode::Line(width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let options = t::StrokeOptions::default().with_line_width(width);
-                    t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
+                    let _ = t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
                 }
                 DrawMode::CustomFill(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let tessellator = &mut t::FillTessellator::new();
                     // TODO: Removing this expect would be rather nice.
-                    t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
+                    let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
                         .expect("Could not fill polygon?");
                 }
                 DrawMode::CustomLine(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
+                    let _ = t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
                 }
             };
         }
@@ -278,7 +278,7 @@ impl MeshBuilder {
                     // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let fill_options = t::FillOptions::default();
-                    t::basic_shapes::fill_rectangle(
+                    let _ = t::basic_shapes::fill_rectangle(
                         &rect,
                         &fill_options,
                         builder,
@@ -288,7 +288,7 @@ impl MeshBuilder {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width);
-                    t::basic_shapes::stroke_rectangle(
+                    let _ = t::basic_shapes::stroke_rectangle(
                         &rect,
                         &options,
                         builder,
@@ -296,7 +296,7 @@ impl MeshBuilder {
                 }
                 DrawMode::CustomFill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::fill_rectangle(
+                    let _ = t::basic_shapes::fill_rectangle(
                         &rect,
                         &fill_options,
                         builder,
@@ -304,7 +304,7 @@ impl MeshBuilder {
                 }
                 DrawMode::CustomLine(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    t::basic_shapes::stroke_rectangle(
+                    let _ = t::basic_shapes::stroke_rectangle(
                         &rect,
                         &options,
                         builder,
@@ -358,7 +358,7 @@ impl MeshBuilder {
                 let i3 = builder.add_vertex(thd);
                 builder.add_triangle(i1, i2, i3);
             }
-            builder.end_geometry();
+            let _ = builder.end_geometry();
         }
         self
     }
@@ -418,7 +418,7 @@ impl Mesh {
         P: Into<mint::Point2<f32>> + Clone,
     {
         let mut mb = MeshBuilder::new();
-        mb.polyline(DrawMode::Line(width), points);
+        let _ = mb.polyline(DrawMode::Line(width), points);
         mb.build(ctx)
     }
 
@@ -434,7 +434,7 @@ impl Mesh {
         P: Into<mint::Point2<f32>>,
     {
         let mut mb = MeshBuilder::new();
-        mb.circle(mode, point, radius, tolerance);
+        let _ = mb.circle(mode, point, radius, tolerance);
         mb.build(ctx)
     }
 
@@ -451,7 +451,7 @@ impl Mesh {
         P: Into<mint::Point2<f32>>,
     {
         let mut mb = MeshBuilder::new();
-        mb.ellipse(mode, point, radius1, radius2, tolerance);
+        let _ = mb.ellipse(mode, point, radius1, radius2, tolerance);
         mb.build(ctx)
     }
 
@@ -461,7 +461,7 @@ impl Mesh {
         P: Into<mint::Point2<f32>> + Clone,
     {
         let mut mb = MeshBuilder::new();
-        mb.polyline(mode, points);
+        let _ = mb.polyline(mode, points);
         mb.build(ctx)
     }
 
@@ -471,7 +471,7 @@ impl Mesh {
         P: Into<mint::Point2<f32>> + Clone,
     {
         let mut mb = MeshBuilder::new();
-        mb.polygon(mode, points);
+        let _ = mb.polygon(mode, points);
         mb.build(ctx)
     }
 
@@ -479,7 +479,7 @@ impl Mesh {
     pub fn new_rectangle(ctx: &mut Context, mode: DrawMode, bounds: Rect) -> GameResult<Mesh>
     {
         let mut mb = MeshBuilder::new();
-        mb.rectangle(mode, bounds);
+        let _ = mb.rectangle(mode, bounds);
         mb.build(ctx)
     }
 
@@ -490,7 +490,7 @@ impl Mesh {
         P: Into<mint::Point2<f32>> + Clone + Clone,
     {
         let mut mb = MeshBuilder::new();
-        mb.triangles(triangles);
+        let _ = mb.triangles(triangles);
         mb.build(ctx)
     }
 }

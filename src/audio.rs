@@ -69,7 +69,7 @@ impl SoundData {
         R: Read,
     {
         let mut buffer = Vec::new();
-        reader.read_to_end(&mut buffer)?;
+        let _ = reader.read_to_end(&mut buffer)?;
 
         Ok(SoundData::from(buffer))
     }
