@@ -9,6 +9,7 @@ submit a PR, please!
  * <https://github.com/Piripant/skii>
  * <https://github.com/aprokurov/spaceshooter>
  * <https://github.com/ozkriff/zemeroth>
+ * <https://github.com/Swampsoft/solitaire>
 
 # Examples/tutorial code
 
