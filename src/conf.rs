@@ -50,10 +50,10 @@ pub enum FullscreenType {
 pub struct WindowMode {
     /// Window width
     #[default = r#"800.0"#]
-    pub width: f64,
+    pub width: f32,
     /// Window height
     #[default = r#"600.0"#]
-    pub height: f64,
+    pub height: f32,
     /// Whether or not to maximize the window
     #[default = r#"false"#]
     pub maximized: bool,
@@ -65,21 +65,21 @@ pub struct WindowMode {
     pub borderless: bool,
     /// Minimum width for resizable windows; 0 means no limit
     #[default = r#"0.0"#]
-    pub min_width: f64,
+    pub min_width: f32,
     /// Minimum height for resizable windows; 0 means no limit
     #[default = r#"0.0"#]
-    pub min_height: f64,
+    pub min_height: f32,
     /// Maximum width for resizable windows; 0 means no limit
     #[default = r#"0.0"#]
-    pub max_width: f64,
+    pub max_width: f32,
     /// Maximum height for resizable windows; 0 means no limit
     #[default = r#"0.0"#]
-    pub max_height: f64,
+    pub max_height: f32,
 }
 
 impl WindowMode {
     /// Set default window size, or screen resolution in true fullscreen mode
-    pub fn dimensions(mut self, width: f64, height: f64) -> Self {
+    pub fn dimensions(mut self, width: f32, height: f32) -> Self {
         self.width = width;
         self.height = height;
         self
@@ -104,14 +104,14 @@ impl WindowMode {
     }
 
     /// Set minimum window dimensions for windowed mode
-    pub fn min_dimensions(mut self, width: f64, height: f64) -> Self {
+    pub fn min_dimensions(mut self, width: f32, height: f32) -> Self {
         self.min_width = width;
         self.min_height = height;
         self
     }
 
     /// Set maximum window dimensions for windowed mode
-    pub fn max_dimensions(mut self, width: f64, height: f64) -> Self {
+    pub fn max_dimensions(mut self, width: f32, height: f32) -> Self {
         self.max_width = width;
         self.max_height = height;
         self

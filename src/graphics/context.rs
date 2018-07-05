@@ -240,9 +240,9 @@ where
 
         // Set initial uniform values
         let left = 0.0;
-        let right = window_mode.width as f32;
+        let right = window_mode.width;
         let top = 0.0;
-        let bottom = window_mode.height as f32;
+        let bottom = window_mode.height;
         let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
         let initial_transform = Matrix4::identity();
         let globals = Globals {
@@ -284,8 +284,8 @@ where
         gfx.set_window_mode(window_mode)?;
 
         // Calculate and apply the actual initial projection matrix
-        let w = window_mode.width as f32;
-        let h = window_mode.height as f32;
+        let w = window_mode.width;
+        let h = window_mode.height;
         let rect = Rect {
             x: 0.0,
             y: 0.0,
@@ -433,8 +433,8 @@ where
         let mut min_dimensions = None;
         if mode.min_width > 0.0 && mode.min_height > 0.0 {
             min_dimensions = Some(dpi::LogicalSize {
-                width: mode.min_width, 
-                height: mode.min_height,
+                width: mode.min_width.into(), 
+                height: mode.min_height.into(),
             });
         }
         window.set_min_dimensions(min_dimensions);
@@ -442,8 +442,8 @@ where
         let mut max_dimensions = None;
         if mode.max_width > 0.0 && mode.max_height > 0.0 {
             max_dimensions = Some(dpi::LogicalSize {
-                width: mode.max_width, 
-                height: mode.max_height
+                width: mode.max_width.into(), 
+                height: mode.max_height.into(),
             });
         }
         window.set_max_dimensions(max_dimensions);
@@ -454,15 +454,15 @@ where
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
                 window.set_inner_size(dpi::LogicalSize {
-                    width: mode.width, 
-                    height: mode.height,
+                    width: mode.width.into(), 
+                    height: mode.height.into(),
                 });
             }
             FullscreenType::True => {
                 window.set_fullscreen(Some(monitor));
                 window.set_inner_size(dpi::LogicalSize {
-                    width: mode.width, 
-                    height: mode.height,
+                    width: mode.width.into(), 
+                    height: mode.height.into(),
                 });
             }
             FullscreenType::Desktop => {
