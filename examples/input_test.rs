@@ -123,8 +123,8 @@ pub fn main() -> GameResult {
     let c = conf::Conf::new();
     let (ctx, events_loop) = &mut Context::load_from_conf("input_test", "ggez", c)?;
 
-    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
-    // we we look in the cargo project for files.
+    // We add the CARGO_MANIFEST_DIR/resources to the filesystem paths so
+    // that ggez will look in our cargo project directory for files.
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");

@@ -65,7 +65,7 @@ trait ModuloSigned {
 
 /// Here we implement our `ModuloSigned` trait for any type T which implements
 /// `Add` (the `+` operator) with an output type T and Rem (the `%` operator)
-/// that also has anout put type of T, and that can be cloned. These are the bounds
+/// that also has an output type of T, and that can be cloned. These are the bounds
 /// that we need in order to implement a modulus function that works for negative numbers
 /// as well.
 impl<T> ModuloSigned for T
