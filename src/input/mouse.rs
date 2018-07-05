@@ -88,11 +88,6 @@ pub fn get_position(ctx: &Context) -> Point2 {
     ctx.mouse_context.last_position
 }
 
-/// Get the distance the cursor was moved during last frame, in pixels.
-pub fn get_delta(ctx: &Context) -> Point2 {
-    ctx.mouse_context.last_delta
-}
-
 /// Set the current position of the mouse cursor, in pixels.
 /// Uses strictly window-only coordinates.
 pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
@@ -103,4 +98,25 @@ pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
             y: point.y as f64,
         })
         .map_err(|_| "Couldn't set mouse cursor position!".to_owned().into())
+}
+
+/// Get the distance the cursor was moved during last frame, in pixels.
+pub fn get_delta(ctx: &Context) -> Point2 {
+    ctx.mouse_context.last_delta
+}
+
+pub fn get_button_pressed() -> bool {
+    unimplemented!()
+}
+
+pub fn get_buttons_pressed(_buttons: &[()]) -> bool {
+    unimplemented!()
+}
+
+pub fn get_relative_mode() -> bool {
+    unimplemented!()
+}
+
+pub fn set_relative_mode() {
+    unimplemented!()
 }
