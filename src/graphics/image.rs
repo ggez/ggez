@@ -305,7 +305,10 @@ impl fmt::Debug for Image {
 }
 
 impl Drawable for Image {
-    fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
+    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
+    where
+        D: Into<DrawTransform> {
+        let param = param.into();
         self.debug_id.assert(ctx);
 
         // println!("Matrix: {:#?}", param.matrix);

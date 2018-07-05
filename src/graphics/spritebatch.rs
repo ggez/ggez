@@ -13,8 +13,7 @@ use context::Context;
 use error;
 use gfx;
 use gfx::Factory;
-use graphics;
-use graphics::{BackendSpec};
+use graphics::{self, BackendSpec, DrawTransform};
 use GameResult;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
@@ -98,7 +97,7 @@ impl SpriteBatch {
                 // This is fine because coloring the whole spritebatch is possible
                 // with graphics::set_color(); this just inherits from that.
                 new_param.color = new_param.color;
-                let primitive_param = graphics::PrimitiveDrawParam::from(new_param);
+                let primitive_param = graphics::DrawTransform::from(new_param);
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
             })
             .collect::<Vec<_>>();
@@ -145,7 +144,10 @@ impl SpriteBatch {
 }
 
 impl graphics::Drawable for SpriteBatch {
-    fn draw_primitive(&self, ctx: &mut Context, param: graphics::PrimitiveDrawParam) -> GameResult {
+    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
+    where
+        D: Into<DrawTransform> {
+        let param = param.into();
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
         self.flush(ctx, &self.image)?;

@@ -120,29 +120,30 @@ impl DrawParam {
     // TODO: Easy mirror functions for X and Y axis might be nice.
 }
 
-/// Create a DrawParam from a location
-impl<P> From<(P,)> for DrawParam
+/// Create a DrawTransform from a location
+impl<P> From<(P,)> for DrawTransform
 where
     P: Into<mint::Point2<f32>>,
 {
     fn from(location: (P,)) -> Self {
         DrawParam::new().dest(location.0)
+        .into()
     }
 }
 
-/// Create a DrawParam from a location and color
-impl<P, C> From<(P, C)> for DrawParam
+/// Create a DrawTransform from a location and color
+impl<P, C> From<(P, C)> for DrawTransform
 where
     P: Into<mint::Point2<f32>>,
     C: Into<Color>,
 {
     fn from((location, color): (P, C)) -> Self {
-        DrawParam::new().dest(location).color(color)
+        DrawParam::new().dest(location).color(color).into()
     }
 }
 
-/// Create a DrawParam from a location, rotation and color
-impl<P, C> From<(P, f32, C)> for DrawParam
+/// Create a DrawTransform from a location, rotation and color
+impl<P, C> From<(P, f32, C)> for DrawTransform
 where
     P: Into<mint::Point2<f32>>,
     C: Into<Color>,
@@ -152,11 +153,12 @@ where
             .dest(location)
             .rotation(rotation)
             .color(color)
+            .into()
     }
 }
 
-/// Create a DrawParam from a location, rotation, offset and color
-impl<P, C> From<(P, f32, P, C)> for DrawParam
+/// Create a DrawTransform from a location, rotation, offset and color
+impl<P, C> From<(P, f32, P, C)> for DrawTransform
 where
     P: Into<mint::Point2<f32>>,
     C: Into<Color>,
@@ -167,11 +169,12 @@ where
             .rotation(rotation)
             .offset(offset)
             .color(color)
+            .into()
     }
 }
 
-/// Create a DrawParam from a location, rotation, offset, scale and color
-impl<P, V, C> From<(P, f32, P, V, C)> for DrawParam
+/// Create a DrawTransform from a location, rotation, offset, scale and color
+impl<P, V, C> From<(P, f32, P, V, C)> for DrawTransform
 where
     P: Into<mint::Point2<f32>>,
     V: Into<mint::Vector2<f32>>,
@@ -184,18 +187,17 @@ where
             .offset(offset)
             .scale(scale)
             .color(color)
+            .into()
     }
 }
 
 /// A `DrawParam` that has been crunched down to a single matrix.
-/// Useful for doing matrix-based coordiante transformations, I hope.
-///
-/// TODO: This needs a better name.
+/// Useful for doing matrix-based coordinate transformations, I hope.
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct PrimitiveDrawParam {
+pub struct DrawTransform {
     /// The transform matrix for the DrawParams
     pub matrix: Matrix4,
-    /// a portion of the drawable to clip, as a fraction of the whole image.
+    /// A portion of the drawable to clip, as a fraction of the whole image.
     /// Defaults to the whole image (1.0) if omitted.
     pub src: Rect,
     /// A color to draw the target with.
@@ -203,9 +205,9 @@ pub struct PrimitiveDrawParam {
     pub color: Color,
 }
 
-impl Default for PrimitiveDrawParam {
+impl Default for DrawTransform {
     fn default() -> Self {
-        PrimitiveDrawParam {
+        DrawTransform {
             matrix: na::one(),
             src: Rect::one(),
             color: WHITE,
@@ -213,7 +215,7 @@ impl Default for PrimitiveDrawParam {
     }
 }
 
-impl From<DrawParam> for PrimitiveDrawParam {
+impl From<DrawParam> for DrawTransform {
     fn from(param: DrawParam) -> Self {
         let translate = Matrix4::new_translation(&Vec3::new(param.dest.x, param.dest.y, 0.0));
         let offset = Matrix4::new_translation(&Vec3::new(param.offset.x, param.offset.y, 0.0));
@@ -241,7 +243,7 @@ impl From<DrawParam> for PrimitiveDrawParam {
             1.0,
         );
         let transform = translate * offset * rotation * shear * scale * offset_inverse;
-        PrimitiveDrawParam {
+        DrawTransform {
             src: param.src,
             color: param.color,
             matrix: transform,
@@ -249,13 +251,13 @@ impl From<DrawParam> for PrimitiveDrawParam {
     }
 }
 
-impl PrimitiveDrawParam {
+impl DrawTransform {
     /// Returns a new `PrimitiveDrawParam` with its matrix multiplied
     /// by the given one.
     ///
     /// TODO: Make some way to implement `matrix * self.matrix`, or just implement `Mul`...
     pub fn mul(self, matrix: Matrix4) -> Self {
-        PrimitiveDrawParam {
+        DrawTransform {
             matrix: self.matrix * matrix,
             ..self
         }

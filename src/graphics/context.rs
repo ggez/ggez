@@ -359,7 +359,7 @@ where
     /// sends it to the graphics card at the front of the instance buffer.
     pub(crate) fn update_instance_properties(
         &mut self,
-        draw_params: PrimitiveDrawParam,
+        draw_params: DrawTransform,
     ) -> GameResult {
         // This clone is cheap since draw_params is Copy
         // TODO: Clean up

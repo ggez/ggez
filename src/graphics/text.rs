@@ -404,7 +404,10 @@ impl Text {
 
 
 impl Drawable for Text {
-    fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
+    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
+    where
+        D: Into<DrawTransform> {
+        let param = param.into();
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
         // TODO: Fix for PrimitiveDrawParam
         // let offset = Point2::new(
@@ -501,9 +504,9 @@ where
 /// color is ignored - specify it when `queue()`ing instead.
 pub fn draw_queued_text<D>(context: &mut Context, param: D) -> GameResult
 where
-    D: Into<PrimitiveDrawParam>,
+    D: Into<DrawTransform>,
 {
-    let param: PrimitiveDrawParam = param.into();
+    let param: DrawTransform = param.into();
     type Mat4 = na::Matrix4<f32>;
     type Vec3 = na::Vector3<f32>;
     let screen_rect = get_screen_coordinates(context);

@@ -496,7 +496,10 @@ impl Mesh {
 }
 
 impl Drawable for Mesh {
-    fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
+    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
+    where
+        D: Into<DrawTransform> {
+        let param = param.into();
         self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;
         gfx.update_instance_properties(param)?;

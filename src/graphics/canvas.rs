@@ -120,7 +120,10 @@ impl Canvas {
 }
 
 impl Drawable for Canvas {
-    fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
+    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
+    where
+        D: Into<DrawTransform> {
+        let param = param.into();
         self.debug_id.assert(ctx);
         // Gotta flip the image on the Y axis here
         // to account for OpenGL's origin being at the bottom-left.
@@ -129,7 +132,7 @@ impl Drawable for Canvas {
         let mut flipped_param = param;
         // flipped_param.scale.y *= -1.0;
         // flipped_param.dest.y += self.image.height() as f32 * param.scale.y;
-        self.image.draw_primitive(ctx, flipped_param)?;
+        self.image.draw(ctx, flipped_param)?;
         Ok(())
     }
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {

@@ -367,19 +367,12 @@ pub fn clear(ctx: &mut Context, color: Color) {
 pub fn draw<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult
 where
     D: Drawable,
-    T: Into<DrawParam>,
+    T: Into<DrawTransform>,
 {
     let params = params.into();
-    drawable.draw_primitive(ctx, PrimitiveDrawParam::from(params))
+    drawable.draw(ctx, DrawTransform::from(params))
 }
 
-/// Draws the given `Drawable` object to the screen by calling its `draw_ex()` method.
-pub fn draw_primitive<D>(ctx: &mut Context, drawable: &D, params: PrimitiveDrawParam) -> GameResult
-where
-    D: Drawable,
-{
-    drawable.draw_primitive(ctx, params)
-}
 
 /// Tells the graphics system to actually put everything on the screen.
 /// Call this at the end of your `EventHandler`'s `draw()` method.
@@ -910,40 +903,12 @@ pub fn get_gfx_objects(
 
 /// All types that can be drawn on the screen implement the `Drawable` trait.
 pub trait Drawable {
-    /// Actually draws the object to the screen.
-    ///
-    /// This is the most general version of the operation, which is all that
-    /// is required for implementing this trait.
-    ///
-    /// TODO: We could use a better name here.
-    fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult;
-
     /// Draws the drawable onto the rendering target.
     ///
-    /// It just is a shortcut that calls `draw_ex()` with a default `DrawParam`
-    /// except for the destination and rotation.
-    ///
-    /// * `ctx` - The `Context` this graphic will be rendered to.
-    /// * `dest` - the position to draw the graphic expressed as a `Point2`.
-    /// * `rotation` - orientation of the graphic in radians.
-    ///
-    /// TODO: This should probably be removed, but can't actually be
-    /// made generic on T where T: Into<DrawParam> because we treat
-    /// Drawable's as trait objects.
-    /// 
-    /// We can fix that by getting rid of this entirely and just using
-    /// graphics::draw() to do the polymorphism, and then `draw_primitive()`
-    /// to do the actual concrete stuff.  Excessive polymorphism concerns me 
-    /// a little 'cause it's a large change to how ggez does things,
-    /// so I'd like to keep it to a minimum.
-    /// 
-    /// ALSO TODO: Fix docs
+    /// ALSO TODO: Expand docs
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawParam>,
-    {
-        self.draw_primitive(ctx, (param.into()).into())
-    }
+        D: Into<DrawTransform>;
 
     /// Sets the blend mode to be used when drawing this drawable.
     /// This overrides the general `graphics::set_blend_mode()`.
