@@ -594,8 +594,8 @@ where
         encoder,
         &(render_tgt, color_format),
         &(depth_view, depth_format),
-    )?;
-    Ok(())
+    )
+    .map_err(|e| GameError::RenderError(e.to_string()))
 }
 
 

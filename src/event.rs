@@ -218,7 +218,6 @@ where
                     WindowEvent::CursorMoved { .. } => {
                         let position = mouse::get_position(ctx);
                         let delta = mouse::get_delta(ctx);
-                        // BUGGO: Smooth out winit-related f32 vs f64 stuff!
                         state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                     }
                     x => {

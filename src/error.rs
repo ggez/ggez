@@ -25,7 +25,7 @@ pub enum GameError {
     /// Happens when an `EventsLoopProxy` attempts to
     /// wake up an `EventsLoop` that no longer exists.
     EventLoopError(String),
-    /// An error trying to parse a resource
+    /// An error trying to load a resource, such as getting an invalid image file.
     ResourceLoadError(String),
     /// Unable to find a resource; the Vec is the paths it searched for and associated errors
     ResourceNotFound(String, Vec<(std::path::PathBuf, GameError)>),
@@ -33,8 +33,10 @@ pub enum GameError {
     RenderError(String),
     /// Something went wrong in the audio playback
     AudioError(String),
+    /// Something went wrong trying to set or get window properties.
+    WindowError(String),
     /// Something went wrong trying to create a window
-    WindowError(glutin::CreationError),
+    WindowCreationError(glutin::CreationError),
     /// Something went wrong trying to read from a file
     IOError(std::io::Error),
     /// Something went wrong trying to load/render a font
@@ -45,8 +47,6 @@ pub enum GameError {
     ShaderProgramError(gfx::shade::ProgramError),
     /// Something went wrong with Gilrs
     GamepadError(String),
-    /// Something else happened; this is generally a bug.
-    UnknownError(String),
 }
 
 impl fmt::Display for GameError {
@@ -76,18 +76,18 @@ impl Error for GameError {
             GameError::RenderError(_) => "Render error",
             GameError::AudioError(_) => "Audio error",
             GameError::WindowError(_) => "Window error",
+            GameError::WindowCreationError(_) => "Window creation error",
             GameError::IOError(_) => "IO error",
             GameError::FontError(_) => "Font error",
             GameError::VideoError(_) => "Video error",
             GameError::ShaderProgramError(_) => "Shader program error",
             GameError::GamepadError(_) => "Gamepad error",
-            GameError::UnknownError(_) => "Unknown error",
         }
     }
 
     fn cause(&self) -> Option<&dyn Error> {
         match *self {
-            GameError::WindowError(ref e) => Some(e),
+            GameError::WindowCreationError(ref e) => Some(e),
             GameError::IOError(ref e) => Some(e),
             GameError::ShaderProgramError(ref e) => Some(e),
             _ => None,
@@ -98,11 +98,6 @@ impl Error for GameError {
 /// A convenient result type consisting of a return type and a `GameError`
 pub type GameResult<T = ()> = Result<T, GameError>;
 
-impl From<String> for GameError {
-    fn from(s: String) -> GameError {
-        GameError::UnknownError(s)
-    }
-}
 
 impl From<AppDirsError> for GameError {
     fn from(e: AppDirsError) -> GameError {
@@ -235,7 +230,7 @@ impl From<winit::EventsLoopClosed> for GameError {
 
 impl From<glutin::CreationError> for GameError {
     fn from(s: glutin::CreationError) -> GameError {
-        GameError::WindowError(s)
+        GameError::WindowCreationError(s)
     }
 }
 

@@ -77,7 +77,7 @@ pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
     ctx.mouse_context.cursor_grabbed = grabbed;
     graphics::get_window(ctx)
         .grab_cursor(grabbed)
-        .map_err(GameError::from)
+        .map_err(|e| GameError::WindowError(e.to_string()))
 }
 
 /// Set whether or not the mouse is hidden (invisible)
@@ -108,7 +108,7 @@ pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
             x: point.x as f64, 
             y: point.y as f64,
         })
-        .map_err(|_| "Couldn't set mouse cursor position!".to_owned().into())
+        .map_err(|_| GameError::WindowError("Couldn't set mouse cursor position!".to_owned()))
 }
 
 /// Get the distance the cursor was moved during last frame, in pixels.
