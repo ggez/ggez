@@ -41,12 +41,8 @@ impl MouseContext {
         self.last_delta = p;
     }
 
-    pub(crate) fn press_button(&mut self, button: MouseButton) {
-        let _ = self.buttons_pressed.insert(button, true);
-    }
-
-    pub(crate) fn release_button(&mut self, button: MouseButton) {
-        let _ = self.buttons_pressed.insert(button, false);
+    pub(crate) fn set_button(&mut self, button: MouseButton, pressed: bool) {
+        let _ = self.buttons_pressed.insert(button, pressed);
     }
 
     fn button_pressed(&self, button: MouseButton) -> bool {

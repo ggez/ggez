@@ -156,13 +156,7 @@ impl Context {
                         winit_event::ElementState::Pressed => true,
                         winit_event::ElementState::Released => false,
                     };
-                    if pressed {
-                        self.mouse_context
-                            .press_button(*button)
-                    } else {
-                        self.mouse_context
-                            .release_button(*button)
-                    }
+                    self.mouse_context.set_button(*button, pressed);
                 }
                 _ => (),
             },
