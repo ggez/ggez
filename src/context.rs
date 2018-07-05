@@ -147,6 +147,23 @@ impl Context {
                     self.mouse_context
                         .set_last_position(Point2::new(*x as f32, *y as f32));
                 }
+                winit_event::WindowEvent::MouseInput {
+                    button,
+                    state,
+                    ..
+                } => {
+                    let pressed = match *state {
+                        winit_event::ElementState::Pressed => true,
+                        winit_event::ElementState::Released => false,
+                    };
+                    if pressed {
+                        self.mouse_context
+                            .press_button(*button)
+                    } else {
+                        self.mouse_context
+                            .release_button(*button)
+                    }
+                }
                 _ => (),
             },
             winit_event::Event::DeviceEvent { event, .. } => match event {

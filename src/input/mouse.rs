@@ -1,19 +1,21 @@
 //! Mouse utility functions.
 
+use std::collections::HashMap;
 use GameError;
 use context::Context;
 use graphics;
 use graphics::Point2;
-pub use winit::{MouseCursor};
+pub use winit::{MouseButton, MouseCursor};
 use winit::dpi;
 use GameResult;
 
 /// Stores state information for the mouse,
 /// what little of it there is.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct MouseContext {
     last_position: Point2,
     last_delta: Point2,
+    buttons_pressed:  HashMap<MouseButton, bool>,
     cursor_type: MouseCursor,
     cursor_grabbed: bool,
     cursor_hidden: bool
@@ -25,6 +27,7 @@ impl MouseContext {
             last_position: Point2::origin(),
             last_delta: Point2::origin(),
             cursor_type: MouseCursor::Default,
+            buttons_pressed: HashMap::new(),
             cursor_grabbed: false,
             cursor_hidden: false,
         }
@@ -36,6 +39,18 @@ impl MouseContext {
 
     pub(crate) fn set_last_delta(&mut self, p: Point2) {
         self.last_delta = p;
+    }
+
+    pub(crate) fn press_button(&mut self, button: MouseButton) {
+        let _ = self.buttons_pressed.insert(button, true);
+    }
+
+    pub(crate) fn release_button(&mut self, button: MouseButton) {
+        let _ = self.buttons_pressed.insert(button, false);
+    }
+
+    fn button_pressed(&self, button: MouseButton) -> bool {
+        *(self.buttons_pressed.get(&button).unwrap_or(&false))
     }
 }
 
@@ -105,18 +120,18 @@ pub fn get_delta(ctx: &Context) -> Point2 {
     ctx.mouse_context.last_delta
 }
 
-pub fn get_button_pressed() -> bool {
-    unimplemented!()
+
+/// Returns whether or not the given mouse button is pressed.
+pub fn get_button_pressed(ctx: &Context, button: MouseButton) -> bool {
+    ctx.mouse_context.button_pressed(button)
 }
 
-pub fn get_buttons_pressed(_buttons: &[()]) -> bool {
-    unimplemented!()
-}
-
+/// TODO: Can we implement this?  Checked with Winit peoples.
 pub fn get_relative_mode() -> bool {
     unimplemented!()
 }
 
+/// TODO: Can we impement this?  Checked with Winit peoples.
 pub fn set_relative_mode() {
     unimplemented!()
 }
