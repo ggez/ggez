@@ -757,16 +757,16 @@ mod tests {
     fn test_path_filtering() {
         // Valid pahts
         let p = path::Path::new("/foo");
-        sanitize_path(p).unwrap();
+        assert!(sanitize_path(p).is_some());
 
         let p = path::Path::new("/foo/");
-        sanitize_path(p).unwrap();
+        assert!(sanitize_path(p).is_some());
 
         let p = path::Path::new("/foo/bar.txt");
-        sanitize_path(p).unwrap();
+        assert!(sanitize_path(p).is_some());
 
         let p = path::Path::new("/");
-        sanitize_path(p).unwrap();
+        assert!(sanitize_path(p).is_some());
 
         // Invalid paths
         let p = path::Path::new("../foo");

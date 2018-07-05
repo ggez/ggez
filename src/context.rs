@@ -7,10 +7,8 @@ use audio;
 use conf;
 use event::winit_event;
 use filesystem::Filesystem;
-use gamepad;
+use input::{gamepad, keyboard, mouse};
 use graphics::{self, Point2};
-use keyboard;
-use mouse;
 use timer;
 use GameResult;
 

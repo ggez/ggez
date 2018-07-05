@@ -19,7 +19,7 @@ use gilrs;
 use winit;
 use winit::dpi;
 
-pub use keyboard::{KeyCode, KeyMods};
+pub use input::keyboard::{KeyCode, KeyMods};
 /// A mouse button.
 pub use winit::MouseButton;
 
@@ -146,8 +146,7 @@ pub fn run<S>(ctx: &mut Context, events_loop: &mut EventsLoop, state: &mut S) ->
 where
     S: EventHandler,
 {
-    use keyboard;
-    use mouse;
+    use input::{keyboard, mouse};
 
     while ctx.continuing {
         ctx.timer_context.tick();

@@ -131,10 +131,8 @@ mod context;
 pub mod error;
 pub mod event;
 pub mod filesystem;
-pub mod gamepad;
 pub mod graphics;
-pub mod keyboard;
-pub mod mouse;
+pub mod input;
 pub mod timer;
 mod vfs;
 
