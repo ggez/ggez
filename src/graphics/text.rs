@@ -605,8 +605,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     /*
+    use super::*;
     #[test]
     fn test_metrics() {
         let f = Font::default_font().expect("Could not get default font");

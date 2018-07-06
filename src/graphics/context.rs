@@ -30,6 +30,7 @@ where
     color_format: gfx::format::Format,
     depth_format: gfx::format::Format,
     srgb: bool,
+    pub(crate) hidpi_factor: f32,
 
     // TODO: is this needed?
     #[allow(unused)]
@@ -111,7 +112,10 @@ where
             gfx::format::SurfaceType::D24_S8,
             gfx::format::ChannelType::Unorm,
         );
-        
+
+        // TODO: Alter window size based on hidpi.
+        // Can't get it from window, can we get it from
+        // monitor info...?
 
         // WINDOW SETUP
         let gl_builder = glutin::ContextBuilder::new()
@@ -121,7 +125,7 @@ where
             .with_gl_profile(glutin::GlProfile::Core)
             .with_multisampling(window_setup.samples as u16)
             // TODO: Better pixel format here?
-            .with_pixel_format(5, 8)
+            .with_pixel_format(8, 8)
             .with_vsync(window_setup.vsync);
 
         let mut window_builder = glutin::WindowBuilder::new()
@@ -148,10 +152,18 @@ where
                 depth_format,
             );
 
+        // See https://docs.rs/winit/0.16.1/winit/dpi/index.html for
+        // an excellent explaination of how this works.
+        let hidpi_factor = if window_mode.hidpi {
+            window.get_hidpi_factor() as f32
+        } else {
+            1.0
+        };
+
         // TODO: see winit #548 about DPI.
         {
             // TODO: improve.
-            // Log a bunch of OpenGL state info pulled out of SDL and gfx
+            // Log a bunch of OpenGL state info pulled out of winit and gfx
             let api = window.get_api();
             let dpi::LogicalSize{width: w, height: h} = window
                 .get_outer_size()
@@ -249,6 +261,7 @@ where
             mvp_matrix: initial_projection.into(),
         };
 
+
         let mut gfx = Self {
             shader_globals: globals,
             projection: initial_projection,
@@ -258,6 +271,7 @@ where
             color_format,
             depth_format,
             srgb,
+            hidpi_factor,
 
             backend_spec: backend,
             window,
@@ -426,6 +440,12 @@ where
     /// Sets window mode from a WindowMode object.
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
         let window = &self.window;
+
+        if mode.hidpi {
+            self.hidpi_factor = window.get_hidpi_factor() as f32;
+        } else {
+            self.hidpi_factor = 1.0;
+        }
 
         window.set_maximized(mode.maximized);
 

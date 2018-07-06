@@ -87,6 +87,8 @@ pub fn main() -> GameResult {
         filesystem::mount(ctx, &path, true);
     }
 
+    println!("HIDPI: {}", graphics::get_hidpi_factor(ctx));
+
     let state = &mut MainState::new(ctx)?;
     event::run(ctx, event_loop, state)
 }

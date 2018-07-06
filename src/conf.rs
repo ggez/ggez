@@ -75,6 +75,17 @@ pub struct WindowMode {
     /// Maximum height for resizable windows; 0 means no limit
     #[default = r#"0.0"#]
     pub max_height: f32,
+    /// Whether or not to scale all "pixel" coordinates to deal with
+    /// high DPI screens.
+    /// 
+    /// A very good overview of this is available in
+    /// [the `winit` docs](https://docs.rs/winit/0.16.1/winit/dpi/index.html).
+    /// If this is false (the default), one pixel in ggez equates to one
+    /// physical pixel on the screen.  If it is `true`, then ggez will 
+    /// scale *all* pixel coordinates by the scaling factor returned by
+    /// `graphics::get_hidpi_factor()`.
+    #[default = r"false"]
+    pub hidpi: bool,
 }
 
 impl WindowMode {
@@ -116,12 +127,20 @@ impl WindowMode {
         self.max_height = height;
         self
     }
+
+    /// Sets whether or not to allow hidpi.
+    pub fn hidpi(mut self, hidpi: bool) -> Self {
+        self.hidpi = hidpi;
+        self
+    }
 }
 
 /// A builder structure containing window settings
 /// that must be set at init time and cannot be changed afterwards.
 ///
 /// Defaults:
+/// 
+/// TODO: Update docs and defaults
 ///
 /// ```rust,ignore
 /// WindowSetup {
