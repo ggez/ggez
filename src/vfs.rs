@@ -754,7 +754,7 @@ mod tests {
     use std::io::{self, BufRead};
 
     #[test]
-    fn test_path_filtering() {
+    fn headless_test_path_filtering() {
         // Valid pahts
         let p = path::Path::new("/foo");
         assert!(sanitize_path(p).is_some());
@@ -789,7 +789,7 @@ mod tests {
     }
 
     #[test]
-    fn test_read() {
+    fn headless_test_read() {
         let cargo_path = Path::new(env!("CARGO_MANIFEST_DIR"));
         let fs = PhysicalFS::new(cargo_path, true);
         let f = fs.open(Path::new("/Cargo.toml")).unwrap();
@@ -803,7 +803,7 @@ mod tests {
     }
 
     #[test]
-    fn test_read_overlay() {
+    fn headless_test_read_overlay() {
         let cargo_path = Path::new(env!("CARGO_MANIFEST_DIR"));
         let fs1 = PhysicalFS::new(cargo_path, true);
         let mut f2path = PathBuf::from(cargo_path);
@@ -819,7 +819,7 @@ mod tests {
     }
 
     #[test]
-    fn test_physical_all() {
+    fn headless_test_physical_all() {
         let cargo_path = Path::new(env!("CARGO_MANIFEST_DIR"));
         let fs = PhysicalFS::new(cargo_path, false);
         let testdir = Path::new("/testdir");

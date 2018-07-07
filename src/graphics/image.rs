@@ -362,9 +362,7 @@ impl Drawable for Image {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // We need to set up separate unit tests for CI vs non-CI environments; see issue #234
-    // #[test]
-    #[allow(dead_code)]
+    #[test]
     fn test_invalid_image_size() {
         let c = conf::Conf::new();
         let (ctx, _) = &mut Context::load_from_conf("unittest", "unittest", c).unwrap();

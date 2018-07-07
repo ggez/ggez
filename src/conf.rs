@@ -346,7 +346,7 @@ mod tests {
     /// Tries to encode and decode a `Conf` object
     /// and makes sure it gets the same result it had.
     #[test]
-    fn encode_round_trip() {
+    fn headless_encode_round_trip() {
         let c1 = conf::Conf::new();
         let mut writer = Vec::new();
         let _c = c1.to_toml_file(&mut writer).unwrap();
