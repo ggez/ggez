@@ -135,8 +135,13 @@ impl Context {
     /// state it needs to, such as detecting window resizes.  If you are
     /// rolling your own event loop, you should call this on the events
     /// you receive before processing them yourself.
-    pub fn process_event(&mut self, event: &winit::Event) {
-        match event {
+    /// 
+    /// This also returns a new version of the `event` that has been modified
+    /// for ggez's optional overriding of hidpi.  For full discussion see
+    /// <https://github.com/tomaka/winit/issues/591#issuecomment-403096230>.
+    pub fn process_event(&mut self, event: &winit::Event) -> winit::Event {
+        let event = self.gfx_context.hack_event_hidpi(event);
+        match event.clone() {
             winit_event::Event::WindowEvent { event, .. } => match event {
                 winit_event::WindowEvent::Resized(_) => {
                     self.gfx_context.resize_viewport();
@@ -145,25 +150,25 @@ impl Context {
                     position: dpi::LogicalPosition{x, y}, ..
                 } => {
                     self.mouse_context
-                        .set_last_position(Point2::new(*x as f32, *y as f32));
+                        .set_last_position(Point2::new(x as f32, y as f32));
                 }
                 winit_event::WindowEvent::MouseInput {
                     button,
                     state,
                     ..
                 } => {
-                    let pressed = match *state {
+                    let pressed = match state {
                         winit_event::ElementState::Pressed => true,
                         winit_event::ElementState::Released => false,
                     };
-                    self.mouse_context.set_button(*button, pressed);
+                    self.mouse_context.set_button(button, pressed);
                 }
                 _ => (),
             },
             winit_event::Event::DeviceEvent { event, .. } => match event {
                 winit_event::DeviceEvent::MouseMotion { delta: (x, y) } => {
                     self.mouse_context
-                        .set_last_delta(Point2::new(*x as f32, *y as f32));
+                        .set_last_delta(Point2::new(x as f32, y as f32));
                 }
                 winit_event::DeviceEvent::Key(winit_event::KeyboardInput {
                     state,
@@ -171,19 +176,20 @@ impl Context {
                     modifiers,
                     ..
                 }) => {
-                    let pressed = match *state {
+                    let pressed = match state {
                         winit_event::ElementState::Pressed => true,
                         winit_event::ElementState::Released => false,
                     };
                     self.keyboard_context
-                        .set_modifiers(keyboard::KeyMods::from(*modifiers));
-                    self.keyboard_context.set_key(*keycode, pressed);
+                        .set_modifiers(keyboard::KeyMods::from(modifiers));
+                    self.keyboard_context.set_key(keycode, pressed);
                 }
                 _ => (),
             },
 
             _ => (),
-        }
+        };
+        event
     }
 }
 

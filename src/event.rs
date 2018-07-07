@@ -134,7 +134,7 @@ pub trait EventHandler {
     /// Is not called when you resize it yourself with
     /// `graphics::set_mode()` though.
     /// TODO: CHECK!
-    fn resize_event(&mut self, _ctx: &mut Context, _width: f64, _height: f64) {}
+    fn resize_event(&mut self, _ctx: &mut Context, _width: f32, _height: f32) {}
 }
 
 /// Runs the game's main loop, calling event callbacks on the given state
@@ -151,11 +151,11 @@ where
     while ctx.continuing {
         ctx.timer_context.tick();
         events_loop.poll_events(|event| {
-            ctx.process_event(&event);
+            let event = ctx.process_event(&event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(dpi::LogicalSize{width, height}) => {
-                        state.resize_event(ctx, width, height);
+                        state.resize_event(ctx, width as f32, height as f32);
                     }
                     WindowEvent::CloseRequested => {
                         if !state.quit_event(ctx) {

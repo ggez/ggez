@@ -5,7 +5,7 @@ use gfx::traits::FactoryExt;
 use gfx::Factory;
 use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
 use glutin;
-use winit::dpi;
+use winit::{self, dpi};
 
 use conf::{FullscreenType, WindowMode, WindowSetup};
 use context::DebugId;
@@ -31,6 +31,7 @@ where
     depth_format: gfx::format::Format,
     srgb: bool,
     pub(crate) hidpi_factor: f32,
+    pub(crate) os_hidpi_factor: f32,
 
     // TODO: is this needed?
     #[allow(unused)]
@@ -154,8 +155,9 @@ where
 
         // See https://docs.rs/winit/0.16.1/winit/dpi/index.html for
         // an excellent explaination of how this works.
+        let os_hidpi_factor = window.get_hidpi_factor() as f32;
         let hidpi_factor = if window_mode.hidpi {
-            window.get_hidpi_factor() as f32
+            os_hidpi_factor
         } else {
             1.0
         };
@@ -272,6 +274,7 @@ where
             depth_format,
             srgb,
             hidpi_factor,
+            os_hidpi_factor,
 
             backend_spec: backend,
             window,
@@ -513,7 +516,6 @@ where
         }
     }
 
-
     /// Returns the screen color format used by the context.
     pub(crate) fn color_format(&self) -> gfx::format::Format {
         self.color_format
@@ -534,5 +536,28 @@ where
         } else {
             false
         }
+    }
+
+    /// This is a filthy hack allow users to override hidpi
+    /// scaling if they want to.  Everything that winit touches
+    /// is scaled by the hidpi factor that it uses, such as monitor
+    /// resolutions and mouse positions.  If you want display-independent
+    /// scaling this is Good, if you want pixel-perfect scaling this
+    /// is Bad.  We are currently operating on the assumption that you want
+    /// pixel-perfect scaling.
+    /// 
+    /// See <https://github.com/tomaka/winit/issues/591#issuecomment-403096230>
+    /// and related issues for fuller discussion.
+    pub(crate) fn hack_event_hidpi(&self, event: &winit::Event) -> winit::Event {
+        event.clone()
+    }
+
+    /// Takes a coordinate in winit's Logical scale (aka everything we touch)
+    /// and turns it into the equivalent in PhysicalScale, allowing us to
+    /// override the DPI if necessary.
+    pub(crate) fn to_physical_dpi(&self, x: f32, y: f32) -> (f32, f32) {
+        let logical = dpi::LogicalPosition::new(x as f64, y as f64);
+        let physical = dpi::PhysicalPosition::from_logical(logical, self.hidpi_factor.into());
+        (physical.x as f32, physical.y as f32)
     }
 }

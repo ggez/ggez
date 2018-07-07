@@ -829,10 +829,19 @@ pub fn get_size(context: &Context) -> (f64, f64) {
         .unwrap_or((0.0, 0.0))
 }
 
-/// TODO: Really need to figure out whether all of ggez's pixel
-/// stuff is in physical or logical pixels...
+/// Returns the hidpi pixel scaling factor that ggez
+/// is currently using.  If  `conf::WindowMode::hidpi` 
+/// is true this is equal to `get_os_hidpi_factor()`,
+/// otherwise it is `1.0`.
 pub fn get_hidpi_factor(context: &Context) -> f32 {
     context.gfx_context.hidpi_factor
+}
+
+
+/// Returns the hidpi pixel scaling factor that the operating
+/// system says that ggez should be using.
+pub fn get_os_hidpi_factor(context: &Context) -> f32 {
+    context.gfx_context.os_hidpi_factor
 }
 
 /// Returns the size of the window's underlying drawable in pixels as (width, height).

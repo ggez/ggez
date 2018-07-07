@@ -34,13 +34,16 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
-        graphics::circle(
+        graphics::rectangle(
             ctx,
             graphics::WHITE,
             DrawMode::Fill,
-            cgmath::Point2::new(self.pos_x as f32, self.pos_y as f32),
-            100.0,
-            1.0,
+            graphics::Rect {
+                x: self.pos_x,
+                y: self.pos_y,
+                w: 400.0,
+                h: 300.0,
+            }
         )?;
         graphics::present(ctx)?;
         Ok(())
