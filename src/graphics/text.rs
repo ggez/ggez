@@ -334,7 +334,7 @@ impl Font {
                 let offset = rusttype::point(0.0, v_metrics.ascent);
                 let glyphs: Vec<rusttype::PositionedGlyph> =
                     font.layout(text, scale, offset).collect();
-                text_width(&glyphs) as usize
+                text_width(&glyphs).ceil() as usize
             }
             Font::GlyphFont(_) => 0,
         }
