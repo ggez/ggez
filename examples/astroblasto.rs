@@ -215,11 +215,9 @@ fn handle_timed_life(actor: &mut Actor, dt: f32) {
 /// has Y pointing up and the origin at the center,
 /// to the screen coordinate system, which has Y
 /// pointing downward and the origin at the top-left,
-fn world_to_screen_coords(screen_width: u32, screen_height: u32, point: Point2) -> Point2 {
-    let width = screen_width as f32;
-    let height = screen_height as f32;
-    let x = point.x + width / 2.0;
-    let y = height - (point.y + height / 2.0);
+fn world_to_screen_coords(screen_width: f32, screen_height: f32, point: Point2) -> Point2 {
+    let x = point.x + screen_width / 2.0;
+    let y = screen_height - (point.y + screen_height / 2.0);
     Point2::new(x, y)
 }
 
@@ -307,8 +305,8 @@ struct MainState {
     level: i32,
     score: i32,
     assets: Assets,
-    screen_width: u32,
-    screen_height: u32,
+    screen_width: f32,
+    screen_height: f32,
     input: InputState,
     player_shot_timeout: f32,
 }
@@ -416,7 +414,7 @@ fn draw_actor(
     assets: &mut Assets,
     ctx: &mut Context,
     actor: &Actor,
-    world_coords: (u32, u32),
+    world_coords: (f32, f32),
 ) -> GameResult {
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, actor.pos);
@@ -593,7 +591,7 @@ impl EventHandler for MainState {
 pub fn main() -> GameResult {
     let mut cb = ContextBuilder::new("astroblasto", "ggez")
         .window_setup(conf::WindowSetup::default().title("Astroblasto!"))
-        .window_mode(conf::WindowMode::default().dimensions(640, 480));
+        .window_mode(conf::WindowMode::default().dimensions(640.0, 480.0));
 
     // We add the CARGO_MANIFEST_DIR/resources to the filesystems paths so
     // we we look in the cargo project for files.

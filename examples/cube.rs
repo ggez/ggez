@@ -4,6 +4,7 @@
 extern crate gfx;
 extern crate gfx_device_gl;
 extern crate ggez;
+extern crate nalgebra;
 
 use gfx::texture;
 use gfx::traits::FactoryExt;
@@ -13,11 +14,11 @@ use ggez::conf;
 use ggez::event;
 use ggez::filesystem;
 use ggez::graphics;
-use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
 use std::env;
 use std::f32;
 use std::path;
+use nalgebra as na;
 
 type Isometry3 = na::Isometry3<f32>;
 type Point3 = na::Point3<f32>;
@@ -69,8 +70,6 @@ fn default_view() -> Isometry3 {
 }
 
 struct MainState {
-    text1: graphics::Text,
-    text2: graphics::Text,
     frames: usize,
     rotation: f32,
 
@@ -82,11 +81,7 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> Self {
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 18).unwrap();
-        let text1 = graphics::Text::new(ctx, "You can mix ggez and gfx drawing;", &font).unwrap();
-        let text2 =
-            graphics::Text::new(ctx, "it basically draws gfx stuff first, then ggez", &font)
-                .unwrap();
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf").unwrap();
 
         let color_view = graphics::get_screen_render_target(ctx);
         let depth_view = graphics::get_depth_view(ctx);
@@ -202,8 +197,6 @@ void main() {
         };
 
         MainState {
-            text1,
-            text2,
             frames: 0,
             data,
             pso,
@@ -240,10 +233,14 @@ impl event::EventHandler for MainState {
         }
 
         // Do ggez drawing
-        let dest_point1 = graphics::Point2::new(10.0, 210.0);
-        let dest_point2 = graphics::Point2::new(10.0, 250.0);
-        graphics::draw(ctx, &self.text1, (dest_point1,))?;
-        graphics::draw(ctx, &self.text2, (dest_point2,))?;
+        let dest_point1 = na::Point2::new(10.0, 210.0);
+        let dest_point2 = na::Point2::new(10.0, 250.0);
+        // graphics::draw(ctx, &self.text1, (dest_point1,))?;
+        // graphics::draw(ctx, &self.text2, (dest_point2,))?;
+
+        graphics::queue_text(ctx, &graphics::Text::new("You can mix ggez and gfx drawing;"), dest_point1, None);
+        graphics::queue_text(ctx, &graphics::Text::new("it basically draws gfx stuff first, then ggez"), dest_point2, None);
+        graphics::draw_queued_text(ctx, graphics::DrawParam::default())?;
         graphics::present(ctx)?;
         self.frames += 1;
         if (self.frames % 10) == 0 {
