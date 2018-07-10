@@ -187,7 +187,7 @@ const TORCH_COLOR: [f32; 4] = [0.80, 0.73, 0.44, 1.0];
 /// The number of rays to cast to. Increasing this number will result in better
 /// quality shadows. If you increase too much you might hit some GPU shader
 /// hardware limits.
-const LIGHT_RAY_COUNT: u32 = 1440;
+const LIGHT_RAY_COUNT: u16 = 1440;
 /// The strength of the light - how far it shines
 const LIGHT_STRENGTH: f32 = 0.0035;
 /// The factor at which the light glows - just for fun
@@ -200,8 +200,8 @@ impl MainState {
         let background = graphics::Image::new(ctx, "/bg_top.png")?;
         let tile = graphics::Image::new(ctx, "/tile.png")?;
         let text = {
-            let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
-            graphics::Text::new(ctx, "SHADOWS...", &font)?
+            let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
+            graphics::Text::new(("SHADOWS...", font, 48.0))
         };
         let screen_size = {
             let size = graphics::get_drawable_size(ctx);

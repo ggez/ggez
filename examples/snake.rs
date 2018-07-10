@@ -33,9 +33,9 @@ const GRID_CELL_SIZE: (i16, i16) = (32, 32);
 
 // Next we define how large we want our actual window to be by multiplying
 // the components of our grid size by its corresponding pixel size.
-const SCREEN_SIZE: (u32, u32) = (
-    GRID_SIZE.0 as u32 * GRID_CELL_SIZE.0 as u32,
-    GRID_SIZE.1 as u32 * GRID_CELL_SIZE.1 as u32,
+const SCREEN_SIZE: (f32, f32) = (
+    GRID_SIZE.0 as f32 * GRID_CELL_SIZE.0 as f32,
+    GRID_SIZE.1 as f32 * GRID_CELL_SIZE.1 as f32,
 );
 
 // Here we're defining how many quickly we want our game to update. This will be

@@ -9,7 +9,7 @@ use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::filesystem;
-use ggez::graphics::{self, 
+use ggez::graphics::{self,
     Align, Scale, Text, TextFragment,
     Color, DrawParam, Font};
 use ggez::timer;
@@ -56,7 +56,7 @@ impl App {
             color: Some(Color::new(1.0, 0.0, 0.0, 1.0)),
             // `FontId` is a handle to a loaded TTF, stored inside the context.
             // `FontId::default()` always exists and maps to DejaVuSerif.
-            font_id: Some(graphics::default_font(ctx)),
+            font_id: Some(graphics::Font::default()),
             scale: Some(Scale::uniform(10.0)),
             // This doesn't do anything at this point; can be used to omit fields in declarations.
             ..Default::default()
@@ -199,10 +199,10 @@ impl event::EventHandler for App {
         Ok(())
     }
 
-    fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
         graphics::set_screen_coordinates(
             ctx,
-            graphics::Rect::new(0.0, 0.0, width as f32, height as f32),
+            graphics::Rect::new(0.0, 0.0, width, height),
         ).unwrap();
     }
 }
@@ -212,7 +212,7 @@ pub fn main() -> GameResult {
         .window_setup(
             WindowSetup::default().title("Cached text example!") //.resizable(true), TODO: this.
         )
-        .window_mode(WindowMode::default().dimensions(640, 480))
+        .window_mode(WindowMode::default().dimensions(640.0, 480.0))
         .build()?;
 
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
