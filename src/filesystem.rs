@@ -410,6 +410,9 @@ pub fn read_dir<P: AsRef<path::Path>>(
 
 /// Prints the contents of all data directories.
 /// Useful for debugging.
+///
+/// TODO: Should be closer to log_all()...
+/// I feel like they should share a common path.
 pub fn print_all(ctx: &mut Context) {
     ctx.filesystem.print_all()
 }

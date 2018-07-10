@@ -9,11 +9,11 @@
 //! It is functionally identical to the `super_simple.rs` example apart from that.
 
 extern crate ggez;
+extern crate cgmath;
 
 use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
-use ggez::filesystem;
-use ggez::graphics::{self, DrawMode, Point2};
+use ggez::graphics::{self, DrawMode};
 use ggez::{conf, Context, GameResult};
 
 pub fn main() -> GameResult {
@@ -64,7 +64,7 @@ pub fn main() -> GameResult {
             ctx,
             graphics::WHITE,
             DrawMode::Fill,
-            Point2::new(position, 380.0),
+            cgmath::Point2::new(position, 380.0),
             100.0,
             2.0,
         )?;

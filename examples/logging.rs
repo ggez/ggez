@@ -94,7 +94,7 @@ impl EventHandler for App {
     /// Draws the screen. We don't really have anything to draw.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         timer::yield_now();
         Ok(())
     }
@@ -119,10 +119,10 @@ impl EventHandler for App {
     }
 
     /// Called when window is resized.
-    fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
         match graphics::set_screen_coordinates(
             ctx,
-            graphics::Rect::new(0.0, 0.0, width as f32, height as f32),
+            graphics::Rect::new(0.0, 0.0, width, height),
         ) {
             Ok(()) => info!("Resized window to {} x {}", width, height),
             Err(e) => error!("Couldn't resize window: {}", e),
@@ -144,8 +144,8 @@ pub fn main() -> GameResult {
         // Formats logs
         .format(|out, message, record| {
             out.finish(format_args!(
-                "[{}][{:<5}][{}] {}",                                                                         
-                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),                                              
+                "[{}][{:<5}][{}] {}",
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
                 record.level().to_string(),
                 record.target(),
                 message
@@ -174,7 +174,7 @@ pub fn main() -> GameResult {
         .window_setup(
             WindowSetup::default().title("Pretty console output!"), //.resizable(true), TODO: this.
         )
-        .window_mode(WindowMode::default().dimensions(640, 480))
+        .window_mode(WindowMode::default().dimensions(640.0, 480.0))
         .build()?;
 
     trace!("Context created, creating a file logger.");

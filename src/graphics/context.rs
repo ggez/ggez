@@ -456,7 +456,7 @@ where
         let mut min_dimensions = None;
         if mode.min_width > 0.0 && mode.min_height > 0.0 {
             min_dimensions = Some(dpi::LogicalSize {
-                width: mode.min_width.into(), 
+                width: mode.min_width.into(),
                 height: mode.min_height.into(),
             });
         }
@@ -465,7 +465,7 @@ where
         let mut max_dimensions = None;
         if mode.max_width > 0.0 && mode.max_height > 0.0 {
             max_dimensions = Some(dpi::LogicalSize {
-                width: mode.max_width.into(), 
+                width: mode.max_width.into(),
                 height: mode.max_height.into(),
             });
         }
@@ -473,18 +473,18 @@ where
 
         let monitor = window.get_current_monitor();
         match mode.fullscreen_type {
-            FullscreenType::Off => {
+            FullscreenType::Windowed => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
                 window.set_inner_size(dpi::LogicalSize {
-                    width: mode.width.into(), 
+                    width: mode.width.into(),
                     height: mode.height.into(),
                 });
             }
             FullscreenType::True => {
                 window.set_fullscreen(Some(monitor));
                 window.set_inner_size(dpi::LogicalSize {
-                    width: mode.width.into(), 
+                    width: mode.width.into(),
                     height: mode.height.into(),
                 });
             }
@@ -520,14 +520,14 @@ where
     pub(crate) fn color_format(&self) -> gfx::format::Format {
         self.color_format
     }
-    
+
 
     /// Returns the screen depth format used by the context.
-    /// 
+    ///
     pub(crate) fn depth_format(&self) -> gfx::format::Format {
         self.depth_format
     }
-    
+
     /// Simple shortcut to check whether the context's color
     /// format is SRGB or not.
     pub(crate) fn is_srgb(&self) -> bool {
@@ -545,7 +545,7 @@ where
     /// scaling this is Good, if you want pixel-perfect scaling this
     /// is Bad.  We are currently operating on the assumption that you want
     /// pixel-perfect scaling.
-    /// 
+    ///
     /// See <https://github.com/tomaka/winit/issues/591#issuecomment-403096230>
     /// and related issues for fuller discussion.
     pub(crate) fn hack_event_hidpi(&self, event: &winit::Event) -> winit::Event {

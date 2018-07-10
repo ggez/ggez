@@ -5,24 +5,27 @@
 
 extern crate clap;
 extern crate ggez;
+extern crate nalgebra;
 
 use clap::{App, Arg};
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::filesystem;
-use ggez::graphics::{self, DrawMode, Point2};
+use ggez::graphics::{self, DrawMode};
 use ggez::timer;
 use ggez::{Context, GameResult};
 
 use std::env;
 use std::path;
 
+use nalgebra as na;
+type Point2 = na::Point2<f32>;
+
+
 struct WindowSettings {
     window_size_toggle: bool,
     toggle_fullscreen: bool,
     is_fullscreen: bool,
-    num_of_resolutions: usize,
-    resolution_index: usize,
     resize_projection: bool,
 }
 
@@ -43,15 +46,15 @@ impl MainState {
                 toggle_fullscreen: false,
                 window_size_toggle: false,
                 is_fullscreen: false,
-                resolution_index: 0,
-                num_of_resolutions: 0,
                 resize_projection: false,
             },
         };
 
+        // This functionality seems to have been removed,
+        // see issue #427
         // TODO: see method in graphics module.
-        let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
-        s.window_settings.num_of_resolutions = resolutions.len();
+        // let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
+        // s.window_settings.num_of_resolutions = resolutions.len();
 
         Ok(s)
     }
@@ -65,17 +68,18 @@ impl event::EventHandler for MainState {
 
             if self.window_settings.toggle_fullscreen {
                 let fullscreen_type = if self.window_settings.is_fullscreen {
-                    conf::FullscreenType::Desktop(conf::MonitorId::Current)
+                    conf::FullscreenType::Desktop
                 } else {
-                    conf::FullscreenType::Off;
+                    conf::FullscreenType::Windowed
                 };
                 ggez::graphics::set_fullscreen(
                     ctx,
-                    self.window_settings.is_fullscreen == FullscreenType::Windowed,
+                    fullscreen_type
                 )?;
                 self.window_settings.toggle_fullscreen = false;
             }
 
+/*
             if self.window_settings.window_size_toggle {
                 let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
                 let (width, height) = resolutions[self.window_settings.resolution_index];
@@ -84,6 +88,7 @@ impl event::EventHandler for MainState {
 
                 self.window_settings.window_size_toggle = false;
             }
+        */
         }
         Ok(())
     }
@@ -98,8 +103,8 @@ impl event::EventHandler for MainState {
             100.0,
             4.0,
         )?;
-        graphics::draw(ctx, &self.image, Point2::new(400.0, 300.0), 0.0)?;
-        graphics::draw(ctx, &circle, Point2::new(400.0, 300.0), rotation as f32)?;
+        graphics::draw(ctx, &self.image, (Point2::new(400.0, 300.0), 0.0, graphics::WHITE))?;
+        graphics::draw(ctx, &circle, (Point2::new(400.0, 300.0), rotation as f32, graphics::WHITE))?;
 
         // Let's draw a grid so we can see where the window bounds are.
         const COUNT: i32 = 10;
@@ -141,6 +146,7 @@ impl event::EventHandler for MainState {
                 self.window_settings.toggle_fullscreen = true;
                 self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
             }
+            /*
             KeyCode::H => {
                 self.window_settings.window_size_toggle = true;
                 self.window_settings.resolution_index += 1;
@@ -154,6 +160,7 @@ impl event::EventHandler for MainState {
                         self.window_settings.num_of_resolutions;
                 }
             }
+            */
             KeyCode::Up => {
                 self.zoom += 0.1;
                 println!("Zoom is now {}", self.zoom);
@@ -181,7 +188,7 @@ impl event::EventHandler for MainState {
         }
     }
 
-    fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
         println!("Resized screen to {}, {}", width, height);
         if self.window_settings.resize_projection {
             let new_rect = graphics::Rect::new(
@@ -225,10 +232,11 @@ pub fn main() -> GameResult {
         .parse()
         .expect("Option msaa needs to be a number!");
     let mut c = conf::Conf::new();
-    c.window_mode.fullscreen_type = conf::FullscreenType::Off;
+    c.window_mode.fullscreen_type = conf::FullscreenType::Windowed;
     c.window_setup.samples =
         conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
-    c.window_setup.resizable = true;
+    // TODO BUGGO: See issue #428
+    // c.window_setup.resizable = true;
     println!("{:?}", c);
 
     let (ctx, events_loop) = &mut Context::load_from_conf("graphics_settings", "ggez", c)?;

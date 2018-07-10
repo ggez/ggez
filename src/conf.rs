@@ -19,7 +19,7 @@ use GameResult;
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum FullscreenType {
     /// Windowed mode
-    Off,
+    Windowed,
     /// Real fullscreen
     True,
     /// Windowed fullscreen, generally preferred over real fullscreen
@@ -38,7 +38,7 @@ pub enum FullscreenType {
 ///     width: 800,
 ///     height: 600,
 ///     borderless: false,
-///     fullscreen_type: FullscreenType::Off,
+///     fullscreen_type: FullscreenType::Windowed,
 ///     vsync: true,
 ///     min_width: 0,
 ///     max_width: 0,
@@ -58,7 +58,7 @@ pub struct WindowMode {
     #[default = r#"false"#]
     pub maximized: bool,
     /// Fullscreen type
-    #[default = r#"FullscreenType::Off"#]
+    #[default = r#"FullscreenType::Windowed"#]
     pub fullscreen_type: FullscreenType,
     /// Whether or not to show window decorations
     #[default = r#"false"#]
@@ -77,11 +77,11 @@ pub struct WindowMode {
     pub max_height: f32,
     /// Whether or not to scale all "pixel" coordinates to deal with
     /// high DPI screens.
-    /// 
+    ///
     /// A very good overview of this is available in
     /// [the `winit` docs](https://docs.rs/winit/0.16.1/winit/dpi/index.html).
     /// If this is false (the default), one pixel in ggez equates to one
-    /// physical pixel on the screen.  If it is `true`, then ggez will 
+    /// physical pixel on the screen.  If it is `true`, then ggez will
     /// scale *all* pixel coordinates by the scaling factor returned by
     /// `graphics::get_hidpi_factor()`.
     #[default = r"false"]
@@ -139,7 +139,7 @@ impl WindowMode {
 /// that must be set at init time and cannot be changed afterwards.
 ///
 /// Defaults:
-/// 
+///
 /// TODO: Update docs and defaults
 ///
 /// ```rust,ignore
@@ -209,7 +209,7 @@ impl WindowSetup {
     }
 
     /// Set if window background should be transparent.
-    /// 
+    ///
     /// TODO: Is this necessary?  Do we ever want this?
     pub fn transparent(mut self, transparent: bool) -> Self {
         self.transparent = transparent;

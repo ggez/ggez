@@ -81,8 +81,6 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> Self {
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf").unwrap();
-
         let color_view = graphics::get_screen_render_target(ctx);
         let depth_view = graphics::get_depth_view(ctx);
         let factory = graphics::get_factory(ctx);

@@ -23,8 +23,8 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         // The ttf file will be in your resources directory. Later, we
         // will mount that directory so we can omit it in the path here.
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
-        let text = graphics::Text::new(ctx, "Hello world!", &font)?;
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
+        let text = graphics::Text::new(("Hello world!", font, 48.0));
         let canvas = graphics::Canvas::with_window_size(ctx)?;
 
         let s = MainState {

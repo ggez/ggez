@@ -18,7 +18,6 @@ struct MainState {
     direction: i32,
     image: graphics::Image,
     text: graphics::Text,
-    bmptext: graphics::Text,
     pixel_sized_text: graphics::Text,
     // Not actually dead, see BUGGO below
     #[allow(dead_code)]
@@ -49,20 +48,16 @@ impl MainState {
     }
 
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        filesystem::print_resource_stats(ctx);
+        filesystem::print_all(ctx);
 
         let image = graphics::Image::new(ctx, "/dragon1.png").unwrap();
 
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48).unwrap();
-        let text = graphics::Text::new(ctx, "Hello world!", &font).unwrap();
-        let bmpfont =
-            graphics::Font::new_bitmap(ctx, "/arial.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ").unwrap();
-        let bmptext = graphics::Text::new(ctx, "ZYXWVYTSRQPONMLKJIHGFEDCBA", &bmpfont).unwrap();
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf").unwrap();
+        let text = graphics::Text::new(("Hello world!", font, 48.0));
         let sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
 
-        let pixel_font = graphics::Font::new_px(ctx, "/DejaVuSerif.ttf", 32).unwrap();
         let pixel_sized_text =
-            graphics::Text::new(ctx, "This text is 32 pixels high", &pixel_font).unwrap();
+            graphics::Text::new(("This text is 32 pixels high", font, 32.0));
 
         let _ = sound.play();
 
@@ -71,7 +66,6 @@ impl MainState {
             direction: 1,
             image,
             text,
-            bmptext,
             pixel_sized_text,
             // BUGGO: We never use sound again,
             // but we have to hang on to it, Or Else!
@@ -108,8 +102,6 @@ impl event::EventHandler for MainState {
         let dest_point = cgmath::Point2::new(0.0, 0.0);
         graphics::draw(ctx, &self.image, (dest_point, 0.0, color))?;
         graphics::draw(ctx, &self.text, (dest_point, 0.0, color))?;
-        let dest_point = cgmath::Point2::new(100.0, 50.0);
-        graphics::draw(ctx, &self.bmptext, (dest_point, 0.0, color))?;
 
         let dest_point2 = cgmath::Point2::new(0.0, 256.0);
         graphics::rectangle(
