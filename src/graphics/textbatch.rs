@@ -128,36 +128,6 @@ where
     }
 }
 */
-/*
-impl Drawable for TextFragment {
-    fn draw_primitive(&self, ctx: &mut Context, param: PrimitiveDrawParam) -> GameResult {
-        // TODO: This is nasty; we pull the translation out of the PrimitiveDrawParam's
-        // matrix directly.
-        // Translation vector =
-        // [1 0 tx]
-        // [0 1 ty]
-        // [0 0 0 ]
-        //
-        // ...wait, is that just done by draw_queued()?  Looks like it.
-        // let tx = param.matrix[2, 0];
-        // let ty = param.matrix[2, 1];
-        // let offset = Point2::new(tx, ty);
-        let origin: Point2 = na::origin();
-        let b = &mut TextBatch::new(self);
-        b.queue(ctx, origin, Some(param.color));
-        TextBatch::draw_queued(ctx, param)
-    }
-
-    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
-        // TODO
-        unimplemented!()
-    }
-    fn get_blend_mode(&self) -> Option<BlendMode> {
-        // TODO
-        unimplemented!()
-    }
-}
-*/
 
 impl Into<FontId> for Font {
     fn into(self) -> FontId {

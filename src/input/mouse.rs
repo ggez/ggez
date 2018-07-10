@@ -122,12 +122,14 @@ pub fn get_button_pressed(ctx: &Context, button: MouseButton) -> bool {
     ctx.mouse_context.button_pressed(button)
 }
 
-/// TODO: Can we implement this?  Checked with Winit peoples.
+/// TODO: Can we implement this?  Check with Winit peoples.
+/// Winit doesn't implement it itself, we can do it by locking 
+/// the cursor to the window and resetting it to center each frame?
 pub fn get_relative_mode() -> bool {
     unimplemented!()
 }
 
-/// TODO: Can we impement this?  Checked with Winit peoples.
+/// TODO: Can we impement this?  Check with Winit peoples.
 pub fn set_relative_mode() {
     unimplemented!()
 }
