@@ -233,9 +233,9 @@ pub fn main() -> GameResult {
         .expect("Option msaa needs to be a number!");
     let mut c = conf::Conf::new();
     c.window_mode.fullscreen_type = conf::FullscreenType::Windowed;
+    c.window_mode.resizable = true;
     c.window_setup.samples =
         conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
-    c.window_setup.resizable = true;
     println!("{:?}", c);
 
     let (ctx, events_loop) = &mut Context::load_from_conf("graphics_settings", "ggez", c)?;
