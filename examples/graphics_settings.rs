@@ -235,8 +235,7 @@ pub fn main() -> GameResult {
     c.window_mode.fullscreen_type = conf::FullscreenType::Windowed;
     c.window_setup.samples =
         conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
-    // TODO BUGGO: See issue #428
-    // c.window_setup.resizable = true;
+    c.window_setup.resizable = true;
     println!("{:?}", c);
 
     let (ctx, events_loop) = &mut Context::load_from_conf("graphics_settings", "ggez", c)?;

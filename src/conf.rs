@@ -86,6 +86,9 @@ pub struct WindowMode {
     /// `graphics::get_hidpi_factor()`.
     #[default = r"false"]
     pub hidpi: bool,
+    /// Whether or not the window is resizable
+    #[default = r#"false"#]
+    pub resizable: bool,
 }
 
 impl WindowMode {
@@ -156,9 +159,6 @@ pub struct WindowSetup {
     /// The window title.
     #[default = r#""An easy, good game".to_owned()"#]
     pub title: String,
-    /*/// Whether or not the window is resizable
-    #[default = r#"false"#]
-    pub resizable: bool,*/ // TODO: winit #540
     /// Number of samples for multisample anti-aliasing
     #[default = r#"NumSamples::One"#]
     pub samples: NumSamples,

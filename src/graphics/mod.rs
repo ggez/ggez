@@ -64,7 +64,7 @@ pub trait BackendSpec: fmt::Debug {
 
     /// A helper function to take a RawShaderResourceView and turn it into a typed one based on
     /// the surface type defined in a `BackendSpec`.
-    /// 
+    ///
     /// But right now we only allow surfaces that use [f32;4] colors, so we can freely
     /// hardcode this in the `ShaderResourceType` type.
     fn raw_to_typed_shader_resource(&self,
@@ -82,7 +82,7 @@ pub trait BackendSpec: fmt::Debug {
 
 
     /// Returns the version of the backend, `(major, minor)`.
-    /// 
+    ///
     /// So for instance if the backend is using OpenGL version 3.2,
     /// it would return `(3, 2)`.
     fn version_tuple(&self) -> (u8, u8);
@@ -93,10 +93,10 @@ pub trait BackendSpec: fmt::Debug {
     /// Creates the window.
     fn init<'a>(&self, window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop,
     color_format: gfx::format::Format, depth_format: gfx::format::Format) -> (
-        glutin::GlWindow, 
-        Self::Device, 
-        Self::Factory, 
-        gfx::handle::RawRenderTargetView<Self::Resources>, 
+        glutin::GlWindow,
+        Self::Device,
+        Self::Factory,
+        gfx::handle::RawRenderTargetView<Self::Resources>,
         gfx::handle::RawDepthStencilView<Self::Resources>
     );
 
@@ -110,7 +110,7 @@ pub trait BackendSpec: fmt::Debug {
     fn resize_viewport(&self, color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
     color_format: gfx::format::Format, depth_format: gfx::format::Format,
     window: &glutin::GlWindow)  ->
-        Option<(gfx::handle::RawRenderTargetView<Self::Resources>, 
+        Option<(gfx::handle::RawRenderTargetView<Self::Resources>,
         gfx::handle::RawDepthStencilView<Self::Resources>)>;
 }
 
@@ -135,8 +135,8 @@ pub struct GlBackendSpec {
 impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL { major, minor } => Self { 
-                major, 
+            conf::Backend::OpenGL { major, minor } => Self {
+                major,
                 minor,
             },
         }
@@ -155,10 +155,10 @@ impl BackendSpec for GlBackendSpec {
 
     fn init<'a>(&self, window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop,
     color_format: gfx::format::Format, depth_format: gfx::format::Format) -> (
-        glutin::GlWindow, 
-        Self::Device, 
-        Self::Factory, 
-        gfx::handle::RawRenderTargetView<Self::Resources>, 
+        glutin::GlWindow,
+        Self::Device,
+        Self::Factory,
+        gfx::handle::RawRenderTargetView<Self::Resources>,
         gfx::handle::RawDepthStencilView<Self::Resources>
     ) {
         use gfx_window_glutin;
@@ -195,7 +195,7 @@ impl BackendSpec for GlBackendSpec {
     fn resize_viewport(&self, color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
     color_format: gfx::format::Format, depth_format: gfx::format::Format,
     window: &glutin::GlWindow) ->
-        Option<(gfx::handle::RawRenderTargetView<Self::Resources>, 
+        Option<(gfx::handle::RawRenderTargetView<Self::Resources>,
         gfx::handle::RawDepthStencilView<Self::Resources>)> {
         // Basically taken from the definition of
         // gfx_window_glutin::update_views()
@@ -273,8 +273,8 @@ gfx_defines!{
         // The default values here are overwritten by the
         // pipeline init values in `shader::create_shader()`.
         out: gfx::RawRenderTarget =
-          ("Target0", 
-           gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, gfx::format::ChannelType::Srgb), 
+          ("Target0",
+           gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, gfx::format::ChannelType::Srgb),
            gfx::state::ColorMask::all(), Some(gfx::preset::blend::ALPHA)
           ),
         // out: gfx::RawRenderTarget = "Target0",
@@ -773,7 +773,10 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
 /// size to make sure everything is what you want it to be.
 pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult {
     let gfx = &mut context.gfx_context;
-    gfx.set_window_mode(mode)
+    gfx.set_window_mode(mode)?;
+    // Save updated mode.
+    context.conf.window_mode = mode;
+    Ok(())
 }
 
 /// Sets the window to fullscreen or back.
@@ -783,11 +786,18 @@ pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -
     set_mode(context, window_mode)
 }
 
-/// Sets the window resolution based on the specified width and height.
+/// Sets the window size/resolution to the specified width and height.
 pub fn set_resolution(context: &mut Context, width: f32, height: f32) -> GameResult {
     let mut window_mode = context.conf.window_mode;
     window_mode.width = width;
     window_mode.height = height;
+    set_mode(context, window_mode)
+}
+
+/// Sets whether or not the window is resizable.
+pub fn set_resizable(context: &mut Context, resizable: bool) -> GameResult {
+    let mut window_mode = context.conf.window_mode;
+    window_mode.resizable = resizable;
     set_mode(context, window_mode)
 }
 
@@ -830,7 +840,7 @@ pub fn get_size(context: &Context) -> (f64, f64) {
 }
 
 /// Returns the hidpi pixel scaling factor that ggez
-/// is currently using.  If  `conf::WindowMode::hidpi` 
+/// is currently using.  If  `conf::WindowMode::hidpi`
 /// is true this is equal to `get_os_hidpi_factor()`,
 /// otherwise it is `1.0`.
 pub fn get_hidpi_factor(context: &Context) -> f32 {

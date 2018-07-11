@@ -131,18 +131,15 @@ where
 
         let mut window_builder = glutin::WindowBuilder::new()
             .with_title(window_setup.title.clone())
-            .with_transparency(window_setup.transparent);
+            .with_transparency(window_setup.transparent)
+            .with_resizable(window_mode.resizable);
+
         window_builder = if !window_setup.icon.is_empty() {
             use winit::Icon;
             window_builder.with_window_icon(Some(Icon::from_path(&window_setup.icon)?))
         } else {
             window_builder
         };
-
-        // TODO: see winit #540 about disabling resizing.
-        /*if window_setup.resizable {
-            window_builder.resizable();
-        }*/
 
         let (window, device, mut factory, screen_render_target, depth_view) =
             backend.init(
