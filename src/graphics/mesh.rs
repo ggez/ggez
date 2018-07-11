@@ -337,10 +337,11 @@ impl MeshBuilder {
                             normal: nv,
                         }
                     })
-                    // Can we remove this collect?
-                    // Probably means collecting into chunks first, THEN
-                    // converting point types, since we can't chunk an iterator,
-                    // only a slice.  Not sure that's an improvement.
+                    // Removing this collect might be nice, but is not easy.
+                    // We can chunk a slice, but can't chunk an arbitrary
+                    // iterator.
+                    // Using the itertools crate doesn't really make anything
+                    // nicer, so we'll just live with it.
                 .collect::<Vec<_>>();
             let tris = tris.chunks(3);
             let builder: &mut t::BuffersBuilder<_, _, _> =
@@ -484,14 +485,43 @@ impl Mesh {
     }
 
 
-    /// Create a new `Mesh` from a raw list of triangles.
+    /// Create a new `Mesh` from a raw list of triangle points.
     pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P]) -> GameResult<Mesh>
     where
-        P: Into<mint::Point2<f32>> + Clone + Clone,
+        P: Into<mint::Point2<f32>> + Clone,
     {
         let mut mb = MeshBuilder::new();
         let _ = mb.triangles(triangles);
         mb.build(ctx)
+    }
+
+    /// Creates a `Mesh` from a raw list of triangles defined from points
+    /// and indices, with the given UV texture coordinates.
+    ///
+    /// This is the most primitive mesh-creation method, but allows you full
+    /// control over the tesselation and texturing.
+    /// As such it will panic or produce incorrect/invalid output (that may later
+    /// cause drawing to panic), if:
+    ///
+    ///  * `indices` contains a value out of bounds of `verts`
+    pub fn from_raw<V>(ctx: &mut Context, verts: &[V], indices: &[u16]) -> Mesh
+    where
+        V: Into<Vertex> + Clone
+    {
+        let verts: Vec<Vertex> = verts.iter()
+            .cloned()
+            .map(|v| v.into())
+            .collect();
+        let (vbuf, slice) = ctx.gfx_context
+            .factory
+            .create_vertex_buffer_with_slice(&verts[..], indices);
+        Mesh {
+            buffer: vbuf,
+            slice,
+            blend_mode: None,
+            debug_id: DebugId::get(ctx),
+        }
+
     }
 }
 
