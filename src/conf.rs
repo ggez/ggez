@@ -131,6 +131,12 @@ impl WindowMode {
         self
     }
 
+    /// Set resizable
+    pub fn resizable(mut self, resizable: bool) -> Self {
+        self.resizable = resizable;
+        self
+    }
+
     /// Sets whether or not to allow hidpi.
     pub fn hidpi(mut self, hidpi: bool) -> Self {
         self.hidpi = hidpi;
@@ -185,13 +191,6 @@ impl WindowSetup {
         self.title = title.to_owned();
         self
     }
-
-    /*/// Set resizable
-    pub fn resizable(mut self, resizable: bool) -> Self {
-        self.resizable = resizable;
-        self
-    }*/
-    // TODO: winit #540
 
     /// Set number of samples
     ///
