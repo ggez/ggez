@@ -4,7 +4,8 @@
 //!
 //! ```rust, no-run
 //! use ggez::event::{EventHandler, KeyCode, KeyMods};
-//! use ggez::{graphics, keyboard, nalgebra as na, timer};
+//! use ggez::{graphics, nalgebra as na, timer};
+//! use ggez::input::keyboard;
 //! use ggez::{Context, GameResult};
 //!
 //! struct MainState {
@@ -115,9 +116,13 @@ pub struct KeyboardContext {
     /// KeyCode's are a c-like enum, and so can be converted to/from
     /// simple integers.
     /// As of winit 0.16 this is Big Enough For Anyone; assertions
-    /// will check if that assumption gets violated
+    /// will check if that assumption gets violated.
+    // Maybe we can just use a HashSet instead?  Eh.
     pressed_keys: Vec<bool>,
+
+    // These two are necessary for tracking key-repeat.
     last_pressed: Option<KeyCode>,
+    current_pressed: Option<KeyCode>,
 }
 
 impl KeyboardContext {
@@ -127,7 +132,7 @@ impl KeyboardContext {
         // Rust what an enum's max member is and a Sufficiently Big
         // fixed-size array `[bool; MAX_KEY_IDX]` doesn't implement
         // nice things like Debug.  :|
-        // We have an assert everywhere pressed_keys is accessed so 
+        // We have an assert everywhere pressed_keys is accessed so
         // we know if this assumption is broken.
         const MAX_KEY_IDX: usize = 256;
         let mut key_vec =  Vec::with_capacity(MAX_KEY_IDX);
@@ -136,6 +141,7 @@ impl KeyboardContext {
             active_modifiers: KeyMods::empty(),
             pressed_keys: key_vec,
             last_pressed: None,
+            current_pressed: None,
         }
     }
 
@@ -149,8 +155,10 @@ impl KeyboardContext {
         assert!(key_idx < self.pressed_keys.len(), "Impossible KeyCode detected!");
         self.pressed_keys[key_idx] = pressed;
         if pressed {
-            self.last_pressed = Some(key);
+            self.last_pressed = self.current_pressed;
+            self.current_pressed = Some(key);
         } else {
+            self.current_pressed = None;
             // Double check that this edge handling is necessary;
             // winit sounds like it should do this for us,
             // see https://docs.rs/winit/0.16.1/winit/struct.KeyboardInput.html#structfield.modifiers
@@ -176,8 +184,8 @@ impl KeyboardContext {
     }
 
     pub(crate) fn is_key_repeated(&self) -> bool {
-        if let Some(key) = self.last_pressed {
-            self.is_key_pressed(key)
+        if let Some(_) = self.last_pressed {
+            self.last_pressed == self.current_pressed
         } else {
             false
         }
@@ -193,8 +201,10 @@ impl KeyboardContext {
                     // into the matching KeyCode, because Rust's support
                     // for C-like numeric enums is UTTER GARBAGE.
                     // TODO: Can we protect this with an assertion somehow?
-                    let keycode: &KeyCode = unsafe { 
-                        &*(&key_idx as *const usize as *const KeyCode) 
+                    // I don't even see a way to get the max element of an
+                    // enum.
+                    let keycode: &KeyCode = unsafe {
+                        &*(&key_idx as *const usize as *const KeyCode)
                     };
                     Some(*keycode)
                 } else {

@@ -25,8 +25,8 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// A more sophisticated example:
 ///
 /// ```rust
-/// use ggez::{Context, GameResult};
-/// use ggez::graphics::{self, DrawMode, MeshBuilder, Point2};
+/// use ggez::{Context, GameResult, nalgebra as na};
+/// use ggez::graphics::{self, DrawMode, MeshBuilder};
 ///
 /// fn draw_danger_signs(ctx: &mut Context) -> GameResult {
 ///     // Initialize a builder instance.
@@ -34,23 +34,23 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 ///         // Add vertices for 3 lines (in an approximate equilateral triangle).
 ///         .line(
 ///             &[
-///                 Point2::new(0.0, 0.0),
-///                 Point2::new(-30.0, 52.0),
-///                 Point2::new(30.0, 52.0),
-///                 Point2::new(0.0, 0.0),
+///                 na::Point2::new(0.0, 0.0),
+///                 na::Point2::new(-30.0, 52.0),
+///                 na::Point2::new(30.0, 52.0),
+///                 na::Point2::new(0.0, 0.0),
 ///             ],
 ///             1.0,
 ///         )
 ///         // Add vertices for an exclamation mark!
-///         .ellipse(DrawMode::Fill, Point2::new(0.0, 25.0), 2.0, 15.0, 2.0)
-///         .circle(DrawMode::Fill, Point2::new(0.0, 45.0), 2.0, 2.0)
+///         .ellipse(DrawMode::Fill, na::Point2::new(0.0, 25.0), 2.0, 15.0, 2.0)
+///         .circle(DrawMode::Fill, na::Point2::new(0.0, 45.0), 2.0, 2.0)
 ///         // Finalize then unwrap. Unwrapping via `?` operator either yields the final `Mesh`,
 ///         // or propagates the error (note return type).
 ///         .build(ctx)?;
 ///     // Draw 3 meshes in a line, 1st and 3rd tilted by 1 radian.
-///     graphics::draw(ctx, &mesh, Point2::new(50.0, 50.0), -1.0).unwrap();
-///     graphics::draw(ctx, &mesh, Point2::new(150.0, 50.0), 0.0).unwrap();
-///     graphics::draw(ctx, &mesh, Point2::new(250.0, 50.0), 1.0).unwrap();
+///     graphics::draw(ctx, &mesh, (na::Point2::new(50.0, 50.0), -1.0, graphics::WHITE))?;
+///     graphics::draw(ctx, &mesh, (na::Point2::new(150.0, 50.0), 0.0, graphics::WHITE))?;
+///     graphics::draw(ctx, &mesh, (na::Point2::new(250.0, 50.0), 1.0, graphics::WHITE))?;
 ///     Ok(())
 /// }
 /// ```
