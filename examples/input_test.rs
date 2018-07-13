@@ -43,7 +43,7 @@ impl event::EventHandler for MainState {
                 y: self.pos_y,
                 w: 400.0,
                 h: 300.0,
-            }
+            },
         )?;
         graphics::present(ctx)?;
         Ok(())

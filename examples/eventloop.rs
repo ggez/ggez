@@ -8,8 +8,8 @@
 //!
 //! It is functionally identical to the `super_simple.rs` example apart from that.
 
-extern crate ggez;
 extern crate cgmath;
+extern crate ggez;
 
 use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};

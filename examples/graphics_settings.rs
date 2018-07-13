@@ -21,7 +21,6 @@ use std::path;
 use nalgebra as na;
 type Point2 = na::Point2<f32>;
 
-
 struct WindowSettings {
     window_size_toggle: bool,
     toggle_fullscreen: bool,
@@ -72,14 +71,11 @@ impl event::EventHandler for MainState {
                 } else {
                     conf::FullscreenType::Windowed
                 };
-                ggez::graphics::set_fullscreen(
-                    ctx,
-                    fullscreen_type
-                )?;
+                ggez::graphics::set_fullscreen(ctx, fullscreen_type)?;
                 self.window_settings.toggle_fullscreen = false;
             }
 
-/*
+            /*
             if self.window_settings.window_size_toggle {
                 let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
                 let (width, height) = resolutions[self.window_settings.resolution_index];
@@ -103,8 +99,16 @@ impl event::EventHandler for MainState {
             100.0,
             4.0,
         )?;
-        graphics::draw(ctx, &self.image, (Point2::new(400.0, 300.0), 0.0, graphics::WHITE))?;
-        graphics::draw(ctx, &circle, (Point2::new(400.0, 300.0), rotation as f32, graphics::WHITE))?;
+        graphics::draw(
+            ctx,
+            &self.image,
+            (Point2::new(400.0, 300.0), 0.0, graphics::WHITE),
+        )?;
+        graphics::draw(
+            ctx,
+            &circle,
+            (Point2::new(400.0, 300.0), rotation as f32, graphics::WHITE),
+        )?;
 
         // Let's draw a grid so we can see where the window bounds are.
         const COUNT: i32 = 10;

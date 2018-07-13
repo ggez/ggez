@@ -1,4 +1,3 @@
-
 // #[cfg(all(test, has_display))]
 
 extern crate ggez;

@@ -7,11 +7,10 @@ use audio;
 use conf;
 use event::winit_event;
 use filesystem::Filesystem;
-use input::{gamepad, keyboard, mouse};
 use graphics::{self, Point2};
+use input::{gamepad, keyboard, mouse};
 use timer;
 use GameResult;
-
 
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
@@ -77,7 +76,6 @@ impl Context {
         let keyboard_context = keyboard::KeyboardContext::new();
         let gamepad_context = gamepad::GamepadContext::new()?;
 
-
         let ctx = Context {
             conf,
             filesystem: fs,
@@ -135,7 +133,7 @@ impl Context {
     /// state it needs to, such as detecting window resizes.  If you are
     /// rolling your own event loop, you should call this on the events
     /// you receive before processing them yourself.
-    /// 
+    ///
     /// This also returns a new version of the `event` that has been modified
     /// for ggez's optional overriding of hidpi.  For full discussion see
     /// <https://github.com/tomaka/winit/issues/591#issuecomment-403096230>.
@@ -147,16 +145,13 @@ impl Context {
                     self.gfx_context.resize_viewport();
                 }
                 winit_event::WindowEvent::CursorMoved {
-                    position: dpi::LogicalPosition{x, y}, ..
+                    position: dpi::LogicalPosition { x, y },
+                    ..
                 } => {
                     self.mouse_context
                         .set_last_position(Point2::new(x as f32, y as f32));
                 }
-                winit_event::WindowEvent::MouseInput {
-                    button,
-                    state,
-                    ..
-                } => {
+                winit_event::WindowEvent::MouseInput { button, state, .. } => {
                     let pressed = match state {
                         winit_event::ElementState::Pressed => true,
                         winit_event::ElementState::Released => false,
@@ -284,7 +279,7 @@ static DEBUG_ID_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 /// This is a type that contains a unique ID for each Context and
 /// is contained in each thing created from the Context which
 /// becomes invalid when the Context goes away (for example, Image because
-/// it contains texture handles).  When compiling without assertions 
+/// it contains texture handles).  When compiling without assertions
 /// (in release mode) it is replaced with a zero-size type, compiles
 /// down to nothing, disappears entirely with a puff of optimization logic.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

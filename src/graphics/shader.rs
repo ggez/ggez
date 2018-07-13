@@ -335,7 +335,6 @@ where
     }
 }
 
-
 impl<C> Shader<C>
 where
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,

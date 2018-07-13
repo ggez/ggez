@@ -66,9 +66,9 @@
 
 use context::Context;
 
+use winit::ModifiersState;
 /// A key code.
 pub use winit::VirtualKeyCode as KeyCode;
-use winit::ModifiersState;
 
 bitflags! {
     /// Bitflags describing state of keyboard modifiers, such as Control or Shift.
@@ -106,7 +106,6 @@ impl From<ModifiersState> for KeyMods {
     }
 }
 
-
 /// Tracks held down keyboard keys, active keyboard modifiers,
 /// and figures out if the system is sending repeat keystrokes.
 #[derive(Clone, Debug)]
@@ -135,7 +134,7 @@ impl KeyboardContext {
         // We have an assert everywhere pressed_keys is accessed so
         // we know if this assumption is broken.
         const MAX_KEY_IDX: usize = 256;
-        let mut key_vec =  Vec::with_capacity(MAX_KEY_IDX);
+        let mut key_vec = Vec::with_capacity(MAX_KEY_IDX);
         key_vec.resize(MAX_KEY_IDX, false);
         Self {
             active_modifiers: KeyMods::empty(),
@@ -145,14 +144,16 @@ impl KeyboardContext {
         }
     }
 
-
     // TODO: Set modifiers correctly
     // and in general cmake sure this is hooked up correctly
     // from Context::process_event().
     // Looks like it is, but, not 100% sure.
     pub(crate) fn set_key(&mut self, key: KeyCode, pressed: bool) {
         let key_idx = key as usize;
-        assert!(key_idx < self.pressed_keys.len(), "Impossible KeyCode detected!");
+        assert!(
+            key_idx < self.pressed_keys.len(),
+            "Impossible KeyCode detected!"
+        );
         self.pressed_keys[key_idx] = pressed;
         if pressed {
             self.last_pressed = self.current_pressed;
@@ -179,7 +180,10 @@ impl KeyboardContext {
 
     pub(crate) fn is_key_pressed(&self, key: KeyCode) -> bool {
         let key_idx = key as usize;
-        assert!(key_idx < self.pressed_keys.len(), "Impossible KeyCode detected!");
+        assert!(
+            key_idx < self.pressed_keys.len(),
+            "Impossible KeyCode detected!"
+        );
         self.pressed_keys[key_idx]
     }
 
@@ -192,7 +196,8 @@ impl KeyboardContext {
     }
 
     pub(crate) fn get_pressed_keys(&self) -> Vec<KeyCode> {
-        self.pressed_keys.iter()
+        self.pressed_keys
+            .iter()
             .enumerate()
             .filter_map(|(key_idx, b)| {
                 if *b {
@@ -203,9 +208,8 @@ impl KeyboardContext {
                     // TODO: Can we protect this with an assertion somehow?
                     // I don't even see a way to get the max element of an
                     // enum.
-                    let keycode: &KeyCode = unsafe {
-                        &*(&key_idx as *const usize as *const KeyCode)
-                    };
+                    let keycode: &KeyCode =
+                        unsafe { &*(&key_idx as *const usize as *const KeyCode) };
                     Some(*keycode)
                 } else {
                     None

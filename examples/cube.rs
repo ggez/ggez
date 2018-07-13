@@ -15,10 +15,10 @@ use ggez::event;
 use ggez::filesystem;
 use ggez::graphics;
 use ggez::{Context, GameResult};
+use nalgebra as na;
 use std::env;
 use std::f32;
 use std::path;
-use nalgebra as na;
 
 type Isometry3 = na::Isometry3<f32>;
 type Point3 = na::Point3<f32>;
@@ -236,8 +236,18 @@ impl event::EventHandler for MainState {
         // graphics::draw(ctx, &self.text1, (dest_point1,))?;
         // graphics::draw(ctx, &self.text2, (dest_point2,))?;
 
-        graphics::queue_text(ctx, &graphics::Text::new("You can mix ggez and gfx drawing;"), dest_point1, None);
-        graphics::queue_text(ctx, &graphics::Text::new("it basically draws gfx stuff first, then ggez"), dest_point2, None);
+        graphics::queue_text(
+            ctx,
+            &graphics::Text::new("You can mix ggez and gfx drawing;"),
+            dest_point1,
+            None,
+        );
+        graphics::queue_text(
+            ctx,
+            &graphics::Text::new("it basically draws gfx stuff first, then ggez"),
+            dest_point2,
+            None,
+        );
         graphics::draw_queued_text(ctx, graphics::DrawParam::default())?;
         graphics::present(ctx)?;
         self.frames += 1;

@@ -63,11 +63,7 @@ impl Canvas {
             bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
             usage: Usage::Data,
         };
-        let tex = factory.create_texture_raw(
-            texture_create_info,
-            Some(color_format.1),
-            None,
-        )?;
+        let tex = factory.create_texture_raw(texture_create_info, Some(color_format.1), None)?;
         let resource_desc = gfx::texture::ResourceDesc {
             channel: color_format.1,
             layer: None,
@@ -122,7 +118,8 @@ impl Canvas {
 impl Drawable for Canvas {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform> {
+        D: Into<DrawTransform>,
+    {
         let param = param.into();
         self.debug_id.assert(ctx);
         // Gotta flip the image on the Y axis here

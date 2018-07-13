@@ -48,7 +48,7 @@ pub use self::text::*;
 pub use self::types::*;
 
 type BuggoSurfaceFormat = gfx::format::Srgba8;
-type ShaderResourceType = [f32;4];
+type ShaderResourceType = [f32; 4];
 
 /// A marker trait saying that something is a label for a particular backend,
 /// with associated gfx-rs types for that backend.
@@ -67,19 +67,14 @@ pub trait BackendSpec: fmt::Debug {
     ///
     /// But right now we only allow surfaces that use [f32;4] colors, so we can freely
     /// hardcode this in the `ShaderResourceType` type.
-    fn raw_to_typed_shader_resource(&self,
+    fn raw_to_typed_shader_resource(
+        &self,
         texture_view: gfx::handle::RawShaderResourceView<Self::Resources>,
-    ) -> gfx::handle::ShaderResourceView<
-        <Self as BackendSpec>::Resources,
-        ShaderResourceType,
-    > {
-        let typed_view: gfx::handle::ShaderResourceView<
-            _,
-            ShaderResourceType,
-        > = gfx::memory::Typed::new(texture_view);
+    ) -> gfx::handle::ShaderResourceView<<Self as BackendSpec>::Resources, ShaderResourceType> {
+        let typed_view: gfx::handle::ShaderResourceView<_, ShaderResourceType> =
+            gfx::memory::Typed::new(texture_view);
         typed_view
     }
-
 
     /// Returns the version of the backend, `(major, minor)`.
     ///
@@ -91,27 +86,38 @@ pub trait BackendSpec: fmt::Debug {
     fn get_info(&self, device: &Self::Device) -> String;
 
     /// Creates the window.
-    fn init<'a>(&self, window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop,
-    color_format: gfx::format::Format, depth_format: gfx::format::Format) -> (
+    fn init<'a>(
+        &self,
+        window_builder: glutin::WindowBuilder,
+        gl_builder: glutin::ContextBuilder<'a>,
+        events_loop: &glutin::EventsLoop,
+        color_format: gfx::format::Format,
+        depth_format: gfx::format::Format,
+    ) -> (
         glutin::GlWindow,
         Self::Device,
         Self::Factory,
         gfx::handle::RawRenderTargetView<Self::Resources>,
-        gfx::handle::RawDepthStencilView<Self::Resources>
+        gfx::handle::RawDepthStencilView<Self::Resources>,
     );
 
     /// Create an Encoder for the backend.
-    fn get_encoder(factory: &mut Self::Factory) -> gfx::Encoder<
-            Self::Resources,
-            Self::CommandBuffer,
-        >;
+    fn get_encoder(
+        factory: &mut Self::Factory,
+    ) -> gfx::Encoder<Self::Resources, Self::CommandBuffer>;
 
     /// Resizes the viewport for the backend. (right now assumes a Glutin window...)
-    fn resize_viewport(&self, color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
-    color_format: gfx::format::Format, depth_format: gfx::format::Format,
-    window: &glutin::GlWindow)  ->
-        Option<(gfx::handle::RawRenderTargetView<Self::Resources>,
-        gfx::handle::RawDepthStencilView<Self::Resources>)>;
+    fn resize_viewport(
+        &self,
+        color_view: &gfx::handle::RawRenderTargetView<Self::Resources>,
+        depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
+        color_format: gfx::format::Format,
+        depth_format: gfx::format::Format,
+        window: &glutin::GlWindow,
+    ) -> Option<(
+        gfx::handle::RawRenderTargetView<Self::Resources>,
+        gfx::handle::RawDepthStencilView<Self::Resources>,
+    )>;
 }
 
 /// A backend specification for OpenGL.
@@ -135,10 +141,7 @@ pub struct GlBackendSpec {
 impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL { major, minor } => Self {
-                major,
-                minor,
-            },
+            conf::Backend::OpenGL { major, minor } => Self { major, minor },
         }
     }
 }
@@ -153,13 +156,19 @@ impl BackendSpec for GlBackendSpec {
         (self.major, self.minor)
     }
 
-    fn init<'a>(&self, window_builder: glutin::WindowBuilder, gl_builder: glutin::ContextBuilder<'a>, events_loop: &glutin::EventsLoop,
-    color_format: gfx::format::Format, depth_format: gfx::format::Format) -> (
+    fn init<'a>(
+        &self,
+        window_builder: glutin::WindowBuilder,
+        gl_builder: glutin::ContextBuilder<'a>,
+        events_loop: &glutin::EventsLoop,
+        color_format: gfx::format::Format,
+        depth_format: gfx::format::Format,
+    ) -> (
         glutin::GlWindow,
         Self::Device,
         Self::Factory,
         gfx::handle::RawRenderTargetView<Self::Resources>,
-        gfx::handle::RawDepthStencilView<Self::Resources>
+        gfx::handle::RawDepthStencilView<Self::Resources>,
     ) {
         use gfx_window_glutin;
         let (window, device, factory, screen_render_target, depth_view) =
@@ -184,30 +193,31 @@ impl BackendSpec for GlBackendSpec {
         )
     }
 
-    fn get_encoder(factory: &mut Self::Factory) -> gfx::Encoder<
-            Self::Resources,
-            Self::CommandBuffer,
-        >  {
-       factory.create_command_buffer().into()
+    fn get_encoder(
+        factory: &mut Self::Factory,
+    ) -> gfx::Encoder<Self::Resources, Self::CommandBuffer> {
+        factory.create_command_buffer().into()
     }
 
-
-    fn resize_viewport(&self, color_view: &gfx::handle::RawRenderTargetView<Self::Resources>, depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
-    color_format: gfx::format::Format, depth_format: gfx::format::Format,
-    window: &glutin::GlWindow) ->
-        Option<(gfx::handle::RawRenderTargetView<Self::Resources>,
-        gfx::handle::RawDepthStencilView<Self::Resources>)> {
+    fn resize_viewport(
+        &self,
+        color_view: &gfx::handle::RawRenderTargetView<Self::Resources>,
+        depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
+        color_format: gfx::format::Format,
+        depth_format: gfx::format::Format,
+        window: &glutin::GlWindow,
+    ) -> Option<(
+        gfx::handle::RawRenderTargetView<Self::Resources>,
+        gfx::handle::RawDepthStencilView<Self::Resources>,
+    )> {
         // Basically taken from the definition of
         // gfx_window_glutin::update_views()
         let dim = color_view.get_dimensions();
         assert_eq!(dim, depth_view.get_dimensions());
         use gfx_window_glutin;
-        if let Some((cv, dv)) = gfx_window_glutin::update_views_raw(
-            window,
-            dim,
-            color_format,
-            depth_format,
-        ) {
+        if let Some((cv, dv)) =
+            gfx_window_glutin::update_views_raw(window, dim, color_format, depth_format)
+        {
             Some((cv, dv))
         } else {
             None
@@ -372,7 +382,6 @@ where
     let params = params.into();
     drawable.draw(ctx, DrawTransform::from(params))
 }
-
 
 /// Tells the graphics system to actually put everything on the screen.
 /// Call this at the end of your `EventHandler`'s `draw()` method.
@@ -834,7 +843,8 @@ pub fn get_window(context: &Context) -> &glutin::Window {
 /// actually want
 pub fn get_size(context: &Context) -> (f64, f64) {
     let gfx = &context.gfx_context;
-    gfx.window.get_outer_size()
+    gfx.window
+        .get_outer_size()
         .map(|logical_size| (logical_size.width, logical_size.height))
         .unwrap_or((0.0, 0.0))
 }
@@ -847,7 +857,6 @@ pub fn get_hidpi_factor(context: &Context) -> f32 {
     context.gfx_context.hidpi_factor
 }
 
-
 /// Returns the hidpi pixel scaling factor that the operating
 /// system says that ggez should be using.
 pub fn get_os_hidpi_factor(context: &Context) -> f32 {
@@ -858,7 +867,8 @@ pub fn get_os_hidpi_factor(context: &Context) -> f32 {
 /// Returns zeros if window doesn't exist.
 pub fn get_drawable_size(context: &Context) -> (f64, f64) {
     let gfx = &context.gfx_context;
-    gfx.window.get_inner_size()
+    gfx.window
+        .get_inner_size()
         .map(|logical_size| (logical_size.width, logical_size.height))
         .unwrap_or((0.0, 0.0))
 }

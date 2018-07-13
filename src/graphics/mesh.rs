@@ -264,10 +264,8 @@ impl MeshBuilder {
         self
     }
 
-
     /// Create a new mesh for a rectangle.
-    pub fn rectangle(&mut self, mode: DrawMode, bounds: Rect) -> &mut Self
-    {
+    pub fn rectangle(&mut self, mode: DrawMode, bounds: Rect) -> &mut Self {
         {
             let buffers = &mut self.buffer;
             let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
@@ -278,37 +276,20 @@ impl MeshBuilder {
                     // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let fill_options = t::FillOptions::default();
-                    let _ = t::basic_shapes::fill_rectangle(
-                        &rect,
-                        &fill_options,
-                        builder,
-                    );
+                    let _ = t::basic_shapes::fill_rectangle(&rect, &fill_options, builder);
                 }
                 DrawMode::Line(line_width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let options = t::StrokeOptions::default()
-                        .with_line_width(line_width);
-                    let _ = t::basic_shapes::stroke_rectangle(
-                        &rect,
-                        &options,
-                        builder,
-                    );
+                    let options = t::StrokeOptions::default().with_line_width(line_width);
+                    let _ = t::basic_shapes::stroke_rectangle(&rect, &options, builder);
                 }
                 DrawMode::CustomFill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let _ = t::basic_shapes::fill_rectangle(
-                        &rect,
-                        &fill_options,
-                        builder,
-                    );
+                    let _ = t::basic_shapes::fill_rectangle(&rect, &fill_options, builder);
                 }
                 DrawMode::CustomLine(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let _ = t::basic_shapes::stroke_rectangle(
-                        &rect,
-                        &options,
-                        builder,
-                    );
+                    let _ = t::basic_shapes::stroke_rectangle(&rect, &options, builder);
                 }
             };
         }
@@ -477,13 +458,11 @@ impl Mesh {
     }
 
     /// Create a new mesh for a rectangle
-    pub fn new_rectangle(ctx: &mut Context, mode: DrawMode, bounds: Rect) -> GameResult<Mesh>
-    {
+    pub fn new_rectangle(ctx: &mut Context, mode: DrawMode, bounds: Rect) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         let _ = mb.rectangle(mode, bounds);
         mb.build(ctx)
     }
-
 
     /// Create a new `Mesh` from a raw list of triangle points.
     pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P]) -> GameResult<Mesh>
@@ -506,12 +485,9 @@ impl Mesh {
     ///  * `indices` contains a value out of bounds of `verts`
     pub fn from_raw<V>(ctx: &mut Context, verts: &[V], indices: &[u16]) -> Mesh
     where
-        V: Into<Vertex> + Clone
+        V: Into<Vertex> + Clone,
     {
-        let verts: Vec<Vertex> = verts.iter()
-            .cloned()
-            .map(|v| v.into())
-            .collect();
+        let verts: Vec<Vertex> = verts.iter().cloned().map(|v| v.into()).collect();
         let (vbuf, slice) = ctx.gfx_context
             .factory
             .create_vertex_buffer_with_slice(&verts[..], indices);
@@ -521,14 +497,14 @@ impl Mesh {
             blend_mode: None,
             debug_id: DebugId::get(ctx),
         }
-
     }
 }
 
 impl Drawable for Mesh {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform> {
+        D: Into<DrawTransform>,
+    {
         let param = param.into();
         self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;

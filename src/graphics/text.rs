@@ -1,11 +1,11 @@
-use std::fmt;
-use std::io::Read;
-use std::path;
 use gfx_glyph::{self, GlyphPositioner, Layout, SectionText, VariedSection};
 pub use gfx_glyph::{FontId, HorizontalAlign as Align, Scale};
 use mint;
 use std::borrow::Cow;
 use std::f32;
+use std::fmt;
+use std::io::Read;
+use std::path;
 use std::sync::{Arc, RwLock};
 
 use super::*;
@@ -16,13 +16,13 @@ use super::*;
 pub const DEFAULT_FONT_SCALE: f32 = 16.0;
 
 /// A loaded Truetype font handle.
-/// 
+///
 /// TODO: Figure out appropraite visibility here...
 /// We probably don't want `FontId` to be part of the public API.
 /// Wrapping it in a newtype gives us a convenient place to hide it
 /// and to hang convenient traits and impl's and such, and maybe
 /// extra information later if necessary.
-/// 
+///
 /// TODO: Actually, since it depends on the `Context`, a `DebugId`
 /// would be appropriate here!
 #[derive(Debug, Copy, Clone)]
@@ -31,7 +31,7 @@ pub struct Font(pub FontId);
 /// A piece of text with optional color, font and font scale information.
 /// These options take precedence over any similar field/argument.
 /// Can be implicitly constructed from `String`, `(String, Color)`, and `(String, FontId, Scale)`.
-/// 
+///
 /// TODO: Construction should be full builder pattern, if it's not already.
 #[derive(Clone, Debug)]
 pub struct TextFragment {
@@ -44,7 +44,6 @@ pub struct TextFragment {
     /// Fragment's scale, defaults to text's scale.
     pub scale: Option<Scale>,
 }
-
 
 impl Default for TextFragment {
     fn default() -> Self {
@@ -91,7 +90,6 @@ impl<'a> From<&'a str> for TextFragment {
     }
 }
 
-
 impl From<char> for TextFragment {
     fn from(ch: char) -> TextFragment {
         TextFragment {
@@ -111,15 +109,14 @@ impl From<String> for TextFragment {
 }
 
 // TODO: Scale ergonomics need to be better
-impl<T> From<(T, Font, f32)> for TextFragment 
-    where T: Into<TextFragment>{
+impl<T> From<(T, Font, f32)> for TextFragment
+where
+    T: Into<TextFragment>,
+{
     fn from((text, font, scale): (T, Font, f32)) -> TextFragment {
-        text.into()
-            .font(font)
-            .scale(Scale::uniform(scale))
+        text.into().font(font).scale(Scale::uniform(scale))
     }
 }
-
 
 // TODO:
 // https://doc.rust-lang.org/std/borrow/trait.ToOwned.html#tymethod.to_owned
@@ -154,9 +151,9 @@ impl Default for CachedMetrics {
     }
 }
 
-/// Drawable text object.  Essentially a list of `TextFragment`'s and some metrics 
+/// Drawable text object.  Essentially a list of `TextFragment`'s and some metrics
 /// information.
-/// 
+///
 /// It implements `Drawable` so it can be drawn immediately with `graphics::draw()`, or
 /// many of them can be queued with (TODO: function name) `graphics::queue_text()` and then
 /// all drawn at once with `graphics::draw_queued_text()`.
@@ -233,10 +230,10 @@ impl Text {
     }
 
     // TODO: Decide whether the set_* methods should remain named that way
-    // (to maintain consistency with love2d, ggez and general sanity) or 
-    // should just be `font()` and `bounds()` (which is more idiomatic for 
+    // (to maintain consistency with love2d, ggez and general sanity) or
+    // should just be `font()` and `bounds()` (which is more idiomatic for
     // builder pattern).
-    // 
+    //
     // Bleh.
 
     /// Specifies rectangular dimensions to try and fit contents inside of,
@@ -257,8 +254,7 @@ impl Text {
     }
 
     /// Specifies text's font and font scale; used for fragments that don't have their own.
-    pub fn set_font(&mut self, font: Font, font_scale: Scale) -> &mut Text
-    {
+    pub fn set_font(&mut self, font: Font, font_scale: Scale) -> &mut Text {
         self.font_id = font.0;
         self.font_scale = font_scale;
         self.invalidate_cached_metrics();
@@ -399,14 +395,13 @@ impl Text {
         }
         self.calculate_dimensions(context).1
     }
-
 }
-
 
 impl Drawable for Text {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform> {
+        D: Into<DrawTransform>,
+    {
         let param = param.into();
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
         // TODO: Fix for PrimitiveDrawParam
@@ -427,7 +422,6 @@ impl Drawable for Text {
         self.blend_mode
     }
 }
-
 
 impl Font {
     /// Load a new TTF font from the given file.
@@ -467,8 +461,6 @@ impl Default for Font {
         Font(FontId(0))
     }
 }
-
-
 
 /// Queues the `Text`
 /// to be drawn by `draw_queued()`.
@@ -568,8 +560,7 @@ where
         0.0,
     ));
 
-    let m_scale =
-        Mat4::new_nonuniform_scaling(&Vec3::new(2.0 / screen_w, -(2.0 / screen_h), 0.0));
+    let m_scale = Mat4::new_nonuniform_scaling(&Vec3::new(2.0 / screen_w, -(2.0 / screen_h), 0.0));
     // println!("ggez projection is: {:#?}", context.gfx_context.projection);
     let final_matrix = m_scale * param.matrix * m_translate * m_scale_inv;
     // If we do everything in terms of nalgebra isometry types then it might
@@ -592,16 +583,17 @@ where
         &context.gfx_context.depth_view,
     );
 
-    context.gfx_context.glyph_brush.draw_queued_with_transform(
-        final_matrix.into(),
-        encoder,
-        &(render_tgt, color_format),
-        &(depth_view, depth_format),
-    )
-    .map_err(|e| GameError::RenderError(e.to_string()))
+    context
+        .gfx_context
+        .glyph_brush
+        .draw_queued_with_transform(
+            final_matrix.into(),
+            encoder,
+            &(render_tgt, color_format),
+            &(depth_view, depth_format),
+        )
+        .map_err(|e| GameError::RenderError(e.to_string()))
 }
-
-
 
 #[cfg(test)]
 mod tests {

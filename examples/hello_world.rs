@@ -6,7 +6,7 @@ extern crate ggez;
 use ggez::conf;
 use ggez::event;
 use ggez::filesystem;
-use ggez::graphics::{self};
+use ggez::graphics;
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
@@ -24,10 +24,7 @@ impl MainState {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
         let text = graphics::Text::new(("Hello world!", font, 48.0));
 
-        let s = MainState { 
-            frames: 0,
-            text
-        };
+        let s = MainState { frames: 0, text };
         Ok(s)
     }
 }

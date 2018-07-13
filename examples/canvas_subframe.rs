@@ -2,9 +2,9 @@
 //!
 //! You really want to run this one in release mode.
 
+extern crate cgmath;
 extern crate ggez;
 extern crate rand;
-extern crate cgmath;
 
 use ggez::conf;
 use ggez::event;
@@ -67,8 +67,7 @@ impl MainState {
                             .cos()
                             .abs() * 0.0625,
                     ))
-                    .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28))
-                ;
+                    .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28));
                 self.spritebatch.add(p);
             }
         }
@@ -124,7 +123,7 @@ impl event::EventHandler for MainState {
             &self.canvas,
             graphics::DrawParam::new()
                 .dest(self.draw_pt)
-                .src(graphics::Rect::new(src_x, -src_y, 0.5, 0.5))
+                .src(graphics::Rect::new(src_x, -src_y, 0.5, 0.5)),
         )?;
         graphics::present(ctx)?;
         Ok(())

@@ -120,10 +120,7 @@ impl EventHandler for App {
 
     /// Called when window is resized.
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
-        match graphics::set_screen_coordinates(
-            ctx,
-            graphics::Rect::new(0.0, 0.0, width, height),
-        ) {
+        match graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height)) {
             Ok(()) => info!("Resized window to {} x {}", width, height),
             Err(e) => error!("Couldn't resize window: {}", e),
         }

@@ -28,12 +28,14 @@ where
     pub(crate) debug_id: DebugId,
 }
 
-impl<B> ImageGeneric<B>  where B: BackendSpec{
-
+impl<B> ImageGeneric<B>
+where
+    B: BackendSpec,
+{
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
-    /// 
+    ///
     /// BUGGO TODO: It really doesn't seem to be able to put two and two together regarding
     /// the gfx_device_gl::Factory equalling its factory...
     pub(crate) fn make_raw(
@@ -105,7 +107,6 @@ impl<B> ImageGeneric<B>  where B: BackendSpec{
             debug_id,
         })
     }
-
 }
 
 /// In-GPU-memory image data available to be drawn on the screen,
@@ -124,9 +125,8 @@ pub enum ImageFormat {
 }
 
 impl Image {
-
     /* TODO: Needs generic Context to work.
-    */
+     */
 
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
@@ -307,7 +307,8 @@ impl fmt::Debug for Image {
 impl Drawable for Image {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform> {
+        D: Into<DrawTransform>,
+    {
         let param = param.into();
         self.debug_id.assert(ctx);
 
@@ -329,7 +330,8 @@ impl Drawable for Image {
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(self.texture.clone());
+        let typed_thingy = gfx.backend_spec
+            .raw_to_typed_shader_resource(self.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.get_blend_mode();

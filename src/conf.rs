@@ -27,7 +27,6 @@ pub enum FullscreenType {
     Desktop,
 }
 
-
 /// A builder structure containing window settings
 /// that can be set at runtime and changed with `graphics::set_mode()`
 ///
@@ -247,17 +246,14 @@ pub enum Backend {
     },
 }
 
-
 impl Backend {
     /// Set OpenGL backend and version.
     pub fn opengl(self, new_major: u8, new_minor: u8) -> Self {
         match self {
-            Backend::OpenGL {..} => {
-                Backend::OpenGL {
-                    major: new_major,
-                    minor: new_minor,
-                }
-            }
+            Backend::OpenGL { .. } => Backend::OpenGL {
+                major: new_major,
+                minor: new_minor,
+            },
         }
     }
 }

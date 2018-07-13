@@ -146,7 +146,8 @@ impl SpriteBatch {
 impl graphics::Drawable for SpriteBatch {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform> {
+        D: Into<DrawTransform>,
+    {
         let param = param.into();
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
@@ -155,7 +156,8 @@ impl graphics::Drawable for SpriteBatch {
         let sampler = gfx.samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(self.image.texture.clone());
+        let typed_thingy = gfx.backend_spec
+            .raw_to_typed_shader_resource(self.image.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
 
         let mut slice = gfx.quad_slice.clone();
