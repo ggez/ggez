@@ -3,9 +3,7 @@
 extern crate cgmath;
 extern crate ggez;
 
-use ggez::conf;
 use ggez::event;
-use ggez::filesystem;
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use std::env;
@@ -60,29 +58,28 @@ impl event::EventHandler for MainState {
 
 // Now our main function, which does three things:
 //
-// * First, create a new `ggez::conf::Conf`
+// * First, create a new `ggez::ContextBuilder`
 // object which contains configuration info on things such
 // as screen resolution and window title.
 // * Second, create a `ggez::game::Game` object which will
 // do the work of creating our MainState and running our game.
 // * Then, just call `game.run()` which runs the `Game` mainloop.
 pub fn main() -> GameResult {
-    let c = conf::Conf {
-        window_setup: conf::WindowSetup {
-            samples: conf::NumSamples::Eight,
-            ..Default::default()
-        },
-        ..Default::default()
-    };
-    let (ctx, event_loop) = &mut Context::load_from_conf("helloworld", "ggez", c)?;
 
-    // We add the CARGO_MANIFEST_DIR/resources to the filesystem's path
+    // We add the CARGO_MANIFEST_DIR/resources to the resource paths
     // so that ggez will look in our cargo project directory for files.
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        filesystem::mount(ctx, &path, true);
-    }
+        path
+    } else {
+        path::PathBuf::from("./resources")
+    };
+
+    let cb = ggez::ContextBuilder::new("helloworld", "ggez")
+        .add_resource_path(resource_dir)
+        ;
+    let (ctx, event_loop) = &mut cb.build()?;
 
     println!("HIDPI: {}", graphics::get_hidpi_factor(ctx));
 

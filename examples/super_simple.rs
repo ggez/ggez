@@ -2,7 +2,6 @@
 
 extern crate ggez;
 
-use ggez::conf;
 use ggez::event;
 use ggez::graphics::{self, DrawMode};
 use ggez::nalgebra as na;
@@ -41,8 +40,9 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let c = conf::Conf::new();
-    let (ctx, events_loop) = &mut Context::load_from_conf("super_simple", "ggez", c)?;
+
+    let cb = ggez::ContextBuilder::new("shader", "ggez");
+    let (ctx, event_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, events_loop, state)
+    event::run(ctx, event_loop, state)
 }

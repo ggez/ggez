@@ -3,13 +3,9 @@
 extern crate cgmath;
 extern crate ggez;
 
-use ggez::conf;
 use ggez::event::{self, Axis, Button, KeyCode, KeyMods, MouseButton};
-use ggez::filesystem;
 use ggez::graphics::{self, DrawMode};
 use ggez::{Context, GameResult};
-use std::env;
-use std::path;
 
 struct MainState {
     pos_x: f32,
@@ -123,17 +119,9 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let c = conf::Conf::new();
-    let (ctx, events_loop) = &mut Context::load_from_conf("input_test", "ggez", c)?;
-
-    // We add the CARGO_MANIFEST_DIR/resources to the filesystem paths so
-    // that ggez will look in our cargo project directory for files.
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
-        let mut path = path::PathBuf::from(manifest_dir);
-        path.push("resources");
-        filesystem::mount(ctx, &path, true);
-    }
+    let cb = ggez::ContextBuilder::new("input_test", "ggez");
+    let (ctx, event_loop) = &mut cb.build()?;
 
     let state = &mut MainState::new();
-    event::run(ctx, events_loop, state)
+    event::run(ctx, event_loop, state)
 }

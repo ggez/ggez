@@ -8,7 +8,6 @@ extern crate rand;
 use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
-use ggez::filesystem;
 use ggez::graphics::{self, Align, Color, DrawParam, Font, Scale, Text, TextFragment};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
@@ -203,18 +202,21 @@ impl event::EventHandler for App {
 }
 
 pub fn main() -> GameResult {
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        path
+    } else {
+        path::PathBuf::from("./resources")
+    };
+
     let (ctx, events_loop) = &mut ContextBuilder::new("text_cached", "ggez")
         .window_setup(
             WindowSetup::default().title("Cached text example!"), //.resizable(true), TODO: this.
         )
         .window_mode(WindowMode::default().dimensions(640.0, 480.0))
+        .add_resource_path(resource_dir)
         .build()?;
-
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
-        let mut path = path::PathBuf::from(manifest_dir);
-        path.push("resources");
-        filesystem::mount(ctx, &path, true);
-    }
 
     let state = &mut App::new(ctx)?;
     event::run(ctx, events_loop, state)

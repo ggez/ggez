@@ -77,9 +77,8 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let mut c = conf::Conf::new();
-    //c.window_setup.resizable = true; TODO: this.
-    let (ctx, events_loop) = &mut Context::load_from_conf("super_simple", "ggez", c)?;
+    let cb = ggez::ContextBuilder::new("render_to_image", "ggez");
+    let (ctx, event_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, events_loop, state)
+    event::run(ctx, event_loop, state)
 }

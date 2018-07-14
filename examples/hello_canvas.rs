@@ -3,9 +3,7 @@
 extern crate ggez;
 extern crate nalgebra;
 
-use ggez::conf;
 use ggez::event;
-use ggez::filesystem;
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use nalgebra as na;
@@ -108,20 +106,18 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let c = conf::Conf {
-        window_setup: conf::WindowSetup {
-            samples: conf::NumSamples::Two,
-            ..Default::default()
-        },
-        ..Default::default()
-    };
-    let (ctx, event_loop) = &mut Context::load_from_conf("helloworld", "ggez", c)?;
-
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        filesystem::mount(ctx, &path, true);
-    }
+        path
+    } else {
+        path::PathBuf::from("./resources")
+    };
+
+    let cb = ggez::ContextBuilder::new("hello_canvas", "ggez")
+        .add_resource_path(resource_dir)
+        ;
+    let (ctx, event_loop) = &mut cb.build()?;
 
     let state = &mut MainState::new(ctx)?;
     event::run(ctx, event_loop, state)

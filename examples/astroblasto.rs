@@ -589,23 +589,20 @@ impl EventHandler for MainState {
 /// **********************************************************************
 
 pub fn main() -> GameResult {
-    let mut cb = ContextBuilder::new("astroblasto", "ggez")
-        .window_setup(conf::WindowSetup::default().title("Astroblasto!"))
-        .window_mode(conf::WindowMode::default().dimensions(640.0, 480.0));
-
-    // We add the CARGO_MANIFEST_DIR/resources to the filesystems paths so
-    // we we look in the cargo project for files.
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+    // We add the CARGO_MANIFEST_DIR/resources to the resource paths
+    // so that ggez will look in our cargo project directory for files.
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        println!("Adding path {:?}", path);
-        // We need this re-assignment alas, see
-        // https://aturon.github.io/ownership/builders.html
-        // under "Consuming builders"
-        cb = cb.add_resource_path(path);
+        path
     } else {
-        println!("Not building from cargo?  Ok.");
-    }
+        path::PathBuf::from("./resources")
+    };
+
+    let cb = ContextBuilder::new("astroblasto", "ggez")
+        .window_setup(conf::WindowSetup::default().title("Astroblasto!"))
+        .window_mode(conf::WindowMode::default().dimensions(640.0, 480.0))
+        .add_resource_path(resource_dir);
 
     let (ctx, events_loop) = &mut cb.build()?;
 
