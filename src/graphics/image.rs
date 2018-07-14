@@ -141,6 +141,12 @@ impl Image {
     }
 
     /// Creates a new `Image` from the given buffer of `u8` RGBA values.
+    ///
+    /// The pixel layout is row-major.  That is,
+    /// the first 4 `u8` values make the top-left pixel in the `Image`, the
+    /// next 4 make the next pixel in the same row, and so on to the end of
+    /// the row.  The next `width * 4` values make up the second row, and so
+    /// on.
     pub fn from_rgba8(
         context: &mut Context,
         width: u16,
