@@ -3,9 +3,7 @@
 extern crate cgmath;
 extern crate ggez;
 
-use ggez::conf;
 use ggez::event;
-use ggez::filesystem;
 use ggez::graphics::{self, Color, DrawParam};
 use ggez::{Context, GameResult};
 

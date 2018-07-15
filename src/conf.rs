@@ -1,8 +1,8 @@
 //! The `conf` module contains functions for loading and saving game
 //! configurations.
 //!
-//! A `Conf` struct is used to specify hardware setup stuff used to create
-//! the window and other context information.
+//! A `Conf` struct is used to create a config file which specifies
+//! hardware setup stuff, mostly video display settings.
 //!
 //! By default a ggez game will search its resource paths for a `/conf.toml`
 //! file and load values from it when the `Context` is created.  This file

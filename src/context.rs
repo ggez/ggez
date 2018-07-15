@@ -58,7 +58,7 @@ impl fmt::Debug for Context {
 
 impl Context {
     /// Tries to create a new Context using settings from the given config file.
-    /// Usually called by `Context::load_from_conf()`.
+    /// Usually called by `ContextBuilder::build()`.
     fn from_conf(conf: conf::Conf, fs: Filesystem) -> GameResult<(Context, winit::EventsLoop)> {
         let debug_id = DebugId::new();
         let audio_context = audio::AudioContext::new()?;
@@ -103,6 +103,7 @@ impl Context {
     /// module.  You can also always debug-print the
     /// `Context::filesystem` field to see what paths it is
     /// searching.
+    #[deprecated]
     pub fn load_from_conf(
         game_id: &'static str,
         author: &'static str,
@@ -190,11 +191,13 @@ impl Context {
 
 use std::path;
 
-/// A builder object for creating a context.
+/// A builder object for creating a `Context`.
 ///
 /// Can do everything the `Context::load_from_conf()` method does, plus you can
 /// also specify new paths to add to the resource path list at build time instead
 /// of using `filesystem::mount()`.
+///
+/// TODO: Better docs.  Should `Context::load_from_conf` be outright deprecated?
 #[derive(Debug)]
 pub struct ContextBuilder {
     game_id: &'static str,

@@ -478,11 +478,12 @@ where
             FullscreenType::Desktop => {
                 let position = monitor.get_position();
                 let dimensions = monitor.get_dimensions();
+                let hidpi_factor = window.get_hidpi_factor();
+                self.hidpi_factor = hidpi_factor as f32;
                 window.set_fullscreen(None);
                 window.set_decorations(false);
-                // BUGGO: Need to find and store dpi_size
-                window.set_inner_size(dimensions.to_logical(1.0));
-                window.set_position(position.to_logical(1.0));
+                window.set_inner_size(dimensions.to_logical(hidpi_factor));
+                window.set_position(position.to_logical(hidpi_factor));
             }
         }
         Ok(())

@@ -69,7 +69,6 @@ impl MainState {
             // but we have to hang on to it, Or Else!
             // The optimizer will decide we don't need it
             // since play() has "no side effects" and free it.
-            // Or something.
             sound,
         };
 

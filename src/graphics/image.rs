@@ -35,9 +35,6 @@ where
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
-    ///
-    /// BUGGO TODO: It really doesn't seem to be able to put two and two together regarding
-    /// the gfx_device_gl::Factory equalling its factory...
     pub(crate) fn make_raw(
         factory: &mut <B as BackendSpec>::Factory,
         sampler_info: &texture::SamplerInfo,
@@ -55,8 +52,16 @@ where
             );
             return Err(GameError::ResourceLoadError(msg));
         }
-        // TODO: Check for overflow on 32-bit systems here
-        let expected_bytes = width as usize * height as usize * 4;
+        // Check for overflow, which might happen on 32-bit systems
+        let uwidth = width as usize;
+        let uheight = height as usize;
+        let expected_bytes = uwidth.checked_mul(uheight)
+            .and_then(|size| size.checked_mul(4))
+            .ok_or_else(|| {
+                let msg = format!("Integer overflow in Image::make_raw, image size: {} {}",
+                                  uwidth, uheight);
+                GameError::ResourceLoadError(msg)
+            })?;
         if expected_bytes != rgba.len() {
             let msg = format!(
                 "Tried to create a texture of size {}x{}, but gave {} bytes of data (expected {})",
@@ -369,11 +374,13 @@ impl Drawable for Image {
 
 #[cfg(test)]
 mod tests {
+    use ContextBuilder;
     use super::*;
     #[test]
     fn test_invalid_image_size() {
-        let c = conf::Conf::new();
-        let (ctx, _) = &mut Context::load_from_conf("unittest", "unittest", c).unwrap();
+        let (ctx, _) = &mut ContextBuilder::new("unittest", "unittest")
+            .build()
+            .unwrap();
         let _i = assert!(Image::from_rgba8(ctx, 0, 0, &vec![]).is_err());
         let _i = assert!(Image::from_rgba8(ctx, 3432, 432, &vec![]).is_err());
         let _i = Image::from_rgba8(ctx, 2, 2, &vec![99; 16]).unwrap();
