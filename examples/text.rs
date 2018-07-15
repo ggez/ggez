@@ -51,9 +51,9 @@ impl App {
             // or even individual letters, into the same block of text.
             text: "Small red fragment".to_string(),
             color: Some(Color::new(1.0, 0.0, 0.0, 1.0)),
-            // `FontId` is a handle to a loaded TTF, stored inside the context.
+            // `Font` is a handle to a loaded TTF, stored inside the `Context`.
             // `FontId::default()` always exists and maps to DejaVuSerif.
-            font_id: Some(graphics::Font::default()),
+            font: Some(graphics::Font::default()),
             scale: Some(Scale::uniform(10.0)),
             // This doesn't do anything at this point; can be used to omit fields in declarations.
             ..Default::default()
@@ -212,9 +212,9 @@ pub fn main() -> GameResult {
 
     let (ctx, events_loop) = &mut ContextBuilder::new("text_cached", "ggez")
         .window_setup(
-            WindowSetup::default().title("Cached text example!").resizable(true),
+            WindowSetup::default().title("Cached text example!"),
         )
-        .window_mode(WindowMode::default().dimensions(640.0, 480.0))
+        .window_mode(WindowMode::default().dimensions(640.0, 480.0).resizable(true))
         .add_resource_path(resource_dir)
         .build()?;
 
