@@ -47,13 +47,6 @@ impl MainState {
                 resize_projection: false,
             },
         };
-
-        // This functionality seems to have been removed,
-        // see issue #427
-        // TODO: see method in graphics module.
-        // let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
-        // s.window_settings.num_of_resolutions = resolutions.len();
-
         Ok(s)
     }
 }

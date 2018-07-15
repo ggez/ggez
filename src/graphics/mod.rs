@@ -185,7 +185,7 @@ impl BackendSpec for GlBackendSpec {
     fn get_info(&self, device: &Self::Device) -> String {
         let info = device.get_info();
         format!(
-            "  Driver vendor: {}, renderer {}, version {:?}, shading language {:?}",
+            "Driver vendor: {}, renderer {}, version {:?}, shading language {:?}",
             info.platform_name.vendor,
             info.platform_name.renderer,
             info.version,
@@ -362,11 +362,15 @@ impl From<gfx::buffer::CreationError> for GameError {
 /// TODO: Into<Color> ?
 pub fn clear(ctx: &mut Context, color: Color) {
     let gfx = &mut ctx.gfx_context;
-    // SRGB BUGGO: Only convert when drawing on srgb surface
+    // SRGB BUGGO: Only convert when drawing on srgb surface?
+    // I actually can't make it make any difference; fiddle more.
     let linear_color: types::LinearColor = color.into();
-    // SRGB BUGGO: Need a clear_raw() method here, which I don't think
-    // gfx-rs has.  So for now we wing it.
+    // SRGB BUGGO: Need a clear_raw() method here,
+    // which currently isn't released, see
+    // https://github.com/gfx-rs/gfx/pull/2197
+    // So for now we wing it.
     type ColorFormat = BuggoSurfaceFormat;
+
     let typed_render_target: gfx::handle::RenderTargetView<_, ColorFormat> =
         gfx::memory::Typed::new(gfx.data.out.clone());
     gfx.encoder.clear(&typed_render_target, linear_color.into());
@@ -468,21 +472,6 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     Ok(image)
 }
 
-/* // TODO: consider implementing.
-// Draw an arc.
-// Punting on this until later.
-pub fn arc(_ctx: &mut Context,
-           _mode: DrawMode,
-           _point: Point,
-           _radius: f32,
-           _angle1: f32,
-           _angle2: f32,
-           _segments: u32)
-           -> GameResult {
-    unimplemented!();
-}
-*/
-
 // TODO: Make all of these take Into<Color>???
 
 /// Draw a circle.
@@ -568,19 +557,6 @@ where
     m.draw(ctx, DrawParam::new().color(color))
 }
 
-// TODO: consider removing - it's commented out on devel.
-// Renders text with the default font.
-// Not terribly efficient as it re-renders the text with each call,
-// but good enough for debugging.
-// Doesn't actually work, double-borrow on ctx.  Bah.
-// pub fn print(ctx: &mut Context, dest: Point, text: &str) -> GameResult {
-//     let rendered_text = {
-//         let font = &ctx.default_font;
-//         text::Text::new(ctx, text, font)?
-//     };
-//     draw(ctx, &rendered_text, dest, 0.0)
-// }
-
 /// Draws a rectangle.
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
@@ -609,17 +585,15 @@ pub fn get_default_filter(ctx: &Context) -> FilterMode {
     gfx.default_sampler_info.filter.into()
 }
 
-// TODO: consider putting more stuff here;
-// actual GL version will likely require new glutin features.
-// ALSO TODO: Query actual GL profile stuff
 /// Returns a string that tells a little about the obtained rendering mode.
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
 pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
+    let backend_info = ctx.gfx_context.backend_spec.get_info(&*ctx.gfx_context.device);
     Ok(format!(
-        "Requested GL {}.{} Core profile with sRGB {}, actually got GL ?.? ? profile with sRGB {:?}.",
+        "Requested OpenGL {}.{} Core profile, actually got {}.",
         ctx.gfx_context.backend_spec.major, ctx.gfx_context.backend_spec.minor,
-        ctx.gfx_context.is_srgb(), ctx.gfx_context.color_format()
+        backend_info
     ))
 }
 

@@ -129,10 +129,8 @@ pub trait EventHandler {
         false
     }
 
-    /// Called when the user resizes the window.
-    /// Is not called when you resize it yourself with
-    /// `graphics::set_mode()` though.
-    /// TODO: CHECK!
+    /// Called when the user resizes the window, or when it is resized
+    /// via `graphics::set_mode()`.
     fn resize_event(&mut self, _ctx: &mut Context, _width: f32, _height: f32) {}
 }
 

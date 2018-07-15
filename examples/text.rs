@@ -212,7 +212,7 @@ pub fn main() -> GameResult {
 
     let (ctx, events_loop) = &mut ContextBuilder::new("text_cached", "ggez")
         .window_setup(
-            WindowSetup::default().title("Cached text example!"), //.resizable(true), TODO: this.
+            WindowSetup::default().title("Cached text example!").resizable(true),
         )
         .window_mode(WindowMode::default().dimensions(640.0, 480.0))
         .add_resource_path(resource_dir)

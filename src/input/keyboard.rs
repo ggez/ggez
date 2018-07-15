@@ -205,7 +205,7 @@ impl KeyboardContext {
                     // Horrible unsafe pointer cast to turn a number
                     // into the matching KeyCode, because Rust's support
                     // for C-like numeric enums is UTTER GARBAGE.
-                    // TODO: Can we protect this with an assertion somehow?
+                    // Can we protect this with an assertion somehow?
                     // I don't even see a way to get the max element of an
                     // enum.
                     let keycode: &KeyCode =
