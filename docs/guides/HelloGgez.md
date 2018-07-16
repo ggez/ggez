@@ -113,7 +113,7 @@ But, we're not going to write any bugs right? 😉
 In your main, you will need to create an instance of `State`.
 ```rust
 pub fn main() {
-    let s = &mut State { };
+    let state = &mut State { };
 }
 ```
 
