@@ -11,6 +11,7 @@ use std::path;
 
 use std::sync::Arc;
 
+use mint;
 use rodio;
 
 use context::Context;
@@ -212,5 +213,148 @@ impl Source {
 impl fmt::Debug for Source {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Audio source: {:p}>", self)
+    }
+}
+
+/// A source of audio data located in space relative to a listener's ears.
+/// Will stop playing when dropped.
+pub struct SpatialSource {
+    data: io::Cursor<SoundData>,
+    sink: rodio::SpatialSink,
+    repeat: bool,
+
+    left_ear: mint::Point3<f32>,
+    right_ear: mint::Point3<f32>,
+    emitter_position: mint::Point3<f32>,
+}
+
+impl SpatialSource {
+    /// Create a new Source from the given file.
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+        let path = path.as_ref();
+        let data = SoundData::new(context, path)?;
+        SpatialSource::from_data(context, data)
+    }
+
+    /// Creates a new Source using the given SoundData object.
+    pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
+        let sink = rodio::SpatialSink::new(
+            &context.audio_context.device,
+            [0.0, 0.0, 0.0],
+            [-1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+        );
+
+        let cursor = io::Cursor::new(data);
+
+        Ok(SpatialSource {
+            sink,
+            data: cursor,
+            repeat: false,
+            left_ear: [-1.0, 0.0, 0.0].into(),
+            right_ear: [1.0, 0.0, 0.0].into(),
+            emitter_position: [0.0, 0.0, 0.0].into(),
+        })
+    }
+
+    /// Plays the Source.
+    pub fn play(&self) -> GameResult {
+        use rodio::Source;
+        let cursor = self.data.clone();
+        let decoder = rodio::Decoder::new(cursor)?;
+        if self.repeat {
+            let repeating = decoder.repeat_infinite();
+            self.sink.append(repeating);
+        } else {
+            self.sink.append(decoder);
+        }
+        Ok(())
+    }
+
+    /// Sets the source to repeat playback infinitely on next `play()`
+    pub fn set_repeat(&mut self, repeat: bool) {
+        self.repeat = repeat;
+    }
+
+    /// Gets whether or not the source is set to repeat.
+    pub fn repeat(&self) -> bool {
+        self.repeat
+    }
+
+    /// Pauses playback
+    pub fn pause(&self) {
+        self.sink.pause()
+    }
+
+    /// Resumes playback
+    pub fn resume(&self) {
+        self.sink.play()
+    }
+
+    /// Stops playback
+    pub fn stop(&mut self) {
+        // `rodio::SpatialSink` does not have a `.stop()` method at
+        // the moment. To stop the current sound we drop the old
+        // sink and create a new one in its place.
+        let device = rodio::default_output_device().unwrap();
+        self.sink = rodio::SpatialSink::new(
+            &device,
+            self.emitter_position.into(),
+            self.left_ear.into(),
+            self.right_ear.into(),
+        );
+    }
+
+    /// Returns whether or not the source is stopped
+    /// -- that is, has no more data to play.
+    pub fn stopped(&self) -> bool {
+        self.sink.empty()
+    }
+
+    /// Gets the current volume
+    pub fn volume(&self) -> f32 {
+        self.sink.volume()
+    }
+
+    /// Sets the current volume
+    pub fn set_volume(&mut self, value: f32) {
+        self.sink.set_volume(value)
+    }
+
+    /// Get whether or not the source is paused
+    pub fn paused(&self) -> bool {
+        self.sink.is_paused()
+    }
+
+    /// Get whether or not the source is playing (ie, not paused
+    /// and not stopped)
+    pub fn playing(&self) -> bool {
+        !self.paused() && !self.stopped()
+    }
+
+    /// Set location of the sound
+    pub fn set_position<P>(&mut self, pos: P)
+    where
+        P: Into<mint::Point3<f32>>,
+    {
+        self.emitter_position = pos.into();
+        self.sink.set_emitter_position(self.emitter_position.into());
+    }
+
+    /// Set locations of the listener's ears
+    pub fn set_ears<P>(&mut self, left: P, right: P)
+    where
+        P: Into<mint::Point3<f32>>,
+    {
+        self.left_ear = left.into();
+        self.right_ear = right.into();
+        self.sink.set_left_ear_position(self.left_ear.into());
+        self.sink.set_right_ear_position(self.right_ear.into());
+    }
+}
+
+impl fmt::Debug for SpatialSource {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<Spatial audio source: {:p}>", self)
     }
 }
