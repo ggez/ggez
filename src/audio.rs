@@ -9,6 +9,7 @@ use std::io;
 use std::io::Read;
 use std::mem;
 use std::path;
+use std::time;
 
 use std::sync::Arc;
 
@@ -119,6 +120,7 @@ pub struct Source {
     data: io::Cursor<SoundData>,
     sink: rodio::Sink,
     repeat: bool,
+    fade_in: time::Duration,
 }
 
 impl Source {
@@ -137,6 +139,7 @@ impl Source {
             sink,
             data: cursor,
             repeat: false,
+            fade_in: time::Duration::from_millis(0),
         })
     }
 
@@ -161,12 +164,16 @@ impl Source {
         use rodio::Source;
         let cursor = self.data.clone();
         let decoder = rodio::Decoder::new(cursor)?;
-        if self.repeat {
-            let repeating = decoder.repeat_infinite();
-            self.sink.append(repeating);
-        } else {
-            self.sink.append(decoder);
+
+        match (self.repeat, self.fade_in) {
+            (true, dur) if dur == time::Duration::from_secs(0) => {
+                self.sink.append(decoder.repeat_infinite())
+            }
+            (false, dur) if dur == time::Duration::from_secs(0) => self.sink.append(decoder),
+            (true, dur) => self.sink.append(decoder.repeat_infinite().fade_in(dur)),
+            (false, dur) => self.sink.append(decoder.fade_in(dur)),
         }
+
         Ok(())
     }
 
@@ -186,6 +193,11 @@ impl Source {
     /// Sets the source to repeat playback infinitely on next `play()`
     pub fn set_repeat(&mut self, repeat: bool) {
         self.repeat = repeat;
+    }
+
+    /// Sets the fade-in time of the source
+    pub fn set_fade_in(&mut self, dur: time::Duration) {
+        self.fade_in = dur;
     }
 
     /// Gets whether or not the source is set to repeat.
@@ -259,6 +271,7 @@ pub struct SpatialSource {
     data: io::Cursor<SoundData>,
     sink: rodio::SpatialSink,
     repeat: bool,
+    fade_in: time::Duration,
 
     left_ear: mint::Point3<f32>,
     right_ear: mint::Point3<f32>,
@@ -288,6 +301,7 @@ impl SpatialSource {
             sink,
             data: cursor,
             repeat: false,
+            fade_in: time::Duration::from_millis(0),
             left_ear: [-1.0, 0.0, 0.0].into(),
             right_ear: [1.0, 0.0, 0.0].into(),
             emitter_position: [0.0, 0.0, 0.0].into(),
@@ -311,12 +325,16 @@ impl SpatialSource {
         use rodio::Source;
         let cursor = self.data.clone();
         let decoder = rodio::Decoder::new(cursor)?;
-        if self.repeat {
-            let repeating = decoder.repeat_infinite();
-            self.sink.append(repeating);
-        } else {
-            self.sink.append(decoder);
+
+        match (self.repeat, self.fade_in) {
+            (true, dur) if dur == time::Duration::from_secs(0) => {
+                self.sink.append(decoder.repeat_infinite())
+            }
+            (false, dur) if dur == time::Duration::from_secs(0) => self.sink.append(decoder),
+            (true, dur) => self.sink.append(decoder.repeat_infinite().fade_in(dur)),
+            (false, dur) => self.sink.append(decoder.fade_in(dur)),
         }
+
         Ok(())
     }
 
@@ -341,6 +359,11 @@ impl SpatialSource {
     /// Sets the source to repeat playback infinitely on next `play()`
     pub fn set_repeat(&mut self, repeat: bool) {
         self.repeat = repeat;
+    }
+
+    /// Sets the fade-in time of the source
+    pub fn set_fade_in(&mut self, dur: time::Duration) {
+        self.fade_in = dur;
     }
 
     /// Gets whether or not the source is set to repeat.
