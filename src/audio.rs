@@ -7,6 +7,7 @@
 use std::fmt;
 use std::io;
 use std::io::Read;
+use std::mem;
 use std::path;
 
 use std::sync::Arc;
@@ -139,8 +140,20 @@ impl Source {
         })
     }
 
-    /// Plays the Source.
-    pub fn play(&self) -> GameResult {
+    /// Plays the Source; defaults to `play_restart`
+    #[inline(always)]
+    pub fn play(&mut self) -> GameResult {
+        self.play_restart()
+    }
+
+    /// Plays the Source; restarts the sound if currently playing
+    pub fn play_restart(&mut self) -> GameResult {
+        self.stop();
+        self.play_later()
+    }
+
+    /// Plays the Source; waits until done if the sound is currently playing
+    pub fn play_later(&self) -> GameResult {
         // Creating a new Decoder each time seems a little messy,
         // since it may do checking and data-type detection that is
         // redundant, but it's not super expensive.
@@ -154,6 +167,19 @@ impl Source {
         } else {
             self.sink.append(decoder);
         }
+        Ok(())
+    }
+
+    /// Play source "in the background"; cannot be stopped
+    pub fn play_detached(&mut self) -> GameResult {
+        self.stop();
+        self.play_later()?;
+
+        let device = rodio::default_output_device().unwrap();
+        let new_sink = rodio::Sink::new(&device);
+        let old_sink = mem::replace(&mut self.sink, new_sink);
+        old_sink.detach();
+
         Ok(())
     }
 
@@ -178,8 +204,19 @@ impl Source {
     }
 
     /// Stops playback
-    pub fn stop(&self) {
-        self.sink.stop()
+    pub fn stop(&mut self) {
+        // Sinks cannot be reused after calling `.stop()`. See
+        // https://github.com/tomaka/rodio/issues/171 for information.
+        // To stop the current sound we have to drop the old sink and
+        // create a new one in its place.
+        // This is most ugly because in order to create a new sink
+        // we need a `device`. However, we can only get the default
+        // device without having access to a context. Currently that's
+        // fine because the `AudioContext` uses the default device too,
+        // but it may cause problems in the future if devices become
+        // customizable.
+        let device = rodio::default_output_device().unwrap();
+        self.sink = rodio::Sink::new(&device);
     }
 
     /// Returns whether or not the source is stopped
@@ -257,8 +294,20 @@ impl SpatialSource {
         })
     }
 
-    /// Plays the Source.
-    pub fn play(&self) -> GameResult {
+    /// Plays the Source; defaults to `play_restart`
+    #[inline(always)]
+    pub fn play(&mut self) -> GameResult {
+        self.play_restart()
+    }
+
+    /// Plays the Source; restarts the sound if currently playing
+    pub fn play_restart(&mut self) -> GameResult {
+        self.stop();
+        self.play_later()
+    }
+
+    /// Plays the Source; waits until done if the sound is currently playing
+    pub fn play_later(&self) -> GameResult {
         use rodio::Source;
         let cursor = self.data.clone();
         let decoder = rodio::Decoder::new(cursor)?;
@@ -268,6 +317,24 @@ impl SpatialSource {
         } else {
             self.sink.append(decoder);
         }
+        Ok(())
+    }
+
+    /// Play source "in the background"; cannot be stopped
+    pub fn play_detached(&mut self) -> GameResult {
+        self.stop();
+        self.play_later()?;
+
+        let device = rodio::default_output_device().unwrap();
+        let new_sink = rodio::SpatialSink::new(
+            &device,
+            self.emitter_position.into(),
+            self.left_ear.into(),
+            self.right_ear.into(),
+        );
+        let old_sink = mem::replace(&mut self.sink, new_sink);
+        old_sink.detach();
+
         Ok(())
     }
 
@@ -296,6 +363,12 @@ impl SpatialSource {
         // `rodio::SpatialSink` does not have a `.stop()` method at
         // the moment. To stop the current sound we drop the old
         // sink and create a new one in its place.
+        // This is most ugly because in order to create a new sink
+        // we need a `device`. However, we can only get the default
+        // device without having access to a context. Currently that's
+        // fine because the `AudioContext` uses the default device too,
+        // but it may cause problems in the future if devices become
+        // customizable.
         let device = rodio::default_output_device().unwrap();
         self.sink = rodio::SpatialSink::new(
             &device,
