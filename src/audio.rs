@@ -121,6 +121,7 @@ pub struct Source {
     sink: rodio::Sink,
     repeat: bool,
     fade_in: time::Duration,
+    pitch: f32,
 }
 
 impl Source {
@@ -140,6 +141,7 @@ impl Source {
             data: cursor,
             repeat: false,
             fade_in: time::Duration::from_millis(0),
+            pitch: 1.0,
         })
     }
 
@@ -163,15 +165,44 @@ impl Source {
         // See https://github.com/ggez/ggez/issues/98 for discussion
         use rodio::Source;
         let cursor = self.data.clone();
-        let decoder = rodio::Decoder::new(cursor)?;
+        let sound = rodio::Decoder::new(cursor)?;
 
-        match (self.repeat, self.fade_in) {
-            (true, dur) if dur == time::Duration::from_secs(0) => {
-                self.sink.append(decoder.repeat_infinite())
+        // todo: this is getting ugly but a match wouldn't be much better. any ideas, anyone?
+        if (self.pitch - 1.0).abs() < 1e-6 {
+            if self.repeat {
+                let sound = sound.repeat_infinite();
+                if self.fade_in == time::Duration::from_secs(0) {
+                    self.sink.append(sound);
+                } else {
+                    let sound = sound.fade_in(self.fade_in);
+                    self.sink.append(sound);
+                }
+            } else {
+                if self.fade_in == time::Duration::from_secs(0) {
+                    self.sink.append(sound);
+                } else {
+                    let sound = sound.fade_in(self.fade_in);
+                    self.sink.append(sound);
+                }
             }
-            (false, dur) if dur == time::Duration::from_secs(0) => self.sink.append(decoder),
-            (true, dur) => self.sink.append(decoder.repeat_infinite().fade_in(dur)),
-            (false, dur) => self.sink.append(decoder.fade_in(dur)),
+        } else {
+            let sound = sound.speed(self.pitch);
+            if self.repeat {
+                let sound = sound.repeat_infinite();
+                if self.fade_in == time::Duration::from_secs(0) {
+                    self.sink.append(sound);
+                } else {
+                    let sound = sound.fade_in(self.fade_in);
+                    self.sink.append(sound);
+                }
+            } else {
+                if self.fade_in == time::Duration::from_secs(0) {
+                    self.sink.append(sound);
+                } else {
+                    let sound = sound.fade_in(self.fade_in);
+                    self.sink.append(sound);
+                }
+            }
         }
 
         Ok(())
@@ -198,6 +229,11 @@ impl Source {
     /// Sets the fade-in time of the source
     pub fn set_fade_in(&mut self, dur: time::Duration) {
         self.fade_in = dur;
+    }
+
+    /// Sets the pitch ratio (by adjusting the playback speed)
+    pub fn set_pitch(&mut self, ratio: f32) {
+        self.pitch = ratio;
     }
 
     /// Gets whether or not the source is set to repeat.
@@ -272,6 +308,7 @@ pub struct SpatialSource {
     sink: rodio::SpatialSink,
     repeat: bool,
     fade_in: time::Duration,
+    pitch: f32,
 
     left_ear: mint::Point3<f32>,
     right_ear: mint::Point3<f32>,
@@ -302,6 +339,7 @@ impl SpatialSource {
             data: cursor,
             repeat: false,
             fade_in: time::Duration::from_millis(0),
+            pitch: 1.0,
             left_ear: [-1.0, 0.0, 0.0].into(),
             right_ear: [1.0, 0.0, 0.0].into(),
             emitter_position: [0.0, 0.0, 0.0].into(),
@@ -326,13 +364,33 @@ impl SpatialSource {
         let cursor = self.data.clone();
         let decoder = rodio::Decoder::new(cursor)?;
 
-        match (self.repeat, self.fade_in) {
-            (true, dur) if dur == time::Duration::from_secs(0) => {
+        // todo: this is getting ugly but nested ifs wouldn't be much better. any ideas, anyone?
+        match (self.repeat, self.fade_in, self.pitch) {
+            (true, dur, ratio)
+                if dur == time::Duration::from_secs(0) && (ratio - 1.0).abs() < 1e-6 =>
+            {
                 self.sink.append(decoder.repeat_infinite())
             }
-            (false, dur) if dur == time::Duration::from_secs(0) => self.sink.append(decoder),
-            (true, dur) => self.sink.append(decoder.repeat_infinite().fade_in(dur)),
-            (false, dur) => self.sink.append(decoder.fade_in(dur)),
+            (false, dur, ratio)
+                if dur == time::Duration::from_secs(0) && (ratio - 1.0).abs() < 1e-6 =>
+            {
+                self.sink.append(decoder)
+            }
+            (true, dur, ratio) if (ratio - 1.0).abs() < 1e-6 => {
+                self.sink.append(decoder.repeat_infinite().fade_in(dur))
+            }
+            (false, dur, ratio) if (ratio - 1.0).abs() < 1e-6 => {
+                self.sink.append(decoder.fade_in(dur))
+            }
+            (true, dur, ratio) if dur == time::Duration::from_secs(0) => {
+                self.sink.append(decoder.speed(ratio).repeat_infinite())
+            }
+            (false, dur, ratio) if dur == time::Duration::from_secs(0) => {
+                self.sink.append(decoder.speed(ratio))
+            }
+            (true, dur, ratio) => self.sink
+                .append(decoder.speed(ratio).repeat_infinite().fade_in(dur)),
+            (false, dur, ratio) => self.sink.append(decoder.speed(ratio).fade_in(dur)),
         }
 
         Ok(())
@@ -364,6 +422,11 @@ impl SpatialSource {
     /// Sets the fade-in time of the source
     pub fn set_fade_in(&mut self, dur: time::Duration) {
         self.fade_in = dur;
+    }
+
+    /// Sets the pitch ratio (by adjusting the playback speed)
+    pub fn set_pitch(&mut self, ratio: f32) {
+        self.pitch = ratio;
     }
 
     /// Gets whether or not the source is set to repeat.
