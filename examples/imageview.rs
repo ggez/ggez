@@ -54,7 +54,7 @@ impl MainState {
 
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf").unwrap();
         let text = graphics::Text::new(("Hello world!", font, 48.0));
-        let sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
+        let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
 
         let pixel_sized_text =
             graphics::Text::new(("This text is 32 pixels high", font, 32.0));
