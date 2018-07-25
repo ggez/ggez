@@ -5,6 +5,14 @@
 //! This module also manages graphics state, coordinate systems, etc.
 //! The default coordinate system has the origin in the upper-left
 //! corner of the screen, with Y increasing downwards.
+//!
+//! This library differs significantly in performance characteristics from the
+//! love library that it is based on. Many operations that are batched by default
+//! in love (e.g. drawing primitives like rectangles or circles) are *not* batched
+//! in ggez, so render loops with a large number of draw calls can be very slow.
+//! The primary solution to efficiently rendering a large number of primitives is
+//! a `SpriteBatch`, which can be orders of magnitude more efficient than individual
+//! draw calls.
 
 use std::collections::HashMap;
 use std::convert::From;
