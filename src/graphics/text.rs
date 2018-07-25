@@ -737,7 +737,7 @@ mod tests {
     fn test_metrics() {
         let f = Font::default_font().expect("Could not get default font");
         assert_eq!(f.get_height(), 17);
-        assert_eq!(f.get_width("Foo!"), 33);
+        assert_eq!(f.get_width("Foo!"), 34);
 
         // http://www.catipsum.com/index.php
         let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff \
@@ -746,7 +746,7 @@ mod tests {
                             Human give me attention meow.";
         let (len, v) = f.get_wrap(text_to_wrap, 250);
         println!("{} {:?}", len, v);
-        assert_eq!(len, 249);
+        assert_eq!(len, 250);
 
         /*
         let wrapped_text = vec![
