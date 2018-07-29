@@ -8,7 +8,7 @@
 //! framework.  This means it contains basic and portable 2D
 //! drawing, sound, resource loading and event handling.
 //!
-//! For a fuller outline, see the (README.md)[https://github.com/ggez/ggez/)
+//! For a fuller outline, see the [README.md](https://github.com/ggez/ggez/)
 //!
 //! ## Usage
 //!
