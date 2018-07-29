@@ -352,14 +352,11 @@ impl Text {
     /// TODO: Should these return f32 rather than u32?
     pub fn dimensions(&self, context: &Context) -> (u32, u32) {
         if let Ok(metrics) = self.cached_metrics.read() {
-            match (metrics.width, metrics.height) {
-                (Some(width), Some(height)) => (width, height),
-                _ => self.calculate_dimensions(context)
+            if let (Some(width), Some(height)) = (metrics.width, metrics.height) {
+                return (width, height);
             }
-        } else {
-            self.calculate_dimensions(context)
         }
-
+        self.calculate_dimensions(context)
     }
 
     /// Returns the width of formatted and wrapped text, in screen coordinates.
