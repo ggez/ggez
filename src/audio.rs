@@ -165,28 +165,19 @@ impl Source {
         // See https://github.com/ggez/ggez/issues/98 for discussion
         use rodio::Source;
         let cursor = self.data.clone();
-        let decoder = rodio::Decoder::new(cursor)?;
-
-        // Using boxed sources is the solution with the nicest code I could come up with (the
-        // alternatives are nested `if`s or a *huge* ugly `match`). The drawback is that we end up
-        // with multiple nested boxed sources, each incurring dynamic dispatch. This might have
-        // a negative impact on playback performance. If performance becomes an issue it may be
-        // worth to revert to a static solution like, ugh!, nested `if`s (maybe time for macros?).
-        let mut sound = BoxedSource::new(decoder);
 
         if self.repeat {
-            sound = BoxedSource::new(sound.repeat_infinite());
+            let sound = rodio::Decoder::new(cursor)?
+                .repeat_infinite()
+                .speed(self.pitch)
+                .fade_in(self.fade_in);
+            self.sink.append(sound);
+        } else {
+            let sound = rodio::Decoder::new(cursor)?
+                .speed(self.pitch)
+                .fade_in(self.fade_in);
+            self.sink.append(sound);
         }
-
-        if (self.pitch - 1.0).abs() < 1e-6 {
-            sound = BoxedSource::new(sound.speed(self.pitch));
-        }
-
-        if self.fade_in > time::Duration::from_secs(0) {
-            sound = BoxedSource::new(sound.fade_in(self.fade_in));
-        }
-
-        self.sink.append(sound);
 
         Ok(())
     }
@@ -345,28 +336,19 @@ impl SpatialSource {
     pub fn play_later(&self) -> GameResult {
         use rodio::Source;
         let cursor = self.data.clone();
-        let decoder = rodio::Decoder::new(cursor)?;
-
-        // Using boxed sources is the solution with the nicest code I could come up with (the
-        // alternatives are nested `if`s or a *huge* ugly `match`). The drawback is that we end up
-        // with multiple nested boxed sources, each incurring dynamic dispatch. This might have
-        // a negative impact on playback performance. If performance becomes an issue it may be
-        // worth to revert to a static solution like, ugh!, nested `if`s (maybe time for macros?).
-        let mut sound = BoxedSource::new(decoder);
 
         if self.repeat {
-            sound = BoxedSource::new(sound.repeat_infinite());
+            let sound = rodio::Decoder::new(cursor)?
+                .repeat_infinite()
+                .speed(self.pitch)
+                .fade_in(self.fade_in);
+            self.sink.append(sound);
+        } else {
+            let sound = rodio::Decoder::new(cursor)?
+                .speed(self.pitch)
+                .fade_in(self.fade_in);
+            self.sink.append(sound);
         }
-
-        if (self.pitch - 1.0).abs() < 1e-6 {
-            sound = BoxedSource::new(sound.speed(self.pitch));
-        }
-
-        if self.fade_in > time::Duration::from_secs(0) {
-            sound = BoxedSource::new(sound.fade_in(self.fade_in));
-        }
-
-        self.sink.append(sound);
 
         Ok(())
     }
@@ -490,59 +472,5 @@ impl SpatialSource {
 impl fmt::Debug for SpatialSource {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Spatial audio source: {:p}>", self)
-    }
-}
-
-/// Boxed wrapper over `rodio::Source` trait objects.
-///
-/// Used for dynamically composing sources.
-struct BoxedSource<T> {
-    input: Box<dyn rodio::Source<Item = T> + Send>,
-}
-
-impl<T> BoxedSource<T>
-where
-    T: rodio::Sample,
-{
-    fn new<S: 'static>(source: S) -> Self
-    where
-        S: rodio::Source<Item = T> + Send,
-    {
-        BoxedSource {
-            input: Box::new(source),
-        }
-    }
-}
-
-impl<T> rodio::Source for BoxedSource<T>
-where
-    T: rodio::Sample,
-{
-    #[inline(always)]
-    fn current_frame_len(&self) -> Option<usize> {
-        self.input.current_frame_len()
-    }
-
-    #[inline(always)]
-    fn channels(&self) -> u16 {
-        self.input.channels()
-    }
-
-    #[inline(always)]
-    fn sample_rate(&self) -> u32 {
-        self.input.sample_rate()
-    }
-
-    #[inline(always)]
-    fn total_duration(&self) -> Option<time::Duration> {
-        self.input.total_duration()
-    }
-}
-
-impl<T> Iterator for BoxedSource<T> {
-    type Item = T;
-
-    fn next(&mut self) -> Option<T> {
-        self.input.next()
     }
 }
