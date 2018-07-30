@@ -145,14 +145,9 @@ impl Source {
         })
     }
 
-    /// Plays the Source; defaults to `play_restart`
+    /// Plays the Source; restarts the sound if currently playing
     #[inline(always)]
     pub fn play(&mut self) -> GameResult {
-        self.play_restart()
-    }
-
-    /// Plays the Source; restarts the sound if currently playing
-    pub fn play_restart(&mut self) -> GameResult {
         self.stop();
         self.play_later()
     }
@@ -320,14 +315,9 @@ impl SpatialSource {
         })
     }
 
-    /// Plays the Source; defaults to `play_restart`
+    /// Plays the Source; restarts the sound if currently playing
     #[inline(always)]
     pub fn play(&mut self) -> GameResult {
-        self.play_restart()
-    }
-
-    /// Plays the Source; restarts the sound if currently playing
-    pub fn play_restart(&mut self) -> GameResult {
         self.stop();
         self.play_later()
     }
