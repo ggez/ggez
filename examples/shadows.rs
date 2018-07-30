@@ -9,7 +9,6 @@ extern crate ggez;
 use cgmath::{Point2, Vector2};
 use ggez::conf;
 use ggez::event;
-use ggez::filesystem;
 use ggez::graphics::{self, BlendMode, Canvas, DrawParam, Drawable, Shader};
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -417,17 +416,19 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let c = conf::Conf::new();
-    let (ctx, events_loop) = &mut Context::load_from_conf("shadows", "ggez", c)?;
-
-    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
-    // we we look in the cargo project for files.
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        filesystem::mount(ctx, &path, true);
-    }
+        path
+    } else {
+        path::PathBuf::from("./resources")
+    };
+
+    let cb = ggez::ContextBuilder::new("shadows", "ggez")
+        .add_resource_path(resource_dir)
+    ;
+    let (ctx, event_loop) = &mut cb.build()?;
 
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, events_loop, state)
+    event::run(ctx, event_loop, state)
 }

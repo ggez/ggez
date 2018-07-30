@@ -32,8 +32,7 @@ pub fn main() -> GameResult {
     println!("Full filesystem info: {:#?}", ctx.filesystem);
 
     println!("Resource stats:");
-    // BUGGO: TODO: Make this output to stdout (somehow)
-    filesystem::log_all(ctx);
+    filesystem::print_all(ctx);
 
     let dir_contents: Vec<_> = filesystem::read_dir(ctx, "/")?.collect();
     println!("Directory has {} things in it:", dir_contents.len());

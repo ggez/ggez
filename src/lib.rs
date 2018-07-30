@@ -8,7 +8,7 @@
 //! framework.  This means it contains basic and portable 2D
 //! drawing, sound, resource loading and event handling.
 //!
-//! For a fuller outline, see the (README.md)[https://github.com/ggez/ggez/)
+//! For a fuller outline, see the [README.md](https://github.com/ggez/ggez/)
 //!
 //! ## Usage
 //!
@@ -30,7 +30,6 @@
 #![deny(unused_results)]
 #![warn(bare_trait_objects)]
 #![warn(missing_copy_implementations)]
-
 
 #[macro_use]
 extern crate bitflags;

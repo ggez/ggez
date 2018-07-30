@@ -10,7 +10,6 @@ extern crate nalgebra;
 use clap::{App, Arg};
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
-use ggez::filesystem;
 use ggez::graphics::{self, DrawMode};
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -20,7 +19,6 @@ use std::path;
 
 use nalgebra as na;
 type Point2 = na::Point2<f32>;
-
 
 struct WindowSettings {
     window_size_toggle: bool,
@@ -38,7 +36,7 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let mut s = MainState {
+        let s = MainState {
             angle: 0.0,
             zoom: 1.0,
             image: graphics::Image::new(ctx, "/tile.png")?,
@@ -49,13 +47,6 @@ impl MainState {
                 resize_projection: false,
             },
         };
-
-        // This functionality seems to have been removed,
-        // see issue #427
-        // TODO: see method in graphics module.
-        // let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
-        // s.window_settings.num_of_resolutions = resolutions.len();
-
         Ok(s)
     }
 }
@@ -72,14 +63,11 @@ impl event::EventHandler for MainState {
                 } else {
                     conf::FullscreenType::Windowed
                 };
-                ggez::graphics::set_fullscreen(
-                    ctx,
-                    fullscreen_type
-                )?;
+                ggez::graphics::set_fullscreen(ctx, fullscreen_type)?;
                 self.window_settings.toggle_fullscreen = false;
             }
 
-/*
+            /*
             if self.window_settings.window_size_toggle {
                 let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
                 let (width, height) = resolutions[self.window_settings.resolution_index];
@@ -103,8 +91,16 @@ impl event::EventHandler for MainState {
             100.0,
             4.0,
         )?;
-        graphics::draw(ctx, &self.image, (Point2::new(400.0, 300.0), 0.0, graphics::WHITE))?;
-        graphics::draw(ctx, &circle, (Point2::new(400.0, 300.0), rotation as f32, graphics::WHITE))?;
+        graphics::draw(
+            ctx,
+            &self.image,
+            (Point2::new(400.0, 300.0), 0.0, graphics::WHITE),
+        )?;
+        graphics::draw(
+            ctx,
+            &circle,
+            (Point2::new(400.0, 300.0), rotation as f32, graphics::WHITE),
+        )?;
 
         // Let's draw a grid so we can see where the window bounds are.
         const COUNT: i32 = 10;
@@ -231,25 +227,29 @@ pub fn main() -> GameResult {
         .unwrap_or("1")
         .parse()
         .expect("Option msaa needs to be a number!");
-    let mut c = conf::Conf::new();
-    c.window_mode.fullscreen_type = conf::FullscreenType::Windowed;
-    c.window_mode.resizable = true;
-    c.window_setup.samples =
-        conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
-    println!("{:?}", c);
 
-    let (ctx, events_loop) = &mut Context::load_from_conf("graphics_settings", "ggez", c)?;
-
-    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
-    // we we look in the cargo project for files.
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        filesystem::mount(ctx, &path, true);
-        println!("Adding path {:?}", path);
+        path
     } else {
-        println!("not building with cargo?");
-    }
+        path::PathBuf::from("./resources")
+    };
+
+    let cb = ggez::ContextBuilder::new("graphics_settings", "ggez")
+        .window_mode(conf::WindowMode::default()
+            .fullscreen_type(conf::FullscreenType::Windowed)
+            .resizable(true)
+        )
+        .window_setup(conf::WindowSetup::default()
+            .samples(
+                conf::NumSamples::from_u32(msaa)
+                    .expect("Option msaa needs to be 1, 2, 4, 8 or 16!")
+            )
+        )
+        .add_resource_path(resource_dir);
+
+    let (ctx, events_loop) = &mut cb.build()?;
 
     print_help();
     let state = &mut MainState::new(ctx)?;

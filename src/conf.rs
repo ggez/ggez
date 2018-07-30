@@ -1,8 +1,8 @@
 //! The `conf` module contains functions for loading and saving game
 //! configurations.
 //!
-//! A `Conf` struct is used to specify hardware setup stuff used to create
-//! the window and other context information.
+//! A `Conf` struct is used to create a config file which specifies
+//! hardware setup stuff, mostly video display settings.
 //!
 //! By default a ggez game will search its resource paths for a `/conf.toml`
 //! file and load values from it when the `Context` is created.  This file
@@ -26,7 +26,6 @@ pub enum FullscreenType {
     /// these days 'cause it plays nicer with multiple monitors.
     Desktop,
 }
-
 
 /// A builder structure containing window settings
 /// that can be set at runtime and changed with `graphics::set_mode()`
@@ -247,17 +246,14 @@ pub enum Backend {
     },
 }
 
-
 impl Backend {
     /// Set OpenGL backend and version.
     pub fn opengl(self, new_major: u8, new_minor: u8) -> Self {
         match self {
-            Backend::OpenGL {..} => {
-                Backend::OpenGL {
-                    major: new_major,
-                    minor: new_minor,
-                }
-            }
+            Backend::OpenGL { .. } => Backend::OpenGL {
+                major: new_major,
+                minor: new_minor,
+            },
         }
     }
 }

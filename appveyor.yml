@@ -21,7 +21,6 @@ install:
     - cargo -V
 
 test_script:
-    - cargo build --verbose
     - cargo test --verbose headless
 
 # 'cargo test' takes care of building for us, so disable Appveyor's build stage. This prevents

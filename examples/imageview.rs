@@ -3,7 +3,6 @@ extern crate ggez;
 extern crate rand;
 
 use ggez::audio;
-use ggez::conf;
 use ggez::event;
 use ggez::filesystem;
 use ggez::graphics;
@@ -53,8 +52,7 @@ impl MainState {
         let text = graphics::Text::new(("Hello world!", font, 48.0));
         let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
 
-        let pixel_sized_text =
-            graphics::Text::new(("This text is 32 pixels high", font, 32.0));
+        let pixel_sized_text = graphics::Text::new(("This text is 32 pixels high", font, 32.0));
 
         // "detached" sounds keep playing even after they are dropped
         let _ = sound.play_detached();
@@ -121,18 +119,19 @@ impl event::EventHandler for MainState {
 // Loading a config file depends on having FS (or we can just fake our way around it
 // by creating an FS and then throwing it away; the costs are not huge.)
 pub fn main() -> GameResult {
-    let c = conf::Conf::new();
-    println!("Starting with default config: {:#?}", c);
-    let (ctx, events_loop) = &mut Context::load_from_conf("imageview", "ggez", c)?;
-
-    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
-    // we we look in the cargo project for files.
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        filesystem::mount(ctx, &path, true);
-    }
+        path
+    } else {
+        path::PathBuf::from("./resources")
+    };
+
+    let cb = ggez::ContextBuilder::new("imageview", "ggez")
+        .add_resource_path(resource_dir)
+        ;
+    let (ctx, event_loop) = &mut cb.build()?;
 
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, events_loop, state)
+    event::run(ctx, event_loop, state)
 }

@@ -1,12 +1,12 @@
 //! Mouse utility functions.
 
-use std::collections::HashMap;
-use GameError;
 use context::Context;
 use graphics;
 use graphics::Point2;
-pub use winit::{MouseButton, MouseCursor};
+use std::collections::HashMap;
 use winit::dpi;
+pub use winit::{MouseButton, MouseCursor};
+use GameError;
 use GameResult;
 
 /// Stores state information for the mouse,
@@ -15,10 +15,10 @@ use GameResult;
 pub struct MouseContext {
     last_position: Point2,
     last_delta: Point2,
-    buttons_pressed:  HashMap<MouseButton, bool>,
+    buttons_pressed: HashMap<MouseButton, bool>,
     cursor_type: MouseCursor,
     cursor_grabbed: bool,
-    cursor_hidden: bool
+    cursor_hidden: bool,
 }
 
 impl MouseContext {
@@ -88,8 +88,7 @@ pub fn get_cursor_hidden(ctx: &Context) -> bool {
 /// Set whether or not the mouse is hidden (invisible).
 pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
     ctx.mouse_context.cursor_hidden = hidden;
-    graphics::get_window(ctx)
-        .hide_cursor(hidden)
+    graphics::get_window(ctx).hide_cursor(hidden)
 }
 
 /// Get the current position of the mouse cursor, in pixels.
@@ -105,7 +104,7 @@ pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
     ctx.mouse_context.last_position = point;
     graphics::get_window(ctx)
         .set_cursor_position(dpi::LogicalPosition {
-            x: point.x as f64, 
+            x: point.x as f64,
             y: point.y as f64,
         })
         .map_err(|_| GameError::WindowError("Couldn't set mouse cursor position!".to_owned()))
@@ -116,14 +115,13 @@ pub fn get_delta(ctx: &Context) -> Point2 {
     ctx.mouse_context.last_delta
 }
 
-
 /// Returns whether or not the given mouse button is pressed.
 pub fn get_button_pressed(ctx: &Context, button: MouseButton) -> bool {
     ctx.mouse_context.button_pressed(button)
 }
 
 /// TODO: Can we implement this?  Check with Winit peoples.
-/// Winit doesn't implement it itself, we can do it by locking 
+/// Winit doesn't implement it itself, we can do it by locking
 /// the cursor to the window and resetting it to center each frame?
 pub fn get_relative_mode() -> bool {
     unimplemented!()

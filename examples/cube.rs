@@ -10,15 +10,13 @@ use gfx::texture;
 use gfx::traits::FactoryExt;
 use gfx::Factory;
 
-use ggez::conf;
 use ggez::event;
-use ggez::filesystem;
 use ggez::graphics;
 use ggez::{Context, GameResult};
+use nalgebra as na;
 use std::env;
 use std::f32;
 use std::path;
-use nalgebra as na;
 
 type Isometry3 = na::Isometry3<f32>;
 type Point3 = na::Point3<f32>;
@@ -236,8 +234,18 @@ impl event::EventHandler for MainState {
         // graphics::draw(ctx, &self.text1, (dest_point1,))?;
         // graphics::draw(ctx, &self.text2, (dest_point2,))?;
 
-        graphics::queue_text(ctx, &graphics::Text::new("You can mix ggez and gfx drawing;"), dest_point1, None);
-        graphics::queue_text(ctx, &graphics::Text::new("it basically draws gfx stuff first, then ggez"), dest_point2, None);
+        graphics::queue_text(
+            ctx,
+            &graphics::Text::new("You can mix ggez and gfx drawing;"),
+            dest_point1,
+            None,
+        );
+        graphics::queue_text(
+            ctx,
+            &graphics::Text::new("it basically draws gfx stuff first, then ggez"),
+            dest_point2,
+            None,
+        );
         graphics::draw_queued_text(ctx, graphics::DrawParam::default())?;
         graphics::present(ctx)?;
         self.frames += 1;
@@ -249,17 +257,18 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let c = conf::Conf::new();
-    let (ctx, events_loop) = &mut Context::load_from_conf("cube", "ggez", c)?;
-
-    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
-    // we we look in the cargo project for files.
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        filesystem::mount(ctx, &path, true);
-    }
+        path
+    } else {
+        path::PathBuf::from("./resources")
+    };
 
+    let cb = ggez::ContextBuilder::new("cube", "ggez")
+        .add_resource_path(resource_dir);
+
+    let (ctx, events_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx);
     event::run(ctx, events_loop, state)
 }

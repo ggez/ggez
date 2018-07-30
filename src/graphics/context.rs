@@ -59,7 +59,6 @@ where
     pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
 }
 
-
 impl<B> fmt::Debug for GraphicsContextGeneric<B>
 where
     B: BackendSpec,
@@ -70,24 +69,17 @@ where
 }
 
 /// A concrete graphics context for GL rendering.
-pub(crate) type GraphicsContext =
-    GraphicsContextGeneric<GlBackendSpec>;
-
-
+pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec>;
 
 impl<B> GraphicsContextGeneric<B>
 where
-    B: BackendSpec + 'static {
-
+    B: BackendSpec + 'static,
+{
     /// TODO: This is sorta redundant with BackendSpec too...?
-    pub(crate) fn new_encoder(&mut self) -> gfx::Encoder<
-            B::Resources,
-            B::CommandBuffer,
-        >  {
+    pub(crate) fn new_encoder(&mut self) -> gfx::Encoder<B::Resources, B::CommandBuffer> {
         let factory = &mut *self.factory;
         B::get_encoder(factory)
     }
-
 
     /// Create a new GraphicsContext
     pub(crate) fn new(
@@ -101,12 +93,12 @@ where
         let color_format = if srgb {
             gfx::format::Format(
                 gfx::format::SurfaceType::R8_G8_B8_A8,
-                gfx::format::ChannelType::Srgb
+                gfx::format::ChannelType::Srgb,
             )
         } else {
             gfx::format::Format(
                 gfx::format::SurfaceType::R8_G8_B8_A8,
-                gfx::format::ChannelType::Unorm
+                gfx::format::ChannelType::Unorm,
             )
         };
         let depth_format = gfx::format::Format(
@@ -141,14 +133,13 @@ where
             window_builder
         };
 
-        let (window, device, mut factory, screen_render_target, depth_view) =
-            backend.init(
-                window_builder,
-                gl_builder,
-                events_loop,
-                color_format,
-                depth_format,
-            );
+        let (window, device, mut factory, screen_render_target, depth_view) = backend.init(
+            window_builder,
+            gl_builder,
+            events_loop,
+            color_format,
+            depth_format,
+        );
 
         // See https://docs.rs/winit/0.16.1/winit/dpi/index.html for
         // an excellent explaination of how this works.
@@ -164,10 +155,16 @@ where
             // TODO: improve.
             // Log a bunch of OpenGL state info pulled out of winit and gfx
             let api = window.get_api();
-            let dpi::LogicalSize{width: w, height: h} = window
+            let dpi::LogicalSize {
+                width: w,
+                height: h,
+            } = window
                 .get_outer_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            let dpi::LogicalSize{width: dw, height: dh} = window
+            let dpi::LogicalSize {
+                width: dw,
+                height: dh,
+            } = window
                 .get_inner_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
             debug!("Window created.");
@@ -259,7 +256,6 @@ where
         let globals = Globals {
             mvp_matrix: initial_projection.into(),
         };
-
 
         let mut gfx = Self {
             shader_globals: globals,
@@ -371,10 +367,7 @@ where
 
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
     /// sends it to the graphics card at the front of the instance buffer.
-    pub(crate) fn update_instance_properties(
-        &mut self,
-        draw_params: DrawTransform,
-    ) -> GameResult {
+    pub(crate) fn update_instance_properties(&mut self, draw_params: DrawTransform) -> GameResult {
         // This clone is cheap since draw_params is Copy
         // TODO: Clean up
         let mut new_draw_params = draw_params;
@@ -387,10 +380,7 @@ where
 
     /// Draws with the current encoder, slice, and pixel shader. Prefer calling
     /// this method from `Drawables` so that the pixel shader gets used
-    pub(crate) fn draw(
-        &mut self,
-        slice: Option<&gfx::Slice<B::Resources>>,
-    ) -> GameResult {
+    pub(crate) fn draw(&mut self, slice: Option<&gfx::Slice<B::Resources>>) -> GameResult {
         let slice = slice.unwrap_or(&self.quad_slice);
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
         let shader_handle = &self.shaders[id];
@@ -488,11 +478,12 @@ where
             FullscreenType::Desktop => {
                 let position = monitor.get_position();
                 let dimensions = monitor.get_dimensions();
+                let hidpi_factor = window.get_hidpi_factor();
+                self.hidpi_factor = hidpi_factor as f32;
                 window.set_fullscreen(None);
                 window.set_decorations(false);
-                // BUGGO: Need to find and store dpi_size
-                window.set_inner_size(dimensions.to_logical(1.0));
-                window.set_position(position.to_logical(1.0));
+                window.set_inner_size(dimensions.to_logical(hidpi_factor));
+                window.set_position(position.to_logical(hidpi_factor));
             }
         }
         Ok(())
@@ -506,8 +497,13 @@ where
     pub(crate) fn resize_viewport(&mut self) {
         // Basically taken from the definition of
         // gfx_window_glutin::update_views()
-        if let Some((cv, dv)) = self.backend_spec.resize_viewport(&self.screen_render_target, &self.depth_view,
-        self.color_format(), self.depth_format(), &self.window) {
+        if let Some((cv, dv)) = self.backend_spec.resize_viewport(
+            &self.screen_render_target,
+            &self.depth_view,
+            self.color_format(),
+            self.depth_format(),
+            &self.window,
+        ) {
             self.screen_render_target = cv;
             self.depth_view = dv;
         }
@@ -517,7 +513,6 @@ where
     pub(crate) fn color_format(&self) -> gfx::format::Format {
         self.color_format
     }
-
 
     /// Returns the screen depth format used by the context.
     ///

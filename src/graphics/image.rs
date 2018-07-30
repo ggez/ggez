@@ -28,14 +28,13 @@ where
     pub(crate) debug_id: DebugId,
 }
 
-impl<B> ImageGeneric<B>  where B: BackendSpec{
-
+impl<B> ImageGeneric<B>
+where
+    B: BackendSpec,
+{
     /// A helper function that just takes a factory directly so we can make an image
     /// without needing the full context object, so we can create an Image while still
     /// creating the GraphicsContext.
-    /// 
-    /// BUGGO TODO: It really doesn't seem to be able to put two and two together regarding
-    /// the gfx_device_gl::Factory equalling its factory...
     pub(crate) fn make_raw(
         factory: &mut <B as BackendSpec>::Factory,
         sampler_info: &texture::SamplerInfo,
@@ -53,8 +52,16 @@ impl<B> ImageGeneric<B>  where B: BackendSpec{
             );
             return Err(GameError::ResourceLoadError(msg));
         }
-        // TODO: Check for overflow on 32-bit systems here
-        let expected_bytes = width as usize * height as usize * 4;
+        // Check for overflow, which might happen on 32-bit systems
+        let uwidth = width as usize;
+        let uheight = height as usize;
+        let expected_bytes = uwidth.checked_mul(uheight)
+            .and_then(|size| size.checked_mul(4))
+            .ok_or_else(|| {
+                let msg = format!("Integer overflow in Image::make_raw, image size: {} {}",
+                                  uwidth, uheight);
+                GameError::ResourceLoadError(msg)
+            })?;
         if expected_bytes != rgba.len() {
             let msg = format!(
                 "Tried to create a texture of size {}x{}, but gave {} bytes of data (expected {})",
@@ -105,7 +112,6 @@ impl<B> ImageGeneric<B>  where B: BackendSpec{
             debug_id,
         })
     }
-
 }
 
 /// In-GPU-memory image data available to be drawn on the screen,
@@ -124,9 +130,8 @@ pub enum ImageFormat {
 }
 
 impl Image {
-
     /* TODO: Needs generic Context to work.
-    */
+     */
 
     /// Load a new image from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
@@ -141,6 +146,12 @@ impl Image {
     }
 
     /// Creates a new `Image` from the given buffer of `u8` RGBA values.
+    ///
+    /// The pixel layout is row-major.  That is,
+    /// the first 4 `u8` values make the top-left pixel in the `Image`, the
+    /// next 4 make the next pixel in the same row, and so on to the end of
+    /// the row.  The next `width * 4` values make up the second row, and so
+    /// on.
     pub fn from_rgba8(
         context: &mut Context,
         width: u16,
@@ -307,7 +318,8 @@ impl fmt::Debug for Image {
 impl Drawable for Image {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform> {
+        D: Into<DrawTransform>,
+    {
         let param = param.into();
         self.debug_id.assert(ctx);
 
@@ -329,7 +341,8 @@ impl Drawable for Image {
         let sampler = gfx.samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(self.texture.clone());
+        let typed_thingy = gfx.backend_spec
+            .raw_to_typed_shader_resource(self.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.get_blend_mode();
@@ -361,11 +374,13 @@ impl Drawable for Image {
 
 #[cfg(test)]
 mod tests {
+    use ContextBuilder;
     use super::*;
     #[test]
     fn test_invalid_image_size() {
-        let c = conf::Conf::new();
-        let (ctx, _) = &mut Context::load_from_conf("unittest", "unittest", c).unwrap();
+        let (ctx, _) = &mut ContextBuilder::new("unittest", "unittest")
+            .build()
+            .unwrap();
         let _i = assert!(Image::from_rgba8(ctx, 0, 0, &vec![]).is_err());
         let _i = assert!(Image::from_rgba8(ctx, 3432, 432, &vec![]).is_err());
         let _i = Image::from_rgba8(ctx, 2, 2, &vec![99; 16]).unwrap();

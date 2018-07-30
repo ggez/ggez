@@ -1,5 +1,5 @@
 //! Gamepad utility functions.
-//! 
+//!
 //! This is going to be a bit of a work-in-progress as gamepad input
 //! gets fleshed out.  The `gilrs` crate needs help to add better
 //! cross-platform support.  Why not give it a hand?
@@ -55,4 +55,3 @@ pub fn get_axis() {
 pub fn get_button_pressed() {
     unimplemented!()
 }
-

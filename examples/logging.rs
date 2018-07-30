@@ -120,10 +120,7 @@ impl EventHandler for App {
 
     /// Called when window is resized.
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
-        match graphics::set_screen_coordinates(
-            ctx,
-            graphics::Rect::new(0.0, 0.0, width, height),
-        ) {
+        match graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height)) {
             Ok(()) => info!("Resized window to {} x {}", width, height),
             Err(e) => error!("Couldn't resize window: {}", e),
         }
@@ -172,9 +169,9 @@ pub fn main() -> GameResult {
     // This sets up `ggez` guts (including filesystem) and creates a window.
     let (ctx, events_loop) = &mut ContextBuilder::new("logging", "ggez")
         .window_setup(
-            WindowSetup::default().title("Pretty console output!"), //.resizable(true), TODO: this.
+            WindowSetup::default().title("Pretty console output!"),
         )
-        .window_mode(WindowMode::default().dimensions(640.0, 480.0))
+        .window_mode(WindowMode::default().dimensions(640.0, 480.0).resizable(true))
         .build()?;
 
     trace!("Context created, creating a file logger.");

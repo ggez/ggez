@@ -25,8 +25,8 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// A more sophisticated example:
 ///
 /// ```rust
-/// use ggez::{Context, GameResult};
-/// use ggez::graphics::{self, DrawMode, MeshBuilder, Point2};
+/// use ggez::{Context, GameResult, nalgebra as na};
+/// use ggez::graphics::{self, DrawMode, MeshBuilder};
 ///
 /// fn draw_danger_signs(ctx: &mut Context) -> GameResult {
 ///     // Initialize a builder instance.
@@ -34,23 +34,23 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 ///         // Add vertices for 3 lines (in an approximate equilateral triangle).
 ///         .line(
 ///             &[
-///                 Point2::new(0.0, 0.0),
-///                 Point2::new(-30.0, 52.0),
-///                 Point2::new(30.0, 52.0),
-///                 Point2::new(0.0, 0.0),
+///                 na::Point2::new(0.0, 0.0),
+///                 na::Point2::new(-30.0, 52.0),
+///                 na::Point2::new(30.0, 52.0),
+///                 na::Point2::new(0.0, 0.0),
 ///             ],
 ///             1.0,
 ///         )
 ///         // Add vertices for an exclamation mark!
-///         .ellipse(DrawMode::Fill, Point2::new(0.0, 25.0), 2.0, 15.0, 2.0)
-///         .circle(DrawMode::Fill, Point2::new(0.0, 45.0), 2.0, 2.0)
+///         .ellipse(DrawMode::Fill, na::Point2::new(0.0, 25.0), 2.0, 15.0, 2.0)
+///         .circle(DrawMode::Fill, na::Point2::new(0.0, 45.0), 2.0, 2.0)
 ///         // Finalize then unwrap. Unwrapping via `?` operator either yields the final `Mesh`,
 ///         // or propagates the error (note return type).
 ///         .build(ctx)?;
 ///     // Draw 3 meshes in a line, 1st and 3rd tilted by 1 radian.
-///     graphics::draw(ctx, &mesh, Point2::new(50.0, 50.0), -1.0).unwrap();
-///     graphics::draw(ctx, &mesh, Point2::new(150.0, 50.0), 0.0).unwrap();
-///     graphics::draw(ctx, &mesh, Point2::new(250.0, 50.0), 1.0).unwrap();
+///     graphics::draw(ctx, &mesh, (na::Point2::new(50.0, 50.0), -1.0, graphics::WHITE))?;
+///     graphics::draw(ctx, &mesh, (na::Point2::new(150.0, 50.0), 0.0, graphics::WHITE))?;
+///     graphics::draw(ctx, &mesh, (na::Point2::new(250.0, 50.0), 1.0, graphics::WHITE))?;
 ///     Ok(())
 /// }
 /// ```
@@ -264,10 +264,8 @@ impl MeshBuilder {
         self
     }
 
-
     /// Create a new mesh for a rectangle.
-    pub fn rectangle(&mut self, mode: DrawMode, bounds: Rect) -> &mut Self
-    {
+    pub fn rectangle(&mut self, mode: DrawMode, bounds: Rect) -> &mut Self {
         {
             let buffers = &mut self.buffer;
             let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
@@ -278,37 +276,20 @@ impl MeshBuilder {
                     // GeometryBuilder<FillVertex>
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
                     let fill_options = t::FillOptions::default();
-                    let _ = t::basic_shapes::fill_rectangle(
-                        &rect,
-                        &fill_options,
-                        builder,
-                    );
+                    let _ = t::basic_shapes::fill_rectangle(&rect, &fill_options, builder);
                 }
                 DrawMode::Line(line_width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let options = t::StrokeOptions::default()
-                        .with_line_width(line_width);
-                    let _ = t::basic_shapes::stroke_rectangle(
-                        &rect,
-                        &options,
-                        builder,
-                    );
+                    let options = t::StrokeOptions::default().with_line_width(line_width);
+                    let _ = t::basic_shapes::stroke_rectangle(&rect, &options, builder);
                 }
                 DrawMode::CustomFill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let _ = t::basic_shapes::fill_rectangle(
-                        &rect,
-                        &fill_options,
-                        builder,
-                    );
+                    let _ = t::basic_shapes::fill_rectangle(&rect, &fill_options, builder);
                 }
                 DrawMode::CustomLine(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
-                    let _ = t::basic_shapes::stroke_rectangle(
-                        &rect,
-                        &options,
-                        builder,
-                    );
+                    let _ = t::basic_shapes::stroke_rectangle(&rect, &options, builder);
                 }
             };
         }
@@ -477,13 +458,11 @@ impl Mesh {
     }
 
     /// Create a new mesh for a rectangle
-    pub fn new_rectangle(ctx: &mut Context, mode: DrawMode, bounds: Rect) -> GameResult<Mesh>
-    {
+    pub fn new_rectangle(ctx: &mut Context, mode: DrawMode, bounds: Rect) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         let _ = mb.rectangle(mode, bounds);
         mb.build(ctx)
     }
-
 
     /// Create a new `Mesh` from a raw list of triangle points.
     pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P]) -> GameResult<Mesh>
@@ -506,12 +485,9 @@ impl Mesh {
     ///  * `indices` contains a value out of bounds of `verts`
     pub fn from_raw<V>(ctx: &mut Context, verts: &[V], indices: &[u16]) -> Mesh
     where
-        V: Into<Vertex> + Clone
+        V: Into<Vertex> + Clone,
     {
-        let verts: Vec<Vertex> = verts.iter()
-            .cloned()
-            .map(|v| v.into())
-            .collect();
+        let verts: Vec<Vertex> = verts.iter().cloned().map(|v| v.into()).collect();
         let (vbuf, slice) = ctx.gfx_context
             .factory
             .create_vertex_buffer_with_slice(&verts[..], indices);
@@ -521,14 +497,14 @@ impl Mesh {
             blend_mode: None,
             debug_id: DebugId::get(ctx),
         }
-
     }
 }
 
 impl Drawable for Mesh {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform> {
+        D: Into<DrawTransform>,
+    {
         let param = param.into();
         self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;

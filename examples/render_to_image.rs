@@ -3,9 +3,7 @@
 extern crate cgmath;
 extern crate ggez;
 
-use ggez::conf;
 use ggez::event;
-use ggez::filesystem;
 use ggez::graphics::{self, Color, DrawParam};
 use ggez::{Context, GameResult};
 
@@ -35,7 +33,11 @@ impl event::EventHandler for MainState {
         // first lets render to our canvas
         graphics::set_canvas(ctx, Some(&self.canvas));
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
-        graphics::draw(ctx, &self.text, (Point2::new(400.0, 300.0), graphics::WHITE))?;
+        graphics::draw(
+            ctx,
+            &self.text,
+            (Point2::new(400.0, 300.0), graphics::WHITE),
+        )?;
 
         // now lets render our scene once in the top right and in the bottom
         // right
@@ -52,13 +54,15 @@ impl event::EventHandler for MainState {
             &self.canvas,
             DrawParam::default()
                 .dest(Point2::new(0.0, 0.0))
-                .scale(scale))?;
+                .scale(scale),
+        )?;
         graphics::draw(
             ctx,
             &self.canvas,
             DrawParam::default()
                 .dest(Point2::new(400.0, 300.0))
-                .scale(scale))?;
+                .scale(scale),
+        )?;
         graphics::present(ctx)?;
 
         Ok(())
@@ -71,9 +75,8 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let mut c = conf::Conf::new();
-    //c.window_setup.resizable = true; TODO: this.
-    let (ctx, events_loop) = &mut Context::load_from_conf("super_simple", "ggez", c)?;
+    let cb = ggez::ContextBuilder::new("render_to_image", "ggez");
+    let (ctx, event_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, events_loop, state)
+    event::run(ctx, event_loop, state)
 }

@@ -8,10 +8,7 @@ extern crate rand;
 use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
-use ggez::filesystem;
-use ggez::graphics::{self,
-    Align, Scale, Text, TextFragment,
-    Color, DrawParam, Font};
+use ggez::graphics::{self, Align, Color, DrawParam, Font, Scale, Text, TextFragment};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use std::collections::BTreeMap;
@@ -54,9 +51,9 @@ impl App {
             // or even individual letters, into the same block of text.
             text: "Small red fragment".to_string(),
             color: Some(Color::new(1.0, 0.0, 0.0, 1.0)),
-            // `FontId` is a handle to a loaded TTF, stored inside the context.
+            // `Font` is a handle to a loaded TTF, stored inside the `Context`.
             // `FontId::default()` always exists and maps to DejaVuSerif.
-            font_id: Some(graphics::Font::default()),
+            font: Some(graphics::Font::default()),
             scale: Some(Scale::uniform(10.0)),
             // This doesn't do anything at this point; can be used to omit fields in declarations.
             ..Default::default()
@@ -114,8 +111,7 @@ impl App {
         let mut wonky_text = Text::default();
         for ch in wonky_string.chars() {
             wonky_text.add(
-                TextFragment::new(ch)
-                    .scale(Scale::uniform(10.0 + 24.0 * rand::random::<f32>())),
+                TextFragment::new(ch).scale(Scale::uniform(10.0 + 24.0 * rand::random::<f32>())),
             );
         }
         texts.insert("3_wonky", wonky_text);
@@ -200,26 +196,27 @@ impl event::EventHandler for App {
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
-        graphics::set_screen_coordinates(
-            ctx,
-            graphics::Rect::new(0.0, 0.0, width, height),
-        ).unwrap();
+        graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height))
+            .unwrap();
     }
 }
 
 pub fn main() -> GameResult {
-    let (ctx, events_loop) = &mut ContextBuilder::new("text_cached", "ggez")
-        .window_setup(
-            WindowSetup::default().title("Cached text example!") //.resizable(true), TODO: this.
-        )
-        .window_mode(WindowMode::default().dimensions(640.0, 480.0))
-        .build()?;
-
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        filesystem::mount(ctx, &path, true);
-    }
+        path
+    } else {
+        path::PathBuf::from("./resources")
+    };
+
+    let (ctx, events_loop) = &mut ContextBuilder::new("text_cached", "ggez")
+        .window_setup(
+            WindowSetup::default().title("Cached text example!"),
+        )
+        .window_mode(WindowMode::default().dimensions(640.0, 480.0).resizable(true))
+        .add_resource_path(resource_dir)
+        .build()?;
 
     let state = &mut App::new(ctx)?;
     event::run(ctx, events_loop, state)

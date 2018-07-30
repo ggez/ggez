@@ -98,7 +98,6 @@ impl Error for GameError {
 /// A convenient result type consisting of a return type and a `GameError`
 pub type GameResult<T = ()> = Result<T, GameError>;
 
-
 impl From<AppDirsError> for GameError {
     fn from(e: AppDirsError) -> GameError {
         let errmessage = format!("{}", e);
