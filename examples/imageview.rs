@@ -18,9 +18,6 @@ struct MainState {
     image: graphics::Image,
     text: graphics::Text,
     pixel_sized_text: graphics::Text,
-    // Not actually dead, see BUGGO below
-    #[allow(dead_code)]
-    sound: audio::Source,
 }
 
 impl MainState {
@@ -53,11 +50,12 @@ impl MainState {
 
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf").unwrap();
         let text = graphics::Text::new(("Hello world!", font, 48.0));
-        let sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
+        let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
 
         let pixel_sized_text = graphics::Text::new(("This text is 32 pixels high", font, 32.0));
 
-        let _ = sound.play();
+        // "detached" sounds keep playing even after they are dropped
+        let _ = sound.play_detached();
 
         let s = MainState {
             a: 0,
@@ -65,11 +63,6 @@ impl MainState {
             image,
             text,
             pixel_sized_text,
-            // BUGGO: We never use sound again,
-            // but we have to hang on to it, Or Else!
-            // The optimizer will decide we don't need it
-            // since play() has "no side effects" and free it.
-            sound,
         };
 
         Ok(s)

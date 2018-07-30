@@ -221,6 +221,15 @@ fn world_to_screen_coords(screen_width: f32, screen_height: f32, point: Point2) 
     Point2::new(x, y)
 }
 
+/// Translates the world coordinate system to
+/// coordinates suitable for the audio system.
+fn world_to_audio_coords(screen_width: f32, screen_height: f32, point: Point2) -> [f32; 3] {
+    let x = point.x * 2.0 / screen_width;
+    let y = point.y * 2.0 / screen_height;
+    let z = 0.0;
+    [x, y, z]
+}
+
 /// **********************************************************************
 /// So that was the real meat of our game.  Now we just need a structure
 /// to contain the images, sounds, etc. that we need to hang on to; this
@@ -233,8 +242,9 @@ struct Assets {
     shot_image: graphics::Image,
     rock_image: graphics::Image,
     font: graphics::Font,
-    shot_sound: audio::Source,
-    hit_sound: audio::Source,
+    // Todo: add a music track to show non-spatial audio?
+    shot_sound: audio::SpatialSource,
+    hit_sound: audio::SpatialSource,
 }
 
 impl Assets {
@@ -244,8 +254,12 @@ impl Assets {
         let rock_image = graphics::Image::new(ctx, "/rock.png")?;
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
 
-        let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
-        let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
+        let mut shot_sound = audio::SpatialSource::new(ctx, "/pew.ogg")?;
+        let mut hit_sound = audio::SpatialSource::new(ctx, "/boom.ogg")?;
+
+        shot_sound.set_ears([-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        hit_sound.set_ears([-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+
         Ok(Assets {
             player_image,
             shot_image,
@@ -352,6 +366,9 @@ impl MainState {
         shot.velocity.y = SHOT_SPEED * direction.y;
 
         self.shots.push(shot);
+
+        let pos = world_to_audio_coords(self.screen_width, self.screen_height, player.pos);
+        self.assets.shot_sound.set_position(pos);
         let _ = self.assets.shot_sound.play();
     }
 
@@ -372,6 +389,9 @@ impl MainState {
                     shot.life = 0.0;
                     rock.life = 0.0;
                     self.score += 1;
+
+                    let pos = world_to_audio_coords(self.screen_width, self.screen_height, rock.pos);
+                    self.assets.shot_sound.set_position(pos);
                     let _ = self.assets.hit_sound.play();
                 }
             }
