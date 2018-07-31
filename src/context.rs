@@ -277,15 +277,15 @@ impl ContextBuilder {
         let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(self.game_id, self.author)?;
 
+        for path in &self.paths {
+            fs.mount(path, true);
+        }
+
         let config = if self.load_conf_file {
             fs.read_config().unwrap_or(self.conf)
         } else {
             self.conf
         };
-
-        for path in &self.paths {
-            fs.mount(path, true);
-        }
 
         Context::from_conf(config, fs, sdl_context)
     }
