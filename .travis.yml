@@ -21,13 +21,13 @@ script:
   - cargo test --verbose headless
 
 before_install:
-  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then
+  - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
       sudo apt-get -qq update
       && sudo apt-get install -y libasound2-dev libudev-dev;
     fi
 
 after_success: |
-  if [[ ${TRAVIS_OS_NAME}" == "linux" && "${TRAVIS_RUST_VERSION}" == stable ]]; then
+  if [[ "${TRAVIS_OS_NAME}" == "linux" && "${TRAVIS_RUST_VERSION}" == stable ]]; then
     RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin 
     # Uncomment the following line for coveralls.io
     # cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
