@@ -188,14 +188,14 @@ impl KeyboardContext {
     }
 
     pub(crate) fn is_key_repeated(&self) -> bool {
-        if let Some(_) = self.last_pressed {
+        if self.last_pressed.is_some() {
             self.last_pressed == self.current_pressed
         } else {
             false
         }
     }
 
-    pub(crate) fn get_pressed_keys(&self) -> Vec<KeyCode> {
+    pub(crate) fn pressed_keys(&self) -> Vec<KeyCode> {
         self.pressed_keys
             .iter()
             .enumerate()
@@ -218,7 +218,7 @@ impl KeyboardContext {
             .collect()
     }
 
-    pub(crate) fn get_active_mods(&self) -> KeyMods {
+    pub(crate) fn active_mods(&self) -> KeyMods {
         self.active_modifiers
     }
 }
@@ -242,17 +242,17 @@ pub fn is_key_repeated(ctx: &Context) -> bool {
 
 /// Returns a Vec with currently pressed keys.
 pub fn get_pressed_keys(ctx: &Context) -> Vec<KeyCode> {
-    ctx.keyboard_context.get_pressed_keys()
+    ctx.keyboard_context.pressed_keys()
 }
 
 /// Checks if keyboard modifier (or several) is active.
 pub fn is_mod_active(ctx: &Context, keymods: KeyMods) -> bool {
-    ctx.keyboard_context.get_active_mods().contains(keymods)
+    ctx.keyboard_context.active_mods().contains(keymods)
 }
 
 /// Returns currently active keyboard modifiers.
 pub fn get_active_mods(ctx: &Context) -> KeyMods {
-    ctx.keyboard_context.get_active_mods()
+    ctx.keyboard_context.active_mods()
 }
 
 #[cfg(test)]
@@ -329,29 +329,52 @@ mod tests {
     #[test]
     fn pressed_keys_tracking() {
         let mut keyboard = KeyboardContext::new();
-        assert_eq!(keyboard.get_pressed_keys(), &[]);
+        assert_eq!(keyboard.pressed_keys(), &[]);
         assert!(!keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.get_pressed_keys(), &[KeyCode::A]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A]);
         assert!(keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, false);
-        assert_eq!(keyboard.get_pressed_keys(), &[]);
+        assert_eq!(keyboard.pressed_keys(), &[]);
         assert!(!keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.get_pressed_keys(), &[KeyCode::A]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A]);
         assert!(keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.get_pressed_keys(), &[KeyCode::A]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A]);
         keyboard.set_key(KeyCode::B, true);
-        assert_eq!(keyboard.get_pressed_keys(), &[KeyCode::A, KeyCode::B]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A, KeyCode::B]);
         keyboard.set_key(KeyCode::B, true);
-        assert_eq!(keyboard.get_pressed_keys(), &[KeyCode::A, KeyCode::B]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A, KeyCode::B]);
         keyboard.set_key(KeyCode::A, false);
-        assert_eq!(keyboard.get_pressed_keys(), &[KeyCode::B]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::B]);
         keyboard.set_key(KeyCode::A, false);
-        assert_eq!(keyboard.get_pressed_keys(), &[KeyCode::B]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::B]);
         keyboard.set_key(KeyCode::B, false);
-        assert_eq!(keyboard.get_pressed_keys(), &[]);
+        assert_eq!(keyboard.pressed_keys(), &[]);
+    }
+
+    #[test]
+    fn keyboard_modifiers() {
+        let mut keyboard = KeyboardContext::new();
+
+        // this test is mostly useless and is primarily for code coverage
+        assert_eq!(keyboard.active_mods(), KeyMods::default());
+        keyboard.set_modifiers(KeyMods::from(ModifiersState {
+            shift: true,
+            ctrl: true,
+            alt: true,
+            logo: true,
+        }));
+
+        // these test the workaround for https://github.com/tomaka/winit/issues/600
+        assert_eq!(keyboard.active_mods(), KeyMods::SHIFT | KeyMods::CTRL | KeyMods::ALT | KeyMods::LOGO);
+        keyboard.set_key(KeyCode::LControl, false);
+        assert_eq!(keyboard.active_mods(), KeyMods::SHIFT | KeyMods::ALT | KeyMods::LOGO);
+        keyboard.set_key(KeyCode::RAlt, false);
+        assert_eq!(keyboard.active_mods(), KeyMods::SHIFT | KeyMods::LOGO);
+        keyboard.set_key(KeyCode::LWin, false);
+        assert_eq!(keyboard.active_mods(), KeyMods::SHIFT);
     }
 
     #[test]
