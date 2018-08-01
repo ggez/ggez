@@ -384,7 +384,7 @@ where
     T: Into<DrawTransform>,
 {
     let params = params.into();
-    drawable.draw(ctx, DrawTransform::from(params))
+    drawable.draw(ctx, params)
 }
 
 /// Tells the graphics system to actually put everything on the screen.

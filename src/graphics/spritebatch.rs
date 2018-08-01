@@ -89,8 +89,8 @@ impl SpriteBatch {
                 let src_width = param.src.w;
                 let src_height = param.src.h;
                 let real_scale = graphics::Vector2::new(
-                    src_width * param.scale.x * image.width as f32,
-                    src_height * param.scale.y * image.height as f32,
+                    src_width * param.scale.x * f32::from(image.width),
+                    src_height * param.scale.y * f32::from(image.height),
                 );
                 new_param.scale = real_scale;
                 // If we have no color, our color is white.

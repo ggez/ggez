@@ -104,8 +104,8 @@ pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
     ctx.mouse_context.last_position = point;
     graphics::get_window(ctx)
         .set_cursor_position(dpi::LogicalPosition {
-            x: point.x as f64,
-            y: point.y as f64,
+            x: f64::from(point.x),
+            y: f64::from(point.y),
         })
         .map_err(|_| GameError::WindowError("Couldn't set mouse cursor position!".to_owned()))
 }

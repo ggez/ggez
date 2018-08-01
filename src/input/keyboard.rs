@@ -75,15 +75,15 @@ bitflags! {
     #[derive(Default)]
     pub struct KeyMods: u8 {
         /// No modifiers; equivalent to `KeyMods::default()` and `KeyMods::empty()`.
-        const NONE  = 0b00000000;
+        const NONE  = 0b0000_0000;
         /// Left or right Shift key.
-        const SHIFT = 0b00000001;
+        const SHIFT = 0b0000_0001;
         /// Left or right Control key.
-        const CTRL  = 0b00000010;
+        const CTRL  = 0b0000_0010;
         /// Left or right Alt key.
-        const ALT   = 0b00000100;
+        const ALT   = 0b0000_0100;
         /// Left or right Win/Cmd/equivalent key.
-        const LOGO  = 0b00001000;
+        const LOGO  = 0b0000_1000;
     }
 }
 
@@ -214,8 +214,7 @@ impl KeyboardContext {
                 } else {
                     None
                 }
-            })
-            .collect()
+            }).collect()
     }
 
     pub(crate) fn active_mods(&self) -> KeyMods {
@@ -368,9 +367,15 @@ mod tests {
         }));
 
         // these test the workaround for https://github.com/tomaka/winit/issues/600
-        assert_eq!(keyboard.active_mods(), KeyMods::SHIFT | KeyMods::CTRL | KeyMods::ALT | KeyMods::LOGO);
+        assert_eq!(
+            keyboard.active_mods(),
+            KeyMods::SHIFT | KeyMods::CTRL | KeyMods::ALT | KeyMods::LOGO
+        );
         keyboard.set_key(KeyCode::LControl, false);
-        assert_eq!(keyboard.active_mods(), KeyMods::SHIFT | KeyMods::ALT | KeyMods::LOGO);
+        assert_eq!(
+            keyboard.active_mods(),
+            KeyMods::SHIFT | KeyMods::ALT | KeyMods::LOGO
+        );
         keyboard.set_key(KeyCode::RAlt, false);
         assert_eq!(keyboard.active_mods(), KeyMods::SHIFT | KeyMods::LOGO);
         keyboard.set_key(KeyCode::LWin, false);

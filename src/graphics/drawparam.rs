@@ -276,7 +276,7 @@ impl DrawTransform {
             col2: mat[1],
             col3: mat[2],
             col4: mat[3],
-            color: color,
+            color,
         }
     }
 }
