@@ -440,22 +440,24 @@ where
         window.set_maximized(mode.maximized);
 
         // TODO: find out if single-dimension constraints are possible.
-        let mut min_dimensions = None;
-        if mode.min_width > 0.0 && mode.min_height > 0.0 {
-            min_dimensions = Some(dpi::LogicalSize {
+        let min_dimensions = if mode.min_width > 0.0 && mode.min_height > 0.0 {
+            Some(dpi::LogicalSize {
                 width: mode.min_width.into(),
                 height: mode.min_height.into(),
-            });
-        }
+            })
+        } else {
+            None
+        };
         window.set_min_dimensions(min_dimensions);
 
-        let mut max_dimensions = None;
-        if mode.max_width > 0.0 && mode.max_height > 0.0 {
-            max_dimensions = Some(dpi::LogicalSize {
+        let max_dimensions = if mode.max_width > 0.0 && mode.max_height > 0.0 {
+            Some(dpi::LogicalSize {
                 width: mode.max_width.into(),
                 height: mode.max_height.into(),
-            });
-        }
+            })
+        } else {
+            None
+        };
         window.set_max_dimensions(max_dimensions);
 
         let monitor = window.get_current_monitor();
@@ -548,7 +550,7 @@ where
     /// and turns it into the equivalent in PhysicalScale, allowing us to
     /// override the DPI if necessary.
     pub(crate) fn to_physical_dpi(&self, x: f32, y: f32) -> (f32, f32) {
-        let logical = dpi::LogicalPosition::new(x as f64, y as f64);
+        let logical = dpi::LogicalPosition::new(f64::from(x), f64::from(y));
         let physical = dpi::PhysicalPosition::from_logical(logical, self.hidpi_factor.into());
         (physical.x as f32, physical.y as f32)
     }

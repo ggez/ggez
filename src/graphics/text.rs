@@ -155,11 +155,11 @@ impl Clone for Text {
     fn clone(&self) -> Self {
         Text {
             fragments: self.fragments.clone(),
-            blend_mode: self.blend_mode.clone(),
-            bounds: self.bounds.clone(),
-            layout: self.layout.clone(),
-            font_id: self.font_id.clone(),
-            font_scale: self.font_scale.clone(),
+            blend_mode: self.blend_mode,
+            bounds: self.bounds,
+            layout: self.layout,
+            font_id: self.font_id,
+            font_scale: self.font_scale,
             cached_metrics: Arc::new(RwLock::new(CachedMetrics::default())),
         }
     }
@@ -236,11 +236,11 @@ impl Text {
     }
 
     /// Converts `Text` to a type `gfx_glyph` can understand and queue.
-    fn generate_varied_section<'a>(
-        &'a self,
+    fn generate_varied_section(
+        &self,
         relative_dest: Point2,
         color: Option<Color>,
-    ) -> VariedSection<'a> {
+    ) -> VariedSection {
         let mut sections = Vec::with_capacity(self.fragments.len());
         for fragment in &self.fragments {
             let color = match fragment.color {
@@ -419,7 +419,7 @@ impl Font {
         let font_id = context.gfx_context.glyph_brush.add_font_bytes(v);
 
         Ok(Font {
-            font_id: font_id,
+            font_id,
         })
     }
 
