@@ -133,8 +133,8 @@ impl SpriteBatch {
     }
 
     /// Get the filter mode for the SpriteBatch.
-    pub fn get_filter(&self) -> FilterMode {
-        self.image.get_filter()
+    pub fn filter(&self) -> FilterMode {
+        self.image.filter()
     }
 
     /// Set the filter mode for the SpriteBatch.
@@ -162,12 +162,12 @@ impl graphics::Drawable for SpriteBatch {
 
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.sprites.len() as u32, 0));
-        let curr_transform = gfx.get_transform();
+        let curr_transform = gfx.transform();
         gfx.push_transform(param.matrix * curr_transform);
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
-            let current_mode = gfx.get_blend_mode();
+            let current_mode = gfx.blend_mode();
             if current_mode != mode {
                 gfx.set_blend_mode(mode)?;
                 Some(current_mode)
@@ -189,7 +189,7 @@ impl graphics::Drawable for SpriteBatch {
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
         self.blend_mode = mode;
     }
-    fn get_blend_mode(&self) -> Option<BlendMode> {
+    fn blend_mode(&self) -> Option<BlendMode> {
         self.blend_mode
     }
 }

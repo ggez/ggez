@@ -275,7 +275,7 @@ impl Image {
     }
 
     /// Get the filter mode for the image.
-    pub fn get_filter(&self) -> FilterMode {
+    pub fn filter(&self) -> FilterMode {
         self.sampler_info.filter.into()
     }
 
@@ -285,12 +285,12 @@ impl Image {
     }
 
     /// Returns the dimensions of the image.
-    pub fn get_dimensions(&self) -> Rect {
+    pub fn dimensions(&self) -> Rect {
         Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
     }
 
     /// Gets the `Image`'s `WrapMode` along the X and Y axes.
-    pub fn get_wrap(&self) -> (WrapMode, WrapMode) {
+    pub fn wrap(&self) -> (WrapMode, WrapMode) {
         (self.sampler_info.wrap_mode.0, self.sampler_info.wrap_mode.1)
     }
 
@@ -345,7 +345,7 @@ impl Drawable for Image {
             .raw_to_typed_shader_resource(self.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
-            let current_mode = gfx.get_blend_mode();
+            let current_mode = gfx.blend_mode();
             if current_mode != mode {
                 gfx.set_blend_mode(mode)?;
                 Some(current_mode)
@@ -367,7 +367,7 @@ impl Drawable for Image {
         self.blend_mode = mode;
     }
 
-    fn get_blend_mode(&self) -> Option<BlendMode> {
+    fn blend_mode(&self) -> Option<BlendMode> {
         self.blend_mode
     }
 }

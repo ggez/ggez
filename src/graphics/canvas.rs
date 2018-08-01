@@ -103,7 +103,7 @@ impl Canvas {
     }
 
     /// Gets the backend `Image` that is being rendered to.
-    pub fn get_image(&self) -> &Image {
+    pub fn image(&self) -> &Image {
         &self.image
     }
 
@@ -135,7 +135,7 @@ impl Drawable for Canvas {
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
         self.image.blend_mode = mode;
     }
-    fn get_blend_mode(&self) -> Option<BlendMode> {
+    fn blend_mode(&self) -> Option<BlendMode> {
         self.image.blend_mode
     }
 }

@@ -19,6 +19,7 @@
    to be consistent with the rest of the API.
  * What used to be the `TextCached` module is now the `Text` module, replacing all the old text stuff.  This *dramatically* changes the text API, as well as being faster and more powerful.
  * Various dimension parameters have changed to fit the underlying implementations more closely.  `Image` dimensions have changed from `u32` to `u16`, which they always were but now it's exposed to the API.  Various screen size dimensions have changed from `u32` to `f64`, which allows `winit` to do smooth DPI-independent scaling.
+ * Various getters have been renamed from `get_<field>()` to `<field>`(). Of particular note are changes to Drawable and ShaderHandle traits.
 
 ## Deprecated
 

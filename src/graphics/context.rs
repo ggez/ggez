@@ -78,7 +78,7 @@ where
     /// TODO: This is sorta redundant with BackendSpec too...?
     pub(crate) fn new_encoder(&mut self) -> gfx::Encoder<B::Resources, B::CommandBuffer> {
         let factory = &mut *self.factory;
-        B::get_encoder(factory)
+        B::encoder(factory)
     }
 
     /// Create a new GraphicsContext
@@ -175,12 +175,12 @@ where
             );
             debug!("  Actually got: OpenGL ?.? {:?}, vsync: ?", api);
             debug!("  Window size: {}x{}, drawable size: {}x{}", w, h, dw, dh);
-            let device_info = backend.get_info(&device);
+            let device_info = backend.info(&device);
             debug!("  {}", device_info);
         }
 
         // GFX SETUP
-        let mut encoder = B::get_encoder(&mut factory);
+        let mut encoder = B::encoder(&mut factory);
 
         let blend_modes = [
             BlendMode::Alpha,
@@ -354,7 +354,7 @@ where
     }
 
     /// Gets a copy of the current transform matrix.
-    pub(crate) fn get_transform(&self) -> Matrix4 {
+    pub(crate) fn transform(&self) -> Matrix4 {
         assert!(
             !self.modelview_stack.is_empty(),
             "Tried to get a transform on an empty transform stack!"
@@ -397,10 +397,10 @@ where
     }
 
     /// Gets the current blend mode of the active shader
-    pub(crate) fn get_blend_mode(&self) -> BlendMode {
+    pub(crate) fn blend_mode(&self) -> BlendMode {
         let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
         let shader_handle = &self.shaders[id];
-        shader_handle.get_blend_mode()
+        shader_handle.blend_mode()
     }
 
     /// Shortcut function to set the projection matrix to an
@@ -423,7 +423,7 @@ where
     }
 
     /// Gets a copy of the raw projection matrix.
-    pub(crate) fn get_projection(&self) -> Matrix4 {
+    pub(crate) fn projection(&self) -> Matrix4 {
         self.projection
     }
 

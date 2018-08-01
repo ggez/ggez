@@ -83,7 +83,7 @@ pub trait BackendSpec: fmt::Debug {
     fn version_tuple(&self) -> (u8, u8);
 
     /// Returns a string containing some backend-dependent info.
-    fn get_info(&self, device: &Self::Device) -> String;
+    fn info(&self, device: &Self::Device) -> String;
 
     /// Creates the window.
     fn init<'a>(
@@ -102,7 +102,7 @@ pub trait BackendSpec: fmt::Debug {
     );
 
     /// Create an Encoder for the backend.
-    fn get_encoder(
+    fn encoder(
         factory: &mut Self::Factory,
     ) -> gfx::Encoder<Self::Resources, Self::CommandBuffer>;
 
@@ -182,7 +182,7 @@ impl BackendSpec for GlBackendSpec {
         (window, device, factory, screen_render_target, depth_view)
     }
 
-    fn get_info(&self, device: &Self::Device) -> String {
+    fn info(&self, device: &Self::Device) -> String {
         let info = device.get_info();
         format!(
             "Driver vendor: {}, renderer {}, version {:?}, shading language {:?}",
@@ -193,7 +193,7 @@ impl BackendSpec for GlBackendSpec {
         )
     }
 
-    fn get_encoder(
+    fn encoder(
         factory: &mut Self::Factory,
     ) -> gfx::Encoder<Self::Resources, Self::CommandBuffer> {
         factory.create_command_buffer().into()
@@ -589,7 +589,7 @@ pub fn get_default_filter(ctx: &Context) -> FilterMode {
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
 pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
-    let backend_info = ctx.gfx_context.backend_spec.get_info(&*ctx.gfx_context.device);
+    let backend_info = ctx.gfx_context.backend_spec.info(&*ctx.gfx_context.device);
     Ok(format!(
         "Requested OpenGL {}.{} Core profile, actually got {}.",
         ctx.gfx_context.backend_spec.major, ctx.gfx_context.backend_spec.minor,
@@ -652,14 +652,14 @@ pub fn set_projection(context: &mut Context, proj: Matrix4) {
 /// these changes and recalculate the underlying MVP matrix.
 pub fn transform_projection(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
-    let curr = gfx.get_projection();
+    let curr = gfx.projection();
     gfx.set_projection(transform * curr);
 }
 
 /// Gets a copy of the context's raw projection matrix
 pub fn get_projection(context: &Context) -> Matrix4 {
     let gfx = &context.gfx_context;
-    gfx.get_projection()
+    gfx.projection()
 }
 
 /// Pushes a homogeneous transform matrix to the top of the transform
@@ -709,7 +709,7 @@ pub fn set_transform(context: &mut Context, transform: Matrix4) {
 /// Gets a copy of the context's current transform matrix
 pub fn get_transform(context: &Context) -> Matrix4 {
     let gfx = &context.gfx_context;
-    gfx.get_transform()
+    gfx.transform()
 }
 
 /// Premultiplies the given transform with the current model transform.
@@ -721,7 +721,7 @@ pub fn get_transform(context: &Context) -> Matrix4 {
 /// matrix by calling `param.into_matrix()`.
 pub fn transform(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
-    let curr = gfx.get_transform();
+    let curr = gfx.transform();
     gfx.set_transform(transform * curr);
 }
 
@@ -926,7 +926,7 @@ pub trait Drawable {
     fn set_blend_mode(&mut self, mode: Option<BlendMode>);
 
     /// Gets the blend mode to be used when drawing this drawable.
-    fn get_blend_mode(&self) -> Option<BlendMode>;
+    fn blend_mode(&self) -> Option<BlendMode>;
 }
 
 #[cfg(test)]
