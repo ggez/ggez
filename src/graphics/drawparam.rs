@@ -28,9 +28,6 @@ pub struct DrawParam {
     /// By default these operations are done from the top-left corner, so to rotate something
     /// from the center specify `Point2::new(0.5, 0.5)` here.
     pub(crate) offset: Point2,
-    /// x/y shear factors expressed as a `Point2`.
-    /// TODO: Should it be a Vector2?
-    pub(crate) shear: Point2,
     /// A color to draw the target with.
     /// Default: white.
     pub(crate) color: Color,
@@ -44,7 +41,6 @@ impl Default for DrawParam {
             rotation: 0.0,
             scale: Vector2::new(1.0, 1.0),
             offset: Point2::new(0.0, 0.0),
-            shear: Point2::new(0.0, 0.0),
             color: WHITE,
         }
     }
@@ -104,16 +100,6 @@ impl DrawParam {
     {
         let p: mint::Point2<f32> = offset.into();
         self.offset = Point2::from(p);
-        self
-    }
-
-    /// TODO
-    pub fn shear<P>(mut self, shear: P) -> Self
-    where
-        P: Into<mint::Point2<f32>>,
-    {
-        let p: mint::Point2<f32> = shear.into();
-        self.shear = Point2::from(p);
         self
     }
 
@@ -223,25 +209,7 @@ impl From<DrawParam> for DrawTransform {
         let axis_angle = Vec3::z() * param.rotation;
         let rotation = Matrix4::new_rotation(axis_angle);
         let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(param.scale.x, param.scale.y, 1.0));
-        let shear = Matrix4::new(
-            1.0,
-            param.shear.x,
-            0.0,
-            0.0,
-            param.shear.y,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-        );
-        let transform = translate * offset * rotation * shear * scale * offset_inverse;
+        let transform = translate * offset * rotation * scale * offset_inverse;
         DrawTransform {
             src: param.src,
             color: param.color,

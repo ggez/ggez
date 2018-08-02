@@ -186,7 +186,6 @@ impl event::EventHandler for App {
             ctx,
             DrawParam::new()
                 .dest(Point2::new(500.0, 300.0))
-                .shear(Point2::new(-0.3, 0.0))
                 .rotation(-0.5),
         )?;
 
