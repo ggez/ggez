@@ -1,5 +1,5 @@
 //! Demonstrates various projection and matrix fiddling/testing.
-//! 
+//!
 extern crate ggez;
 extern crate nalgebra;
 
@@ -40,16 +40,16 @@ impl MainState {
             graphics::Rect::new(0.0, 600.0, 800.0, -600.0),
         ];
         let screen_bounds_idx = 0;
-        let s = MainState { 
-            pos_x: 0.0, 
-            gridmesh, 
+        let s = MainState {
+            pos_x: 0.0,
+            gridmesh,
             angle,
             screen_bounds,
             screen_bounds_idx,
         };
         Ok(s)
     }
-    
+
     fn draw_coord_labels(&self, ctx: &mut Context) -> GameResult {
 
         for x in 0..Self::GRID_SIZE {
@@ -77,7 +77,7 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &self.gridmesh, (origin, graphics::BLACK))?;
 
         let param = graphics::DrawParam::new()
-            .dest(na::Point2::new(400.0, 800.0))
+            .dest(na::Point2::new(400.0, 400.0))
             // .rotation(self.pos_x / 100.0)
             // .offset(na::Point2::new(64.0, 64.0))
             .scale(na::Vector2::new(0.5, 0.5))
@@ -86,7 +86,7 @@ impl event::EventHandler for MainState {
         ;
 
         self.draw_coord_labels(ctx)?;
-        
+
         graphics::draw(
             ctx,
             &self.angle,

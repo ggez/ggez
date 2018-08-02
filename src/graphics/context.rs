@@ -408,11 +408,42 @@ where
     ///
     /// Call `update_globals()` to apply it after calling this.
     pub(crate) fn set_projection_rect(&mut self, rect: Rect) {
-        type Vec3 = na::Vector3<f32>;
+
+
+        /// Creates an orthographic projection matrix.
+        /// Because nalgebra gets frumple when you try to make
+        /// one that is upside-down.
+        fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [[f32; 4]; 4] {
+            let c0r0 = 2.0 / (right - left);
+            let c0r1 = 0.0;
+            let c0r2 = 0.0;
+            let c0r3 = 0.0;
+
+            let c1r0 = 0.0;
+            let c1r1 = 2.0 / (top - bottom);
+            let c1r2 = 0.0;
+            let c1r3 = 0.0;
+
+            let c2r0 = 0.0;
+            let c2r1 = 0.0;
+            let c2r2 = -2.0 / (far - near);
+            let c2r3 = 0.0;
+
+            let c3r0 = -(right + left) / (right - left);
+            let c3r1 = -(top + bottom) / (top - bottom);
+            let c3r2 = -(far + near) / (far - near);
+            let c3r3 = 1.0;
+
+            // our matrices are column-major, so here we are.
+            [[c0r0, c0r1, c0r2, c0r3],
+            [c1r0, c1r1, c1r2, c1r3],
+            [c2r0, c2r1, c2r2, c2r3],
+            [c3r0, c3r1, c3r2, c3r3]]
+        }
+
         self.screen_rect = rect;
         self.projection =
-            Matrix4::new_orthographic(rect.x, rect.x + rect.w, rect.y, rect.y + rect.h, -1.0, 1.0)
-                .append_nonuniform_scaling(&Vec3::new(1.0, -1.0, 1.0));
+            Matrix4::from(ortho(rect.x, rect.x + rect.w, rect.y, rect.y + rect.h, -1.0, 1.0));
     }
 
     /// Sets the raw projection matrix to the given Matrix.
