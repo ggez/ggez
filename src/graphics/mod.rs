@@ -384,7 +384,7 @@ where
     T: Into<DrawTransform>,
 {
     let params = params.into();
-    drawable.draw(ctx, DrawTransform::from(params))
+    drawable.draw(ctx, params)
 }
 
 /// Tells the graphics system to actually put everything on the screen.
@@ -650,7 +650,7 @@ pub fn set_projection(context: &mut Context, proj: Matrix4) {
 ///
 /// You must call `apply_transformations(ctx)` after calling this to apply
 /// these changes and recalculate the underlying MVP matrix.
-pub fn transform_projection(context: &mut Context, transform: Matrix4) {
+pub fn mul_projection(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
     let curr = gfx.projection();
     gfx.set_projection(transform * curr);
@@ -719,7 +719,7 @@ pub fn get_transform(context: &Context) -> Matrix4 {
 ///
 /// A `DrawParam` can be converted into an appropriate transform
 /// matrix by calling `param.into_matrix()`.
-pub fn transform(context: &mut Context, transform: Matrix4) {
+pub fn mul_transform(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
     let curr = gfx.transform();
     gfx.set_transform(transform * curr);

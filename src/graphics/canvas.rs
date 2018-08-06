@@ -57,8 +57,8 @@ impl Canvas {
         let color_format = ctx.gfx_context.color_format();
         let factory = &mut ctx.gfx_context.factory;
         let texture_create_info = gfx::texture::Info {
-            kind: kind,
-            levels: levels,
+            kind,
+            levels,
             format: color_format.0,
             bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
             usage: Usage::Data,

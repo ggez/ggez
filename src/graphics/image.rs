@@ -76,7 +76,7 @@ where
         use gfx::memory::Bind;
         let gfx::format::Format(surface_format, channel_type) = color_format;
         let texinfo = gfx::texture::Info {
-            kind: kind,
+            kind,
             levels: 1,
             format: surface_format,
             bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
@@ -107,8 +107,8 @@ where
             texture_handle: raw_tex,
             sampler_info: *sampler_info,
             blend_mode: None,
-            width: width,
-            height: height,
+            width,
+            height,
             debug_id,
         })
     }
@@ -241,7 +241,7 @@ impl Image {
         let color_format = image::ColorType::RGBA(8);
         match format {
             ImageFormat::Png => image::png::PNGEncoder::new(writer)
-                .encode(&data, self.width as u32, self.height as u32, color_format)
+                .encode(&data, u32::from(self.width), u32::from(self.height), color_format)
                 .map_err(|e| e.into()),
         }
     }
@@ -331,8 +331,8 @@ impl Drawable for Image {
         // be its-unit-size-in-pixels.
         use nalgebra;
         let real_scale = nalgebra::Vector3::new(
-            src_width * self.width as f32,
-            src_height * self.height as f32,
+            src_width * f32::from(self.width),
+            src_height * f32::from(self.height),
             1.0,
         );
         let new_param = param.mul(Matrix4::new_nonuniform_scaling(&real_scale));

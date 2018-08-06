@@ -93,38 +93,6 @@ impl Context {
         Ok((ctx, events_loop))
     }
 
-    /// Tries to create a new Context by loading a config
-    /// file from its default path, using the given `Conf`
-    /// object as a default if none is found.
-    ///
-    /// The `game_id` and `author` are game-specific strings that
-    /// are used to locate the default storage locations for the
-    /// platform it looks in, as documented in the `filesystem`
-    /// module.  You can also always debug-print the
-    /// `Context::filesystem` field to see what paths it is
-    /// searching.
-    #[deprecated]
-    pub fn load_from_conf(
-        game_id: &'static str,
-        author: &'static str,
-        default_config: conf::Conf,
-    ) -> GameResult<(Context, winit::EventsLoop)> {
-        let mut fs = Filesystem::new(game_id, author)?;
-
-        let config = match fs.read_config() {
-            Ok(config) => {
-                info!("Loading conf.toml");
-                config
-            }
-            Err(e) => {
-                info!("Could not load conf.toml, using default: {:?}", e);
-                default_config
-            }
-        };
-
-        Context::from_conf(config, fs)
-    }
-
     /// Terminates `ggez::run()` loop by setting `Context::continuing` to `false`.
     pub fn quit(&mut self) {
         self.continuing = false;
