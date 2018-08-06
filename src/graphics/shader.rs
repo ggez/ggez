@@ -145,7 +145,7 @@ where
         let _ = self.psos.insert(mode, pso);
     }
 
-    pub fn get_mode(
+    pub fn mode(
         &self,
         mode: &BlendMode,
     ) -> GameResult<&PipelineState<Spec::Resources, ConstMeta<C>>> {
@@ -389,7 +389,7 @@ pub trait ShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
     fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult;
 
     /// Gets the shader program's current blend mode
-    fn get_blend_mode(&self) -> BlendMode;
+    fn blend_mode(&self) -> BlendMode;
 }
 
 impl<Spec, C> ShaderHandle<Spec> for ShaderProgram<Spec, C>
@@ -403,18 +403,18 @@ where
         slice: &Slice<Spec::Resources>,
         data: &graphics::pipe::Data<Spec::Resources>,
     ) -> GameResult {
-        let pso = self.psos.get_mode(&self.active_blend_mode)?;
+        let pso = self.psos.mode(&self.active_blend_mode)?;
         encoder.draw(slice, pso, &ConstData(data, &self.buffer));
         Ok(())
     }
 
     fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult {
-        let _ = self.psos.get_mode(&mode)?;
+        let _ = self.psos.mode(&mode)?;
         self.active_blend_mode = mode;
         Ok(())
     }
 
-    fn get_blend_mode(&self) -> BlendMode {
+    fn blend_mode(&self) -> BlendMode {
         self.active_blend_mode
     }
 }

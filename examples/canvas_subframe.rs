@@ -112,7 +112,7 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         self.draw_spritebatch(ctx)?;
-        let dims = self.canvas.get_image().get_dimensions();
+        let dims = self.canvas.image().dimensions();
         let src_x = self.draw_pt.x / dims.w;
         let src_y = self.draw_pt.y / dims.h;
         graphics::draw(

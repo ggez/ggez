@@ -391,7 +391,7 @@ impl Drawable for Text {
         self.blend_mode = mode;
     }
 
-    fn get_blend_mode(&self) -> Option<BlendMode> {
+    fn blend_mode(&self) -> Option<BlendMode> {
         self.blend_mode
     }
 }
