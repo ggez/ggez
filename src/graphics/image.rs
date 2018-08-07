@@ -133,7 +133,8 @@ impl Image {
     /* TODO: Needs generic Context to work.
      */
 
-    /// Load a new image from the file at the given path.
+    /// Load a new image from the file at the given path. The documentation for the
+    /// `filesystem` module explains how the path must be specified.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let img = {
             let mut buf = Vec::new();
