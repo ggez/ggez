@@ -5,6 +5,7 @@ submit a PR, please!
 
 # Games!
 
+ * <https://github.com/MushuYoWushu/mehens_portable_casino>
  * <https://github.com/maccam912/thewizzerofoz>
  * <https://github.com/Piripant/skii>
  * <https://github.com/aprokurov/spaceshooter>
