@@ -172,6 +172,16 @@ impl Image {
         )
     }
 
+    /// Creates a new `Image` from the given `u8` buffer,
+    /// making an educated guess about the image format.
+    ///
+    /// TGA is not supported by this function.
+    pub fn from_bytes(context: &mut Context, buffer: &[u8]) -> GameResult<Self> {
+        let img = image::load_from_memory(&buffer)?.to_rgba();
+        let (width, height) = img.dimensions();
+        Self::from_rgba8(context, width as u16, height as u16, &img)
+    }
+
     /// Dumps the `Image`'s data to a `Vec` of `u8` RGBA values.
     pub fn to_rgba8(&self, ctx: &mut Context) -> GameResult<Vec<u8>> {
         use gfx::memory::Typed;
