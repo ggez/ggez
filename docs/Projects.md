@@ -10,6 +10,7 @@ submit a PR, please!
  * <https://github.com/aprokurov/spaceshooter>
  * <https://github.com/ozkriff/zemeroth>
  * <https://github.com/Swampsoft/solitaire>
+ * <https://github.com/icefoxen/ld42/>
 
 # Examples/tutorial code
 
@@ -29,7 +30,7 @@ submit a PR, please!
 ## Games
 
  * <https://github.com/obsoke/rustris>
- * <https://rap2hpoutre.github.io/llamassacre-website/> 
+ * <https://rap2hpoutre.github.io/llamassacre-website/>
 
 ## Examples/tutorial code
 
