@@ -477,7 +477,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
 /// Draw a circle.
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
-/// you should create the `Mesh` yourself.
+/// it will be quite slow.  To speed it up you should create the `Mesh` yourself and cache it.
 ///
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
 pub fn circle<P>(
@@ -498,7 +498,7 @@ where
 /// Draw an ellipse.
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
-/// you should create the `Mesh` yourself.
+/// it will be quite slow.  To speed it up you should create the `Mesh` yourself and cache it.
 ///
 /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
 pub fn ellipse<P>(
@@ -520,7 +520,7 @@ where
 /// Draws a line of one or more connected segments.
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
-/// you should create the `Mesh` yourself.
+/// it will be quite slow.  To speed it up you should create the `Mesh` yourself and cache it.
 pub fn line<P>(ctx: &mut Context, color: Color, points: &[P], width: f32) -> GameResult
 where
     P: Into<mint::Point2<f32>> + Clone,
@@ -529,10 +529,10 @@ where
     m.draw(ctx, DrawParam::new().color(color))
 }
 
-/// Draws points (as rectangles)
+/// Draws points (as rectangles).
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
-/// you should create the `Mesh` yourself.
+/// it will be quite slow.  To speed it up you should create the `Mesh` yourself and cache it.
 pub fn points<P>(ctx: &mut Context, color: Color, points: &[P], point_size: f32) -> GameResult
 where
     P: Into<mint::Point2<f32>> + Clone,
@@ -545,10 +545,10 @@ where
     Ok(())
 }
 
-/// Draws a closed polygon
+/// Draws a closed polygon.
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
-/// you should create the `Mesh` yourself.
+/// it will be quite slow.  To speed it up you should create the `Mesh` yourself and cache it.
 pub fn polygon<P>(ctx: &mut Context, color: Color, mode: DrawMode, vertices: &[P]) -> GameResult
 where
     P: Into<mint::Point2<f32>> + Clone,
@@ -560,7 +560,7 @@ where
 /// Draws a rectangle.
 ///
 /// Allocates a new `Mesh`, draws it, and throws it away, so if you are drawing many of them
-/// you should create the `Mesh` yourself.
+/// it will be quite slow.  To speed it up you should create the `Mesh` yourself and cache it.
 pub fn rectangle(ctx: &mut Context, color: Color, mode: DrawMode, rect: Rect) -> GameResult {
     let x1 = rect.x;
     let x2 = rect.x + rect.w;
