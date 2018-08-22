@@ -75,3 +75,13 @@ pub fn set_position(ctx: &Context, point: Point2) {
         .mouse()
         .warp_mouse_in_window(window, point.x as i32, point.y as i32)
 }
+
+/// Set whether or not the cursor is visible (not hidden) on the screen
+pub fn set_cursor_visible(ctx: &Context, visible: bool) {
+    ctx.sdl_context.mouse().show_cursor(visible)
+}
+
+/// Get whether or not the cursor is visible (not hidden) on the screen
+pub fn get_cursor_visible(ctx: &Context) -> bool {
+    ctx.sdl_context.mouse().is_cursor_showing()
+}
