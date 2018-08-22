@@ -24,7 +24,7 @@ use GameResult;
 /// in Debug mode because it spends a lot of time on array bounds checking and
 /// un-optimized math; you need to build with optimizations enabled to really get the
 /// speed boost.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SpriteBatch {
     image: graphics::Image,
     sprites: Vec<graphics::DrawParam>,

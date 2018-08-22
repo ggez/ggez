@@ -1,3 +1,27 @@
+# 0.4.4
+
+## Added
+
+ * Added functions to get and set mouse cursor visibility.
+ * Derived `PartialEq` for `Image` and `SpriteBatch`.
+
+## Changed
+
+Nothing
+
+## Deprecated
+
+Nothing
+
+## Removed
+
+Nothing
+
+## Fixed
+
+ * Myriad small documentation and example typos.
+ * Fixed a rounding error in `Font::get_width()`.
+
 # 0.4.3
 
 ## Added

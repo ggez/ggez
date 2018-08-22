@@ -78,7 +78,7 @@ Ideally you'd be able to use a glyph cache to render letters to a texture once, 
 
 # Drawing a few hundred images or shapes is slow!
 
-Again, debug mode is slow.  Plus, each single draw call has some overhead.  If building in release mode still isn't fast enough, then look into using `SpriteBatch` to draw a bunch of chunks from a spritesheet (also known as an atlas).  If you're drawing geometry, instead of using `graphics::rectangle()` or `graphics::circle()` and such, which create a new `Mesh` on each call and then throw it away, create and store a `Mesh` and draw it many times, or use a `MeshBuilder` to build a single `Mesh` out of many small shapes.
+Again, debug mode is slow.  Plus, each single draw call has some overhead.  If building in release mode still isn't fast enough, then look into using `SpriteBatch` to draw a bunch of chunks from a spritesheet (also known as an atlas).  If you're drawing geometry, instead of using `graphics::rectangle()` or `graphics::circle()` and such, which create a new `Mesh` on each call and then throw it away, create and store a `Mesh` and draw it many times, or use a `MeshBuilder` to build a single `Mesh` out of many separate shapes.
 
 
 # How do I build on platform X?
@@ -130,7 +130,7 @@ demonstrates how to use ggez with `specs` for ECS, `warmy` for resource loading,
 
 # If I write X, will you include it in ggez?
 
-Maybe, if it's something that fits in with ggez's goals: a simple and flexible 2D game framework with a LÖVE-ish API, 
+Maybe, if it's something that fits in with ggez's goals: a simple and flexible 2D game framework with a LÖVE-ish API,
 which provides all the basics you need in one package without dictating too much about the more complicated tools.
 
 Examples of things that would be included:
