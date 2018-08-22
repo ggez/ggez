@@ -30,7 +30,7 @@ impl GamepadContext {
 }
 
 /// returns the `Gamepad` associated with an id.
-pub fn get_gamepad(ctx: &Context, id: usize) -> Option<&Gamepad> {
+pub fn gamepad(ctx: &Context, id: usize) -> Option<&Gamepad> {
     ctx.gamepad_context.gilrs.get(id)
 }
 
@@ -47,11 +47,11 @@ pub fn list_gamepads() {
 }
 
 /// Returns the state of the given axis on a gamepad.
-pub fn get_axis() {
+pub fn axis() {
     unimplemented!()
 }
 
 /// Returns the state of the given button on a gamepad.
-pub fn get_button_pressed() {
+pub fn button_pressed() {
     unimplemented!()
 }

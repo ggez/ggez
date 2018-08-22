@@ -204,7 +204,7 @@ where
                         button,
                         ..
                     } => {
-                        let position = mouse::get_position(ctx);
+                        let position = mouse::position(ctx);
                         match element_state {
                             ElementState::Pressed => {
                                 state.mouse_button_down_event(ctx, button, position.x, position.y)
@@ -215,8 +215,8 @@ where
                         }
                     }
                     WindowEvent::CursorMoved { .. } => {
-                        let position = mouse::get_position(ctx);
-                        let delta = mouse::get_delta(ctx);
+                        let position = mouse::position(ctx);
+                        let delta = mouse::delta(ctx);
                         state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                     }
                     x => {

@@ -85,7 +85,7 @@ impl event::EventHandler for MainState {
         // Drawables are drawn from their top-left corner.
         self.frames += 1;
         if (self.frames % 100) == 0 {
-            println!("FPS: {}", ggez::timer::get_fps(ctx));
+            println!("FPS: {}", ggez::timer::fps(ctx));
         }
 
         Ok(())

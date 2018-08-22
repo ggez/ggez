@@ -384,18 +384,18 @@ pub fn is_dir<P: AsRef<path::Path>>(ctx: &Context, path: P) -> bool {
 }
 
 /// Return the full path to the user data directory
-pub fn get_user_data_dir(ctx: &Context) -> &path::Path {
+pub fn user_data_dir(ctx: &Context) -> &path::Path {
     &ctx.filesystem.user_data_path
 }
 
 /// Return the full path to the user config directory
-pub fn get_user_config_dir(ctx: &Context) -> &path::Path {
+pub fn user_config_dir(ctx: &Context) -> &path::Path {
     &ctx.filesystem.user_config_path
 }
 
 /// Returns the full path to the resource directory
 /// (even if it doesn't exist)
-pub fn get_resources_dir(ctx: &Context) -> &path::Path {
+pub fn resources_dir(ctx: &Context) -> &path::Path {
     &ctx.filesystem.resources_path
 }
 

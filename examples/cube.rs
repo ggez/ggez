@@ -79,9 +79,9 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> Self {
-        let color_view = graphics::get_screen_render_target(ctx);
-        let depth_view = graphics::get_depth_view(ctx);
-        let factory = graphics::get_factory(ctx);
+        let color_view = graphics::screen_render_target(ctx);
+        let depth_view = graphics::depth_view(ctx);
+        let factory = graphics::factory(ctx);
 
         // Shaders.
         let vs = br#"#version 150 core
@@ -212,7 +212,7 @@ impl event::EventHandler for MainState {
         // Do gfx-rs drawing
         {
             let (_factory, device, encoder, _depthview, _colorview) =
-                graphics::get_gfx_objects(ctx);
+                graphics::gfx_objects(ctx);
             encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0]);
 
             let rotation = na::Matrix4::from_scaled_axis(na::Vector3::z() * self.rotation);
@@ -250,7 +250,7 @@ impl event::EventHandler for MainState {
         graphics::present(ctx)?;
         self.frames += 1;
         if (self.frames % 10) == 0 {
-            println!("FPS: {}", ggez::timer::get_fps(ctx));
+            println!("FPS: {}", ggez::timer::fps(ctx));
         }
         Ok(())
     }

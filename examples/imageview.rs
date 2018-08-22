@@ -77,8 +77,8 @@ impl event::EventHandler for MainState {
             if self.a > 250 || self.a <= 0 {
                 self.direction *= -1;
 
-                println!("Delta frame time: {:?} ", timer::get_delta(ctx));
-                println!("Average FPS: {}", timer::get_fps(ctx));
+                println!("Delta frame time: {:?} ", timer::delta(ctx));
+                println!("Average FPS: {}", timer::fps(ctx));
             }
         }
         Ok(())

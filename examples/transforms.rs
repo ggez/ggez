@@ -30,7 +30,7 @@ impl MainState {
             for y in 0..Self::GRID_SIZE {
                 let point = na::Point2::new(x as f32 * Self::GRID_INTERVAL, y as f32 * Self::GRID_INTERVAL);
                 gridmesh_builder
-                    .circle(DrawMode::Fill, point, Self::GRID_POINT_RADIUS, 2.0);
+                    .circle(DrawMode::Fill, point, Self::GRID_POINT_RADIUS, 2.0, graphics::WHITE);
             }
         }
         let gridmesh = gridmesh_builder.build(ctx)?;

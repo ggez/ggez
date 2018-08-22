@@ -28,9 +28,9 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if timer::get_ticks(ctx) % 100 == 0 {
-            println!("Delta frame time: {:?} ", timer::get_delta(ctx));
-            println!("Average FPS: {}", timer::get_fps(ctx));
+        if timer::ticks(ctx) % 100 == 0 {
+            println!("Delta frame time: {:?} ", timer::delta(ctx));
+            println!("Average FPS: {}", timer::fps(ctx));
         }
         Ok(())
     }
@@ -38,7 +38,7 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, graphics::BLACK);
 
-        let time = (timer::duration_to_f64(timer::get_time_since_start(ctx)) * 1000.0) as u32;
+        let time = (timer::duration_to_f64(timer::time_since_start(ctx)) * 1000.0) as u32;
         let cycle = 10_000;
         for x in 0..150 {
             for y in 0..150 {

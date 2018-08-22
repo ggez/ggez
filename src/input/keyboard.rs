@@ -240,7 +240,7 @@ pub fn is_key_repeated(ctx: &Context) -> bool {
 }
 
 /// Returns a Vec with currently pressed keys.
-pub fn get_pressed_keys(ctx: &Context) -> Vec<KeyCode> {
+pub fn pressed_keys(ctx: &Context) -> Vec<KeyCode> {
     ctx.keyboard_context.pressed_keys()
 }
 
@@ -250,7 +250,7 @@ pub fn is_mod_active(ctx: &Context, keymods: KeyMods) -> bool {
 }
 
 /// Returns currently active keyboard modifiers.
-pub fn get_active_mods(ctx: &Context) -> KeyMods {
+pub fn active_mods(ctx: &Context) -> KeyMods {
     ctx.keyboard_context.active_mods()
 }
 

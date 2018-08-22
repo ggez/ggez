@@ -46,7 +46,7 @@ impl MainState {
         graphics::clear(ctx, graphics::WHITE);
 
         // Freeze the animation so things are easier to see.
-        // let time = (timer::duration_to_f64(timer::get_time_since_start(ctx)) * 1000.0) as u32;
+        // let time = (timer::duration_to_f64(timer::time_since_start(ctx)) * 1000.0) as u32;
         let time = 2000;
         let cycle = 10_000;
         for x in 0..150 {
@@ -88,13 +88,13 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if timer::get_ticks(ctx) % 100 == 0 {
-            println!("Delta frame time: {:?} ", timer::get_delta(ctx));
-            println!("Average FPS: {}", timer::get_fps(ctx));
+        if timer::ticks(ctx) % 100 == 0 {
+            println!("Delta frame time: {:?} ", timer::delta(ctx));
+            println!("Average FPS: {}", timer::fps(ctx));
         }
 
         // Bounce the rect if necessary
-        let (w, h) = graphics::get_size(ctx);
+        let (w, h) = graphics::size(ctx);
         if self.draw_pt.x + (w as f32 / 2.0) > (w as f32) || self.draw_pt.x < 0.0 {
             self.draw_vec.x *= -1.0;
         }

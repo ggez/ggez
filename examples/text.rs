@@ -133,7 +133,7 @@ impl event::EventHandler for App {
         // `Text` can be used in "immediate mode", but it's slightly less efficient
         // in most cases, and horrifically less efficient in a few select ones
         // (using `.width()` or `.height()`, for example).
-        let fps = timer::get_fps(ctx);
+        let fps = timer::fps(ctx);
         let fps_display = Text::new(format!("FPS: {}", fps));
         // When drawing through these calls, `DrawParam` will work as they are documented.
         graphics::draw(
