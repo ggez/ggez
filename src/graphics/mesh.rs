@@ -56,7 +56,7 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// ```
 #[derive(Debug, Clone)]
 pub struct MeshBuilder {
-    buffer: t::geometry_builder::VertexBuffers<Vertex>,
+    buffer: t::geometry_builder::VertexBuffers<Vertex, u16>,
 }
 
 impl Default for MeshBuilder {
@@ -341,7 +341,7 @@ impl MeshBuilder {
             let vb = VertexBuilder {
                 color,
             };
-            let builder: &mut t::BuffersBuilder<_, _, _> =
+            let builder: &mut t::BuffersBuilder<_, _, _, _> =
                 &mut t::BuffersBuilder::new(&mut self.buffer, vb);
             use lyon::tessellation::GeometryBuilder;
             builder.begin_geometry();
