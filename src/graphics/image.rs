@@ -12,7 +12,7 @@ use GameError;
 use GameResult;
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct ImageGeneric<B>
 where
     B: BackendSpec,
