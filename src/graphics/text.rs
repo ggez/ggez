@@ -477,81 +477,48 @@ where
     D: Into<DrawTransform>,
 {
     let param: DrawTransform = param.into();
-    type Mat4 = na::Matrix4<f32>;
-    type Vec3 = na::Vector3<f32>;
     let screen_rect = get_screen_coordinates(context);
-    let (screen_w, screen_h) = (screen_rect.w, screen_rect.h);
-    // TODO: Fix allllll this crap...
+
+    let (screen_x, screen_y, screen_w, screen_h) = (screen_rect.x, screen_rect.y, screen_rect.w, screen_rect.h);
+    let scale_x = screen_w / 2.0;
+    let scale_y = screen_h / -2.0;
+
+    // gfx_glyph rotates things around the center (1.0, -1.0) with
+    // a window rect of (x, y, w, h) = (0.0, 0.0, 2.0, -2.0).
+    // We need to a) translate it so that the rotation has the
+    // top right corner as its origin, b) scale it so that the
+    // translation can happen in screen coordinates, and
+    // c) translate it *again* in case our screen coordinates
+    // don't start at (0.0, 0.0) for the top left corner.
+    // And obviously, the whole tour back!
+
+    // Unoptimized implementation for final_matrix below
     /*
+    type Vec3 = na::Vector3<f32>;
+    type Mat4 = na::Matrix4<f32>;
 
-    // TODO: fix non-pixel screen coordinates.
-    let (offset_x, offset_y) = (
-        -1.0 + 2.0 * param.offset.x / screen_w,
-        1.0 - 2.0 * param.offset.y / screen_h,
-    );
-    let (aspect, aspect_inv) = (screen_h / screen_w, screen_w / screen_h);
-    let m_aspect = Mat4::new_nonuniform_scaling(&Vec3::new(1.0, aspect_inv, 1.0));
-    let m_aspect_inv = Mat4::new_nonuniform_scaling(&Vec3::new(1.0, aspect, 1.0));
-    let m_scale = Mat4::new_nonuniform_scaling(&Vec3::new(param.scale.x, param.scale.y, 1.0));
-    let m_shear = Mat4::new(
-        1.0,
-        -param.shear.x,
-        0.0,
-        0.0,
-        -param.shear.y,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-    );
-    let m_rotation = Mat4::new_rotation(-param.rotation * Vec3::z());
-    let m_offset = Mat4::new_translation(&Vec3::new(offset_x, offset_y, 0.0));
-    let m_offset_inv = Mat4::new_translation(&Vec3::new(-offset_x, -offset_y, 0.0));
-    let m_translate = Mat4::new_translation(&Vec3::new(
-        2.0 * param.dest.x / screen_w,
-        2.0 * -param.dest.y / screen_h,
-        0.0,
-    ));
+    let m_translate_glyph = Mat4::new_translation(&Vec3::new(1.0, -1.0, 0.0));
+    let m_translate_glyph_inv = Mat4::new_translation(&Vec3::new(-1.0, 1.0, 0.0));
+    let m_scale = Mat4::new_nonuniform_scaling(&Vec3::new(scale_x, scale_y, 1.0));
+    let m_scale_inv = Mat4::new_nonuniform_scaling(&Vec3::new(1.0 / scale_x, 1.0 / scale_y, 1.0));
+    let m_translate = Mat4::new_translation(&Vec3::new(-screen_x, -screen_y, 0.0));
+    let m_translate_inv = Mat4::new_translation(&Vec3::new(screen_x, screen_y, 0.0));
 
-    let m_transform = m_translate * m_offset * m_aspect * m_rotation * m_shear * m_scale
-        * m_aspect_inv * m_offset_inv;
+    let final_matrix = m_translate_glyph_inv * m_scale_inv * m_translate_inv * param.matrix * m_translate * m_scale * m_translate_glyph;
     */
+    // Optimized version has a speedup of ~1.29 (175ns vs 225ns)
+    type Mat4 = na::Matrix4<f32>;
+    let m_transform = Mat4::new(scale_x, 0.0, 0.0, scale_x - screen_x,
+                                0.0, scale_y, 0.0, -scale_y - screen_y,
+                                0.0, 0.0, 1.0, 0.0,
+                                0.0, 0.0, 0.0, 1.0);
 
-    // This is what REALLY needs to happen,
-    // how the heck do I make it happen nicely?
-    // final_matrix[12] *= 2.0 / screen_w;
-    // final_matrix[13] *= -2.0 / screen_h;
-    //
-    // Like this, which is arguably not an improvement:
-    let m_translate = Mat4::new_translation(&Vec3::new(2.0 / screen_w, -2.0 / screen_h, 0.0));
+    let m_transform_inv = Mat4::new(1.0 / scale_x, 0.0, 0.0, (screen_x / scale_x) - 1.0,
+                                    0.0, 1.0 / scale_y, 0.0, (scale_y + screen_y) / scale_y,
+                                    0.0, 0.0, 1.0, 0.0,
+                                    0.0, 0.0, 0.0, 1.0);
 
-    let m_scale_inv = Mat4::new_nonuniform_scaling(&Vec3::new(
-        1.0 / (2.0 / screen_w),
-        -1.0 / (2.0 / screen_h),
-        0.0,
-    ));
-
-    let m_scale = Mat4::new_nonuniform_scaling(&Vec3::new(2.0 / screen_w, -(2.0 / screen_h), 0.0));
-    // println!("ggez projection is: {:#?}", context.gfx_context.projection);
-    let final_matrix = m_scale * param.matrix * m_translate * m_scale_inv;
-    // If we do everything in terms of nalgebra isometry types then it might
-    // not be too difficult or inefficient
-    // but for now, ugh.
-
-    // println!("Final: {:#?}", final_matrix);
-    // println!(
-    //     "Projected matrix: {:#?}",
-    //     param.matrix * context.gfx_context.projection
-    // );
-
-    // TODO: Does this not handle color?
+    let final_matrix = m_transform_inv * param.matrix * m_transform;
 
     let color_format = context.gfx_context.color_format();
     let depth_format = context.gfx_context.depth_format();
