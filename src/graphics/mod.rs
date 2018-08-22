@@ -229,18 +229,22 @@ const QUAD_VERTS: [Vertex; 4] = [
     Vertex {
         pos: [0.0, 0.0],
         uv: [0.0, 0.0],
+        color: [1.0, 1.0, 1.0, 1.0],
     },
     Vertex {
         pos: [1.0, 0.0],
         uv: [1.0, 0.0],
+        color: [1.0, 1.0, 1.0, 1.0],
     },
     Vertex {
         pos: [1.0, 1.0],
         uv: [1.0, 1.0],
+        color: [1.0, 1.0, 1.0, 1.0],
     },
     Vertex {
         pos: [0.0, 1.0],
         uv: [0.0, 1.0],
+        color: [1.0, 1.0, 1.0, 1.0],
     },
 ];
 
@@ -251,6 +255,7 @@ gfx_defines!{
     vertex Vertex {
         pos: [f32; 2] = "a_Pos",
         uv: [f32; 2] = "a_Uv",
+        color: [f32;4] = "a_VertColor",
     }
 
     /// Internal structure containing values that are different for each
@@ -491,7 +496,7 @@ pub fn circle<P>(
 where
     P: Into<mint::Point2<f32>>,
 {
-    let m = Mesh::new_circle(ctx, mode, point, radius, tolerance)?;
+    let m = Mesh::new_circle(ctx, mode, point, radius, tolerance, color)?;
     m.draw(ctx, DrawParam::new().color(color))
 }
 
@@ -513,8 +518,8 @@ pub fn ellipse<P>(
 where
     P: Into<mint::Point2<f32>>,
 {
-    let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance)?;
-    m.draw(ctx, DrawParam::new().color(color))
+    let m = Mesh::new_ellipse(ctx, mode, point, radius1, radius2, tolerance, color)?;
+    m.draw(ctx, DrawParam::new())
 }
 
 /// Draws a line of one or more connected segments.
@@ -525,8 +530,8 @@ pub fn line<P>(ctx: &mut Context, color: Color, points: &[P], width: f32) -> Gam
 where
     P: Into<mint::Point2<f32>> + Clone,
 {
-    let m = Mesh::new_line(ctx, points, width)?;
-    m.draw(ctx, DrawParam::new().color(color))
+    let m = Mesh::new_line(ctx, points, width, color)?;
+    m.draw(ctx, DrawParam::new())
 }
 
 /// Draws points (as rectangles).
@@ -553,8 +558,8 @@ pub fn polygon<P>(ctx: &mut Context, color: Color, mode: DrawMode, vertices: &[P
 where
     P: Into<mint::Point2<f32>> + Clone,
 {
-    let m = Mesh::new_polygon(ctx, mode, vertices)?;
-    m.draw(ctx, DrawParam::new().color(color))
+    let m = Mesh::new_polygon(ctx, mode, vertices, color)?;
+    m.draw(ctx, DrawParam::new())
 }
 
 /// Draws a rectangle.

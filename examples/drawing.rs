@@ -5,7 +5,7 @@ extern crate ggez;
 
 use ggez::event;
 use ggez::graphics;
-use ggez::graphics::{DrawMode, DrawParam};
+use ggez::graphics::{Color, DrawMode, DrawParam};
 use ggez::nalgebra::Point2;
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -48,11 +48,36 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
             Point2::new(200.0, 300.0),
         ],
         4.0,
+        Color::new(1.0, 0.0, 0.0, 1.0),
     );
 
-    mb.ellipse(DrawMode::Fill, Point2::new(600.0, 200.0), 50.0, 120.0, 1.0);
+    mb.ellipse(DrawMode::Fill, Point2::new(600.0, 200.0), 50.0, 120.0, 1.0, Color::new(1.0, 1.0, 0.0, 1.0));
 
-    mb.circle(DrawMode::Fill, Point2::new(600.0, 380.0), 40.0, 1.0);
+    mb.circle(DrawMode::Fill, Point2::new(600.0, 380.0), 40.0, 1.0, Color::new(1.0, 0.0, 1.0, 1.0));
+
+    let triangle_verts = vec![
+        graphics::Vertex {
+            pos: [100.0, 100.0],
+            uv: [0.0, 0.0],
+            color: [1.0, 0.0, 0.0, 1.0],
+        },
+        graphics::Vertex {
+            pos: [0.0, 100.0],
+            uv: [0.0, 0.0],
+            color: [0.0, 1.0, 0.0, 1.0],
+        },
+        graphics::Vertex {
+            pos: [0.0, 0.0],
+            uv: [0.0, 0.0],
+            color: [0.0, 0.0, 1.0, 1.0],
+        },
+    ];
+
+    let triangle_indices = vec![
+        0, 1, 2
+    ];
+
+    mb.from_raw(&triangle_verts, &triangle_indices);
     mb.build(ctx)
 }
 
@@ -112,13 +137,13 @@ impl event::EventHandler for MainState {
             rect,
         )?;
 
+        */
         let mesh = build_mesh(ctx)?;
         graphics::draw(
             ctx,
             &mesh,
-            DrawParam::new().color((0, 0, 255)),
+            DrawParam::new(),
         )?;
-        */
 
         graphics::present(ctx)?;
         Ok(())

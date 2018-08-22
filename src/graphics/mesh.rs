@@ -74,29 +74,32 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a line of one or more connected segments.
-    pub fn line<P>(&mut self, points: &[P], width: f32) -> &mut Self
+    pub fn line<P>(&mut self, points: &[P], width: f32, color: Color) -> &mut Self
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
-        self.polyline(DrawMode::Line(width), points)
+        self.polyline(DrawMode::Line(width), points, color)
     }
 
     /// Create a new mesh for a circle.
     ///
     /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
-    pub fn circle<P>(&mut self, mode: DrawMode, point: P, radius: f32, tolerance: f32) -> &mut Self
+    pub fn circle<P>(&mut self, mode: DrawMode, point: P, radius: f32, tolerance: f32, color: Color) -> &mut Self
     where
         P: Into<mint::Point2<f32>>,
     {
         {
             let point = point.into();
             let buffers = &mut self.buffer;
+            let vb = VertexBuilder {
+                color,
+            };
             match mode {
                 DrawMode::Fill => {
                     // These builders have to be in separate match arms 'cause they're actually
                     // different types; one is GeometryBuilder<StrokeVertex> and the other is
                     // GeometryBuilder<FillVertex>
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let fill_options = t::FillOptions::default().with_tolerance(tolerance);
                     let _ = t::basic_shapes::fill_circle(
                         t::math::point(point.x, point.y),
@@ -106,7 +109,7 @@ impl MeshBuilder {
                     );
                 }
                 DrawMode::Line(line_width) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width)
                         .with_tolerance(tolerance);
@@ -118,7 +121,7 @@ impl MeshBuilder {
                     );
                 }
                 DrawMode::CustomFill(fill_options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::fill_circle(
                         t::math::point(point.x, point.y),
                         radius,
@@ -127,7 +130,7 @@ impl MeshBuilder {
                     );
                 }
                 DrawMode::CustomLine(options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::stroke_circle(
                         t::math::point(point.x, point.y),
                         radius,
@@ -150,6 +153,7 @@ impl MeshBuilder {
         radius1: f32,
         radius2: f32,
         tolerance: f32,
+        color: Color,
     ) -> &mut Self
     where
         P: Into<mint::Point2<f32>>,
@@ -157,9 +161,12 @@ impl MeshBuilder {
         {
             let buffers = &mut self.buffer;
             let point = point.into();
+            let vb = VertexBuilder {
+                color,
+            };
             match mode {
                 DrawMode::Fill => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let fill_options = t::FillOptions::default().with_tolerance(tolerance);
                     let _ = t::basic_shapes::fill_ellipse(
                         t::math::point(point.x, point.y),
@@ -170,7 +177,7 @@ impl MeshBuilder {
                     );
                 }
                 DrawMode::Line(line_width) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let options = t::StrokeOptions::default()
                         .with_line_width(line_width)
                         .with_tolerance(tolerance);
@@ -183,7 +190,7 @@ impl MeshBuilder {
                     );
                 }
                 DrawMode::CustomFill(fill_options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::fill_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
@@ -193,7 +200,7 @@ impl MeshBuilder {
                     );
                 }
                 DrawMode::CustomLine(options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::stroke_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
@@ -208,22 +215,22 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a series of connected lines.
-    pub fn polyline<P>(&mut self, mode: DrawMode, points: &[P]) -> &mut Self
+    pub fn polyline<P>(&mut self, mode: DrawMode, points: &[P], color: Color) -> &mut Self
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
-        self.polyline_inner(mode, points, false)
+        self.polyline_inner(mode, points, false, color)
     }
 
     /// Create a new mesh for a closed polygon.
-    pub fn polygon<P>(&mut self, mode: DrawMode, points: &[P]) -> &mut Self
+    pub fn polygon<P>(&mut self, mode: DrawMode, points: &[P], color: Color) -> &mut Self
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
-        self.polyline_inner(mode, points, true)
+        self.polyline_inner(mode, points, true, color)
     }
 
-    fn polyline_inner<P>(&mut self, mode: DrawMode, points: &[P], is_closed: bool) -> &mut Self
+    fn polyline_inner<P>(&mut self, mode: DrawMode, points: &[P], is_closed: bool, color: Color) -> &mut Self
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -234,9 +241,12 @@ impl MeshBuilder {
                 let mint_point: mint::Point2<f32> = p.into();
                 t::math::point(mint_point.x, mint_point.y)
             });
+            let vb = VertexBuilder {
+                color,
+            };
             match mode {
                 DrawMode::Fill => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
                     // TODO: Removing this expect would be rather nice.
@@ -244,19 +254,19 @@ impl MeshBuilder {
                         .expect("Could not fill polygon?");
                 }
                 DrawMode::Line(width) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let options = t::StrokeOptions::default().with_line_width(width);
                     let _ = t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
                 }
                 DrawMode::CustomFill(options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let tessellator = &mut t::FillTessellator::new();
                     // TODO: Removing this expect would be rather nice.
                     let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
                         .expect("Could not fill polygon?");
                 }
                 DrawMode::CustomLine(options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
                 }
             };
@@ -265,30 +275,33 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a rectangle.
-    pub fn rectangle(&mut self, mode: DrawMode, bounds: Rect) -> &mut Self {
+    pub fn rectangle(&mut self, mode: DrawMode, bounds: Rect, color: Color) -> &mut Self {
         {
             let buffers = &mut self.buffer;
             let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
+            let vb = VertexBuilder {
+                color,
+            };
             match mode {
                 DrawMode::Fill => {
                     // These builders have to be in separate match arms 'cause they're actually
                     // different types; one is GeometryBuilder<StrokeVertex> and the other is
                     // GeometryBuilder<FillVertex>
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let fill_options = t::FillOptions::default();
                     let _ = t::basic_shapes::fill_rectangle(&rect, &fill_options, builder);
                 }
                 DrawMode::Line(line_width) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let options = t::StrokeOptions::default().with_line_width(line_width);
                     let _ = t::basic_shapes::stroke_rectangle(&rect, &options, builder);
                 }
                 DrawMode::CustomFill(fill_options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::fill_rectangle(&rect, &fill_options, builder);
                 }
                 DrawMode::CustomLine(options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, VertexBuilder);
+                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::stroke_rectangle(&rect, &options, builder);
                 }
             };
@@ -299,7 +312,7 @@ impl MeshBuilder {
     /// Create a new `Mesh` from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
-    pub fn triangles<P>(&mut self, triangles: &[P]) -> &mut Self
+    pub fn triangles<P>(&mut self, triangles: &[P], color: Color) -> &mut Self
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -325,8 +338,11 @@ impl MeshBuilder {
                     // nicer, so we'll just live with it.
                 .collect::<Vec<_>>();
             let tris = tris.chunks(3);
+            let vb = VertexBuilder {
+                color,
+            };
             let builder: &mut t::BuffersBuilder<_, _, _> =
-                &mut t::BuffersBuilder::new(&mut self.buffer, VertexBuilder);
+                &mut t::BuffersBuilder::new(&mut self.buffer, vb);
             use lyon::tessellation::GeometryBuilder;
             builder.begin_geometry();
             for tri in tris {
@@ -342,6 +358,30 @@ impl MeshBuilder {
             }
             let _ = builder.end_geometry();
         }
+        self
+    }
+
+    /// TODO: Update docs.
+    /// Creates a `Mesh` from a raw list of triangles defined from points
+    /// and indices, with the given UV texture coordinates.
+    ///
+    /// This is the most primitive mesh-creation method, but allows you full
+    /// control over the tesselation and texturing.
+    /// As such it will panic or produce incorrect/invalid output (that may later
+    /// cause drawing to panic), if:
+    ///
+    ///  * `indices` contains a value out of bounds of `verts`
+    pub fn from_raw<V>(&mut self, verts: &[V], indices: &[u16]) -> &mut Self
+    where
+        V: Into<Vertex> + Clone,
+    {
+        // TODO: Make `as` conversion checked
+        let next_idx = self.buffer.vertices.len() as u16;
+        // TODO: Can we remove the clone here?
+        let vertices = verts.iter().cloned().map(|v: V| -> Vertex { v.into() });
+        let indices = indices.iter().map(|i| (*i) + next_idx);
+        self.buffer.vertices.extend(vertices);
+        self.buffer.indices.extend(indices);
         self
     }
 
@@ -361,13 +401,17 @@ impl MeshBuilder {
     }
 }
 
-struct VertexBuilder;
+#[derive(Copy, Clone, PartialEq, Debug)]
+struct VertexBuilder {
+    color: Color,
+}
 
 impl t::VertexConstructor<t::FillVertex, Vertex> for VertexBuilder {
     fn new_vertex(&mut self, vertex: t::FillVertex) -> Vertex {
         Vertex {
             pos: [vertex.position.x, vertex.position.y],
             uv: [0.0, 0.0],
+            color: self.color.into(),
         }
     }
 }
@@ -377,6 +421,7 @@ impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
         Vertex {
             pos: [vertex.position.x, vertex.position.y],
             uv: [0.0, 0.0],
+            color: self.color.into(),
         }
     }
 }
@@ -395,12 +440,12 @@ pub struct Mesh {
 
 impl Mesh {
     /// Create a new mesh for a line of one or more connected segments.
-    pub fn new_line<P>(ctx: &mut Context, points: &[P], width: f32) -> GameResult<Mesh>
+    pub fn new_line<P>(ctx: &mut Context, points: &[P], width: f32, color: Color) -> GameResult<Mesh>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
         let mut mb = MeshBuilder::new();
-        let _ = mb.polyline(DrawMode::Line(width), points);
+        let _ = mb.polyline(DrawMode::Line(width), points, color);
         mb.build(ctx)
     }
 
@@ -411,12 +456,13 @@ impl Mesh {
         point: P,
         radius: f32,
         tolerance: f32,
+        color: Color,
     ) -> GameResult<Mesh>
     where
         P: Into<mint::Point2<f32>>,
     {
         let mut mb = MeshBuilder::new();
-        let _ = mb.circle(mode, point, radius, tolerance);
+        let _ = mb.circle(mode, point, radius, tolerance, color);
         mb.build(ctx)
     }
 
@@ -428,49 +474,50 @@ impl Mesh {
         radius1: f32,
         radius2: f32,
         tolerance: f32,
+        color: Color,
     ) -> GameResult<Mesh>
     where
         P: Into<mint::Point2<f32>>,
     {
         let mut mb = MeshBuilder::new();
-        let _ = mb.ellipse(mode, point, radius1, radius2, tolerance);
+        let _ = mb.ellipse(mode, point, radius1, radius2, tolerance, color);
         mb.build(ctx)
     }
 
     /// Create a new mesh for series of connected lines.
-    pub fn new_polyline<P>(ctx: &mut Context, mode: DrawMode, points: &[P]) -> GameResult<Mesh>
+    pub fn new_polyline<P>(ctx: &mut Context, mode: DrawMode, points: &[P], color: Color,) -> GameResult<Mesh>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
         let mut mb = MeshBuilder::new();
-        let _ = mb.polyline(mode, points);
+        let _ = mb.polyline(mode, points, color);
         mb.build(ctx)
     }
 
     /// Create a new mesh for closed polygon.
-    pub fn new_polygon<P>(ctx: &mut Context, mode: DrawMode, points: &[P]) -> GameResult<Mesh>
+    pub fn new_polygon<P>(ctx: &mut Context, mode: DrawMode, points: &[P], color: Color,) -> GameResult<Mesh>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
         let mut mb = MeshBuilder::new();
-        let _ = mb.polygon(mode, points);
+        let _ = mb.polygon(mode, points, color);
         mb.build(ctx)
     }
 
     /// Create a new mesh for a rectangle
-    pub fn new_rectangle(ctx: &mut Context, mode: DrawMode, bounds: Rect) -> GameResult<Mesh> {
+    pub fn new_rectangle(ctx: &mut Context, mode: DrawMode, bounds: Rect, color: Color,) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
-        let _ = mb.rectangle(mode, bounds);
+        let _ = mb.rectangle(mode, bounds, color);
         mb.build(ctx)
     }
 
     /// Create a new `Mesh` from a raw list of triangle points.
-    pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P]) -> GameResult<Mesh>
+    pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P], color: Color,) -> GameResult<Mesh>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
         let mut mb = MeshBuilder::new();
-        let _ = mb.triangles(triangles);
+        let _ = mb.triangles(triangles, color);
         mb.build(ctx)
     }
 
