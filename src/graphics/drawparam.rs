@@ -209,7 +209,7 @@ impl From<DrawParam> for DrawTransform {
         let axis_angle = Vec3::z() * param.rotation;
         let rotation = Matrix4::new_rotation(axis_angle);
         let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(param.scale.x, param.scale.y, 1.0));
-        let transform = translate * offset * rotation * scale * offset_inverse;
+        let transform = translate * offset * rotation * offset_inverse * scale;
         DrawTransform {
             src: param.src,
             color: param.color,

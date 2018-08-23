@@ -330,6 +330,12 @@ impl Drawable for Image {
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
+        // BUGGO: Based on previous ggez code we need
+        // to have param.scale in this math but there's
+        // no way we can get it...
+        // ...or do we, 'cause we do param.mul() afterwards?
+        // but it doesn't seem to have the same effect on
+        // offset, so.
         use nalgebra;
         let real_scale = nalgebra::Vector3::new(
             src_width * f32::from(self.width),
@@ -337,6 +343,7 @@ impl Drawable for Image {
             1.0,
         );
         let new_param = param.mul(Matrix4::new_nonuniform_scaling(&real_scale));
+        // let new_param = param;
 
         gfx.update_instance_properties(new_param)?;
         let sampler = gfx.samplers
