@@ -29,8 +29,13 @@ where
 /// to as "render target" or "render to texture"). Set the canvas with the
 /// `ggez::graphics::set_canvas()` function, and then anything you
 /// draw will be drawn to the canvas instead of the screen.
-///
 /// Resume drawing to the screen by calling `ggez::graphics::set_canvas(None)`.
+///
+/// **This is not an optimization tool.**  You may be tempted to say "I'll draw a scene
+/// to a `Canvas` and then just draw the single `Canvas` each frame."  This is technically
+/// possible but makes life much harder than it needs to be (especially since the current
+/// implementation of `Canvas` has a number of [hard-to-squash bugs](https://github.com/ggez/ggez/issues?utf8=%E2%9C%93&q=is%3Aissue+canvas+).)
+/// If you want to draw things maximally efficiently, use `SpriteBatch`.
 ///
 /// A `Canvas` allows creating render targets to be used instead of
 /// the screen.  This allows graphics to be rendered to images off-screen
