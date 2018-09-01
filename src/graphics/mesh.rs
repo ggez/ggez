@@ -40,10 +40,11 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 ///                 na::Point2::new(0.0, 0.0),
 ///             ],
 ///             1.0,
+///             graphics::WHITE,
 ///         )
 ///         // Add vertices for an exclamation mark!
-///         .ellipse(DrawMode::Fill, na::Point2::new(0.0, 25.0), 2.0, 15.0, 2.0)
-///         .circle(DrawMode::Fill, na::Point2::new(0.0, 45.0), 2.0, 2.0)
+///         .ellipse(DrawMode::Fill, na::Point2::new(0.0, 25.0), 2.0, 15.0, 2.0, graphics::WHITE,)
+///         .circle(DrawMode::Fill, na::Point2::new(0.0, 45.0), 2.0, 2.0, graphics::WHITE,)
 ///         // Finalize then unwrap. Unwrapping via `?` operator either yields the final `Mesh`,
 ///         // or propagates the error (note return type).
 ///         .build(ctx)?;

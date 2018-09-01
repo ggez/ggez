@@ -43,7 +43,7 @@ impl FileLogger {
         debug!(
             "Created log file {:?} in {:?}",
             path,
-            filesystem::get_user_config_dir(ctx)
+            filesystem::user_config_dir(ctx)
         );
         Ok(FileLogger { file, receiver })
     }

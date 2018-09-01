@@ -477,7 +477,7 @@ where
     D: Into<DrawTransform>,
 {
     let param: DrawTransform = param.into();
-    let screen_rect = get_screen_coordinates(context);
+    let screen_rect = screen_coordinates(context);
 
     let (screen_x, screen_y, screen_w, screen_h) = (screen_rect.x, screen_rect.y, screen_rect.w, screen_rect.h);
     let scale_x = screen_w / 2.0;
@@ -547,15 +547,15 @@ mod tests {
     #[test]
     fn test_metrics() {
         let f = Font::default_font().expect("Could not get default font");
-        assert_eq!(f.get_height(), 17);
-        assert_eq!(f.get_width("Foo!"), 33);
+        assert_eq!(f.height(), 17);
+        assert_eq!(f.width("Foo!"), 33);
 
         // http://www.catipsum.com/index.php
         let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff \
                             other cat's butt and hang jaw half open thereafter for give attitude. \
                             Annoy kitten\nbrother with poking. Mrow toy mouse squeak roll over. \
                             Human give me attention meow.";
-        let (len, v) = f.get_wrap(text_to_wrap, 250);
+        let (len, v) = f.wrap(text_to_wrap, 250);
         println!("{} {:?}", len, v);
         assert_eq!(len, 249);
 
@@ -600,7 +600,7 @@ mod tests {
                             Annoy kitten\nbrother with poking. Mrow toy mouse squeak roll over. \
                             Human give me attention meow.";
         let wrap_length = 250;
-        let (len, v) = font.get_wrap(text_to_wrap, wrap_length);
+        let (len, v) = font.wrap(text_to_wrap, wrap_length);
         assert!(len < wrap_length);
         for line in &v {
             let t = Text::new(ctx, line, &font).unwrap();

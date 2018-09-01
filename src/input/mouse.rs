@@ -57,44 +57,44 @@ impl Default for MouseContext {
 }
 
 /// Returns the current mouse cursor type of the window.
-pub fn get_cursor_type(ctx: &Context) -> MouseCursor {
+pub fn cursor_type(ctx: &Context) -> MouseCursor {
     ctx.mouse_context.cursor_type
 }
 
 /// Modifies the mouse cursor type of the window.
 pub fn set_cursor_type(ctx: &mut Context, cursor_type: MouseCursor) {
     ctx.mouse_context.cursor_type = cursor_type;
-    graphics::get_window(ctx).set_cursor(cursor_type);
+    graphics::window(ctx).set_cursor(cursor_type);
 }
 
 /// Get whether or not the mouse is grabbed (confined to the window)
-pub fn get_cursor_grabbed(ctx: &Context) -> bool {
+pub fn cursor_grabbed(ctx: &Context) -> bool {
     ctx.mouse_context.cursor_grabbed
 }
 
 /// Set whether or not the mouse is grabbed (confined to the window)
 pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
     ctx.mouse_context.cursor_grabbed = grabbed;
-    graphics::get_window(ctx)
+    graphics::window(ctx)
         .grab_cursor(grabbed)
         .map_err(|e| GameError::WindowError(e.to_string()))
 }
 
 /// Set whether or not the mouse is hidden (invisible)
-pub fn get_cursor_hidden(ctx: &Context) -> bool {
+pub fn cursor_hidden(ctx: &Context) -> bool {
     ctx.mouse_context.cursor_hidden
 }
 
 /// Set whether or not the mouse is hidden (invisible).
 pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
     ctx.mouse_context.cursor_hidden = hidden;
-    graphics::get_window(ctx).hide_cursor(hidden)
+    graphics::window(ctx).hide_cursor(hidden)
 }
 
 /// Get the current position of the mouse cursor, in pixels.
 /// Complement to `set_position()`.
 /// Uses strictly window-only coordinates.
-pub fn get_position(ctx: &Context) -> Point2 {
+pub fn position(ctx: &Context) -> Point2 {
     ctx.mouse_context.last_position
 }
 
@@ -102,7 +102,7 @@ pub fn get_position(ctx: &Context) -> Point2 {
 /// Uses strictly window-only coordinates.
 pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
     ctx.mouse_context.last_position = point;
-    graphics::get_window(ctx)
+    graphics::window(ctx)
         .set_cursor_position(dpi::LogicalPosition {
             x: f64::from(point.x),
             y: f64::from(point.y),
@@ -111,19 +111,19 @@ pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
 }
 
 /// Get the distance the cursor was moved during last frame, in pixels.
-pub fn get_delta(ctx: &Context) -> Point2 {
+pub fn delta(ctx: &Context) -> Point2 {
     ctx.mouse_context.last_delta
 }
 
 /// Returns whether or not the given mouse button is pressed.
-pub fn get_button_pressed(ctx: &Context, button: MouseButton) -> bool {
+pub fn button_pressed(ctx: &Context, button: MouseButton) -> bool {
     ctx.mouse_context.button_pressed(button)
 }
 
 /// TODO: Can we implement this?  Check with Winit peoples.
 /// Winit doesn't implement it itself, we can do it by locking
 /// the cursor to the window and resetting it to center each frame?
-pub fn get_relative_mode() -> bool {
+pub fn relative_mode() -> bool {
     unimplemented!()
 }
 

@@ -49,7 +49,7 @@ impl event::EventHandler for MainState {
 
         self.frames += 1;
         if (self.frames % 100) == 0 {
-            println!("FPS: {}", ggez::timer::get_fps(ctx));
+            println!("FPS: {}", ggez::timer::fps(ctx));
         }
 
         Ok(())
@@ -81,7 +81,7 @@ pub fn main() -> GameResult {
         ;
     let (ctx, event_loop) = &mut cb.build()?;
 
-    println!("HIDPI: {}", graphics::get_hidpi_factor(ctx));
+    println!("HIDPI: {}", graphics::hidpi_factor(ctx));
 
     let state = &mut MainState::new(ctx)?;
     event::run(ctx, event_loop, state)

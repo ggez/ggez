@@ -23,7 +23,7 @@ fn test_calculated_text_width() {
 
     let text = "Hello There";
 
-    let expected_width = font.get_width(text);
+    let expected_width = font.width(text);
     let rendered_width = graphics::Text::new((text, font, 24)).unwrap().width();
 
     println!("Text: {:?}, expected: {}, rendered: {}", text, expected_width, rendered_width);
@@ -40,10 +40,10 @@ fn test_monospace_text_is_actually_monospace() {
     let text3 = "Hello 3";
     let text4 = "Hello 4";
 
-    let width1 = font.get_width(text1);
-    let width2 = font.get_width(text2);
-    let width3 = font.get_width(text3);
-    let width4 = font.get_width(text4);
+    let width1 = font.width(text1);
+    let width2 = font.width(text2);
+    let width3 = font.width(text3);
+    let width4 = font.width(text4);
 
     assert_eq!(width1, width2);
     assert_eq!(width2, width3);

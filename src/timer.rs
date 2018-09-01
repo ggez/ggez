@@ -126,14 +126,14 @@ impl Default for TimeContext {
 
 /// Get the time between the start of the last frame and the current one;
 /// in other words, the length of the last frame.
-pub fn get_delta(ctx: &Context) -> time::Duration {
+pub fn delta(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     tc.frame_durations.latest()
 }
 
 /// Gets the average time of a frame, averaged
 /// over the last 200 frames.
-pub fn get_average_delta(ctx: &Context) -> time::Duration {
+pub fn average_delta(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     let init = time::Duration::new(0, 0);
     let sum = tc.frame_durations
@@ -176,15 +176,15 @@ fn fps_as_duration(fps: u32) -> time::Duration {
 
 /// Gets the FPS of the game, averaged over the last
 /// 200 frames.
-pub fn get_fps(ctx: &Context) -> f64 {
-    let duration_per_frame = get_average_delta(ctx);
+pub fn fps(ctx: &Context) -> f64 {
+    let duration_per_frame = average_delta(ctx);
     let seconds_per_frame = duration_to_f64(duration_per_frame);
     1.0 / seconds_per_frame
 }
 
 /// Returns the time since the game was initialized,
 /// as reported by the system clock.
-pub fn get_time_since_start(ctx: &Context) -> time::Duration {
+pub fn time_since_start(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     time::Instant::now() - tc.init_instant
 }
@@ -225,14 +225,14 @@ pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
 /// by  `check_update_time()`.  For example, if the desired
 /// update frame time is 40 ms (25 fps), and 45 ms have
 /// passed since the last frame, `check_update_time()` will
-/// return `true` and `get_remaining_update_time()` will
+/// return `true` and `remaining_update_time()` will
 /// return 5 ms -- the amount of time "overflowing" from one
 /// frame to the next.
 ///
 /// The intention is for it to be called in your `draw()` callback
 /// to interpolate phyisics states for smooth rendering.
 /// (see <http://gafferongames.com/game-physics/fix-your-timestep/>)
-pub fn get_remaining_update_time(ctx: &mut Context) -> time::Duration {
+pub fn remaining_update_time(ctx: &mut Context) -> time::Duration {
     ctx.timer_context.residual_update_dt
 }
 
@@ -255,6 +255,6 @@ pub fn yield_now() {
 ///
 /// Specifically, the number of times that `TimeContext::tick()` has been
 /// called by it.
-pub fn get_ticks(ctx: &Context) -> usize {
+pub fn ticks(ctx: &Context) -> usize {
     ctx.timer_context.frame_count
 }

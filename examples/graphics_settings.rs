@@ -69,7 +69,7 @@ impl event::EventHandler for MainState {
 
             /*
             if self.window_settings.window_size_toggle {
-                let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
+                let resolutions = ggez::graphics::fullscreen_modes(ctx, 0)?;
                 let (width, height) = resolutions[self.window_settings.resolution_index];
 
                 ggez::graphics::set_resolution(ctx, width, height)?;
@@ -83,13 +83,14 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, graphics::BLACK);
-        let rotation = timer::get_ticks(ctx) % 1000;
+        let rotation = timer::ticks(ctx) % 1000;
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::Line(3.0),
             Point2::new(0.0, 0.0),
             100.0,
             4.0,
+            graphics::WHITE
         )?;
         graphics::draw(
             ctx,
@@ -160,7 +161,7 @@ impl event::EventHandler for MainState {
             KeyCode::Up => {
                 self.zoom += 0.1;
                 println!("Zoom is now {}", self.zoom);
-                let (w, h) = graphics::get_size(ctx);
+                let (w, h) = graphics::size(ctx);
                 let new_rect =
                     graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                 graphics::set_screen_coordinates(ctx, new_rect).unwrap();
@@ -168,7 +169,7 @@ impl event::EventHandler for MainState {
             KeyCode::Down => {
                 self.zoom -= 0.1;
                 println!("Zoom is now {}", self.zoom);
-                let (w, h) = graphics::get_size(ctx);
+                let (w, h) = graphics::size(ctx);
                 let new_rect =
                     graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                 graphics::set_screen_coordinates(ctx, new_rect).unwrap();

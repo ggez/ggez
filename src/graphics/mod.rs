@@ -599,7 +599,7 @@ pub fn rectangle(ctx: &mut Context, color: Color, mode: DrawMode, rect: Rect) ->
 // **********************************************************************
 
 /// Get the default filter mode for new images.
-pub fn get_default_filter(ctx: &Context) -> FilterMode {
+pub fn default_filter(ctx: &Context) -> FilterMode {
     let gfx = &ctx.gfx_context;
     gfx.default_sampler_info.filter.into()
 }
@@ -607,7 +607,7 @@ pub fn get_default_filter(ctx: &Context) -> FilterMode {
 /// Returns a string that tells a little about the obtained rendering mode.
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
-pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
+pub fn renderer_info(ctx: &Context) -> GameResult<String> {
     let backend_info = ctx.gfx_context.backend_spec.info(&*ctx.gfx_context.device);
     Ok(format!(
         "Requested OpenGL {}.{} Core profile, actually got {}.",
@@ -621,7 +621,7 @@ pub fn get_renderer_info(ctx: &Context) -> GameResult<String> {
 ///
 /// If the Y axis increases downwards, the `height` of the Rect
 /// will be negative.
-pub fn get_screen_coordinates(ctx: &Context) -> Rect {
+pub fn screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
 }
 
@@ -676,7 +676,7 @@ pub fn mul_projection(context: &mut Context, transform: Matrix4) {
 }
 
 /// Gets a copy of the context's raw projection matrix
-pub fn get_projection(context: &Context) -> Matrix4 {
+pub fn projection(context: &Context) -> Matrix4 {
     let gfx = &context.gfx_context;
     gfx.projection()
 }
@@ -726,7 +726,7 @@ pub fn set_transform(context: &mut Context, transform: Matrix4) {
 }
 
 /// Gets a copy of the context's current transform matrix
-pub fn get_transform(context: &Context) -> Matrix4 {
+pub fn transform(context: &Context) -> Matrix4 {
     let gfx = &context.gfx_context;
     gfx.transform()
 }
@@ -824,7 +824,7 @@ pub fn set_window_title(context: &Context, title: &str) {
 /// Ideally you should not need to use this because ggez
 /// would provide all the functions you need without having
 /// to dip into SDL itself.  But life isn't always ideal.
-pub fn get_window(context: &Context) -> &glutin::Window {
+pub fn window(context: &Context) -> &glutin::Window {
     let gfx = &context.gfx_context;
     &gfx.window
 }
@@ -834,7 +834,7 @@ pub fn get_window(context: &Context) -> &glutin::Window {
 /// Returns zeros if window doesn't exist.
 /// TODO: Rename, since get_drawable_size is usually what we
 /// actually want
-pub fn get_size(context: &Context) -> (f64, f64) {
+pub fn size(context: &Context) -> (f64, f64) {
     let gfx = &context.gfx_context;
     gfx.window
         .get_outer_size()
@@ -846,19 +846,19 @@ pub fn get_size(context: &Context) -> (f64, f64) {
 /// is currently using.  If  `conf::WindowMode::hidpi`
 /// is true this is equal to `get_os_hidpi_factor()`,
 /// otherwise it is `1.0`.
-pub fn get_hidpi_factor(context: &Context) -> f32 {
+pub fn hidpi_factor(context: &Context) -> f32 {
     context.gfx_context.hidpi_factor
 }
 
 /// Returns the hidpi pixel scaling factor that the operating
 /// system says that ggez should be using.
-pub fn get_os_hidpi_factor(context: &Context) -> f32 {
+pub fn os_hidpi_factor(context: &Context) -> f32 {
     context.gfx_context.os_hidpi_factor
 }
 
 /// Returns the size of the window's underlying drawable in pixels as (width, height).
 /// Returns zeros if window doesn't exist.
-pub fn get_drawable_size(context: &Context) -> (f64, f64) {
+pub fn drawable_size(context: &Context) -> (f64, f64) {
     let gfx = &context.gfx_context;
     gfx.window
         .get_inner_size()
@@ -867,19 +867,19 @@ pub fn get_drawable_size(context: &Context) -> (f64, f64) {
 }
 
 /// Returns the gfx-rs `Factory` object for ggez's rendering context.
-pub fn get_factory(context: &mut Context) -> &mut gfx_device_gl::Factory {
+pub fn factory(context: &mut Context) -> &mut gfx_device_gl::Factory {
     let gfx = &mut context.gfx_context;
     &mut gfx.factory
 }
 
 /// Returns the gfx-rs `Device` object for ggez's rendering context.
-pub fn get_device(context: &mut Context) -> &mut gfx_device_gl::Device {
+pub fn device(context: &mut Context) -> &mut gfx_device_gl::Device {
     let gfx = &mut context.gfx_context;
     gfx.device.as_mut()
 }
 
 /// Returns the gfx-rs `Encoder` object for ggez's rendering context.
-pub fn get_encoder(
+pub fn encoder(
     context: &mut Context,
 ) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
     let gfx = &mut context.gfx_context;
@@ -887,7 +887,7 @@ pub fn get_encoder(
 }
 
 /// Returns the gfx-rs depth target object for ggez's rendering context.
-pub fn get_depth_view(
+pub fn depth_view(
     context: &mut Context,
 ) -> gfx::handle::RawDepthStencilView<gfx_device_gl::Resources> {
     let gfx = &mut context.gfx_context;
@@ -895,7 +895,7 @@ pub fn get_depth_view(
 }
 
 /// Returns the gfx-rs color target object for ggez's rendering context.
-pub fn get_screen_render_target(
+pub fn screen_render_target(
     context: &Context,
 ) -> gfx::handle::RawRenderTargetView<gfx_device_gl::Resources> {
     let gfx = &context.gfx_context;
@@ -908,7 +908,7 @@ pub fn get_screen_render_target(
 /// Returns all the relevant objects at once;
 /// getting them one by one is awkward 'cause it tends to create double-borrows
 /// on the Context object.
-pub fn get_gfx_objects(
+pub fn gfx_objects(
     context: &mut Context,
 ) -> (
     &mut <GlBackendSpec as BackendSpec>::Factory,

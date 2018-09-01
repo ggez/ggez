@@ -203,7 +203,7 @@ impl MainState {
             graphics::Text::new(("SHADOWS...", font, 48.0))
         };
         let screen_size = {
-            let size = graphics::get_drawable_size(ctx);
+            let size = graphics::drawable_size(ctx);
             [size.0 as f32, size.1 as f32]
         };
         let torch = Light {
@@ -214,7 +214,7 @@ impl MainState {
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
-        let (w, h) = graphics::get_size(ctx);
+        let (w, h) = graphics::size(ctx);
         let (x, y) = (100.0 / w as f32, 1.0 - 75.0 / h as f32);
         let static_light = Light {
             pos: [x, y],
@@ -279,7 +279,7 @@ impl MainState {
         origin: DrawParam,
         canvas_origin: DrawParam,
     ) -> GameResult {
-        let size = graphics::get_size(ctx);
+        let size = graphics::size(ctx);
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
         graphics::set_canvas(ctx, Some(&self.occlusions));
@@ -321,23 +321,23 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if timer::get_ticks(ctx) % 100 == 0 {
-            println!("Average FPS: {}", timer::get_fps(ctx));
+        if timer::ticks(ctx) % 100 == 0 {
+            println!("Average FPS: {}", timer::fps(ctx));
         }
 
         self.torch.glow =
-            LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
+            LIGHT_GLOW_FACTOR * ((timer::ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
         self.static_light.glow =
-            LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE * 0.75).sin();
+            LIGHT_GLOW_FACTOR * ((timer::ticks(ctx) as f32) / LIGHT_GLOW_RATE * 0.75).sin();
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let size = graphics::get_size(ctx);
+        let size = graphics::size(ctx);
         let origin = DrawParam::new().dest(Point2::new(0.0, 0.0));
         // for re-rendering canvases, we need to take the DPI into account
         let dpiscale = {
-            let dsize = graphics::get_drawable_size(ctx);
+            let dsize = graphics::drawable_size(ctx);
             Vector2::new(
                 size.0 as f32 / dsize.0 as f32,
                 size.1 as f32 / dsize.1 as f32,
@@ -409,7 +409,7 @@ impl event::EventHandler for MainState {
     }
 
     fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32, _xrel: f32, _yrel: f32) {
-        let (w, h) = graphics::get_size(ctx);
+        let (w, h) = graphics::size(ctx);
         let (x, y) = (x / w as f32, 1.0 - y / h as f32);
         self.torch.pos = [x, y];
     }

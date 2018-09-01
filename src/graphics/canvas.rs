@@ -96,7 +96,7 @@ impl Canvas {
     /// Create a new canvas with the current window dimensions.
     pub fn with_window_size(ctx: &mut Context) -> GameResult<Canvas> {
         use graphics;
-        let (w, h) = graphics::get_drawable_size(ctx);
+        let (w, h) = graphics::drawable_size(ctx);
         // Default to no multisampling
         // TODO: Use winit's into() to translate f64's more accurately
         Canvas::new(ctx, w as u16, h as u16, conf::NumSamples::One)

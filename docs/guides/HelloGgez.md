@@ -227,10 +227,10 @@ let state = &mut State { dt: std::time::Duration::new(0, 0) };
 ```
 
 So now that we have state to update, let's update it in our `update` callback!
-We'll use [`timer::get_delta`](https://docs.rs/ggez/0.4.0/ggez/timer/fn.get_delta.html) to get the delta time.
+We'll use [`timer::delta`](https://docs.rs/ggez/0.4.0/ggez/timer/fn.delta.html) to get the delta time.
 ```rust
 fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-    self.dt = timer::get_delta(ctx);
+    self.dt = timer::delta(ctx);
     Ok(())
 }
 ```
@@ -243,7 +243,7 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
 }
 ```
 Every frame, print out `Hello ggez! dt = {}ns`. This will print once a frame. Which is going to be a lot.
-  
+
 ### ✔ Check Program
 
 And yet again, run `cargo run`.

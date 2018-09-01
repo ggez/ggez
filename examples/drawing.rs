@@ -164,7 +164,7 @@ pub fn main() -> GameResult {
 
     let (ctx, events_loop) = &mut cb.build()?;
 
-    println!("{}", graphics::get_renderer_info(ctx)?);
+    println!("{}", graphics::renderer_info(ctx)?);
     let state = &mut MainState::new(ctx).unwrap();
     event::run(ctx, events_loop, state)
 }
