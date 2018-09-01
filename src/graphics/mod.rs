@@ -309,6 +309,20 @@ impl Default for InstanceProperties {
     }
 }
 
+impl fmt::Display for InstanceProperties {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut matrix_vec: Vec<f32> = vec![];
+        matrix_vec.extend(&self.col1);
+        matrix_vec.extend(&self.col2);
+        matrix_vec.extend(&self.col3);
+        matrix_vec.extend(&self.col4);
+        let matrix = na::Matrix4::from_column_slice(&matrix_vec);
+        write!(f, "Src: ({},{}+{},{})\n", self.src[0], self.src[1], self.src[2], self.src[3])?;
+        write!(f, "Color: {:?}\n", self.color)?;
+        write!(f, "Matrix: {}", matrix)
+    }
+}
+
 /// A structure for conveniently storing Sampler's, based off
 /// their `SamplerInfo`.
 pub(crate) struct SamplerCache<B>

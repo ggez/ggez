@@ -11,6 +11,7 @@ use std::mem;
 use std::path;
 use std::time;
 
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use mint;
@@ -122,6 +123,8 @@ pub struct Source {
     repeat: bool,
     fade_in: time::Duration,
     pitch: f32,
+    query_interval: time::Duration,
+    play_time: Arc<AtomicUsize>,
 }
 
 impl Source {
@@ -142,6 +145,8 @@ impl Source {
             repeat: false,
             fade_in: time::Duration::from_millis(0),
             pitch: 1.0,
+            query_interval: time::Duration::from_millis(100),
+            play_time: Arc::new(AtomicUsize::new(0)),
         })
     }
 
@@ -161,16 +166,26 @@ impl Source {
         use rodio::Source;
         let cursor = self.data.clone();
 
+        let counter = self.play_time.clone();
+        let period_mus = self.query_interval.as_secs() as usize * 1_000_000
+            + self.query_interval.subsec_micros() as usize;
+
         if self.repeat {
             let sound = rodio::Decoder::new(cursor)?
                 .repeat_infinite()
                 .speed(self.pitch)
-                .fade_in(self.fade_in);
+                .fade_in(self.fade_in)
+                .periodic_access(self.query_interval, move |_| {
+                    let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
+                });
             self.sink.append(sound);
         } else {
             let sound = rodio::Decoder::new(cursor)?
                 .speed(self.pitch)
-                .fade_in(self.fade_in);
+                .fade_in(self.fade_in)
+                .periodic_access(self.query_interval, move |_| {
+                    let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
+                });
             self.sink.append(sound);
         }
 
@@ -234,6 +249,7 @@ impl Source {
         // customizable.
         let device = rodio::default_output_device().unwrap();
         self.sink = rodio::Sink::new(&device);
+        self.play_time.store(0, Ordering::SeqCst);
     }
 
     /// Returns whether or not the source is stopped
@@ -262,6 +278,22 @@ impl Source {
     pub fn playing(&self) -> bool {
         !self.paused() && !self.stopped()
     }
+
+    /// Get the time the source has been playing since the last call to `play()`.
+    ///
+    /// Time measurement is based on audio samples consumed, so it may drift from the system
+    /// clock over longer periods of time.
+    pub fn elapsed(&self) -> time::Duration {
+        let t = self.play_time.load(Ordering::SeqCst);
+        time::Duration::from_micros(t as u64)
+    }
+
+    /// Set the update interval of the internal sample counter.
+    ///
+    /// This parameter determines the precision of the time measured by `elapsed()`.
+    pub fn set_query_interval(&mut self, t: time::Duration) {
+        self.query_interval = t;
+    }
 }
 
 impl fmt::Debug for Source {
@@ -278,6 +310,8 @@ pub struct SpatialSource {
     repeat: bool,
     fade_in: time::Duration,
     pitch: f32,
+    query_interval: time::Duration,
+    play_time: Arc<AtomicUsize>,
 
     left_ear: mint::Point3<f32>,
     right_ear: mint::Point3<f32>,
@@ -309,6 +343,8 @@ impl SpatialSource {
             repeat: false,
             fade_in: time::Duration::from_millis(0),
             pitch: 1.0,
+            query_interval: time::Duration::from_millis(100),
+            play_time: Arc::new(AtomicUsize::new(0)),
             left_ear: [-1.0, 0.0, 0.0].into(),
             right_ear: [1.0, 0.0, 0.0].into(),
             emitter_position: [0.0, 0.0, 0.0].into(),
@@ -327,16 +363,26 @@ impl SpatialSource {
         use rodio::Source;
         let cursor = self.data.clone();
 
+        let counter = self.play_time.clone();
+        let period_mus = self.query_interval.as_secs() as usize * 1_000_000
+            + self.query_interval.subsec_micros() as usize;
+
         if self.repeat {
             let sound = rodio::Decoder::new(cursor)?
                 .repeat_infinite()
                 .speed(self.pitch)
-                .fade_in(self.fade_in);
+                .fade_in(self.fade_in)
+                .periodic_access(self.query_interval, move |_| {
+                    let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
+                });
             self.sink.append(sound);
         } else {
             let sound = rodio::Decoder::new(cursor)?
                 .speed(self.pitch)
-                .fade_in(self.fade_in);
+                .fade_in(self.fade_in)
+                .periodic_access(self.query_interval, move |_| {
+                    let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
+                });
             self.sink.append(sound);
         }
 
@@ -409,6 +455,7 @@ impl SpatialSource {
             self.left_ear.into(),
             self.right_ear.into(),
         );
+        self.play_time.store(0, Ordering::SeqCst);
     }
 
     /// Returns whether or not the source is stopped
@@ -436,6 +483,22 @@ impl SpatialSource {
     /// and not stopped)
     pub fn playing(&self) -> bool {
         !self.paused() && !self.stopped()
+    }
+
+    /// Get the time the source has been playing since the last call to `play()`.
+    ///
+    /// Time measurement is based on audio samples consumed, so it may drift from the system
+    /// clock over longer periods of time.
+    pub fn elapsed(&self) -> time::Duration {
+        let t = self.play_time.load(Ordering::SeqCst);
+        time::Duration::from_micros(t as u64)
+    }
+
+    /// Set the update interval of the internal sample counter.
+    ///
+    /// This parameter determines the precision of the time measured by `elapsed()`.
+    pub fn set_query_interval(&mut self, t: time::Duration) {
+        self.query_interval = t;
     }
 
     /// Set location of the sound
