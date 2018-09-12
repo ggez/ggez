@@ -394,7 +394,7 @@ impl From<FilterMode> for FilterMethod {
 }
 
 /// Specifies how to wrap textures.
-pub type WrapMode = gfx::texture::WrapMode;
+pub use gfx::texture::WrapMode;
 
 #[cfg(test)]
 mod tests {
