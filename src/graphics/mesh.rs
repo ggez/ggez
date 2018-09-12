@@ -41,7 +41,7 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 ///             ],
 ///             1.0,
 ///             graphics::WHITE,
-///         )
+///         )?
 ///         // Add vertices for an exclamation mark!
 ///         .ellipse(DrawMode::Fill, na::Point2::new(0.0, 25.0), 2.0, 15.0, 2.0, graphics::WHITE,)
 ///         .circle(DrawMode::Fill, na::Point2::new(0.0, 45.0), 2.0, 2.0, graphics::WHITE,)
@@ -75,7 +75,7 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a line of one or more connected segments.
-    pub fn line<P>(&mut self, points: &[P], width: f32, color: Color) -> &mut Self
+    pub fn line<P>(&mut self, points: &[P], width: f32, color: Color) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -216,7 +216,7 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a series of connected lines.
-    pub fn polyline<P>(&mut self, mode: DrawMode, points: &[P], color: Color) -> &mut Self
+    pub fn polyline<P>(&mut self, mode: DrawMode, points: &[P], color: Color) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -224,14 +224,14 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a closed polygon.
-    pub fn polygon<P>(&mut self, mode: DrawMode, points: &[P], color: Color) -> &mut Self
+    pub fn polygon<P>(&mut self, mode: DrawMode, points: &[P], color: Color) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
         self.polyline_inner(mode, points, true, color)
     }
 
-    fn polyline_inner<P>(&mut self, mode: DrawMode, points: &[P], is_closed: bool, color: Color) -> &mut Self
+    fn polyline_inner<P>(&mut self, mode: DrawMode, points: &[P], is_closed: bool, color: Color) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -250,9 +250,7 @@ impl MeshBuilder {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let tessellator = &mut t::FillTessellator::new();
                     let options = t::FillOptions::default();
-                    // TODO: Removing this expect would be rather nice.
-                    let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
-                        .expect("Could not fill polygon?");
+                    let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)?;
                 }
                 DrawMode::Line(width) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -262,9 +260,7 @@ impl MeshBuilder {
                 DrawMode::CustomFill(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let tessellator = &mut t::FillTessellator::new();
-                    // TODO: Removing this expect would be rather nice.
-                    let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)
-                        .expect("Could not fill polygon?");
+                    let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)?;
                 }
                 DrawMode::CustomLine(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -272,7 +268,7 @@ impl MeshBuilder {
                 }
             };
         }
-        self
+        Ok(self)
     }
 
     /// Create a new mesh for a rectangle.

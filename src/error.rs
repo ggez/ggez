@@ -13,6 +13,7 @@ use gilrs;
 use image;
 use rodio::decoder::DecoderError;
 use toml;
+use lyon;
 use zip;
 
 /// An enum containing all kinds of game framework errors.
@@ -47,6 +48,8 @@ pub enum GameError {
     ShaderProgramError(gfx::shade::ProgramError),
     /// Something went wrong with Gilrs
     GamepadError(String),
+    /// Something went wrong with the `lyon` shape-tesselation library.
+    LyonError(String),
 }
 
 impl fmt::Display for GameError {
@@ -66,25 +69,6 @@ impl fmt::Display for GameError {
 }
 
 impl Error for GameError {
-    fn description(&self) -> &str {
-        match *self {
-            GameError::FilesystemError(_) => "Filesystem error",
-            GameError::ConfigError(_) => "Config file error",
-            GameError::EventLoopError(_) => "Event loop error",
-            GameError::ResourceLoadError(_) => "Resource load error",
-            GameError::ResourceNotFound(_, _) => "Resource not found",
-            GameError::RenderError(_) => "Render error",
-            GameError::AudioError(_) => "Audio error",
-            GameError::WindowError(_) => "Window error",
-            GameError::WindowCreationError(_) => "Window creation error",
-            GameError::IOError(_) => "IO error",
-            GameError::FontError(_) => "Font error",
-            GameError::VideoError(_) => "Video error",
-            GameError::ShaderProgramError(_) => "Shader program error",
-            GameError::GamepadError(_) => "Gamepad error",
-        }
-    }
-
     fn cause(&self) -> Option<&dyn Error> {
         match *self {
             GameError::WindowCreationError(ref e) => Some(e),
@@ -244,5 +228,12 @@ impl From<gilrs::Error> for GameError {
     fn from(s: gilrs::Error) -> GameError {
         let errstr = format!("Gamepad error: {}", s);
         GameError::GamepadError(errstr)
+    }
+}
+
+impl From<lyon::lyon_tessellation::FillError> for GameError {
+    fn from(s: lyon::lyon_tessellation::FillError) -> GameError {
+        let errstr = format!("Error while tesselating shape (did you give it an infinity or NaN?): {:?}", s);
+        GameError::LyonError(errstr)
     }
 }

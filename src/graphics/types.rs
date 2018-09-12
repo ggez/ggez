@@ -372,7 +372,6 @@ pub enum FilterMode {
     Nearest,
 }
 
-use gfx;
 use gfx::texture::FilterMethod;
 
 impl From<FilterMethod> for FilterMode {

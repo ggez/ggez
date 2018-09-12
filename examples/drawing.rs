@@ -49,7 +49,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
         ],
         4.0,
         Color::new(1.0, 0.0, 0.0, 1.0),
-    );
+    )?;
 
     mb.ellipse(DrawMode::Fill, Point2::new(600.0, 200.0), 50.0, 120.0, 1.0, Color::new(1.0, 1.0, 0.0, 1.0));
 
