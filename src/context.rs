@@ -155,11 +155,6 @@ impl Context {
         };
         event
     }
-
-    /// Sets the config
-    pub fn set_config(&mut self, conf: conf::Conf) {
-        self.conf = conf
-    }
 }
 
 use std::path;
