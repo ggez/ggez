@@ -155,6 +155,11 @@ impl Context {
         };
         event
     }
+
+    /// Sets the config
+    pub fn set_config(&mut self, conf: conf::Conf) {
+        self.conf = conf
+    }
 }
 
 use std::path;
@@ -202,6 +207,12 @@ impl ContextBuilder {
     /// Sets the graphics backend
     pub fn backend(mut self, backend: conf::Backend) -> Self {
         self.conf.backend = backend;
+        self
+    }
+
+    /// Sets the entire config
+    pub fn conf(mut self, conf: conf::Conf) -> Self {
+        self.conf = conf;
         self
     }
 
