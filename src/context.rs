@@ -205,6 +205,12 @@ impl ContextBuilder {
         self
     }
 
+    /// Sets the entire config
+    pub fn conf(mut self, conf: conf::Conf) -> Self {
+        self.conf = conf;
+        self
+    }
+
     /// Add a new read-only filesystem path to the places to search
     /// for resources.
     pub fn add_resource_path<T>(mut self, path: T) -> Self
