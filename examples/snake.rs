@@ -94,7 +94,8 @@ impl GridPosition {
         (
             rng.gen_range::<i16>(0, max_x),
             rng.gen_range::<i16>(0, max_y),
-        ).into()
+        )
+            .into()
     }
 
     /// We'll make another helper function that takes one grid position and returns a new one after

@@ -390,7 +390,8 @@ impl MainState {
                     rock.life = 0.0;
                     self.score += 1;
 
-                    let pos = world_to_audio_coords(self.screen_width, self.screen_height, rock.pos);
+                    let pos =
+                        world_to_audio_coords(self.screen_width, self.screen_height, rock.pos);
                     self.assets.shot_sound.set_position(pos);
                     let _ = self.assets.hit_sound.play();
                 }

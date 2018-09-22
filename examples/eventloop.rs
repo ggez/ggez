@@ -11,12 +11,11 @@
 extern crate cgmath;
 extern crate ggez;
 
-use ggez::{event, GameResult};
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
 use ggez::graphics::{self, DrawMode};
+use ggez::{event, GameResult};
 
 pub fn main() -> GameResult {
-
     let cb = ggez::ContextBuilder::new("eventloop", "ggez");
     let (ctx, events_loop) = &mut cb.build()?;
 

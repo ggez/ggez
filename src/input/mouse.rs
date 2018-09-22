@@ -106,8 +106,7 @@ pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
         .set_cursor_position(dpi::LogicalPosition {
             x: f64::from(point.x),
             y: f64::from(point.y),
-        })
-        .map_err(|_| GameError::WindowError("Couldn't set mouse cursor position!".to_owned()))
+        }).map_err(|_| GameError::WindowError("Couldn't set mouse cursor position!".to_owned()))
 }
 
 /// Get the distance the cursor was moved during last frame, in pixels.

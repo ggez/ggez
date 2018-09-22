@@ -11,9 +11,9 @@ use winit;
 use app_dirs2::AppDirsError;
 use gilrs;
 use image;
+use lyon;
 use rodio::decoder::DecoderError;
 use toml;
-use lyon;
 use zip;
 
 /// An enum containing all kinds of game framework errors.
@@ -233,7 +233,10 @@ impl From<gilrs::Error> for GameError {
 
 impl From<lyon::lyon_tessellation::FillError> for GameError {
     fn from(s: lyon::lyon_tessellation::FillError) -> GameError {
-        let errstr = format!("Error while tesselating shape (did you give it an infinity or NaN?): {:?}", s);
+        let errstr = format!(
+            "Error while tesselating shape (did you give it an infinity or NaN?): {:?}",
+            s
+        );
         GameError::LyonError(errstr)
     }
 }

@@ -168,11 +168,12 @@ pub fn main() -> GameResult {
 
     // This sets up `ggez` guts (including filesystem) and creates a window.
     let (ctx, events_loop) = &mut ContextBuilder::new("logging", "ggez")
-        .window_setup(
-            WindowSetup::default().title("Pretty console output!"),
-        )
-        .window_mode(WindowMode::default().dimensions(640.0, 480.0).resizable(true))
-        .build()?;
+        .window_setup(WindowSetup::default().title("Pretty console output!"))
+        .window_mode(
+            WindowMode::default()
+                .dimensions(640.0, 480.0)
+                .resizable(true),
+        ).build()?;
 
     trace!("Context created, creating a file logger.");
 

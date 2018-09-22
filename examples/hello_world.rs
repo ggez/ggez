@@ -65,7 +65,6 @@ impl event::EventHandler for MainState {
 // do the work of creating our MainState and running our game.
 // * Then, just call `game.run()` which runs the `Game` mainloop.
 pub fn main() -> GameResult {
-
     // We add the CARGO_MANIFEST_DIR/resources to the resource paths
     // so that ggez will look in our cargo project directory for files.
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
@@ -76,9 +75,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("helloworld", "ggez")
-        .add_resource_path(resource_dir)
-        ;
+    let cb = ggez::ContextBuilder::new("helloworld", "ggez").add_resource_path(resource_dir);
     let (ctx, event_loop) = &mut cb.build()?;
 
     println!("HIDPI: {}", graphics::hidpi_factor(ctx));

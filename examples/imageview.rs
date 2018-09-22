@@ -127,9 +127,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("imageview", "ggez")
-        .add_resource_path(resource_dir)
-        ;
+    let cb = ggez::ContextBuilder::new("imageview", "ggez").add_resource_path(resource_dir);
     let (ctx, event_loop) = &mut cb.build()?;
 
     let state = &mut MainState::new(ctx)?;

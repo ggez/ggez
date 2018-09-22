@@ -112,7 +112,6 @@ where
     }
 }
 
-
 /// Cached font metrics that we can keep attached to a `Text`
 /// so we don't have to keep recalculating them.
 #[derive(Clone, Debug)]
@@ -250,7 +249,7 @@ impl Text {
                     None => WHITE,
                 },
             };
-            let font_id = match fragment.font{
+            let font_id = match fragment.font {
                 Some(font) => font.font_id,
                 None => self.font_id,
             };
@@ -325,7 +324,8 @@ impl Text {
         let mut max_height = 0;
         {
             let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
-            let glyphed_section_texts = self.layout
+            let glyphed_section_texts = self
+                .layout
                 .calculate_glyphs(context.gfx_context.glyph_brush.fonts(), &varied_section);
             for glyphed_section_text in &glyphed_section_texts {
                 let (ref positioned_glyph, ..) = glyphed_section_text;
@@ -418,9 +418,7 @@ impl Font {
         let v = bytes.to_vec();
         let font_id = context.gfx_context.glyph_brush.add_font_bytes(v);
 
-        Ok(Font {
-            font_id,
-        })
+        Ok(Font { font_id })
     }
 
     /// Returns the baked-in bytes of default font (currently `DejaVuSerif.ttf`).
@@ -434,9 +432,7 @@ impl Font {
 
 impl Default for Font {
     fn default() -> Self {
-        Font {
-            font_id: FontId(0)
-        }
+        Font { font_id: FontId(0) }
     }
 }
 
@@ -479,7 +475,8 @@ where
     let param: DrawTransform = param.into();
     let screen_rect = screen_coordinates(context);
 
-    let (screen_x, screen_y, screen_w, screen_h) = (screen_rect.x, screen_rect.y, screen_rect.w, screen_rect.h);
+    let (screen_x, screen_y, screen_w, screen_h) =
+        (screen_rect.x, screen_rect.y, screen_rect.w, screen_rect.h);
     let scale_x = screen_w / 2.0;
     let scale_y = screen_h / -2.0;
 
@@ -508,15 +505,43 @@ where
     */
     // Optimized version has a speedup of ~1.29 (175ns vs 225ns)
     type Mat4 = na::Matrix4<f32>;
-    let m_transform = Mat4::new(scale_x, 0.0, 0.0, scale_x - screen_x,
-                                0.0, scale_y, 0.0, -scale_y - screen_y,
-                                0.0, 0.0, 1.0, 0.0,
-                                0.0, 0.0, 0.0, 1.0);
+    let m_transform = Mat4::new(
+        scale_x,
+        0.0,
+        0.0,
+        scale_x - screen_x,
+        0.0,
+        scale_y,
+        0.0,
+        -scale_y - screen_y,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+    );
 
-    let m_transform_inv = Mat4::new(1.0 / scale_x, 0.0, 0.0, (screen_x / scale_x) - 1.0,
-                                    0.0, 1.0 / scale_y, 0.0, (scale_y + screen_y) / scale_y,
-                                    0.0, 0.0, 1.0, 0.0,
-                                    0.0, 0.0, 0.0, 1.0);
+    let m_transform_inv = Mat4::new(
+        1.0 / scale_x,
+        0.0,
+        0.0,
+        (screen_x / scale_x) - 1.0,
+        0.0,
+        1.0 / scale_y,
+        0.0,
+        (scale_y + screen_y) / scale_y,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+    );
 
     let final_matrix = m_transform_inv * param.matrix * m_transform;
 
@@ -536,8 +561,7 @@ where
             encoder,
             &(render_tgt, color_format),
             &(depth_view, depth_format),
-        )
-        .map_err(|e| GameError::RenderError(e.to_string()))
+        ).map_err(|e| GameError::RenderError(e.to_string()))
 }
 
 #[cfg(test)]

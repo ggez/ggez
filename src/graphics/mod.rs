@@ -102,9 +102,7 @@ pub trait BackendSpec: fmt::Debug {
     );
 
     /// Create an Encoder for the backend.
-    fn encoder(
-        factory: &mut Self::Factory,
-    ) -> gfx::Encoder<Self::Resources, Self::CommandBuffer>;
+    fn encoder(factory: &mut Self::Factory) -> gfx::Encoder<Self::Resources, Self::CommandBuffer>;
 
     /// Resizes the viewport for the backend. (right now assumes a Glutin window...)
     fn resize_viewport(
@@ -193,9 +191,7 @@ impl BackendSpec for GlBackendSpec {
         )
     }
 
-    fn encoder(
-        factory: &mut Self::Factory,
-    ) -> gfx::Encoder<Self::Resources, Self::CommandBuffer> {
+    fn encoder(factory: &mut Self::Factory) -> gfx::Encoder<Self::Resources, Self::CommandBuffer> {
         factory.create_command_buffer().into()
     }
 
@@ -317,7 +313,11 @@ impl fmt::Display for InstanceProperties {
         matrix_vec.extend(&self.col3);
         matrix_vec.extend(&self.col4);
         let matrix = na::Matrix4::from_column_slice(&matrix_vec);
-        write!(f, "Src: ({},{}+{},{})\n", self.src[0], self.src[1], self.src[2], self.src[3])?;
+        write!(
+            f,
+            "Src: ({},{}+{},{})\n",
+            self.src[0], self.src[1], self.src[2], self.src[3]
+        )?;
         write!(f, "Color: {:?}\n", self.color)?;
         write!(f, "Matrix: {}", matrix)
     }
@@ -347,7 +347,8 @@ where
         info: texture::SamplerInfo,
         factory: &mut B::Factory,
     ) -> gfx::handle::Sampler<B::Resources> {
-        let sampler = self.samplers
+        let sampler = self
+            .samplers
             .entry(info)
             .or_insert_with(|| factory.create_sampler(info));
         sampler.clone()
@@ -442,7 +443,8 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         bind: Bind::TRANSFER_SRC | Bind::TRANSFER_DST | Bind::SHADER_RESOURCE,
         usage: gfx::memory::Usage::Data,
     };
-    let target_texture = gfx.factory
+    let target_texture = gfx
+        .factory
         .create_texture_raw(texture_info, Some(channel_type), None)?;
     let image_info = gfx::texture::ImageInfoCommon {
         xoffset: 0,
@@ -476,7 +478,8 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         max: 0,
         swizzle: gfx::format::Swizzle::new(),
     };
-    let shader_resource = gfx.factory
+    let shader_resource = gfx
+        .factory
         .view_texture_as_shader_resource_raw(&target_texture, resource_desc)?;
     let image = Image {
         texture: shader_resource,
@@ -611,8 +614,7 @@ pub fn renderer_info(ctx: &Context) -> GameResult<String> {
     let backend_info = ctx.gfx_context.backend_spec.info(&*ctx.gfx_context.device);
     Ok(format!(
         "Requested OpenGL {}.{} Core profile, actually got {}.",
-        ctx.gfx_context.backend_spec.major, ctx.gfx_context.backend_spec.minor,
-        backend_info
+        ctx.gfx_context.backend_spec.major, ctx.gfx_context.backend_spec.minor, backend_info
     ))
 }
 
@@ -695,7 +697,8 @@ pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
     if let Some(t) = transform {
         gfx.push_transform(t);
     } else {
-        let copy = *gfx.modelview_stack
+        let copy = *gfx
+            .modelview_stack
             .last()
             .expect("Matrix stack empty, should never happen");
         gfx.push_transform(copy);

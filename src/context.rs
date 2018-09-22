@@ -205,7 +205,8 @@ impl ContextBuilder {
         self
     }
 
-    /// Sets the entire config
+    /// Sets all the config options, overriding any previous
+    /// ones from `window_setup()`, `window_mode()` and `backend()`.
     pub fn conf(mut self, conf: conf::Conf) -> Self {
         self.conf = conf;
         self

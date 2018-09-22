@@ -40,7 +40,6 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-
     let cb = ggez::ContextBuilder::new("shader", "ggez");
     let (ctx, event_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx)?;

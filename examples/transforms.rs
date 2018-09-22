@@ -33,8 +33,7 @@ impl MainState {
                 let fsize = Self::GRID_SIZE as f32;
                 let point = na::Point2::new(fx * Self::GRID_INTERVAL, fy * Self::GRID_INTERVAL);
                 let color = graphics::Color::new(fx / fsize, 0.0, fy / fsize, 1.0);
-                gridmesh_builder
-                    .circle(DrawMode::Fill, point, Self::GRID_POINT_RADIUS, 2.0, color);
+                gridmesh_builder.circle(DrawMode::Fill, point, Self::GRID_POINT_RADIUS, 2.0, color);
             }
         }
         let gridmesh = gridmesh_builder.build(ctx)?;
@@ -55,10 +54,12 @@ impl MainState {
     }
 
     fn draw_coord_labels(&self, ctx: &mut Context) -> GameResult {
-
         for x in 0..Self::GRID_SIZE {
             for y in 0..Self::GRID_SIZE {
-                let point = na::Point2::new(x as f32 * Self::GRID_INTERVAL, y as f32 * Self::GRID_INTERVAL);
+                let point = na::Point2::new(
+                    x as f32 * Self::GRID_INTERVAL,
+                    y as f32 * Self::GRID_INTERVAL,
+                );
                 let s = format!("({}, {})", point.x, point.y);
                 let t = graphics::Text::new(s);
                 graphics::queue_text(ctx, &t, point, None);
@@ -92,11 +93,7 @@ impl event::EventHandler for MainState {
 
         self.draw_coord_labels(ctx)?;
 
-        graphics::draw(
-            ctx,
-            &self.angle,
-            param
-        )?;
+        graphics::draw(ctx, &self.angle, param)?;
         graphics::present(ctx)?;
         Ok(())
     }
@@ -106,14 +103,15 @@ impl event::EventHandler for MainState {
         ctx: &mut Context,
         keycode: KeyCode,
         _keymod: KeyMods,
-        _repeat: bool
+        _repeat: bool,
     ) {
         match keycode {
             event::KeyCode::Space => {
                 self.screen_bounds_idx = (self.screen_bounds_idx + 1) % self.screen_bounds.len();
-                graphics::set_screen_coordinates(ctx, self.screen_bounds[self.screen_bounds_idx]).unwrap();
-            },
-            _ => ()
+                graphics::set_screen_coordinates(ctx, self.screen_bounds[self.screen_bounds_idx])
+                    .unwrap();
+            }
+            _ => (),
         }
     }
 }

@@ -166,8 +166,7 @@ void main() {
                 texture::Kind::D2(1, 1, texture::AaMode::Single),
                 texture::Mipmap::Provided,
                 &[&texels],
-            )
-            .unwrap();
+            ).unwrap();
 
         let sinfo =
             texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
@@ -211,8 +210,7 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Do gfx-rs drawing
         {
-            let (_factory, device, encoder, _depthview, _colorview) =
-                graphics::gfx_objects(ctx);
+            let (_factory, device, encoder, _depthview, _colorview) = graphics::gfx_objects(ctx);
             encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0]);
 
             let rotation = na::Matrix4::from_scaled_axis(na::Vector3::z() * self.rotation);
@@ -265,8 +263,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("cube", "ggez")
-        .add_resource_path(resource_dir);
+    let cb = ggez::ContextBuilder::new("cube", "ggez").add_resource_path(resource_dir);
 
     let (ctx, events_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx);

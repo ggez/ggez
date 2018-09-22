@@ -51,9 +51,22 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
         Color::new(1.0, 0.0, 0.0, 1.0),
     )?;
 
-    mb.ellipse(DrawMode::Fill, Point2::new(600.0, 200.0), 50.0, 120.0, 1.0, Color::new(1.0, 1.0, 0.0, 1.0));
+    mb.ellipse(
+        DrawMode::Fill,
+        Point2::new(600.0, 200.0),
+        50.0,
+        120.0,
+        1.0,
+        Color::new(1.0, 1.0, 0.0, 1.0),
+    );
 
-    mb.circle(DrawMode::Fill, Point2::new(600.0, 380.0), 40.0, 1.0, Color::new(1.0, 0.0, 1.0, 1.0));
+    mb.circle(
+        DrawMode::Fill,
+        Point2::new(600.0, 380.0),
+        40.0,
+        1.0,
+        Color::new(1.0, 0.0, 1.0, 1.0),
+    );
 
     let triangle_verts = vec![
         graphics::Vertex {
@@ -73,9 +86,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
         },
     ];
 
-    let triangle_indices = vec![
-        0, 1, 2
-    ];
+    let triangle_indices = vec![0, 1, 2];
 
     mb.from_raw(&triangle_verts, &triangle_indices);
     mb.build(ctx)
@@ -139,11 +150,7 @@ impl event::EventHandler for MainState {
 
         */
         let mesh = build_mesh(ctx)?;
-        graphics::draw(
-            ctx,
-            &mesh,
-            DrawParam::new(),
-        )?;
+        graphics::draw(ctx, &mesh, DrawParam::new())?;
 
         graphics::present(ctx)?;
         Ok(())
@@ -159,8 +166,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("drawing", "ggez")
-        .add_resource_path(resource_dir);
+    let cb = ggez::ContextBuilder::new("drawing", "ggez").add_resource_path(resource_dir);
 
     let (ctx, events_loop) = &mut cb.build()?;
 

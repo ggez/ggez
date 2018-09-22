@@ -55,11 +55,14 @@ where
         // Check for overflow, which might happen on 32-bit systems
         let uwidth = width as usize;
         let uheight = height as usize;
-        let expected_bytes = uwidth.checked_mul(uheight)
+        let expected_bytes = uwidth
+            .checked_mul(uheight)
             .and_then(|size| size.checked_mul(4))
             .ok_or_else(|| {
-                let msg = format!("Integer overflow in Image::make_raw, image size: {} {}",
-                                  uwidth, uheight);
+                let msg = format!(
+                    "Integer overflow in Image::make_raw, image size: {} {}",
+                    uwidth, uheight
+                );
                 GameError::ResourceLoadError(msg)
             })?;
         if expected_bytes != rgba.len() {
@@ -187,7 +190,8 @@ impl Image {
         // Unsure of the performance impact of creating this as it is needed.
         // Probably okay for now though, since this probably won't be a super
         // common operation.
-        let dl_buffer = gfx.factory
+        let dl_buffer = gfx
+            .factory
             .create_download_buffer::<[u8; 4]>(w as usize * h as usize)?;
 
         let mut local_encoder = gfx.new_encoder();
@@ -242,8 +246,12 @@ impl Image {
         let color_format = image::ColorType::RGBA(8);
         match format {
             ImageFormat::Png => image::png::PNGEncoder::new(writer)
-                .encode(&data, u32::from(self.width), u32::from(self.height), color_format)
-                .map_err(|e| e.into()),
+                .encode(
+                    &data,
+                    u32::from(self.width),
+                    u32::from(self.height),
+                    color_format,
+                ).map_err(|e| e.into()),
         }
     }
 
@@ -346,10 +354,12 @@ impl Drawable for Image {
         // let new_param = param;
 
         gfx.update_instance_properties(new_param)?;
-        let sampler = gfx.samplers
+        let sampler = gfx
+            .samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        let typed_thingy = gfx.backend_spec
+        let typed_thingy = gfx
+            .backend_spec
             .raw_to_typed_shader_resource(self.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
@@ -382,13 +392,11 @@ impl Drawable for Image {
 
 #[cfg(test)]
 mod tests {
-    use ContextBuilder;
     use super::*;
+    use ContextBuilder;
     #[test]
     fn test_invalid_image_size() {
-        let (ctx, _) = &mut ContextBuilder::new("unittest", "unittest")
-            .build()
-            .unwrap();
+        let (ctx, _) = &mut ContextBuilder::new("unittest", "unittest").build().unwrap();
         let _i = assert!(Image::from_rgba8(ctx, 0, 0, &vec![]).is_err());
         let _i = assert!(Image::from_rgba8(ctx, 3432, 432, &vec![]).is_err());
         let _i = Image::from_rgba8(ctx, 2, 2, &vec![99; 16]).unwrap();

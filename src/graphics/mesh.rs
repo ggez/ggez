@@ -85,16 +85,21 @@ impl MeshBuilder {
     /// Create a new mesh for a circle.
     ///
     /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
-    pub fn circle<P>(&mut self, mode: DrawMode, point: P, radius: f32, tolerance: f32, color: Color) -> &mut Self
+    pub fn circle<P>(
+        &mut self,
+        mode: DrawMode,
+        point: P,
+        radius: f32,
+        tolerance: f32,
+        color: Color,
+    ) -> &mut Self
     where
         P: Into<mint::Point2<f32>>,
     {
         {
             let point = point.into();
             let buffers = &mut self.buffer;
-            let vb = VertexBuilder {
-                color,
-            };
+            let vb = VertexBuilder { color };
             match mode {
                 DrawMode::Fill => {
                     // These builders have to be in separate match arms 'cause they're actually
@@ -162,9 +167,7 @@ impl MeshBuilder {
         {
             let buffers = &mut self.buffer;
             let point = point.into();
-            let vb = VertexBuilder {
-                color,
-            };
+            let vb = VertexBuilder { color };
             match mode {
                 DrawMode::Fill => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -216,7 +219,12 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a series of connected lines.
-    pub fn polyline<P>(&mut self, mode: DrawMode, points: &[P], color: Color) -> GameResult<&mut Self>
+    pub fn polyline<P>(
+        &mut self,
+        mode: DrawMode,
+        points: &[P],
+        color: Color,
+    ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -224,14 +232,25 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a closed polygon.
-    pub fn polygon<P>(&mut self, mode: DrawMode, points: &[P], color: Color) -> GameResult<&mut Self>
+    pub fn polygon<P>(
+        &mut self,
+        mode: DrawMode,
+        points: &[P],
+        color: Color,
+    ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
         self.polyline_inner(mode, points, true, color)
     }
 
-    fn polyline_inner<P>(&mut self, mode: DrawMode, points: &[P], is_closed: bool, color: Color) -> GameResult<&mut Self>
+    fn polyline_inner<P>(
+        &mut self,
+        mode: DrawMode,
+        points: &[P],
+        is_closed: bool,
+        color: Color,
+    ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -242,9 +261,7 @@ impl MeshBuilder {
                 let mint_point: mint::Point2<f32> = p.into();
                 t::math::point(mint_point.x, mint_point.y)
             });
-            let vb = VertexBuilder {
-                color,
-            };
+            let vb = VertexBuilder { color };
             match mode {
                 DrawMode::Fill => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -276,9 +293,7 @@ impl MeshBuilder {
         {
             let buffers = &mut self.buffer;
             let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
-            let vb = VertexBuilder {
-                color,
-            };
+            let vb = VertexBuilder { color };
             match mode {
                 DrawMode::Fill => {
                     // These builders have to be in separate match arms 'cause they're actually
@@ -335,9 +350,7 @@ impl MeshBuilder {
                     // nicer, so we'll just live with it.
                 .collect::<Vec<_>>();
             let tris = tris.chunks(3);
-            let vb = VertexBuilder {
-                color,
-            };
+            let vb = VertexBuilder { color };
             let builder: &mut t::BuffersBuilder<_, _, _, _> =
                 &mut t::BuffersBuilder::new(&mut self.buffer, vb);
             use lyon::tessellation::GeometryBuilder;
@@ -385,7 +398,8 @@ impl MeshBuilder {
     /// Takes the accumulated geometry and load it into GPU memory,
     /// creating a single `Mesh`.
     pub fn build(&self, ctx: &mut Context) -> GameResult<Mesh> {
-        let (vbuf, slice) = ctx.gfx_context
+        let (vbuf, slice) = ctx
+            .gfx_context
             .factory
             .create_vertex_buffer_with_slice(&self.buffer.vertices[..], &self.buffer.indices[..]);
 
@@ -437,7 +451,12 @@ pub struct Mesh {
 
 impl Mesh {
     /// Create a new mesh for a line of one or more connected segments.
-    pub fn new_line<P>(ctx: &mut Context, points: &[P], width: f32, color: Color) -> GameResult<Mesh>
+    pub fn new_line<P>(
+        ctx: &mut Context,
+        points: &[P],
+        width: f32,
+        color: Color,
+    ) -> GameResult<Mesh>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -482,7 +501,12 @@ impl Mesh {
     }
 
     /// Create a new mesh for series of connected lines.
-    pub fn new_polyline<P>(ctx: &mut Context, mode: DrawMode, points: &[P], color: Color,) -> GameResult<Mesh>
+    pub fn new_polyline<P>(
+        ctx: &mut Context,
+        mode: DrawMode,
+        points: &[P],
+        color: Color,
+    ) -> GameResult<Mesh>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -492,7 +516,12 @@ impl Mesh {
     }
 
     /// Create a new mesh for closed polygon.
-    pub fn new_polygon<P>(ctx: &mut Context, mode: DrawMode, points: &[P], color: Color,) -> GameResult<Mesh>
+    pub fn new_polygon<P>(
+        ctx: &mut Context,
+        mode: DrawMode,
+        points: &[P],
+        color: Color,
+    ) -> GameResult<Mesh>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -502,14 +531,19 @@ impl Mesh {
     }
 
     /// Create a new mesh for a rectangle
-    pub fn new_rectangle(ctx: &mut Context, mode: DrawMode, bounds: Rect, color: Color,) -> GameResult<Mesh> {
+    pub fn new_rectangle(
+        ctx: &mut Context,
+        mode: DrawMode,
+        bounds: Rect,
+        color: Color,
+    ) -> GameResult<Mesh> {
         let mut mb = MeshBuilder::new();
         let _ = mb.rectangle(mode, bounds, color);
         mb.build(ctx)
     }
 
     /// Create a new `Mesh` from a raw list of triangle points.
-    pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P], color: Color,) -> GameResult<Mesh>
+    pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P], color: Color) -> GameResult<Mesh>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -532,7 +566,8 @@ impl Mesh {
         V: Into<Vertex> + Clone,
     {
         let verts: Vec<Vertex> = verts.iter().cloned().map(|v| v.into()).collect();
-        let (vbuf, slice) = ctx.gfx_context
+        let (vbuf, slice) = ctx
+            .gfx_context
             .factory
             .create_vertex_buffer_with_slice(&verts[..], indices);
         Mesh {

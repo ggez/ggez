@@ -49,12 +49,13 @@ impl event::EventHandler for MainState {
                     .scale(Vector2::new(
                         ((time % cycle * 2) as f32 / cycle as f32 * 6.28)
                             .cos()
-                            .abs() * 0.0625,
+                            .abs()
+                            * 0.0625,
                         ((time % cycle * 2) as f32 / cycle as f32 * 6.28)
                             .cos()
-                            .abs() * 0.0625,
-                    ))
-                    .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28));
+                            .abs()
+                            * 0.0625,
+                    )).rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28));
                 self.spritebatch.add(p);
             }
         }
@@ -62,12 +63,10 @@ impl event::EventHandler for MainState {
             .dest(Point2::new(
                 ((time % cycle) as f32 / cycle as f32 * 6.28).cos() * 50.0 - 350.0,
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin() * 50.0 - 450.0,
-            ))
-            .scale(Vector2::new(
+            )).scale(Vector2::new(
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
-            ))
-            .rotation((time % cycle) as f32 / cycle as f32 * 6.28)
+            )).rotation((time % cycle) as f32 / cycle as f32 * 6.28)
             .offset(Point2::new(750.0, 750.0));
         graphics::draw(ctx, &self.spritebatch, param)?;
         self.spritebatch.clear();
@@ -90,9 +89,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("spritebatch", "ggez")
-        .add_resource_path(resource_dir)
-    ;
+    let cb = ggez::ContextBuilder::new("spritebatch", "ggez").add_resource_path(resource_dir);
     let (ctx, event_loop) = &mut cb.build()?;
 
     let state = &mut MainState::new(ctx)?;

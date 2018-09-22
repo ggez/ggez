@@ -81,7 +81,8 @@ impl SpriteBatch {
         // We have a Context, and *everything* must pass through this
         // function to be drawn, so.
         // Though we do awkwardly have to allocate a new vector.
-        let new_sprites = self.sprites
+        let new_sprites = self
+            .sprites
             .iter()
             .map(|param| {
                 // Copy old params
@@ -99,8 +100,7 @@ impl SpriteBatch {
                 new_param.color = new_param.color;
                 let primitive_param = graphics::DrawTransform::from(new_param);
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
-            })
-            .collect::<Vec<_>>();
+            }).collect::<Vec<_>>();
 
         let gfx = &mut ctx.gfx_context;
         if gfx.data.rect_instance_properties.len() < self.sprites.len() {
@@ -153,10 +153,12 @@ impl graphics::Drawable for SpriteBatch {
         // Also awkwardly we have this chain of colors with differing priorities.
         self.flush(ctx, &self.image)?;
         let gfx = &mut ctx.gfx_context;
-        let sampler = gfx.samplers
+        let sampler = gfx
+            .samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
         gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        let typed_thingy = gfx.backend_spec
+        let typed_thingy = gfx
+            .backend_spec
             .raw_to_typed_shader_resource(self.image.texture.clone());
         gfx.data.tex = (typed_thingy, sampler);
 
