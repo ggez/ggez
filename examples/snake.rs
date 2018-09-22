@@ -13,6 +13,7 @@ extern crate rand;
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
 use ggez::event::{KeyCode, KeyMods};
+use ggez::graphics::Drawable;
 use ggez::{event, graphics, Context, GameResult};
 
 // We'll bring in some things from `std` to help us in the future.
@@ -211,7 +212,10 @@ impl Food {
         // Then we draw a rectangle with the Fill draw mode, and we convert the
         // Food's position into a `ggez::Rect` using `.into()` which we can do
         // since we implemented `From<GridPosition>` for `Rect` earlier.
-        graphics::rectangle(ctx, color, graphics::DrawMode::Fill, self.pos.into())
+        // graphics::rectangle(ctx, color, graphics::DrawMode::Fill, self.pos.into())
+
+        graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::Fill, self.pos.into(), color)?
+            .draw(ctx, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))
     }
 }
 
@@ -326,21 +330,21 @@ impl Snake {
             // TODO: Fix colors
             // graphics::set_color(ctx, )?;
             // and then draw the Rect that we convert that Segment's position into
-            graphics::rectangle(
+            graphics::Mesh::new_rectangle(
                 ctx,
-                [1.0, 0.5, 0.0, 1.0].into(),
                 graphics::DrawMode::Fill,
                 seg.pos.into(),
-            )?;
+                [1.0, 0.5, 0.0, 1.0].into(),
+            )?.draw(ctx, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
         }
         // And then we do the same for the head, instead making it fully red to distinguish it.
         // TODO: Fix colors
-        graphics::rectangle(
+        graphics::Mesh::new_rectangle(
             ctx,
-            [1.0, 0.0, 0.0, 1.0].into(),
             graphics::DrawMode::Fill,
             self.head.pos.into(),
-        )?;
+            [1.0, 0.5, 0.0, 1.0].into(),
+        )?.draw(ctx, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
         Ok(())
     }
 }

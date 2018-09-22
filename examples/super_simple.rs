@@ -3,7 +3,7 @@
 extern crate ggez;
 
 use ggez::event;
-use ggez::graphics::{self, DrawMode};
+use ggez::graphics::{self, Drawable};
 use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
 
@@ -26,14 +26,16 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
-        graphics::circle(
+
+        graphics::Mesh::new_circle(
             ctx,
-            graphics::WHITE,
-            DrawMode::Fill,
+            graphics::DrawMode::Fill,
             na::Point2::new(self.pos_x, 380.0),
             100.0,
             2.0,
-        )?;
+            graphics::WHITE,
+        )?.draw(ctx, (na::Point2::new(0.0, 0.0),))?;
+
         graphics::present(ctx)?;
         Ok(())
     }

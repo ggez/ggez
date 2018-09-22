@@ -10,7 +10,7 @@ extern crate nalgebra;
 use clap::{App, Arg};
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
-use ggez::graphics::{self, DrawMode};
+use ggez::graphics::{self, DrawMode, Drawable};
 use ggez::timer;
 use ggez::{Context, GameResult};
 
@@ -105,6 +105,7 @@ impl event::EventHandler for MainState {
 
         // Let's draw a grid so we can see where the window bounds are.
         const COUNT: i32 = 10;
+        let mut mb = graphics::MeshBuilder::new();
         for x in -COUNT..COUNT {
             for y in -COUNT..COUNT {
                 const SPACING: i32 = 100;
@@ -115,14 +116,17 @@ impl event::EventHandler for MainState {
                 let b = (y as f32) / (COUNT as f32);
                 // println!("R: {}", r);
                 let color = graphics::Color::new(r, 0.0, b, 1.0);
-                graphics::rectangle(
-                    ctx,
-                    color,
-                    graphics::DrawMode::Fill,
-                    graphics::Rect::new(fx, fy, 5.0, 5.0),
-                )?
+                // graphics::rectangle(
+                //     ctx,
+                //     color,
+                //     graphics::DrawMode::Fill,
+                //     graphics::Rect::new(fx, fy, 5.0, 5.0),
+                // )?
+                mb.rectangle(DrawMode::Fill, graphics::Rect::new(fx, fy, 5.0, 5.0), color);
             }
         }
+        let mesh = mb.build(ctx)?;
+        graphics::draw(ctx, &mesh, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
         graphics::present(ctx)?;
         Ok(())
     }

@@ -5,8 +5,7 @@ extern crate rand;
 use ggez::audio;
 use ggez::event;
 use ggez::filesystem;
-use ggez::graphics;
-use ggez::graphics::Color;
+use ggez::graphics::{self, Color, Drawable};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
@@ -32,13 +31,16 @@ impl MainState {
         }
 
         let mut last_point = cgmath::Point2::new(400.0, 300.0);
+        let mut mb = graphics::MeshBuilder::new();
         for color in colors {
             let x = (rand::random::<i32>() % 50) as f32;
             let y = (rand::random::<i32>() % 50) as f32;
             let point = cgmath::Point2::new(last_point.x + x, last_point.y + y);
-            graphics::line(ctx, color, &[last_point, point], 3.0)?;
+            mb.line(&[last_point, point], 3.0, color)?;
             last_point = point;
         }
+        let mesh = mb.build(ctx)?;
+        graphics::draw(ctx, &mesh, (cgmath::Point2::new(0.0, 0.0),))?;
 
         Ok(())
     }
@@ -94,12 +96,12 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &self.text, (dest_point, 0.0, color))?;
 
         let dest_point2 = cgmath::Point2::new(0.0, 256.0);
-        graphics::rectangle(
+        graphics::Mesh::new_rectangle(
             ctx,
-            Color::from((0, 0, 0, 255)),
             graphics::DrawMode::Fill,
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
-        )?;
+            Color::from((0, 0, 0, 255)),
+        )?.draw(ctx, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
         graphics::draw(
             ctx,
             &self.pixel_sized_text,
