@@ -5,6 +5,7 @@ extern crate ggez;
 
 use ggez::event::{self, Axis, Button, KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, DrawMode, Drawable};
+use ggez::input;
 use ggez::{Context, GameResult};
 
 struct MainState {
@@ -24,7 +25,17 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
+        if input::keyboard::is_key_pressed(ctx, KeyCode::A) {
+            println!("The A key is pressed");
+            if input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::SHIFT) {
+                println!("The shift key is held too.");
+            }
+            println!(
+                "Full list of pressed keys: {:?}",
+                input::keyboard::pressed_keys(ctx)
+            );
+        }
         Ok(())
     }
 
