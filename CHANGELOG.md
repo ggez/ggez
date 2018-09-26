@@ -56,6 +56,7 @@
  * Updated rodio to 0.7, which fixes a sample rate bug on Linux: [#359](https://github.com/ggez/ggez/issues/359)
  * Documented which version of rustc we require, and added unit tests for that specific version: it is currently >=1.23.0,
    primarily driven by features required by dependencies.
+ * Moved `Context::quit()` to `ggez::quit()` 'cause all our other non-object-related functions are functions, not methods.
 
 ## Deprecated
 

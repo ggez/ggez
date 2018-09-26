@@ -99,7 +99,7 @@ pub trait EventHandler {
         _repeat: bool,
     ) {
         if keycode == KeyCode::Escape {
-            ctx.quit();
+            super::quit(ctx);
         }
     }
 
@@ -156,7 +156,7 @@ where
                     }
                     WindowEvent::CloseRequested => {
                         if !state.quit_event(ctx) {
-                            ctx.quit();
+                            super::quit(ctx);
                         }
                     }
                     WindowEvent::Focused(gained) => {

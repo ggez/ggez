@@ -503,7 +503,7 @@ impl EventHandler for MainState {
             // but for now we just quit.
             if self.player.life <= 0.0 {
                 println!("Game over!");
-                let _ = ctx.quit();
+                let _ = ggez::quit(ctx);
             }
         }
 
@@ -583,7 +583,7 @@ impl EventHandler for MainState {
                 img.encode(ctx, graphics::ImageFormat::Png, "/screenshot.png")
                     .expect("Could not save screenshot");
             }
-            KeyCode::Escape => ctx.quit(),
+            KeyCode::Escape => ggez::quit(ctx),
             _ => (), // Do nothing
         }
     }

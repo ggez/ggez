@@ -21,7 +21,7 @@ pub fn main() -> GameResult {
 
     let mut position: f32 = 1.0;
 
-    // This is also used in the loop inside `::run()` - it can be flipped off with `ctx.quit()`
+    // This is also used in the loop inside `::run()` - it can be flipped off with `ggez::quit()`
     while ctx.continuing {
         // Tell the timer stuff a frame has happened.
         // Without this the FPS timer functions and such won't work.
@@ -33,7 +33,7 @@ pub fn main() -> GameResult {
             ctx.process_event(&event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::CloseRequested => ctx.quit(),
+                    WindowEvent::CloseRequested => ggez::quit(ctx),
                     WindowEvent::KeyboardInput {
                         input:
                             KeyboardInput {
@@ -42,7 +42,7 @@ pub fn main() -> GameResult {
                             },
                         ..
                     } => match keycode {
-                        event::KeyCode::Escape => ctx.quit(),
+                        event::KeyCode::Escape => ggez::quit(ctx),
 
                         _ => (),
                     },

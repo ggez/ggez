@@ -93,11 +93,6 @@ impl Context {
         Ok((ctx, events_loop))
     }
 
-    /// Terminates `ggez::run()` loop by setting `Context::continuing` to `false`.
-    pub fn quit(&mut self) {
-        self.continuing = false;
-    }
-
     /// Feeds an `Event` into the `Context` so it can update any internal
     /// state it needs to, such as detecting window resizes.  If you are
     /// rolling your own event loop, you should call this on the events
@@ -247,6 +242,11 @@ impl ContextBuilder {
 
         Context::from_conf(config, fs)
     }
+}
+
+/// Terminates `ggez::run()` loop by setting `Context.continuing` to `false`.
+pub fn quit(ctx: &mut Context) {
+    ctx.continuing = false;
 }
 
 #[cfg(debug_assertions)]
