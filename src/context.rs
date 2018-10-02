@@ -36,7 +36,7 @@ pub struct Context {
     /// Mouse context
     pub mouse_context: mouse::MouseContext,
     /// Gamepad context
-    pub gamepad_context: gamepad::GamepadContext,
+    pub gamepad_context: Option<gamepad::GamepadContext>,
 
     /// The Conf object the Context was created with
     pub conf: conf::Conf,
@@ -74,7 +74,7 @@ impl Context {
         )?;
         let mouse_context = mouse::MouseContext::new();
         let keyboard_context = keyboard::KeyboardContext::new();
-        let gamepad_context = gamepad::GamepadContext::new()?;
+        let gamepad_context: Option<gamepad::GamepadContext> = None; //gamepad::GamepadContext::new()?;
 
         let ctx = Context {
             conf,

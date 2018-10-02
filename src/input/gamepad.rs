@@ -31,7 +31,11 @@ impl GamepadContext {
 
 /// returns the `Gamepad` associated with an id.
 pub fn gamepad(ctx: &Context, id: usize) -> Option<&Gamepad> {
-    ctx.gamepad_context.gilrs.get(id)
+    if let Some(gamepad_context) = &ctx.gamepad_context {
+        gamepad_context.gilrs.get(id)
+    } else {
+        None
+    }
 }
 
 // Properties gamepads might want:

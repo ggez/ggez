@@ -230,20 +230,27 @@ where
                 Event::Suspended(_) => (),
             }
         });
-        while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.gilrs.next_event() {
-            match event {
-                gilrs::EventType::ButtonPressed(button, _) => {
-                    state.controller_button_down_event(ctx, button, id);
-                }
-                gilrs::EventType::ButtonReleased(button, _) => {
-                    state.controller_button_up_event(ctx, button, id);
-                }
-                gilrs::EventType::AxisChanged(axis, value, _) => {
-                    state.controller_axis_event(ctx, axis, value, id);
-                }
-                _ => {}
+
+        let mut events = Vec::new();
+        let _ = ctx.gamepad_context.as_mut().map(|gamepad_context| {
+            while let Some(gilrs::Event { id, event, .. }) = gamepad_context.gilrs.next_event() {
+                events.push((event, id));
             }
-        }
+        });
+
+        events.iter().for_each(|(event, id)| match event {
+            gilrs::EventType::ButtonPressed(button, _) => {
+                state.controller_button_down_event(ctx, *button, *id);
+            }
+            gilrs::EventType::ButtonReleased(button, _) => {
+                state.controller_button_up_event(ctx, *button, *id);
+            }
+            gilrs::EventType::AxisChanged(axis, value, _) => {
+                state.controller_axis_event(ctx, *axis, *value, *id);
+            }
+            _ => {}
+        });
+
         state.update(ctx)?;
         state.draw(ctx)?;
     }
