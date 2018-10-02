@@ -42,7 +42,8 @@ where
     T: Clone + Copy,
 {
     fn new(size: usize, init_val: T) -> LogBuffer<T> {
-        let mut v = Vec::with_capacity(size);
+        // Empty vec doesn't allocate until it's resized
+        let mut v = Vec::new();
         v.resize(size, init_val);
         LogBuffer {
             head: 0,
@@ -92,10 +93,16 @@ const TIME_LOG_FRAMES: usize = 200;
 impl TimeContext {
     /// Creates a new `TimeContext` and initializes the start to this instant.
     pub fn new() -> TimeContext {
+        // This fills the empty log-buffer with 60 fps frame times,
+        // which is kind of silly but smooths out the initial time claiming
+        // 1000's of fps until the log buffer actually fills.
+        // TODO: Would be better to make the log buffer know its proper length
+        // or filter out placeholders or something, but eh.
+        let initial_dt = time::Duration::from_millis(16);
         TimeContext {
             init_instant: time::Instant::now(),
             last_instant: time::Instant::now(),
-            frame_durations: LogBuffer::new(TIME_LOG_FRAMES, time::Duration::new(0, 0)),
+            frame_durations: LogBuffer::new(TIME_LOG_FRAMES, initial_dt),
             residual_update_dt: time::Duration::from_secs(0),
             frame_count: 0,
         }
