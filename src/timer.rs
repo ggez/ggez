@@ -201,13 +201,21 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
 /// The intention is to for it to be called in a while loop
 /// in your `update()` callback:
 ///
-/// ```rust,ignore
-/// fn update(&mut self, ctx: &mut Context) -> GameResult<()>
+/// ```rust
+/// # use ggez::*;
+/// # fn update_game_physics() -> GameResult<()> { Ok(()) }
+/// # struct State {}
+/// use ggez::timer;
+///
+/// # impl ggez::event::EventHandler for State {
+/// fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
 ///     while(timer::check_update_time(ctx, 60)) {
 ///         update_game_physics()?;
 ///     }
 ///     Ok(())
 /// }
+/// # fn draw(&mut self, ctx: &mut Context) -> GameResult<()> { Ok(()) }
+/// # }
 /// ```
 pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
     let timedata = &mut ctx.timer_context;

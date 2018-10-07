@@ -53,8 +53,9 @@ impl From<FullscreenType> for SdlFullscreenType {
 ///
 /// Defaults:
 ///
-/// ```rust,ignore
-/// WindowMode {
+/// ```rust
+/// # use ggez::conf::*;
+/// let wm = WindowMode {
 ///     width: 800,
 ///     height: 600,
 ///     borderless: false,
@@ -64,7 +65,8 @@ impl From<FullscreenType> for SdlFullscreenType {
 ///     max_width: 0,
 ///     min_height: 0,
 ///     max_height: 0,
-/// }
+/// };
+/// assert_eq!(wm, WindowMode::default())
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowMode {
@@ -143,14 +145,16 @@ impl WindowMode {
 ///
 /// Defaults:
 ///
-/// ```rust,ignore
-/// WindowSetup {
+/// ```rust
+/// # use ggez::conf::*;
+/// let ws = WindowSetup {
 ///     title: "An easy, good game".to_owned(),
 ///     icon: "".to_owned(),
 ///     resizable: false,
 ///     allow_highdpi: true,
 ///     samples: NumSamples::One,
-/// }
+/// };
+/// assert_eq!(ws, WindowSetup::default())
 /// ```
 #[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowSetup {
@@ -267,12 +271,14 @@ impl NumSamples {
 ///
 /// Defaults:
 ///
-/// ```rust,ignore
-/// Conf {
+/// ```rust
+/// # use ggez::conf::*;
+/// let c = Conf {
 ///     window_mode: WindowMode::default(),
 ///     window_setup: WindowSetup::default(),
-///     backend: Backend::OpenGL(3, 2),
-/// }
+///     backend: Backend::OpenGL{major: 3, minor: 2},
+/// };
+/// assert_eq!(c, Conf::default())
 /// ```
 #[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault)]
 pub struct Conf {

@@ -5,8 +5,13 @@ use graphics::*;
 /// This struct implements the `Default` trait, so to set only some parameter
 /// you can just do:
 ///
-/// ```rust,ignore
-/// graphics::draw_ex(ctx, drawable, DrawParam{ dest: my_dest, .. Default::default()} )
+/// ```rust
+/// # use ggez::*;
+/// # use ggez::graphics::*;
+/// # fn t(ctx: &mut Context, drawable: &Drawable) {
+/// let my_dest = Point2::new(13.0, 37.0);
+/// graphics::draw_ex(ctx, drawable, DrawParam{ dest: my_dest, .. Default::default()} );
+/// # }
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawParam {
