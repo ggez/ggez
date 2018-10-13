@@ -288,6 +288,16 @@ impl NumSamples {
     }
 }
 
+/// Defines which submodules to enable in ggez.
+/// If one tries to use a submodule that is not enabled,
+/// it will panic.
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, SmartDefault)]
+pub struct ModuleConf {
+    /// The gamepad input module.
+    #[default = r#"true"#]
+    pub gamepad: bool,
+}
+
 /// A structure containing configuration data
 /// for the game engine.
 ///
@@ -308,6 +318,8 @@ pub struct Conf {
     pub window_setup: WindowSetup,
     /// Backend configuration
     pub backend: Backend,
+    /// Which modules to enable.
+    pub modules: ModuleConf,
 }
 
 impl Conf {

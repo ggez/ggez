@@ -6,32 +6,67 @@
 
 use std::fmt;
 
-use gilrs::{Gamepad, Gilrs};
+use gilrs::{Event, Gamepad, Gilrs};
 
 use context::Context;
 use GameResult;
 
-/// A structure that contains gamepad state.
-pub struct GamepadContext {
+/// Trait object defining a gamepad/joystick context.
+pub trait GamepadContext {
+    /// Returns a gamepad event.
+    fn next_event(&mut self) -> Option<Event>;
+
+    /// returns the `Gamepad` associated with an id.
+    fn gamepad(&self, id: usize) -> Option<&Gamepad>;
+}
+
+/// A structure that contains gamepad state using `gilrs`.
+pub struct GilrsGamepadContext {
     pub(crate) gilrs: Gilrs,
 }
 
-impl fmt::Debug for GamepadContext {
+impl fmt::Debug for GilrsGamepadContext {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<GamepadContext: {:p}>", self)
+        write!(f, "<GilrsGamepadContext: {:p}>", self)
     }
 }
 
-impl GamepadContext {
-    pub(crate) fn new() -> GameResult<GamepadContext> {
+impl GilrsGamepadContext {
+    pub(crate) fn new() -> GameResult<Self> {
         let gilrs = Gilrs::new()?;
-        Ok(GamepadContext { gilrs })
+        Ok(GilrsGamepadContext { gilrs })
+    }
+}
+
+impl GamepadContext for GilrsGamepadContext {
+    fn next_event(&mut self) -> Option<Event> {
+        self.gilrs.next_event()
+    }
+
+    fn gamepad(&self, id: usize) -> Option<&Gamepad> {
+        self.gilrs.get(id)
+    }
+}
+
+/// A structure that implements `GamepadContext` but does
+/// nothing; a stub for when you don't need it or are on
+/// a platform that `gilrs` doesn't support.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct NullGamepadContext {}
+
+impl GamepadContext for NullGamepadContext {
+    fn next_event(&mut self) -> Option<Event> {
+        panic!("Gamepad module disabled")
+    }
+
+    fn gamepad(&self, _id: usize) -> Option<&Gamepad> {
+        panic!("Gamepad module disabled")
     }
 }
 
 /// returns the `Gamepad` associated with an id.
 pub fn gamepad(ctx: &Context, id: usize) -> Option<&Gamepad> {
-    ctx.gamepad_context.gilrs.get(id)
+    ctx.gamepad_context.gamepad(id)
 }
 
 // Properties gamepads might want:

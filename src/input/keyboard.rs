@@ -31,15 +31,16 @@
 //!
 //!     fn draw(&mut self, ctx: &mut Context) -> GameResult {
 //!         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
-//!         // Draw a circle at `position_x`.
-//!         graphics::circle(
+//!         // Create a circle at `position_x` and draw
+//!         let circle = graphics::Mesh::new_circle(
 //!             ctx,
-//!             graphics::WHITE,
 //!             graphics::DrawMode::Fill,
 //!             na::Point2::new(self.position_x, 380.0),
 //!             100.0,
 //!             2.0,
+//!             graphics::WHITE,
 //!         )?;
+//!         graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
 //!         graphics::present(ctx)?;
 //!         timer::yield_now();
 //!         Ok(())
@@ -51,7 +52,7 @@
 //!             KeyCode::Q => {
 //!                 if mods.contains(KeyMods::SHIFT & KeyMods::CTRL) {
 //!                     println!("Terminating!");
-//!                     ctx.quit();
+//!                     ggez::quit(ctx);
 //!                 } else if mods.contains(KeyMods::SHIFT) || mods.contains(KeyMods::CTRL) {
 //!                     println!("You need to hold both Shift and Control to quit.");
 //!                 } else {
