@@ -11,7 +11,7 @@ environment:
         - TARGET: x86_64-pc-windows-msvc
           CHANNEL: nightly
         - TARGET: x86_64-pc-windows-msvc
-          CHANNEL: 1.25.0
+          CHANNEL: 1.26.0
 
 install:
     - curl -sSf -o rustup-init.exe https://win.rustup.rs
