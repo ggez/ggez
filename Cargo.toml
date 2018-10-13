@@ -30,6 +30,10 @@ bzip2 = ["zip/bzip2"]
 default = ["bzip2"]
 mint = ["nalgebra/mint"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
+# Enables the sdl2 bundled mode.
+# This allows the user not to install sdl2 via the package manager
+# having cargo compile it from sources instead.
+sdl2-bundled = ["sdl2/bundled"]
 
 [dependencies]
 rusttype = "0.5"
