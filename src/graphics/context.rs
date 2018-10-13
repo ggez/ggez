@@ -169,14 +169,13 @@ where
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
             debug!("Window created.");
             let (major, minor) = backend.version_tuple();
-            debug!(
-                "  Asked for     OpenGL {}.{} Core, vsync: {}",
-                major, minor, window_setup.vsync
-            );
-            debug!("  Actually got: OpenGL ?.? {:?}, vsync: ?", api);
             debug!("  Window size: {}x{}, drawable size: {}x{}", w, h, dw, dh);
             let device_info = backend.info(&device);
-            debug!("  {}", device_info);
+            debug!(
+                "  Asked for   : OpenGL {}.{} Core, vsync: {}",
+                major, minor, window_setup.vsync
+            );
+            debug!("  Actually got: {}", device_info);
         }
 
         // GFX SETUP
