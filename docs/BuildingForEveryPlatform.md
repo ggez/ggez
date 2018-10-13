@@ -50,6 +50,16 @@ on!
 
 # Linux
 
+## All versions (bundled mode)
+
+The SDL crate provides a feature to download and compile the correct version of SDL.
+To do this, it is sufficient to enable the sdl2-bundled feature:
+
+```toml
+[dependencies]
+ggez = {version = "0.4", features = ["sdl2-bundled"]}
+```
+
 ## Debian
 
 Very easy, just install the required dev packages:
