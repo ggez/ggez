@@ -4,10 +4,11 @@ rust:
   - stable
   - beta
   - nightly
-  - 1.27.1
+  - 1.28.0
 os:
   - linux
   - osx
+  - windows
 matrix:
   allow_failures:
     - rust: nightly
@@ -28,7 +29,7 @@ before_install:
 
 after_success: |
   if [[ "${TRAVIS_OS_NAME}" == "linux" && "${TRAVIS_RUST_VERSION}" == stable ]]; then
-    RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin 
+    RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
     # Uncomment the following line for coveralls.io
     # cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
 

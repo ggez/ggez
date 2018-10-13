@@ -51,7 +51,7 @@ Check out the [projects list!](docs/Projects.md)
 
 ## Usage
 
-ggez is requires rustc >= 1.27 and distributed on
+ggez is requires rustc >= 1.28 and distributed on
 crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
