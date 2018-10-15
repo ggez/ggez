@@ -230,7 +230,7 @@ where
                 Event::Suspended(_) => (),
             }
         });
-        while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.gilrs.next_event() {
+        while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.next_event() {
             match event {
                 gilrs::EventType::ButtonPressed(button, _) => {
                     state.controller_button_down_event(ctx, button, id);
