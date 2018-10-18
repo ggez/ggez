@@ -201,7 +201,7 @@ impl Source {
         self.sink.is_paused()
     }
 
-    /// Get whether or not the source is playing (ie, not paused
+    /// Get whether or not the source is playing (i.e., not paused
     /// and not stopped)
     pub fn playing(&self) -> bool {
         !self.paused() && !self.stopped()
