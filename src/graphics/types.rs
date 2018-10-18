@@ -241,7 +241,7 @@ impl From<(u8, u8, u8, u8)> for Color {
 
 impl From<(u8, u8, u8)> for Color {
     /// Convert a `(R, G, B)` tuple of `u8`'s in the range 0-255 into a Color,
-    /// with a value of 255 for the alpha element (ie, no transparency.)
+    /// with a value of 255 for the alpha element (i.e., no transparency.)
     fn from(val: (u8, u8, u8)) -> Self {
         let (r, g, b) = val;
         Color::from((r, g, b, 255))

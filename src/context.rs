@@ -298,8 +298,8 @@ static DEBUG_ID_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
 /// This is a type that contains a unique ID for each Context and
 /// is contained in each thing created from the Context which contains
-/// data that becomes invalid when the Context goes away (ie, texture
-/// handles).  When compiling without assertions (ie in release mode) it
+/// data that becomes invalid when the Context goes away (i.e., texture
+/// handles).  When compiling without assertions (i.e., in release mode) it
 /// is replaced with a zero-size type, compiles down to nothing,
 /// and should disappear entirely with a puff of optimization logic.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

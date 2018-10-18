@@ -6,7 +6,7 @@
 //!
 //! By default a ggez game will search its resource paths for a `/conf.toml`
 //! file and load values from it when the `Context` is created.  This file
-//! must be complete (ie you cannot just fill in some fields and have the
+//! must be complete (i.e., you cannot just fill in some fields and have the
 //! rest be default) and provides a nice way to specify settings that
 //! can be tweaked such as window resolution, multisampling options, etc.
 
