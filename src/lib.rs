@@ -34,6 +34,9 @@
 #[macro_use]
 extern crate bitflags;
 extern crate app_dirs2;
+extern crate failure;
+#[macro_use]
+extern crate failure_derive;
 #[macro_use]
 extern crate gfx;
 extern crate gfx_device_gl;

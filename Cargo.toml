@@ -31,6 +31,8 @@ multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 bitflags = "1.0"
 zip = { version = "0.4", default-features = false }
 app_dirs2 = "2"
+failure = "0.1"
+failure_derive = "0.1"
 gfx = "0.17"
 gfx_device_gl = "0.15"
 gfx_glyph = "0.12"
