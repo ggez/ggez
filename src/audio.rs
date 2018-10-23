@@ -22,29 +22,52 @@ use filesystem;
 use GameError;
 use GameResult;
 
+/// A trait object defining an audio context.
+pub trait AudioContext {
+    /// Returns the audio device.
+    fn device(&self) -> &rodio::Device;
+}
+
 /// A struct that contains all information for tracking sound info.
 ///
 /// You generally don't have to create this yourself, it will be part
 /// of your `Context` object.
-pub struct AudioContext {
+pub struct RodioAudioContext {
     device: rodio::Device,
 }
 
-impl AudioContext {
-    /// Create new AudioContext.
-    pub fn new() -> GameResult<AudioContext> {
+impl RodioAudioContext {
+    /// Create new RodioAudioContext.
+    pub fn new() -> GameResult<Self> {
         let device = rodio::default_output_device().ok_or_else(|| {
             GameError::AudioError(String::from(
                 "Could not initialize sound system (for some reason)",
             ))
         })?;
-        Ok(AudioContext { device })
+        Ok(Self { device })
     }
 }
 
-impl fmt::Debug for AudioContext {
+impl AudioContext for RodioAudioContext {
+    fn device(&self) -> &rodio::Device {
+        &self.device
+    }
+}
+
+impl fmt::Debug for RodioAudioContext {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<AudioContext: {:p}>", self)
+        write!(f, "<RodioAudioContext: {:p}>", self)
+    }
+}
+
+/// A structure that implements `AudioContext` but does nothing; serves as a
+/// stub for when you don't need audio.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct NullAudioContext;
+
+impl AudioContext for NullAudioContext {
+    fn device(&self) -> &rodio::Device {
+        panic!("Audio module disabled")
     }
 }
 
@@ -137,7 +160,7 @@ impl Source {
 
     /// Creates a new Source using the given SoundData object.
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
-        let sink = rodio::Sink::new(&context.audio_context.device);
+        let sink = rodio::Sink::new(&context.audio_context.device());
         let cursor = io::Cursor::new(data);
         Ok(Source {
             sink,
@@ -244,7 +267,7 @@ impl Source {
         // This is most ugly because in order to create a new sink
         // we need a `device`. However, we can only get the default
         // device without having access to a context. Currently that's
-        // fine because the `AudioContext` uses the default device too,
+        // fine because the `RodioAudioContext` uses the default device too,
         // but it may cause problems in the future if devices become
         // customizable.
         let device = rodio::default_output_device().unwrap();
@@ -329,7 +352,7 @@ impl SpatialSource {
     /// Creates a new Source using the given SoundData object.
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
         let sink = rodio::SpatialSink::new(
-            &context.audio_context.device,
+            &context.audio_context.device(),
             [0.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
@@ -445,7 +468,7 @@ impl SpatialSource {
         // This is most ugly because in order to create a new sink
         // we need a `device`. However, we can only get the default
         // device without having access to a context. Currently that's
-        // fine because the `AudioContext` uses the default device too,
+        // fine because the `RodioAudioContext` uses the default device too,
         // but it may cause problems in the future if devices become
         // customizable.
         let device = rodio::default_output_device().unwrap();

@@ -30,7 +30,7 @@ pub struct Context {
     /// Timer state
     pub timer_context: timer::TimeContext,
     /// Audio context
-    pub audio_context: audio::AudioContext,
+    pub audio_context: Box<dyn audio::AudioContext>,
     /// Keyboard context
     pub keyboard_context: keyboard::KeyboardContext,
     /// Mouse context
@@ -61,7 +61,11 @@ impl Context {
     /// Usually called by `ContextBuilder::build()`.
     fn from_conf(conf: conf::Conf, fs: Filesystem) -> GameResult<(Context, winit::EventsLoop)> {
         let debug_id = DebugId::new();
-        let audio_context = audio::AudioContext::new()?;
+        let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
+            Box::new(audio::RodioAudioContext::new()?)
+        } else {
+            Box::new(audio::NullAudioContext::default())
+        };
         let events_loop = winit::EventsLoop::new();
         let timer_context = timer::TimeContext::new();
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);

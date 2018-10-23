@@ -296,6 +296,9 @@ pub struct ModuleConf {
     /// The gamepad input module.
     #[default = r#"true"#]
     pub gamepad: bool,
+    /// The audio module.
+    #[default = r#"true"#]
+    pub audio: bool,
 }
 
 /// A structure containing configuration data
