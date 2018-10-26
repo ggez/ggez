@@ -208,6 +208,12 @@ impl ContextBuilder {
         self
     }
 
+    /// Sets the modules configuration.
+    pub fn modules(mut self, modules: conf::ModuleConf) -> Self {
+        self.conf.modules = modules;
+        self
+    }
+
     /// Sets all the config options, overriding any previous
     /// ones from `window_setup()`, `window_mode()` and `backend()`.
     pub fn conf(mut self, conf: conf::Conf) -> Self {
