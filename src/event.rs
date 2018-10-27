@@ -230,18 +230,20 @@ where
                 Event::Suspended(_) => (),
             }
         });
-        while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.next_event() {
-            match event {
-                gilrs::EventType::ButtonPressed(button, _) => {
-                    state.controller_button_down_event(ctx, button, id);
+        if ctx.conf.modules.gamepad {
+            while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.next_event() {
+                match event {
+                    gilrs::EventType::ButtonPressed(button, _) => {
+                        state.controller_button_down_event(ctx, button, id);
+                    }
+                    gilrs::EventType::ButtonReleased(button, _) => {
+                        state.controller_button_up_event(ctx, button, id);
+                    }
+                    gilrs::EventType::AxisChanged(axis, value, _) => {
+                        state.controller_axis_event(ctx, axis, value, id);
+                    }
+                    _ => {}
                 }
-                gilrs::EventType::ButtonReleased(button, _) => {
-                    state.controller_button_up_event(ctx, button, id);
-                }
-                gilrs::EventType::AxisChanged(axis, value, _) => {
-                    state.controller_axis_event(ctx, axis, value, id);
-                }
-                _ => {}
             }
         }
         state.update(ctx)?;
