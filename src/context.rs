@@ -130,19 +130,16 @@ impl Context {
                     };
                     self.mouse_context.set_button(button, pressed);
                 }
-                _ => (),
-            },
-            winit_event::Event::DeviceEvent { event, .. } => match event {
-                winit_event::DeviceEvent::MouseMotion { delta: (x, y) } => {
-                    self.mouse_context
-                        .set_last_delta(Point2::new(x as f32, y as f32));
-                }
-                winit_event::DeviceEvent::Key(winit_event::KeyboardInput {
-                    state,
-                    virtual_keycode: Some(keycode),
-                    modifiers,
+                winit_event::WindowEvent::KeyboardInput {
+                    input:
+                        winit::KeyboardInput {
+                            state,
+                            virtual_keycode: Some(keycode),
+                            modifiers,
+                            ..
+                        },
                     ..
-                }) => {
+                } => {
                     let pressed = match state {
                         winit_event::ElementState::Pressed => true,
                         winit_event::ElementState::Released => false,
@@ -150,6 +147,13 @@ impl Context {
                     self.keyboard_context
                         .set_modifiers(keyboard::KeyMods::from(modifiers));
                     self.keyboard_context.set_key(keycode, pressed);
+                }
+                _ => (),
+            },
+            winit_event::Event::DeviceEvent { event, .. } => match event {
+                winit_event::DeviceEvent::MouseMotion { delta: (x, y) } => {
+                    self.mouse_context
+                        .set_last_delta(Point2::new(x as f32, y as f32));
                 }
                 _ => (),
             },
