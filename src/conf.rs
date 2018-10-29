@@ -13,7 +13,7 @@
 use std::io;
 use toml;
 
-use GameResult;
+use crate::error::GameResult;
 
 /// Possible fullscreen modes.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -351,7 +351,7 @@ impl Conf {
 
 #[cfg(test)]
 mod tests {
-    use conf;
+    use crate::conf;
 
     /// Tries to encode and decode a `Conf` object
     /// and makes sure it gets the same result it had.

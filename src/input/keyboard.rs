@@ -65,7 +65,7 @@
 //! }
 //! ```
 
-use context::Context;
+use crate::context::Context;
 
 use winit::ModifiersState;
 /// A key code.
@@ -215,7 +215,8 @@ impl KeyboardContext {
                 } else {
                     None
                 }
-            }).collect()
+            })
+            .collect()
     }
 
     pub(crate) fn active_mods(&self) -> KeyMods {

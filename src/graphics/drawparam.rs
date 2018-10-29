@@ -1,4 +1,4 @@
-use graphics::*;
+use crate::graphics::*;
 
 use mint;
 

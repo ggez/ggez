@@ -1,13 +1,13 @@
 //! Mouse utility functions.
 
-use context::Context;
-use graphics;
-use graphics::Point2;
+use crate::context::Context;
+use crate::error::GameError;
+use crate::error::GameResult;
+use crate::graphics;
+use crate::graphics::Point2;
 use std::collections::HashMap;
 use winit::dpi;
 pub use winit::{MouseButton, MouseCursor};
-use GameError;
-use GameResult;
 
 /// Stores state information for the mouse,
 /// what little of it there is.
@@ -106,7 +106,8 @@ pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
         .set_cursor_position(dpi::LogicalPosition {
             x: f64::from(point.x),
             y: f64::from(point.y),
-        }).map_err(|_| GameError::WindowError("Couldn't set mouse cursor position!".to_owned()))
+        })
+        .map_err(|_| GameError::WindowError("Couldn't set mouse cursor position!".to_owned()))
 }
 
 /// Get the distance the cursor was moved during last frame, in pixels.

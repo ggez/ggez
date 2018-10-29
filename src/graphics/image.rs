@@ -4,12 +4,12 @@ use std::path;
 use gfx;
 use image;
 
-use context::{Context, DebugId};
-use filesystem;
-use graphics::shader::*;
-use graphics::*;
-use GameError;
-use GameResult;
+use crate::context::{Context, DebugId};
+use crate::error::GameError;
+use crate::error::GameResult;
+use crate::filesystem;
+use crate::graphics::shader::*;
+use crate::graphics::*;
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
 #[derive(Clone, PartialEq)]
@@ -251,12 +251,13 @@ impl Image {
                     u32::from(self.width),
                     u32::from(self.height),
                     color_format,
-                ).map_err(|e| e.into()),
+                )
+                .map_err(|e| e.into()),
         }
     }
 
     /* TODO: Needs generic context
-
+    
     /// A little helper function that creates a new Image that is just
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
@@ -393,7 +394,7 @@ impl Drawable for Image {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ContextBuilder;
+    use crate::ContextBuilder;
     #[test]
     fn test_invalid_image_size() {
         let (ctx, _) = &mut ContextBuilder::new("unittest", "unittest").build().unwrap();

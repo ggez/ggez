@@ -7,11 +7,11 @@ use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
 use glutin;
 use winit::{self, dpi};
 
-use conf::{FullscreenType, WindowMode, WindowSetup};
-use context::DebugId;
-use graphics::*;
+use crate::conf::{FullscreenType, WindowMode, WindowSetup};
+use crate::context::DebugId;
+use crate::graphics::*;
 
-use GameResult;
+use crate::error::GameResult;
 
 /// A structure that contains graphics state.
 /// For instance,
@@ -154,7 +154,7 @@ where
         {
             // TODO: improve.
             // Log a bunch of OpenGL state info pulled out of winit and gfx
-            let api = window.get_api();
+            let _api = window.get_api();
             let dpi::LogicalSize {
                 width: w,
                 height: h,

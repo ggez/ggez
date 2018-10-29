@@ -12,7 +12,7 @@
 //! For a more detailed tutorial in how to handle frame timings in games,
 //! see <http://gafferongames.com/game-physics/fix-your-timestep/>
 
-use context::Context;
+use crate::context::Context;
 
 use std::cmp;
 use std::f64;

@@ -17,10 +17,10 @@ use std::sync::Arc;
 use mint;
 use rodio;
 
-use context::Context;
-use filesystem;
-use GameError;
-use GameResult;
+use crate::context::Context;
+use crate::error::GameError;
+use crate::error::GameResult;
+use crate::filesystem;
 
 /// A trait object defining an audio context.
 pub trait AudioContext {
