@@ -301,6 +301,20 @@ pub struct ModuleConf {
     pub audio: bool,
 }
 
+impl ModuleConf {
+    /// Sets whether or not to enable the gamepad input module.
+    pub fn gamepad(mut self, gamepad: bool) -> Self {
+        self.gamepad = gamepad;
+        self
+    }
+
+    /// Sets whether or not to enable the audio module.
+    pub fn audio(mut self, audio: bool) -> Self {
+        self.audio = audio;
+        self
+    }
+}
+
 /// A structure containing configuration data
 /// for the game engine.
 ///
