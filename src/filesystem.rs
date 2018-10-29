@@ -32,11 +32,11 @@ use std::path;
 
 use app_dirs2::*;
 
-use conf;
-use vfs::{self, VFS};
-use {Context, GameError, GameResult};
+use crate::conf;
+use crate::vfs::{self, VFS};
+use crate::{Context, GameError, GameResult};
 
-pub use vfs::OpenOptions;
+pub use crate::vfs::OpenOptions;
 
 const CONFIG_NAME: &str = "/conf.toml";
 
@@ -253,9 +253,11 @@ impl Filesystem {
         for vfs in self.vfs.roots() {
             println!("Source {:?}", vfs);
             match vfs.read_dir(path::Path::new("/")) {
-                Ok(files) => for itm in files {
-                    println!("  {:?}", itm);
-                },
+                Ok(files) => {
+                    for itm in files {
+                        println!("  {:?}", itm);
+                    }
+                }
                 Err(e) => println!(" Could not read source: {:?}", e),
             }
         }
@@ -273,9 +275,11 @@ impl Filesystem {
         for vfs in self.vfs.roots() {
             info!("Source {:?}", vfs);
             match vfs.read_dir(path::Path::new("/")) {
-                Ok(files) => for itm in files {
-                    info!("  {:?}", itm);
-                },
+                Ok(files) => {
+                    for itm in files {
+                        info!("  {:?}", itm);
+                    }
+                }
                 Err(e) => warn!(" Could not read source: {:?}", e),
             }
         }
@@ -452,9 +456,9 @@ pub fn write_config(ctx: &mut Context, conf: &conf::Conf) -> GameResult {
 
 #[cfg(test)]
 mod tests {
-    use conf;
-    use error::*;
-    use filesystem::*;
+    use crate::conf;
+    use crate::error::*;
+    use crate::filesystem::*;
     use std::io::{Read, Write};
     use std::path;
 

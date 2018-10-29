@@ -7,11 +7,11 @@ use gfx::memory::{Bind, Usage};
 use gfx::texture::{AaMode, Kind};
 use gfx::Factory;
 
-use conf;
-use context::DebugId;
-use error::*;
-use graphics::*;
-use Context;
+use crate::conf;
+use crate::context::DebugId;
+use crate::error::*;
+use crate::graphics::*;
+use crate::Context;
 
 /// A generic canvas independent of graphics backend. This type should probably
 /// never be used directly; use `ggez::graphics::Canvas` instead.
@@ -95,7 +95,7 @@ impl Canvas {
 
     /// Create a new canvas with the current window dimensions.
     pub fn with_window_size(ctx: &mut Context) -> GameResult<Canvas> {
-        use graphics;
+        use crate::graphics;
         let (w, h) = graphics::drawable_size(ctx);
         // Default to no multisampling
         // TODO: Use winit's into() to translate f64's more accurately
@@ -126,7 +126,7 @@ impl Drawable for Canvas {
         // to account for OpenGL's origin being at the bottom-left.
 
         // TODO: FIX PrimitiveDrawParam
-        let mut flipped_param = param;
+        let flipped_param = param;
         // flipped_param.scale.y *= -1.0;
         // flipped_param.dest.y += self.image.height() as f32 * param.scale.y;
         self.image.draw(ctx, flipped_param)?;

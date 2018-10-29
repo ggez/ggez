@@ -18,34 +18,35 @@ use gfx::Factory;
 use gfx_device_gl;
 use glutin::{self, GlContext};
 
-use conf;
-use conf::WindowMode;
-use context::Context;
-use context::DebugId;
-use GameError;
-use GameResult;
+use crate::conf;
+use crate::conf::WindowMode;
+use crate::context::Context;
+use crate::context::DebugId;
+use crate::GameError;
+use crate::GameResult;
 
-mod canvas;
-mod context;
-mod drawparam;
-mod image;
-mod mesh;
-mod shader;
-mod text;
-mod types;
+pub(crate) mod canvas;
+pub(crate) mod context;
+pub(crate) mod drawparam;
+pub(crate) mod image;
+pub(crate) mod mesh;
+pub(crate) mod shader;
+pub(crate) mod text;
+pub(crate) mod types;
+
 use mint;
-use nalgebra as na;
+pub(crate) use nalgebra as na;
 
 pub mod spritebatch;
 
-pub use self::canvas::*;
-pub(crate) use self::context::*;
-pub use self::drawparam::*;
-pub use self::image::*;
-pub use self::mesh::*;
-pub use self::shader::*;
-pub use self::text::*;
-pub use self::types::*;
+//pub(crate) use self::context::*;
+pub use crate::graphics::canvas::*;
+pub use crate::graphics::drawparam::*;
+pub use crate::graphics::image::*;
+pub use crate::graphics::mesh::*;
+pub use crate::graphics::shader::*;
+pub use crate::graphics::text::*;
+pub use crate::graphics::types::*;
 
 type BuggoSurfaceFormat = gfx::format::Srgba8;
 type ShaderResourceType = [f32; 4];

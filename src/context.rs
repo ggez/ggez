@@ -3,14 +3,14 @@ use winit::dpi;
 
 use std::fmt;
 
-use audio;
-use conf;
-use event::winit_event;
-use filesystem::Filesystem;
-use graphics::{self, Point2};
-use input::{gamepad, keyboard, mouse};
-use timer;
-use GameResult;
+use crate::audio;
+use crate::conf;
+use crate::error::GameResult;
+use crate::event::winit_event;
+use crate::filesystem::Filesystem;
+use crate::graphics::{self, Point2};
+use crate::input::{gamepad, keyboard, mouse};
+use crate::timer;
 
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
@@ -26,7 +26,7 @@ pub struct Context {
     /// Filesystem state
     pub filesystem: Filesystem,
     /// Graphics state
-    pub(crate) gfx_context: graphics::GraphicsContext,
+    pub(crate) gfx_context: crate::graphics::context::GraphicsContext,
     /// Timer state
     pub timer_context: timer::TimeContext,
     /// Audio context
@@ -69,7 +69,7 @@ impl Context {
         let events_loop = winit::EventsLoop::new();
         let timer_context = timer::TimeContext::new();
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
-        let graphics_context = graphics::GraphicsContext::new(
+        let graphics_context = graphics::context::GraphicsContext::new(
             &events_loop,
             &conf.window_setup,
             conf.window_mode,

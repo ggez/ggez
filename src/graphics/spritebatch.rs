@@ -7,14 +7,14 @@
 //! a large amount of location/position data in a buffer, then feed it
 //! to the graphics card all in one go.
 
-use super::shader::BlendMode;
-use super::types::FilterMode;
-use context::Context;
-use error;
+use crate::context::Context;
+use crate::error;
+use crate::error::GameResult;
+use crate::graphics::shader::BlendMode;
+use crate::graphics::types::FilterMode;
+use crate::graphics::{self, BackendSpec, DrawTransform};
 use gfx;
 use gfx::Factory;
-use graphics::{self, BackendSpec, DrawTransform};
-use GameResult;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
 ///
@@ -100,7 +100,8 @@ impl SpriteBatch {
                 new_param.color = new_param.color;
                 let primitive_param = graphics::DrawTransform::from(new_param);
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
-            }).collect::<Vec<_>>();
+            })
+            .collect::<Vec<_>>();
 
         let gfx = &mut ctx.gfx_context;
         if gfx.data.rect_instance_properties.len() < self.sprites.len() {

@@ -18,7 +18,7 @@ use std::path::{self, Path, PathBuf};
 
 use zip;
 
-use {GameError, GameResult};
+use crate::error::{GameError, GameResult};
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     path.to_str().ok_or_else(|| {
@@ -553,7 +553,8 @@ impl ZipFS {
                     .expect("Should never happen!")
                     .name()
                     .to_string()
-            }).collect();
+            })
+            .collect();
         Ok(Self {
             source: filename.into(),
             archive: RefCell::new(archive),

@@ -11,6 +11,7 @@ authors = [
    "Sven-Hendrik Haase <svenstaro@gmail.com>",
    "Simon Heath <icefoxen@gmail.com>",
 ]
+edition = "2018"
 license = "MIT"
 readme = "README.md"
 categories = ["game-engines"]

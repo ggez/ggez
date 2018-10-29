@@ -1,6 +1,6 @@
-use context::DebugId;
+use crate::context::DebugId;
+use crate::graphics::*;
 use gfx::traits::FactoryExt;
-use graphics::*;
 use lyon;
 use lyon::tessellation as t;
 
@@ -335,19 +335,19 @@ impl MeshBuilder {
                 .cloned()
                 .map(|p| {
                     // Gotta turn ggez Point2's into lyon FillVertex's
-                        let mint_point = p.into();
-                        let np = lyon::math::point(mint_point.x, mint_point.y);
-                        let nv = lyon::math::vector(mint_point.x, mint_point.y);
-                        t::FillVertex {
-                            position: np,
-                            normal: nv,
-                        }
-                    })
-                    // Removing this collect might be nice, but is not easy.
-                    // We can chunk a slice, but can't chunk an arbitrary
-                    // iterator.
-                    // Using the itertools crate doesn't really make anything
-                    // nicer, so we'll just live with it.
+                    let mint_point = p.into();
+                    let np = lyon::math::point(mint_point.x, mint_point.y);
+                    let nv = lyon::math::vector(mint_point.x, mint_point.y);
+                    t::FillVertex {
+                        position: np,
+                        normal: nv,
+                    }
+                })
+                // Removing this collect might be nice, but is not easy.
+                // We can chunk a slice, but can't chunk an arbitrary
+                // iterator.
+                // Using the itertools crate doesn't really make anything
+                // nicer, so we'll just live with it.
                 .collect::<Vec<_>>();
             let tris = tris.chunks(3);
             let vb = VertexBuilder { color };

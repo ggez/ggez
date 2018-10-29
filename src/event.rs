@@ -19,7 +19,6 @@ use gilrs;
 use winit;
 use winit::dpi;
 
-pub use input::keyboard::{KeyCode, KeyMods};
 /// A mouse button.
 pub use winit::MouseButton;
 
@@ -40,8 +39,9 @@ use self::winit_event::*;
 /// `winit` event loop.
 pub use winit::EventsLoop;
 
-use context::Context;
-use GameResult;
+use crate::context::Context;
+use crate::error::GameResult;
+pub use crate::input::keyboard::{KeyCode, KeyMods};
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
@@ -143,7 +143,7 @@ pub fn run<S>(ctx: &mut Context, events_loop: &mut EventsLoop, state: &mut S) ->
 where
     S: EventHandler,
 {
-    use input::{keyboard, mouse};
+    use crate::input::{keyboard, mouse};
 
     while ctx.continuing {
         ctx.timer_context.tick();

@@ -19,10 +19,10 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::rc::Rc;
 
-use context::DebugId;
-use error::*;
-use graphics;
-use Context;
+use crate::context::DebugId;
+use crate::error::*;
+use crate::graphics;
+use crate::Context;
 
 /// A type for empty shader data for shaders that do not require any additional
 /// data to be sent to the GPU
@@ -380,9 +380,9 @@ pub trait ShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
     /// Draw with the current Shader
     fn draw(
         &self,
-        &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
-        &Slice<Spec::Resources>,
-        &graphics::pipe::Data<Spec::Resources>,
+        encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+        slice: &Slice<Spec::Resources>,
+        data: &graphics::pipe::Data<Spec::Resources>,
     ) -> GameResult;
 
     /// Sets the shader program's blend mode

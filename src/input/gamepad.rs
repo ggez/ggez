@@ -8,8 +8,8 @@ use std::fmt;
 
 use gilrs::{Event, Gamepad, Gilrs};
 
-use context::Context;
-use GameResult;
+use crate::context::Context;
+use crate::error::GameResult;
 
 /// Trait object defining a gamepad/joystick context.
 pub trait GamepadContext {

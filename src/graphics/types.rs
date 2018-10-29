@@ -1,8 +1,8 @@
-use nalgebra as na;
+pub(crate) use nalgebra as na;
 use std::f32;
 use std::u32;
 
-use super::{FillOptions, StrokeOptions};
+use crate::graphics::{FillOptions, StrokeOptions};
 
 /// A 2 dimensional point representing a location
 pub(crate) type Point2 = na::Point2<f32>;
