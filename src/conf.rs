@@ -4,7 +4,7 @@
 //! A `Conf` struct is used to specify hardware setup stuff used to create
 //! the window and other context information.
 //!
-//! By default a ggez game will search its resource paths for a `/conf.toml`
+//! By default a ggez game will search its resource paths for a [`/conf.toml`](../../../../src/examples/conf.toml)
 //! file and load values from it when the `Context` is created.  This file
 //! must be complete (ie you cannot just fill in some fields and have the
 //! rest be default) and provides a nice way to specify settings that
