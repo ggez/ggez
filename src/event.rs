@@ -16,8 +16,7 @@
 //! See the `eventloop` example for an implementation.
 
 use gilrs;
-use winit;
-use winit::dpi;
+use winit::{self, dpi};
 
 /// A mouse button.
 pub use winit::MouseButton;

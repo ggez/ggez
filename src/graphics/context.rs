@@ -83,7 +83,7 @@ where
 
     /// Create a new GraphicsContext
     pub(crate) fn new(
-        events_loop: &glutin::EventsLoop,
+        events_loop: &winit::EventsLoop,
         window_setup: &WindowSetup,
         window_mode: WindowMode,
         backend: B,
@@ -121,7 +121,7 @@ where
             .with_pixel_format(8, 8)
             .with_vsync(window_setup.vsync);
 
-        let mut window_builder = glutin::WindowBuilder::new()
+        let mut window_builder = winit::WindowBuilder::new()
             .with_title(window_setup.title.clone())
             .with_transparency(window_setup.transparent)
             .with_resizable(window_mode.resizable);
@@ -154,6 +154,7 @@ where
         {
             // TODO: improve.
             // Log a bunch of OpenGL state info pulled out of winit and gfx
+            use glutin::GlContext;
             let _api = window.get_api();
             let dpi::LogicalSize {
                 width: w,

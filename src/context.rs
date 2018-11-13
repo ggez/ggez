@@ -1,5 +1,4 @@
-use winit;
-use winit::dpi;
+use winit::{self, dpi};
 
 use std::fmt;
 

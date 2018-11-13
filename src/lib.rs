@@ -53,7 +53,6 @@ extern crate serde_derive;
 extern crate smart_default;
 extern crate gilrs;
 extern crate toml;
-extern crate winit;
 extern crate zip;
 
 pub mod audio;
