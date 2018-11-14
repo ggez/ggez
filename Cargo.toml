@@ -38,7 +38,7 @@ gfx_glyph = "0.12"
 gfx_window_glutin = "0.27"
 glutin = "0.19"
 winit = { version = "0.18", features = ["icon_loading"] }
-image = {version = "0.19", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
+image = {version = "0.20.1", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
 rodio = "0.8"
 serde = "1"
