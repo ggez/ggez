@@ -16,7 +16,7 @@ use gfx::texture;
 use gfx::Device;
 use gfx::Factory;
 use gfx_device_gl;
-use glutin::{self, GlContext};
+use glutin;
 
 use crate::conf;
 use crate::conf::WindowMode;

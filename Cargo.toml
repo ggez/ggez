@@ -35,9 +35,10 @@ app_dirs2 = "2"
 gfx = "0.17"
 gfx_device_gl = "0.15"
 gfx_glyph = "0.12"
-gfx_window_glutin = "0.26"
-glutin = "0.18"
-image = {version = "0.19", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
+gfx_window_glutin = "0.27"
+glutin = "0.19"
+winit = { version = "0.18", features = ["icon_loading"] }
+image = {version = "0.20.1", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
 rodio = "0.8"
 serde = "1"
@@ -49,7 +50,6 @@ smart-default = "0.2"
 nalgebra = {version = "0.16", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here.
 mint = "0.5"
-winit = { version = "0.17", features = ["icon_loading"] }
 gilrs = "0.6"
 
 [dev-dependencies]
