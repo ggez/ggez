@@ -62,9 +62,7 @@ impl App {
         // More fragments can be appended at any time.
         text.add(" default fragment, should be long enough to showcase everything")
             // `add()` can be chained, along with most `Text` methods.
-            .add(
-                TextFragment::new(" magenta fragment")
-                    .color(Color::new(1.0, 0.0, 1.0, 1.0)))
+            .add(TextFragment::new(" magenta fragment").color(Color::new(1.0, 0.0, 1.0, 1.0)))
             .add(" another default fragment, to really drive the point home");
 
         // This loads a new TrueType font into the context and returns a

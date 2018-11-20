@@ -90,3 +90,14 @@ pub fn axis() {
 pub fn button_pressed() {
     unimplemented!()
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gilrs_init() {
+        assert!(GilrsGamepadContext::new().is_ok());
+    }
+}

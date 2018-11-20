@@ -561,8 +561,7 @@ where
             encoder,
             &(render_tgt, color_format),
             &(depth_view, depth_format),
-        )
-        .map_err(|e| GameError::RenderError(e.to_string()))
+        ).map_err(|e| GameError::RenderError(e.to_string()))
 }
 
 #[cfg(test)]

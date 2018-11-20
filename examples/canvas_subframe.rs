@@ -59,12 +59,13 @@ impl MainState {
                     .scale(Vector2::new(
                         ((time % cycle * 2) as f32 / cycle as f32 * 6.28)
                             .cos()
-                            .abs() * 0.0625,
+                            .abs()
+                            * 0.0625,
                         ((time % cycle * 2) as f32 / cycle as f32 * 6.28)
                             .cos()
-                            .abs() * 0.0625,
-                    ))
-                    .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28));
+                            .abs()
+                            * 0.0625,
+                    )).rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28));
                 self.spritebatch.add(p);
             }
         }

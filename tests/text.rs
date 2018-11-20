@@ -12,7 +12,6 @@ fn make_context() -> (Context, event::EventsLoop) {
         path.push("resources");
         cb = cb.add_resource_path(path);
     }
-
     cb.build().unwrap()
 }
 /* TODO; the font API has changed and I don't want to deal with it now

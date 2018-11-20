@@ -251,8 +251,7 @@ impl Image {
                     u32::from(self.width),
                     u32::from(self.height),
                     color_format,
-                )
-                .map_err(|e| e.into()),
+                ).map_err(|e| e.into()),
         }
     }
 

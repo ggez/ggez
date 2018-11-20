@@ -100,8 +100,7 @@ impl SpriteBatch {
                 new_param.color = new_param.color;
                 let primitive_param = graphics::DrawTransform::from(new_param);
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
-            })
-            .collect::<Vec<_>>();
+            }).collect::<Vec<_>>();
 
         let gfx = &mut ctx.gfx_context;
         if gfx.data.rect_instance_properties.len() < self.sprites.len() {
