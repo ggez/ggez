@@ -30,3 +30,10 @@ fn save_screenshot() {
     let screenshot = graphics::screenshot(c).unwrap();
     // screenshot.encode(c, graphics::ImageFormat::Png, "/screenshot_test.png").unwrap();
 }
+
+#[test]
+fn load_images() {
+    let (c, _e) = &mut make_context();
+    let image = graphics::Image::new(c, "/player.png").unwrap();
+    // TODO: Add more images, figure out how to store them more nicely
+}
