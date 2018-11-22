@@ -91,7 +91,6 @@ pub fn button_pressed() {
     unimplemented!()
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

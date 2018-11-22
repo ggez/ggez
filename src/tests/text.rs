@@ -1,19 +1,10 @@
 // #[cfg(all(test, has_display))]
 
-extern crate ggez;
-use ggez::*;
-use std::env;
-use std::path;
+// use crate::*;
+// use crate::tests;
+// use std::env;
+// use std::path;
 
-fn make_context() -> (Context, event::EventsLoop) {
-    let mut cb = ContextBuilder::new("ggez_unit_tests", "ggez");
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
-        let mut path = path::PathBuf::from(manifest_dir);
-        path.push("resources");
-        cb = cb.add_resource_path(path);
-    }
-    cb.build().unwrap()
-}
 /* TODO; the font API has changed and I don't want to deal with it now
 #[test]
 fn test_calculated_text_width() {
