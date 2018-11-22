@@ -93,8 +93,8 @@ impl GridPosition {
         // We can use `.into()` to convert from `(i16, i16)` to a `GridPosition` since
         // we implement `From<(i16, i16)>` for `GridPosition` below.
         (
-            rng.gen_range::<i16>(0, max_x),
-            rng.gen_range::<i16>(0, max_y),
+            rng.gen_range::<i16, i16, i16>(0, max_x),
+            rng.gen_range::<i16, i16, i16>(0, max_y),
         )
             .into()
     }
