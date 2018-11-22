@@ -31,7 +31,7 @@ multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 
 [dependencies]
 bitflags = "1.0"
-zip = { version = "0.4", default-features = false }
+zip = { version = "0.5", default-features = false }
 app_dirs2 = "2"
 gfx = "0.17"
 gfx_device_gl = "0.15"
@@ -56,6 +56,6 @@ gilrs = "0.6"
 [dev-dependencies]
 chrono = "0.4"
 fern = "0.5"
-rand = "0.5"
+rand = "0.6"
 clap = "2"
 cgmath = { version = "0.16", features = ["mint"]}
