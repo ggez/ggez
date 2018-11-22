@@ -1,5 +1,5 @@
-use crate::*;
 use crate::tests;
+use crate::*;
 
 // use std::path;
 
@@ -24,6 +24,8 @@ fn save_screenshot() {
 fn load_images() {
     let (c, _e) = &mut tests::make_context();
     let image = graphics::Image::new(c, "/player.png").unwrap();
-    image.encode(c, graphics::ImageFormat::Png, "/player_save_test.png").unwrap();
+    image
+        .encode(c, graphics::ImageFormat::Png, "/player_save_test.png")
+        .unwrap();
     // TODO: Add more images, figure out how to store them more nicely
 }

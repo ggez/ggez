@@ -1,5 +1,5 @@
-use crate::*;
 use crate::tests;
+use crate::*;
 
 #[test]
 fn audio_load() {
