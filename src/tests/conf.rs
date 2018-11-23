@@ -12,6 +12,9 @@ pub fn context_build_tests() {
         conf::Conf::default()
             .window_mode(conf::WindowMode::default()
             .dimensions(400.0, 400.0)),
+        conf::Conf::default()
+            .window_mode(conf::WindowMode::default()
+            .resizable(false)),
     ];
     for conf in confs.into_iter() {
         let mut cb = ContextBuilder::new("ggez_unit_tests", "ggez").conf(conf);
@@ -24,5 +27,6 @@ pub fn context_build_tests() {
         let (w, h) = graphics::drawable_size(&c);
         assert_eq!(w, cb.conf.window_mode.width.into());
         assert_eq!(h, cb.conf.window_mode.height.into());
+        // Can't really test whether or not the window is resizable?
     }
 }
