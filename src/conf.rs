@@ -327,7 +327,7 @@ impl ModuleConf {
 ///     backend: Backend::OpenGL{ major: 3, minor: 2, srgb: true},
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault, Clone)]
 pub struct Conf {
     /// Window setting information that can be set at runtime
     pub window_mode: WindowMode,
@@ -360,6 +360,24 @@ impl Conf {
         let s = toml::to_vec(self)?;
         file.write_all(&s)?;
         Ok(())
+    }
+
+    /// Sets the window mode
+    pub fn window_mode(mut self, window_mode: WindowMode) -> Self {
+        self.window_mode = window_mode;
+        self
+    }
+
+    /// Sets the backend
+    pub fn backend(mut self, backend: Backend) -> Self {
+        self.backend = backend;
+        self
+    }
+
+    /// Sets the backend
+    pub fn modules(mut self, modules: ModuleConf) -> Self {
+        self.modules = modules;
+        self
     }
 }
 

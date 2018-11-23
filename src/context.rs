@@ -172,13 +172,13 @@ use std::path;
 /// of using `filesystem::mount()`.
 ///
 /// TODO: Better docs.  Should `Context::load_from_conf` be outright deprecated?
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ContextBuilder {
-    game_id: &'static str,
-    author: &'static str,
-    conf: conf::Conf,
-    paths: Vec<path::PathBuf>,
-    load_conf_file: bool,
+    pub(crate) game_id: &'static str,
+    pub(crate) author: &'static str,
+    pub(crate) conf: conf::Conf,
+    pub(crate) paths: Vec<path::PathBuf>,
+    pub(crate) load_conf_file: bool,
 }
 
 impl ContextBuilder {

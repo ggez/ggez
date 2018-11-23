@@ -5,6 +5,7 @@ use std::env;
 use std::path;
 
 mod audio;
+mod conf;
 mod filesystem;
 mod graphics;
 mod text;
