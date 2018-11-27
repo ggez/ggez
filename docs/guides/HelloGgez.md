@@ -61,7 +61,7 @@ It is why we're here after all.
 
 First we'll tell Rust we want to use `ggez`.
 Add this to the top of your `src/main.rs`:
-```rust
+```rust,ignore
 extern crate ggez;
 use ggez::*;
 ```
@@ -86,7 +86,7 @@ This means it is intended to be implemented on a struct.
 There are quite a few callbacks defined on the Trait, but only [2 are required: update and draw](https://docs.rs/ggez/0.4.0/ggez/event/trait.EventHandler.html#required-methods).
 
 Let's add `EventHandler` to our `src/main.rs` file:
-```rust
+```rust,ignore
 struct State {}
 
 impl ggez::event::EventHandler for State {
@@ -111,7 +111,7 @@ What is included in your state is very dependent on the game you are making.
 But, we're not going to write any bugs right? 😉
 
 In your main, you will need to create an instance of `State`.
-```rust
+```rust,ignore
 pub fn main() {
     let s = &mut State { };
 }
@@ -162,7 +162,7 @@ Now is the time for us to interface with our hardware and do something fun.
 To do that, you need to create a [`Context`](https://docs.rs/ggez/0.4.0/ggez/struct.Context.html) courtesy of `ggez`.
 
 Add this to the end of your `main` fn:
-```rust
+```rust,ignore
 let c = conf::Conf::new();
 let ctx = &mut Context::load_from_conf("hello_ggez", "awesome_person", c).unwrap();
 ```
@@ -172,7 +172,7 @@ Feel free to replace the author with yourself.
 You are awesome after all.
 
 Now you're ready to kick off the loop!
-```rust
+```rust,ignore
 event::run(ctx, state).unwrap();
 ```
 
@@ -214,7 +214,7 @@ For this program, we want to display the duration of each frame in the console a
 How should we do that? Well, let's look at the 2 callbacks we have in our loop and our `State` struct.
 
 There is some information we want to track, so we'll modify `State` first.
-```rust
+```rust,ignore
 struct State {
     dt: std::time::Duration,
 }
@@ -222,13 +222,13 @@ struct State {
 `dt` is going to represent the time each frame has taken. It stands for "delta time" and is a useful metric for games to handle variable frame rates.
 
 Now in `main`, you need to update the `State` instantiation to include `dt`:
-```rust
+```rust,ignore
 let state = &mut State { dt: std::time::Duration::new(0, 0) };
 ```
 
 So now that we have state to update, let's update it in our `update` callback!
 We'll use [`timer::delta`](https://docs.rs/ggez/0.4.0/ggez/timer/fn.delta.html) to get the delta time.
-```rust
+```rust,ignore
 fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
     self.dt = timer::delta(ctx);
     Ok(())
@@ -236,7 +236,7 @@ fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
 ```
 
 And now to let us see the changes in `State`, you need to modify the `draw` callback.
-```rust
+```rust,ignore
 fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
     println!("Hello ggez! dt = {}ns", self.dt.subsec_nanos());
     Ok(())

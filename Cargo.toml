@@ -16,6 +16,7 @@ edition = "2018"
 license = "MIT"
 readme = "README.md"
 categories = ["game-engines"]
+build = "build.rs"
 
 [badges]
 maintenance = { status = "actively-developed" }
@@ -59,3 +60,7 @@ fern = "0.5"
 rand = "0.6"
 clap = "2"
 cgmath = { version = "0.16", features = ["mint"]}
+skeptic = "0.13"
+
+[build-dependencies]
+skeptic = "0.13"

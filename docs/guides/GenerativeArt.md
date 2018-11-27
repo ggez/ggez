@@ -13,7 +13,7 @@ Modify `Cargo.toml` to include `ggez` in the dependencies.
 
 Just like in `Hello ggez!`, we're going to use a loop and a struct.
 Let's start with this code in `src/main.rs`:
-```rust
+```rust,no_run
 extern crate ggez;
 use ggez::*;
 
@@ -21,19 +21,19 @@ struct State {
 }
 
 impl ggez::event::EventHandler for State {
-  fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+  fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
       Ok(())
   }
-  fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+  fn draw(&mut self, _ctx: &mut Context) -> GameResult<()> {
       Ok(())
   }
 }
 
 fn main() {
     let state = &mut State { };
-    let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("generative_art", "awesome_person", c).unwrap();
-    event::run(ctx, state).unwrap();
+    let cb = ggez::ContextBuilder::new("generative_art", "awesome_person");
+    let (ctx, event_loop) = &mut cb.build().unwrap();
+    event::run(ctx, event_loop, state).unwrap();
 }
 ```
 
@@ -70,14 +70,19 @@ Circles are represented by 2 pieces of information: origin, and radius.
 Geometry, it's all coming back now.
 
 Here is the code for a [circle](https://docs.rs/ggez/0.4.0/ggez/graphics/fn.circle.html):
-```rust
-graphics::circle(
-    ctx,
-    graphics::DrawMode::Fill,
-    graphics::Point2::new(200.0, 300.0),
-    100.0,
-    0.1,
-);
+```rust,skt-draw
+fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    let circle = graphics::Mesh::new_circle(
+        ctx,
+        graphics::DrawMode::Fill,
+        nalgebra::Point2::new(200.0, 300.0),
+        100.0,
+        0.1,
+        graphics::WHITE,
+    )?;
+    graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
+    Ok(())
+}
 ```
 
 Now now now, hold on a second... I said 2 pieces of information!
@@ -101,18 +106,18 @@ And that's how a circle is drawn!
 #### ✔ Check Circle
 
 Let's try it out with some quick code:
-```rust
+```rust,skt-draw
 fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-  graphics::clear(ctx);
-  graphics::circle(
-      ctx,
-      graphics::DrawMode::Fill,
-      graphics::Point2::new(200.0, 300.0),
-      100.0,
-      0.1,
-  );
-  graphics::present(ctx);
-  Ok(())
+    let circle = graphics::Mesh::new_circle(
+        ctx,
+        graphics::DrawMode::Fill,
+        nalgebra::Point2::new(200.0, 300.0),
+        100.0,
+        0.1,
+        graphics::WHITE,
+    )?;
+    graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
+    Ok(())
 }
 ```
 
@@ -123,7 +128,7 @@ If you see a circle on the screen when you run `cargo run` you're good!
 Rectangles are represented by 3 pieces of information: origin, width, and height.
 
 Here is the code for a [rectangle](https://docs.rs/ggez/0.4.0/ggez/graphics/fn.rectangle.html):
-```rust
+```rust,ignore
 graphics::rectangle(
     ctx,
     graphics::DrawMode::Fill,
@@ -143,15 +148,15 @@ And that's how a rectangle is drawn!
 #### ✔ Check Rectangle
 
 Let's try it out with some quick code:
-```rust
+```rust,skt-draw
 fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-  graphics::clear(ctx);
-  graphics::rectangle(
-      ctx,
-      graphics::DrawMode::Fill,
-      graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
-  );
-  graphics::present(ctx);
+  graphics::clear(ctx, graphics::BLACK);
+  //graphics::rectangle(
+  //    ctx,
+   //   graphics::DrawMode::Fill,
+   //   graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
+  //);
+  graphics::present(ctx)?;
   Ok(())
 }
 ```
@@ -171,7 +176,7 @@ We will use [`enum`](https://doc.rust-lang.org/book/second-edition/ch06-01-defin
 We need a place to store our shapes.
 
 Modify your `State`:
-```rust
+```rust,ignore
 struct State {
     shapes: Vec<Shape>,
 }
@@ -182,7 +187,7 @@ But what is the `Shape` type?
 Let's create it!
 
 Create the `Shape` enum:
-```rust
+```rust,ignore
 enum Shape {
     Circle(graphics::Point2, f32),
     Rectangle(graphics::Rect),
@@ -191,7 +196,7 @@ enum Shape {
 With this `enum`, we are saying each `Shape` can be either a `Circle`, or a `Rectangle`.
 
 Store 2 `Shape` values in your `shapes` `Vec`.
-```rust
+```rust,ignore
 fn main() {
     let mut shapes = Vec::new();
     shapes.push(Shape::Rectangle(ggez::graphics::Rect::new(
@@ -214,7 +219,7 @@ We're using `Vec.push` to add 2 new values to our `Vec`.
 
 But we still don't see anything...
 You need to modify `draw` to illustrate your new `State`.
-```rust
+```rust,ignore
 fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
     graphics::clear(ctx);
     for shape in &self.shapes {
@@ -250,13 +255,13 @@ rand = "0.4.2"
 ```
 
 At the top of `main.rs`, `extern crate` and `use` `rand`:
-```rust
+```rust,ignore
 extern crate rand;
 use rand::{thread_rng, Rng};
 ```
 
 Change how the 2 shapes are created to include randomness:
-```rust
+```rust,ignore
 shapes.push(Shape::Rectangle(ggez::graphics::Rect::new(
     thread_rng().gen_range(0.0, 800.0),
     thread_rng().gen_range(0.0, 600.0),
@@ -277,7 +282,7 @@ But only 2 shapes?
 Surly we can do better!
 
 Modify your `main.rs`:
-```rust
+```rust,ignore
 let mut shapes = Vec::new();
 for _ in 0..8 {
     if thread_rng().gen_range(0, 2) % 2 == 0 {
