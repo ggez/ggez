@@ -1,0 +1,26 @@
+# An example conf.toml, just for reference.
+# Usually you don't need to make one yourself, you can
+# modify your `Conf` object however you want and then
+# write it out.  But sometimes it's useful to know
+# which options there are.
+
+[window_mode]
+width = 800
+height = 600
+borderless = false
+fullscreen_type = "Off"
+vsync = true
+min_width = 0
+min_height = 0
+max_width = 0
+max_height = 0
+[window_setup]
+title = "An easy, good game"
+icon = ""
+resizable = false
+allow_highdpi = true
+samples = "One"
+[backend]
+type = "OpenGL"
+major = 3
+minor = 2
