@@ -5,16 +5,10 @@ use std::path;
 #[test]
 pub fn context_build_tests() {
     // TODO: More tests!
-    let confs = vec! [
-        conf::Conf::default()
-            .window_mode(conf::WindowMode::default()
-            .dimensions(800.0, 600.0)),
-        conf::Conf::default()
-            .window_mode(conf::WindowMode::default()
-            .dimensions(400.0, 400.0)),
-        conf::Conf::default()
-            .window_mode(conf::WindowMode::default()
-            .resizable(false)),
+    let confs = vec![
+        conf::Conf::default().window_mode(conf::WindowMode::default().dimensions(800.0, 600.0)),
+        conf::Conf::default().window_mode(conf::WindowMode::default().dimensions(400.0, 400.0)),
+        conf::Conf::default().window_mode(conf::WindowMode::default().resizable(false)),
         // conf::Conf::default()
         //     .window_mode(conf::WindowMode::default()
         //     .fullscreen_type(conf::FullscreenType::Windowed)),
@@ -27,10 +21,7 @@ pub fn context_build_tests() {
         //     .modules(conf::ModuleConf::default()
         //         .gamepad(false)
         //     ),
-        conf::Conf::default()
-            .modules(conf::ModuleConf::default()
-                .audio(false)
-            ),
+        conf::Conf::default().modules(conf::ModuleConf::default().audio(false)),
     ];
     for conf in confs.into_iter() {
         let mut cb = ContextBuilder::new("ggez_unit_tests", "ggez").conf(conf);
