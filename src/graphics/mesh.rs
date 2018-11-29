@@ -578,21 +578,24 @@ impl Mesh {
         }
     }
 
-    /// Replaces the vertices in the `Mesh` with the given ones.
-    /// This is in principle faster than throwing away an existing mesh and
-    /// creating a new one with `Mesh::from_raw()`, but really only because it
-    /// doesn't take `Into<Vertex>` and so doesn't need to create an intermediate
-    /// `Vec`.  It still creates a new GPU buffer and replaces the old one instead
-    /// of just copying into the old one.
-    /// 
-    /// TODO: By default we create `Mesh` with a read-only GPU buffer, which I am
-    /// a little hesitant to change... partially because doing that with
-    /// `Image` has caused some subtle edge case bugs.
-    /// It's not terribly hard to do in principle though, just tedious;
-    /// start at `Factory::create_vertex_buffer_with_slice()`, drill down to
-    /// <https://docs.rs/gfx/0.17.1/gfx/traits/trait.Factory.html#tymethod.create_buffer_raw>,
-    /// and fill in the bits between with the appropriate values.
+    /// Replaces the vertices in the `Mesh` with the given ones.  This MAY be faster
+    /// than re-creating a `Mesh` with `Mesh::from_raw()` due to reusing memory instead
+    /// of allocating and deallocating it, both on the CPU and GPU side.  There's too
+    /// much variation in implementations and drivers to promise it will actually be faster
+    /// though.  At worst, it will be the same speed.
     pub fn set_vertices(&mut self, ctx: &mut Context, verts: &[Vertex], indices: &[u16]) {
+        // This is in principle faster than throwing away an existing mesh and
+        // creating a new one with `Mesh::from_raw()`, but really only because it
+        // doesn't take `Into<Vertex>` and so doesn't need to create an intermediate
+        // `Vec`.  It still creates a new GPU buffer and replaces the old one instead
+        // of just copying into the old one.
+        // TODO: By default we create `Mesh` with a read-only GPU buffer, which I am
+        // a little hesitant to change... partially because doing that with
+        // `Image` has caused some subtle edge case bugs.
+        // It's not terribly hard to do in principle though, just tedious;
+        // start at `Factory::create_vertex_buffer_with_slice()`, drill down to
+        // <https://docs.rs/gfx/0.17.1/gfx/traits/trait.Factory.html#tymethod.create_buffer_raw>,
+        // and fill in the bits between with the appropriate values.
         let (vbuf, slice) = ctx
             .gfx_context
             .factory
