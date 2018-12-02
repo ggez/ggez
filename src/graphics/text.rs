@@ -131,12 +131,12 @@ impl Default for CachedMetrics {
     }
 }
 
-/// Drawable text object.  Essentially a list of `TextFragment`'s and some metrics
-/// information.
+/// Drawable text object.  Essentially a list of [`TextFragment`](struct.TextFragment.html)'s
+/// and some metrics information.
 ///
-/// It implements `Drawable` so it can be drawn immediately with `graphics::draw()`, or
-/// many of them can be queued with `graphics::queue_text()` and then
-/// all drawn at once with `graphics::draw_queued_text()`.
+/// It implements [`Drawable`](trait.Drawable.html) so it can be drawn immediately with
+/// [`graphics::draw()`](fn.draw.html), or many of them can be queued with [`graphics::queue_text()`](fn.queue_text.html)
+/// and then all drawn at once with [`graphics::draw_queued_text()`](fn.draw_queued_text.html).
 #[derive(Debug)]
 pub struct Text {
     fragments: Vec<TextFragment>,
@@ -180,6 +180,13 @@ impl Default for Text {
 
 impl Text {
     /// Creates a `Text` from a `TextFragment`.
+    ///
+    /// ```rust
+    /// # use ggez::graphics::Text;
+    /// # fn main() {
+    /// let text = Text::new("foo");
+    /// # }
+    /// ```
     pub fn new<F>(fragment: F) -> Text
     where
         F: Into<TextFragment>,
@@ -411,7 +418,8 @@ impl Font {
         Font::new_glyph_font_bytes(context, &buf)
     }
 
-    /// Loads a new TrueType font from given bytes and into `GraphicsContext::glyph_brush`.
+    /// Loads a new TrueType font from given bytes and into a `gfx::GlyphBrush` owned
+    /// by the `Context`.
     pub fn new_glyph_font_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
         // Take a Cow here to avoid this clone where unnecessary?
         // Nah, let's not complicate things more than necessary.
@@ -436,11 +444,10 @@ impl Default for Font {
     }
 }
 
-/// Queues the `Text`
-/// to be drawn by `draw_queued()`.
-/// `relative_dest` is relative to the `DrawParam::dest` passed to `draw_queued()`.
-/// Note, any `Text`
-/// drawn via `graphics::draw()` will also draw the queue.
+/// Queues the `Text` to be drawn by [`draw_queued()`](fn.draw_queued.html).
+/// `relative_dest` is relative to the [`DrawParam::dest`](struct.DrawParam.html#structfield.dest)
+/// passed to `draw_queued()`./ Note, any `Text` drawn via [`graphics::draw()`](fn.draw.html)
+/// will also draw the queue.
 pub fn queue_text<P>(context: &mut Context, batch: &Text, relative_dest: P, color: Option<Color>)
 where
     P: Into<mint::Point2<f32>>,
@@ -464,10 +471,10 @@ where
     }
 }
 
-/// Draws all of `queue()`d `Text`es.
+/// Draws all of the [`Text`](struct.Text.html)s added via [`queue_text()`](fn.queue_text.html).
 ///
 /// `DrawParam` apply to everything in the queue; offset is in screen coordinates;
-/// color is ignored - specify it when `queue()`ing instead.
+/// color is ignored - specify it when `queue_text()`ing instead.
 pub fn draw_queued_text<D>(context: &mut Context, param: D) -> GameResult
 where
     D: Into<DrawTransform>,

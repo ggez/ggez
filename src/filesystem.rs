@@ -10,8 +10,9 @@
 //! platform-dependent location,
 //! such as `~/.local/share/<gameid>/` on Linux.  The `gameid`
 //! is the the string passed to
-//! `Context::load_from_conf()`; some platforms such as Windows also
-//! incorporate the `author` string into the path.
+//! [`Context::load_from_conf()`](../struct.Context.html#method.load_from_conf);
+//! some platforms such as Windows also incorporate the `author` string into
+//! the path.
 //!
 //! These locations will be searched in order for files, and the first file
 //! found used.  That allows game assets to be easily distributed as an archive
@@ -19,7 +20,7 @@
 //! altered copies of them in the game's `resources/` directory.  It
 //! is loosely based off of the `PhysicsFS` library.
 //!
-//! See the source of the `files` example for more details.
+//! See the source of the [`files` example](https://github.com/ggez/ggez/blob/master/examples/files.rs) for more details.
 //!
 //! Note that the file lookups WILL follow symlinks!  It is
 //! more for convenience than absolute security, so don't treat it as
@@ -91,7 +92,7 @@ impl io::Write for File {
 }
 
 impl Filesystem {
-    /// Create a new Filesystem instance, using the given `id` and (on
+    /// Create a new `Filesystem` instance, using the given `id` and (on
     /// some platforms) the `author` as a portion of the user
     /// directory path.  This function is called automatically by
     /// ggez, the end user should never need to call it.
@@ -162,7 +163,7 @@ impl Filesystem {
         Ok(fs)
     }
 
-    /// Opens the given path and returns the resulting `File`
+    /// Opens the given `path` and returns the resulting `File`
     /// in read-only mode.
     pub(crate) fn open<P: AsRef<path::Path>>(&mut self, path: P) -> GameResult<File> {
         self.vfs.open(path.as_ref()).map(|f| File::VfsFile(f))
@@ -269,8 +270,8 @@ impl Filesystem {
     /// using the "info" log level of the `log` crate.
     /// Useful for debugging.
     ///
-    /// See the `logging` example for info on how to collect
-    /// log information.
+    /// See the [`logging` example](https://github.com/ggez/ggez/blob/master/examples/logging.rs)
+    /// for info on how to collect log information.
     pub(crate) fn log_all(&mut self) {
         for vfs in self.vfs.roots() {
             info!("Source {:?}", vfs);
@@ -298,7 +299,7 @@ impl Filesystem {
         self.vfs.push_back(Box::new(physfs));
     }
 
-    /// Looks for a file named "/conf.toml" in any resource directory and
+    /// Looks for a file named `/conf.toml` in any resource directory and
     /// loads it if it finds it.
     /// If it can't read it for some reason, returns an error.
     pub(crate) fn read_config(&mut self) -> GameResult<conf::Conf> {
@@ -314,7 +315,7 @@ impl Filesystem {
         }
     }
 
-    /// Takes a `conf::Conf` object and saves it to the user directory,
+    /// Takes a `Conf` object and saves it to the user directory,
     /// overwriting any file already there.
     pub(crate) fn write_config(&mut self, conf: &conf::Conf) -> GameResult<()> {
         let conf_path = path::Path::new(CONFIG_NAME);
@@ -424,8 +425,8 @@ pub fn print_all(ctx: &mut Context) {
 /// using the "info" log level of the `log` crate.
 /// Useful for debugging.
 ///
-/// See the `logging` example for how to collect
-/// log information.
+/// See the [`logging` example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs)
+/// for how to collect log information.
 pub fn log_all(ctx: &mut Context) {
     ctx.filesystem.log_all()
 }
@@ -441,14 +442,14 @@ pub fn mount(ctx: &mut Context, path: &path::Path, readonly: bool) {
     ctx.filesystem.mount(path, readonly)
 }
 
-/// Looks for a file named "/conf.toml" in any resource directory and
+/// Looks for a file named `/conf.toml` in any resource directory and
 /// loads it if it finds it.
 /// If it can't read it for some reason, returns an error.
 pub fn read_config(ctx: &mut Context) -> GameResult<conf::Conf> {
     ctx.filesystem.read_config()
 }
 
-/// Takes a `conf::Conf` object and saves it to the user directory,
+/// Takes a `Conf` object and saves it to the user directory,
 /// overwriting any file already there.
 pub fn write_config(ctx: &mut Context, conf: &conf::Conf) -> GameResult {
     ctx.filesystem.write_config(conf)

@@ -9,8 +9,7 @@ use std::collections::HashMap;
 use winit::dpi;
 pub use winit::{MouseButton, MouseCursor};
 
-/// Stores state information for the mouse,
-/// what little of it there is.
+/// Stores state information for the mouse.
 #[derive(Clone, Debug)]
 pub struct MouseContext {
     last_position: Point2,
@@ -92,7 +91,7 @@ pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
 }
 
 /// Get the current position of the mouse cursor, in pixels.
-/// Complement to `set_position()`.
+/// Complement to [`set_position()`](fn.set_position.html).
 /// Uses strictly window-only coordinates.
 pub fn position(ctx: &Context) -> Point2 {
     ctx.mouse_context.last_position

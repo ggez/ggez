@@ -1,7 +1,7 @@
-//! A `SpriteBatch` is a way to efficiently draw a large
-//! number of copies of the same image, or part of the same image.  It's
-//! useful for implementing tiled maps, spritesheets, particles, and
-//! other such things.
+//! A [`SpriteBatch`](spritebatch/struct.SpriteBatch.html) is a way to
+//! efficiently draw a large number of copies of the same image, or part
+//! of the same image.  It's useful for implementing tiled maps,
+//! spritesheets, particles, and other such things.
 //!
 //! Essentially this uses a technique called "instancing" to queue up
 //! a large amount of location/position data in a buffer, then feed it
@@ -18,11 +18,11 @@ use gfx::Factory;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
 ///
-/// This is generally faster than drawing the same sprite with many invocations of `draw()`,
-/// though it has a bit of overhead to set up the batch.  This makes it run very slowly
-/// in Debug mode because it spends a lot of time on array bounds checking and
-/// un-optimized math; you need to build with optimizations enabled to really get the
-/// speed boost.
+/// This is generally faster than drawing the same sprite with many invocations of
+/// [`draw()`](../fn.draw.html), though it has a bit of overhead to set up the batch.
+/// This makes it run very slowly in Debug mode because it spends a lot of time on array
+/// bounds checking and un-optimized math; you need to build with optimizations enabled
+/// to really get the speed boost.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpriteBatch {
     image: graphics::Image,
@@ -50,7 +50,8 @@ impl SpriteBatch {
 
     /// Adds a new sprite to the sprite batch.
     ///
-    /// Returns a handle with which type to modify the sprite using `set()`
+    /// Returns a handle with which type to modify the sprite using
+    /// [`set()`](#method.set)
     ///
     /// TODO: Into<DrawParam> and such
     pub fn add(&mut self, param: graphics::DrawParam) -> SpriteIdx {
@@ -72,7 +73,7 @@ impl SpriteBatch {
 
     /// Immediately sends all data in the batch to the graphics card.
     ///
-    /// Generally just calling `graphics::draw()` on the `SpriteBatch`
+    /// Generally just calling [`graphics::draw()`](../fn.draw.html) on the `SpriteBatch`
     /// will do this automaticassertally.
     fn flush(&self, ctx: &mut Context, image: &graphics::Image) -> GameResult {
         // TODO: Can we clean up now?

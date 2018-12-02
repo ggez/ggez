@@ -1,5 +1,7 @@
-//! The `Shader` module allows user-defined shaders to be used
-//! with ggez for cool and spooky effects. See the `shader` and `shadows`
+//! The `shader` module allows user-defined shaders to be used
+//! with ggez for cool and spooky effects. See the
+//! [`shader`](https://github.com/ggez/ggez/blob/devel/examples/shader.rs)
+//! and [`shadows`](https://github.com/ggez/ggez/blob/devel/examples/shadows.rs)
 //! examples for a taste.
 
 use gfx::format;
@@ -40,13 +42,22 @@ unsafe impl Pod for EmptyConst {}
 /// An enum for specifying default and custom blend modes
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum BlendMode {
-    /// When combining two fragments, add their values together, saturating at 1.0
+    /// When combining two fragments, add their values together, saturating
+    /// at 1.0
     Add,
-    /// When combining two fragments, subtract the source value from the destination value
+    /// When combining two fragments, subtract the source value from the
+    /// destination value
     Subtract,
-    /// When combining two fragments, add the value of the source times its alpha channel with the value of the destination multiplied by the inverse of the source alpha channel. Has the usual transparency effect: mixes the two colors using a fraction of each one specified by the alpha of the source.
+    /// When combining two fragments, add the value of the source times its
+    /// alpha channel with the value of the destination multiplied by the inverse
+    /// of the source alpha channel. Has the usual transparency effect: mixes the
+    /// two colors using a fraction of each one specified by the alpha of the source.
     Alpha,
-    /// When combining two fragments, subtract the destination color from a constant color using the source color as weight. Has an invert effect with the constant color as base and source color controlling displacement from the base color. A white source color and a white value results in plain invert. The output alpha is same as destination alpha.
+    /// When combining two fragments, subtract the destination color from a constant
+    /// color using the source color as weight. Has an invert effect with the constant
+    /// color as base and source color controlling displacement from the base color.
+    /// A white source color and a white value results in plain invert. The output
+    /// alpha is same as destination alpha.
     Invert,
     /// When combining two fragments, multiply their values together.
     Multiply,
@@ -117,7 +128,7 @@ impl From<BlendMode> for Blend {
 /// modes is to just make multiple PSOs with respective blend modes baked in.
 /// The `PsoSet` struct is basically just a hash map for easily
 /// storing each shader set's PSOs and then retrieving them based
-/// on a `BlendMode`.
+/// on a [`BlendMode`](enum.BlendMode.html).
 struct PsoSet<Spec, C>
 where
     Spec: graphics::BackendSpec,
@@ -158,14 +169,14 @@ where
     }
 }
 
-/// An ID used by the `GraphicsContext` to uniquely identify a shader
+/// An ID used by the ggez graphics context to uniquely identify a shader
 pub type ShaderId = usize;
 
 /// A `ShaderGeneric` reprensents a handle user-defined shader that can be used
 /// with a ggez graphics context that is generic over `gfx::Resources`
 ///
 /// As an end-user you shouldn't ever have to touch this and should use
-/// `Shader` instead.
+/// [`Shader`](type.Shader.html) instead.
 #[derive(Clone)]
 pub struct ShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
     id: ShaderId,
@@ -262,7 +273,7 @@ where
     /// In order to use a specific blend mode when this shader is being
     /// used, you must include that blend mode as part of the
     /// `blend_modes` parameter at creation. If `None` is given, only the
-    /// default `Alpha` blend mode is used.
+    /// default [`Alpha`](enum.BlendMode.html#variant.Alpha) blend mode is used.
     pub fn new<P: AsRef<Path>, S: Into<String>>(
         ctx: &mut Context,
         vertex_path: P,
@@ -299,7 +310,7 @@ where
     /// In order to use a specific blend mode when this shader is being
     /// used, you must include that blend mode as part of the
     /// `blend_modes` parameter at creation. If `None` is given, only the
-    /// default `Alpha` blend mode is used.
+    /// default [`Alpha`](enum.BlendMode.html#variant.Alpha) blend mode is used.
     pub fn from_u8<S: Into<String>>(
         ctx: &mut Context,
         vertex_source: &[u8],
@@ -329,7 +340,7 @@ where
     }
 
     /// Gets the shader ID for the `Shader` which is used by the
-    /// `GraphicsContext` for identifying shaders in its cache
+    /// ggez graphics context for identifying shaders in its cache
     pub fn shader_id(&self) -> ShaderId {
         self.id
     }
@@ -375,7 +386,7 @@ where
 }
 
 /// A trait that is used to create trait objects to abstract away the
-/// Structure<ConstFormat> type of the constant data for drawing
+/// `gfx::Structure<ConstFormat>` type of the constant data for drawing
 pub trait ShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
     /// Draw with the current Shader
     fn draw(
@@ -422,9 +433,9 @@ where
 /// A lock for RAII shader regions. The shader automatically gets cleared once
 /// the lock goes out of scope, restoring the previous shader (if any).
 ///
-/// Essentially, binding a `Shader` will return one of these, and the shader
-/// will remain active as long as this object exists.  When this is dropped,
-/// the previous shader is restored.
+/// Essentially, binding a [`Shader`](type.Shader.html) will return one of these,
+/// and the shader will remain active as long as this object exists.  When this is
+/// dropped, the previous shader is restored.
 #[derive(Debug, Clone)]
 pub struct ShaderLock {
     cell: Rc<RefCell<Option<ShaderId>>>,
@@ -452,7 +463,7 @@ where
     }
 }
 
-/// Set the current  shader for the Context to render with
+/// Set the current  shader for the `Context` to render with
 pub fn set_shader<C>(ctx: &mut Context, ps: &Shader<C>)
 where
     C: Structure<ConstFormat>,
@@ -461,10 +472,10 @@ where
     *ctx.gfx_context.current_shader.borrow_mut() = Some(ps.id);
 }
 
-/// Clears the the current shader for the Context, restoring the default shader.
+/// Clears the the current shader for the `Context`, restoring the default shader.
 ///
-/// However, calling this and then dropping a `ShaderLock` will still set the
-/// shader to whatever was set when the `ShaderLock` was created.
+/// However, calling this and then dropping a [`ShaderLock`](struct.ShaderLock.html)
+/// will still set the shader to whatever was set when the `ShaderLock` was created.
 pub fn clear_shader(ctx: &mut Context) {
     *ctx.gfx_context.current_shader.borrow_mut() = None;
 }

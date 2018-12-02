@@ -23,12 +23,12 @@ pub enum GameError {
     FilesystemError(String),
     /// An error in the config file
     ConfigError(String),
-    /// Happens when an `EventsLoopProxy` attempts to
-    /// wake up an `EventsLoop` that no longer exists.
+    /// Happens when an `winit::EventsLoopProxy` attempts to
+    /// wake up an `winit::EventsLoop` that no longer exists.
     EventLoopError(String),
     /// An error trying to load a resource, such as getting an invalid image file.
     ResourceLoadError(String),
-    /// Unable to find a resource; the Vec is the paths it searched for and associated errors
+    /// Unable to find a resource; the `Vec` is the paths it searched for and associated errors
     ResourceNotFound(String, Vec<(std::path::PathBuf, GameError)>),
     /// Something went wrong in the renderer
     RenderError(String),
@@ -46,7 +46,7 @@ pub enum GameError {
     VideoError(String),
     /// Something went wrong compiling shaders
     ShaderProgramError(gfx::shade::ProgramError),
-    /// Something went wrong with Gilrs
+    /// Something went wrong with `Gilrs`
     GamepadError(String),
     /// Something went wrong with the `lyon` shape-tesselation library.
     LyonError(String),

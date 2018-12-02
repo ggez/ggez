@@ -1,11 +1,11 @@
 //! The `conf` module contains functions for loading and saving game
 //! configurations.
 //!
-//! A `Conf` struct is used to create a config file which specifies
-//! hardware setup stuff, mostly video display settings.
+//! A [`Conf`](struct.Conf.html) struct is used to create a config file
+//! which specifies hardware setup stuff, mostly video display settings.
 //!
 //! By default a ggez game will search its resource paths for a `/conf.toml`
-//! file and load values from it when the `Context` is created.  This file
+//! file and load values from it when the [`Context`](../struct.Context.html) is created.  This file
 //! must be complete (ie you cannot just fill in some fields and have the
 //! rest be default) and provides a nice way to specify settings that
 //! can be tweaked such as window resolution, multisampling options, etc.
@@ -28,22 +28,27 @@ pub enum FullscreenType {
 }
 
 /// A builder structure containing window settings
-/// that can be set at runtime and changed with `graphics::set_mode()`
+/// that can be set at runtime and changed with [`graphics::set_mode()`](../graphics/fn.set_mode.html)
 ///
 /// Defaults:
 ///
-/// ```rust,ignore
+/// ```rust
+/// # use ggez::conf::*;
+/// # fn main() { assert_eq!(
 /// WindowMode {
-///     width: 800,
-///     height: 600,
-///     borderless: false,
+///     width: 800.0,
+///     height: 600.0,
+///     maximized: false,
 ///     fullscreen_type: FullscreenType::Windowed,
-///     vsync: true,
-///     min_width: 0,
-///     max_width: 0,
-///     min_height: 0,
-///     max_height: 0,
+///     borderless: false,
+///     min_width: 0.0,
+///     max_width: 0.0,
+///     min_height: 0.0,
+///     max_height: 0.0,
+///     hidpi: false,
+///     resizable: false,
 /// }
+/// # , WindowMode::default());}
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq)]
 pub struct WindowMode {
@@ -82,7 +87,7 @@ pub struct WindowMode {
     /// If this is false (the default), one pixel in ggez equates to one
     /// physical pixel on the screen.  If it is `true`, then ggez will
     /// scale *all* pixel coordinates by the scaling factor returned by
-    /// `graphics::get_hidpi_factor()`.
+    /// [`graphics::get_hidpi_factor()`](../graphics/fn.get_hidpi_factor.html).
     #[default = r"false"]
     pub hidpi: bool,
     /// Whether or not the window is resizable
@@ -150,14 +155,18 @@ impl WindowMode {
 ///
 /// TODO: Update docs and defaults
 ///
-/// ```rust,ignore
+/// ```rust
+/// # use ggez::conf::*;
+/// # fn main() { assert_eq!(
 /// WindowSetup {
 ///     title: "An easy, good game".to_owned(),
-///     icon: "".to_owned(),
-///     resizable: false,
-///     allow_highdpi: true,
 ///     samples: NumSamples::One,
+///     vsync: true,
+///     transparent: false,
+///     icon: "".to_owned(),
+///     srgb: true,
 /// }
+/// # , WindowSetup::default()); }
 /// ```
 #[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq)]
 pub struct WindowSetup {
@@ -174,8 +183,8 @@ pub struct WindowSetup {
     #[default = r#"false"#]
     pub transparent: bool,
     /// A file path to the window's icon.
-    /// It is rooted in the `resources` directory (see the `filesystem` module for details),
-    /// and an empty string results in a blank/default icon.
+    /// It is rooted in the `resources` directory (see the [`filesystem`](../filesystem/index.html)
+    /// module for details), and an empty string results in a blank/default icon.
     #[default = r#""".to_owned()"#]
     pub icon: String,
     /// Whether or not to enable sRGB (gamma corrected color)
@@ -193,7 +202,7 @@ impl WindowSetup {
 
     /// Set number of samples
     ///
-    /// Returns None if given an invalid value
+    /// Returns `None` if given an invalid value
     /// (valid values are powers of 2 from 1 to 16)
     pub fn samples(mut self, samples: NumSamples) -> Self {
         self.samples = samples;
@@ -230,6 +239,18 @@ impl WindowSetup {
 /// Possible backends.
 /// Currently, only OpenGL Core spec is supported,
 /// but this lets you specify the version numbers.
+///
+/// Defaults:
+///
+/// ```rust
+/// # use ggez::conf::*;
+/// # fn main() { assert_eq!(
+/// Backend::OpenGL {
+///     major: 3,
+///     minor: 2,
+/// }
+/// # , Backend::default()); }
+/// ```
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, SmartDefault)]
 #[serde(tag = "type")]
 pub enum Backend {
@@ -274,8 +295,8 @@ pub enum NumSamples {
 }
 
 impl NumSamples {
-    /// Create a NumSamples from a number.
-    /// Returns None if i is invalid.
+    /// Create a `NumSamples` from a number.
+    /// Returns None if `i` is invalid.
     pub fn from_u32(i: u32) -> Option<NumSamples> {
         match i {
             1 => Some(NumSamples::One),
@@ -291,6 +312,18 @@ impl NumSamples {
 /// Defines which submodules to enable in ggez.
 /// If one tries to use a submodule that is not enabled,
 /// it will panic.
+///
+/// Defaults:
+///
+/// ```rust
+/// # use ggez::conf::*;
+/// # fn main() { assert_eq!(
+/// ModuleConf {
+///     gamepad: true,
+///     audio: true,
+/// }
+/// # , ModuleConf::default()); }
+/// ```
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, SmartDefault)]
 pub struct ModuleConf {
     /// The gamepad input module.
@@ -320,12 +353,16 @@ impl ModuleConf {
 ///
 /// Defaults:
 ///
-/// ```rust,ignore
+/// ```rust
+/// # use ggez::conf::*;
+/// # fn main() { assert_eq!(
 /// Conf {
 ///     window_mode: WindowMode::default(),
 ///     window_setup: WindowSetup::default(),
-///     backend: Backend::OpenGL{ major: 3, minor: 2, srgb: true},
+///     backend: Backend::OpenGL{ major: 3, minor: 2 },
+///     modules: ModuleConf::default(),
 /// }
+/// # , Conf::default()); }
 /// ```
 #[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault, Clone)]
 pub struct Conf {
@@ -340,7 +377,7 @@ pub struct Conf {
 }
 
 impl Conf {
-    /// Same as Conf::default()
+    /// Same as `Conf::default()`
     pub fn new() -> Self {
         Self::default()
     }

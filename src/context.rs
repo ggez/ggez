@@ -57,7 +57,7 @@ impl fmt::Debug for Context {
 
 impl Context {
     /// Tries to create a new Context using settings from the given config file.
-    /// Usually called by `ContextBuilder::build()`.
+    /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
     fn from_conf(conf: conf::Conf, fs: Filesystem) -> GameResult<(Context, winit::EventsLoop)> {
         let debug_id = DebugId::new();
         let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
@@ -105,7 +105,7 @@ impl Context {
     /// rolling your own event loop, you should call this on the events
     /// you receive before processing them yourself.
     ///
-    /// This also returns a new version of the `event` that has been modified
+    /// This also returns a new version of the `Event` that has been modified
     /// for ggez's optional overriding of hidpi.  For full discussion see
     /// <https://github.com/tomaka/winit/issues/591#issuecomment-403096230>.
     pub fn process_event(&mut self, event: &winit::Event) -> winit::Event {
@@ -165,11 +165,11 @@ impl Context {
 
 use std::path;
 
-/// A builder object for creating a `Context`.
+/// A builder object for creating a [`Context`](struct.Context.html).
 ///
-/// Can do everything the `Context::load_from_conf()` method does, plus you can
-/// also specify new paths to add to the resource path list at build time instead
-/// of using `filesystem::mount()`.
+/// Can do everything the [`Context::load_from_conf()`](struct.Context.html#method.load_from_conf)
+/// method does, plus you can also specify new paths to add to the resource path
+/// list at build time instead of using [`filesystem::mount()`](filesystem/fn.mount.html).
 ///
 /// TODO: Better docs.  Should `Context::load_from_conf` be outright deprecated?
 #[derive(Debug, Clone, PartialEq)]
@@ -182,7 +182,7 @@ pub struct ContextBuilder {
 }
 
 impl ContextBuilder {
-    /// Create a new ContextBuilder
+    /// Create a new `ContextBuilder`
     pub fn new(game_id: &'static str, author: &'static str) -> Self {
         Self {
             game_id,
@@ -218,7 +218,9 @@ impl ContextBuilder {
     }
 
     /// Sets all the config options, overriding any previous
-    /// ones from `window_setup()`, `window_mode()` and `backend()`.
+    /// ones from [`window_setup()`](#method.window_setup),
+    /// [`window_mode()`](#method.window_mode), and 
+    /// [`backend()`](#method.backend).
     pub fn conf(mut self, conf: conf::Conf) -> Self {
         self.conf = conf;
         self
@@ -243,7 +245,7 @@ impl ContextBuilder {
         self
     }
 
-    /// Build the Context.
+    /// Build the `Context`.
     pub fn build(self) -> GameResult<(Context, winit::EventsLoop)> {
         let mut fs = Filesystem::new(self.game_id, self.author)?;
 
@@ -261,7 +263,9 @@ impl ContextBuilder {
     }
 }
 
-/// Terminates `ggez::run()` loop by setting `Context.continuing` to `false`.
+/// Terminates [`ggez::run()`](fn.run.html) loop by setting 
+/// [`Context.continuing`](struct.Context.html#structfield.continuing)
+/// to `false`.
 pub fn quit(ctx: &mut Context) {
     ctx.continuing = false;
 }
@@ -271,9 +275,9 @@ use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 #[cfg(debug_assertions)]
 static DEBUG_ID_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
-/// This is a type that contains a unique ID for each Context and
-/// is contained in each thing created from the Context which
-/// becomes invalid when the Context goes away (for example, Image because
+/// This is a type that contains a unique ID for each `Context` and
+/// is contained in each thing created from the `Context` which
+/// becomes invalid when the `Context` goes away (for example, `Image` because
 /// it contains texture handles).  When compiling without assertions
 /// (in release mode) it is replaced with a zero-size type, compiles
 /// down to nothing, disappears entirely with a puff of optimization logic.

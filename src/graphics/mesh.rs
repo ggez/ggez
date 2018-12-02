@@ -6,7 +6,7 @@ use lyon::tessellation as t;
 
 pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 
-/// A builder for creating `Mesh`es.
+/// A builder for creating [`Mesh`](struct.Mesh.html)es.
 ///
 /// This allows you to easily make one `Mesh` containing
 /// many different complex pieces of geometry.  They don't
@@ -15,12 +15,17 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 ///
 /// The following example shows how to build a mesh containing a line and a circle:
 ///
-/// ```rust,ignore
+/// ```rust,no_run
+/// # use ggez::*;
+/// # use ggez::graphics::*;
+/// # use ggez::nalgebra::Point2;
+/// # fn main() -> GameResult {
+/// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
 /// let mesh: Mesh = MeshBuilder::new()
-///     .line(&[Point2::new(20.0, 20.0), Point2::new(40.0, 20.0)], 4.0)
-///     .circle(DrawMode::Fill, Point2::new(60.0, 38.0), 40.0, 1.0)
-///     .build(ctx)
-///     .unwrap();
+///     .line(&[Point2::new(20.0, 20.0), Point2::new(40.0, 20.0)], 4.0, (255, 0, 0).into())?
+///     .circle(DrawMode::Fill, Point2::new(60.0, 38.0), 40.0, 1.0, (0, 255, 0).into())
+///     .build(ctx)?;
+/// # Ok(()) }
 /// ```
 /// A more sophisticated example:
 ///
@@ -69,7 +74,7 @@ impl Default for MeshBuilder {
 }
 
 impl MeshBuilder {
-    /// Create a new MeshBuilder.
+    /// Create a new `MeshBuilder`.
     pub fn new() -> Self {
         Self::default()
     }
@@ -440,7 +445,7 @@ impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
 /// 2D polygon mesh.
 ///
 /// All of its creation methods are just shortcuts for doing the same operation
-/// via a `MeshBuilder`.
+/// via a [`MeshBuilder`](struct.MeshBuilder.html).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mesh {
     buffer: gfx::handle::Buffer<gfx_device_gl::Resources, Vertex>,
@@ -579,10 +584,10 @@ impl Mesh {
     }
 
     /// Replaces the vertices in the `Mesh` with the given ones.  This MAY be faster
-    /// than re-creating a `Mesh` with `Mesh::from_raw()` due to reusing memory instead
-    /// of allocating and deallocating it, both on the CPU and GPU side.  There's too
-    /// much variation in implementations and drivers to promise it will actually be faster
-    /// though.  At worst, it will be the same speed.
+    /// than re-creating a `Mesh` with [`Mesh::from_raw()`](#method.from_raw) due to
+    /// reusing memory instead of allocating and deallocating it, both on the CPU and
+    /// GPU side.  There's too much variation in implementations and drivers to promise
+    /// it will actually be faster though.  At worst, it will be the same speed.
     pub fn set_vertices(&mut self, ctx: &mut Context, verts: &[Vertex], indices: &[u16]) {
         // This is in principle faster than throwing away an existing mesh and
         // creating a new one with `Mesh::from_raw()`, but really only because it
