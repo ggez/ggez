@@ -49,23 +49,71 @@
 //! system.  The best way to do this is documented [by the SDL2
 //! crate](https://github.com/AngryLawyer/rust-sdl2#user-content-requirements).
 //!
-//! ggez consists of three main parts: A `Context` object which
-//! contains all the state required to interface with the computer's
-//! hardware, an `EventHandler` trait that the user implements to
-//! register callbacks for events, and various sub-modules such as
-//! `graphics` and `audio` that provide the functionality to actually
-//! get stuff done.  The general pattern is to create a struct holding
-//! your game's data which implements the `EventHandler` trait.
-//! Create a new `Context` object with default objects from a `ContextBuilder`
-//! or `Conf` object, and then call `event::run()` with
-//! the `Context` and an instance of your `EventHandler` to run your game's
-//! main loop.
+//! ggez consists of three main parts: A [`Context`](struct.Context.html) object
+//! which contains all the state required to interface with the computer's
+//! hardware, an [`EventHandler`](event/trait.EventHandler.html) trait that the
+//! user implements to register callbacks for events, and various sub-modules such as
+//! [`graphics`](graphics/index.html) and [`audio`](audio/index.html) that provide
+//! the functionality to actually get stuff done. 
+//!
+//! The general pattern is to create a struct holding your game's data which implements
+//! the `EventHandler` trait. Create a new `Context` object with default objects from a
+//! [`ContextBuilder`](struct.ContextBuilder.html) or [`Conf`](conf/struct.Conf.html) object,
+//! and then call [`event::run()`](event/fn.run.html) with the `Context` and an instance of
+//! your `EventHandler` to run your game's main loop.
+//!
+//! ```compile
+//! use ggez::{Context, ContextBuilder, GameResult};
+//! use ggez::event::{self, EventHandler};
+//!
+//! fn main() {
+//!     // Make a Context.
+//!     let ctx = &mut /* ContextBuilder params */
+//! #       ContextBuilder::new("doc_template", "ggez")
+//! #           .build()
+//! #           .unwrap();
+//!
+//!     // Create an instance of your event handler.
+//!     // Usually, you want to provide it with the Context object to use it when setting
+//!     // your game up.
+//!     let mut my_game = MyGame::new(ctx);
+//!
+//!     // Run!
+//!     match event::run(ctx, &mut my_game) {
+//!         Ok(_) => println!("Exited cleanly."),
+//!         Err(e) => println!("Error occured: {}", e)
+//!     }
+//! }
+//!
+//! struct MyGame {
+//!     // Your state here...
+//! }
+//!
+//! impl EventHandler for MyGame {
+//!     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+//!         // Update code here...
+//! #       Ok(())
+//!     }
+//!
+//!     fn draw(&mut self, _ctx: &mut Context) -> GameResult<()> {
+//!         // Draw code here...
+//! #       Ok(())
+//!     }
+//! }
+//! #
+//! # impl MyGame {
+//! #   pub fn new(_ctx: &mut Context) -> MyGame {
+//! #       MyGame { }
+//! #   }
+//! # }
+//! ```
 //!
 //! ## Examples
 //!
-//! See the `examples/` directory in the source.  Most examples show off
-//! a single feature of ggez, while `astroblasto` is a small  but
-//! complete Asteroids-like game.
+//! See the [`examples/`](https://github.com/ggez/ggez/tree/master/examples) directory
+//! in the source.  Most examples show off a single feature of ggez, while 
+//! [`astroblasto`](https://github.com/ggez/ggez/blob/master/examples/astroblasto.rs)
+//! is a small  but complete Asteroids-like game.
 //!
 //! To run the examples, just check out the source and execute `cargo run --example`
 //! in the root directory:

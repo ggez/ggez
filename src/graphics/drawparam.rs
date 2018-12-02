@@ -1,6 +1,6 @@
 use graphics::*;
 
-/// A struct containing all the necessary info for drawing a Drawable.
+/// A struct containing all the necessary info for drawing a [`Drawable`](trait.Drawable.html).
 ///
 /// This struct implements the `Default` trait, so to set only some parameter
 /// you can just do:
@@ -32,7 +32,7 @@ pub struct DrawParam {
     /// x/y shear factors expressed as a `Point2`.
     pub shear: Point2,
     /// A color to draw the target with.
-    /// If `None`, the color set by `graphics::set_color()` is used; default white.
+    /// If `None`, the color set by [`graphics::set_color()`](fn.set_color.html) is used; default white.
     pub color: Option<Color>,
 }
 

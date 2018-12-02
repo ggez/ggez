@@ -10,7 +10,7 @@
 //! platform-dependent location,
 //! such as `~/.local/share/<gameid>/` on Linux.  The `gameid`
 //! is the the string passed to
-//! `Context::load_from_conf()`; some platforms such as Windows also
+//! [`Context::load_from_conf()`](../struct.Context.html#method.load_from_conf); some platforms such as Windows also
 //! incorporate the `author` string into the path.
 //!
 //! Files will be searched for in these locations in order, and the first one
@@ -95,7 +95,7 @@ impl io::Write for File {
 }
 
 impl Filesystem {
-    /// Create a new Filesystem instance, using the given `id` and (on
+    /// Create a new `Filesystem` instance, using the given `id` and (on
     /// some platforms) the `author` as a portion of the user
     /// directory path.  This function is called automatically by
     /// ggez, the end user should never need to call it.
@@ -184,7 +184,8 @@ impl Filesystem {
         self.vfs.open(path.as_ref()).map(|f| File::VfsFile(f))
     }
 
-    /// Opens a file in the user directory with the given `filesystem::OpenOptions`.
+    /// Opens a file in the user directory with the given
+    /// [`filesystem::OpenOptions`](struct.OpenOptions.html).
     /// Note that even if you open a file read-only, it can only access
     /// files in the user directory.
     pub fn open_options<P: AsRef<path::Path>>(
@@ -294,11 +295,11 @@ impl Filesystem {
     }
 
     /// Outputs the contents of all data directories,
-    /// using the "info" log level of the `log` crate.
+    /// using the "info" log level of the [`log`](https://docs.rs/log/) crate.
     /// Useful for debugging.
     ///
-    /// See the `logging` example for how to collect
-    /// log information.
+    /// See the [`logging` example](https://github.com/ggez/ggez/blob/master/examples/logging.rs)
+    /// for how to collect log information.
     pub fn log_all(&mut self) {
         for vfs in self.vfs.roots() {
             info!("Source {:?}", vfs);

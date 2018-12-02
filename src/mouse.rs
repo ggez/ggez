@@ -5,8 +5,8 @@ use error::GameResult;
 use graphics;
 use graphics::Point2;
 
-/// Stores state information for the mouse,
-/// what little of it there is.
+/// Stores state information for the mouse.
+// ...what little of it there is.
 #[derive(Clone, Debug)]
 pub struct MouseContext {
     last_position: Point2,
@@ -31,12 +31,12 @@ impl Default for MouseContext {
     }
 }
 
-/// Get whether or not the mouse is "grabbed", ie, confined to the window.
+/// Get whether or not the mouse is "grabbed", i.e., confined to the window.
 pub fn get_grabbed(ctx: &Context) -> bool {
     graphics::get_window(ctx).grab()
 }
 
-/// Set whether or not the mouse is "grabbed", ie, confined to the window.
+/// Set whether or not the mouse is "grabbed", i.e., confined to the window.
 pub fn set_grabbed(ctx: &mut Context, grabbed: bool) {
     graphics::get_window_mut(ctx).set_grab(grabbed)
 }
@@ -60,7 +60,7 @@ pub fn set_relative_mode(ctx: &Context, mode: bool) {
 }
 
 /// Get the current position of the mouse cursor, in pixels.
-/// Complement to `set_position()`.
+/// Complement to [`set_position()`](fn.set_position.html).
 /// Uses strictly window-only coordinates.
 pub fn get_position(ctx: &Context) -> GameResult<Point2> {
     // TODO: Next time we can break the API, remove the GameResult here.
