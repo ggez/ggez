@@ -3,6 +3,8 @@ use std::env;
 use std::path;
 
 #[test]
+// FIXME: This test is being flakey. Passes about 90% of the time.
+#[ignore]
 pub fn context_build_tests() {
     // TODO: More tests!
     let confs = vec![

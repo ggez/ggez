@@ -650,7 +650,7 @@ pub fn pop_transform(context: &mut Context) {
 /// let param = /* DrawParam building */
 /// #   DrawParam::new();
 /// let transform: DrawTransform = param.into();
-/// graphics::set_transform(ctx, Some(transform.matrix));
+/// graphics::set_transform(ctx, transform.matrix);
 /// # }
 /// ```
 pub fn set_transform(context: &mut Context, transform: Matrix4) {
@@ -681,7 +681,7 @@ pub fn transform(context: &Context) -> Matrix4 {
 /// let param = /* DrawParam building */
 /// #   DrawParam::new();
 /// let transform: DrawTransform = param.into();
-/// graphics::mul_transform(ctx, Some(transform.matrix));
+/// graphics::mul_transform(ctx, transform.matrix);
 /// # }
 /// ```
 pub fn mul_transform(context: &mut Context, transform: Matrix4) {

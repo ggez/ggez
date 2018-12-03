@@ -60,7 +60,9 @@ fern = "0.5"
 rand = "0.6"
 clap = "2"
 cgmath = { version = "0.16", features = ["mint"]}
-skeptic = "0.13"
+skeptic = { path = "../rust-skeptic/src/skeptic" }
+#skeptic = "0.13"
 
 [build-dependencies]
-skeptic = "0.13"
+skeptic = { path = "../rust-skeptic/src/skeptic" }
+#skeptic = "0.13"

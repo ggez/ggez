@@ -27,13 +27,13 @@
 //!
 //! ## Basic Project Template
 //!
-//! ```rust,compile
+//! ```rust,no_run
 //! use ggez::{Context, ContextBuilder, GameResult};
 //! use ggez::event::{self, EventHandler};
 //!
 //! fn main() {
-//!     // Make a Context.
-//!     let ctx = &mut /* ContextBuilder params */
+//!     // Make a Context and an EventLoop.
+//!     let (mut ctx, mut event_loop) = /* ContextBuilder params */
 //! #       ContextBuilder::new("doc_template", "ggez")
 //! #           .build()
 //! #           .unwrap();
@@ -41,10 +41,10 @@
 //!     // Create an instance of your event handler.
 //!     // Usually, you should provide it with the Context object to
 //!     // use when setting your game up.
-//!     let mut my_game = MyGame::new(ctx);
+//!     let mut my_game = MyGame::new(&mut ctx);
 //!
 //!     // Run!
-//!     match event::run(ctx, &mut my_game) {
+//!     match event::run(&mut ctx, &mut event_loop, &mut my_game) {
 //!         Ok(_) => println!("Exited cleanly."),
 //!         Err(e) => println!("Error occured: {}", e)
 //!     }
