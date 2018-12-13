@@ -65,7 +65,8 @@ impl MainState {
                             .cos()
                             .abs()
                             * 0.0625,
-                    )).rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28));
+                    ))
+                    .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28));
                 self.spritebatch.add(p);
             }
         }
@@ -73,10 +74,12 @@ impl MainState {
             .dest(Point2::new(
                 ((time % cycle) as f32 / cycle as f32 * 6.28).cos() * 50.0 - 350.0,
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin() * 50.0 - 450.0,
-            )).scale(Vector2::new(
+            ))
+            .scale(Vector2::new(
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
-            )).rotation((time % cycle) as f32 / cycle as f32 * 6.28)
+            ))
+            .rotation((time % cycle) as f32 / cycle as f32 * 6.28)
             .offset(Point2::new(750.0, 750.0));
         graphics::draw(ctx, &self.spritebatch, param)?;
         self.spritebatch.clear();

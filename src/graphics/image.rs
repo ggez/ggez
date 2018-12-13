@@ -251,12 +251,13 @@ impl Image {
                     u32::from(self.width),
                     u32::from(self.height),
                     color_format,
-                ).map_err(|e| e.into()),
+                )
+                .map_err(|e| e.into()),
         }
     }
 
     /* TODO: Needs generic context
-    
+
     /// A little helper function that creates a new Image that is just
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.

@@ -67,7 +67,8 @@ pub fn main() -> GameResult {
             100.0,
             2.0,
             graphics::WHITE,
-        )?.draw(ctx, (cgmath::Point2::new(position, 380.0),))?;
+        )?
+        .draw(ctx, (cgmath::Point2::new(position, 380.0),))?;
         graphics::present(ctx)?;
         ggez::timer::yield_now();
     }

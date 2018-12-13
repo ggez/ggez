@@ -101,7 +101,8 @@ impl event::EventHandler for MainState {
             graphics::DrawMode::Fill,
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
             Color::from((0, 0, 0, 255)),
-        )?.draw(ctx, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
+        )?
+        .draw(ctx, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
         graphics::draw(
             ctx,
             &self.pixel_sized_text,

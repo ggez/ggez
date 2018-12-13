@@ -553,7 +553,8 @@ impl ZipFS {
                     .expect("Should never happen!")
                     .name()
                     .to_string()
-            }).collect();
+            })
+            .collect();
         Ok(Self {
             source: filename.into(),
             archive: RefCell::new(archive),

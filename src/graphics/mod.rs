@@ -247,7 +247,7 @@ const QUAD_VERTS: [Vertex; 4] = [
 
 const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
-gfx_defines!{
+gfx_defines! {
     /// Internal structure containing vertex data.
     vertex Vertex {
         pos: [f32; 2] = "a_Pos",

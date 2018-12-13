@@ -27,7 +27,7 @@ type Vector3 = na::Vector3<f32>;
 type ColorFormat = gfx::format::Srgba8;
 type DepthFormat = gfx::format::DepthStencil;
 
-gfx_defines!{
+gfx_defines! {
     vertex Vertex {
         pos: [f32; 4] = "a_Pos",
         tex_coord: [f32; 2] = "a_TexCoord",
@@ -166,7 +166,8 @@ void main() {
                 texture::Kind::D2(1, 1, texture::AaMode::Single),
                 texture::Mipmap::Provided,
                 &[&texels],
-            ).unwrap();
+            )
+            .unwrap();
 
         let sinfo =
             texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
