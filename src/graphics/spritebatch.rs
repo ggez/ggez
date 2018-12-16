@@ -12,7 +12,7 @@ use crate::error;
 use crate::error::GameResult;
 use crate::graphics::shader::BlendMode;
 use crate::graphics::types::FilterMode;
-use crate::graphics::{self, BackendSpec, DrawTransform};
+use crate::graphics::{self, BackendSpec, DrawParam, DrawTransform};
 use gfx;
 use gfx::Factory;
 
@@ -147,7 +147,7 @@ impl SpriteBatch {
 impl graphics::Drawable for SpriteBatch {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform>,
+        D: Into<DrawParam>,
     {
         let param = param.into();
         // Awkwardly we must update values on all sprites and such.
@@ -166,7 +166,8 @@ impl graphics::Drawable for SpriteBatch {
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.sprites.len() as u32, 0));
         let curr_transform = gfx.transform();
-        gfx.push_transform(param.matrix * curr_transform);
+        let m: DrawTransform = param.into();
+        gfx.push_transform(m.matrix * curr_transform);
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {

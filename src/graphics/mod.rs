@@ -402,7 +402,7 @@ pub fn clear(ctx: &mut Context, color: Color) {
 pub fn draw<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult
 where
     D: Drawable,
-    T: Into<DrawTransform>,
+    T: Into<DrawParam>,
 {
     let params = params.into();
     drawable.draw(ctx, params)
@@ -837,7 +837,7 @@ pub trait Drawable {
     /// ALSO TODO: Expand docs
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform>;
+        D: Into<DrawParam>;
 
     /// Sets the blend mode to be used when drawing this drawable.
     /// This overrides the general `graphics::set_blend_mode()`.

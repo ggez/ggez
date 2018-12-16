@@ -632,12 +632,12 @@ impl Mesh {
 impl Drawable for Mesh {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform>,
+        D: Into<DrawParam>,
     {
         let param = param.into();
         self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;
-        gfx.update_instance_properties(param)?;
+        gfx.update_instance_properties(param.into())?;
 
         gfx.data.vbuf = self.buffer.clone();
         let texture = self.image.texture.clone();
