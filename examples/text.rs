@@ -75,7 +75,8 @@ impl App {
             TextFragment::new(" fancy fragment")
                 .font(fancy_font.clone())
                 .scale(Scale::uniform(25.0)),
-        ).add(" and a default one, for symmetry");
+        )
+        .add(" and a default one, for symmetry");
         // Store a copy of the built text, retain original for further modifications.
         texts.insert("1_demo_text_1", text.clone());
 
@@ -213,7 +214,8 @@ pub fn main() -> GameResult {
             WindowMode::default()
                 .dimensions(640.0, 480.0)
                 .resizable(true),
-        ).add_resource_path(resource_dir)
+        )
+        .add_resource_path(resource_dir)
         .build()?;
 
     let state = &mut App::new(ctx)?;

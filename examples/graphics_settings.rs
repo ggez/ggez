@@ -68,15 +68,15 @@ impl event::EventHandler for MainState {
             }
 
             /*
-            if self.window_settings.window_size_toggle {
-                let resolutions = ggez::graphics::fullscreen_modes(ctx, 0)?;
-                let (width, height) = resolutions[self.window_settings.resolution_index];
+                if self.window_settings.window_size_toggle {
+                    let resolutions = ggez::graphics::fullscreen_modes(ctx, 0)?;
+                    let (width, height) = resolutions[self.window_settings.resolution_index];
 
-                ggez::graphics::set_resolution(ctx, width, height)?;
+                    ggez::graphics::set_resolution(ctx, width, height)?;
 
-                self.window_settings.window_size_toggle = false;
-            }
-        */
+                    self.window_settings.window_size_toggle = false;
+                }
+            */
         }
         Ok(())
     }
@@ -224,7 +224,8 @@ pub fn main() -> GameResult {
                 .value_name("N")
                 .help("Number of MSAA samples to do (powers of 2 from 1 to 16)")
                 .takes_value(true),
-        ).get_matches();
+        )
+        .get_matches();
 
     let msaa: u32 = matches
         .value_of("msaa")
@@ -245,9 +246,11 @@ pub fn main() -> GameResult {
             conf::WindowMode::default()
                 .fullscreen_type(conf::FullscreenType::Windowed)
                 .resizable(true),
-        ).window_setup(conf::WindowSetup::default().samples(
+        )
+        .window_setup(conf::WindowSetup::default().samples(
             conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!"),
-        )).add_resource_path(resource_dir);
+        ))
+        .add_resource_path(resource_dir);
 
     let (ctx, events_loop) = &mut cb.build()?;
 

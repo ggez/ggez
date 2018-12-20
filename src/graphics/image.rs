@@ -251,12 +251,13 @@ impl Image {
                     u32::from(self.width),
                     u32::from(self.height),
                     color_format,
-                ).map_err(|e| e.into()),
+                )
+                .map_err(|e| e.into()),
         }
     }
 
     /* TODO: Needs generic context
-    
+
     /// A little helper function that creates a new Image that is just
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
@@ -327,7 +328,7 @@ impl fmt::Debug for Image {
 impl Drawable for Image {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform>,
+        D: Into<DrawParam>,
     {
         let param = param.into();
         self.debug_id.assert(ctx);
@@ -345,15 +346,15 @@ impl Drawable for Image {
         // but it doesn't seem to have the same effect on
         // offset, so.
         use nalgebra;
-        let real_scale = nalgebra::Vector3::new(
-            src_width * f32::from(self.width),
-            src_height * f32::from(self.height),
-            1.0,
+        let real_scale = nalgebra::Vector2::new(
+            param.scale.x * src_width * f32::from(self.width),
+            param.scale.y * src_height * f32::from(self.height),
         );
-        let new_param = param.mul(Matrix4::new_nonuniform_scaling(&real_scale));
-        // let new_param = param;
 
-        gfx.update_instance_properties(new_param)?;
+        let mut new_param = param;
+        new_param.scale = real_scale;
+
+        gfx.update_instance_properties(new_param.into())?;
         let sampler = gfx
             .samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());

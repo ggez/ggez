@@ -51,7 +51,8 @@ impl event::EventHandler for MainState {
                 h: 300.0,
             },
             graphics::WHITE,
-        )?.draw(ctx, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
+        )?
+        .draw(ctx, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
         graphics::present(ctx)?;
         Ok(())
     }

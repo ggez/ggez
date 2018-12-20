@@ -249,7 +249,7 @@ const QUAD_VERTS: [Vertex; 4] = [
 
 const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
-gfx_defines!{
+gfx_defines! {
     /// Internal structure containing vertex data.
     vertex Vertex {
         pos: [f32; 2] = "a_Pos",
@@ -404,7 +404,7 @@ pub fn clear(ctx: &mut Context, color: Color) {
 pub fn draw<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult
 where
     D: Drawable,
-    T: Into<DrawTransform>,
+    T: Into<DrawParam>,
 {
     let params = params.into();
     drawable.draw(ctx, params)
@@ -882,7 +882,7 @@ pub trait Drawable {
     /// ALSO TODO: Expand docs
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform>;
+        D: Into<DrawParam>;
 
     /// Sets the blend mode to be used when drawing this drawable.
     /// This overrides the general [`graphics::set_blend_mode()`](fn.set_blend_mode.html).

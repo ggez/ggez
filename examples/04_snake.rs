@@ -335,7 +335,8 @@ impl Snake {
                 graphics::DrawMode::Fill,
                 seg.pos.into(),
                 [1.0, 0.5, 0.0, 1.0].into(),
-            )?.draw(ctx, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
+            )?
+            .draw(ctx, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
         }
         // And then we do the same for the head, instead making it fully red to distinguish it.
         // TODO: Fix colors
@@ -344,7 +345,8 @@ impl Snake {
             graphics::DrawMode::Fill,
             self.head.pos.into(),
             [1.0, 0.5, 0.0, 1.0].into(),
-        )?.draw(ctx, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
+        )?
+        .draw(ctx, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
         Ok(())
     }
 }

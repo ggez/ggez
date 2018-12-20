@@ -380,7 +380,7 @@ impl Text {
 impl Drawable for Text {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform>,
+        D: Into<DrawParam>,
     {
         let param = param.into();
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
@@ -500,14 +500,14 @@ where
     /*
     type Vec3 = na::Vector3<f32>;
     type Mat4 = na::Matrix4<f32>;
-    
+
     let m_translate_glyph = Mat4::new_translation(&Vec3::new(1.0, -1.0, 0.0));
     let m_translate_glyph_inv = Mat4::new_translation(&Vec3::new(-1.0, 1.0, 0.0));
     let m_scale = Mat4::new_nonuniform_scaling(&Vec3::new(scale_x, scale_y, 1.0));
     let m_scale_inv = Mat4::new_nonuniform_scaling(&Vec3::new(1.0 / scale_x, 1.0 / scale_y, 1.0));
     let m_translate = Mat4::new_translation(&Vec3::new(-screen_x, -screen_y, 0.0));
     let m_translate_inv = Mat4::new_translation(&Vec3::new(screen_x, screen_y, 0.0));
-    
+
     let final_matrix = m_translate_glyph_inv * m_scale_inv * m_translate_inv * param.matrix * m_translate * m_scale * m_translate_glyph;
     */
     // Optimized version has a speedup of ~1.29 (175ns vs 225ns)
@@ -568,7 +568,8 @@ where
             encoder,
             &(render_tgt, color_format),
             &(depth_view, depth_format),
-        ).map_err(|e| GameError::RenderError(e.to_string()))
+        )
+        .map_err(|e| GameError::RenderError(e.to_string()))
 }
 
 #[cfg(test)]
@@ -580,7 +581,7 @@ mod tests {
             let f = Font::default_font().expect("Could not get default font");
             assert_eq!(f.height(), 17);
             assert_eq!(f.width("Foo!"), 33);
-    
+
             // http://www.catipsum.com/index.php
             let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff \
                                 other cat's butt and hang jaw half open thereafter for give attitude. \
@@ -589,7 +590,7 @@ mod tests {
             let (len, v) = f.wrap(text_to_wrap, 250);
             println!("{} {:?}", len, v);
             assert_eq!(len, 249);
-    
+
             /*
             let wrapped_text = vec![
                 "Walk on car leaving trail of paw prints",

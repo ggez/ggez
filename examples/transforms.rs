@@ -84,8 +84,8 @@ impl event::EventHandler for MainState {
         let param = graphics::DrawParam::new()
             .dest(na::Point2::new(400.0, 400.0))
             .rotation(self.pos_x / 100.0)
-            .offset(na::Point2::new(64.0, 64.0))
-            .scale(na::Vector2::new(0.5, 0.5))
+            .offset(na::Point2::new(0.5, 0.5))
+            .scale(na::Vector2::new(1.0, 1.0))
             // .src(graphics::Rect::new(0.0, 0.0, 0.5, 0.5))
         ;
         let dt = graphics::DrawTransform::from(param);

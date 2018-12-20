@@ -12,7 +12,7 @@ use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
-gfx_defines!{
+gfx_defines! {
     constant Dim {
         rate: f32 = "u_Rate",
     }
@@ -54,7 +54,8 @@ impl event::EventHandler for MainState {
             100.0,
             2.0,
             graphics::WHITE,
-        )?.draw(ctx, (cgmath::Point2::new(0.0, 0.0),))?;
+        )?
+        .draw(ctx, (cgmath::Point2::new(0.0, 0.0),))?;
 
         {
             let _lock = graphics::use_shader(ctx, &self.shader);
@@ -66,7 +67,8 @@ impl event::EventHandler for MainState {
                 100.0,
                 2.0,
                 graphics::WHITE,
-            )?.draw(ctx, (cgmath::Point2::new(0.0, 0.0),))?;
+            )?
+            .draw(ctx, (cgmath::Point2::new(0.0, 0.0),))?;
         }
 
         graphics::Mesh::new_circle(
@@ -76,7 +78,8 @@ impl event::EventHandler for MainState {
             100.0,
             2.0,
             graphics::WHITE,
-        )?.draw(ctx, (cgmath::Point2::new(0.0, 0.0),))?;
+        )?
+        .draw(ctx, (cgmath::Point2::new(0.0, 0.0),))?;
 
         graphics::present(ctx)?;
         Ok(())

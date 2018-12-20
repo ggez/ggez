@@ -99,29 +99,29 @@ impl DrawParam {
     // TODO: Easy mirror functions for X and Y axis might be nice.
 }
 
-/// Create a `DrawTransform` from a location
-impl<P> From<(P,)> for DrawTransform
+/// Create a `DrawParam` from a location
+impl<P> From<(P,)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
 {
     fn from(location: (P,)) -> Self {
-        DrawParam::new().dest(location.0).into()
+        DrawParam::new().dest(location.0)
     }
 }
 
-/// Create a `DrawTransform` from a location and color
-impl<P, C> From<(P, C)> for DrawTransform
+/// Create a `DrawParam` from a location and color
+impl<P, C> From<(P, C)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
     C: Into<Color>,
 {
     fn from((location, color): (P, C)) -> Self {
-        DrawParam::new().dest(location).color(color).into()
+        DrawParam::new().dest(location).color(color)
     }
 }
 
-/// Create a DrawTransform from a location, rotation and color
-impl<P, C> From<(P, f32, C)> for DrawTransform
+/// Create a `DrawParam` from a location, rotation and color
+impl<P, C> From<(P, f32, C)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
     C: Into<Color>,
@@ -131,12 +131,11 @@ where
             .dest(location)
             .rotation(rotation)
             .color(color)
-            .into()
     }
 }
 
-/// Create a DrawTransform from a location, rotation, offset and color
-impl<P, C> From<(P, f32, P, C)> for DrawTransform
+/// Create a `DrawParam` from a location, rotation, offset and color
+impl<P, C> From<(P, f32, P, C)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
     C: Into<Color>,
@@ -147,12 +146,11 @@ where
             .rotation(rotation)
             .offset(offset)
             .color(color)
-            .into()
     }
 }
 
-/// Create a DrawTransform from a location, rotation, offset, scale and color
-impl<P, V, C> From<(P, f32, P, V, C)> for DrawTransform
+/// Create a `DrawParam` from a location, rotation, offset, scale and color
+impl<P, V, C> From<(P, f32, P, V, C)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
     V: Into<mint::Vector2<f32>>,
@@ -165,7 +163,6 @@ where
             .offset(offset)
             .scale(scale)
             .color(color)
-            .into()
     }
 }
 

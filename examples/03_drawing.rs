@@ -16,6 +16,7 @@ struct MainState {
     image1: graphics::Image,
     image2_linear: graphics::Image,
     image2_nearest: graphics::Image,
+    meshes: Vec<graphics::Mesh>,
     zoomlevel: f32,
 }
 
@@ -25,10 +26,13 @@ impl MainState {
         let image2_linear = graphics::Image::new(ctx, "/shot.png")?;
         let mut image2_nearest = graphics::Image::new(ctx, "/shot.png")?;
         image2_nearest.set_filter(graphics::FilterMode::Nearest);
+
+        let meshes = vec![build_mesh(ctx)?, build_textured_triangle(ctx)?];
         let s = MainState {
             image1,
             image2_linear,
             image2_nearest,
+            meshes,
             zoomlevel: 1.0,
         };
 
@@ -68,15 +72,20 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
         Color::new(1.0, 0.0, 1.0, 1.0),
     );
 
+    mb.build(ctx)
+}
+
+fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
+    let mb = &mut graphics::MeshBuilder::new();
     let triangle_verts = vec![
         graphics::Vertex {
             pos: [100.0, 100.0],
-            uv: [0.0, 0.0],
+            uv: [1.0, 1.0],
             color: [1.0, 0.0, 0.0, 1.0],
         },
         graphics::Vertex {
             pos: [0.0, 100.0],
-            uv: [0.0, 0.0],
+            uv: [0.0, 1.0],
             color: [0.0, 1.0, 0.0, 1.0],
         },
         graphics::Vertex {
@@ -88,7 +97,8 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
 
     let triangle_indices = vec![0, 1, 2];
 
-    mb.from_raw(&triangle_verts, &triangle_indices);
+    let i = graphics::Image::new(ctx, "/rock.png")?;
+    mb.from_raw(&triangle_verts, &triangle_indices, Some(i));
     mb.build(ctx)
 }
 
@@ -149,8 +159,9 @@ impl event::EventHandler for MainState {
         )?;
 
         */
-        let mesh = build_mesh(ctx)?;
-        graphics::draw(ctx, &mesh, DrawParam::new())?;
+        for m in &self.meshes {
+            graphics::draw(ctx, m, DrawParam::new())?;
+        }
 
         graphics::present(ctx)?;
         Ok(())

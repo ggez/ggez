@@ -15,7 +15,7 @@ use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
-gfx_defines!{
+gfx_defines! {
     /// Constants used by the shaders to calculate stuff
     constant Light {
         light_color: [f32; 4] = "u_LightColor",
@@ -239,7 +239,8 @@ impl MainState {
             torch,
             "Light",
             None,
-        ).unwrap();
+        )
+        .unwrap();
         let shadows_shader = Shader::from_u8(
             ctx,
             VERTEX_SHADER_SOURCE,
@@ -247,7 +248,8 @@ impl MainState {
             torch,
             "Light",
             None,
-        ).unwrap();
+        )
+        .unwrap();
         let lights_shader = Shader::from_u8(
             ctx,
             VERTEX_SHADER_SOURCE,
@@ -255,7 +257,8 @@ impl MainState {
             torch,
             "Light",
             Some(&[BlendMode::Add]),
-        ).unwrap();
+        )
+        .unwrap();
 
         Ok(MainState {
             background,

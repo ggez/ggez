@@ -119,7 +119,7 @@ impl Canvas {
 impl Drawable for Canvas {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform>,
+        D: Into<DrawParam>,
     {
         let param = param.into();
         self.debug_id.assert(ctx);

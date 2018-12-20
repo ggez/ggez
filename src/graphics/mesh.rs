@@ -63,12 +63,14 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 #[derive(Debug, Clone)]
 pub struct MeshBuilder {
     buffer: t::geometry_builder::VertexBuffers<Vertex, u16>,
+    image: Option<Image>,
 }
 
 impl Default for MeshBuilder {
     fn default() -> Self {
         Self {
             buffer: t::VertexBuffers::new(),
+            image: None,
         }
     }
 }
@@ -376,9 +378,17 @@ impl MeshBuilder {
         self
     }
 
+    /// Takes an `Image` to apply to the mesh.
+    pub fn texture(&mut self, texture: Image) -> &mut Self {
+        self.image = Some(texture);
+        self
+    }
+
     /// TODO: Update docs.
     /// Creates a `Mesh` from a raw list of triangles defined from points
-    /// and indices, with the given UV texture coordinates.
+    /// and indices, with the given UV texture coordinates.  You may also
+    /// supply an `Image` to use as a texture, if you pass `None`, it will
+    /// just use a pure white texture.
     ///
     /// This is the most primitive mesh-creation method, but allows you full
     /// control over the tesselation and texturing.
@@ -386,7 +396,7 @@ impl MeshBuilder {
     /// cause drawing to panic), if:
     ///
     ///  * `indices` contains a value out of bounds of `verts`
-    pub fn from_raw<V>(&mut self, verts: &[V], indices: &[u16]) -> &mut Self
+    pub fn from_raw<V>(&mut self, verts: &[V], indices: &[u16], texture: Option<Image>) -> &mut Self
     where
         V: Into<Vertex> + Clone,
     {
@@ -397,6 +407,7 @@ impl MeshBuilder {
         let indices = indices.iter().map(|i| (*i) + next_idx);
         self.buffer.vertices.extend(vertices);
         self.buffer.indices.extend(indices);
+        self.image = texture;
         self
     }
 
@@ -412,6 +423,10 @@ impl MeshBuilder {
             buffer: vbuf,
             slice,
             blend_mode: None,
+            image: self
+                .image
+                .clone()
+                .unwrap_or(ctx.gfx_context.white_image.clone()),
             debug_id: DebugId::get(ctx),
         })
     }
@@ -451,6 +466,7 @@ pub struct Mesh {
     buffer: gfx::handle::Buffer<gfx_device_gl::Resources, Vertex>,
     slice: gfx::Slice<gfx_device_gl::Resources>,
     blend_mode: Option<BlendMode>,
+    image: Image,
     debug_id: DebugId,
 }
 
@@ -558,7 +574,9 @@ impl Mesh {
     }
 
     /// Creates a `Mesh` from a raw list of triangles defined from points
-    /// and indices, with the given UV texture coordinates.
+    /// and indices, with the given UV texture coordinates.  You may also
+    /// supply an `Image` to use as a texture, if you pass `None`, it will
+    /// just use a pure white texture.
     ///
     /// This is the most primitive mesh-creation method, but allows you full
     /// control over the tesselation and texturing.
@@ -566,7 +584,12 @@ impl Mesh {
     /// cause drawing to panic), if:
     ///
     ///  * `indices` contains a value out of bounds of `verts`
-    pub fn from_raw<V>(ctx: &mut Context, verts: &[V], indices: &[u16]) -> Mesh
+    pub fn from_raw<V>(
+        ctx: &mut Context,
+        verts: &[V],
+        indices: &[u16],
+        texture: Option<Image>,
+    ) -> Mesh
     where
         V: Into<Vertex> + Clone,
     {
@@ -579,6 +602,7 @@ impl Mesh {
             buffer: vbuf,
             slice,
             blend_mode: None,
+            image: texture.unwrap_or(ctx.gfx_context.white_image.clone()),
             debug_id: DebugId::get(ctx),
         }
     }
@@ -613,15 +637,15 @@ impl Mesh {
 impl Drawable for Mesh {
     fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
     where
-        D: Into<DrawTransform>,
+        D: Into<DrawParam>,
     {
         let param = param.into();
         self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;
-        gfx.update_instance_properties(param)?;
+        gfx.update_instance_properties(param.into())?;
 
         gfx.data.vbuf = self.buffer.clone();
-        let texture = gfx.white_image.texture.clone();
+        let texture = self.image.texture.clone();
 
         let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(texture);
         gfx.data.tex.0 = typed_thingy;
