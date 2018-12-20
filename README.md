@@ -74,6 +74,42 @@ If this doesn't work, see the
 [FAQ](https://github.com/ggez/ggez/blob/master/docs/FAQ.md) for solutions
 to common problems.
 
+### Basic Project Template
+
+```rust
+use ggez::{Context, ContextBuilder, GameResult};
+use ggez::event::{self, EventHandler};
+
+fn main() {
+    // Make a Context.
+    let ctx = &mut /* ContextBuilder params */
+
+    // Create an instance of your event handler.
+    // Usually, you should provide it with the Context object to
+    // use when setting your game up.
+    let mut my_game = MyGame::new(ctx);
+
+    // Run!
+    match event::run(ctx, &mut my_game) {
+        Ok(_) => println!("Exited cleanly."),
+        Err(e) => println!("Error occured: {}", e)
+    }
+}
+
+struct MyGame {
+    // Your state here...
+}
+
+impl EventHandler for MyGame {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+        // Update code here...
+    }
+
+    fn draw(&mut self, _ctx: &mut Context) -> GameResult<()> {
+        // Draw code here...
+    }
+}
+```
 
 ## Implementation details
 

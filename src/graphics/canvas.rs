@@ -14,7 +14,7 @@ use crate::graphics::*;
 use crate::Context;
 
 /// A generic canvas independent of graphics backend. This type should probably
-/// never be used directly; use `ggez::graphics::Canvas` instead.
+/// never be used directly; use [`graphics::Canvas`](type.Canvas.html) instead.
 #[derive(Debug)]
 pub struct CanvasGeneric<Spec>
 where
@@ -27,20 +27,21 @@ where
 
 /// A canvas that can be rendered to instead of the screen (sometimes referred
 /// to as "render target" or "render to texture"). Set the canvas with the
-/// `ggez::graphics::set_canvas()` function, and then anything you
+/// [`graphics::set_canvas()`](fn.set_canvas.html) function, and then anything you
 /// draw will be drawn to the canvas instead of the screen.
 ///
-/// Resume drawing to the screen by calling `ggez::graphics::set_canvas(None)`.
+/// Resume drawing to the screen by calling `graphics::set_canvas(None)`.
 ///
 /// A `Canvas` allows creating render targets to be used instead of
 /// the screen.  This allows graphics to be rendered to images off-screen
 /// in order to do things like saving to an image file or creating cool effects
 /// by using shaders that render to an image.
-/// If you just want to draw multiple things efficiently, look at `SpriteBatch`.
+/// If you just want to draw multiple things efficiently, look at
+/// [`SpriteBatch`](spritebatch/struct.Spritebatch.html).
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 impl Canvas {
-    /// Create a new canvas with the given size and number of samples.
+    /// Create a new `Canvas` with the given size and number of samples.
     pub fn new(
         ctx: &mut Context,
         width: u16,
@@ -93,7 +94,7 @@ impl Canvas {
         })
     }
 
-    /// Create a new canvas with the current window dimensions.
+    /// Create a new `Canvas` with the current window dimensions.
     pub fn with_window_size(ctx: &mut Context) -> GameResult<Canvas> {
         use crate::graphics;
         let (w, h) = graphics::drawable_size(ctx);
@@ -107,7 +108,7 @@ impl Canvas {
         &self.image
     }
 
-    /// Destroys the Canvas and returns the `Image` it contains.
+    /// Destroys the `Canvas` and returns the `Image` it contains.
     pub fn into_inner(self) -> Image {
         // This texture is created with different settings
         // than the default; does that matter?
@@ -140,7 +141,7 @@ impl Drawable for Canvas {
     }
 }
 
-/// Set the canvas to render to. Specifying `Option::None` will cause all
+/// Set the `Canvas` to render to. Specifying `Option::None` will cause all
 /// rendering to be done directly to the screen.
 pub fn set_canvas(ctx: &mut Context, target: Option<&Canvas>) {
     match target {

@@ -28,12 +28,12 @@ pub struct Rect {
 }
 
 impl Rect {
-    /// Create a new rect.
+    /// Create a new `Rect`.
     pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
         Rect { x, y, w, h }
     }
 
-    /// Creates a new rect a la Love2D's love.graphics.newQuad,
+    /// Creates a new `Rect` a la Love2D's `love.graphics.newQuad`,
     /// as a fraction of the reference rect's size.
     pub fn fraction(x: f32, y: f32, w: f32, h: f32, reference: &Rect) -> Rect {
         Rect {
@@ -44,7 +44,7 @@ impl Rect {
         }
     }
 
-    /// Create a new rect from i32 coordinates.
+    /// Create a new rect from `i32` coordinates.
     pub fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
         Rect {
             x: x as f32,
@@ -138,6 +138,8 @@ impl From<Rect> for [f32; 4] {
 }
 
 /// A RGBA color in the `sRGB` color space represented as `f32`'s in the range `[0.0-1.0]`
+///
+/// For convenience, [`WHITE`](constant.WHITE.html) and [`BLACK`](constant.BLACK.html) are provided.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Color {
     /// Red component
@@ -167,35 +169,35 @@ pub const BLACK: Color = Color {
 };
 
 impl Color {
-    /// Create a new Color from four f32's in the range [0.0-1.0]
+    /// Create a new `Color` from four `f32`'s in the range `[0.0-1.0]`
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color { r, g, b, a }
     }
 
-    /// Create a new Color from four u8's in the range `[0-255]`
+    /// Create a new `Color` from four `u8`'s in the range `[0-255]`
     pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
         Color::from((r, g, b, a))
     }
 
-    /// Create a new Color from three u8's in the range `[0-255]`,
+    /// Create a new `Color` from three u8's in the range `[0-255]`,
     /// with the alpha component fixed to 255 (opaque)
     pub fn from_rgb(r: u8, g: u8, b: u8) -> Color {
         Color::from((r, g, b))
     }
 
-    /// Return a tuple of four u8's in the range `[0-255]` with the Color's
+    /// Return a tuple of four `u8`'s in the range `[0-255]` with the `Color`'s
     /// components.
     pub fn to_rgba(self) -> (u8, u8, u8, u8) {
         self.into()
     }
 
-    /// Return a tuple of three u8's in the range `[0-255]` with the Color's
+    /// Return a tuple of three `u8`'s in the range `[0-255]` with the `Color`'s
     /// components.
     pub fn to_rgb(self) -> (u8, u8, u8) {
         self.into()
     }
 
-    /// Convert a packed u32 containing 0xRRGGBBAA into a Color.conf
+    /// Convert a packed `u32` containing `0xRRGGBBAA` into a `Color`
     pub fn from_rgba_u32(c: u32) -> Color {
         let rp = ((c & 0xFF00_0000u32) >> 24) as u8;
         let gp = ((c & 0x00FF_0000u32) >> 16) as u8;
@@ -204,7 +206,7 @@ impl Color {
         Color::from((rp, gp, bp, ap))
     }
 
-    /// Convert a packed u32 containing 0x00RRGGBB into a Color.
+    /// Convert a packed `u32` containing `0x00RRGGBB` into a `Color`.
     /// This lets you do things like `Color::from_rgb_u32(0xCD09AA)` easily if you want.
     pub fn from_rgb_u32(c: u32) -> Color {
         let rp = ((c & 0x00FF_0000u32) >> 16) as u8;
@@ -213,7 +215,7 @@ impl Color {
         Color::from((rp, gp, bp))
     }
 
-    /// Convert a Color into a packed u32, containing 0xRRGGBBAA as bytes.
+    /// Convert a `Color` into a packed `u32`, containing `0xRRGGBBAA` as bytes.
     pub fn to_rgba_u32(self) -> u32 {
         let (r, g, b, a): (u8, u8, u8, u8) = self.into();
         let rp = (u32::from(r)) << 24;
@@ -223,7 +225,7 @@ impl Color {
         (rp | gp | bp | ap)
     }
 
-    /// Convert a Color into a packed u32, containing 0x00RRGGBB as bytes.
+    /// Convert a `Color` into a packed `u32`, containing `0x00RRGGBB` as bytes.
     pub fn to_rgb_u32(self) -> u32 {
         let (r, g, b, _a): (u8, u8, u8, u8) = self.into();
         let rp = (u32::from(r)) << 16;
@@ -234,7 +236,7 @@ impl Color {
 }
 
 impl From<(u8, u8, u8, u8)> for Color {
-    /// Convert a `(R, G, B, A)` tuple of `u8`'s in the range 0-255 into a Color
+    /// Convert a `(R, G, B, A)` tuple of `u8`'s in the range `[0-255]` into a `Color`
     fn from(val: (u8, u8, u8, u8)) -> Self {
         let (r, g, b, a) = val;
         let rf = (f32::from(r)) / 255.0;

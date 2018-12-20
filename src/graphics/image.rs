@@ -137,7 +137,7 @@ impl Image {
      */
 
     /// Load a new image from the file at the given path. The documentation for the
-    /// `filesystem` module explains how the path must be specified.
+    /// [`filesystem`](../filesystem/index.html) module explains how the path must be specified.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let img = {
             let mut buf = Vec::new();
@@ -231,7 +231,7 @@ impl Image {
     /// Encode the `Image` to the given file format and
     /// write it out to the given path.
     ///
-    /// See the `filesystem` module docs for where exactly
+    /// See the [`filesystem`](../filesystem/index.html) module docs for where exactly
     /// the file will end up.
     pub fn encode<P: AsRef<path::Path>>(
         &self,

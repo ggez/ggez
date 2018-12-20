@@ -2,7 +2,7 @@
 //!
 //! Example:
 //!
-//! ```rust, no-run
+//! ```rust, compile
 //! use ggez::event::{EventHandler, KeyCode, KeyMods};
 //! use ggez::{graphics, nalgebra as na, timer};
 //! use ggez::input::keyboard;
@@ -72,10 +72,11 @@ use winit::ModifiersState;
 pub use winit::VirtualKeyCode as KeyCode;
 
 bitflags! {
-    /// Bitflags describing state of keyboard modifiers, such as Control or Shift.
+    /// Bitflags describing the state of keyboard modifiers, such as `Control` or `Shift`.
     #[derive(Default)]
     pub struct KeyMods: u8 {
-        /// No modifiers; equivalent to `KeyMods::default()` and `KeyMods::empty()`.
+        /// No modifiers; equivalent to `KeyMods::default()` and
+        /// [`KeyMods::empty()`](struct.KeyMods.html#method.empty).
         const NONE  = 0b0000_0000;
         /// Left or right Shift key.
         const SHIFT = 0b0000_0001;
@@ -113,9 +114,9 @@ impl From<ModifiersState> for KeyMods {
 pub struct KeyboardContext {
     active_modifiers: KeyMods,
     /// A simple mapping of which key code has been pressed.
-    /// KeyCode's are a c-like enum, and so can be converted to/from
+    /// `KeyCode`'s are a c-like enum, and so can be converted to/from
     /// simple integers.
-    /// As of winit 0.16 this is Big Enough For Anyone; assertions
+    /// As of `winit` 0.16 this is Big Enough For Anyone; assertions
     /// will check if that assumption gets violated.
     // Maybe we can just use a HashSet instead?  Eh.
     pressed_keys: Vec<bool>,
@@ -241,7 +242,7 @@ pub fn is_key_repeated(ctx: &Context) -> bool {
     ctx.keyboard_context.is_key_repeated()
 }
 
-/// Returns a Vec with currently pressed keys.
+/// Returns a `Vec` with currently pressed keys.
 pub fn pressed_keys(ctx: &Context) -> Vec<KeyCode> {
     ctx.keyboard_context.pressed_keys()
 }

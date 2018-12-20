@@ -1,8 +1,8 @@
 //! Provides an interface to output sound to the user's speakers.
 //!
-//! It consists of two main types: `SoundData` is just raw sound data,
-//! and a `Source` is a `SoundData` connected to a particular sound
-//! channel.
+//! It consists of two main types: [`SoundData`](struct.SoundData.html)
+//! is just raw sound data, and a [`Source`](struct.Source.html) is a
+//! `SoundData` connected to a particular sound channel.
 
 use std::fmt;
 use std::io;
@@ -37,7 +37,7 @@ pub struct RodioAudioContext {
 }
 
 impl RodioAudioContext {
-    /// Create new RodioAudioContext.
+    /// Create new `RodioAudioContext`.
     pub fn new() -> GameResult<Self> {
         let device = rodio::default_output_device().ok_or_else(|| {
             GameError::AudioError(String::from(
@@ -72,24 +72,24 @@ impl AudioContext for NullAudioContext {
 }
 
 /// Static sound data stored in memory.
-/// It is Arc'ed, so cheap to clone.
+/// It is `Arc`'ed, so cheap to clone.
 #[derive(Clone, Debug)]
 pub struct SoundData(Arc<[u8]>);
 
 impl SoundData {
-    /// Create a new SoundData from the file at the given path.
+    /// Create a new `SoundData` from the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
         let file = &mut filesystem::open(context, path)?;
         SoundData::from_read(file)
     }
 
-    /// Copies the data in the given slice into a new SoundData object.
+    /// Copies the data in the given slice into a new `SoundData` object.
     pub fn from_bytes(data: &[u8]) -> Self {
         SoundData(Arc::from(data))
     }
 
-    /// Creates a SoundData from any Read object; this involves
+    /// Creates a `SoundData` from any `Read` object; this involves
     /// copying it into a buffer.
     pub fn from_read<R>(reader: &mut R) -> GameResult<Self>
     where
@@ -151,14 +151,14 @@ pub struct Source {
 }
 
 impl Source {
-    /// Create a new Source from the given file.
+    /// Create a new `Source` from the given file.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
         let data = SoundData::new(context, path)?;
         Source::from_data(context, data)
     }
 
-    /// Creates a new Source using the given SoundData object.
+    /// Creates a new `Source` using the given `SoundData` object.
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
         let sink = rodio::Sink::new(&context.audio_context.device());
         let cursor = io::Cursor::new(data);
@@ -173,14 +173,14 @@ impl Source {
         })
     }
 
-    /// Plays the Source; restarts the sound if currently playing
+    /// Plays the `Source`; restarts the sound if currently playing
     #[inline(always)]
     pub fn play(&mut self) -> GameResult {
         self.stop();
         self.play_later()
     }
 
-    /// Plays the Source; waits until done if the sound is currently playing
+    /// Plays the `Source`; waits until done if the sound is currently playing
     pub fn play_later(&self) -> GameResult {
         // Creating a new Decoder each time seems a little messy,
         // since it may do checking and data-type detection that is
@@ -228,7 +228,7 @@ impl Source {
         Ok(())
     }
 
-    /// Sets the source to repeat playback infinitely on next `play()`
+    /// Sets the source to repeat playback infinitely on next [`play()`](#method.play)
     pub fn set_repeat(&mut self, repeat: bool) {
         self.repeat = repeat;
     }
@@ -296,13 +296,13 @@ impl Source {
         self.sink.is_paused()
     }
 
-    /// Get whether or not the source is playing (ie, not paused
+    /// Get whether or not the source is playing (i.e., not paused
     /// and not stopped)
     pub fn playing(&self) -> bool {
         !self.paused() && !self.stopped()
     }
 
-    /// Get the time the source has been playing since the last call to `play()`.
+    /// Get the time the source has been playing since the last call to [`play()`](#method.play).
     ///
     /// Time measurement is based on audio samples consumed, so it may drift from the system
     /// clock over longer periods of time.
@@ -313,7 +313,7 @@ impl Source {
 
     /// Set the update interval of the internal sample counter.
     ///
-    /// This parameter determines the precision of the time measured by `elapsed()`.
+    /// This parameter determines the precision of the time measured by [`elapsed()`](#method.elapsed).
     pub fn set_query_interval(&mut self, t: time::Duration) {
         self.query_interval = t;
     }
@@ -342,14 +342,14 @@ pub struct SpatialSource {
 }
 
 impl SpatialSource {
-    /// Create a new Source from the given file.
+    /// Create a new `SpatialSource` from the given file.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
         let data = SoundData::new(context, path)?;
         SpatialSource::from_data(context, data)
     }
 
-    /// Creates a new Source using the given SoundData object.
+    /// Creates a new `SpatialSource` using the given `SoundData` object.
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
         let sink = rodio::SpatialSink::new(
             &context.audio_context.device(),
@@ -374,14 +374,14 @@ impl SpatialSource {
         })
     }
 
-    /// Plays the Source; restarts the sound if currently playing
+    /// Plays the `SpatialSource`; restarts the sound if currently playing
     #[inline(always)]
     pub fn play(&mut self) -> GameResult {
         self.stop();
         self.play_later()
     }
 
-    /// Plays the Source; waits until done if the sound is currently playing
+    /// Plays the `SpatialSource`; waits until done if the sound is currently playing
     pub fn play_later(&self) -> GameResult {
         use rodio::Source;
         let cursor = self.data.clone();
@@ -430,7 +430,7 @@ impl SpatialSource {
         Ok(())
     }
 
-    /// Sets the source to repeat playback infinitely on next `play()`
+    /// Sets the source to repeat playback infinitely on next [`play()`](#method.play)
     pub fn set_repeat(&mut self, repeat: bool) {
         self.repeat = repeat;
     }
@@ -508,7 +508,7 @@ impl SpatialSource {
         !self.paused() && !self.stopped()
     }
 
-    /// Get the time the source has been playing since the last call to `play()`.
+    /// Get the time the source has been playing since the last call to [`play()`](#method.play).
     ///
     /// Time measurement is based on audio samples consumed, so it may drift from the system
     /// clock over longer periods of time.
@@ -519,7 +519,7 @@ impl SpatialSource {
 
     /// Set the update interval of the internal sample counter.
     ///
-    /// This parameter determines the precision of the time measured by `elapsed()`.
+    /// This parameter determines the precision of the time measured by [`elapsed()`](#method.elapsed).
     pub fn set_query_interval(&mut self, t: time::Duration) {
         self.query_interval = t;
     }

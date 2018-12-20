@@ -48,9 +48,9 @@ impl GamepadContext for GilrsGamepadContext {
     }
 }
 
-/// A structure that implements `GamepadContext` but does
-/// nothing; a stub for when you don't need it or are on
-/// a platform that `gilrs` doesn't support.
+/// A structure that implements [`GamepadContext`](trait.GamepadContext.html)
+/// but does nothing; a stub for when you don't need it or are
+/// on a platform that `gilrs` doesn't support.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NullGamepadContext {}
 
@@ -64,7 +64,7 @@ impl GamepadContext for NullGamepadContext {
     }
 }
 
-/// returns the `Gamepad` associated with an id.
+/// Returns the `Gamepad` associated with an `id`.
 pub fn gamepad(ctx: &Context, id: usize) -> Option<&Gamepad> {
     ctx.gamepad_context.gamepad(id)
 }

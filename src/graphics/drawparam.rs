@@ -5,13 +5,6 @@ use mint;
 type Vec3 = na::Vector3<f32>;
 
 /// A struct containing all the necessary info for drawing a Drawable.
-///
-/// This struct implements the `Default` trait, so to set only some parameter
-/// you can just do:
-///
-/// ```rust,ignore
-/// graphics::draw_ex(ctx, drawable, DrawParam{ dest: my_dest, .. Default::default()} )
-/// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawParam {
     /// a portion of the drawable to clip, as a fraction of the whole image.
@@ -106,7 +99,7 @@ impl DrawParam {
     // TODO: Easy mirror functions for X and Y axis might be nice.
 }
 
-/// Create a DrawTransform from a location
+/// Create a `DrawParam` from a location
 impl<P> From<(P,)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
@@ -116,7 +109,7 @@ where
     }
 }
 
-/// Create a DrawTransform from a location and color
+/// Create a `DrawParam` from a location and color
 impl<P, C> From<(P, C)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
@@ -127,7 +120,7 @@ where
     }
 }
 
-/// Create a DrawTransform from a location, rotation and color
+/// Create a `DrawParam` from a location, rotation and color
 impl<P, C> From<(P, f32, C)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
@@ -141,7 +134,7 @@ where
     }
 }
 
-/// Create a DrawTransform from a location, rotation, offset and color
+/// Create a `DrawParam` from a location, rotation, offset and color
 impl<P, C> From<(P, f32, P, C)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
@@ -156,7 +149,7 @@ where
     }
 }
 
-/// Create a DrawTransform from a location, rotation, offset, scale and color
+/// Create a `DrawParam` from a location, rotation, offset, scale and color
 impl<P, V, C> From<(P, f32, P, V, C)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
@@ -173,7 +166,7 @@ where
     }
 }
 
-/// A `DrawParam` that has been crunched down to a single matrix.
+/// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
 /// Useful for doing matrix-based coordinate transformations, I hope.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawTransform {
@@ -216,7 +209,7 @@ impl From<DrawParam> for DrawTransform {
 }
 
 impl DrawTransform {
-    /// Returns a new `PrimitiveDrawParam` with its matrix multiplied
+    /// Returns a new `DrawTransform` with its matrix multiplied
     /// by the given one.
     ///
     /// TODO: Make some way to implement `matrix * self.matrix`, or just implement `Mul`...

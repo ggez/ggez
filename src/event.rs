@@ -13,7 +13,7 @@
 //!
 //! TODO: UPDATE DOCS!
 //!
-//! See the `eventloop` example for an implementation.
+//! See the [`eventloop` example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs) for an implementation.
 
 use gilrs;
 use winit::{self, dpi};
@@ -44,12 +44,14 @@ pub use crate::input::keyboard::{KeyCode, KeyMods};
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
-/// override at least the update() and draw() methods, then pass it to
-/// `event::run()` to run the game's mainloop.
+/// override at least the [`update()`](#tymethod.update) and 
+/// [`draw()`](#tymethod.draw) methods, then pass it to
+/// [`event::run()`](fn.run.html) to run the game's mainloop.
 ///
 /// The default event handlers do nothing, apart from
-/// `key_down_event()`, which will by default exit the game if the escape
-/// key is pressed.  Just override the methods you want to do things with.
+/// [`key_down_event()`](#tymethod.key_down_event), which will by
+/// default exit the game if the escape key is pressed.  Just
+/// override the methods you want to do things with.
 pub trait EventHandler {
     /// Called upon each logic update to the game.
     /// This should be where the game's logic takes place.
@@ -57,8 +59,9 @@ pub trait EventHandler {
 
     /// Called to do the drawing of your game.
     /// You probably want to start this with
-    /// `graphics::clear()` and end it with
-    /// `graphics::present()` and `timer::yield_now()`
+    /// [`graphics::clear()`](../graphics/fn.clear.html) and end it
+    /// with [`graphics::present()`](../graphics/fn.present.html) and 
+    /// [`timer::yield_now()`](../timer/fn.yield_now.html).
     fn draw(&mut self, _ctx: &mut Context) -> GameResult;
 
     /// A mouse button was pressed
@@ -109,13 +112,19 @@ pub trait EventHandler {
     /// This is the intended way of facilitating text input.
     fn text_input_event(&mut self, _ctx: &mut Context, _character: char) {}
 
-    /// A controller button was pressed; id identifies which controller.
+    /// A controller button was pressed; `id` identifies which controller.
+    /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
+    /// the controller.
     fn controller_button_down_event(&mut self, _ctx: &mut Context, _btn: Button, _id: usize) {}
 
-    /// A controller button was released.
+    /// A controller button was released; `id` identifies which controller.
+    /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
+    /// the controller.
     fn controller_button_up_event(&mut self, _ctx: &mut Context, _btn: Button, _id: usize) {}
 
-    /// A controller axis moved.
+    /// A controller axis moved; `id` identifies which controller.
+    /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
+    /// the controller.
     fn controller_axis_event(&mut self, _ctx: &mut Context, _axis: Axis, _value: f32, _id: usize) {}
 
     /// Called when the window is shown or hidden.
@@ -129,7 +138,7 @@ pub trait EventHandler {
     }
 
     /// Called when the user resizes the window, or when it is resized
-    /// via `graphics::set_mode()`.
+    /// via [`graphics::set_mode()`](../graphics/fn.set_mode.html).
     fn resize_event(&mut self, _ctx: &mut Context, _width: f32, _height: f32) {}
 }
 
@@ -137,7 +146,7 @@ pub trait EventHandler {
 /// object as events occur.
 ///
 /// It does not try to do any type of framerate limiting.  See the
-/// documentation for the `timer` module for more info.
+/// documentation for the [`timer`](../timer/index.html) module for more info.
 pub fn run<S>(ctx: &mut Context, events_loop: &mut EventsLoop, state: &mut S) -> GameResult
 where
     S: EventHandler,

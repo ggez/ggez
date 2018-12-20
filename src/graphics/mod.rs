@@ -1,6 +1,6 @@
 //! The `graphics` module performs the actual drawing of images, text, and other
-//! objects with the `Drawable` trait.  It also handles basic loading of images
-//! and text.
+//! objects with the [`Drawable`](trait.Drawable.html) trait.  It also handles
+//! basic loading of images and text.
 //!
 //! This module also manages graphics state, coordinate systems, etc.
 //! The default coordinate system has the origin in the upper-left
@@ -9,6 +9,7 @@
 use std::collections::HashMap;
 use std::convert::From;
 use std::fmt;
+use std::path::Path;
 use std::u16;
 
 use gfx;
@@ -17,6 +18,7 @@ use gfx::Device;
 use gfx::Factory;
 use gfx_device_gl;
 use glutin;
+use winit::Icon;
 
 use crate::conf;
 use crate::conf::WindowMode;
@@ -120,15 +122,15 @@ pub trait BackendSpec: fmt::Debug {
 }
 
 /// A backend specification for OpenGL.
-/// This is different from `conf::Backend` because
-/// this needs to be its own struct to implement traits upon,
-/// and because there may need to be a layer of translation
+/// This is different from [`Backend`](../conf/enum.Backend.html)
+/// because this needs to be its own struct to implement traits
+/// upon, and because there may need to be a layer of translation
 /// between what the user specifies in the config, and what the
 /// graphics backend init code actually gets.
 ///
 /// You shouldn't normally need to fiddle with this directly
-/// but it has to be exported cause generic types like
-/// `Shader` depend on it.
+/// but it has to be exported because generic types like
+/// [`Shader`](type.Shader.html) depend on it.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
 pub struct GlBackendSpec {
     #[default = r#"3"#]
@@ -398,7 +400,7 @@ pub fn clear(ctx: &mut Context, color: Color) {
 }
 
 /// Draws the given `Drawable` object to the screen by calling its
-/// `draw()` method.
+/// [`draw()`](trait.Drawable.html#tymethod.draw) method.
 pub fn draw<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult
 where
     D: Drawable,
@@ -409,7 +411,8 @@ where
 }
 
 /// Tells the graphics system to actually put everything on the screen.
-/// Call this at the end of your `EventHandler`'s `draw()` method.
+/// Call this at the end of your [`EventHandler`](../event/trait.EventHandler.html)'s
+/// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) method.
 ///
 /// Unsets any active canvas.
 pub fn present(ctx: &mut Context) -> GameResult<()> {
@@ -519,7 +522,7 @@ pub fn renderer_info(ctx: &Context) -> GameResult<String> {
 /// Returns a rectangle defining the coordinate system of the screen.
 /// It will be `Rect { x: left, y: top, w: width, h: height }`
 ///
-/// If the Y axis increases downwards, the `height` of the Rect
+/// If the Y axis increases downwards, the `height` of the `Rect`
 /// will be negative.
 pub fn screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
@@ -558,8 +561,9 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
 /// Sets the raw projection matrix to the given homogeneous
 /// transformation matrix.
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply
-/// these changes and recalculate the underlying MVP matrix.
+/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
+/// after calling this to apply these changes and recalculate the
+/// underlying MVP matrix.
 pub fn set_projection(context: &mut Context, proj: Matrix4) {
     let gfx = &mut context.gfx_context;
     gfx.set_projection(proj);
@@ -567,8 +571,9 @@ pub fn set_projection(context: &mut Context, proj: Matrix4) {
 
 /// Premultiplies the given transformation matrix with the current projection matrix
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply
-/// these changes and recalculate the underlying MVP matrix.
+/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
+/// after calling this to apply these changes and recalculate the
+/// underlying MVP matrix.
 pub fn mul_projection(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
     let curr = gfx.projection();
@@ -585,11 +590,24 @@ pub fn projection(context: &Context) -> Matrix4 {
 /// (model) matrix stack of the `Context`. If no matrix is given, then
 /// pushes a copy of the current transform matrix to the top of the stack.
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply
-/// these changes and recalculate the underlying MVP matrix.
+/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
+/// after calling this to apply these changes and recalculate the
+/// underlying MVP matrix.
 ///
-/// A `DrawParam` can be converted into an appropriate transform
-/// matrix by calling `param.into_matrix()`.
+/// A [`DrawParam`](struct.DrawParam.html) can be converted into an appropriate
+/// transform matrix by turning it into a [`DrawTransform`](struct.DrawTransform.html):
+///
+/// ```rust,no_run
+/// # use ggez::*;
+/// # use ggez::graphics::*;
+/// # fn main() {
+/// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
+/// let param = /* DrawParam building */
+/// #   DrawParam::new();
+/// let transform: DrawTransform = param.into();
+/// graphics::push_transform(ctx, Some(transform.matrix));
+/// # }
+/// ```
 pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
     let gfx = &mut context.gfx_context;
     if let Some(t) = transform {
@@ -606,8 +624,9 @@ pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
 /// Pops the transform matrix off the top of the transform
 /// (model) matrix stack of the `Context`.
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply
-/// these changes and recalculate the underlying MVP matrix.
+/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
+/// after calling this to apply these changes and recalculate the
+/// underlying MVP matrix.
 pub fn pop_transform(context: &mut Context) {
     let gfx = &mut context.gfx_context;
     gfx.pop_transform();
@@ -616,11 +635,24 @@ pub fn pop_transform(context: &mut Context) {
 /// Sets the current model transformation to the given homogeneous
 /// transformation matrix.
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply
-/// these changes and recalculate the underlying MVP matrix.
+/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
+/// after calling this to apply these changes and recalculate the
+/// underlying MVP matrix.
 ///
-/// A `DrawParam` can be converted into an appropriate transform
-/// matrix by calling `param.into_matrix()`.
+/// A [`DrawParam`](struct.DrawParam.html) can be converted into an appropriate
+/// transform matrix by turning it into a [`DrawTransform`](struct.DrawTransform.html):
+///
+/// ```rust,no_run
+/// # use ggez::*;
+/// # use ggez::graphics::*;
+/// # fn main() {
+/// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
+/// let param = /* DrawParam building */
+/// #   DrawParam::new();
+/// let transform: DrawTransform = param.into();
+/// graphics::set_transform(ctx, transform.matrix);
+/// # }
+/// ```
 pub fn set_transform(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
     gfx.set_transform(transform);
@@ -634,11 +666,24 @@ pub fn transform(context: &Context) -> Matrix4 {
 
 /// Premultiplies the given transform with the current model transform.
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply
-/// these changes and recalculate the underlying MVP matrix.
+/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
+/// after calling this to apply these changes and recalculate the
+/// underlying MVP matrix.
 ///
-/// A `DrawParam` can be converted into an appropriate transform
-/// matrix by calling `param.into_matrix()`.
+/// A [`DrawParam`](struct.DrawParam.html) can be converted into an appropriate
+/// transform matrix by turning it into a [`DrawTransform`](struct.DrawTransform.html):
+///
+/// ```rust,no_run
+/// # use ggez::*;
+/// # use ggez::graphics::*;
+/// # fn main() {
+/// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
+/// let param = /* DrawParam building */
+/// #   DrawParam::new();
+/// let transform: DrawTransform = param.into();
+/// graphics::mul_transform(ctx, transform.matrix);
+/// # }
+/// ```
 pub fn mul_transform(context: &mut Context, transform: Matrix4) {
     let gfx = &mut context.gfx_context;
     let curr = gfx.transform();
@@ -647,8 +692,9 @@ pub fn mul_transform(context: &mut Context, transform: Matrix4) {
 
 /// Sets the current model transform to the origin transform (no transformation)
 ///
-/// You must call `apply_transformations(ctx)` after calling this to apply
-/// these changes and recalculate the underlying MVP matrix.
+/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
+/// after calling this to apply these changes and recalculate the
+/// underlying MVP matrix.
 pub fn origin(context: &mut Context) {
     let gfx = &mut context.gfx_context;
     gfx.set_transform(Matrix4::identity());
@@ -672,8 +718,9 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
 ///
 /// Setting the window mode may have side effects, such as clearing
 /// the screen or setting the screen coordinates viewport to some undefined value.
-/// It is recommended to call `set_screen_coordinates()` after changing the window
-/// size to make sure everything is what you want it to be.
+/// It is recommended to call [`set_screen_coordinates()`](fn.set_screen_coordinates.html)
+/// after changing the window size to make sure everything is what you want
+/// it to be.
 pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult {
     let gfx = &mut context.gfx_context;
     gfx.set_window_mode(mode)?;
@@ -704,8 +751,6 @@ pub fn set_resizable(context: &mut Context, resizable: bool) -> GameResult {
     set_mode(context, window_mode)
 }
 
-use std::path::Path;
-use winit::Icon;
 /// Sets the window icon.
 pub fn set_window_icon<P: AsRef<Path>>(context: &Context, path: Option<P>) -> GameResult<()> {
     let icon = match path {
@@ -721,10 +766,10 @@ pub fn set_window_title(context: &Context, title: &str) {
     context.gfx_context.window.set_title(title);
 }
 
-/// Returns a reference to the SDL window.
+/// Returns a reference to the Glutin window.
 /// Ideally you should not need to use this because ggez
 /// would provide all the functions you need without having
-/// to dip into SDL itself.  But life isn't always ideal.
+/// to dip into Glutin itself.  But life isn't always ideal.
 pub fn window(context: &Context) -> &glutin::Window {
     let gfx = &context.gfx_context;
     &gfx.window
@@ -732,9 +777,9 @@ pub fn window(context: &Context) -> &glutin::Window {
 
 /// Returns the size of the window in pixels as (width, height),
 /// including borders, titlebar, etc.
-/// Returns zeros if window doesn't exist.
+/// Returns zeros if the window doesn't exist.
 /// TODO: Rename, since get_drawable_size is usually what we
-/// actually want
+/// actually want. Maybe get_entire_size or get_window_border_size?
 pub fn size(context: &Context) -> (f64, f64) {
     let gfx = &context.gfx_context;
     gfx.window
@@ -744,8 +789,8 @@ pub fn size(context: &Context) -> (f64, f64) {
 }
 
 /// Returns the hidpi pixel scaling factor that ggez
-/// is currently using.  If  `conf::WindowMode::hidpi`
-/// is true this is equal to `get_os_hidpi_factor()`,
+/// is currently using.  If  [`WindowSetup::allow_highdpi`](../conf/struct.WindowSetup.html#structfield.allow_highdpi)
+/// is true this is equal to [`os_hidpi_factor()`](fn.os_hidpi_factor.html),
 /// otherwise it is `1.0`.
 pub fn hidpi_factor(context: &Context) -> f32 {
     context.gfx_context.hidpi_factor
@@ -840,7 +885,7 @@ pub trait Drawable {
         D: Into<DrawParam>;
 
     /// Sets the blend mode to be used when drawing this drawable.
-    /// This overrides the general `graphics::set_blend_mode()`.
+    /// This overrides the general [`graphics::set_blend_mode()`](fn.set_blend_mode.html).
     /// If `None` is set, defers to the blend mode set by
     /// `graphics::set_blend_mode()`.
     fn set_blend_mode(&mut self, mode: Option<BlendMode>);
