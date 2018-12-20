@@ -14,7 +14,7 @@ use graphics::*;
 use Context;
 
 /// A generic canvas independent of graphics backend. This type should probably
-/// never be used directly; use `ggez::graphics::Canvas` instead.
+/// never be used directly; use [`ggez::graphics::Canvas`](type.Canvas.html) instead.
 #[derive(Debug)]
 pub struct CanvasGeneric<Spec>
 where
@@ -27,7 +27,7 @@ where
 
 /// A canvas that can be rendered to instead of the screen (sometimes referred
 /// to as "render target" or "render to texture"). Set the canvas with the
-/// `ggez::graphics::set_canvas()` function, and then anything you
+/// [`ggez::graphics::set_canvas()`](fn.set_canvas.html) function, and then anything you
 /// draw will be drawn to the canvas instead of the screen.
 /// Resume drawing to the screen by calling `ggez::graphics::set_canvas(None)`.
 ///
@@ -41,7 +41,7 @@ where
 /// the screen.  This allows graphics to be rendered to images off-screen
 /// in order to do things like saving to an image file or creating cool effects
 /// by using shaders that render to an image.
-/// If you just want to draw multiple things efficiently, look at `SpriteBatch`.
+/// If you just want to draw multiple things efficiently, look at [`SpriteBatch`](struct.SpriteBatch.html).
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 impl Canvas {
@@ -110,12 +110,12 @@ impl Canvas {
         Canvas::new(ctx, w, h, conf::NumSamples::One)
     }
 
-    /// Gets the backend `Image` that is being rendered to.
+    /// Gets the backend [`Image`](type.Image.html) that is being rendered to.
     pub fn get_image(&self) -> &Image {
         &self.image
     }
 
-    /// Destroys the Canvas and returns the `Image` it contains.
+    /// Destroys the Canvas and returns the [`Image`](type.Image.html) it contains.
     pub fn into_inner(self) -> Image {
         // This texture is created with different settings
         // than the default; does that matter?

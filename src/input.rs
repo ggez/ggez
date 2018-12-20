@@ -27,7 +27,7 @@ impl fmt::Debug for GamepadContext {
 }
 
 impl GamepadContext {
-    /// Create new GamepadContext
+    /// Create new `GamepadContext`
     pub fn new(sdl_context: &Sdl) -> GameResult<Self> {
         let controller_ctx = sdl_context.game_controller()?;
         let joy_count = controller_ctx.num_joysticks()?;
@@ -47,8 +47,12 @@ impl GamepadContext {
     }
 }
 
-/// returns the `GameController` associated with an instance id.
-/// The `instance_id` can be obtained from `GamepadEvents` in the `EventHandler`
+/// Returns the `GameController` associated with an instance id.
+/// The `instance_id` can be obtained from
+/// [`controller_*`](../event/trait.EventHandler.html#tymethod.controller_button_down_event)
+/// events in the [`EventHandler`](../event/trait.EventHandler.html).
+// Note: The link to specifically controller_button_down_event is because `cargo doc` will sort
+// methods alphabetically. By linking to the first one, the user will be shown all three consecutively.
 pub fn get_gamepad(ctx: &Context, instance_id: i32) -> Option<&GameController> {
     ctx.gamepad_context.gamepads.get(&instance_id)
 }

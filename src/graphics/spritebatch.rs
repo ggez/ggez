@@ -1,4 +1,4 @@
-//! A `SpriteBatch` is a way to efficiently draw a large
+//! A [`SpriteBatch`](struct.SpriteBatch.html) is a way to efficiently draw a large
 //! number of copies of the same image, or part of the same image.  It's
 //! useful for implementing tiled maps, spritesheets, particles, and
 //! other such things.
@@ -19,11 +19,11 @@ use GameResult;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
 ///
-/// This is generally faster than drawing the same sprite with many invocations of `draw()`,
-/// though it has a bit of overhead to set up the batch.  This makes it run very slowly
-/// in Debug mode because it spends a lot of time on array bounds checking and
-/// un-optimized math; you need to build with optimizations enabled to really get the
-/// speed boost.
+/// This is generally faster than drawing the same sprite with many invocations of
+/// [`draw()`](../fn.draw.html), though it has a bit of overhead to set up the batch.
+/// This makes it run very slowly in `Debug` mode because it spends a lot of time on array
+/// bounds checking and un-optimized math; you need to build with optimizations enabled to
+/// really get the speed boost.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpriteBatch {
     image: graphics::Image,
@@ -31,10 +31,10 @@ pub struct SpriteBatch {
     blend_mode: Option<BlendMode>,
 }
 
-/// A drawable combination of a `SpriteBatch` and a specific `Image`.
-/// It is not always convenient for a `SpriteBatch` to own the image
-/// it is drawing, so this structure lets you override the image with
-/// a borrowed one.
+/// A drawable combination of a [`SpriteBatch`](struct.SpriteBatch.html)
+/// and a specific [`Image`](../type.Image.html). It is not always
+/// convenient for a `SpriteBatch` to own the image it is drawing, so this
+/// structure lets you override the image with a borrowed one.
 ///
 /// This is now deprecated; an `Image` is cheap to clone and
 /// this was never terribly useful to begin with.
@@ -45,7 +45,7 @@ pub struct BoundSpriteBatch<'a> {
     batch: &'a mut SpriteBatch,
 }
 
-/// An index of a particular sprite in a `SpriteBatch`.
+/// An index of a particular sprite in a [`SpriteBatch`](struct.SpriteBatch.html).
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SpriteIdx(usize);
 
@@ -65,7 +65,8 @@ impl SpriteBatch {
 
     /// Adds a new sprite to the sprite batch.
     ///
-    /// Returns a handle with which type to modify the sprite using `set()`
+    /// Returns a handle with which type to modify the sprite using
+    /// [`set()`](#method.set)
     pub fn add(&mut self, param: graphics::DrawParam) -> SpriteIdx {
         self.sprites.push(param);
         SpriteIdx(self.sprites.len() - 1)
@@ -85,8 +86,8 @@ impl SpriteBatch {
 
     /// Immediately sends all data in the batch to the graphics card.
     ///
-    /// Generally just calling `graphics::draw()` on the `SpriteBatch`
-    /// will do this automaticassertally.
+    /// Generally just calling [`graphics::draw()`](../fn.draw.html) on
+    /// the `SpriteBatch` will do this automaticassertally.
     fn flush(
         &self,
         ctx: &mut Context,

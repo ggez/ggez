@@ -1,8 +1,8 @@
 //! This module is an **experimental** integration of the `gfx_glyph`
 //! text cache crate.  This should offer both much higher performance than
-//! `ggez::graphics::Text`, and also more features.  Use it, enjoy it,
-//! experiment with it, and offer suggestions for improving the API.
-//! Hopefully this will be the default method of rendering text for
+//! [`ggez::graphics::Text`](struct.Text.html), and also more features.
+//! Use it, enjoy it, experiment with it, and offer suggestions for improving
+//! the API. Hopefully this will be the default method of rendering text for
 //! ggez 0.5.0.
 
 use super::*;
@@ -18,7 +18,8 @@ use std::sync::{Arc, RwLock};
 /// Aliased type from `gfx_glyph`.
 pub type Layout = gfx_glyph::Layout<gfx_glyph::BuiltInLineBreaker>;
 
-/// Default scale, used as `Scale::uniform(DEFAULT_FONT_SCALE)` when no explicit scale is given.
+/// Default scale, used as [`Scale::uniform(DEFAULT_FONT_SCALE)`](type.Scale.html)
+/// when no explicit scale is given.
 pub const DEFAULT_FONT_SCALE: f32 = 16.0;
 
 /// A piece of text with optional color, font and font scale information.
@@ -396,9 +397,10 @@ impl TextCached {
         self.calculate_dimensions(context).1
     }
 
-    /// Queues the `TextCached` to be drawn by `draw_queued()`.
-    /// `relative_dest` is relative to the `DrawParam::dest` passed to `draw_queued()`.
-    /// Note, any `TextCached` drawn via `graphics::draw()` will also draw the queue.
+    /// Queues the `TextCached` to be drawn by [`draw_queued()`](#method.draw_queued).
+    /// `relative_dest` is relative to the [`DrawParam::dest`](struct.DrawParam.html#structfield.dest)
+    /// passed to `draw_queued()`. Note, any `TextCached` drawn via [`graphics::draw()`](fn.draw.html)
+    /// will also draw the queue.
     pub fn queue(&self, context: &mut Context, relative_dest: Point2, color: Option<Color>) {
         let varied_section = self.generate_varied_section(context, relative_dest, color);
         context.gfx_context.glyph_brush.queue(varied_section);
@@ -418,9 +420,9 @@ impl TextCached {
         }
     }
 
-    /// Draws all of `queue()`d `TextCached`.
-    /// `DrawParam` apply to everything in the queue; offset is in screen coordinates;
-    /// color is ignored - specify it when `queue()`ing instead.
+    /// Draws all of [`queue()`](#method.queue)d `TextCached`.
+    /// [`DrawParam`](struct.DrawParam.html) apply to everything in the queue; offset is in
+    /// screen coordinates; color is ignored - specify it when `queue()`ing instead.
     pub fn draw_queued<D>(context: &mut Context, param: D) -> GameResult<()>
     where
         D: Into<DrawParam>,

@@ -1,12 +1,12 @@
 //! The `conf` module contains functions for loading and saving game
 //! configurations.
 //!
-//! A `Conf` struct is used to specify hardware setup stuff used to create
+//! A [`Conf`](struct.Conf.html) struct is used to specify hardware setup stuff used to create
 //! the window and other context information.
 //!
 //! By default a ggez game will search its resource paths for a `/conf.toml`
-//! file and load values from it when the `Context` is created.  This file
-//! must be complete (i.e., you cannot just fill in some fields and have the
+//! file and load values from it when the [`Context`](../struct.Context.html) is created.
+//!  This file must be complete (i.e., you cannot just fill in some fields and have the
 //! rest be default) and provides a nice way to specify settings that
 //! can be tweaked such as window resolution, multisampling options, etc.
 
@@ -49,7 +49,7 @@ impl From<FullscreenType> for SdlFullscreenType {
 }
 
 /// A builder structure containing window settings
-/// that can be set at runtime and changed with `graphics::set_mode()`
+/// that can be set at runtime and changed with [`graphics::set_mode()`](../graphics/fn.set_mode.html)
 ///
 /// Defaults:
 ///
@@ -162,8 +162,8 @@ pub struct WindowSetup {
     #[default = r#""An easy, good game".to_owned()"#]
     pub title: String,
     /// A file path to the window's icon.
-    /// It is rooted in the `resources` directory (see the `filesystem` module for details),
-    /// and an empty string results in a blank/default icon.
+    /// It is rooted in the `resources` directory (see the [`filesystem`](../filesystem/index.html)
+    /// module for details), and an empty string results in a blank/default icon.
     #[default = r#""".to_owned()"#]
     pub icon: String,
     /// Whether or not the window is resizable
@@ -252,8 +252,8 @@ pub enum NumSamples {
 }
 
 impl NumSamples {
-    /// Create a NumSamples from a number.
-    /// Returns None if i is invalid.
+    /// Create a `NumSamples` from a number.
+    /// Returns None if `i` is invalid.
     pub fn from_u32(i: u32) -> Option<NumSamples> {
         match i {
             1 => Some(NumSamples::One),
@@ -291,7 +291,7 @@ pub struct Conf {
 }
 
 impl Conf {
-    /// Same as Conf::default()
+    /// Same as `Conf::default()`
     pub fn new() -> Self {
         Self::default()
     }
