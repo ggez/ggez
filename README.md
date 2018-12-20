@@ -77,6 +77,10 @@ or `Conf` object, and then call `event::run()` with
 the `Context` and an instance of your `EventHandler` to run your game's
 main loop.
 
+## Getting started
+
+For a quick tutorial on ggez, see the [Hello ggez](https://github.com/ggez/ggez/blob/master/docs/guides/HelloGgez.md) guide in the `docs/` directory.
+
 ## Examples
 
 See the `examples/` directory in the source.  Most examples show off
