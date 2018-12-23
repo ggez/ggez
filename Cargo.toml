@@ -35,8 +35,10 @@ bitflags = "1.0"
 zip = { version = "0.5", default-features = false }
 app_dirs2 = "2"
 gfx = "0.17"
+gfx_core = "0.8"
 gfx_device_gl = "0.15"
-gfx_glyph = "0.12"
+gfx_glyph = "0.13"
+glyph_brush = "0.2"
 gfx_window_glutin = "0.27"
 glutin = "0.19"
 winit = { version = "0.18", features = ["icon_loading"] }

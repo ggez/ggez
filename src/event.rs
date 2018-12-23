@@ -44,7 +44,7 @@ pub use crate::input::keyboard::{KeyCode, KeyMods};
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
-/// override at least the [`update()`](#tymethod.update) and 
+/// override at least the [`update()`](#tymethod.update) and
 /// [`draw()`](#tymethod.draw) methods, then pass it to
 /// [`event::run()`](fn.run.html) to run the game's mainloop.
 ///
@@ -60,7 +60,7 @@ pub trait EventHandler {
     /// Called to do the drawing of your game.
     /// You probably want to start this with
     /// [`graphics::clear()`](../graphics/fn.clear.html) and end it
-    /// with [`graphics::present()`](../graphics/fn.present.html) and 
+    /// with [`graphics::present()`](../graphics/fn.present.html) and
     /// [`timer::yield_now()`](../timer/fn.yield_now.html).
     fn draw(&mut self, _ctx: &mut Context) -> GameResult;
 

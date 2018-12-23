@@ -219,7 +219,7 @@ impl ContextBuilder {
 
     /// Sets all the config options, overriding any previous
     /// ones from [`window_setup()`](#method.window_setup),
-    /// [`window_mode()`](#method.window_mode), and 
+    /// [`window_mode()`](#method.window_mode), and
     /// [`backend()`](#method.backend).
     pub fn conf(mut self, conf: conf::Conf) -> Self {
         self.conf = conf;
@@ -263,7 +263,7 @@ impl ContextBuilder {
     }
 }
 
-/// Terminates [`ggez::run()`](fn.run.html) loop by setting 
+/// Terminates [`ggez::run()`](fn.run.html) loop by setting
 /// [`Context.continuing`](struct.Context.html#structfield.continuing)
 /// to `false`.
 pub fn quit(ctx: &mut Context) {

@@ -57,6 +57,7 @@ where
     pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
     pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
+    pub(crate) fonts: Vec<glyph_brush::rusttype::Font<'static>>,
 }
 
 impl<B> fmt::Debug for GraphicsContextGeneric<B>
@@ -290,6 +291,8 @@ where
             shaders: vec![draw],
 
             glyph_brush,
+            // TODO: Use default font here
+            fonts: vec![],
         };
         gfx.set_window_mode(window_mode)?;
 

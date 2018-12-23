@@ -17,7 +17,7 @@
 //! hardware, an [`EventHandler`](event/trait.EventHandler.html) trait that the
 //! user implements to register callbacks for events, and various sub-modules such as
 //! [`graphics`](graphics/index.html) and [`audio`](audio/index.html) that provide
-//! the functionality to actually get stuff done. 
+//! the functionality to actually get stuff done.
 //!
 //! The general pattern is to create a struct holding your game's data which implements
 //! the `EventHandler` trait. Create a new `Context` object with default objects from a
