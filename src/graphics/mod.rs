@@ -85,6 +85,14 @@ pub trait BackendSpec: fmt::Debug {
     /// it would return `(3, 2)`.
     fn version_tuple(&self) -> (u8, u8);
 
+    /// Returns the glutin `Api` enum for this backend.
+    /// For GL this will always be the same, I suppose.
+    fn api(&self) -> glutin::Api;
+
+    /// Returns the text of the vertex and fragment shader files
+    /// to create default shaders for this backend.
+    fn shaders(&self) -> (&'static [u8], &'static [u8]);
+
     /// Returns a string containing some backend-dependent info.
     fn info(&self, device: &Self::Device) -> String;
 
@@ -131,18 +139,29 @@ pub trait BackendSpec: fmt::Debug {
 /// You shouldn't normally need to fiddle with this directly
 /// but it has to be exported because generic types like
 /// [`Shader`](type.Shader.html) depend on it.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault)]
 pub struct GlBackendSpec {
     #[default = r#"3"#]
     major: u8,
     #[default = r#"2"#]
     minor: u8,
+    #[default = r#"glutin::Api::OpenGl"#]
+    api: glutin::Api,
 }
 
 impl From<conf::Backend> for GlBackendSpec {
     fn from(c: conf::Backend) -> Self {
         match c {
-            conf::Backend::OpenGL { major, minor } => Self { major, minor },
+            conf::Backend::OpenGL { major, minor } => Self {
+                major,
+                minor,
+                api: glutin::Api::OpenGl,
+            },
+            conf::Backend::OpenGLES { major, minor } => Self {
+                major,
+                minor,
+                api: glutin::Api::OpenGlEs,
+            },
         }
     }
 }
@@ -155,6 +174,24 @@ impl BackendSpec for GlBackendSpec {
 
     fn version_tuple(&self) -> (u8, u8) {
         (self.major, self.minor)
+    }
+
+    fn api(&self) -> glutin::Api {
+        self.api
+    }
+
+    fn shaders(&self) -> (&'static [u8], &'static [u8]) {
+        match self.api {
+            glutin::Api::OpenGl => (
+                include_bytes!("shader/basic_150.glslv"),
+                include_bytes!("shader/basic_150.glslf"),
+            ),
+            glutin::Api::OpenGlEs => (
+                include_bytes!("shader/basic_es300.glslv"),
+                include_bytes!("shader/basic_es300.glslf"),
+            ),
+            a => panic!("Unsupported API: {:?}, should never happen", a),
+        }
     }
 
     fn init<'a>(

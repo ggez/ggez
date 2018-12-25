@@ -237,8 +237,8 @@ impl WindowSetup {
 }
 
 /// Possible backends.
-/// Currently, only OpenGL Core spec is supported,
-/// but this lets you specify the version numbers.
+/// Currently, only OpenGL and OpenGL ES Core specs are supported,
+/// but this lets you specify which to use as well as the version numbers.
 ///
 /// Defaults:
 ///
@@ -265,6 +265,17 @@ pub enum Backend {
         #[default = r#"2"#]
         minor: u8,
     },
+    /// OpenGL ES versions, defaults to 3.0.  Using something older
+    /// than that starts to running into sticky limitations, particularly
+    /// with instancing, but might be possible.
+    OpenGLES {
+        /// OpenGL ES major version
+        #[default = r#"3"#]
+        major: u8,
+        /// OpenGL ES minor version
+        #[default = r#"0"#]
+        minor: u8,
+    },
 }
 
 impl Backend {
@@ -272,6 +283,10 @@ impl Backend {
     pub fn opengl(self, new_major: u8, new_minor: u8) -> Self {
         match self {
             Backend::OpenGL { .. } => Backend::OpenGL {
+                major: new_major,
+                minor: new_minor,
+            },
+            Backend::OpenGLES { .. } => Backend::OpenGLES {
                 major: new_major,
                 minor: new_minor,
             },

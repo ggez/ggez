@@ -72,22 +72,13 @@ where
 /// A concrete graphics context for GL rendering.
 pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec>;
 
-impl<B> GraphicsContextGeneric<B>
-where
-    B: BackendSpec + 'static,
-{
-    /// TODO: This is sorta redundant with BackendSpec too...?
-    pub(crate) fn new_encoder(&mut self) -> gfx::Encoder<B::Resources, B::CommandBuffer> {
-        let factory = &mut *self.factory;
-        B::encoder(factory)
-    }
-
+impl GraphicsContextGeneric<GlBackendSpec> {
     /// Create a new GraphicsContext
     pub(crate) fn new(
         events_loop: &winit::EventsLoop,
         window_setup: &WindowSetup,
         window_mode: WindowMode,
-        backend: B,
+        backend: GlBackendSpec,
         debug_id: DebugId,
     ) -> GameResult<Self> {
         let srgb = window_setup.srgb;
@@ -113,9 +104,12 @@ where
 
         // WINDOW SETUP
         let gl_builder = glutin::ContextBuilder::new()
-            //GlRequest::Specific(Api::OpenGl, (backend.major, backend.minor))
+            // GlRequest::Specific(Api::OpenGl, (backend.major, backend.minor))
             // TODO: Fix the "Latest" here.
-            .with_gl(glutin::GlRequest::Latest)
+            .with_gl(glutin::GlRequest::Specific(
+                backend.api(),
+                backend.version_tuple(),
+            ))
             .with_gl_profile(glutin::GlProfile::Core)
             .with_multisampling(window_setup.samples as u16)
             // TODO: Better pixel format here?
@@ -174,14 +168,17 @@ where
             debug!("  Window size: {}x{}, drawable size: {}x{}", w, h, dw, dh);
             let device_info = backend.info(&device);
             debug!(
-                "  Asked for   : OpenGL {}.{} Core, vsync: {}",
-                major, minor, window_setup.vsync
+                "  Asked for   : {:?} {}.{} Core, vsync: {}",
+                backend.api(),
+                major,
+                minor,
+                window_setup.vsync
             );
             debug!("  Actually got: {}", device_info);
         }
 
         // GFX SETUP
-        let mut encoder = B::encoder(&mut factory);
+        let mut encoder = GlBackendSpec::encoder(&mut factory);
 
         let blend_modes = [
             BlendMode::Alpha,
@@ -194,9 +191,10 @@ where
             BlendMode::Darken,
         ];
         let multisample_samples = window_setup.samples as u8;
+        let (vs_text, fs_text) = backend.shaders();
         let (shader, draw) = create_shader(
-            include_bytes!("shader/basic_150.glslv"),
-            include_bytes!("shader/basic_150.glslf"),
+            vs_text,
+            fs_text,
             EmptyConst,
             "Empty",
             &mut encoder,
@@ -223,7 +221,7 @@ where
         quad_slice.instances = Some((1, 0));
 
         let globals_buffer = factory.create_constant_buffer(1);
-        let mut samplers: SamplerCache<B> = SamplerCache::new();
+        let mut samplers: SamplerCache<GlBackendSpec> = SamplerCache::new();
         let sampler_info =
             texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
         let sampler = samplers.get_or_insert(sampler_info, &mut factory);
@@ -273,8 +271,8 @@ where
             backend_spec: backend,
             window,
             multisample_samples,
-            device: Box::new(device as B::Device),
-            factory: Box::new(factory as B::Factory),
+            device: Box::new(device as <GlBackendSpec as BackendSpec>::Device),
+            factory: Box::new(factory as <GlBackendSpec as BackendSpec>::Factory),
             encoder,
             screen_render_target,
             depth_view,
@@ -309,6 +307,17 @@ where
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
         Ok(gfx)
+    }
+}
+
+impl<B> GraphicsContextGeneric<B>
+where
+    B: BackendSpec + 'static,
+{
+    /// TODO: This is sorta redundant with BackendSpec too...?
+    pub(crate) fn new_encoder(&mut self) -> gfx::Encoder<B::Resources, B::CommandBuffer> {
+        let factory = &mut *self.factory;
+        B::encoder(factory)
     }
 
     /// Sends the current value of the graphics context's shader globals
