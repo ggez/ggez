@@ -3,8 +3,8 @@ use std::rc::Rc;
 
 use gfx::traits::FactoryExt;
 use gfx::Factory;
-use gfx_glyph::{GlyphBrush, GlyphBrushBuilder};
 use glutin;
+use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
 use winit::{self, dpi};
 
 use crate::conf::{FullscreenType, WindowMode, WindowSetup};
@@ -56,7 +56,7 @@ where
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
-    pub(crate) glyph_brush: GlyphBrush<'static, B::Resources, B::Factory>,
+    pub(crate) glyph_brush: GlyphBrush<'static>,
     pub(crate) fonts: Vec<glyph_brush::rusttype::Font<'static>>,
 }
 
@@ -207,8 +207,8 @@ where
             debug_id,
         )?;
 
-        let glyph_brush = GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec())
-            .build(factory.clone());
+        let glyph_brush =
+            GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec()).build();
 
         let rect_inst_props = factory.create_buffer(
             1,

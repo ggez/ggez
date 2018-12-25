@@ -37,7 +37,6 @@ app_dirs2 = "2"
 gfx = "0.17"
 gfx_core = "0.8"
 gfx_device_gl = "0.15"
-gfx_glyph = "0.13"
 glyph_brush = "0.2"
 gfx_window_glutin = "0.27"
 glutin = "0.19"
@@ -66,3 +65,4 @@ skeptic = "0.13"
 
 [build-dependencies]
 skeptic = "0.13"
+

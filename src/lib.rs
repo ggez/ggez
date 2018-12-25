@@ -85,9 +85,9 @@ extern crate app_dirs2;
 #[macro_use]
 extern crate gfx;
 extern crate gfx_device_gl;
-extern crate gfx_glyph;
 extern crate gfx_window_glutin;
 extern crate glutin;
+extern crate glyph_brush;
 extern crate image;
 #[macro_use]
 extern crate log;

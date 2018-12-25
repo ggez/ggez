@@ -8,7 +8,7 @@ extern crate rand;
 use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
-use ggez::graphics::{self, Align, Color, DrawParam, Font, Scale, Text, TextFragment};
+use ggez::graphics::{self, rusttype::Scale, Align, Color, DrawParam, Font, Text, TextFragment};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use std::collections::BTreeMap;
