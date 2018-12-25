@@ -61,7 +61,7 @@ gilrs = "0.6"
 chrono = "0.4"
 fern = "0.5"
 rand = "0.6"
-clap = "2"
+structopt = "0.2"
 cgmath = { version = "0.16", features = ["mint"]}
 skeptic = "0.13"
 

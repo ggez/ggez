@@ -551,8 +551,11 @@ pub fn default_filter(ctx: &Context) -> FilterMode {
 pub fn renderer_info(ctx: &Context) -> GameResult<String> {
     let backend_info = ctx.gfx_context.backend_spec.info(&*ctx.gfx_context.device);
     Ok(format!(
-        "Requested OpenGL {}.{} Core profile, actually got {}.",
-        ctx.gfx_context.backend_spec.major, ctx.gfx_context.backend_spec.minor, backend_info
+        "Requested {:?} {}.{} Core profile, actually got {}.",
+        ctx.gfx_context.backend_spec.api,
+        ctx.gfx_context.backend_spec.major,
+        ctx.gfx_context.backend_spec.minor,
+        backend_info
     ))
 }
 

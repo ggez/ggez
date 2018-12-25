@@ -3,16 +3,16 @@
 //!
 //! Prints instructions to the console.
 
-extern crate clap;
 extern crate ggez;
 extern crate nalgebra;
+extern crate structopt;
 
-use clap::{App, Arg};
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode, Drawable};
 use ggez::timer;
 use ggez::{Context, GameResult};
+use structopt::StructOpt;
 
 use std::env;
 use std::path;
@@ -216,22 +216,19 @@ fn print_help() {
     println!("    ");
 }
 
-pub fn main() -> GameResult {
-    let matches = App::new("ggez graphics settings example")
-        .arg(
-            Arg::with_name("msaa")
-                .short("m")
-                .value_name("N")
-                .help("Number of MSAA samples to do (powers of 2 from 1 to 16)")
-                .takes_value(true),
-        )
-        .get_matches();
+#[derive(StructOpt, Debug)]
+#[structopt(name = "graphics_settings")]
+struct Opt {
+    /// What level of MSAA to try to use (1, 2, 4, 8)
+    #[structopt(short = "m", long = "msaa", default_value = "1")]
+    msaa: u32,
+    /// Use OpenGL ES instead of regular OpenGL.
+    #[structopt(long = "es")]
+    es: bool,
+}
 
-    let msaa: u32 = matches
-        .value_of("msaa")
-        .unwrap_or("1")
-        .parse()
-        .expect("Option msaa needs to be a number!");
+pub fn main() -> GameResult {
+    let opt = Opt::from_args();
 
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
@@ -241,18 +238,29 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
+    let mut backend = conf::Backend::default();
+    if opt.es {
+        backend = backend.gles().version(3, 0);
+    }
+
     let cb = ggez::ContextBuilder::new("graphics_settings", "ggez")
         .window_mode(
             conf::WindowMode::default()
                 .fullscreen_type(conf::FullscreenType::Windowed)
                 .resizable(true),
         )
-        .window_setup(conf::WindowSetup::default().samples(
-            conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!"),
-        ))
+        .window_setup(
+            conf::WindowSetup::default().samples(
+                conf::NumSamples::from_u32(opt.msaa)
+                    .expect("Option msaa needs to be 1, 2, 4, 8 or 16!"),
+            ),
+        )
+        .backend(backend)
         .add_resource_path(resource_dir);
 
     let (ctx, events_loop) = &mut cb.build()?;
+
+    println!("Renderer: {}", graphics::renderer_info(ctx).unwrap());
 
     print_help();
     let state = &mut MainState::new(ctx)?;
