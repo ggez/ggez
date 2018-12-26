@@ -1,6 +1,6 @@
 use glyph_brush::GlyphPositioner;
-use glyph_brush::{self, rusttype::Scale, Layout, SectionText, VariedSection};
-pub use glyph_brush::{FontId, HorizontalAlign as Align};
+use glyph_brush::{self, Layout, SectionText, VariedSection};
+pub use glyph_brush::{rusttype::Scale, FontId, HorizontalAlign as Align};
 use mint;
 use std::borrow::Cow;
 use std::f32;
@@ -578,22 +578,14 @@ where
     let action = gb.process_queued(
         (screen_w as u32, screen_h as u32),
         |rect, tex_data| update_texture::<GlBackendSpec>(backend, encoder, gc, rect, tex_data),
-        // |rect, tex_data| {
-        //     let offset = [rect.min.x as u16, rect.min.y as u16];
-        //     let size = [rect.width() as u16, rect.height() as u16];
-        //     let texture = ctx.gfx_context.glyph_cache.texture_handle;
-        //     update_texture(&mut ctx.gfx_context.encoder, &tex, offset, size, tex_data);
-        // },
         to_vertex,
     );
     match action {
         Ok(glyph_brush::BrushAction::ReDraw) => {
-            eprintln!("Redraw");
             let s = ctx.gfx_context.glyph_state.clone();
             draw(ctx, &s, param)?;
         }
         Ok(glyph_brush::BrushAction::Draw(drawparams)) => {
-            eprintln!("Draw: {:#?}", drawparams);
             // Gotta clone the image to avoid double-borrow's.
             // let image = ctx.gfx_context.glyph_cache.clone();
             ctx.gfx_context.glyph_state.clear();
@@ -606,7 +598,6 @@ where
             draw(ctx, &s, param)?;
         }
         Err(glyph_brush::BrushError::TextureTooSmall { suggested }) => {
-            eprintln!("Resize and retry: {:?}", suggested);
             let (new_width, new_height) = suggested;
             let data = vec![255; 4 * new_width as usize * new_height as usize];
             let new_glyph_cache =
@@ -618,8 +609,6 @@ where
                 .resize_texture(new_width, new_height);
         }
     }
-    let image = ctx.gfx_context.glyph_cache.clone();
-    // draw(ctx, &image, param)?;
     Ok(())
 }
 
@@ -644,12 +633,6 @@ fn update_texture<B>(
         format: (),
         mipmap: 0,
     };
-    println!(
-        "SIZE: {}x{}, {}",
-        info.width,
-        info.height,
-        info.width * info.height
-    );
 
     // TODO: Fixme, the backend should have all these types, sigh.
     type SurfaceTypeThingy = (gfx::format::R8_G8_B8_A8, gfx::format::Srgb);
@@ -657,10 +640,7 @@ fn update_texture<B>(
     // let typed_tex: gfx::handle::Texture<B::Resources, gfx::format::R8_G8_B8_A8> =
     //     gfx::memory::Typed::new(texture.clone());
     // let view = gfx::memory::Typed::new(raw_view);
-    let tex_data_chunks: Vec<[u8; 4]> = tex_data
-        .chunks_exact(4)
-        .map(|c| [c[0], c[1], c[2], c[3]])
-        .collect();
+    let tex_data_chunks: Vec<[u8; 4]> = tex_data.iter().map(|c| [255, 255, 255, *c]).collect();
     let typed_tex = backend.raw_to_typed_texture(texture.clone());
     encoder
         .update_texture::<<SurfaceTypeThingy as gfx::format::Formatted>::Surface, SurfaceTypeThingy>(
@@ -669,31 +649,6 @@ fn update_texture<B>(
         .unwrap();
 }
 
-// fn update_texture<R, C>(
-//     encoder: &mut gfx::Encoder<R, C>,
-//     texture: &gfx::handle::Texture<R, TexSurface>,
-//     offset: [u16; 2],
-//     size: [u16; 2],
-//     data: &[u8],
-// ) where
-//     R: gfx::Resources,
-//     C: gfx::CommandBuffer<R>,
-// {
-//     let info = texture::ImageInfoCommon {
-//         xoffset: offset[0],
-//         yoffset: offset[1],
-//         zoffset: 0,
-//         width: size[0],
-//         height: size[1],
-//         depth: 0,
-//         format: (),
-//         mipmap: 0,
-//     };
-//     encoder
-//         .update_texture::<TexSurface, TexForm>(texture, None, info, data)
-//         .unwrap();
-// }
-
 /// I THINK what we're going to need to do is have a
 /// `SpriteBatch` that actually does the stuff and stores the
 /// UV's and verts and such, while
@@ -701,7 +656,6 @@ fn update_texture<B>(
 /// Basically, `glyph_brush`'s "`to_vertex`" callback is really
 /// `to_quad`; in the default code it
 fn to_vertex(v: glyph_brush::GlyphVertex) -> DrawParam {
-    eprintln!("To vertex: {:#?}", v);
     let src_rect = Rect {
         x: v.tex_coords.min.x,
         y: v.tex_coords.min.y,
@@ -715,7 +669,6 @@ fn to_vertex(v: glyph_brush::GlyphVertex) -> DrawParam {
         .src(src_rect)
         .dest(dest_pt)
         .color(v.color)
-    // TO DO NEXT: fix scale
 }
 
 #[cfg(test)]
