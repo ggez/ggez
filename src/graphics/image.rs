@@ -82,8 +82,11 @@ where
             kind,
             levels: 1,
             format: surface_format,
-            bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
-            usage: gfx::memory::Usage::Data,
+            bind: Bind::SHADER_RESOURCE
+                | Bind::RENDER_TARGET
+                | Bind::TRANSFER_SRC
+                | Bind::TRANSFER_DST,
+            usage: gfx::memory::Usage::Dynamic,
         };
         let raw_tex = factory.create_texture_raw(
             texinfo,

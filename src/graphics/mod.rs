@@ -79,6 +79,21 @@ pub trait BackendSpec: fmt::Debug {
         typed_view
     }
 
+    /// TODO: BUGGO: Placeholder
+    fn raw_to_typed_texture(
+        &self,
+        texture_view: gfx::handle::RawTexture<Self::Resources>,
+    ) -> gfx::handle::Texture<
+        <Self as BackendSpec>::Resources,
+        <BuggoSurfaceFormat as gfx::format::Formatted>::Surface,
+    > {
+        let typed_view: gfx::handle::Texture<
+            _,
+            <BuggoSurfaceFormat as gfx::format::Formatted>::Surface,
+        > = gfx::memory::Typed::new(texture_view);
+        typed_view
+    }
+
     /// Returns the version of the backend, `(major, minor)`.
     ///
     /// So for instance if the backend is using OpenGL version 3.2,

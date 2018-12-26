@@ -570,9 +570,20 @@ where
         &ctx.gfx_context.depth_view,
     );
 
-    let action = ctx.gfx_context.glyph_brush.process_queued(
+    let gb = &mut ctx.gfx_context.glyph_brush;
+    let encoder = &mut ctx.gfx_context.encoder;
+    let gc = &ctx.gfx_context.glyph_cache.texture_handle;
+    let backend = &ctx.gfx_context.backend_spec;
+
+    let action = gb.process_queued(
         (screen_w as u32, screen_h as u32),
-        update_texture,
+        |rect, tex_data| update_texture::<GlBackendSpec>(backend, encoder, gc, rect, tex_data),
+        // |rect, tex_data| {
+        //     let offset = [rect.min.x as u16, rect.min.y as u16];
+        //     let size = [rect.width() as u16, rect.height() as u16];
+        //     let texture = ctx.gfx_context.glyph_cache.texture_handle;
+        //     update_texture(&mut ctx.gfx_context.encoder, &tex, offset, size, tex_data);
+        // },
         to_vertex,
     );
     match action {
@@ -612,8 +623,50 @@ where
     Ok(())
 }
 
-fn update_texture(rect: glyph_brush::rusttype::Rect<u32>, tex_data: &[u8]) {
-    eprintln!("Updating texture: {:?}", rect);
+fn update_texture<B>(
+    backend: &B,
+    encoder: &mut gfx::Encoder<B::Resources, B::CommandBuffer>,
+    texture: &gfx::handle::RawTexture<B::Resources>,
+    rect: glyph_brush::rusttype::Rect<u32>,
+    tex_data: &[u8],
+) where
+    B: BackendSpec,
+{
+    let offset = [rect.min.x as u16, rect.min.y as u16];
+    let size = [rect.width() as u16, rect.height() as u16];
+    let info = texture::ImageInfoCommon {
+        xoffset: offset[0],
+        yoffset: offset[1],
+        zoffset: 0,
+        width: size[0],
+        height: size[1],
+        depth: 0,
+        format: (),
+        mipmap: 0,
+    };
+    println!(
+        "SIZE: {}x{}, {}",
+        info.width,
+        info.height,
+        info.width * info.height
+    );
+
+    // TODO: Fixme, the backend should have all these types, sigh.
+    type SurfaceTypeThingy = (gfx::format::R8_G8_B8_A8, gfx::format::Srgb);
+
+    // let typed_tex: gfx::handle::Texture<B::Resources, gfx::format::R8_G8_B8_A8> =
+    //     gfx::memory::Typed::new(texture.clone());
+    // let view = gfx::memory::Typed::new(raw_view);
+    let tex_data_chunks: Vec<[u8; 4]> = tex_data
+        .chunks_exact(4)
+        .map(|c| [c[0], c[1], c[2], c[3]])
+        .collect();
+    let typed_tex = backend.raw_to_typed_texture(texture.clone());
+    encoder
+        .update_texture::<<SurfaceTypeThingy as gfx::format::Formatted>::Surface, SurfaceTypeThingy>(
+            &typed_tex, None, info, &tex_data_chunks,
+        )
+        .unwrap();
 }
 
 // fn update_texture<R, C>(
