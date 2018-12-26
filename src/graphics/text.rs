@@ -20,10 +20,11 @@ pub const DEFAULT_FONT_SCALE: f32 = 16.0;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Font {
     font_id: FontId,
-    // Add DebugId?  It makes Font::default() less convenient.
+    // TODO: Add DebugId?  It makes Font::default() less convenient.
 }
 
 /// A piece of text with optional color, font and font scale information.
+/// Drawing text generally involves one or more of these.
 /// These options take precedence over any similar field/argument.
 /// Can be implicitly constructed from `String`, `(String, Color)`, and `(String, FontId, Scale)`.
 ///
@@ -150,7 +151,12 @@ pub struct Text {
     cached_metrics: Arc<RwLock<CachedMetrics>>,
 }
 
-// This has to be explicit. Derived `Clone` clones the `Arc`, so clones end up sharing the metrics.
+/// This has to be explicit. Derived `Clone` clones the `Arc`, so clones end up
+/// sharing the metrics instead of the proper behavior which is to have different
+/// ones for each `Text` object, since `Text` may be mutated.
+///
+/// TODO: Can we just ditch the `Arc` entirely then?
+/// ...do we ever even WRITE the actual metrics to cached_metrics?
 impl Clone for Text {
     fn clone(&self) -> Self {
         Text {
@@ -478,12 +484,12 @@ where
 ///
 /// `DrawParam` apply to everything in the queue; offset is in screen coordinates;
 /// color is ignored - specify it when `queue_text()`ing instead.
-pub fn draw_queued_text<D>(context: &mut Context, param: D) -> GameResult
+pub fn draw_queued_text<D>(ctx: &mut Context, param: D) -> GameResult
 where
-    D: Into<DrawTransform>,
+    D: Into<DrawParam>,
 {
-    let param: DrawTransform = param.into();
-    let screen_rect = screen_coordinates(context);
+    let param: DrawParam = param.into();
+    let screen_rect = screen_coordinates(ctx);
 
     let (screen_x, screen_y, screen_w, screen_h) =
         (screen_rect.x, screen_rect.y, screen_rect.w, screen_rect.h);
@@ -553,33 +559,56 @@ where
         1.0,
     );
 
-    let final_matrix = m_transform_inv * param.matrix * m_transform;
+    let m: DrawTransform = param.into();
+    let final_matrix = m_transform_inv * m.matrix * m_transform;
 
-    let color_format = context.gfx_context.color_format();
-    let depth_format = context.gfx_context.depth_format();
+    let color_format = ctx.gfx_context.color_format();
+    let depth_format = ctx.gfx_context.depth_format();
     let (encoder, render_tgt, depth_view) = (
-        &mut context.gfx_context.encoder,
-        &context.gfx_context.screen_render_target,
-        &context.gfx_context.depth_view,
+        &mut ctx.gfx_context.encoder,
+        &ctx.gfx_context.screen_render_target,
+        &ctx.gfx_context.depth_view,
     );
 
-    // context
-    //     .gfx_context
-    //     .glyph_brush
-    //     .draw_queued_with_transform(
-    //         final_matrix.into(),
-    //         encoder,
-    //         &(render_tgt, color_format),
-    //         &(depth_view, depth_format),
-    //     )
-    //     .map_err(|e| GameError::RenderError(e.to_string()))
-
-    let actions = context.gfx_context.glyph_brush.process_queued(
+    let action = ctx.gfx_context.glyph_brush.process_queued(
         (screen_w as u32, screen_h as u32),
         update_texture,
         to_vertex,
     );
-    eprintln!("Draw actions: {:?}", "fasfd");
+    match action {
+        Ok(glyph_brush::BrushAction::ReDraw) => {
+            eprintln!("Redraw");
+            let s = ctx.gfx_context.glyph_state.clone();
+            draw(ctx, &s, param)?;
+        }
+        Ok(glyph_brush::BrushAction::Draw(drawparams)) => {
+            eprintln!("Draw: {:#?}", drawparams);
+            // Gotta clone the image to avoid double-borrow's.
+            // let image = ctx.gfx_context.glyph_cache.clone();
+            ctx.gfx_context.glyph_state.clear();
+            for p in &drawparams {
+                // Ignore returned sprite index.
+                let _ = ctx.gfx_context.glyph_state.add(*p);
+            }
+            // TODO: Augh, double-borrow
+            let s = ctx.gfx_context.glyph_state.clone();
+            draw(ctx, &s, param)?;
+        }
+        Err(glyph_brush::BrushError::TextureTooSmall { suggested }) => {
+            eprintln!("Resize and retry: {:?}", suggested);
+            let (new_width, new_height) = suggested;
+            let data = vec![255; 4 * new_width as usize * new_height as usize];
+            let new_glyph_cache =
+                Image::from_rgba8(ctx, new_width as u16, new_height as u16, &data)?;
+            ctx.gfx_context.glyph_cache = new_glyph_cache.clone();
+            let _ = ctx.gfx_context.glyph_state.set_image(new_glyph_cache);
+            ctx.gfx_context
+                .glyph_brush
+                .resize_texture(new_width, new_height);
+        }
+    }
+    let image = ctx.gfx_context.glyph_cache.clone();
+    // draw(ctx, &image, param)?;
     Ok(())
 }
 
@@ -587,8 +616,53 @@ fn update_texture(rect: glyph_brush::rusttype::Rect<u32>, tex_data: &[u8]) {
     eprintln!("Updating texture: {:?}", rect);
 }
 
-fn to_vertex(v: glyph_brush::GlyphVertex) -> () {
-    eprintln!("To vertex: {:?}", v);
+// fn update_texture<R, C>(
+//     encoder: &mut gfx::Encoder<R, C>,
+//     texture: &gfx::handle::Texture<R, TexSurface>,
+//     offset: [u16; 2],
+//     size: [u16; 2],
+//     data: &[u8],
+// ) where
+//     R: gfx::Resources,
+//     C: gfx::CommandBuffer<R>,
+// {
+//     let info = texture::ImageInfoCommon {
+//         xoffset: offset[0],
+//         yoffset: offset[1],
+//         zoffset: 0,
+//         width: size[0],
+//         height: size[1],
+//         depth: 0,
+//         format: (),
+//         mipmap: 0,
+//     };
+//     encoder
+//         .update_texture::<TexSurface, TexForm>(texture, None, info, data)
+//         .unwrap();
+// }
+
+/// I THINK what we're going to need to do is have a
+/// `SpriteBatch` that actually does the stuff and stores the
+/// UV's and verts and such, while
+///
+/// Basically, `glyph_brush`'s "`to_vertex`" callback is really
+/// `to_quad`; in the default code it
+fn to_vertex(v: glyph_brush::GlyphVertex) -> DrawParam {
+    eprintln!("To vertex: {:#?}", v);
+    let src_rect = Rect {
+        x: v.tex_coords.min.x,
+        y: v.tex_coords.min.y,
+        w: v.tex_coords.max.x - v.tex_coords.min.x,
+        h: v.tex_coords.max.y - v.tex_coords.min.y,
+    };
+    // it LOOKS like pixel_coords are the output coordinates?
+    // I'm not sure though...
+    let dest_pt = Point2::new(v.pixel_coords.min.x as f32, v.pixel_coords.min.y as f32);
+    DrawParam::default()
+        .src(src_rect)
+        .dest(dest_pt)
+        .color(v.color)
+    // TO DO NEXT: fix scale
 }
 
 #[cfg(test)]

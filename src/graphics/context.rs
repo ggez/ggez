@@ -57,7 +57,8 @@ where
     pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
     pub(crate) glyph_brush: GlyphBrush<'static>,
-    pub(crate) fonts: Vec<glyph_brush::rusttype::Font<'static>>,
+    pub(crate) glyph_cache: ImageGeneric<B>,
+    pub(crate) glyph_state: spritebatch::SpriteBatch,
 }
 
 impl<B> fmt::Debug for GraphicsContextGeneric<B>
@@ -205,9 +206,6 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             debug_id,
         )?;
 
-        let glyph_brush =
-            GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec()).build();
-
         let rect_inst_props = factory.create_buffer(
             1,
             gfx::buffer::Role::Vertex,
@@ -244,6 +242,23 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             globals: globals_buffer,
             out: screen_render_target.clone(),
         };
+
+        // Glyph cache stuff.
+        let glyph_brush =
+            GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec()).build();
+        let (glyph_cache_width, glyph_cache_height) = glyph_brush.texture_dimensions();
+        let initial_contents =
+            vec![255; 4 * glyph_cache_width as usize * glyph_cache_height as usize];
+        let glyph_cache = ImageGeneric::make_raw(
+            &mut factory,
+            &sampler_info,
+            glyph_cache_width as u16,
+            glyph_cache_height as u16,
+            &initial_contents,
+            color_format,
+            debug_id,
+        )?;
+        let glyph_state = spritebatch::SpriteBatch::new(glyph_cache.clone());
 
         // Set initial uniform values
         let left = 0.0;
@@ -289,8 +304,8 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             shaders: vec![draw],
 
             glyph_brush,
-            // TODO: Use default font here
-            fonts: vec![],
+            glyph_cache,
+            glyph_state,
         };
         gfx.set_window_mode(window_mode)?;
 

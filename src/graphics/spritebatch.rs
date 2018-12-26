@@ -74,7 +74,7 @@ impl SpriteBatch {
     /// Immediately sends all data in the batch to the graphics card.
     ///
     /// Generally just calling [`graphics::draw()`](../fn.draw.html) on the `SpriteBatch`
-    /// will do this automaticassertally.
+    /// will do this automatically.
     fn flush(&self, ctx: &mut Context, image: &graphics::Image) -> GameResult {
         // TODO: Can we clean up now?
         // This is a little awkward but this is the right place
