@@ -37,10 +37,8 @@ app_dirs2 = "2"
 gfx = "0.17"
 gfx_core = "0.8"
 gfx_device_gl = "0.15"
-# FIXME: https://gitlab.redox-os.org/redox-os/rusttype/issues/130
-# glyph_brush = "0.2"
-glyph_brush = { git = "https://github.com/icefoxen/glyph-brush.git", branch = "rusttype-version-hack" }
-gfx_window_glutin = "0.27"
+glyph_brush = "0.2"
+gfx_window_glutin = "0.28"
 glutin = "0.19"
 winit = { version = "0.18", features = ["icon_loading"] }
 image = {version = "0.20.1", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",

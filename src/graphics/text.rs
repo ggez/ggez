@@ -491,84 +491,7 @@ where
     let param: DrawParam = param.into();
     let screen_rect = screen_coordinates(ctx);
 
-    let (screen_x, screen_y, screen_w, screen_h) =
-        (screen_rect.x, screen_rect.y, screen_rect.w, screen_rect.h);
-    let scale_x = screen_w / 2.0;
-    let scale_y = screen_h / -2.0;
-
-    // gfx_glyph rotates things around the center (1.0, -1.0) with
-    // a window rect of (x, y, w, h) = (0.0, 0.0, 2.0, -2.0).
-    // We need to a) translate it so that the rotation has the
-    // top right corner as its origin, b) scale it so that the
-    // translation can happen in screen coordinates, and
-    // c) translate it *again* in case our screen coordinates
-    // don't start at (0.0, 0.0) for the top left corner.
-    // And obviously, the whole tour back!
-
-    // Unoptimized implementation for final_matrix below
-    /*
-    type Vec3 = na::Vector3<f32>;
-    type Mat4 = na::Matrix4<f32>;
-
-    let m_translate_glyph = Mat4::new_translation(&Vec3::new(1.0, -1.0, 0.0));
-    let m_translate_glyph_inv = Mat4::new_translation(&Vec3::new(-1.0, 1.0, 0.0));
-    let m_scale = Mat4::new_nonuniform_scaling(&Vec3::new(scale_x, scale_y, 1.0));
-    let m_scale_inv = Mat4::new_nonuniform_scaling(&Vec3::new(1.0 / scale_x, 1.0 / scale_y, 1.0));
-    let m_translate = Mat4::new_translation(&Vec3::new(-screen_x, -screen_y, 0.0));
-    let m_translate_inv = Mat4::new_translation(&Vec3::new(screen_x, screen_y, 0.0));
-
-    let final_matrix = m_translate_glyph_inv * m_scale_inv * m_translate_inv * param.matrix * m_translate * m_scale * m_translate_glyph;
-    */
-    // Optimized version has a speedup of ~1.29 (175ns vs 225ns)
-    type Mat4 = na::Matrix4<f32>;
-    let m_transform = Mat4::new(
-        scale_x,
-        0.0,
-        0.0,
-        scale_x - screen_x,
-        0.0,
-        scale_y,
-        0.0,
-        -scale_y - screen_y,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-    );
-
-    let m_transform_inv = Mat4::new(
-        1.0 / scale_x,
-        0.0,
-        0.0,
-        (screen_x / scale_x) - 1.0,
-        0.0,
-        1.0 / scale_y,
-        0.0,
-        (scale_y + screen_y) / scale_y,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-    );
-
-    let m: DrawTransform = param.into();
-    let final_matrix = m_transform_inv * m.matrix * m_transform;
-
-    let color_format = ctx.gfx_context.color_format();
-    let depth_format = ctx.gfx_context.depth_format();
-    let (encoder, render_tgt, depth_view) = (
-        &mut ctx.gfx_context.encoder,
-        &ctx.gfx_context.screen_render_target,
-        &ctx.gfx_context.depth_view,
-    );
+    let (screen_w, screen_h) = (screen_rect.w, screen_rect.h);
 
     let gb = &mut ctx.gfx_context.glyph_brush;
     let encoder = &mut ctx.gfx_context.encoder;
@@ -583,19 +506,23 @@ where
     match action {
         Ok(glyph_brush::BrushAction::ReDraw) => {
             let s = ctx.gfx_context.glyph_state.clone();
-            draw(ctx, &s, param)?;
+            draw(ctx, &*s.borrow(), param)?;
         }
         Ok(glyph_brush::BrushAction::Draw(drawparams)) => {
             // Gotta clone the image to avoid double-borrow's.
             // let image = ctx.gfx_context.glyph_cache.clone();
-            ctx.gfx_context.glyph_state.clear();
+            let spritebatch = ctx.gfx_context.glyph_state.clone();
+            let spritebatch = &mut *spritebatch.borrow_mut();
+            spritebatch.clear();
             for p in &drawparams {
                 // Ignore returned sprite index.
-                let _ = ctx.gfx_context.glyph_state.add(*p);
+                let _ = spritebatch.add(*p);
             }
             // TODO: Augh, double-borrow
-            let s = ctx.gfx_context.glyph_state.clone();
-            draw(ctx, &s, param)?;
+            // let s = ctx.gfx_context.glyph_state.clone();
+            // let s = &ctx.gfx_context.glyph_state;
+            // ctx.gfx_context.glyph_state.draw(ctx, param)?;
+            draw(ctx, &*spritebatch, param)?;
         }
         Err(glyph_brush::BrushError::TextureTooSmall { suggested }) => {
             let (new_width, new_height) = suggested;
@@ -603,7 +530,9 @@ where
             let new_glyph_cache =
                 Image::from_rgba8(ctx, new_width as u16, new_height as u16, &data)?;
             ctx.gfx_context.glyph_cache = new_glyph_cache.clone();
-            let _ = ctx.gfx_context.glyph_state.set_image(new_glyph_cache);
+            let spritebatch = ctx.gfx_context.glyph_state.clone();
+            let spritebatch = &mut *spritebatch.borrow_mut();
+            let _ = spritebatch.set_image(new_glyph_cache);
             ctx.gfx_context
                 .glyph_brush
                 .resize_texture(new_width, new_height);
@@ -634,16 +563,10 @@ fn update_texture<B>(
         mipmap: 0,
     };
 
-    // TODO: Fixme, the backend should have all these types, sigh.
-    type SurfaceTypeThingy = (gfx::format::R8_G8_B8_A8, gfx::format::Srgb);
-
-    // let typed_tex: gfx::handle::Texture<B::Resources, gfx::format::R8_G8_B8_A8> =
-    //     gfx::memory::Typed::new(texture.clone());
-    // let view = gfx::memory::Typed::new(raw_view);
     let tex_data_chunks: Vec<[u8; 4]> = tex_data.iter().map(|c| [255, 255, 255, *c]).collect();
     let typed_tex = backend.raw_to_typed_texture(texture.clone());
     encoder
-        .update_texture::<<SurfaceTypeThingy as gfx::format::Formatted>::Surface, SurfaceTypeThingy>(
+        .update_texture::<<super::BuggoSurfaceFormat as gfx::format::Formatted>::Surface, super::BuggoSurfaceFormat>(
             &typed_tex, None, info, &tex_data_chunks,
         )
         .unwrap();

@@ -50,7 +50,8 @@ pub use crate::graphics::shader::*;
 pub use crate::graphics::text::*;
 pub use crate::graphics::types::*;
 
-type BuggoSurfaceFormat = gfx::format::Srgba8;
+// BUGGO TODO: Figure out how to formalize this a bit better
+pub(crate) type BuggoSurfaceFormat = gfx::format::Srgba8;
 type ShaderResourceType = [f32; 4];
 
 /// A marker trait saying that something is a label for a particular backend,
@@ -119,13 +120,16 @@ pub trait BackendSpec: fmt::Debug {
         events_loop: &glutin::EventsLoop,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-    ) -> (
-        glutin::GlWindow,
-        Self::Device,
-        Self::Factory,
-        gfx::handle::RawRenderTargetView<Self::Resources>,
-        gfx::handle::RawDepthStencilView<Self::Resources>,
-    );
+    ) -> Result<
+        (
+            glutin::GlWindow,
+            Self::Device,
+            Self::Factory,
+            gfx::handle::RawRenderTargetView<Self::Resources>,
+            gfx::handle::RawDepthStencilView<Self::Resources>,
+        ),
+        glutin::CreationError,
+    >;
 
     /// Create an Encoder for the backend.
     fn encoder(factory: &mut Self::Factory) -> gfx::Encoder<Self::Resources, Self::CommandBuffer>;
@@ -216,23 +220,25 @@ impl BackendSpec for GlBackendSpec {
         events_loop: &glutin::EventsLoop,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-    ) -> (
-        glutin::GlWindow,
-        Self::Device,
-        Self::Factory,
-        gfx::handle::RawRenderTargetView<Self::Resources>,
-        gfx::handle::RawDepthStencilView<Self::Resources>,
-    ) {
+    ) -> Result<
+        (
+            glutin::GlWindow,
+            Self::Device,
+            Self::Factory,
+            gfx::handle::RawRenderTargetView<Self::Resources>,
+            gfx::handle::RawDepthStencilView<Self::Resources>,
+        ),
+        glutin::CreationError,
+    > {
         use gfx_window_glutin;
-        let (window, device, factory, screen_render_target, depth_view) =
-            gfx_window_glutin::init_raw(
-                window_builder,
-                gl_builder,
-                events_loop,
-                color_format,
-                depth_format,
-            );
-        (window, device, factory, screen_render_target, depth_view)
+        gfx_window_glutin::init_raw(
+            window_builder,
+            gl_builder,
+            events_loop,
+            color_format,
+            depth_format,
+        )
+        // (window, device, factory, screen_render_target, depth_view)
     }
 
     fn info(&self, device: &Self::Device) -> String {

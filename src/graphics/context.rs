@@ -58,7 +58,7 @@ where
 
     pub(crate) glyph_brush: GlyphBrush<'static>,
     pub(crate) glyph_cache: ImageGeneric<B>,
-    pub(crate) glyph_state: spritebatch::SpriteBatch,
+    pub(crate) glyph_state: Rc<RefCell<spritebatch::SpriteBatch>>,
 }
 
 impl<B> fmt::Debug for GraphicsContextGeneric<B>
@@ -135,7 +135,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             events_loop,
             color_format,
             depth_format,
-        );
+        )?;
 
         // See https://docs.rs/winit/0.16.1/winit/dpi/index.html for
         // an excellent explaination of how this works.
@@ -258,7 +258,9 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             color_format,
             debug_id,
         )?;
-        let glyph_state = spritebatch::SpriteBatch::new(glyph_cache.clone());
+        let glyph_state = Rc::new(RefCell::new(spritebatch::SpriteBatch::new(
+            glyph_cache.clone(),
+        )));
 
         // Set initial uniform values
         let left = 0.0;
