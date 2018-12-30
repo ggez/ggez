@@ -67,6 +67,7 @@
 
 use crate::context::Context;
 
+use std::collections::HashSet;
 use winit::ModifiersState;
 /// A key code.
 pub use winit::VirtualKeyCode as KeyCode;
@@ -114,12 +115,9 @@ impl From<ModifiersState> for KeyMods {
 pub struct KeyboardContext {
     active_modifiers: KeyMods,
     /// A simple mapping of which key code has been pressed.
-    /// `KeyCode`'s are a c-like enum, and so can be converted to/from
-    /// simple integers.
-    /// As of `winit` 0.16 this is Big Enough For Anyone; assertions
-    /// will check if that assumption gets violated.
-    // Maybe we can just use a HashSet instead?  Eh.
-    pressed_keys: Vec<bool>,
+    /// We COULD use a `Vec<bool>` but turning Rust enums to and from
+    /// integers is unsafe and a set really is what we want anyway.
+    pressed_keys_set: HashSet<KeyCode>,
 
     // These two are necessary for tracking key-repeat.
     last_pressed: Option<KeyCode>,
@@ -128,19 +126,10 @@ pub struct KeyboardContext {
 
 impl KeyboardContext {
     pub(crate) fn new() -> Self {
-        // We reserve a fixed-size vec because we never want to have
-        // to bother resizing it, but it is not easy to ask
-        // Rust what an enum's max member is and a Sufficiently Big
-        // fixed-size array `[bool; MAX_KEY_IDX]` doesn't implement
-        // nice things like Debug.  :|
-        // We have an assert everywhere pressed_keys is accessed so
-        // we know if this assumption is broken.
-        const MAX_KEY_IDX: usize = 256;
-        let mut key_vec = Vec::with_capacity(MAX_KEY_IDX);
-        key_vec.resize(MAX_KEY_IDX, false);
         Self {
             active_modifiers: KeyMods::empty(),
-            pressed_keys: key_vec,
+            // We just use 256 as a number Big Enough For Keyboard Keys to try to avoid resizing.
+            pressed_keys_set: HashSet::with_capacity(256),
             last_pressed: None,
             current_pressed: None,
         }
@@ -151,16 +140,12 @@ impl KeyboardContext {
     // from Context::process_event().
     // Looks like it is, but, not 100% sure.
     pub(crate) fn set_key(&mut self, key: KeyCode, pressed: bool) {
-        let key_idx = key as usize;
-        assert!(
-            key_idx < self.pressed_keys.len(),
-            "Impossible KeyCode detected!"
-        );
-        self.pressed_keys[key_idx] = pressed;
         if pressed {
+            let _ = self.pressed_keys_set.insert(key);
             self.last_pressed = self.current_pressed;
             self.current_pressed = Some(key);
         } else {
+            let _ = self.pressed_keys_set.remove(&key);
             self.current_pressed = None;
             // Double check that this edge handling is necessary;
             // winit sounds like it should do this for us,
@@ -181,12 +166,7 @@ impl KeyboardContext {
     }
 
     pub(crate) fn is_key_pressed(&self, key: KeyCode) -> bool {
-        let key_idx = key as usize;
-        assert!(
-            key_idx < self.pressed_keys.len(),
-            "Impossible KeyCode detected!"
-        );
-        self.pressed_keys[key_idx]
+        self.pressed_keys_set.contains(&key)
     }
 
     pub(crate) fn is_key_repeated(&self) -> bool {
@@ -197,27 +177,8 @@ impl KeyboardContext {
         }
     }
 
-    pub(crate) fn pressed_keys(&self) -> Vec<KeyCode> {
-        self.pressed_keys
-            .iter()
-            .enumerate()
-            .filter_map(|(key_idx, b)| {
-                if *b {
-                    // Sigh
-                    // Horrible unsafe pointer cast to turn a number
-                    // into the matching KeyCode, because Rust's support
-                    // for C-like numeric enums is UTTER GARBAGE.
-                    // Can we protect this with an assertion somehow?
-                    // I don't even see a way to get the max element of an
-                    // enum.
-                    let keycode: &KeyCode =
-                        unsafe { &*(&key_idx as *const usize as *const KeyCode) };
-                    Some(*keycode)
-                } else {
-                    None
-                }
-            })
-            .collect()
+    pub(crate) fn pressed_keys(&self) -> &HashSet<KeyCode> {
+        &self.pressed_keys_set
     }
 
     pub(crate) fn active_mods(&self) -> KeyMods {
@@ -242,8 +203,8 @@ pub fn is_key_repeated(ctx: &Context) -> bool {
     ctx.keyboard_context.is_key_repeated()
 }
 
-/// Returns a `Vec` with currently pressed keys.
-pub fn pressed_keys(ctx: &Context) -> Vec<KeyCode> {
+/// Returns a `HashSet` with currently pressed keys.
+pub fn pressed_keys(ctx: &Context) -> &HashSet<KeyCode> {
     ctx.keyboard_context.pressed_keys()
 }
 

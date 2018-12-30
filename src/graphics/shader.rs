@@ -3,7 +3,7 @@
 //! [`shader`](https://github.com/ggez/ggez/blob/devel/examples/shader.rs)
 //! and [`shadows`](https://github.com/ggez/ggez/blob/devel/examples/shadows.rs)
 //! examples for a taste.
-
+#![allow(unsafe_code)]
 use gfx::format;
 use gfx::handle::*;
 use gfx::preset::blend;

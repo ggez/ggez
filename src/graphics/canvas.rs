@@ -1,6 +1,5 @@
 //! I guess these docs will never appear since we re-export the canvas
 //! module from graphics...
-
 use gfx::format::Swizzle;
 use gfx::handle::RawRenderTargetView;
 use gfx::memory::{Bind, Usage};
