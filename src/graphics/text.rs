@@ -334,6 +334,7 @@ impl Text {
     }
 
     /// Calculates, caches, and returns width and height of formatted and wrapped text.
+    /// TODO: Might now be redundant?  See https://docs.rs/glyph_brush/0.2.2/glyph_brush/trait.GlyphCruncher.html
     fn calculate_dimensions(&self, context: &mut Context) -> (u32, u32) {
         let mut max_width = 0;
         let mut max_height = 0;
