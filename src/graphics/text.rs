@@ -224,7 +224,8 @@ impl Text {
     }
 
     /// Specifies rectangular dimensions to try and fit contents inside of,
-    /// by wrapping, and alignment within the bounds.
+    /// by wrapping, and alignment within the bounds.  To disable wrapping,
+    /// give it a layout with `f32::INF` for the x value.
     pub fn set_bounds<P>(&mut self, bounds: P, alignment: Align) -> &mut Text
     where
         P: Into<mint::Point2<f32>>,
@@ -248,47 +249,46 @@ impl Text {
         self
     }
 
-    /// Converts `Text` to a type `gfx_glyph` can understand and queue.
+    /// Converts `Text` to a type `glyph_brush` can understand and queue.
     fn generate_varied_section(
         &self,
         relative_dest: Point2,
         color: Option<Color>,
     ) -> VariedSection {
-        let mut sections = Vec::with_capacity(self.fragments.len());
-        for fragment in &self.fragments {
-            let color = match fragment.color {
-                Some(c) => c,
-                None => match color {
-                    Some(c) => c,
-                    None => WHITE,
-                },
-            };
-            let font_id = match fragment.font {
-                Some(font) => font.font_id,
-                None => self.font_id,
-            };
-            let scale = match fragment.scale {
-                Some(scale) => scale,
-                None => self.font_scale,
-            };
-            sections.push(SectionText {
-                text: &fragment.text,
-                color: <[f32; 4]>::from(color),
-                font_id,
-                scale,
-            });
-        }
+        let sections: Vec<SectionText> = self
+            .fragments
+            .iter()
+            .map(|fragment| {
+                let color = fragment.color.or(color).unwrap_or(WHITE);
+                let font_id = fragment
+                    .font
+                    .map(|font| font.font_id)
+                    .unwrap_or(self.font_id);
+                let scale = fragment.scale.unwrap_or(self.font_scale);
+                SectionText {
+                    text: &fragment.text,
+                    color: <[f32; 4]>::from(color),
+                    font_id,
+                    scale,
+                }
+            })
+            .collect();
+
         let relative_dest_x = {
             // This positions text within bounds with relative_dest being to the left, always.
             let mut dest_x = relative_dest.x;
             if self.bounds.x != f32::INFINITY {
                 use glyph_brush::Layout::Wrap;
-                if let Wrap { h_align, .. } = self.layout {
-                    match h_align {
-                        Align::Center => dest_x += self.bounds.x * 0.5,
-                        Align::Right => dest_x += self.bounds.x,
-                        _ => (),
-                    }
+                match self.layout {
+                    Wrap {
+                        h_align: Align::Center,
+                        ..
+                    } => dest_x += self.bounds.x * 0.5,
+                    Wrap {
+                        h_align: Align::Right,
+                        ..
+                    } => dest_x += self.bounds.x,
+                    _ => (),
                 }
             }
             dest_x
@@ -297,11 +297,23 @@ impl Text {
         VariedSection {
             screen_position: relative_dest,
             bounds: (self.bounds.x, self.bounds.y),
-            //z: f32,
             layout: self.layout,
             text: sections,
             ..Default::default()
         }
+    }
+
+    fn generate_section_texts(&self) -> Vec<glyph_brush::SectionText> {
+        let sections = self.fragments.iter().map(|frag| {
+            let color = frag.color.unwrap_or(super::WHITE);
+            glyph_brush::SectionText {
+                text: &frag.text,
+                scale: glyph_brush::rusttype::Scale { x: 0.0, y: 0.0 },
+                color: color.into(),
+                font_id: frag.font.unwrap_or_default().font_id,
+            }
+        });
+        sections.collect()
     }
 
     fn invalidate_cached_metrics(&mut self) {
@@ -322,68 +334,86 @@ impl Text {
                 return string.clone();
             }
         }
-        let mut string_accm = String::new();
-        for frg in &self.fragments {
-            string_accm += &frg.text;
-        }
+        let string_accm: String = self
+            .fragments
+            .iter()
+            .map(|frag| frag.text.as_str())
+            .collect();
+
         if let Ok(mut metrics) = self.cached_metrics.write() {
             metrics.string = Some(string_accm.clone());
         }
         string_accm
     }
 
-    // /// Calculates, caches, and returns width and height of formatted and wrapped text.
-    // fn calculate_dimensions(&self, context: &Context) -> (u32, u32) {
-    //     let mut max_width = 0;
-    //     let mut max_height = 0;
-    //     {
-    //         let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
-    //         let glyphed_section_texts = self
-    //             .layout
+    /// Calculates, caches, and returns width and height of formatted and wrapped text.
+    fn calculate_dimensions(&self, context: &Context) -> (u32, u32) {
+        let mut max_width = 0;
+        let mut max_height = 0;
+        {
+            let geom = glyph_brush::SectionGeometry {
+                screen_position: (0.0, 0.0),
+                // bounds: (
+                //     context.gfx_context.screen_rect.w,
+                //     context.gfx_context.screen_rect.h,
+                // ),
+                bounds: (self.bounds.x, self.bounds.y),
+            };
+            // let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
+            // .calculate_glyphs(context.gfx_context.glyph_brush.fonts(), &varied_section);
+            let section_texts = self.generate_section_texts();
+            let glyphed_section_texts = self.layout.calculate_glyphs(
+                &context.gfx_context.glyph_brush.fonts(),
+                &geom,
+                &section_texts,
+            );
+            eprintln!(
+                "glyphs: {}, bounds: {:?}",
+                glyphed_section_texts.len(),
+                geom
+            );
+            for glyphed_section_text in &glyphed_section_texts {
+                let (ref positioned_glyph, ..) = glyphed_section_text;
+                if let Some(rect) = positioned_glyph.pixel_bounding_box() {
+                    if rect.max.x > max_width {
+                        max_width = rect.max.x;
+                    }
+                    if rect.max.y > max_height {
+                        max_height = rect.max.y;
+                    }
+                }
+            }
+        }
+        eprintln!("MAX HEIGHT: {}", max_height);
+        let (width, height) = (max_width as u32, max_height as u32);
+        if let Ok(mut metrics) = self.cached_metrics.write() {
+            metrics.width = Some(width);
+            metrics.height = Some(height);
+        }
+        (width, height)
+    }
 
-    //             .calculate_glyphs(context.gfx_context.fonts, &varied_section);
-    //             // .calculate_glyphs(context.gfx_context.glyph_brush.fonts(), &varied_section);
-    //         for glyphed_section_text in &glyphed_section_texts {
-    //             let (ref positioned_glyph, ..) = glyphed_section_text;
-    //             if let Some(rect) = positioned_glyph.pixel_bounding_box() {
-    //                 if rect.max.x > max_width {
-    //                     max_width = rect.max.x;
-    //                 }
-    //                 if rect.max.y > max_height {
-    //                     max_height = rect.max.y;
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     let (width, height) = (max_width as u32, max_height as u32);
-    //     if let Ok(mut metrics) = self.cached_metrics.write() {
-    //         metrics.width = Some(width);
-    //         metrics.height = Some(height);
-    //     }
-    //     (width, height)
-    // }
+    /// Returns the width and height of the formatted and wrapped text.
+    ///
+    /// TODO: Should these return f32 rather than u32?  Probably!
+    pub fn dimensions(&self, context: &Context) -> (u32, u32) {
+        if let Ok(metrics) = self.cached_metrics.read() {
+            if let (Some(width), Some(height)) = (metrics.width, metrics.height) {
+                return (width, height);
+            }
+        }
+        self.calculate_dimensions(context)
+    }
 
-    // /// Returns the width and height of the formatted and wrapped text.
-    // ///
-    // /// TODO: Should these return f32 rather than u32?
-    // pub fn dimensions(&self, context: &Context) -> (u32, u32) {
-    //     if let Ok(metrics) = self.cached_metrics.read() {
-    //         if let (Some(width), Some(height)) = (metrics.width, metrics.height) {
-    //             return (width, height);
-    //         }
-    //     }
-    //     self.calculate_dimensions(context)
-    // }
+    /// Returns the width of formatted and wrapped text, in screen coordinates.
+    pub fn width(&self, context: &Context) -> u32 {
+        self.dimensions(context).0
+    }
 
-    // /// Returns the width of formatted and wrapped text, in screen coordinates.
-    // pub fn width(&self, context: &Context) -> u32 {
-    //     self.dimensions(context).0
-    // }
-
-    // /// Returns the height of formatted and wrapped text, in screen coordinates.
-    // pub fn height(&self, context: &Context) -> u32 {
-    //     self.dimensions(context).1
-    // }
+    /// Returns the height of formatted and wrapped text, in screen coordinates.
+    pub fn height(&self, context: &Context) -> u32 {
+        self.dimensions(context).1
+    }
 }
 
 impl Drawable for Text {

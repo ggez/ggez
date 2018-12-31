@@ -146,9 +146,7 @@ impl event::EventHandler for App {
             // Calling `.queue()` for all bits of text that can share a `DrawParam`,
             // followed with `::draw_queued()` with said params, is the intended way.
             graphics::queue_text(ctx, text, Point2::new(20.0, 20.0 + height), None);
-            // BUGGO TODO: Need text height
-            // height += 20.0 + text.height(ctx) as f32;
-            height += 20.0 + 10.0;
+            height += 20.0 + text.height(ctx) as f32;
         }
         // When drawing via `draw_queued()`, `.offset` in `DrawParam` will be
         // in screen coordinates, and `.color` will be ignored.
@@ -170,11 +168,8 @@ impl event::EventHandler for App {
                 TextFragment::new(ch).scale(Scale::uniform(10.0 + 6.0 * rand::random::<f32>())),
             );
         }
-        // BUGGO TODO: Make the width and height work
-        // let wobble_width = wobble.width(ctx);
-        // let wobble_height = wobble.height(ctx);
-        let wobble_width = 10.0;
-        let wobble_height = 10.0;
+        let wobble_width = wobble.width(ctx);
+        let wobble_height = wobble.height(ctx);
         graphics::queue_text(
             ctx,
             &wobble,
