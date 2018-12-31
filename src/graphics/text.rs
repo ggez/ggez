@@ -303,19 +303,6 @@ impl Text {
         }
     }
 
-    fn generate_section_texts(&self) -> Vec<glyph_brush::SectionText> {
-        let sections = self.fragments.iter().map(|frag| {
-            let color = frag.color.unwrap_or(super::WHITE);
-            glyph_brush::SectionText {
-                text: &frag.text,
-                scale: glyph_brush::rusttype::Scale { x: 0.0, y: 0.0 },
-                color: color.into(),
-                font_id: frag.font.unwrap_or_default().font_id,
-            }
-        });
-        sections.collect()
-    }
-
     fn invalidate_cached_metrics(&mut self) {
         if let Ok(mut metrics) = self.cached_metrics.write() {
             *metrics = CachedMetrics::default();
@@ -347,33 +334,14 @@ impl Text {
     }
 
     /// Calculates, caches, and returns width and height of formatted and wrapped text.
-    fn calculate_dimensions(&self, context: &Context) -> (u32, u32) {
+    fn calculate_dimensions(&self, context: &mut Context) -> (u32, u32) {
         let mut max_width = 0;
         let mut max_height = 0;
         {
-            let geom = glyph_brush::SectionGeometry {
-                screen_position: (0.0, 0.0),
-                // bounds: (
-                //     context.gfx_context.screen_rect.w,
-                //     context.gfx_context.screen_rect.h,
-                // ),
-                bounds: (self.bounds.x, self.bounds.y),
-            };
-            // let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
-            // .calculate_glyphs(context.gfx_context.glyph_brush.fonts(), &varied_section);
-            let section_texts = self.generate_section_texts();
-            let glyphed_section_texts = self.layout.calculate_glyphs(
-                &context.gfx_context.glyph_brush.fonts(),
-                &geom,
-                &section_texts,
-            );
-            eprintln!(
-                "glyphs: {}, bounds: {:?}",
-                glyphed_section_texts.len(),
-                geom
-            );
-            for glyphed_section_text in &glyphed_section_texts {
-                let (ref positioned_glyph, ..) = glyphed_section_text;
+            let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
+            use glyph_brush::GlyphCruncher;
+            let glyphs = context.gfx_context.glyph_brush.glyphs(varied_section);
+            for positioned_glyph in glyphs {
                 if let Some(rect) = positioned_glyph.pixel_bounding_box() {
                     if rect.max.x > max_width {
                         max_width = rect.max.x;
@@ -384,7 +352,6 @@ impl Text {
                 }
             }
         }
-        eprintln!("MAX HEIGHT: {}", max_height);
         let (width, height) = (max_width as u32, max_height as u32);
         if let Ok(mut metrics) = self.cached_metrics.write() {
             metrics.width = Some(width);
@@ -396,7 +363,7 @@ impl Text {
     /// Returns the width and height of the formatted and wrapped text.
     ///
     /// TODO: Should these return f32 rather than u32?  Probably!
-    pub fn dimensions(&self, context: &Context) -> (u32, u32) {
+    pub fn dimensions(&self, context: &mut Context) -> (u32, u32) {
         if let Ok(metrics) = self.cached_metrics.read() {
             if let (Some(width), Some(height)) = (metrics.width, metrics.height) {
                 return (width, height);
@@ -406,12 +373,12 @@ impl Text {
     }
 
     /// Returns the width of formatted and wrapped text, in screen coordinates.
-    pub fn width(&self, context: &Context) -> u32 {
+    pub fn width(&self, context: &mut Context) -> u32 {
         self.dimensions(context).0
     }
 
     /// Returns the height of formatted and wrapped text, in screen coordinates.
-    pub fn height(&self, context: &Context) -> u32 {
+    pub fn height(&self, context: &mut Context) -> u32 {
         self.dimensions(context).1
     }
 }
