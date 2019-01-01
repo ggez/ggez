@@ -200,6 +200,12 @@ impl event::EventHandler for App {
 }
 
 pub fn main() -> GameResult {
+    if cfg!(debug_assertions) && env::var("yes_i_really_want_debug_mode").is_err() {
+        eprintln!(
+            "Note: Release mode will improve performance greatly.\n    \
+             e.g. use `cargo run --example text --release`"
+        );
+    }
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");

@@ -84,6 +84,13 @@ impl event::EventHandler for MainState {
 // Loading a config file depends on having FS (or we can just fake our way around it
 // by creating an FS and then throwing it away; the costs are not huge.)
 pub fn main() -> GameResult {
+    if cfg!(debug_assertions) && env::var("yes_i_really_want_debug_mode").is_err() {
+        eprintln!(
+            "Note: Release mode will improve performance greatly.\n    \
+             e.g. use `cargo run --example spritebatch --release`"
+        );
+    }
+
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
