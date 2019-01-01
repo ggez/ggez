@@ -292,29 +292,29 @@ mod tests {
     #[test]
     fn pressed_keys_tracking() {
         let mut keyboard = KeyboardContext::new();
-        assert_eq!(keyboard.pressed_keys(), &[]);
+        assert_eq!(keyboard.pressed_keys(), &[].iter().cloned().collect());
         assert!(!keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A].iter().cloned().collect());
         assert!(keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, false);
-        assert_eq!(keyboard.pressed_keys(), &[]);
+        assert_eq!(keyboard.pressed_keys(), &[].iter().cloned().collect());
         assert!(!keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A].iter().cloned().collect());
         assert!(keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A].iter().cloned().collect());
         keyboard.set_key(KeyCode::B, true);
-        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A, KeyCode::B]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A, KeyCode::B].iter().cloned().collect());
         keyboard.set_key(KeyCode::B, true);
-        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A, KeyCode::B]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::A, KeyCode::B].iter().cloned().collect());
         keyboard.set_key(KeyCode::A, false);
-        assert_eq!(keyboard.pressed_keys(), &[KeyCode::B]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::B].iter().cloned().collect());
         keyboard.set_key(KeyCode::A, false);
-        assert_eq!(keyboard.pressed_keys(), &[KeyCode::B]);
+        assert_eq!(keyboard.pressed_keys(), &[KeyCode::B].iter().cloned().collect());
         keyboard.set_key(KeyCode::B, false);
-        assert_eq!(keyboard.pressed_keys(), &[]);
+        assert_eq!(keyboard.pressed_keys(), &[].iter().cloned().collect());
     }
 
     #[test]
