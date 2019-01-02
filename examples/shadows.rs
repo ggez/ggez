@@ -336,8 +336,11 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let size = graphics::size(ctx);
-        let origin = DrawParam::new().dest(Point2::new(0.0, 0.0));
+        let origin = DrawParam::new()
+            .dest(Point2::new(0.0, 0.0))
+            .scale(Vector2::new(0.5, 0.5));
         // for re-rendering canvases, we need to take the DPI into account
+        // TODO: Double-check this; it is probably redundant now
         let dpiscale = {
             let dsize = graphics::drawable_size(ctx);
             Vector2::new(
@@ -377,9 +380,9 @@ impl event::EventHandler for MainState {
         let torch = self.torch;
         let light = self.static_light;
         graphics::set_canvas(ctx, Some(&self.lights));
-        graphics::clear(ctx, graphics::BLACK);
+        graphics::clear(ctx, graphics::Color::new(0.0, 0.0, 0.5, 1.0));
         graphics::set_canvas(ctx, Some(&self.shadows));
-        graphics::clear(ctx, graphics::BLACK);
+        graphics::clear(ctx, graphics::Color::new(0.0, 0.5, 0.0, 1.0));
         self.render_light(ctx, torch, origin, canvas_origin)?;
         self.render_light(ctx, light, origin, canvas_origin)?;
 
@@ -388,12 +391,12 @@ impl event::EventHandler for MainState {
         graphics::set_canvas(ctx, None);
         graphics::clear(ctx, graphics::WHITE);
         graphics::draw(ctx, &self.background, origin)?;
-        graphics::draw(ctx, &self.shadows, origin)?;
-        graphics::draw(ctx, &self.lights, origin)?;
+        // graphics::draw(ctx, &self.shadows, origin)?;
+        // graphics::draw(ctx, &self.lights, origin)?;
         // We switch the color to the shadow color before drawing the foreground objects
         // this has the same effect as applying this color in a multiply blend mode with
         // full opacity. We also reset the blend mode back to the default Alpha blend mode.
-        graphics::draw(ctx, &self.foreground, origin.color(AMBIENT_COLOR))?;
+        graphics::draw(ctx, &self.foreground, origin)?;
 
         // Uncomment following two lines to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then

@@ -9,6 +9,8 @@
 //! must be complete (ie you cannot just fill in some fields and have the
 //! rest be default) and provides a nice way to specify settings that
 //! can be tweaked such as window resolution, multisampling options, etc.
+//! If no file is found, it will create a `Conf` object from the settings
+//! passed to the [`ContextBuilder`](../struct.ContextBuilder.html).
 
 use std::io;
 use toml;
@@ -18,9 +20,9 @@ use crate::error::GameResult;
 /// Possible fullscreen modes.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum FullscreenType {
-    /// Windowed mode
+    /// Windowed mode.
     Windowed,
-    /// Real fullscreen
+    /// Real fullscreen.
     True,
     /// Windowed fullscreen, generally preferred over real fullscreen
     /// these days 'cause it plays nicer with multiple monitors.
@@ -28,7 +30,7 @@ pub enum FullscreenType {
 }
 
 /// A builder structure containing window settings
-/// that can be set at runtime and changed with [`graphics::set_mode()`](../graphics/fn.set_mode.html)
+/// that can be set at runtime and changed with [`graphics::set_mode()`](../graphics/fn.set_mode.html).
 ///
 /// Defaults:
 ///
@@ -83,11 +85,13 @@ pub struct WindowMode {
     /// high DPI screens.
     ///
     /// A very good overview of this is available in
-    /// [the `winit` docs](https://docs.rs/winit/0.16.1/winit/dpi/index.html).
+    /// [the `winit` docs](https://docs.rs/winit/0.18.0/winit/dpi/index.html).
     /// If this is false (the default), one pixel in ggez equates to one
     /// physical pixel on the screen.  If it is `true`, then ggez will
     /// scale *all* pixel coordinates by the scaling factor returned by
     /// [`graphics::get_hidpi_factor()`](../graphics/fn.get_hidpi_factor.html).
+    ///
+    /// TODO: This is not implemented properly yet because winit is stubborn.
     #[default = r"false"]
     pub hidpi: bool,
     /// Whether or not the window is resizable
@@ -96,46 +100,46 @@ pub struct WindowMode {
 }
 
 impl WindowMode {
-    /// Set default window size, or screen resolution in true fullscreen mode
+    /// Set default window size, or screen resolution in true fullscreen mode.
     pub fn dimensions(mut self, width: f32, height: f32) -> Self {
         self.width = width;
         self.height = height;
         self
     }
 
-    /// Set whether the window should be maximized
+    /// Set whether the window should be maximized.
     pub fn maximized(mut self, maximized: bool) -> Self {
         self.maximized = maximized;
         self
     }
 
-    /// Set the fullscreen type
+    /// Set the fullscreen type.
     pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
         self.fullscreen_type = fullscreen_type;
         self
     }
 
-    /// Set borderless
+    /// Set whether a window should be borderless in windowed mode.
     pub fn borderless(mut self, borderless: bool) -> Self {
         self.borderless = borderless;
         self
     }
 
-    /// Set minimum window dimensions for windowed mode
+    /// Set minimum window dimensions for windowed mode.
     pub fn min_dimensions(mut self, width: f32, height: f32) -> Self {
         self.min_width = width;
         self.min_height = height;
         self
     }
 
-    /// Set maximum window dimensions for windowed mode
+    /// Set maximum window dimensions for windowed mode.
     pub fn max_dimensions(mut self, width: f32, height: f32) -> Self {
         self.max_width = width;
         self.max_height = height;
         self
     }
 
-    /// Set resizable
+    /// Set resizable.
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
         self
@@ -152,8 +156,6 @@ impl WindowMode {
 /// that must be set at init time and cannot be changed afterwards.
 ///
 /// Defaults:
-///
-/// TODO: Update docs and defaults
 ///
 /// ```rust
 /// # use ggez::conf::*;
@@ -173,17 +175,19 @@ pub struct WindowSetup {
     /// The window title.
     #[default = r#""An easy, good game".to_owned()"#]
     pub title: String,
-    /// Number of samples for multisample anti-aliasing
+    /// Number of samples to use for multisample anti-aliasing.
     #[default = r#"NumSamples::One"#]
     pub samples: NumSamples,
-    /// Whether or not to enable vsync
+    /// Whether or not to enable vsync.
     #[default = r#"true"#]
     pub vsync: bool,
-    /// Whether or not should the window's background be transparent
+    /// Whether or not should the window's background be transparent.
+    ///
+    /// TODO: I don't think I've ever even tried to use this???  Need tests!
     #[default = r#"false"#]
     pub transparent: bool,
     /// A file path to the window's icon.
-    /// It is rooted in the `resources` directory (see the [`filesystem`](../filesystem/index.html)
+    /// It takes a path rooted in the `resources` directory (see the [`filesystem`](../filesystem/index.html)
     /// module for details), and an empty string results in a blank/default icon.
     #[default = r#""".to_owned()"#]
     pub icon: String,
@@ -194,22 +198,19 @@ pub struct WindowSetup {
 }
 
 impl WindowSetup {
-    /// Set window title
+    /// Set window title.
     pub fn title(mut self, title: &str) -> Self {
         self.title = title.to_owned();
         self
     }
 
-    /// Set number of samples
-    ///
-    /// Returns `None` if given an invalid value
-    /// (valid values are powers of 2 from 1 to 16)
+    /// Set number of samples to use for multisample anti-aliasing.
     pub fn samples(mut self, samples: NumSamples) -> Self {
         self.samples = samples;
         self
     }
 
-    /// Set if vsync is enabled.
+    /// Set whether vsync is enabled.
     pub fn vsync(mut self, vsync: bool) -> Self {
         self.vsync = vsync;
         self
@@ -255,7 +256,7 @@ impl WindowSetup {
 #[serde(tag = "type")]
 pub enum Backend {
     /// Defaults to OpenGL 3.2, which is supported by basically
-    /// every machine since 2009 or so (apart from the ones that don't)
+    /// every machine since 2009 or so (apart from the ones that don't).
     #[default]
     OpenGL {
         /// OpenGL major version
@@ -265,8 +266,9 @@ pub enum Backend {
         #[default = r#"2"#]
         minor: u8,
     },
-    /// OpenGL ES versions, defaults to 3.0.  Using something older
-    /// than that starts to running into sticky limitations, particularly
+    /// OpenGL ES, defaults to 3.0.  Used for phones and other mobile
+    /// devices.  Using something older
+    /// than 3.0 starts to running into sticky limitations, particularly
     /// with instancing, but might be possible.
     OpenGLES {
         /// OpenGL ES major version
@@ -310,7 +312,7 @@ impl Backend {
     }
 }
 
-/// The possible number of samples for multisample anti-aliasing
+/// The possible number of samples for multisample anti-aliasing.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum NumSamples {
     /// One sample
@@ -342,7 +344,8 @@ impl NumSamples {
 
 /// Defines which submodules to enable in ggez.
 /// If one tries to use a submodule that is not enabled,
-/// it will panic.
+/// it will panic.  Currently, not all subsystems can be
+/// disabled.
 ///
 /// Defaults:
 ///
@@ -390,7 +393,7 @@ impl ModuleConf {
 /// Conf {
 ///     window_mode: WindowMode::default(),
 ///     window_setup: WindowSetup::default(),
-///     backend: Backend::OpenGL{ major: 3, minor: 2 },
+///     backend: Backend::default(),
 ///     modules: ModuleConf::default(),
 /// }
 /// # , Conf::default()); }

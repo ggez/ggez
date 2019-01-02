@@ -1,8 +1,8 @@
 //! Provides an interface to output sound to the user's speakers.
 //!
 //! It consists of two main types: [`SoundData`](struct.SoundData.html)
-//! is just raw sound data, and a [`Source`](struct.Source.html) is a
-//! `SoundData` connected to a particular sound channel.
+//! is just an array of raw sound data, and a [`Source`](struct.Source.html) is a
+//! `SoundData` connected to a particular sound channel able to be played.
 
 use std::fmt;
 use std::io;
@@ -22,7 +22,8 @@ use crate::error::GameError;
 use crate::error::GameResult;
 use crate::filesystem;
 
-/// A trait object defining an audio context.
+/// A trait object defining an audio context, allowing us to someday
+/// use something other than `rodio` if we really want.
 pub trait AudioContext {
     /// Returns the audio device.
     fn device(&self) -> &rodio::Device;
@@ -41,7 +42,7 @@ impl RodioAudioContext {
     pub fn new() -> GameResult<Self> {
         let device = rodio::default_output_device().ok_or_else(|| {
             GameError::AudioError(String::from(
-                "Could not initialize sound system (for some reason)",
+                "Could not initialize sound system using default output device (for some reason)",
             ))
         })?;
         Ok(Self { device })
@@ -61,7 +62,8 @@ impl fmt::Debug for RodioAudioContext {
 }
 
 /// A structure that implements `AudioContext` but does nothing; serves as a
-/// stub for when you don't need audio.
+/// stub for when you don't need audio.  Will panic if you try to actually
+/// play sound from it.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NullAudioContext;
 
@@ -77,7 +79,7 @@ impl AudioContext for NullAudioContext {
 pub struct SoundData(Arc<[u8]>);
 
 impl SoundData {
-    /// Create a new `SoundData` from the file at the given path.
+    /// Load the file at the given path and create a new `SoundData` from it.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
         let file = &mut filesystem::open(context, path)?;
@@ -145,7 +147,7 @@ pub struct Source {
     sink: rodio::Sink,
     repeat: bool,
     fade_in: time::Duration,
-    pitch: f32,
+    speed: f32,
     query_interval: time::Duration,
     play_time: Arc<AtomicUsize>,
 }
@@ -167,20 +169,20 @@ impl Source {
             data: cursor,
             repeat: false,
             fade_in: time::Duration::from_millis(0),
-            pitch: 1.0,
+            speed: 1.0,
             query_interval: time::Duration::from_millis(100),
             play_time: Arc::new(AtomicUsize::new(0)),
         })
     }
 
-    /// Plays the `Source`; restarts the sound if currently playing
+    /// Plays the `Source`; restarts the sound if currently playing.
     #[inline(always)]
     pub fn play(&mut self) -> GameResult {
         self.stop();
         self.play_later()
     }
 
-    /// Plays the `Source`; waits until done if the sound is currently playing
+    /// Plays the `Source`; waits until done if the sound is currently playing.
     pub fn play_later(&self) -> GameResult {
         // Creating a new Decoder each time seems a little messy,
         // since it may do checking and data-type detection that is
@@ -196,7 +198,7 @@ impl Source {
         if self.repeat {
             let sound = rodio::Decoder::new(cursor)?
                 .repeat_infinite()
-                .speed(self.pitch)
+                .speed(self.speed)
                 .fade_in(self.fade_in)
                 .periodic_access(self.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
@@ -204,7 +206,7 @@ impl Source {
             self.sink.append(sound);
         } else {
             let sound = rodio::Decoder::new(cursor)?
-                .speed(self.pitch)
+                .speed(self.speed)
                 .fade_in(self.fade_in)
                 .periodic_access(self.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
@@ -215,7 +217,7 @@ impl Source {
         Ok(())
     }
 
-    /// Play source "in the background"; cannot be stopped
+    /// Play source "in the background"; cannot be stopped.
     pub fn play_detached(&mut self) -> GameResult {
         self.stop();
         self.play_later()?;
@@ -233,14 +235,14 @@ impl Source {
         self.repeat = repeat;
     }
 
-    /// Sets the fade-in time of the source
+    /// Sets the fade-in time of the source.
     pub fn set_fade_in(&mut self, dur: time::Duration) {
         self.fade_in = dur;
     }
 
-    /// Sets the pitch ratio (by adjusting the playback speed)
+    /// Sets the pitch ratio (by adjusting the playback speed).
     pub fn set_pitch(&mut self, ratio: f32) {
-        self.pitch = ratio;
+        self.speed = ratio;
     }
 
     /// Gets whether or not the source is set to repeat.
@@ -332,7 +334,7 @@ pub struct SpatialSource {
     sink: rodio::SpatialSink,
     repeat: bool,
     fade_in: time::Duration,
-    pitch: f32,
+    speed: f32,
     query_interval: time::Duration,
     play_time: Arc<AtomicUsize>,
 
@@ -365,7 +367,7 @@ impl SpatialSource {
             data: cursor,
             repeat: false,
             fade_in: time::Duration::from_millis(0),
-            pitch: 1.0,
+            speed: 1.0,
             query_interval: time::Duration::from_millis(100),
             play_time: Arc::new(AtomicUsize::new(0)),
             left_ear: [-1.0, 0.0, 0.0].into(),
@@ -393,7 +395,7 @@ impl SpatialSource {
         if self.repeat {
             let sound = rodio::Decoder::new(cursor)?
                 .repeat_infinite()
-                .speed(self.pitch)
+                .speed(self.speed)
                 .fade_in(self.fade_in)
                 .periodic_access(self.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
@@ -401,7 +403,7 @@ impl SpatialSource {
             self.sink.append(sound);
         } else {
             let sound = rodio::Decoder::new(cursor)?
-                .speed(self.pitch)
+                .speed(self.speed)
                 .fade_in(self.fade_in)
                 .periodic_access(self.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
@@ -440,9 +442,9 @@ impl SpatialSource {
         self.fade_in = dur;
     }
 
-    /// Sets the pitch ratio (by adjusting the playback speed)
+    /// Sets the speed ratio (by adjusting the playback speed)
     pub fn set_pitch(&mut self, ratio: f32) {
-        self.pitch = ratio;
+        self.speed = ratio;
     }
 
     /// Gets whether or not the source is set to repeat.
@@ -487,23 +489,23 @@ impl SpatialSource {
         self.sink.empty()
     }
 
-    /// Gets the current volume
+    /// Gets the current volume.
     pub fn volume(&self) -> f32 {
         self.sink.volume()
     }
 
-    /// Sets the current volume
+    /// Sets the current volume.
     pub fn set_volume(&mut self, value: f32) {
         self.sink.set_volume(value)
     }
 
-    /// Get whether or not the source is paused
+    /// Get whether or not the source is paused.
     pub fn paused(&self) -> bool {
         self.sink.is_paused()
     }
 
     /// Get whether or not the source is playing (ie, not paused
-    /// and not stopped)
+    /// and not stopped).
     pub fn playing(&self) -> bool {
         !self.paused() && !self.stopped()
     }
@@ -524,7 +526,7 @@ impl SpatialSource {
         self.query_interval = t;
     }
 
-    /// Set location of the sound
+    /// Set location of the sound.
     pub fn set_position<P>(&mut self, pos: P)
     where
         P: Into<mint::Point3<f32>>,

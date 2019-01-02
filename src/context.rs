@@ -1,4 +1,7 @@
-use winit::{self, dpi};
+/// We re-export winit so it's easy for people to use the same version as we are
+/// without having to mess around figuring it out.
+pub use winit;
+use winit::dpi;
 
 use std::fmt;
 
@@ -56,7 +59,7 @@ impl fmt::Debug for Context {
 }
 
 impl Context {
-    /// Tries to create a new Context using settings from the given config file.
+    /// Tries to create a new Context using settings from the given [`Conf`](../conf/struct.Conf.html) object.
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
     fn from_conf(conf: conf::Conf, fs: Filesystem) -> GameResult<(Context, winit::EventsLoop)> {
         let debug_id = DebugId::new();
@@ -105,6 +108,7 @@ impl Context {
     /// rolling your own event loop, you should call this on the events
     /// you receive before processing them yourself.
     ///
+    /// TODO: Resolve hidpi mongling in #391.
     /// This also returns a new version of the `Event` that has been modified
     /// for ggez's optional overriding of hidpi.  For full discussion see
     /// <https://github.com/tomaka/winit/issues/591#issuecomment-403096230>.
@@ -166,12 +170,6 @@ impl Context {
 use std::path;
 
 /// A builder object for creating a [`Context`](struct.Context.html).
-///
-/// Can do everything the [`Context::load_from_conf()`](struct.Context.html#method.load_from_conf)
-/// method does, plus you can also specify new paths to add to the resource path
-/// list at build time instead of using [`filesystem::mount()`](filesystem/fn.mount.html).
-///
-/// TODO: Better docs.  Should `Context::load_from_conf` be outright deprecated?
 #[derive(Debug, Clone, PartialEq)]
 pub struct ContextBuilder {
     pub(crate) game_id: &'static str,
@@ -182,7 +180,7 @@ pub struct ContextBuilder {
 }
 
 impl ContextBuilder {
-    /// Create a new `ContextBuilder`
+    /// Create a new `ContextBuilder` with default settings.
     pub fn new(game_id: &'static str, author: &'static str) -> Self {
         Self {
             game_id,
@@ -193,19 +191,19 @@ impl ContextBuilder {
         }
     }
 
-    /// Sets the window setup settings
+    /// Sets the window setup settings.
     pub fn window_setup(mut self, setup: conf::WindowSetup) -> Self {
         self.conf.window_setup = setup;
         self
     }
 
-    /// Sets the window mode settings
+    /// Sets the window mode settings.
     pub fn window_mode(mut self, mode: conf::WindowMode) -> Self {
         self.conf.window_mode = mode;
         self
     }
 
-    /// Sets the graphics backend
+    /// Sets the graphics backend.
     pub fn backend(mut self, backend: conf::Backend) -> Self {
         self.conf.backend = backend;
         self
@@ -263,7 +261,7 @@ impl ContextBuilder {
     }
 }
 
-/// Terminates [`ggez::run()`](fn.run.html) loop by setting
+/// Terminates the [`ggez::run()`](fn.run.html) loop by setting
 /// [`Context.continuing`](struct.Context.html#structfield.continuing)
 /// to `false`.
 pub fn quit(ctx: &mut Context) {
@@ -293,7 +291,7 @@ impl DebugId {
     pub fn new() -> Self {
         let id = DEBUG_ID_COUNTER.fetch_add(1, Ordering::SeqCst) as u32;
         // fetch_add() wraps on overflow so we check for overflow explicitly.
-        // JUST IN CASE YOU TRY TO CREATE 2^32 CONTEXTS IN ONE PROGRAM!
+        // JUST IN CASE YOU TRY TO CREATE 2^32 CONTEXTS IN ONE PROGRAM!  muahahahahaaa
         assert!(DEBUG_ID_COUNTER.load(Ordering::SeqCst) as u32 > id);
         DebugId(id)
     }

@@ -264,6 +264,23 @@ impl From<[f32; 4]> for Color {
     }
 }
 
+impl From<(f32, f32, f32)> for Color {
+    /// Convert a `(R, G, B)` tuple of `f32`'s in the range `[0.0-1.0]` into a `Color`,
+    /// with a value of 1.0 to for the alpha element (ie, no transparency.)
+    fn from(val: (f32, f32, f32)) -> Self {
+        let (r, g, b) = val;
+        Color::new(r, g, b, 1.0)
+    }
+}
+
+impl From<(f32, f32, f32, f32)> for Color {
+    /// Convert a `(R, G, B, A)` tuple of `f32`'s in the range `[0.0-1.0]` into a `Color`
+    fn from(val: (f32, f32, f32, f32)) -> Self {
+        let (r, g, b, a) = val;
+        Color::new(r, g, b, a)
+    }
+}
+
 impl From<Color> for (u8, u8, u8, u8) {
     /// Convert a Color into a `(R, G, B, A)` tuple of `u8`'s in the range of 0-255.
     fn from(color: Color) -> Self {
