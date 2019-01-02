@@ -10,11 +10,11 @@
 //! platform-dependent location,
 //! such as `~/.local/share/<gameid>/` on Linux.  The `gameid`
 //! is the the string passed to
-//! [`Context::load_from_conf()`](../struct.Context.html#method.load_from_conf);
-//! some platforms such as Windows also incorporate the `author` string into
+//! [`ContextBuilder::new()`](../struct.ContextBuilder.html#method.new).
+//! Some platforms such as Windows also incorporate the `author` string into
 //! the path.
 //!
-//! These locations will be searched in order for files, and the first file
+//! These locations will be searched for files in the order listed, and the first file
 //! found used.  That allows game assets to be easily distributed as an archive
 //! file, but locally overridden for testing or modding simply by putting
 //! altered copies of them in the game's `resources/` directory.  It
@@ -22,8 +22,8 @@
 //!
 //! See the source of the [`files` example](https://github.com/ggez/ggez/blob/master/examples/files.rs) for more details.
 //!
-//! Note that the file lookups WILL follow symlinks!  It is
-//! more for convenience than absolute security, so don't treat it as
+//! Note that the file lookups WILL follow symlinks!  This is
+//! for convenience more than security, so don't treat it as
 //! being secure.
 
 use std::env;
@@ -248,42 +248,36 @@ impl Filesystem {
         Ok(Box::new(itr))
     }
 
+    fn write_to_string(&mut self) -> String {
+        use std::fmt::Write;
+        let mut s = String::new();
+        for vfs in self.vfs.roots() {
+            write!(s, "Source {:?}", vfs).expect("Could not write to string; should never happen?");
+            match vfs.read_dir(path::Path::new("/")) {
+                Ok(files) => {
+                    for itm in files {
+                        write!(s, "  {:?}", itm)
+                            .expect("Could not write to string; should never happen?");
+                    }
+                }
+                Err(e) => write!(s, " Could not read source: {:?}", e)
+                    .expect("Could not write to string; should never happen?"),
+            }
+        }
+        s
+    }
+
     /// Prints the contents of all data directories
     /// to standard output.  Useful for debugging.
     pub(crate) fn print_all(&mut self) {
-        for vfs in self.vfs.roots() {
-            println!("Source {:?}", vfs);
-            match vfs.read_dir(path::Path::new("/")) {
-                Ok(files) => {
-                    for itm in files {
-                        println!("  {:?}", itm);
-                    }
-                }
-                Err(e) => println!(" Could not read source: {:?}", e),
-            }
-        }
+        println!("{}", self.write_to_string());
     }
 
-    // TODO: The code duplication here irks me.
-    // print_all() and log_all() should be combinable.
     /// Outputs the contents of all data directories,
     /// using the "info" log level of the `log` crate.
     /// Useful for debugging.
-    ///
-    /// See the [`logging` example](https://github.com/ggez/ggez/blob/master/examples/logging.rs)
-    /// for info on how to collect log information.
     pub(crate) fn log_all(&mut self) {
-        for vfs in self.vfs.roots() {
-            info!("Source {:?}", vfs);
-            match vfs.read_dir(path::Path::new("/")) {
-                Ok(files) => {
-                    for itm in files {
-                        info!("  {:?}", itm);
-                    }
-                }
-                Err(e) => warn!(" Could not read source: {:?}", e),
-            }
-        }
+        info!("{}", self.write_to_string());
     }
 
     /// Adds the given (absolute) path to the list of directories

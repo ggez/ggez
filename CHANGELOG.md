@@ -3,11 +3,13 @@
 ## Added
 
  * Added line cap and join options
+ * Added spatial sources for audio
+ * Added `From` implementations for `Color` to convert from various tuples of `f32`'s.  Redundant but it annoyed me they don't exist.
 
 ## Changed
 
  * Updated versions of lots of dependencies.
- * Minimum rustc version is now 1.26
+ * Minimum rustc version is now 1.31, rust 2018 edition.
  * We now use `winit` instead of `sdl2` for window creation and events!  This involves lots of minor
    changes, the full extent of which is still being explored.
  * `DrawParam` now uses the builder pattern instead of being a bare struct, which allows easier conversion from generics (such as `mint` types) as well as simplifying the internal math.
@@ -34,7 +36,6 @@
  * Removed `Context::from_conf()` for `ContextBuilder` which is strictly more powerful.  [#429](https://github.com/ggez/ggez/issues/429)
  * Removed bitmap fonts; better support deserves to exist than what ggez currently provides, and there's no reason it can't be its own crate.
  * Removed the `cargo-resource-root` feature flag; just use `filesystem::mount()` instead or add the directories to your `ContextBuilder`.
- * Removed
 
 ## Fixed
 

@@ -224,7 +224,6 @@ impl From<glutin::ContextError> for GameError {
 }
 
 impl From<gilrs::Error> for GameError {
-    // TODO: Better error type?
     fn from(s: gilrs::Error) -> GameError {
         let errstr = format!("Gamepad error: {}", s);
         GameError::GamepadError(errstr)

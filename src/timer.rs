@@ -2,10 +2,10 @@
 //!
 //! ggez does not try to do any framerate limitation by default. If
 //! you want to run at anything other than full-bore max speed all the
-//! time, calling [`thread::yield_now()`](https://doc.rust-lang.org/std/thread/fn.yield_now.html)
+//! time, call [`thread::yield_now()`](https://doc.rust-lang.org/std/thread/fn.yield_now.html)
 //! (or [`timer::yield_now()`](fn.yield_now.html) which does the same
-//! thing) yield to the OS so it has a chance to breathe before continuing
-//! with your game. This should prevent it from using 100% CPU unless it
+//! thing) to yield to the OS so it has a chance to breathe before continuing
+//! with your game. This should prevent it from using 100% CPU as much unless it
 //! really needs to.  Enabling vsync by setting
 //! [`conf.window_setup.vsync`](../conf/struct.WindowSetup.html#structfield.vsync)
 //! in your [`Conf`](../conf/struct.Conf.html) object is generally the best
@@ -44,9 +44,7 @@ where
     T: Clone + Copy,
 {
     fn new(size: usize, init_val: T) -> LogBuffer<T> {
-        // Empty vec doesn't allocate until it's resized
-        let mut v = Vec::new();
-        v.resize(size, init_val);
+        let v = vec![init_val; size];
         LogBuffer {
             head: 0,
             size,
@@ -250,7 +248,7 @@ pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
 ///
 /// The intention is for it to be called in your
 /// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) callback
-/// to interpolate phyisics states for smooth rendering.
+/// to interpolate physics states for smooth rendering.
 /// (see <http://gafferongames.com/game-physics/fix-your-timestep/>)
 pub fn remaining_update_time(ctx: &mut Context) -> time::Duration {
     ctx.timer_context.residual_update_dt

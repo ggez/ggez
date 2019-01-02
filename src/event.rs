@@ -3,17 +3,13 @@
 //! and mouse.
 //!
 //! If you don't want to do this, you can write your own mainloop and
-//! get the necessary event machinery by calling
-//! `context.sdl_context.event_pump()` on your `Context`.  You can
-//! then call whatever SDL event methods you want on that.  This is
-//! not particularly elegant and is not guaranteed to be stable across
-//! different versions of ggez (for instance, we may someday get rid of SDL2),
-//! but trying to wrap it
-//! up more conveniently really ends up with the exact same interface.
+//! check for events on your own, which is not particularly hard.  This
+//! just tries to simplify the process a little.  See the source code for
+//! this module, or the
+//! [`eventloop` example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs)
+//! example code to see how to do this.
 //!
 //! TODO: UPDATE DOCS!
-//!
-//! See the [`eventloop` example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs) for an implementation.
 
 use gilrs;
 use winit::{self, dpi};
@@ -42,8 +38,8 @@ use crate::context::Context;
 use crate::error::GameResult;
 pub use crate::input::keyboard::{KeyCode, KeyMods};
 
-/// A trait defining event callbacks; your primary interface with
-/// `ggez`'s event loop.  Have a type implement this trait and
+/// A trait defining event callbacks.  This is your primary interface with
+/// `ggez`'s event loop.  Implement this trait for a type and
 /// override at least the [`update()`](#tymethod.update) and
 /// [`draw()`](#tymethod.draw) methods, then pass it to
 /// [`event::run()`](fn.run.html) to run the game's mainloop.
@@ -51,7 +47,7 @@ pub use crate::input::keyboard::{KeyCode, KeyMods};
 /// The default event handlers do nothing, apart from
 /// [`key_down_event()`](#tymethod.key_down_event), which will by
 /// default exit the game if the escape key is pressed.  Just
-/// override the methods you want to do things with.
+/// override the methods you want to use.
 pub trait EventHandler {
     /// Called upon each logic update to the game.
     /// This should be where the game's logic takes place.
@@ -61,7 +57,7 @@ pub trait EventHandler {
     /// You probably want to start this with
     /// [`graphics::clear()`](../graphics/fn.clear.html) and end it
     /// with [`graphics::present()`](../graphics/fn.present.html) and
-    /// [`timer::yield_now()`](../timer/fn.yield_now.html).
+    /// maybe [`timer::yield_now()`](../timer/fn.yield_now.html).
     fn draw(&mut self, _ctx: &mut Context) -> GameResult;
 
     /// A mouse button was pressed
