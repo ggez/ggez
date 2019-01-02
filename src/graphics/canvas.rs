@@ -124,11 +124,9 @@ impl Drawable for Canvas {
         self.debug_id.assert(ctx);
         // Gotta flip the image on the Y axis here
         // to account for OpenGL's origin being at the bottom-left.
-
-        // TODO: FIX PrimitiveDrawParam
-        let flipped_param = param;
-        // flipped_param.scale.y *= -1.0;
-        // flipped_param.dest.y += self.image.height() as f32 * param.scale.y;
+        let mut flipped_param = param;
+        flipped_param.scale.y *= -1.0;
+        flipped_param.dest.y += self.image.height() as f32 * param.scale.y;
         self.image.draw(ctx, flipped_param)?;
         Ok(())
     }

@@ -385,25 +385,20 @@ impl event::EventHandler for MainState {
 
         // Now lets finally render to screen starting with out background, then
         // the shadows and lights overtop and finally our foreground.
-        // TODO: Clean up color
         graphics::set_canvas(ctx, None);
-        // graphics::set_color(ctx, graphics::WHITE)?;
+        graphics::clear(ctx, graphics::WHITE);
         graphics::draw(ctx, &self.background, origin)?;
         graphics::draw(ctx, &self.shadows, origin)?;
         graphics::draw(ctx, &self.lights, origin)?;
         // We switch the color to the shadow color before drawing the foreground objects
         // this has the same effect as applying this color in a multiply blend mode with
         // full opacity. We also reset the blend mode back to the default Alpha blend mode.
-        // TODO: Clean up color
-        // graphics::set_color(ctx, AMBIENT_COLOR.into())?;
         graphics::draw(ctx, &self.foreground, origin.color(AMBIENT_COLOR))?;
 
         // Uncomment following two lines to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
         // the greyscale pixels are the half distances of the nearest shadows to
         // the mouse position (equally encoded in all color channels).
-        // TODO: Clean up color
-        // graphics::set_color(ctx, [1.0; 4].into())?;
         // graphics::draw(ctx, &self.occlusions, origin)?;
 
         graphics::present(ctx)?;
