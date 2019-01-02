@@ -105,16 +105,14 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 
         // WINDOW SETUP
         let gl_builder = glutin::ContextBuilder::new()
-            // GlRequest::Specific(Api::OpenGl, (backend.major, backend.minor))
-            // TODO: Fix the "Latest" here.
             .with_gl(glutin::GlRequest::Specific(
                 backend.api(),
                 backend.version_tuple(),
             ))
             .with_gl_profile(glutin::GlProfile::Core)
             .with_multisampling(window_setup.samples as u16)
-            // TODO: Better pixel format here?
-            .with_pixel_format(8, 8)
+            // 24 color bits, 8 alpha bits
+            .with_pixel_format(24, 8)
             .with_vsync(window_setup.vsync);
 
         let mut window_builder = winit::WindowBuilder::new()
@@ -137,7 +135,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             depth_format,
         )?;
 
-        // See https://docs.rs/winit/0.16.1/winit/dpi/index.html for
+        // See https://docs.rs/winit/0.18.0/winit/dpi/index.html for
         // an excellent explaination of how this works.
         let os_hidpi_factor = window.get_hidpi_factor() as f32;
         let hidpi_factor = if window_mode.hidpi {
@@ -148,10 +146,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 
         // TODO: see winit #548 about DPI.
         {
-            // TODO: improve.
             // Log a bunch of OpenGL state info pulled out of winit and gfx
-            use glutin::GlContext;
-            let _api = window.get_api();
             let dpi::LogicalSize {
                 width: w,
                 height: h,
@@ -331,12 +326,6 @@ impl<B> GraphicsContextGeneric<B>
 where
     B: BackendSpec + 'static,
 {
-    /// TODO: This is sorta redundant with BackendSpec too...?
-    pub(crate) fn new_encoder(&mut self) -> gfx::Encoder<B::Resources, B::CommandBuffer> {
-        let factory = &mut *self.factory;
-        B::encoder(factory)
-    }
-
     /// Sends the current value of the graphics context's shader globals
     /// to the graphics card.
     pub(crate) fn update_globals(&mut self) -> GameResult {
@@ -364,7 +353,7 @@ where
     }
 
     /// Pops the current transform matrix off the top of the transform
-    /// (model) matrix stack.
+    /// (model) matrix stack.  Will never pop the last transform.
     pub(crate) fn pop_transform(&mut self) {
         if self.modelview_stack.len() > 1 {
             let _ = self.modelview_stack.pop();
@@ -400,8 +389,6 @@ where
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
     /// sends it to the graphics card at the front of the instance buffer.
     pub(crate) fn update_instance_properties(&mut self, draw_params: DrawTransform) -> GameResult {
-        // This clone is cheap since draw_params is Copy
-        // TODO: Clean up
         let mut new_draw_params = draw_params;
         new_draw_params.color = draw_params.color;
         let properties = new_draw_params.to_instance_properties(self.srgb);
@@ -443,6 +430,8 @@ where
         /// Creates an orthographic projection matrix.
         /// Because nalgebra gets frumple when you try to make
         /// one that is upside-down.
+        /// This is fixed now (issue here: https://github.com/rustsim/nalgebra/issues/365)
+        /// but removing this kinda isn't worth it.
         fn ortho(
             left: f32,
             right: f32,
@@ -618,6 +607,7 @@ where
     ///
     /// See <https://github.com/tomaka/winit/issues/591#issuecomment-403096230>
     /// and related issues for fuller discussion.
+    /// TODO: Unimplemented yet because I don't know the best way to fix hidpi.  :|
     pub(crate) fn hack_event_hidpi(&self, event: &winit::Event) -> winit::Event {
         event.clone()
     }

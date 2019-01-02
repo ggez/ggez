@@ -88,10 +88,12 @@ impl event::EventHandler for MainState {
             .scale(na::Vector2::new(1.0, 1.0))
             // .src(graphics::Rect::new(0.0, 0.0, 0.5, 0.5))
         ;
-        let dt = graphics::DrawTransform::from(param);
-        println!("transform: {}", dt.matrix);
+        // TODO: I made DrawTransform private but maybe it's still useful for
+        // this sort of stuff?
+        // let dt = graphics::DrawTransform::from(param);
+        // println!("transform: {}", dt.matrix);
 
-        self.draw_coord_labels(ctx)?;
+        // self.draw_coord_labels(ctx)?;
 
         graphics::draw(ctx, &self.angle, param)?;
         graphics::present(ctx)?;

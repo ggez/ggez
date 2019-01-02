@@ -149,7 +149,7 @@ impl KeyboardContext {
             self.current_pressed = None;
             // Double check that this edge handling is necessary;
             // winit sounds like it should do this for us,
-            // see https://docs.rs/winit/0.16.1/winit/struct.KeyboardInput.html#structfield.modifiers
+            // see https://docs.rs/winit/0.18.0/winit/struct.KeyboardInput.html#structfield.modifiers
             match key {
                 KeyCode::LShift | KeyCode::RShift => self.active_modifiers -= KeyMods::SHIFT,
                 KeyCode::LControl | KeyCode::RControl => self.active_modifiers -= KeyMods::CTRL,
@@ -203,7 +203,7 @@ pub fn is_key_repeated(ctx: &Context) -> bool {
     ctx.keyboard_context.is_key_repeated()
 }
 
-/// Returns a `HashSet` with currently pressed keys.
+/// Returns a reference to the set of currently pressed keys.
 pub fn pressed_keys(ctx: &Context) -> &HashSet<KeyCode> {
     ctx.keyboard_context.pressed_keys()
 }

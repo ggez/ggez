@@ -12,6 +12,7 @@ use crate::graphics::shader::*;
 use crate::graphics::*;
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
+/// You probably just want to look at the `Image` type.
 #[derive(Clone, PartialEq)]
 pub struct ImageGeneric<B>
 where
@@ -52,7 +53,8 @@ where
             );
             return Err(GameError::ResourceLoadError(msg));
         }
-        // Check for overflow, which might happen on 32-bit systems
+        // Check for overflow, which might happen on 32-bit systems.
+        // Textures can be max u16*u16, pixels, but then have 4 bytes per pixel.
         let uwidth = width as usize;
         let uheight = height as usize;
         let expected_bytes = uwidth
@@ -101,13 +103,6 @@ where
             swizzle: gfx::format::Swizzle::new(),
         };
         let raw_view = factory.view_texture_as_shader_resource_raw(&raw_tex, resource_desc)?;
-        // gfx::memory::Typed is UNDOCUMENTED, aiee!
-        // However there doesn't seem to be an official way to turn a raw tex/view into a typed
-        // one; this API oversight would probably get fixed, except gfx is moving to a new
-        // API model.  So, that also fortunately means that undocumented features like this
-        // probably won't go away on pre-ll gfx...
-        // let tex = gfx::memory::Typed::new(raw_tex);
-        // let view = gfx::memory::Typed::new(raw_view);
         Ok(Self {
             texture: raw_view,
             texture_handle: raw_tex,
@@ -136,9 +131,6 @@ pub enum ImageFormat {
 }
 
 impl Image {
-    /* TODO: Needs generic Context to work.
-     */
-
     /// Load a new image from the file at the given path. The documentation for the
     /// [`filesystem`](../filesystem/index.html) module explains how the path must be specified.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
@@ -197,7 +189,8 @@ impl Image {
             .factory
             .create_download_buffer::<[u8; 4]>(w as usize * h as usize)?;
 
-        let mut local_encoder = gfx.new_encoder();
+        let factory = &mut *gfx.factory;
+        let mut local_encoder = GlBackendSpec::encoder(factory);
 
         local_encoder.copy_texture_to_buffer_raw(
             &self.texture_handle,
@@ -224,6 +217,8 @@ impl Image {
         // so the screenshot isn't upside-down
         let mut data = Vec::with_capacity(self.width as usize * self.height as usize * 4);
         for row in reader.chunks(w as usize).rev() {
+            // TODO: Test if we can just do row.flatten() here?
+            // data.extend(row.iter().flatten());
             for pixel in row.iter() {
                 data.extend(pixel);
             }
@@ -259,13 +254,10 @@ impl Image {
         }
     }
 
-    /* TODO: Needs generic context
-
     /// A little helper function that creates a new Image that is just
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
     pub fn solid(context: &mut Context, size: u16, color: Color) -> GameResult<Self> {
-        // let pixel_array: [u8; 4] = color.into();
         let (r, g, b, a) = color.into();
         let pixel_array: [u8; 4] = [r, g, b, a];
         let size_squared = size as usize * size as usize;
@@ -275,7 +267,6 @@ impl Image {
         }
         Image::from_rgba8(context, size, size, &buffer)
     }
-    */
 
     /// Return the width of the image.
     pub fn width(&self) -> u16 {
@@ -336,18 +327,11 @@ impl Drawable for Image {
         let param = param.into();
         self.debug_id.assert(ctx);
 
-        // println!("Matrix: {:#?}", param.matrix);
         let gfx = &mut ctx.gfx_context;
         let src_width = param.src.w;
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
-        // BUGGO: Based on previous ggez code we need
-        // to have param.scale in this math but there's
-        // no way we can get it...
-        // ...or do we, 'cause we do param.mul() afterwards?
-        // but it doesn't seem to have the same effect on
-        // offset, so.
         use nalgebra;
         let real_scale = nalgebra::Vector2::new(
             param.scale.x * src_width * f32::from(self.width),

@@ -7,16 +7,16 @@ type Vec3 = na::Vector3<f32>;
 /// A struct containing all the necessary info for drawing a Drawable.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawParam {
-    /// a portion of the drawable to clip, as a fraction of the whole image.
-    /// Defaults to the whole image (1.0) if omitted.
+    /// A portion of the drawable to clip, as a fraction of the whole image.
+    /// Defaults to the whole image `(0,0 to 1,1)` if omitted.
     pub(crate) src: Rect,
-    /// the position to draw the graphic expressed as a `Point2`.
+    /// The position to draw the graphic expressed as a `Point2`.
     pub(crate) dest: Point2,
-    /// orientation of the graphic in radians.
+    /// The orientation of the graphic in radians.
     pub(crate) rotation: f32,
-    /// x/y scale factors expressed as a `Vector2`.
+    /// The x/y scale factors expressed as a `Vector2`.
     pub(crate) scale: Vector2,
-    /// specifies an offset from the center for transform operations like scale/rotation,
+    /// An offset from the center for transform operations like scale/rotation,
     /// with `0,0` meaning the origin and `1,1` meaning the opposite corner from the origin.
     /// By default these operations are done from the top-left corner, so to rotate something
     /// from the center specify `Point2::new(0.5, 0.5)` here.
@@ -61,7 +61,8 @@ impl DrawParam {
         self
     }
 
-    /// TODO
+    /// Set the drawable color.  This will be blended with whatever
+    /// color the drawn object already is.
     pub fn color<C>(mut self, color: C) -> Self
     where
         C: Into<Color>,
@@ -70,13 +71,13 @@ impl DrawParam {
         self
     }
 
-    /// TODO
+    /// Set the rotation of the drawable.
     pub fn rotation(mut self, rotation: f32) -> Self {
         self.rotation = rotation;
         self
     }
 
-    /// TODO
+    /// Set the scaling factors of the drawable.
     pub fn scale<V>(mut self, scale: V) -> Self
     where
         V: Into<mint::Vector2<f32>>,
@@ -86,7 +87,7 @@ impl DrawParam {
         self
     }
 
-    /// TODO
+    /// Set the transformation offset of the drawable.
     pub fn offset<P>(mut self, offset: P) -> Self
     where
         P: Into<mint::Point2<f32>>,
@@ -95,11 +96,12 @@ impl DrawParam {
         self.offset = Point2::from(p);
         self
     }
-
-    // TODO: Easy mirror functions for X and Y axis might be nice.
 }
 
-/// Create a `DrawParam` from a location
+/// Create a `DrawParam` from a location.
+/// Note that this takes a single-element tuple.
+/// It's a little weird but keeps the trait implementations
+/// from clashing.
 impl<P> From<(P,)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
@@ -167,9 +169,14 @@ where
 }
 
 /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
-/// Useful for doing matrix-based coordinate transformations, I hope.
+/// This is a lot less useful for doing transformations than I'd hoped; basically, we sometimes
+/// have to modify parameters of a `DrawParam` based *on* the parameters of a `DrawParam`, for
+/// instance when scaling images so that they are in units of pixels.  This makes it really
+/// hard to extract scale and rotation and such, so meh.
+///
+/// It's still useful for a couple internal things though, so it's kept around.
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct DrawTransform {
+pub(crate) struct DrawTransform {
     /// The transform matrix for the DrawParams
     pub matrix: Matrix4,
     /// A portion of the drawable to clip, as a fraction of the whole image.
@@ -209,17 +216,6 @@ impl From<DrawParam> for DrawTransform {
 }
 
 impl DrawTransform {
-    /// Returns a new `DrawTransform` with its matrix multiplied
-    /// by the given one.
-    ///
-    /// TODO: Make some way to implement `matrix * self.matrix`, or just implement `Mul`...
-    pub fn mul(self, matrix: Matrix4) -> Self {
-        DrawTransform {
-            matrix: self.matrix * matrix,
-            ..self
-        }
-    }
-
     pub(crate) fn to_instance_properties(&self, srgb: bool) -> InstanceProperties {
         let mat: [[f32; 4]; 4] = self.matrix.into();
         let color: [f32; 4] = if srgb {

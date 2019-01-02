@@ -146,19 +146,31 @@ impl event::EventHandler for MainState {
                 .scale(scale)
                 // shear: shear,
         )?;
+        */
 
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
-        graphics::rectangle(ctx, graphics::WHITE, graphics::DrawMode::Fill, rect)?;
+        let r1 =
+            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::Fill, rect, graphics::WHITE)?;
+        graphics::draw(ctx, &r1, DrawParam::default())?;
 
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
-        graphics::rectangle(
+        let r2 = graphics::Mesh::new_rectangle(
             ctx,
-            graphics::Color::new(1.0, 0.0, 0.0, 1.0),
             graphics::DrawMode::Line(1.0),
             rect,
+            graphics::Color::new(1.0, 0.0, 0.0, 1.0),
         )?;
+        graphics::draw(ctx, &r2, DrawParam::default())?;
+        // graphics::rectangle(ctx, graphics::WHITE, graphics::DrawMode::Fill, rect)?;
 
-        */
+        // let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
+        // graphics::rectangle(
+        //     ctx,
+        //     graphics::Color::new(1.0, 0.0, 0.0, 1.0),
+        //     graphics::DrawMode::Line(1.0),
+        //     rect,
+        // )?;
+
         for m in &self.meshes {
             graphics::draw(ctx, m, DrawParam::new())?;
         }

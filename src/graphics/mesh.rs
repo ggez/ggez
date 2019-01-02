@@ -15,7 +15,7 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 ///
 /// The following example shows how to build a mesh containing a line and a circle:
 ///
-/// ```rust,no_run
+/// ```rust
 /// # use ggez::*;
 /// # use ggez::graphics::*;
 /// # use ggez::nalgebra::Point2;
@@ -91,7 +91,7 @@ impl MeshBuilder {
 
     /// Create a new mesh for a circle.
     ///
-    /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
+    /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.11.0/lyon_geom/#flattening).
     pub fn circle<P>(
         &mut self,
         mode: DrawMode,
@@ -158,7 +158,7 @@ impl MeshBuilder {
 
     /// Create a new mesh for an ellipse.
     ///
-    /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.9.0/lyon_geom/#flattening).
+    /// For the meaning of the `tolerance` parameter, [see here](https://docs.rs/lyon_geom/0.11.0/lyon_geom/#flattening).
     pub fn ellipse<P>(
         &mut self,
         mode: DrawMode,
@@ -384,9 +384,8 @@ impl MeshBuilder {
         self
     }
 
-    /// TODO: Update docs.
-    /// Creates a `Mesh` from a raw list of triangles defined from points
-    /// and indices, with the given UV texture coordinates.  You may also
+    /// Creates a `Mesh` from a raw list of triangles defined from vertices
+    /// and indices.  You may also
     /// supply an `Image` to use as a texture, if you pass `None`, it will
     /// just use a pure white texture.
     ///
@@ -396,13 +395,18 @@ impl MeshBuilder {
     /// cause drawing to panic), if:
     ///
     ///  * `indices` contains a value out of bounds of `verts`
+    ///  * Adding the `indices` or `verts` would create a buffer too long
+    ///    to be indexed by a `u16`.
     pub fn from_raw<V>(&mut self, verts: &[V], indices: &[u16], texture: Option<Image>) -> &mut Self
     where
         V: Into<Vertex> + Clone,
     {
-        // TODO: Make `as` conversion checked
+        assert!(self.buffer.vertices.len() + verts.len() < (u16::MAX as usize));
+        assert!(self.buffer.indices.len() + indices.len() < (u16::MAX as usize));
         let next_idx = self.buffer.vertices.len() as u16;
-        // TODO: Can we remove the clone here?
+        // Can we remove the clone here?
+        // I can't find a way to, because `into()` consumes its source and
+        // `Borrow` or `AsRef` aren't really right.
         let vertices = verts.iter().cloned().map(|v: V| -> Vertex { v.into() });
         let indices = indices.iter().map(|i| (*i) + next_idx);
         self.buffer.vertices.extend(vertices);
@@ -441,7 +445,7 @@ impl t::VertexConstructor<t::FillVertex, Vertex> for VertexBuilder {
     fn new_vertex(&mut self, vertex: t::FillVertex) -> Vertex {
         Vertex {
             pos: [vertex.position.x, vertex.position.y],
-            uv: [0.0, 0.0],
+            uv: [vertex.position.x, vertex.position.y],
             color: self.color.into(),
         }
     }
@@ -584,6 +588,7 @@ impl Mesh {
     /// cause drawing to panic), if:
     ///
     ///  * `indices` contains a value out of bounds of `verts`
+    ///  * `verts` is longer than `u16::MAX` elements.
     pub fn from_raw<V>(
         ctx: &mut Context,
         verts: &[V],

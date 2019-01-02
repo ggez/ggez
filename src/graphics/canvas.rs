@@ -31,8 +31,7 @@ where
 ///
 /// Resume drawing to the screen by calling `graphics::set_canvas(None)`.
 ///
-/// A `Canvas` allows creating render targets to be used instead of
-/// the screen.  This allows graphics to be rendered to images off-screen
+/// A `Canvas` allows graphics to be rendered to images off-screen
 /// in order to do things like saving to an image file or creating cool effects
 /// by using shaders that render to an image.
 /// If you just want to draw multiple things efficiently, look at
@@ -99,6 +98,7 @@ impl Canvas {
         let (w, h) = graphics::drawable_size(ctx);
         // Default to no multisampling
         // TODO: Use winit's into() to translate f64's more accurately
+        // ...where the heck IS winit's into()?  wth was I referring to?
         Canvas::new(ctx, w as u16, h as u16, conf::NumSamples::One)
     }
 
@@ -109,7 +109,7 @@ impl Canvas {
 
     /// Destroys the `Canvas` and returns the `Image` it contains.
     pub fn into_inner(self) -> Image {
-        // This texture is created with different settings
+        // TODO: This texture is created with different settings
         // than the default; does that matter?
         self.image
     }

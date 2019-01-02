@@ -74,6 +74,11 @@ pub trait BackendSpec: fmt::Debug {
         &self,
         texture_view: gfx::handle::RawShaderResourceView<Self::Resources>,
     ) -> gfx::handle::ShaderResourceView<<Self as BackendSpec>::Resources, ShaderResourceType> {
+        // gfx::memory::Typed is UNDOCUMENTED, aiee!
+        // However there doesn't seem to be an official way to turn a raw tex/view into a typed
+        // one; this API oversight would probably get fixed, except gfx is moving to a new
+        // API model.  So, that also fortunately means that undocumented features like this
+        // probably won't go away on pre-ll gfx...
         let typed_view: gfx::handle::ShaderResourceView<_, ShaderResourceType> =
             gfx::memory::Typed::new(texture_view);
         typed_view
