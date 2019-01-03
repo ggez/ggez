@@ -6,6 +6,9 @@
 //! Essentially this uses a technique called "instancing" to queue up
 //! a large amount of location/position data in a buffer, then feed it
 //! to the graphics card all in one go.
+//!
+//! Also it's super slow in `rustc`'s default debug mode, so if you build
+//! it crank up the `opt-level` for debug mode in your `Cargo.toml`.
 
 use crate::context::Context;
 use crate::error;
@@ -20,7 +23,7 @@ use gfx::Factory;
 ///
 /// This is generally faster than drawing the same sprite with many invocations of
 /// [`draw()`](../fn.draw.html), though it has a bit of overhead to set up the batch.
-/// This makes it run very slowly in Debug mode because it spends a lot of time on array
+/// This makes it run very slowly in `debug` mode because it spends a lot of time on array
 /// bounds checking and un-optimized math; you need to build with optimizations enabled
 /// to really get the speed boost.
 #[derive(Debug, Clone, PartialEq)]
@@ -52,17 +55,21 @@ impl SpriteBatch {
     ///
     /// Returns a handle with which type to modify the sprite using
     /// [`set()`](#method.set)
-    ///
-    /// TODO: Into<DrawParam> and such
-    pub fn add(&mut self, param: graphics::DrawParam) -> SpriteIdx {
-        self.sprites.push(param);
+    pub fn add<P>(&mut self, param: P) -> SpriteIdx
+    where
+        P: Into<graphics::DrawParam>,
+    {
+        self.sprites.push(param.into());
         SpriteIdx(self.sprites.len() - 1)
     }
 
     /// Alters a sprite in the batch to use the given draw params
-    pub fn set(&mut self, handle: SpriteIdx, param: graphics::DrawParam) -> GameResult {
+    pub fn set<P>(&mut self, handle: SpriteIdx, param: P) -> GameResult
+    where
+        P: Into<graphics::DrawParam>,
+    {
         if handle.0 < self.sprites.len() {
-            self.sprites[handle.0] = param;
+            self.sprites[handle.0] = param.into();
             Ok(())
         } else {
             Err(error::GameError::RenderError(String::from(
@@ -76,12 +83,13 @@ impl SpriteBatch {
     /// Generally just calling [`graphics::draw()`](../fn.draw.html) on the `SpriteBatch`
     /// will do this automatically.
     fn flush(&self, ctx: &mut Context, image: &graphics::Image) -> GameResult {
-        // TODO: Can we clean up now?
         // This is a little awkward but this is the right place
         // to do whatever transformations need to happen to DrawParam's.
         // We have a Context, and *everything* must pass through this
         // function to be drawn, so.
         // Though we do awkwardly have to allocate a new vector.
+        // ...though upon benchmarking, the actual allocation is basically nothing,
+        // the cost in debug mode is alllll math.
         let new_sprites = self
             .sprites
             .iter()
@@ -95,9 +103,6 @@ impl SpriteBatch {
                     src_height * param.scale.y * f32::from(image.height),
                 );
                 new_param.scale = real_scale;
-                // If we have no color, our color is white.
-                // This is fine because coloring the whole spritebatch is possible
-                // with graphics::set_color(); this just inherits from that.
                 new_param.color = new_param.color;
                 let primitive_param = graphics::DrawTransform::from(new_param);
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())

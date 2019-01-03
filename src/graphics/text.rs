@@ -27,8 +27,6 @@ pub struct Font {
 /// Drawing text generally involves one or more of these.
 /// These options take precedence over any similar field/argument.
 /// Can be implicitly constructed from `String`, `(String, Color)`, and `(String, FontId, Scale)`.
-///
-/// TODO: Construction should be full builder pattern, if it's not already.
 #[derive(Clone, Debug)]
 pub struct TextFragment {
     /// Text string itself.
@@ -104,7 +102,7 @@ impl From<String> for TextFragment {
     }
 }
 
-// TODO: Scale ergonomics need to be better
+// TODO: Scale ergonomics need to be better?
 impl<T> From<(T, Font, f32)> for TextFragment
 where
     T: Into<TextFragment>,
@@ -156,7 +154,6 @@ pub struct Text {
 /// ones for each `Text` object, since `Text` may be mutated.
 ///
 /// TODO: Can we just ditch the `Arc` entirely then?
-/// ...do we ever even WRITE the actual metrics to cached_metrics?
 impl Clone for Text {
     fn clone(&self) -> Self {
         Text {
@@ -334,7 +331,6 @@ impl Text {
     }
 
     /// Calculates, caches, and returns width and height of formatted and wrapped text.
-    /// TODO: Might now be redundant?  See https://docs.rs/glyph_brush/0.2.2/glyph_brush/trait.GlyphCruncher.html
     fn calculate_dimensions(&self, context: &mut Context) -> (u32, u32) {
         let mut max_width = 0;
         let mut max_height = 0;
@@ -362,8 +358,6 @@ impl Text {
     }
 
     /// Returns the width and height of the formatted and wrapped text.
-    ///
-    /// TODO: Should these return f32 rather than u32?  Probably!
     pub fn dimensions(&self, context: &mut Context) -> (u32, u32) {
         if let Ok(metrics) = self.cached_metrics.read() {
             if let (Some(width), Some(height)) = (metrics.width, metrics.height) {
@@ -391,12 +385,6 @@ impl Drawable for Text {
     {
         let param = param.into();
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
-        // TODO: Fix for DrawTransform
-        // let offset = Point2::new(
-        //     param.offset.x * self.width(ctx) as f32,
-        //     param.offset.y * self.height(ctx) as f32,
-        // );
-        // let param = param.offset(offset);
         queue_text(ctx, self, Point2::new(0.0, 0.0), Some(param.color));
         draw_queued_text(ctx, param)
     }
@@ -589,7 +577,7 @@ fn to_vertex(v: glyph_brush::GlyphVertex) -> DrawParam {
     DrawParam::default()
         .src(src_rect)
         .dest(dest_pt)
-        .color(v.color)
+        .color(v.color.into())
 }
 
 #[cfg(test)]

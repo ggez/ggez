@@ -40,7 +40,6 @@ pub(crate) use nalgebra as na;
 
 pub mod spritebatch;
 
-//pub(crate) use self::context::*;
 pub use crate::graphics::canvas::*;
 pub use crate::graphics::drawparam::*;
 pub use crate::graphics::image::*;
@@ -53,8 +52,10 @@ pub use crate::graphics::types::*;
 pub(crate) type BuggoSurfaceFormat = gfx::format::Srgba8;
 type ShaderResourceType = [f32; 4];
 
-/// A marker trait saying that something is a label for a particular backend,
-/// with associated gfx-rs types for that backend.
+/// A trait providing methods for working with a particular backend, such as OpenGL,
+/// with associated gfx-rs types for that backend.  As a user you probably
+/// don't need to touch this unless you want to write a new graphics backend
+/// for ggez.  (Trust me, you don't.)
 pub trait BackendSpec: fmt::Debug {
     /// gfx resource type
     type Resources: gfx::Resources;
@@ -106,7 +107,6 @@ pub trait BackendSpec: fmt::Debug {
     fn version_tuple(&self) -> (u8, u8);
 
     /// Returns the glutin `Api` enum for this backend.
-    /// For GL this will always be the same, I suppose.
     fn api(&self) -> glutin::Api;
 
     /// Returns the text of the vertex and fragment shader files
@@ -242,7 +242,6 @@ impl BackendSpec for GlBackendSpec {
             color_format,
             depth_format,
         )
-        // (window, device, factory, screen_render_target, depth_view)
     }
 
     fn info(&self, device: &Self::Device) -> String {
@@ -312,7 +311,7 @@ const QUAD_VERTS: [Vertex; 4] = [
 const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
 gfx_defines! {
-    /// Internal structure containing vertex data.
+    /// Structure containing fundamental vertex data.
     vertex Vertex {
         pos: [f32; 2] = "a_Pos",
         uv: [f32; 2] = "a_Uv",
@@ -320,16 +319,17 @@ gfx_defines! {
     }
 
     /// Internal structure containing values that are different for each
-    /// drawable object.
+    /// drawable object.  This is the per-object data that
+    /// gets fed into the shaders.
     vertex InstanceProperties {
         // the columns here are for the transform matrix;
         // you can't shove a full matrix into an instance
         // buffer, annoyingly.
-        src: [f32; 4] = "a_Src",
         col1: [f32; 4] = "a_TCol1",
         col2: [f32; 4] = "a_TCol2",
         col3: [f32; 4] = "a_TCol3",
         col4: [f32; 4] = "a_TCol4",
+        src: [f32; 4] = "a_Src",
         color: [f32; 4] = "a_Color",
     }
 
@@ -353,18 +353,17 @@ gfx_defines! {
            gfx::format::Format(gfx::format::SurfaceType::R8_G8_B8_A8, gfx::format::ChannelType::Srgb),
            gfx::state::ColorMask::all(), Some(gfx::preset::blend::ALPHA)
           ),
-        // out: gfx::RawRenderTarget = "Target0",
     }
 }
 
 impl Default for InstanceProperties {
     fn default() -> Self {
         InstanceProperties {
-            src: [0.0, 0.0, 1.0, 1.0],
             col1: [1.0, 0.0, 0.0, 0.0],
             col2: [0.0, 1.0, 0.0, 0.0],
             col3: [1.0, 0.0, 1.0, 0.0],
             col4: [1.0, 0.0, 0.0, 1.0],
+            src: [0.0, 0.0, 1.0, 1.0],
             color: [1.0, 1.0, 1.0, 1.0],
         }
     }
@@ -388,7 +387,7 @@ impl fmt::Display for InstanceProperties {
     }
 }
 
-/// A structure for conveniently storing Sampler's, based off
+/// A structure for conveniently storing `Sampler`'s, based off
 /// their `SamplerInfo`.
 pub(crate) struct SamplerCache<B>
 where
@@ -444,7 +443,6 @@ impl From<gfx::buffer::CreationError> for GameError {
 // **********************************************************************
 
 /// Clear the screen to the background color.
-/// TODO: Into<Color> ?
 pub fn clear(ctx: &mut Context, color: Color) {
     let gfx = &mut ctx.gfx_context;
     // SRGB BUGGO: Only convert when drawing on srgb surface?

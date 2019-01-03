@@ -562,8 +562,6 @@ where
     /// so it may cause squirrelliness to
     /// happen with canvases or other things that touch it.
     pub(crate) fn resize_viewport(&mut self) {
-        // Basically taken from the definition of
-        // gfx_window_glutin::update_views()
         if let Some((cv, dv)) = self.backend_spec.resize_viewport(
             &self.screen_render_target,
             &self.depth_view,

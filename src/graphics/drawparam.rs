@@ -63,11 +63,8 @@ impl DrawParam {
 
     /// Set the drawable color.  This will be blended with whatever
     /// color the drawn object already is.
-    pub fn color<C>(mut self, color: C) -> Self
-    where
-        C: Into<Color>,
-    {
-        self.color = color.into();
+    pub fn color(mut self, color: Color) -> Self {
+        self.color = color;
         self
     }
 
@@ -112,23 +109,21 @@ where
 }
 
 /// Create a `DrawParam` from a location and color
-impl<P, C> From<(P, C)> for DrawParam
+impl<P> From<(P, Color)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
-    C: Into<Color>,
 {
-    fn from((location, color): (P, C)) -> Self {
+    fn from((location, color): (P, Color)) -> Self {
         DrawParam::new().dest(location).color(color)
     }
 }
 
 /// Create a `DrawParam` from a location, rotation and color
-impl<P, C> From<(P, f32, C)> for DrawParam
+impl<P> From<(P, f32, Color)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
-    C: Into<Color>,
 {
-    fn from((location, rotation, color): (P, f32, C)) -> Self {
+    fn from((location, rotation, color): (P, f32, Color)) -> Self {
         DrawParam::new()
             .dest(location)
             .rotation(rotation)
@@ -137,12 +132,11 @@ where
 }
 
 /// Create a `DrawParam` from a location, rotation, offset and color
-impl<P, C> From<(P, f32, P, C)> for DrawParam
+impl<P> From<(P, f32, P, Color)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
-    C: Into<Color>,
 {
-    fn from((location, rotation, offset, color): (P, f32, P, C)) -> Self {
+    fn from((location, rotation, offset, color): (P, f32, P, Color)) -> Self {
         DrawParam::new()
             .dest(location)
             .rotation(rotation)
@@ -152,13 +146,12 @@ where
 }
 
 /// Create a `DrawParam` from a location, rotation, offset, scale and color
-impl<P, V, C> From<(P, f32, P, V, C)> for DrawParam
+impl<P, V> From<(P, f32, P, V, Color)> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
     V: Into<mint::Vector2<f32>>,
-    C: Into<Color>,
 {
-    fn from((location, rotation, offset, scale, color): (P, f32, P, V, C)) -> Self {
+    fn from((location, rotation, offset, scale, color): (P, f32, P, V, Color)) -> Self {
         DrawParam::new()
             .dest(location)
             .rotation(rotation)
