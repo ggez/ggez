@@ -610,12 +610,13 @@ where
         event.clone()
     }
 
-    /// Takes a coordinate in winit's Logical scale (aka everything we touch)
-    /// and turns it into the equivalent in PhysicalScale, allowing us to
-    /// override the DPI if necessary.
-    pub(crate) fn to_physical_dpi(&self, x: f32, y: f32) -> (f32, f32) {
-        let logical = dpi::LogicalPosition::new(f64::from(x), f64::from(y));
-        let physical = dpi::PhysicalPosition::from_logical(logical, self.hidpi_factor.into());
-        (physical.x as f32, physical.y as f32)
-    }
+    // TODO: Heckin' figure out DPI.
+    // /// Takes a coordinate in winit's Logical scale (aka everything we touch)
+    // /// and turns it into the equivalent in PhysicalScale, allowing us to
+    // /// override the DPI if necessary.
+    // pub(crate) fn to_physical_dpi(&self, x: f32, y: f32) -> (f32, f32) {
+    //     let logical = dpi::LogicalPosition::new(f64::from(x), f64::from(y));
+    //     let physical = dpi::PhysicalPosition::from_logical(logical, self.hidpi_factor.into());
+    //     (physical.x as f32, physical.y as f32)
+    // }
 }
