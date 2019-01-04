@@ -4,7 +4,7 @@ extern crate ggez;
 extern crate nalgebra;
 
 use ggez::event;
-use ggez::graphics;
+use ggez::graphics::{self, Color};
 use ggez::{Context, GameResult};
 use nalgebra as na;
 use std::env;
@@ -55,7 +55,7 @@ impl event::EventHandler for MainState {
                 &self.text,
                 graphics::DrawParam::new()
                     .dest(dest_point)
-                    .color((0, 0, 0, 255)),
+                    .color(Color::from((0, 0, 0, 255))),
             )?;
             graphics::set_canvas(ctx, None);
 
@@ -64,7 +64,7 @@ impl event::EventHandler for MainState {
             graphics::draw(
                 ctx,
                 &self.canvas,
-                graphics::DrawParam::new().color((255, 255, 255, 128)),
+                graphics::DrawParam::new().color(Color::from((255, 255, 255, 128))),
             )?;
         } else {
             println!("Drawing without canvas");
@@ -76,13 +76,12 @@ impl event::EventHandler for MainState {
                 &self.text,
                 graphics::DrawParam::new()
                     .dest(dest_point)
-                    .color((192, 128, 64, 255)),
+                    .color(Color::from((192, 128, 64, 255))),
             )?;
         }
 
         graphics::present(ctx)?;
 
-        // Drawables are drawn from their top-left corner.
         self.frames += 1;
         if (self.frames % 100) == 0 {
             println!("FPS: {}", ggez::timer::fps(ctx));

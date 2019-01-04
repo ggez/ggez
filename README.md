@@ -7,6 +7,15 @@
 [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
 [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
 
+WARNING: The current released version, 0.5.0-rc.X, is **NOT DONE**.  It
+is basically a PRE-RELEASE.  It will get fixed up pretty rapidly, and
+you are encouraged to use it, as the API will not change much before the
+final release.  However, the docs are not entirely updated, and there
+WILL be bugs!  They should get fixed rapidly, and a real release
+coming Real Soon.  But it seemed better to get people using the thing
+instead of blocking it on things like updating the web site.  You can
+track release progress [here](https://github.com/ggez/ggez/milestone/5).
+
 ggez is a Rust library to create a Good Game Easily.
 
 More specifically, ggez is a lightweight cross-platform game framework
@@ -29,11 +38,11 @@ your own libraries atop ggez.
 * Filesystem abstraction that lets you load resources from folders or zip files
 * Hardware-accelerated 2D rendering built on the `gfx-rs` graphics engine
 * Loading and playing .ogg, .wav and .flac files via the `rodio` crate
-* TTF font rendering with `rusttype`, as well as bitmap fonts.
+* TTF font rendering with `rusttype` and `glyph_brush`.
 * Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
 * Easy timing and FPS measurement functions.
-* Math integration with nalgebra
+* Math integration with `mint`.
 * Some more advanced graphics options: shaders, sprite batches and render targets
 
 
@@ -51,7 +60,7 @@ Check out the [projects list!](docs/Projects.md)
 
 ## Usage
 
-ggez is requires rustc >= 1.28 and distributed on
+ggez is requires rustc >= 1.31 and distributed on
 crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
