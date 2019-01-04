@@ -4,7 +4,7 @@ use graphics::*;
 use lyon;
 use lyon::tessellation as t;
 
-/// A builder for creating `Mesh`es.
+/// A builder for creating [`Mesh`](struct.Mesh.html)es.
 ///
 /// This allows you to easily make one `Mesh` containing
 /// many different complex pieces of geometry.  They don't
@@ -13,12 +13,16 @@ use lyon::tessellation as t;
 ///
 /// The following example shows how to build a mesh containing a line and a circle:
 ///
-/// ```rust,ignore
+/// ```rust
+/// # use ggez::*;
+/// # use ggez::graphics::*;
+/// # fn t(ctx: &mut Context) {
 /// let mesh: Mesh = MeshBuilder::new()
 ///     .line(&[Point2::new(20.0, 20.0), Point2::new(40.0, 20.0)], 4.0)
 ///     .circle(DrawMode::Fill, Point2::new(60.0, 38.0), 40.0, 1.0)
 ///     .build(ctx)
 ///     .unwrap();
+/// # }
 /// ```
 /// A more sophisticated example:
 ///
@@ -215,7 +219,7 @@ impl MeshBuilder {
         self
     }
 
-    /// Create a new `Mesh` from a raw list of triangles.
+    /// Create a new [`Mesh`](struct.Mesh.html) from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
     pub fn triangles(&mut self, triangles: &[Point2]) -> &mut Self {
@@ -298,7 +302,7 @@ impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
 /// 2D polygon mesh.
 ///
 /// All of its creation methods are just shortcuts for doing the same operation
-/// via a `MeshBuilder`.
+/// via a [`MeshBuilder`](struct.MeshBuilder.html).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mesh {
     buffer: gfx::handle::Buffer<gfx_device_gl::Resources, Vertex>,

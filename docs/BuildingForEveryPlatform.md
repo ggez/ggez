@@ -123,18 +123,18 @@ All you need to install is the SDL2 libraries but it's a pain in the butt.  The 
 2. Unpack SDL2-devel-2.0.x-VC.zip to a folder of your choosing (You can delete it afterwards).
 3. Copy all lib files from
     > SDL2-devel-2.0.x-VC\SDL2-2.0.x\lib\x64\
-
-    to (for Rust 1.6 and above)
-    > C:\Program Files\Rust\\**lib**\rustlib\x86_64-pc-windows-msvc\lib
+    
+    to the Rust library folder.  For Rustup users (most common), this folder will be in
+    > C:\\Users\\{Your Username}\\.rustup\\toolchains\\{current toolchain}\\lib\\rustlib\\{current toolchain}\\lib
+    
+    or, if not using Rustup, to (for Rust 1.6 and above)
+    > C:\\Program Files\\Rust\\**lib**\\rustlib\\x86_64-pc-windows-msvc\\lib
 
     or to (for Rust versions 1.5 and below)
-    > C:\Program Files\Rust\\**bin**\rustlib\x86_64-pc-windows-msvc\lib
+    > C:\\Program Files\\Rust\\**bin**\\rustlib\\x86_64-pc-windows-msvc\\lib
 
     or to your library folder of choice, and ensure you have a system environment variable of
     > LIB = C:\your\rust\library\folder
-
-	For Rustup users, this folder will be in
-        > C:\Users\\{Your Username}\.multirust\toolchains\\{current toolchain}\lib\rustlib\\{current toolchain}\lib
 
   Where current toolchain is likely `stable-x86_64-pc-windows-msvc`.
 

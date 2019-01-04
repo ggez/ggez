@@ -2,6 +2,13 @@
 //! <https://www.youtube.com/watch?v=HCwMb0KslX8>
 //! to showcase ggez and how it relates/differs from piston.
 //!
+//! Note that this example is meant to highlight the general
+//! structure of a ggez game. Some of the details may need to
+//! be changed to scale the game. For example, if we needed to
+//! draw hundreds or thousands of shapes, a SpriteBatch is going
+//! to offer far better performance than the direct draw calls
+//! that this example uses.
+//!
 //! Author: @termhn
 //! Original repo: https://github.com/termhn/ggez_snake
 
@@ -65,7 +72,7 @@ trait ModuloSigned {
 
 /// Here we implement our `ModuloSigned` trait for any type T which implements
 /// `Add` (the `+` operator) with an output type T and Rem (the `%` operator)
-/// that also has anout put type of T, and that can be cloned. These are the bounds
+/// that also has an output type of T, and that can be cloned. These are the bounds
 /// that we need in order to implement a modulus function that works for negative numbers
 /// as well.
 impl<T> ModuloSigned for T
@@ -203,6 +210,10 @@ impl Food {
     /// with the helpers in `ggez::graphics` to do drawing. We also return a
     /// `ggez::GameResult` so that we can use the `?` operator to bubble up
     /// failure of drawing.
+    ///
+    /// Note: this method of drawing does not scale. If you need to render
+    /// a large number of shapes, use a SpriteBatch. This approach is fine for
+    /// this example since there are a fairly limited number of calls.
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         // First we set the color to draw with, in this case all food will be
         // colored blue.
@@ -318,6 +329,10 @@ impl Snake {
 
     /// Here we have the Snake draw itself. This is very similar to how we saw the Food
     /// draw itself earlier.
+    ///
+    /// Again, note that this approach to drawing is fine for the limited scope of this
+    /// example, but larger scale games will likely need a more optimized render path
+    /// using SpriteBatch or something similar that batches draw calls.
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         // We first iterate through the body segments and draw them.
         for seg in self.body.iter() {

@@ -26,7 +26,7 @@ pub enum Font {
     },
     /// A bitmap font where letter widths are infered
     BitmapFontVariant(BitmapFont),
-    /// A TrueType font stored in `GraphicsContext::glyph_brush`
+    /// A TrueType font stored in `gfx_glyph::GraphicsContext::glyph_brush`
     GlyphFont(FontId),
 }
 
@@ -168,7 +168,7 @@ impl Font {
 
     /// Creates a bitmap font from a long image of its alphabet, specified by `path`.
     /// The width of each individual chars is assumed to be to be
-    /// image(path).width/glyphs.chars().count()
+    /// `image(path).width/glyphs.chars().count()`
     pub fn new_bitmap<P: AsRef<path::Path>>(
         context: &mut Context,
         path: P,
@@ -258,7 +258,7 @@ impl Font {
         }))
     }
 
-    /// Loads a new TrueType font from given file and into `GraphicsContext::glyph_brush`.
+    /// Loads a new TrueType font from given file and into `gfx_glyph::GraphicsContext::glyph_brush`.
     pub fn new_glyph_font<P>(context: &mut Context, path: P) -> GameResult<Self>
     where
         P: AsRef<path::Path> + fmt::Debug,
@@ -272,7 +272,7 @@ impl Font {
         Ok(Font::GlyphFont(font_id))
     }
 
-    /// Retrieves a loaded font from `GraphicsContext::glyph_brush`.
+    /// Retrieves a loaded font from `gfx_glyph::GraphicsContext::glyph_brush`.
     pub fn get_glyph_font_by_id(context: &mut Context, font_id: FontId) -> GameResult<Self> {
         if context
             .gfx_context
@@ -288,7 +288,7 @@ impl Font {
         }
     }
 
-    /// Returns the baked-in bytes of default font (currently DejaVuSerif.ttf).
+    /// Returns the baked-in bytes of default font (currently `DejaVuSerif.ttf`).
     pub(crate) fn default_font_bytes() -> &'static [u8] {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
@@ -296,8 +296,8 @@ impl Font {
         ))
     }
 
-    /// Returns baked-in default font (currently DejaVuSerif.ttf).
-    /// Note it does create a new `Font` object with every call;
+    /// Returns baked-in default font (currently `DejaVuSerif.ttf`).
+    /// Note it does create a new [`Font`](enum.Font.html) object with every call;
     /// although the actual data should be shared.
     pub fn default_font() -> GameResult<Self> {
         let size = 16;
@@ -334,7 +334,7 @@ impl Font {
                 let offset = rusttype::point(0.0, v_metrics.ascent);
                 let glyphs: Vec<rusttype::PositionedGlyph> =
                     font.layout(text, scale, offset).collect();
-                text_width(&glyphs) as usize
+                text_width(&glyphs).ceil() as usize
             }
             Font::GlyphFont(_) => 0,
         }
@@ -405,7 +405,7 @@ impl fmt::Debug for Font {
     }
 }
 
-/// Drawable text created from a `Font`.
+/// Drawable text created from a [`Font`](enum.Font.html).
 #[derive(Clone)]
 pub struct Text {
     texture: Image,
@@ -737,7 +737,7 @@ mod tests {
     fn test_metrics() {
         let f = Font::default_font().expect("Could not get default font");
         assert_eq!(f.get_height(), 17);
-        assert_eq!(f.get_width("Foo!"), 33);
+        assert_eq!(f.get_width("Foo!"), 34);
 
         // http://www.catipsum.com/index.php
         let text_to_wrap = "Walk on car leaving trail of paw prints on hood and windshield sniff \
@@ -746,7 +746,7 @@ mod tests {
                             Human give me attention meow.";
         let (len, v) = f.get_wrap(text_to_wrap, 250);
         println!("{} {:?}", len, v);
-        assert_eq!(len, 249);
+        assert_eq!(len, 250);
 
         /*
         let wrapped_text = vec![

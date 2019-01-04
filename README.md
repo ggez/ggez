@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez)
 [![Build status](https://ci.appveyor.com/api/projects/status/3v9lsq6n9li7kxim/branch/master?svg=true)](https://ci.appveyor.com/project/svenstaro/ggez/branch/master)
 [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez)
-[![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ggez/ggez/blob/master/LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ggez/ggez/blob/master/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
 [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
 
@@ -13,7 +13,9 @@ More specifically, ggez is a lightweight cross-platform game framework
 for making 2D games with minimum friction.  It aims to implement an 
 API based on (a Rustified version of) the [LÖVE](https://love2d.org/) 
 game framework.  This means it contains basic and portable 2D
-drawing, sound, resource loading and event handling.
+drawing, sound, resource loading and event handling, but finer details
+like performance characteristics may be very different (e.g. ggez does
+*not* do automatic batching).
 
 ggez is not meant to be everything to everyone, but rather a good
 base upon which to build.  Thus it takes a fairly
@@ -51,7 +53,7 @@ Check out the [projects list!](docs/Projects.md)
 
 ## Usage
 
-ggez is requires rustc >= 1.23.0 and distributed on
+ggez requires rustc >= 1.25.0 and distributed on
 crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
@@ -74,6 +76,10 @@ Create a new `Context` object with default objects from a `ContextBuilder`
 or `Conf` object, and then call `event::run()` with
 the `Context` and an instance of your `EventHandler` to run your game's
 main loop.
+
+## Getting started
+
+For a quick tutorial on ggez, see the [Hello ggez](https://github.com/ggez/ggez/blob/master/docs/guides/HelloGgez.md) guide in the `docs/` directory.
 
 ## Examples
 

@@ -2,11 +2,12 @@
 //!
 //! ggez does not try to do any framerate limitation by default. If
 //! you want to run at anything other than full-bore max speed all the
-//! time, calling `thread::yield_now()` (or `timer::yield_now()` which
-//! does the same thing) yield to the OS
-//! so it has a chance to breathe before continuing with your game.
-//! This should prevent it from using 100% CPU unless it really needs
-//! to.  Enabling vsync by setting `vsync` in your `Conf` object is
+//! time, calling [`thread::yield_now()`](https://doc.rust-lang.org/std/thread/fn.yield_now.html)
+//! (or [`timer::yield_now()`](fn.yield_now.html) which does the same thing)
+//! yield to the OS so it has a chance to breathe before continuing with your
+//! game. This should prevent it from using 100% CPU unless it really needs
+//! to.  Enabling vsync by setting [`Conf::window_mode.vsync`](../conf/struct.WindowMode.html#structfield.vsync)
+//! in your [`Conf`](../conf/struct.Conf.html) object is
 //! generally the best way to cap your displayed framerate.
 //!
 //! For a more detailed tutorial in how to handle frame timings in games,
@@ -51,7 +52,7 @@ where
         }
     }
 
-    /// Pushes a new item into the logbuffer, overwriting
+    /// Pushes a new item into the `LogBuffer`, overwriting
     /// the oldest item in it.
     fn push(&mut self, item: T) {
         self.head = (self.head + 1) % self.contents.len();
@@ -62,7 +63,7 @@ where
     /// Returns a slice pointing at the contents of the buffer.
     /// They are in *no particular order*, and if not all the
     /// slots are filled, the empty slots will be present but
-    /// contain the initial value given to `new()`
+    /// contain the initial value given to [`new()`](#method.new).
     ///
     /// We're only using this to log FPS for a short time,
     /// so we don't care for the second or so when it's inaccurate.
@@ -101,12 +102,13 @@ impl TimeContext {
         }
     }
 
-    /// Update the state of the TimeContext to record that
+    /// Update the state of the `TimeContext` to record that
     /// another frame has taken place.  Necessary for the FPS
-    /// tracking and `check_update_time()` functions to work.
+    /// tracking and [`check_update_time()`](fn.check_update_time.html)
+    /// functions to work.
     ///
     /// It's usually not necessary to call this function yourself,
-    /// `EventHandler::run()` will do it for you.
+    /// [`event::run()`](../event/fn.run.html) will do it for you.
     pub fn tick(&mut self) {
         let now = time::Instant::now();
         let time_since_last = now - self.last_instant;
@@ -144,7 +146,7 @@ pub fn get_average_delta(ctx: &Context) -> time::Duration {
 }
 
 /// A convenience function to convert a Rust `Duration` type
-/// to a (less precise but more useful) f64.
+/// to a (less precise but more useful) `f64`.
 ///
 /// Does not make sure that the `Duration` is within the bounds
 /// of the `f64`.
@@ -155,7 +157,7 @@ pub fn duration_to_f64(d: time::Duration) -> f64 {
 }
 
 /// A convenience function to create a Rust `Duration` type
-/// from a (less precise but more useful) f64.
+/// from a (less precise but more useful) `f64`.
 ///
 /// Only handles positive numbers correctly.
 pub fn f64_to_duration(t: f64) -> time::Duration {
@@ -190,10 +192,10 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
 }
 
 /// This function will return true if the time since the
-/// last `update()` call has been equal to or greater to
-/// the update FPS indicated by the `target_fps`.
-/// It keeps track of fractional frames, so if you want
-/// 60 fps (16.67 ms/frame) and the game stutters so that
+/// last [`update()`](../event/trait.EventHandler.html#tymethod.update)
+/// call has been equal to or greater to the update FPS indicated
+/// by the `target_fps`. It keeps track of fractional frames, so if
+/// you want 60 fps (16.67 ms/frame) and the game stutters so that
 /// there is 40 ms between `update()` calls, this will return
 /// `true` twice, and take the remaining 6.67 ms into account
 /// in the next frame.
@@ -201,13 +203,21 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
 /// The intention is to for it to be called in a while loop
 /// in your `update()` callback:
 ///
-/// ```rust,ignore
-/// fn update(&mut self, ctx: &mut Context) -> GameResult<()>
+/// ```rust
+/// # use ggez::*;
+/// # fn update_game_physics() -> GameResult<()> { Ok(()) }
+/// # struct State {}
+/// use ggez::timer;
+///
+/// # impl ggez::event::EventHandler for State {
+/// fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
 ///     while(timer::check_update_time(ctx, 60)) {
 ///         update_game_physics()?;
 ///     }
 ///     Ok(())
 /// }
+/// # fn draw(&mut self, ctx: &mut Context) -> GameResult<()> { Ok(()) }
+/// # }
 /// ```
 pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
     let timedata = &mut ctx.timer_context;
@@ -222,14 +232,15 @@ pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
 }
 
 /// Returns the fractional amount of a frame not consumed
-/// by  `check_update_time()`.  For example, if the desired
-/// update frame time is 40 ms (25 fps), and 45 ms have
-/// passed since the last frame, `check_update_time()` will
-/// return `true` and `get_remaining_update_time()` will
-/// return 5 ms -- the amount of time "overflowing" from one
+/// by  [`check_update_time()`](fn.check_update_time.html).
+/// For example, if the desired update frame time is 40 ms
+/// (25 fps), and 45 ms have passed since the last frame, 
+/// `check_update_time()` will return `true` and `get_remaining_update_time()`
+/// will return 5 ms -- the amount of time "overflowing" from one
 /// frame to the next.
 ///
-/// The intention is for it to be called in your `draw()` callback
+/// The intention is for it to be called in your
+/// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) callback
 /// to interpolate phyisics states for smooth rendering.
 /// (see <http://gafferongames.com/game-physics/fix-your-timestep/>)
 pub fn get_remaining_update_time(ctx: &mut Context) -> time::Duration {
@@ -237,23 +248,24 @@ pub fn get_remaining_update_time(ctx: &mut Context) -> time::Duration {
 }
 
 /// Pauses the current thread for the target duration.
-/// Just calls `std::thread::sleep()` so it's as accurate
-/// as that is (which is usually not very).
+/// Just calls [`std::thread::sleep()`](https://doc.rust-lang.org/std/thread/fn.sleep.html)
+/// so it's as accurate as that is (which is usually not very).
 pub fn sleep(duration: time::Duration) {
     thread::sleep(duration);
 }
 
 /// Yields the current timeslice to the OS.
 ///
-/// This just calls `std::thread::yield_now()` but it's
-/// handy to have here.
+/// This just calls [`std::thread::yield_now()`](https://doc.rust-lang.org/std/thread/fn.yield_now.html)
+/// but it's handy to have here.
 pub fn yield_now() {
     thread::yield_now();
 }
 
 /// Gets the number of times the game has gone through its event loop.
 ///
-/// Specifically, the number of times that `TimeContext::tick()` has been
+/// Specifically, the number of times that 
+/// [`TimeContext::tick()`](struct.TimeContext.html#method.tick) has been
 /// called by it.
 pub fn get_ticks(ctx: &Context) -> usize {
     ctx.timer_context.frame_count

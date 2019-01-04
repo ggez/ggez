@@ -13,7 +13,7 @@ use GameError;
 use GameResult;
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct ImageGeneric<R>
 where
     R: gfx::Resources,
@@ -133,7 +133,7 @@ impl Image {
     /// Encode the `Image` to the given file format and
     /// write it out to the given path.
     ///
-    /// See the `filesystem` module docs for where exactly
+    /// See the [`filesystem`](../filesystem/index.html) module docs for where exactly
     /// the file will end up.
     pub fn encode<P: AsRef<path::Path>>(
         &self,

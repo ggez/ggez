@@ -4,14 +4,19 @@
 //!
 //! If you don't want to do this, you can write your own mainloop and
 //! get the necessary event machinery by calling
-//! `context.sdl_context.event_pump()` on your `Context`.  You can
-//! then call whatever SDL event methods you want on that.  This is
+//! [`Context::sdl_context.event_pump()`](../struct.Context.html#structfield.sdl_context).
+//! You can then call whatever SDL event methods you want on that.  This is
 //! not particularly elegant and is not guaranteed to be stable across
-//! different versions of ggez (for instance, we may someday get rid of SDL2),
-//! but trying to wrap it
-//! up more conveniently really ends up with the exact same interface.
+//! different versions of `ggez` (for instance, we may someday get rid of SDL2),
+//! but trying to wrap it up more conveniently really ends up with the exact same
+//! interface.
 //!
 //! See the `eventloop` example for an implementation.
+//!
+//! Note: Most of these types are re-exported from
+//! [`sdl2::{mouse, keyboard, controller, event}`](https://docs.rs/sdl2/).
+// This note is here because the sdl2 crate has next to no documentation on the specific
+// enums, constants, etc., and since it's `pub use`'d, there's no link back to sdl2.
 
 use sdl2;
 
@@ -47,12 +52,12 @@ pub use sdl2::keyboard::{CAPSMOD, LALTMOD, LCTRLMOD, LGUIMOD, LSHIFTMOD, MODEMOD
 
 /// A trait defining event callbacks; your primary interface with
 /// `ggez`'s event loop.  Have a type implement this trait and
-/// override at least the update() and draw() methods, then pass it to
-/// `event::run()` to run the game's mainloop.
+/// override at least the [`update()`](#tymethod.update) and [`draw()`](#tymethod.draw)
+/// methods, then pass it to [`event::run()`](fn.run.html) to run the game's mainloop.
 ///
 /// The default event handlers do nothing, apart from
-/// `key_down_event()`, which will by default exit the game if escape
-/// is pressed.  Just override the methods you want to do things with.
+/// [`key_down_event()`](#tymethod.key_down_event), which will by default exit the game
+/// if escape is pressed.  Just override the methods you want to do things with.
 pub trait EventHandler {
     /// Called upon each physics update to the game.
     /// This should be where the game's logic takes place.
@@ -60,8 +65,9 @@ pub trait EventHandler {
 
     /// Called to do the drawing of your game.
     /// You probably want to start this with
-    /// `graphics::clear()` and end it with
-    /// `graphics::present()` and `timer::yield_now()`
+    /// [`graphics::clear()`](../graphics/fn.clear.html) and end it with
+    /// [`graphics::present()`](../graphics/fn.present.html) and 
+    /// [`timer::yield_now()`](../timer/fn.yield_now.html).
     fn draw(&mut self, _ctx: &mut Context) -> GameResult<()>;
 
     /// A mouse button was pressed
@@ -127,7 +133,9 @@ pub trait EventHandler {
     /// <https://wiki.libsdl.org/Tutorials/TextInput>
     fn text_input_event(&mut self, _ctx: &mut Context, _text: String) {}
 
-    /// A controller button was pressed; instance_id identifies which controller.
+    /// A controller button was pressed; `instance_id` identifies which controller.
+    /// This can be used with [`get_gamepad()`](../input/fn.get_gamepad.html) to get more
+    /// information about the controller.
     fn controller_button_down_event(
         &mut self,
         _ctx: &mut Context,
@@ -151,7 +159,7 @@ pub trait EventHandler {
     fn focus_event(&mut self, _ctx: &mut Context, _gained: bool) {}
 
     /// Called upon a quit event.  If it returns true,
-    /// the game does not exit.
+    /// the game does not exit (the quit event is cancelled).
     fn quit_event(&mut self, _ctx: &mut Context) -> bool {
         debug!("quit_event() callback called, quitting...");
         false
@@ -159,7 +167,7 @@ pub trait EventHandler {
 
     /// Called when the user resizes the window.
     /// Is not called when you resize it yourself with
-    /// `graphics::set_mode()` though.
+    /// [`graphics::set_mode()`](../graphics/fn.set_mode.html), though.
     fn resize_event(&mut self, _ctx: &mut Context, _width: u32, _height: u32) {}
 }
 
@@ -174,7 +182,7 @@ impl fmt::Debug for Events {
 }
 
 impl Events {
-    /// Create a new Events object.
+    /// Create a new `Events` object.
     pub fn new(ctx: &Context) -> GameResult<Events> {
         let e = ctx.sdl_context.event_pump()?;
         Ok(Events(e))
@@ -190,7 +198,7 @@ impl Events {
 /// object as events occur.
 ///
 /// It does not try to do any type of framerate limiting.  See the
-/// documentation for the `timer` module for more info.
+/// documentation for the [`timer`](../timer/index.html) module for more info.
 pub fn run<S>(ctx: &mut Context, state: &mut S) -> GameResult<()>
 where
     S: EventHandler,

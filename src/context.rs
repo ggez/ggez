@@ -62,8 +62,8 @@ impl fmt::Debug for Context {
     }
 }
 
-/// Sets the window icon from the Conf `window_icon` field.
-/// An empty string in the conf's `window_icon`
+/// Sets the window icon from the Conf's [`window_icon`](conf/struct.WindowSetup.html#structfield.icon)
+/// field. An empty string in the Conf's `window_icon`
 /// means to do nothing.
 fn set_window_icon(context: &mut Context) -> GameResult<()> {
     // This clone is a little annoying, but, borrowing is inconvenient.
@@ -93,8 +93,8 @@ fn set_window_icon(context: &mut Context) -> GameResult<()> {
 }
 
 impl Context {
-    /// Tries to create a new Context using settings from the given config file.
-    /// Usually called by `Context::load_from_conf()`.
+    /// Tries to create a new `Context` using settings from the given config file.
+    /// Usually called by [`Context::load_from_conf()`](#method.load_from_conf).
     fn from_conf(conf: conf::Conf, fs: Filesystem, sdl_context: Sdl) -> GameResult<Context> {
         let debug_id = DebugId::new();
         let video = sdl_context.video()?;
@@ -139,9 +139,9 @@ impl Context {
     ///
     /// The `game_id` and `author` are game-specific strings that
     /// are used to locate the default storage locations for the
-    /// platform it looks in, as documented in the `filesystem`
+    /// platform it looks in, as documented in the [`filesystem`](filesystem/index.html)
     /// module.  You can also always debug-print the
-    /// `Context::filesystem` field to see what paths it is
+    /// [`Context::filesystem`](#structfield.filesystem) field to see what paths it is
     /// searching.
     pub fn load_from_conf(
         game_id: &'static str,
@@ -172,7 +172,7 @@ impl Context {
         self.filesystem.print_all();
     }
 
-    /// Triggers a Quit event.
+    /// Triggers a [`Quit`](event/enum.Event.html#variant.Quit) event.
     pub fn quit(&mut self) -> GameResult<()> {
         let now_dur = timer::get_time_since_start(self);
         let now = timer::duration_to_f64(now_dur);
@@ -211,9 +211,9 @@ use std::path;
 
 /// A builder object for creating a context.
 ///
-/// Can do everything the `Context::load_from_conf()` method does, plus you can
-/// also specify new paths to add to the resource path list at build time instead
-/// of using `filesystem::mount()`.
+/// Can do everything the [`Context::load_from_conf()`](struct.Context.html#method.load_from_conf)
+/// method does, plus you can also specify new paths to add to the resource path list
+/// at build time instead of using [`filesystem::mount()`](filesystem/fn.mount.html).
 #[derive(Debug)]
 pub struct ContextBuilder {
     game_id: &'static str,
@@ -224,7 +224,7 @@ pub struct ContextBuilder {
 }
 
 impl ContextBuilder {
-    /// Create a new ContextBuilder
+    /// Create a new `ContextBuilder`
     pub fn new(game_id: &'static str, author: &'static str) -> Self {
         Self {
             game_id,
@@ -272,7 +272,7 @@ impl ContextBuilder {
         self
     }
 
-    /// Build the Context.
+    /// Build the `Context`.
     pub fn build(self) -> GameResult<Context> {
         let sdl_context = sdl2::init()?;
         let mut fs = Filesystem::new(self.game_id, self.author)?;
@@ -296,10 +296,10 @@ use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 #[cfg(debug_assertions)]
 static DEBUG_ID_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
-/// This is a type that contains a unique ID for each Context and
-/// is contained in each thing created from the Context which contains
-/// data that becomes invalid when the Context goes away (ie, texture
-/// handles).  When compiling without assertions (ie in release mode) it
+/// This is a type that contains a unique ID for each [`Context`](struct.Context.html)
+/// and is contained in each thing created from the `Context` which contains
+/// data that becomes invalid when the `Context` goes away (i.e., texture
+/// handles).  When compiling without assertions (i.e., in release mode) it
 /// is replaced with a zero-size type, compiles down to nothing,
 /// and should disappear entirely with a puff of optimization logic.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

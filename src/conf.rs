@@ -1,12 +1,12 @@
 //! The `conf` module contains functions for loading and saving game
 //! configurations.
 //!
-//! A `Conf` struct is used to specify hardware setup stuff used to create
+//! A [`Conf`](struct.Conf.html) struct is used to specify hardware setup stuff used to create
 //! the window and other context information.
 //!
 //! By default a ggez game will search its resource paths for a `/conf.toml`
-//! file and load values from it when the `Context` is created.  This file
-//! must be complete (ie you cannot just fill in some fields and have the
+//! file and load values from it when the [`Context`](../struct.Context.html) is created.
+//!  This file must be complete (i.e., you cannot just fill in some fields and have the
 //! rest be default) and provides a nice way to specify settings that
 //! can be tweaked such as window resolution, multisampling options, etc.
 
@@ -49,12 +49,13 @@ impl From<FullscreenType> for SdlFullscreenType {
 }
 
 /// A builder structure containing window settings
-/// that can be set at runtime and changed with `graphics::set_mode()`
+/// that can be set at runtime and changed with [`graphics::set_mode()`](../graphics/fn.set_mode.html)
 ///
 /// Defaults:
 ///
-/// ```rust,ignore
-/// WindowMode {
+/// ```rust
+/// # use ggez::conf::*;
+/// let wm = WindowMode {
 ///     width: 800,
 ///     height: 600,
 ///     borderless: false,
@@ -64,7 +65,8 @@ impl From<FullscreenType> for SdlFullscreenType {
 ///     max_width: 0,
 ///     min_height: 0,
 ///     max_height: 0,
-/// }
+/// };
+/// assert_eq!(wm, WindowMode::default())
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowMode {
@@ -143,14 +145,16 @@ impl WindowMode {
 ///
 /// Defaults:
 ///
-/// ```rust,ignore
-/// WindowSetup {
+/// ```rust
+/// # use ggez::conf::*;
+/// let ws = WindowSetup {
 ///     title: "An easy, good game".to_owned(),
 ///     icon: "".to_owned(),
 ///     resizable: false,
 ///     allow_highdpi: true,
 ///     samples: NumSamples::One,
-/// }
+/// };
+/// assert_eq!(ws, WindowSetup::default())
 /// ```
 #[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowSetup {
@@ -158,8 +162,8 @@ pub struct WindowSetup {
     #[default = r#""An easy, good game".to_owned()"#]
     pub title: String,
     /// A file path to the window's icon.
-    /// It is rooted in the `resources` directory (see the `filesystem` module for details),
-    /// and an empty string results in a blank/default icon.
+    /// It is rooted in the `resources` directory (see the [`filesystem`](../filesystem/index.html)
+    /// module for details), and an empty string results in a blank/default icon.
     #[default = r#""".to_owned()"#]
     pub icon: String,
     /// Whether or not the window is resizable
@@ -248,8 +252,8 @@ pub enum NumSamples {
 }
 
 impl NumSamples {
-    /// Create a NumSamples from a number.
-    /// Returns None if i is invalid.
+    /// Create a `NumSamples` from a number.
+    /// Returns None if `i` is invalid.
     pub fn from_u32(i: u32) -> Option<NumSamples> {
         match i {
             1 => Some(NumSamples::One),
@@ -267,12 +271,14 @@ impl NumSamples {
 ///
 /// Defaults:
 ///
-/// ```rust,ignore
-/// Conf {
+/// ```rust
+/// # use ggez::conf::*;
+/// let c = Conf {
 ///     window_mode: WindowMode::default(),
 ///     window_setup: WindowSetup::default(),
-///     backend: Backend::OpenGL(3, 2),
-/// }
+///     backend: Backend::OpenGL{major: 3, minor: 2},
+/// };
+/// assert_eq!(c, Conf::default())
 /// ```
 #[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault)]
 pub struct Conf {
@@ -285,7 +291,7 @@ pub struct Conf {
 }
 
 impl Conf {
-    /// Same as Conf::default()
+    /// Same as `Conf::default()`
     pub fn new() -> Self {
         Self::default()
     }
