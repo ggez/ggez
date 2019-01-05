@@ -55,31 +55,31 @@ pub enum FullscreenType {
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq)]
 pub struct WindowMode {
     /// Window width
-    #[default = r#"800.0"#]
+    #[default = 800.0]
     pub width: f32,
     /// Window height
-    #[default = r#"600.0"#]
+    #[default = 600.0]
     pub height: f32,
     /// Whether or not to maximize the window
-    #[default = r#"false"#]
+    #[default = false]
     pub maximized: bool,
     /// Fullscreen type
-    #[default = r#"FullscreenType::Windowed"#]
+    #[default(FullscreenType::Windowed)]
     pub fullscreen_type: FullscreenType,
     /// Whether or not to show window decorations
-    #[default = r#"false"#]
+    #[default = false]
     pub borderless: bool,
     /// Minimum width for resizable windows; 0 means no limit
-    #[default = r#"0.0"#]
+    #[default = 0.0]
     pub min_width: f32,
     /// Minimum height for resizable windows; 0 means no limit
-    #[default = r#"0.0"#]
+    #[default = 0.0]
     pub min_height: f32,
     /// Maximum width for resizable windows; 0 means no limit
-    #[default = r#"0.0"#]
+    #[default = 0.0]
     pub max_width: f32,
     /// Maximum height for resizable windows; 0 means no limit
-    #[default = r#"0.0"#]
+    #[default = 0.0]
     pub max_height: f32,
     /// Whether or not to scale all "pixel" coordinates to deal with
     /// high DPI screens.
@@ -92,10 +92,10 @@ pub struct WindowMode {
     /// [`graphics::get_hidpi_factor()`](../graphics/fn.get_hidpi_factor.html).
     ///
     /// TODO: This is not implemented properly yet because winit is stubborn.
-    #[default = r"false"]
+    #[default = false]
     pub hidpi: bool,
     /// Whether or not the window is resizable
-    #[default = r#"false"#]
+    #[default = false]
     pub resizable: bool,
 }
 
@@ -173,27 +173,27 @@ impl WindowMode {
 #[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq)]
 pub struct WindowSetup {
     /// The window title.
-    #[default = r#""An easy, good game".to_owned()"#]
+    #[default(String::from("An easy, good game"))]
     pub title: String,
     /// Number of samples to use for multisample anti-aliasing.
-    #[default = r#"NumSamples::One"#]
+    #[default(NumSamples::One)]
     pub samples: NumSamples,
     /// Whether or not to enable vsync.
-    #[default = r#"true"#]
+    #[default = true]
     pub vsync: bool,
     /// Whether or not should the window's background be transparent.
     ///
     /// TODO: I don't think I've ever even tried to use this???  Need tests!
-    #[default = r#"false"#]
+    #[default = false]
     pub transparent: bool,
     /// A file path to the window's icon.
     /// It takes a path rooted in the `resources` directory (see the [`filesystem`](../filesystem/index.html)
     /// module for details), and an empty string results in a blank/default icon.
-    #[default = r#""".to_owned()"#]
+    #[default(String::new())]
     pub icon: String,
     /// Whether or not to enable sRGB (gamma corrected color)
     /// handling on the display.
-    #[default = r#"true"#]
+    #[default = true]
     pub srgb: bool,
 }
 
@@ -260,10 +260,10 @@ pub enum Backend {
     #[default]
     OpenGL {
         /// OpenGL major version
-        #[default = r#"3"#]
+        #[default = 3]
         major: u8,
         /// OpenGL minor version
-        #[default = r#"2"#]
+        #[default = 2]
         minor: u8,
     },
     /// OpenGL ES, defaults to 3.0.  Used for phones and other mobile
@@ -272,10 +272,10 @@ pub enum Backend {
     /// with instancing, but might be possible.
     OpenGLES {
         /// OpenGL ES major version
-        #[default = r#"3"#]
+        #[default = 3]
         major: u8,
         /// OpenGL ES minor version
-        #[default = r#"0"#]
+        #[default = 0]
         minor: u8,
     },
 }
@@ -361,10 +361,10 @@ impl NumSamples {
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, SmartDefault)]
 pub struct ModuleConf {
     /// The gamepad input module.
-    #[default = r#"true"#]
+    #[default = true]
     pub gamepad: bool,
     /// The audio module.
-    #[default = r#"true"#]
+    #[default = true]
     pub audio: bool,
 }
 

@@ -338,7 +338,6 @@ where
 
         Ok(shader)
     }
-
 }
 
 impl<C> Shader<C>

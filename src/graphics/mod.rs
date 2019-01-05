@@ -175,11 +175,11 @@ pub trait BackendSpec: fmt::Debug {
 /// [`Shader`](type.Shader.html) depend on it.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, SmartDefault)]
 pub struct GlBackendSpec {
-    #[default = r#"3"#]
+    #[default = 3]
     major: u8,
-    #[default = r#"2"#]
+    #[default = 2]
     minor: u8,
-    #[default = r#"glutin::Api::OpenGl"#]
+    #[default(glutin::Api::OpenGl)]
     api: glutin::Api,
 }
 
@@ -367,7 +367,6 @@ gfx_defines! {
     }
 }
 
-
 impl fmt::Display for InstanceProperties {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut matrix_vec: Vec<f32> = vec![];
@@ -376,7 +375,11 @@ impl fmt::Display for InstanceProperties {
         matrix_vec.extend(&self.col3);
         matrix_vec.extend(&self.col4);
         let matrix = na::Matrix4::from_column_slice(&matrix_vec);
-        write!(f, "Src: ({},{}+{},{})\n", self.src[0], self.src[1], self.src[2], self.src[3])?;
+        write!(
+            f,
+            "Src: ({},{}+{},{})\n",
+            self.src[0], self.src[1], self.src[2], self.src[3]
+        )?;
         write!(f, "Color: {:?}\n", self.color)?;
         write!(f, "Matrix: {}", matrix)
     }

@@ -49,7 +49,7 @@ serde_derive = "1"
 toml = "0.4"
 log = "0.4"
 lyon = "0.11"
-smart-default = "0.2"
+smart-default = "0.3"
 nalgebra = {version = "0.16", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here.
 mint = "0.5"
