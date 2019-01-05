@@ -6,6 +6,9 @@
  * Added line cap and join options
  * Added spatial sources for audio
  * Added `From` implementations for `Color` to convert from various tuples of `f32`'s.  Redundant but it annoyed me they don't exist.
+ * Add OpenGL ES 3.0 support
+ * Add optional textures to `Mesh`es.
+ * Added lots of tests and doctests.
 
 ## Changed
 
@@ -23,6 +26,10 @@
  * What used to be the `TextCached` module is now the `Text` module, replacing all the old text stuff.  This *dramatically* changes the text API, as well as being faster and more powerful.
  * Various dimension parameters have changed to fit the underlying implementations more closely.  `Image` dimensions have changed from `u32` to `u16`, which they always were but now it's exposed to the API.  Various screen size dimensions have changed from `u32` to `f64`, which allows `winit` to do smooth DPI-independent scaling.
  * Various getters have been renamed from `get_<field>()` to `<field>`(). Of particular note are changes to Drawable and ShaderHandle traits.
+ * Probably tons of other things I've forgotten.
+ * We now target Rust 2018
+ * Some minor modularization has taken place; at least, gamepad and audio module scan be disabled with settings in your `conf.toml`.  Doing the same for filesystem, graphics, and input is a liiiiiittle more involved.
+ * 
 
 ## Deprecated
 
