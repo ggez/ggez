@@ -25,19 +25,26 @@
 
 ## Deprecated
 
+ * Nothing, it's a breaking change so things just got removed.
+
 ## Removed
 
  * The foreground and background colors and associated functions have beeen removed; all colors are
    now specified purely where they are used for drawing.
  * Removed deprecated `BoundSpriteBatch` type.
  * Removed `Context::print_resource_stats()` in favor of `filesystem::print_all()`.
- * Removed `graphics::rectangle()` and friends in favor of just building and drawing the meshes explicitly.  [#466](https://github.com/ggez/ggez/issues/466)
+ * Removed `graphics::rectangle()` and friends in favor of just
+   building and drawing the meshes explicitly.  Shortcut functions for
+   this have been added to `Mesh`. [#466](https://github.com/ggez/ggez/issues/466)
  * Removed `TTFFont` font type in favor of `GlyphBrush`. [#132](https://github.com/ggez/ggez/issues/132)
  * Removed `Context::from_conf()` for `ContextBuilder` which is strictly more powerful.  [#429](https://github.com/ggez/ggez/issues/429)
  * Removed bitmap fonts; better support deserves to exist than what ggez currently provides, and there's no reason it can't be its own crate.
  * Removed the `cargo-resource-root` feature flag; just use `filesystem::mount()` instead or add the directories to your `ContextBuilder`.
 
 ## Fixed
+
+ * Minor things beyond counting.  Don't worry, we added plenty of new
+   bugs too.
 
 # 0.4.3
 
