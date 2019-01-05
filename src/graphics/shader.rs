@@ -1,7 +1,10 @@
-//! The `Shader` module allows user-defined shaders to be used
-//! with ggez for cool and spooky effects. See the `shader` and `shadows`
+//! The `shader` module allows user-defined shaders to be used
+//! with ggez for cool and spooky effects. See the
+//! [`shader`](https://github.com/ggez/ggez/blob/devel/examples/shader.rs)
+//! and [`shadows`](https://github.com/ggez/ggez/blob/devel/examples/shadows.rs)
 //! examples for a taste.
-
+#![allow(unsafe_code)]
+use gfx::format;
 use gfx::handle::*;
 use gfx::preset::blend;
 use gfx::pso::buffer::*;
@@ -18,10 +21,10 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::rc::Rc;
 
-use context::DebugId;
-use error::*;
-use graphics;
-use Context;
+use crate::context::DebugId;
+use crate::error::*;
+use crate::graphics;
+use crate::Context;
 
 /// A type for empty shader data for shaders that do not require any additional
 /// data to be sent to the GPU
@@ -39,13 +42,22 @@ unsafe impl Pod for EmptyConst {}
 /// An enum for specifying default and custom blend modes
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum BlendMode {
-    /// When combining two fragments, add their values together, saturating at 1.0
+    /// When combining two fragments, add their values together, saturating
+    /// at 1.0
     Add,
-    /// When combining two fragments, subtract the source value from the destination value
+    /// When combining two fragments, subtract the source value from the
+    /// destination value
     Subtract,
-    /// When combining two fragments, add the value of the source times its alpha channel with the value of the destination multiplied by the inverse of the source alpha channel. Has the usual transparency effect: mixes the two colors using a fraction of each one specified by the alpha of the source.
+    /// When combining two fragments, add the value of the source times its
+    /// alpha channel with the value of the destination multiplied by the inverse
+    /// of the source alpha channel. Has the usual transparency effect: mixes the
+    /// two colors using a fraction of each one specified by the alpha of the source.
     Alpha,
-    /// When combining two fragments, subtract the destination color from a constant color using the source color as weight. Has an invert effect with the constant color as base and source color controlling displacement from the base color. A white source color and a white value results in plain invert. The output alpha is same as destination alpha.
+    /// When combining two fragments, subtract the destination color from a constant
+    /// color using the source color as weight. Has an invert effect with the constant
+    /// color as base and source color controlling displacement from the base color.
+    /// A white source color and a white value results in plain invert. The output
+    /// alpha is same as destination alpha.
     Invert,
     /// When combining two fragments, multiply their values together.
     Multiply,
@@ -116,7 +128,7 @@ impl From<BlendMode> for Blend {
 /// modes is to just make multiple PSOs with respective blend modes baked in.
 /// The `PsoSet` struct is basically just a hash map for easily
 /// storing each shader set's PSOs and then retrieving them based
-/// on a `BlendMode`.
+/// on a [`BlendMode`](enum.BlendMode.html).
 struct PsoSet<Spec, C>
 where
     Spec: graphics::BackendSpec,
@@ -141,10 +153,10 @@ where
         mode: BlendMode,
         pso: PipelineState<Spec::Resources, ConstMeta<C>>,
     ) {
-        self.psos.insert(mode, pso);
+        let _ = self.psos.insert(mode, pso);
     }
 
-    pub fn get_mode(
+    pub fn mode(
         &self,
         mode: &BlendMode,
     ) -> GameResult<&PipelineState<Spec::Resources, ConstMeta<C>>> {
@@ -157,7 +169,7 @@ where
     }
 }
 
-/// An ID used by the graphics context to uniquely identify a shader
+/// An ID used by the ggez graphics context to uniquely identify a shader
 pub type ShaderId = usize;
 
 /// A `ShaderGeneric` reprensents a handle user-defined shader that can be used
@@ -185,8 +197,9 @@ pub(crate) fn create_shader<C, S, Spec>(
     factory: &mut Spec::Factory,
     multisample_samples: u8,
     blend_modes: Option<&[BlendMode]>,
+    color_format: format::Format,
     debug_id: DebugId,
-) -> GameResult<(ShaderGeneric<Spec, C>, Box<ShaderHandle<Spec>>)>
+) -> GameResult<(ShaderGeneric<Spec, C>, Box<dyn ShaderHandle<Spec>>)>
 where
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
     S: Into<String>,
@@ -206,7 +219,7 @@ where
             graphics::pipe::Init {
                 out: (
                     "Target0",
-                    graphics::GraphicsContext::get_format(),
+                    color_format,
                     ColorMask::all(),
                     Some((*mode).into()),
                 ),
@@ -238,7 +251,7 @@ where
         psos,
         active_blend_mode: blend_modes[0],
     };
-    let draw: Box<ShaderHandle<Spec>> = Box::new(program);
+    let draw: Box<dyn ShaderHandle<Spec>> = Box::new(program);
 
     let id = 0;
     let shader = ShaderGeneric {
@@ -250,8 +263,9 @@ where
     Ok((shader, draw))
 }
 
-impl<C> Shader<C>
+impl<Spec, C> ShaderGeneric<Spec, C>
 where
+    Spec: graphics::BackendSpec,
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
 {
     /// Create a new `Shader` given a gfx pipeline object
@@ -271,13 +285,13 @@ where
         let vertex_source = {
             let mut buf = Vec::new();
             let mut reader = ctx.filesystem.open(vertex_path)?;
-            reader.read_to_end(&mut buf)?;
+            let _ = reader.read_to_end(&mut buf)?;
             buf
         };
         let pixel_source = {
             let mut buf = Vec::new();
             let mut reader = ctx.filesystem.open(pixel_path)?;
-            reader.read_to_end(&mut buf)?;
+            let _ = reader.read_to_end(&mut buf)?;
             buf
         };
         Shader::from_u8(
@@ -306,6 +320,7 @@ where
         blend_modes: Option<&[BlendMode]>,
     ) -> GameResult<Shader<C>> {
         let debug_id = DebugId::get(ctx);
+        let color_format = ctx.gfx_context.color_format();
         let (mut shader, draw) = create_shader(
             vertex_source,
             pixel_source,
@@ -315,6 +330,7 @@ where
             &mut *ctx.gfx_context.factory,
             ctx.gfx_context.multisample_samples,
             blend_modes,
+            color_format,
             debug_id,
         )?;
         shader.id = ctx.gfx_context.shaders.len();
@@ -323,8 +339,14 @@ where
         Ok(shader)
     }
 
+}
+
+impl<C> Shader<C>
+where
+    C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
+{
     /// Send data to the GPU for use with the `Shader`
-    pub fn send(&self, ctx: &mut Context, consts: C) -> GameResult<()> {
+    pub fn send(&self, ctx: &mut Context, consts: C) -> GameResult {
         ctx.gfx_context
             .encoder
             .update_buffer(&self.buffer, &[consts], 0)?;
@@ -365,21 +387,21 @@ where
 }
 
 /// A trait that is used to create trait objects to abstract away the
-/// `gfx::Structure<gfx::ConstFormat>` type of the constant data for drawing
+/// `gfx::Structure<ConstFormat>` type of the constant data for drawing
 pub trait ShaderHandle<Spec: graphics::BackendSpec>: fmt::Debug {
     /// Draw with the current Shader
     fn draw(
         &self,
-        &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
-        &Slice<Spec::Resources>,
-        &graphics::pipe::Data<Spec::Resources>,
-    ) -> GameResult<()>;
+        encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
+        slice: &Slice<Spec::Resources>,
+        data: &graphics::pipe::Data<Spec::Resources>,
+    ) -> GameResult;
 
     /// Sets the shader program's blend mode
-    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()>;
+    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult;
 
     /// Gets the shader program's current blend mode
-    fn get_blend_mode(&self) -> BlendMode;
+    fn blend_mode(&self) -> BlendMode;
 }
 
 impl<Spec, C> ShaderHandle<Spec> for ShaderProgram<Spec, C>
@@ -392,19 +414,19 @@ where
         encoder: &mut Encoder<Spec::Resources, Spec::CommandBuffer>,
         slice: &Slice<Spec::Resources>,
         data: &graphics::pipe::Data<Spec::Resources>,
-    ) -> GameResult<()> {
-        let pso = self.psos.get_mode(&self.active_blend_mode)?;
+    ) -> GameResult {
+        let pso = self.psos.mode(&self.active_blend_mode)?;
         encoder.draw(slice, pso, &ConstData(data, &self.buffer));
         Ok(())
     }
 
-    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult<()> {
-        self.psos.get_mode(&mode)?;
+    fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult {
+        let _ = self.psos.mode(&mode)?;
         self.active_blend_mode = mode;
         Ok(())
     }
 
-    fn get_blend_mode(&self) -> BlendMode {
+    fn blend_mode(&self) -> BlendMode {
         self.active_blend_mode
     }
 }
@@ -518,7 +540,7 @@ where
             // create a local clone of the program info so that we can remove
             // the var we found from the `constant_buffer`
             let mut program_info = info.clone();
-            program_info.constant_buffers.remove(index);
+            let _ = program_info.constant_buffers.remove(index);
 
             let meta0 = match self.0.link_to(desc, &program_info) {
                 Ok(m) => m,

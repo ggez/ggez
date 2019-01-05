@@ -14,11 +14,6 @@ At the end of this guide you will:
 Follow Rust's guides for installing the latest stable version.
 You did know this was a Rust library right? 😉
 
-### SDL
-
-`ggez` requires the [`SDL2` crate](https://github.com/Rust-SDL2/rust-sdl2#user-content-requirements) to be setup on your computer.
-Follow the `SDL2` crate's guide for installing the crate.
-
 ## 🛠 Project Setup
 
 ### Cargo Crate
@@ -61,8 +56,7 @@ It is why we're here after all.
 
 First we'll tell Rust we want to use `ggez`.
 Add this to the top of your `src/main.rs`:
-```rust
-extern crate ggez;
+```rust,skt-definition,no_run
 use ggez::*;
 ```
 
@@ -86,7 +80,7 @@ This means it is intended to be implemented on a struct.
 There are quite a few callbacks defined on the Trait, but only [2 are required: update and draw](https://docs.rs/ggez/0.4.0/ggez/event/trait.EventHandler.html#required-methods).
 
 Let's add `EventHandler` to our `src/main.rs` file:
-```rust
+```rust,skt-definition,no_run
 struct State {}
 
 impl ggez::event::EventHandler for State {
@@ -111,7 +105,7 @@ What is included in your state is very dependent on the game you are making.
 But, we're not going to write any bugs right? 😉
 
 In your main, you will need to create an instance of `State`.
-```rust
+```rust,skt-definition-no-main,no_run
 pub fn main() {
     let state = &mut State { };
 }
@@ -162,18 +156,23 @@ Now is the time for us to interface with our hardware and do something fun.
 To do that, you need to create a [`Context`](https://docs.rs/ggez/0.4.0/ggez/struct.Context.html) courtesy of `ggez`.
 
 Add this to the end of your `main` fn:
-```rust
+```rust,skt-expression,no_run
 let c = conf::Conf::new();
-let ctx = &mut Context::load_from_conf("hello_ggez", "awesome_person", c).unwrap();
+let (ref mut ctx, ref mut event_loop) = ContextBuilder::new("hello_ggez", "awesome_person")
+    .conf(c)
+    .build()
+    .unwrap();
 ```
 
 This will create a `Context` with the `game_id` `hello_ggez` and the author `awesome_person`.
+It will also create an [`EventsLoop`](https://docs.rs/ggez/0.4.0/event/struct.EventsLoop.html). 
+We'll need it in a minute to call [`run`](https://docs.rs/ggez/0.4.0/ggez/event/fn.run.html).
 Feel free to replace the author with yourself.
 You are awesome after all.
 
 Now you're ready to kick off the loop!
-```rust
-event::run(ctx, state).unwrap();
+```rust,skt-expression,no_run
+event::run(ctx, event_loop, state).unwrap();
 ```
 
 ### ✔ Check Context
@@ -214,7 +213,7 @@ For this program, we want to display the duration of each frame in the console a
 How should we do that? Well, let's look at the 2 callbacks we have in our loop and our `State` struct.
 
 There is some information we want to track, so we'll modify `State` first.
-```rust
+```rust,skt-definition,no_run
 struct State {
     dt: std::time::Duration,
 }
@@ -222,28 +221,28 @@ struct State {
 `dt` is going to represent the time each frame has taken. It stands for "delta time" and is a useful metric for games to handle variable frame rates.
 
 Now in `main`, you need to update the `State` instantiation to include `dt`:
-```rust
+```rust,skt-expression,no_run
 let state = &mut State { dt: std::time::Duration::new(0, 0) };
 ```
 
 So now that we have state to update, let's update it in our `update` callback!
-We'll use [`timer::get_delta`](https://docs.rs/ggez/0.4.0/ggez/timer/fn.get_delta.html) to get the delta time.
-```rust
-fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-    self.dt = timer::get_delta(ctx);
+We'll use [`timer::delta`](https://docs.rs/ggez/0.4.0/ggez/timer/fn.delta.html) to get the delta time.
+```rust,skt-update,no_run
+fn update(&mut self, ctx: &mut Context) -> GameResult {
+    self.dt = timer::delta(ctx);
     Ok(())
 }
 ```
 
 And now to let us see the changes in `State`, you need to modify the `draw` callback.
-```rust
-fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+```rust,skt-draw,no_run
+fn draw(&mut self, ctx: &mut Context) -> GameResult {
     println!("Hello ggez! dt = {}ns", self.dt.subsec_nanos());
     Ok(())
 }
 ```
 Every frame, print out `Hello ggez! dt = {}ns`. This will print once a frame. Which is going to be a lot.
-  
+
 ### ✔ Check Program
 
 And yet again, run `cargo run`.

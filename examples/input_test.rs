@@ -1,67 +1,73 @@
 //! Example that just prints out all the input events.
 
+extern crate cgmath;
 extern crate ggez;
 
-use ggez::conf;
-use ggez::event::{self, Axis, Button, Keycode, Mod, MouseButton, MouseState};
-use ggez::graphics::{self, DrawMode, Point2};
+use ggez::event::{self, Axis, Button, KeyCode, KeyMods, MouseButton};
+use ggez::graphics::{self, DrawMode, Drawable};
+use ggez::input;
 use ggez::{Context, GameResult};
-use std::env;
-use std::path;
 
 struct MainState {
-    pos_x: i32,
-    pos_y: i32,
+    pos_x: f32,
+    pos_y: f32,
     mouse_down: bool,
 }
 
 impl MainState {
     fn new() -> MainState {
         MainState {
-            pos_x: 100,
-            pos_y: 100,
+            pos_x: 100.0,
+            pos_y: 100.0,
             mouse_down: false,
         }
     }
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
+        if input::keyboard::is_key_pressed(ctx, KeyCode::A) {
+            println!("The A key is pressed");
+            if input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::SHIFT) {
+                println!("The shift key is held too.");
+            }
+            println!(
+                "Full list of pressed keys: {:?}",
+                input::keyboard::pressed_keys(ctx)
+            );
+        }
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx);
-        graphics::circle(
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        graphics::Mesh::new_rectangle(
             ctx,
             DrawMode::Fill,
-            Point2::new(self.pos_x as f32, self.pos_y as f32),
-            100.0,
-            1.0,
-        )?;
-        graphics::present(ctx);
+            graphics::Rect {
+                x: self.pos_x,
+                y: self.pos_y,
+                w: 400.0,
+                h: 300.0,
+            },
+            graphics::WHITE,
+        )?
+        .draw(ctx, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
+        graphics::present(ctx)?;
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: i32, y: i32) {
+    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         self.mouse_down = true;
         println!("Mouse button pressed: {:?}, x: {}, y: {}", button, x, y);
     }
 
-    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, x: i32, y: i32) {
+    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         self.mouse_down = false;
         println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
     }
 
-    fn mouse_motion_event(
-        &mut self,
-        _ctx: &mut Context,
-        _state: MouseState,
-        x: i32,
-        y: i32,
-        xrel: i32,
-        yrel: i32,
-    ) {
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, xrel: f32, yrel: f32) {
         if self.mouse_down {
             self.pos_x = x;
             self.pos_y = y;
@@ -72,58 +78,46 @@ impl event::EventHandler for MainState {
         );
     }
 
-    fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: i32, y: i32) {
+    fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) {
         println!("Mousewheel event, x: {}, y: {}", x, y);
     }
 
-    fn key_down_event(&mut self, _ctx: &mut Context, keycode: Keycode, keymod: Mod, repeat: bool) {
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: KeyCode,
+        keymod: KeyMods,
+        repeat: bool,
+    ) {
         println!(
             "Key pressed: {:?}, modifier {:?}, repeat: {}",
             keycode, keymod, repeat
         );
     }
-    fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, keymod: Mod, repeat: bool) {
-        println!(
-            "Key released: {:?}, modifier {:?}, repeat: {}",
-            keycode, keymod, repeat
-        );
+
+    fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, keymod: KeyMods) {
+        println!("Key released: {:?}, modifier {:?}", keycode, keymod);
     }
 
-    fn text_editing_event(&mut self, _ctx: &mut Context, text: String, start: i32, length: i32) {
-        println!(
-            "Text editing: {}, start {}, length: {}",
-            text, start, length
-        );
+    fn text_input_event(&mut self, _ctx: &mut Context, ch: char) {
+        println!("Text input: {}", ch);
     }
 
-    fn text_input_event(&mut self, _ctx: &mut Context, text: String) {
-        println!("Text input: {}", text);
+    fn controller_button_down_event(&mut self, _ctx: &mut Context, btn: Button, id: usize) {
+        println!("Controller button pressed: {:?} Controller_Id: {}", btn, id);
     }
 
-    fn controller_button_down_event(&mut self, _ctx: &mut Context, btn: Button, instance_id: i32) {
-        println!(
-            "Controller button pressed: {:?} Controller_Id: {}",
-            btn, instance_id
-        );
-    }
-
-    fn controller_button_up_event(&mut self, _ctx: &mut Context, btn: Button, instance_id: i32) {
+    fn controller_button_up_event(&mut self, _ctx: &mut Context, btn: Button, id: usize) {
         println!(
             "Controller button released: {:?} Controller_Id: {}",
-            btn, instance_id
+            btn, id
         );
     }
 
-    fn controller_axis_event(
-        &mut self,
-        _ctx: &mut Context,
-        axis: Axis,
-        value: i16,
-        instance_id: i32,
-    ) {
+    fn controller_axis_event(&mut self, _ctx: &mut Context, axis: Axis, value: f32, id: usize) {
         println!(
             "Axis Event: {:?} Value: {} Controller_Id: {}",
-            axis, value, instance_id
+            axis, value, id
         );
     }
 
@@ -136,18 +130,10 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() {
-    let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("input_test", "ggez", c).unwrap();
-
-    // We add the CARGO_MANIFEST_DIR/resources to the filesystem paths so
-    // that ggez will look in our cargo project directory for files.
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
-        let mut path = path::PathBuf::from(manifest_dir);
-        path.push("resources");
-        ctx.filesystem.mount(&path, true);
-    }
+pub fn main() -> GameResult {
+    let cb = ggez::ContextBuilder::new("input_test", "ggez");
+    let (ctx, event_loop) = &mut cb.build()?;
 
     let state = &mut MainState::new();
-    event::run(ctx, state).unwrap();
+    event::run(ctx, event_loop, state)
 }

@@ -2,18 +2,19 @@
 //!
 //! ggez does not try to do any framerate limitation by default. If
 //! you want to run at anything other than full-bore max speed all the
-//! time, calling [`thread::yield_now()`](https://doc.rust-lang.org/std/thread/fn.yield_now.html)
-//! (or [`timer::yield_now()`](fn.yield_now.html) which does the same thing)
-//! yield to the OS so it has a chance to breathe before continuing with your
-//! game. This should prevent it from using 100% CPU unless it really needs
-//! to.  Enabling vsync by setting [`Conf::window_mode.vsync`](../conf/struct.WindowMode.html#structfield.vsync)
-//! in your [`Conf`](../conf/struct.Conf.html) object is
-//! generally the best way to cap your displayed framerate.
+//! time, call [`thread::yield_now()`](https://doc.rust-lang.org/std/thread/fn.yield_now.html)
+//! (or [`timer::yield_now()`](fn.yield_now.html) which does the same
+//! thing) to yield to the OS so it has a chance to breathe before continuing
+//! with your game. This should prevent it from using 100% CPU as much unless it
+//! really needs to.  Enabling vsync by setting
+//! [`conf.window_setup.vsync`](../conf/struct.WindowSetup.html#structfield.vsync)
+//! in your [`Conf`](../conf/struct.Conf.html) object is generally the best
+//! way to cap your displayed framerate.
 //!
 //! For a more detailed tutorial in how to handle frame timings in games,
 //! see <http://gafferongames.com/game-physics/fix-your-timestep/>
 
-use context::Context;
+use crate::context::Context;
 
 use std::cmp;
 use std::f64;
@@ -43,8 +44,7 @@ where
     T: Clone + Copy,
 {
     fn new(size: usize, init_val: T) -> LogBuffer<T> {
-        let mut v = Vec::with_capacity(size);
-        v.resize(size, init_val);
+        let v = vec![init_val; size];
         LogBuffer {
             head: 0,
             size,
@@ -93,10 +93,16 @@ const TIME_LOG_FRAMES: usize = 200;
 impl TimeContext {
     /// Creates a new `TimeContext` and initializes the start to this instant.
     pub fn new() -> TimeContext {
+        // This fills the empty log-buffer with 60 fps frame times,
+        // which is kind of silly but smooths out the initial time claiming
+        // 1000's of fps until the log buffer actually fills.
+        // TODO: Would be better to make the log buffer know its proper length
+        // or filter out placeholders or something, but eh.
+        let initial_dt = time::Duration::from_millis(16);
         TimeContext {
             init_instant: time::Instant::now(),
             last_instant: time::Instant::now(),
-            frame_durations: LogBuffer::new(TIME_LOG_FRAMES, time::Duration::new(0, 0)),
+            frame_durations: LogBuffer::new(TIME_LOG_FRAMES, initial_dt),
             residual_update_dt: time::Duration::from_secs(0),
             frame_count: 0,
         }
@@ -128,17 +134,18 @@ impl Default for TimeContext {
 
 /// Get the time between the start of the last frame and the current one;
 /// in other words, the length of the last frame.
-pub fn get_delta(ctx: &Context) -> time::Duration {
+pub fn delta(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     tc.frame_durations.latest()
 }
 
 /// Gets the average time of a frame, averaged
 /// over the last 200 frames.
-pub fn get_average_delta(ctx: &Context) -> time::Duration {
+pub fn average_delta(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     let init = time::Duration::new(0, 0);
-    let sum = tc.frame_durations
+    let sum = tc
+        .frame_durations
         .contents()
         .iter()
         .fold(init, |d1, d2| d1 + *d2);
@@ -178,24 +185,25 @@ fn fps_as_duration(fps: u32) -> time::Duration {
 
 /// Gets the FPS of the game, averaged over the last
 /// 200 frames.
-pub fn get_fps(ctx: &Context) -> f64 {
-    let duration_per_frame = get_average_delta(ctx);
+pub fn fps(ctx: &Context) -> f64 {
+    let duration_per_frame = average_delta(ctx);
     let seconds_per_frame = duration_to_f64(duration_per_frame);
     1.0 / seconds_per_frame
 }
 
 /// Returns the time since the game was initialized,
 /// as reported by the system clock.
-pub fn get_time_since_start(ctx: &Context) -> time::Duration {
+pub fn time_since_start(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
     time::Instant::now() - tc.init_instant
 }
 
 /// This function will return true if the time since the
 /// last [`update()`](../event/trait.EventHandler.html#tymethod.update)
-/// call has been equal to or greater to the update FPS indicated
-/// by the `target_fps`. It keeps track of fractional frames, so if
-/// you want 60 fps (16.67 ms/frame) and the game stutters so that
+/// call has been equal to or greater to
+/// the update FPS indicated by the `target_fps`.
+/// It keeps track of fractional frames, so if you want
+/// 60 fps (16.67 ms/frame) and the game stutters so that
 /// there is 40 ms between `update()` calls, this will return
 /// `true` twice, and take the remaining 6.67 ms into account
 /// in the next frame.
@@ -205,18 +213,16 @@ pub fn get_time_since_start(ctx: &Context) -> time::Duration {
 ///
 /// ```rust
 /// # use ggez::*;
-/// # fn update_game_physics() -> GameResult<()> { Ok(()) }
-/// # struct State {}
-/// use ggez::timer;
-///
+/// # fn update_game_physics() -> GameResult { Ok(()) }
+/// # struct State;
 /// # impl ggez::event::EventHandler for State {
-/// fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+/// fn update(&mut self, ctx: &mut Context) -> GameResult {
 ///     while(timer::check_update_time(ctx, 60)) {
 ///         update_game_physics()?;
 ///     }
 ///     Ok(())
 /// }
-/// # fn draw(&mut self, ctx: &mut Context) -> GameResult<()> { Ok(()) }
+/// # fn draw(&mut self, _ctx: &mut Context) -> GameResult { Ok(()) }
 /// # }
 /// ```
 pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
@@ -233,17 +239,18 @@ pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
 
 /// Returns the fractional amount of a frame not consumed
 /// by  [`check_update_time()`](fn.check_update_time.html).
-/// For example, if the desired update frame time is 40 ms
-/// (25 fps), and 45 ms have passed since the last frame, 
-/// `check_update_time()` will return `true` and `get_remaining_update_time()`
-/// will return 5 ms -- the amount of time "overflowing" from one
+/// For example, if the desired
+/// update frame time is 40 ms (25 fps), and 45 ms have
+/// passed since the last frame, [`check_update_time()`](fn.check_update_time.html)
+/// will return `true` and `remaining_update_time()` will
+/// return 5 ms -- the amount of time "overflowing" from one
 /// frame to the next.
 ///
 /// The intention is for it to be called in your
 /// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) callback
-/// to interpolate phyisics states for smooth rendering.
+/// to interpolate physics states for smooth rendering.
 /// (see <http://gafferongames.com/game-physics/fix-your-timestep/>)
-pub fn get_remaining_update_time(ctx: &mut Context) -> time::Duration {
+pub fn remaining_update_time(ctx: &mut Context) -> time::Duration {
     ctx.timer_context.residual_update_dt
 }
 
@@ -264,9 +271,8 @@ pub fn yield_now() {
 
 /// Gets the number of times the game has gone through its event loop.
 ///
-/// Specifically, the number of times that 
-/// [`TimeContext::tick()`](struct.TimeContext.html#method.tick) has been
-/// called by it.
-pub fn get_ticks(ctx: &Context) -> usize {
+/// Specifically, the number of times that [`TimeContext::tick()`](struct.TimeContext.html#method.tick)
+/// has been called by it.
+pub fn ticks(ctx: &Context) -> usize {
     ctx.timer_context.frame_count
 }

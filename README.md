@@ -7,11 +7,20 @@
 [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
 [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
 
+WARNING: The current released version, 0.5.0-rc.X, is **NOT DONE**.  It
+is basically a PRE-RELEASE.  It will get fixed up pretty rapidly, and
+you are encouraged to use it, as the API will not change much before the
+final release.  However, the docs are not entirely updated, and there
+WILL be bugs!  They should get fixed rapidly, and a real release
+coming Real Soon.  But it seemed better to get people using the thing
+instead of blocking it on things like updating the web site.  You can
+track release progress [here](https://github.com/ggez/ggez/milestone/5).
+
 ggez is a Rust library to create a Good Game Easily.
 
-More specifically, ggez is a lightweight cross-platform game framework 
-for making 2D games with minimum friction.  It aims to implement an 
-API based on (a Rustified version of) the [LÖVE](https://love2d.org/) 
+More specifically, ggez is a lightweight cross-platform game framework
+for making 2D games with minimum friction.  It aims to implement an
+API based on (a Rustified version of) the [LÖVE](https://love2d.org/)
 game framework.  This means it contains basic and portable 2D
 drawing, sound, resource loading and event handling, but finer details
 like performance characteristics may be very different (e.g. ggez does
@@ -31,11 +40,11 @@ your own libraries atop ggez.
 * Filesystem abstraction that lets you load resources from folders or zip files
 * Hardware-accelerated 2D rendering built on the `gfx-rs` graphics engine
 * Loading and playing .ogg, .wav and .flac files via the `rodio` crate
-* TTF font rendering with `rusttype`, as well as bitmap fonts.
+* TTF font rendering with `rusttype` and `glyph_brush`.
 * Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
 * Easy timing and FPS measurement functions.
-* Math integration with nalgebra
+* Math integration with `mint`.
 * Some more advanced graphics options: shaders, sprite batches and render targets
 
 
@@ -53,12 +62,12 @@ Check out the [projects list!](docs/Projects.md)
 
 ## Usage
 
-ggez requires rustc >= 1.25.0 and distributed on
+ggez is requires rustc >= 1.31 and distributed on
 crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```text
-ggez = "0.4"
+ggez = "0.5"
 ```
 
 However you also need to have the SDL2 libraries installed on your
@@ -77,6 +86,9 @@ or `Conf` object, and then call `event::run()` with
 the `Context` and an instance of your `EventHandler` to run your game's
 main loop.
 
+See the [API docs](https://docs.rs/ggez/) for full documentation, or the [examples](/examples) directory for a number of commented examples of varying complexity.  Most examples show off
+a single feature of ggez, while `astroblasto` and `snake` are a small but complete games.
+
 ## Getting started
 
 For a quick tutorial on ggez, see the [Hello ggez](https://github.com/ggez/ggez/blob/master/docs/guides/HelloGgez.md) guide in the `docs/` directory.
@@ -91,6 +103,8 @@ To run the examples, just check out the source and execute `cargo run --example`
 in the root directory:
 
 ```text
+git clone https://github.com/ggez/ggez.git
+cd ggez
 cargo run --example astroblasto
 ```
 
@@ -98,17 +112,52 @@ If this doesn't work, see the
 [FAQ](https://github.com/ggez/ggez/blob/master/docs/FAQ.md) for solutions
 to common problems.
 
+### Basic Project Template
+
+```rust
+use ggez::{Context, ContextBuilder, GameResult};
+use ggez::event::{self, EventHandler};
+
+fn main() {
+    // Make a Context.
+    let ctx = &mut /* ContextBuilder params */
+
+    // Create an instance of your event handler.
+    // Usually, you should provide it with the Context object to
+    // use when setting your game up.
+    let mut my_game = MyGame::new(ctx);
+
+    // Run!
+    match event::run(ctx, &mut my_game) {
+        Ok(_) => println!("Exited cleanly."),
+        Err(e) => println!("Error occured: {}", e)
+    }
+}
+
+struct MyGame {
+    // Your state here...
+}
+
+impl EventHandler for MyGame {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+        // Update code here...
+    }
+
+    fn draw(&mut self, _ctx: &mut Context) -> GameResult<()> {
+        // Draw code here...
+    }
+}
+```
 
 ## Implementation details
 
-ggez is built upon SDL2 for windowing and events, `rodio` for sound,
+ggez is built upon `winit` for windowing and events, `rodio` for sound,
 and a 2D drawing engine implemented in `gfx` using the OpenGL backend
 (which currently defaults to use OpenGL 3.2).  It *should* be
 entirely thread-safe outside of the basic event-handling loop, and
 portable to Windows, Linux and Mac.
 
-The goal is to eventually have ggez be pure Rust, but we're not there
-yet.
+ggez is Pure Rust(tm).
 
 ## Help!
 
@@ -118,4 +167,8 @@ Sources of information:
  * The [API docs](https://docs.rs/ggez/), a lot of design stuff is explained there.
  * Check out the [examples](https://github.com/ggez/ggez/tree/master/examples).
 
-If you still have problems, feel free to [open an issue](https://github.com/ggez/ggez/issues) or say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server.
+ If you still have problems or questions, feel free to ask!  Easiest ways are:
+
+ * open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
+ * say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server
+ * or in the [unofficial Rust Discord server](http://bit.ly/rust-community)

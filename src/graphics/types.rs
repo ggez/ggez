@@ -1,13 +1,15 @@
-use nalgebra as na;
+pub(crate) use nalgebra as na;
 use std::f32;
 use std::u32;
 
+use crate::graphics::{FillOptions, StrokeOptions};
+
 /// A 2 dimensional point representing a location
-pub type Point2 = na::Point2<f32>;
+pub(crate) type Point2 = na::Point2<f32>;
 /// A 2 dimensional vector representing an offset of a location
-pub type Vector2 = na::Vector2<f32>;
+pub(crate) type Vector2 = na::Vector2<f32>;
 /// A 4 dimensional matrix representing an arbitrary 3d transformation
-pub type Matrix4 = na::Matrix4<f32>;
+pub(crate) type Matrix4 = na::Matrix4<f32>;
 
 /// A simple 2D rectangle.
 ///
@@ -26,12 +28,12 @@ pub struct Rect {
 }
 
 impl Rect {
-    /// Create a new rect.
+    /// Create a new `Rect`.
     pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
         Rect { x, y, w, h }
     }
 
-    /// Creates a new rect a la Love2D's `love.graphics.newQuad`,
+    /// Creates a new `Rect` a la Love2D's `love.graphics.newQuad`,
     /// as a fraction of the reference rect's size.
     pub fn fraction(x: f32, y: f32, w: f32, h: f32, reference: &Rect) -> Rect {
         Rect {
@@ -89,13 +91,17 @@ impl Rect {
 
     /// Checks whether the `Rect` contains a `Point`
     pub fn contains(&self, point: Point2) -> bool {
-        point.x >= self.left() && point.x <= self.right() && point.y <= self.bottom()
+        point.x >= self.left()
+            && point.x <= self.right()
+            && point.y <= self.bottom()
             && point.y >= self.top()
     }
 
     /// Checks whether the `Rect` overlaps another `Rect`
     pub fn overlaps(&self, other: &Rect) -> bool {
-        self.left() <= other.right() && self.right() >= other.left() && self.top() <= other.bottom()
+        self.left() <= other.right()
+            && self.right() >= other.left()
+            && self.top() <= other.bottom()
             && self.bottom() >= other.top()
     }
 
@@ -132,6 +138,8 @@ impl From<Rect> for [f32; 4] {
 }
 
 /// A RGBA color in the `sRGB` color space represented as `f32`'s in the range `[0.0-1.0]`
+///
+/// For convenience, [`WHITE`](constant.WHITE.html) and [`BLACK`](constant.BLACK.html) are provided.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Color {
     /// Red component
@@ -161,7 +169,7 @@ pub const BLACK: Color = Color {
 };
 
 impl Color {
-    /// Create a new `Color` from four `f32`'s in the range [0.0-1.0]
+    /// Create a new `Color` from four `f32`'s in the range `[0.0-1.0]`
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color { r, g, b, a }
     }
@@ -171,7 +179,7 @@ impl Color {
         Color::from((r, g, b, a))
     }
 
-    /// Create a new `Color` from three `u8`'s in the range `[0-255]`,
+    /// Create a new `Color` from three u8's in the range `[0-255]`,
     /// with the alpha component fixed to 255 (opaque)
     pub fn from_rgb(r: u8, g: u8, b: u8) -> Color {
         Color::from((r, g, b))
@@ -189,7 +197,7 @@ impl Color {
         self.into()
     }
 
-    /// Convert a packed `u32` containing `0xRRGGBBAA` into a `Color`.
+    /// Convert a packed `u32` containing `0xRRGGBBAA` into a `Color`
     pub fn from_rgba_u32(c: u32) -> Color {
         let rp = ((c & 0xFF00_0000u32) >> 24) as u8;
         let gp = ((c & 0x00FF_0000u32) >> 16) as u8;
@@ -207,7 +215,7 @@ impl Color {
         Color::from((rp, gp, bp))
     }
 
-    /// Convert a Color into a packed `u32`, containing `0xRRGGBBAA` as bytes.
+    /// Convert a `Color` into a packed `u32`, containing `0xRRGGBBAA` as bytes.
     pub fn to_rgba_u32(self) -> u32 {
         let (r, g, b, a): (u8, u8, u8, u8) = self.into();
         let rp = (u32::from(r)) << 24;
@@ -217,7 +225,7 @@ impl Color {
         (rp | gp | bp | ap)
     }
 
-    /// Convert a Color into a packed `u32`, containing `0x00RRGGBB` as bytes.
+    /// Convert a `Color` into a packed `u32`, containing `0x00RRGGBB` as bytes.
     pub fn to_rgb_u32(self) -> u32 {
         let (r, g, b, _a): (u8, u8, u8, u8) = self.into();
         let rp = (u32::from(r)) << 16;
@@ -228,7 +236,7 @@ impl Color {
 }
 
 impl From<(u8, u8, u8, u8)> for Color {
-    /// Convert a `(R, G, B, A)` tuple of `u8`'s in the range `[0-255]` into a `Color`.
+    /// Convert a `(R, G, B, A)` tuple of `u8`'s in the range `[0-255]` into a `Color`
     fn from(val: (u8, u8, u8, u8)) -> Self {
         let (r, g, b, a) = val;
         let rf = (f32::from(r)) / 255.0;
@@ -253,6 +261,23 @@ impl From<[f32; 4]> for Color {
     /// All inputs should be in the range `[0.0-1.0]`.
     fn from(val: [f32; 4]) -> Self {
         Color::new(val[0], val[1], val[2], val[3])
+    }
+}
+
+impl From<(f32, f32, f32)> for Color {
+    /// Convert a `(R, G, B)` tuple of `f32`'s in the range `[0.0-1.0]` into a `Color`,
+    /// with a value of 1.0 to for the alpha element (ie, no transparency.)
+    fn from(val: (f32, f32, f32)) -> Self {
+        let (r, g, b) = val;
+        Color::new(r, g, b, 1.0)
+    }
+}
+
+impl From<(f32, f32, f32, f32)> for Color {
+    /// Convert a `(R, G, B, A)` tuple of `f32`'s in the range `[0.0-1.0]` into a `Color`
+    fn from(val: (f32, f32, f32, f32)) -> Self {
+        let (r, g, b, a) = val;
+        Color::new(r, g, b, a)
     }
 }
 
@@ -347,10 +372,14 @@ impl From<LinearColor> for [f32; 4] {
 /// filled or as an outline.
 #[derive(Debug, Copy, Clone)]
 pub enum DrawMode {
-    /// A stroked line with the given width
+    /// A stroked line with the given width.
     Line(f32),
     /// A filled shape.
     Fill,
+    /// A stroked line with given parameters, see `StrokeOptions` documentation.
+    CustomLine(StrokeOptions),
+    /// A filled shape with given parameters, see `FillOptions` documentation.
+    CustomFill(FillOptions),
 }
 
 /// Specifies what blending method to use when scaling up/down images.
@@ -362,7 +391,6 @@ pub enum FilterMode {
     Nearest,
 }
 
-use gfx;
 use gfx::texture::FilterMethod;
 
 impl From<FilterMethod> for FilterMode {
@@ -384,13 +412,13 @@ impl From<FilterMode> for FilterMethod {
 }
 
 /// Specifies how to wrap textures.
-pub type WrapMode = gfx::texture::WrapMode;
+pub use gfx::texture::WrapMode;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn test_color_conversions() {
+    fn headless_test_color_conversions() {
         let white = Color::new(1.0, 1.0, 1.0, 1.0);
         let w1 = Color::from((255, 255, 255, 255));
         assert_eq!(white, w1);
@@ -421,7 +449,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rect_scaling() {
+    fn headless_test_rect_scaling() {
         let r1 = Rect::new(0.0, 0.0, 128.0, 128.0);
         let r2 = Rect::fraction(0.0, 0.0, 32.0, 32.0, &r1);
         assert_eq!(r2, Rect::new(0.0, 0.0, 0.25, 0.25));
@@ -431,7 +459,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rect_contains() {
+    fn headless_test_rect_contains() {
         let r = Rect::new(0.0, 0.0, 128.0, 128.0);
         println!("{} {} {} {}", r.top(), r.bottom(), r.left(), r.right());
         let p = Point2::new(1.0, 1.0);
@@ -442,7 +470,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rect_overlaps() {
+    fn headless_test_rect_overlaps() {
         let r1 = Rect::new(0.0, 0.0, 128.0, 128.0);
         let r2 = Rect::new(0.0, 0.0, 64.0, 64.0);
         assert!(r1.overlaps(&r2));
@@ -455,7 +483,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rect_transform() {
+    fn headless_test_rect_transform() {
         let mut r1 = Rect::new(0.0, 0.0, 64.0, 64.0);
         let r2 = Rect::new(64.0, 64.0, 64.0, 64.0);
         r1.translate(Vector2::new(64.0, 64.0));

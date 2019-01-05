@@ -1,3 +1,52 @@
+
+# 0.5.0 (in progress)
+
+## Added
+
+ * Added line cap and join options
+ * Added spatial sources for audio
+ * Added `From` implementations for `Color` to convert from various tuples of `f32`'s.  Redundant but it annoyed me they don't exist.
+
+## Changed
+
+ * Updated versions of lots of dependencies.
+ * Minimum rustc version is now 1.31, rust 2018 edition.
+ * We now use `winit` instead of `sdl2` for window creation and events!  This involves lots of minor
+   changes, the full extent of which is still being explored.
+ * `DrawParam` now uses the builder pattern instead of being a bare struct, which allows easier conversion from generics (such as `mint` types) as well as simplifying the internal math.
+ * All public-facing API's that take `Point2`, `Vector2` or `Matrix4` should now take
+   `Into<mint::...>` for the appropriate type from the `mint` crate.  This should let users use
+   whatever math library they care to that supports `mint`; currently both `nalgebra` and `cgmath`
+   are options, and `euclid` should be soon.
+ * Moved all the `FilesystemContext` methods into top-level functions in the `filesystem` module,
+   to be consistent with the rest of the API.
+ * What used to be the `TextCached` module is now the `Text` module, replacing all the old text stuff.  This *dramatically* changes the text API, as well as being faster and more powerful.
+ * Various dimension parameters have changed to fit the underlying implementations more closely.  `Image` dimensions have changed from `u32` to `u16`, which they always were but now it's exposed to the API.  Various screen size dimensions have changed from `u32` to `f64`, which allows `winit` to do smooth DPI-independent scaling.
+ * Various getters have been renamed from `get_<field>()` to `<field>`(). Of particular note are changes to Drawable and ShaderHandle traits.
+
+## Deprecated
+
+ * Nothing, it's a breaking change so things just got removed.
+
+## Removed
+
+ * The foreground and background colors and associated functions have beeen removed; all colors are
+   now specified purely where they are used for drawing.
+ * Removed deprecated `BoundSpriteBatch` type.
+ * Removed `Context::print_resource_stats()` in favor of `filesystem::print_all()`.
+ * Removed `graphics::rectangle()` and friends in favor of just
+   building and drawing the meshes explicitly.  Shortcut functions for
+   this have been added to `Mesh`. [#466](https://github.com/ggez/ggez/issues/466)
+ * Removed `TTFFont` font type in favor of `GlyphBrush`. [#132](https://github.com/ggez/ggez/issues/132)
+ * Removed `Context::from_conf()` for `ContextBuilder` which is strictly more powerful.  [#429](https://github.com/ggez/ggez/issues/429)
+ * Removed bitmap fonts; better support deserves to exist than what ggez currently provides, and there's no reason it can't be its own crate.
+ * Removed the `cargo-resource-root` feature flag; just use `filesystem::mount()` instead or add the directories to your `ContextBuilder`.
+
+## Fixed
+
+ * Minor things beyond counting.  Don't worry, we added plenty of new
+   bugs too.
+
 # 0.4.4
 
 ## Added
@@ -40,6 +89,7 @@ Nothing
  * Updated rodio to 0.7, which fixes a sample rate bug on Linux: [#359](https://github.com/ggez/ggez/issues/359)
  * Documented which version of rustc we require, and added unit tests for that specific version: it is currently >=1.23.0,
    primarily driven by features required by dependencies.
+ * Moved `Context::quit()` to `ggez::quit()` 'cause all our other non-object-related functions are functions, not methods.
 
 ## Deprecated
 

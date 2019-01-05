@@ -1,11 +1,12 @@
 //! Basic hello world example.
 
 extern crate ggez;
+extern crate nalgebra;
 
-use ggez::conf;
 use ggez::event;
-use ggez::graphics;
+use ggez::graphics::{self, Color};
 use ggez::{Context, GameResult};
+use nalgebra as na;
 use std::env;
 use std::path;
 
@@ -20,8 +21,8 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         // The ttf file will be in your resources directory. Later, we
         // will mount that directory so we can omit it in the path here.
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
-        let text = graphics::Text::new(ctx, "Hello world!", &font)?;
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
+        let text = graphics::Text::new(("Hello world!", font, 48.0));
         let canvas = graphics::Canvas::with_window_size(ctx)?;
 
         let s = MainState {
@@ -35,66 +36,55 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let dest_point = graphics::Point2::new(10.0, 10.0);
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        let dest_point = na::Point2::new(10.0, 10.0);
 
         if self.draw_with_canvas {
             println!("Drawing with canvas");
-            graphics::set_background_color(ctx, graphics::Color::from((64, 0, 0, 0)));
-            graphics::clear(ctx);
+            graphics::clear(ctx, graphics::Color::from((64, 0, 0, 0)));
 
             graphics::set_canvas(ctx, Some(&self.canvas));
-            graphics::set_background_color(ctx, graphics::Color::from((255, 255, 255, 128)));
-            graphics::clear(ctx);
+            graphics::clear(ctx, graphics::Color::from((255, 255, 255, 128)));
 
-            graphics::draw_ex(
+            graphics::draw(
                 ctx,
                 &self.text,
-                graphics::DrawParam {
-                    dest: dest_point,
-                    color: Some(graphics::Color::from((0, 0, 0, 255))),
-                    ..Default::default()
-                },
+                graphics::DrawParam::new()
+                    .dest(dest_point)
+                    .color(Color::from((0, 0, 0, 255))),
             )?;
             graphics::set_canvas(ctx, None);
 
-            // graphics::draw(ctx, &self.canvas, graphics::Point2::new(0.0, 0.0), 0.0)?;
+            // graphics::draw(ctx, &self.canvas, na::Point2::new(0.0, 0.0), 0.0)?;
 
-            graphics::draw_ex(
+            graphics::draw(
                 ctx,
                 &self.canvas,
-                graphics::DrawParam {
-                    color: Some(graphics::Color::from((255, 255, 255, 128))),
-                    ..Default::default()
-                },
+                graphics::DrawParam::new().color(Color::from((255, 255, 255, 128))),
             )?;
         } else {
             println!("Drawing without canvas");
             graphics::set_canvas(ctx, None);
-            graphics::set_background_color(ctx, graphics::Color::from((64, 0, 0, 255)));
-            graphics::clear(ctx);
+            graphics::clear(ctx, [0.25, 0.0, 0.0, 1.0].into());
 
-            graphics::draw_ex(
+            graphics::draw(
                 ctx,
                 &self.text,
-                graphics::DrawParam {
-                    dest: dest_point,
-                    color: Some(graphics::Color::from((192, 128, 64, 255))),
-                    ..Default::default()
-                },
+                graphics::DrawParam::new()
+                    .dest(dest_point)
+                    .color(Color::from((192, 128, 64, 255))),
             )?;
         }
 
-        graphics::present(ctx);
+        graphics::present(ctx)?;
 
-        // Drawables are drawn from their top-left corner.
         self.frames += 1;
         if (self.frames % 100) == 0 {
-            println!("FPS: {}", ggez::timer::get_fps(ctx));
+            println!("FPS: {}", ggez::timer::fps(ctx));
         }
 
         Ok(())
@@ -103,8 +93,8 @@ impl event::EventHandler for MainState {
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
-        _keycode: ggez::event::Keycode,
-        _keymod: ggez::event::Mod,
+        _keycode: ggez::event::KeyCode,
+        _keymod: ggez::event::KeyMods,
         repeat: bool,
     ) {
         if !repeat {
@@ -114,26 +104,18 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() {
-    let c = conf::Conf {
-        window_setup: conf::WindowSetup {
-            samples: conf::NumSamples::Two,
-            ..Default::default()
-        },
-        ..Default::default()
-    };
-    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
-
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+pub fn main() -> GameResult {
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        ctx.filesystem.mount(&path, true);
-    }
-
-    let state = &mut MainState::new(ctx).unwrap();
-    if let Err(e) = event::run(ctx, state) {
-        println!("Error encountered: {}", e);
+        path
     } else {
-        println!("Game exited cleanly.");
-    }
+        path::PathBuf::from("./resources")
+    };
+
+    let cb = ggez::ContextBuilder::new("hello_canvas", "ggez").add_resource_path(resource_dir);
+    let (ctx, event_loop) = &mut cb.build()?;
+
+    let state = &mut MainState::new(ctx)?;
+    event::run(ctx, event_loop, state)
 }

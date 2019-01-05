@@ -19,7 +19,8 @@ extern crate rand;
 
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
-use ggez::event::Keycode;
+use ggez::event::{KeyCode, KeyMods};
+use ggez::graphics::Drawable;
 use ggez::{event, graphics, Context, GameResult};
 
 // We'll bring in some things from `std` to help us in the future.
@@ -40,9 +41,9 @@ const GRID_CELL_SIZE: (i16, i16) = (32, 32);
 
 // Next we define how large we want our actual window to be by multiplying
 // the components of our grid size by its corresponding pixel size.
-const SCREEN_SIZE: (u32, u32) = (
-    GRID_SIZE.0 as u32 * GRID_CELL_SIZE.0 as u32,
-    GRID_SIZE.1 as u32 * GRID_CELL_SIZE.1 as u32,
+const SCREEN_SIZE: (f32, f32) = (
+    GRID_SIZE.0 as f32 * GRID_CELL_SIZE.0 as f32,
+    GRID_SIZE.1 as f32 * GRID_CELL_SIZE.1 as f32,
 );
 
 // Here we're defining how many quickly we want our game to update. This will be
@@ -99,9 +100,10 @@ impl GridPosition {
         // We can use `.into()` to convert from `(i16, i16)` to a `GridPosition` since
         // we implement `From<(i16, i16)>` for `GridPosition` below.
         (
-            rng.gen_range::<i16>(0, max_x),
-            rng.gen_range::<i16>(0, max_y),
-        ).into()
+            rng.gen_range::<i16, i16, i16>(0, max_x),
+            rng.gen_range::<i16, i16, i16>(0, max_y),
+        )
+            .into()
     }
 
     /// We'll make another helper function that takes one grid position and returns a new one after
@@ -169,12 +171,12 @@ impl Direction {
     /// `ggez` `Keycode` and the `Direction` that it represents. Of course,
     /// not every keycode represents a direction, so we return `None` if this
     /// is the case.
-    pub fn from_keycode(key: Keycode) -> Option<Direction> {
+    pub fn from_keycode(key: KeyCode) -> Option<Direction> {
         match key {
-            Keycode::Up => Some(Direction::Up),
-            Keycode::Down => Some(Direction::Down),
-            Keycode::Left => Some(Direction::Left),
-            Keycode::Right => Some(Direction::Right),
+            KeyCode::Up => Some(Direction::Up),
+            KeyCode::Down => Some(Direction::Down),
+            KeyCode::Left => Some(Direction::Left),
+            KeyCode::Right => Some(Direction::Right),
             _ => None,
         }
     }
@@ -217,11 +219,14 @@ impl Food {
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         // First we set the color to draw with, in this case all food will be
         // colored blue.
-        graphics::set_color(ctx, [0.0, 0.0, 1.0, 1.0].into())?;
+        let color = [0.0, 0.0, 1.0, 1.0].into();
         // Then we draw a rectangle with the Fill draw mode, and we convert the
         // Food's position into a `ggez::Rect` using `.into()` which we can do
         // since we implemented `From<GridPosition>` for `Rect` earlier.
-        graphics::rectangle(ctx, graphics::DrawMode::Fill, self.pos.into())
+        // graphics::rectangle(ctx, color, graphics::DrawMode::Fill, self.pos.into())
+
+        graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::Fill, self.pos.into(), color)?
+            .draw(ctx, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))
     }
 }
 
@@ -337,13 +342,26 @@ impl Snake {
         // We first iterate through the body segments and draw them.
         for seg in self.body.iter() {
             // Again we set the color (in this case an orangey color)
-            graphics::set_color(ctx, [1.0, 0.5, 0.0, 1.0].into())?;
+            // TODO: Fix colors
+            // graphics::set_color(ctx, )?;
             // and then draw the Rect that we convert that Segment's position into
-            graphics::rectangle(ctx, graphics::DrawMode::Fill, seg.pos.into())?;
+            graphics::Mesh::new_rectangle(
+                ctx,
+                graphics::DrawMode::Fill,
+                seg.pos.into(),
+                [1.0, 0.5, 0.0, 1.0].into(),
+            )?
+            .draw(ctx, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
         }
         // And then we do the same for the head, instead making it fully red to distinguish it.
-        graphics::set_color(ctx, [1.0, 0.0, 0.0, 1.0].into())?;
-        graphics::rectangle(ctx, graphics::DrawMode::Fill, self.head.pos.into())?;
+        // TODO: Fix colors
+        graphics::Mesh::new_rectangle(
+            ctx,
+            graphics::DrawMode::Fill,
+            self.head.pos.into(),
+            [1.0, 0.5, 0.0, 1.0].into(),
+        )?
+        .draw(ctx, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
         Ok(())
     }
 }
@@ -387,7 +405,7 @@ impl GameState {
 impl event::EventHandler for GameState {
     /// Update will happen on every frame before it is drawn. This is where we update
     /// our game state to react to whatever is happening in the game world.
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         // First we check to see if enough time has elapsed since our last update based on
         // the update rate we defined at the top.
         if Instant::now() - self.last_update >= Duration::from_millis(MILLIS_PER_UPDATE) {
@@ -421,15 +439,15 @@ impl event::EventHandler for GameState {
     }
 
     /// draw is where we should actually render the game's current state.
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        // First we clear the screen
-        graphics::clear(ctx);
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        // First we clear the screen to a nice (well, maybe pretty glaring ;)) green
+        graphics::clear(ctx, [0.0, 1.0, 0.0, 1.0].into());
         // Then we tell the snake and the food to draw themselves
         self.snake.draw(ctx)?;
         self.food.draw(ctx)?;
         // Finally we call graphics::present to cycle the gpu's framebuffer and display
         // the new frame we just drew.
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         // We yield the current thread until the next update
         ggez::timer::yield_now();
         // And return success.
@@ -440,8 +458,8 @@ impl event::EventHandler for GameState {
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
-        keycode: Keycode,
-        _keymod: event::Mod,
+        keycode: KeyCode,
+        _keymod: KeyMods,
         _repeat: bool,
     ) {
         // Here we attempt to convert the Keycode into a Direction using the helper
@@ -457,26 +475,19 @@ impl event::EventHandler for GameState {
     }
 }
 
-fn main() {
+fn main() -> GameResult {
     // Here we use a ContextBuilder to setup metadata about our game. First the title and author
-    let ctx = &mut ggez::ContextBuilder::new("snake", "Gray Olson")
+    let (ctx, events_loop) = &mut ggez::ContextBuilder::new("snake", "Gray Olson")
         // Next we set up the window. This title will be displayed in the title bar of the window.
         .window_setup(ggez::conf::WindowSetup::default().title("Snake!"))
         // Now we get to set the size of the window, which we use our SCREEN_SIZE constant from earlier to help with
         .window_mode(ggez::conf::WindowMode::default().dimensions(SCREEN_SIZE.0, SCREEN_SIZE.1))
         // And finally we attempt to build the context and create the window. If it fails, we panic with the message
         // "Failed to build ggez context"
-        .build().expect("Failed to build ggez context");
+        .build()?;
 
-    // We set the background color of our Context to a nice (well, maybe pretty glaring ;)) green
-    graphics::set_background_color(ctx, [0.0, 1.0, 0.0, 1.0].into());
     // Next we create a new instance of our GameState struct, which implements EventHandler
     let state = &mut GameState::new();
     // And finally we actually run our game, passing in our context and state.
-    match event::run(ctx, state) {
-        // If we encounter an error, we print it before exiting
-        Err(e) => println!("Error encountered running game: {}", e),
-        // And if not, we print a message saying we ran cleanly. Hooray!
-        Ok(_) => println!("Game exited cleanly!"),
-    }
+    event::run(ctx, events_loop, state)
 }

@@ -3,17 +3,19 @@
 
 #[macro_use]
 extern crate gfx;
+extern crate cgmath;
 extern crate ggez;
 
+use cgmath::{Point2, Vector2};
 use ggez::conf;
-use ggez::event::{self, MouseState};
-use ggez::graphics::{self, BlendMode, Canvas, DrawParam, Drawable, Point2, Shader};
+use ggez::event;
+use ggez::graphics::{self, BlendMode, Canvas, DrawParam, Drawable, Shader};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
-gfx_defines!{
+gfx_defines! {
     /// Constants used by the shaders to calculate stuff
     constant Light {
         light_color: [f32; 4] = "u_LightColor",
@@ -184,7 +186,7 @@ const TORCH_COLOR: [f32; 4] = [0.80, 0.73, 0.44, 1.0];
 /// The number of rays to cast to. Increasing this number will result in better
 /// quality shadows. If you increase too much you might hit some GPU shader
 /// hardware limits.
-const LIGHT_RAY_COUNT: u32 = 1440;
+const LIGHT_RAY_COUNT: u16 = 1440;
 /// The strength of the light - how far it shines
 const LIGHT_STRENGTH: f32 = 0.0035;
 /// The factor at which the light glows - just for fun
@@ -197,11 +199,11 @@ impl MainState {
         let background = graphics::Image::new(ctx, "/bg_top.png")?;
         let tile = graphics::Image::new(ctx, "/tile.png")?;
         let text = {
-            let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
-            graphics::Text::new(ctx, "SHADOWS...", &font)?
+            let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
+            graphics::Text::new(("SHADOWS...", font, 48.0))
         };
         let screen_size = {
-            let size = graphics::get_drawable_size(ctx);
+            let size = graphics::drawable_size(ctx);
             [size.0 as f32, size.1 as f32]
         };
         let torch = Light {
@@ -212,7 +214,7 @@ impl MainState {
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
-        let (w, h) = graphics::get_size(ctx);
+        let (w, h) = graphics::size(ctx);
         let (x, y) = (100.0 / w as f32, 1.0 - 75.0 / h as f32);
         let static_light = Light {
             pos: [x, y],
@@ -237,7 +239,8 @@ impl MainState {
             torch,
             "Light",
             None,
-        ).unwrap();
+        )
+        .unwrap();
         let shadows_shader = Shader::from_u8(
             ctx,
             VERTEX_SHADER_SOURCE,
@@ -245,7 +248,8 @@ impl MainState {
             torch,
             "Light",
             None,
-        ).unwrap();
+        )
+        .unwrap();
         let lights_shader = Shader::from_u8(
             ctx,
             VERTEX_SHADER_SOURCE,
@@ -253,7 +257,8 @@ impl MainState {
             torch,
             "Light",
             Some(&[BlendMode::Add]),
-        ).unwrap();
+        )
+        .unwrap();
 
         Ok(MainState {
             background,
@@ -276,8 +281,8 @@ impl MainState {
         light: Light,
         origin: DrawParam,
         canvas_origin: DrawParam,
-    ) -> GameResult<()> {
-        let size = graphics::get_size(ctx);
+    ) -> GameResult {
+        let size = graphics::size(ctx);
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
         graphics::set_canvas(ctx, Some(&self.occlusions));
@@ -285,7 +290,7 @@ impl MainState {
             let _shader_lock = graphics::use_shader(ctx, &self.occlusions_shader);
 
             self.occlusions_shader.send(ctx, light)?;
-            graphics::draw_ex(ctx, &self.foreground, canvas_origin)?;
+            graphics::draw(ctx, &self.foreground, canvas_origin)?;
         }
 
         // Now we render our shadow map and light map into their respective
@@ -295,59 +300,55 @@ impl MainState {
         {
             let _shader_lock = graphics::use_shader(ctx, &self.shadows_shader);
 
-            let param = DrawParam {
-                scale: Point2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), size.1 as f32),
-                ..origin
-            };
+            let param = origin.scale(Vector2::new(
+                (size.0 as f32) / (LIGHT_RAY_COUNT as f32),
+                size.1 as f32,
+            ));
             self.shadows_shader.send(ctx, light)?;
-            graphics::draw_ex(ctx, &self.occlusions, param)?;
+            graphics::draw(ctx, &self.occlusions, param)?;
         }
         graphics::set_canvas(ctx, Some(&self.lights));
         {
             let _shader_lock = graphics::use_shader(ctx, &self.lights_shader);
 
-            let param = DrawParam {
-                scale: Point2::new((size.0 as f32) / (LIGHT_RAY_COUNT as f32), size.1 as f32),
-                ..origin
-            };
+            let param = origin.scale(Vector2::new(
+                (size.0 as f32) / (LIGHT_RAY_COUNT as f32),
+                size.1 as f32,
+            ));
             self.lights_shader.send(ctx, light)?;
-            graphics::draw_ex(ctx, &self.occlusions, param)?;
+            graphics::draw(ctx, &self.occlusions, param)?;
         }
         Ok(())
     }
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        if timer::get_ticks(ctx) % 100 == 0 {
-            println!("Average FPS: {}", timer::get_fps(ctx));
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
+        if timer::ticks(ctx) % 100 == 0 {
+            println!("Average FPS: {}", timer::fps(ctx));
         }
 
-        self.torch.glow =
-            LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
+        self.torch.glow = LIGHT_GLOW_FACTOR * ((timer::ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
         self.static_light.glow =
-            LIGHT_GLOW_FACTOR * ((timer::get_ticks(ctx) as f32) / LIGHT_GLOW_RATE * 0.75).sin();
+            LIGHT_GLOW_FACTOR * ((timer::ticks(ctx) as f32) / LIGHT_GLOW_RATE * 0.75).sin();
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let size = graphics::get_size(ctx);
-        let origin = DrawParam {
-            dest: Point2::new(0.0, 0.0),
-            ..Default::default()
-        };
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        let size = graphics::size(ctx);
+        let origin = DrawParam::new()
+            .dest(Point2::new(0.0, 0.0))
+            .scale(Vector2::new(0.5, 0.5));
         // for re-rendering canvases, we need to take the DPI into account
+        // TODO: Double-check this; it is probably redundant now
         let dpiscale = {
-            let dsize = graphics::get_drawable_size(ctx);
-            Point2::new(
+            let dsize = graphics::drawable_size(ctx);
+            Vector2::new(
                 size.0 as f32 / dsize.0 as f32,
                 size.1 as f32 / dsize.1 as f32,
             )
         };
-        let canvas_origin = DrawParam {
-            scale: dpiscale,
-            ..origin
-        };
+        let canvas_origin = DrawParam::new().scale(dpiscale);
 
         // First thing we want to do it to render all the foreground items (that
         // will have shadows) onto their own Canvas (off-screen render). We will
@@ -355,96 +356,77 @@ impl event::EventHandler for MainState {
         //  - run the occlusions shader to determine where the shadows are
         //  - render to screen once all the shadows are calculated and rendered
         graphics::set_canvas(ctx, Some(&self.foreground));
-        graphics::set_background_color(ctx, [0.0; 4].into());
-        graphics::clear(ctx);
-        graphics::draw_ex(
+        graphics::clear(ctx, graphics::BLACK);
+        graphics::draw(
             ctx,
             &self.tile,
-            DrawParam {
-                dest: Point2::new(598.0, 124.0),
-                ..Default::default()
-            },
+            DrawParam::new().dest(Point2::new(598.0, 124.0)),
         )?;
-        graphics::draw_ex(
+        graphics::draw(
             ctx,
             &self.tile,
-            DrawParam {
-                dest: Point2::new(92.0, 350.0),
-                ..Default::default()
-            },
+            DrawParam::new().dest(Point2::new(92.0, 350.0)),
         )?;
-        graphics::draw_ex(
+        graphics::draw(
             ctx,
             &self.tile,
-            DrawParam {
-                dest: Point2::new(442.0, 468.0),
-                rotation: 0.5,
-                ..Default::default()
-            },
+            DrawParam::new()
+                .dest(Point2::new(442.0, 468.0))
+                .rotation(0.5),
         )?;
-        graphics::draw(ctx, &self.text, Point2::new(50.0, 200.0), 0.0)?;
+        graphics::draw(ctx, &self.text, (Point2::new(50.0, 200.0),))?;
 
         // First we draw our light and shadow maps
         let torch = self.torch;
         let light = self.static_light;
         graphics::set_canvas(ctx, Some(&self.lights));
-        graphics::clear(ctx);
+        graphics::clear(ctx, graphics::Color::new(0.0, 0.0, 0.5, 1.0));
         graphics::set_canvas(ctx, Some(&self.shadows));
-        graphics::clear(ctx);
+        graphics::clear(ctx, graphics::Color::new(0.0, 0.5, 0.0, 1.0));
         self.render_light(ctx, torch, origin, canvas_origin)?;
         self.render_light(ctx, light, origin, canvas_origin)?;
 
         // Now lets finally render to screen starting with out background, then
         // the shadows and lights overtop and finally our foreground.
         graphics::set_canvas(ctx, None);
-        graphics::set_color(ctx, graphics::WHITE)?;
-        graphics::draw_ex(ctx, &self.background, origin)?;
-        graphics::draw_ex(ctx, &self.shadows, origin)?;
-        graphics::draw_ex(ctx, &self.lights, origin)?;
+        graphics::clear(ctx, graphics::WHITE);
+        graphics::draw(ctx, &self.background, origin)?;
+        // graphics::draw(ctx, &self.shadows, origin)?;
+        // graphics::draw(ctx, &self.lights, origin)?;
         // We switch the color to the shadow color before drawing the foreground objects
         // this has the same effect as applying this color in a multiply blend mode with
         // full opacity. We also reset the blend mode back to the default Alpha blend mode.
-        graphics::set_color(ctx, AMBIENT_COLOR.into())?;
-        graphics::draw_ex(ctx, &self.foreground, origin)?;
+        graphics::draw(ctx, &self.foreground, origin)?;
 
         // Uncomment following two lines to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
         // the greyscale pixels are the half distances of the nearest shadows to
         // the mouse position (equally encoded in all color channels).
-        // graphics::set_color(ctx, [1.0; 4].into())?;
-        // graphics::draw_ex(ctx, &self.occlusions, origin)?;
+        // graphics::draw(ctx, &self.occlusions, origin)?;
 
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         Ok(())
     }
 
-    fn mouse_motion_event(
-        &mut self,
-        ctx: &mut Context,
-        _state: MouseState,
-        x: i32,
-        y: i32,
-        _xrel: i32,
-        _yrel: i32,
-    ) {
-        let (w, h) = graphics::get_size(ctx);
-        let (x, y) = (x as f32 / w as f32, 1.0 - y as f32 / h as f32);
+    fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32, _xrel: f32, _yrel: f32) {
+        let (w, h) = graphics::size(ctx);
+        let (x, y) = (x / w as f32, 1.0 - y / h as f32);
         self.torch.pos = [x, y];
     }
 }
 
-pub fn main() {
-    let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("shadows", "ggez", c).unwrap();
-
-    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
-    // we we look in the cargo project for files.
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+pub fn main() -> GameResult {
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        ctx.filesystem.mount(&path, true);
-    }
+        path
+    } else {
+        path::PathBuf::from("./resources")
+    };
 
-    let state = &mut MainState::new(ctx).unwrap();
-    event::run(ctx, state).unwrap();
+    let cb = ggez::ContextBuilder::new("shadows", "ggez").add_resource_path(resource_dir);
+    let (ctx, event_loop) = &mut cb.build()?;
+
+    let state = &mut MainState::new(ctx)?;
+    event::run(ctx, event_loop, state)
 }

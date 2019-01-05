@@ -13,8 +13,8 @@ extern crate ggez;
 extern crate log;
 
 use ggez::conf::{WindowMode, WindowSetup};
-use ggez::event::{EventHandler, Keycode, Mod};
-use ggez::filesystem::File;
+use ggez::event::{EventHandler, KeyCode, KeyMods};
+use ggez::filesystem::{self, File};
 use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
@@ -39,11 +39,11 @@ impl FileLogger {
         receiver: mpsc::Receiver<String>,
     ) -> GameResult<FileLogger> {
         // This (re)creates a file and opens it for appending.
-        let file = ctx.filesystem.create(path::Path::new(path))?;
+        let file = filesystem::create(ctx, path::Path::new(path))?;
         debug!(
             "Created log file {:?} in {:?}",
             path,
-            ctx.filesystem.get_user_config_dir()
+            filesystem::user_config_dir(ctx)
         );
         Ok(FileLogger { file, receiver })
     }
@@ -51,7 +51,7 @@ impl FileLogger {
     /// Reads pending messages from the channel and writes them to the file.
     /// Intended to be called in `EventHandler::update()`, to avoid using threads.
     /// (which you totally shouldn't actively avoid, Rust is perfect for concurrency)
-    fn update(&mut self) -> GameResult<()> {
+    fn update(&mut self) -> GameResult {
         // try_recv() doesn't block, it returns Err if there's no message to pop.
         while let Ok(msg) = self.receiver.try_recv() {
             // std::io::Write::write_all() takes a byte array.
@@ -81,7 +81,7 @@ impl App {
 /// Where the app meets the `ggez`.
 impl EventHandler for App {
     /// This is where the logic should happen.
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         // This tries to throttle updates to desired value.
         while timer::check_update_time(ctx, DESIRED_FPS) {
@@ -92,41 +92,42 @@ impl EventHandler for App {
     }
 
     /// Draws the screen. We don't really have anything to draw.
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx);
-        graphics::present(ctx);
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        graphics::present(ctx)?;
         timer::yield_now();
         Ok(())
     }
 
     /// Called when `ggez` catches a keyboard key being pressed.
-    fn key_down_event(&mut self, ctx: &mut Context, keycode: Keycode, keymod: Mod, repeat: bool) {
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: KeyCode,
+        keymod: KeyMods,
+        repeat: bool,
+    ) {
         // Log the keypress to info channel!
         info!(
-            "Key down event: {}, modifiers: {:?}, repeat: {}",
+            "Key down event: {:?}, modifiers: {:?}, repeat: {}",
             keycode, keymod, repeat
         );
-        if keycode == Keycode::Escape {
+        if keycode == KeyCode::Escape {
             // Escape key closes the app.
-            if let Err(e) = ctx.quit() {
-                error!("Context::quit() failed, somehow: {}", e);
-            }
+            ggez::quit(ctx);
         }
     }
 
     /// Called when window is resized.
-    fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
-        match graphics::set_screen_coordinates(
-            ctx,
-            graphics::Rect::new(0.0, 0.0, width as f32, height as f32),
-        ) {
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
+        match graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height)) {
             Ok(()) => info!("Resized window to {} x {}", width, height),
             Err(e) => error!("Couldn't resize window: {}", e),
         }
     }
 }
 
-pub fn main() {
+pub fn main() -> GameResult {
     // This creates a channel that can be used to asynchronously pass things between parts of the
     // app. There's some overhead, so using it somewhere that doesn't need async (read: threads)
     // is suboptimal. But, `fern`'s arbitrary logging requires a channel.
@@ -140,8 +141,8 @@ pub fn main() {
         // Formats logs
         .format(|out, message, record| {
             out.finish(format_args!(
-                "[{}][{:<5}][{}] {}",                                                                         
-                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),                                              
+                "[{}][{:<5}][{}] {}",
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
                 record.level().to_string(),
                 record.target(),
                 message
@@ -166,19 +167,18 @@ pub fn main() {
     trace!("Creating ggez context.");
 
     // This sets up `ggez` guts (including filesystem) and creates a window.
-    let ctx = &mut ContextBuilder::new("logging", "ggez")
-        .window_setup(
-            WindowSetup::default()
-                .title("Pretty console output!")
+    let (ctx, events_loop) = &mut ContextBuilder::new("logging", "ggez")
+        .window_setup(WindowSetup::default().title("Pretty console output!"))
+        .window_mode(
+            WindowMode::default()
+                .dimensions(640.0, 480.0)
                 .resizable(true),
         )
-        .window_mode(WindowMode::default().dimensions(640, 480))
-        .build()
-        .unwrap();
+        .build()?;
 
     trace!("Context created, creating a file logger.");
 
-    let file_logger = FileLogger::new(ctx, "/out.log", log_rx).unwrap();
+    let file_logger = FileLogger::new(ctx, "/out.log", log_rx)?;
 
     trace!("File logger created, starting loop.");
 
@@ -187,7 +187,7 @@ pub fn main() {
         Err(e) => {
             error!("Could not initialize: {}", e);
         }
-        Ok(ref mut app) => match ggez::event::run(ctx, app) {
+        Ok(ref mut app) => match ggez::event::run(ctx, events_loop, app) {
             Err(e) => {
                 error!("Error occurred: {}", e);
             }
@@ -198,4 +198,5 @@ pub fn main() {
     }
 
     trace!("Since file logger is dropped with App, this line will cause an error in fern!");
+    Ok(())
 }

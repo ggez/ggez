@@ -3,25 +3,27 @@
 //!
 //! Prints instructions to the console.
 
-extern crate clap;
 extern crate ggez;
+extern crate nalgebra;
+extern crate structopt;
 
-use clap::{App, Arg};
 use ggez::conf;
-use ggez::event::{self, Keycode, Mod};
-use ggez::graphics::{self, DrawMode, Point2};
+use ggez::event::{self, KeyCode, KeyMods};
+use ggez::graphics::{self, DrawMode, Drawable};
 use ggez::timer;
 use ggez::{Context, GameResult};
+use structopt::StructOpt;
 
 use std::env;
 use std::path;
+
+use nalgebra as na;
+type Point2 = na::Point2<f32>;
 
 struct WindowSettings {
     window_size_toggle: bool,
     toggle_fullscreen: bool,
     is_fullscreen: bool,
-    num_of_resolutions: usize,
-    resolution_index: usize,
     resize_projection: bool,
 }
 
@@ -34,7 +36,7 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let mut s = MainState {
+        let s = MainState {
             angle: 0.0,
             zoom: 1.0,
             image: graphics::Image::new(ctx, "/tile.png")?,
@@ -42,59 +44,68 @@ impl MainState {
                 toggle_fullscreen: false,
                 window_size_toggle: false,
                 is_fullscreen: false,
-                resolution_index: 0,
-                num_of_resolutions: 0,
                 resize_projection: false,
             },
         };
-
-        let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
-        s.window_settings.num_of_resolutions = resolutions.len();
-
         Ok(s)
     }
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         while timer::check_update_time(ctx, DESIRED_FPS) {
             self.angle += 0.01;
 
             if self.window_settings.toggle_fullscreen {
-                ggez::graphics::set_fullscreen(ctx, self.window_settings.is_fullscreen)?;
+                let fullscreen_type = if self.window_settings.is_fullscreen {
+                    conf::FullscreenType::Desktop
+                } else {
+                    conf::FullscreenType::Windowed
+                };
+                ggez::graphics::set_fullscreen(ctx, fullscreen_type)?;
                 self.window_settings.toggle_fullscreen = false;
             }
 
-            if self.window_settings.window_size_toggle {
-                let resolutions = ggez::graphics::get_fullscreen_modes(ctx, 0)?;
-                let (width, height) = resolutions[self.window_settings.resolution_index];
+            /*
+                if self.window_settings.window_size_toggle {
+                    let resolutions = ggez::graphics::fullscreen_modes(ctx, 0)?;
+                    let (width, height) = resolutions[self.window_settings.resolution_index];
 
-                ggez::graphics::set_resolution(ctx, width, height)?;
+                    ggez::graphics::set_resolution(ctx, width, height)?;
 
-                self.window_settings.window_size_toggle = false;
-            }
+                    self.window_settings.window_size_toggle = false;
+                }
+            */
         }
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::set_background_color(ctx, graphics::BLACK);
-        graphics::clear(ctx);
-        let rotation = timer::get_ticks(ctx) % 1000;
-        graphics::set_color(ctx, graphics::WHITE)?;
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        graphics::clear(ctx, graphics::BLACK);
+        let rotation = timer::ticks(ctx) % 1000;
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::Line(3.0),
             Point2::new(0.0, 0.0),
             100.0,
             4.0,
+            graphics::WHITE,
         )?;
-        graphics::draw(ctx, &self.image, Point2::new(400.0, 300.0), 0.0)?;
-        graphics::draw(ctx, &circle, Point2::new(400.0, 300.0), rotation as f32)?;
+        graphics::draw(
+            ctx,
+            &self.image,
+            (Point2::new(400.0, 300.0), 0.0, graphics::WHITE),
+        )?;
+        graphics::draw(
+            ctx,
+            &circle,
+            (Point2::new(400.0, 300.0), rotation as f32, graphics::WHITE),
+        )?;
 
         // Let's draw a grid so we can see where the window bounds are.
         const COUNT: i32 = 10;
+        let mut mb = graphics::MeshBuilder::new();
         for x in -COUNT..COUNT {
             for y in -COUNT..COUNT {
                 const SPACING: i32 = 100;
@@ -105,15 +116,18 @@ impl event::EventHandler for MainState {
                 let b = (y as f32) / (COUNT as f32);
                 // println!("R: {}", r);
                 let color = graphics::Color::new(r, 0.0, b, 1.0);
-                graphics::set_color(ctx, color)?;
-                graphics::rectangle(
-                    ctx,
-                    graphics::DrawMode::Fill,
-                    graphics::Rect::new(fx, fy, 5.0, 5.0),
-                )?
+                // graphics::rectangle(
+                //     ctx,
+                //     color,
+                //     graphics::DrawMode::Fill,
+                //     graphics::Rect::new(fx, fy, 5.0, 5.0),
+                // )?
+                mb.rectangle(DrawMode::Fill, graphics::Rect::new(fx, fy, 5.0, 5.0), color);
             }
         }
-        graphics::present(ctx);
+        let mesh = mb.build(ctx)?;
+        graphics::draw(ctx, &mesh, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
+        graphics::present(ctx)?;
         Ok(())
     }
 
@@ -121,63 +135,61 @@ impl event::EventHandler for MainState {
         &mut self,
         _ctx: &mut Context,
         _btn: event::MouseButton,
-        x: i32,
-        y: i32,
+        x: f32,
+        y: f32,
     ) {
         println!("Button clicked at: {} {}", x, y);
     }
 
-    fn key_up_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, repeat: bool) {
-        if !repeat {
-            match keycode {
-                Keycode::F => {
-                    self.window_settings.toggle_fullscreen = true;
-                    self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
-                }
-                Keycode::H => {
+    fn key_up_event(&mut self, ctx: &mut Context, keycode: KeyCode, _keymod: KeyMods) {
+        match keycode {
+            KeyCode::F => {
+                self.window_settings.toggle_fullscreen = true;
+                self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
+            }
+            /*
+            KeyCode::H => {
+                self.window_settings.window_size_toggle = true;
+                self.window_settings.resolution_index += 1;
+                self.window_settings.resolution_index %= self.window_settings.num_of_resolutions;
+            }
+            KeyCode::G => {
+                if self.window_settings.resolution_index > 0 {
                     self.window_settings.window_size_toggle = true;
-                    self.window_settings.resolution_index += 1;
+                    self.window_settings.resolution_index -= 1;
                     self.window_settings.resolution_index %=
                         self.window_settings.num_of_resolutions;
                 }
-                Keycode::G => {
-                    if self.window_settings.resolution_index > 0 {
-                        self.window_settings.window_size_toggle = true;
-                        self.window_settings.resolution_index -= 1;
-                        self.window_settings.resolution_index %=
-                            self.window_settings.num_of_resolutions;
-                    }
-                }
-                Keycode::Up => {
-                    self.zoom += 0.1;
-                    println!("Zoom is now {}", self.zoom);
-                    let (w, h) = graphics::get_size(ctx);
-                    let new_rect =
-                        graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
-                    graphics::set_screen_coordinates(ctx, new_rect).unwrap();
-                }
-                Keycode::Down => {
-                    self.zoom -= 0.1;
-                    println!("Zoom is now {}", self.zoom);
-                    let (w, h) = graphics::get_size(ctx);
-                    let new_rect =
-                        graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
-                    graphics::set_screen_coordinates(ctx, new_rect).unwrap();
-                }
-                Keycode::Space => {
-                    self.window_settings.resize_projection =
-                        !self.window_settings.resize_projection;
-                    println!(
-                        "Resizing the projection on window resize is now: {}",
-                        self.window_settings.resize_projection
-                    );
-                }
-                _ => {}
             }
+            */
+            KeyCode::Up => {
+                self.zoom += 0.1;
+                println!("Zoom is now {}", self.zoom);
+                let (w, h) = graphics::size(ctx);
+                let new_rect =
+                    graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
+                graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+            }
+            KeyCode::Down => {
+                self.zoom -= 0.1;
+                println!("Zoom is now {}", self.zoom);
+                let (w, h) = graphics::size(ctx);
+                let new_rect =
+                    graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
+                graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+            }
+            KeyCode::Space => {
+                self.window_settings.resize_projection = !self.window_settings.resize_projection;
+                println!(
+                    "Resizing the projection on window resize is now: {}",
+                    self.window_settings.resize_projection
+                );
+            }
+            _ => {}
         }
     }
 
-    fn resize_event(&mut self, ctx: &mut Context, width: u32, height: u32) {
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
         println!("Resized screen to {}, {}", width, height);
         if self.window_settings.resize_projection {
             let new_rect = graphics::Rect::new(
@@ -204,43 +216,53 @@ fn print_help() {
     println!("    ");
 }
 
-pub fn main() {
-    let matches = App::new("ggez graphics settings example")
-        .arg(
-            Arg::with_name("msaa")
-                .short("m")
-                .value_name("N")
-                .help("Number of MSAA samples to do (powers of 2 from 1 to 16)")
-                .takes_value(true),
-        )
-        .get_matches();
+#[derive(StructOpt, Debug)]
+#[structopt(name = "graphics_settings")]
+struct Opt {
+    /// What level of MSAA to try to use (1, 2, 4, 8)
+    #[structopt(short = "m", long = "msaa", default_value = "1")]
+    msaa: u32,
+    /// Use OpenGL ES instead of regular OpenGL.
+    #[structopt(long = "es")]
+    es: bool,
+}
 
-    let msaa: u32 = matches
-        .value_of("msaa")
-        .unwrap_or("1")
-        .parse()
-        .expect("Option msaa needs to be a number!");
-    let mut c = conf::Conf::new();
-    c.window_mode.fullscreen_type = conf::FullscreenType::Off;
-    c.window_setup.samples =
-        conf::NumSamples::from_u32(msaa).expect("Option msaa needs to be 1, 2, 4, 8 or 16!");
-    c.window_setup.resizable = true;
-    println!("{:?}", c);
+pub fn main() -> GameResult {
+    let opt = Opt::from_args();
 
-    let ctx = &mut Context::load_from_conf("graphics_settings", "ggez", c).unwrap();
-
-    // We add the CARGO_MANIFEST_DIR/resources do the filesystems paths so
-    // we we look in the cargo project for files.
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        ctx.filesystem.mount(&path, true);
-        println!("Adding path {:?}", path);
+        path
     } else {
-        println!("not building with cargo?");
+        path::PathBuf::from("./resources")
+    };
+
+    let mut backend = conf::Backend::default();
+    if opt.es {
+        backend = backend.gles().version(3, 0);
     }
 
+    let cb = ggez::ContextBuilder::new("graphics_settings", "ggez")
+        .window_mode(
+            conf::WindowMode::default()
+                .fullscreen_type(conf::FullscreenType::Windowed)
+                .resizable(true),
+        )
+        .window_setup(
+            conf::WindowSetup::default().samples(
+                conf::NumSamples::from_u32(opt.msaa)
+                    .expect("Option msaa needs to be 1, 2, 4, 8 or 16!"),
+            ),
+        )
+        .backend(backend)
+        .add_resource_path(resource_dir);
+
+    let (ctx, events_loop) = &mut cb.build()?;
+
+    println!("Renderer: {}", graphics::renderer_info(ctx).unwrap());
+
     print_help();
-    let state = &mut MainState::new(ctx).unwrap();
-    event::run(ctx, state).unwrap();
+    let state = &mut MainState::new(ctx)?;
+    event::run(ctx, events_loop, state)
 }

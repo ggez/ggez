@@ -4,27 +4,36 @@ rust:
   - stable
   - beta
   - nightly
-  - 1.26.0
+  - 1.31.0
 os:
   - linux
   - osx
+  - windows
 matrix:
   allow_failures:
     - rust: nightly
+addons:
+  apt:
+    packages:
+      - libssl-dev
+cache: cargo
+
+script:
+  - cargo test --verbose headless
 
 before_install:
-  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then
+  - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
       sudo apt-get -qq update
-      && sudo apt-get install -y libasound2-dev;
+      && sudo apt-get install -y libasound2-dev libudev-dev;
     fi
 
-install:
-  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then
-      wget http://libsdl.org/release/SDL2-2.0.5.tar.gz
-      && tar -xzvf SDL2-2.0.5.tar.gz
-      && pushd SDL2-2.0.5 && ./configure --prefix=/usr && make && sudo make install && popd;
-    fi
-  - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then
-      brew update
-      && brew install sdl2;
-    fi
+after_success: |
+  if [[ "${TRAVIS_OS_NAME}" == "linux" && "${TRAVIS_RUST_VERSION}" == stable ]]; then
+    RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
+    # Uncomment the following line for coveralls.io
+    # cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
+
+    # Uncomment the following two lines create and upload a report for codecov.io
+    cargo tarpaulin --out Xml
+    bash <(curl -s https://codecov.io/bash)
+  fi

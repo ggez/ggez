@@ -1,7 +1,7 @@
 [package]
 name = "ggez"
 description = "A lightweight game framework for making 2D games with minimum friction, inspired by Love2D."
-version = "0.4.4"
+version = "0.5.0-rc.0"
 homepage = "http://ggez.rs"
 repository = "https://github.com/ggez/ggez"
 documentation = "https://docs.rs/ggez"
@@ -11,9 +11,12 @@ authors = [
    "Sven-Hendrik Haase <svenstaro@gmail.com>",
    "Simon Heath <icefoxen@gmail.com>",
 ]
+
+edition = "2018"
 license = "MIT"
 readme = "README.md"
 categories = ["game-engines"]
+build = "build.rs"
 
 [badges]
 maintenance = { status = "actively-developed" }
@@ -23,36 +26,43 @@ name = "ggez"
 path = "src/lib.rs"
 
 [features]
-# If this feature is enabled, it will add <cargo root dir>/resources/ to
-# the resource search path.
-cargo-resource-root = []
 bzip2 = ["zip/bzip2"]
 default = ["bzip2"]
-mint = ["nalgebra/mint"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 
 [dependencies]
-rusttype = "0.5"
-zip = { version = "0.3", default-features = false }
+bitflags = "1.0"
+zip = { version = "0.5", default-features = false }
 app_dirs2 = "2"
 gfx = "0.17"
+gfx_core = "0.8"
 gfx_device_gl = "0.15"
-gfx_glyph = "~0.10.2"
-gfx_window_sdl = "0.8"
-image = {version = "0.19", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
+glyph_brush = "0.2"
+gfx_window_glutin = "0.28"
+glutin = "0.19"
+winit = { version = "0.18", features = ["icon_loading"] }
+image = {version = "0.20.1", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
-sdl2 = "0.31"
-rodio = "0.7"
-serde = "1.0"
-serde_derive = "1.0"
+rodio = "0.8"
+serde = "1"
+serde_derive = "1"
 toml = "0.4"
 log = "0.4"
-lyon = "0.10"
+lyon = "0.11"
 smart-default = "0.2"
-nalgebra = "0.14"
+nalgebra = {version = "0.16", features = ["mint"] }
+# Has to be the same version of mint that nalgebra uses here.
+mint = "0.5"
+gilrs = "0.6"
 
 [dev-dependencies]
 chrono = "0.4"
 fern = "0.5"
-rand = "0.4"
-clap = "2"
+rand = "0.6"
+structopt = "0.2"
+cgmath = { version = "0.16", features = ["mint"]}
+skeptic = "0.13"
+
+[build-dependencies]
+skeptic = "0.13"
+

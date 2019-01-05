@@ -11,7 +11,7 @@ environment:
         - TARGET: x86_64-pc-windows-msvc
           CHANNEL: nightly
         - TARGET: x86_64-pc-windows-msvc
-          CHANNEL: 1.26.0
+          CHANNEL: 1.31
 
 install:
     - curl -sSf -o rustup-init.exe https://win.rustup.rs
@@ -20,16 +20,8 @@ install:
     - rustc -Vv
     - cargo -V
 
-before_test:
-    - cd %TEMP%
-    - appveyor DownloadFile https://www.libsdl.org/release/SDL2-devel-2.0.5-VC.zip
-    - 7z x SDL2-devel-2.0.5-VC.zip > nul
-    - xcopy SDL2-2.0.5\lib\x64\* %APPVEYOR_BUILD_FOLDER% > nul
-    - cd %APPVEYOR_BUILD_FOLDER%
-
 test_script:
-    - cargo build --verbose
-    - cargo test --verbose
+    - cargo test --verbose headless
 
 # 'cargo test' takes care of building for us, so disable Appveyor's build stage. This prevents
 # the "directory does not contain a project or solution file" error.
@@ -38,6 +30,6 @@ build: false
 
 # For now disable the AppVeyor cache since it seems to be causing build problems
 # but should eventually be re-enabled once the issues get resolved.
-# cache:
-#     - target
-#     - C:\Users\appveyor\.cargo\registry
+cache:
+    - C:\Users\appveyor\.cargo\registry
+    # - target
