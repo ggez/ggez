@@ -667,8 +667,8 @@ pub fn projection(context: &Context) -> Matrix4 {
 /// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
 /// let param = /* DrawParam building */
 /// #   DrawParam::new();
-/// let transform: DrawTransform = param.into();
-/// graphics::push_transform(ctx, Some(transform.matrix));
+/// let transform = param.to_matrix();
+/// graphics::push_transform(ctx, Some(transform));
 /// # }
 /// ```
 pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
@@ -712,8 +712,8 @@ pub fn pop_transform(context: &mut Context) {
 /// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
 /// let param = /* DrawParam building */
 /// #   DrawParam::new();
-/// let transform: DrawTransform = param.into();
-/// graphics::set_transform(ctx, transform.matrix);
+/// let transform = param.to_matrix();
+/// graphics::set_transform(ctx, transform);
 /// # }
 /// ```
 pub fn set_transform(context: &mut Context, transform: Matrix4) {
@@ -737,14 +737,15 @@ pub fn transform(context: &Context) -> Matrix4 {
 /// transform matrix by turning it into a [`DrawTransform`](struct.DrawTransform.html):
 ///
 /// ```rust,no_run
+/// # use ggez::nalgebra as na;
 /// # use ggez::*;
 /// # use ggez::graphics::*;
 /// # fn main() {
 /// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
 /// let param = /* DrawParam building */
 /// #   DrawParam::new();
-/// let transform: DrawTransform = param.into();
-/// graphics::mul_transform(ctx, transform.matrix);
+/// let transform = param.to_matrix();
+/// graphics::mul_transform(ctx, transform);
 /// # }
 /// ```
 pub fn mul_transform(context: &mut Context, transform: Matrix4) {

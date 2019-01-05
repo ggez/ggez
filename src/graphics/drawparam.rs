@@ -93,6 +93,18 @@ impl DrawParam {
         self.offset = Point2::from(p);
         self
     }
+
+    /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
+    pub fn to_matrix(&self) -> na::Matrix4<f32> {
+        let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
+        let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
+        let offset_inverse =
+            Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
+        let axis_angle = Vec3::z() * self.rotation;
+        let rotation = Matrix4::new_rotation(axis_angle);
+        let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
+        translate * offset * rotation * scale * offset_inverse
+    }
 }
 
 /// Create a `DrawParam` from a location.
@@ -192,18 +204,11 @@ impl Default for DrawTransform {
 
 impl From<DrawParam> for DrawTransform {
     fn from(param: DrawParam) -> Self {
-        let translate = Matrix4::new_translation(&Vec3::new(param.dest.x, param.dest.y, 0.0));
-        let offset = Matrix4::new_translation(&Vec3::new(param.offset.x, param.offset.y, 0.0));
-        let offset_inverse =
-            Matrix4::new_translation(&Vec3::new(-param.offset.x, -param.offset.y, 0.0));
-        let axis_angle = Vec3::z() * param.rotation;
-        let rotation = Matrix4::new_rotation(axis_angle);
-        let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(param.scale.x, param.scale.y, 1.0));
-        let transform = translate * offset * rotation * scale * offset_inverse;
+        let transform = param.to_matrix();
         DrawTransform {
             src: param.src,
             color: param.color,
-            matrix: transform,
+            matrix: transform.into(),
         }
     }
 }
