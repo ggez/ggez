@@ -14,6 +14,10 @@ use std::time;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
+use rodio::buffer::SamplesBuffer;
+use rodio::Decoder;
+use rodio::Source as RSource;
+
 use mint;
 use rodio;
 
@@ -143,7 +147,9 @@ impl AsRef<[u8]> for SoundData {
 // code has done the data-slurping-from-zip's for us
 // but for now it works.
 pub struct Source {
-    data: io::Cursor<SoundData>,
+    channels: u16,
+    samples_rate: u32,
+    samples: Vec<f32>,
     sink: rodio::Sink,
     repeat: bool,
     fade_in: time::Duration,
@@ -164,15 +170,22 @@ impl Source {
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
         let sink = rodio::Sink::new(&context.audio_context.device());
         let cursor = io::Cursor::new(data);
+        let src = Decoder::new(cursor).unwrap();
         Ok(Source {
             sink,
-            data: cursor,
+            channels: src.channels(),
+            samples_rate: src.sample_rate(),
+            samples: src.convert_samples().collect::<Vec<f32>>(),
             repeat: false,
             fade_in: time::Duration::from_millis(0),
             speed: 1.0,
             query_interval: time::Duration::from_millis(100),
             play_time: Arc::new(AtomicUsize::new(0)),
         })
+    }
+
+    fn to_buffer(&self) -> SamplesBuffer<f32> {
+        return SamplesBuffer::new(self.channels, self.samples_rate, self.samples.clone());
     }
 
     /// Plays the `Source`; restarts the sound if currently playing.
@@ -188,15 +201,13 @@ impl Source {
         // since it may do checking and data-type detection that is
         // redundant, but it's not super expensive.
         // See https://github.com/ggez/ggez/issues/98 for discussion
-        use rodio::Source;
-        let cursor = self.data.clone();
-
         let counter = self.play_time.clone();
         let period_mus = self.query_interval.as_secs() as usize * 1_000_000
             + self.query_interval.subsec_micros() as usize;
 
         if self.repeat {
-            let sound = rodio::Decoder::new(cursor)?
+            let sound = self
+                .to_buffer()
                 .repeat_infinite()
                 .speed(self.speed)
                 .fade_in(self.fade_in)
@@ -205,7 +216,8 @@ impl Source {
                 });
             self.sink.append(sound);
         } else {
-            let sound = rodio::Decoder::new(cursor)?
+            let sound = self
+                .to_buffer()
                 .speed(self.speed)
                 .fade_in(self.fade_in)
                 .periodic_access(self.query_interval, move |_| {
@@ -330,7 +342,9 @@ impl fmt::Debug for Source {
 /// A source of audio data located in space relative to a listener's ears.
 /// Will stop playing when dropped.
 pub struct SpatialSource {
-    data: io::Cursor<SoundData>,
+    channels: u16,
+    samples_rate: u32,
+    samples: Vec<f32>,
     sink: rodio::SpatialSink,
     repeat: bool,
     fade_in: time::Duration,
@@ -361,10 +375,13 @@ impl SpatialSource {
         );
 
         let cursor = io::Cursor::new(data);
+        let src = Decoder::new(cursor).unwrap();
 
         Ok(SpatialSource {
             sink,
-            data: cursor,
+            channels: src.channels(),
+            samples_rate: src.sample_rate(),
+            samples: src.convert_samples().collect::<Vec<f32>>(),
             repeat: false,
             fade_in: time::Duration::from_millis(0),
             speed: 1.0,
@@ -374,6 +391,10 @@ impl SpatialSource {
             right_ear: [1.0, 0.0, 0.0].into(),
             emitter_position: [0.0, 0.0, 0.0].into(),
         })
+    }
+
+    fn to_buffer(&self) -> SamplesBuffer<f32> {
+        return SamplesBuffer::new(self.channels, self.samples_rate, self.samples.clone());
     }
 
     /// Plays the `SpatialSource`; restarts the sound if currently playing
@@ -386,14 +407,14 @@ impl SpatialSource {
     /// Plays the `SpatialSource`; waits until done if the sound is currently playing
     pub fn play_later(&self) -> GameResult {
         use rodio::Source;
-        let cursor = self.data.clone();
 
         let counter = self.play_time.clone();
         let period_mus = self.query_interval.as_secs() as usize * 1_000_000
             + self.query_interval.subsec_micros() as usize;
 
         if self.repeat {
-            let sound = rodio::Decoder::new(cursor)?
+            let sound = self
+                .to_buffer()
                 .repeat_infinite()
                 .speed(self.speed)
                 .fade_in(self.fade_in)
@@ -402,7 +423,8 @@ impl SpatialSource {
                 });
             self.sink.append(sound);
         } else {
-            let sound = rodio::Decoder::new(cursor)?
+            let sound = self
+                .to_buffer()
                 .speed(self.speed)
                 .fade_in(self.fade_in)
                 .periodic_access(self.query_interval, move |_| {
