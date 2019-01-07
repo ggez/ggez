@@ -36,6 +36,9 @@ where
 {
     head: usize,
     size: usize,
+    /// The number of actual samples inserted, used for
+    /// smarter averaging.
+    samples: usize,
     contents: Vec<T>,
 }
 
@@ -43,12 +46,14 @@ impl<T> LogBuffer<T>
 where
     T: Clone + Copy,
 {
+
     fn new(size: usize, init_val: T) -> LogBuffer<T> {
-        let v = vec![init_val; size];
         LogBuffer {
             head: 0,
             size,
-            contents: v,
+            contents: vec![init_val; size],
+            // Never divide by 0
+            samples: 1,
         }
     }
 
@@ -58,6 +63,7 @@ where
         self.head = (self.head + 1) % self.contents.len();
         self.contents[self.head] = item;
         self.size = cmp::min(self.size + 1, self.contents.len());
+        self.samples += 1;
     }
 
     /// Returns a slice pointing at the contents of the buffer.
@@ -68,7 +74,11 @@ where
     /// We're only using this to log FPS for a short time,
     /// so we don't care for the second or so when it's inaccurate.
     fn contents(&self) -> &[T] {
-        &self.contents
+        if self.samples > self.size {
+            &self.contents
+        } else {
+            &self.contents[..self.samples]
+        }
     }
 
     /// Returns the most recent value in the buffer.
@@ -93,11 +103,6 @@ const TIME_LOG_FRAMES: usize = 200;
 impl TimeContext {
     /// Creates a new `TimeContext` and initializes the start to this instant.
     pub fn new() -> TimeContext {
-        // This fills the empty log-buffer with 60 fps frame times,
-        // which is kind of silly but smooths out the initial time claiming
-        // 1000's of fps until the log buffer actually fills.
-        // TODO: Would be better to make the log buffer know its proper length
-        // or filter out placeholders or something, but eh.
         let initial_dt = time::Duration::from_millis(16);
         TimeContext {
             init_instant: time::Instant::now(),
@@ -143,13 +148,18 @@ pub fn delta(ctx: &Context) -> time::Duration {
 /// over the last 200 frames.
 pub fn average_delta(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
-    let init = time::Duration::new(0, 0);
-    let sum = tc
+    let sum: time::Duration = tc
         .frame_durations
         .contents()
         .iter()
-        .fold(init, |d1, d2| d1 + *d2);
-    sum / (tc.frame_durations.size as u32)
+        .sum();
+    // If our buffer is actually full, divide by its size.
+    // Otherwise divide by the number of samples we've added
+    if tc.frame_durations.samples > tc.frame_durations.size {
+        sum / (tc.frame_durations.size as u32)
+    } else {
+        sum / (tc.frame_durations.samples as u32)
+    }
 }
 
 /// A convenience function to convert a Rust `Duration` type
