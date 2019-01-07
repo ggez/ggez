@@ -7,7 +7,7 @@ use std::f32;
 use std::fmt;
 use std::io::Read;
 use std::path;
-use std::sync::{Arc, RwLock};
+use std::cell::RefCell;
 
 use super::*;
 
@@ -20,7 +20,7 @@ pub const DEFAULT_FONT_SCALE: f32 = 16.0;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Font {
     font_id: FontId,
-    // TODO: Add DebugId?  It makes Font::default() less convenient.
+    // Add DebugId?  It makes Font::default() less convenient.
 }
 
 /// A piece of text with optional color, font and font scale information.
@@ -102,7 +102,6 @@ impl From<String> for TextFragment {
     }
 }
 
-// TODO: Scale ergonomics need to be better?
 impl<T> From<(T, Font, f32)> for TextFragment
 where
     T: Into<TextFragment>,
@@ -137,7 +136,7 @@ impl Default for CachedMetrics {
 /// It implements [`Drawable`](trait.Drawable.html) so it can be drawn immediately with
 /// [`graphics::draw()`](fn.draw.html), or many of them can be queued with [`graphics::queue_text()`](fn.queue_text.html)
 /// and then all drawn at once with [`graphics::draw_queued_text()`](fn.draw_queued_text.html).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Text {
     fragments: Vec<TextFragment>,
     // TODO: make it do something, maybe.
@@ -146,26 +145,7 @@ pub struct Text {
     layout: Layout<glyph_brush::BuiltInLineBreaker>,
     font_id: FontId,
     font_scale: Scale,
-    cached_metrics: Arc<RwLock<CachedMetrics>>,
-}
-
-/// This has to be explicit. Derived `Clone` clones the `Arc`, so clones end up
-/// sharing the metrics instead of the proper behavior which is to have different
-/// ones for each `Text` object, since `Text` may be mutated.
-///
-/// TODO: Can we just ditch the `Arc` entirely then?
-impl Clone for Text {
-    fn clone(&self) -> Self {
-        Text {
-            fragments: self.fragments.clone(),
-            blend_mode: self.blend_mode,
-            bounds: self.bounds,
-            layout: self.layout,
-            font_id: self.font_id,
-            font_scale: self.font_scale,
-            cached_metrics: Arc::new(RwLock::new(CachedMetrics::default())),
-        }
-    }
+    cached_metrics: RefCell<CachedMetrics>,
 }
 
 impl Default for Text {
@@ -177,7 +157,7 @@ impl Default for Text {
             layout: Layout::default(),
             font_id: FontId::default(),
             font_scale: Scale::uniform(DEFAULT_FONT_SCALE),
-            cached_metrics: Arc::new(RwLock::new(CachedMetrics::default())),
+            cached_metrics: RefCell::new(CachedMetrics::default()),
         }
     }
 }
@@ -301,19 +281,19 @@ impl Text {
     }
 
     fn invalidate_cached_metrics(&mut self) {
-        if let Ok(mut metrics) = self.cached_metrics.write() {
+        if let Ok(mut metrics) = self.cached_metrics.try_borrow_mut() {
             *metrics = CachedMetrics::default();
             // Returning early avoids a double-borrow in the "else"
             // part.
             return;
         }
-        warn!("Cached metrics RwLock has been poisoned.");
-        self.cached_metrics = Arc::new(RwLock::new(CachedMetrics::default()));
+        warn!("Cached metrics RefCell has been poisoned.");
+        self.cached_metrics = RefCell::new(CachedMetrics::default());
     }
 
     /// Returns the string that the text represents.
     pub fn contents(&self) -> String {
-        if let Ok(metrics) = self.cached_metrics.read() {
+        if let Ok(metrics) = self.cached_metrics.try_borrow() {
             if let Some(ref string) = metrics.string {
                 return string.clone();
             }
@@ -324,7 +304,7 @@ impl Text {
             .map(|frag| frag.text.as_str())
             .collect();
 
-        if let Ok(mut metrics) = self.cached_metrics.write() {
+        if let Ok(mut metrics) = self.cached_metrics.try_borrow_mut() {
             metrics.string = Some(string_accm.clone());
         }
         string_accm
@@ -350,7 +330,7 @@ impl Text {
             }
         }
         let (width, height) = (max_width as u32, max_height as u32);
-        if let Ok(mut metrics) = self.cached_metrics.write() {
+        if let Ok(mut metrics) = self.cached_metrics.try_borrow_mut() {
             metrics.width = Some(width);
             metrics.height = Some(height);
         }
@@ -359,7 +339,7 @@ impl Text {
 
     /// Returns the width and height of the formatted and wrapped text.
     pub fn dimensions(&self, context: &mut Context) -> (u32, u32) {
-        if let Ok(metrics) = self.cached_metrics.read() {
+        if let Ok(metrics) = self.cached_metrics.try_borrow() {
             if let (Some(width), Some(height)) = (metrics.width, metrics.height) {
                 return (width, height);
             }
@@ -504,10 +484,6 @@ where
                 // Ignore returned sprite index.
                 let _ = spritebatch.add(*p);
             }
-            // TODO: Augh, double-borrow
-            // let s = ctx.gfx_context.glyph_state.clone();
-            // let s = &ctx.gfx_context.glyph_state;
-            // ctx.gfx_context.glyph_state.draw(ctx, param)?;
             draw(ctx, &*spritebatch, param)?;
         }
         Err(glyph_brush::BrushError::TextureTooSmall { suggested }) => {
