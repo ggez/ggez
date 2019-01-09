@@ -35,7 +35,7 @@ version = "0.1.0"
 authors = ["Awesome Person awesome@person.com"]
 
 [dependencies]
-ggez = "0.4"
+ggez = "0.5.0-rc.0"
 ```
 
 ### ✔ Check Project Setup
@@ -234,13 +234,19 @@ fn update(&mut self, ctx: &mut Context) -> GameResult {
 }
 ```
 
-And now to let us see the changes in `State`, you need to modify the `draw` callback.
+To see the changes in `State`, you need to modify the `draw` callback.
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
     println!("Hello ggez! dt = {}ns", self.dt.subsec_nanos());
     Ok(())
 }
 ```
+
+Now let's start the event loop by adding this to end of `main` fn:
+```rust,skt-draw,no_run
+event::run(ctx, event_loop, state);
+```
+
 Every frame, print out `Hello ggez! dt = {}ns`. This will print once a frame. Which is going to be a lot.
 
 ### ✔ Check Program
