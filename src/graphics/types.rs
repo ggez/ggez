@@ -165,6 +165,70 @@ pub const BLACK: Color = Color {
     a: 1.0,
 };
 
+/// CLEAR
+pub const CLEAR: Color = Color {
+    r: 0.0,
+    g: 0.0,
+    b: 0.0,
+    a: 0.0,
+};
+
+/// Red
+pub const RED: Color = Color {
+    r: 1.0,
+    g: 0.0,
+    b: 0.0,
+    a: 1.0,
+};
+
+/// Blue
+pub const BLUE: Color = Color {
+    r: 0.0,
+    g: 0.0,
+    b: 1.0,
+    a: 1.0,
+};
+
+/// Green
+pub const GREEN: Color = Color {
+    r: 0.0,
+    g: 1.0,
+    b: 0.0,
+    a: 1.0,
+};
+
+/// Cyan
+pub const CYAN: Color = Color {
+    r: 0.0,
+    g: 1.0,
+    b: 1.0,
+    a: 1.0,
+};
+
+/// Gray
+pub const GRAY: Color = Color {
+    r: 0.5,
+    g: 0.5,
+    b: 0.5,
+    a: 1.0,
+};
+
+/// Magenta
+pub const MAGENTA: Color = Color {
+    r: 1.0,
+    g: 0.0,
+    b: 1.0,
+    a: 1.0,
+};
+
+/// Yellow
+pub const YELLOW: Color = Color {
+    r: 1.0,
+    g: 0.92,
+    b: 0.016,
+    a: 1.0,
+};
+
 impl Color {
     /// Create a new Color from four f32's in the range [0.0-1.0]
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
