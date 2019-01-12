@@ -82,29 +82,14 @@
 #![warn(bare_trait_objects)]
 #![warn(missing_copy_implementations)]
 
-#[macro_use]
-extern crate bitflags;
-extern crate app_dirs2;
-#[macro_use]
-extern crate gfx;
-extern crate gfx_device_gl;
-extern crate gfx_window_glutin;
-extern crate glutin;
-extern crate glyph_brush;
-extern crate image;
-#[macro_use]
-extern crate log;
-extern crate lyon;
+#[macro_use] extern crate bitflags;
+#[macro_use] extern crate gfx;
+#[macro_use] extern crate log;
+#[macro_use] extern crate serde_derive;
+#[macro_use] extern crate smart_default;
+
 pub extern crate mint;
 pub extern crate nalgebra;
-extern crate rodio;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate smart_default;
-extern crate gilrs;
-extern crate toml;
-extern crate zip;
 
 pub mod audio;
 pub mod conf;
