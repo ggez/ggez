@@ -62,7 +62,7 @@ pub fn main() -> GameResult {
         use ggez::graphics::Drawable;
         graphics::Mesh::new_circle(
             ctx,
-            DrawMode::Fill,
+            DrawMode::fill(),
             cgmath::Point2::new(0.0, 0.0),
             100.0,
             2.0,

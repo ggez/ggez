@@ -34,7 +34,7 @@
 //!         // Create a circle at `position_x` and draw
 //!         let circle = graphics::Mesh::new_circle(
 //!             ctx,
-//!             graphics::DrawMode::Fill,
+//!             graphics::DrawMode::fill(),
 //!             na::Point2::new(self.position_x, 380.0),
 //!             100.0,
 //!             2.0,

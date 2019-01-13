@@ -372,14 +372,22 @@ impl From<LinearColor> for [f32; 4] {
 /// filled or as an outline.
 #[derive(Debug, Copy, Clone)]
 pub enum DrawMode {
-    /// A stroked line with the given width.
-    Line(f32),
-    /// A filled shape.
-    Fill,
     /// A stroked line with given parameters, see `StrokeOptions` documentation.
-    CustomLine(StrokeOptions),
+    Stroke(StrokeOptions),
     /// A filled shape with given parameters, see `FillOptions` documentation.
-    CustomFill(FillOptions),
+    Fill(FillOptions),
+}
+
+impl DrawMode {
+    /// Constructs a DrawMode that draws a stroke with the given width
+    pub fn stroke(width: f32) -> DrawMode {
+        DrawMode::Stroke(StrokeOptions::default().with_line_width(width))
+    }
+
+    /// Constructs a DrawMode that fills shapes
+    pub fn fill() -> DrawMode {
+        DrawMode::Fill(FillOptions::default())
+    }
 }
 
 /// Specifies what blending method to use when scaling up/down images.

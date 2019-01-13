@@ -23,7 +23,7 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
 /// let mesh: Mesh = MeshBuilder::new()
 ///     .line(&[Point2::new(20.0, 20.0), Point2::new(40.0, 20.0)], 4.0, (255, 0, 0).into())?
-///     .circle(DrawMode::Fill, Point2::new(60.0, 38.0), 40.0, 1.0, (0, 255, 0).into())
+///     .circle(DrawMode::fill(), Point2::new(60.0, 38.0), 40.0, 1.0, (0, 255, 0).into())
 ///     .build(ctx)?;
 /// # Ok(()) }
 /// ```
@@ -48,8 +48,8 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 ///             graphics::WHITE,
 ///         )?
 ///         // Add vertices for an exclamation mark!
-///         .ellipse(DrawMode::Fill, na::Point2::new(0.0, 25.0), 2.0, 15.0, 2.0, graphics::WHITE,)
-///         .circle(DrawMode::Fill, na::Point2::new(0.0, 45.0), 2.0, 2.0, graphics::WHITE,)
+///         .ellipse(DrawMode::fill(), na::Point2::new(0.0, 25.0), 2.0, 15.0, 2.0, graphics::WHITE,)
+///         .circle(DrawMode::fill(), na::Point2::new(0.0, 45.0), 2.0, 2.0, graphics::WHITE,)
 ///         // Finalize then unwrap. Unwrapping via `?` operator either yields the final `Mesh`,
 ///         // or propagates the error (note return type).
 ///         .build(ctx)?;
@@ -86,7 +86,7 @@ impl MeshBuilder {
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
-        self.polyline(DrawMode::Line(width), points, color)
+        self.polyline(DrawMode::stroke(width), points, color)
     }
 
     /// Create a new mesh for a circle.
@@ -108,32 +108,7 @@ impl MeshBuilder {
             let buffers = &mut self.buffer;
             let vb = VertexBuilder { color };
             match mode {
-                DrawMode::Fill => {
-                    // These builders have to be in separate match arms 'cause they're actually
-                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                    // GeometryBuilder<FillVertex>
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let fill_options = t::FillOptions::default().with_tolerance(tolerance);
-                    let _ = t::basic_shapes::fill_circle(
-                        t::math::point(point.x, point.y),
-                        radius,
-                        &fill_options,
-                        builder,
-                    );
-                }
-                DrawMode::Line(line_width) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let options = t::StrokeOptions::default()
-                        .with_line_width(line_width)
-                        .with_tolerance(tolerance);
-                    let _ = t::basic_shapes::stroke_circle(
-                        t::math::point(point.x, point.y),
-                        radius,
-                        &options,
-                        builder,
-                    );
-                }
-                DrawMode::CustomFill(fill_options) => {
+                DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::fill_circle(
                         t::math::point(point.x, point.y),
@@ -142,7 +117,7 @@ impl MeshBuilder {
                         builder,
                     );
                 }
-                DrawMode::CustomLine(options) => {
+                DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::stroke_circle(
                         t::math::point(point.x, point.y),
@@ -176,31 +151,7 @@ impl MeshBuilder {
             let point = point.into();
             let vb = VertexBuilder { color };
             match mode {
-                DrawMode::Fill => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let fill_options = t::FillOptions::default().with_tolerance(tolerance);
-                    let _ = t::basic_shapes::fill_ellipse(
-                        t::math::point(point.x, point.y),
-                        t::math::vector(radius1, radius2),
-                        t::math::Angle { radians: 0.0 },
-                        &fill_options,
-                        builder,
-                    );
-                }
-                DrawMode::Line(line_width) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let options = t::StrokeOptions::default()
-                        .with_line_width(line_width)
-                        .with_tolerance(tolerance);
-                    let _ = t::basic_shapes::stroke_ellipse(
-                        t::math::point(point.x, point.y),
-                        t::math::vector(radius1, radius2),
-                        t::math::Angle { radians: 0.0 },
-                        &options,
-                        builder,
-                    );
-                }
-                DrawMode::CustomFill(fill_options) => {
+                DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::fill_ellipse(
                         t::math::point(point.x, point.y),
@@ -210,7 +161,7 @@ impl MeshBuilder {
                         builder,
                     );
                 }
-                DrawMode::CustomLine(options) => {
+                DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::stroke_ellipse(
                         t::math::point(point.x, point.y),
@@ -270,23 +221,12 @@ impl MeshBuilder {
             });
             let vb = VertexBuilder { color };
             match mode {
-                DrawMode::Fill => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let tessellator = &mut t::FillTessellator::new();
-                    let options = t::FillOptions::default();
-                    let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)?;
-                }
-                DrawMode::Line(width) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let options = t::StrokeOptions::default().with_line_width(width);
-                    let _ = t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
-                }
-                DrawMode::CustomFill(options) => {
+                DrawMode::Fill(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let tessellator = &mut t::FillTessellator::new();
                     let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)?;
                 }
-                DrawMode::CustomLine(options) => {
+                DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
                 }
@@ -302,24 +242,11 @@ impl MeshBuilder {
             let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
             let vb = VertexBuilder { color };
             match mode {
-                DrawMode::Fill => {
-                    // These builders have to be in separate match arms 'cause they're actually
-                    // different types; one is GeometryBuilder<StrokeVertex> and the other is
-                    // GeometryBuilder<FillVertex>
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let fill_options = t::FillOptions::default();
-                    let _ = t::basic_shapes::fill_rectangle(&rect, &fill_options, builder);
-                }
-                DrawMode::Line(line_width) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let options = t::StrokeOptions::default().with_line_width(line_width);
-                    let _ = t::basic_shapes::stroke_rectangle(&rect, &options, builder);
-                }
-                DrawMode::CustomFill(fill_options) => {
+                DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::fill_rectangle(&rect, &fill_options, builder);
                 }
-                DrawMode::CustomLine(options) => {
+                DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::stroke_rectangle(&rect, &options, builder);
                 }
@@ -486,7 +413,7 @@ impl Mesh {
         P: Into<mint::Point2<f32>> + Clone,
     {
         let mut mb = MeshBuilder::new();
-        let _ = mb.polyline(DrawMode::Line(width), points, color);
+        let _ = mb.polyline(DrawMode::stroke(width), points, color);
         mb.build(ctx)
     }
 

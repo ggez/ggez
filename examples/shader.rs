@@ -49,7 +49,7 @@ impl event::EventHandler for MainState {
 
         graphics::Mesh::new_circle(
             ctx,
-            DrawMode::Fill,
+            DrawMode::fill(),
             cgmath::Point2::new(100.0, 300.0),
             100.0,
             2.0,
@@ -62,7 +62,7 @@ impl event::EventHandler for MainState {
             self.shader.send(ctx, self.dim)?;
             graphics::Mesh::new_circle(
                 ctx,
-                DrawMode::Fill,
+                DrawMode::fill(),
                 cgmath::Point2::new(400.0, 300.0),
                 100.0,
                 2.0,
@@ -73,7 +73,7 @@ impl event::EventHandler for MainState {
 
         graphics::Mesh::new_circle(
             ctx,
-            DrawMode::Fill,
+            DrawMode::fill(),
             cgmath::Point2::new(700.0, 300.0),
             100.0,
             2.0,

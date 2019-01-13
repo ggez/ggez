@@ -73,7 +73,7 @@ Here is the code for a [circle](https://docs.rs/ggez/0.4.0/ggez/graphics/struct.
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
     let circle = graphics::Mesh::new_circle(
         ctx,
-        graphics::DrawMode::Fill,
+        graphics::DrawMode::fill(),
         mint::Point2{x: 200.0, y: 300.0},
         100.0,
         0.1,
@@ -90,7 +90,7 @@ Why did I just write like a million?!
 Well, `ctx` is needed to tell `ggez` where you are drawing to.
 `ctx` is what is passed into `update` and `draw` already.
 
-[`graphics::DrawMode::Fill`](https://docs.rs/ggez/0.4.0/ggez/graphics/enum.DrawMode.html) is choosing between outlining the circle or filling it in.
+[`graphics::DrawMode::fill()`](https://docs.rs/ggez/0.4.0/ggez/graphics/enum.DrawMode.html) is choosing between outlining the circle or filling it in.
 
 Point, now here is one we expected.
 This is the origin of the circle.
@@ -109,7 +109,7 @@ Let's try it out with some quick code:
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
     let circle = graphics::Mesh::new_circle(
         ctx,
-        graphics::DrawMode::Fill,
+        graphics::DrawMode::fill(),
         mint::Point2{x: 200.0, y: 300.0},
         100.0,
         0.1,
@@ -130,7 +130,7 @@ Here is the code for a [rectangle](https://docs.rs/ggez/0.4.0/ggez/graphics/fn.r
 ```rust,skt-expression,no_run
 graphics::Mesh::new_rectangle(
     ctx,
-    graphics::DrawMode::Fill,
+    graphics::DrawMode::fill(),
     graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
     graphics::WHITE,
 )?;
@@ -152,7 +152,7 @@ Let's try it out with some quick code:
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
     let rect = graphics::Mesh::new_rectangle(
         ctx,
-        graphics::DrawMode::Fill,
+        graphics::DrawMode::fill(),
         graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
         graphics::WHITE,
     )?;
@@ -228,10 +228,10 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Make the shape...
         let mesh = match shape {
             &Shape::Rectangle(rect) => {
-                Mesh::new_rectangle(ctx, graphics::DrawMode::Fill, rect, graphics::WHITE)?
+                Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, graphics::WHITE)?
             }
             &Shape::Circle(origin, radius) => {
-                Mesh::new_circle(ctx, graphics::DrawMode::Fill, origin, radius, 0.1, graphics::WHITE)?
+                Mesh::new_circle(ctx, graphics::DrawMode::fill(), origin, radius, 0.1, graphics::WHITE)?
             }
         };
 

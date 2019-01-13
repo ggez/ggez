@@ -86,7 +86,7 @@ impl event::EventHandler for MainState {
         let rotation = timer::ticks(ctx) % 1000;
         let circle = graphics::Mesh::new_circle(
             ctx,
-            DrawMode::Line(3.0),
+            DrawMode::stroke(3.0),
             Point2::new(0.0, 0.0),
             100.0,
             4.0,
@@ -119,10 +119,10 @@ impl event::EventHandler for MainState {
                 // graphics::rectangle(
                 //     ctx,
                 //     color,
-                //     graphics::DrawMode::Fill,
+                //     graphics::DrawMode::fill(),
                 //     graphics::Rect::new(fx, fy, 5.0, 5.0),
                 // )?
-                mb.rectangle(DrawMode::Fill, graphics::Rect::new(fx, fy, 5.0, 5.0), color);
+                mb.rectangle(DrawMode::fill(), graphics::Rect::new(fx, fy, 5.0, 5.0), color);
             }
         }
         let mesh = mb.build(ctx)?;

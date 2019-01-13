@@ -56,7 +56,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
     )?;
 
     mb.ellipse(
-        DrawMode::Fill,
+        DrawMode::fill(),
         Point2::new(600.0, 200.0),
         50.0,
         120.0,
@@ -65,7 +65,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
     );
 
     mb.circle(
-        DrawMode::Fill,
+        DrawMode::fill(),
         Point2::new(600.0, 380.0),
         40.0,
         1.0,
@@ -150,24 +150,24 @@ impl event::EventHandler for MainState {
 
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         let r1 =
-            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::Fill, rect, graphics::WHITE)?;
+            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, graphics::WHITE)?;
         graphics::draw(ctx, &r1, DrawParam::default())?;
 
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         let r2 = graphics::Mesh::new_rectangle(
             ctx,
-            graphics::DrawMode::Line(1.0),
+            graphics::DrawMode::stroke(1.0),
             rect,
             graphics::Color::new(1.0, 0.0, 0.0, 1.0),
         )?;
         graphics::draw(ctx, &r2, DrawParam::default())?;
-        // graphics::rectangle(ctx, graphics::WHITE, graphics::DrawMode::Fill, rect)?;
+        // graphics::rectangle(ctx, graphics::WHITE, graphics::DrawMode::fill(), rect)?;
 
         // let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         // graphics::rectangle(
         //     ctx,
         //     graphics::Color::new(1.0, 0.0, 0.0, 1.0),
-        //     graphics::DrawMode::Line(1.0),
+        //     graphics::DrawMode::stroke(1.0),
         //     rect,
         // )?;
 
