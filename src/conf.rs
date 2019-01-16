@@ -162,7 +162,7 @@ impl WindowMode {
 /// # fn main() { assert_eq!(
 /// WindowSetup {
 ///     title: "An easy, good game".to_owned(),
-///     samples: NumSamples::One,
+///     samples: NumSamples::Zero,
 ///     vsync: true,
 ///     transparent: false,
 ///     icon: "".to_owned(),
@@ -176,7 +176,7 @@ pub struct WindowSetup {
     #[default(String::from("An easy, good game"))]
     pub title: String,
     /// Number of samples to use for multisample anti-aliasing.
-    #[default(NumSamples::One)]
+    #[default(NumSamples::Zero)]
     pub samples: NumSamples,
     /// Whether or not to enable vsync.
     #[default = true]
@@ -269,7 +269,7 @@ pub enum Backend {
     /// OpenGL ES, defaults to 3.0.  Used for phones and other mobile
     /// devices.  Using something older
     /// than 3.0 starts to running into sticky limitations, particularly
-    /// with instancing, but might be possible.
+    /// with instanced drawing, but might be possible.
     OpenGLES {
         /// OpenGL ES major version
         #[default = 3]
@@ -315,6 +315,8 @@ impl Backend {
 /// The possible number of samples for multisample anti-aliasing.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum NumSamples {
+    /// Multisampling disabled.
+    Zero = 0,
     /// One sample
     One = 1,
     /// Two samples
@@ -332,6 +334,7 @@ impl NumSamples {
     /// Returns None if `i` is invalid.
     pub fn from_u32(i: u32) -> Option<NumSamples> {
         match i {
+            0 => Some(NumSamples::Zero),
             1 => Some(NumSamples::One),
             2 => Some(NumSamples::Two),
             4 => Some(NumSamples::Four),

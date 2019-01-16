@@ -82,11 +82,16 @@
 #![warn(bare_trait_objects)]
 #![warn(missing_copy_implementations)]
 
-#[macro_use] extern crate bitflags;
-#[macro_use] extern crate gfx;
-#[macro_use] extern crate log;
-#[macro_use] extern crate serde_derive;
-#[macro_use] extern crate smart_default;
+#[macro_use]
+extern crate bitflags;
+#[macro_use]
+extern crate gfx;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate serde_derive;
+#[macro_use]
+extern crate smart_default;
 
 pub extern crate mint;
 pub extern crate nalgebra;

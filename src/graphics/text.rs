@@ -3,11 +3,11 @@ use glyph_brush::{self, Layout, SectionText, VariedSection};
 pub use glyph_brush::{rusttype::Scale, FontId, HorizontalAlign as Align};
 use mint;
 use std::borrow::Cow;
+use std::cell::RefCell;
 use std::f32;
 use std::fmt;
 use std::io::Read;
 use std::path;
-use std::cell::RefCell;
 
 use super::*;
 

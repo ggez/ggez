@@ -46,7 +46,6 @@ impl<T> LogBuffer<T>
 where
     T: Clone + Copy,
 {
-
     fn new(size: usize, init_val: T) -> LogBuffer<T> {
         LogBuffer {
             head: 0,
@@ -148,11 +147,7 @@ pub fn delta(ctx: &Context) -> time::Duration {
 /// over the last 200 frames.
 pub fn average_delta(ctx: &Context) -> time::Duration {
     let tc = &ctx.timer_context;
-    let sum: time::Duration = tc
-        .frame_durations
-        .contents()
-        .iter()
-        .sum();
+    let sum: time::Duration = tc.frame_durations.contents().iter().sum();
     // If our buffer is actually full, divide by its size.
     // Otherwise divide by the number of samples we've added
     if tc.frame_durations.samples > tc.frame_durations.size {
