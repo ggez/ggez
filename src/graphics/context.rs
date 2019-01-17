@@ -9,6 +9,7 @@ use winit::{self, dpi};
 
 use crate::conf::{FullscreenType, WindowMode, WindowSetup};
 use crate::context::DebugId;
+use crate::filesystem::Filesystem;
 use crate::graphics::*;
 
 use crate::error::GameResult;
@@ -76,6 +77,7 @@ pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec>;
 impl GraphicsContextGeneric<GlBackendSpec> {
     /// Create a new GraphicsContext
     pub(crate) fn new(
+        filesystem: &mut Filesystem,
         events_loop: &winit::EventsLoop,
         window_setup: &WindowSetup,
         window_mode: WindowMode,
@@ -122,7 +124,13 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 
         window_builder = if !window_setup.icon.is_empty() {
             use winit::Icon;
-            window_builder.with_window_icon(Some(Icon::from_path(&window_setup.icon)?))
+            use std::io::Read;
+
+            let mut buf = Vec::new();
+            let mut reader = filesystem.open(&window_setup.icon)?;
+            let _ = reader.read_to_end(&mut buf)?;
+
+            window_builder.with_window_icon(Some(Icon::from_bytes(&buf)?))
         } else {
             window_builder
         };
