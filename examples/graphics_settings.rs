@@ -9,7 +9,7 @@ extern crate structopt;
 
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
-use ggez::graphics::{self, DrawMode, Drawable};
+use ggez::graphics::{self, DrawMode};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use structopt::StructOpt;

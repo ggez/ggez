@@ -5,7 +5,7 @@ extern crate rand;
 use ggez::audio;
 use ggez::event;
 use ggez::filesystem;
-use ggez::graphics::{self, Color, Drawable};
+use ggez::graphics::{self, Color};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
@@ -96,13 +96,13 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &self.text, (dest_point, 0.0, color))?;
 
         let dest_point2 = cgmath::Point2::new(0.0, 256.0);
-        graphics::Mesh::new_rectangle(
+        let rectangle = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::Fill,
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
             Color::from((0, 0, 0, 255)),
-        )?
-        .draw(ctx, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
+        )?;
+        graphics::draw(ctx, &rectangle, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
         graphics::draw(
             ctx,
             &self.pixel_sized_text,

@@ -359,11 +359,7 @@ impl Text {
 }
 
 impl Drawable for Text {
-    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
-    where
-        D: Into<DrawParam>,
-    {
-        let param = param.into();
+    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
         queue_text(ctx, self, Point2::new(0.0, 0.0), Some(param.color));
         draw_queued_text(ctx, param)

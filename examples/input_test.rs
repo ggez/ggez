@@ -4,7 +4,7 @@ extern crate cgmath;
 extern crate ggez;
 
 use ggez::event::{self, Axis, Button, KeyCode, KeyMods, MouseButton};
-use ggez::graphics::{self, DrawMode, Drawable};
+use ggez::graphics::{self, DrawMode};
 use ggez::input;
 use ggez::{Context, GameResult};
 
@@ -41,7 +41,7 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
-        graphics::Mesh::new_rectangle(
+        let rectangle = graphics::Mesh::new_rectangle(
             ctx,
             DrawMode::Fill,
             graphics::Rect {
@@ -51,8 +51,8 @@ impl event::EventHandler for MainState {
                 h: 300.0,
             },
             graphics::WHITE,
-        )?
-        .draw(ctx, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
+        )?;
+        graphics::draw(ctx, &rectangle, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
         graphics::present(ctx)?;
         Ok(())
     }
