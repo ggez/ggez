@@ -320,11 +320,7 @@ impl fmt::Debug for Image {
 }
 
 impl Drawable for Image {
-    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
-    where
-        D: Into<DrawParam>,
-    {
-        let param = param.into();
+    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
 
         let gfx = &mut ctx.gfx_context;

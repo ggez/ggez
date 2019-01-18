@@ -954,9 +954,7 @@ pub trait Drawable {
     /// Draws the drawable onto the rendering target.
     ///
     /// ALSO TODO: Expand docs
-    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
-    where
-        D: Into<DrawParam>;
+    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult;
 
     /// Sets the blend mode to be used when drawing this drawable.
     /// This overrides the general [`graphics::set_blend_mode()`](fn.set_blend_mode.html).
