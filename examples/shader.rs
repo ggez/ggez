@@ -6,7 +6,7 @@ extern crate cgmath;
 extern crate ggez;
 
 use ggez::event;
-use ggez::graphics::{self, DrawMode, Drawable};
+use ggez::graphics::{self, DrawMode};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
@@ -47,39 +47,39 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
-        graphics::Mesh::new_circle(
+        let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),
             cgmath::Point2::new(100.0, 300.0),
             100.0,
             2.0,
             graphics::WHITE,
-        )?
-        .draw(ctx, (cgmath::Point2::new(0.0, 0.0),))?;
+        )?;
+        graphics::draw(ctx, &circle, (cgmath::Point2::new(0.0, 0.0),))?;
 
         {
             let _lock = graphics::use_shader(ctx, &self.shader);
             self.shader.send(ctx, self.dim)?;
-            graphics::Mesh::new_circle(
+            let circle = graphics::Mesh::new_circle(
                 ctx,
                 DrawMode::fill(),
                 cgmath::Point2::new(400.0, 300.0),
                 100.0,
                 2.0,
                 graphics::WHITE,
-            )?
-            .draw(ctx, (cgmath::Point2::new(0.0, 0.0),))?;
+            )?;
+            graphics::draw(ctx, &circle, (cgmath::Point2::new(0.0, 0.0),))?;
         }
 
-        graphics::Mesh::new_circle(
+        let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),
             cgmath::Point2::new(700.0, 300.0),
             100.0,
             2.0,
             graphics::WHITE,
-        )?
-        .draw(ctx, (cgmath::Point2::new(0.0, 0.0),))?;
+        )?;
+        graphics::draw(ctx, &circle, (cgmath::Point2::new(0.0, 0.0),))?;
 
         graphics::present(ctx)?;
         Ok(())

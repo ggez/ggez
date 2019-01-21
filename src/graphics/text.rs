@@ -3,11 +3,11 @@ use glyph_brush::{self, Layout, SectionText, VariedSection};
 pub use glyph_brush::{rusttype::Scale, FontId, HorizontalAlign as Align};
 use mint;
 use std::borrow::Cow;
+use std::cell::RefCell;
 use std::f32;
 use std::fmt;
 use std::io::Read;
 use std::path;
-use std::cell::RefCell;
 
 use super::*;
 
@@ -359,11 +359,7 @@ impl Text {
 }
 
 impl Drawable for Text {
-    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
-    where
-        D: Into<DrawParam>,
-    {
-        let param = param.into();
+    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
         queue_text(ctx, self, Point2::new(0.0, 0.0), Some(param.color));
         draw_queued_text(ctx, param)

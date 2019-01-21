@@ -59,16 +59,15 @@ pub fn main() -> GameResult {
 
         // Draw
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
-        use ggez::graphics::Drawable;
-        graphics::Mesh::new_circle(
+        let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),
             cgmath::Point2::new(0.0, 0.0),
             100.0,
             2.0,
             graphics::WHITE,
-        )?
-        .draw(ctx, (cgmath::Point2::new(position, 380.0),))?;
+        )?;
+        graphics::draw(ctx, &circle, (cgmath::Point2::new(position, 380.0),))?;
         graphics::present(ctx)?;
         ggez::timer::yield_now();
     }

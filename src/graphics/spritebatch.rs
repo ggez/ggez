@@ -151,11 +151,7 @@ impl SpriteBatch {
 }
 
 impl graphics::Drawable for SpriteBatch {
-    fn draw<D>(&self, ctx: &mut Context, param: D) -> GameResult
-    where
-        D: Into<DrawParam>,
-    {
-        let param = param.into();
+    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
         self.flush(ctx, &self.image)?;
