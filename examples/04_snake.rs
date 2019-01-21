@@ -222,10 +222,10 @@ impl Food {
         // Then we draw a rectangle with the Fill draw mode, and we convert the
         // Food's position into a `ggez::Rect` using `.into()` which we can do
         // since we implemented `From<GridPosition>` for `Rect` earlier.
-        // graphics::rectangle(ctx, color, graphics::DrawMode::Fill, self.pos.into())
+        // graphics::rectangle(ctx, color, graphics::DrawMode::fill(), self.pos.into())
 
         let rectangle =
-            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::Fill, self.pos.into(), color)?;
+            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode:fill(), self.pos.into(), color)?;
         graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))
     }
 }
@@ -347,7 +347,7 @@ impl Snake {
             // and then draw the Rect that we convert that Segment's position into
             let rectangle = graphics::Mesh::new_rectangle(
                 ctx,
-                graphics::DrawMode::Fill,
+                graphics::DrawMode::fill(),
                 seg.pos.into(),
                 [1.0, 0.5, 0.0, 1.0].into(),
             )?;
@@ -357,7 +357,7 @@ impl Snake {
         // TODO: Fix colors
         let rectangle = graphics::Mesh::new_rectangle(
             ctx,
-            graphics::DrawMode::Fill,
+            graphics::DrawMode::fill(),
             self.head.pos.into(),
             [1.0, 0.5, 0.0, 1.0].into(),
         )?;

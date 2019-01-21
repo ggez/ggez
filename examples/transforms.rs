@@ -33,7 +33,7 @@ impl MainState {
                 let fsize = Self::GRID_SIZE as f32;
                 let point = na::Point2::new(fx * Self::GRID_INTERVAL, fy * Self::GRID_INTERVAL);
                 let color = graphics::Color::new(fx / fsize, 0.0, fy / fsize, 1.0);
-                gridmesh_builder.circle(DrawMode::Fill, point, Self::GRID_POINT_RADIUS, 2.0, color);
+                gridmesh_builder.circle(DrawMode::fill(), point, Self::GRID_POINT_RADIUS, 2.0, color);
             }
         }
         let gridmesh = gridmesh_builder.build(ctx)?;

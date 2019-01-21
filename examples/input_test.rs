@@ -43,7 +43,7 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         let rectangle = graphics::Mesh::new_rectangle(
             ctx,
-            DrawMode::Fill,
+            DrawMode::fill(),
             graphics::Rect {
                 x: self.pos_x,
                 y: self.pos_y,

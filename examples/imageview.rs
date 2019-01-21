@@ -98,7 +98,7 @@ impl event::EventHandler for MainState {
         let dest_point2 = cgmath::Point2::new(0.0, 256.0);
         let rectangle = graphics::Mesh::new_rectangle(
             ctx,
-            graphics::DrawMode::Fill,
+            graphics::DrawMode::fill(),
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
             Color::from((0, 0, 0, 255)),
         )?;
