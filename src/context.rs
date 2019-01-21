@@ -61,7 +61,7 @@ impl fmt::Debug for Context {
 impl Context {
     /// Tries to create a new Context using settings from the given [`Conf`](../conf/struct.Conf.html) object.
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
-    fn from_conf(conf: conf::Conf, fs: Filesystem) -> GameResult<(Context, winit::EventsLoop)> {
+    fn from_conf(conf: conf::Conf, mut fs: Filesystem) -> GameResult<(Context, winit::EventsLoop)> {
         let debug_id = DebugId::new();
         let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
             Box::new(audio::RodioAudioContext::new()?)
@@ -72,6 +72,7 @@ impl Context {
         let timer_context = timer::TimeContext::new();
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
         let graphics_context = graphics::context::GraphicsContext::new(
+            &mut fs,
             &events_loop,
             &conf.window_setup,
             conf.window_mode,
