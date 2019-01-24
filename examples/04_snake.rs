@@ -225,7 +225,7 @@ impl Food {
         // graphics::rectangle(ctx, color, graphics::DrawMode::fill(), self.pos.into())
 
         let rectangle =
-            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode:fill(), self.pos.into(), color)?;
+            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), self.pos.into(), color)?;
         graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))
     }
 }
