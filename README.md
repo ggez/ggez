@@ -105,7 +105,7 @@ in the root directory:
 ```text
 git clone https://github.com/ggez/ggez.git
 cd ggez
-cargo run --example astroblasto
+cargo run --example 05_astroblasto
 ```
 
 If this doesn't work, see the
