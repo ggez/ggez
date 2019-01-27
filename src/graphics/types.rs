@@ -155,6 +155,15 @@ impl Rect {
             y: y_min,
         }
     }
+
+    /// Returns a new `Rect` that includes all points of these two `Rect`s.
+    pub fn combine_with(self, other: Rect) -> Rect {
+        let x = f32::min(self.x, other.x);
+        let y = f32::min(self.y, other.y);
+        let w = f32::max(self.right(), other.right()) - x;
+        let h = f32::max(self.bottom(), other.bottom()) - y;
+        Rect { x, y, w, h }
+    }
 }
 
 impl approx::AbsDiffEq for Rect {
@@ -561,6 +570,31 @@ mod tests {
         let r2 = Rect::new(64.0, 64.0, 64.0, 64.0);
         r1.move_to(Point2::new(64.0, 64.0));
         assert!(r1 == r2);
+    }
+
+    #[test]
+    fn headless_test_rect_combine_with() {
+        {
+            let a = Rect { x: 0.0, y: 0.0, w: 1.0, h: 1.0 };
+            let b = Rect { x: 0.0, y: 0.0, w: 1.0, h: 1.0 };
+            let c = a.combine_with(b);
+            assert_relative_eq!(a, b);
+            assert_relative_eq!(a, c);
+        }
+        {
+            let a = Rect { x: 0.0, y: 0.0, w: 1.0, h: 2.0 };
+            let b = Rect { x: 0.0, y: 0.0, w: 2.0, h: 1.0 };
+            let real = a.combine_with(b);
+            let expected = Rect { x: 0.0, y: 0.0, w: 2.0, h: 2.0 };
+            assert_relative_eq!(real, expected);
+        }
+        {
+            let a = Rect { x: -1.0, y: 0.0, w: 2.0, h: 2.0 };
+            let b = Rect { x: 0.0, y: -1.0, w: 1.0, h: 1.0 };
+            let real = a.combine_with(b);
+            let expected = Rect { x: -1.0, y: -1.0, w: 2.0, h: 3.0 };
+            assert_relative_eq!(real, expected);
+        }
     }
 
     #[test]
