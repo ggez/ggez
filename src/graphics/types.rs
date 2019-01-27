@@ -125,6 +125,34 @@ impl Rect {
     }
 }
 
+impl approx::AbsDiffEq for Rect {
+    type Epsilon = f32;
+
+    fn default_epsilon() -> Self::Epsilon {
+        f32::default_epsilon()
+    }
+
+    fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+        f32::abs_diff_eq(&self.x, &other.x,  epsilon)
+            && f32::abs_diff_eq(&self.y, &other.y,  epsilon)
+            && f32::abs_diff_eq(&self.w, &other.w,  epsilon)
+            && f32::abs_diff_eq(&self.h, &other.h,  epsilon)
+    }
+}
+
+impl approx::RelativeEq for Rect {
+    fn default_max_relative() -> Self::Epsilon {
+        f32::default_max_relative()
+    }
+
+    fn relative_eq(&self, other: &Self, epsilon: Self::Epsilon, max_relative: Self::Epsilon) -> bool {
+        f32::relative_eq(&self.x, &other.x,  epsilon, max_relative)
+            && f32::relative_eq(&self.y, &other.y,  epsilon, max_relative)
+            && f32::relative_eq(&self.w, &other.w,  epsilon, max_relative)
+            && f32::relative_eq(&self.h, &other.h,  epsilon, max_relative)
+    }
+}
+
 impl From<[f32; 4]> for Rect {
     fn from(val: [f32; 4]) -> Self {
         Rect::new(val[0], val[1], val[2], val[3])
