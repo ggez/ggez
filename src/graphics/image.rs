@@ -8,6 +8,7 @@ use crate::context::{Context, DebugId};
 use crate::error::GameError;
 use crate::error::GameResult;
 use crate::filesystem;
+use crate::graphics;
 use crate::graphics::shader::*;
 use crate::graphics::*;
 
@@ -363,6 +364,10 @@ impl Drawable for Image {
             gfx.set_blend_mode(mode)?;
         }
         Ok(())
+    }
+
+    fn dimensions(&self, _: &mut Context) -> Option<graphics::Rect> {
+        Some(self.dimensions())
     }
 
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {

@@ -126,6 +126,9 @@ impl Drawable for Canvas {
         self.image.draw(ctx, flipped_param)?;
         Ok(())
     }
+    fn dimensions(&self, _: &mut Context) -> Option<Rect> {
+        Some(self.image.dimensions())
+    }
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
         self.image.blend_mode = mode;
     }

@@ -1,4 +1,5 @@
 use crate::context::DebugId;
+use crate::error::GameError;
 use crate::graphics::*;
 use gfx::traits::FactoryExt;
 use lyon;
@@ -423,6 +424,8 @@ impl MeshBuilder {
             .factory
             .create_vertex_buffer_with_slice(&self.buffer.vertices[..], &self.buffer.indices[..]);
 
+        let rect = bbox_for_vertices(&self.buffer.vertices)
+            .ok_or(GameError::RenderError("No vertices in MeshBuilder".into()))?;
         Ok(Mesh {
             buffer: vbuf,
             slice,
@@ -432,6 +435,7 @@ impl MeshBuilder {
                 .clone()
                 .unwrap_or(ctx.gfx_context.white_image.clone()),
             debug_id: DebugId::get(ctx),
+            rect,
         })
     }
 }
@@ -472,6 +476,7 @@ pub struct Mesh {
     blend_mode: Option<BlendMode>,
     image: Image,
     debug_id: DebugId,
+    rect: Rect,
 }
 
 impl Mesh {
@@ -599,6 +604,7 @@ impl Mesh {
         V: Into<Vertex> + Clone,
     {
         let verts: Vec<Vertex> = verts.iter().cloned().map(|v| v.into()).collect();
+        let rect = bbox_for_vertices(&verts).expect("No vertices in MeshBuilder");
         let (vbuf, slice) = ctx
             .gfx_context
             .factory
@@ -609,6 +615,7 @@ impl Mesh {
             blend_mode: None,
             image: texture.unwrap_or(ctx.gfx_context.white_image.clone()),
             debug_id: DebugId::get(ctx),
+            rect,
         }
     }
 
@@ -655,10 +662,38 @@ impl Drawable for Mesh {
 
         Ok(())
     }
+    fn dimensions(&self, _ctx: &mut Context) -> Option<Rect> {
+        Some(self.rect)
+    }
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
         self.blend_mode = mode;
     }
     fn blend_mode(&self) -> Option<BlendMode> {
         self.blend_mode
     }
+}
+
+fn bbox_for_vertices(verts: &[Vertex]) -> Option<Rect> {
+    if verts.is_empty() {
+        return None;
+    }
+    let [x0, y0] = verts[0].pos;
+    let mut x_max = x0;
+    let mut x_min = x0;
+    let mut y_max = y0;
+    let mut y_min = y0;
+    for v in verts {
+        let x = v.pos[0];
+        let y = v.pos[1];
+        x_max = f32::max(x_max, x);
+        x_min = f32::min(x_min, x);
+        y_max = f32::max(y_max, y);
+        y_min = f32::min(y_min, y);
+    }
+    Some(Rect {
+        w: x_max - x_min,
+        h: y_max - y_min,
+        x: x_min,
+        y: y_min,
+    })
 }

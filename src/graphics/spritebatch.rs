@@ -15,7 +15,7 @@ use crate::error;
 use crate::error::GameResult;
 use crate::graphics::shader::BlendMode;
 use crate::graphics::types::FilterMode;
-use crate::graphics::{self, BackendSpec, DrawParam, DrawTransform};
+use crate::graphics::{self, transform_rect, BackendSpec, DrawParam, DrawTransform, Rect};
 use gfx;
 use gfx::Factory;
 
@@ -191,6 +191,20 @@ impl graphics::Drawable for SpriteBatch {
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
         Ok(())
+    }
+    fn dimensions(&self, _ctx: &mut Context) -> Option<Rect> {
+        if self.sprites.is_empty() {
+            return None;
+        }
+        let dimensions = self.image.dimensions();
+        self.sprites.iter().map(|&param| transform_rect(dimensions, param))
+        .fold(None, |acc: Option<Rect>, rect| {
+            Some(if let Some(acc) = acc {
+                acc.combine_with(rect)
+            } else {
+                rect
+            })
+        })
     }
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
         self.blend_mode = mode;
