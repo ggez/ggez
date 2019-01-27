@@ -990,51 +990,93 @@ pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
 
 #[cfg(test)]
 mod tests {
-    use std::f32::consts::PI;
+    use crate::graphics::{transform_rect, DrawParam, Rect};
     use approx::assert_relative_eq;
-    use crate::graphics::{DrawParam, Rect, transform_rect};
+    use std::f32::consts::PI;
 
     #[test]
     fn headless_test_transform_rect() {
         {
-            let r = Rect { x: 0.0, y: 0.0, w: 1.0, h: 1.0 };
+            let r = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 1.0,
+                h: 1.0,
+            };
             let param = DrawParam::new();
             let real = transform_rect(r, param);
             let expected = r;
             assert_relative_eq!(real, expected);
         }
         {
-            let r = Rect { x: -1.0, y: -1.0, w: 2.0, h: 1.0 };
-            let param = DrawParam::new()
-                .scale([0.5, 0.5]);
+            let r = Rect {
+                x: -1.0,
+                y: -1.0,
+                w: 2.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new().scale([0.5, 0.5]);
             let real = transform_rect(r, param);
-            let expected = Rect { x: -0.5, y: -0.5, w: 1.0, h: 0.5 };
+            let expected = Rect {
+                x: -0.5,
+                y: -0.5,
+                w: 1.0,
+                h: 0.5,
+            };
             assert_relative_eq!(real, expected);
         }
         {
-            let r = Rect { x: -1.0, y: -1.0, w: 1.0, h: 1.0 };
-            let param = DrawParam::new()
-                .offset([0.5, 0.5]);
+            let r = Rect {
+                x: -1.0,
+                y: -1.0,
+                w: 1.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new().offset([0.5, 0.5]);
             let real = transform_rect(r, param);
-            let expected = Rect { x: -1.5, y: -1.5, w: 1.0, h: 1.0 };
+            let expected = Rect {
+                x: -1.5,
+                y: -1.5,
+                w: 1.0,
+                h: 1.0,
+            };
             assert_relative_eq!(real, expected);
         }
         {
-            let r = Rect { x: 1.0, y: 0.0, w: 2.0, h: 1.0 };
-            let param = DrawParam::new()
-                .rotation(PI * 0.5);
+            let r = Rect {
+                x: 1.0,
+                y: 0.0,
+                w: 2.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new().rotation(PI * 0.5);
             let real = transform_rect(r, param);
-            let expected = Rect { x: -1.0, y: 1.0, w: 1.0, h: 2.0 };
+            let expected = Rect {
+                x: -1.0,
+                y: 1.0,
+                w: 1.0,
+                h: 2.0,
+            };
             assert_relative_eq!(real, expected);
         }
         {
-            let r = Rect { x: -1.0, y: -1.0, w: 2.0, h: 1.0 };
+            let r = Rect {
+                x: -1.0,
+                y: -1.0,
+                w: 2.0,
+                h: 1.0,
+            };
             let param = DrawParam::new()
                 .scale([0.5, 0.5])
                 .offset([0.0, 1.0])
                 .rotation(PI * 0.5);
             let real = transform_rect(r, param);
-            let expected = Rect { x: 0.5, y: -0.5, w: 0.5, h: 1.0 };
+            let expected = Rect {
+                x: 0.5,
+                y: -0.5,
+                w: 0.5,
+                h: 1.0,
+            };
             assert_relative_eq!(real, expected);
         }
     }

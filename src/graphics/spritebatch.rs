@@ -197,14 +197,16 @@ impl graphics::Drawable for SpriteBatch {
             return None;
         }
         let dimensions = self.image.dimensions();
-        self.sprites.iter().map(|&param| transform_rect(dimensions, param))
-        .fold(None, |acc: Option<Rect>, rect| {
-            Some(if let Some(acc) = acc {
-                acc.combine_with(rect)
-            } else {
-                rect
+        self.sprites
+            .iter()
+            .map(|&param| transform_rect(dimensions, param))
+            .fold(None, |acc: Option<Rect>, rect| {
+                Some(if let Some(acc) = acc {
+                    acc.combine_with(rect)
+                } else {
+                    rect
+                })
             })
-        })
     }
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
         self.blend_mode = mode;

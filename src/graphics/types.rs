@@ -174,10 +174,10 @@ impl approx::AbsDiffEq for Rect {
     }
 
     fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-        f32::abs_diff_eq(&self.x, &other.x,  epsilon)
-            && f32::abs_diff_eq(&self.y, &other.y,  epsilon)
-            && f32::abs_diff_eq(&self.w, &other.w,  epsilon)
-            && f32::abs_diff_eq(&self.h, &other.h,  epsilon)
+        f32::abs_diff_eq(&self.x, &other.x, epsilon)
+            && f32::abs_diff_eq(&self.y, &other.y, epsilon)
+            && f32::abs_diff_eq(&self.w, &other.w, epsilon)
+            && f32::abs_diff_eq(&self.h, &other.h, epsilon)
     }
 }
 
@@ -186,11 +186,16 @@ impl approx::RelativeEq for Rect {
         f32::default_max_relative()
     }
 
-    fn relative_eq(&self, other: &Self, epsilon: Self::Epsilon, max_relative: Self::Epsilon) -> bool {
-        f32::relative_eq(&self.x, &other.x,  epsilon, max_relative)
-            && f32::relative_eq(&self.y, &other.y,  epsilon, max_relative)
-            && f32::relative_eq(&self.w, &other.w,  epsilon, max_relative)
-            && f32::relative_eq(&self.h, &other.h,  epsilon, max_relative)
+    fn relative_eq(
+        &self,
+        other: &Self,
+        epsilon: Self::Epsilon,
+        max_relative: Self::Epsilon,
+    ) -> bool {
+        f32::relative_eq(&self.x, &other.x, epsilon, max_relative)
+            && f32::relative_eq(&self.y, &other.y, epsilon, max_relative)
+            && f32::relative_eq(&self.w, &other.w, epsilon, max_relative)
+            && f32::relative_eq(&self.h, &other.h, epsilon, max_relative)
     }
 }
 
@@ -485,9 +490,9 @@ pub use gfx::texture::WrapMode;
 
 #[cfg(test)]
 mod tests {
-    use std::f32::consts::PI;
-    use approx::assert_relative_eq;
     use super::*;
+    use approx::assert_relative_eq;
+    use std::f32::consts::PI;
 
     #[test]
     fn headless_test_color_conversions() {
@@ -575,24 +580,64 @@ mod tests {
     #[test]
     fn headless_test_rect_combine_with() {
         {
-            let a = Rect { x: 0.0, y: 0.0, w: 1.0, h: 1.0 };
-            let b = Rect { x: 0.0, y: 0.0, w: 1.0, h: 1.0 };
+            let a = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 1.0,
+                h: 1.0,
+            };
+            let b = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 1.0,
+                h: 1.0,
+            };
             let c = a.combine_with(b);
             assert_relative_eq!(a, b);
             assert_relative_eq!(a, c);
         }
         {
-            let a = Rect { x: 0.0, y: 0.0, w: 1.0, h: 2.0 };
-            let b = Rect { x: 0.0, y: 0.0, w: 2.0, h: 1.0 };
+            let a = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 1.0,
+                h: 2.0,
+            };
+            let b = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 2.0,
+                h: 1.0,
+            };
             let real = a.combine_with(b);
-            let expected = Rect { x: 0.0, y: 0.0, w: 2.0, h: 2.0 };
+            let expected = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 2.0,
+                h: 2.0,
+            };
             assert_relative_eq!(real, expected);
         }
         {
-            let a = Rect { x: -1.0, y: 0.0, w: 2.0, h: 2.0 };
-            let b = Rect { x: 0.0, y: -1.0, w: 1.0, h: 1.0 };
+            let a = Rect {
+                x: -1.0,
+                y: 0.0,
+                w: 2.0,
+                h: 2.0,
+            };
+            let b = Rect {
+                x: 0.0,
+                y: -1.0,
+                w: 1.0,
+                h: 1.0,
+            };
             let real = a.combine_with(b);
-            let expected = Rect { x: -1.0, y: -1.0, w: 2.0, h: 3.0 };
+            let expected = Rect {
+                x: -1.0,
+                y: -1.0,
+                w: 2.0,
+                h: 3.0,
+            };
             assert_relative_eq!(real, expected);
         }
     }
@@ -600,33 +645,78 @@ mod tests {
     #[test]
     fn headless_test_rect_rotate() {
         {
-            let mut r = Rect { x: -0.5, y: -0.5, w: 1.0, h: 1.0 };
+            let mut r = Rect {
+                x: -0.5,
+                y: -0.5,
+                w: 1.0,
+                h: 1.0,
+            };
             let expected = r;
             r.rotate(PI * 2.0);
             assert_relative_eq!(r, expected);
         }
         {
-            let mut r = Rect { x: 0.0, y: 0.0, w: 1.0, h: 2.0 };
+            let mut r = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 1.0,
+                h: 2.0,
+            };
             r.rotate(PI * 0.5);
-            let expected = Rect { x: -2.0, y: 0.0, w: 2.0, h: 1.0 };
+            let expected = Rect {
+                x: -2.0,
+                y: 0.0,
+                w: 2.0,
+                h: 1.0,
+            };
             assert_relative_eq!(r, expected);
         }
         {
-            let mut r = Rect { x: 0.0, y: 0.0, w: 1.0, h: 2.0 };
+            let mut r = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 1.0,
+                h: 2.0,
+            };
             r.rotate(PI);
-            let expected = Rect { x: -1.0, y: -2.0, w: 1.0, h: 2.0 };
+            let expected = Rect {
+                x: -1.0,
+                y: -2.0,
+                w: 1.0,
+                h: 2.0,
+            };
             assert_relative_eq!(r, expected);
         }
         {
-            let mut r = Rect { x: -0.5, y: -0.5, w: 1.0, h: 1.0 };
+            let mut r = Rect {
+                x: -0.5,
+                y: -0.5,
+                w: 1.0,
+                h: 1.0,
+            };
             r.rotate(PI * 0.5);
-            let expected = Rect { x: -0.5, y: -0.5, w: 1.0, h: 1.0 };
+            let expected = Rect {
+                x: -0.5,
+                y: -0.5,
+                w: 1.0,
+                h: 1.0,
+            };
             assert_relative_eq!(r, expected);
         }
         {
-            let mut r = Rect { x: 1.0, y: 1.0, w: 0.5, h: 2.0 };
+            let mut r = Rect {
+                x: 1.0,
+                y: 1.0,
+                w: 0.5,
+                h: 2.0,
+            };
             r.rotate(PI * 0.5);
-            let expected = Rect { x: -3.0, y: 1.0, w: 2.0, h: 0.5 };
+            let expected = Rect {
+                x: -3.0,
+                y: 1.0,
+                w: 2.0,
+                h: 0.5,
+            };
             assert_relative_eq!(r, expected);
         }
     }
