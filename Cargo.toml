@@ -26,8 +26,10 @@ name = "ggez"
 path = "src/lib.rs"
 
 [features]
+default = ["c_dependencies"]
 bzip2 = ["zip/bzip2"]
-default = ["bzip2"]
+c_dependencies = ["bzip2", "mp3"]
+mp3 = ["rodio/mp3"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 
 [dependencies]
@@ -43,7 +45,7 @@ glutin = "0.19"
 winit = { version = "0.18", features = ["icon_loading"] }
 image = {version = "0.20.1", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
-rodio = "0.8"
+rodio = { version = "0.8", default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
 serde_derive = "1"
 toml = "0.4"
