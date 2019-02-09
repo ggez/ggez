@@ -19,32 +19,33 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         self.pos_x = self.pos_x % 800.0 + 1.0;
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        graphics::clear(ctx);
 
         let circle = graphics::Mesh::new_circle(
             ctx,
-            graphics::DrawMode::fill(),
+            graphics::DrawMode::Fill,
             na::Point2::new(self.pos_x, 380.0),
             100.0,
             2.0,
-            graphics::WHITE,
         )?;
-        graphics::draw(ctx, &circle, (na::Point2::new(0.0, 0.0),))?;
 
-        graphics::present(ctx)?;
+        graphics::draw(ctx, &circle, na::Point2::new(0.0, 0.0), 0.0)?;
+
+        graphics::present(ctx);
+
         Ok(())
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> GameResult<()> {
     let cb = ggez::ContextBuilder::new("super_simple", "ggez");
-    let (ctx, event_loop) = &mut cb.build()?;
+    let ctx = &mut cb.build()?;
     let state = &mut MainState::new(ctx)?;
-    event::run(ctx, event_loop, state)
+    event::run(ctx, state)
 }
