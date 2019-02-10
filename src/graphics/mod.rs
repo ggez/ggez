@@ -956,6 +956,12 @@ pub trait Drawable {
     /// ALSO TODO: Expand docs
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult;
 
+    /// Returns a bounding box in the form of `Rect`.
+    ///
+    /// It returns `Option` because some `Drawable`s may have no bbox
+    /// (an empty `SpriteBatch` for example).
+    fn dimensions(&self, ctx: &mut Context) -> Option<Rect>;
+
     /// Sets the blend mode to be used when drawing this drawable.
     /// This overrides the general [`graphics::set_blend_mode()`](fn.set_blend_mode.html).
     /// If `None` is set, defers to the blend mode set by
@@ -966,5 +972,112 @@ pub trait Drawable {
     fn blend_mode(&self) -> Option<BlendMode>;
 }
 
+/// Applies `DrawParam` to `Rect`.
+pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
+    let w = param.src.w * param.scale.x * rect.w;
+    let h = param.src.h * param.scale.y * rect.h;
+    let offset = Vector2::new(w * param.offset.x, h * param.offset.y);
+    let dest = param.dest - offset;
+    let mut r = Rect {
+        w,
+        h,
+        x: dest.x + rect.x * param.scale.x,
+        y: dest.y + rect.y * param.scale.y,
+    };
+    r.rotate(param.rotation);
+    r
+}
+
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use crate::graphics::{transform_rect, DrawParam, Rect};
+    use approx::assert_relative_eq;
+    use std::f32::consts::PI;
+
+    #[test]
+    fn headless_test_transform_rect() {
+        {
+            let r = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 1.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new();
+            let real = transform_rect(r, param);
+            let expected = r;
+            assert_relative_eq!(real, expected);
+        }
+        {
+            let r = Rect {
+                x: -1.0,
+                y: -1.0,
+                w: 2.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new().scale([0.5, 0.5]);
+            let real = transform_rect(r, param);
+            let expected = Rect {
+                x: -0.5,
+                y: -0.5,
+                w: 1.0,
+                h: 0.5,
+            };
+            assert_relative_eq!(real, expected);
+        }
+        {
+            let r = Rect {
+                x: -1.0,
+                y: -1.0,
+                w: 1.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new().offset([0.5, 0.5]);
+            let real = transform_rect(r, param);
+            let expected = Rect {
+                x: -1.5,
+                y: -1.5,
+                w: 1.0,
+                h: 1.0,
+            };
+            assert_relative_eq!(real, expected);
+        }
+        {
+            let r = Rect {
+                x: 1.0,
+                y: 0.0,
+                w: 2.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new().rotation(PI * 0.5);
+            let real = transform_rect(r, param);
+            let expected = Rect {
+                x: -1.0,
+                y: 1.0,
+                w: 1.0,
+                h: 2.0,
+            };
+            assert_relative_eq!(real, expected);
+        }
+        {
+            let r = Rect {
+                x: -1.0,
+                y: -1.0,
+                w: 2.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new()
+                .scale([0.5, 0.5])
+                .offset([0.0, 1.0])
+                .rotation(PI * 0.5);
+            let real = transform_rect(r, param);
+            let expected = Rect {
+                x: 0.5,
+                y: -0.5,
+                w: 0.5,
+                h: 1.0,
+            };
+            assert_relative_eq!(real, expected);
+        }
+    }
+}

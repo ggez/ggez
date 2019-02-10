@@ -365,6 +365,16 @@ impl Drawable for Text {
         draw_queued_text(ctx, param)
     }
 
+    fn dimensions(&self, ctx: &mut Context) -> Option<Rect> {
+        let (w, h) = self.dimensions(ctx);
+        Some(Rect {
+            w: w as _,
+            h: h as _,
+            x: 0.0,
+            y: 0.0,
+        })
+    }
+
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
         self.blend_mode = mode;
     }
