@@ -21,21 +21,21 @@ type Vec3 = na::Vector3<f32>;
 pub struct DrawParam {
     /// A portion of the drawable to clip, as a fraction of the whole image.
     /// Defaults to the whole image `(0,0 to 1,1)` if omitted.
-    pub(crate) src: Rect,
+    pub src: Rect,
     /// The position to draw the graphic expressed as a `Point2`.
-    pub(crate) dest: Point2,
+    pub dest: Point2,
     /// The orientation of the graphic in radians.
-    pub(crate) rotation: f32,
+    pub rotation: f32,
     /// The x/y scale factors expressed as a `Vector2`.
-    pub(crate) scale: Vector2,
+    pub scale: Vector2,
     /// An offset from the center for transform operations like scale/rotation,
     /// with `0,0` meaning the origin and `1,1` meaning the opposite corner from the origin.
     /// By default these operations are done from the top-left corner, so to rotate something
     /// from the center specify `Point2::new(0.5, 0.5)` here.
-    pub(crate) offset: Point2,
+    pub offset: Point2,
     /// A color to draw the target with.
     /// Default: white.
-    pub(crate) color: Color,
+    pub color: Color,
 }
 
 impl Default for DrawParam {
