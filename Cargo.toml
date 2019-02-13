@@ -50,9 +50,9 @@ serde = "1"
 serde_derive = "1"
 toml = "0.4"
 log = "0.4"
-lyon = "0.11"
+lyon = "0.13"
 smart-default = "0.3"
-nalgebra = {version = "0.16", features = ["mint"] }
+nalgebra = {version = "0.17", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here.
 mint = "0.5"
 gilrs = "0.6"
@@ -63,7 +63,7 @@ chrono = "0.4"
 fern = "0.5"
 rand = "0.6"
 structopt = "0.2"
-cgmath = { version = "0.16", features = ["mint"]}
+cgmath = { version = "0.17", features = ["mint"]}
 skeptic = "0.13"
 
 [build-dependencies]

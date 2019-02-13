@@ -259,7 +259,7 @@ impl MeshBuilder {
     /// Create a new [`Mesh`](struct.Mesh.html) from a raw list of triangles.
     ///
     /// Currently does not support UV's or indices.
-    pub fn triangles<P>(&mut self, triangles: &[P], color: Color) -> &mut Self
+    pub fn triangles<P>(&mut self, triangles: &[P], color: Color) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
@@ -296,14 +296,14 @@ impl MeshBuilder {
                 let fst = tri[0];
                 let snd = tri[1];
                 let thd = tri[2];
-                let i1 = builder.add_vertex(fst);
-                let i2 = builder.add_vertex(snd);
-                let i3 = builder.add_vertex(thd);
+                let i1 = builder.add_vertex(fst)?;
+                let i2 = builder.add_vertex(snd)?;
+                let i3 = builder.add_vertex(thd)?;
                 builder.add_triangle(i1, i2, i3);
             }
             let _ = builder.end_geometry();
         }
-        self
+        Ok(self)
     }
 
     /// Takes an `Image` to apply to the mesh.

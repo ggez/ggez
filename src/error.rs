@@ -230,10 +230,20 @@ impl From<gilrs::Error> for GameError {
     }
 }
 
-impl From<lyon::lyon_tessellation::FillError> for GameError {
-    fn from(s: lyon::lyon_tessellation::FillError) -> GameError {
+impl From<lyon::lyon_tessellation::TessellationError> for GameError {
+    fn from(s: lyon::lyon_tessellation::TessellationError) -> GameError {
         let errstr = format!(
             "Error while tesselating shape (did you give it an infinity or NaN?): {:?}",
+            s
+        );
+        GameError::LyonError(errstr)
+    }
+}
+
+impl From<lyon::lyon_tessellation::geometry_builder::GeometryBuilderError> for GameError {
+    fn from(s: lyon::lyon_tessellation::geometry_builder::GeometryBuilderError) -> GameError {
+        let errstr = format!(
+            "Error while building geometry (did you give it too many vertices?): {:?}",
             s
         );
         GameError::LyonError(errstr)
