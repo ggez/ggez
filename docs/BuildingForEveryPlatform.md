@@ -39,7 +39,7 @@ wget https://raw.githubusercontent.com/ggez/ggez/master/resources/DejaVuSerif.tt
 Then edit your `Cargo.toml` with your favorite super duper editor and under `[dependencies]` add:
 
 ```
-ggez = "0.4"
+ggez = "0.5"
 ```
 
 Now run `cargo run` and it should build
@@ -55,20 +55,25 @@ on!
 Very easy, just install the required dev packages:
 
 ```sh
-apt install libasound2-dev libsdl2-dev pkg-config
+apt install libasound2-dev libudev-dev pkg-config
 ```
 
 Then you should be able to build with `cargo run`
 
 ## Redhat
 
-Same libraries as Debian, slightly different names.  On CentOS 7 at least you can install them with:
+Same libraries as Debian, slightly different names.  On CentOS 7 at
+least you can install them with:
+
+TODO: Double-check this with 0.5
 
 ```sh
 yum install alsa-lib-devel SDL2-devel
 ```
 
 ## Distributing
+
+TODO: Double-check this with 0.5
 
 As documented in more depth [here](https://aimlesslygoingforward.com/blog/2014/01/19/bundling-shared-libraries-on-linux/).
 
@@ -103,7 +108,10 @@ Note that distributing your own libSDL2.so will still fail if the user has a sig
 
 # Mac
 
-Install SDL2 with the [brew](https://brew.sh/) package manager like so:
+Install SDL2 with the [brew](https://brew.sh/) package manager like
+so:
+
+TODO: Double-check this with 0.5
 
 ```sh
 brew install sdl2
@@ -116,6 +124,8 @@ which should build and install SDL2, header files and any dependencies.
 ???
 
 # Windows
+
+TODO: Double-check this with 0.5
 
 All you need to install is the SDL2 libraries but it's a pain in the butt.  The instructions here are from the [sdl2](https://github.com/AngryLawyer/rust-sdl2#user-content-windows-msvc) crate for building with MSVC, which is what I've found to be simplest:
 
@@ -160,33 +170,4 @@ Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
 # Web/wasm/emscripten
 
 Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/71
-
-However, there are some WIP notes for getting things running on
-emscripten:
-
-Known blockers for wasm: threads (rodio), gfx-rs (OpenGL backend
-should work but is touchy to set up, we don't yet have a good way to
-specify WebGL), probably app_dirs/resources, SDL2
-
-For the sake of (my) simplicity, I am going to assume this is being done on Linux or something like it for now.
-
-First fetch and install the emscripten SDK, which is a compiler and set of libraries for turning LLVM code into asm.js or wasm.  You should get the latest version from [the emscripten website](http://kripken.github.io/emscripten-site/docs/getting_started/downloads.html).  It appears to be distributed as a portable package since it contains a lot of stuff you don't want mucking up your system with anyway; it's basically a self-contained cross-compiler, and you usually want to make sure those live in their own little world.
-
-Follow the emscripten install instructions.  Unpack it somewhere convenient, install dependencies, set environment variables, etc.
-
-Now install the Rust emscripten toolchain:
-
-```sh
-rustup target install wasm32-unknown-emscripten
-```
-
-(We're using wasm here 'cause it's awesome.)
-
-Build the thing:
-
-```
-embuilder.py build sdl2
-export EMMAKEN_CFLAGS="-s USE_SDL=2"
-cargo build --target=wasm32-unknown-emscripten
-```
 

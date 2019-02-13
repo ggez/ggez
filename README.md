@@ -70,10 +70,6 @@ line to your `Cargo.toml` file:
 ggez = "0.5"
 ```
 
-However you also need to have the SDL2 libraries installed on your
-system.  The best way to do this is documented [by the SDL2
-crate](https://github.com/AngryLawyer/rust-sdl2#user-content-requirements).
-
 ggez consists of three main parts: A `Context` object which
 contains all the state required to interface with the computer's
 hardware, an `EventHandler` trait that the user implements to
@@ -120,7 +116,9 @@ use ggez::event::{self, EventHandler};
 
 fn main() {
     // Make a Context.
-    let ctx = &mut /* ContextBuilder params */
+    let ctx = &mut ContextBuilder::new("my_game", "Cool Game Author")
+		.build()
+		.expect("aieee, could not create ggez context!");
 
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to

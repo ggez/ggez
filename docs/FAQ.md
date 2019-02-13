@@ -19,7 +19,7 @@ If you want to add a non-standard location to the resources lookup
 path, you can use `Filesystem::mount()` or
 `ContextBuilder::add_resource_path()`; see the examples for examples.
 
-# Why do I get `WindowError(SdlError("Could not create GL context"))` when I try to run my game?
+# Why do I get `WindowError("Could not create GL context")` when I try to run my game?
 
 Basically this means "the graphics driver couldn't give ggez the
 graphics settings it's asking for".  This usually means "the graphics
@@ -99,10 +99,6 @@ draw using ggez".
 
 Contributions are welcome! ;-)
 
-# Trying to build something gives me "library not found for -lSDL2"
-
-You don't have the SDL2 development libraries installed.  See [build docs](https://github.com/ggez/ggez/blob/master/docs/BuildingForEveryPlatform.md) for how to install them for your platform.
-
 # How do I load my `conf.toml` file?
 
 When you create a `Context` it will automatically look for a
@@ -146,7 +142,7 @@ Examples of things that would not be included:
  * GUI library -- A large and complicated problem, and it doesn't need to be part of ggez to solve the problem
 
 Part of the goal of this sort of setup is to make it easy for people to write more sophisticated tools atop ggez!  By all
-means, write your Tiled map loader or your aseprite sprite loader!  Submit a PR to add it to the `docs/Projects.md` file!
+means, write your Tiled map drawer or your aseprite sprite loader!  Submit a PR to add it to the `docs/Projects.md` file!
 We'd love to have an ecosystem of awesome tools.
 
 One favor to ask: If you're making a crate to do `foo`, please don't name it `ggez-foo`.  It makes it harder to search for
