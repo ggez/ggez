@@ -11,14 +11,17 @@
 //!
 //! TODO: UPDATE DOCS!
 
+#[cfg(feature = "gilrs")]
 use gilrs;
 use winit::{self, dpi};
 
 /// A mouse button.
 pub use winit::MouseButton;
 
+#[cfg(feature = "gilrs")]
 /// An analog axis of some device (controller, joystick...).
 pub use gilrs::Axis;
+#[cfg(feature = "gilrs")]
 /// A button of some device (controller, joystick...).
 pub use gilrs::Button;
 
@@ -235,6 +238,7 @@ where
             }
         });
         if ctx.conf.modules.gamepad {
+            #[cfg(feature = "gilrs")]
             while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.next_event() {
                 match event {
                     gilrs::EventType::ButtonPressed(button, _) => {

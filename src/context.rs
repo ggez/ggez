@@ -81,11 +81,20 @@ impl Context {
         )?;
         let mouse_context = mouse::MouseContext::new();
         let keyboard_context = keyboard::KeyboardContext::new();
+        #[cfg(feature = "gilrs")]
         let gamepad_context: Box<dyn gamepad::GamepadContext> = if conf.modules.gamepad {
             Box::new(gamepad::GilrsGamepadContext::new()?)
         } else {
             Box::new(gamepad::NullGamepadContext::default())
         };
+
+        #[cfg(not(feature = "gilrs"))]
+        let gamepad_context: Box<dyn gamepad::GamepadContext> = if conf.modules.gamepad {
+            unimplemented!("TODO: gilrs is not supported on this platform")
+        } else {
+            Box::new(gamepad::NullGamepadContext::default())
+        };
+
 
         let ctx = Context {
             conf,

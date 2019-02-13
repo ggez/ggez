@@ -9,6 +9,7 @@ use glutin;
 use winit;
 
 use app_dirs2::AppDirsError;
+#[cfg(feature = "gilrs")]
 use gilrs;
 use image;
 use lyon;
@@ -46,6 +47,7 @@ pub enum GameError {
     VideoError(String),
     /// Something went wrong compiling shaders
     ShaderProgramError(gfx::shade::ProgramError),
+    #[cfg(feature = "gilrs")]
     /// Something went wrong with `Gilrs`
     GamepadError(String),
     /// Something went wrong with the `lyon` shape-tesselation library.
@@ -223,6 +225,7 @@ impl From<glutin::ContextError> for GameError {
     }
 }
 
+#[cfg(feature = "gilrs")]
 impl From<gilrs::Error> for GameError {
     fn from(s: gilrs::Error) -> GameError {
         let errstr = format!("Gamepad error: {}", s);
