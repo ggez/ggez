@@ -125,12 +125,24 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         window_builder = if !window_setup.icon.is_empty() {
             use winit::Icon;
             use std::io::Read;
+            use ::image;
+            use ::image::GenericImageView;
 
+            // This is kinda awful 'cause it copies a couple times,
+            // but still better than
+            // having `winit` try to do the image loading for us.
+            // see https://github.com/tomaka/winit/issues/661
             let mut buf = Vec::new();
             let mut reader = filesystem.open(&window_setup.icon)?;
             let _ = reader.read_to_end(&mut buf)?;
-
-            window_builder.with_window_icon(Some(Icon::from_bytes(&buf)?))
+            let i = image::load_from_memory(&buf)?;
+            let image_data = i.to_rgba();
+            let icon = Icon::from_rgba(image_data.to_vec(), i.width(), i.height())
+                .map_err(|e| {
+                    let msg = format!("Could not load icon: {:?}", e);
+                    GameError::ResourceLoadError(msg)
+                })?;
+            window_builder.with_window_icon(Some(icon))
         } else {
             window_builder
         };
