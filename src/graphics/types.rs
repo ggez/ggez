@@ -65,8 +65,8 @@ impl Rect {
     }
 
     /// Gets the `Rect`'s x and y coordinates as a `Point2`.
-    pub fn point(&self) -> Point2 {
-        Point2::new(self.x, self.y)
+    pub fn point(&self) -> mint::Point2<f32> {
+        mint::Point2{ x: self.x, y: self.y}
     }
 
     /// Returns the left edge of the `Rect`
@@ -90,7 +90,8 @@ impl Rect {
     }
 
     /// Checks whether the `Rect` contains a `Point`
-    pub fn contains(&self, point: Point2) -> bool {
+    pub fn contains<P>(&self, point: P) -> bool where P: Into<mint::Point2<f32>> {
+        let point = point.into();
         point.x >= self.left()
             && point.x <= self.right()
             && point.y <= self.bottom()
@@ -106,13 +107,15 @@ impl Rect {
     }
 
     /// Translates the `Rect` by an offset of (x, y)
-    pub fn translate(&mut self, offset: Vector2) {
+    pub fn translate<V>(&mut self, offset: V) where V: Into<mint::Vector2<f32>> {
+        let offset = offset.into();
         self.x += offset.x;
         self.y += offset.y;
     }
 
     /// Moves the `Rect`'s origin to (x, y)
-    pub fn move_to(&mut self, destination: Point2) {
+    pub fn move_to<P>(&mut self, destination: P) where P: Into<mint::Point2<f32>> {
+        let destination = destination.into();
         self.x = destination.x;
         self.y = destination.y;
     }
