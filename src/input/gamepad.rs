@@ -8,22 +8,10 @@
 
 use std::fmt;
 
-#[cfg(feature = "gilrs")]
 use gilrs::{Event, Gamepad, Gilrs};
 
 use crate::context::Context;
 use crate::error::GameResult;
-
-/// A type that contains a reference to the underlying implementation's
-/// gamepad interface.
-#[derive(Clone, Debug)]
-pub enum ConcreteGamepad<'a> {
-    #[cfg(feature = "gilrs")]
-    /// A gamepad interface from the `gilrs` crate
-    GilrsGamepad(&'a Gamepad),
-    /// A dummy gamepad interface
-    NullGamepad(&'a ())
-}
 
 /// Trait object defining a gamepad/joystick context.
 pub trait GamepadContext {
@@ -31,22 +19,20 @@ pub trait GamepadContext {
     fn next_event(&mut self) -> Option<Event>;
 
     /// returns the `Gamepad` associated with an id.
-    fn gamepad(&self, id: usize) -> Option<ConcreteGamepad>;
+    fn gamepad(&self, id: usize) -> Option<&Gamepad>;
 }
 
-#[cfg(feature = "gilrs")]
 /// A structure that contains gamepad state using `gilrs`.
 pub struct GilrsGamepadContext {
     pub(crate) gilrs: Gilrs,
 }
 
-#[cfg(feature = "gilrs")]
 impl fmt::Debug for GilrsGamepadContext {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<GilrsGamepadContext: {:p}>", self)
     }
 }
-#[cfg(feature = "gilrs")]
+
 impl GilrsGamepadContext {
     pub(crate) fn new() -> GameResult<Self> {
         let gilrs = Gilrs::new()?;
@@ -54,15 +40,13 @@ impl GilrsGamepadContext {
     }
 }
 
-#[cfg(feature = "gilrs")]
 impl GamepadContext for GilrsGamepadContext {
     fn next_event(&mut self) -> Option<Event> {
         self.gilrs.next_event()
     }
 
-    fn gamepad(&self, id: usize) -> Option<ConcreteGamepad> {
+    fn gamepad(&self, id: usize) -> Option<&Gamepad> {
         self.gilrs.get(id)
-            .map(|gp| ConcreteGamepad::GilrsGamepad(gp))
     }
 }
 
@@ -77,13 +61,13 @@ impl GamepadContext for NullGamepadContext {
         panic!("Gamepad module disabled")
     }
 
-    fn gamepad(&self, _id: usize) -> Option<ConcreteGamepad> {
-        None
+    fn gamepad(&self, _id: usize) -> Option<&Gamepad> {
+        panic!("Gamepad module disabled")
     }
 }
 
 /// Returns the `Gamepad` associated with an `id`.
-pub fn gamepad(ctx: &Context, id: usize) -> Option<ConcreteGamepad> {
+pub fn gamepad(ctx: &Context, id: usize) -> Option<&Gamepad> {
     ctx.gamepad_context.gamepad(id)
 }
 

@@ -26,7 +26,7 @@ name = "ggez"
 path = "src/lib.rs"
 
 [features]
-default = ["c_dependencies", "gilrs"]
+default = ["c_dependencies"]
 bzip2 = ["zip/bzip2"]
 c_dependencies = ["bzip2", "mp3"]
 mp3 = ["rodio/mp3"]
@@ -55,7 +55,7 @@ smart-default = "0.3"
 nalgebra = {version = "0.17", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here.
 mint = "0.5"
-gilrs = {version = "0.6", optional = true}
+gilrs = "0.6"
 approx = "0.3"
 
 [dev-dependencies]
