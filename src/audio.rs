@@ -272,9 +272,16 @@ impl Source {
         // fine because the `RodioAudioContext` uses the default device too,
         // but it may cause problems in the future if devices become
         // customizable.
+
+        // We also need to carry over information from the previous sink.
+        let volume = self.volume();
+
         let device = rodio::default_output_device().unwrap();
         self.sink = rodio::Sink::new(&device);
         self.play_time.store(0, Ordering::SeqCst);
+
+        // Restore information from the previous link.
+        self.set_volume(volume);
     }
 
     /// Returns whether or not the source is stopped
