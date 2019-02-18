@@ -14,16 +14,16 @@ We will use the `hello_world` example project from ggez for all these
 examples.  To do the initial setup, assuming you have cargo installed:
 
 ```sh
-cargo init --bin hello_world
-cd hello_world
+cargo init --bin 02_hello_world
+cd 02_hello_world
 ```
 
 Now copy-paste the contents of
-<https://raw.githubusercontent.com/ggez/ggez/master/examples/hello_world.rs>
+<https://raw.githubusercontent.com/ggez/ggez/master/examples/02_hello_world.rs>
 into `hello_world/src/main.rs`, or just wget it:
 
 ```sh
-wget https://raw.githubusercontent.com/ggez/ggez/master/examples/hello_world.rs
+wget https://raw.githubusercontent.com/ggez/ggez/master/examples/02_hello_world.rs
 mv hello_world.rs src/main.rs
 ```
 
@@ -108,16 +108,8 @@ Note that distributing your own libSDL2.so will still fail if the user has a sig
 
 # Mac
 
-Install SDL2 with the [brew](https://brew.sh/) package manager like
-so:
-
-TODO: Double-check this with 0.5
-
-```sh
-brew install sdl2
-```
-
-which should build and install SDL2, header files and any dependencies.
+Should be able to just install Rust and run the game, same as the basic setup
+instructions.
 
 ## Distributing
 
