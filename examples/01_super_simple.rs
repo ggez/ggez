@@ -29,7 +29,7 @@ impl event::EventHandler for MainState {
 
         let circle = graphics::Mesh::new_circle(
             ctx,
-            graphics::DrawMode::fill(),
+            graphics::DrawMode::Fill,
             na::Point2::new(self.pos_x, 380.0),
             100.0,
             2.0,
