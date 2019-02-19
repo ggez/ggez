@@ -93,25 +93,27 @@ pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
 /// Get the current position of the mouse cursor, in pixels.
 /// Complement to [`set_position()`](fn.set_position.html).
 /// Uses strictly window-only coordinates.
-pub fn position(ctx: &Context) -> Point2 {
-    ctx.mouse_context.last_position
+pub fn position(ctx: &Context) -> mint::Point2<f32> {
+    ctx.mouse_context.last_position.into()
 }
 
 /// Set the current position of the mouse cursor, in pixels.
 /// Uses strictly window-only coordinates.
-pub fn set_position(ctx: &mut Context, point: Point2) -> GameResult<()> {
-    ctx.mouse_context.last_position = point;
+pub fn set_position<P>(ctx: &mut Context, point: P) -> GameResult<()>
+    where P: Into<mint::Point2<f32>> {
+    let mintpoint = point.into();
+    ctx.mouse_context.last_position = Point2::from(mintpoint);
     graphics::window(ctx)
         .set_cursor_position(dpi::LogicalPosition {
-            x: f64::from(point.x),
-            y: f64::from(point.y),
+            x: f64::from(mintpoint.x),
+            y: f64::from(mintpoint.y),
         })
         .map_err(|_| GameError::WindowError("Couldn't set mouse cursor position!".to_owned()))
 }
 
 /// Get the distance the cursor was moved during last frame, in pixels.
-pub fn delta(ctx: &Context) -> Point2 {
-    ctx.mouse_context.last_delta
+pub fn delta(ctx: &Context) -> mint::Point2<f32> {
+    ctx.mouse_context.last_delta.into()
 }
 
 /// Returns whether or not the given mouse button is pressed.
