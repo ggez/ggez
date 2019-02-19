@@ -63,7 +63,7 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// ```
 #[derive(Debug, Clone)]
 pub struct MeshBuilder {
-    buffer: t::geometry_builder::VertexBuffers<Vertex, u16>,
+    buffer: t::geometry_builder::VertexBuffers<Vertex, u32>,
     image: Option<Image>,
 }
 
@@ -324,14 +324,14 @@ impl MeshBuilder {
     ///
     ///  * `indices` contains a value out of bounds of `verts`
     ///  * Adding the `indices` or `verts` would create a buffer too long
-    ///    to be indexed by a `u16`.
-    pub fn from_raw<V>(&mut self, verts: &[V], indices: &[u16], texture: Option<Image>) -> &mut Self
+    ///    to be indexed by a `u32`.
+    pub fn from_raw<V>(&mut self, verts: &[V], indices: &[u32], texture: Option<Image>) -> &mut Self
     where
         V: Into<Vertex> + Clone,
     {
-        assert!(self.buffer.vertices.len() + verts.len() < (u16::MAX as usize));
-        assert!(self.buffer.indices.len() + indices.len() < (u16::MAX as usize));
-        let next_idx = self.buffer.vertices.len() as u16;
+        assert!(self.buffer.vertices.len() + verts.len() < (std::u32::MAX as usize));
+        assert!(self.buffer.indices.len() + indices.len() < (std::u32::MAX as usize));
+        let next_idx = self.buffer.vertices.len() as u32;
         // Can we remove the clone here?
         // I can't find a way to, because `into()` consumes its source and
         // `Borrow` or `AsRef` aren't really right.
@@ -520,11 +520,11 @@ impl Mesh {
     /// cause drawing to panic), if:
     ///
     ///  * `indices` contains a value out of bounds of `verts`
-    ///  * `verts` is longer than `u16::MAX` elements.
+    ///  * `verts` is longer than `u32::MAX` elements.
     pub fn from_raw<V>(
         ctx: &mut Context,
         verts: &[V],
-        indices: &[u16],
+        indices: &[u32],
         texture: Option<Image>,
     ) -> Mesh
     where
@@ -551,7 +551,7 @@ impl Mesh {
     /// reusing memory instead of allocating and deallocating it, both on the CPU and
     /// GPU side.  There's too much variation in implementations and drivers to promise
     /// it will actually be faster though.  At worst, it will be the same speed.
-    pub fn set_vertices(&mut self, ctx: &mut Context, verts: &[Vertex], indices: &[u16]) {
+    pub fn set_vertices(&mut self, ctx: &mut Context, verts: &[Vertex], indices: &[u32]) {
         // This is in principle faster than throwing away an existing mesh and
         // creating a new one with `Mesh::from_raw()`, but really only because it
         // doesn't take `Into<Vertex>` and so doesn't need to create an intermediate
