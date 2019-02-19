@@ -100,7 +100,9 @@ pub fn position(ctx: &Context) -> mint::Point2<f32> {
 /// Set the current position of the mouse cursor, in pixels.
 /// Uses strictly window-only coordinates.
 pub fn set_position<P>(ctx: &mut Context, point: P) -> GameResult<()>
-    where P: Into<mint::Point2<f32>> {
+where
+    P: Into<mint::Point2<f32>>,
+{
     let mintpoint = point.into();
     ctx.mouse_context.last_position = Point2::from(mintpoint);
     graphics::window(ctx)

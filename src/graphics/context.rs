@@ -123,10 +123,10 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_resizable(window_mode.resizable);
 
         window_builder = if !window_setup.icon.is_empty() {
-            use winit::Icon;
-            use std::io::Read;
             use ::image;
             use ::image::GenericImageView;
+            use std::io::Read;
+            use winit::Icon;
 
             // This is kinda awful 'cause it copies a couple times,
             // but still better than
@@ -137,8 +137,8 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             let _ = reader.read_to_end(&mut buf)?;
             let i = image::load_from_memory(&buf)?;
             let image_data = i.to_rgba();
-            let icon = Icon::from_rgba(image_data.to_vec(), i.width(), i.height())
-                .map_err(|e| {
+            let icon =
+                Icon::from_rgba(image_data.to_vec(), i.width(), i.height()).map_err(|e| {
                     let msg = format!("Could not load icon: {:?}", e);
                     GameError::ResourceLoadError(msg)
                 })?;

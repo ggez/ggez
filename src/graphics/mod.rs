@@ -637,7 +637,11 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
 /// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
 /// after calling this to apply these changes and recalculate the
 /// underlying MVP matrix.
-pub fn set_projection(context: &mut Context, proj: Matrix4) {
+pub fn set_projection<M>(context: &mut Context, proj: M)
+where
+    M: Into<mint::ColumnMatrix4<f32>>,
+{
+    let proj = Matrix4::from(proj.into());
     let gfx = &mut context.gfx_context;
     gfx.set_projection(proj);
 }
@@ -647,16 +651,20 @@ pub fn set_projection(context: &mut Context, proj: Matrix4) {
 /// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
 /// after calling this to apply these changes and recalculate the
 /// underlying MVP matrix.
-pub fn mul_projection(context: &mut Context, transform: Matrix4) {
+pub fn mul_projection<M>(context: &mut Context, transform: M)
+where
+    M: Into<mint::ColumnMatrix4<f32>>,
+{
+    let transform = Matrix4::from(transform.into());
     let gfx = &mut context.gfx_context;
     let curr = gfx.projection();
     gfx.set_projection(transform * curr);
 }
 
 /// Gets a copy of the context's raw projection matrix
-pub fn projection(context: &Context) -> Matrix4 {
+pub fn projection(context: &Context) -> mint::ColumnMatrix4<f32> {
     let gfx = &context.gfx_context;
-    gfx.projection()
+    gfx.projection().into()
 }
 
 /// Pushes a homogeneous transform matrix to the top of the transform
@@ -681,7 +689,11 @@ pub fn projection(context: &Context) -> Matrix4 {
 /// graphics::push_transform(ctx, Some(transform));
 /// # }
 /// ```
-pub fn push_transform(context: &mut Context, transform: Option<Matrix4>) {
+pub fn push_transform<M>(context: &mut Context, transform: Option<M>)
+where
+    M: Into<mint::ColumnMatrix4<f32>>,
+{
+    let transform = transform.map(|transform| Matrix4::from(transform.into()));
     let gfx = &mut context.gfx_context;
     if let Some(t) = transform {
         gfx.push_transform(t);
@@ -758,7 +770,11 @@ pub fn transform(context: &Context) -> Matrix4 {
 /// graphics::mul_transform(ctx, transform);
 /// # }
 /// ```
-pub fn mul_transform(context: &mut Context, transform: Matrix4) {
+pub fn mul_transform<M>(context: &mut Context, transform: M)
+where
+    M: Into<mint::ColumnMatrix4<f32>>,
+{
+    let transform = Matrix4::from(transform.into());
     let gfx = &mut context.gfx_context;
     let curr = gfx.transform();
     gfx.set_transform(transform * curr);

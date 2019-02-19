@@ -122,7 +122,11 @@ impl event::EventHandler for MainState {
                 //     graphics::DrawMode::fill(),
                 //     graphics::Rect::new(fx, fy, 5.0, 5.0),
                 // )?
-                mb.rectangle(DrawMode::fill(), graphics::Rect::new(fx, fy, 5.0, 5.0), color);
+                mb.rectangle(
+                    DrawMode::fill(),
+                    graphics::Rect::new(fx, fy, 5.0, 5.0),
+                    color,
+                );
             }
         }
         let mesh = mb.build(ctx)?;
