@@ -363,9 +363,18 @@ impl NumSamples {
 /// ```
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, SmartDefault)]
 pub struct ModuleConf {
+    // Gamepad is disabled by default on OSX
+    // See issue #588 in general, #577 for specifics.
     /// The gamepad input module.
+    #[cfg(target_os = "macos")]
+    #[default = false]
+    pub gamepad: bool,
+
+    /// The gamepad input module.
+    #[cfg(not(target_os = "macos"))]
     #[default = true]
     pub gamepad: bool,
+
     /// The audio module.
     #[default = true]
     pub audio: bool,
