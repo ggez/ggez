@@ -28,9 +28,9 @@ path = "src/lib.rs"
 [features]
 default = ["c_dependencies"]
 bzip2 = ["zip/bzip2"]
-c_dependencies = ["bzip2", "mp3"]
 mp3 = ["rodio/mp3"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
+c_dependencies = ["bzip2", "mp3"]
 
 [dependencies]
 bitflags = "1.0"

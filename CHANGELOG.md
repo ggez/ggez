@@ -9,6 +9,9 @@
  * Add OpenGL ES 3.0 support
  * Add optional textures to `Mesh`es.
  * Added lots of tests and doctests.
+ * Added a `c_dependencies` feature.  It's on by default, but
+   disabling it will build ggez without unnecessary C dependencies
+   (currently `bzip2` and `minimp3`). [#549](https://github.com/ggez/ggez/issues/549)
 
 ## Changed
 
@@ -29,7 +32,12 @@
  * Probably tons of other things I've forgotten.
  * We now target Rust 2018
  * Some minor modularization has taken place; at least, gamepad and audio module scan be disabled with settings in your `conf.toml`.  Doing the same for filesystem, graphics, and input is a liiiiiittle more involved.
- * 
+ * `Mesh`'s now have `u32`
+   indices. [#574](https://github.com/ggez/ggez/issues/574)
+ * `MeshBuilder` `DrawMode`'s now can take parameters, and have some
+   shortcut functions to make default parameters.  This simplifies
+   things somewhat by not needing separate args to specify things like
+   a stroke width for `DrawMode::Stroke`.
 
 ## Deprecated
 
@@ -53,6 +61,15 @@
 
  * Minor things beyond counting.  Don't worry, we added plenty of new
    bugs too.
+ 
+## Broken
+
+ * `gamepad` module is now disabled by default on OSX until we get
+   `gilrs` shipshape.  [#588](https://github.com/ggez/ggez/issues/588)
+ * Does not work on Windows 7 or below, again due to `gilrs`.
+   [#588](https://github.com/ggez/ggez/issues/588)
+ * There are various and sundry horrible DPI-related graphics bugs.
+   [#587](https://github.com/ggez/ggez/issues/587)
 
 # 0.4.4
 
