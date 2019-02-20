@@ -130,6 +130,11 @@ impl AsRef<[u8]> for SoundData {
     }
 }
 
+enum SourceSink {
+    Sink(rodio::Sink),
+    SpatialSink(rodio::SpatialSink),
+}
+
 /// A source of audio data connected to a particular `Channel`.
 /// Will stop playing when dropped.
 // TODO: Check and see if this matches Love2d's semantics!
@@ -144,7 +149,7 @@ impl AsRef<[u8]> for SoundData {
 // but for now it works.
 pub struct Source {
     data: io::Cursor<SoundData>,
-    sink: rodio::Sink,
+    sink: SourceSink,
     repeat: bool,
     fade_in: time::Duration,
     speed: f32,
@@ -165,7 +170,7 @@ impl Source {
         let sink = rodio::Sink::new(&context.audio_context.device());
         let cursor = io::Cursor::new(data);
         Ok(Source {
-            sink,
+            sink: SourceSink::Sink(sink),
             data: cursor,
             repeat: false,
             fade_in: time::Duration::from_millis(0),
@@ -203,7 +208,10 @@ impl Source {
                 .periodic_access(self.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
-            self.sink.append(sound);
+            match &self.sink {
+                SourceSink::Sink(sink) => sink.append(sound),
+                SourceSink::SpatialSink(sink) => sink.append(sound),
+            };
         } else {
             let sound = rodio::Decoder::new(cursor)?
                 .speed(self.speed)
@@ -211,7 +219,10 @@ impl Source {
                 .periodic_access(self.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
-            self.sink.append(sound);
+            match &self.sink {
+                SourceSink::Sink(sink) => sink.append(sound),
+                SourceSink::SpatialSink(sink) => sink.append(sound),
+            };
         }
 
         Ok(())
@@ -223,9 +234,12 @@ impl Source {
         self.play_later()?;
 
         let device = rodio::default_output_device().unwrap();
-        let new_sink = rodio::Sink::new(&device);
+        let new_sink = SourceSink::Sink(rodio::Sink::new(&device));
         let old_sink = mem::replace(&mut self.sink, new_sink);
-        old_sink.detach();
+        match old_sink {
+            SourceSink::Sink(sink) => sink.detach(),
+            SourceSink::SpatialSink(sink) => sink.detach(),
+        };
 
         Ok(())
     }
@@ -252,12 +266,18 @@ impl Source {
 
     /// Pauses playback
     pub fn pause(&self) {
-        self.sink.pause()
+        match &self.sink {
+            SourceSink::Sink(sink) => sink.pause(),
+            SourceSink::SpatialSink(sink) => sink.pause(),
+        }
     }
 
     /// Resumes playback
     pub fn resume(&self) {
-        self.sink.play()
+        match &self.sink {
+            SourceSink::Sink(sink) => sink.play(),
+            SourceSink::SpatialSink(sink) => sink.play(),
+        }
     }
 
     /// Stops playback
@@ -277,7 +297,7 @@ impl Source {
         let volume = self.volume();
 
         let device = rodio::default_output_device().unwrap();
-        self.sink = rodio::Sink::new(&device);
+        self.sink = SourceSink::Sink(rodio::Sink::new(&device));
         self.play_time.store(0, Ordering::SeqCst);
 
         // Restore information from the previous link.
@@ -287,22 +307,34 @@ impl Source {
     /// Returns whether or not the source is stopped
     /// -- that is, has no more data to play.
     pub fn stopped(&self) -> bool {
-        self.sink.empty()
+        match &self.sink {
+            SourceSink::Sink(sink) => sink.empty(),
+            SourceSink::SpatialSink(sink) => sink.empty(),
+        }
     }
 
     /// Gets the current volume
     pub fn volume(&self) -> f32 {
-        self.sink.volume()
+        match &self.sink {
+            SourceSink::Sink(sink) => sink.volume(),
+            SourceSink::SpatialSink(sink) => sink.volume(),
+        }
     }
 
     /// Sets the current volume
     pub fn set_volume(&mut self, value: f32) {
-        self.sink.set_volume(value)
+        match self.sink {
+            SourceSink::Sink(ref mut sink) => sink.set_volume(value),
+            SourceSink::SpatialSink(ref mut sink) => sink.set_volume(value),
+        }
     }
 
     /// Get whether or not the source is paused
     pub fn paused(&self) -> bool {
-        self.sink.is_paused()
+        match &self.sink {
+            SourceSink::Sink(sink) => sink.is_paused(),
+            SourceSink::SpatialSink(sink) => sink.is_paused(),
+        }
     }
 
     /// Get whether or not the source is playing (i.e., not paused
