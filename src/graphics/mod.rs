@@ -28,7 +28,6 @@ use gfx::Device;
 use gfx::Factory;
 use gfx_device_gl;
 use glutin;
-use winit::Icon;
 
 use crate::conf;
 use crate::conf::WindowMode;
@@ -842,9 +841,12 @@ pub fn set_resizable(context: &mut Context, resizable: bool) -> GameResult {
 }
 
 /// Sets the window icon.
-pub fn set_window_icon<P: AsRef<Path>>(context: &Context, path: Option<P>) -> GameResult<()> {
+pub fn set_window_icon<P: AsRef<Path>>(context: &mut Context, path: Option<P>) -> GameResult<()> {
     let icon = match path {
-        Some(path) => Some(Icon::from_path(path)?),
+        Some(p) => {
+            let p: &Path = p.as_ref();
+            Some(context::load_icon(p, &mut context.filesystem)?)
+        },
         None => None,
     };
     context.gfx_context.window.set_window_icon(icon);
