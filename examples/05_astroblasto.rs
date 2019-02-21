@@ -243,8 +243,8 @@ struct Assets {
     rock_image: graphics::Image,
     font: graphics::Font,
     // Todo: add a music track to show non-spatial audio?
-    shot_sound: audio::SpatialSource,
-    hit_sound: audio::SpatialSource,
+    shot_sound: audio::Source,
+    hit_sound: audio::Source,
 }
 
 impl Assets {
@@ -254,8 +254,8 @@ impl Assets {
         let rock_image = graphics::Image::new(ctx, "/rock.png")?;
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
 
-        let mut shot_sound = audio::SpatialSource::new(ctx, "/pew.ogg")?;
-        let mut hit_sound = audio::SpatialSource::new(ctx, "/boom.ogg")?;
+        let mut shot_sound = audio::Source::new_spatial(ctx, "/pew.ogg")?;
+        let mut hit_sound = audio::Source::new_spatial(ctx, "/boom.ogg")?;
 
         shot_sound.set_ears([-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
         hit_sound.set_ears([-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]);

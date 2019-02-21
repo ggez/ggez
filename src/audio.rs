@@ -155,6 +155,10 @@ pub struct Source {
     speed: f32,
     query_interval: time::Duration,
     play_time: Arc<AtomicUsize>,
+
+    left_ear: mint::Point3<f32>,
+    right_ear: mint::Point3<f32>,
+    emitter_position: mint::Point3<f32>,
 }
 
 impl Source {
@@ -177,6 +181,42 @@ impl Source {
             speed: 1.0,
             query_interval: time::Duration::from_millis(100),
             play_time: Arc::new(AtomicUsize::new(0)),
+            left_ear: [-1.0, 0.0, 0.0].into(),
+            right_ear: [1.0, 0.0, 0.0].into(),
+            emitter_position: [0.0, 0.0, 0.0].into(),
+        })
+    }
+
+    /// Create a new `Source` with a location from the given file.
+    pub fn new_spatial<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+        let path = path.as_ref();
+        let data = SoundData::new(context, path)?;
+        Source::from_spatial_data(context, data)
+    }
+
+    /// Create a source of audio data located in space relative to a listener's ears using the given `SoundData` object.
+    /// Will stop playing when dropped.
+    pub fn from_spatial_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
+        let sink = rodio::SpatialSink::new(
+            &context.audio_context.device(),
+            [0.0, 0.0, 0.0],
+            [-1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+        );
+
+        let cursor = io::Cursor::new(data);
+
+        Ok(Source {
+            sink: SourceSink::SpatialSink(sink),
+            data: cursor,
+            repeat: false,
+            fade_in: time::Duration::from_millis(0),
+            speed: 1.0,
+            query_interval: time::Duration::from_millis(100),
+            play_time: Arc::new(AtomicUsize::new(0)),
+            left_ear: [-1.0, 0.0, 0.0].into(),
+            right_ear: [1.0, 0.0, 0.0].into(),
+            emitter_position: [0.0, 0.0, 0.0].into(),
         })
     }
 
@@ -234,12 +274,25 @@ impl Source {
         self.play_later()?;
 
         let device = rodio::default_output_device().unwrap();
-        let new_sink = SourceSink::Sink(rodio::Sink::new(&device));
-        let old_sink = mem::replace(&mut self.sink, new_sink);
+        let old_sink = match &self.sink {
+            SourceSink::Sink(_) => {
+                let new_sink = SourceSink::Sink(rodio::Sink::new(&device));
+                mem::replace(&mut self.sink, new_sink)
+            },
+            SourceSink::SpatialSink(_) => {
+                let new_sink = SourceSink::SpatialSink(rodio::SpatialSink::new(
+                    &device,
+                    self.emitter_position.into(),
+                    self.left_ear.into(),
+                    self.right_ear.into(),
+                ));
+                mem::replace(&mut self.sink, new_sink)
+            },
+        };
         match old_sink {
             SourceSink::Sink(sink) => sink.detach(),
             SourceSink::SpatialSink(sink) => sink.detach(),
-        };
+        }
 
         Ok(())
     }
@@ -358,227 +411,16 @@ impl Source {
     pub fn set_query_interval(&mut self, t: time::Duration) {
         self.query_interval = t;
     }
-}
-
-impl fmt::Debug for Source {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<Audio source: {:p}>", self)
-    }
-}
-
-/// A source of audio data located in space relative to a listener's ears.
-/// Will stop playing when dropped.
-pub struct SpatialSource {
-    data: io::Cursor<SoundData>,
-    sink: rodio::SpatialSink,
-    repeat: bool,
-    fade_in: time::Duration,
-    speed: f32,
-    query_interval: time::Duration,
-    play_time: Arc<AtomicUsize>,
-
-    left_ear: mint::Point3<f32>,
-    right_ear: mint::Point3<f32>,
-    emitter_position: mint::Point3<f32>,
-}
-
-impl SpatialSource {
-    /// Create a new `SpatialSource` from the given file.
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
-        let path = path.as_ref();
-        let data = SoundData::new(context, path)?;
-        SpatialSource::from_data(context, data)
-    }
-
-    /// Creates a new `SpatialSource` using the given `SoundData` object.
-    pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
-        let sink = rodio::SpatialSink::new(
-            &context.audio_context.device(),
-            [0.0, 0.0, 0.0],
-            [-1.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-        );
-
-        let cursor = io::Cursor::new(data);
-
-        Ok(SpatialSource {
-            sink,
-            data: cursor,
-            repeat: false,
-            fade_in: time::Duration::from_millis(0),
-            speed: 1.0,
-            query_interval: time::Duration::from_millis(100),
-            play_time: Arc::new(AtomicUsize::new(0)),
-            left_ear: [-1.0, 0.0, 0.0].into(),
-            right_ear: [1.0, 0.0, 0.0].into(),
-            emitter_position: [0.0, 0.0, 0.0].into(),
-        })
-    }
-
-    /// Plays the `SpatialSource`; restarts the sound if currently playing
-    #[inline(always)]
-    pub fn play(&mut self) -> GameResult {
-        self.stop();
-        self.play_later()
-    }
-
-    /// Plays the `SpatialSource`; waits until done if the sound is currently playing
-    pub fn play_later(&self) -> GameResult {
-        use rodio::Source;
-        let cursor = self.data.clone();
-
-        let counter = self.play_time.clone();
-        let period_mus = self.query_interval.as_secs() as usize * 1_000_000
-            + self.query_interval.subsec_micros() as usize;
-
-        if self.repeat {
-            let sound = rodio::Decoder::new(cursor)?
-                .repeat_infinite()
-                .speed(self.speed)
-                .fade_in(self.fade_in)
-                .periodic_access(self.query_interval, move |_| {
-                    let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
-                });
-            self.sink.append(sound);
-        } else {
-            let sound = rodio::Decoder::new(cursor)?
-                .speed(self.speed)
-                .fade_in(self.fade_in)
-                .periodic_access(self.query_interval, move |_| {
-                    let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
-                });
-            self.sink.append(sound);
-        }
-
-        Ok(())
-    }
-
-    /// Play source "in the background"; cannot be stopped
-    pub fn play_detached(&mut self) -> GameResult {
-        self.stop();
-        self.play_later()?;
-
-        let device = rodio::default_output_device().unwrap();
-        let new_sink = rodio::SpatialSink::new(
-            &device,
-            self.emitter_position.into(),
-            self.left_ear.into(),
-            self.right_ear.into(),
-        );
-        let old_sink = mem::replace(&mut self.sink, new_sink);
-        old_sink.detach();
-
-        Ok(())
-    }
-
-    /// Sets the source to repeat playback infinitely on next [`play()`](#method.play)
-    pub fn set_repeat(&mut self, repeat: bool) {
-        self.repeat = repeat;
-    }
-
-    /// Sets the fade-in time of the source
-    pub fn set_fade_in(&mut self, dur: time::Duration) {
-        self.fade_in = dur;
-    }
-
-    /// Sets the speed ratio (by adjusting the playback speed)
-    pub fn set_pitch(&mut self, ratio: f32) {
-        self.speed = ratio;
-    }
-
-    /// Gets whether or not the source is set to repeat.
-    pub fn repeat(&self) -> bool {
-        self.repeat
-    }
-
-    /// Pauses playback
-    pub fn pause(&self) {
-        self.sink.pause()
-    }
-
-    /// Resumes playback
-    pub fn resume(&self) {
-        self.sink.play()
-    }
-
-    /// Stops playback
-    pub fn stop(&mut self) {
-        // `rodio::SpatialSink` does not have a `.stop()` method at
-        // the moment. To stop the current sound we drop the old
-        // sink and create a new one in its place.
-        // This is most ugly because in order to create a new sink
-        // we need a `device`. However, we can only get the default
-        // device without having access to a context. Currently that's
-        // fine because the `RodioAudioContext` uses the default device too,
-        // but it may cause problems in the future if devices become
-        // customizable.
-
-        // We also need to carry over information from the previous sink.
-        let volume = self.volume();
-
-        let device = rodio::default_output_device().unwrap();
-        self.sink = rodio::SpatialSink::new(
-            &device,
-            self.emitter_position.into(),
-            self.left_ear.into(),
-            self.right_ear.into(),
-        );
-        self.play_time.store(0, Ordering::SeqCst);
-
-        // Restore information from the previous sink.
-        self.set_volume(volume);
-    }
-
-    /// Returns whether or not the source is stopped
-    /// -- that is, has no more data to play.
-    pub fn stopped(&self) -> bool {
-        self.sink.empty()
-    }
-
-    /// Gets the current volume.
-    pub fn volume(&self) -> f32 {
-        self.sink.volume()
-    }
-
-    /// Sets the current volume.
-    pub fn set_volume(&mut self, value: f32) {
-        self.sink.set_volume(value)
-    }
-
-    /// Get whether or not the source is paused.
-    pub fn paused(&self) -> bool {
-        self.sink.is_paused()
-    }
-
-    /// Get whether or not the source is playing (ie, not paused
-    /// and not stopped).
-    pub fn playing(&self) -> bool {
-        !self.paused() && !self.stopped()
-    }
-
-    /// Get the time the source has been playing since the last call to [`play()`](#method.play).
-    ///
-    /// Time measurement is based on audio samples consumed, so it may drift from the system
-    /// clock over longer periods of time.
-    pub fn elapsed(&self) -> time::Duration {
-        let t = self.play_time.load(Ordering::SeqCst);
-        time::Duration::from_micros(t as u64)
-    }
-
-    /// Set the update interval of the internal sample counter.
-    ///
-    /// This parameter determines the precision of the time measured by [`elapsed()`](#method.elapsed).
-    pub fn set_query_interval(&mut self, t: time::Duration) {
-        self.query_interval = t;
-    }
 
     /// Set location of the sound.
     pub fn set_position<P>(&mut self, pos: P)
     where
         P: Into<mint::Point3<f32>>,
     {
-        self.emitter_position = pos.into();
-        self.sink.set_emitter_position(self.emitter_position.into());
+        if let SourceSink::SpatialSink(ref mut sink) = self.sink {
+            self.emitter_position = pos.into();
+            sink.set_emitter_position(self.emitter_position.into());
+        }
     }
 
     /// Set locations of the listener's ears
@@ -586,15 +428,17 @@ impl SpatialSource {
     where
         P: Into<mint::Point3<f32>>,
     {
-        self.left_ear = left.into();
-        self.right_ear = right.into();
-        self.sink.set_left_ear_position(self.left_ear.into());
-        self.sink.set_right_ear_position(self.right_ear.into());
+        if let SourceSink::SpatialSink(ref mut sink) = self.sink {
+            self.left_ear = left.into();
+            self.right_ear = right.into();
+            sink.set_left_ear_position(self.left_ear.into());
+            sink.set_right_ear_position(self.right_ear.into());
+        }
     }
 }
 
-impl fmt::Debug for SpatialSource {
+impl fmt::Debug for Source {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<Spatial audio source: {:p}>", self)
+        write!(f, "<Audio source: {:p}>", self)
     }
 }
