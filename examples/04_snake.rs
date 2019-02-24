@@ -349,7 +349,7 @@ impl Snake {
                 ctx,
                 graphics::DrawMode::fill(),
                 seg.pos.into(),
-                [1.0, 0.5, 0.0, 1.0].into(),
+                [0.3, 0.3, 0.0, 1.0].into(),
             )?;
             graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
         }
