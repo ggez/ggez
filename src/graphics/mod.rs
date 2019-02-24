@@ -846,7 +846,7 @@ pub fn set_window_icon<P: AsRef<Path>>(context: &mut Context, path: Option<P>) -
         Some(p) => {
             let p: &Path = p.as_ref();
             Some(context::load_icon(p, &mut context.filesystem)?)
-        },
+        }
         None => None,
     };
     context.gfx_context.window.set_window_icon(icon);

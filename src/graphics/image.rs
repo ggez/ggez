@@ -1,8 +1,8 @@
 use std::io::Read;
 use std::path;
 
-use ::image;
 use gfx;
+use image;
 
 use crate::context::{Context, DebugId};
 use crate::error::GameError;

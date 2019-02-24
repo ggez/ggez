@@ -68,43 +68,14 @@ least you can install them with:
 TODO: Double-check this with 0.5
 
 ```sh
-yum install alsa-lib-devel SDL2-devel
+yum install alsa-lib-devel
 ```
 
 ## Distributing
 
 TODO: Double-check this with 0.5
 
-As documented in more depth [here](https://aimlesslygoingforward.com/blog/2014/01/19/bundling-shared-libraries-on-linux/).
-
-The *right* way is to get your users to install SDL2 themselves, and make sure it's the same one you built your game against.  This is often not practical unless you're delivering your game as source.
-
-Another other option is to take the `libSDL2.so` library and distribute it with your game, then include a startup script that sets the `LD_LIBRARY_PATH` to include wherever you put it.
-
-So if our game directory structure is:
-
-```
-my_game
-lib/libSDL2.so
-```
-
-our launcher script would go in the same directory and look like:
-
-```sh
-#!/bin/sh
-GAMEDIR=$(dirname "$0")
-LD_LIBRARY_PATH=$GAMEDIR/lib $GAMEDIR/my_game
-```
-
-Or, and this is a new one to me, you can use the `rpath` linker option to include a relative `LD_LIBRARY_PATH`-ish path to search in the executable itself, by setting the `LD_RUN_PATH` environment variable when you build your game:
-
-```
-env LD_RUN_PATH='$ORIGIN/lib' cargo build
-```
-
-Then, when the executable is run, it will look in `lib/` relative to the executable location for shared objects along with wherever the system says it should look.
-
-Note that distributing your own libSDL2.so will still fail if the user has a significantly different of `glibc` than you do.  If anyone comes up with a good way to build everything statically with musl it would be interesting to be able to do that.
+You should be able to just copy-paste the executable file and the `resources` directory to wherever you want.
 
 # Mac
 
@@ -113,43 +84,19 @@ instructions.
 
 ## Distributing
 
+TODO: Fix this now that I have access to a mac.
+
 ???
 
 # Windows
 
 TODO: Double-check this with 0.5
 
-All you need to install is the SDL2 libraries but it's a pain in the butt.  The instructions here are from the [sdl2](https://github.com/AngryLawyer/rust-sdl2#user-content-windows-msvc) crate for building with MSVC, which is what I've found to be simplest:
-
-1. Download MSVC development libraries from http://www.libsdl.org/ (SDL2-devel-2.0.x-VC.zip).
-2. Unpack SDL2-devel-2.0.x-VC.zip to a folder of your choosing (You can delete it afterwards).
-3. Copy all lib files from
-    > SDL2-devel-2.0.x-VC\SDL2-2.0.x\lib\x64\
-    
-    to the Rust library folder.  For Rustup users (most common), this folder will be in
-    > C:\\Users\\{Your Username}\\.rustup\\toolchains\\{current toolchain}\\lib\\rustlib\\{current toolchain}\\lib
-    
-    or, if not using Rustup, to (for Rust 1.6 and above)
-    > C:\\Program Files\\Rust\\**lib**\\rustlib\\x86_64-pc-windows-msvc\\lib
-
-    or to (for Rust versions 1.5 and below)
-    > C:\\Program Files\\Rust\\**bin**\\rustlib\\x86_64-pc-windows-msvc\\lib
-
-    or to your library folder of choice, and ensure you have a system environment variable of
-    > LIB = C:\your\rust\library\folder
-
-  Where current toolchain is likely `stable-x86_64-pc-windows-msvc`.
-
-4. Copy SDL2.dll from
-    > SDL2-devel-2.0.x-VC\SDL2-2.0.x\lib\x64\
-
-    into your cargo project, right next to your Cargo.toml.
-
-However once this is done you should be good to go.
+Should just build.  We recommend using the MSVC toolchain whenever possible, the MinGW one can be pretty jank and difficult to set up.
 
 ## Distributing
 
-Just copy SDL2.dll to the same directory that your compiled exe is in and distribute it along with.
+Just copy-paste the exe and resource files to the destination computer.
 
 # Android
 

@@ -322,7 +322,8 @@ impl Text {
                 if let Some(rect) = positioned_glyph.pixel_bounding_box() {
                     let font = positioned_glyph.font().expect("Glyph doesn't have a font");
                     let v_metrics = font.v_metrics(positioned_glyph.scale());
-                    let max_y = positioned_glyph.position().y + positioned_glyph.scale().y - v_metrics.ascent;
+                    let max_y = positioned_glyph.position().y + positioned_glyph.scale().y
+                        - v_metrics.ascent;
                     let max_y = max_y.ceil() as u32;
                     max_width = std::cmp::max(max_width, rect.max.x as u32);
                     max_height = std::cmp::max(max_height, max_y);

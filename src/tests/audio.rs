@@ -1,6 +1,6 @@
+use crate::audio::SoundSource;
 use crate::tests;
 use crate::*;
-use crate::audio::SoundSource;
 
 #[test]
 fn audio_load() {

@@ -327,13 +327,13 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 // This is kinda awful 'cause it copies a couple times,
 // but still better than
 // having `winit` try to do the image loading for us.
-// see https://github.com/tomaka/winit/issues/661    
+// see https://github.com/tomaka/winit/issues/661
 pub(crate) fn load_icon(icon_file: &Path, filesystem: &mut Filesystem) -> GameResult<winit::Icon> {
-    use ::image;
     use ::image::GenericImageView;
+    use image;
     use std::io::Read;
     use winit::Icon;
-    
+
     let mut buf = Vec::new();
     let mut reader = filesystem.open(icon_file)?;
     let _ = reader.read_to_end(&mut buf)?;
@@ -345,11 +345,10 @@ pub(crate) fn load_icon(icon_file: &Path, filesystem: &mut Filesystem) -> GameRe
     })
 }
 
-
 impl<B> GraphicsContextGeneric<B>
 where
     B: BackendSpec + 'static,
-{    
+{
     /// Sends the current value of the graphics context's shader globals
     /// to the graphics card.
     pub(crate) fn update_globals(&mut self) -> GameResult {
