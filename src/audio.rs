@@ -130,26 +130,74 @@ impl AsRef<[u8]> for SoundData {
     }
 }
 
-enum SourceSink {
-    Sink(rodio::Sink),
-    SpatialSink(rodio::SpatialSink),
+/// The source for a sound.
+pub trait SoundSource {
+    /// Plays the audio source; restarts the sound if currently playing
+    #[inline(always)]
+    fn play(&mut self) -> GameResult {
+        self.stop();
+        self.play_later()
+    }
+
+    /// Plays the `SpatialSource`; waits until done if the sound is currently playing
+    fn play_later(&self) -> GameResult;
+
+    /// Play source "in the background"; cannot be stopped
+    fn play_detached(&mut self) -> GameResult;
+
+    /// Sets the source to repeat playback infinitely on next [`play()`](#method.play)
+    fn set_repeat(&mut self, repeat: bool);
+
+    /// Sets the fade-in time of the source
+    fn set_fade_in(&mut self, dur: time::Duration);
+
+    /// Sets the speed ratio (by adjusting the playback speed)
+    fn set_pitch(&mut self, ratio: f32);
+
+    /// Gets whether or not the source is set to repeat.
+    fn repeat(&self) -> bool;
+
+    /// Pauses playback
+    fn pause(&self);
+
+    /// Resumes playback
+    fn resume(&self);
+
+    /// Stops playback
+    fn stop(&mut self);
+
+    /// Returns whether or not the source is stopped
+    /// -- that is, has no more data to play.
+    fn stopped(&self) -> bool;
+
+    /// Gets the current volume.
+    fn volume(&self) -> f32;
+
+    /// Sets the current volume.
+    fn set_volume(&mut self, value: f32);
+
+    /// Get whether or not the source is paused.
+    fn paused(&self) -> bool;
+
+    /// Get whether or not the source is playing (ie, not paused
+    /// and not stopped).
+    fn playing(&self) -> bool;
+
+    /// Get the time the source has been playing since the last call to [`play()`](#method.play).
+    ///
+    /// Time measurement is based on audio samples consumed, so it may drift from the system
+    fn elapsed(&self) -> time::Duration;
+
+    /// Set the update interval of the internal sample counter.
+    ///
+    /// This parameter determines the precision of the time measured by [`elapsed()`](#method.elapsed).
+    fn set_query_interval(&mut self, t: time::Duration);
 }
 
-/// A source of audio data connected to a particular `Channel`.
-/// Will stop playing when dropped.
-// TODO: Check and see if this matches Love2d's semantics!
-// Eventually it might read from a streaming decoder of some kind,
-// but for now it is just an in-memory SoundData structure.
-// The source of a rodio decoder must be Send, which something
-// that contains a reference to a ZipFile is not, so we are going
-// to just slurp all the data into memory for now.
-// There's really a lot of work that needs to be done here, since
-// rodio has gotten better (if still somewhat arcane) and our filesystem
-// code has done the data-slurping-from-zip's for us
-// but for now it works.
-pub struct Source {
+/// Internal state used by audio sources.
+#[derive(Debug)]
+pub struct SourceState {
     data: io::Cursor<SoundData>,
-    sink: SourceSink,
     repeat: bool,
     fade_in: time::Duration,
     speed: f32,
@@ -157,93 +205,18 @@ pub struct Source {
     play_time: Arc<AtomicUsize>,
 }
 
-impl Source {
-    /// Create a new `Source` from the given file.
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
-        let path = path.as_ref();
-        let data = SoundData::new(context, path)?;
-        Source::from_data(context, data)
-    }
-
-    /// Creates a new `Source` using the given `SoundData` object.
-    pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
-        let sink = rodio::Sink::new(&context.audio_context.device());
-        let cursor = io::Cursor::new(data);
-        Ok(Source {
-            sink: SourceSink::Sink(sink),
+impl SourceState {
+    /// Create a new `SourceState` based around the given `SoundData`
+    pub fn new(cursor: io::Cursor<SoundData>) -> Self {
+        SourceState {
             data: cursor,
             repeat: false,
             fade_in: time::Duration::from_millis(0),
             speed: 1.0,
             query_interval: time::Duration::from_millis(100),
             play_time: Arc::new(AtomicUsize::new(0)),
-        })
-    }
-
-    /// Plays the `Source`; restarts the sound if currently playing.
-    #[inline(always)]
-    pub fn play(&mut self) -> GameResult {
-        self.stop();
-        self.play_later()
-    }
-
-    /// Plays the `Source`; waits until done if the sound is currently playing.
-    pub fn play_later(&self) -> GameResult {
-        // Creating a new Decoder each time seems a little messy,
-        // since it may do checking and data-type detection that is
-        // redundant, but it's not super expensive.
-        // See https://github.com/ggez/ggez/issues/98 for discussion
-        use rodio::Source;
-        let cursor = self.data.clone();
-
-        let counter = self.play_time.clone();
-        let period_mus = self.query_interval.as_secs() as usize * 1_000_000
-            + self.query_interval.subsec_micros() as usize;
-
-        if self.repeat {
-            let sound = rodio::Decoder::new(cursor)?
-                .repeat_infinite()
-                .speed(self.speed)
-                .fade_in(self.fade_in)
-                .periodic_access(self.query_interval, move |_| {
-                    let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
-                });
-            match &self.sink {
-                SourceSink::Sink(sink) => sink.append(sound),
-                SourceSink::SpatialSink(sink) => sink.append(sound),
-            };
-        } else {
-            let sound = rodio::Decoder::new(cursor)?
-                .speed(self.speed)
-                .fade_in(self.fade_in)
-                .periodic_access(self.query_interval, move |_| {
-                    let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
-                });
-            match &self.sink {
-                SourceSink::Sink(sink) => sink.append(sound),
-                SourceSink::SpatialSink(sink) => sink.append(sound),
-            };
         }
-
-        Ok(())
     }
-
-    /// Play source "in the background"; cannot be stopped.
-    pub fn play_detached(&mut self) -> GameResult {
-        self.stop();
-        self.play_later()?;
-
-        let device = rodio::default_output_device().unwrap();
-        let new_sink = SourceSink::Sink(rodio::Sink::new(&device));
-        let old_sink = mem::replace(&mut self.sink, new_sink);
-        match old_sink {
-            SourceSink::Sink(sink) => sink.detach(),
-            SourceSink::SpatialSink(sink) => sink.detach(),
-        };
-
-        Ok(())
-    }
-
     /// Sets the source to repeat playback infinitely on next [`play()`](#method.play)
     pub fn set_repeat(&mut self, repeat: bool) {
         self.repeat = repeat;
@@ -264,85 +237,6 @@ impl Source {
         self.repeat
     }
 
-    /// Pauses playback
-    pub fn pause(&self) {
-        match &self.sink {
-            SourceSink::Sink(sink) => sink.pause(),
-            SourceSink::SpatialSink(sink) => sink.pause(),
-        }
-    }
-
-    /// Resumes playback
-    pub fn resume(&self) {
-        match &self.sink {
-            SourceSink::Sink(sink) => sink.play(),
-            SourceSink::SpatialSink(sink) => sink.play(),
-        }
-    }
-
-    /// Stops playback
-    pub fn stop(&mut self) {
-        // Sinks cannot be reused after calling `.stop()`. See
-        // https://github.com/tomaka/rodio/issues/171 for information.
-        // To stop the current sound we have to drop the old sink and
-        // create a new one in its place.
-        // This is most ugly because in order to create a new sink
-        // we need a `device`. However, we can only get the default
-        // device without having access to a context. Currently that's
-        // fine because the `RodioAudioContext` uses the default device too,
-        // but it may cause problems in the future if devices become
-        // customizable.
-
-        // We also need to carry over information from the previous sink.
-        let volume = self.volume();
-
-        let device = rodio::default_output_device().unwrap();
-        self.sink = SourceSink::Sink(rodio::Sink::new(&device));
-        self.play_time.store(0, Ordering::SeqCst);
-
-        // Restore information from the previous link.
-        self.set_volume(volume);
-    }
-
-    /// Returns whether or not the source is stopped
-    /// -- that is, has no more data to play.
-    pub fn stopped(&self) -> bool {
-        match &self.sink {
-            SourceSink::Sink(sink) => sink.empty(),
-            SourceSink::SpatialSink(sink) => sink.empty(),
-        }
-    }
-
-    /// Gets the current volume
-    pub fn volume(&self) -> f32 {
-        match &self.sink {
-            SourceSink::Sink(sink) => sink.volume(),
-            SourceSink::SpatialSink(sink) => sink.volume(),
-        }
-    }
-
-    /// Sets the current volume
-    pub fn set_volume(&mut self, value: f32) {
-        match self.sink {
-            SourceSink::Sink(ref mut sink) => sink.set_volume(value),
-            SourceSink::SpatialSink(ref mut sink) => sink.set_volume(value),
-        }
-    }
-
-    /// Get whether or not the source is paused
-    pub fn paused(&self) -> bool {
-        match &self.sink {
-            SourceSink::Sink(sink) => sink.is_paused(),
-            SourceSink::SpatialSink(sink) => sink.is_paused(),
-        }
-    }
-
-    /// Get whether or not the source is playing (i.e., not paused
-    /// and not stopped)
-    pub fn playing(&self) -> bool {
-        !self.paused() && !self.stopped()
-    }
-
     /// Get the time the source has been playing since the last call to [`play()`](#method.play).
     ///
     /// Time measurement is based on audio samples consumed, so it may drift from the system
@@ -360,6 +254,160 @@ impl Source {
     }
 }
 
+/// A source of audio data connected to a particular `Channel`.
+/// Will stop playing when dropped.
+// TODO: Check and see if this matches Love2d's semantics!
+// Eventually it might read from a streaming decoder of some kind,
+// but for now it is just an in-memory SoundData structure.
+// The source of a rodio decoder must be Send, which something
+// that contains a reference to a ZipFile is not, so we are going
+// to just slurp all the data into memory for now.
+// There's really a lot of work that needs to be done here, since
+// rodio has gotten better (if still somewhat arcane) and our filesystem
+// code has done the data-slurping-from-zip's for us
+// but for now it works.
+pub struct Source {
+    sink: rodio::Sink,
+    state: SourceState,
+}
+
+impl Source {
+    /// Create a new `Source` from the given file.
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+        let path = path.as_ref();
+        let data = SoundData::new(context, path)?;
+        Source::from_data(context, data)
+    }
+
+    /// Creates a new `Source` using the given `SoundData` object.
+    pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
+        let sink = rodio::Sink::new(&context.audio_context.device());
+        let cursor = io::Cursor::new(data);
+        Ok(Source {
+            sink: sink,
+            state: SourceState::new(cursor),
+        })
+    }
+}
+
+impl SoundSource for Source {
+    fn play_later(&self) -> GameResult {
+        // Creating a new Decoder each time seems a little messy,
+        // since it may do checking and data-type detection that is
+        // redundant, but it's not super expensive.
+        // See https://github.com/ggez/ggez/issues/98 for discussion
+        use rodio::Source;
+        let cursor = self.state.data.clone();
+
+        let counter = self.state.play_time.clone();
+        let period_mus = self.state.query_interval.as_secs() as usize * 1_000_000
+            + self.state.query_interval.subsec_micros() as usize;
+
+        if self.state.repeat {
+            let sound = rodio::Decoder::new(cursor)?
+                .repeat_infinite()
+                .speed(self.state.speed)
+                .fade_in(self.state.fade_in)
+                .periodic_access(self.state.query_interval, move |_| {
+                    let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
+                });
+            self.sink.append(sound);
+        } else {
+            let sound = rodio::Decoder::new(cursor)?
+                .speed(self.state.speed)
+                .fade_in(self.state.fade_in)
+                .periodic_access(self.state.query_interval, move |_| {
+                    let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
+                });
+            self.sink.append(sound);
+        }
+
+        Ok(())
+    }
+
+    fn play_detached(&mut self) -> GameResult {
+        self.stop();
+        self.play_later()?;
+
+        let device = rodio::default_output_device().unwrap();
+        let new_sink = rodio::Sink::new(&device);
+        let old_sink = mem::replace(&mut self.sink, new_sink);
+        old_sink.detach();
+
+        Ok(())
+    }
+
+    fn set_repeat(&mut self, repeat: bool) {
+        self.state.set_repeat(repeat)
+    }
+    fn set_fade_in(&mut self, dur: time::Duration) {
+        self.state.set_fade_in(dur)
+    }
+    fn set_pitch(&mut self, ratio: f32) {
+        self.state.set_pitch(ratio)
+    }
+    fn repeat(&self) -> bool {
+        self.state.repeat()
+    }
+    fn pause(&self) {
+        self.sink.pause()
+    }
+    fn resume(&self) {
+        self.sink.play()
+    }
+
+    fn stop(&mut self) {
+        // Sinks cannot be reused after calling `.stop()`. See
+        // https://github.com/tomaka/rodio/issues/171 for information.
+        // To stop the current sound we have to drop the old sink and
+        // create a new one in its place.
+        // This is most ugly because in order to create a new sink
+        // we need a `device`. However, we can only get the default
+        // device without having access to a context. Currently that's
+        // fine because the `RodioAudioContext` uses the default device too,
+        // but it may cause problems in the future if devices become
+        // customizable.
+
+        // We also need to carry over information from the previous sink.
+        let volume = self.volume();
+
+        let device = rodio::default_output_device().unwrap();
+        self.sink = rodio::Sink::new(&device);
+        self.state.play_time.store(0, Ordering::SeqCst);
+
+        // Restore information from the previous link.
+        self.set_volume(volume);
+    }
+
+    fn stopped(&self) -> bool {
+        self.sink.empty()
+    }
+
+    fn volume(&self) -> f32 {
+        self.sink.volume()
+    }
+
+    fn set_volume(&mut self, value: f32) {
+        self.sink.set_volume(value)
+    }
+
+    fn paused(&self) -> bool {
+        self.sink.is_paused()
+    }
+
+    fn playing(&self) -> bool {
+        !self.paused() && !self.stopped()
+    }
+
+    fn elapsed(&self) -> time::Duration {
+        self.state.elapsed()
+    }
+
+    fn set_query_interval(&mut self, t: time::Duration) {
+        self.state.set_query_interval(t)
+    }
+}
+
 impl fmt::Debug for Source {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Audio source: {:p}>", self)
@@ -369,14 +417,8 @@ impl fmt::Debug for Source {
 /// A source of audio data located in space relative to a listener's ears.
 /// Will stop playing when dropped.
 pub struct SpatialSource {
-    data: io::Cursor<SoundData>,
     sink: rodio::SpatialSink,
-    repeat: bool,
-    fade_in: time::Duration,
-    speed: f32,
-    query_interval: time::Duration,
-    play_time: Arc<AtomicUsize>,
-
+    state: SourceState,
     left_ear: mint::Point3<f32>,
     right_ear: mint::Point3<f32>,
     emitter_position: mint::Point3<f32>,
@@ -403,48 +445,42 @@ impl SpatialSource {
 
         Ok(SpatialSource {
             sink,
-            data: cursor,
-            repeat: false,
-            fade_in: time::Duration::from_millis(0),
-            speed: 1.0,
-            query_interval: time::Duration::from_millis(100),
-            play_time: Arc::new(AtomicUsize::new(0)),
+            state: SourceState::new(cursor),
             left_ear: [-1.0, 0.0, 0.0].into(),
             right_ear: [1.0, 0.0, 0.0].into(),
             emitter_position: [0.0, 0.0, 0.0].into(),
         })
     }
+}
 
-    /// Plays the `SpatialSource`; restarts the sound if currently playing
-    #[inline(always)]
-    pub fn play(&mut self) -> GameResult {
-        self.stop();
-        self.play_later()
-    }
-
-    /// Plays the `SpatialSource`; waits until done if the sound is currently playing
-    pub fn play_later(&self) -> GameResult {
+impl SoundSource for SpatialSource {
+    /// Plays the `SpatialSource`; waits until done if the sound is currently playing.
+    fn play_later(&self) -> GameResult {
+        // Creating a new Decoder each time seems a little messy,
+        // since it may do checking and data-type detection that is
+        // redundant, but it's not super expensive.
+        // See https://github.com/ggez/ggez/issues/98 for discussion
         use rodio::Source;
-        let cursor = self.data.clone();
+        let cursor = self.state.data.clone();
 
-        let counter = self.play_time.clone();
-        let period_mus = self.query_interval.as_secs() as usize * 1_000_000
-            + self.query_interval.subsec_micros() as usize;
+        let counter = self.state.play_time.clone();
+        let period_mus = self.state.query_interval.as_secs() as usize * 1_000_000
+            + self.state.query_interval.subsec_micros() as usize;
 
-        if self.repeat {
+        if self.state.repeat {
             let sound = rodio::Decoder::new(cursor)?
                 .repeat_infinite()
-                .speed(self.speed)
-                .fade_in(self.fade_in)
-                .periodic_access(self.query_interval, move |_| {
+                .speed(self.state.speed)
+                .fade_in(self.state.fade_in)
+                .periodic_access(self.state.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
             self.sink.append(sound);
         } else {
             let sound = rodio::Decoder::new(cursor)?
-                .speed(self.speed)
-                .fade_in(self.fade_in)
-                .periodic_access(self.query_interval, move |_| {
+                .speed(self.state.speed)
+                .fade_in(self.state.fade_in)
+                .periodic_access(self.state.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
             self.sink.append(sound);
@@ -453,8 +489,7 @@ impl SpatialSource {
         Ok(())
     }
 
-    /// Play source "in the background"; cannot be stopped
-    pub fn play_detached(&mut self) -> GameResult {
+    fn play_detached(&mut self) -> GameResult {
         self.stop();
         self.play_later()?;
 
@@ -471,41 +506,35 @@ impl SpatialSource {
         Ok(())
     }
 
-    /// Sets the source to repeat playback infinitely on next [`play()`](#method.play)
-    pub fn set_repeat(&mut self, repeat: bool) {
-        self.repeat = repeat;
+    fn set_repeat(&mut self, repeat: bool) {
+        self.state.set_repeat(repeat)
     }
 
-    /// Sets the fade-in time of the source
-    pub fn set_fade_in(&mut self, dur: time::Duration) {
-        self.fade_in = dur;
+    fn set_fade_in(&mut self, dur: time::Duration) {
+        self.state.set_fade_in(dur)
     }
 
-    /// Sets the speed ratio (by adjusting the playback speed)
-    pub fn set_pitch(&mut self, ratio: f32) {
-        self.speed = ratio;
+    fn set_pitch(&mut self, ratio: f32) {
+        self.state.set_pitch(ratio)
     }
 
-    /// Gets whether or not the source is set to repeat.
-    pub fn repeat(&self) -> bool {
-        self.repeat
+    fn repeat(&self) -> bool {
+        self.state.repeat()
     }
 
-    /// Pauses playback
-    pub fn pause(&self) {
+    fn pause(&self) {
         self.sink.pause()
     }
 
-    /// Resumes playback
-    pub fn resume(&self) {
+    fn resume(&self) {
         self.sink.play()
     }
 
-    /// Stops playback
-    pub fn stop(&mut self) {
-        // `rodio::SpatialSink` does not have a `.stop()` method at
-        // the moment. To stop the current sound we drop the old
-        // sink and create a new one in its place.
+    fn stop(&mut self) {
+        // Sinks cannot be reused after calling `.stop()`. See
+        // https://github.com/tomaka/rodio/issues/171 for information.
+        // To stop the current sound we have to drop the old sink and
+        // create a new one in its place.
         // This is most ugly because in order to create a new sink
         // we need a `device`. However, we can only get the default
         // device without having access to a context. Currently that's
@@ -523,55 +552,42 @@ impl SpatialSource {
             self.left_ear.into(),
             self.right_ear.into(),
         );
-        self.play_time.store(0, Ordering::SeqCst);
+        self.state.play_time.store(0, Ordering::SeqCst);
 
-        // Restore information from the previous sink.
+        // Restore information from the previous link.
         self.set_volume(volume);
     }
 
-    /// Returns whether or not the source is stopped
-    /// -- that is, has no more data to play.
-    pub fn stopped(&self) -> bool {
+    fn stopped(&self) -> bool {
         self.sink.empty()
     }
 
-    /// Gets the current volume.
-    pub fn volume(&self) -> f32 {
+    fn volume(&self) -> f32 {
         self.sink.volume()
     }
 
-    /// Sets the current volume.
-    pub fn set_volume(&mut self, value: f32) {
+    fn set_volume(&mut self, value: f32) {
         self.sink.set_volume(value)
     }
 
-    /// Get whether or not the source is paused.
-    pub fn paused(&self) -> bool {
+    fn paused(&self) -> bool {
         self.sink.is_paused()
     }
 
-    /// Get whether or not the source is playing (ie, not paused
-    /// and not stopped).
-    pub fn playing(&self) -> bool {
+    fn playing(&self) -> bool {
         !self.paused() && !self.stopped()
     }
 
-    /// Get the time the source has been playing since the last call to [`play()`](#method.play).
-    ///
-    /// Time measurement is based on audio samples consumed, so it may drift from the system
-    /// clock over longer periods of time.
-    pub fn elapsed(&self) -> time::Duration {
-        let t = self.play_time.load(Ordering::SeqCst);
-        time::Duration::from_micros(t as u64)
+    fn elapsed(&self) -> time::Duration {
+        self.state.elapsed()
     }
 
-    /// Set the update interval of the internal sample counter.
-    ///
-    /// This parameter determines the precision of the time measured by [`elapsed()`](#method.elapsed).
-    pub fn set_query_interval(&mut self, t: time::Duration) {
-        self.query_interval = t;
+    fn set_query_interval(&mut self, t: time::Duration) {
+        self.state.set_query_interval(t)
     }
+}
 
+impl SpatialSource {
     /// Set location of the sound.
     pub fn set_position<P>(&mut self, pos: P)
     where

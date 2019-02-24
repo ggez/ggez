@@ -7,6 +7,7 @@ extern crate nalgebra;
 extern crate rand;
 
 use ggez::audio;
+use ggez::audio::SoundSource;
 use ggez::conf;
 use ggez::event::{self, EventHandler, KeyCode, KeyMods};
 use ggez::graphics;

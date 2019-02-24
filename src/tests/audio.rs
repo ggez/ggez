@@ -1,5 +1,6 @@
 use crate::tests;
 use crate::*;
+use crate::audio::SoundSource;
 
 #[test]
 fn audio_load() {
@@ -34,7 +35,7 @@ fn volume_persists_after_stop_for_spatial_source() {
     let (c, _e) = &mut tests::make_context();
     {
         let volume = 0.8;
-        let mut sound = audio::SpatialSource::new(c, "/pew.ogg").unwrap();
+        let mut sound = audio::Source::new(c, "/pew.ogg").unwrap();
         sound.set_volume(volume);
         assert_eq!(sound.volume(), volume);
         sound.stop();
@@ -60,7 +61,7 @@ fn volume_persists_after_play_for_spatial_source() {
     let (c, _e) = &mut tests::make_context();
     {
         let volume = 0.8;
-        let mut sound = audio::SpatialSource::new(c, "/pew.ogg").unwrap();
+        let mut sound = audio::Source::new(c, "/pew.ogg").unwrap();
         sound.set_volume(volume);
         assert_eq!(sound.volume(), volume);
         sound.play().unwrap();

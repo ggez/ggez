@@ -3,6 +3,7 @@ extern crate ggez;
 extern crate rand;
 
 use ggez::audio;
+use ggez::audio::SoundSource;
 use ggez::event;
 use ggez::filesystem;
 use ggez::graphics::{self, Color};

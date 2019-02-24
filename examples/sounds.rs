@@ -1,6 +1,7 @@
 extern crate ggez;
 
 use ggez::audio;
+use ggez::audio::SoundSource;
 use ggez::event;
 use ggez::graphics;
 use ggez::input;
