@@ -2,7 +2,7 @@ use std::io::Read;
 use std::path;
 
 use gfx;
-use image;
+use ::image;
 
 use crate::context::{Context, DebugId};
 use crate::error::GameError;
@@ -336,7 +336,7 @@ impl Drawable for Image {
         );
 
         let mut new_param = param;
-        new_param.scale = real_scale;
+        new_param.scale = real_scale.into();
 
         gfx.update_instance_properties(new_param.into())?;
         let sampler = gfx

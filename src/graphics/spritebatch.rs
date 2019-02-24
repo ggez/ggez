@@ -102,7 +102,7 @@ impl SpriteBatch {
                     src_width * param.scale.x * f32::from(image.width),
                     src_height * param.scale.y * f32::from(image.height),
                 );
-                new_param.scale = real_scale;
+                new_param.scale = real_scale.into();
                 new_param.color = new_param.color;
                 let primitive_param = graphics::DrawTransform::from(new_param);
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())

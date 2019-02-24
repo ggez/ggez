@@ -23,16 +23,16 @@ pub struct DrawParam {
     /// Defaults to the whole image `(0,0 to 1,1)` if omitted.
     pub src: Rect,
     /// The position to draw the graphic expressed as a `Point2`.
-    pub dest: Point2,
+    pub dest: mint::Point2<f32>,
     /// The orientation of the graphic in radians.
     pub rotation: f32,
     /// The x/y scale factors expressed as a `Vector2`.
-    pub scale: Vector2,
+    pub scale: mint::Vector2<f32>,
     /// An offset from the center for transform operations like scale/rotation,
     /// with `0,0` meaning the origin and `1,1` meaning the opposite corner from the origin.
     /// By default these operations are done from the top-left corner, so to rotate something
     /// from the center specify `Point2::new(0.5, 0.5)` here.
-    pub offset: Point2,
+    pub offset: mint::Point2<f32>,
     /// A color to draw the target with.
     /// Default: white.
     pub color: Color,
@@ -42,10 +42,10 @@ impl Default for DrawParam {
     fn default() -> Self {
         DrawParam {
             src: Rect::one(),
-            dest: Point2::origin(),
+            dest: mint::Point2{x: 0.0, y: 0.0},
             rotation: 0.0,
-            scale: Vector2::new(1.0, 1.0),
-            offset: Point2::new(0.0, 0.0),
+            scale: mint::Vector2{x: 1.0, y: 1.0},
+            offset: mint::Point2{x: 0.0, y: 0.0},
             color: WHITE,
         }
     }
@@ -69,7 +69,7 @@ impl DrawParam {
         P: Into<mint::Point2<f32>>,
     {
         let p: mint::Point2<f32> = dest.into();
-        self.dest = Point2::from(p);
+        self.dest = p;
         self
     }
 
@@ -92,7 +92,7 @@ impl DrawParam {
         V: Into<mint::Vector2<f32>>,
     {
         let p: mint::Vector2<f32> = scale.into();
-        self.scale = Vector2::from(p);
+        self.scale = p;
         self
     }
 
@@ -102,12 +102,12 @@ impl DrawParam {
         P: Into<mint::Point2<f32>>,
     {
         let p: mint::Point2<f32> = offset.into();
-        self.offset = Point2::from(p);
+        self.offset = p;
         self
     }
 
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
-    pub fn to_matrix(&self) -> na::Matrix4<f32> {
+    fn to_na_matrix(&self) -> Matrix4 {
         let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
         let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
         let offset_inverse =
@@ -116,6 +116,14 @@ impl DrawParam {
         let rotation = Matrix4::new_rotation(axis_angle);
         let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
         translate * offset * rotation * scale * offset_inverse
+    }
+
+
+    /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single 
+    ///matrix.  Because of this it only contains the transform part (rotation/scale/etc),
+    /// with no src/dest/color info.
+    pub fn to_matrix(&self) -> mint::ColumnMatrix4<f32> {
+        self.to_na_matrix().into()
     }
 }
 

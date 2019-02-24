@@ -737,15 +737,17 @@ pub fn pop_transform(context: &mut Context) {
 /// graphics::set_transform(ctx, transform);
 /// # }
 /// ```
-pub fn set_transform(context: &mut Context, transform: Matrix4) {
+pub fn set_transform<M>(context: &mut Context, transform: M)
+where M: Into<mint::ColumnMatrix4<f32>> {
+    let transform = transform.into();
     let gfx = &mut context.gfx_context;
-    gfx.set_transform(transform);
+    gfx.set_transform(Matrix4::from(transform));
 }
 
 /// Gets a copy of the context's current transform matrix
-pub fn transform(context: &Context) -> Matrix4 {
+pub fn transform(context: &Context) -> mint::ColumnMatrix4<f32> {
     let gfx = &context.gfx_context;
-    gfx.transform()
+    gfx.transform().into()
 }
 
 /// Premultiplies the given transform with the current model transform.
@@ -994,13 +996,15 @@ pub trait Drawable {
 pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
     let w = param.src.w * param.scale.x * rect.w;
     let h = param.src.h * param.scale.y * rect.h;
-    let offset = Vector2::new(w * param.offset.x, h * param.offset.y);
-    let dest = param.dest - offset;
+    let offset_x = w * param.offset.x;
+    let offset_y = h*param.offset.y;
+    let dest_x = param.dest.x - offset_x;
+    let dest_y = param.dest.y - offset_y;
     let mut r = Rect {
         w,
         h,
-        x: dest.x + rect.x * param.scale.x,
-        y: dest.y + rect.y * param.scale.y,
+        x: dest_x + rect.x * param.scale.x,
+        y: dest_y + rect.y * param.scale.y,
     };
     r.rotate(param.rotation);
     r
