@@ -2,7 +2,7 @@ use std::io::Read;
 use std::path;
 
 use gfx;
-use image;
+use ::image;
 
 use crate::context::{Context, DebugId};
 use crate::error::GameError;

@@ -330,7 +330,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 // see https://github.com/tomaka/winit/issues/661
 pub(crate) fn load_icon(icon_file: &Path, filesystem: &mut Filesystem) -> GameResult<winit::Icon> {
     use ::image::GenericImageView;
-    use image;
+    use ::image;
     use std::io::Read;
     use winit::Icon;
 
