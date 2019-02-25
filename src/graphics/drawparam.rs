@@ -42,10 +42,10 @@ impl Default for DrawParam {
     fn default() -> Self {
         DrawParam {
             src: Rect::one(),
-            dest: mint::Point2{x: 0.0, y: 0.0},
+            dest: mint::Point2 { x: 0.0, y: 0.0 },
             rotation: 0.0,
-            scale: mint::Vector2{x: 1.0, y: 1.0},
-            offset: mint::Point2{x: 0.0, y: 0.0},
+            scale: mint::Vector2 { x: 1.0, y: 1.0 },
+            offset: mint::Point2 { x: 0.0, y: 0.0 },
             color: WHITE,
         }
     }
@@ -118,8 +118,7 @@ impl DrawParam {
         translate * offset * rotation * scale * offset_inverse
     }
 
-
-    /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single 
+    /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single
     ///matrix.  Because of this it only contains the transform part (rotation/scale/etc),
     /// with no src/dest/color info.
     pub fn to_matrix(&self) -> mint::ColumnMatrix4<f32> {
