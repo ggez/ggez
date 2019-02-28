@@ -8,11 +8,6 @@ fn audio_load_ogg() {
 
     // OGG format
     let _sound = audio::Source::new(c, "/pew.ogg").unwrap();
-
-    // TODO: This is awkward, we should have a way to check whether
-    // a file is valid without trying to play it?
-    // let mut sound = audio::Source::new(c, "/player.png").unwrap();
-    // sound.play().unwrap();
 }
 
 #[test]
@@ -37,6 +32,21 @@ fn audio_load_flac() {
 
     // FLAC format
     let _sound = audio::Source::new(c, "/pew.flac").unwrap();
+}
+
+#[test]
+fn fail_when_loading_nonexistent_file() {
+    let (c, _e) = &mut tests::make_context();
+
+    // File does not exist
+    assert!(audio::Source::new(c, "/does-not-exists.ogg").is_err());
+}
+
+#[test]
+fn fail_when_loading_non_audio_file() {
+    let (c, _e) = &mut tests::make_context();
+
+    assert!(audio::Source::new(c, "/player.png").is_err());
 }
 
 #[test]
