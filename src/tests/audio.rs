@@ -124,6 +124,7 @@ fn volume_persists_after_play() {
     {
         let volume = 0.8;
         let mut sound = audio::Source::new(c, filename).unwrap();
+        assert_eq!(sound.volume(), 1.0);
         sound.set_volume(volume);
         assert_eq!(sound.volume(), volume);
         sound.play().unwrap();
@@ -133,6 +134,7 @@ fn volume_persists_after_play() {
     {
         let volume = 0.8;
         let mut sound = audio::SpatialSource::new(c, filename).unwrap();
+        assert_eq!(sound.volume(), 1.0);
         sound.set_volume(volume);
         assert_eq!(sound.volume(), volume);
         sound.play().unwrap();
