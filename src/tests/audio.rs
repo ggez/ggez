@@ -3,10 +3,10 @@ use crate::tests;
 use crate::*;
 
 #[test]
-fn audio_load() {
+fn audio_load_ogg() {
     let (c, _e) = &mut tests::make_context();
     {
-        // TODO: Test different sound formats
+        // OGG format
         let mut sound = audio::Source::new(c, "/pew.ogg").unwrap();
         sound.play().unwrap();
     }
@@ -15,6 +15,36 @@ fn audio_load() {
     // a file is valid without trying to play it?
     // let mut sound = audio::Source::new(c, "/player.png").unwrap();
     // sound.play().unwrap();
+}
+
+#[test]
+fn audio_load_mp3() {
+    let (c, _e) = &mut tests::make_context();
+    {
+        // LAME encoded MP3 format
+        let mut sound = audio::Source::new(c, "/pew.mp3").unwrap();
+        sound.play().unwrap();
+    }
+}
+
+#[test]
+fn audio_load_wav() {
+    let (c, _e) = &mut tests::make_context();
+    {
+        // WAV format
+        let mut sound = audio::Source::new(c, "/pew.wav").unwrap();
+        sound.play().unwrap();
+    }
+}
+
+#[test]
+fn audio_load_flac() {
+    let (c, _e) = &mut tests::make_context();
+    {
+        // FLAC format
+        let mut sound = audio::Source::new(c, "/pew.flac").unwrap();
+        sound.play().unwrap();
+    }
 }
 
 #[test]
