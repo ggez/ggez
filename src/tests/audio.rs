@@ -7,8 +7,9 @@ fn audio_load_ogg() {
     let (c, _e) = &mut tests::make_context();
 
     // OGG format
-    let _sound = audio::Source::new(c, "/pew.ogg").unwrap();
-    let _sound = audio::SpatialSource::new(c, "/pew.ogg").unwrap();
+    let filename = "/pew.ogg";
+    let _sound = audio::Source::new(c, filename).unwrap();
+    let _sound = audio::SpatialSource::new(c, filename).unwrap();
 }
 
 #[test]
@@ -16,8 +17,9 @@ fn audio_load_wav() {
     let (c, _e) = &mut tests::make_context();
 
     // WAV format
-    let _sound = audio::Source::new(c, "/pew.wav").unwrap();
-    let _sound = audio::SpatialSource::new(c, "/pew.wav").unwrap();
+    let filename = "/pew.wav";
+    let _sound = audio::Source::new(c, filename).unwrap();
+    let _sound = audio::SpatialSource::new(c, filename).unwrap();
 }
 
 #[test]
@@ -25,8 +27,9 @@ fn audio_load_flac() {
     let (c, _e) = &mut tests::make_context();
 
     // FLAC format
-    let _sound = audio::Source::new(c, "/pew.flac").unwrap();
-    let _sound = audio::SpatialSource::new(c, "/pew.flac").unwrap();
+    let filename = "/pew.flac";
+    let _sound = audio::Source::new(c, filename).unwrap();
+    let _sound = audio::SpatialSource::new(c, filename).unwrap();
 }
 
 #[test]
@@ -34,24 +37,27 @@ fn fail_when_loading_nonexistent_file() {
     let (c, _e) = &mut tests::make_context();
 
     // File does not exist
-    assert!(audio::Source::new(c, "/does-not-exists.ogg").is_err());
-    assert!(audio::SpatialSource::new(c, "/does-not-exists.ogg").is_err());
+    let filename = "/does-not-exist.ogg";
+    assert!(audio::Source::new(c, filename).is_err());
+    assert!(audio::SpatialSource::new(c, filename).is_err());
 }
 
 #[test]
 fn fail_when_loading_non_audio_file() {
     let (c, _e) = &mut tests::make_context();
 
-    assert!(audio::Source::new(c, "/player.png").is_err());
-    assert!(audio::SpatialSource::new(c, "/player.png").is_err());
+    let filename = "/player.png";
+    assert!(audio::Source::new(c, filename).is_err());
+    assert!(audio::SpatialSource::new(c, filename).is_err());
 }
 
 #[test]
 fn volume_persists_after_stop() {
     let (c, _e) = &mut tests::make_context();
+    let filename = "/pew.ogg";
     {
         let volume = 0.8;
-        let mut sound = audio::Source::new(c, "/pew.ogg").unwrap();
+        let mut sound = audio::Source::new(c, filename).unwrap();
         sound.set_volume(volume);
         assert_eq!(sound.volume(), volume);
         sound.stop();
@@ -60,7 +66,7 @@ fn volume_persists_after_stop() {
 
     {
         let volume = 0.8;
-        let mut sound = audio::SpatialSource::new(c, "/pew.ogg").unwrap();
+        let mut sound = audio::SpatialSource::new(c, filename).unwrap();
         sound.set_volume(volume);
         assert_eq!(sound.volume(), volume);
         sound.stop();
@@ -71,9 +77,10 @@ fn volume_persists_after_stop() {
 #[test]
 fn volume_persists_after_play() {
     let (c, _e) = &mut tests::make_context();
+    let filename = "/pew.ogg";
     {
         let volume = 0.8;
-        let mut sound = audio::Source::new(c, "/pew.ogg").unwrap();
+        let mut sound = audio::Source::new(c, filename).unwrap();
         sound.set_volume(volume);
         assert_eq!(sound.volume(), volume);
         sound.play().unwrap();
@@ -82,7 +89,7 @@ fn volume_persists_after_play() {
 
     {
         let volume = 0.8;
-        let mut sound = audio::SpatialSource::new(c, "/pew.ogg").unwrap();
+        let mut sound = audio::SpatialSource::new(c, filename).unwrap();
         sound.set_volume(volume);
         assert_eq!(sound.volume(), volume);
         sound.play().unwrap();
