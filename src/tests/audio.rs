@@ -12,15 +12,6 @@ fn audio_load_ogg() {
 }
 
 #[test]
-fn audio_load_mp3() {
-    let (c, _e) = &mut tests::make_context();
-
-    // LAME encoded MP3 format
-    let _sound = audio::Source::new(c, "/pew.mp3").unwrap();
-    let _sound = audio::SpatialSource::new(c, "/pew.mp3").unwrap();
-}
-
-#[test]
 fn audio_load_wav() {
     let (c, _e) = &mut tests::make_context();
 
