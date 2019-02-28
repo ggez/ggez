@@ -52,6 +52,49 @@ fn fail_when_loading_non_audio_file() {
 }
 
 #[test]
+fn playing_returns_correct_value_based_on_state() {
+    let (c, _e) = &mut tests::make_context();
+
+    let mut sound = audio::Source::new(c, "/pew.ogg").unwrap();
+    assert!(!sound.playing());
+
+    sound.play().unwrap();
+    assert!(sound.playing());
+
+    sound.pause();
+    assert!(!sound.playing());
+
+    sound.resume();
+    assert!(sound.playing());
+
+    sound.stop();
+    assert!(!sound.playing());
+}
+
+#[test]
+fn paused_returns_correct_value_based_on_state() {
+    let (c, _e) = &mut tests::make_context();
+
+    let mut sound = audio::Source::new(c, "/pew.ogg").unwrap();
+    assert!(!sound.paused());
+
+    sound.play().unwrap();
+    assert!(!sound.paused());
+
+    sound.pause();
+    assert!(sound.paused());
+
+    sound.resume();
+    assert!(!sound.paused());
+
+    sound.pause();
+    assert!(sound.paused());
+
+    sound.stop();
+    assert!(!sound.paused());
+}
+
+#[test]
 fn volume_persists_after_stop() {
     let (c, _e) = &mut tests::make_context();
     let filename = "/pew.ogg";
