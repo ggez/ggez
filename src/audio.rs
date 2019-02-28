@@ -106,12 +106,7 @@ impl SoundData {
     /// Indicates if the data can be played as a sound.
     pub fn can_play(&self) -> bool {
         let cursor = io::Cursor::new(self.clone());
-
-        if let Ok(_) = rodio::Decoder::new(cursor) {
-            true
-        } else {
-            false
-        }
+        rodio::Decoder::new(cursor).is_ok()
     }
 }
 
