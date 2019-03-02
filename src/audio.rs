@@ -102,6 +102,12 @@ impl SoundData {
 
         Ok(SoundData::from(buffer))
     }
+
+    /// Indicates if the data can be played as a sound.
+    pub fn can_play(&self) -> bool {
+        let cursor = io::Cursor::new(self.clone());
+        rodio::Decoder::new(cursor).is_ok()
+    }
 }
 
 impl From<Arc<[u8]>> for SoundData {
@@ -281,6 +287,11 @@ impl Source {
 
     /// Creates a new `Source` using the given `SoundData` object.
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
+        if !data.can_play() {
+            return Err(GameError::AudioError(
+                "Could not decode the given audio data".to_string(),
+            ));
+        }
         let sink = rodio::Sink::new(&context.audio_context.device());
         let cursor = io::Cursor::new(data);
         Ok(Source {
@@ -434,6 +445,11 @@ impl SpatialSource {
 
     /// Creates a new `SpatialSource` using the given `SoundData` object.
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
+        if !data.can_play() {
+            return Err(GameError::AudioError(
+                "Could not decode the given audio data".to_string(),
+            ));
+        }
         let sink = rodio::SpatialSink::new(
             &context.audio_context.device(),
             [0.0, 0.0, 0.0],
