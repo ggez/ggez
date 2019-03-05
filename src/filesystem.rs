@@ -31,7 +31,7 @@ use std::fmt;
 use std::io;
 use std::path;
 
-use app_dirs2::*;
+use directories::ProjectDirs;
 
 use crate::conf;
 use crate::vfs::{self, VFS};
@@ -97,7 +97,6 @@ impl Filesystem {
     /// directory path.  This function is called automatically by
     /// ggez, the end user should never need to call it.
     pub fn new(id: &'static str, author: &'static str) -> GameResult<Filesystem> {
-        let app_info = AppInfo { name: id, author };
         let mut root_path = env::current_exe()?;
 
         // Ditch the filename (if any)
@@ -112,6 +111,16 @@ impl Filesystem {
         let mut resources_zip_path;
         let user_data_path;
         let user_config_path;
+
+        let project_dirs = match ProjectDirs::from("", author, id) {
+            Some(dirs) => dirs,
+            None => {
+                return Err(GameError::FilesystemError(String::from(
+                    "No valid home directory path could be retrieved.",
+                )));
+            }
+        };
+
         // <game exe root>/resources/
         {
             resources_path = root_path.clone();
@@ -137,7 +146,7 @@ impl Filesystem {
         // Per-user data dir,
         // ~/.local/share/whatever/
         {
-            user_data_path = get_app_root(AppDataType::UserData, &app_info)?;
+            user_data_path = project_dirs.data_local_dir();
             trace!("User-local data path: {:?}", user_data_path);
             let physfs = vfs::PhysicalFS::new(&user_data_path, true);
             overlay.push_back(Box::new(physfs));
@@ -146,7 +155,7 @@ impl Filesystem {
         // Writeable local dir, ~/.config/whatever/
         // Save game dir is read-write
         {
-            user_config_path = get_app_root(AppDataType::UserConfig, &app_info)?;
+            user_config_path = project_dirs.config_dir();
             trace!("User-local configuration path: {:?}", user_config_path);
             let physfs = vfs::PhysicalFS::new(&user_config_path, false);
             overlay.push_back(Box::new(physfs));
@@ -156,8 +165,8 @@ impl Filesystem {
             vfs: overlay,
             resources_path,
             zip_path: resources_zip_path,
-            user_config_path,
-            user_data_path,
+            user_config_path: user_config_path.to_path_buf(),
+            user_data_path: user_data_path.to_path_buf(),
         };
 
         Ok(fs)
