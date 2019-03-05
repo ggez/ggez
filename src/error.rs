@@ -8,7 +8,6 @@ use gfx;
 use glutin;
 use winit;
 
-use app_dirs2::AppDirsError;
 use gilrs;
 use image;
 use lyon;
@@ -82,12 +81,6 @@ impl Error for GameError {
 /// A convenient result type consisting of a return type and a `GameError`
 pub type GameResult<T = ()> = Result<T, GameError>;
 
-impl From<AppDirsError> for GameError {
-    fn from(e: AppDirsError) -> GameError {
-        let errmessage = format!("{}", e);
-        GameError::FilesystemError(errmessage)
-    }
-}
 impl From<std::io::Error> for GameError {
     fn from(e: std::io::Error) -> GameError {
         GameError::IOError(e)

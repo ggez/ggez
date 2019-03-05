@@ -35,7 +35,7 @@ c_dependencies = ["bzip2", "mp3"]
 [dependencies]
 bitflags = "1.0"
 zip = { version = "0.5", default-features = false }
-app_dirs2 = "2"
+directories = "1.0.2"
 gfx = "0.18"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
