@@ -1,4 +1,3 @@
-
 #version 300 es
 
 in mediump vec2 a_Pos;
