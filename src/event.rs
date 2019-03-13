@@ -89,6 +89,7 @@ pub trait EventHandler {
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32) {}
 
     /// A keyboard button was pressed.
+    /// Note that if the event handler overrides this method, quit-on-escape will be disabled.
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
@@ -96,7 +97,7 @@ pub trait EventHandler {
         _keymods: KeyMods,
         _repeat: bool,
     ) {
-        if keycode == KeyCode::Escape {
+        if keycode == KeyCode::Escape && !self.quit_event(ctx) {
             super::quit(ctx);
         }
     }
