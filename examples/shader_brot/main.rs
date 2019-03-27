@@ -199,6 +199,11 @@ impl ggez::event::EventHandler for MainState {
 }
 
 fn main() -> GameResult {
+    println!("Arrow keys to move around");
+    println!("TAB to switch between mandelbrot and julia set");
+    println!("E/D to zoom in/out");
+    println!("W/S to increase/decrease detail (changes performance)");
+
     let resource_dir = path::PathBuf::from("./resources");
 
     let cb = ggez::ContextBuilder::new("shader-driven julia/mandelbrot", "BenPH").add_resource_path(resource_dir).with_conf_file(true);
