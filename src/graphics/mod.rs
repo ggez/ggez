@@ -136,7 +136,7 @@ pub trait BackendSpec: fmt::Debug {
         depth_format: gfx::format::Format,
     ) -> Result<
         (
-            glutin::GlWindow,
+            glutin::WindowedContext,
             Self::Device,
             Self::Factory,
             gfx::handle::RawRenderTargetView<Self::Resources>,
@@ -155,7 +155,7 @@ pub trait BackendSpec: fmt::Debug {
         depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-        window: &glutin::GlWindow,
+        window: &glutin::WindowedContext,
     ) -> Option<(
         gfx::handle::RawRenderTargetView<Self::Resources>,
         gfx::handle::RawDepthStencilView<Self::Resources>,
@@ -236,7 +236,7 @@ impl BackendSpec for GlBackendSpec {
         depth_format: gfx::format::Format,
     ) -> Result<
         (
-            glutin::GlWindow,
+            glutin::WindowedContext,
             Self::Device,
             Self::Factory,
             gfx::handle::RawRenderTargetView<Self::Resources>,
@@ -275,7 +275,7 @@ impl BackendSpec for GlBackendSpec {
         depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-        window: &glutin::GlWindow,
+        window: &glutin::WindowedContext,
     ) -> Option<(
         gfx::handle::RawRenderTargetView<Self::Resources>,
         gfx::handle::RawDepthStencilView<Self::Resources>,
