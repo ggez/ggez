@@ -37,7 +37,7 @@ where
     // TODO: is this needed?
     #[allow(unused)]
     pub(crate) backend_spec: B,
-    pub(crate) window: glutin::GlWindow,
+    pub(crate) window: glutin::WindowedContext,
     pub(crate) multisample_samples: u8,
     pub(crate) device: Box<B::Device>,
     pub(crate) factory: Box<B::Factory>,

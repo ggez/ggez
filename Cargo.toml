@@ -40,9 +40,9 @@ gfx = "0.18"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
 glyph_brush = "0.2"
-gfx_window_glutin = "0.29"
-glutin = "0.19"
-winit = { version = "0.18" }
+gfx_window_glutin = "0.30"
+glutin = "0.20"
+winit = { version = "0.19" }
 image = {version = "0.21", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
 rodio = { version = "0.8", default-features = false, features = ["flac", "vorbis", "wav"] }
