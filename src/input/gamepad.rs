@@ -5,10 +5,16 @@
 //! cross-platform support.  Why not give it a hand?
 //!
 //! TODO: All of this.
+//! TODO: Either re-export gilrs or remove its types from the public API;
+//! pref. the latter.
 
 use std::fmt;
 
-use gilrs::{Event, Gamepad, Gilrs};
+use gilrs::{self, Event, Gamepad, Gilrs};
+
+/// A unique identifier for a particular GamePad
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct GamepadId(pub(crate) gilrs::GamepadId);
 
 use crate::context::Context;
 use crate::error::GameResult;
@@ -19,7 +25,7 @@ pub trait GamepadContext {
     fn next_event(&mut self) -> Option<Event>;
 
     /// returns the `Gamepad` associated with an id.
-    fn gamepad(&self, id: usize) -> Option<&Gamepad>;
+    fn gamepad(&self, id: GamepadId) -> Gamepad;
 }
 
 /// A structure that contains gamepad state using `gilrs`.
@@ -45,8 +51,8 @@ impl GamepadContext for GilrsGamepadContext {
         self.gilrs.next_event()
     }
 
-    fn gamepad(&self, id: usize) -> Option<&Gamepad> {
-        self.gilrs.get(id)
+    fn gamepad(&self, id: GamepadId) -> Gamepad {
+        self.gilrs.gamepad(id.0)
     }
 }
 
@@ -61,13 +67,13 @@ impl GamepadContext for NullGamepadContext {
         panic!("Gamepad module disabled")
     }
 
-    fn gamepad(&self, _id: usize) -> Option<&Gamepad> {
+    fn gamepad(&self, _id: GamepadId) -> Gamepad {
         panic!("Gamepad module disabled")
     }
 }
 
 /// Returns the `Gamepad` associated with an `id`.
-pub fn gamepad(ctx: &Context, id: usize) -> Option<&Gamepad> {
+pub fn gamepad(ctx: &Context, id: GamepadId) -> Gamepad {
     ctx.gamepad_context.gamepad(id)
 }
 

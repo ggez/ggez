@@ -270,9 +270,9 @@ pub fn quit(ctx: &mut Context) {
 }
 
 #[cfg(debug_assertions)]
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 #[cfg(debug_assertions)]
-static DEBUG_ID_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+static DEBUG_ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 /// This is a type that contains a unique ID for each `Context` and
 /// is contained in each thing created from the `Context` which
