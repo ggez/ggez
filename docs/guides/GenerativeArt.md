@@ -23,7 +23,8 @@ impl ggez::event::EventHandler for State {
   fn update(&mut self, _ctx: &mut Context) -> GameResult {
       Ok(())
   }
-  fn draw(&mut self, _ctx: &mut Context) -> GameResult {
+  fn draw(&mut self, ctx: &mut Context) -> GameResult {
+      graphics::present(ctx)?;
       Ok(())
   }
 }
@@ -80,6 +81,7 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::WHITE,
     )?;
     graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
+    graphics::present(ctx)?
     Ok(())
 }
 ```
@@ -116,6 +118,7 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::WHITE,
     )?;
     graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
+    graphics::present(ctx)?;
     Ok(())
 }
 ```
@@ -157,6 +160,7 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::WHITE,
     )?;
     graphics::draw(ctx, &rect, graphics::DrawParam::default())?;
+    graphics::present(ctx)?;
     Ok(())
 }
 ```
@@ -238,6 +242,7 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // ...and then draw it.
         graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
     }
+    graphics::present(ctx)?;
     Ok(())
 }
 ```
