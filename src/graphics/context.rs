@@ -32,10 +32,7 @@ where
     depth_format: gfx::format::Format,
     srgb: bool,
     pub(crate) hidpi_factor: f32,
-    pub(crate) os_hidpi_factor: f32,
 
-    // TODO: is this needed?
-    #[allow(unused)]
     pub(crate) backend_spec: B,
     pub(crate) window: glutin::WindowedContext,
     pub(crate) multisample_samples: u8,
@@ -101,9 +98,24 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             gfx::format::ChannelType::Unorm,
         );
 
-        // TODO: Alter window size based on hidpi.
-        // Can't get it from window, can we get it from
-        // monitor info...?
+        // MONGLE HIDPI
+        // See https://docs.rs/winit/0.18.0/winit/dpi/index.html for
+        // an excellent explaination of how this works.
+        // See https://github.com/ggez/ggez/issues/587 for an entry point
+        // into why this behavior is now a personal nemesis of mine.
+        //
+        // TODO: We assume that the hidpi factor we use is always the hidpi
+        // factor of the primary monitor.  Depending on how clever winit
+        // tries to be, this might result in AWFUL things happening if a window
+        // is dragged from a hidpi to normal monitor and back...
+        // If so we might have to do cruel things in our resize event handler.
+        let hidpi_factor = events_loop.get_primary_monitor().get_hidpi_factor() as f32;
+        // Subvert winit's hidpi and make it so the window is created
+        // with the physical size the user asks for.
+        let subverted_size = glutin::dpi::LogicalSize::new(
+            (window_mode.width / hidpi_factor) as f64,
+            (window_mode.height / hidpi_factor) as f64,
+        );
 
         // WINDOW SETUP
         let gl_builder = glutin::ContextBuilder::new()
@@ -119,6 +131,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 
         let mut window_builder = winit::WindowBuilder::new()
             .with_title(window_setup.title.clone())
+            .with_dimensions(subverted_size)
             .with_transparency(window_setup.transparent)
             .with_resizable(window_mode.resizable);
 
@@ -137,15 +150,6 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             depth_format,
         )?;
 
-        // See https://docs.rs/winit/0.18.0/winit/dpi/index.html for
-        // an excellent explaination of how this works.
-        let os_hidpi_factor = window.get_hidpi_factor() as f32;
-        let hidpi_factor = if window_mode.hidpi {
-            os_hidpi_factor
-        } else {
-            1.0
-        };
-
         // TODO: see winit #548 about DPI.
         {
             // Log a bunch of OpenGL state info pulled out of winit and gfx
@@ -161,9 +165,12 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             } = window
                 .get_inner_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            debug!("Window created.");
+            debug!("Window created, hidpi factor {}.", hidpi_factor);
             let (major, minor) = backend.version_tuple();
-            debug!("  Window size: {}x{}, drawable size: {}x{}", w, h, dw, dh);
+            debug!(
+                "  Window logical outer size: {}x{}, logical drawable size: {}x{}",
+                w, h, dw, dh
+            );
             let device_info = backend.info(&device);
             debug!(
                 "  Asked for   : {:?} {}.{} Core, vsync: {}",
@@ -280,7 +287,6 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             depth_format,
             srgb,
             hidpi_factor,
-            os_hidpi_factor,
 
             backend_spec: backend,
             window,
@@ -329,8 +335,8 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 // having `winit` try to do the image loading for us.
 // see https://github.com/tomaka/winit/issues/661
 pub(crate) fn load_icon(icon_file: &Path, filesystem: &mut Filesystem) -> GameResult<winit::Icon> {
-    use ::image::GenericImageView;
     use ::image;
+    use ::image::GenericImageView;
     use std::io::Read;
     use winit::Icon;
 
@@ -519,12 +525,6 @@ where
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
         let window = &self.window;
 
-        if mode.hidpi {
-            self.hidpi_factor = window.get_hidpi_factor() as f32;
-        } else {
-            self.hidpi_factor = 1.0;
-        }
-
         window.set_maximized(mode.maximized);
 
         // TODO: find out if single-dimension constraints are possible.
@@ -569,7 +569,6 @@ where
                 let position = monitor.get_position();
                 let dimensions = monitor.get_dimensions();
                 let hidpi_factor = window.get_hidpi_factor();
-                self.hidpi_factor = hidpi_factor as f32;
                 window.set_fullscreen(None);
                 window.set_decorations(false);
                 window.set_inner_size(dimensions.to_logical(hidpi_factor));

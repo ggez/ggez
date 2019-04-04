@@ -36,8 +36,8 @@ pub use winit::EventsLoop;
 
 use crate::context::Context;
 use crate::error::GameResult;
+pub use crate::input::gamepad::GamepadId;
 pub use crate::input::keyboard::{KeyCode, KeyMods};
-pub use crate::input::gamepad::{GamepadId};
 
 /// A trait defining event callbacks.  This is your primary interface with
 /// `ggez`'s event loop.  Implement this trait for a type and
@@ -122,7 +122,14 @@ pub trait EventHandler {
     /// A controller axis moved; `id` identifies which controller.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
     /// the controller.
-    fn controller_axis_event(&mut self, _ctx: &mut Context, _axis: Axis, _value: f32, _id: GamepadId) {}
+    fn controller_axis_event(
+        &mut self,
+        _ctx: &mut Context,
+        _axis: Axis,
+        _value: f32,
+        _id: GamepadId,
+    ) {
+    }
 
     /// Called when the window is shown or hidden.
     fn focus_event(&mut self, _ctx: &mut Context, _gained: bool) {}
