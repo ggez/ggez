@@ -161,6 +161,7 @@ where
         ctx.timer_context.tick();
         events_loop.poll_events(|event| {
             let event = ctx.process_event(&event);
+            info!("Window event: {:?}", event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(dpi::LogicalSize { width, height }) => {

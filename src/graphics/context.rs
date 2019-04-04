@@ -165,7 +165,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             } = window
                 .get_inner_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            debug!("Window created, hidpi factor {}.", hidpi_factor);
+            debug!("Window created, desired size {}x{}, hidpi factor {}.", window_mode.width, window_mode.height, hidpi_factor);
             let (major, minor) = backend.version_tuple();
             debug!(
                 "  Window logical outer size: {}x{}, logical drawable size: {}x{}",
@@ -530,8 +530,8 @@ where
         // TODO: find out if single-dimension constraints are possible.
         let min_dimensions = if mode.min_width > 0.0 && mode.min_height > 0.0 {
             Some(dpi::LogicalSize {
-                width: mode.min_width.into(),
-                height: mode.min_height.into(),
+                width: (mode.min_width / self.hidpi_factor).into(),
+                height: (mode.min_height / self.hidpi_factor).into(),
             })
         } else {
             None
@@ -540,8 +540,8 @@ where
 
         let max_dimensions = if mode.max_width > 0.0 && mode.max_height > 0.0 {
             Some(dpi::LogicalSize {
-                width: mode.max_width.into(),
-                height: mode.max_height.into(),
+                width: (mode.max_width / self.hidpi_factor).into(),
+                height: (mode.max_height / self.hidpi_factor).into(),
             })
         } else {
             None
@@ -554,15 +554,15 @@ where
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
                 window.set_inner_size(dpi::LogicalSize {
-                    width: mode.width.into(),
-                    height: mode.height.into(),
+                    width: (mode.width / self.hidpi_factor).into(),
+                    height: (mode.height / self.hidpi_factor).into(),
                 });
             }
             FullscreenType::True => {
                 window.set_fullscreen(Some(monitor));
                 window.set_inner_size(dpi::LogicalSize {
-                    width: mode.width.into(),
-                    height: mode.height.into(),
+                    width: (mode.width / self.hidpi_factor).into(),
+                    height: (mode.height / self.hidpi_factor).into(),
                 });
             }
             FullscreenType::Desktop => {
