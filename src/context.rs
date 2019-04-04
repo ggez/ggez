@@ -121,11 +121,12 @@ impl Context {
                     self.gfx_context.resize_viewport();
                 }
                 winit_event::WindowEvent::CursorMoved {
-                    position: dpi::LogicalPosition { x, y },
+                    position: logical_position,
                     ..
                 } => {
+                    let actual_position = logical_position.to_physical(self.gfx_context.hidpi_factor as f64);
                     self.mouse_context
-                        .set_last_position(Point2::new(x as f32, y as f32));
+                        .set_last_position(Point2::new(actual_position.x as f32, actual_position.y as f32));
                 }
                 winit_event::WindowEvent::MouseInput { button, state, .. } => {
                     let pressed = match state {
@@ -157,7 +158,7 @@ impl Context {
             winit_event::Event::DeviceEvent { event, .. } => match event {
                 winit_event::DeviceEvent::MouseMotion { delta: (x, y) } => {
                     self.mouse_context
-                        .set_last_delta(Point2::new(x as f32, y as f32));
+                        .set_last_delta(Point2::new(x as f32 * self.gfx_context.hidpi_factor, y as f32 * self.gfx_context.hidpi_factor));
                 }
                 _ => (),
             },
