@@ -830,7 +830,7 @@ pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -
 }
 
 /// Sets the window size/resolution to the specified width and height.
-pub fn set_resolution(context: &mut Context, width: f32, height: f32) -> GameResult {
+pub fn set_drawable_size(context: &mut Context, width: f32, height: f32) -> GameResult {
     let mut window_mode = context.conf.window_mode;
     window_mode.width = width;
     window_mode.height = height;
@@ -876,27 +876,29 @@ pub fn window(context: &Context) -> &glutin::Window {
 /// Returns zeros if the window doesn't exist.
 /// TODO: Rename, since get_drawable_size is usually what we
 /// actually want. Maybe get_entire_size or get_window_border_size?
-pub fn size(context: &Context) -> (f64, f64) {
+pub fn size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     gfx.window
         .get_outer_size()
-        .map(|logical_size| (logical_size.width, logical_size.height))
+        .map(|logical_size| logical_size.to_physical(context.gfx_context.hidpi_factor as f64))
+        .map(|physical_size| (physical_size.width as f32, physical_size.height as f32))
         .unwrap_or((0.0, 0.0))
 }
 
 /// Returns the hidpi pixel scaling factor that the operating
 /// system says that ggez should be using.
-pub fn os_hidpi_factor(context: &Context) -> f32 {
+pub fn hidpi_factor(context: &Context) -> f32 {
     context.gfx_context.hidpi_factor
 }
 
 /// Returns the size of the window's underlying drawable in pixels as (width, height).
 /// Returns zeros if window doesn't exist.
-pub fn drawable_size(context: &Context) -> (f64, f64) {
+pub fn drawable_size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     gfx.window
         .get_inner_size()
-        .map(|logical_size| (logical_size.width, logical_size.height))
+        .map(|logical_size| logical_size.to_physical(context.gfx_context.hidpi_factor as f64))
+        .map(|physical_size| (physical_size.width as f32, physical_size.height as f32))
         .unwrap_or((0.0, 0.0))
 }
 

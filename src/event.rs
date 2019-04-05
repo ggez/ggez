@@ -161,7 +161,6 @@ where
         ctx.timer_context.tick();
         events_loop.poll_events(|event| {
             let event = ctx.process_event(&event);
-            info!("Window event: {:?}", event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(logical_size) => {
@@ -236,8 +235,8 @@ where
                         let delta = mouse::delta(ctx);
                         state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                     }
-                    x => {
-                        trace!("ignoring window event {:?}", x);
+                    _x => {
+                        // trace!("ignoring window event {:?}", x);
                     }
                 },
                 Event::DeviceEvent { event, .. } => match event {

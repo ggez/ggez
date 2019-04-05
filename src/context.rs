@@ -1,8 +1,6 @@
 /// We re-export winit so it's easy for people to use the same version as we are
 /// without having to mess around figuring it out.
 pub use winit;
-use winit::dpi;
-
 use std::fmt;
 
 use crate::audio;
