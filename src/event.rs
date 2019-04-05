@@ -235,6 +235,11 @@ where
                         let delta = mouse::delta(ctx);
                         state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                     }
+                    WindowEvent::HiDpiFactorChanged(new_hidpi_factor) => {
+                        // TODO: Test how this actually works... does winit's hidpi factor change and
+                        // we have to account for it here, or does winit just tell us when something
+                        // changes?
+                    }
                     _x => {
                         // trace!("ignoring window event {:?}", x);
                     }
