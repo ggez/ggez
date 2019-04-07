@@ -90,8 +90,8 @@ pub struct WindowMode {
     /// physical pixel on the screen.  If it is `true`, then ggez will
     /// scale *all* pixel coordinates by the scaling factor returned by
     /// [`graphics::get_hidpi_factor()`](../graphics/fn.get_hidpi_factor.html).
-    ///
-    /// TODO: This is not implemented properly yet because winit is stubborn.
+    /// 
+    /// BUGGO: Currently unimplemented.  hidpi is always forcefully ignored.
     #[default = false]
     pub hidpi: bool,
     /// Whether or not the window is resizable
