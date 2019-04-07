@@ -1,9 +1,7 @@
+use std::fmt;
 /// We re-export winit so it's easy for people to use the same version as we are
 /// without having to mess around figuring it out.
 pub use winit;
-use winit::dpi;
-
-use std::fmt;
 
 use crate::audio;
 use crate::conf;
@@ -121,11 +119,15 @@ impl Context {
                     self.gfx_context.resize_viewport();
                 }
                 winit_event::WindowEvent::CursorMoved {
-                    position: dpi::LogicalPosition { x, y },
+                    position: logical_position,
                     ..
                 } => {
-                    self.mouse_context
-                        .set_last_position(Point2::new(x as f32, y as f32));
+                    let actual_position =
+                        logical_position.to_physical(self.gfx_context.hidpi_factor as f64);
+                    self.mouse_context.set_last_position(Point2::new(
+                        actual_position.x as f32,
+                        actual_position.y as f32,
+                    ));
                 }
                 winit_event::WindowEvent::MouseInput { button, state, .. } => {
                     let pressed = match state {
@@ -152,12 +154,22 @@ impl Context {
                         .set_modifiers(keyboard::KeyMods::from(modifiers));
                     self.keyboard_context.set_key(keycode, pressed);
                 }
+                winit_event::WindowEvent::HiDpiFactorChanged(new_hidpi_factor) => {
+                    // TODO: Test how this actually works... does winit's hidpi factor change and
+                    // we have to account for it here, or does winit just tell us when something
+                    // changes?
+                    // Well this is actually really hard to test without the right hardware, soooo,
+                    // I guess I'll just leave it as this for now.
+                    self.gfx_context.hidpi_factor = new_hidpi_factor as f32;
+                }
                 _ => (),
             },
             winit_event::Event::DeviceEvent { event, .. } => match event {
                 winit_event::DeviceEvent::MouseMotion { delta: (x, y) } => {
-                    self.mouse_context
-                        .set_last_delta(Point2::new(x as f32, y as f32));
+                    self.mouse_context.set_last_delta(Point2::new(
+                        x as f32 * self.gfx_context.hidpi_factor,
+                        y as f32 * self.gfx_context.hidpi_factor,
+                    ));
                 }
                 _ => (),
             },

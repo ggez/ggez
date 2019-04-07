@@ -36,8 +36,8 @@ pub use winit::EventsLoop;
 
 use crate::context::Context;
 use crate::error::GameResult;
+pub use crate::input::gamepad::GamepadId;
 pub use crate::input::keyboard::{KeyCode, KeyMods};
-pub use crate::input::gamepad::{GamepadId};
 
 /// A trait defining event callbacks.  This is your primary interface with
 /// `ggez`'s event loop.  Implement this trait for a type and
@@ -122,7 +122,14 @@ pub trait EventHandler {
     /// A controller axis moved; `id` identifies which controller.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
     /// the controller.
-    fn controller_axis_event(&mut self, _ctx: &mut Context, _axis: Axis, _value: f32, _id: GamepadId) {}
+    fn controller_axis_event(
+        &mut self,
+        _ctx: &mut Context,
+        _axis: Axis,
+        _value: f32,
+        _id: GamepadId,
+    ) {
+    }
 
     /// Called when the window is shown or hidden.
     fn focus_event(&mut self, _ctx: &mut Context, _gained: bool) {}
@@ -156,8 +163,17 @@ where
             let event = ctx.process_event(&event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::Resized(dpi::LogicalSize { width, height }) => {
-                        state.resize_event(ctx, width as f32, height as f32);
+                    WindowEvent::Resized(logical_size) => {
+                        // TODO: HECKIN HIDPI is probably going to screw up every time anyone tries
+                        // to handle resizes in their own event loop now.
+                        let actual_size =
+                            logical_size.to_physical(ctx.gfx_context.hidpi_factor as f64);
+                        // let actual_size = logical_size;
+                        state.resize_event(
+                            ctx,
+                            actual_size.width as f32,
+                            actual_size.height as f32,
+                        );
                     }
                     WindowEvent::CloseRequested => {
                         if !state.quit_event(ctx) {
@@ -224,8 +240,8 @@ where
                         let delta = mouse::delta(ctx);
                         state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                     }
-                    x => {
-                        trace!("ignoring window event {:?}", x);
+                    _x => {
+                        // trace!("ignoring window event {:?}", x);
                     }
                 },
                 Event::DeviceEvent { event, .. } => match event {

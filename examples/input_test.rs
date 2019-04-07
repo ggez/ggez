@@ -3,7 +3,7 @@
 extern crate cgmath;
 extern crate ggez;
 
-use ggez::event::{self, Axis, Button, KeyCode, KeyMods, MouseButton, GamepadId};
+use ggez::event::{self, Axis, Button, GamepadId, KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, DrawMode};
 use ggez::input;
 use ggez::{Context, GameResult};
@@ -104,7 +104,10 @@ impl event::EventHandler for MainState {
     }
 
     fn controller_button_down_event(&mut self, _ctx: &mut Context, btn: Button, id: GamepadId) {
-        println!("Controller button pressed: {:?} Controller_Id: {:?}", btn, id);
+        println!(
+            "Controller button pressed: {:?} Controller_Id: {:?}",
+            btn, id
+        );
     }
 
     fn controller_button_up_event(&mut self, _ctx: &mut Context, btn: Button, id: GamepadId) {
