@@ -165,7 +165,10 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             } = window
                 .get_inner_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            debug!("Window created, desired size {}x{}, hidpi factor {}.", window_mode.width, window_mode.height, hidpi_factor);
+            debug!(
+                "Window created, desired size {}x{}, hidpi factor {}.",
+                window_mode.width, window_mode.height, hidpi_factor
+            );
             let (major, minor) = backend.version_tuple();
             debug!(
                 "  Window logical outer size: {}x{}, logical drawable size: {}x{}",
