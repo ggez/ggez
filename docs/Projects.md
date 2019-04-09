@@ -13,6 +13,7 @@ submit a PR, please!
  * <https://github.com/Swampsoft/solitaire>
  * <https://github.com/obsoke/rustris>
  * <https://github.com/icefoxen/ld42/>
+ * <https://github.com/conwayste/conwayste/>
 
 # Examples/tutorial code
 
