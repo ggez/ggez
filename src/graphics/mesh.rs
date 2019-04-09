@@ -584,7 +584,6 @@ impl Drawable for Mesh {
         let sampler = gfx
             .samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());
-        gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
 
         let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(texture);
         gfx.data.tex = (typed_thingy, sampler);
