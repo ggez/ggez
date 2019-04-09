@@ -473,7 +473,7 @@ impl DrawMode {
         DrawMode::Stroke(StrokeOptions::default().with_line_width(width))
     }
 
-    /// Constructs a DrawMode that fills shapes
+    /// Constructs a DrawMode that fills shapes with default fill options.
     pub fn fill() -> DrawMode {
         DrawMode::Fill(FillOptions::default())
     }

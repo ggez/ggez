@@ -90,7 +90,7 @@ pub struct WindowMode {
     /// physical pixel on the screen.  If it is `true`, then ggez will
     /// scale *all* pixel coordinates by the scaling factor returned by
     /// [`graphics::get_hidpi_factor()`](../graphics/fn.get_hidpi_factor.html).
-    /// 
+    ///
     /// BUGGO: Currently unimplemented.  hidpi is always forcefully ignored.
     #[default = false]
     pub hidpi: bool,
