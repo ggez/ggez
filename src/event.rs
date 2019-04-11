@@ -17,9 +17,9 @@ use winit::{self, dpi};
 /// A mouse button.
 pub use winit::MouseButton;
 
-/// An analog axis of some device (controller, joystick...).
+/// An analog axis of some device (gamepad, joystick...).
 pub use gilrs::Axis;
-/// A button of some device (controller, joystick...).
+/// A button of some device (gamepad, joystick...).
 pub use gilrs::Button;
 
 /// `winit` events; nested in a module for re-export neatness.
@@ -109,20 +109,20 @@ pub trait EventHandler {
     /// This is the intended way of facilitating text input.
     fn text_input_event(&mut self, _ctx: &mut Context, _character: char) {}
 
-    /// A controller button was pressed; `id` identifies which controller.
+    /// A gamepad button was pressed; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
-    /// the controller.
-    fn controller_button_down_event(&mut self, _ctx: &mut Context, _btn: Button, _id: GamepadId) {}
+    /// the gamepad.
+    fn gamepad_button_down_event(&mut self, _ctx: &mut Context, _btn: Button, _id: GamepadId) {}
 
-    /// A controller button was released; `id` identifies which controller.
+    /// A gamepad button was released; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
-    /// the controller.
-    fn controller_button_up_event(&mut self, _ctx: &mut Context, _btn: Button, _id: GamepadId) {}
+    /// the gamepad.
+    fn gamepad_button_up_event(&mut self, _ctx: &mut Context, _btn: Button, _id: GamepadId) {}
 
-    /// A controller axis moved; `id` identifies which controller.
+    /// A gamepad axis moved; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
-    /// the controller.
-    fn controller_axis_event(
+    /// the gamepad.
+    fn gamepad_axis_event(
         &mut self,
         _ctx: &mut Context,
         _axis: Axis,
@@ -255,13 +255,13 @@ where
             while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.next_event() {
                 match event {
                     gilrs::EventType::ButtonPressed(button, _) => {
-                        state.controller_button_down_event(ctx, button, GamepadId(id));
+                        state.gamepad_button_down_event(ctx, button, GamepadId(id));
                     }
                     gilrs::EventType::ButtonReleased(button, _) => {
-                        state.controller_button_up_event(ctx, button, GamepadId(id));
+                        state.gamepad_button_up_event(ctx, button, GamepadId(id));
                     }
                     gilrs::EventType::AxisChanged(axis, value, _) => {
-                        state.controller_axis_event(ctx, axis, value, GamepadId(id));
+                        state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
                     }
                     _ => {}
                 }
