@@ -39,7 +39,7 @@ directories = "1.0.2"
 gfx = "0.18"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
-glyph_brush = "0.2"
+glyph_brush = "0.4"
 gfx_window_glutin = "0.30"
 glutin = "0.20"
 winit = { version = "0.19" }

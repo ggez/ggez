@@ -54,7 +54,7 @@ where
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
-    pub(crate) glyph_brush: GlyphBrush<'static>,
+    pub(crate) glyph_brush: GlyphBrush<'static, DrawParam>,
     pub(crate) glyph_cache: ImageGeneric<B>,
     pub(crate) glyph_state: Rc<RefCell<spritebatch::SpriteBatch>>,
 }

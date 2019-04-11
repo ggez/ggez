@@ -483,7 +483,6 @@ where
         }
         Ok(glyph_brush::BrushAction::Draw(drawparams)) => {
             // Gotta clone the image to avoid double-borrow's.
-            // let image = ctx.gfx_context.glyph_cache.clone();
             let spritebatch = ctx.gfx_context.glyph_state.clone();
             let spritebatch = &mut *spritebatch.borrow_mut();
             spritebatch.clear();
