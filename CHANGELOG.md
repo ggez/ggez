@@ -12,6 +12,7 @@
  * Added a `c_dependencies` feature.  It's on by default, but
    disabling it will build ggez without unnecessary C dependencies
    (currently `bzip2` and `minimp3`). [#549](https://github.com/ggez/ggez/issues/549)
+ * Added (basic) spatial sound support.
 
 ## Changed
 
@@ -22,15 +23,14 @@
  * `DrawParam` now uses the builder pattern instead of being a bare struct, which allows easier conversion from generics (such as `mint` types) as well as simplifying the internal math.
  * All public-facing API's that take `Point2`, `Vector2` or `Matrix4` should now take
    `Into<mint::...>` for the appropriate type from the `mint` crate.  This should let users use
-   whatever math library they care to that supports `mint`; currently both `nalgebra` and `cgmath`
-   are options, and `euclid` should be soon.
+   whatever math library they care to that supports `mint`; currently `nalgebra`, `cgmath` and
+   `euclid` are all options.
  * Moved all the `FilesystemContext` methods into top-level functions in the `filesystem` module,
    to be consistent with the rest of the API.
  * What used to be the `TextCached` module is now the `Text` module, replacing all the old text stuff.  This *dramatically* changes the text API, as well as being faster and more powerful.
  * Various dimension parameters have changed to fit the underlying implementations more closely.  `Image` dimensions have changed from `u32` to `u16`, which they always were but now it's exposed to the API.  Various screen size dimensions have changed from `u32` to `f64`, which allows `winit` to do smooth DPI-independent scaling.
  * Various getters have been renamed from `get_<field>()` to `<field>`(). Of particular note are changes to Drawable and ShaderHandle traits.
  * Probably tons of other things I've forgotten.
- * We now target Rust 2018
  * Some minor modularization has taken place; at least, gamepad and audio module scan be disabled with settings in your `conf.toml`.  Doing the same for filesystem, graphics, and input is a liiiiiittle more involved.
  * `Mesh`'s now have `u32`
    indices. [#574](https://github.com/ggez/ggez/issues/574)
