@@ -103,21 +103,21 @@ impl event::EventHandler for MainState {
         println!("Text input: {}", ch);
     }
 
-    fn controller_button_down_event(&mut self, _ctx: &mut Context, btn: Button, id: GamepadId) {
+    fn gamepad_button_down_event(&mut self, _ctx: &mut Context, btn: Button, id: GamepadId) {
         println!(
             "Gamepad button pressed: {:?} Gamepad_Id: {:?}",
             btn, id
         );
     }
 
-    fn controller_button_up_event(&mut self, _ctx: &mut Context, btn: Button, id: GamepadId) {
+    fn gamepad_button_up_event(&mut self, _ctx: &mut Context, btn: Button, id: GamepadId) {
         println!(
             "Gamepad button released: {:?} Gamepad_Id: {:?}",
             btn, id
         );
     }
 
-    fn controller_axis_event(&mut self, _ctx: &mut Context, axis: Axis, value: f32, id: GamepadId) {
+    fn gamepad_axis_event(&mut self, _ctx: &mut Context, axis: Axis, value: f32, id: GamepadId) {
         println!(
             "Axis Event: {:?} Value: {} Gamepad_Id: {:?}",
             axis, value, id
