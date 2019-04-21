@@ -189,6 +189,7 @@ pub struct ContextBuilder {
     pub(crate) author: &'static str,
     pub(crate) conf: conf::Conf,
     pub(crate) paths: Vec<path::PathBuf>,
+    pub(crate) memory_zip_files: Vec<Vec<u8>>,
     pub(crate) load_conf_file: bool,
 }
 
@@ -200,6 +201,7 @@ impl ContextBuilder {
             author,
             conf: conf::Conf::default(),
             paths: vec![],
+            memory_zip_files: vec![],
             load_conf_file: true,
         }
     }
@@ -247,6 +249,20 @@ impl ContextBuilder {
         self
     }
 
+    /// Add a new zip file from bytes whose contents will be searched
+    /// for resources. The zip file will be stored in-memory.
+    ///
+    /// ```ignore
+    /// #use ggez::context::ContextBuilder;
+    /// let _ = ContextBuilder::new()
+    ///     .add_zipfile_bytes(include_bytes!("../resources.zip").to_vec())
+    ///     .build();
+    /// ```
+    pub fn add_zipfile_bytes(mut self, bytes: Vec<u8>) -> Self {
+        self.memory_zip_files.push(bytes);
+        self
+    }
+
     /// Specifies whether or not to load the `conf.toml` file if it
     /// exists and use its settings to override the provided values.
     /// Defaults to `true` which is usually what you want, but being
@@ -262,6 +278,10 @@ impl ContextBuilder {
 
         for path in &self.paths {
             fs.mount(path, true);
+        }
+
+        for zipfile_bytes in self.memory_zip_files {
+            fs.add_zip_file(std::io::Cursor::new(zipfile_bytes))?;
         }
 
         let config = if self.load_conf_file {

@@ -303,6 +303,22 @@ impl Filesystem {
         self.vfs.push_back(Box::new(physfs));
     }
 
+    /// Adds any object that implements Read + Seek as a zip file.
+    ///
+    /// Note: This is not intended for system files for the same reasons as
+    /// for `.mount()`. Rather, it can be used to read zip files from sources
+    /// such as `std::io::Cursor::new(includes_bytes!(...))` in order to embed
+    /// resources into the game's executable.
+    pub(crate) fn add_zip_file<R: io::Read + io::Seek + 'static>(
+        &mut self,
+        reader: R,
+    ) -> GameResult<()> {
+        let zipfs = vfs::ZipFS::from_read(reader)?;
+        trace!("Adding zip file from reader");
+        self.vfs.push_back(Box::new(zipfs));
+        Ok(())
+    }
+
     /// Looks for a file named `/conf.toml` in any resource directory and
     /// loads it if it finds it.
     /// If it can't read it for some reason, returns an error.

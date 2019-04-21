@@ -13,6 +13,7 @@
    disabling it will build ggez without unnecessary C dependencies
    (currently `bzip2` and `minimp3`). [#549](https://github.com/ggez/ggez/issues/549)
  * Added (basic) spatial sound support.
+ * Added loading of resource zip files from in-memory bytes
 
 ## Changed
 

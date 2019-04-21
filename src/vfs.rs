@@ -524,6 +524,37 @@ impl VFS for OverlayFS {
     }
 }
 
+trait ZipArchiveAccess {
+    fn by_name<'a>(&'a mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile<'a>>;
+    fn by_index<'a>(
+        &'a mut self,
+        file_number: usize,
+    ) -> zip::result::ZipResult<zip::read::ZipFile<'a>>;
+    fn len(&self) -> usize;
+}
+
+impl<T: Read + Seek> ZipArchiveAccess for zip::ZipArchive<T> {
+    fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile> {
+        self.by_name(name)
+    }
+
+    fn by_index(&mut self, file_number: usize) -> zip::result::ZipResult<zip::read::ZipFile> {
+        self.by_index(file_number)
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+}
+
+impl Debug for dyn ZipArchiveAccess {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        // Hide the contents; for an io::Cursor, this would print what is
+        // likely to be megabytes of data.
+        write!(f, "<ZipArchiveAccess>")
+    }
+}
+
 /// A filesystem backed by a zip file.
 #[derive(Debug)]
 pub struct ZipFS {
@@ -535,8 +566,8 @@ pub struct ZipFS {
     // ALSO THE SEMANTICS OF ZIPARCHIVE AND HAVING ZIPFILES BORROW IT IS
     // HORRIFICALLY BROKEN BY DESIGN SO WE'RE JUST GONNA REFCELL IT AND COPY
     // ALL CONTENTS OUT OF IT AAAAA.
-    source: PathBuf,
-    archive: RefCell<zip::ZipArchive<fs::File>>,
+    source: Option<PathBuf>,
+    archive: RefCell<Box<dyn ZipArchiveAccess>>,
     // We keep an index of what files are in the zip file
     // because trying to read it lazily is a pain in the butt.
     index: Vec<String>,
@@ -545,7 +576,24 @@ pub struct ZipFS {
 impl ZipFS {
     pub fn new(filename: &Path) -> GameResult<Self> {
         let f = fs::File::open(filename)?;
-        let mut archive = zip::ZipArchive::new(f)?;
+        let archive = Box::new(zip::ZipArchive::new(f)?);
+        ZipFS::from_boxed_archive(archive, Some(filename.into()))
+    }
+
+    /// Creates a `ZipFS` from any `Read+Seek` object, most useful with an
+    /// in-memory `std::io::Cursor`.
+    pub fn from_read<R>(reader: R) -> GameResult<Self>
+    where
+        R: Read + Seek + 'static,
+    {
+        let archive = Box::new(zip::ZipArchive::new(reader)?);
+        ZipFS::from_boxed_archive(archive, None)
+    }
+
+    fn from_boxed_archive(
+        mut archive: Box<dyn ZipArchiveAccess>,
+        source: Option<PathBuf>,
+    ) -> GameResult<Self> {
         let idx = (0..archive.len())
             .map(|i| {
                 archive
@@ -556,7 +604,7 @@ impl ZipFS {
             })
             .collect();
         Ok(Self {
-            source: filename.into(),
+            source,
             archive: RefCell::new(archive),
             index: idx,
         })
@@ -629,10 +677,7 @@ impl ZipMetadata {
     /// this way without basically just faking it.
     ///
     /// This does make listing a directory rather screwy.
-    fn new<T>(name: &str, archive: &mut zip::ZipArchive<T>) -> Option<Self>
-    where
-        T: io::Read + io::Seek,
-    {
+    fn new(name: &str, archive: &mut Box<dyn ZipArchiveAccess>) -> Option<Self> {
         match archive.by_name(name) {
             Err(_) => None,
             Ok(zipfile) => {
@@ -742,7 +787,7 @@ impl VFS for ZipFS {
     }
 
     fn to_path_buf(&self) -> Option<PathBuf> {
-        Some(self.source.clone())
+        self.source.clone()
     }
 }
 
@@ -886,6 +931,32 @@ mod tests {
 
         fs.rmrf(testdir).unwrap();
         assert!(!fs.exists(testdir));
+    }
+
+    #[test]
+    fn test_zip_files() {
+        let mut finished_zip_bytes: io::Cursor<_> = {
+            let zip_bytes = io::Cursor::new(vec![]);
+            let mut zip_archive = zip::ZipWriter::new(zip_bytes);
+
+            zip_archive
+                .start_file("fake_file_name.txt", zip::write::FileOptions::default())
+                .unwrap();
+            let _bytes = zip_archive.write(b"Zip contents!").unwrap();
+            zip_archive.finish().unwrap()
+        };
+
+        let _bytes = finished_zip_bytes.seek(io::SeekFrom::Start(0)).unwrap();
+        let zfs = ZipFS::from_read(finished_zip_bytes).unwrap();
+
+        assert!(zfs.exists(Path::new("fake_file_name.txt".into())));
+
+        let mut contents = String::new();
+        let _bytes = zfs
+            .open(Path::new("fake_file_name.txt"))
+            .unwrap()
+            .read_to_string(&mut contents);
+        assert_eq!(contents, "Zip contents!");
     }
 
     // BUGGO: TODO: Make sure all functions are tested for OverlayFS and ZipFS!!
