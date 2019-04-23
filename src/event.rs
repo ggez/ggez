@@ -90,6 +90,11 @@ pub trait EventHandler {
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32) {}
 
     /// A keyboard button was pressed.
+    ///
+    /// The default implementation of this will call `ggez::quit()`
+    /// when the escape key is pressed.  If you override this with
+    /// your own event handler you have to re-implment that
+    /// functionality yourself.
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
