@@ -80,10 +80,26 @@ Ideally you'd be able to use a glyph cache to render letters to a texture once, 
 
 Again, debug mode is slow.  Plus, each single draw call has some overhead.  If building in release mode still isn't fast enough, then look into using `SpriteBatch` to draw a bunch of chunks from a spritesheet (also known as an atlas).  If you're drawing geometry, instead of using `graphics::rectangle()` or `graphics::circle()` and such, which create a new `Mesh` on each call and then throw it away, create and store a `Mesh` and draw it many times, or use a `MeshBuilder` to build a single `Mesh` out of many separate shapes.
 
-
 # How do I build on platform X?
 
-See the [build docs](https://github.com/ggez/ggez/blob/master/docs/BuildingForEveryPlatform.md).  If your question is not answered there, open an [issue](https://github.com/ggez/ggez/issues).
+See the [build
+docs](https://github.com/ggez/ggez/blob/master/docs/BuildingForEveryPlatform.md).
+If your question is not answered there, open an
+[issue](https://github.com/ggez/ggez/issues).
+
+# Is Mac/iOS supported?
+
+Apple will be supported when they treat programmers trying to use
+their systems as something other than third-class citizens.  See
+https://drewdevault.com/2017/10/26/Fuck-you-nvidia.html for the
+general message, but replace "NVidia" with "Apple" and make it an
+ongoing problem of continual exploitation that has made Apple the
+richest company in the world off of the work of others.
+
+That said, ggez will probably build and run fine on Mac, and pull
+requests for Mac-specific bugs will be accepted as long as they don't
+break anything else.  In the mean time, consider writing your software
+for a company that doesn't treat you like dirt.
 
 # Can I do 3D stuff?
 

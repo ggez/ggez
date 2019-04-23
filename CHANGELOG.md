@@ -38,6 +38,12 @@
    shortcut functions to make default parameters.  This simplifies
    things somewhat by not needing separate args to specify things like
    a stroke width for `DrawMode::Stroke`.
+ * HiDPI support removed [since it doesn't do anything
+   useful](https://github.com/rust-windowing/winit/issues/837#issuecomment-485864175).
+   Any problems with your window not being the size you asked for are
+   `winit`'s problem and will be solved once they fix it.
+   [#587](https://github.com/ggez/ggez/issues/587)
+   
 
 ## Deprecated
 
@@ -45,6 +51,7 @@
 
 ## Removed
 
+ * Apple products are no longer supported.  [this commit](https://github.com/ggez/ggez/commit/2f02c72cf31401a1e6ab55edc745f6227c99fb67)
  * The foreground and background colors and associated functions have beeen removed; all colors are
    now specified purely where they are used for drawing.
  * Removed deprecated `BoundSpriteBatch` type.
@@ -64,12 +71,8 @@
  
 ## Broken
 
- * `gamepad` module is now disabled by default on OSX until we get
-   `gilrs` shipshape.  [#588](https://github.com/ggez/ggez/issues/588)
  * Does not work on Windows 7 or below, again due to `gilrs`.
    [#588](https://github.com/ggez/ggez/issues/588)
- * There are various and sundry horrible DPI-related graphics bugs.
-   [#587](https://github.com/ggez/ggez/issues/587)
 
 # 0.4.4
 

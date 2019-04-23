@@ -150,11 +150,12 @@ impl EventHandler for MyGame {
 
 ## Implementation details
 
-ggez is built upon `winit` for windowing and events, `rodio` for sound,
-and a 2D drawing engine implemented in `gfx` using the OpenGL backend
-(which currently defaults to use OpenGL 3.2).  It *should* be
-entirely thread-safe outside of the basic event-handling loop, and
-portable to Windows nad Linux.
+ggez is built upon `winit` for windowing and events, `rodio` for
+sound, and a 2D drawing engine implemented in `gfx` using the OpenGL
+backend (which currently defaults to use OpenGL 3.2).  It is entirely
+thread-safe (though platform constraints mean the event-handling loop
+and drawing must be done in the main thread), and portable to Windows
+and Linux.
 
 ggez is Pure Rust(tm).
 
