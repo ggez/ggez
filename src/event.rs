@@ -168,6 +168,7 @@ where
                         // to handle resizes in their own event loop now.
                         let actual_size =
                             logical_size.to_physical(ctx.gfx_context.hidpi_factor as f64);
+                        ctx.gfx_context.window.resize(actual_size);
                         // let actual_size = logical_size;
                         state.resize_event(
                             ctx,
