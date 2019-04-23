@@ -47,7 +47,6 @@ pub enum FullscreenType {
 ///     max_width: 0.0,
 ///     min_height: 0.0,
 ///     max_height: 0.0,
-///     hidpi: false,
 ///     resizable: false,
 /// }
 /// # , WindowMode::default());}
@@ -81,19 +80,6 @@ pub struct WindowMode {
     /// Maximum height for resizable windows; 0 means no limit
     #[default = 0.0]
     pub max_height: f32,
-    /// Whether or not to scale all "pixel" coordinates to deal with
-    /// high DPI screens.
-    ///
-    /// A very good overview of this is available in
-    /// [the `winit` docs](https://docs.rs/winit/0.18.0/winit/dpi/index.html).
-    /// If this is false (the default), one pixel in ggez equates to one
-    /// physical pixel on the screen.  If it is `true`, then ggez will
-    /// scale *all* pixel coordinates by the scaling factor returned by
-    /// [`graphics::get_hidpi_factor()`](../graphics/fn.get_hidpi_factor.html).
-    ///
-    /// BUGGO: Currently unimplemented.  hidpi is always forcefully ignored.
-    #[default = false]
-    pub hidpi: bool,
     /// Whether or not the window is resizable
     #[default = false]
     pub resizable: bool,
@@ -142,12 +128,6 @@ impl WindowMode {
     /// Set resizable.
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
-        self
-    }
-
-    /// Sets whether or not to allow hidpi.
-    pub fn hidpi(mut self, hidpi: bool) -> Self {
-        self.hidpi = hidpi;
         self
     }
 }

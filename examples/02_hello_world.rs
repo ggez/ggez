@@ -78,8 +78,6 @@ pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("helloworld", "ggez").add_resource_path(resource_dir);
     let (ctx, event_loop) = &mut cb.build()?;
 
-    println!("HIDPI: {}", graphics::hidpi_factor(ctx));
-
     let state = &mut MainState::new(ctx)?;
     event::run(ctx, event_loop, state)
 }

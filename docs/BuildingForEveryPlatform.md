@@ -2,7 +2,7 @@
 
 Greetings, one and all.  Today we shall explore how to build and
 deploy a `ggez` game for every possible platform.  For platforms like
-Linux and Mac it's pretty darn simple.  For ones like Android it gets
+Linux it's pretty darn simple.  For ones like Android it gets
 harder and you have to jump through hoops.  The purpose of this is to
 document the hoops and give you a cookbook on the best jumping methods
 and trajectories.  We will progress generally from the easiest to
@@ -77,16 +77,6 @@ TODO: Double-check this with 0.5
 
 You should be able to just copy-paste the executable file and the `resources` directory to wherever you want.
 
-# Mac
-
-Should be able to just install Rust and run the game, same as the basic setup
-instructions.
-
-## Distributing
-
-TODO: Fix this now that I have access to a mac.
-
-???
 
 # Windows
 
@@ -99,10 +89,6 @@ Should just build.  We recommend using the MSVC toolchain whenever possible, the
 Just copy-paste the exe and resource files to the destination computer.
 
 # Android
-
-Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
-
-# iOS
 
 Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
 

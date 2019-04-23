@@ -31,7 +31,6 @@ where
     color_format: gfx::format::Format,
     depth_format: gfx::format::Format,
     srgb: bool,
-    pub(crate) hidpi_factor: f32,
 
     pub(crate) backend_spec: B,
     pub(crate) window: glutin::WindowedContext,
@@ -98,25 +97,6 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             gfx::format::ChannelType::Unorm,
         );
 
-        // MONGLE HIDPI
-        // See https://docs.rs/winit/0.18.0/winit/dpi/index.html for
-        // an excellent explaination of how this works.
-        // See https://github.com/ggez/ggez/issues/587 for an entry point
-        // into why this behavior is now a personal nemesis of mine.
-        //
-        // TODO: We assume that the hidpi factor we use is always the hidpi
-        // factor of the primary monitor.  Depending on how clever winit
-        // tries to be, this might result in AWFUL things happening if a window
-        // is dragged from a hidpi to normal monitor and back...
-        // If so we might have to do cruel things in our resize event handler.
-        let hidpi_factor = events_loop.get_primary_monitor().get_hidpi_factor() as f32;
-        // Subvert winit's hidpi and make it so the window is created
-        // with the physical size the user asks for.
-        let subverted_size = glutin::dpi::LogicalSize::new(
-            (window_mode.width / hidpi_factor) as f64,
-            (window_mode.height / hidpi_factor) as f64,
-        );
-
         // WINDOW SETUP
         let gl_builder = glutin::ContextBuilder::new()
             .with_gl(glutin::GlRequest::Specific(
@@ -129,9 +109,10 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_pixel_format(24, 8)
             .with_vsync(window_setup.vsync);
 
+        let window_size = dpi::LogicalSize::from((window_mode.width as f64, window_mode.height as f64));
         let mut window_builder = winit::WindowBuilder::new()
             .with_title(window_setup.title.clone())
-            .with_dimensions(subverted_size)
+            .with_dimensions(window_size)
             .with_transparency(window_setup.transparent)
             .with_resizable(window_mode.resizable);
 
@@ -165,6 +146,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             } = window
                 .get_inner_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
+            let hidpi_factor = window.get_hidpi_factor();
             debug!(
                 "Window created, desired size {}x{}, hidpi factor {}.",
                 window_mode.width, window_mode.height, hidpi_factor
@@ -289,7 +271,6 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             color_format,
             depth_format,
             srgb,
-            hidpi_factor,
 
             backend_spec: backend,
             window,
@@ -533,8 +514,8 @@ where
         // TODO: find out if single-dimension constraints are possible.
         let min_dimensions = if mode.min_width > 0.0 && mode.min_height > 0.0 {
             Some(dpi::LogicalSize {
-                width: (mode.min_width / self.hidpi_factor).into(),
-                height: (mode.min_height / self.hidpi_factor).into(),
+                width: mode.min_width as f64,
+                height: mode.min_height as f64,
             })
         } else {
             None
@@ -543,8 +524,8 @@ where
 
         let max_dimensions = if mode.max_width > 0.0 && mode.max_height > 0.0 {
             Some(dpi::LogicalSize {
-                width: (mode.max_width / self.hidpi_factor).into(),
-                height: (mode.max_height / self.hidpi_factor).into(),
+                width: mode.max_width as f64,
+                height: mode.max_height as f64,
             })
         } else {
             None
@@ -557,15 +538,15 @@ where
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
                 window.set_inner_size(dpi::LogicalSize {
-                    width: (mode.width / self.hidpi_factor).into(),
-                    height: (mode.height / self.hidpi_factor).into(),
+                    width: mode.width as f64,
+                    height: mode.height as f64,
                 });
             }
             FullscreenType::True => {
                 window.set_fullscreen(Some(monitor));
                 window.set_inner_size(dpi::LogicalSize {
-                    width: (mode.width / self.hidpi_factor).into(),
-                    height: (mode.height / self.hidpi_factor).into(),
+                    width: mode.width as f64,
+                    height: mode.height as f64,
                 });
             }
             FullscreenType::Desktop => {
@@ -619,29 +600,4 @@ where
             false
         }
     }
-
-    /// This is a filthy hack allow users to override hidpi
-    /// scaling if they want to.  Everything that winit touches
-    /// is scaled by the hidpi factor that it uses, such as monitor
-    /// resolutions and mouse positions.  If you want display-independent
-    /// scaling this is Good, if you want pixel-perfect scaling this
-    /// is Bad.  We are currently operating on the assumption that you want
-    /// pixel-perfect scaling.
-    ///
-    /// See <https://github.com/tomaka/winit/issues/591#issuecomment-403096230>
-    /// and related issues for fuller discussion.
-    /// TODO: Unimplemented yet because I don't know the best way to fix hidpi.  :|
-    pub(crate) fn hack_event_hidpi(&self, event: &winit::Event) -> winit::Event {
-        event.clone()
-    }
-
-    // TODO: Heckin' figure out DPI.
-    // /// Takes a coordinate in winit's Logical scale (aka everything we touch)
-    // /// and turns it into the equivalent in PhysicalScale, allowing us to
-    // /// override the DPI if necessary.
-    // pub(crate) fn to_physical_dpi(&self, x: f32, y: f32) -> (f32, f32) {
-    //     let logical = dpi::LogicalPosition::new(f64::from(x), f64::from(y));
-    //     let physical = dpi::PhysicalPosition::from_logical(logical, self.hidpi_factor.into());
-    //     (physical.x as f32, physical.y as f32)
-    // }
 }

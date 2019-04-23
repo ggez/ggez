@@ -244,7 +244,6 @@ impl BackendSpec for GlBackendSpec {
         ),
         glutin::CreationError,
     > {
-        use gfx_window_glutin;
         gfx_window_glutin::init_raw(
             window_builder,
             gl_builder,
@@ -284,7 +283,6 @@ impl BackendSpec for GlBackendSpec {
         // gfx_window_glutin::update_views()
         let dim = color_view.get_dimensions();
         assert_eq!(dim, depth_view.get_dimensions());
-        use gfx_window_glutin;
         if let Some((cv, dv)) =
             gfx_window_glutin::update_views_raw(window, dim, color_format, depth_format)
         {
@@ -880,16 +878,10 @@ pub fn size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     gfx.window
         .get_outer_size()
-        .map(|logical_size| logical_size.to_physical(context.gfx_context.hidpi_factor as f64))
-        .map(|physical_size| (physical_size.width as f32, physical_size.height as f32))
+        .map(|logical_size| (logical_size.width as f32, logical_size.height as f32))
         .unwrap_or((0.0, 0.0))
 }
 
-/// Returns the hidpi pixel scaling factor that the operating
-/// system says that ggez should be using.
-pub fn hidpi_factor(context: &Context) -> f32 {
-    context.gfx_context.hidpi_factor
-}
 
 /// Returns the size of the window's underlying drawable in pixels as (width, height).
 /// Returns zeros if window doesn't exist.
@@ -897,8 +889,7 @@ pub fn drawable_size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     gfx.window
         .get_inner_size()
-        .map(|logical_size| logical_size.to_physical(context.gfx_context.hidpi_factor as f64))
-        .map(|physical_size| (physical_size.width as f32, physical_size.height as f32))
+        .map(|logical_size| (logical_size.width as f32, logical_size.height as f32))
         .unwrap_or((0.0, 0.0))
 }
 

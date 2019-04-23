@@ -165,19 +165,15 @@ where
     while ctx.continuing {
         ctx.timer_context.tick();
         events_loop.poll_events(|event| {
-            let event = ctx.process_event(&event);
+            let event = ctx.process_event(event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(logical_size) => {
-                        // TODO: HECKIN HIDPI is probably going to screw up every time anyone tries
-                        // to handle resizes in their own event loop now.
-                        let actual_size =
-                            logical_size.to_physical(ctx.gfx_context.hidpi_factor as f64);
                         // let actual_size = logical_size;
                         state.resize_event(
                             ctx,
-                            actual_size.width as f32,
-                            actual_size.height as f32,
+                            logical_size.width as f32,
+                            logical_size.height as f32,
                         );
                     }
                     WindowEvent::CloseRequested => {

@@ -50,9 +50,10 @@ your own libraries atop ggez.
 
 ## Supported platforms
 
- * Fully supported: Windows, Linux, macOS
+ * Fully supported: Windows, Linux
  * Work in progress: Web/WASM/Emscripten
- * Not officially supported yet (but maybe you can help!): Android, iOS
+ * Not officially supported yet (but maybe you can help!): Android
+ * Will never officially support but might work anyway: Mac, iOS
 
 For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
 
@@ -153,7 +154,7 @@ ggez is built upon `winit` for windowing and events, `rodio` for sound,
 and a 2D drawing engine implemented in `gfx` using the OpenGL backend
 (which currently defaults to use OpenGL 3.2).  It *should* be
 entirely thread-safe outside of the basic event-handling loop, and
-portable to Windows, Linux and Mac.
+portable to Windows nad Linux.
 
 ggez is Pure Rust(tm).
 

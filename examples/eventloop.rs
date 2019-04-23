@@ -30,7 +30,7 @@ pub fn main() -> GameResult {
         events_loop.poll_events(|event| {
             // This tells `ggez` to update it's internal states, should the event require that.
             // These include cursor position, view updating on resize, etc.
-            ctx.process_event(&event);
+            let event = ctx.process_event(event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
                     WindowEvent::CloseRequested => ggez::quit(ctx),
