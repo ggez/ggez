@@ -58,7 +58,14 @@ pub use crate::graphics::shader::*;
 pub use crate::graphics::text::*;
 pub use crate::graphics::types::*;
 
-// BUGGO TODO: Figure out how to formalize this a bit better
+// This isn't really particularly nice, but it's only used
+// in a couple places and it's not very easy to change or configure.
+// Since the next major project is "rewrite the graphics engine" I think
+// we're fine just leaving it.
+//
+// It exists basically because gfx-rs is incomplete and we can't *always*
+// specify texture formats and such entirely at runtime, which we need to
+// do to make sRGB handling work properly.
 pub(crate) type BuggoSurfaceFormat = gfx::format::Srgba8;
 type ShaderResourceType = [f32; 4];
 
@@ -95,7 +102,13 @@ pub trait BackendSpec: fmt::Debug {
         typed_view
     }
 
-    /// TODO: BUGGO: Placeholder
+    /// Helper function that turns a raw to typed texture.
+    /// A bit hacky since we can't really specify surface formats as part
+    /// of this that well, alas.  There's some functions, like
+    /// `gfx::Encoder::update_texture()`, that don't seem to have a `_raw()`
+    /// counterpart, so we need this, so we need `BuggoSurfaceFormat` to
+    /// keep fixed at compile time what texture format we're actually using.
+    /// Oh well!
     fn raw_to_typed_texture(
         &self,
         texture_view: gfx::handle::RawTexture<Self::Resources>,
@@ -452,18 +465,13 @@ impl From<gfx::buffer::CreationError> for GameError {
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context, color: Color) {
     let gfx = &mut ctx.gfx_context;
-    // SRGB BUGGO: Only convert when drawing on srgb surface?
-    // I actually can't make it make any difference; fiddle more.
+    // TODO: Only convert when drawing on srgb surface?  I
+    // actually can't make it make any difference; fiddle more.  Need
+    // to double-check it works properly now we have `clear_raw()`
+    // too.
     let linear_color: types::LinearColor = color.into();
-    // SRGB BUGGO: Need a clear_raw() method here,
-    // which currently isn't released, see
-    // https://github.com/gfx-rs/gfx/pull/2197
-    // So for now we wing it.
-    type ColorFormat = BuggoSurfaceFormat;
-
-    let typed_render_target: gfx::handle::RenderTargetView<_, ColorFormat> =
-        gfx::memory::Typed::new(gfx.data.out.clone());
-    gfx.encoder.clear(&typed_render_target, linear_color.into());
+    let c: [f32;4] = linear_color.into();
+    gfx.encoder.clear_raw(&gfx.data.out, c.into());
 }
 
 /// Draws the given `Drawable` object to the screen by calling its
