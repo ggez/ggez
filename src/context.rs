@@ -181,6 +181,7 @@ impl Context {
 }
 
 use std::path;
+use std::borrow::Cow;
 
 /// A builder object for creating a [`Context`](struct.Context.html).
 #[derive(Debug, Clone, PartialEq)]
@@ -189,7 +190,7 @@ pub struct ContextBuilder {
     pub(crate) author: &'static str,
     pub(crate) conf: conf::Conf,
     pub(crate) paths: Vec<path::PathBuf>,
-    pub(crate) memory_zip_files: Vec<Vec<u8>>,
+    pub(crate) memory_zip_files: Vec<Cow<'static, [u8]>>,
     pub(crate) load_conf_file: bool,
 }
 
@@ -251,6 +252,7 @@ impl ContextBuilder {
 
     /// Add a new zip file from bytes whose contents will be searched
     /// for resources. The zip file will be stored in-memory.
+    /// You can pass it a static slice, a `Vec` of bytes, etc.
     ///
     /// ```ignore
     /// #use ggez::context::ContextBuilder;
@@ -258,8 +260,10 @@ impl ContextBuilder {
     ///     .add_zipfile_bytes(include_bytes!("../resources.zip").to_vec())
     ///     .build();
     /// ```
-    pub fn add_zipfile_bytes(mut self, bytes: Vec<u8>) -> Self {
-        self.memory_zip_files.push(bytes);
+    pub fn add_zipfile_bytes<B>(mut self, bytes: B) -> Self
+    where B: Into<Cow<'static, [u8]>> {
+        let cow = bytes.into();
+        self.memory_zip_files.push(cow);
         self
     }
 
