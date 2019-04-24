@@ -19,7 +19,6 @@ pub struct ImageGeneric<B>
 where
     B: BackendSpec,
 {
-    // TODO: Rename to shader_view or such.
     pub(crate) texture: gfx::handle::RawShaderResourceView<B::Resources>,
     pub(crate) texture_handle: gfx::handle::RawTexture<B::Resources>,
     pub(crate) sampler_info: gfx::texture::SamplerInfo,
@@ -218,11 +217,8 @@ impl Image {
         // so the screenshot isn't upside-down
         let mut data = Vec::with_capacity(self.width as usize * self.height as usize * 4);
         for row in reader.chunks(w as usize).rev() {
-            // TODO: Test if we can just do row.flatten() here?
-            // data.extend(row.iter().flatten());
-            for pixel in row.iter() {
-                data.extend(pixel);
-            }
+            data.extend(row.iter().flatten());
+
         }
         Ok(data)
     }

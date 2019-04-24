@@ -880,8 +880,6 @@ pub fn window(context: &Context) -> &glutin::Window {
 /// Returns the size of the window in pixels as (width, height),
 /// including borders, titlebar, etc.
 /// Returns zeros if the window doesn't exist.
-/// TODO: Rename, since get_drawable_size is usually what we
-/// actually want. Maybe get_entire_size or get_window_border_size?
 pub fn size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     gfx.window
@@ -967,8 +965,6 @@ pub fn gfx_objects(
 /// All types that can be drawn on the screen implement the `Drawable` trait.
 pub trait Drawable {
     /// Draws the drawable onto the rendering target.
-    ///
-    /// ALSO TODO: Expand docs
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult;
 
     /// Returns a bounding box in the form of `Rect`.

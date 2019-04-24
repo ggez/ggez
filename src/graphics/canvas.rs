@@ -111,6 +111,9 @@ impl Canvas {
     pub fn into_inner(self) -> Image {
         // TODO: This texture is created with different settings
         // than the default; does that matter?
+        // Test; we really just need to add Bind::TRANSFER_SRC
+        // and change the Usage's to match to make them identical.
+        // Ask termhn maybe?
         self.image
     }
 }
