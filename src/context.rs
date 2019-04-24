@@ -117,12 +117,7 @@ impl Context {
     /// state it needs to, such as detecting window resizes.  If you are
     /// rolling your own event loop, you should call this on the events
     /// you receive before processing them yourself.
-    ///
-    /// TODO: Resolve hidpi mongling in #391.
-    /// This also returns a new version of the `Event` that has been modified
-    /// for ggez's optional overriding of hidpi.  For full discussion see
-    /// <https://github.com/tomaka/winit/issues/591#issuecomment-403096230>.
-    pub fn process_event(&mut self, event: winit::Event) -> winit::Event {
+    pub fn process_event(&mut self, event: &winit::Event) {
         match event.clone() {
             winit_event::Event::WindowEvent { event, .. } => match event {
                 winit_event::WindowEvent::Resized(logical_size) => {
@@ -182,7 +177,6 @@ impl Context {
 
             _ => (),
         };
-        event
     }
 }
 

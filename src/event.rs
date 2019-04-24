@@ -2,14 +2,13 @@
 //! and handle top-level state, as well as handle input events such as keyboard
 //! and mouse.
 //!
-//! If you don't want to do this, you can write your own mainloop and
-//! check for events on your own, which is not particularly hard.  This
-//! just tries to simplify the process a little.  See the source code for
-//! this module, or the
-//! [`eventloop` example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs)
-//! example code to see how to do this.
-//!
-//! TODO: UPDATE DOCS!
+//! If you don't want to use `ggez`'s built in event loop, you can
+//! write your own mainloop and check for events on your own.  This is
+//! not particularly hard, there's nothing special about the
+//! `EventHandler` trait.  It just tries to simplify the process a
+//! little.  For examples of how to write your own main loop, see the
+//! source code for this module, or the [`eventloop`
+//! example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs).
 
 use gilrs;
 use winit::{self, dpi};
@@ -17,7 +16,7 @@ use winit::{self, dpi};
 /// A mouse button.
 pub use winit::MouseButton;
 
-/// An analog axis of some device (gamepad, joystick...).
+/// An analog axis of some device (gamepad thumbstick, joystick...).
 pub use gilrs::Axis;
 /// A button of some device (gamepad, joystick...).
 pub use gilrs::Button;
@@ -163,9 +162,13 @@ where
     use crate::input::{keyboard, mouse};
 
     while ctx.continuing {
+        // If you are writing your own event loop, make sure
+        // you include `timer_context.tick()` and
+        // `ctx.process_event()` calls.  These update ggez's
+        // internal state however necessary.
         ctx.timer_context.tick();
         events_loop.poll_events(|event| {
-            let event = ctx.process_event(event);
+            ctx.process_event(&event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(logical_size) => {
@@ -252,6 +255,7 @@ where
                 Event::Suspended(_) => (),
             }
         });
+        // Handle gamepad events if necessary.
         if ctx.conf.modules.gamepad {
             while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.next_event() {
                 match event {
