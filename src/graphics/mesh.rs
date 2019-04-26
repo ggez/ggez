@@ -561,7 +561,7 @@ impl Mesh {
         // By default we create `Mesh` with a read-only GPU buffer, which I am
         // a little hesitant to change... partially because doing that with
         // `Image` has caused some subtle edge case bugs.
-        // 
+        //
         // It's not terribly hard to do in principle though, just tedious;
         // start at `Factory::create_vertex_buffer_with_slice()`, drill down to
         // <https://docs.rs/gfx/0.17.1/gfx/traits/trait.Factory.html#tymethod.create_buffer_raw>,

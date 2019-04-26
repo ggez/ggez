@@ -27,7 +27,7 @@ use crate::timer;
 /// here to make it easier to debug,
 /// or to let advanced users hook into the guts of ggez and make it
 /// do things it normally can't.  
-/// Most users shouldn't touch these things directly, since 
+/// Most users shouldn't touch these things directly, since
 /// implementation details may change without warning.  The
 /// public and stable API is `ggez`'s module-level functions and types.
 pub struct Context {
@@ -167,10 +167,8 @@ impl Context {
             },
             winit_event::Event::DeviceEvent { event, .. } => match event {
                 winit_event::DeviceEvent::MouseMotion { delta: (x, y) } => {
-                    self.mouse_context.set_last_delta(Point2::new(
-                        x as f32,
-                        y as f32,
-                    ));
+                    self.mouse_context
+                        .set_last_delta(Point2::new(x as f32, y as f32));
                 }
                 _ => (),
             },
@@ -180,8 +178,8 @@ impl Context {
     }
 }
 
-use std::path;
 use std::borrow::Cow;
+use std::path;
 
 /// A builder object for creating a [`Context`](struct.Context.html).
 #[derive(Debug, Clone, PartialEq)]
@@ -261,7 +259,9 @@ impl ContextBuilder {
     ///     .build();
     /// ```
     pub fn add_zipfile_bytes<B>(mut self, bytes: B) -> Self
-    where B: Into<Cow<'static, [u8]>> {
+    where
+        B: Into<Cow<'static, [u8]>>,
+    {
         let cow = bytes.into();
         self.memory_zip_files.push(cow);
         self

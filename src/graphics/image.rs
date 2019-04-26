@@ -218,7 +218,6 @@ impl Image {
         let mut data = Vec::with_capacity(self.width as usize * self.height as usize * 4);
         for row in reader.chunks(w as usize).rev() {
             data.extend(row.iter().flatten());
-
         }
         Ok(data)
     }

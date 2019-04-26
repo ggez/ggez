@@ -109,7 +109,8 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_pixel_format(24, 8)
             .with_vsync(window_setup.vsync);
 
-        let window_size = dpi::LogicalSize::from((window_mode.width as f64, window_mode.height as f64));
+        let window_size =
+            dpi::LogicalSize::from((window_mode.width as f64, window_mode.height as f64));
         let mut window_builder = winit::WindowBuilder::new()
             .with_title(window_setup.title.clone())
             .with_dimensions(window_size)

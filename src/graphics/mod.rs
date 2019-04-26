@@ -470,7 +470,7 @@ pub fn clear(ctx: &mut Context, color: Color) {
     // to double-check it works properly now we have `clear_raw()`
     // too.
     let linear_color: types::LinearColor = color.into();
-    let c: [f32;4] = linear_color.into();
+    let c: [f32; 4] = linear_color.into();
     gfx.encoder.clear_raw(&gfx.data.out, c.into());
 }
 
@@ -887,7 +887,6 @@ pub fn size(context: &Context) -> (f32, f32) {
         .map(|logical_size| (logical_size.width as f32, logical_size.height as f32))
         .unwrap_or((0.0, 0.0))
 }
-
 
 /// Returns the size of the window's underlying drawable in pixels as (width, height).
 /// Returns zeros if window doesn't exist.

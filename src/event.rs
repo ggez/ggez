@@ -126,13 +126,7 @@ pub trait EventHandler {
     /// A gamepad axis moved; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
     /// the gamepad.
-    fn gamepad_axis_event(
-        &mut self,
-        _ctx: &mut Context,
-        _axis: Axis,
-        _value: f32,
-        _id: GamepadId,
-    ) {
+    fn gamepad_axis_event(&mut self, _ctx: &mut Context, _axis: Axis, _value: f32, _id: GamepadId) {
     }
 
     /// Called when the window is shown or hidden.
