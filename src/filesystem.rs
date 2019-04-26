@@ -185,7 +185,7 @@ impl Filesystem {
     pub(crate) fn open_options<P: AsRef<path::Path>>(
         &mut self,
         path: P,
-        options: &OpenOptions,
+        options: OpenOptions,
     ) -> GameResult<File> {
         self.vfs
             .open_options(path.as_ref(), options)
@@ -364,7 +364,7 @@ pub fn open<P: AsRef<path::Path>>(ctx: &mut Context, path: P) -> GameResult<File
 pub fn open_options<P: AsRef<path::Path>>(
     ctx: &mut Context,
     path: P,
-    options: &OpenOptions,
+    options: OpenOptions,
 ) -> GameResult<File> {
     ctx.filesystem.open_options(path, options)
 }

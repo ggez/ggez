@@ -158,9 +158,9 @@ where
 
     pub fn mode(
         &self,
-        mode: &BlendMode,
+        mode: BlendMode,
     ) -> GameResult<&PipelineState<Spec::Resources, ConstMeta<C>>> {
-        match self.psos.get(mode) {
+        match self.psos.get(&mode) {
             Some(pso) => Ok(pso),
             None => Err(GameError::RenderError(
                 "Could not find a pipeline for the specified shader and BlendMode".into(),
@@ -414,13 +414,13 @@ where
         slice: &Slice<Spec::Resources>,
         data: &graphics::pipe::Data<Spec::Resources>,
     ) -> GameResult {
-        let pso = self.psos.mode(&self.active_blend_mode)?;
+        let pso = self.psos.mode(self.active_blend_mode)?;
         encoder.draw(slice, pso, &ConstData(data, &self.buffer));
         Ok(())
     }
 
     fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult {
-        let _ = self.psos.mode(&mode)?;
+        let _ = self.psos.mode(mode)?;
         self.active_blend_mode = mode;
         Ok(())
     }

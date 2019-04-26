@@ -51,36 +51,36 @@ impl OpenOptions {
     }
 
     /// Open for reading
-    pub fn read(&mut self, read: bool) -> &mut OpenOptions {
+    pub fn read(mut self, read: bool) -> OpenOptions {
         self.read = read;
         self
     }
 
     /// Open for writing
-    pub fn write(&mut self, write: bool) -> &mut OpenOptions {
+    pub fn write(mut self, write: bool) -> OpenOptions {
         self.write = write;
         self
     }
 
     /// Create the file if it does not exist yet
-    pub fn create(&mut self, create: bool) -> &mut OpenOptions {
+    pub fn create(mut self, create: bool) -> OpenOptions {
         self.create = create;
         self
     }
 
     /// Append at the end of the file
-    pub fn append(&mut self, append: bool) -> &mut OpenOptions {
+    pub fn append(mut self, append: bool) -> OpenOptions {
         self.append = append;
         self
     }
 
     /// Truncate the file to 0 bytes after opening
-    pub fn truncate(&mut self, truncate: bool) -> &mut OpenOptions {
+    pub fn truncate(mut self, truncate: bool) -> OpenOptions {
         self.truncate = truncate;
         self
     }
 
-    fn to_fs_openoptions(&self) -> fs::OpenOptions {
+    fn to_fs_openoptions(self) -> fs::OpenOptions {
         let mut opt = fs::OpenOptions::new();
         let _ = opt
             .read(self.read)
@@ -95,7 +95,7 @@ impl OpenOptions {
 
 pub trait VFS: Debug {
     /// Open the file at this path with the given options
-    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<dyn VFile>>;
+    fn open_options(&self, path: &Path, open_options: OpenOptions) -> GameResult<Box<dyn VFile>>;
     /// Open the file at this path for reading
     fn open(&self, path: &Path) -> GameResult<Box<dyn VFile>> {
         self.open_options(path, OpenOptions::new().read(true))
@@ -260,7 +260,7 @@ impl Debug for PhysicalFS {
 
 impl VFS for PhysicalFS {
     /// Open the file at this path with the given options
-    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<dyn VFile>> {
+    fn open_options(&self, path: &Path, open_options: OpenOptions) -> GameResult<Box<dyn VFile>> {
         if self.readonly
             && (open_options.write
                 || open_options.create
@@ -419,7 +419,7 @@ impl OverlayFS {
 
 impl VFS for OverlayFS {
     /// Open the file at this path with the given options
-    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<dyn VFile>> {
+    fn open_options(&self, path: &Path, open_options: OpenOptions) -> GameResult<Box<dyn VFile>> {
         let mut tried: Vec<(PathBuf, GameError)> = vec![];
 
         for vfs in &self.roots {
@@ -677,7 +677,7 @@ impl ZipMetadata {
     /// this way without basically just faking it.
     ///
     /// This does make listing a directory rather screwy.
-    fn new(name: &str, archive: &mut Box<dyn ZipArchiveAccess>) -> Option<Self> {
+    fn new(name: &str, archive: &mut dyn ZipArchiveAccess) -> Option<Self> {
         match archive.by_name(name) {
             Err(_) => None,
             Ok(zipfile) => {
@@ -705,7 +705,7 @@ impl VMetadata for ZipMetadata {
 }
 
 impl VFS for ZipFS {
-    fn open_options(&self, path: &Path, open_options: &OpenOptions) -> GameResult<Box<dyn VFile>> {
+    fn open_options(&self, path: &Path, open_options: OpenOptions) -> GameResult<Box<dyn VFile>> {
         // Zip is readonly
         let path = convenient_path_to_str(path)?;
         if open_options.write || open_options.create || open_options.append || open_options.truncate
@@ -764,7 +764,7 @@ impl VFS for ZipFS {
         let mut stupid_archive_borrow = self.archive
             .try_borrow_mut()
             .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen! Report a bug at https://github.com/ggez/ggez/");
-        match ZipMetadata::new(path, &mut stupid_archive_borrow) {
+        match ZipMetadata::new(path, &mut **stupid_archive_borrow) {
             None => Err(GameError::FilesystemError(format!(
                 "Metadata not found in zip file for {}",
                 path

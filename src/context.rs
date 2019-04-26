@@ -165,12 +165,11 @@ impl Context {
                 }
                 _ => (),
             },
-            winit_event::Event::DeviceEvent { event, .. } => match event {
-                winit_event::DeviceEvent::MouseMotion { delta: (x, y) } => {
+            winit_event::Event::DeviceEvent { event, .. } => {
+                if let winit_event::DeviceEvent::MouseMotion { delta: (x, y) } = event {
                     self.mouse_context
                         .set_last_delta(Point2::new(x as f32, y as f32));
                 }
-                _ => (),
             },
 
             _ => (),
@@ -337,6 +336,7 @@ impl DebugId {
         DebugId(ctx.debug_id.0)
     }
 
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn assert(&self, ctx: &Context) {
         if *self != ctx.debug_id {
             panic!("Tried to use a resource with a Context that did not create it; this should never happen!");

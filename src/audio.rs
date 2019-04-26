@@ -295,7 +295,7 @@ impl Source {
         let sink = rodio::Sink::new(&context.audio_context.device());
         let cursor = io::Cursor::new(data);
         Ok(Source {
-            sink: sink,
+            sink,
             state: SourceState::new(cursor),
         })
     }

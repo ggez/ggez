@@ -246,7 +246,7 @@ impl Image {
                     u32::from(self.height),
                     color_format,
                 )
-                .map_err(|e| e.into()),
+                .map_err(Into::into),
         }
     }
 
@@ -286,7 +286,7 @@ impl Image {
 
     /// Returns the dimensions of the image.
     pub fn dimensions(&self) -> Rect {
-        Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
+        Rect::new(0.0, 0.0, f32::from(self.width()), f32::from(self.height()))
     }
 
     /// Gets the `Image`'s `WrapMode` along the X and Y axes.

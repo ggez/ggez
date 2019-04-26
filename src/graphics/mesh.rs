@@ -216,7 +216,7 @@ impl MeshBuilder {
         {
             assert!(points.len() > 1);
             let buffers = &mut self.buffer;
-            let points = points.into_iter().cloned().map(|p| {
+            let points = points.iter().cloned().map(|p| {
                 let mint_point: mint::Point2<f32> = p.into();
                 t::math::point(mint_point.x, mint_point.y)
             });
@@ -325,7 +325,7 @@ impl MeshBuilder {
     ///  * `indices` contains a value out of bounds of `verts`
     ///  * Adding the `indices` or `verts` would create a buffer too long
     ///    to be indexed by a `u32`.
-    pub fn from_raw<V>(&mut self, verts: &[V], indices: &[u32], texture: Option<Image>) -> &mut Self
+    pub fn raw<V>(&mut self, verts: &[V], indices: &[u32], texture: Option<Image>) -> &mut Self
     where
         V: Into<Vertex> + Clone,
     {
@@ -352,7 +352,7 @@ impl MeshBuilder {
             .create_vertex_buffer_with_slice(&self.buffer.vertices[..], &self.buffer.indices[..]);
 
         let rect = bbox_for_vertices(&self.buffer.vertices)
-            .ok_or(GameError::RenderError("No vertices in MeshBuilder".into()))?;
+            .ok_or_else(|| GameError::RenderError("No vertices in MeshBuilder".into()))?;
         Ok(Mesh {
             buffer: vbuf,
             slice,
@@ -360,7 +360,7 @@ impl MeshBuilder {
             image: self
                 .image
                 .clone()
-                .unwrap_or(ctx.gfx_context.white_image.clone()),
+                .unwrap_or_else(|| ctx.gfx_context.white_image.clone()),
             debug_id: DebugId::get(ctx),
             rect,
         })
@@ -530,7 +530,7 @@ impl Mesh {
     where
         V: Into<Vertex> + Clone,
     {
-        let verts: Vec<Vertex> = verts.iter().cloned().map(|v| v.into()).collect();
+        let verts: Vec<Vertex> = verts.iter().cloned().map(Into::into).collect();
         let rect = bbox_for_vertices(&verts).expect("No vertices in MeshBuilder");
         let (vbuf, slice) = ctx
             .gfx_context
@@ -540,7 +540,7 @@ impl Mesh {
             buffer: vbuf,
             slice,
             blend_mode: None,
-            image: texture.unwrap_or(ctx.gfx_context.white_image.clone()),
+            image: texture.unwrap_or_else(|| ctx.gfx_context.white_image.clone()),
             debug_id: DebugId::get(ctx),
             rect,
         }

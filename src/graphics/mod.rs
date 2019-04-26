@@ -385,12 +385,12 @@ impl fmt::Display for InstanceProperties {
         matrix_vec.extend(&self.col3);
         matrix_vec.extend(&self.col4);
         let matrix = na::Matrix4::from_column_slice(&matrix_vec);
-        write!(
+        writeln!(
             f,
-            "Src: ({},{}+{},{})\n",
+            "Src: ({},{}+{},{})",
             self.src[0], self.src[1], self.src[2], self.src[3]
         )?;
-        write!(f, "Color: {:?}\n", self.color)?;
+        writeln!(f, "Color: {:?}", self.color)?;
         write!(f, "Matrix: {}", matrix)
     }
 }

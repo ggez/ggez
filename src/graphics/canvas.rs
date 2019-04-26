@@ -125,7 +125,7 @@ impl Drawable for Canvas {
         // to account for OpenGL's origin being at the bottom-left.
         let mut flipped_param = param;
         flipped_param.scale.y *= -1.0;
-        flipped_param.dest.y += self.image.height() as f32 * param.scale.y;
+        flipped_param.dest.y += f32::from(self.image.height()) * param.scale.y;
         self.image.draw(ctx, flipped_param)?;
         Ok(())
     }

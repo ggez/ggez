@@ -53,7 +53,7 @@ pub fn main() -> GameResult {
     {
         let mut options = filesystem::OpenOptions::new();
         options.append(true);
-        let mut file = filesystem::open_options(ctx, test_file, &options)?;
+        let mut file = filesystem::open_options(ctx, test_file, options)?;
         file.write_all(bytes)?;
     }
     println!("Appended to test file");

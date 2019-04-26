@@ -110,7 +110,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_vsync(window_setup.vsync);
 
         let window_size =
-            dpi::LogicalSize::from((window_mode.width as f64, window_mode.height as f64));
+            dpi::LogicalSize::from((f64::from(window_mode.width), f64::from(window_mode.height)));
         let mut window_builder = winit::WindowBuilder::new()
             .with_title(window_setup.title.clone())
             .with_dimensions(window_size)
@@ -515,8 +515,8 @@ where
         // TODO: find out if single-dimension constraints are possible.
         let min_dimensions = if mode.min_width > 0.0 && mode.min_height > 0.0 {
             Some(dpi::LogicalSize {
-                width: mode.min_width as f64,
-                height: mode.min_height as f64,
+                width: f64::from(mode.min_width),
+                height: f64::from(mode.min_height),
             })
         } else {
             None
@@ -525,8 +525,8 @@ where
 
         let max_dimensions = if mode.max_width > 0.0 && mode.max_height > 0.0 {
             Some(dpi::LogicalSize {
-                width: mode.max_width as f64,
-                height: mode.max_height as f64,
+                width: f64::from(mode.max_width),
+                height: f64::from(mode.max_height),
             })
         } else {
             None
@@ -539,15 +539,15 @@ where
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
                 window.set_inner_size(dpi::LogicalSize {
-                    width: mode.width as f64,
-                    height: mode.height as f64,
+                    width: f64::from(mode.width),
+                    height: f64::from(mode.height),
                 });
             }
             FullscreenType::True => {
                 window.set_fullscreen(Some(monitor));
                 window.set_inner_size(dpi::LogicalSize {
-                    width: mode.width as f64,
-                    height: mode.height as f64,
+                    width: f64::from(mode.width),
+                    height: f64::from(mode.height),
                 });
             }
             FullscreenType::Desktop => {
