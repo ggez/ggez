@@ -242,11 +242,6 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
 }
 ```
 
-Now let's start the event loop by adding this to end of `main` fn:
-```rust,skt-draw,no_run
-event::run(ctx, event_loop, state);
-```
-
 Every frame, print out `Hello ggez! dt = {}ns`. This will print once a frame. Which is going to be a lot.
 
 ### ✔ Check Program
