@@ -30,6 +30,7 @@
 //! ```rust,no_run
 //! use ggez::{Context, ContextBuilder, GameResult};
 //! use ggez::event::{self, EventHandler};
+//! use ggez::graphics;
 //!
 //! fn main() {
 //!     // Make a Context and an EventLoop.
@@ -60,9 +61,13 @@
 //! #       Ok(())
 //!     }
 //!
-//!     fn draw(&mut self, _ctx: &mut Context) -> GameResult<()> {
+//!     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+//!         // Optional
+//!         graphics::clear(ctx, graphics::WHITE);
+//!
 //!         // Draw code here...
-//! #       Ok(())
+//!
+//!         graphics::present(ctx)
 //!     }
 //! }
 //! #
