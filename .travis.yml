@@ -18,9 +18,9 @@ addons:
       - libssl-dev
 cache: cargo
 
-#script:
+script:
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then cargo test --verbose headless; fi
 #  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then cargo test --verbose headless --no-default-features; fi
-#  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then cargo test --verbose headless; fi
 
 before_install:
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
