@@ -39,7 +39,7 @@ impl event::EventHandler for MainState {
             (Point2::new(400.0, 300.0), graphics::WHITE),
         )?;
 
-        // now lets render our scene once in the top right and in the bottom
+        // now lets render our scene once in the top left and in the bottom
         // right
         let window_size = graphics::size(ctx);
         let scale = Vector2::new(
