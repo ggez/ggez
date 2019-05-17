@@ -107,6 +107,16 @@ impl Canvas {
         &self.image
     }
 
+    /// Get the filter mode for the image.
+    pub fn filter(&self) -> FilterMode {
+        self.image.filter()
+    }
+
+    /// Set the filter mode for the canvas.
+    pub fn set_filter(&mut self, mode: FilterMode) {
+        self.image.set_filter(mode)
+    }
+
     /// Destroys the `Canvas` and returns the `Image` it contains.
     pub fn into_inner(self) -> Image {
         // TODO: This texture is created with different settings
