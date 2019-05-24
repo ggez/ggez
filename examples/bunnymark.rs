@@ -9,7 +9,7 @@ use rand::{self, Rng};
 use nalgebra as na;
 
 use ggez::*;
-use ggez::graphics::{Color, Image};
+use ggez::graphics::{Color, Image, spritebatch::SpriteBatch};
 use ggez::Context;
 
 // NOTE: Using a high number here yields worse performance than adding more bunnies over
@@ -44,6 +44,8 @@ struct GameState {
     max_y: f32,
 
     click_timer: i32,
+    bunnybatch: SpriteBatch,
+    batched_drawing: bool,
 }
 
 impl GameState {
@@ -58,6 +60,8 @@ impl GameState {
             bunnies.push(Bunny::new(&mut rng));
         }
 
+        let bunnybatch = SpriteBatch::new(texture.clone());
+
         Ok(GameState {
             rng,
             texture,
@@ -66,6 +70,8 @@ impl GameState {
             max_y,
 
             click_timer: 0,
+            bunnybatch,
+            batched_drawing: true,
         })
     }
 }
@@ -107,21 +113,37 @@ impl event::EventHandler for GameState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, Color::from((0.392, 0.584, 0.929)));
 
-        for bunny in &self.bunnies {
-            graphics::draw(ctx, &self.texture, (bunny.position, ))?;
+        if self.batched_drawing {
+            self.bunnybatch.clear();
+            for bunny in &self.bunnies {
+                self.bunnybatch.add((bunny.position, ));
+            }
+            graphics::draw(ctx, &self.bunnybatch, (na::Point2::new(0.0, 0.0), ))?;
+        } else {
+            for bunny in &self.bunnies {
+                graphics::draw(ctx, &self.texture, (bunny.position, ))?;
+            }
         }
 
         graphics::set_window_title(
             ctx,
             &format!(
-                "BunnyMark - {} bunnies - {:.0} FPS",
+                "BunnyMark - {} bunnies - {:.0} FPS - batched drawing: {}",
                 self.bunnies.len(),
-                timer::fps(ctx)
+                timer::fps(ctx),
+                self.batched_drawing
             ),
         );
         graphics::present(ctx)?;
 
         Ok(())
+    }
+
+    fn key_down_event(&mut self, _ctx: &mut Context,
+                      keycode: event::KeyCode, _keymods: event::KeyMods, _repeat: bool) {
+        if keycode == event::KeyCode::Space {
+            self.batched_drawing = !self.batched_drawing;
+        }
     }
 
     fn mouse_button_down_event(&mut self, _ctx: &mut Context,
@@ -152,18 +174,4 @@ fn main() -> GameResult {
 
     let state = &mut GameState::new(ctx)?;
     event::run(ctx, event_loop, state)
-
-    /*
-    
-    let cb = ggez::ContextBuilder::new("bunnymark", "ggez");
-    let (ctx, event_loop) = &mut cb.build()?;
-    let state = &mut MainState::new(ctx)?;
-    event::run(ctx, event_loop, state)
-
-
-    ContextBuilder::new("BunnyMark", WIDTH, HEIGHT)
-        .quit_on_escape(true)
-        .build()?
-        .run_with(GameState::new)
-*/
 }
