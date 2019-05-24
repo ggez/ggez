@@ -49,7 +49,7 @@ struct GameState {
 impl GameState {
     fn new(ctx: &mut Context) -> ggez::GameResult<GameState> {
         let mut rng = rand::thread_rng();
-        let texture = Image::new(ctx, "/resources/wabbit_alpha.png")?;
+        let texture = Image::new(ctx, "/wabbit_alpha.png")?;
         let mut bunnies = Vec::with_capacity(INITIAL_BUNNIES);
         let max_x = (WIDTH - texture.width()) as f32;
         let max_y = (HEIGHT - texture.height()) as f32;
@@ -119,6 +119,7 @@ impl event::EventHandler for GameState {
                 timer::fps(ctx)
             ),
         );
+        graphics::present(ctx)?;
 
         Ok(())
     }
