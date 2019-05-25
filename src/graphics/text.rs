@@ -426,7 +426,7 @@ impl Default for Font {
     }
 }
 
-/// Queues the `Text` to be drawn by [`draw_queued()`](fn.draw_queued.html).
+/// Queues the `Text` to be drawn by [`draw_queued_text()`](fn.draw_queued_text.html).
 /// `relative_dest` is relative to the [`DrawParam::dest`](struct.DrawParam.html#structfield.dest)
 /// passed to `draw_queued()`./ Note, any `Text` drawn via [`graphics::draw()`](fn.draw.html)
 /// will also draw the queue.

@@ -16,8 +16,8 @@ Steps to reproduce, example code snippet, etc.
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Screenshots or pasted code**
+If applicable, add screenshots etc to help explain your problem.
 
 **Hardware and Software:**
  - ggez version: For example, release 0.4.4, current git master, current git devel branch, etc.

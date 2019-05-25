@@ -21,7 +21,7 @@ You did know this was a Rust library right? 😉
 Open up your terminal and make sure it is in the location where you want to create your new project folder.
 
 ```bash
-cargo new --bin hello_ggez
+cargo new hello_ggez
 cd hello_ggez
 ```
 
