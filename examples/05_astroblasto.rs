@@ -222,15 +222,6 @@ fn world_to_screen_coords(screen_width: f32, screen_height: f32, point: Point2) 
     Point2::new(x, y)
 }
 
-/// Translates the world coordinate system to
-/// coordinates suitable for the audio system.
-fn world_to_audio_coords(screen_width: f32, screen_height: f32, point: Point2) -> [f32; 3] {
-    let x = point.x * 2.0 / screen_width;
-    let y = point.y * 2.0 / screen_height;
-    let z = 0.0;
-    [x, y, z]
-}
-
 /// **********************************************************************
 /// So that was the real meat of our game.  Now we just need a structure
 /// to contain the images, sounds, etc. that we need to hang on to; this
@@ -243,9 +234,8 @@ struct Assets {
     shot_image: graphics::Image,
     rock_image: graphics::Image,
     font: graphics::Font,
-    // Todo: add a music track to show non-spatial audio?
-    shot_sound: audio::SpatialSource,
-    hit_sound: audio::SpatialSource,
+    shot_sound: audio::Source,
+    hit_sound: audio::Source,
 }
 
 impl Assets {
@@ -255,11 +245,8 @@ impl Assets {
         let rock_image = graphics::Image::new(ctx, "/rock.png")?;
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
 
-        let mut shot_sound = audio::SpatialSource::new(ctx, "/pew.ogg")?;
-        let mut hit_sound = audio::SpatialSource::new(ctx, "/boom.ogg")?;
-
-        shot_sound.set_ears([-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
-        hit_sound.set_ears([-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
+        let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
 
         Ok(Assets {
             player_image,
@@ -333,9 +320,6 @@ impl MainState {
         print_instructions();
 
         let assets = Assets::new(ctx)?;
-        // let score_disp = graphics::Text::new(ctx, "score", &assets.font)?;
-        // let level_disp = graphics::Text::new(ctx, "level", &assets.font)?;
-
         let player = create_player();
         let rocks = create_rocks(5, player.pos, 100.0, 250.0);
 
@@ -368,8 +352,6 @@ impl MainState {
 
         self.shots.push(shot);
 
-        let pos = world_to_audio_coords(self.screen_width, self.screen_height, player.pos);
-        self.assets.shot_sound.set_position(pos);
         let _ = self.assets.shot_sound.play();
     }
 
@@ -391,9 +373,6 @@ impl MainState {
                     rock.life = 0.0;
                     self.score += 1;
 
-                    let pos =
-                        world_to_audio_coords(self.screen_width, self.screen_height, rock.pos);
-                    self.assets.shot_sound.set_position(pos);
                     let _ = self.assets.hit_sound.play();
                 }
             }
@@ -407,16 +386,6 @@ impl MainState {
             self.rocks.extend(r);
         }
     }
-
-    // fn update_ui(&mut self, ctx: &mut Context) {
-    //     let score_str = format!("Score: {}", self.score);
-    //     let level_str = format!("Level: {}", self.level);
-    //     let score_text = graphics::Text::new(ctx, &score_str, &self.assets.font).unwrap();
-    //     let level_text = graphics::Text::new(ctx, &level_str, &self.assets.font).unwrap();
-
-    //     self.score_display = score_text;
-    //     self.level_display = level_text;
-    // }
 }
 
 /// **********************************************************************
