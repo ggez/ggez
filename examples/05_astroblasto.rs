@@ -2,10 +2,8 @@
 //! The idea is that this game is simple but still
 //! non-trivial enough to be interesting.
 
-extern crate ggez;
-extern crate nalgebra;
-extern crate rand;
-
+use rand;
+use ggez;
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::conf;
@@ -18,13 +16,13 @@ use ggez::{Context, ContextBuilder, GameResult};
 use std::env;
 use std::path;
 
-type Point2 = nalgebra::Point2<f32>;
-type Vector2 = nalgebra::Vector2<f32>;
+type Point2 = na::Point2<f32>;
+type Vector2 = na::Vector2<f32>;
 
 /// *********************************************************************
 /// Basic stuff, make some helpers for vector functions.
 /// ggez includes the nalgebra math library to provide lots of
-/// math stuff  We just add some helpers.
+/// math stuff.  We just add some helpers.
 /// **********************************************************************
 
 /// Create a unit vector representing the
