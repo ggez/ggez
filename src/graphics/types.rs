@@ -288,39 +288,31 @@ impl Color {
 
     /// Convert a packed `u32` containing `0xRRGGBBAA` into a `Color`
     pub fn from_rgba_u32(c: u32) -> Color {
-        let rp = ((c & 0xFF00_0000u32) >> 24) as u8;
-        let gp = ((c & 0x00FF_0000u32) >> 16) as u8;
-        let bp = ((c & 0x0000_FF00u32) >> 8) as u8;
-        let ap = (c & 0x0000_00FFu32) as u8;
-        Color::from((rp, gp, bp, ap))
+        let c = c.to_be_bytes();
+
+        Color::from((c[0], c[1], c[2], c[3]))
     }
 
     /// Convert a packed `u32` containing `0x00RRGGBB` into a `Color`.
     /// This lets you do things like `Color::from_rgb_u32(0xCD09AA)` easily if you want.
     pub fn from_rgb_u32(c: u32) -> Color {
-        let rp = ((c & 0x00FF_0000u32) >> 16) as u8;
-        let gp = ((c & 0x0000_FF00u32) >> 8) as u8;
-        let bp = (c & 0x0000_00FFu32) as u8;
-        Color::from((rp, gp, bp))
+        let c = c.to_be_bytes();
+
+        Color::from((c[1], c[2], c[3]))
     }
 
     /// Convert a `Color` into a packed `u32`, containing `0xRRGGBBAA` as bytes.
     pub fn to_rgba_u32(self) -> u32 {
         let (r, g, b, a): (u8, u8, u8, u8) = self.into();
-        let rp = (u32::from(r)) << 24;
-        let gp = (u32::from(g)) << 16;
-        let bp = (u32::from(b)) << 8;
-        let ap = u32::from(a);
-        (rp | gp | bp | ap)
+
+        u32::from_be_bytes([r, g, b, a])
     }
 
     /// Convert a `Color` into a packed `u32`, containing `0x00RRGGBB` as bytes.
     pub fn to_rgb_u32(self) -> u32 {
         let (r, g, b, _a): (u8, u8, u8, u8) = self.into();
-        let rp = (u32::from(r)) << 16;
-        let gp = (u32::from(g)) << 8;
-        let bp = u32::from(b);
-        (rp | gp | bp)
+
+        u32::from_be_bytes([0, r, g, b])
     }
 }
 
