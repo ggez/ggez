@@ -398,7 +398,7 @@ fn print_instructions() {
     println!("L/R arrow keys rotate your ship, up thrusts, space bar fires");
     println!();
 }
-extern crate mint;
+
 fn draw_actor(
     assets: &mut Assets,
     ctx: &mut Context,
