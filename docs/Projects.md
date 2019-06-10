@@ -12,6 +12,7 @@ submit a PR, please!
  * <https://github.com/ozkriff/zemeroth>
  * <https://github.com/Swampsoft/solitaire>
  * <https://github.com/obsoke/rustris>
+ * <https://github.com/vinceniko/tetrust>
  * <https://github.com/icefoxen/ld42/>
  * <https://github.com/conwayste/conwayste/>
 
