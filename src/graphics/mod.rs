@@ -786,7 +786,7 @@ where
     let transform = Matrix4::from(transform.into());
     let gfx = &mut context.gfx_context;
     let curr = gfx.transform();
-    gfx.set_transform(transform * curr);
+    gfx.set_transform(curr * transform);
 }
 
 /// Sets the current model transform to the origin transform (no transformation)
