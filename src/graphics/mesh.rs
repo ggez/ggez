@@ -16,7 +16,7 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 ///
 /// The following example shows how to build a mesh containing a line and a circle:
 ///
-/// ```rust
+/// ```rust,no_run
 /// # use ggez::*;
 /// # use ggez::graphics::*;
 /// # use ggez::nalgebra::Point2;
@@ -30,7 +30,7 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// ```
 /// A more sophisticated example:
 ///
-/// ```rust
+/// ```rust,no_run
 /// use ggez::{Context, GameResult, nalgebra as na};
 /// use ggez::graphics::{self, DrawMode, MeshBuilder};
 ///

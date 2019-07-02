@@ -19,7 +19,7 @@ addons:
 cache: cargo
 
 script:
-  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then cargo test --verbose headless; fi
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then cargo test headless; cargo test --doc; cargo test --test skeptic;; fi
 #  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then cargo test --verbose headless --no-default-features; fi
 
 before_install:
