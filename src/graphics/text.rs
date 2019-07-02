@@ -11,8 +11,6 @@ use std::path;
 
 use super::*;
 
-// TODO: consider adding bits from example to docs.
-
 /// Default size for fonts.
 pub const DEFAULT_FONT_SCALE: f32 = 16.0;
 
@@ -140,6 +138,7 @@ impl Default for CachedMetrics {
 pub struct Text {
     fragments: Vec<TextFragment>,
     // TODO: make it do something, maybe.
+    // See issue #561
     blend_mode: Option<BlendMode>,
     bounds: Point2,
     layout: Layout<glyph_brush::BuiltInLineBreaker>,
@@ -396,7 +395,9 @@ impl Font {
         let mut buf = Vec::new();
         let _ = stream.read_to_end(&mut buf)?;
 
-        // TODO: DPI; see winit #548.  Also need point size, pixels, etc...
+        // There's a DPI issue here; see winit #548.
+        // Also see commit 2f02c72cf31401a1e6ab55edc745f6227c99fb67
+        // Also need point size, pixels, etc...
         Font::new_glyph_font_bytes(context, &buf)
     }
 

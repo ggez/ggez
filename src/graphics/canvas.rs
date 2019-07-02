@@ -97,8 +97,6 @@ impl Canvas {
         use crate::graphics;
         let (w, h) = graphics::drawable_size(ctx);
         // Default to no multisampling
-        // TODO: Use winit's into() to translate f64's more accurately
-        // ...where the heck IS winit's into()?  wth was I referring to?
         Canvas::new(ctx, w as u16, h as u16, conf::NumSamples::One)
     }
 

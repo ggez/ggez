@@ -114,7 +114,6 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         let mut window_builder = winit::WindowBuilder::new()
             .with_title(window_setup.title.clone())
             .with_dimensions(window_size)
-            .with_transparency(window_setup.transparent)
             .with_resizable(window_mode.resizable);
 
         window_builder = if !window_setup.icon.is_empty() {

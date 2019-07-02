@@ -6,7 +6,6 @@ use std::path;
 // FIXME: This test is being flakey. Passes about 90% of the time.
 #[ignore]
 pub fn context_build_tests() {
-    // TODO: More tests!
     let confs = vec![
         conf::Conf::default().window_mode(conf::WindowMode::default().dimensions(800.0, 600.0)),
         conf::Conf::default().window_mode(conf::WindowMode::default().dimensions(400.0, 400.0)),
@@ -19,6 +18,7 @@ pub fn context_build_tests() {
         //     .fullscreen_type(conf::FullscreenType::True)),
 
         // TODO: This makes the window size wrong, it seems.  Why?
+        // Probably hidpi.
         // conf::Conf::default()
         //     .modules(conf::ModuleConf::default()
         //         .gamepad(false)

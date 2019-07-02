@@ -342,8 +342,6 @@ impl Snake {
         // We first iterate through the body segments and draw them.
         for seg in self.body.iter() {
             // Again we set the color (in this case an orangey color)
-            // TODO: Fix colors
-            // graphics::set_color(ctx, )?;
             // and then draw the Rect that we convert that Segment's position into
             let rectangle = graphics::Mesh::new_rectangle(
                 ctx,
@@ -354,7 +352,6 @@ impl Snake {
             graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
         }
         // And then we do the same for the head, instead making it fully red to distinguish it.
-        // TODO: Fix colors
         let rectangle = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),

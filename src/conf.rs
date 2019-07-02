@@ -161,11 +161,6 @@ pub struct WindowSetup {
     /// Whether or not to enable vsync.
     #[default = true]
     pub vsync: bool,
-    /// Whether or not should the window's background be transparent.
-    ///
-    /// TODO: I don't think I've ever even tried to use this???  Need tests!
-    #[default = false]
-    pub transparent: bool,
     /// A file path to the window's icon.
     /// It takes a path rooted in the `resources` directory (see the [`filesystem`](../filesystem/index.html)
     /// module for details), and an empty string results in a blank/default icon.
@@ -193,14 +188,6 @@ impl WindowSetup {
     /// Set whether vsync is enabled.
     pub fn vsync(mut self, vsync: bool) -> Self {
         self.vsync = vsync;
-        self
-    }
-
-    /// Set if window background should be transparent.
-    ///
-    /// TODO: Is this necessary?  Do we ever want this?
-    pub fn transparent(mut self, transparent: bool) -> Self {
-        self.transparent = transparent;
         self
     }
 

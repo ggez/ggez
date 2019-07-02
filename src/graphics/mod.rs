@@ -465,10 +465,6 @@ impl From<gfx::buffer::CreationError> for GameError {
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context, color: Color) {
     let gfx = &mut ctx.gfx_context;
-    // TODO: Only convert when drawing on srgb surface?  I
-    // actually can't make it make any difference; fiddle more.  Need
-    // to double-check it works properly now we have `clear_raw()`
-    // too.
     let linear_color: types::LinearColor = color.into();
     let c: [f32; 4] = linear_color.into();
     gfx.encoder.clear_raw(&gfx.data.out, c.into());

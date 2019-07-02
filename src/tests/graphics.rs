@@ -27,7 +27,7 @@ fn load_images() {
     image
         .encode(c, graphics::ImageFormat::Png, "/player_save_test.png")
         .unwrap();
-    // TODO: Add more images, figure out how to store them more nicely
+    let _i2 = graphics::Image::new(c, "/player_save_test.png").unwrap();
 }
 
 #[test]

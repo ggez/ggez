@@ -136,7 +136,7 @@ impl KeyboardContext {
     }
 
     // TODO: Set modifiers correctly
-    // and in general cmake sure this is hooked up correctly
+    // and in general make sure this is hooked up correctly
     // from Context::process_event().
     // Looks like it is, but, not 100% sure.
     pub(crate) fn set_key(&mut self, key: KeyCode, pressed: bool) {

@@ -262,7 +262,7 @@ impl SourceState {
 
 /// A source of audio data connected to a particular `Channel`.
 /// Will stop playing when dropped.
-// TODO: Check and see if this matches Love2d's semantics!
+// TODO LATER: Check and see if this matches Love2d's semantics!
 // Eventually it might read from a streaming decoder of some kind,
 // but for now it is just an in-memory SoundData structure.
 // The source of a rodio decoder must be Send, which something
