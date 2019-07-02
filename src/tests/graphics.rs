@@ -56,3 +56,20 @@ fn sanity_check_window_sizes() {
     assert_eq!(w, size.0);
     assert_eq!(h, size.1);
 }
+
+/// Ensure that the transform stack applies operations in the correct order.
+#[test]
+fn test_transform_stack_order() {
+    let (ctx, _e) = &mut tests::make_context();
+    let p1 = graphics::DrawParam::default();
+    let p2 = graphics::DrawParam::default();
+    let t1 = p1.to_matrix();
+    let t2 = p2.to_matrix();
+    graphics::push_transform(ctx, Some(t1));
+    graphics::mul_transform(ctx, t2);
+    let res = crate::nalgebra::Matrix4::<f32>::from(graphics::transform(ctx));
+    let m1: crate::nalgebra::Matrix4<f32> = t1.into();
+    let m2: crate::nalgebra::Matrix4<f32> = t2.into();
+    assert_eq!(res, m2 * m1);
+}
+
