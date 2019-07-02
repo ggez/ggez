@@ -187,10 +187,16 @@ impl MeshBuilder {
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
+        if points.len() < 2 {
+            return Err(GameError::LyonError("MeshBuilder::polyline() got a list of < 2 points".to_string()))
+        }
+
         self.polyline_inner(mode, points, false, color)
     }
 
     /// Create a new mesh for a closed polygon.
+    /// The points given must be in clockwise order,
+    /// otherwise at best the polygon will not draw.
     pub fn polygon<P>(
         &mut self,
         mode: DrawMode,
@@ -200,6 +206,10 @@ impl MeshBuilder {
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
+        if points.len() < 3 {
+            return Err(GameError::LyonError("MeshBuilder::polygon() got a list of < 3 points".to_string()))
+        }
+
         self.polyline_inner(mode, points, true, color)
     }
 
@@ -346,6 +356,17 @@ impl MeshBuilder {
     /// Takes the accumulated geometry and load it into GPU memory,
     /// creating a single `Mesh`.
     pub fn build(&self, ctx: &mut Context) -> GameResult<Mesh> {
+        // Sanity checks to return early with helpful error messages.
+        if self.buffer.vertices.len() < 3 {
+            let msg = format!("Trying to build mesh with < 3 vertices, this is usually due to invalid input to a `Mesh` or MeshBuilder`.  Verts:\n {:#?}", self.buffer.vertices);
+            return Err(GameError::LyonError(msg));
+        }
+        if self.buffer.indices.len() < 3 {
+            let msg = format!("Trying to build mesh with < 3 indices, this is usually due to invalid input to a `Mesh` or MeshBuilder`.  Indices:\n {:#?}", self.buffer.indices);
+            return Err(GameError::LyonError(msg));
+        }
+
+        
         let (vbuf, slice) = ctx
             .gfx_context
             .factory
@@ -473,6 +494,8 @@ impl Mesh {
     }
 
     /// Create a new mesh for closed polygon.
+    /// The points given must be in clockwise order,
+    /// otherwise at best the polygon will not draw.
     pub fn new_polygon<P>(
         ctx: &mut Context,
         mode: DrawMode,
@@ -482,6 +505,9 @@ impl Mesh {
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
+        if points.len() < 3 {
+            return Err(GameError::LyonError("Mesh::new_polygon() got a list of < 3 points".to_string()))
+        }
         let mut mb = MeshBuilder::new();
         let _ = mb.polygon(mode, points, color);
         mb.build(ctx)
@@ -512,7 +538,8 @@ impl Mesh {
     /// Creates a `Mesh` from a raw list of triangles defined from points
     /// and indices, with the given UV texture coordinates.  You may also
     /// supply an `Image` to use as a texture, if you pass `None`, it will
-    /// just use a pure white texture.
+    /// just use a pure white texture.  The indices should draw the points in
+    /// clockwise order, otherwise at best the mesh will not draw.
     ///
     /// This is the most primitive mesh-creation method, but allows you full
     /// control over the tesselation and texturing.
@@ -521,6 +548,7 @@ impl Mesh {
     ///
     ///  * `indices` contains a value out of bounds of `verts`
     ///  * `verts` is longer than `u32::MAX` elements.
+    ///  * `indices` do not specify polygons in clockwise order.
     pub fn from_raw<V>(
         ctx: &mut Context,
         verts: &[V],
