@@ -188,7 +188,9 @@ impl MeshBuilder {
         P: Into<mint::Point2<f32>> + Clone,
     {
         if points.len() < 2 {
-            return Err(GameError::LyonError("MeshBuilder::polyline() got a list of < 2 points".to_string()))
+            return Err(GameError::LyonError(
+                "MeshBuilder::polyline() got a list of < 2 points".to_string(),
+            ));
         }
 
         self.polyline_inner(mode, points, false, color)
@@ -207,7 +209,9 @@ impl MeshBuilder {
         P: Into<mint::Point2<f32>> + Clone,
     {
         if points.len() < 3 {
-            return Err(GameError::LyonError("MeshBuilder::polygon() got a list of < 3 points".to_string()))
+            return Err(GameError::LyonError(
+                "MeshBuilder::polygon() got a list of < 3 points".to_string(),
+            ));
         }
 
         self.polyline_inner(mode, points, true, color)
@@ -366,7 +370,6 @@ impl MeshBuilder {
             return Err(GameError::LyonError(msg));
         }
 
-        
         let (vbuf, slice) = ctx
             .gfx_context
             .factory
@@ -506,7 +509,9 @@ impl Mesh {
         P: Into<mint::Point2<f32>> + Clone,
     {
         if points.len() < 3 {
-            return Err(GameError::LyonError("Mesh::new_polygon() got a list of < 3 points".to_string()))
+            return Err(GameError::LyonError(
+                "Mesh::new_polygon() got a list of < 3 points".to_string(),
+            ));
         }
         let mut mb = MeshBuilder::new();
         let _ = mb.polygon(mode, points, color);

@@ -4,13 +4,13 @@
 use std::env;
 use std::path;
 
+use nalgebra as na;
 use rand::rngs::ThreadRng;
 use rand::{self, Rng};
-use nalgebra as na;
 
-use ggez::*;
-use ggez::graphics::{Color, Image, spritebatch::SpriteBatch};
+use ggez::graphics::{spritebatch::SpriteBatch, Color, Image};
 use ggez::Context;
+use ggez::*;
 
 // NOTE: Using a high number here yields worse performance than adding more bunnies over
 // time - I think this is due to all of the RNG being run on the same tick...
@@ -116,12 +116,12 @@ impl event::EventHandler for GameState {
         if self.batched_drawing {
             self.bunnybatch.clear();
             for bunny in &self.bunnies {
-                self.bunnybatch.add((bunny.position, ));
+                self.bunnybatch.add((bunny.position,));
             }
-            graphics::draw(ctx, &self.bunnybatch, (na::Point2::new(0.0, 0.0), ))?;
+            graphics::draw(ctx, &self.bunnybatch, (na::Point2::new(0.0, 0.0),))?;
         } else {
             for bunny in &self.bunnies {
-                graphics::draw(ctx, &self.texture, (bunny.position, ))?;
+                graphics::draw(ctx, &self.texture, (bunny.position,))?;
             }
         }
 
@@ -139,17 +139,25 @@ impl event::EventHandler for GameState {
         Ok(())
     }
 
-    fn key_down_event(&mut self, _ctx: &mut Context,
-                      keycode: event::KeyCode, _keymods: event::KeyMods, _repeat: bool) {
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: event::KeyCode,
+        _keymods: event::KeyMods,
+        _repeat: bool,
+    ) {
         if keycode == event::KeyCode::Space {
             self.batched_drawing = !self.batched_drawing;
         }
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context,
-                               button: input::mouse::MouseButton,
-                               _x: f32,
-                               _y: f32) {
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: input::mouse::MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
         if button == input::mouse::MouseButton::Left && self.click_timer == 0 {
             for _ in 0..INITIAL_BUNNIES {
                 self.bunnies.push(Bunny::new(&mut self.rng));
@@ -157,7 +165,6 @@ impl event::EventHandler for GameState {
             self.click_timer = 10;
         }
     }
-
 }
 
 fn main() -> GameResult {

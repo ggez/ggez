@@ -2,7 +2,6 @@
 //! The idea is that this game is simple but still
 //! non-trivial enough to be interesting.
 
-use rand;
 use ggez;
 use ggez::audio;
 use ggez::audio::SoundSource;
@@ -12,6 +11,7 @@ use ggez::graphics;
 use ggez::nalgebra as na;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
+use rand;
 
 use std::env;
 use std::path;

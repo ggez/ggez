@@ -72,4 +72,3 @@ fn test_transform_stack_order() {
     let m2: crate::nalgebra::Matrix4<f32> = t2.into();
     assert_eq!(res, m2 * m1);
 }
-

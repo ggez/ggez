@@ -170,7 +170,7 @@ impl Context {
                     self.mouse_context
                         .set_last_delta(Point2::new(x as f32, y as f32));
                 }
-            },
+            }
 
             _ => (),
         };

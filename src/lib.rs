@@ -54,7 +54,7 @@
 //! struct MyGame {
 //!     // Your state here...
 //! }
-//! 
+//!
 //! impl MyGame {
 //!     pub fn new(_ctx: &mut Context) -> MyGame {
 //!         // Load/create resources such as images here.
@@ -77,7 +77,7 @@
 //!         graphics::present(ctx)
 //!     }
 //! }
-//! 
+//!
 //! ```
 
 #![deny(missing_docs)]
