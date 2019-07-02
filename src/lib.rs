@@ -54,6 +54,13 @@
 //! struct MyGame {
 //!     // Your state here...
 //! }
+//! 
+//! impl MyGame {
+//!     pub fn new(_ctx: &mut Context) -> MyGame {
+//!         // Load/create resources such as images here.
+//!         MyGame { }
+//!     }
+//! }
 //!
 //! impl EventHandler for MyGame {
 //!     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
@@ -70,12 +77,7 @@
 //!         graphics::present(ctx)
 //!     }
 //! }
-//! #
-//! # impl MyGame {
-//! #   pub fn new(_ctx: &mut Context) -> MyGame {
-//! #       MyGame { }
-//! #   }
-//! # }
+//! 
 //! ```
 
 #![deny(missing_docs)]

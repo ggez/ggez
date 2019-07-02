@@ -84,7 +84,7 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
-        let origin: na::Point2<f32> = na::origin();
+        let origin: na::Point2<f32> = na::Point2::origin();
         graphics::draw(ctx, &self.gridmesh, (origin, graphics::WHITE))?;
 
         let param = graphics::DrawParam::new()

@@ -81,7 +81,7 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::WHITE,
     )?;
     graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
-    graphics::present(ctx)?
+    graphics::present(ctx)?;
     Ok(())
 }
 ```
