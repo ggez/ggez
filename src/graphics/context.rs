@@ -131,7 +131,9 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             depth_format,
         )?;
 
-        // TODO: see winit #548 about DPI.
+        // see winit #548 about DPI.
+        // We basically ignore it and if it's wrong, that's a winit bug
+        // since we have no good control over it.
         {
             // Log a bunch of OpenGL state info pulled out of winit and gfx
             let dpi::LogicalSize {
@@ -511,7 +513,7 @@ where
 
         window.set_maximized(mode.maximized);
 
-        // TODO: find out if single-dimension constraints are possible.
+        // TODO LATER: find out if single-dimension constraints are possible?
         let min_dimensions = if mode.min_width > 0.0 && mode.min_height > 0.0 {
             Some(dpi::LogicalSize {
                 width: f64::from(mode.min_width),
