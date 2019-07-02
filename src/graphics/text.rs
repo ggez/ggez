@@ -463,9 +463,6 @@ where
     D: Into<DrawParam>,
 {
     let param: DrawParam = param.into();
-    let screen_rect = screen_coordinates(ctx);
-
-    let (screen_w, screen_h) = (screen_rect.w, screen_rect.h);
 
     let gb = &mut ctx.gfx_context.glyph_brush;
     let encoder = &mut ctx.gfx_context.encoder;
@@ -473,7 +470,6 @@ where
     let backend = &ctx.gfx_context.backend_spec;
 
     let action = gb.process_queued(
-        (screen_w as u32, screen_h as u32),
         |rect, tex_data| update_texture::<GlBackendSpec>(backend, encoder, gc, rect, tex_data),
         to_vertex,
     );

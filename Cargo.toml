@@ -35,17 +35,17 @@ c_dependencies = ["bzip2", "mp3"]
 [dependencies]
 bitflags = "1.0"
 zip = { version = "0.5", default-features = false }
-directories = "1.0.2"
+directories = "2"
 gfx = "0.18"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
-glyph_brush = "0.4"
+glyph_brush = "0.5"
 gfx_window_glutin = "0.30"
 glutin = "0.20"
 winit = { version = "0.19" }
 image = {version = "0.21", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
-rodio = { version = "0.8", default-features = false, features = ["flac", "vorbis", "wav"] }
+rodio = { version = "0.9", default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
 serde_derive = "1"
 toml = "0.5"
@@ -61,7 +61,7 @@ approx = "0.3"
 [dev-dependencies]
 chrono = "0.4"
 fern = "0.5"
-rand = "0.6"
+rand = "0.7"
 structopt = "0.2"
 cgmath = { version = "0.17", features = ["mint"]}
 skeptic = "0.13"
