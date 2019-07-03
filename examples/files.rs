@@ -4,7 +4,7 @@
 //! It doesn't use an event loop, it just runs once and exits,
 //! printing a bunch of stuff to the console.
 
-extern crate ggez;
+use ggez;
 
 use ggez::{conf, filesystem, ContextBuilder, GameResult};
 use std::env;
@@ -51,7 +51,7 @@ pub fn main() -> GameResult {
     }
     println!("Wrote to test file");
     {
-        let mut options = filesystem::OpenOptions::new();
+        let options = filesystem::OpenOptions::new();
         options.append(true);
         let mut file = filesystem::open_options(ctx, test_file, options)?;
         file.write_all(bytes)?;

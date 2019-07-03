@@ -1,9 +1,8 @@
 //! This example demonstrates how to use `Text` to draw TrueType font texts efficiently.
-//! Powered by `gfx_glyph` crate.
 
-extern crate cgmath;
-extern crate ggez;
-extern crate rand;
+use cgmath;
+use ggez;
+use rand;
 
 use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};

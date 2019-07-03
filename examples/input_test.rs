@@ -1,7 +1,6 @@
 //! Example that just prints out all the input events.
 
-extern crate cgmath;
-extern crate ggez;
+use ggez;
 
 use ggez::event::{self, Axis, Button, GamepadId, KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, DrawMode};

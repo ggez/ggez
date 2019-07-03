@@ -1,6 +1,6 @@
-extern crate cgmath;
-extern crate ggez;
-extern crate rand;
+use cgmath;
+use ggez;
+use rand;
 
 use ggez::audio;
 use ggez::audio::SoundSource;
@@ -118,10 +118,6 @@ impl event::EventHandler for MainState {
     }
 }
 
-// Creating a gamestate depends on having an SDL context to load resources.
-// Creating a context depends on loading a config file.
-// Loading a config file depends on having FS (or we can just fake our way around it
-// by creating an FS and then throwing it away; the costs are not huge.)
 pub fn main() -> GameResult {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);

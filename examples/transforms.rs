@@ -1,7 +1,6 @@
 //! Demonstrates various projection and matrix fiddling/testing.
-//!
-extern crate ggez;
-extern crate nalgebra;
+use ggez;
+use nalgebra;
 
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};
@@ -94,12 +93,8 @@ impl event::EventHandler for MainState {
             .scale(na::Vector2::new(1.0, 1.0))
             // .src(graphics::Rect::new(0.0, 0.0, 0.5, 0.5))
         ;
-        // TODO: I made DrawTransform private but maybe it's still useful for
-        // this sort of stuff?
-        // let dt = graphics::DrawTransform::from(param);
-        // println!("transform: {}", dt.matrix);
 
-        // self.draw_coord_labels(ctx)?;
+        self.draw_coord_labels(ctx)?;
 
         graphics::draw(ctx, &self.angle, param)?;
         graphics::present(ctx)?;
@@ -134,7 +129,6 @@ pub fn main() -> GameResult {
     };
     let cb = ggez::ContextBuilder::new("transforms", "ggez")
         .add_resource_path(resource_dir)
-        // .window_setup(ggez::conf::WindowSetup::default().srgb(false))
     ;
     let (ctx, event_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx)?;

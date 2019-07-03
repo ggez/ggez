@@ -1,4 +1,8 @@
 //! How to draw a 3D cube in ggez.
+//!
+//! ggez doesn't provide any 3D drawing itself, but it exposes
+//! the underlying `gfx-rs` data types, so you can bypass ggez's
+//! drawing code entirely and write your own.
 
 #[macro_use]
 extern crate gfx;

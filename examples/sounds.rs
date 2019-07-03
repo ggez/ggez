@@ -1,4 +1,4 @@
-extern crate ggez;
+use ggez;
 
 use ggez::audio;
 use ggez::audio::SoundSource;

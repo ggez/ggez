@@ -1,4 +1,4 @@
-//! An example of how to use a `SpriteBatch`.
+//! An example of how to use a `SpriteBatch` with a `Canvas`.
 //!
 //! You really want to run this one in release mode.
 

@@ -8,7 +8,7 @@ use ggez::audio::SoundSource;
 use ggez::conf;
 use ggez::event::{self, EventHandler, KeyCode, KeyMods};
 use ggez::graphics;
-use ggez::nalgebra as na;
+use nalgebra as na;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use rand;
@@ -21,8 +21,8 @@ type Vector2 = na::Vector2<f32>;
 
 /// *********************************************************************
 /// Basic stuff, make some helpers for vector functions.
-/// ggez includes the nalgebra math library to provide lots of
-/// math stuff.  We just add some helpers.
+/// We use the nalgebra math library to provide lots of
+/// math stuff.  This just adds some helpers.
 /// **********************************************************************
 
 /// Create a unit vector representing the
@@ -33,7 +33,7 @@ fn vec_from_angle(angle: f32) -> Vector2 {
     Vector2::new(vx, vy)
 }
 
-/// Just makes a random `Vector2` with the given max magnitude.
+/// Makes a random `Vector2` with the given max magnitude.
 fn random_vec(max_magnitude: f32) -> Vector2 {
     let angle = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
     let mag = rand::random::<f32>() * max_magnitude;
@@ -150,14 +150,16 @@ fn create_rocks(num: i32, exclusion: Point2, min_radius: f32, max_radius: f32) -
 /// the coordinate system so that +y is up and -y is down.
 /// **********************************************************************
 
+/// How fast shots move.
 const SHOT_SPEED: f32 = 200.0;
+/// Angular velocity of how fast shots rotate.
 const SHOT_ANG_VEL: f32 = 0.1;
 
-// Acceleration in pixels per second.
+/// Acceleration in pixels per second.
 const PLAYER_THRUST: f32 = 100.0;
-// Rotation in radians per second.
+/// Rotation in radians per second.
 const PLAYER_TURN_RATE: f32 = 3.0;
-// Seconds between shots
+/// Refire delay between shots, in seconds.
 const PLAYER_SHOT_TIME: f32 = 0.5;
 
 fn player_handle_input(actor: &mut Actor, input: &InputState, dt: f32) {
@@ -292,7 +294,7 @@ impl Default for InputState {
 /// game's "global" state, it keeps track of everything we need for
 /// actually running the game.
 ///
-/// Our game objects are simply a vector for each actor type, and we
+/// We simply keep game objects in a vector for each actor type, and we
 /// probably mingle gameplay-state (like score) and hardware-state
 /// (like `input`) a little more than we should, but for something
 /// this small it hardly matters.

@@ -1,4 +1,4 @@
-//! This example shows two ways to set up logging in apps, using `log` crate macros with `fern`
+//! This example shows two ways to set up logging in games, using the `log` crate macros with `fern`
 //! frontend, to display neatly formatted console output and write same output to a file.
 //!
 //! Output in question is a trace of app's initialization, and keyboard presses when it's running.
@@ -52,7 +52,7 @@ impl FileLogger {
     /// Intended to be called in `EventHandler::update()`, to avoid using threads.
     /// (which you totally shouldn't actively avoid, Rust is perfect for concurrency)
     fn update(&mut self) -> GameResult {
-        // try_recv() doesn't block, it returns Err if there's no message to pop.
+        // try_recv() doesn't block, it returns Err if there's no message to receive.
         while let Ok(msg) = self.receiver.try_recv() {
             // std::io::Write::write_all() takes a byte array.
             self.file.write_all(msg.as_bytes())?;

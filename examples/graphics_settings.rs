@@ -3,9 +3,9 @@
 //!
 //! Prints instructions to the console.
 
-extern crate ggez;
-extern crate nalgebra;
-extern crate structopt;
+use ggez;
+use nalgebra;
+use structopt;
 
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};

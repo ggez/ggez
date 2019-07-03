@@ -1,7 +1,8 @@
-//! Basic hello world example.
+//! Basic hello world example, drawing
+//! to a canvas.
 
-extern crate ggez;
-extern crate nalgebra;
+use ggez;
+use nalgebra;
 
 use ggez::event;
 use ggez::graphics::{self, Color};

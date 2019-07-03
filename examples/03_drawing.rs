@@ -1,8 +1,8 @@
 //! A collection of semi-random shape and image drawing examples.
 
-extern crate cgmath;
-extern crate ggez;
+use cgmath;
 
+use ggez;
 use ggez::event;
 use ggez::graphics;
 use ggez::graphics::{Color, DrawMode, DrawParam};

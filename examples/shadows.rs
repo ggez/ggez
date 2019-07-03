@@ -1,10 +1,9 @@
 //! A more sophisticated example of how to use shaders
 //! and canvas's to do 2D GPU shadows.
 
-#[macro_use]
-extern crate gfx;
-extern crate cgmath;
-extern crate ggez;
+use gfx::{self, *};
+use cgmath;
+use ggez;
 
 use cgmath::{Point2, Vector2};
 use ggez::conf;

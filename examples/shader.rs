@@ -1,9 +1,9 @@
 //! A very simple shader example.
 
-#[macro_use]
-extern crate gfx;
-extern crate cgmath;
-extern crate ggez;
+
+use gfx::{self, *};
+use cgmath;
+use ggez;
 
 use ggez::event;
 use ggez::graphics::{self, DrawMode};
@@ -12,6 +12,7 @@ use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
+// Define the input struct for our shader.
 gfx_defines! {
     constant Dim {
         rate: f32 = "u_Rate",

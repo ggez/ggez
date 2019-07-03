@@ -1,7 +1,7 @@
-//! An example of how to render to images using the `Canvas` type.
+//! An example of how to draw to `Image`'s using the `Canvas` type.
 
-extern crate cgmath;
-extern crate ggez;
+use cgmath;
+use ggez;
 
 use ggez::event;
 use ggez::graphics::{self, Color, DrawParam};

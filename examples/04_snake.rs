@@ -14,8 +14,8 @@
 
 // First we'll import the crates we need for our game;
 // in this case that is just `ggez` and `rand`.
-extern crate ggez;
-extern crate rand;
+use ggez;
+use rand;
 
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
@@ -222,8 +222,6 @@ impl Food {
         // Then we draw a rectangle with the Fill draw mode, and we convert the
         // Food's position into a `ggez::Rect` using `.into()` which we can do
         // since we implemented `From<GridPosition>` for `Rect` earlier.
-        // graphics::rectangle(ctx, color, graphics::DrawMode::fill(), self.pos.into())
-
         let rectangle =
             graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), self.pos.into(), color)?;
         graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))
