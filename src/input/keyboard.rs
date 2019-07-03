@@ -135,10 +135,6 @@ impl KeyboardContext {
         }
     }
 
-    // TODO: Set modifiers correctly
-    // and in general make sure this is hooked up correctly
-    // from Context::process_event().
-    // Looks like it is, but, not 100% sure.
     pub(crate) fn set_key(&mut self, key: KeyCode, pressed: bool) {
         if pressed {
             let _ = self.pressed_keys_set.insert(key);
@@ -147,20 +143,40 @@ impl KeyboardContext {
         } else {
             let _ = self.pressed_keys_set.remove(&key);
             self.current_pressed = None;
-            // Double check that this edge handling is necessary;
-            // winit sounds like it should do this for us,
-            // see https://docs.rs/winit/0.18.0/winit/struct.KeyboardInput.html#structfield.modifiers
+        }
+
+        self.set_key_modifier(key, pressed);
+    }
+
+    /// Take a modifier key code and alter our state.
+    ///
+    /// Double check that this edge handling is necessary;
+    /// winit sounds like it should do this for us,
+    /// see https://docs.rs/winit/0.18.0/winit/struct.KeyboardInput.html#structfield.modifiers
+    ///
+    /// ...more specifically, we should refactor all this to consistant-ify events a bit and
+    /// make winit do more of the work.
+    /// But to quote Scott Pilgrim, "This is... this is... Booooooring."
+    fn set_key_modifier(&mut self, key: KeyCode, pressed: bool) {
+        if pressed {
+            match key {
+                KeyCode::LShift | KeyCode::RShift => self.active_modifiers |= KeyMods::SHIFT,
+                KeyCode::LControl | KeyCode::RControl => self.active_modifiers |= KeyMods::CTRL,
+                KeyCode::LAlt | KeyCode::RAlt => self.active_modifiers |= KeyMods::ALT,
+                KeyCode::LWin | KeyCode::RWin => self.active_modifiers |= KeyMods::LOGO,
+                _ => (),
+            }
+        } else {
             match key {
                 KeyCode::LShift | KeyCode::RShift => self.active_modifiers -= KeyMods::SHIFT,
                 KeyCode::LControl | KeyCode::RControl => self.active_modifiers -= KeyMods::CTRL,
                 KeyCode::LAlt | KeyCode::RAlt => self.active_modifiers -= KeyMods::ALT,
                 KeyCode::LWin | KeyCode::RWin => self.active_modifiers -= KeyMods::LOGO,
                 _ => (),
-            }
+        }
         }
     }
 
-    // TODO: Merge into set_key?
     pub(crate) fn set_modifiers(&mut self, keymods: KeyMods) {
         self.active_modifiers = keymods;
     }
