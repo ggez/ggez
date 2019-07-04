@@ -957,10 +957,51 @@ pub fn gfx_objects(
     (f, d, e, dv, cv)
 }
 
+/// Alignment of a drawable
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub struct Alignment(pub HorizontalAlignment, pub VerticalAlignment);
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+#[allow(missing_docs)]
+pub enum HorizontalAlignment {
+    Left,
+    Center,
+    Right,
+}
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+#[allow(missing_docs)]
+pub enum VerticalAlignment {
+    Top,
+    Middle,
+    Bottom,
+}
+
 /// All types that can be drawn on the screen implement the `Drawable` trait.
 pub trait Drawable {
     /// Draws the drawable onto the rendering target.
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult;
+    
+    /// Draws the drawable onto the rendering target with specified alignment
+    fn draw_aligned(&self, ctx: &mut Context, param: DrawParam, alignment: Alignment) -> GameResult {
+        let adjusted_params = match self.dimensions(ctx) {
+            None => param,
+            Some(dimensions) => {
+                let x = match alignment.0 {
+                    HorizontalAlignment::Left => param.dest.x,
+                    HorizontalAlignment::Right => param.dest.x - dimensions.w * param.scale.x,
+                    HorizontalAlignment::Center => param.dest.x - dimensions.w * param.scale.x / 2.0,
+                };
+                let y = match alignment.1 {
+                    VerticalAlignment::Top => param.dest.y,
+                    VerticalAlignment::Bottom => param.dest.y - dimensions.h * param.scale.y,
+                    VerticalAlignment::Middle => param.dest.y - dimensions.h * param.scale.y / 2.0,
+                };
+                param.dest([x, y])
+            }
+        };
+        self.draw(ctx, adjusted_params)
+    }
 
     /// Returns a bounding box in the form of `Rect`.
     ///
