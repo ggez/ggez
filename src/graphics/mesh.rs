@@ -271,6 +271,7 @@ impl MeshBuilder {
     }
 
     /// Create a new [`Mesh`](struct.Mesh.html) from a raw list of triangles.
+    /// The length of the list must be a multiple of 3.
     ///
     /// Currently does not support UV's or indices.
     pub fn triangles<P>(&mut self, triangles: &[P], color: Color) -> GameResult<&mut Self>
@@ -278,7 +279,10 @@ impl MeshBuilder {
         P: Into<mint::Point2<f32>> + Clone,
     {
         {
-            assert_eq!(triangles.len() % 3, 0);
+            if (triangles.len() % 3) != 0 {
+                let msg = format!("Called Mesh::triangles() with points that have a length not a multiple of 3.");
+                return Err(GameError::LyonError(msg));
+            }
             let tris = triangles
                 .iter()
                 .cloned()
@@ -332,13 +336,8 @@ impl MeshBuilder {
     /// just use a pure white texture.
     ///
     /// This is the most primitive mesh-creation method, but allows you full
-    /// control over the tesselation and texturing.
-    /// As such it will panic or produce incorrect/invalid output (that may later
-    /// cause drawing to panic), if:
-    ///
-    ///  * `indices` contains a value out of bounds of `verts`
-    ///  * Adding the `indices` or `verts` would create a buffer too long
-    ///    to be indexed by a `u32`.
+    /// control over the tesselation and texturing.  It has the same constraints
+    /// as `Mesh::from_raw()`.
     pub fn raw<V>(&mut self, verts: &[V], indices: &[u32], texture: Option<Image>) -> &mut Self
     where
         V: Into<Vertex> + Clone,
@@ -360,16 +359,10 @@ impl MeshBuilder {
     /// Takes the accumulated geometry and load it into GPU memory,
     /// creating a single `Mesh`.
     pub fn build(&self, ctx: &mut Context) -> GameResult<Mesh> {
-        // Sanity checks to return early with helpful error messages.
-        if self.buffer.vertices.len() < 3 {
-            let msg = format!("Trying to build mesh with < 3 vertices, this is usually due to invalid input to a `Mesh` or MeshBuilder`.  Verts:\n {:#?}", self.buffer.vertices);
-            return Err(GameError::LyonError(msg));
-        }
-        if self.buffer.indices.len() < 3 {
-            let msg = format!("Trying to build mesh with < 3 indices, this is usually due to invalid input to a `Mesh` or MeshBuilder`.  Indices:\n {:#?}", self.buffer.indices);
-            return Err(GameError::LyonError(msg));
-        }
-
+        Mesh::from_raw(ctx, &self.buffer.vertices, &self.buffer.indices, self.image.clone())
+        /*
+            TODO: This has been refactored into `Mesh::from_raw()`, test it and remove this
+            if it's okay.
         let (vbuf, slice) = ctx
             .gfx_context
             .factory
@@ -388,6 +381,7 @@ impl MeshBuilder {
             debug_id: DebugId::get(ctx),
             rect,
         })
+*/
     }
 }
 
@@ -546,37 +540,61 @@ impl Mesh {
     /// just use a pure white texture.  The indices should draw the points in
     /// clockwise order, otherwise at best the mesh will not draw.
     ///
-    /// This is the most primitive mesh-creation method, but allows you full
-    /// control over the tesselation and texturing.
-    /// As such it will panic or produce incorrect/invalid output (that may later
-    /// cause drawing to panic), if:
+    /// This is the most primitive mesh-creation method, but allows
+    /// you full control over the tesselation and texturing.  As such
+    /// it will return an error, panic, or produce incorrect/invalid
+    /// output (that may later cause drawing to panic), if:
     ///
     ///  * `indices` contains a value out of bounds of `verts`
     ///  * `verts` is longer than `u32::MAX` elements.
-    ///  * `indices` do not specify polygons in clockwise order.
+    ///  * `indices` do not specify triangles in clockwise order.
     pub fn from_raw<V>(
         ctx: &mut Context,
         verts: &[V],
         indices: &[u32],
         texture: Option<Image>,
-    ) -> Mesh
+    ) -> GameResult<Mesh>
     where
         V: Into<Vertex> + Clone,
     {
+        // Sanity checks to return early with helpful error messages.
+        if verts.len() > (std::u32::MAX as usize) {
+            let msg = format!("Tried to build a mesh with {} vertices, max is u32::MAX", verts.len());
+            return Err(GameError::LyonError(msg));
+        }
+        if indices.len() > (std::u32::MAX as usize) {
+            let msg = format!("Tried to build a mesh with {} indices, max is u32::MAX", indices.len());
+            return Err(GameError::LyonError(msg));
+        }
+        if verts.len() < 3 {
+            let msg = format!("Trying to build mesh with < 3 vertices, this is usually due to invalid input to a `Mesh` or MeshBuilder`.");
+            return Err(GameError::LyonError(msg));
+        }
+        if indices.len() < 3 {
+            let msg = format!("Trying to build mesh with < 3 indices, this is usually due to invalid input to a `Mesh` or MeshBuilder`.  Indices:\n {:#?}", indices);
+            return Err(GameError::LyonError(msg));
+        }
+
+        if indices.len() % 3 != 0 {
+            let msg = format!("Trying to build mesh with an array of indices that is not a multiple of 3, this is usually due to invalid input to a `Mesh` or MeshBuilder`.");
+            return Err(GameError::LyonError(msg));
+        }
+
+        
         let verts: Vec<Vertex> = verts.iter().cloned().map(Into::into).collect();
         let rect = bbox_for_vertices(&verts).expect("No vertices in MeshBuilder");
         let (vbuf, slice) = ctx
             .gfx_context
             .factory
             .create_vertex_buffer_with_slice(&verts[..], indices);
-        Mesh {
+        Ok(Mesh {
             buffer: vbuf,
             slice,
             blend_mode: None,
             image: texture.unwrap_or_else(|| ctx.gfx_context.white_image.clone()),
             debug_id: DebugId::get(ctx),
             rect,
-        }
+        })
     }
 
     /// Replaces the vertices in the `Mesh` with the given ones.  This MAY be faster

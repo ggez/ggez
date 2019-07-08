@@ -8,6 +8,7 @@ mod audio;
 mod conf;
 mod filesystem;
 mod graphics;
+mod mesh;
 mod text;
 
 /// Make a basic `Context` with sane defaults.
