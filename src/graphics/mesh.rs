@@ -280,7 +280,9 @@ impl MeshBuilder {
     {
         {
             if (triangles.len() % 3) != 0 {
-                let msg = format!("Called Mesh::triangles() with points that have a length not a multiple of 3.");
+                let msg = format!(
+                    "Called Mesh::triangles() with points that have a length not a multiple of 3."
+                );
                 return Err(GameError::LyonError(msg));
             }
             let tris = triangles
@@ -359,29 +361,34 @@ impl MeshBuilder {
     /// Takes the accumulated geometry and load it into GPU memory,
     /// creating a single `Mesh`.
     pub fn build(&self, ctx: &mut Context) -> GameResult<Mesh> {
-        Mesh::from_raw(ctx, &self.buffer.vertices, &self.buffer.indices, self.image.clone())
+        Mesh::from_raw(
+            ctx,
+            &self.buffer.vertices,
+            &self.buffer.indices,
+            self.image.clone(),
+        )
         /*
-            TODO: This has been refactored into `Mesh::from_raw()`, test it and remove this
-            if it's okay.
-        let (vbuf, slice) = ctx
-            .gfx_context
-            .factory
-            .create_vertex_buffer_with_slice(&self.buffer.vertices[..], &self.buffer.indices[..]);
+                    TODO: This has been refactored into `Mesh::from_raw()`, test it and remove this
+                    if it's okay.
+                let (vbuf, slice) = ctx
+                    .gfx_context
+                    .factory
+                    .create_vertex_buffer_with_slice(&self.buffer.vertices[..], &self.buffer.indices[..]);
 
-        let rect = bbox_for_vertices(&self.buffer.vertices)
-            .ok_or_else(|| GameError::RenderError("No vertices in MeshBuilder".into()))?;
-        Ok(Mesh {
-            buffer: vbuf,
-            slice,
-            blend_mode: None,
-            image: self
-                .image
-                .clone()
-                .unwrap_or_else(|| ctx.gfx_context.white_image.clone()),
-            debug_id: DebugId::get(ctx),
-            rect,
-        })
-*/
+                let rect = bbox_for_vertices(&self.buffer.vertices)
+                    .ok_or_else(|| GameError::RenderError("No vertices in MeshBuilder".into()))?;
+                Ok(Mesh {
+                    buffer: vbuf,
+                    slice,
+                    blend_mode: None,
+                    image: self
+                        .image
+                        .clone()
+                        .unwrap_or_else(|| ctx.gfx_context.white_image.clone()),
+                    debug_id: DebugId::get(ctx),
+                    rect,
+                })
+        */
     }
 }
 
@@ -559,11 +566,17 @@ impl Mesh {
     {
         // Sanity checks to return early with helpful error messages.
         if verts.len() > (std::u32::MAX as usize) {
-            let msg = format!("Tried to build a mesh with {} vertices, max is u32::MAX", verts.len());
+            let msg = format!(
+                "Tried to build a mesh with {} vertices, max is u32::MAX",
+                verts.len()
+            );
             return Err(GameError::LyonError(msg));
         }
         if indices.len() > (std::u32::MAX as usize) {
-            let msg = format!("Tried to build a mesh with {} indices, max is u32::MAX", indices.len());
+            let msg = format!(
+                "Tried to build a mesh with {} indices, max is u32::MAX",
+                indices.len()
+            );
             return Err(GameError::LyonError(msg));
         }
         if verts.len() < 3 {
@@ -580,7 +593,6 @@ impl Mesh {
             return Err(GameError::LyonError(msg));
         }
 
-        
         let verts: Vec<Vertex> = verts.iter().cloned().map(Into::into).collect();
         let rect = bbox_for_vertices(&verts).expect("No vertices in MeshBuilder");
         let (vbuf, slice) = ctx

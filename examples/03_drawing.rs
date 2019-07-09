@@ -131,7 +131,7 @@ impl event::EventHandler for MainState {
             graphics::DrawParam::new()
                 .dest(dst)
                 .rotation(self.rotation)
-                .scale(scale)
+                .scale(scale),
         )?;
         graphics::draw(
             ctx,
@@ -140,7 +140,7 @@ impl event::EventHandler for MainState {
                 .dest(dst2)
                 .rotation(self.rotation)
                 .offset(Point2::new(0.5, 0.5))
-                .scale(scale)
+                .scale(scale),
         )?;
 
         // Create and draw a filled rectangle mesh.

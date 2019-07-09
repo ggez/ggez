@@ -173,7 +173,7 @@ impl KeyboardContext {
                 KeyCode::LAlt | KeyCode::RAlt => self.active_modifiers -= KeyMods::ALT,
                 KeyCode::LWin | KeyCode::RWin => self.active_modifiers -= KeyMods::LOGO,
                 _ => (),
-        }
+            }
         }
     }
 

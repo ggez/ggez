@@ -90,8 +90,7 @@ impl event::EventHandler for MainState {
             .dest(na::Point2::new(400.0, 400.0))
             .rotation(self.pos_x / 100.0)
             .offset(na::Point2::new(0.5, 0.5))
-            .scale(na::Vector2::new(1.0, 1.0))
-        ;
+            .scale(na::Vector2::new(1.0, 1.0));
 
         self.draw_coord_labels(ctx)?;
 
@@ -127,10 +126,11 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
     let cb = ggez::ContextBuilder::new("transforms", "ggez")
-        .window_setup(ggez::conf::WindowSetup::default()
-                      .title("transforms -- Press spacebar to cycle projection!"))
-        .add_resource_path(resource_dir)
-    ;
+        .window_setup(
+            ggez::conf::WindowSetup::default()
+                .title("transforms -- Press spacebar to cycle projection!"),
+        )
+        .add_resource_path(resource_dir);
     let (ctx, event_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx)?;
     event::run(ctx, event_loop, state)

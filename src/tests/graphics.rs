@@ -14,10 +14,26 @@ fn image_encode() {
 
 #[test]
 fn save_screenshot() {
-    let (_c, _e) = &mut tests::make_context();
-    // TODO: This doesn't work.
-    // let screenshot = graphics::screenshot(c).unwrap();
-    // screenshot.encode(c, graphics::ImageFormat::Png, "/screenshot_test.png").unwrap();
+    let (c, _e) = &mut tests::make_context();
+    graphics::clear(c, graphics::Color::new(0.1, 0.2, 0.3, 1.0));
+    // Draw a triangle on it so you can see which way is right-side up.
+    let tri_mesh = graphics::Mesh::new_polygon(
+        c,
+        graphics::DrawMode::stroke(10.0),
+        &[
+            graphics::Point2::new(100.0, 100.0),
+            graphics::Point2::new(100.0, 200.0),
+            graphics::Point2::new(200.0, 100.0),
+        ],
+        graphics::WHITE,
+    )
+    .unwrap();
+    graphics::draw(c, &tri_mesh, graphics::DrawParam::default()).unwrap();
+    graphics::present(c).unwrap();
+    let screenshot = graphics::screenshot(c).unwrap();
+    screenshot
+        .encode(c, graphics::ImageFormat::Png, "/screenshot_test.png")
+        .unwrap();
 }
 
 #[test]

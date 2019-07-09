@@ -502,6 +502,9 @@ pub fn present(ctx: &mut Context) -> GameResult<()> {
 /// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to a PNG file.
 pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
+    // TODO: This makes the screenshot upside-down form some reason...
+    // Probably because all our images are upside down, for coordinate reasons!
+    // How can we fix it?
     use gfx::memory::Bind;
     let debug_id = DebugId::get(ctx);
 

@@ -212,13 +212,11 @@ impl Image {
 
         let reader = gfx.factory.read_mapping(&dl_buffer)?;
 
-        // intermediary buffer to avoid casting
-        // and also to reverse the order in which we pass the rows
-        // so the screenshot isn't upside-down
+        // intermediary buffer to avoid casting.
+        // Apparently this also at one point made the screenshot upside-down,
+        // but no longer?
         let mut data = Vec::with_capacity(self.width as usize * self.height as usize * 4);
-        for row in reader.chunks(w as usize).rev() {
-            data.extend(row.iter().flatten());
-        }
+        data.extend(reader.into_iter().flatten());
         Ok(data)
     }
 
