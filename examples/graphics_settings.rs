@@ -21,7 +21,6 @@ use nalgebra as na;
 type Point2 = na::Point2<f32>;
 
 struct WindowSettings {
-    window_size_toggle: bool,
     toggle_fullscreen: bool,
     is_fullscreen: bool,
     resize_projection: bool,
@@ -42,7 +41,6 @@ impl MainState {
             image: graphics::Image::new(ctx, "/tile.png")?,
             window_settings: WindowSettings {
                 toggle_fullscreen: false,
-                window_size_toggle: false,
                 is_fullscreen: false,
                 resize_projection: false,
             },
@@ -66,17 +64,6 @@ impl event::EventHandler for MainState {
                 ggez::graphics::set_fullscreen(ctx, fullscreen_type)?;
                 self.window_settings.toggle_fullscreen = false;
             }
-
-            /*
-                if self.window_settings.window_size_toggle {
-                    let resolutions = ggez::graphics::fullscreen_modes(ctx, 0)?;
-                    let (width, height) = resolutions[self.window_settings.resolution_index];
-
-                    ggez::graphics::set_resolution(ctx, width, height)?;
-
-                    self.window_settings.window_size_toggle = false;
-                }
-            */
         }
         Ok(())
     }
@@ -151,21 +138,6 @@ impl event::EventHandler for MainState {
                 self.window_settings.toggle_fullscreen = true;
                 self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
             }
-            /*
-            KeyCode::H => {
-                self.window_settings.window_size_toggle = true;
-                self.window_settings.resolution_index += 1;
-                self.window_settings.resolution_index %= self.window_settings.num_of_resolutions;
-            }
-            KeyCode::G => {
-                if self.window_settings.resolution_index > 0 {
-                    self.window_settings.window_size_toggle = true;
-                    self.window_settings.resolution_index -= 1;
-                    self.window_settings.resolution_index %=
-                        self.window_settings.num_of_resolutions;
-                }
-            }
-            */
             KeyCode::Up => {
                 self.zoom += 0.1;
                 println!("Zoom is now {}", self.zoom);
@@ -210,7 +182,6 @@ impl event::EventHandler for MainState {
 fn print_help() {
     println!("GRAPHICS SETTING EXAMPLE:");
     println!("    F: toggle fullscreen");
-    println!("    G/H: Increase/decrease window sizes");
     println!("    Up/Down: Zoom in/out");
     println!(
         "    Spacebar: Toggle whether or not to resize the projection when the window is resized"
@@ -226,7 +197,7 @@ struct Opt {
     /// What level of MSAA to try to use (1, 2, 4, 8)
     #[structopt(short = "m", long = "msaa", default_value = "1")]
     msaa: u32,
-    /// Use OpenGL ES instead of regular OpenGL.
+    /// Try to use OpenGL ES 3.0 instead of regular OpenGL.
     #[structopt(long = "es")]
     es: bool,
 }
