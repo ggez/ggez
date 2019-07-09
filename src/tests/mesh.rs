@@ -23,16 +23,23 @@ const TRIANGLE_VERTS: &[graphics::Vertex] = &[
 #[test]
 fn test_mesh_verts_empty() {
     let (mut ctx, _ev) = tests::make_context();
-    let verts: Vec<graphics::Vertex> = vec![
+    let bad_verts: Vec<graphics::Vertex> = vec![
     ];
-    let indices: Vec<u32> = vec![
+    let bad_indices = vec![
     ];
-    let m = graphics::Mesh::from_raw(&mut ctx, &verts, &indices, None);
+    let good_indices = vec![0,1,2];
+    let m = graphics::Mesh::from_raw(&mut ctx, &bad_verts, &bad_indices, None);
     assert!(m.is_err());
 
-    let m = graphics::Mesh::from_raw(&mut ctx, TRIANGLE_VERTS, &indices, None);
+    let m = graphics::Mesh::from_raw(&mut ctx, &bad_verts, &good_indices, None);
     assert!(m.is_err());
 
+
+    let m = graphics::Mesh::from_raw(&mut ctx, TRIANGLE_VERTS, &bad_indices, None);
+    assert!(m.is_err());
+
+    let m = graphics::Mesh::from_raw(&mut ctx, TRIANGLE_VERTS, &good_indices, None);
+    assert!(m.is_ok());
 }
 
 /// Mesh creation fails if not enough indices to make a triangle.
@@ -60,16 +67,16 @@ fn test_mesh_points_clockwise() {
     // Points in CCW order
     let points: Vec<graphics::Point2> = vec![
         graphics::Point2::new(0.0, 0.0),
-        graphics::Point2::new(0.0, -1.0),
-        graphics::Point2::new(-1.0, -1.0),
+        graphics::Point2::new(0.0, 1.0),
+        graphics::Point2::new(1.0, 1.0),
     ];
     
-    let trapezoid_mesh = graphics::Mesh::new_polygon(
+    let _trapezoid_mesh = graphics::Mesh::new_polygon(
         &mut ctx, 
         graphics::DrawMode::fill(), 
         &points,
         [0.0, 0.0, 1.0, 1.0].into()
-    );
+    ).unwrap();
 
     // TODO: This is actually tricky to test for well...
     // We don't actually check for CCW points in

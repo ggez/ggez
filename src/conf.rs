@@ -144,7 +144,6 @@ impl WindowMode {
 ///     title: "An easy, good game".to_owned(),
 ///     samples: NumSamples::Zero,
 ///     vsync: true,
-///     transparent: false,
 ///     icon: "".to_owned(),
 ///     srgb: true,
 /// }

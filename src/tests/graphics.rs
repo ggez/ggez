@@ -32,7 +32,7 @@ fn load_images() {
 
 #[test]
 fn sanity_check_window_sizes() {
-    let (c, _e) = &mut tests::make_context();
+    let (c, e) = &mut tests::make_context();
 
     // Make sure that window sizes are what we ask for, and not what hidpi gives us.
     let w = c.conf.window_mode.width;
@@ -51,7 +51,13 @@ fn sanity_check_window_sizes() {
     graphics::set_drawable_size(c, w, h).unwrap();
     // ahahaha this apparently REQUIRES a delay between setting
     // the size and it actually altering, at least on Linux X11
-    std::thread::sleep(std::time::Duration::from_millis(50));
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    // Maybe we need to run the event pump too?  It seems VERY flaky.
+    // Sometimes you need one, sometimes you need both...
+    e.poll_events(|event| {
+        c.process_event(&event);
+    });
+
     let size = graphics::drawable_size(c);
     assert_eq!(w, size.0);
     assert_eq!(h, size.1);
