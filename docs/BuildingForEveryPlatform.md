@@ -10,21 +10,20 @@ hardest jumps.
 
 ## Project setup
 
-We will use the `hello_world` example project from ggez for all these
+We will use the `02_hello_world` example program from ggez for all these
 examples.  To do the initial setup, assuming you have cargo installed:
 
 ```sh
-cargo init --bin 02_hello_world
-cd 02_hello_world
+cargo init --bin hello_world
+cd hello_world
 ```
 
 Now copy-paste the contents of
 <https://raw.githubusercontent.com/ggez/ggez/master/examples/02_hello_world.rs>
-into `hello_world/src/main.rs`, or just wget it:
+into `hello_world/src/main.rs`, or if you are on Linux, just wget it:
 
 ```sh
-wget https://raw.githubusercontent.com/ggez/ggez/master/examples/02_hello_world.rs
-mv hello_world.rs src/main.rs
+wget https://raw.githubusercontent.com/ggez/ggez/master/examples/02_hello_world.rs -O src/main.rs
 ```
 
 You'll need a font to print "Hello world!" with, so we need to fetch one and
@@ -65,22 +64,16 @@ Then you should be able to build with `cargo run`
 Same libraries as Debian, slightly different names.  On CentOS 7 at
 least you can install them with:
 
-TODO: Double-check this with 0.5
-
 ```sh
 yum install alsa-lib-devel
 ```
 
 ## Distributing
 
-TODO: Double-check this with 0.5
-
 You should be able to just copy-paste the executable file and the `resources` directory to wherever you want.
 
 
 # Windows
-
-TODO: Double-check this with 0.5
 
 Should just build.  We recommend using the MSVC toolchain whenever possible, the MinGW one can be pretty jank and difficult to set up.
 

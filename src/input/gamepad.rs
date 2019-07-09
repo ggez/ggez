@@ -3,14 +3,9 @@
 //! This is going to be a bit of a work-in-progress as gamepad input
 //! gets fleshed out.  The `gilrs` crate needs help to add better
 //! cross-platform support.  Why not give it a hand?
-//!
-//! TODO: All of this.
-//! TODO: Either re-export gilrs or remove its types from the public API;
-//! pref. the latter.
-
 use std::fmt;
 
-use gilrs::{self, Event, Gamepad, Gilrs};
+pub use gilrs::{self, Event, Gamepad, Gilrs};
 
 /// A unique identifier for a particular GamePad
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -84,6 +79,7 @@ pub fn gamepad(ctx: &Context, id: GamepadId) -> Gamepad {
 // Is it connected?  (For consoles?)
 // Whether or not they support vibration
 
+/*
 /// Lists all gamepads.  With metainfo, maybe?
 pub fn list_gamepads() {
     unimplemented!()
@@ -98,6 +94,7 @@ pub fn axis() {
 pub fn button_pressed() {
     unimplemented!()
 }
+*/
 
 #[cfg(test)]
 mod tests {

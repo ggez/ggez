@@ -7,15 +7,6 @@
 [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
 [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
 
-WARNING: The current released version, 0.5.0-rc.X, is **NOT DONE**.  It
-is basically a PRE-RELEASE.  It will get fixed up pretty rapidly, and
-you are encouraged to use it, as the API will not change much before the
-final release.  However, the docs are not entirely updated, and there
-WILL be bugs!  They should get fixed rapidly, and a real release
-coming Real Soon.  But it seemed better to get people using the thing
-instead of blocking it on things like updating the web site.  You can
-track release progress [here](https://github.com/ggez/ggez/milestone/5).
-
 ggez is a Rust library to create a Good Game Easily.
 
 More specifically, ggez is a lightweight cross-platform game framework
@@ -44,16 +35,15 @@ your own libraries atop ggez.
 * Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
 * Easy timing and FPS measurement functions.
-* Math integration with `mint`.
+* Math library integration with `mint`.
 * Some more advanced graphics options: shaders, sprite batches and render targets
-
 
 ## Supported platforms
 
  * Fully supported: Windows, Linux
+ * Not officially supported but might work anyway: Mac, iOS
  * Work in progress: Web/WASM/Emscripten
  * Not officially supported yet (but maybe you can help!): Android
- * Will never officially support but might work anyway: Mac, iOS
 
 For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
 
@@ -140,7 +130,9 @@ struct MyGame {
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         // Load/create resources such as images here.
-        MyGame { }
+        MyGame {
+		    // ...
+		}
     }
 }
 

@@ -1,5 +1,4 @@
-
-# 0.5.0 (in progress)
+# 0.5.0
 
 ## Added
 
@@ -19,8 +18,7 @@
 
  * Updated versions of lots of dependencies.
  * Minimum rustc version is now 1.32, rust 2018 edition.
- * We now use `winit` instead of `sdl2` for window creation and events!  This involves lots of minor
-   changes, the full extent of which is still being explored.
+ * We now use `winit` instead of `sdl2` for window creation and events!  This removes the last major C dependency from ggez.  It also involves lots of minor changes, the full extent of which is still going to evolve.
  * `DrawParam` now uses the builder pattern instead of being a bare struct, which allows easier conversion from generics (such as `mint` types) as well as simplifying the internal math.
  * All public-facing API's that take `Point2`, `Vector2` or `Matrix4` should now take
    `Into<mint::...>` for the appropriate type from the `mint` crate.  This should let users use
@@ -28,23 +26,14 @@
    `euclid` are all options.
  * Moved all the `FilesystemContext` methods into top-level functions in the `filesystem` module,
    to be consistent with the rest of the API.
- * What used to be the `TextCached` module is now the `Text` module, replacing all the old text stuff.  This *dramatically* changes the text API, as well as being faster and more powerful.
- * Various dimension parameters have changed to fit the underlying implementations more closely.  `Image` dimensions have changed from `u32` to `u16`, which they always were but now it's exposed to the API.  Various screen size dimensions have changed from `u32` to `f64`, which allows `winit` to do smooth DPI-independent scaling.
+ * What used to be the `text_cached` module is now the `text` module, replacing all the old text stuff with cached text drawing using the `glyph_brush` crate.  This *dramatically* changes the text API, as well as being faster and more powerful.
+ * Various dimension parameters have changed to fit the underlying implementations more closely.  `Image` dimensions have changed from `u32` to `u16`, which they always were but now it's exposed to the API.  Various screen size dimensions have changed from `u32` to `f64`, which allows `winit` to do smoother scaling.
+ * Similarly, `Mesh`'s now have `u32` indices. [#574](https://github.com/ggez/ggez/issues/574)
  * Various getters have been renamed from `get_<field>()` to `<field>`(). Of particular note are changes to Drawable and ShaderHandle traits.
- * Probably tons of other things I've forgotten.
  * Some minor modularization has taken place; at least, gamepad and audio module scan be disabled with settings in your `conf.toml`.  Doing the same for filesystem, graphics, and input is a liiiiiittle more involved.
- * `Mesh`'s now have `u32`
-   indices. [#574](https://github.com/ggez/ggez/issues/574)
- * `MeshBuilder` `DrawMode`'s now can take parameters, and have some
-   shortcut functions to make default parameters.  This simplifies
-   things somewhat by not needing separate args to specify things like
-   a stroke width for `DrawMode::Stroke`.
- * HiDPI support removed [since it doesn't do anything
-   useful](https://github.com/rust-windowing/winit/issues/837#issuecomment-485864175).
-   Any problems with your window not being the size you asked for are
-   `winit`'s problem and will be solved once they fix it.
-   [#587](https://github.com/ggez/ggez/issues/587)
-   
+ * `MeshBuilder` `DrawMode`'s now can take parameters, and have some shortcut functions to make default parameters.  This simplifies things somewhat by not needing separate args to specify things like a stroke width for `DrawMode::Stroke`.
+ * HiDPI support removed [since it doesn't do anything useful](https://github.com/rust-windowing/winit/issues/837#issuecomment-485864175). Any problems with your window not being the size you asked for are `winit`'s problem and will be solved once they fix it. [#587](https://github.com/ggez/ggez/issues/587)
+ * Probably tons of other things I've forgotten.
 
 ## Deprecated
 
@@ -52,9 +41,8 @@
 
 ## Removed
 
- * Apple products are no longer supported.  [this commit](https://github.com/ggez/ggez/commit/2f02c72cf31401a1e6ab55edc745f6227c99fb67)
- * The foreground and background colors and associated functions have beeen removed; all colors are
-   now specified purely where they are used for drawing.
+ * Apple products are no longer officially supported.  They may work fine anyway, and I'll accept PR's for them, but handlin it all myself is too large an investment of time and energy.  Sorry.  :-(  [this commit](https://github.com/ggez/ggez/commit/2f02c72cf31401a1e6ab55edc745f6227c99fb67)
+ * The foreground and background colors and associated functions have beeen removed; all colors are now specified purely where they are used for drawing.
  * Removed deprecated `BoundSpriteBatch` type.
  * Removed `Context::print_resource_stats()` in favor of `filesystem::print_all()`.
  * Removed `graphics::rectangle()` and friends in favor of just

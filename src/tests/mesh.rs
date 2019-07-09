@@ -71,7 +71,7 @@ fn test_mesh_points_clockwise() {
     )
     .unwrap();
 
-    // TODO: This is actually tricky to test for well...
+    // TODO LATER: This is actually tricky to test for well...
     // We don't actually check for CCW points in
     // the `Mesh` building functions yet, so this will never fail.
     //assert!(trapezoid_mesh.is_err());
