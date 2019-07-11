@@ -33,6 +33,7 @@
  * Some minor modularization has taken place; at least, gamepad and audio module scan be disabled with settings in your `conf.toml`.  Doing the same for filesystem, graphics, and input is a liiiiiittle more involved.
  * `MeshBuilder` `DrawMode`'s now can take parameters, and have some shortcut functions to make default parameters.  This simplifies things somewhat by not needing separate args to specify things like a stroke width for `DrawMode::Stroke`.
  * HiDPI support removed [since it doesn't do anything useful](https://github.com/rust-windowing/winit/issues/837#issuecomment-485864175). Any problems with your window not being the size you asked for are `winit`'s problem and will be solved once they fix it. [#587](https://github.com/ggez/ggez/issues/587)
+ * Moved `ggez::quit()` to `ggez::event::quit()`.  [This commit](https://github.com/ggez/ggez/commit/66f21b3d03aea482001d60d23032354d7876446b)
  * Probably tons of other things I've forgotten.
 
 ## Deprecated

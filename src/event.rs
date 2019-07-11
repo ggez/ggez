@@ -90,7 +90,7 @@ pub trait EventHandler {
 
     /// A keyboard button was pressed.
     ///
-    /// The default implementation of this will call `ggez::quit()`
+    /// The default implementation of this will call `ggez::event::quit()`
     /// when the escape key is pressed.  If you override this with
     /// your own event handler you have to re-implment that
     /// functionality yourself.

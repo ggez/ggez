@@ -3,7 +3,7 @@
 //! Example:
 //!
 //! ```rust, compile
-//! use ggez::event::{EventHandler, KeyCode, KeyMods};
+//! use ggez::event::{self, EventHandler, KeyCode, KeyMods};
 //! use ggez::{graphics, nalgebra as na, timer};
 //! use ggez::input::keyboard;
 //! use ggez::{Context, GameResult};
@@ -52,7 +52,7 @@
 //!             KeyCode::Q => {
 //!                 if mods.contains(KeyMods::SHIFT & KeyMods::CTRL) {
 //!                     println!("Terminating!");
-//!                     ggez::quit(ctx);
+//!                     event::quit(ctx);
 //!                 } else if mods.contains(KeyMods::SHIFT) || mods.contains(KeyMods::CTRL) {
 //!                     println!("You need to hold both Shift and Control to quit.");
 //!                 } else {

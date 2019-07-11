@@ -23,13 +23,12 @@ use crate::timer;
 /// need to be transformed into a format the hardware likes) will need
 /// to access the `Context`.
 ///
-/// All fields in this struct are basically undocumented features, only
-/// here to make it easier to debug,
-/// or to let advanced users hook into the guts of ggez and make it
-/// do things it normally can't.  
-/// Most users shouldn't touch these things directly, since
-/// implementation details may change without warning.  The
-/// public and stable API is `ggez`'s module-level functions and types.
+/// All fields in this struct are basically undocumented features,
+/// only here to make it easier to debug, or to let advanced users
+/// hook into the guts of ggez and make it do things it normally
+/// can't.  Most users shouldn't touch these things directly, since
+/// implementation details may change without warning.  The public and
+/// stable API is `ggez`'s module-level functions and types.
 pub struct Context {
     /// Filesystem state
     pub filesystem: Filesystem,
@@ -49,10 +48,10 @@ pub struct Context {
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
     /// updating it will have no effect.
-    pub conf: conf::Conf,
+    pub(crate) conf: conf::Conf,
     /// Controls whether or not the event loop should be running.
-    /// Set this with `ggez::quit()`.
-    pub continuing: bool,
+    /// Set this with `ggez::event::quit()`.
+    pub(crate) continuing: bool,
 
     /// Context-specific unique ID.
     /// Compiles to nothing in release mode, and so
