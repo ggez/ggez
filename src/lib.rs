@@ -117,5 +117,5 @@ mod vfs;
 #[cfg(test)]
 pub mod tests;
 
-pub use crate::context::{quit, Context, ContextBuilder};
+pub use crate::context::{Context, ContextBuilder};
 pub use crate::error::*;

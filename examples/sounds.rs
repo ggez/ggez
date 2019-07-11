@@ -101,7 +101,7 @@ impl event::EventHandler for MainState {
             input::keyboard::KeyCode::Key4 => self.play_highpitch(ctx),
             input::keyboard::KeyCode::Key5 => self.play_lowpitch(ctx),
             input::keyboard::KeyCode::Key6 => self.play_stats(ctx),
-            input::keyboard::KeyCode::Escape => ggez::quit(ctx),
+            input::keyboard::KeyCode::Escape => event::quit(ctx),
             _ => (),
         }
     }

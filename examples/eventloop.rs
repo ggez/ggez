@@ -11,9 +11,10 @@
 use cgmath;
 use ggez;
 
+use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
 use ggez::graphics::{self, DrawMode};
-use ggez::{event, GameResult};
+use ggez::GameResult;
 
 pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("eventloop", "ggez");
@@ -21,7 +22,7 @@ pub fn main() -> GameResult {
 
     let mut position: f32 = 1.0;
 
-    // This is also used in the loop inside `::run()` - it can be flipped off with `ggez::quit()`
+    // This is also used in the loop inside `::run()` - it can be flipped off with `event::quit()`
     while ctx.continuing {
         // Tell the timer stuff a frame has happened.
         // Without this the FPS timer functions and such won't work.
@@ -33,7 +34,7 @@ pub fn main() -> GameResult {
             ctx.process_event(&event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::CloseRequested => ggez::quit(ctx),
+                    WindowEvent::CloseRequested => event::quit(ctx),
                     WindowEvent::KeyboardInput {
                         input:
                             KeyboardInput {
@@ -42,7 +43,7 @@ pub fn main() -> GameResult {
                             },
                         ..
                     } => match keycode {
-                        event::KeyCode::Escape => ggez::quit(ctx),
+                        event::KeyCode::Escape => event::quit(ctx),
 
                         _ => (),
                     },

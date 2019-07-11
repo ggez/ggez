@@ -114,7 +114,7 @@ impl EventHandler for App {
         );
         if keycode == KeyCode::Escape {
             // Escape key closes the app.
-            ggez::quit(ctx);
+            ggez::event::quit(ctx);
         }
     }
 

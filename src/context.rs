@@ -297,13 +297,6 @@ impl ContextBuilder {
     }
 }
 
-/// Terminates the [`ggez::run()`](fn.run.html) loop by setting
-/// [`Context.continuing`](struct.Context.html#structfield.continuing)
-/// to `false`.
-pub fn quit(ctx: &mut Context) {
-    ctx.continuing = false;
-}
-
 #[cfg(debug_assertions)]
 use std::sync::atomic::{AtomicUsize, Ordering};
 #[cfg(debug_assertions)]

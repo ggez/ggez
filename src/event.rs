@@ -102,7 +102,7 @@ pub trait EventHandler {
         _repeat: bool,
     ) {
         if keycode == KeyCode::Escape {
-            super::quit(ctx);
+            quit(ctx);
         }
     }
 
@@ -144,6 +144,13 @@ pub trait EventHandler {
     fn resize_event(&mut self, _ctx: &mut Context, _width: f32, _height: f32) {}
 }
 
+/// Terminates the [`ggez::event::run()`](fn.run.html) loop by setting
+/// [`Context.continuing`](struct.Context.html#structfield.continuing)
+/// to `false`.
+pub fn quit(ctx: &mut Context) {
+    ctx.continuing = false;
+}
+
 /// Runs the game's main loop, calling event callbacks on the given state
 /// object as events occur.
 ///
@@ -175,7 +182,7 @@ where
                     }
                     WindowEvent::CloseRequested => {
                         if !state.quit_event(ctx) {
-                            super::quit(ctx);
+                            quit(ctx);
                         }
                     }
                     WindowEvent::Focused(gained) => {
