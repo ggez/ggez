@@ -51,7 +51,7 @@ impl App {
             text: "Small red fragment".to_string(),
             color: Some(Color::new(1.0, 0.0, 0.0, 1.0)),
             // `Font` is a handle to a loaded TTF, stored inside the `Context`.
-            // `FontId::default()` always exists and maps to DejaVuSerif.
+            // `Font::default()` always exists and maps to DejaVuSerif.
             font: Some(graphics::Font::default()),
             scale: Some(Scale::uniform(10.0)),
             // This doesn't do anything at this point; can be used to omit fields in declarations.
@@ -64,15 +64,14 @@ impl App {
             .add(TextFragment::new(" magenta fragment").color(Color::new(1.0, 0.0, 1.0, 1.0)))
             .add(" another default fragment, to really drive the point home");
 
-        // This loads a new TrueType font into the context and returns a
-        // `Font::GlyphFont`, which can be used interchangeably with the
-        // `FontId` it contains throughout most of `Text` interface.
+        // This loads a new TrueType font into the context and
+        // returns a `Font` referring to it.
         let fancy_font = Font::new(ctx, "/Tangerine_Regular.ttf")?;
 
-        // `Font::GlyphFont` is really only a handle, and can be cloned around.
+        // `Font` is really only an integer handle, and can be copied around.
         text.add(
             TextFragment::new(" fancy fragment")
-                .font(fancy_font.clone())
+                .font(fancy_font)
                 .scale(Scale::uniform(25.0)),
         )
         .add(" and a default one, for symmetry");

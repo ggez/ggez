@@ -34,7 +34,8 @@ impl<T> VFile for T where T: Read + Write + Seek + Debug {}
 /// Options for opening files
 ///
 /// We need our own version of this structure because the one in
-/// `std` annoyingly doesn't let you get data out of it.
+/// `std` annoyingly doesn't let you read the read/write/create/etc
+/// state out of it.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct OpenOptions {
     read: bool,

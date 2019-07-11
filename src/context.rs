@@ -14,9 +14,9 @@ use crate::timer;
 
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
-/// system, timers, and so on.  Generally this type is **not** thread-
-/// safe and only one `Context` can exist at a time.  Trying to create
-/// another one will fail.
+/// system, timers, and so on.  Generally this type is **not**
+/// thread-safe and only one `Context` can exist at a time.  Trying
+/// to create another one will fail.
 ///
 /// Most functions that interact with the hardware, for instance
 /// drawing things, playing sounds, or loading resources (which then
@@ -182,8 +182,8 @@ use std::path;
 /// A builder object for creating a [`Context`](struct.Context.html).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ContextBuilder {
-    pub(crate) game_id: &'static str,
-    pub(crate) author: &'static str,
+    pub(crate) game_id: String,
+    pub(crate) author: String,
     pub(crate) conf: conf::Conf,
     pub(crate) paths: Vec<path::PathBuf>,
     pub(crate) memory_zip_files: Vec<Cow<'static, [u8]>>,
@@ -192,10 +192,10 @@ pub struct ContextBuilder {
 
 impl ContextBuilder {
     /// Create a new `ContextBuilder` with default settings.
-    pub fn new(game_id: &'static str, author: &'static str) -> Self {
+    pub fn new(game_id: &str, author: &str) -> Self {
         Self {
-            game_id,
-            author,
+            game_id: game_id.to_string(),
+            author: author.to_string(),
             conf: conf::Conf::default(),
             paths: vec![],
             memory_zip_files: vec![],
@@ -276,7 +276,7 @@ impl ContextBuilder {
 
     /// Build the `Context`.
     pub fn build(self) -> GameResult<(Context, winit::EventsLoop)> {
-        let mut fs = Filesystem::new(self.game_id, self.author)?;
+        let mut fs = Filesystem::new(self.game_id.as_ref(), self.author.as_ref())?;
 
         for path in &self.paths {
             fs.mount(path, true);

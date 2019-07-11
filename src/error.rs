@@ -46,7 +46,7 @@ pub enum GameError {
     VideoError(String),
     /// Something went wrong compiling shaders
     ShaderProgramError(gfx::shade::ProgramError),
-    /// Something went wrong with `Gilrs`
+    /// Something went wrong with the `gilrs` gamepad-input library.
     GamepadError(String),
     /// Something went wrong with the `lyon` shape-tesselation library.
     LyonError(String),

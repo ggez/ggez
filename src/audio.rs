@@ -24,6 +24,10 @@ use crate::filesystem;
 
 /// A trait object defining an audio context, allowing us to someday
 /// use something other than `rodio` if we really want.
+///
+/// End-users usually don't need to mess with this, but it's there
+/// if you want to bypass `ggez`'s sound functionality and write your
+/// own.
 pub trait AudioContext {
     /// Returns the audio device.
     fn device(&self) -> &rodio::Device;
@@ -33,7 +37,7 @@ pub trait AudioContext {
 ///
 /// You generally don't have to create this yourself, it will be part
 /// of your `Context` object.
-pub struct RodioAudioContext {
+pub(crate) struct RodioAudioContext {
     device: rodio::Device,
 }
 
@@ -65,7 +69,7 @@ impl fmt::Debug for RodioAudioContext {
 /// stub for when you don't need audio.  Will panic if you try to actually
 /// play sound from it.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct NullAudioContext;
+pub(crate) struct NullAudioContext;
 
 impl AudioContext for NullAudioContext {
     fn device(&self) -> &rodio::Device {
@@ -136,7 +140,8 @@ impl AsRef<[u8]> for SoundData {
     }
 }
 
-/// The source for a sound.
+/// A trait defining the operations possible on a sound;
+/// it is implemented by both `Source` and `SpatialSource`.
 pub trait SoundSource {
     /// Plays the audio source; restarts the sound if currently playing
     #[inline(always)]
@@ -145,7 +150,7 @@ pub trait SoundSource {
         self.play_later()
     }
 
-    /// Plays the `SpatialSource`; waits until done if the sound is currently playing
+    /// Plays the `SoundSource`; waits until done if the sound is currently playing
     fn play_later(&self) -> GameResult;
 
     /// Play source "in the background"; cannot be stopped
@@ -202,7 +207,7 @@ pub trait SoundSource {
 
 /// Internal state used by audio sources.
 #[derive(Debug)]
-pub struct SourceState {
+pub(crate) struct SourceState {
     data: io::Cursor<SoundData>,
     repeat: bool,
     fade_in: time::Duration,
@@ -260,8 +265,9 @@ impl SourceState {
     }
 }
 
-/// A source of audio data connected to a particular `Channel`.
-/// Will stop playing when dropped.
+/// A source of audio data that is connected to an output
+/// channel and ready to play.  It will stop playing when
+/// dropped.
 // TODO LATER: Check and see if this matches Love2d's semantics!
 // Eventually it might read from a streaming decoder of some kind,
 // but for now it is just an in-memory SoundData structure.

@@ -17,6 +17,8 @@ type Vec3 = na::Vector3<f32>;
 /// graphics::draw(ctx, drawable, DrawParam::default().dest(my_dest) );
 /// # }
 /// ```
+///
+/// As a shortcut, it also implements `From` for a variety of tuple types.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawParam {
     /// A portion of the drawable to clip, as a fraction of the whole image.

@@ -22,7 +22,8 @@ use crate::error::GameResult;
 pub enum FullscreenType {
     /// Windowed mode.
     Windowed,
-    /// Real fullscreen.
+    /// True fullscreen, which used to be preferred 'cause it can have
+    /// small performance benefits over windowed fullscreen.
     True,
     /// Windowed fullscreen, generally preferred over real fullscreen
     /// these days 'cause it plays nicer with multiple monitors.
@@ -235,7 +236,8 @@ pub enum Backend {
     /// OpenGL ES, defaults to 3.0.  Used for phones and other mobile
     /// devices.  Using something older
     /// than 3.0 starts to running into sticky limitations, particularly
-    /// with instanced drawing, but might be possible.
+    /// with instanced drawing (used for `SpriteBatch`), but might be
+    /// possible.
     OpenGLES {
         /// OpenGL ES major version
         #[default = 3]
@@ -247,7 +249,7 @@ pub enum Backend {
 }
 
 impl Backend {
-    /// Set OpenGL version.
+    /// Set requested OpenGL/OpenGL ES version.
     pub fn version(self, new_major: u8, new_minor: u8) -> Self {
         match self {
             Backend::OpenGL { .. } => Backend::OpenGL {
@@ -297,7 +299,7 @@ pub enum NumSamples {
 
 impl NumSamples {
     /// Create a `NumSamples` from a number.
-    /// Returns None if `i` is invalid.
+    /// Returns `None` if `i` is invalid.
     pub fn from_u32(i: u32) -> Option<NumSamples> {
         match i {
             0 => Some(NumSamples::Zero),
@@ -382,7 +384,7 @@ pub struct Conf {
     pub window_mode: WindowMode,
     /// Window setting information that must be set at init-time
     pub window_setup: WindowSetup,
-    /// Backend configuration
+    /// Graphics backend configuration
     pub backend: Backend,
     /// Which modules to enable.
     pub modules: ModuleConf,

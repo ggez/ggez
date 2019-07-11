@@ -20,8 +20,8 @@
 //! the functionality to actually get stuff done.
 //!
 //! The general pattern is to create a struct holding your game's data which implements
-//! the `EventHandler` trait. Create a new `Context` object with default objects from a
-//! [`ContextBuilder`](struct.ContextBuilder.html) or [`Conf`](conf/struct.Conf.html) object,
+//! the `EventHandler` trait. Create a [`ContextBuilder`](struct.ContextBuilder.html)
+//! object with configuration settings, use it to create a new `Context` object,
 //! and then call [`event::run()`](event/fn.run.html) with the `Context` and an instance of
 //! your `EventHandler` to run your game's main loop.
 //!
@@ -34,14 +34,14 @@
 //!
 //! fn main() {
 //!     // Make a Context and an EventLoop.
-//!     let (mut ctx, mut event_loop) = /* ContextBuilder params */
-//! #       ContextBuilder::new("doc_template", "ggez")
-//! #           .build()
-//! #           .unwrap();
+//!     let (mut ctx, mut event_loop) =
+//!        ContextBuilder::new("game_name", "author_name")
+//!            .build()
+//!            .unwrap();
 //!
 //!     // Create an instance of your event handler.
-//!     // Usually, you should provide it with the Context object to
-//!     // use when setting your game up.
+//!     // Usually, you should provide it with the Context object 
+//!     // so it can load resources like images during setup.
 //!     let mut my_game = MyGame::new(&mut ctx);
 //!
 //!     // Run!
@@ -57,7 +57,7 @@
 //!
 //! impl MyGame {
 //!     pub fn new(_ctx: &mut Context) -> MyGame {
-//!         // Load/create resources such as images here.
+//!         // Load/create resources here: images, fonts, sounds, etc.
 //!         MyGame { }
 //!     }
 //! }
@@ -69,7 +69,6 @@
 //!     }
 //!
 //!     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-//!         // Optional
 //!         graphics::clear(ctx, graphics::WHITE);
 //!
 //!         // Draw code here...

@@ -1,6 +1,6 @@
 use glyph_brush::GlyphPositioner;
-use glyph_brush::{self, Layout, SectionText, VariedSection};
-pub use glyph_brush::{rusttype::Scale, FontId, HorizontalAlign as Align};
+use glyph_brush::{self, Layout, SectionText, VariedSection, FontId};
+pub use glyph_brush::{rusttype::Scale, HorizontalAlign as Align};
 use mint;
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -15,6 +15,12 @@ use super::*;
 pub const DEFAULT_FONT_SCALE: f32 = 16.0;
 
 /// A handle referring to a loaded Truetype font.
+///
+/// This is just an integer referring to a loaded font
+/// stored in the `Context`, so is cheap to copy.
+/// Note that fonts are cached and currently never
+/// *removed* from the cache, so you do not want to
+/// load a font more than once.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Font {
     font_id: FontId,
@@ -24,7 +30,8 @@ pub struct Font {
 /// A piece of text with optional color, font and font scale information.
 /// Drawing text generally involves one or more of these.
 /// These options take precedence over any similar field/argument.
-/// Can be implicitly constructed from `String`, `(String, Color)`, and `(String, FontId, Scale)`.
+/// Implements `From` for `char`, `&str`, `String` and
+/// `(String, Font, Scale)`.
 #[derive(Clone, Debug)]
 pub struct TextFragment {
     /// Text string itself.
@@ -129,7 +136,7 @@ impl Default for CachedMetrics {
 }
 
 /// Drawable text object.  Essentially a list of [`TextFragment`](struct.TextFragment.html)'s
-/// and some metrics information.
+/// and some cached size information.
 ///
 /// It implements [`Drawable`](trait.Drawable.html) so it can be drawn immediately with
 /// [`graphics::draw()`](fn.draw.html), or many of them can be queued with [`graphics::queue_text()`](fn.queue_text.html)
@@ -395,6 +402,7 @@ impl Font {
         let mut buf = Vec::new();
         let _ = stream.read_to_end(&mut buf)?;
 
+        // TODO:
         // There's a DPI issue here; see winit #548.
         // Also see commit 2f02c72cf31401a1e6ab55edc745f6227c99fb67
         // Also need point size, pixels, etc...

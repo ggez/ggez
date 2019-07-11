@@ -13,6 +13,10 @@
 use gilrs;
 use winit::{self, dpi};
 
+// TODO LATER: I kinda hate all these re-exports.  I kinda hate
+// a lot of the details of the `EventHandler` and input now though,
+// and look forward to ripping it all out and replacing it with newer winit.
+
 /// A mouse button.
 pub use winit::MouseButton;
 
@@ -28,6 +32,9 @@ pub mod winit_event {
         TouchPhase, WindowEvent,
     };
 }
+pub use crate::input::gamepad::GamepadId;
+pub use crate::input::keyboard::{KeyCode, KeyMods};
+
 
 use self::winit_event::*;
 /// `winit` event loop.
@@ -35,8 +42,6 @@ pub use winit::EventsLoop;
 
 use crate::context::Context;
 use crate::error::GameResult;
-pub use crate::input::gamepad::GamepadId;
-pub use crate::input::keyboard::{KeyCode, KeyMods};
 
 /// A trait defining event callbacks.  This is your primary interface with
 /// `ggez`'s event loop.  Implement this trait for a type and

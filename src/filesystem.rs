@@ -3,9 +3,9 @@
 //! This module provides access to files in specific places:
 //!
 //! * The `resources/` subdirectory in the same directory as the
-//! program executable,
+//! program executable, if any,
 //! * The `resources.zip` file in the same
-//! directory as the program executable,
+//! directory as the program executable, if any,
 //! * The root folder of the  game's "save" directory which is in a
 //! platform-dependent location,
 //! such as `~/.local/share/<gameid>/` on Linux.  The `gameid`
@@ -96,7 +96,7 @@ impl Filesystem {
     /// some platforms) the `author` as a portion of the user
     /// directory path.  This function is called automatically by
     /// ggez, the end user should never need to call it.
-    pub fn new(id: &'static str, author: &'static str) -> GameResult<Filesystem> {
+    pub fn new(id: &str, author: &str) -> GameResult<Filesystem> {
         let mut root_path = env::current_exe()?;
 
         // Ditch the filename (if any)
@@ -180,8 +180,8 @@ impl Filesystem {
 
     /// Opens a file in the user directory with the given
     /// [`filesystem::OpenOptions`](struct.OpenOptions.html).
-    /// Note that even if you open a file read-only, it can only access
-    /// files in the user directory.
+    /// Note that even if you open a file read-write, it can only
+    /// write to files in the "user" directory.
     pub(crate) fn open_options<P: AsRef<path::Path>>(
         &mut self,
         path: P,

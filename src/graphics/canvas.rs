@@ -12,8 +12,9 @@ use crate::error::*;
 use crate::graphics::*;
 use crate::Context;
 
-/// A generic canvas independent of graphics backend. This type should probably
-/// never be used directly; use [`graphics::Canvas`](type.Canvas.html) instead.
+/// A generic canvas independent of graphics backend. This type should 
+/// never need to be used directly; use [`graphics::Canvas`](type.Canvas.html)
+/// instead.
 #[derive(Debug)]
 pub struct CanvasGeneric<Spec>
 where
