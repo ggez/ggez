@@ -248,7 +248,7 @@ impl Image {
         }
     }
 
-    /// A little helper function that creates a new Image that is just
+    /// A little helper function that creates a new `Image` that is just
     /// a solid square of the given size and color.  Mainly useful for
     /// debugging.
     pub fn solid(context: &mut Context, size: u16, color: Color) -> GameResult<Self> {

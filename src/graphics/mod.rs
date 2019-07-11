@@ -502,7 +502,7 @@ pub fn present(ctx: &mut Context) -> GameResult<()> {
 }
 
 /// Take a screenshot by outputting the current render surface
-/// (screen or selected canvas) to a PNG file.
+/// (screen or selected canvas) to an `Image`.
 pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     // TODO LATER: This makes the screenshot upside-down form some reason...
     // Probably because all our images are upside down, for coordinate reasons!
@@ -731,8 +731,7 @@ pub fn pop_transform(context: &mut Context) {
 /// underlying MVP matrix.
 ///
 /// A [`DrawParam`](struct.DrawParam.html) can be converted into an appropriate
-/// transform matrix by turning it into a [`DrawTransform`](struct.DrawTransform.html):
-///
+/// transform matrix with `DrawParam::to_matrix()`.
 /// ```rust,no_run
 /// # use ggez::*;
 /// # use ggez::graphics::*;
@@ -817,9 +816,11 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
 /// Sets the window mode, such as the size and other properties.
 ///
 /// Setting the window mode may have side effects, such as clearing
-/// the screen or setting the screen coordinates viewport to some undefined value.
-/// It is recommended to call [`set_screen_coordinates()`](fn.set_screen_coordinates.html)
-/// after changing the window size to make sure everything is what you want
+/// the screen or setting the screen coordinates viewport to some
+/// undefined value (for example, the window was resized).  It is
+/// recommended to call
+/// [`set_screen_coordinates()`](fn.set_screen_coordinates.html) after
+/// changing the window size to make sure everything is what you want
 /// it to be.
 pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult {
     let gfx = &mut context.gfx_context;
@@ -899,42 +900,7 @@ pub fn drawable_size(context: &Context) -> (f32, f32) {
         .unwrap_or((0.0, 0.0))
 }
 
-/// Returns the gfx-rs `Factory` object for ggez's rendering context.
-pub fn factory(context: &mut Context) -> &mut gfx_device_gl::Factory {
-    let gfx = &mut context.gfx_context;
-    &mut gfx.factory
-}
-
-/// Returns the gfx-rs `Device` object for ggez's rendering context.
-pub fn device(context: &mut Context) -> &mut gfx_device_gl::Device {
-    let gfx = &mut context.gfx_context;
-    gfx.device.as_mut()
-}
-
-/// Returns the gfx-rs `Encoder` object for ggez's rendering context.
-pub fn encoder(
-    context: &mut Context,
-) -> &mut gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
-    let gfx = &mut context.gfx_context;
-    &mut gfx.encoder
-}
-
 /// Returns the gfx-rs depth target object for ggez's rendering context.
-pub fn depth_view(
-    context: &mut Context,
-) -> gfx::handle::RawDepthStencilView<gfx_device_gl::Resources> {
-    let gfx = &mut context.gfx_context;
-    gfx.depth_view.clone()
-}
-
-/// Returns the gfx-rs color target object for ggez's rendering context.
-pub fn screen_render_target(
-    context: &Context,
-) -> gfx::handle::RawRenderTargetView<gfx_device_gl::Resources> {
-    let gfx = &context.gfx_context;
-    gfx.data.out.clone()
-}
-
 /// Returns raw `gfx-rs` state objects, if you want to use `gfx-rs` to write
 /// your own graphics pipeline then this gets you the interfaces you need
 /// to do so.

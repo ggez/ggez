@@ -437,7 +437,7 @@ impl Default for Font {
 
 /// Queues the `Text` to be drawn by [`draw_queued_text()`](fn.draw_queued_text.html).
 /// `relative_dest` is relative to the [`DrawParam::dest`](struct.DrawParam.html#structfield.dest)
-/// passed to `draw_queued()`./ Note, any `Text` drawn via [`graphics::draw()`](fn.draw.html)
+/// passed to `draw_queued()`. Note, any `Text` drawn via [`graphics::draw()`](fn.draw.html)
 /// will also draw the queue.
 pub fn queue_text<P>(context: &mut Context, batch: &Text, relative_dest: P, color: Option<Color>)
 where
@@ -448,7 +448,7 @@ where
     context.gfx_context.glyph_brush.queue(varied_section);
 }
 
-/// Exposes `gfx_glyph`'s `GlyphBrush::queue()` and `GlyphBrush::queue_custom_layout()`,
+/// Returns `gfx_glyph`'s `GlyphBrush::queue()` and `GlyphBrush::queue_custom_layout()`,
 /// in case `ggez`' API is insufficient.
 pub fn queue_text_raw<'a, S, G>(context: &mut Context, section: S, custom_layout: Option<&G>)
 where

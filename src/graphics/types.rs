@@ -449,7 +449,7 @@ impl From<LinearColor> for [f32; 4] {
     }
 }
 
-/// Specifies whether a shape should be drawn
+/// Specifies whether a mesh should be drawn
 /// filled or as an outline.
 #[derive(Debug, Copy, Clone)]
 pub enum DrawMode {
@@ -474,9 +474,9 @@ impl DrawMode {
 /// Specifies what blending method to use when scaling up/down images.
 #[derive(Debug, Copy, Clone)]
 pub enum FilterMode {
-    /// Use linear interpolation
+    /// Use linear interpolation (ie, smooth)
     Linear,
-    /// Use nearest-neighbor interpolation
+    /// Use nearest-neighbor interpolation (ie, pixelated)
     Nearest,
 }
 

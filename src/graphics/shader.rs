@@ -268,7 +268,7 @@ where
     Spec: graphics::BackendSpec,
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
 {
-    /// Create a new `Shader` given a gfx pipeline object
+    /// Create a new `Shader` given source files, constants and a name.
     ///
     /// In order to use a specific blend mode when this shader is being
     /// used, you must include that blend mode as part of the
@@ -304,8 +304,7 @@ where
         )
     }
 
-    /// Create a new `Shader` directly from source given a gfx pipeline
-    /// object
+    /// Create a new `Shader` directly from GLSL source code.
     ///
     /// In order to use a specific blend mode when this shader is being
     /// used, you must include that blend mode as part of the

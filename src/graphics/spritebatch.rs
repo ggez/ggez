@@ -7,8 +7,10 @@
 //! a large amount of location/position data in a buffer, then feed it
 //! to the graphics card all in one go.
 //!
-//! Also it's super slow in `rustc`'s default debug mode, so if you build
-//! it crank up the `opt-level` for debug mode in your `Cargo.toml`.
+//! Also it's super slow in `rustc`'s default debug mode, because
+//! `rustc` adds a lot of checking to the vector accesses and math.
+//! If you use it, it's recommended to crank up the `opt-level` for
+//! debug mode in your game's `Cargo.toml`.
 
 use crate::context::Context;
 use crate::error;
@@ -21,11 +23,12 @@ use gfx::Factory;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
 ///
-/// This is generally faster than drawing the same sprite with many invocations of
-/// [`draw()`](../fn.draw.html), though it has a bit of overhead to set up the batch.
-/// This makes it run very slowly in `debug` mode because it spends a lot of time on array
-/// bounds checking and un-optimized math; you need to build with optimizations enabled
-/// to really get the speed boost.
+/// This is generally faster than drawing the same sprite with many
+/// invocations of [`draw()`](../fn.draw.html), though it has a bit of
+/// overhead to set up the batch.  This overhead makes it run very
+/// slowly in `debug` mode because it spends a lot of time on array
+/// bounds checking and un-optimized math; you need to build with
+/// optimizations enabled to really get the speed boost.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpriteBatch {
     image: graphics::Image,
@@ -53,7 +56,7 @@ impl SpriteBatch {
 
     /// Adds a new sprite to the sprite batch.
     ///
-    /// Returns a handle with which type to modify the sprite using
+    /// Returns a handle with which to modify the sprite using
     /// [`set()`](#method.set)
     pub fn add<P>(&mut self, param: P) -> SpriteIdx
     where
