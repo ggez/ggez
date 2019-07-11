@@ -173,7 +173,7 @@ pub fn duration_to_f64(d: time::Duration) -> f64 {
 ///
 /// Only handles positive numbers correctly.
 pub fn f64_to_duration(t: f64) -> time::Duration {
-    debug_assert!(t >= 0.0, "f64_to_duration passed a negative number!");
+    debug_assert!(t > 0.0, "f64_to_duration passed a negative number!");
     let seconds = t.trunc();
     let nanos = t.fract() * 1e9;
     time::Duration::new(seconds as u64, nanos as u32)
@@ -203,15 +203,18 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
     time::Instant::now() - tc.init_instant
 }
 
-/// This function will return true if the time since the
-/// last [`update()`](../event/trait.EventHandler.html#tymethod.update)
-/// call has been equal to or greater to
-/// the update FPS indicated by the `target_fps`.
-/// It keeps track of fractional frames, so if you want
-/// 60 fps (16.67 ms/frame) and the game stutters so that
-/// there is 40 ms between `update()` calls, this will return
-/// `true` twice, and take the remaining 6.67 ms into account
-/// in the next frame.
+/// Check whether or not the desired amount of time has elapsed
+/// since the last frame.
+///
+/// This function will return true if the time since the last
+/// [`update()`](../event/trait.EventHandler.html#tymethod.update)
+/// call has been equal to or greater to the update FPS indicated by
+/// the `target_fps`.  It keeps track of fractional frames, so if you
+/// want 60 fps (16.67 ms/frame) and the game stutters so that there
+/// is 40 ms between `update()` calls, this will return `true` twice
+/// in a row even in the same frame, then taking into account the
+/// residual 6.67 ms to catch up to the next frame before returning
+/// `true` again.
 ///
 /// The intention is to for it to be called in a while loop
 /// in your `update()` callback:

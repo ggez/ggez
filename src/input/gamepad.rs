@@ -55,7 +55,7 @@ impl GamepadContext for GilrsGamepadContext {
 /// but does nothing; a stub for when you don't need it or are
 /// on a platform that `gilrs` doesn't support.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct NullGamepadContext {}
+pub(crate) struct NullGamepadContext {}
 
 impl GamepadContext for NullGamepadContext {
     fn next_event(&mut self) -> Option<Event> {
