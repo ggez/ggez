@@ -22,9 +22,9 @@
 //!
 //! See the source of the [`files` example](https://github.com/ggez/ggez/blob/master/examples/files.rs) for more details.
 //!
-//! Note that the file lookups WILL follow symlinks!  This is
-//! for convenience more than security, so don't treat it as
-//! being secure.
+//! Note that the file lookups WILL follow symlinks!  This module's
+//! directory isolation is intended for convenience, not security, so
+//! don't assume it will be secure.
 
 use std::env;
 use std::fmt;
