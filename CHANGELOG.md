@@ -17,7 +17,7 @@
 ## Changed
 
  * Updated versions of lots of dependencies.
- * Minimum rustc version is now 1.32, rust 2018 edition.
+ * Minimum rustc version is now 1.33, rust 2018 edition.
  * We now use `winit` instead of `sdl2` for window creation and events!  This removes the last major C dependency from ggez.  It also involves lots of minor changes, the full extent of which is still going to evolve.
  * `DrawParam` now uses the builder pattern instead of being a bare struct, which allows easier conversion from generics (such as `mint` types) as well as simplifying the internal math.
  * All public-facing API's that take `Point2`, `Vector2` or `Matrix4` should now take
