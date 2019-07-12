@@ -1,5 +1,5 @@
 use glyph_brush::GlyphPositioner;
-use glyph_brush::{self, Layout, SectionText, VariedSection, FontId};
+use glyph_brush::{self, FontId, Layout, SectionText, VariedSection};
 pub use glyph_brush::{rusttype::Scale, HorizontalAlign as Align};
 use mint;
 use std::borrow::Cow;

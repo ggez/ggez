@@ -40,7 +40,7 @@
 //!            .unwrap();
 //!
 //!     // Create an instance of your event handler.
-//!     // Usually, you should provide it with the Context object 
+//!     // Usually, you should provide it with the Context object
 //!     // so it can load resources like images during setup.
 //!     let mut my_game = MyGame::new(&mut ctx);
 //!

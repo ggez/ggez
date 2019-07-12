@@ -9,13 +9,11 @@ pub fn context_build_tests() {
         conf::Conf::default().window_mode(conf::WindowMode::default().dimensions(800.0, 600.0)),
         conf::Conf::default().window_mode(conf::WindowMode::default().dimensions(400.0, 400.0)),
         conf::Conf::default().window_mode(conf::WindowMode::default().resizable(false)),
+        conf::Conf::default().window_mode(
+            conf::WindowMode::default().fullscreen_type(conf::FullscreenType::Windowed),
+        ),
         conf::Conf::default()
-            .window_mode(conf::WindowMode::default()
-            .fullscreen_type(conf::FullscreenType::Windowed)),
-        conf::Conf::default()
-            .window_mode(conf::WindowMode::default()
-            .fullscreen_type(conf::FullscreenType::True)),
-
+            .window_mode(conf::WindowMode::default().fullscreen_type(conf::FullscreenType::True)),
         conf::Conf::default().modules(conf::ModuleConf::default().audio(false)),
     ];
     for conf in confs.into_iter() {

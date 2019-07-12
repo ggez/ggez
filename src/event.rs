@@ -35,7 +35,6 @@ pub mod winit_event {
 pub use crate::input::gamepad::GamepadId;
 pub use crate::input::keyboard::{KeyCode, KeyMods};
 
-
 use self::winit_event::*;
 /// `winit` event loop.
 pub use winit::EventsLoop;
