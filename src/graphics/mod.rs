@@ -900,10 +900,10 @@ pub fn drawable_size(context: &Context) -> (f32, f32) {
         .unwrap_or((0.0, 0.0))
 }
 
-/// Returns the gfx-rs depth target object for ggez's rendering context.
 /// Returns raw `gfx-rs` state objects, if you want to use `gfx-rs` to write
 /// your own graphics pipeline then this gets you the interfaces you need
 /// to do so.
+///
 /// Returns all the relevant objects at once;
 /// getting them one by one is awkward 'cause it tends to create double-borrows
 /// on the Context object.

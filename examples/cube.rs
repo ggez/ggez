@@ -83,9 +83,12 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> Self {
+        /*
         let color_view = graphics::screen_render_target(ctx);
         let depth_view = graphics::depth_view(ctx);
         let factory = graphics::factory(ctx);
+         */
+        let (factory, _device, _encoder, depth_view, color_view) = graphics::gfx_objects(ctx);
 
         // Shaders.
         let vs = br#"#version 150 core

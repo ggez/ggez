@@ -323,6 +323,7 @@ impl MainState {
         let player = create_player();
         let rocks = create_rocks(5, player.pos, 100.0, 250.0);
 
+        let (width, height) = graphics::drawable_size(ctx);
         let s = MainState {
             player,
             shots: Vec::new(),
@@ -330,8 +331,8 @@ impl MainState {
             level: 0,
             score: 0,
             assets,
-            screen_width: ctx.conf.window_mode.width,
-            screen_height: ctx.conf.window_mode.height,
+            screen_width: width,
+            screen_height: height,
             input: InputState::default(),
             player_shot_timeout: 0.0,
         };
