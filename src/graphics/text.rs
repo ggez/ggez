@@ -16,11 +16,11 @@ pub const DEFAULT_FONT_SCALE: f32 = 16.0;
 
 /// A handle referring to a loaded Truetype font.
 ///
-/// This is just an integer referring to a loaded font
-/// stored in the `Context`, so is cheap to copy.
-/// Note that fonts are cached and currently never
-/// *removed* from the cache, so you do not want to
-/// load a font more than once.
+/// This is just an integer referring to a loaded font stored in the
+/// `Context`, so is cheap to copy.  Note that fonts are cached and
+/// currently never *removed* from the cache, since that would
+/// invalidate the whole cache and require re-loading all the other
+/// fonts.  So, you do not want to load a font more than once.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Font {
     font_id: FontId,
@@ -144,9 +144,8 @@ impl Default for CachedMetrics {
 #[derive(Debug, Clone)]
 pub struct Text {
     fragments: Vec<TextFragment>,
-    // TODO: make it do something, maybe.
-    // See issue #561
     blend_mode: Option<BlendMode>,
+    filter_mode: FilterMode,
     bounds: Point2,
     layout: Layout<glyph_brush::BuiltInLineBreaker>,
     font_id: FontId,
@@ -159,6 +158,7 @@ impl Default for Text {
         Text {
             fragments: Vec::new(),
             blend_mode: None,
+            filter_mode: FilterMode::Linear,
             bounds: Point2::new(f32::INFINITY, f32::INFINITY),
             layout: Layout::default(),
             font_id: FontId::default(),
@@ -369,7 +369,7 @@ impl Drawable for Text {
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
         queue_text(ctx, self, Point2::new(0.0, 0.0), Some(param.color));
-        draw_queued_text(ctx, param)
+        draw_queued_text(ctx, param, self.blend_mode, self.filter_mode)
     }
 
     fn dimensions(&self, ctx: &mut Context) -> Option<Rect> {
@@ -438,7 +438,7 @@ impl Default for Font {
 /// Queues the `Text` to be drawn by [`draw_queued_text()`](fn.draw_queued_text.html).
 /// `relative_dest` is relative to the [`DrawParam::dest`](struct.DrawParam.html#structfield.dest)
 /// passed to `draw_queued()`. Note, any `Text` drawn via [`graphics::draw()`](fn.draw.html)
-/// will also draw the queue.
+/// will also draw everything already the queue.
 pub fn queue_text<P>(context: &mut Context, batch: &Text, relative_dest: P, color: Option<Color>)
 where
     P: Into<mint::Point2<f32>>,
@@ -448,8 +448,9 @@ where
     context.gfx_context.glyph_brush.queue(varied_section);
 }
 
-/// Returns `gfx_glyph`'s `GlyphBrush::queue()` and `GlyphBrush::queue_custom_layout()`,
-/// in case `ggez`' API is insufficient.
+/// Exposes `glyph_brush`'s drawing API in case `ggez`'s text drawing is insufficient.
+/// It takes `glyph_brush`'s `VariedSection` and `GlyphPositioner`, which give you lower-
+/// level control over how text is drawn.
 pub fn queue_text_raw<'a, S, G>(context: &mut Context, section: S, custom_layout: Option<&G>)
 where
     S: Into<Cow<'a, VariedSection<'a>>>,
@@ -464,9 +465,15 @@ where
 
 /// Draws all of the [`Text`](struct.Text.html)s added via [`queue_text()`](fn.queue_text.html).
 ///
-/// `DrawParam` apply to everything in the queue; offset is in screen coordinates;
-/// color is ignored - specify it when `queue_text()`ing instead.
-pub fn draw_queued_text<D>(ctx: &mut Context, param: D) -> GameResult
+/// the `DrawParam` applies to everything in the queue; offset is in
+/// screen coordinates; color is ignored - specify it when using
+/// `queue_text()` instead.
+///
+/// Note that all text will, and in fact must, be drawn with the same
+/// `BlendMode` and `FilterMode`.  This is unfortunate but currently
+/// unavoidable, see [this issue](https://github.com/ggez/ggez/issues/561)
+/// for more info.
+pub fn draw_queued_text<D>(ctx: &mut Context, param: D, blend: Option<BlendMode>, filter: FilterMode) -> GameResult
 where
     D: Into<DrawParam>,
 {
@@ -483,14 +490,19 @@ where
     );
     match action {
         Ok(glyph_brush::BrushAction::ReDraw) => {
-            let s = ctx.gfx_context.glyph_state.clone();
-            draw(ctx, &*s.borrow(), param)?;
+            let spritebatch = ctx.gfx_context.glyph_state.clone();
+            let spritebatch = &mut *spritebatch.borrow_mut();
+            spritebatch.set_blend_mode(blend);
+            spritebatch.set_filter(filter);
+            draw(ctx, &*spritebatch, param)?;
         }
         Ok(glyph_brush::BrushAction::Draw(drawparams)) => {
             // Gotta clone the image to avoid double-borrow's.
             let spritebatch = ctx.gfx_context.glyph_state.clone();
             let spritebatch = &mut *spritebatch.borrow_mut();
             spritebatch.clear();
+            spritebatch.set_blend_mode(blend);
+            spritebatch.set_filter(filter);
             for p in &drawparams {
                 // Ignore returned sprite index.
                 let _ = spritebatch.add(*p);

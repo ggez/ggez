@@ -81,7 +81,7 @@ impl event::EventHandler for MainState {
             na::Point2::origin(),
             None,
         );
-        graphics::draw_queued_text(ctx, (na::Point2::new(100.0, 100.0),))?;
+        graphics::draw_queued_text(ctx, (na::Point2::new(100.0, 100.0),), None, graphics::FilterMode::Linear)?;
 
         graphics::present(ctx)?;
         Ok(())

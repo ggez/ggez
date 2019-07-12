@@ -14,8 +14,7 @@ for making 2D games with minimum friction.  It aims to implement an
 API based on (a Rustified version of) the [LÖVE](https://love2d.org/)
 game framework.  This means it contains basic and portable 2D
 drawing, sound, resource loading and event handling, but finer details
-like performance characteristics may be very different (e.g. ggez does
-*not* do automatic batching).
+and performance characteristics may be different than LÖVE.
 
 ggez is not meant to be everything to everyone, but rather a good
 base upon which to build.  Thus it takes a fairly
@@ -42,7 +41,7 @@ your own libraries atop ggez.
 
  * Fully supported: Windows, Linux
  * Not officially supported but might work anyway: Mac, iOS
- * Work in progress: Web/WASM/Emscripten
+ * Work in progress: WebAssembly
  * Not officially supported yet (but maybe you can help!): Android
 
 For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)

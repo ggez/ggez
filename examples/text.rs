@@ -148,7 +148,7 @@ impl event::EventHandler for App {
         }
         // When drawing via `draw_queued()`, `.offset` in `DrawParam` will be
         // in screen coordinates, and `.color` will be ignored.
-        graphics::draw_queued_text(ctx, DrawParam::default())?;
+        graphics::draw_queued_text(ctx, DrawParam::default(), None, graphics::FilterMode::Linear)?;
 
         // Individual fragments within the `Text` can be replaced;
         // this can be used for inlining animated sentences, words, etc.
@@ -184,6 +184,8 @@ impl event::EventHandler for App {
             DrawParam::new()
                 .dest(Point2::new(500.0, 300.0))
                 .rotation(-0.5),
+            None,
+            graphics::FilterMode::Linear
         )?;
 
         graphics::present(ctx)?;
