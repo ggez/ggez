@@ -560,6 +560,7 @@ where
                     width: (mode.width / self.hidpi_factor).into(),
                     height: (mode.height / self.hidpi_factor).into(),
                 });
+                window.set_resizable(mode.resizable);
             }
             FullscreenType::True => {
                 window.set_fullscreen(Some(monitor));
