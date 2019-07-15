@@ -19,7 +19,7 @@ categories = ["game-engines"]
 build = "build.rs"
 
 [badges]
-maintenance = { status = "actively-developed" }
+maintenance = { status = "passively-maintained" }
 
 [lib]
 name = "ggez"
