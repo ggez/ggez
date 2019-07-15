@@ -29,7 +29,7 @@ pub struct Rect {
 
 impl Rect {
     /// Create a new `Rect`.
-    pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
+    pub const fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
         Rect { x, y, w, h }
     }
 
@@ -45,7 +45,7 @@ impl Rect {
     }
 
     /// Create a new rect from `i32` coordinates.
-    pub fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
+    pub const fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
         Rect {
             x: x as f32,
             y: y as f32,
@@ -55,17 +55,17 @@ impl Rect {
     }
 
     /// Create a new `Rect` with all values zero.
-    pub fn zero() -> Self {
+    pub const fn zero() -> Self {
         Self::new(0.0, 0.0, 0.0, 0.0)
     }
 
     /// Creates a new `Rect` at `0,0` with width and height 1.
-    pub fn one() -> Self {
+    pub const fn one() -> Self {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
     /// Gets the `Rect`'s x and y coordinates as a `Point2`.
-    pub fn point(&self) -> mint::Point2<f32> {
+    pub const fn point(&self) -> mint::Point2<f32> {
         mint::Point2 {
             x: self.x,
             y: self.y,
@@ -73,7 +73,7 @@ impl Rect {
     }
 
     /// Returns the left edge of the `Rect`
-    pub fn left(&self) -> f32 {
+    pub const fn left(&self) -> f32 {
         self.x
     }
 
@@ -83,7 +83,7 @@ impl Rect {
     }
 
     /// Returns the top edge of the `Rect`
-    pub fn top(&self) -> f32 {
+    pub const fn top(&self) -> f32 {
         self.y
     }
 
@@ -259,7 +259,7 @@ pub const BLACK: Color = Color {
 
 impl Color {
     /// Create a new `Color` from four `f32`'s in the range `[0.0-1.0]`
-    pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
+    pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color { r, g, b, a }
     }
 

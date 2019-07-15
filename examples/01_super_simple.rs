@@ -1,8 +1,5 @@
 //! The simplest possible example that does something.
 
-use std::env;
-use std::path;
-
 use ggez;
 use ggez::event;
 use ggez::graphics;
@@ -14,7 +11,7 @@ struct MainState {
 }
 
 impl MainState {
-    fn new(_ctx: &mut Context) -> GameResult<MainState> {
+    fn new() -> GameResult<MainState> {
         let s = MainState { pos_x: 0.0 };
         Ok(s)
     }
@@ -45,15 +42,7 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
-        let mut path = path::PathBuf::from(manifest_dir);
-        path.push("resources");
-        path
-    } else {
-        path::PathBuf::from("./resources")
-    };
-
-    let cb = ggez::ContextBuilder::new("super_simple", "ggez").add_resource_path(resource_dir);
+    let cb = ggez::ContextBuilder::new("super_simple", "ggez");
     let (ctx, event_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx)?;
     event::run(ctx, event_loop, state)
