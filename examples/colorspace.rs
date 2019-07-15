@@ -100,7 +100,7 @@ impl MainState {
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
             graphics::WHITE
         )?;
-        let demo_image = graphics::Image::solid(ctx, 100, AQUA)?;
+        let demo_image = graphics::Image::solid(ctx, 200, AQUA)?;
         let s = MainState { demo_mesh, square_mesh, demo_image };
         Ok(s)
     }
