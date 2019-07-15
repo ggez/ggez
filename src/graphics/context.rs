@@ -543,6 +543,7 @@ where
                     width: f64::from(mode.width),
                     height: f64::from(mode.height),
                 });
+                window.set_resizable(mode.resizable);
             }
             FullscreenType::True => {
                 window.set_fullscreen(Some(monitor));
