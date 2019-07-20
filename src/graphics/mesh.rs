@@ -107,7 +107,9 @@ impl MeshBuilder {
         {
             let point = point.into();
             let buffers = &mut self.buffer;
-            let vb = VertexBuilder { color: LinearColor::from(color) };
+            let vb = VertexBuilder {
+                color: LinearColor::from(color),
+            };
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -150,7 +152,9 @@ impl MeshBuilder {
         {
             let buffers = &mut self.buffer;
             let point = point.into();
-            let vb = VertexBuilder { color: LinearColor::from(color) };
+            let vb = VertexBuilder {
+                color: LinearColor::from(color),
+            };
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -234,7 +238,9 @@ impl MeshBuilder {
                 let mint_point: mint::Point2<f32> = p.into();
                 t::math::point(mint_point.x, mint_point.y)
             });
-            let vb = VertexBuilder { color: LinearColor::from(color) };
+            let vb = VertexBuilder {
+                color: LinearColor::from(color),
+            };
             match mode {
                 DrawMode::Fill(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -255,7 +261,9 @@ impl MeshBuilder {
         {
             let buffers = &mut self.buffer;
             let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
-            let vb = VertexBuilder { color: LinearColor::from(color) };
+            let vb = VertexBuilder {
+                color: LinearColor::from(color),
+            };
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -305,7 +313,9 @@ impl MeshBuilder {
                 // nicer, so we'll just live with it.
                 .collect::<Vec<_>>();
             let tris = tris.chunks(3);
-            let vb = VertexBuilder { color: LinearColor::from(color) };
+            let vb = VertexBuilder {
+                color: LinearColor::from(color),
+            };
             let builder: &mut t::BuffersBuilder<_, _, _, _> =
                 &mut t::BuffersBuilder::new(&mut self.buffer, vb);
             use lyon::tessellation::GeometryBuilder;

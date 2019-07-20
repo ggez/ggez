@@ -70,7 +70,12 @@ impl MainState {
                 graphics::queue_text(ctx, &t, point, None);
             }
         }
-        graphics::draw_queued_text(ctx, graphics::DrawParam::default(), None, graphics::FilterMode::Linear)
+        graphics::draw_queued_text(
+            ctx,
+            graphics::DrawParam::default(),
+            None,
+            graphics::FilterMode::Linear,
+        )
     }
 }
 

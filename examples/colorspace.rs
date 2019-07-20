@@ -41,7 +41,7 @@
 //! done by graphics drivers is toggle-able, and can be set on a
 //! per-render-target or per-texture basis, so it's possible for
 //! things to get REAL mixed up in subtle ways.
-//! 
+//!
 //! The Right Answer, as far as I know, is this: All colors that a
 //! human specifies or touches are sRGB-encoded, so a number that is
 //! twice as big then .  We do our color math in shaders, and (if we
@@ -65,7 +65,6 @@
 //! a linear color to something like `graphics::Mesh` it turns it
 //! into sRGB for you to match everything else.  The purpose of this
 //! example is to show that this actually *works* correctly!
-
 
 use ggez;
 use ggez::event;
@@ -98,10 +97,14 @@ impl MainState {
             ctx,
             graphics::DrawMode::fill(),
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
-            graphics::WHITE
+            graphics::WHITE,
         )?;
         let demo_image = graphics::Image::solid(ctx, 200, AQUA)?;
-        let s = MainState { demo_mesh, square_mesh, demo_image };
+        let s = MainState {
+            demo_mesh,
+            square_mesh,
+            demo_image,
+        };
         Ok(s)
     }
 }
@@ -115,18 +118,26 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx, AQUA);
 
         // Draw a white square so we can see things
-        graphics::draw(ctx, &self.square_mesh, DrawParam::default()
-                       .dest(na::Point2::new(200.0, 100.0)))?;
+        graphics::draw(
+            ctx,
+            &self.square_mesh,
+            DrawParam::default().dest(na::Point2::new(200.0, 100.0)),
+        )?;
 
         // Draw things partially over the white square so we can see
         // where they are; they SHOULD be the same color as the
         // background.
-        graphics::draw(ctx, &self.demo_mesh, DrawParam::default()
-                       .dest(na::Point2::new(150.0, 200.0)))?;
+        graphics::draw(
+            ctx,
+            &self.demo_mesh,
+            DrawParam::default().dest(na::Point2::new(150.0, 200.0)),
+        )?;
 
-        graphics::draw(ctx, &self.demo_image, DrawParam::default()
-                       .dest(na::Point2::new(450.0, 200.0)))?;
-
+        graphics::draw(
+            ctx,
+            &self.demo_image,
+            DrawParam::default().dest(na::Point2::new(450.0, 200.0)),
+        )?;
 
         graphics::present(ctx)?;
         Ok(())
@@ -149,4 +160,3 @@ pub fn main() -> GameResult {
     let state = &mut MainState::new(ctx)?;
     event::run(ctx, event_loop, state)
 }
-

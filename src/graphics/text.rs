@@ -473,7 +473,12 @@ where
 /// `BlendMode` and `FilterMode`.  This is unfortunate but currently
 /// unavoidable, see [this issue](https://github.com/ggez/ggez/issues/561)
 /// for more info.
-pub fn draw_queued_text<D>(ctx: &mut Context, param: D, blend: Option<BlendMode>, filter: FilterMode) -> GameResult
+pub fn draw_queued_text<D>(
+    ctx: &mut Context,
+    param: D,
+    blend: Option<BlendMode>,
+    filter: FilterMode,
+) -> GameResult
 where
     D: Into<DrawParam>,
 {

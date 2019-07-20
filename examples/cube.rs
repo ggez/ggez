@@ -247,7 +247,12 @@ impl event::EventHandler for MainState {
             dest_point2,
             None,
         );
-        graphics::draw_queued_text(ctx, graphics::DrawParam::default(), None, graphics::FilterMode::Linear)?;
+        graphics::draw_queued_text(
+            ctx,
+            graphics::DrawParam::default(),
+            None,
+            graphics::FilterMode::Linear,
+        )?;
         graphics::present(ctx)?;
         self.frames += 1;
         if (self.frames % 10) == 0 {
