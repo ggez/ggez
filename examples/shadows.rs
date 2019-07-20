@@ -334,74 +334,67 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let size = graphics::size(ctx);
         let origin = DrawParam::new()
             .dest(Point2::new(0.0, 0.0))
             .scale(Vector2::new(0.5, 0.5));
-        // for re-rendering canvases, we need to take the DPI into account
-        // TODO: Double-check this; it is probably redundant now
-        let dpiscale = {
-            let dsize = graphics::drawable_size(ctx);
-            Vector2::new(
-                size.0 as f32 / dsize.0 as f32,
-                size.1 as f32 / dsize.1 as f32,
-            )
-        };
-        let canvas_origin = DrawParam::new().scale(dpiscale);
+        let canvas_origin = DrawParam::new();
 
         // First thing we want to do it to render all the foreground items (that
         // will have shadows) onto their own Canvas (off-screen render). We will
         // use this canvas to:
         //  - run the occlusions shader to determine where the shadows are
         //  - render to screen once all the shadows are calculated and rendered
-        graphics::set_canvas(ctx, Some(&self.foreground));
-        graphics::clear(ctx, graphics::BLACK);
-        graphics::draw(
-            ctx,
-            &self.tile,
-            DrawParam::new().dest(Point2::new(598.0, 124.0)),
-        )?;
-        graphics::draw(
-            ctx,
-            &self.tile,
-            DrawParam::new().dest(Point2::new(92.0, 350.0)),
-        )?;
-        graphics::draw(
-            ctx,
-            &self.tile,
-            DrawParam::new()
-                .dest(Point2::new(442.0, 468.0))
-                .rotation(0.5),
-        )?;
-        graphics::draw(ctx, &self.text, (Point2::new(50.0, 200.0),))?;
+        {
+            graphics::set_canvas(ctx, Some(&self.foreground));
+            graphics::clear(ctx, graphics::Color::new(0.0, 0.0, 0.0, 0.0));
+            graphics::draw(
+                ctx,
+                &self.tile,
+                DrawParam::new().dest(Point2::new(598.0, 124.0)),
+            )?;
+            graphics::draw(
+                ctx,
+                &self.tile,
+                DrawParam::new().dest(Point2::new(92.0, 350.0)),
+            )?;
+            graphics::draw(
+                ctx,
+                &self.tile,
+                DrawParam::new()
+                    .dest(Point2::new(442.0, 468.0))
+                    .rotation(0.5),
+            )?;
+            graphics::draw(ctx, &self.text, (Point2::new(50.0, 200.0),))?;
+        }
 
-        // First we draw our light and shadow maps
-        let torch = self.torch;
-        let light = self.static_light;
-        graphics::set_canvas(ctx, Some(&self.lights));
-        graphics::clear(ctx, graphics::Color::new(0.0, 0.0, 0.5, 1.0));
-        graphics::set_canvas(ctx, Some(&self.shadows));
-        graphics::clear(ctx, graphics::Color::new(0.0, 0.5, 0.0, 1.0));
-        self.render_light(ctx, torch, origin, canvas_origin)?;
-        self.render_light(ctx, light, origin, canvas_origin)?;
+        // Then we draw our light and shadow maps
+        {
+            let torch = self.torch;
+            let light = self.static_light;
+
+            graphics::set_canvas(ctx, Some(&self.lights));
+            graphics::clear(ctx, graphics::Color::new(0.0, 0.0, 0.0, 1.0));
+
+            graphics::set_canvas(ctx, Some(&self.shadows));
+            graphics::clear(ctx, graphics::Color::new(0.0, 0.0, 0.0, 1.0));
+            self.render_light(ctx, torch, origin, canvas_origin)?;
+            self.render_light(ctx, light, origin, canvas_origin)?;
+        }
 
         // Now lets finally render to screen starting with out background, then
         // the shadows and lights overtop and finally our foreground.
         graphics::set_canvas(ctx, None);
         graphics::clear(ctx, graphics::WHITE);
-        graphics::draw(ctx, &self.background, origin)?;
-        // graphics::draw(ctx, &self.shadows, origin)?;
-        // graphics::draw(ctx, &self.lights, origin)?;
-        // We switch the color to the shadow color before drawing the foreground objects
-        // this has the same effect as applying this color in a multiply blend mode with
-        // full opacity. We also reset the blend mode back to the default Alpha blend mode.
-        graphics::draw(ctx, &self.foreground, origin)?;
+        graphics::draw(ctx, &self.background, DrawParam::default())?;
+        graphics::draw(ctx, &self.shadows, DrawParam::default())?;
+        graphics::draw(ctx, &self.foreground, DrawParam::default())?;
+        graphics::draw(ctx, &self.lights, DrawParam::default())?;
 
-        // Uncomment following two lines to visualize the 1D occlusions canvas,
+        // Uncomment following line to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
         // the greyscale pixels are the half distances of the nearest shadows to
         // the mouse position (equally encoded in all color channels).
-        // graphics::draw(ctx, &self.occlusions, origin)?;
+        // graphics::draw(ctx, &self.occlusions, DrawParam::default())?;
 
         graphics::present(ctx)?;
         Ok(())
