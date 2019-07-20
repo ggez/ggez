@@ -377,28 +377,6 @@ impl MeshBuilder {
             &self.buffer.indices,
             self.image.clone(),
         )
-        /*
-                    TODO: This has been refactored into `Mesh::from_raw()`, test it and remove this
-                    if it's okay.
-                let (vbuf, slice) = ctx
-                    .gfx_context
-                    .factory
-                    .create_vertex_buffer_with_slice(&self.buffer.vertices[..], &self.buffer.indices[..]);
-
-                let rect = bbox_for_vertices(&self.buffer.vertices)
-                    .ok_or_else(|| GameError::RenderError("No vertices in MeshBuilder".into()))?;
-                Ok(Mesh {
-                    buffer: vbuf,
-                    slice,
-                    blend_mode: None,
-                    image: self
-                        .image
-                        .clone()
-                        .unwrap_or_else(|| ctx.gfx_context.white_image.clone()),
-                    debug_id: DebugId::get(ctx),
-                    rect,
-                })
-        */
     }
 }
 

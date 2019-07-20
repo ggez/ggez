@@ -1,8 +1,8 @@
 //! Provides an interface to output sound to the user's speakers.
 //!
 //! It consists of two main types: [`SoundData`](struct.SoundData.html)
-//! is just an array of raw sound data, and a [`Source`](struct.Source.html) is a
-//! `SoundData` connected to a particular sound channel able to be played.
+//! is just an array of raw sound data bytes, and a [`Source`](struct.Source.html) is a
+//! `SoundData` connected to a particular sound channel ready to be played.
 
 use std::fmt;
 use std::io;

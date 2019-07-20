@@ -1,8 +1,7 @@
 // #[cfg(all(test, has_display))]
 
-use crate::*;
 use crate::tests;
-
+use crate::*;
 
 #[test]
 fn test_calculated_text_width() {
@@ -21,7 +20,6 @@ fn test_calculated_text_width() {
     // assert_eq!(expected_width as usize, rendered_width as usize);
 }
 
-
 /// Make sure that the "height" of text with ascenders/descenders
 /// is the same as text without
 #[test]
@@ -36,7 +34,6 @@ fn test_calculated_text_height() {
     let h2 = text2.height(ctx);
     assert_eq!(h1, h2);
 }
-
 
 #[test]
 fn test_monospace_text_is_actually_monospace() {

@@ -14,8 +14,8 @@ use crate::timer;
 
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
-/// system, timers, and so on.  Generally this type is **not**
-/// thread-safe and only one `Context` can exist at a time.  Trying
+/// system, timers, and so on.  Generally this type can **not**
+/// be shared/sent between threads and only one `Context` can exist at a time.  Trying
 /// to create a second one will fail.  It is fine to drop a `Context`
 /// and create a new one, but this will also close and re-open your
 /// game's window.
@@ -260,7 +260,7 @@ impl ContextBuilder {
     /// You can pass it a static slice, a `Vec` of bytes, etc.
     ///
     /// ```ignore
-    /// #use ggez::context::ContextBuilder;
+    /// use ggez::context::ContextBuilder;
     /// let _ = ContextBuilder::new()
     ///     .add_zipfile_bytes(include_bytes!("../resources.zip").to_vec())
     ///     .build();

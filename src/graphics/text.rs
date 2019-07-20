@@ -402,10 +402,6 @@ impl Font {
         let mut buf = Vec::new();
         let _ = stream.read_to_end(&mut buf)?;
 
-        // TODO:
-        // There's a DPI issue here; see winit #548.
-        // Also see commit 2f02c72cf31401a1e6ab55edc745f6227c99fb67
-        // Also need point size, pixels, etc...
         Font::new_glyph_font_bytes(context, &buf)
     }
 

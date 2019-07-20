@@ -100,8 +100,6 @@ impl event::EventHandler for MainState {
         if self.draw_pt.x + (w as f32 / 2.0) > (w as f32) || self.draw_pt.x < 0.0 {
             self.draw_vec.x *= -1.0;
         }
-        // println!("{:?}", self.draw_pt);
-        // BUGGO: The height bounds are hella wrong!
         if self.draw_pt.y + (h as f32 / 2.0) > (h as f32 / 2.0)
             || self.draw_pt.y < -(h as f32 / 2.0)
         {

@@ -57,7 +57,7 @@ crates.io.  To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```text
-ggez = "0.5.0-rc.2"
+ggez = "0.5.0"
 ```
 
 ggez consists of three main parts: A `Context` object which
@@ -171,5 +171,4 @@ Sources of information:
  If you still have problems or questions, feel free to ask!  Easiest ways are:
 
  * open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
- * say hi in the `#rust-gamedev` IRC channel on the `irc.mozilla.org` server
- * or in the [unofficial Rust Discord server](http://bit.ly/rust-community)
+ * say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community)
