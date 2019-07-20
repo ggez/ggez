@@ -1,3 +1,31 @@
+# 0.5.1
+
+## Added
+
+Nothing
+
+## Changed
+
+ * version bumped `image`
+ * Tiny doc cleanups and futzing around with readme
+
+
+## Deprecated
+
+Nothing
+
+## Removed
+
+Nothing
+
+## Fixed
+
+Nothing
+
+## Broken
+
+Nothing
+
 # 0.5.0
 
 ## Added
@@ -58,7 +86,7 @@
 
  * Minor things beyond counting.  Don't worry, we added plenty of new
    bugs too.
- 
+
 ## Broken
 
  * Does not work on Windows 7 or below, again due to `gilrs`.

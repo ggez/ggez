@@ -35,7 +35,7 @@ version = "0.1.0"
 authors = ["Awesome Person awesome@person.com"]
 
 [dependencies]
-ggez = "0.5.0-rc.0"
+ggez = "0.5"
 ```
 
 ### ✔ Check Project Setup
@@ -165,7 +165,7 @@ let (ref mut ctx, ref mut event_loop) = ContextBuilder::new("hello_ggez", "aweso
 ```
 
 This will create a `Context` with the `game_id` `hello_ggez` and the author `awesome_person`.
-It will also create an [`EventsLoop`](https://docs.rs/ggez/0.4.0/event/struct.EventsLoop.html). 
+It will also create an [`EventsLoop`](https://docs.rs/ggez/0.4.0/event/struct.EventsLoop.html).
 We'll need it in a minute to call [`run`](https://docs.rs/ggez/0.4.0/ggez/event/fn.run.html).
 Feel free to replace the author with yourself.
 You are awesome after all.
