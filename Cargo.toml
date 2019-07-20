@@ -43,7 +43,7 @@ glyph_brush = "0.5"
 gfx_window_glutin = "0.30"
 glutin = "0.20"
 winit = { version = "0.19" }
-image = {version = "0.21", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
+image = {version = "0.22", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
 rodio = { version = "0.9", default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
