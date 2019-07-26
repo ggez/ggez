@@ -99,7 +99,7 @@ fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
     let triangle_indices = vec![0, 1, 2];
 
     let i = graphics::Image::new(ctx, "/rock.png")?;
-    mb.raw(&triangle_verts, &triangle_indices, Some(i));
+    mb.from_raw(&triangle_verts, &triangle_indices, Some(i));
     mb.build(ctx)
 }
 
