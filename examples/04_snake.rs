@@ -477,7 +477,7 @@ impl event::EventHandler for GameState {
                 self.snake.next_dir = Some(dir);
             } else if dir.inverse() != self.snake.last_update_dir {
                 // If no new direction has been set and the direction is not the inverse
-                // of the last_update_dir, then set the snake's new direction to be the
+                // of the `last_update_dir`, then set the snake's new direction to be the
                 // direction the user pressed.
                 self.snake.dir = dir;
             }
