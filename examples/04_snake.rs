@@ -256,6 +256,10 @@ struct Snake {
     /// time that `update` was called, which we will use to determine valid
     /// directions that it could move the next time update is called.
     last_update_dir: Direction,
+    /// Store the direction that will be used in the `update` after the next `update`
+    /// This is needed so a user can press two directions (eg. left then up)
+    /// before one `update` has happened. It sort of queues up key press input
+    next_dir: Option<Direction>,
 }
 
 impl Snake {
@@ -270,6 +274,7 @@ impl Snake {
             last_update_dir: Direction::Right,
             body: body,
             ate: None,
+            next_dir: None
         }
     }
 
@@ -298,6 +303,12 @@ impl Snake {
     /// The main update function for our snake which gets called every time
     /// we want to update the game state.
     fn update(&mut self, food: &Food) {
+        // If `last_update_dir` has already been updated to be the same as `dir`
+        // and we have a `next_dir`, then set `dir` to `next_dir` and unset `next_dir`
+        if self.last_update_dir == self.dir && self.next_dir.is_some() {
+            self.dir = self.next_dir.unwrap();
+            self.next_dir = None;
+        }
         // First we get a new head position by using our `new_from_move` helper
         // function from earlier. We move our head in the direction we are currently
         // heading.
@@ -460,10 +471,14 @@ impl event::EventHandler for GameState {
         // Here we attempt to convert the Keycode into a Direction using the helper
         // we defined earlier.
         if let Some(dir) = Direction::from_keycode(keycode) {
-            // If it succeeds, we check to make sure that the direction being pressed
-            // is not directly opposite to the way the snake was facing last update.
-            if dir.inverse() != self.snake.last_update_dir {
-                // If not, we set the snake's new direction to be the direction the user pressed.
+            // If it succeeds, we check if a new direction has already been set
+            // and make sure the new direction is different then `snake.dir`
+            if self.snake.dir != self.snake.last_update_dir && dir.inverse() != self.snake.dir {
+                self.snake.next_dir = Some(dir);
+            } else if dir.inverse() != self.snake.last_update_dir {
+                // If no new direction has been set and the direction is not the inverse
+                // of the `last_update_dir`, then set the snake's new direction to be the
+                // direction the user pressed.
                 self.snake.dir = dir;
             }
         }
