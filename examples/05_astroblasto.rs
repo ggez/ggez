@@ -41,7 +41,7 @@ fn random_vec(max_magnitude: f32) -> Vector2 {
 }
 
 /// *********************************************************************
-/// Now we define our Actor's.
+/// Now we define our Actors.
 /// An Actor is anything in the game world.
 /// We're not *quite* making a real entity-component system but it's
 /// pretty close.  For a more complicated game you would want a
