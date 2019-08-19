@@ -1,6 +1,7 @@
 pub(crate) use nalgebra as na;
 use std::f32;
 use std::u32;
+use serde::{Serialize, Deserialize};
 
 use crate::graphics::{FillOptions, StrokeOptions};
 
@@ -15,7 +16,7 @@ pub(crate) type Matrix4 = na::Matrix4<f32>;
 ///
 /// The origin of the rectangle is at the top-left,
 /// with x increasing to the right and y increasing down.
-#[derive(Copy, Clone, PartialEq, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct Rect {
     /// X coordinate of the left edge of the rect.
     pub x: f32,
@@ -229,7 +230,7 @@ impl From<Rect> for [f32; 4] {
 /// A RGBA color in the `sRGB` color space represented as `f32`'s in the range `[0.0-1.0]`
 ///
 /// For convenience, [`WHITE`](constant.WHITE.html) and [`BLACK`](constant.BLACK.html) are provided.
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Color {
     /// Red component
     pub r: f32,
@@ -391,7 +392,7 @@ impl From<Color> for [f32; 4] {
 
 /// A RGBA color in the *linear* color space,
 /// suitable for shoving into a shader.
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub(crate) struct LinearColor {
     /// Red component
     pub r: f32,
