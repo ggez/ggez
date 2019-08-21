@@ -8,7 +8,6 @@ submit a PR, please!
  * <https://github.com/MushuYoWushu/mehens_portable_casino>
  * <https://github.com/maccam912/thewizzerofoz>
  * <https://github.com/Piripant/skii>
- * <https://github.com/aprokurov/spaceshooter>
  * <https://github.com/ozkriff/zemeroth>
  * <https://github.com/Swampsoft/solitaire>
  * <https://github.com/obsoke/rustris>
