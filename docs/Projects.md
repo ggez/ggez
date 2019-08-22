@@ -14,6 +14,7 @@ submit a PR, please!
  * <https://github.com/vinceniko/tetrust>
  * <https://github.com/icefoxen/ld42/>
  * <https://github.com/conwayste/conwayste/>
+ * <https://github.com/avandolder/tetrominoes-rust>
 
 # Examples/tutorial code
 
