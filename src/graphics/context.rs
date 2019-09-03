@@ -53,7 +53,7 @@ where
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
-    pub(crate) glyph_brush: GlyphBrush<'static, DrawParam>,
+    pub(crate) glyph_brush: Rc<RefCell<GlyphBrush<'static, DrawParam>>>,
     pub(crate) glyph_cache: ImageGeneric<B>,
     pub(crate) glyph_state: Rc<RefCell<spritebatch::SpriteBatch>>,
 }
@@ -294,7 +294,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             current_shader: Rc::new(RefCell::new(None)),
             shaders: vec![draw],
 
-            glyph_brush,
+            glyph_brush: Rc::new(RefCell::new(glyph_brush)),
             glyph_cache,
             glyph_state,
         };
