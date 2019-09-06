@@ -534,9 +534,9 @@ where
         };
         window.set_max_dimensions(max_dimensions);
 
-        let monitor = window.get_current_monitor();
-        match mode.fullscreen_type {
-            FullscreenType::Windowed => {
+        let monitors = window.get_available_monitors();
+        match (mode.fullscreen_type, monitors.last()) {
+            (FullscreenType::Windowed, _) => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
                 window.set_inner_size(dpi::LogicalSize {
@@ -545,14 +545,14 @@ where
                 });
                 window.set_resizable(mode.resizable);
             }
-            FullscreenType::True => {
+            (FullscreenType::True, Some(monitor)) => {
                 window.set_fullscreen(Some(monitor));
                 window.set_inner_size(dpi::LogicalSize {
                     width: f64::from(mode.width),
                     height: f64::from(mode.height),
                 });
             }
-            FullscreenType::Desktop => {
+            (FullscreenType::Desktop, Some(monitor)) => {
                 let position = monitor.get_position();
                 let dimensions = monitor.get_dimensions();
                 let hidpi_factor = window.get_hidpi_factor();
@@ -561,6 +561,7 @@ where
                 window.set_inner_size(dimensions.to_logical(hidpi_factor));
                 window.set_position(position.to_logical(hidpi_factor));
             }
+            _ => panic!("Unable to detect monitor"),
         }
         Ok(())
     }
