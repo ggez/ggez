@@ -561,7 +561,7 @@ where
                 window.set_inner_size(dimensions.to_logical(hidpi_factor));
                 window.set_position(position.to_logical(hidpi_factor));
             }
-            _ => panic!("Unable to detect monitor"),
+            _ => panic!("Unable to detect monitor; if you are on Linux Wayland it may be this bug: https://github.com/rust-windowing/winit/issues/793"),
         }
         Ok(())
     }
