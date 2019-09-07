@@ -1,14 +1,19 @@
 This is a place for people to pimp their stuff that is built with ggez.  If you want your project listed here, add it and
 submit a PR, please!
 
+# 0.5.x
+
+## Games!
+
+ * <https://github.com/ozkriff/zemeroth>
+
 # 0.4.x
 
-# Games!
+## Games!
 
  * <https://github.com/MushuYoWushu/mehens_portable_casino>
  * <https://github.com/maccam912/thewizzerofoz>
  * <https://github.com/Piripant/skii>
- * <https://github.com/ozkriff/zemeroth>
  * <https://github.com/Swampsoft/solitaire>
  * <https://github.com/obsoke/rustris>
  * <https://github.com/vinceniko/tetrust>
@@ -16,18 +21,18 @@ submit a PR, please!
  * <https://github.com/conwayste/conwayste/>
  * <https://github.com/avandolder/tetrominoes-rust>
 
-# Examples/tutorial code
+## Examples/tutorial code
 
  * <https://github.com/ggez/game-template> -- a general-purpose getting-started template integrating warmy, specs, and some other useful tools.
  * <https://github.com/termhn/ggez_snake>
  * <https://github.com/rafaeldelboni/ggez-specs-hello-world> -- A simple hello world project using ggez and specs.
  * <https://github.com/rafaeldelboni/ggez-specs-rhusics-hello-world> -- A hello world project using ggez, specs and rhusics for physics.
 
-# Tools/add-ons
+## Tools/add-ons
 
  * <https://github.com/ggez/ggez-goodies> (incomplete, but maybe useful to someone)
 
-# Written things
+## Written things
 
 
 # 0.3.x
