@@ -73,7 +73,7 @@ the `Context` and an instance of your `EventHandler` to run your game's
 main loop.
 
 See the [API docs](https://docs.rs/ggez/) for full documentation, or the [examples](/examples) directory for a number of commented examples of varying complexity.  Most examples show off
-a single feature of ggez, while `astroblasto` and `snake` are a small but complete games.
+a single feature of ggez, while `astroblasto` and `snake` are small but complete games.
 
 ## Getting started
 
