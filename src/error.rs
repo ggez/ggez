@@ -50,6 +50,8 @@ pub enum GameError {
     GamepadError(String),
     /// Something went wrong with the `lyon` shape-tesselation library.
     LyonError(String),
+    /// Unable to spawn a future onto an executor.
+    TaskSpawnError(Arc<futures::task::SpawnError>),
 }
 
 impl fmt::Display for GameError {
@@ -239,5 +241,11 @@ impl From<lyon::lyon_tessellation::geometry_builder::GeometryBuilderError> for G
             s
         );
         GameError::LyonError(errstr)
+    }
+}
+
+impl From<futures::task::SpawnError> for GameError {
+    fn from(s: futures::task::SpawnError) -> GameError {
+        GameError::TaskSpawnError(Arc::new(s))
     }
 }

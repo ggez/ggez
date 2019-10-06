@@ -10,6 +10,7 @@ use crate::event::winit_event;
 use crate::filesystem::Filesystem;
 use crate::graphics::{self, Point2};
 use crate::input::{gamepad, keyboard, mouse};
+use crate::task;
 use crate::timer;
 
 /// A `Context` is an object that holds on to global resources.
@@ -50,6 +51,8 @@ pub struct Context {
     pub mouse_context: mouse::MouseContext,
     /// Gamepad context
     pub gamepad_context: Box<dyn gamepad::GamepadContext>,
+    /// Task context
+    pub task_context: task::TaskContext,
 
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
@@ -100,6 +103,7 @@ impl Context {
         } else {
             Box::new(gamepad::NullGamepadContext::default())
         };
+        let task_context = task::TaskContext::new()?;
 
         let ctx = Context {
             conf,
@@ -111,6 +115,7 @@ impl Context {
             keyboard_context,
             gamepad_context,
             mouse_context,
+            task_context,
 
             debug_id,
         };
@@ -182,6 +187,20 @@ impl Context {
 
             _ => (),
         };
+    }
+
+    /// TODO
+    pub fn main_handle(&mut self) -> MainContextHandle {
+        MainContextHandle {
+            task_handle: self.task_context.main_handle()
+        }
+    }
+
+    /// TODO
+    pub fn pool_handle(&mut self) -> PoolContextHandle {
+        PoolContextHandle {
+            task_handle: self.task_context.pool_handle()
+        }
     }
 }
 
@@ -357,5 +376,40 @@ impl DebugId {
 
     pub fn assert(&self, _ctx: &Context) {
         // Do nothing.
+    }
+}
+
+/// TODO
+pub enum ContextKind<'ctx> {
+    Real(&'ctx mut Context),
+    Main(&'ctx mut MainContextHandle),
+    Pool(&'ctx mut PoolContextHandle),
+}
+
+/// TODO
+pub struct MainContextHandle {
+    pub(crate) task_handle: task::MainTaskHandle
+}
+
+/// TODO
+pub struct PoolContextHandle {
+    pub(crate) task_handle: task::PoolTaskHandle
+}
+
+impl<'ctx> From<&'ctx mut Context> for ContextKind<'ctx> {
+    fn from(ctx: &'ctx mut Context) -> ContextKind<'ctx> {
+        ContextKind::Real(ctx)
+    }
+}
+
+impl<'ctx> From<&'ctx mut MainContextHandle> for ContextKind<'ctx> {
+    fn from(ctx: &'ctx mut MainContextHandle) -> ContextKind<'ctx> {
+        ContextKind::Main(ctx)
+    }
+}
+
+impl<'ctx> From<&'ctx mut PoolContextHandle> for ContextKind<'ctx> {
+    fn from(ctx: &'ctx mut PoolContextHandle) -> ContextKind<'ctx> {
+        ContextKind::Pool(ctx)
     }
 }

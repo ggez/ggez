@@ -36,6 +36,7 @@ c_dependencies = ["bzip2", "mp3"]
 bitflags = "1"
 zip = { version = "0.5", default-features = false }
 directories = "2"
+futures-preview = "0.3.0-alpha.19"
 gfx = "0.18"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"

@@ -277,7 +277,10 @@ where
                 }
             }
         }
+
+        crate::task::tick_pre_update(ctx);
         state.update(ctx)?;
+        crate::task::tick_post_update(ctx);
         state.draw(ctx)?;
     }
 
