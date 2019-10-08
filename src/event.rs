@@ -145,7 +145,9 @@ pub trait EventHandler {
 
     /// Called when the user resizes the window, or when it is resized
     /// via [`graphics::set_mode()`](../graphics/fn.set_mode.html).
-    fn resize_event(&mut self, _ctx: &mut Context, _width: f32, _height: f32) {}
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
+        graphics::set_screen_coordinates(ctx, Rect::new(0.0, 0.0, width, height));
+    }
 }
 
 /// Terminates the [`ggez::event::run()`](fn.run.html) loop by setting
