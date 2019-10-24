@@ -39,7 +39,7 @@ directories = "2"
 gfx = "0.18"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
-glyph_brush = "0.5"
+glyph_brush = "0.6"
 gfx_window_glutin = "0.30"
 glutin = "0.20"
 winit = { version = "0.19.3" }
@@ -50,7 +50,7 @@ serde = "1"
 serde_derive = "1"
 toml = "0.5"
 log = "0.4"
-lyon = "0.13"
+lyon = "0.14"
 smart-default = "0.5"
 nalgebra = {version = "0.18", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here.

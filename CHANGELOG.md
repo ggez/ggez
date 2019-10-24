@@ -1,3 +1,36 @@
+# 0.6.0
+
+## Added
+
+Nothing
+
+## Changed
+
+ * Switched `rand` in the examples to `oorandom`, for basically
+   aesthetic reasons.  (Not advertising at all, honest.)
+ * Version bumped `lyon` to 0.14
+ * Version bumped `glyph_brush` to 0.6
+
+
+## Deprecated
+
+Nothing
+
+## Removed
+
+Nothing
+
+## Fixed
+
+Nothing
+
+## Broken
+
+Nothing
+
+
+##
+
 # 0.5.1
 
 ## Added
