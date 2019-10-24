@@ -2,8 +2,6 @@ use crate::graphics::*;
 
 use mint;
 
-type Vec3 = na::Vector3<f32>;
-
 /// A struct containing all the necessary info for drawing a [`Drawable`](trait.Drawable.html).
 ///
 /// This struct implements the `Default` trait, so to set only some parameter
@@ -109,22 +107,26 @@ impl DrawParam {
     }
 
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
-    fn to_na_matrix(&self) -> Matrix4 {
-        let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
-        let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
-        let offset_inverse =
-            Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
-        let axis_angle = Vec3::z() * self.rotation;
-        let rotation = Matrix4::new_rotation(axis_angle);
-        let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
-        translate * offset * rotation * scale * offset_inverse
+    fn to_eu_matrix(&self) -> Matrix4 {
+        let translate = Matrix4::create_translation(self.dest.x, self.dest.y, 0.0);
+        let offset = Matrix4::create_translation(self.offset.x, self.offset.y, 0.0);
+        let offset_inverse = Matrix4::create_translation(-self.offset.x, -self.offset.y, 0.0);
+        let rotation = Matrix4::create_rotation(0.0, 0.0, 1.0, eu::Angle::radians(self.rotation));
+        let scale = Matrix4::create_scale(self.scale.x, self.scale.y, 1.0);
+        // TODO: Verify this is correct with Euclid's row matrices!
+        translate
+            .post_transform(&offset)
+            .post_transform(&rotation)
+            .post_transform(&scale)
+            .post_transform(&offset_inverse)
     }
 
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single
     ///matrix.  Because of this it only contains the transform part (rotation/scale/etc),
     /// with no src/dest/color info.
     pub fn to_matrix(&self) -> mint::ColumnMatrix4<f32> {
-        self.to_na_matrix().into()
+        let m = self.to_eu_matrix().to_column_arrays();
+        mint::ColumnMatrix4::from(m)
     }
 }
 
@@ -216,7 +218,7 @@ pub(crate) struct DrawTransform {
 impl Default for DrawTransform {
     fn default() -> Self {
         DrawTransform {
-            matrix: na::one(),
+            matrix: Matrix4::identity(),
             src: Rect::one(),
             color: WHITE,
         }
@@ -225,18 +227,20 @@ impl Default for DrawTransform {
 
 impl From<DrawParam> for DrawTransform {
     fn from(param: DrawParam) -> Self {
-        let transform = param.to_matrix();
+        // TODO: Double-check this all lines up
+        let transform = param.to_eu_matrix();
         DrawTransform {
             src: param.src,
             color: param.color,
-            matrix: transform.into(),
+            matrix: transform,
         }
     }
 }
 
 impl DrawTransform {
     pub(crate) fn to_instance_properties(&self, srgb: bool) -> InstanceProperties {
-        let mat: [[f32; 4]; 4] = self.matrix.into();
+        // TODO: Verify 'row arrays' is correct here.
+        let mat: [[f32; 4]; 4] = self.matrix.to_row_arrays();
         let color: [f32; 4] = if srgb {
             let linear_color: types::LinearColor = self.color.into();
             linear_color.into()

@@ -172,7 +172,8 @@ impl graphics::Drawable for SpriteBatch {
         slice.instances = Some((self.sprites.len() as u32, 0));
         let curr_transform = gfx.transform();
         let m: DrawTransform = param.into();
-        gfx.push_transform(m.matrix * curr_transform);
+        // TODO: Verify this is correct with row/col matrixes
+        gfx.push_transform(m.matrix.post_transform(&curr_transform));
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {

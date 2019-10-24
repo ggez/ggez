@@ -99,8 +99,8 @@ extern crate serde_derive;
 #[macro_use]
 extern crate smart_default;
 
+pub extern crate euclid;
 pub extern crate mint;
-pub extern crate nalgebra;
 
 pub mod audio;
 pub mod conf;

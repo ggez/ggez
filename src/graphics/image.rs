@@ -1,8 +1,9 @@
 use std::io::Read;
 use std::path;
 
-use ::image;
 use gfx;
+#[rustfmt::skip]
+use ::image;
 
 use crate::context::{Context, DebugId};
 use crate::error::GameError;
@@ -322,7 +323,7 @@ impl Drawable for Image {
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
-        let real_scale = nalgebra::Vector2::new(
+        let real_scale = Vector2::new(
             param.scale.x * src_width * f32::from(self.width),
             param.scale.y * src_height * f32::from(self.height),
         );

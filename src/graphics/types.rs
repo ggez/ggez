@@ -1,16 +1,17 @@
-pub(crate) use nalgebra as na;
+pub(crate) use euclid as eu;
 use std::f32;
 use std::u32;
-use serde::{Serialize, Deserialize};
 
 use crate::graphics::{FillOptions, StrokeOptions};
 
 /// A 2 dimensional point representing a location
-pub(crate) type Point2 = na::Point2<f32>;
+pub(crate) type Point2 = eu::Point2D<f32, eu::UnknownUnit>;
 /// A 2 dimensional vector representing an offset of a location
-pub(crate) type Vector2 = na::Vector2<f32>;
+pub(crate) type Vector2 = eu::Vector2D<f32, eu::UnknownUnit>;
+/// A 3 dimensional vector representing an offset of a location
+pub(crate) type Vector3 = eu::Vector3D<f32, eu::UnknownUnit>;
 /// A 4 dimensional matrix representing an arbitrary 3d transformation
-pub(crate) type Matrix4 = na::Matrix4<f32>;
+pub(crate) type Matrix4 = eu::Transform3D<f32, eu::UnknownUnit, eu::UnknownUnit>;
 
 /// A simple 2D rectangle.
 ///
@@ -142,16 +143,17 @@ impl Rect {
 
     /// Calculated the new Rect around the rotated one.
     pub fn rotate(&mut self, rotation: f32) {
-        let rotation = na::Rotation2::new(rotation);
+        let rotation: eu::Rotation2D<f32, eu::UnknownUnit, eu::UnknownUnit> =
+            eu::Rotation2D::radians(rotation);
         let x0 = self.x;
         let y0 = self.y;
         let x1 = self.right();
         let y1 = self.bottom();
         let points = [
-            rotation * na::Point2::new(x0, y0),
-            rotation * na::Point2::new(x0, y1),
-            rotation * na::Point2::new(x1, y0),
-            rotation * na::Point2::new(x1, y1),
+            rotation.transform_point(eu::Point2D::new(x0, y0)),
+            rotation.transform_point(eu::Point2D::new(x0, y1)),
+            rotation.transform_point(eu::Point2D::new(x1, y0)),
+            rotation.transform_point(eu::Point2D::new(x1, y1)),
         ];
         let p0 = points[0];
         let mut x_max = p0.x;

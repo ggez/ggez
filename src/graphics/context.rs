@@ -261,7 +261,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
         let initial_transform = Matrix4::identity();
         let globals = Globals {
-            mvp_matrix: initial_projection.into(),
+            mvp_matrix: initial_projection.to_column_arrays(),
         };
 
         let mut gfx = Self {
@@ -321,15 +321,16 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 // having `winit` try to do the image loading for us.
 // see https://github.com/tomaka/winit/issues/661
 pub(crate) fn load_icon(icon_file: &Path, filesystem: &mut Filesystem) -> GameResult<winit::Icon> {
-    use ::image;
-    use ::image::GenericImageView;
+    #[rustfmt::skip]
+    use ::image as imgcrate;
+    use imgcrate::GenericImageView;
     use std::io::Read;
     use winit::Icon;
 
     let mut buf = Vec::new();
     let mut reader = filesystem.open(icon_file)?;
     let _ = reader.read_to_end(&mut buf)?;
-    let i = image::load_from_memory(&buf)?;
+    let i = imgcrate::load_from_memory(&buf)?;
     let image_data = i.to_rgba();
     Icon::from_rgba(image_data.to_vec(), i.width(), i.height()).map_err(|e| {
         let msg = format!("Could not load icon: {:?}", e);
@@ -357,8 +358,10 @@ where
             .modelview_stack
             .last()
             .expect("Transform stack empty; should never happen");
-        let mvp = self.projection * modelview;
-        self.shader_globals.mvp_matrix = mvp.into();
+        // TODO: Verify this is the correct order, row/column
+        let mvp = self.projection.post_transform(modelview);
+        // TODO: This too
+        self.shader_globals.mvp_matrix = mvp.to_column_arrays();
     }
 
     /// Pushes a homogeneous transform matrix to the top of the transform
@@ -485,7 +488,8 @@ where
         }
 
         self.screen_rect = rect;
-        self.projection = Matrix4::from(ortho(
+        // TODO: Double-check the from_row_arrays here is correct
+        self.projection = Matrix4::from_row_arrays(ortho(
             rect.x,
             rect.x + rect.w,
             rect.y,
