@@ -61,10 +61,11 @@ approx = "0.3"
 [dev-dependencies]
 chrono = "0.4"
 fern = "0.5"
-rand = "0.7"
-structopt = "0.2"
+oorandom = "11"
+structopt = "0.3"
 cgmath = { version = "0.17", features = ["mint"]}
 skeptic = "0.13"
+getrandom = "0.1"
 
 [build-dependencies]
 skeptic = "0.13"

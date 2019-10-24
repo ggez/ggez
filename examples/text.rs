@@ -2,7 +2,7 @@
 
 use cgmath;
 use ggez;
-use rand;
+use oorandom;
 
 use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};
@@ -16,24 +16,23 @@ use std::f32;
 use std::path;
 
 /// Creates a random RGB color.
-fn random_color() -> Color {
-    Color::new(
-        rand::random::<f32>(),
-        rand::random::<f32>(),
-        rand::random::<f32>(),
-        1.0,
-    )
+fn random_color(rng: &mut oorandom::Rand32) -> Color {
+    Color::new(rng.rand_float(), rng.rand_float(), rng.rand_float(), 1.0)
 }
 
 struct App {
     // Doesn't have to be a `BTreeMap`; it's handy if you care about specific elements,
     // want to retrieve them by trivial handles, and have to preserve ordering.
     texts: BTreeMap<&'static str, Text>,
+    rng: oorandom::Rand32,
 }
 
 impl App {
     fn new(ctx: &mut Context) -> GameResult<App> {
         let mut texts = BTreeMap::new();
+
+        // We just use a fixed RNG seed for simplicity.
+        let mut rng = oorandom::Rand32::new(314159);
 
         // This is the simplest way to create a drawable text;
         // the color, font, and scale will be default: white, DejaVuSerif, 16px unform.
@@ -100,20 +99,19 @@ impl App {
         // `default()` exists pretty much specifically for this usecase.
         let mut chroma_text = Text::default();
         for ch in chroma_string.chars() {
-            chroma_text.add(TextFragment::new(ch).color(random_color()));
+            chroma_text.add(TextFragment::new(ch).color(random_color(&mut rng)));
         }
         texts.insert("2_rainbow", chroma_text);
 
         let wonky_string = "So, so wonky.";
         let mut wonky_text = Text::default();
         for ch in wonky_string.chars() {
-            wonky_text.add(
-                TextFragment::new(ch).scale(Scale::uniform(10.0 + 24.0 * rand::random::<f32>())),
-            );
+            wonky_text
+                .add(TextFragment::new(ch).scale(Scale::uniform(10.0 + 24.0 * rng.rand_float())));
         }
         texts.insert("3_wonky", wonky_text);
 
-        Ok(App { texts })
+        Ok(App { texts, rng })
     }
 }
 
@@ -160,7 +158,7 @@ impl event::EventHandler for App {
         if let Some(text) = self.texts.get_mut("1_demo_text_3") {
             // `.fragments_mut()` returns a mutable slice of contained fragments.
             // Fragments are indexed in order of their addition, starting at 0 (of course).
-            text.fragments_mut()[3].color = Some(random_color());
+            text.fragments_mut()[3].color = Some(random_color(&mut self.rng));
         }
 
         // Another animation example. Note, this is very inefficient as-is.
@@ -168,7 +166,7 @@ impl event::EventHandler for App {
         let mut wobble = Text::default();
         for ch in wobble_string.chars() {
             wobble.add(
-                TextFragment::new(ch).scale(Scale::uniform(10.0 + 6.0 * rand::random::<f32>())),
+                TextFragment::new(ch).scale(Scale::uniform(10.0 + 6.0 * self.rng.rand_float())),
             );
         }
         let wobble_width = wobble.width(ctx);

@@ -2,6 +2,7 @@
 //! The idea is that this game is simple but still
 //! non-trivial enough to be interesting.
 
+use getrandom;
 use ggez;
 use ggez::audio;
 use ggez::audio::SoundSource;
@@ -11,7 +12,7 @@ use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use nalgebra as na;
-use rand;
+use oorandom::Rand32;
 
 use std::env;
 use std::path;
@@ -34,9 +35,9 @@ fn vec_from_angle(angle: f32) -> Vector2 {
 }
 
 /// Makes a random `Vector2` with the given max magnitude.
-fn random_vec(max_magnitude: f32) -> Vector2 {
-    let angle = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
-    let mag = rand::random::<f32>() * max_magnitude;
+fn random_vec(rng: &mut Rand32, max_magnitude: f32) -> Vector2 {
+    let angle = rng.rand_float() * 2.0 * std::f32::consts::PI;
+    let mag = rng.rand_float() * max_magnitude;
     vec_from_angle(angle) * (mag)
 }
 
@@ -127,14 +128,20 @@ fn create_shot() -> Actor {
 /// Note that this *could* create rocks outside the
 /// bounds of the playing field, so it should be
 /// called before `wrap_actor_position()` happens.
-fn create_rocks(num: i32, exclusion: Point2, min_radius: f32, max_radius: f32) -> Vec<Actor> {
+fn create_rocks(
+    rng: &mut Rand32,
+    num: i32,
+    exclusion: Point2,
+    min_radius: f32,
+    max_radius: f32,
+) -> Vec<Actor> {
     assert!(max_radius > min_radius);
     let new_rock = |_| {
         let mut rock = create_rock();
-        let r_angle = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
-        let r_distance = rand::random::<f32>() * (max_radius - min_radius) + min_radius;
+        let r_angle = rng.rand_float() * 2.0 * std::f32::consts::PI;
+        let r_distance = rng.rand_float() * (max_radius - min_radius) + min_radius;
         rock.pos = exclusion + vec_from_angle(r_angle) * r_distance;
-        rock.velocity = random_vec(MAX_ROCK_VEL);
+        rock.velocity = random_vec(rng, MAX_ROCK_VEL);
         rock
     };
     (0..num).map(new_rock).collect()
@@ -311,6 +318,7 @@ struct MainState {
     screen_height: f32,
     input: InputState,
     player_shot_timeout: f32,
+    rng: Rand32,
 }
 
 impl MainState {
@@ -319,9 +327,14 @@ impl MainState {
 
         print_instructions();
 
+        // Seed our RNG
+        let mut seed: [u8; 8] = [0; 8];
+        getrandom::getrandom(&mut seed[..]).expect("Could not create RNG seed");
+        let mut rng = Rand32::new(u64::from_ne_bytes(seed));
+
         let assets = Assets::new(ctx)?;
         let player = create_player();
-        let rocks = create_rocks(5, player.pos, 100.0, 250.0);
+        let rocks = create_rocks(&mut rng, 5, player.pos, 100.0, 250.0);
 
         let (width, height) = graphics::drawable_size(ctx);
         let s = MainState {
@@ -335,6 +348,7 @@ impl MainState {
             screen_height: height,
             input: InputState::default(),
             player_shot_timeout: 0.0,
+            rng,
         };
 
         Ok(s)
@@ -383,7 +397,7 @@ impl MainState {
     fn check_for_level_respawn(&mut self) {
         if self.rocks.is_empty() {
             self.level += 1;
-            let r = create_rocks(self.level + 5, self.player.pos, 100.0, 250.0);
+            let r = create_rocks(&mut self.rng, self.level + 5, self.player.pos, 100.0, 250.0);
             self.rocks.extend(r);
         }
     }

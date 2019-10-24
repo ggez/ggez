@@ -5,8 +5,7 @@ use std::env;
 use std::path;
 
 use nalgebra as na;
-use rand::rngs::ThreadRng;
-use rand::{self, Rng};
+use oorandom::Rand32;
 
 use ggez::graphics::{spritebatch::SpriteBatch, Color, Image};
 use ggez::Context;
@@ -25,9 +24,9 @@ struct Bunny {
 }
 
 impl Bunny {
-    fn new(rng: &mut ThreadRng) -> Bunny {
-        let x_vel = rng.gen::<f32>() * 5.0;
-        let y_vel = (rng.gen::<f32>() * 5.0) - 2.5;
+    fn new(rng: &mut Rand32) -> Bunny {
+        let x_vel = rng.rand_float() * 5.0;
+        let y_vel = (rng.rand_float() * 5.0) - 2.5;
 
         Bunny {
             position: na::Point2::new(0.0, 0.0),
@@ -37,7 +36,7 @@ impl Bunny {
 }
 
 struct GameState {
-    rng: ThreadRng,
+    rng: Rand32,
     texture: Image,
     bunnies: Vec<Bunny>,
     max_x: f32,
@@ -50,7 +49,8 @@ struct GameState {
 
 impl GameState {
     fn new(ctx: &mut Context) -> ggez::GameResult<GameState> {
-        let mut rng = rand::thread_rng();
+        // We just use the same RNG seed every time.
+        let mut rng = Rand32::new(12345);
         let texture = Image::new(ctx, "/wabbit_alpha.png")?;
         let mut bunnies = Vec::with_capacity(INITIAL_BUNNIES);
         let max_x = (WIDTH - texture.width()) as f32;
@@ -98,8 +98,9 @@ impl event::EventHandler for GameState {
                 bunny.velocity.y *= -0.8;
                 bunny.position.y = self.max_y;
 
-                if self.rng.gen::<bool>() {
-                    bunny.velocity.y -= 3.0 + (self.rng.gen::<f32>() * 4.0);
+                // Flip a coin
+                if self.rng.rand_i32() > 0 {
+                    bunny.velocity.y -= 3.0 + (self.rng.rand_float() * 4.0);
                 }
             } else if bunny.position.y < 0.0 {
                 bunny.velocity.y = 0.0;
