@@ -378,7 +378,7 @@ impl Snake {
 struct GameState {
     /// First we need a Snake
     snake: Snake,
-    /// A piee of food
+    /// A piece of food
     food: Food,
     /// Whether the game is over or not
     gameover: bool,
