@@ -1,3 +1,19 @@
+# Unreleased
+
+## Added
+
+## Changed
+
+ * Minimum rustc version is now 1.36
+
+## Deprecated
+
+## Removed
+
+## Fixed
+
+## Broken
+
 # 0.5.1
 
 ## Added
