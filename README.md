@@ -130,21 +130,21 @@ impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         // Load/create resources such as images here.
         MyGame {
-		    // ...
-		}
+            // ...
+        }
     }
 }
 
 impl EventHandler for MyGame {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         // Update code here...
-		Ok(())
+        Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-		graphics::clear(ctx, graphics::WHITE);
+        graphics::clear(ctx, graphics::WHITE);
         // Draw code here...
-		graphics::present(ctx)
+        graphics::present(ctx)
     }
 }
 ```
