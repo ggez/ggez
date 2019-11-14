@@ -17,6 +17,7 @@ license = "MIT"
 readme = "README.md"
 categories = ["game-engines"]
 build = "build.rs"
+exclude = ["resources", "!DejaVuSerif.ttf"]
 
 [badges]
 maintenance = { status = "passively-maintained" }
