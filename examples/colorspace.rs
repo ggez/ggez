@@ -81,6 +81,7 @@ struct MainState {
     demo_mesh: graphics::Mesh,
     square_mesh: graphics::Mesh,
     demo_image: graphics::Image,
+    demo_text: graphics::Text,
 }
 
 impl MainState {
@@ -100,10 +101,18 @@ impl MainState {
             graphics::WHITE,
         )?;
         let demo_image = graphics::Image::solid(ctx, 200, AQUA)?;
+        let demo_text = graphics::Text::new(graphics::TextFragment {
+            text: "-".to_string(),
+            color: Some(AQUA),
+            font: Some(graphics::Font::default()),
+            scale: Some(graphics::Scale::uniform(300.0)),
+        });
+
         let s = MainState {
             demo_mesh,
             square_mesh,
             demo_image,
+            demo_text,
         };
         Ok(s)
     }
@@ -137,6 +146,12 @@ impl event::EventHandler for MainState {
             ctx,
             &self.demo_image,
             DrawParam::default().dest(na::Point2::new(450.0, 200.0)),
+        )?;
+
+        graphics::draw(
+            ctx,
+            &self.demo_text,
+            DrawParam::default().dest(na::Point2::new(150.0, 135.0)),
         )?;
 
         graphics::present(ctx)?;
