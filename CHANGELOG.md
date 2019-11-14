@@ -10,6 +10,7 @@ Nothing
    aesthetic reasons.  (Not advertising at all, honest.)
  * Version bumped `lyon` to 0.14
  * Version bumped `glyph_brush` to 0.6
+ * Minimum rustc version is now 1.36
 
 
 ## Deprecated
@@ -27,9 +28,6 @@ Nothing
 ## Broken
 
 Nothing
-
-
-##
 
 # 0.5.1
 
