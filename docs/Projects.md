@@ -6,6 +6,7 @@ submit a PR, please!
 ## Games!
 
  * <https://github.com/ozkriff/zemeroth>
+ * Le Train Dispatcher: <https://athorus.itch.io/ltd>
 
 # 0.4.x
 
