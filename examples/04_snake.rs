@@ -412,34 +412,37 @@ impl event::EventHandler for GameState {
     /// Update will happen on every frame before it is drawn. This is where we update
     /// our game state to react to whatever is happening in the game world.
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        // First we check to see if enough time has elapsed since our last update based on
-        // the update rate we defined at the top.
-        if Instant::now() - self.last_update >= Duration::from_millis(MILLIS_PER_UPDATE) {
-            // Then we check to see if the game is over. If not, we'll update. If so, we'll just do nothing.
-            if !self.gameover {
-                // Here we do the actual updating of our game world. First we tell the snake to update itself,
-                // passing in a reference to our piece of food.
-                self.snake.update(&self.food);
-                // Next we check if the snake ate anything as it updated.
-                if let Some(ate) = self.snake.ate {
-                    // If it did, we want to know what it ate.
-                    match ate {
-                        // If it ate a piece of food, we randomly select a new position for our piece of food
-                        // and move it to this new position.
-                        Ate::Food => {
-                            let new_food_pos = GridPosition::random(GRID_SIZE.0, GRID_SIZE.1);
-                            self.food.pos = new_food_pos;
-                        }
-                        // If it ate itself, we set our gameover state to true.
-                        Ate::Itself => {
-                            self.gameover = true;
-                        }
+        // First we check to see if enough time has elapsed since our last update based
+        // on the update rate we defined at the top.
+        // if not, we do nothing and return early.
+        if !(Instant::now() - self.last_update >= Duration::from_millis(MILLIS_PER_UPDATE)) {
+            Ok(())
+        }
+        // Then we check to see if the game is over. If not, we'll update. If so, we'll just do nothing.
+        if !self.gameover {
+            // Here we do the actual updating of our game world. First we tell the snake to update itself,
+            // passing in a reference to our piece of food.
+            self.snake.update(&self.food);
+            // Next we check if the snake ate anything as it updated.
+            if let Some(ate) = self.snake.ate {
+                // If it did, we want to know what it ate.
+                match ate {
+                    // If it ate a piece of food, we randomly select a new position for our piece of food
+                    // and move it to this new position.
+                    Ate::Food => {
+                        let new_food_pos = GridPosition::random(GRID_SIZE.0, GRID_SIZE.1);
+                        self.food.pos = new_food_pos;
+                    }
+                    // If it ate itself, we set our gameover state to true.
+                    Ate::Itself => {
+                        self.gameover = true;
                     }
                 }
             }
-            // If we updated, we set our last_update to be now
-            self.last_update = Instant::now();
         }
+        // If we updated, we set our last_update to be now
+        self.last_update = Instant::now();
+
         // Finally we return `Ok` to indicate we didn't run into any errors
         Ok(())
     }
