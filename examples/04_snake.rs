@@ -420,7 +420,7 @@ impl event::EventHandler for GameState {
         // on the update rate we defined at the top.
         // if not, we do nothing and return early.
         if !(Instant::now() - self.last_update >= Duration::from_millis(MILLIS_PER_UPDATE)) {
-            Ok(())
+            return Ok(());
         }
         // Then we check to see if the game is over. If not, we'll update. If so, we'll just do nothing.
         if !self.gameover {
