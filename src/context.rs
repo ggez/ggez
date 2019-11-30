@@ -132,9 +132,11 @@ impl Context {
         match event.clone() {
             winit_event::Event::WindowEvent { event, .. } => match event {
                 winit_event::WindowEvent::Resized(logical_size) => {
-                    let hidpi_factor = self.gfx_context.window.get_hidpi_factor();
+                    let hidpi_factor = self.gfx_context.window.window().hidpi_factor();
                     let physical_size = logical_size.to_physical(hidpi_factor as f64);
-                    self.gfx_context.window.resize(physical_size);
+                    // TODO
+                    //self.gfx_context.window.window().resize(physical_size);
+                    use crate::graphics::WindowTrait;
                     self.gfx_context.resize_viewport();
                 }
                 winit_event::WindowEvent::CursorMoved {

@@ -46,12 +46,52 @@ pub use crate::graphics::drawparam::*;
 pub use crate::graphics::mesh::*;
 pub use crate::graphics::types::*;
 
-pub(crate) struct GraphicsContext {}
-
 pub type Image = ggraphics::Texture;
+
+pub type Window = glutin::WindowedContext<glutin::PossiblyCurrent>;
 
 pub use ggraphics::FilterMode;
 pub use ggraphics::WrapMode;
+
+pub(crate) struct GraphicsContext {
+    pub(crate) ctx: ggraphics::GlContext,
+    pub(crate) window: Window,
+}
+
+pub trait WindowTrait {
+    fn request_redraw(&self);
+    fn swap_buffers(&self);
+    fn resize_viewport(&self);
+}
+
+/// Used for desktop
+#[cfg(not(target_arch = "wasm32"))]
+impl WindowTrait for glutin::WindowedContext<glutin::PossiblyCurrent> {
+    fn request_redraw(&self) {
+        self.window().request_redraw();
+    }
+    fn swap_buffers(&self) {
+        self.swap_buffers().unwrap();
+    }
+    // TODO
+    fn resize_viewport(&self) {}
+}
+
+/// Used for wasm
+#[cfg(target_arch = "wasm32")]
+impl Window for winit::window::Window {
+    fn request_redraw(&self) {
+        self.request_redraw();
+    }
+    fn swap_buffers(&self) {
+        /*
+        let msg = format!("swapped buffers");
+        web_sys::console::log_1(&wasm_bindgen::JsValue::from_str(&msg));
+        */
+    }
+    // TODO
+    fn resize_viewport(&self) {}
+}
 
 /*
 pub(crate) mod canvas;
@@ -906,14 +946,6 @@ pub fn set_window_title(context: &Context, title: &str) {
     context.gfx_context.window.set_title(title);
 }
 
-/// Returns a reference to the Glutin window.
-/// Ideally you should not need to use this because ggez
-/// would provide all the functions you need without having
-/// to dip into Glutin itself.  But life isn't always ideal.
-pub fn window(context: &Context) -> &glutin::Window {
-    let gfx = &context.gfx_context;
-    &gfx.window
-}
 
 /// Returns the size of the window in pixels as (width, height),
 /// including borders, titlebar, etc.
@@ -1097,3 +1129,12 @@ mod tests {
     }
 }
 */
+
+/// Returns a reference to the Glutin window.
+/// Ideally you should not need to use this because ggez
+/// would provide all the functions you need without having
+/// to dip into Glutin itself.  But life isn't always ideal.
+pub fn window(context: &Context) -> &Window {
+    let gfx = &context.gfx_context;
+    &gfx.window
+}

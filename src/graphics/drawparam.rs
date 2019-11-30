@@ -106,9 +106,10 @@ impl DrawParam {
         self
     }
 
-    /*
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
+    /// TODO: FIx
     fn to_glam_matrix(&self) -> glam::Mat4 {
+        /*
         let translate = Matrix4::create_translation(self.dest.x, self.dest.y, 0.0);
         let offset = Matrix4::create_translation(self.offset.x, self.offset.y, 0.0);
         let offset_inverse = Matrix4::create_translation(-self.offset.x, -self.offset.y, 0.0);
@@ -120,14 +121,15 @@ impl DrawParam {
             .post_transform(&rotation)
             .post_transform(&scale)
             .post_transform(&offset_inverse)
+            */
+        glam::Mat4::identity()
     }
-    */
 
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single
     ///matrix.  Because of this it only contains the transform part (rotation/scale/etc),
     /// with no src/dest/color info.
     pub fn to_matrix(&self) -> mint::ColumnMatrix4<f32> {
-        let m = self.to_eu_matrix().to_column_arrays();
+        let m = self.to_glam_matrix().to_cols_array();
         mint::ColumnMatrix4::from(m)
     }
 }
@@ -230,7 +232,7 @@ impl Default for DrawTransform {
 impl From<DrawParam> for DrawTransform {
     fn from(param: DrawParam) -> Self {
         // TODO: Double-check this all lines up
-        let transform = param.to_eu_matrix();
+        let transform = param.to_glam_matrix();
         DrawTransform {
             src: param.src,
             color: param.color,
