@@ -1,16 +1,17 @@
-use std::fmt;
+use glow;
 /// We re-export winit so it's easy for people to use the same version as we are
 /// without having to mess around figuring it out.
-pub use winit;
+pub use glutin;
+use std::fmt;
 
 use crate::audio;
 use crate::conf;
 use crate::error::GameResult;
-use crate::event::winit_event;
 use crate::filesystem::Filesystem;
 use crate::graphics::{self, Point2};
 use crate::input::{gamepad, keyboard, mouse};
 use crate::timer;
+use glutin::event as glutin_event;
 
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
@@ -75,17 +76,45 @@ impl fmt::Debug for Context {
 impl Context {
     /// Tries to create a new Context using settings from the given [`Conf`](../conf/struct.Conf.html) object.
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
-    fn from_conf(conf: conf::Conf, mut fs: Filesystem) -> GameResult<(Context, winit::EventsLoop)> {
+    fn from_conf(
+        conf: conf::Conf,
+        mut fs: Filesystem,
+    ) -> GameResult<(Context, glutin::event_loop::EventLoop<()>)> {
         let debug_id = DebugId::new();
         let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
             Box::new(audio::RodioAudioContext::new()?)
         } else {
             Box::new(audio::NullAudioContext::default())
         };
-        let events_loop = winit::EventsLoop::new();
+        let events_loop = glutin::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
-        //let backend_spec = graphics::GlBackendSpec::from(conf.backend);
-        let graphics_context = graphics::GraphicsContext {};
+        //let backend_spec = graphics::GlBackendSpec::from(conf.}backend);
+        let (gl, event_loop, windowed_context) = {
+            let el = glutin::event_loop::EventLoop::new();
+            let wb = glutin::window::WindowBuilder::new()
+                .with_title("Hello triangle!")
+                .with_inner_size(glutin::dpi::LogicalSize::new(800.0, 600.0));
+            let windowed_context = glutin::ContextBuilder::new()
+                //.with_gl(glutin::GlRequest::Latest)
+                .with_gl(glutin::GlRequest::GlThenGles {
+                    opengl_version: (4, 3),
+                    opengles_version: (3, 0),
+                })
+                .with_gl_profile(glutin::GlProfile::Core)
+                .with_vsync(true)
+                .build_windowed(wb, &el)
+                .unwrap();
+            let windowed_context = unsafe {
+                // TODO: Does this need to be unsafe?
+                windowed_context.make_current().unwrap()
+            };
+            let context = glow::Context::from_loader_function(|s| {
+                windowed_context.get_proc_address(s) as *const _
+            });
+            (context, el, windowed_context)
+        };
+
+        let graphics_context = graphics::GraphicsContext::new(gl, windowed_context);
         /* TODO
         let graphics_context = graphics::context::GraphicsContext::new(
             &mut fs,
@@ -128,10 +157,10 @@ impl Context {
     /// state it needs to, such as detecting window resizes.  If you are
     /// rolling your own event loop, you should call this on the events
     /// you receive before processing them yourself.
-    pub fn process_event(&mut self, event: &winit::Event) {
+    pub fn process_event(&mut self, event: &glutin::event::Event<()>) {
         match event.clone() {
-            winit_event::Event::WindowEvent { event, .. } => match event {
-                winit_event::WindowEvent::Resized(logical_size) => {
+            glutin_event::Event::WindowEvent { event, .. } => match event {
+                glutin_event::WindowEvent::Resized(logical_size) => {
                     let hidpi_factor = self.gfx_context.win_ctx.window().hidpi_factor();
                     let physical_size = logical_size.to_physical(hidpi_factor as f64);
                     // TODO
@@ -139,7 +168,7 @@ impl Context {
                     use crate::graphics::WindowTrait;
                     self.gfx_context.win_ctx.resize_viewport();
                 }
-                winit_event::WindowEvent::CursorMoved {
+                glutin_event::WindowEvent::CursorMoved {
                     position: logical_position,
                     ..
                 } => {
@@ -148,16 +177,16 @@ impl Context {
                         logical_position.y as f32,
                     ));
                 }
-                winit_event::WindowEvent::MouseInput { button, state, .. } => {
+                glutin_event::WindowEvent::MouseInput { button, state, .. } => {
                     let pressed = match state {
-                        winit_event::ElementState::Pressed => true,
-                        winit_event::ElementState::Released => false,
+                        glutin_event::ElementState::Pressed => true,
+                        glutin_event::ElementState::Released => false,
                     };
                     self.mouse_context.set_button(button, pressed);
                 }
-                winit_event::WindowEvent::KeyboardInput {
+                glutin_event::WindowEvent::KeyboardInput {
                     input:
-                        winit::KeyboardInput {
+                        glutin_event::KeyboardInput {
                             state,
                             virtual_keycode: Some(keycode),
                             modifiers,
@@ -166,20 +195,20 @@ impl Context {
                     ..
                 } => {
                     let pressed = match state {
-                        winit_event::ElementState::Pressed => true,
-                        winit_event::ElementState::Released => false,
+                        glutin_event::ElementState::Pressed => true,
+                        glutin_event::ElementState::Released => false,
                     };
                     self.keyboard_context
                         .set_modifiers(keyboard::KeyMods::from(modifiers));
                     self.keyboard_context.set_key(keycode, pressed);
                 }
-                winit_event::WindowEvent::HiDpiFactorChanged(_) => {
+                glutin_event::WindowEvent::HiDpiFactorChanged(_) => {
                     // Nope.
                 }
                 _ => (),
             },
-            winit_event::Event::DeviceEvent { event, .. } => {
-                if let winit_event::DeviceEvent::MouseMotion { delta: (x, y) } = event {
+            glutin_event::Event::DeviceEvent { event, .. } => {
+                if let glutin_event::DeviceEvent::MouseMotion { delta: (x, y) } = event {
                     self.mouse_context
                         .set_last_delta(Point2::new(x as f32, y as f32));
                 }
@@ -289,7 +318,7 @@ impl ContextBuilder {
     }
 
     /// Build the `Context`.
-    pub fn build(self) -> GameResult<(Context, winit::EventsLoop)> {
+    pub fn build(self) -> GameResult<(Context, glutin::event_loop::EventLoop<()>)> {
         let mut fs = Filesystem::new(self.game_id.as_ref(), self.author.as_ref())?;
 
         for path in &self.paths {

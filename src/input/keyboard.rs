@@ -67,10 +67,10 @@
 
 use crate::context::Context;
 
-use std::collections::HashSet;
-use winit::ModifiersState;
+use glutin::event::ModifiersState;
 /// A key code.
-pub use winit::VirtualKeyCode as KeyCode;
+pub use glutin::event::VirtualKeyCode as KeyCode;
+use std::collections::HashSet;
 
 bitflags! {
     /// Bitflags describing the state of keyboard modifiers, such as `Control` or `Shift`.

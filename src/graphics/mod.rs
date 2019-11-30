@@ -58,6 +58,14 @@ pub(crate) struct GraphicsContext {
     pub(crate) win_ctx: WindowCtx,
 }
 
+impl GraphicsContext {
+    /// TODO: re-export glow from ggraphics
+    pub(crate) fn new(gl: glow::Context, win_ctx: WindowCtx) -> Self {
+        let ctx = ggraphics::GlContext::new(gl);
+        Self { ctx, win_ctx }
+    }
+}
+
 pub trait WindowTrait {
     fn request_redraw(&self);
     fn swap_buffers(&self);

@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use gfx;
 use glutin;
-use winit;
 
 use gilrs;
 use image;
