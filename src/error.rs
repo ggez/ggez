@@ -195,6 +195,7 @@ impl From<gfx::shade::ProgramError> for GameError {
     }
 }
 
+/*
 impl From<winit::EventsLoopClosed> for GameError {
     fn from(_: glutin::EventsLoopClosed) -> GameError {
         let e = "An event loop proxy attempted to wake up an event loop that no longer exists."
@@ -202,6 +203,7 @@ impl From<winit::EventsLoopClosed> for GameError {
         GameError::EventLoopError(e)
     }
 }
+*/
 
 impl From<glutin::CreationError> for GameError {
     fn from(s: glutin::CreationError) -> GameError {

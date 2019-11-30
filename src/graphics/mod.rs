@@ -39,23 +39,23 @@ use crate::GameError;
 use crate::GameResult;
 
 pub(crate) mod drawparam;
-pub(crate) mod mesh;
+//pub(crate) mod mesh;
 pub(crate) mod types;
 
 pub use crate::graphics::drawparam::*;
-pub use crate::graphics::mesh::*;
+//pub use crate::graphics::mesh::*;
 pub use crate::graphics::types::*;
 
 pub type Image = ggraphics::Texture;
 
-pub type Window = glutin::WindowedContext<glutin::PossiblyCurrent>;
+pub type WindowCtx = glutin::WindowedContext<glutin::PossiblyCurrent>;
 
 pub use ggraphics::FilterMode;
 pub use ggraphics::WrapMode;
 
 pub(crate) struct GraphicsContext {
     pub(crate) ctx: ggraphics::GlContext,
-    pub(crate) window: Window,
+    pub(crate) win_ctx: WindowCtx,
 }
 
 pub trait WindowTrait {
@@ -79,7 +79,7 @@ impl WindowTrait for glutin::WindowedContext<glutin::PossiblyCurrent> {
 
 /// Used for wasm
 #[cfg(target_arch = "wasm32")]
-impl Window for winit::window::Window {
+impl WindowTrait for winit::window::Window {
     fn request_redraw(&self) {
         self.request_redraw();
     }
@@ -1134,7 +1134,7 @@ mod tests {
 /// Ideally you should not need to use this because ggez
 /// would provide all the functions you need without having
 /// to dip into Glutin itself.  But life isn't always ideal.
-pub fn window(context: &Context) -> &Window {
+pub fn window(context: &Context) -> &glutin::window::Window {
     let gfx = &context.gfx_context;
-    &gfx.window
+    &gfx.win_ctx.window()
 }
