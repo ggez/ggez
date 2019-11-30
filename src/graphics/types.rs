@@ -1,17 +1,21 @@
-pub(crate) use euclid as eu;
+use glam;
 use std::f32;
 use std::u32;
 
 use crate::graphics::{FillOptions, StrokeOptions};
 
 /// A 2 dimensional point representing a location
-pub(crate) type Point2 = eu::Point2D<f32, eu::UnknownUnit>;
+pub(crate) type Point2 = glam::Vec2;
 /// A 2 dimensional vector representing an offset of a location
-pub(crate) type Vector2 = eu::Vector2D<f32, eu::UnknownUnit>;
+pub(crate) type Vector2 = glam::Vec2;
 /// A 3 dimensional vector representing an offset of a location
-pub(crate) type Vector3 = eu::Vector3D<f32, eu::UnknownUnit>;
+pub(crate) type Vector3 = glam::Vec3;
 /// A 4 dimensional matrix representing an arbitrary 3d transformation
-pub(crate) type Matrix4 = eu::Transform3D<f32, eu::UnknownUnit, eu::UnknownUnit>;
+pub(crate) type Matrix4 = glam::Mat4;
+
+/// TODO: Should be in ggraphics
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
+pub struct BlendMode {}
 
 /// A simple 2D rectangle.
 ///
@@ -143,8 +147,7 @@ impl Rect {
 
     /// Calculated the new Rect around the rotated one.
     pub fn rotate(&mut self, rotation: f32) {
-        let rotation: eu::Rotation2D<f32, eu::UnknownUnit, eu::UnknownUnit> =
-            eu::Rotation2D::radians(rotation);
+        /* TODO
         let x0 = self.x;
         let y0 = self.y;
         let x1 = self.right();
@@ -172,6 +175,7 @@ impl Rect {
             x: x_min,
             y: y_min,
         }
+        */
     }
 
     /// Returns a new `Rect` that includes all points of these two `Rect`s.

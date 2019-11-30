@@ -38,24 +38,35 @@ use crate::context::DebugId;
 use crate::GameError;
 use crate::GameResult;
 
+pub(crate) mod drawparam;
+pub(crate) mod mesh;
+pub(crate) mod types;
+
+pub use crate::graphics::drawparam::*;
+pub use crate::graphics::mesh::*;
+pub use crate::graphics::types::*;
+
+pub(crate) struct GraphicsContext {}
+
+pub type Image = ggraphics::Texture;
+
+pub use ggraphics::FilterMode;
+pub use ggraphics::WrapMode;
+
+/*
 pub(crate) mod canvas;
 pub(crate) mod context;
-pub(crate) mod drawparam;
 pub(crate) mod image;
-pub(crate) mod mesh;
 pub(crate) mod shader;
 pub(crate) mod text;
 pub(crate) mod types;
 
-pub(crate) use euclid as eu;
 pub use mint;
 
 pub mod spritebatch;
 
 pub use crate::graphics::canvas::*;
-pub use crate::graphics::drawparam::*;
 pub use crate::graphics::image::*;
-pub use crate::graphics::mesh::*;
 pub use crate::graphics::shader::*;
 pub use crate::graphics::text::*;
 pub use crate::graphics::types::*;
@@ -1085,3 +1096,4 @@ mod tests {
         }
     }
 }
+*/

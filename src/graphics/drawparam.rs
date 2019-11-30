@@ -106,12 +106,13 @@ impl DrawParam {
         self
     }
 
+    /*
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
-    fn to_eu_matrix(&self) -> Matrix4 {
+    fn to_glam_matrix(&self) -> glam::Mat4 {
         let translate = Matrix4::create_translation(self.dest.x, self.dest.y, 0.0);
         let offset = Matrix4::create_translation(self.offset.x, self.offset.y, 0.0);
         let offset_inverse = Matrix4::create_translation(-self.offset.x, -self.offset.y, 0.0);
-        let rotation = Matrix4::create_rotation(0.0, 0.0, 1.0, eu::Angle::radians(self.rotation));
+        let rotation = Matrix4::create_rotation(0.0, 0.0, 1.0, );
         let scale = Matrix4::create_scale(self.scale.x, self.scale.y, 1.0);
         // TODO: Verify this is correct with Euclid's row matrices!
         translate
@@ -120,6 +121,7 @@ impl DrawParam {
             .post_transform(&scale)
             .post_transform(&offset_inverse)
     }
+    */
 
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single
     ///matrix.  Because of this it only contains the transform part (rotation/scale/etc),
@@ -238,6 +240,7 @@ impl From<DrawParam> for DrawTransform {
 }
 
 impl DrawTransform {
+    /*
     pub(crate) fn to_instance_properties(&self, srgb: bool) -> InstanceProperties {
         // TODO: Verify 'row arrays' is correct here.
         let mat: [[f32; 4]; 4] = self.matrix.to_row_arrays();
@@ -256,4 +259,5 @@ impl DrawTransform {
             color,
         }
     }
+    */
 }

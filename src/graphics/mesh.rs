@@ -7,6 +7,9 @@ use lyon::tessellation as t;
 
 pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
+pub struct Vertex {}
+
 /// A builder for creating [`Mesh`](struct.Mesh.html)es.
 ///
 /// This allows you to easily make one `Mesh` containing
@@ -626,6 +629,8 @@ impl Mesh {
     }
 }
 
+/*
+ * TODO
 impl Drawable for Mesh {
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
@@ -655,6 +660,7 @@ impl Drawable for Mesh {
         self.blend_mode
     }
 }
+*/
 
 fn bbox_for_vertices(verts: &[Vertex]) -> Option<Rect> {
     if verts.is_empty() {
