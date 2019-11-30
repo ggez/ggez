@@ -480,38 +480,6 @@ impl DrawMode {
 }
 */
 
-/// Specifies what blending method to use when scaling up/down images.
-#[derive(Debug, Copy, Clone)]
-pub enum FilterMode {
-    /// Use linear interpolation (ie, smooth)
-    Linear,
-    /// Use nearest-neighbor interpolation (ie, pixelated)
-    Nearest,
-}
-
-use gfx::texture::FilterMethod;
-
-impl From<FilterMethod> for FilterMode {
-    fn from(f: FilterMethod) -> Self {
-        match f {
-            FilterMethod::Scale => FilterMode::Nearest,
-            _other => FilterMode::Linear,
-        }
-    }
-}
-
-impl From<FilterMode> for FilterMethod {
-    fn from(f: FilterMode) -> Self {
-        match f {
-            FilterMode::Nearest => FilterMethod::Scale,
-            FilterMode::Linear => FilterMethod::Bilinear,
-        }
-    }
-}
-
-/// Specifies how to wrap textures.
-pub use gfx::texture::WrapMode;
-
 #[cfg(test)]
 mod tests {
     use super::*;
