@@ -47,6 +47,7 @@ pub use ggraphics::FilterMode;
 pub use ggraphics::WrapMode;
 
 pub(crate) struct GraphicsContext {
+    // TODO: OMG these names
     pub(crate) ctx: ggraphics::GlContext,
     pub(crate) win_ctx: WindowCtx,
 }
@@ -56,6 +57,54 @@ impl GraphicsContext {
     pub(crate) fn new(gl: glow::Context, win_ctx: WindowCtx) -> Self {
         let ctx = ggraphics::GlContext::new(gl);
         Self { ctx, win_ctx }
+    }
+
+    
+    /// Sets window mode from a WindowMode object.
+    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
+        use glutin::dpi;
+        use crate::conf::FullscreenType;
+        let window = self.win_ctx.window();
+
+        window.set_maximized(mode.maximized);
+
+        // TODO: Min and max dimension constraints have gone away,
+        // remove them from WindowMode
+
+        let monitors = window.available_monitors();
+        // TODO: Okay, how we set fullscreen stuff has changed
+        // and this needs to be totally revamped.
+        /*
+        match (mode.fullscreen_type, monitors.last()) {
+            (FullscreenType::Windowed, _) => {
+                window.set_fullscreen(None);
+                window.set_decorations(!mode.borderless);
+                window.set_inner_size(dpi::LogicalSize {
+                    width: f64::from(mode.width),
+                    height: f64::from(mode.height),
+                });
+                window.set_resizable(mode.resizable);
+            }
+            (FullscreenType::True, Some(monitor)) => {
+                window.set_fullscreen(Some(monitor));
+                window.set_inner_size(dpi::LogicalSize {
+                    width: f64::from(mode.width),
+                    height: f64::from(mode.height),
+                });
+            }
+            (FullscreenType::Desktop, Some(monitor)) => {
+                let position = monitor.get_position();
+                let dimensions = monitor.get_dimensions();
+                let hidpi_factor = window.get_hidpi_factor();
+                window.set_fullscreen(None);
+                window.set_decorations(false);
+                window.set_inner_size(dimensions.to_logical(hidpi_factor));
+                window.set_position(position.to_logical(hidpi_factor));
+            }
+            _ => panic!("Unable to detect monitor; if you are on Linux Wayland it may be this bug: https://github.com/rust-windowing/winit/issues/793"),
+        }
+        */
+        Ok(())
     }
 }
 
@@ -538,6 +587,118 @@ pub fn present(ctx: &mut Context) -> GameResult<()> {
     ctx.gfx_context.win_ctx.swap_buffers()?;
     Ok(())
 }
+
+
+// **********************************************************************
+// GRAPHICS STATE
+// **********************************************************************
+
+/// Returns a string that tells a little about the obtained rendering mode.
+/// It is supposed to be human-readable and will change; do not try to parse
+/// information out of it!
+pub fn renderer_info(ctx: &Context) -> GameResult<String> {
+    let (vend, rend, vers, shader_vers) = ctx.gfx_context.ctx.get_info();
+    Ok(format!(
+        "GL context created info:
+  Vendor: {}
+  Renderer: {}
+  Version: {}
+  Shader version: {}",
+        vend, rend, vers, shader_vers
+    ))
+}
+
+
+/// Sets the window mode, such as the size and other properties.
+///
+/// Setting the window mode may have side effects, such as clearing
+/// the screen or setting the screen coordinates viewport to some
+/// undefined value (for example, the window was resized).  It is
+/// recommended to call
+/// [`set_screen_coordinates()`](fn.set_screen_coordinates.html) after
+/// changing the window size to make sure everything is what you want
+/// it to be.
+pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult {
+    let gfx = &mut context.gfx_context;
+    gfx.set_window_mode(mode)?;
+    // Save updated mode.
+    context.conf.window_mode = mode;
+    Ok(())
+}
+
+// TODO
+// /// Sets the window icon.
+// pub fn set_window_icon<P: AsRef<Path>>(context: &mut Context, path: Option<P>) -> GameResult<()> {
+//     let icon = match path {
+//         Some(p) => {
+//             let p: &Path = p.as_ref();
+//             Some(context::load_icon(p, &mut context.filesystem)?)
+//         }
+//         None => None,
+//     };
+//     context.gfx_context.window.set_window_icon(icon);
+//     Ok(())
+// }
+
+/// Sets the window title.
+pub fn set_window_title(context: &Context, title: &str) {
+    context.gfx_context.win_ctx.window().set_title(title);
+}
+
+/// Returns the size of the window in pixels as (width, height),
+/// including borders, titlebar, etc.
+/// Returns zeros if the window doesn't exist.
+pub fn size(context: &Context) -> (f32, f32) {
+    let gfx = &context.gfx_context;
+    let size = gfx.win_ctx
+        .window()
+        .outer_size();
+    (size.width as f32, size.height as f32)
+}
+
+/// Returns the size of the window's underlying drawable in pixels as (width, height).
+/// Returns zeros if window doesn't exist.
+pub fn drawable_size(context: &Context) -> (f32, f32) {
+    let gfx = &context.gfx_context;
+    let size = gfx.win_ctx
+        .window()
+        .inner_size();
+    (size.width as f32, size.height as f32)
+}
+
+/// Sets the window to fullscreen or back.
+pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -> GameResult {
+    let mut window_mode = context.conf.window_mode;
+    window_mode.fullscreen_type = fullscreen;
+    set_mode(context, window_mode)
+}
+
+/// Sets the window size/resolution to the specified width and height.
+pub fn set_drawable_size(context: &mut Context, width: f32, height: f32) -> GameResult {
+    let mut window_mode = context.conf.window_mode;
+    window_mode.width = width;
+    window_mode.height = height;
+    set_mode(context, window_mode)
+}
+
+/// Sets whether or not the window is resizable.
+pub fn set_resizable(context: &mut Context, resizable: bool) -> GameResult {
+    let mut window_mode = context.conf.window_mode;
+    window_mode.resizable = resizable;
+    set_mode(context, window_mode)
+}
+
+
+/// Returns a reference to the Glutin window.
+/// Ideally you should not need to use this because ggez
+/// would provide all the functions you need without having
+/// to dip into Glutin itself.  But life isn't always ideal.
+pub fn window(context: &Context) -> &glutin::window::Window {
+    let gfx = &context.gfx_context;
+    &gfx.win_ctx.window()
+}
+
+
 /*
 
 
@@ -885,112 +1046,6 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
     ctx.gfx_context.set_blend_mode(mode)
 }
 
-/// Sets the window mode, such as the size and other properties.
-///
-/// Setting the window mode may have side effects, such as clearing
-/// the screen or setting the screen coordinates viewport to some
-/// undefined value (for example, the window was resized).  It is
-/// recommended to call
-/// [`set_screen_coordinates()`](fn.set_screen_coordinates.html) after
-/// changing the window size to make sure everything is what you want
-/// it to be.
-pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult {
-    let gfx = &mut context.gfx_context;
-    gfx.set_window_mode(mode)?;
-    // Save updated mode.
-    context.conf.window_mode = mode;
-    Ok(())
-}
-
-/// Sets the window to fullscreen or back.
-pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -> GameResult {
-    let mut window_mode = context.conf.window_mode;
-    window_mode.fullscreen_type = fullscreen;
-    set_mode(context, window_mode)
-}
-
-/// Sets the window size/resolution to the specified width and height.
-pub fn set_drawable_size(context: &mut Context, width: f32, height: f32) -> GameResult {
-    let mut window_mode = context.conf.window_mode;
-    window_mode.width = width;
-    window_mode.height = height;
-    set_mode(context, window_mode)
-}
-
-/// Sets whether or not the window is resizable.
-pub fn set_resizable(context: &mut Context, resizable: bool) -> GameResult {
-    let mut window_mode = context.conf.window_mode;
-    window_mode.resizable = resizable;
-    set_mode(context, window_mode)
-}
-
-/// Sets the window icon.
-pub fn set_window_icon<P: AsRef<Path>>(context: &mut Context, path: Option<P>) -> GameResult<()> {
-    let icon = match path {
-        Some(p) => {
-            let p: &Path = p.as_ref();
-            Some(context::load_icon(p, &mut context.filesystem)?)
-        }
-        None => None,
-    };
-    context.gfx_context.window.set_window_icon(icon);
-    Ok(())
-}
-
-/// Sets the window title.
-pub fn set_window_title(context: &Context, title: &str) {
-    context.gfx_context.window.set_title(title);
-}
-
-
-/// Returns the size of the window in pixels as (width, height),
-/// including borders, titlebar, etc.
-/// Returns zeros if the window doesn't exist.
-pub fn size(context: &Context) -> (f32, f32) {
-    let gfx = &context.gfx_context;
-    gfx.window
-        .get_outer_size()
-        .map(|logical_size| (logical_size.width as f32, logical_size.height as f32))
-        .unwrap_or((0.0, 0.0))
-}
-
-/// Returns the size of the window's underlying drawable in pixels as (width, height).
-/// Returns zeros if window doesn't exist.
-pub fn drawable_size(context: &Context) -> (f32, f32) {
-    let gfx = &context.gfx_context;
-    gfx.window
-        .get_inner_size()
-        .map(|logical_size| (logical_size.width as f32, logical_size.height as f32))
-        .unwrap_or((0.0, 0.0))
-}
-
-/// Returns raw `gfx-rs` state objects, if you want to use `gfx-rs` to write
-/// your own graphics pipeline then this gets you the interfaces you need
-/// to do so.
-///
-/// Returns all the relevant objects at once;
-/// getting them one by one is awkward 'cause it tends to create double-borrows
-/// on the Context object.
-pub fn gfx_objects(
-    context: &mut Context,
-) -> (
-    &mut <GlBackendSpec as BackendSpec>::Factory,
-    &mut <GlBackendSpec as BackendSpec>::Device,
-    &mut gfx::Encoder<
-        <GlBackendSpec as BackendSpec>::Resources,
-        <GlBackendSpec as BackendSpec>::CommandBuffer,
-    >,
-    gfx::handle::RawDepthStencilView<<GlBackendSpec as BackendSpec>::Resources>,
-    gfx::handle::RawRenderTargetView<<GlBackendSpec as BackendSpec>::Resources>,
-) {
-    let gfx = &mut context.gfx_context;
-    let f = &mut gfx.factory;
-    let d = gfx.device.as_mut();
-    let e = &mut gfx.encoder;
-    let dv = gfx.depth_view.clone();
-    let cv = gfx.data.out.clone();
-    (f, d, e, dv, cv)
-}
 
 /// All types that can be drawn on the screen implement the `Drawable` trait.
 pub trait Drawable {
@@ -1125,12 +1180,3 @@ mod tests {
     }
 }
 */
-
-/// Returns a reference to the Glutin window.
-/// Ideally you should not need to use this because ggez
-/// would provide all the functions you need without having
-/// to dip into Glutin itself.  But life isn't always ideal.
-pub fn window(context: &Context) -> &glutin::window::Window {
-    let gfx = &context.gfx_context;
-    &gfx.win_ctx.window()
-}
