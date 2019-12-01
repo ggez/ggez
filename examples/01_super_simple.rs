@@ -3,15 +3,37 @@
 use ggez;
 use ggez::event;
 use ggez::graphics;
+use ggez::ggraphics;
 use ggez::{Context, GameResult};
+use image;
 
 struct MainState {
     pos_x: f32,
 }
 
 impl MainState {
-    fn new() -> GameResult<MainState> {
+    fn new(ctx: &mut Context) -> GameResult<MainState> {
         let s = MainState { pos_x: 0.0 };
+
+        use ggraphics::Pipeline;
+        let gl = graphics::gl_context(ctx);
+        unsafe {
+            let particle_texture = {
+                let image_bytes = include_bytes!("../resources/player.png");
+                let image_rgba = image::load_from_memory(image_bytes).unwrap().to_rgba();
+                let (w, h) = image_rgba.dimensions();
+                let image_rgba_bytes = image_rgba.into_raw();
+                ggraphics::TextureHandle::new(gl, &image_rgba_bytes, w as usize, h as usize).into_shared()
+            };
+            // Render that texture to the screen
+            let mut screen_pass = ggraphics::RenderPass::new_screen(gl, 800, 600, (0.1, 0.2, 0.3, 1.0));
+            let shader = gl.default_shader();
+            let mut pipeline = ggraphics::QuadPipeline::new(&gl, shader);
+            let dc = pipeline.new_drawcall(gl, particle_texture, ggraphics::SamplerSpec::default());
+            dc.add(ggraphics::QuadData::empty());
+            screen_pass.add_pipeline(pipeline);
+            gl.passes.push(screen_pass);
+        }
         Ok(s)
     }
 }
@@ -44,7 +66,7 @@ impl event::EventHandler for MainState {
 
 pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("super_simple", "ggez");
-    let (ctx, event_loop) = cb.build()?;
-    let state = MainState::new()?;
+    let (mut ctx, event_loop) = cb.build()?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }

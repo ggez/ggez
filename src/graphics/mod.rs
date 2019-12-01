@@ -584,6 +584,7 @@ impl From<gfx::buffer::CreationError> for GameError {
 ///
 /// Unsets any active canvas.
 pub fn present(ctx: &mut Context) -> GameResult<()> {
+    ctx.gfx_context.ctx.draw();
     ctx.gfx_context.win_ctx.swap_buffers()?;
     Ok(())
 }
@@ -698,28 +699,13 @@ pub fn window(context: &Context) -> &glutin::window::Window {
     &gfx.win_ctx.window()
 }
 
+/// TODO: This is roughb ut works
+pub fn gl_context(context: &mut Context) -> &mut ggraphics::GlContext {
+    &mut context.gfx_context.ctx
+}
+
 
 /*
-
-
-/// Clear the screen to the background color.
-pub fn clear(ctx: &mut Context, color: Color) {
-    let gfx = &mut ctx.gfx_context;
-    let linear_color: types::LinearColor = color.into();
-    let c: [f32; 4] = linear_color.into();
-    gfx.encoder.clear_raw(&gfx.data.out, c.into());
-}
-
-/// Draws the given `Drawable` object to the screen by calling its
-/// [`draw()`](trait.Drawable.html#tymethod.draw) method.
-pub fn draw<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult
-where
-    D: Drawable,
-    T: Into<DrawParam>,
-{
-    let params = params.into();
-    drawable.draw(ctx, params)
-}
 
 
 /// Take a screenshot by outputting the current render surface
@@ -799,26 +785,6 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
 // GRAPHICS STATE
 // **********************************************************************
 
-/// Get the default filter mode for new images.
-pub fn default_filter(ctx: &Context) -> FilterMode {
-    let gfx = &ctx.gfx_context;
-    gfx.default_sampler_info.filter.into()
-}
-
-/// Returns a string that tells a little about the obtained rendering mode.
-/// It is supposed to be human-readable and will change; do not try to parse
-/// information out of it!
-pub fn renderer_info(ctx: &Context) -> GameResult<String> {
-    let backend_info = ctx.gfx_context.backend_spec.info(&*ctx.gfx_context.device);
-    Ok(format!(
-        "Requested {:?} {}.{} Core profile, actually got {}.",
-        ctx.gfx_context.backend_spec.api,
-        ctx.gfx_context.backend_spec.major,
-        ctx.gfx_context.backend_spec.minor,
-        backend_info
-    ))
-}
-
 /// Returns a rectangle defining the coordinate system of the screen.
 /// It will be `Rect { x: left, y: top, w: width, h: height }`
 ///
@@ -826,19 +792,6 @@ pub fn renderer_info(ctx: &Context) -> GameResult<String> {
 /// will be negative.
 pub fn screen_coordinates(ctx: &Context) -> Rect {
     ctx.gfx_context.screen_rect
-}
-
-/// Sets the default filter mode used to scale images.
-///
-/// This does not apply retroactively to already created images.
-pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
-    let gfx = &mut ctx.gfx_context;
-    let new_mode = mode.into();
-    let sampler_info = texture::SamplerInfo::new(new_mode, texture::WrapMode::Clamp);
-    // We create the sampler now so we don't end up creating it at some
-    // random-ass time while we're trying to draw stuff.
-    let _sampler = gfx.samplers.get_or_insert(sampler_info, &mut *gfx.factory);
-    gfx.default_sampler_info = sampler_info;
 }
 
 /// Sets the bounds of the screen viewport.
@@ -858,215 +811,7 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
     gfx.update_globals()
 }
 
-/// Sets the raw projection matrix to the given homogeneous
-/// transformation matrix.
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-pub fn set_projection<M>(context: &mut Context, proj: M)
-where
-    M: Into<mint::ColumnMatrix4<f32>>,
-{
-    let col_mat = proj.into();
-    let proj = Matrix4::from(mint::RowMatrix4::<f32>::from(col_mat));
-    let gfx = &mut context.gfx_context;
-    gfx.set_projection(proj);
-}
 
-/// Premultiplies the given transformation matrix with the current projection matrix
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-pub fn mul_projection<M>(context: &mut Context, transform: M)
-where
-    M: Into<mint::ColumnMatrix4<f32>>,
-{
-    let col_mat = transform.into();
-    let transform = Matrix4::from(mint::RowMatrix4::<f32>::from(col_mat));
-    let gfx = &mut context.gfx_context;
-    let curr = gfx.projection();
-    // TODO: Verify the order of this is correct.
-    gfx.set_projection(transform.post_transform(&curr));
-}
-
-/// Gets a copy of the context's raw projection matrix
-pub fn projection(context: &Context) -> mint::ColumnMatrix4<f32> {
-    let gfx = &context.gfx_context;
-    let row_mat: mint::RowMatrix4<f32> = gfx.projection().into();
-    let transform = mint::ColumnMatrix4::from(row_mat);
-    transform
-}
-
-/// Pushes a homogeneous transform matrix to the top of the transform
-/// (model) matrix stack of the `Context`. If no matrix is given, then
-/// pushes a copy of the current transform matrix to the top of the stack.
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-///
-/// A [`DrawParam`](struct.DrawParam.html) can be converted into an appropriate
-/// transform matrix by turning it into a [`DrawTransform`](struct.DrawTransform.html):
-///
-/// ```rust,no_run
-/// # use ggez::*;
-/// # use ggez::graphics::*;
-/// # fn main() {
-/// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
-/// let param = /* DrawParam building */
-/// #   DrawParam::new();
-/// let transform = param.to_matrix();
-/// graphics::push_transform(ctx, Some(transform));
-/// # }
-/// ```
-pub fn push_transform<M>(context: &mut Context, transform: Option<M>)
-where
-    M: Into<mint::ColumnMatrix4<f32>>,
-{
-    let gfx = &mut context.gfx_context;
-    if let Some(t) = transform {
-        let col_mat = t.into();
-        let row_mat = mint::RowMatrix4::<f32>::from(col_mat);
-        gfx.push_transform(row_mat.into());
-    } else {
-        let copy = *gfx
-            .modelview_stack
-            .last()
-            .expect("Matrix stack empty, should never happen");
-        gfx.push_transform(copy);
-    }
-}
-
-/// Pops the transform matrix off the top of the transform
-/// (model) matrix stack of the `Context`.
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-pub fn pop_transform(context: &mut Context) {
-    let gfx = &mut context.gfx_context;
-    gfx.pop_transform();
-}
-
-/// Sets the current model transformation to the given homogeneous
-/// transformation matrix.
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-///
-/// A [`DrawParam`](struct.DrawParam.html) can be converted into an appropriate
-/// transform matrix with `DrawParam::to_matrix()`.
-/// ```rust,no_run
-/// # use ggez::*;
-/// # use ggez::graphics::*;
-/// # fn main() {
-/// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
-/// let param = /* DrawParam building */
-/// #   DrawParam::new();
-/// let transform = param.to_matrix();
-/// graphics::set_transform(ctx, transform);
-/// # }
-/// ```
-pub fn set_transform<M>(context: &mut Context, transform: M)
-where
-    M: Into<mint::ColumnMatrix4<f32>>,
-{
-    let transform = transform.into();
-    let row_mat: mint::RowMatrix4<f32> = transform.into();
-    let gfx = &mut context.gfx_context;
-    gfx.set_transform(Matrix4::from(row_mat));
-}
-
-/// Gets a copy of the context's current transform matrix
-pub fn transform(context: &Context) -> mint::ColumnMatrix4<f32> {
-    let gfx = &context.gfx_context;
-    let row_mat: mint::RowMatrix4<f32> = gfx.transform().into();
-    let col_mat: mint::ColumnMatrix4<f32> = row_mat.into();
-    col_mat
-}
-
-/// Premultiplies the given transform with the current model transform.
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-///
-/// A [`DrawParam`](struct.DrawParam.html) can be converted into an appropriate
-/// transform matrix by turning it into a [`DrawTransform`](struct.DrawTransform.html):
-///
-/// ```rust,no_run
-/// # use ggez::nalgebra as na;
-/// # use ggez::*;
-/// # use ggez::graphics::*;
-/// # fn main() {
-/// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
-/// let param = /* DrawParam building */
-/// #   DrawParam::new();
-/// let transform = param.to_matrix();
-/// graphics::mul_transform(ctx, transform);
-/// # }
-/// ```
-pub fn mul_transform<M>(context: &mut Context, transform: M)
-where
-    M: Into<mint::ColumnMatrix4<f32>>,
-{
-    let col_mat = transform.into();
-    let row_mat: mint::RowMatrix4<f32> = col_mat.into();
-    let transform = Matrix4::from(row_mat);
-    let gfx = &mut context.gfx_context;
-    let curr = gfx.transform();
-    // TODO: Verify this is the right bloody way around
-    gfx.set_transform(curr.post_transform(&transform));
-}
-
-/// Sets the current model transform to the origin transform (no transformation)
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-pub fn origin(context: &mut Context) {
-    let gfx = &mut context.gfx_context;
-    gfx.set_transform(Matrix4::identity());
-}
-
-/// Calculates the new total transformation (Model-View-Projection) matrix
-/// based on the matrices at the top of the transform and view matrix stacks
-/// and sends it to the graphics card.
-pub fn apply_transformations(context: &mut Context) -> GameResult {
-    let gfx = &mut context.gfx_context;
-    gfx.calculate_transform_matrix();
-    gfx.update_globals()
-}
-
-/// Sets the blend mode of the currently active shader program
-pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
-    ctx.gfx_context.set_blend_mode(mode)
-}
-
-
-/// All types that can be drawn on the screen implement the `Drawable` trait.
-pub trait Drawable {
-    /// Draws the drawable onto the rendering target.
-    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult;
-
-    /// Returns a bounding box in the form of a `Rect`.
-    ///
-    /// It returns `Option` because some `Drawable`s may have no bounding box
-    /// (an empty `SpriteBatch` for example).
-    fn dimensions(&self, ctx: &mut Context) -> Option<Rect>;
-
-    /// Sets the blend mode to be used when drawing this drawable.
-    /// This overrides the general [`graphics::set_blend_mode()`](fn.set_blend_mode.html).
-    /// If `None` is set, defers to the blend mode set by
-    /// `graphics::set_blend_mode()`.
-    fn set_blend_mode(&mut self, mode: Option<BlendMode>);
-
-    /// Gets the blend mode to be used when drawing this drawable.
-    fn blend_mode(&self) -> Option<BlendMode>;
-}
 
 /// Applies `DrawParam` to `Rect`.
 pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {

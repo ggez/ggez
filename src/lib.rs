@@ -99,8 +99,9 @@ extern crate serde_derive;
 #[macro_use]
 extern crate smart_default;
 
-pub extern crate glam;
-pub extern crate mint;
+pub use glam;
+pub use mint;
+pub use ggraphics;
 
 pub mod audio;
 pub mod conf;
