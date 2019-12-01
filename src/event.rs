@@ -158,29 +158,33 @@ where
     S: EventHandler + 'static,
 {
     use crate::input::{keyboard, mouse};
+    use glutin::event_loop::ControlFlow;
 
     let mut ctx = ctx;
     let mut events_loop = events_loop;
     let mut state = state;
-    events_loop.run(move |event, _, _control_flow| {
+    events_loop.run(move |event, _, control_flow| {
         let ctx = &mut ctx;
         let state = &mut state;
+        
+        *control_flow = ControlFlow::Wait;
         // If you are writing your own event loop, make sure
         // you include `timer_context.tick()` and
         // `ctx.process_event()` calls.  These update ggez's
         // internal state however necessary.
         ctx.timer_context.tick();
         //events_loop.poll_events(|event| {
+        // TODO: Think more about run_return and associated junk.
         ctx.process_event(&event);
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(logical_size) => {
-                    // let actual_size = logical_size;
                     state.resize_event(ctx, logical_size.width as f32, logical_size.height as f32);
                 }
                 WindowEvent::CloseRequested => {
                     if !state.quit_event(ctx) {
                         quit(ctx);
+                        *control_flow = ControlFlow::Exit;
                     }
                 }
                 WindowEvent::Focused(gained) => {
@@ -243,9 +247,15 @@ where
                     let delta = mouse::delta(ctx);
                     state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                 }
+                WindowEvent::RedrawRequested => {
+                    state.draw(ctx).expect("TODO");
+                }
                 _x => {
                     // trace!("ignoring window event {:?}", x);
                 }
+            },
+            Event::EventsCleared => {
+                state.update(ctx).expect("TODO");
             },
             Event::DeviceEvent { event, .. } => match event {
                 _ => (),
@@ -269,8 +279,6 @@ where
                 }
             }
             //}
-            state.update(ctx).expect("TODO");
-            state.draw(ctx).expect("TODO");
         }
     });
 }

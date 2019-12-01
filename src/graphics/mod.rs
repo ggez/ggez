@@ -524,10 +524,22 @@ impl From<gfx::buffer::CreationError> for GameError {
         }
     }
 }
-
+*/
 // **********************************************************************
 // DRAWING
 // **********************************************************************
+
+/// Tells the graphics system to actually put everything on the screen.
+/// Call this at the end of your [`EventHandler`](../event/trait.EventHandler.html)'s
+/// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) method.
+///
+/// Unsets any active canvas.
+pub fn present(ctx: &mut Context) -> GameResult<()> {
+    ctx.gfx_context.win_ctx.swap_buffers()?;
+    Ok(())
+}
+/*
+
 
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context, color: Color) {
@@ -548,23 +560,6 @@ where
     drawable.draw(ctx, params)
 }
 
-/// Tells the graphics system to actually put everything on the screen.
-/// Call this at the end of your [`EventHandler`](../event/trait.EventHandler.html)'s
-/// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) method.
-///
-/// Unsets any active canvas.
-pub fn present(ctx: &mut Context) -> GameResult<()> {
-    let gfx = &mut ctx.gfx_context;
-    gfx.data.out = gfx.screen_render_target.clone();
-    // We might want to give the user more control over when the
-    // encoder gets flushed eventually, if we want them to be able
-    // to do their own gfx drawing.  HOWEVER, the whole pipeline type
-    // thing is a bigger hurdle, so this is fine for now.
-    gfx.encoder.flush(&mut *gfx.device);
-    gfx.window.swap_buffers()?;
-    gfx.device.cleanup();
-    Ok(())
-}
 
 /// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to an `Image`.

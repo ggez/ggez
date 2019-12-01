@@ -36,8 +36,8 @@ impl event::EventHandler for MainState {
         )?;
         graphics::draw(ctx, &circle, (na::Point2::new(self.pos_x, 380.0),))?;
 
-        graphics::present(ctx)?;
         */
+        graphics::present(ctx)?;
         Ok(())
     }
 }

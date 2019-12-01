@@ -91,13 +91,13 @@ impl Context {
         // };
         let audio_context = Box::new(audio::NullAudioContext::default());
         let timer_context = timer::TimeContext::new();
+        // TODO: Refactor and make this web-y.
         let (gl, event_loop, windowed_context) = {
             let el = glutin::event_loop::EventLoop::new();
             let wb = glutin::window::WindowBuilder::new()
                 .with_title("Hello triangle!")
                 .with_inner_size(glutin::dpi::LogicalSize::new(800.0, 600.0));
             let windowed_context = glutin::ContextBuilder::new()
-                //.with_gl(glutin::GlRequest::Latest)
                 .with_gl(glutin::GlRequest::GlThenGles {
                     opengl_version: (4, 3),
                     opengles_version: (3, 0),
@@ -106,8 +106,9 @@ impl Context {
                 .with_vsync(true)
                 .build_windowed(wb, &el)
                 .unwrap();
+            // This is unsafe for some reason but since we're single-threaded apparently things are
+            // always gonna be okay.
             let windowed_context = unsafe {
-                // TODO: Does this need to be unsafe?
                 windowed_context.make_current().unwrap()
             };
             let context = glow::Context::from_loader_function(|s| {
@@ -117,16 +118,6 @@ impl Context {
         };
 
         let graphics_context = graphics::GraphicsContext::new(gl, windowed_context);
-        /* TODO
-        let graphics_context = graphics::context::GraphicsContext::new(
-            &mut fs,
-            &events_loop,
-            &conf.window_setup,
-            conf.window_mode,
-            backend_spec,
-            debug_id,
-        )?;
-        */
         let mouse_context = mouse::MouseContext::new();
         let keyboard_context = keyboard::KeyboardContext::new();
         let gamepad_context: Box<dyn gamepad::GamepadContext> = if conf.modules.gamepad {
@@ -165,8 +156,6 @@ impl Context {
                 glutin_event::WindowEvent::Resized(logical_size) => {
                     let hidpi_factor = self.gfx_context.win_ctx.window().hidpi_factor();
                     let physical_size = logical_size.to_physical(hidpi_factor as f64);
-                    // TODO
-                    //self.gfx_context.window.window().resize(physical_size);
                     use crate::graphics::WindowTrait;
                     self.gfx_context.win_ctx.resize_viewport();
                 }

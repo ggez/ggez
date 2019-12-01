@@ -13,10 +13,6 @@ pub(crate) type Vector3 = glam::Vec3;
 /// A 4 dimensional matrix representing an arbitrary 3d transformation
 pub(crate) type Matrix4 = glam::Mat4;
 
-/// TODO: Should be in ggraphics
-#[derive(Copy, Clone, PartialEq, Debug, Default)]
-pub struct BlendMode {}
-
 /// A simple 2D rectangle.
 ///
 /// The origin of the rectangle is at the top-left,
