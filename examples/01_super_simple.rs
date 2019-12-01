@@ -3,7 +3,6 @@
 use ggez;
 use ggez::event;
 use ggez::graphics;
-use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
 
 struct MainState {
@@ -24,6 +23,7 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        /*
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         let circle = graphics::Mesh::new_circle(
@@ -37,13 +37,14 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &circle, (na::Point2::new(self.pos_x, 380.0),))?;
 
         graphics::present(ctx)?;
+        */
         Ok(())
     }
 }
 
 pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("super_simple", "ggez");
-    let (ctx, event_loop) = &mut cb.build()?;
-    let state = &mut MainState::new()?;
+    let (ctx, event_loop) = cb.build()?;
+    let state = MainState::new()?;
     event::run(ctx, event_loop, state)
 }

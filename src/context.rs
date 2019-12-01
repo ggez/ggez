@@ -81,14 +81,16 @@ impl Context {
         mut fs: Filesystem,
     ) -> GameResult<(Context, glutin::event_loop::EventLoop<()>)> {
         let debug_id = DebugId::new();
-        let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
-            Box::new(audio::RodioAudioContext::new()?)
-        } else {
-            Box::new(audio::NullAudioContext::default())
-        };
-        let events_loop = glutin::event_loop::EventLoop::new();
+        // TODO BUGGO https://github.com/rust-windowing/winit/issues/1255
+        // Also https://github.com/rust-windowing/winit/pull/1260#pullrequestreview-324846105
+        // Summary: AAAAAAAAAAAAA
+        // let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
+        //     Box::new(audio::RodioAudioContext::new()?)
+        // } else {
+        //     Box::new(audio::NullAudioContext::default())
+        // };
+        let audio_context = Box::new(audio::NullAudioContext::default());
         let timer_context = timer::TimeContext::new();
-        //let backend_spec = graphics::GlBackendSpec::from(conf.}backend);
         let (gl, event_loop, windowed_context) = {
             let el = glutin::event_loop::EventLoop::new();
             let wb = glutin::window::WindowBuilder::new()
@@ -147,7 +149,7 @@ impl Context {
             debug_id,
         };
 
-        Ok((ctx, events_loop))
+        Ok((ctx, event_loop))
     }
 
     // TODO LATER: This should be a function in `ggez::event`, per the
