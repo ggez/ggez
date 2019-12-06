@@ -4,10 +4,10 @@ A small, swift 2D graphics rendering library written in Rust.
 
 Currently, this is essentially an implmentation detail of
 [`ggez`](https://ggez.rs/).  It's not really *designed* to be
-used as a general-purpose thing, but other people may be interested
-in it (ie, other people making 2D games or game engines in Rust)
-but want to otherwise make different design decisions than `ggez` does.
-So, here it is.
+used as a general-purpose renderer, the crate separation between
+ggez and ggraphics is mostly a matter of API convenience.
+But other people making 2D games or game engines in Rust
+may be interested in it, so, here it is.
 
 # Design
 
