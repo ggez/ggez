@@ -26,12 +26,19 @@ maintenance = { status = "passively-maintained" }
 name = "ggez"
 path = "src/lib.rs"
 
+[profile.dev]
+# Useful for making smaller wasm binaries
+opt-level = "s"
+
 [features]
 default = ["c_dependencies"]
 bzip2 = ["zip/bzip2"]
 mp3 = ["rodio/mp3"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 c_dependencies = ["bzip2", "mp3"]
+
+[workspace]
+members = ["ggraphics"]
 
 [dependencies]
 bitflags = "1"
@@ -42,7 +49,7 @@ glutin = "0.22.0-alpha5"
 glow = "0.3.0-alpha4"
 image = {version = "0.22", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
-rodio = { version = "0.9", default-features = false, features = ["flac", "vorbis", "wav"] }
+rodio = { version = "0.10", default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
 serde_derive = "1"
 toml = "0.5"
@@ -54,7 +61,7 @@ glam = {version = "0.8", features = ["mint"] }
 mint = "0.5"
 gilrs = "0.7"
 approx = "0.3"
-ggraphics = "0.0.1"
+ggraphics = { path = "ggraphics", version = "0.0.2" }
 
 [dev-dependencies]
 chrono = "0.4"
@@ -64,7 +71,7 @@ structopt = "0.3"
 cgmath = { version = "0.17", features = ["mint"]}
 skeptic = "0.13"
 getrandom = "0.1"
-nalgebra = {version = "0.18", features = ["mint"] }
+nalgebra = {version = "0.19", features = ["mint"] }
 
 [build-dependencies]
 skeptic = "0.13"
