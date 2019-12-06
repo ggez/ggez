@@ -19,7 +19,7 @@
 // audit unsafes, figure out what can be safe,
 
 #![deny(missing_docs)]
-//#![deny(missing_debug_implementations)]
+#![deny(missing_debug_implementations)]
 #![deny(unused_results)]
 #![warn(bare_trait_objects)]
 #![warn(missing_copy_implementations)]

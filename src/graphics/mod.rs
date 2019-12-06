@@ -21,7 +21,7 @@ use std::fmt;
 use std::path::Path;
 use std::u16;
 
-use ggraphics;
+use ggraphics as gg;
 use glutin;
 
 use crate::conf;
@@ -33,37 +33,35 @@ use crate::GameResult;
 
 pub(crate) mod drawparam;
 //pub(crate) mod mesh;
+pub(crate) mod image;
 pub(crate) mod types;
 
 pub use crate::graphics::drawparam::*;
+pub use crate::graphics::image::*;
 //pub use crate::graphics::mesh::*;
 pub use crate::graphics::types::*;
 
-pub type Image = ggraphics::Texture;
+pub type Image = gg::Texture;
 
 pub type WindowCtx = glutin::WindowedContext<glutin::PossiblyCurrent>;
 
-pub use ggraphics::FilterMode;
-pub use ggraphics::WrapMode;
-
 pub(crate) struct GraphicsContext {
     // TODO: OMG these names
-    pub(crate) ctx: ggraphics::GlContext,
+    pub(crate) ctx: gg::GlContext,
     pub(crate) win_ctx: WindowCtx,
 }
 
 impl GraphicsContext {
     /// TODO: re-export glow from ggraphics
     pub(crate) fn new(gl: glow::Context, win_ctx: WindowCtx) -> Self {
-        let ctx = ggraphics::GlContext::new(gl);
+        let ctx = gg::GlContext::new(gl);
         Self { ctx, win_ctx }
     }
 
-    
     /// Sets window mode from a WindowMode object.
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
-        use glutin::dpi;
         use crate::conf::FullscreenType;
+        use glutin::dpi;
         let window = self.win_ctx.window();
 
         window.set_maximized(mode.maximized);
@@ -578,6 +576,20 @@ impl From<gfx::buffer::CreationError> for GameError {
 // DRAWING
 // **********************************************************************
 
+#[derive(Debug)]
+pub struct ScreenRenderPass {
+    pub(crate) pass: gg::RenderPass,
+}
+
+/// Returns the final render pass that will draw to the screen.
+pub fn screen_render_pass(ctx: &mut Context) -> ScreenRenderPass {
+    let gl = gl_context_mut(ctx);
+    unsafe {
+        let screen_pass = gg::RenderPass::new_screen(gl, 800, 600, (0.1, 0.2, 0.3, 1.0));
+        ScreenRenderPass { pass: screen_pass }
+    }
+}
+
 /// Tells the graphics system to actually put everything on the screen.
 /// Call this at the end of your [`EventHandler`](../event/trait.EventHandler.html)'s
 /// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) method.
@@ -588,7 +600,6 @@ pub fn present(ctx: &mut Context) -> GameResult<()> {
     ctx.gfx_context.win_ctx.swap_buffers()?;
     Ok(())
 }
-
 
 // **********************************************************************
 // GRAPHICS STATE
@@ -608,7 +619,6 @@ pub fn renderer_info(ctx: &Context) -> GameResult<String> {
         vend, rend, vers, shader_vers
     ))
 }
-
 
 /// Sets the window mode, such as the size and other properties.
 ///
@@ -651,9 +661,7 @@ pub fn set_window_title(context: &Context, title: &str) {
 /// Returns zeros if the window doesn't exist.
 pub fn size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
-    let size = gfx.win_ctx
-        .window()
-        .outer_size();
+    let size = gfx.win_ctx.window().outer_size();
     (size.width as f32, size.height as f32)
 }
 
@@ -661,9 +669,7 @@ pub fn size(context: &Context) -> (f32, f32) {
 /// Returns zeros if window doesn't exist.
 pub fn drawable_size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
-    let size = gfx.win_ctx
-        .window()
-        .inner_size();
+    let size = gfx.win_ctx.window().inner_size();
     (size.width as f32, size.height as f32)
 }
 
@@ -689,7 +695,6 @@ pub fn set_resizable(context: &mut Context, resizable: bool) -> GameResult {
     set_mode(context, window_mode)
 }
 
-
 /// Returns a reference to the Glutin window.
 /// Ideally you should not need to use this because ggez
 /// would provide all the functions you need without having
@@ -700,10 +705,14 @@ pub fn window(context: &Context) -> &glutin::window::Window {
 }
 
 /// TODO: This is roughb ut works
-pub fn gl_context(context: &mut Context) -> &mut ggraphics::GlContext {
-    &mut context.gfx_context.ctx
+pub fn gl_context(context: &Context) -> &gg::GlContext {
+    &context.gfx_context.ctx
 }
 
+/// TODO: This is roughb ut works
+pub fn gl_context_mut(context: &mut Context) -> &mut gg::GlContext {
+    &mut context.gfx_context.ctx
+}
 
 /*
 

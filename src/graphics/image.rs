@@ -1,11 +1,105 @@
 use std::io::Read;
 use std::path;
 
-use gfx;
+use crate::graphics;
+use crate::*;
+
+// rustfmt plz stop hecking this up
 #[rustfmt::skip]
 use ::image;
 
+use ggraphics as gg;
+
+/// In-GPU-memory image data available to be drawn on the screen.
+///
+/// Under the hood this is just an `Arc`'ed texture handle and
+/// some metadata, so cloning it is fairly cheap; it doesn't
+/// make another copy of the underlying image data.
+pub struct Image {
+    pub(crate) texture: gg::Texture,
+    pub(crate) width: usize,
+    pub(crate) height: usize,
+}
+
+impl Image {
+    pub fn from_rgba(
+        ctx: &Context,
+        width: usize,
+        height: usize,
+        rgba_bytes: &[u8],
+    ) -> GameResult<Self> {
+        let gl = graphics::gl_context(ctx);
+        let texture = ggraphics::TextureHandle::new(gl, &rgba_bytes, width, height).into_shared();
+        Ok(Self {
+            texture,
+            width,
+            height,
+        })
+    }
+
+    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+        let img = {
+            let mut buf = Vec::new();
+            let mut reader = context.filesystem.open(path)?;
+            let _ = reader.read_to_end(&mut buf)?;
+            image::load_from_memory(&buf)?.to_rgba()
+        };
+        let (width, height) = img.dimensions();
+        let image_rgba_bytes = img.into_raw();
+        Self::from_rgba(context, width as usize, height as usize, &image_rgba_bytes)
+    }
+
+    /// Return the width of the image.
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    /// Return the height of the image.
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    /// Returns the dimensions of the image.
+    ///
+    /// TODO: Panics if the dimensions do not fit into f32's
+    pub fn dimensions(&self) -> graphics::Rect {
+        assert!(self.width < (std::f32::MAX as usize));
+        assert!(self.height < (std::f32::MAX as usize));
+        graphics::Rect::new(0.0, 0.0, self.width() as f32, self.height() as f32)
+    }
+}
+
+/// A `Sampler` is a structure that specifies the details about how
+/// a texture is interpreted by the GPU, such as how values "between"
+/// pixels are interpolated or how to treat values read off the "edge"
+/// of the texture.
+#[derive(Debug, Copy, Clone)]
+pub struct Sampler {
+    // TODO: Can we just use gg::SamplerSpec directly?
+    pub(crate) sampler_spec: gg::SamplerSpec,
+}
+
+pub use gg::FilterMode;
+pub use gg::WrapMode;
+
+impl Sampler {
+    /// Shortcut for creating a new `SamplerSpec`.
+    pub fn new(min: FilterMode, mag: FilterMode, wrap: WrapMode) -> Self {
+        Self {
+            sampler_spec: gg::SamplerSpec::new(min, mag, wrap),
+        }
+    }
+}
+
+impl Default for Sampler {
+    fn default() -> Self {
+        Self::new(FilterMode::Nearest, FilterMode::Nearest, WrapMode::Tile)
+    }
+}
+
+/*
 use crate::context::{Context, DebugId};
+use crate::graphics;
 use crate::error::GameError;
 use crate::error::GameResult;
 use crate::filesystem;
@@ -282,6 +376,16 @@ impl Image {
     pub fn set_filter(&mut self, mode: FilterMode) {
         self.sampler_info.filter = mode.into();
     }
+    /// Return the width of the image.
+    pub fn width(&self) -> u16 {
+        self.width
+    }
+
+    /// Return the height of the image.
+    pub fn height(&self) -> u16 {
+        self.height
+    }
+
 
     /// Returns the dimensions of the image.
     pub fn dimensions(&self) -> Rect {
@@ -371,6 +475,7 @@ impl Drawable for Image {
         self.blend_mode
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {
