@@ -38,9 +38,12 @@ multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 c_dependencies = ["bzip2", "mp3"]
 
 [workspace]
-members = ["ggraphics"]
+members = ["ggraphics", "gvfs"]
 
 [dependencies]
+ggraphics = { path = "ggraphics", version = "0.0.2" }
+gvfs = { path = "gvfs", version = "0.1" }
+
 bitflags = "1"
 zip = { version = "0.5", default-features = false }
 directories = "2"
@@ -61,7 +64,6 @@ glam = {version = "0.8", features = ["mint"] }
 mint = "0.5"
 gilrs = "0.7"
 approx = "0.3"
-ggraphics = { path = "ggraphics", version = "0.0.2" }
 
 [dev-dependencies]
 chrono = "0.4"
