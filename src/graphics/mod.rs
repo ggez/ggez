@@ -15,11 +15,11 @@
 //! of magnitude more efficient than individual
 //! draw calls.
 
-use std::collections::HashMap;
+// use std::collections::HashMap;
 use std::convert::From;
-use std::fmt;
-use std::path::Path;
-use std::u16;
+// use std::fmt;
+// use std::path::Path;
+// use std::u16;
 
 use ggraphics as gg;
 use glutin;
@@ -28,7 +28,7 @@ use crate::conf;
 use crate::conf::WindowMode;
 use crate::context::Context;
 use crate::context::DebugId;
-use crate::GameError;
+// use crate::GameError;
 use crate::GameResult;
 
 pub(crate) mod drawparam;
@@ -61,7 +61,7 @@ impl GraphicsContext {
     /// Sets window mode from a WindowMode object.
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
         use crate::conf::FullscreenType;
-        use glutin::dpi;
+        // use glutin::dpi;
         let window = self.win_ctx.window();
 
         window.set_maximized(mode.maximized);

@@ -52,6 +52,7 @@ type GlUniformLocation = <Context as glow::HasContext>::UniformLocation;
 /// and handling events on both desktop and web.
 /// Anything it contains is specialized to the correct type via cfg flags
 /// at compile time, rather than trying to use generics or such.
+#[derive(Debug)]
 pub struct GlContext {
     /// The OpenGL context.
     pub gl: Rc<glow::Context>,
@@ -64,6 +65,7 @@ pub struct GlContext {
     samplers: HashMap<SamplerSpec, GlSampler>,
     quad_shader: Shader,
 }
+
 
 fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [[f32; 4]; 4] {
     let c0r0 = 2.0 / (right - left);
@@ -962,6 +964,7 @@ impl DrawCall for MeshDrawCall {
 }
 
 /// A pipeline for drawing quads.
+#[derive(Debug)]
 pub struct QuadPipeline {
     /// The draw calls in the pipeline.
     pub drawcalls: Vec<QuadDrawCall>,
@@ -1004,7 +1007,7 @@ impl QuadPipeline {
 
 /// TODO: Docs
 /// hnyrn
-pub trait Pipeline {
+pub trait Pipeline : std::fmt::Debug {
     /// foo
     unsafe fn draw(&mut self, gl: &Context);
     /// foo
@@ -1028,11 +1031,12 @@ pub trait Pipeline {
 
 /// aaaaa
 /// TODO: Docs
-pub struct PipelineIter<'a> {
+#[derive(Debug)]
+pub struct QuadPipelineIter<'a> {
     i: std::slice::Iter<'a, QuadDrawCall>,
 }
 
-impl<'a> PipelineIter<'a> {
+impl<'a> QuadPipelineIter<'a> {
     /// TODO: Docs
     pub fn new(p: &'a QuadPipeline) -> Self {
         Self {
@@ -1041,7 +1045,7 @@ impl<'a> PipelineIter<'a> {
     }
 }
 
-impl<'a> Iterator for PipelineIter<'a> {
+impl<'a> Iterator for QuadPipelineIter<'a> {
     type Item = &'a dyn DrawCall;
     fn next(&mut self) -> Option<Self::Item> {
         self.i.next().map(|x| x as _)
@@ -1050,11 +1054,12 @@ impl<'a> Iterator for PipelineIter<'a> {
 
 /// Sigh
 /// TODO: Docs
-pub struct PipelineIterMut<'a> {
+#[derive(Debug)]
+pub struct QuadPipelineIterMut<'a> {
     i: std::slice::IterMut<'a, QuadDrawCall>,
 }
 
-impl<'a> PipelineIterMut<'a> {
+impl<'a> QuadPipelineIterMut<'a> {
     /// TODO: Docs
     pub fn new(p: &'a mut QuadPipeline) -> Self {
         Self {
@@ -1063,7 +1068,7 @@ impl<'a> PipelineIterMut<'a> {
     }
 }
 
-impl<'a> Iterator for PipelineIterMut<'a> {
+impl<'a> Iterator for QuadPipelineIterMut<'a> {
     type Item = &'a mut dyn DrawCall;
     fn next(&mut self) -> Option<Self::Item> {
         self.i.next().map(|x| x as _)
@@ -1099,17 +1104,18 @@ impl Pipeline for QuadPipeline {
     }
 
     fn drawcalls<'a>(&'a self) -> Box<dyn Iterator<Item = &'a dyn DrawCall> + 'a> {
-        let i = PipelineIter::new(self);
+        let i = QuadPipelineIter::new(self);
         Box::new(i)
     }
 
     fn drawcalls_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = &'a mut dyn DrawCall> + 'a> {
-        let i = PipelineIterMut::new(self);
+        let i = QuadPipelineIterMut::new(self);
         Box::new(i)
     }
 }
 
 /// A pipeline for drawing quads.
+#[derive(Debug)]
 pub struct MeshPipeline {
     /// The draw calls in the pipeline.
     pub drawcalls: Vec<MeshDrawCall>,
@@ -1152,6 +1158,7 @@ impl MeshPipeline {
 
 /// aaaaa
 /// TODO: Docs
+#[derive(Debug)]
 pub struct MeshPipelineIter<'a> {
     i: std::slice::Iter<'a, MeshDrawCall>,
 }
@@ -1174,6 +1181,7 @@ impl<'a> Iterator for MeshPipelineIter<'a> {
 
 /// Sigh
 /// TODO: Docs
+#[derive(Debug)]
 pub struct MeshPipelineIterMut<'a> {
     i: std::slice::IterMut<'a, MeshDrawCall>,
 }
@@ -1363,6 +1371,7 @@ impl RenderTarget {
 /// Currently, no input framebuffers or such.
 /// We're not actually intending to reproduce Rendy's Graph type here.
 /// This may eventually feed into a bounce buffer or such though.
+#[derive(Debug)]
 pub struct RenderPass {
     target: RenderTarget,
     clear_color: (f32, f32, f32, f32),

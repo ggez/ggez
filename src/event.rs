@@ -161,7 +161,7 @@ where
     use glutin::event_loop::ControlFlow;
 
     let mut ctx = ctx;
-    let mut events_loop = events_loop;
+    let events_loop = events_loop;
     let mut state = state;
     events_loop.run(move |event, _, control_flow| {
         let ctx = &mut ctx;
