@@ -231,7 +231,16 @@ impl From<Rect> for [f32; 4] {
 
 /// A RGBA color in the `sRGB` color space represented as `f32`'s in the range `[0.0-1.0]`
 ///
-/// For convenience, [`WHITE`](constant.WHITE.html) and [`BLACK`](constant.BLACK.html) are provided.
+/// For convenience, several colors are provided:
+/// [`WHITE`](constant.WHITE.html)
+/// [`BLACK`](constant.BLACK.html)
+/// [`RED`](constant.RED.html)
+/// [`GREEN`](constant.GREEN.html)
+/// [`BLUE`](constant.BLUE.html)
+/// [`CYAN`](constant.CYAN.html)
+/// [`MAGENTA`](constant.MAGENTA.html)
+/// [`YELLOW`](constant.YELLOW.html)
+
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Color {
     /// Red component
@@ -256,6 +265,54 @@ pub const WHITE: Color = Color {
 pub const BLACK: Color = Color {
     r: 0.0,
     g: 0.0,
+    b: 0.0,
+    a: 1.0,
+};
+
+/// Red
+pub const RED: Color = Color {
+    r: 1.0,
+    g: 0.0,
+    b: 0.0,
+    a: 1.0,
+};
+
+/// Green
+pub const GREEN: Color = Color {
+    r: 0.0,
+    g: 1.0,
+    b: 0.0,
+    a: 1.0,
+};
+
+/// Blue
+pub const BLUE: Color = Color {
+    r: 0.0,
+    g: 0.0,
+    b: 1.0,
+    a: 1.0,
+};
+
+/// Cyan
+pub const CYAN: Color = Color {
+    r: 0.0,
+    g: 1.0,
+    b: 1.0,
+    a: 1.0,
+};
+
+/// Magenta
+pub const MAGENTA: Color = Color {
+    r: 1.0,
+    g: 0.0,
+    b: 1.0,
+    a: 1.0,
+};
+
+/// Yellow
+pub const YELLOW: Color = Color {
+    r: 1.0,
+    g: 1.0,
     b: 0.0,
     a: 1.0,
 };
