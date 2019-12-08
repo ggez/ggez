@@ -7,6 +7,7 @@ submit a PR, please!
 
  * <https://github.com/ozkriff/zemeroth>
  * Le Train Dispatcher: <https://athorus.itch.io/ltd>
+ * <https://github.com/Piripant/sudoku>
 
 # 0.4.x
 
