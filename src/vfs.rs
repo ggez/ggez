@@ -537,7 +537,9 @@ trait ZipArchiveAccess {
 
 impl<T: Read + Seek> ZipArchiveAccess for zip::ZipArchive<T> {
     fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile> {
-        self.by_name(name)
+        let filename = sanitize_path(Path::new(name))
+            .unwrap_or(PathBuf::from(&name));
+        self.by_name(filename.to_str().unwrap_or(name))
     }
 
     fn by_index(&mut self, file_number: usize) -> zip::result::ZipResult<zip::read::ZipFile> {
