@@ -1,4 +1,4 @@
-use glow;
+use ggraphics::glow;
 /// We re-export winit so it's easy for people to use the same version as we are
 /// without having to mess around figuring it out.
 pub use glutin;
@@ -108,9 +108,7 @@ impl Context {
                 .unwrap();
             // This is unsafe for some reason but since we're single-threaded apparently things are
             // always gonna be okay.
-            let windowed_context = unsafe {
-                windowed_context.make_current().unwrap()
-            };
+            let windowed_context = unsafe { windowed_context.make_current().unwrap() };
             let context = glow::Context::from_loader_function(|s| {
                 windowed_context.get_proc_address(s) as *const _
             });

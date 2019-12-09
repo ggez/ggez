@@ -2,8 +2,8 @@
 
 use ggez;
 use ggez::event;
-use ggez::graphics;
 use ggez::ggraphics;
+use ggez::graphics;
 use ggez::{Context, GameResult};
 use image;
 
@@ -16,23 +16,35 @@ impl MainState {
         let s = MainState { pos_x: 0.0 };
 
         use ggraphics::Pipeline;
-        let gl = graphics::gl_context(ctx);
+        let gl = graphics::gl_context_mut(ctx);
         unsafe {
             let particle_texture = {
                 let image_bytes = include_bytes!("../resources/player.png");
                 let image_rgba = image::load_from_memory(image_bytes).unwrap().to_rgba();
                 let (w, h) = image_rgba.dimensions();
                 let image_rgba_bytes = image_rgba.into_raw();
-                ggraphics::TextureHandle::new(gl, &image_rgba_bytes, w as usize, h as usize).into_shared()
+                ggraphics::TextureHandle::new(gl, &image_rgba_bytes, w as usize, h as usize)
+                    .into_shared()
             };
             // Render that texture to the screen
-            let mut screen_pass = ggraphics::RenderPass::new_screen(gl, 800, 600, (0.1, 0.2, 0.3, 1.0));
             let shader = gl.default_shader();
+            graphics::screen_render_pass(ctx, |mut pass| {
+                pass.quad_pipeline(ctx, shader, |mut pipe| {
+                    /*
+                    let dc =
+                        pipe.new_drawcall(gl, particle_texture, ggraphics::SamplerSpec::default());
+                    dc.add(ggraphics::QuadData::empty());
+                    */
+                });
+            });
+            /*
+            let mut screen_pass = ggraphics::RenderPass::new_screen(gl, 800, 600, (0.1, 0.2, 0.3, 1.0));
             let mut pipeline = ggraphics::QuadPipeline::new(&gl, shader);
             let dc = pipeline.new_drawcall(gl, particle_texture, ggraphics::SamplerSpec::default());
             dc.add(ggraphics::QuadData::empty());
             screen_pass.add_pipeline(pipeline);
             gl.passes.push(screen_pass);
+            */
         }
         Ok(s)
     }

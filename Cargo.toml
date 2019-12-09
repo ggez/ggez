@@ -49,7 +49,6 @@ zip = { version = "0.5", default-features = false }
 directories = "2"
 glyph_brush = "0.6"
 glutin = "0.22.0-alpha5"
-glow = "0.3.0-alpha4"
 image = {version = "0.22", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
 rodio = { version = "0.10", default-features = false, features = ["flac", "vorbis", "wav"] }

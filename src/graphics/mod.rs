@@ -27,7 +27,7 @@ use glutin;
 use crate::conf;
 use crate::conf::WindowMode;
 use crate::context::Context;
-use crate::context::DebugId;
+//use crate::context::DebugId;
 // use crate::GameError;
 use crate::GameResult;
 
@@ -49,13 +49,26 @@ pub(crate) struct GraphicsContext {
     // TODO: OMG these names
     pub(crate) ctx: gg::GlContext,
     pub(crate) win_ctx: WindowCtx,
+    pub(crate) screen_pass: gg::RenderPass,
 }
 
 impl GraphicsContext {
-    /// TODO: re-export glow from ggraphics
-    pub(crate) fn new(gl: glow::Context, win_ctx: WindowCtx) -> Self {
-        let ctx = gg::GlContext::new(gl);
-        Self { ctx, win_ctx }
+    pub(crate) fn new(gl: gg::glow::Context, win_ctx: WindowCtx) -> Self {
+        let mut ctx = gg::GlContext::new(gl);
+        unsafe {
+            let (w, h): (u32, u32) = win_ctx.window().inner_size().into();
+            let screen_pass = gg::RenderPass::new_screen(
+                &mut ctx,
+                w as usize,
+                h as usize,
+                Some((0.1, 0.2, 0.3, 1.0)),
+            );
+            Self {
+                ctx,
+                win_ctx,
+                screen_pass,
+            }
+        }
     }
 
     /// Sets window mode from a WindowMode object.
@@ -577,17 +590,37 @@ impl From<gfx::buffer::CreationError> for GameError {
 // **********************************************************************
 
 #[derive(Debug)]
-pub struct ScreenRenderPass {
-    pub(crate) pass: gg::RenderPass,
+pub struct ScreenRenderPass<'a> {
+    pub(crate) pass: &'a mut gg::RenderPass,
+}
+
+impl<'a> ScreenRenderPass<'a> {
+    /// Calls the given thunk with a pipeline
+    pub fn quad_pipeline<F>(&mut self, ctx: &Context, shader: gg::Shader, mut f: F)
+    where
+        F: FnMut(&mut dyn gg::Pipeline),
+    {
+        unsafe {
+            let mut pipeline = ggraphics::QuadPipeline::new(&ctx.gfx_context.ctx, shader);
+            /*
+            let dc = pipeline.new_drawcall(gl, particle_texture, ggraphics::SamplerSpec::default());
+            dc.add(ggraphics::QuadData::empty());
+            */
+            f(&mut pipeline);
+            self.pass.add_pipeline(pipeline);
+        }
+    }
 }
 
 /// Returns the final render pass that will draw to the screen.
-pub fn screen_render_pass(ctx: &mut Context) -> ScreenRenderPass {
-    let gl = gl_context_mut(ctx);
-    unsafe {
-        let screen_pass = gg::RenderPass::new_screen(gl, 800, 600, (0.1, 0.2, 0.3, 1.0));
-        ScreenRenderPass { pass: screen_pass }
-    }
+pub fn screen_render_pass<F>(ctx: &mut Context, mut f: F)
+where
+    F: FnMut(ScreenRenderPass),
+{
+    let s = ScreenRenderPass {
+        pass: &mut ctx.gfx_context.screen_pass,
+    };
+    f(s)
 }
 
 /// Tells the graphics system to actually put everything on the screen.

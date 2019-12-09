@@ -66,7 +66,6 @@ pub struct GlContext {
     quad_shader: Shader,
 }
 
-
 fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [[f32; 4]; 4] {
     let c0r0 = 2.0 / (right - left);
     let c0r1 = 0.0;
@@ -758,6 +757,7 @@ impl DrawCall for QuadDrawCall {
 }
 
 /// TODO: Make this actually a mesh
+/// and implement it in general
 #[derive(Debug)]
 pub struct MeshDrawCall {
     ctx: Rc<glow::Context>,
@@ -1007,7 +1007,7 @@ impl QuadPipeline {
 
 /// TODO: Docs
 /// hnyrn
-pub trait Pipeline : std::fmt::Debug {
+pub trait Pipeline: std::fmt::Debug {
     /// foo
     unsafe fn draw(&mut self, gl: &Context);
     /// foo
@@ -1370,11 +1370,16 @@ impl RenderTarget {
 
 /// Currently, no input framebuffers or such.
 /// We're not actually intending to reproduce Rendy's Graph type here.
-/// This may eventually feed into a bounce buffer or such though.
 #[derive(Debug)]
 pub struct RenderPass {
     target: RenderTarget,
-    clear_color: (f32, f32, f32, f32),
+    /// This is sort of weird.  Basically to clear the render target
+    /// you have to bind it, then clear it.  So if we offer an independent
+    /// `clear()` method that will make it possible to forget to bind the
+    /// correct render target first, or it will change shared state, or
+    /// it will unnecessarily re-bind things.  So instead we ALWAYS clear
+    /// the render target if this is not None.
+    clear_color: Option<(f32, f32, f32, f32)>,
     viewport: (i32, i32, i32, i32),
     /// The pipelines to draw in the render pass.
     pub pipelines: Vec<Box<dyn Pipeline>>,
@@ -1386,7 +1391,7 @@ impl RenderPass {
         ctx: &mut GlContext,
         width: usize,
         height: usize,
-        clear_color: (f32, f32, f32, f32),
+        clear_color: Option<(f32, f32, f32, f32)>,
     ) -> Self {
         let target = RenderTarget::new_target(ctx, width, height);
 
@@ -1403,7 +1408,7 @@ impl RenderPass {
         _ctx: &mut GlContext,
         width: usize,
         height: usize,
-        clear_color: (f32, f32, f32, f32),
+        clear_color: Option<(f32, f32, f32, f32)>,
     ) -> Self {
         Self {
             target: RenderTarget::Screen,
@@ -1418,14 +1423,28 @@ impl RenderPass {
         self.pipelines.push(Box::new(pipeline))
     }
 
+    /// Set the current clear color.  If this is not None,
+    /// the render target will be cleared to the returned
+    /// RGBA color before any drawing is done.
+    pub fn set_clear_color(&mut self, color: Option<(f32, f32, f32, f32)>) {
+        self.clear_color = color;
+    }
+
+    /// Get the current clear color.
+    pub fn clear_color(&self) -> Option<(f32, f32, f32, f32)> {
+        self.clear_color
+    }
+
     unsafe fn draw(&mut self, gl: &Context) {
         self.target.bind(gl);
-        let (r, g, b, a) = self.clear_color;
         let (x, y, w, h) = self.viewport;
         // TODO: Does this need to be set every time, or does it stick to the target binding?
         gl.viewport(x, y, w, h);
-        gl.clear_color(r, g, b, a);
-        gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+
+        if let Some((r, g, b, a)) = self.clear_color {
+            gl.clear_color(r, g, b, a);
+            gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+        }
         for pipeline in self.pipelines.iter_mut() {
             pipeline.draw(gl);
         }
