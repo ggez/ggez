@@ -110,14 +110,23 @@ impl DrawParam {
 
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
     fn to_na_matrix(&self) -> Matrix4 {
-        let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
-        let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
-        let offset_inverse =
-            Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
-        let axis_angle = Vec3::z() * self.rotation;
-        let rotation = Matrix4::new_rotation(axis_angle);
-        let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
-        translate * offset * rotation * scale * offset_inverse
+        // Calculate a matrix equivalent to doing this:
+        //  let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
+        //  let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
+        //  let offset_inverse =
+        //      Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
+        //  let axis_angle = Vec3::z() * self.rotation;
+        //  let rotation = Matrix4::new_rotation(axis_angle);
+        //  let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
+        let cosr = self.rotation.cos();
+        let sinr = self.rotation.sin();
+        let m00 = cosr * self.scale.x;
+        let m01 = -sinr * self.scale.y;
+        let m10 = sinr * self.scale.x;
+        let m11 = cosr * self.scale.y;
+        let m03 = self.offset.x * (1.0 - m00) - self.offset.y * m01 + self.dest.x;
+        let m13 = self.offset.y * (1.0 - m11) - self.offset.x * m10 + self.dest.y;
+        Matrix4::new(m00, m01, 0.0, m03,  m10, m11, 0.0, m13,  0.0, 0.0, 1.0, 0.0,  0.0, 0.0, 0.0, 1.0)
     }
 
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single
