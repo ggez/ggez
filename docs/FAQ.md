@@ -123,6 +123,21 @@ one, use that to override all the defaults you give it.
 
 The `files` example should demonstrate this, and more.
 
+# I get a console window when I launch my executable on Windows
+
+You can disable the console entirely by adding the following at 
+the top of your `main.rs` file:
+
+```rust
+#![windows_subsystem = "windows"]
+```
+
+If you wish, you can also disable it only in release mode:
+
+```rust
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+```
+
 # Resolution independence
 
 By default ggez uses a pixel coordinate system but you can change that
