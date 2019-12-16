@@ -537,8 +537,8 @@ trait ZipArchiveAccess {
 
 impl<T: Read + Seek> ZipArchiveAccess for zip::ZipArchive<T> {
     fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile> {
-        let filename = sanitize_path(Path::new(name))
-            .unwrap_or(PathBuf::from(&name));
+        //let filename = sanitize_path(Path::new(name)).unwrap_or(PathBuf::from(&name));
+        let filename = sanitize_path(Path::new(name)).ok_or(zip::result::ZipError::FileNotFound)?;
         self.by_name(filename.to_str().unwrap_or(name))
     }
 
@@ -938,7 +938,7 @@ mod tests {
     }
 
     #[test]
-    fn test_zip_files() {
+    fn headless_test_zip_files() {
         let mut finished_zip_bytes: io::Cursor<_> = {
             let zip_bytes = io::Cursor::new(vec![]);
             let mut zip_archive = zip::ZipWriter::new(zip_bytes);
@@ -953,11 +953,12 @@ mod tests {
         let _bytes = finished_zip_bytes.seek(io::SeekFrom::Start(0)).unwrap();
         let zfs = ZipFS::from_read(finished_zip_bytes).unwrap();
 
-        assert!(zfs.exists(Path::new("fake_file_name.txt".into())));
+        assert!(zfs.exists(Path::new("/fake_file_name.txt".into())));
+        assert!(!zfs.exists(Path::new("fake_file_name.txt".into())));
 
         let mut contents = String::new();
         let _bytes = zfs
-            .open(Path::new("fake_file_name.txt"))
+            .open(Path::new("/fake_file_name.txt"))
             .unwrap()
             .read_to_string(&mut contents);
         assert_eq!(contents, "Zip contents!");
