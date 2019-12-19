@@ -16,8 +16,9 @@ impl MainState {
         let s = MainState { pos_x: 0.0 };
 
         use ggraphics::Pipeline;
-        let gl = graphics::gl_context_mut(ctx);
         unsafe {
+            let particle_image = graphics::Image::new(ctx, "/resources/player.png")?;
+            /*
             let particle_texture = {
                 let image_bytes = include_bytes!("../resources/player.png");
                 let image_rgba = image::load_from_memory(image_bytes).unwrap().to_rgba();
@@ -26,16 +27,20 @@ impl MainState {
                 ggraphics::TextureHandle::new(gl, &image_rgba_bytes, w as usize, h as usize)
                     .into_shared()
             };
+            */
             // Render that texture to the screen
-            let shader = gl.default_shader();
-            graphics::screen_render_pass(ctx, |mut pass| {
-                pass.quad_pipeline(ctx, shader, |mut pipe| {
-                    /*
-                    let dc =
-                        pipe.new_drawcall(gl, particle_texture, ggraphics::SamplerSpec::default());
-                    dc.add(ggraphics::QuadData::empty());
-                    */
-                });
+            let shader = {
+                let gl = graphics::gl_context_mut(ctx);
+                gl.default_shader()
+            };
+            let mut pass = graphics::screen_render_pass(ctx);
+            pass.quad_pipeline(shader, move |mut pipe| {
+                let dc = pipe.new_drawcall(
+                    gl,
+                    particle_image.texture.clone(),
+                    ggraphics::SamplerSpec::default(),
+                );
+                dc.add(ggraphics::QuadData::empty());
             });
             /*
             let mut screen_pass = ggraphics::RenderPass::new_screen(gl, 800, 600, (0.1, 0.2, 0.3, 1.0));

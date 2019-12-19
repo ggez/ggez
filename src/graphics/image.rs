@@ -15,8 +15,9 @@ use ggraphics as gg;
 /// Under the hood this is just an `Arc`'ed texture handle and
 /// some metadata, so cloning it is fairly cheap; it doesn't
 /// make another copy of the underlying image data.
+#[derive(Clone, Debug)]
 pub struct Image {
-    pub(crate) texture: gg::Texture,
+    pub texture: gg::Texture,
     pub(crate) width: usize,
     pub(crate) height: usize,
 }

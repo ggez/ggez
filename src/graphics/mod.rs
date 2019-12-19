@@ -41,10 +41,9 @@ pub use crate::graphics::image::*;
 //pub use crate::graphics::mesh::*;
 pub use crate::graphics::types::*;
 
-pub type Image = gg::Texture;
-
 pub type WindowCtx = glutin::WindowedContext<glutin::PossiblyCurrent>;
 
+#[derive(Debug)]
 pub(crate) struct GraphicsContext {
     // TODO: OMG these names
     pub(crate) ctx: gg::GlContext,
@@ -591,36 +590,33 @@ impl From<gfx::buffer::CreationError> for GameError {
 
 #[derive(Debug)]
 pub struct ScreenRenderPass<'a> {
-    pub(crate) pass: &'a mut gg::RenderPass,
+    pub(crate) ctx: &'a mut GraphicsContext,
 }
 
 impl<'a> ScreenRenderPass<'a> {
     /// Calls the given thunk with a pipeline
-    pub fn quad_pipeline<F>(&mut self, ctx: &Context, shader: gg::Shader, mut f: F)
+    pub fn quad_pipeline<F>(&mut self, shader: gg::Shader, mut f: F)
     where
         F: FnMut(&mut dyn gg::Pipeline),
     {
         unsafe {
-            let mut pipeline = ggraphics::QuadPipeline::new(&ctx.gfx_context.ctx, shader);
+            let mut pipeline = ggraphics::QuadPipeline::new(&self.ctx.ctx, shader);
             /*
             let dc = pipeline.new_drawcall(gl, particle_texture, ggraphics::SamplerSpec::default());
             dc.add(ggraphics::QuadData::empty());
             */
             f(&mut pipeline);
-            self.pass.add_pipeline(pipeline);
+            self.ctx.screen_pass.add_pipeline(pipeline);
         }
     }
 }
 
 /// Returns the final render pass that will draw to the screen.
-pub fn screen_render_pass<F>(ctx: &mut Context, mut f: F)
-where
-    F: FnMut(ScreenRenderPass),
-{
+pub fn screen_render_pass(ctx: &mut Context) -> ScreenRenderPass {
     let s = ScreenRenderPass {
-        pass: &mut ctx.gfx_context.screen_pass,
+        ctx: &mut ctx.gfx_context,
     };
-    f(s)
+    s
 }
 
 /// Tells the graphics system to actually put everything on the screen.
