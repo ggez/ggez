@@ -30,13 +30,13 @@ impl MainState {
             */
             // Render that texture to the screen
             let shader = {
-                let gl = graphics::gl_context_mut(ctx);
+                let gl = graphics::gl_context(ctx);
                 gl.default_shader()
             };
             let mut pass = graphics::screen_render_pass(ctx);
             let pipe = pass.add_quad_pipeline(shader);
             let dc = pipe.new_drawcall(
-                &mut ctx.gfx_context.ctx,
+                ctx.gfx_context.ctx.clone(),
                 particle_image.texture.clone(),
                 ggraphics::SamplerSpec::default(),
             );

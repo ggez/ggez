@@ -17,6 +17,7 @@
 
 // use std::collections::HashMap;
 use std::convert::From;
+use std::rc::Rc;
 // use std::fmt;
 // use std::path::Path;
 // use std::u16;
@@ -46,9 +47,10 @@ pub type WindowCtx = glutin::WindowedContext<glutin::PossiblyCurrent>;
 #[derive(Debug)]
 pub struct GraphicsContext {
     // TODO: OMG these names
-    pub ctx: gg::GlContext,
+    pub ctx: Rc<gg::GlContext>,
     pub(crate) win_ctx: WindowCtx,
     pub(crate) screen_pass: gg::RenderPass,
+    pub(crate) passes: Vec<gg::RenderPass>,
 }
 
 impl GraphicsContext {
@@ -63,9 +65,10 @@ impl GraphicsContext {
                 Some((0.1, 0.2, 0.3, 1.0)),
             );
             Self {
-                ctx,
+                ctx: Rc::new(ctx),
                 win_ctx,
                 screen_pass,
+                passes: vec![],
             }
         }
     }
@@ -639,7 +642,9 @@ pub fn screen_render_pass(ctx: &mut Context) -> ScreenRenderPass {
 ///
 /// Unsets any active canvas.
 pub fn present(ctx: &mut Context) -> GameResult<()> {
-    ctx.gfx_context.ctx.draw();
+    ctx.gfx_context
+        .ctx
+        .draw(ctx.gfx_context.passes.as_mut_slice());
     ctx.gfx_context.win_ctx.swap_buffers()?;
     Ok(())
 }
@@ -752,10 +757,12 @@ pub fn gl_context(context: &Context) -> &gg::GlContext {
     &context.gfx_context.ctx
 }
 
+/*
 /// TODO: This is roughb ut works
 pub fn gl_context_mut(context: &mut Context) -> &mut gg::GlContext {
     &mut context.gfx_context.ctx
 }
+*/
 
 /*
 
