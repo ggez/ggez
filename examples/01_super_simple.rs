@@ -34,6 +34,14 @@ impl MainState {
                 gl.default_shader()
             };
             let mut pass = graphics::screen_render_pass(ctx);
+            let pipe = pass.add_quad_pipeline(shader);
+            let dc = pipe.new_drawcall(
+                &mut ctx.gfx_context.ctx,
+                particle_image.texture.clone(),
+                ggraphics::SamplerSpec::default(),
+            );
+            dc.add(ggraphics::QuadData::empty());
+            /*
             pass.quad_pipeline(shader, move |mut pipe| {
                 let dc = pipe.new_drawcall(
                     gl,
@@ -42,7 +50,7 @@ impl MainState {
                 );
                 dc.add(ggraphics::QuadData::empty());
             });
-            /*
+
             let mut screen_pass = ggraphics::RenderPass::new_screen(gl, 800, 600, (0.1, 0.2, 0.3, 1.0));
             let mut pipeline = ggraphics::QuadPipeline::new(&gl, shader);
             let dc = pipeline.new_drawcall(gl, particle_texture, ggraphics::SamplerSpec::default());

@@ -44,9 +44,9 @@ pub use crate::graphics::types::*;
 pub type WindowCtx = glutin::WindowedContext<glutin::PossiblyCurrent>;
 
 #[derive(Debug)]
-pub(crate) struct GraphicsContext {
+pub struct GraphicsContext {
     // TODO: OMG these names
-    pub(crate) ctx: gg::GlContext,
+    pub ctx: gg::GlContext,
     pub(crate) win_ctx: WindowCtx,
     pub(crate) screen_pass: gg::RenderPass,
 }
@@ -72,7 +72,7 @@ impl GraphicsContext {
 
     /// Sets window mode from a WindowMode object.
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
-        use crate::conf::FullscreenType;
+        //use crate::conf::FullscreenType;
         // use glutin::dpi;
         let window = self.win_ctx.window();
 
@@ -81,7 +81,7 @@ impl GraphicsContext {
         // TODO: Min and max dimension constraints have gone away,
         // remove them from WindowMode
 
-        let monitors = window.available_monitors();
+        //let monitors = window.available_monitors();
         // TODO: Okay, how we set fullscreen stuff has changed
         // and this needs to be totally revamped.
         /*
@@ -607,6 +607,20 @@ impl<'a> ScreenRenderPass<'a> {
             */
             f(&mut pipeline);
             self.ctx.screen_pass.add_pipeline(pipeline);
+        }
+    }
+
+    /// Creates and returns a new quad pipeline
+    pub fn add_quad_pipeline(&mut self, shader: gg::Shader) -> &mut dyn gg::Pipeline {
+        unsafe {
+            let pipeline = ggraphics::QuadPipeline::new(&self.ctx.ctx, shader);
+            self.ctx.screen_pass.add_pipeline(pipeline);
+            &mut **self
+                .ctx
+                .screen_pass
+                .pipelines
+                .last_mut()
+                .expect("Should never happen")
         }
     }
 }

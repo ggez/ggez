@@ -40,7 +40,7 @@ pub struct Context {
     /// Filesystem state
     pub filesystem: Filesystem,
     /// Graphics state
-    pub(crate) gfx_context: crate::graphics::GraphicsContext,
+    pub gfx_context: crate::graphics::GraphicsContext,
     /// Timer state
     pub timer_context: timer::TimeContext,
     /// Audio context
