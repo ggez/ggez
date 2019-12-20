@@ -24,6 +24,7 @@
 #![warn(bare_trait_objects)]
 #![warn(missing_copy_implementations)]
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::mem;
@@ -56,13 +57,13 @@ type GlUniformLocation = <Context as glow::HasContext>::UniformLocation;
 pub struct GlContext {
     /// The OpenGL context.
     pub gl: Rc<glow::Context>,
-    /// The list of render passes.
-    pub passes: Vec<RenderPass>,
+    // /// The list of render passes.
+    //pub passes: Vec<RenderPass>,
     /// Samplers are cached and managed entirely by the GlContext.
     /// You usually only need a few of them so there's no point freeing
     /// them separately, you just ask for the one you want and it gives
     /// it to you.
-    samplers: HashMap<SamplerSpec, GlSampler>,
+    samplers: RefCell<HashMap<SamplerSpec, GlSampler>>,
     quad_shader: Shader,
 }
 
@@ -115,8 +116,7 @@ impl GlContext {
                 ShaderHandle::new_raw(gl.clone(), VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
             let s = GlContext {
                 gl,
-                passes: vec![],
-                samplers: HashMap::new(),
+                samplers: RefCell::new(HashMap::new()),
                 quad_shader: quad_shader.into_shared(),
             };
             s.register_debug_callback();
@@ -168,33 +168,37 @@ impl GlContext {
     /// Get a sampler given the given spec.  Samplers are cached, and
     /// usually few in number, so you shouldn't free them and this handles
     /// caching them for you.
-    pub fn get_sampler(&mut self, spec: &SamplerSpec) -> GlSampler {
+    pub fn get_sampler(&self, spec: &SamplerSpec) -> GlSampler {
         let gl = &*self.gl;
         // unsafety: This takes no inputs besides spec, which has
         // constrained types.
-        *self.samplers.entry(*spec).or_insert_with(|| unsafe {
-            let sampler = gl.create_sampler().unwrap();
-            gl.sampler_parameter_i32(
-                sampler,
-                glow::TEXTURE_MIN_FILTER,
-                spec.min_filter.to_gl() as i32,
-            );
-            gl.sampler_parameter_i32(
-                sampler,
-                glow::TEXTURE_MAG_FILTER,
-                spec.mag_filter.to_gl() as i32,
-            );
-            gl.sampler_parameter_i32(sampler, glow::TEXTURE_WRAP_S, spec.wrap.to_gl() as i32);
-            gl.sampler_parameter_i32(sampler, glow::TEXTURE_WRAP_T, spec.wrap.to_gl() as i32);
-            sampler
-        })
+        *self
+            .samplers
+            .borrow_mut() // We don't store this borrow anywhere, so it should never panic
+            .entry(*spec)
+            .or_insert_with(|| unsafe {
+                let sampler = gl.create_sampler().unwrap();
+                gl.sampler_parameter_i32(
+                    sampler,
+                    glow::TEXTURE_MIN_FILTER,
+                    spec.min_filter.to_gl() as i32,
+                );
+                gl.sampler_parameter_i32(
+                    sampler,
+                    glow::TEXTURE_MAG_FILTER,
+                    spec.mag_filter.to_gl() as i32,
+                );
+                gl.sampler_parameter_i32(sampler, glow::TEXTURE_WRAP_S, spec.wrap.to_gl() as i32);
+                gl.sampler_parameter_i32(sampler, glow::TEXTURE_WRAP_T, spec.wrap.to_gl() as i32);
+                sampler
+            })
     }
 
     /// Draw all contained render passes, in order.
-    pub fn draw(&mut self) {
+    pub fn draw(&self, passes: &mut [RenderPass]) {
         // unsafety: This will be safe if RenderPass::draw() is
         unsafe {
-            for pass in self.passes.iter_mut() {
+            for pass in passes.iter_mut() {
                 pass.draw(&self.gl);
             }
         }
@@ -213,22 +217,8 @@ impl GlContext {
         }
     }
 
-    /// Sets the viewport for the final render-to-screen pass.
-    /// Negative numbers are valid, see `glViewport` for the
-    /// math behind it.
-    ///
-    /// Panics if there is no such render pass.
-    pub fn set_screen_viewport(&mut self, x: i32, y: i32, w: i32, h: i32) {
-        let pass = self
-            .passes
-            .last_mut()
-            .expect("set_screen_viewport() requires a render pass to function on");
-        if let RenderTarget::Screen = pass.target {
-            pass.set_viewport(x, y, w, h);
-        } else {
-            panic!("Last render pass is not rendering to screen, aiee!");
-        }
-    }
+    /*
+     */
 }
 
 /// This is actually not safe to Clone, we'd have to Rc the GlTexture.
@@ -540,7 +530,7 @@ impl Default for SamplerSpec {
 /// and may have different `QuadData` inputs.
 #[derive(Debug)]
 pub struct QuadDrawCall {
-    ctx: Rc<glow::Context>,
+    ctx: Rc<GlContext>,
     texture: Texture,
     sampler: GlSampler,
     /// The instances that will be drawn.
@@ -558,9 +548,9 @@ pub struct QuadDrawCall {
 impl Drop for QuadDrawCall {
     fn drop(&mut self) {
         unsafe {
-            self.ctx.delete_vertex_array(self.vao);
-            self.ctx.delete_buffer(self.vbo);
-            self.ctx.delete_buffer(self.instance_vbo);
+            self.ctx.gl.delete_vertex_array(self.vao);
+            self.ctx.gl.delete_buffer(self.vbo);
+            self.ctx.gl.delete_buffer(self.instance_vbo);
             // Don't need to drop the sampler, it's owned by
             // the `GlContext`.
             // And the texture takes care of itself.
@@ -591,7 +581,7 @@ impl QuadDrawCall {
 
     /// New empty `QuadDrawCall` using the given pipeline.
     pub fn new(
-        ctx: &mut GlContext,
+        ctx: Rc<GlContext>,
         texture: Texture,
         sampler: SamplerSpec,
         pipeline: &QuadPipeline,
@@ -645,7 +635,7 @@ impl QuadDrawCall {
             // Now create another VBO containing per-instance data
             let instance_vbo = gl.create_buffer().unwrap();
             gl.bind_buffer(glow::ARRAY_BUFFER, Some(instance_vbo));
-            Self::set_vertex_pointers(ctx, &pipeline.shader);
+            Self::set_vertex_pointers(&*ctx, &pipeline.shader);
 
             // We can't define locations for uniforms, yet.
             let texture_location = gl
@@ -655,7 +645,7 @@ impl QuadDrawCall {
             gl.bind_vertex_array(None);
 
             Self {
-                ctx: ctx.gl.clone(),
+                ctx: ctx,
                 vbo,
                 vao,
                 texture,
@@ -760,7 +750,7 @@ impl DrawCall for QuadDrawCall {
 /// and implement it in general
 #[derive(Debug)]
 pub struct MeshDrawCall {
-    ctx: Rc<glow::Context>,
+    ctx: Rc<GlContext>,
     texture: Texture,
     sampler: GlSampler,
     /// The instances that will be drawn.
@@ -777,9 +767,9 @@ pub struct MeshDrawCall {
 impl Drop for MeshDrawCall {
     fn drop(&mut self) {
         unsafe {
-            self.ctx.delete_vertex_array(self.vao);
-            self.ctx.delete_buffer(self.vbo);
-            self.ctx.delete_buffer(self.instance_vbo);
+            self.ctx.gl.delete_vertex_array(self.vao);
+            self.ctx.gl.delete_buffer(self.vbo);
+            self.ctx.gl.delete_buffer(self.instance_vbo);
             // Don't need to drop the sampler, it's owned by
             // the `GlContext`.
             // And the texture takes care of itself.
@@ -810,7 +800,7 @@ impl MeshDrawCall {
 
     /// New empty `MeshDrawCall` using the given pipeline.
     pub fn new(
-        ctx: &mut GlContext,
+        ctx: Rc<GlContext>,
         texture: Texture,
         sampler: SamplerSpec,
         pipeline: &MeshPipeline,
@@ -864,7 +854,7 @@ impl MeshDrawCall {
             // Now create another VBO containing per-instance data
             let instance_vbo = gl.create_buffer().unwrap();
             gl.bind_buffer(glow::ARRAY_BUFFER, Some(instance_vbo));
-            Self::set_vertex_pointers(ctx, &pipeline.shader);
+            Self::set_vertex_pointers(&*ctx, &pipeline.shader);
 
             // We can't define locations for uniforms, yet.
             let texture_location = gl
@@ -874,7 +864,7 @@ impl MeshDrawCall {
             gl.bind_vertex_array(None);
 
             Self {
-                ctx: ctx.gl.clone(),
+                ctx: ctx,
                 vbo,
                 vao,
                 texture,
@@ -931,7 +921,7 @@ impl MeshDrawCall {
         // bind sampler
         // This is FUCKING WHACKO.  I set the active texture
         // unit to glow::TEXTURE0 , which sets it to texture
-        // unit 0, then I bind the sampler to 0, which sets it
+        // unit 0, then I bind the sampler to the number 0, which sets it
         // to texture unit 0.  I think.  You have to dig into
         // the ARB extension RFC to figure this out 'cause it isn't
         // documented anywhere else I can find it.
@@ -1013,7 +1003,7 @@ pub trait Pipeline: std::fmt::Debug {
     /// foo
     fn new_drawcall(
         &mut self,
-        ctx: &mut GlContext,
+        ctx: Rc<GlContext>,
         texture: Texture,
         sampler: SamplerSpec,
     ) -> &mut dyn DrawCall;
@@ -1084,7 +1074,7 @@ impl Pipeline for QuadPipeline {
     /// foo
     fn new_drawcall(
         &mut self,
-        ctx: &mut GlContext,
+        ctx: Rc<GlContext>,
         texture: Texture,
         sampler: SamplerSpec,
     ) -> &mut dyn DrawCall {
@@ -1211,7 +1201,7 @@ impl Pipeline for MeshPipeline {
     /// foo
     fn new_drawcall(
         &mut self,
-        ctx: &mut GlContext,
+        ctx: Rc<GlContext>,
         texture: Texture,
         sampler: SamplerSpec,
     ) -> &mut dyn DrawCall {
@@ -1388,7 +1378,7 @@ pub struct RenderPass {
 impl RenderPass {
     /// Make a new render pass rendering to a texture.
     pub unsafe fn new(
-        ctx: &mut GlContext,
+        ctx: &GlContext,
         width: usize,
         height: usize,
         clear_color: Option<(f32, f32, f32, f32)>,
@@ -1405,7 +1395,7 @@ impl RenderPass {
 
     /// Create a new rnder pass rendering to the screen.
     pub unsafe fn new_screen(
-        _ctx: &mut GlContext,
+        _ctx: &GlContext,
         width: usize,
         height: usize,
         clear_color: Option<(f32, f32, f32, f32)>,
@@ -1462,5 +1452,13 @@ impl RenderPass {
     /// see `glViewport` for the math involved.
     pub fn set_viewport(&mut self, x: i32, y: i32, w: i32, h: i32) {
         self.viewport = (x, y, w, h);
+    }
+
+    /// Returns whether the render target is goin to the actual screen.
+    pub fn is_screen(&self) -> bool {
+        match self.target {
+            RenderTarget::Screen => true,
+            _ => false,
+        }
     }
 }

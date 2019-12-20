@@ -7,6 +7,7 @@ use glow;
 use oorandom;
 use winit;
 
+use std::rc::Rc;
 use std::time::Duration;
 
 struct Particle {
@@ -31,14 +32,16 @@ impl Particle {
 }
 
 struct GameState {
-    ctx: GlContext,
+    ctx: Rc<GlContext>,
     rng: oorandom::Rand32,
     particles: Vec<Particle>,
+    passes: Vec<RenderPass>,
 }
 
 impl GameState {
     pub fn new(gl: glow::Context) -> Self {
-        let mut ctx = GlContext::new(gl);
+        let ctx = Rc::new(GlContext::new(gl));
+        let mut passes = vec![];
         unsafe {
             let particle_texture = {
                 let image_bytes = include_bytes!("../src/data/wabbit_alpha.png");
@@ -48,12 +51,13 @@ impl GameState {
                 TextureHandle::new(&ctx, &image_rgba_bytes, w as usize, h as usize).into_shared()
             };
             // Render that texture to the screen
-            let mut screen_pass = RenderPass::new_screen(&mut ctx, 800, 600, (0.6, 0.6, 0.6, 1.0));
+            let mut screen_pass =
+                RenderPass::new_screen(&*ctx, 800, 600, Some((0.6, 0.6, 0.6, 1.0)));
             let shader = GlContext::default_shader(&ctx);
             let mut pipeline = QuadPipeline::new(&ctx, shader);
-            pipeline.new_drawcall(&mut ctx, particle_texture, SamplerSpec::default());
+            pipeline.new_drawcall(ctx.clone(), particle_texture, SamplerSpec::default());
             screen_pass.add_pipeline(pipeline);
-            ctx.passes.push(screen_pass);
+            passes.push(screen_pass);
         }
 
         let rng = oorandom::Rand32::new(12345);
@@ -61,6 +65,7 @@ impl GameState {
             ctx,
             rng,
             particles: vec![],
+            passes: vec![],
         }
     }
 
@@ -96,7 +101,7 @@ impl GameState {
             // Copy particles into draw call, since they've changed.
             // If our update framerate were faster than our drawing
             // frame rate, we'd want to do this on draw rather than update.
-            let pass = self.ctx.passes.last_mut().unwrap();
+            let pass = self.passes.last_mut().unwrap();
             for pipeline in pass.pipelines.iter_mut() {
                 for drawcall in pipeline.drawcalls_mut() {
                     // Copy all our particles into the draw call
@@ -109,6 +114,21 @@ impl GameState {
             }
         }
         self.particles.len()
+    }
+
+    /// Sets the viewport for the render pass.
+    /// Negative numbers are valid, see `glViewport` for the
+    /// math behind it.
+    pub fn set_screen_viewport(&mut self, x: i32, y: i32, w: i32, h: i32) {
+        let pass = self
+            .passes
+            .last_mut()
+            .expect("set_screen_viewport() requires a render pass to function on");
+        if pass.is_screen() {
+            pass.set_viewport(x, y, w, h);
+        } else {
+            panic!("Last render pass is not rendering to screen, aiee!");
+        }
     }
 }
 
@@ -208,7 +228,7 @@ fn mainloop(
                         //let dpi_factor = windowed_context.window().hidpi_factor();
                         let dpi_factor = 1.0;
                         let physical_size = logical_size.to_physical(dpi_factor);
-                        state.ctx.set_screen_viewport(
+                        state.set_screen_viewport(
                             0,
                             0,
                             physical_size.width as i32,
@@ -217,7 +237,7 @@ fn mainloop(
                         //windowed_context.resize(logical_size.to_physical(dpi_factor));
                     }
                     WindowEvent::RedrawRequested => {
-                        state.ctx.draw();
+                        state.ctx.draw(state.passes.as_mut());
                         window.swap_buffers();
                     }
                     WindowEvent::CloseRequested => {
