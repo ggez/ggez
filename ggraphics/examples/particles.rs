@@ -65,7 +65,7 @@ impl GameState {
             ctx,
             rng,
             particles: vec![],
-            passes: vec![],
+            passes,
         }
     }
 
