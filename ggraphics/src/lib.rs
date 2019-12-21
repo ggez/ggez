@@ -229,6 +229,13 @@ pub struct TextureHandle {
     tex: GlTexture,
 }
 
+impl PartialEq for TextureHandle {
+    fn eq(&self, rhs: &Self) -> bool {
+        // TODO: Compare ctx?  Is it worth it?  idk.
+        self.tex == rhs.tex
+    }
+}
+
 impl Drop for TextureHandle {
     fn drop(&mut self) {
         unsafe {

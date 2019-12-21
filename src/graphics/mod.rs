@@ -590,6 +590,59 @@ impl From<gfx::buffer::CreationError> for GameError {
 // **********************************************************************
 // DRAWING
 // **********************************************************************
+
+/// Basically a render pipeline with some useful fluff around it.
+/// Handles auto-batching of DrawCall's so you don't have to.
+#[derive(Debug)]
+pub struct DrawBatch {
+    current_image: Option<Image>,
+    current_sampler: Option<gg::SamplerSpec>,
+    /// TODO: Shouldn't be pub
+    pub pipe: gg::QuadPipeline,
+}
+
+impl DrawBatch {
+    /// Make a new DrawBatch with the given shader.
+    pub fn new(ctx: &mut Context, shader: gg::Shader) -> Self {
+        let gl = gl_context(ctx);
+        let pipe = unsafe { gg::QuadPipeline::new(gl.clone(), shader) };
+        Self {
+            current_image: None,
+            current_sampler: None,
+            pipe,
+        }
+    }
+    /// Add the given quad to the draw batch, with the given image and sampler.
+    pub fn add(&mut self, image: &Image, sampler: gg::SamplerSpec, quad: gg::QuadData) {
+        use gg::Pipeline;
+        // TODO: Can we clean this up some?  Just comparing the raw image and sampler
+        // is weird.
+        let dc = if self.current_image.as_ref() == Some(image)
+            && self.current_sampler == Some(sampler)
+        {
+            // We add to the current draw call
+            self.pipe.drawcalls.last_mut().expect("can't happen")
+        } else {
+            // We create a new drawcall.
+            self.current_image = Some(image.clone());
+            self.current_sampler = Some(sampler);
+            self.pipe.new_drawcall(image.texture.clone(), sampler)
+        };
+        dc.add(quad);
+    }
+
+    /// Add with default sampler
+    pub fn add_quad(&mut self, image: &Image, quad: gg::QuadData) {
+        self.add(image, gg::SamplerSpec::default(), quad);
+    }
+}
+
+// TODO: Clean up
+pub fn default_shader(ctx: &Context) -> gg::Shader {
+    let gl = gl_context(ctx);
+    gl.default_shader()
+}
+
 /*
 
 #[derive(Debug)]

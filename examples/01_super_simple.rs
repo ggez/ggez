@@ -5,7 +5,6 @@ use ggez::event;
 use ggez::ggraphics as gg;
 use ggez::graphics;
 use ggez::{Context, GameResult};
-use image;
 
 struct MainState {
     pos_x: f32,
@@ -21,47 +20,30 @@ impl MainState {
 
         use ggraphics::Pipeline;
         unsafe {
-            let particle_image = graphics::Image::new(ctx, "/player.png")?;
-            /*
-            let particle_texture = {
-                let image_bytes = include_bytes!("../resources/player.png");
-                let image_rgba = image::load_from_memory(image_bytes).unwrap().to_rgba();
-                let (w, h) = image_rgba.dimensions();
-                let image_rgba_bytes = image_rgba.into_raw();
-                ggraphics::TextureHandle::new(gl, &image_rgba_bytes, w as usize, h as usize)
-                    .into_shared()
-            };
-            */
-            // Render that texture to the screen
-            let gl = graphics::gl_context(ctx);
-            let shader = { gl.default_shader() };
+            // Render raw texture to the screen
+            {
+                let particle_image = graphics::Image::new(ctx, "/player.png")?;
+                let shader = graphics::default_shader(ctx);
+                let gl = graphics::gl_context(ctx);
 
+                let mut screen_pass =
+                    gg::RenderPass::new_screen(&*gl, 800, 600, Some((0.1, 0.2, 0.3, 1.0)));
+                let mut pipeline = gg::QuadPipeline::new(gl.clone(), shader);
+                let dc = pipeline.new_drawcall(particle_image.texture, gg::SamplerSpec::default());
+                dc.add(gg::QuadData::empty());
+                screen_pass.add_pipeline(pipeline);
+                //s.passes.push(screen_pass);
+            }
+
+            let particle_image = graphics::Image::new(ctx, "/player.png")?;
+            let shader = graphics::default_shader(ctx);
+            let mut batch = graphics::DrawBatch::new(ctx, shader);
+            batch.add_quad(&particle_image, gg::QuadData::empty());
+            let gl = graphics::gl_context(ctx);
             let mut screen_pass =
                 gg::RenderPass::new_screen(&*gl, 800, 600, Some((0.1, 0.2, 0.3, 1.0)));
-            let shader = gg::GlContext::default_shader(&*gl);
-            let mut pipeline = gg::QuadPipeline::new(gl.clone(), shader);
-            let mut dc = pipeline.new_drawcall(particle_image.texture, gg::SamplerSpec::default());
-            dc.add(ggraphics::QuadData::empty());
-            screen_pass.add_pipeline(pipeline);
+            screen_pass.add_pipeline(batch.pipe);
             s.passes.push(screen_pass);
-
-            /*
-            pass.quad_pipeline(shader, move |mut pipe| {
-                let dc = pipe.new_drawcall(
-                    gl,
-                    particle_image.texture.clone(),
-                    ggraphics::SamplerSpec::default(),
-                );
-                dc.add(ggraphics::QuadData::empty());
-            });
-
-            let mut screen_pass = ggraphics::RenderPass::new_screen(gl, 800, 600, (0.1, 0.2, 0.3, 1.0));
-            let mut pipeline = ggraphics::QuadPipeline::new(&gl, shader);
-            let dc = pipeline.new_drawcall(gl, particle_texture, ggraphics::SamplerSpec::default());
-            dc.add(ggraphics::QuadData::empty());
-            screen_pass.add_pipeline(pipeline);
-            gl.passes.push(screen_pass);
-            */
         }
         Ok(s)
     }

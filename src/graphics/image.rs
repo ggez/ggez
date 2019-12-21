@@ -12,11 +12,12 @@ use ggraphics as gg;
 
 /// In-GPU-memory image data available to be drawn on the screen.
 ///
-/// Under the hood this is just an `Arc`'ed texture handle and
+/// Under the hood this is just an `Rc`'ed texture handle and
 /// some metadata, so cloning it is fairly cheap; it doesn't
 /// make another copy of the underlying image data.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Image {
+    /// TODO: Shouldn't be pub
     pub texture: gg::Texture,
     pub(crate) width: usize,
     pub(crate) height: usize,
