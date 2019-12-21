@@ -956,6 +956,7 @@ impl DrawCall for MeshDrawCall {
 /// A pipeline for drawing quads.
 #[derive(Debug)]
 pub struct QuadPipeline {
+    ctx: Rc<GlContext>,
     /// The draw calls in the pipeline.
     pub drawcalls: Vec<QuadDrawCall>,
     /// The projection the pipeline will draw with.
@@ -966,14 +967,14 @@ pub struct QuadPipeline {
 
 impl QuadPipeline {
     /// Create new pipeline with the given shader.
-    pub unsafe fn new(ctx: &GlContext, shader: Shader) -> Self {
+    pub unsafe fn new(ctx: Rc<GlContext>, shader: Shader) -> Self {
         let gl = &*ctx.gl;
-        //let projection = Mat4::identity();
         let projection = ortho_mat(-1.0, 1.0, 1.0, -1.0, 1.0, -1.0);
         let projection_location = gl
             .get_uniform_location(shader.program, "projection")
             .unwrap();
         Self {
+            ctx,
             drawcalls: vec![],
             shader,
             projection,
@@ -1001,12 +1002,7 @@ pub trait Pipeline: std::fmt::Debug {
     /// foo
     unsafe fn draw(&mut self, gl: &Context);
     /// foo
-    fn new_drawcall(
-        &mut self,
-        ctx: Rc<GlContext>,
-        texture: Texture,
-        sampler: SamplerSpec,
-    ) -> &mut dyn DrawCall;
+    fn new_drawcall(&mut self, texture: Texture, sampler: SamplerSpec) -> &mut dyn DrawCall;
     /// this seems the way to do it...
     fn get(&self, idx: usize) -> &dyn DrawCall;
     /// Get mut
@@ -1072,13 +1068,8 @@ impl Pipeline for QuadPipeline {
         self.draw(gl);
     }
     /// foo
-    fn new_drawcall(
-        &mut self,
-        ctx: Rc<GlContext>,
-        texture: Texture,
-        sampler: SamplerSpec,
-    ) -> &mut dyn DrawCall {
-        let x = QuadDrawCall::new(ctx, texture, sampler, self);
+    fn new_drawcall(&mut self, texture: Texture, sampler: SamplerSpec) -> &mut dyn DrawCall {
+        let x = QuadDrawCall::new(self.ctx.clone(), texture, sampler, self);
         self.drawcalls.push(x);
         &mut *self.drawcalls.last_mut().unwrap()
     }
@@ -1107,6 +1098,7 @@ impl Pipeline for QuadPipeline {
 /// A pipeline for drawing quads.
 #[derive(Debug)]
 pub struct MeshPipeline {
+    ctx: Rc<GlContext>,
     /// The draw calls in the pipeline.
     pub drawcalls: Vec<MeshDrawCall>,
     /// The projection the pipeline will draw with.
@@ -1117,7 +1109,7 @@ pub struct MeshPipeline {
 
 impl MeshPipeline {
     /// Create new pipeline with the given shader.
-    pub unsafe fn new(ctx: &GlContext, shader: Shader) -> Self {
+    pub unsafe fn new(ctx: Rc<GlContext>, shader: Shader) -> Self {
         let gl = &*ctx.gl;
         //let projection = Mat4::identity();
         let projection = ortho_mat(-1.0, 1.0, 1.0, -1.0, 1.0, -1.0);
@@ -1125,6 +1117,7 @@ impl MeshPipeline {
             .get_uniform_location(shader.program, "projection")
             .unwrap();
         Self {
+            ctx,
             drawcalls: vec![],
             shader,
             projection,
@@ -1199,13 +1192,8 @@ impl Pipeline for MeshPipeline {
         self.draw(gl);
     }
     /// foo
-    fn new_drawcall(
-        &mut self,
-        ctx: Rc<GlContext>,
-        texture: Texture,
-        sampler: SamplerSpec,
-    ) -> &mut dyn DrawCall {
-        let x = MeshDrawCall::new(ctx, texture, sampler, self);
+    fn new_drawcall(&mut self, texture: Texture, sampler: SamplerSpec) -> &mut dyn DrawCall {
+        let x = MeshDrawCall::new(self.ctx.clone(), texture, sampler, self);
         self.drawcalls.push(x);
         &mut *self.drawcalls.last_mut().unwrap()
     }

@@ -2,18 +2,22 @@
 
 use ggez;
 use ggez::event;
-use ggez::ggraphics;
+use ggez::ggraphics as gg;
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use image;
 
 struct MainState {
     pos_x: f32,
+    passes: Vec<gg::RenderPass>,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let s = MainState { pos_x: 0.0 };
+        let mut s = MainState {
+            pos_x: 0.0,
+            passes: vec![],
+        };
 
         use ggraphics::Pipeline;
         unsafe {
@@ -29,18 +33,17 @@ impl MainState {
             };
             */
             // Render that texture to the screen
-            let shader = {
-                let gl = graphics::gl_context(ctx);
-                gl.default_shader()
-            };
-            let mut pass = graphics::screen_render_pass(ctx);
-            let pipe = pass.add_quad_pipeline(shader);
-            let dc = pipe.new_drawcall(
-                ctx.gfx_context.ctx.clone(),
-                particle_image.texture.clone(),
-                ggraphics::SamplerSpec::default(),
-            );
-            dc.add(ggraphics::QuadData::empty());
+            let gl = graphics::gl_context(ctx);
+            let shader = { gl.default_shader() };
+
+            let mut screen_pass =
+                gg::RenderPass::new_screen(&*gl, 800, 600, Some((0.6, 0.6, 0.6, 1.0)));
+            let shader = gg::GlContext::default_shader(&*gl);
+            let mut pipeline = gg::QuadPipeline::new(gl.clone(), shader);
+            pipeline.new_drawcall(particle_image.texture, gg::SamplerSpec::default());
+            screen_pass.add_pipeline(pipeline);
+            s.passes.push(screen_pass);
+
             /*
             pass.quad_pipeline(shader, move |mut pipe| {
                 let dc = pipe.new_drawcall(
@@ -84,6 +87,8 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &circle, (na::Point2::new(self.pos_x, 380.0),))?;
 
         */
+        let gl = graphics::gl_context(ctx);
+        gl.draw(&mut self.passes);
         graphics::present(ctx)?;
         Ok(())
     }

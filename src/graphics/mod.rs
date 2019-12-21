@@ -590,6 +590,7 @@ impl From<gfx::buffer::CreationError> for GameError {
 // **********************************************************************
 // DRAWING
 // **********************************************************************
+/*
 
 #[derive(Debug)]
 pub struct ScreenRenderPass<'a> {
@@ -635,6 +636,7 @@ pub fn screen_render_pass(ctx: &mut Context) -> ScreenRenderPass {
     };
     s
 }
+*/
 
 /// Tells the graphics system to actually put everything on the screen.
 /// Call this at the end of your [`EventHandler`](../event/trait.EventHandler.html)'s
@@ -753,8 +755,8 @@ pub fn window(context: &Context) -> &glutin::window::Window {
 }
 
 /// TODO: This is roughb ut works
-pub fn gl_context(context: &Context) -> &gg::GlContext {
-    &context.gfx_context.ctx
+pub fn gl_context(context: &Context) -> Rc<gg::GlContext> {
+    context.gfx_context.ctx.clone()
 }
 
 /*

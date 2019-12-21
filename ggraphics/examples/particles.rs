@@ -54,8 +54,8 @@ impl GameState {
             let mut screen_pass =
                 RenderPass::new_screen(&*ctx, 800, 600, Some((0.6, 0.6, 0.6, 1.0)));
             let shader = GlContext::default_shader(&ctx);
-            let mut pipeline = QuadPipeline::new(&ctx, shader);
-            pipeline.new_drawcall(ctx.clone(), particle_texture, SamplerSpec::default());
+            let mut pipeline = QuadPipeline::new(ctx.clone(), shader);
+            pipeline.new_drawcall(particle_texture, SamplerSpec::default());
             screen_pass.add_pipeline(pipeline);
             passes.push(screen_pass);
         }

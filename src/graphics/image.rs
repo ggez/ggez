@@ -29,8 +29,9 @@ impl Image {
         height: usize,
         rgba_bytes: &[u8],
     ) -> GameResult<Self> {
-        let gl = graphics::gl_context(ctx);
-        let texture = ggraphics::TextureHandle::new(gl, &rgba_bytes, width, height).into_shared();
+        let texture =
+            ggraphics::TextureHandle::new(&*ctx.gfx_context.ctx, &rgba_bytes, width, height)
+                .into_shared();
         Ok(Self {
             texture,
             width,
