@@ -21,7 +21,7 @@ impl MainState {
 
         use ggraphics::Pipeline;
         unsafe {
-            let particle_image = graphics::Image::new(ctx, "/resources/player.png")?;
+            let particle_image = graphics::Image::new(ctx, "/player.png")?;
             /*
             let particle_texture = {
                 let image_bytes = include_bytes!("../resources/player.png");
@@ -37,10 +37,11 @@ impl MainState {
             let shader = { gl.default_shader() };
 
             let mut screen_pass =
-                gg::RenderPass::new_screen(&*gl, 800, 600, Some((0.6, 0.6, 0.6, 1.0)));
+                gg::RenderPass::new_screen(&*gl, 800, 600, Some((0.1, 0.2, 0.3, 1.0)));
             let shader = gg::GlContext::default_shader(&*gl);
             let mut pipeline = gg::QuadPipeline::new(gl.clone(), shader);
-            pipeline.new_drawcall(particle_image.texture, gg::SamplerSpec::default());
+            let mut dc = pipeline.new_drawcall(particle_image.texture, gg::SamplerSpec::default());
+            dc.add(ggraphics::QuadData::empty());
             screen_pass.add_pipeline(pipeline);
             s.passes.push(screen_pass);
 
@@ -95,7 +96,17 @@ impl event::EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let cb = ggez::ContextBuilder::new("super_simple", "ggez");
+    use std::env;
+    use std::path;
+    let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        path
+    } else {
+        path::PathBuf::from("./resources")
+    };
+
+    let cb = ggez::ContextBuilder::new("super_simple", "ggez").add_resource_path(resource_dir);
     let (mut ctx, event_loop) = cb.build()?;
     let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
