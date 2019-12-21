@@ -44,6 +44,14 @@ impl MainState {
                 gg::RenderPass::new_screen(&*gl, 800, 600, Some((0.1, 0.2, 0.3, 1.0)));
             screen_pass.add_pipeline(batch.pipe);
             s.passes.push(screen_pass);
+
+            /*
+                         * I don't hate this:
+            let particle_image = graphics::Image::new(ctx, "/player.png")?;
+            let mut batch = graphics::DrawBatch::new(ctx, graphics::default_shader(ctx))
+                .add_quad(&particle_image, gg::QuadData::empty());
+            let screen_pass = graphics::screen_pass().draw(ctx, &[batch], Some((0.1, 0.2, 0.3, 1.0)));
+                         */
         }
         Ok(s)
     }
