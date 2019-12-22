@@ -606,8 +606,17 @@ pub struct DrawBatch {
 }
 
 impl DrawBatch {
+    /// Make a new DrawBatch with the default shader.
+    pub fn new(ctx: &mut Context) -> Self {
+        let shader = {
+            let gl = gl_context(ctx);
+            gl.default_shader()
+        };
+        Self::new_with_shader(ctx, shader)
+    }
+
     /// Make a new DrawBatch with the given shader.
-    pub fn new(ctx: &mut Context, shader: gg::Shader) -> Self {
+    pub fn new_with_shader(ctx: &mut Context, shader: gg::Shader) -> Self {
         let gl = gl_context(ctx);
         let pipe = unsafe { gg::QuadPipeline::new(gl.clone(), shader) };
         Self {
@@ -616,6 +625,7 @@ impl DrawBatch {
             pipe,
         }
     }
+
     /// Add the given quad to the draw batch, with the given image and sampler.
     pub fn add(&mut self, image: &Image, sampler: gg::SamplerSpec, quad: gg::QuadData) {
         use gg::Pipeline;
@@ -648,14 +658,31 @@ pub struct RenderPass {
 }
 
 impl RenderPass {
+    /// Draw the given `DrawBatch`es to the render pass's draw target.
+    /// Does not clear the target first.
     pub fn draw(&mut self, batches: &mut [DrawBatch]) {
-        for b in batches {
-            self.inner.draw_single(&*self.gl, &mut b.pipe);
-        }
+        // TODO: Can we do this in terms of clear_draw()?  Not without making it
+        // take an Option<Color> I suppose, which is a little redundant.  Alas.
+        self.inner.set_clear_color(None);
+        self.inner
+            .draw(&*self.gl, batches.iter_mut().map(|b| &mut b.pipe));
+    }
+
+    /// Clears the render target to the given color, then draws the given
+    /// draw batches on it.
+    /// (The clear and draw kinda can't be separate methods for Reasons, they both
+    /// ideally have to be done at once.)
+    ///
+    /// Set to `None` to not clear it at all.
+    pub fn clear_draw(&mut self, color: Color, batches: &mut [DrawBatch]) {
+        let color = Some((color.r, color.g, color.b, color.a));
+        self.inner.set_clear_color(color);
+        self.inner
+            .draw(&*self.gl, batches.iter_mut().map(|b| &mut b.pipe));
     }
 }
 
-// TODO: Clean up
+/// TODO: Clean up
 pub fn default_shader(ctx: &Context) -> gg::Shader {
     let gl = gl_context(ctx);
     gl.default_shader()
