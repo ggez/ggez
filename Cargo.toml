@@ -45,7 +45,7 @@ glutin = "0.20"
 winit = { version = "0.19.3" }
 image = {version = "0.22", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
-rodio = { version = "0.9", default-features = false, features = ["flac", "vorbis", "wav"] }
+rodio = { version = "0.10", default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
 serde_derive = "1"
 toml = "0.5"
