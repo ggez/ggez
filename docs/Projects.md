@@ -6,6 +6,8 @@ submit a PR, please!
 ## Games!
 
  * <https://github.com/ozkriff/zemeroth>
+ * <https://athorus.itch.io/ltd>: Le Train Dispatcher allows you to route trains in a fully simulated rail network. Particular care has been taken on the realistic management of light signals (block systems, switches protection), train physics and curve tracing.
+ * <https://github.com/Piripant/sudoku>
 
 # 0.4.x
 
@@ -40,7 +42,7 @@ submit a PR, please!
 ## Games
 
  * <https://github.com/obsoke/rustris>
- * <https://rap2hpoutre.github.io/llamassacre-website/> 
+ * <https://rap2hpoutre.github.io/llamassacre-website/>
 
 ## Examples/tutorial code
 

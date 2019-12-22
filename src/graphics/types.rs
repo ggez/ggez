@@ -8,8 +8,6 @@ use crate::graphics::{FillOptions, StrokeOptions};
 pub(crate) type Point2 = eu::Point2D<f32, eu::UnknownUnit>;
 /// A 2 dimensional vector representing an offset of a location
 pub(crate) type Vector2 = eu::Vector2D<f32, eu::UnknownUnit>;
-/// A 3 dimensional vector representing an offset of a location
-pub(crate) type Vector3 = eu::Vector3D<f32, eu::UnknownUnit>;
 /// A 4 dimensional matrix representing an arbitrary 3d transformation
 pub(crate) type Matrix4 = eu::Transform3D<f32, eu::UnknownUnit, eu::UnknownUnit>;
 
