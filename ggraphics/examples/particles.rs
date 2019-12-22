@@ -36,12 +36,14 @@ struct GameState {
     rng: oorandom::Rand32,
     particles: Vec<Particle>,
     passes: Vec<RenderPass>,
+    pipelines: Vec<QuadPipeline>,
 }
 
 impl GameState {
     pub fn new(gl: glow::Context) -> Self {
         let ctx = Rc::new(GlContext::new(gl));
         let mut passes = vec![];
+        let mut pipelines = vec![];
         unsafe {
             let particle_texture = {
                 let image_bytes = include_bytes!("../src/data/wabbit_alpha.png");
@@ -51,12 +53,12 @@ impl GameState {
                 TextureHandle::new(&ctx, &image_rgba_bytes, w as usize, h as usize).into_shared()
             };
             // Render that texture to the screen
-            let mut screen_pass =
-                RenderPass::new_screen(&*ctx, 800, 600, Some((0.6, 0.6, 0.6, 1.0)));
+            let screen_pass = RenderPass::new_screen(&*ctx, 800, 600, Some((0.6, 0.6, 0.6, 1.0)));
             let shader = GlContext::default_shader(&ctx);
             let mut pipeline = QuadPipeline::new(ctx.clone(), shader);
             pipeline.new_drawcall(particle_texture, SamplerSpec::default());
-            screen_pass.add_pipeline(pipeline);
+            pipelines.push(pipeline);
+            //screen_pass.add_pipeline(pipeline);
             passes.push(screen_pass);
         }
 
@@ -66,6 +68,7 @@ impl GameState {
             rng,
             particles: vec![],
             passes,
+            pipelines,
         }
     }
 
@@ -101,8 +104,7 @@ impl GameState {
             // Copy particles into draw call, since they've changed.
             // If our update framerate were faster than our drawing
             // frame rate, we'd want to do this on draw rather than update.
-            let pass = self.passes.last_mut().unwrap();
-            for pipeline in pass.pipelines.iter_mut() {
+            for pipeline in self.pipelines.iter_mut() {
                 for drawcall in pipeline.drawcalls_mut() {
                     // Copy all our particles into the draw call
                     drawcall.clear();
@@ -237,7 +239,9 @@ fn mainloop(
                         //windowed_context.resize(logical_size.to_physical(dpi_factor));
                     }
                     WindowEvent::RedrawRequested => {
-                        state.ctx.draw(state.passes.as_mut());
+                        for pass in state.passes.iter_mut() {
+                            pass.draw(&*state.ctx, state.pipelines.as_mut_slice());
+                        }
                         window.swap_buffers();
                     }
                     WindowEvent::CloseRequested => {

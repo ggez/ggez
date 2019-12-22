@@ -697,9 +697,11 @@ pub fn screen_render_pass(ctx: &mut Context) -> ScreenRenderPass {
 ///
 /// Unsets any active canvas.
 pub fn present(ctx: &mut Context) -> GameResult<()> {
+    /*
     ctx.gfx_context
         .ctx
         .draw(ctx.gfx_context.passes.as_mut_slice());
+    */
     ctx.gfx_context.win_ctx.swap_buffers()?;
     Ok(())
 }

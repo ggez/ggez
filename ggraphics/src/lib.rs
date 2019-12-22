@@ -194,6 +194,7 @@ impl GlContext {
             })
     }
 
+    /*
     /// Draw all contained render passes, in order.
     pub fn draw(&self, passes: &mut [RenderPass]) {
         // unsafety: This will be safe if RenderPass::draw() is
@@ -203,6 +204,7 @@ impl GlContext {
             }
         }
     }
+    */
 
     /// Returns OpenGL version info.
     /// Vendor, renderer, GL version, GLSL version
@@ -1366,8 +1368,8 @@ pub struct RenderPass {
     /// the render target if this is not None.
     clear_color: Option<(f32, f32, f32, f32)>,
     viewport: (i32, i32, i32, i32),
-    /// The pipelines to draw in the render pass.
-    pub pipelines: Vec<Box<dyn Pipeline>>,
+    // /// The pipelines to draw in the render pass.
+    // pub pipelines: Vec<Box<dyn Pipeline>>,
 }
 
 impl RenderPass {
@@ -1382,7 +1384,7 @@ impl RenderPass {
 
         Self {
             target,
-            pipelines: vec![],
+            //pipelines: vec![],
             viewport: (0, 0, width as i32, height as i32),
             clear_color,
         }
@@ -1397,16 +1399,18 @@ impl RenderPass {
     ) -> Self {
         Self {
             target: RenderTarget::Screen,
-            pipelines: vec![],
+            //pipelines: vec![],
             viewport: (0, 0, width as i32, height as i32),
             clear_color,
         }
     }
 
+    /*
     /// Add a new pipeline to the renderpass
     pub fn add_pipeline(&mut self, pipeline: impl Pipeline + 'static) {
         self.pipelines.push(Box::new(pipeline))
     }
+    */
 
     /// Set the current clear color.  If this is not None,
     /// the render target will be cleared to the returned
@@ -1420,18 +1424,27 @@ impl RenderPass {
         self.clear_color
     }
 
-    unsafe fn draw(&mut self, gl: &Context) {
-        self.target.bind(gl);
-        let (x, y, w, h) = self.viewport;
-        // TODO: Does this need to be set every time, or does it stick to the target binding?
-        gl.viewport(x, y, w, h);
+    /// Draw the given pipelines
+    pub fn draw<'a, I, P>(&mut self, ctx: &GlContext, pipelines: I)
+    where
+        I: IntoIterator<Item = &'a mut P>,
+        P: Pipeline + 'a,
+    {
+        // TODO: Audit unsafe
+        unsafe {
+            self.target.bind(&*ctx.gl);
+            let (x, y, w, h) = self.viewport;
+            // TODO: Does this need to be set every time, or does it stick to the target binding?
+            ctx.gl.viewport(x, y, w, h);
 
-        if let Some((r, g, b, a)) = self.clear_color {
-            gl.clear_color(r, g, b, a);
-            gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
-        }
-        for pipeline in self.pipelines.iter_mut() {
-            pipeline.draw(gl);
+            if let Some((r, g, b, a)) = self.clear_color {
+                ctx.gl.clear_color(r, g, b, a);
+                ctx.gl
+                    .clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+            }
+            for pipeline in pipelines {
+                pipeline.draw(&*ctx.gl);
+            }
         }
     }
 
