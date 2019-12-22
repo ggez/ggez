@@ -19,32 +19,11 @@ impl MainState {
         };
 
         use ggraphics::Pipeline;
-        unsafe {
-            // Render raw texture to the screen
-            {
-                let particle_image = graphics::Image::new(ctx, "/player.png")?;
-                let shader = graphics::default_shader(ctx);
-                let gl = graphics::gl_context(ctx);
-
-                let mut pipeline = gg::QuadPipeline::new(gl.clone(), shader);
-                let dc = pipeline.new_drawcall(particle_image.texture, gg::SamplerSpec::default());
-                dc.add(gg::QuadData::empty());
-            }
-
-            let particle_image = graphics::Image::new(ctx, "/player.png")?;
-            let shader = graphics::default_shader(ctx);
-            let mut batch = graphics::DrawBatch::new(ctx, shader);
-            batch.add_quad(&particle_image, gg::QuadData::empty());
-            s.batches.push(batch);
-
-            /*
-                         * I don't hate this:
-            let particle_image = graphics::Image::new(ctx, "/player.png")?;
-            let mut batch = graphics::DrawBatch::new(ctx, graphics::default_shader(ctx))
-                .add_quad(&particle_image, gg::QuadData::empty());
-            let screen_pass = graphics::screen_pass().draw(ctx, &[batch], Some((0.1, 0.2, 0.3, 1.0)));
-                         */
-        }
+        let particle_image = graphics::Image::new(ctx, "/player.png")?;
+        let shader = graphics::default_shader(ctx);
+        let mut batch = graphics::DrawBatch::new(ctx, shader);
+        batch.add_quad(&particle_image, gg::QuadData::empty());
+        s.batches.push(batch);
         Ok(s)
     }
 }
@@ -71,7 +50,7 @@ impl event::EventHandler for MainState {
 
         */
         let screen_pass = graphics::screen_pass(ctx);
-        screen_pass.draw(ctx, self.batches.as_mut_slice());
+        screen_pass.draw(self.batches.as_mut_slice());
         graphics::present(ctx)?;
         Ok(())
     }

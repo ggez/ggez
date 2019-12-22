@@ -55,19 +55,21 @@ pub struct GraphicsContext {
 
 impl GraphicsContext {
     pub(crate) fn new(gl: gg::glow::Context, win_ctx: WindowCtx) -> Self {
-        let mut ctx = gg::GlContext::new(gl);
+        let mut ctx = Rc::new(gg::GlContext::new(gl));
         unsafe {
             let (w, h): (u32, u32) = win_ctx.window().inner_size().into();
+            let pass = gg::RenderPass::new_screen(
+                Rc::get_mut(&mut ctx).expect("Can't happen"),
+                w as usize,
+                h as usize,
+                Some((0.1, 0.2, 0.3, 1.0)),
+            );
             let screen_pass = RenderPass {
-                inner: gg::RenderPass::new_screen(
-                    &mut ctx,
-                    w as usize,
-                    h as usize,
-                    Some((0.1, 0.2, 0.3, 1.0)),
-                ),
+                inner: pass,
+                gl: ctx.clone(),
             };
             Self {
-                ctx: Rc::new(ctx),
+                ctx: ctx,
                 win_ctx,
                 screen_pass,
                 passes: vec![],
@@ -642,13 +644,13 @@ impl DrawBatch {
 #[derive(Debug)]
 pub struct RenderPass {
     inner: gg::RenderPass,
+    gl: Rc<gg::GlContext>,
 }
 
 impl RenderPass {
-    pub fn draw(&mut self, ctx: &mut Context, batches: &mut [DrawBatch]) {
-        let gl = gl_context(ctx);
+    pub fn draw(&mut self, batches: &mut [DrawBatch]) {
         for b in batches {
-            self.inner.draw_single(&*gl, &mut b.pipe);
+            self.inner.draw_single(&*self.gl, &mut b.pipe);
         }
     }
 }

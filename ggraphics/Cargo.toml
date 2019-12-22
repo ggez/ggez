@@ -13,7 +13,7 @@ bytemuck = "1"
 glam = "0.8"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-glow = {version = "0.3.0-alpha4", default-features=false}
+glow = {version = "0.4.0", default-features=false}
 glutin = "0.22.0-alpha5"
 winit = {version = "0.20.0-alpha4", features=["web-sys"]}
 
@@ -24,7 +24,7 @@ winit = {version = "0.20.0-alpha4", features=["web-sys"]}
 #webgl_stdweb = { version = "0.3" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-glow = {version = "0.3.0-alpha4", default-features=false, features=["web-sys"]}
+glow = {version = "0.4.0", default-features=false, features=["web-sys"]}
 web_sys = { version = "0.3", package = "web-sys", features=["console"] }
 wasm-bindgen = { version = "0.2" }
 console_error_panic_hook = "0.1"
