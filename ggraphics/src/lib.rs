@@ -1448,6 +1448,24 @@ impl RenderPass {
         }
     }
 
+    /// Draw the given pipelines
+    pub fn draw_single(&mut self, ctx: &GlContext, pipeline: &mut dyn Pipeline) {
+        // TODO: Audit unsafe
+        unsafe {
+            self.target.bind(&*ctx.gl);
+            let (x, y, w, h) = self.viewport;
+            // TODO: Does this need to be set every time, or does it stick to the target binding?
+            ctx.gl.viewport(x, y, w, h);
+
+            if let Some((r, g, b, a)) = self.clear_color {
+                ctx.gl.clear_color(r, g, b, a);
+                ctx.gl
+                    .clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+            }
+            pipeline.draw(&*ctx.gl);
+        }
+    }
+
     /// Get the texture this render pass outputs to, if any.
     pub fn get_texture(&self) -> Option<Texture> {
         match &self.target {

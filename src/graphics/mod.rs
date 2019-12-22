@@ -49,7 +49,7 @@ pub struct GraphicsContext {
     // TODO: OMG these names
     pub ctx: Rc<gg::GlContext>,
     pub(crate) win_ctx: WindowCtx,
-    pub(crate) screen_pass: gg::RenderPass,
+    pub(crate) screen_pass: RenderPass,
     pub(crate) passes: Vec<gg::RenderPass>,
 }
 
@@ -58,12 +58,14 @@ impl GraphicsContext {
         let mut ctx = gg::GlContext::new(gl);
         unsafe {
             let (w, h): (u32, u32) = win_ctx.window().inner_size().into();
-            let screen_pass = gg::RenderPass::new_screen(
-                &mut ctx,
-                w as usize,
-                h as usize,
-                Some((0.1, 0.2, 0.3, 1.0)),
-            );
+            let screen_pass = RenderPass {
+                inner: gg::RenderPass::new_screen(
+                    &mut ctx,
+                    w as usize,
+                    h as usize,
+                    Some((0.1, 0.2, 0.3, 1.0)),
+                ),
+            };
             Self {
                 ctx: Rc::new(ctx),
                 win_ctx,
@@ -637,6 +639,20 @@ impl DrawBatch {
     }
 }
 
+#[derive(Debug)]
+pub struct RenderPass {
+    inner: gg::RenderPass,
+}
+
+impl RenderPass {
+    pub fn draw(&mut self, ctx: &mut Context, batches: &mut [DrawBatch]) {
+        let gl = gl_context(ctx);
+        for b in batches {
+            self.inner.draw_single(&*gl, &mut b.pipe);
+        }
+    }
+}
+
 // TODO: Clean up
 pub fn default_shader(ctx: &Context) -> gg::Shader {
     let gl = gl_context(ctx);
@@ -691,17 +707,17 @@ pub fn screen_render_pass(ctx: &mut Context) -> ScreenRenderPass {
 }
 */
 
+/// Returns the render pass that draws to the screen.
+pub fn screen_pass(ctx: &mut Context) -> &mut RenderPass {
+    &mut ctx.gfx_context.screen_pass
+}
+
 /// Tells the graphics system to actually put everything on the screen.
 /// Call this at the end of your [`EventHandler`](../event/trait.EventHandler.html)'s
 /// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) method.
 ///
 /// Unsets any active canvas.
 pub fn present(ctx: &mut Context) -> GameResult<()> {
-    /*
-    ctx.gfx_context
-        .ctx
-        .draw(ctx.gfx_context.passes.as_mut_slice());
-    */
     ctx.gfx_context.win_ctx.swap_buffers()?;
     Ok(())
 }
