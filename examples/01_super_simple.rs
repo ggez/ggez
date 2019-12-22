@@ -13,17 +13,16 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let mut s = MainState {
-            pos_x: 0.0,
-            batches: vec![],
-        };
-
         use ggraphics::Pipeline;
         let particle_image = graphics::Image::new(ctx, "/player.png")?;
         let shader = graphics::default_shader(ctx);
         let mut batch = graphics::DrawBatch::new(ctx, shader);
         batch.add_quad(&particle_image, gg::QuadData::empty());
-        s.batches.push(batch);
+
+        let s = MainState {
+            pos_x: 0.0,
+            batches: vec![batch],
+        };
         Ok(s)
     }
 }
@@ -49,8 +48,7 @@ impl event::EventHandler for MainState {
         graphics::draw(ctx, &circle, (na::Point2::new(self.pos_x, 380.0),))?;
 
         */
-        let screen_pass = graphics::screen_pass(ctx);
-        screen_pass.draw(self.batches.as_mut_slice());
+        graphics::screen_pass(ctx).draw(self.batches.as_mut_slice());
         graphics::present(ctx)?;
         Ok(())
     }
