@@ -88,6 +88,9 @@ pub trait EventHandler {
     /// and relative x and y coordinates compared to its last position.
     fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32, _dx: f32, _dy: f32) {}
 
+    /// 
+    fn mouse_enter_or_leave(&mut self, _ctx: &mut Context, _entered: bool) {}
+
     /// The mousewheel was scrolled, vertically (y, positive away from and negative toward the user)
     /// or horizontally (x, positive to the right and negative to the left).
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32) {}
@@ -248,6 +251,12 @@ where
                         let position = mouse::position(ctx);
                         let delta = mouse::delta(ctx);
                         state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
+                    }
+                    WindowEvent::CursorEntered { .. } => {
+                        state.mouse_enter_or_leave(ctx, true);
+                    }
+                    WindowEvent::CursorLeft { .. } => {
+                        state.mouse_enter_or_leave(ctx, false);
                     }
                     _x => {
                         // trace!("ignoring window event {:?}", x);
