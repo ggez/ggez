@@ -88,7 +88,7 @@ pub trait EventHandler {
     /// and relative x and y coordinates compared to its last position.
     fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32, _dx: f32, _dy: f32) {}
 
-    /// 
+    /// mouse entered or left window area
     fn mouse_enter_or_leave(&mut self, _ctx: &mut Context, _entered: bool) {}
 
     /// The mousewheel was scrolled, vertically (y, positive away from and negative toward the user)
