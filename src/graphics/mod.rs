@@ -44,6 +44,8 @@ pub use crate::graphics::types::*;
 
 pub type WindowCtx = glutin::WindowedContext<glutin::PossiblyCurrent>;
 
+pub type SamplerSpec = gg::SamplerSpec;
+
 #[derive(Debug)]
 pub struct GraphicsContext {
     // TODO: OMG these names
@@ -600,9 +602,8 @@ impl From<gfx::buffer::CreationError> for GameError {
 #[derive(Debug)]
 pub struct DrawBatch {
     current_image: Option<Image>,
-    current_sampler: Option<gg::SamplerSpec>,
-    /// TODO: Shouldn't be pub
-    pub pipe: gg::QuadPipeline,
+    current_sampler: Option<SamplerSpec>,
+    pipe: gg::QuadPipeline,
 }
 
 impl DrawBatch {
@@ -627,7 +628,7 @@ impl DrawBatch {
     }
 
     /// Add the given quad to the draw batch, with the given image and sampler.
-    pub fn add(&mut self, image: &Image, sampler: gg::SamplerSpec, quad: gg::QuadData) {
+    pub fn add(&mut self, image: &Image, sampler: SamplerSpec, quad: gg::QuadData) {
         use gg::Pipeline;
         // TODO: Can we clean this up some?  Just comparing the raw image and sampler
         // is weird.
@@ -647,7 +648,7 @@ impl DrawBatch {
 
     /// Add with default sampler
     pub fn add_quad(&mut self, image: &Image, quad: gg::QuadData) {
-        self.add(image, gg::SamplerSpec::default(), quad);
+        self.add(image, SamplerSpec::default(), quad);
     }
 }
 

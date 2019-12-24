@@ -1,6 +1,6 @@
 #version 300 es
 precision mediump float;
-in vec2 vert;
+in vec3 vert;
 in vec2 tex_coord;
 in vec4 frag_color;
 uniform sampler2D tex;

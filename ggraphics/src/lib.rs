@@ -194,18 +194,6 @@ impl GlContext {
             })
     }
 
-    /*
-    /// Draw all contained render passes, in order.
-    pub fn draw(&self, passes: &mut [RenderPass]) {
-        // unsafety: This will be safe if RenderPass::draw() is
-        unsafe {
-            for pass in passes.iter_mut() {
-                pass.draw(&self.gl);
-            }
-        }
-    }
-    */
-
     /// Returns OpenGL version info.
     /// Vendor, renderer, GL version, GLSL version
     pub fn get_info(&self) -> (String, String, String, String) {
@@ -218,9 +206,6 @@ impl GlContext {
             (vendor, rend, vers, glsl_vers)
         }
     }
-
-    /*
-     */
 }
 
 /// This is actually not safe to Clone, we'd have to Rc the GlTexture.
@@ -409,6 +394,8 @@ pub struct QuadData {
     pub offset: [f32; 2],
     /// Rotation, in radians, CCW.
     pub rotation: f32,
+    /// Layer/z-coordinate
+    pub layer: f32,
 }
 
 unsafe impl bytemuck::Zeroable for QuadData {}
@@ -424,6 +411,7 @@ impl QuadData {
             src_rect: [0.0, 0.0, 1.0, 1.0],
             dst_rect: [0.0, 0.0, 1.0, 1.0],
             rotation: 0.0,
+            layer: 0.0,
         }
     }
 
@@ -453,12 +441,16 @@ impl QuadData {
         let rotation_offset = (&thing.rotation as *const f32 as usize) - thing_base as usize;
         let rotation_size = mem::size_of_val(&thing.rotation);
 
+        let layer_offset = (&thing.layer as *const f32 as usize) - thing_base as usize;
+        let layer_size = mem::size_of_val(&thing.layer);
+
         vec![
             ("model_offset", offset_offset, offset_size),
             ("model_color", color_offset, color_size),
             ("model_src_rect", src_rect_offset, src_rect_size),
             ("model_dst_rect", dst_rect_offset, dst_rect_size),
             ("model_rotation", rotation_offset, rotation_size),
+            ("model_layer", layer_offset, layer_size),
         ]
     }
 }
@@ -574,7 +566,10 @@ impl QuadDrawCall {
         for (name, offset, size) in layout {
             info!("Layout: {} offset, {} size", offset, size);
             let element_size = mem::size_of::<f32>();
-            let attrib_location = gl.get_attrib_location(shader.program, name).unwrap();
+            let attrib_location = gl
+                .get_attrib_location(shader.program, name)
+                // TODO: make this not always need a format!()
+                .expect(&format!("Unknown attrib name in shader: {}", name));
             gl.vertex_attrib_pointer_f32(
                 attrib_location,
                 (size / element_size) as i32,
@@ -616,7 +611,7 @@ impl QuadDrawCall {
                 .unwrap();
             gl.vertex_attrib_pointer_f32(
                 dummy_attrib,
-                2,
+                3,
                 glow::FLOAT,
                 false,
                 // We can just say the stride of this guy is 0, since
@@ -638,7 +633,7 @@ impl QuadDrawCall {
             // And we only need enough vertices to draw one quad and never have to alter it.
             // We could reuse the same buffer for all QuadDrawCall's, tbh, but that seems
             // a bit overkill.
-            let empty_slice: &[u8] = &[0; mem::size_of::<f32>() * 2 * 6];
+            let empty_slice: &[u8] = &[0; mem::size_of::<f32>() * 3 * 6];
             gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, empty_slice, glow::STREAM_DRAW);
 
             // Now create another VBO containing per-instance data

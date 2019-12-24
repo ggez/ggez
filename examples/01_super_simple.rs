@@ -17,6 +17,22 @@ impl MainState {
         let particle_image = graphics::Image::new(ctx, "/player.png")?;
         let mut batch = graphics::DrawBatch::new(ctx);
         batch.add_quad(&particle_image, gg::QuadData::empty());
+        batch.add_quad(
+            &particle_image,
+            gg::QuadData {
+                color: [1.0, 0.0, 0.0, 1.0],
+                offset: [0.1, 0.0],
+                ..gg::QuadData::empty()
+            },
+        );
+        batch.add_quad(
+            &particle_image,
+            gg::QuadData {
+                color: [0.0, 1.0, 0.0, 1.0],
+                offset: [0.0, 100.1],
+                ..gg::QuadData::empty()
+            },
+        );
 
         let s = MainState {
             pos_x: 0.0,
