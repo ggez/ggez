@@ -21,7 +21,8 @@ impl MainState {
             &particle_image,
             gg::QuadData {
                 color: [1.0, 0.0, 0.0, 1.0],
-                offset: [0.1, 0.0],
+                dst_rect: [0.1, 0.0, 1.0, 1.0],
+                layer: 0.3,
                 ..gg::QuadData::empty()
             },
         );
@@ -29,7 +30,8 @@ impl MainState {
             &particle_image,
             gg::QuadData {
                 color: [0.0, 1.0, 0.0, 1.0],
-                offset: [0.0, 100.1],
+                dst_rect: [0.0, 0.1, 1.0, 1.0],
+                layer: 0.2,
                 ..gg::QuadData::empty()
             },
         );

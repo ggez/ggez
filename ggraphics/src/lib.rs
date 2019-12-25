@@ -971,9 +971,9 @@ pub struct QuadPipeline {
 
 impl QuadPipeline {
     /// Create new pipeline with the given shader.
-    pub unsafe fn new(ctx: Rc<GlContext>, shader: Shader) -> Self {
+    pub unsafe fn new(ctx: Rc<GlContext>, shader: Shader, projection: Mat4) -> Self {
         let gl = &*ctx.gl;
-        let projection = ortho_mat(-1.0, 1.0, 1.0, -1.0, 1.0, -1.0);
+        //let projection = ortho_mat(-1.0, 1.0, 1.0, -1.0, 1.0, -1.0);
         let projection_location = gl
             .get_uniform_location(shader.program, "projection")
             .unwrap();

@@ -53,6 +53,7 @@ pub struct GraphicsContext {
     pub(crate) win_ctx: WindowCtx,
     pub(crate) screen_pass: RenderPass,
     pub(crate) passes: Vec<gg::RenderPass>,
+    projection: Matrix4,
 }
 
 impl GraphicsContext {
@@ -70,11 +71,13 @@ impl GraphicsContext {
                 inner: pass,
                 gl: ctx.clone(),
             };
+            let projection = Matrix4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
             Self {
                 ctx: ctx,
                 win_ctx,
                 screen_pass,
                 passes: vec![],
+                projection,
             }
         }
     }
@@ -619,7 +622,8 @@ impl DrawBatch {
     /// Make a new DrawBatch with the given shader.
     pub fn new_with_shader(ctx: &mut Context, shader: gg::Shader) -> Self {
         let gl = gl_context(ctx);
-        let pipe = unsafe { gg::QuadPipeline::new(gl.clone(), shader) };
+        let projection = ctx.gfx_context.projection;
+        let pipe = unsafe { gg::QuadPipeline::new(gl.clone(), shader, projection) };
         Self {
             current_image: None,
             current_sampler: None,
