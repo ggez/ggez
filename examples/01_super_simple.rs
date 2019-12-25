@@ -22,7 +22,6 @@ impl MainState {
             gg::QuadData {
                 color: [1.0, 0.0, 0.0, 1.0],
                 dst_rect: [0.1, 0.0, 1.0, 1.0],
-                layer: 0.3,
                 ..gg::QuadData::empty()
             },
         );
@@ -31,7 +30,6 @@ impl MainState {
             gg::QuadData {
                 color: [0.0, 1.0, 0.0, 1.0],
                 dst_rect: [0.0, 0.1, 1.0, 1.0],
-                layer: 0.2,
                 ..gg::QuadData::empty()
             },
         );

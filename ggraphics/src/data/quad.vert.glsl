@@ -29,7 +29,6 @@ layout(location = 2) in vec4 model_src_rect;
 layout(location = 3) in vec4 model_dst_rect;
 layout(location = 4) in vec2 model_offset;
 layout(location = 5) in float model_rotation;
-layout(location = 6) in float model_layer;
 uniform mat4 projection;
 
 out vec3 vert;
@@ -44,7 +43,7 @@ void main() {
     );
     vec3 offset_inverse = -vec3(model_offset, 0.0);
     vec3 scale = vec3(model_dst_rect.zw, 1.0);
-    vec3 dest_point = vec3(model_dst_rect.xy, model_layer);
+    vec3 dest_point = vec3(model_dst_rect.xy, 0.0);
     vert = (verts[gl_VertexID % 6] + offset_inverse) * scale * rotation
         + vec3(model_offset, 0.0) + dest_point + vertex_dummy;
 

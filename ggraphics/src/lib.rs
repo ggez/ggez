@@ -112,6 +112,7 @@ impl GlContext {
             gl.enable(glow::BLEND);
             gl.blend_func(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_ALPHA);
             gl.enable(glow::DEPTH_TEST);
+            gl.depth_func(glow::LEQUAL);
             let gl = Rc::new(gl);
             let quad_shader =
                 ShaderHandle::new_raw(gl.clone(), VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
@@ -395,8 +396,6 @@ pub struct QuadData {
     pub offset: [f32; 2],
     /// Rotation, in radians, CCW.
     pub rotation: f32,
-    /// Layer/z-coordinate
-    pub layer: f32,
 }
 
 unsafe impl bytemuck::Zeroable for QuadData {}
@@ -412,7 +411,6 @@ impl QuadData {
             src_rect: [0.0, 0.0, 1.0, 1.0],
             dst_rect: [0.0, 0.0, 1.0, 1.0],
             rotation: 0.0,
-            layer: 0.0,
         }
     }
 
@@ -442,16 +440,12 @@ impl QuadData {
         let rotation_offset = (&thing.rotation as *const f32 as usize) - thing_base as usize;
         let rotation_size = mem::size_of_val(&thing.rotation);
 
-        let layer_offset = (&thing.layer as *const f32 as usize) - thing_base as usize;
-        let layer_size = mem::size_of_val(&thing.layer);
-
         vec![
             ("model_offset", offset_offset, offset_size),
             ("model_color", color_offset, color_size),
             ("model_src_rect", src_rect_offset, src_rect_size),
             ("model_dst_rect", dst_rect_offset, dst_rect_size),
             ("model_rotation", rotation_offset, rotation_size),
-            ("model_layer", layer_offset, layer_size),
         ]
     }
 }
