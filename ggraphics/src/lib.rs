@@ -111,6 +111,7 @@ impl GlContext {
         unsafe {
             gl.enable(glow::BLEND);
             gl.blend_func(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_ALPHA);
+            gl.enable(glow::DEPTH_TEST);
             let gl = Rc::new(gl);
             let quad_shader =
                 ShaderHandle::new_raw(gl.clone(), VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
