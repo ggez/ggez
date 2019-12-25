@@ -166,7 +166,7 @@ where
     events_loop.run(move |event, _, control_flow| {
         let ctx = &mut ctx;
         let state = &mut state;
-        
+
         *control_flow = ControlFlow::Wait;
         // If you are writing your own event loop, make sure
         // you include `timer_context.tick()` and
@@ -256,7 +256,8 @@ where
             },
             Event::EventsCleared => {
                 state.update(ctx).expect("TODO");
-            },
+                ctx.gfx_context.win_ctx.window().request_redraw();
+            }
             Event::DeviceEvent { event, .. } => match event {
                 _ => (),
             },
