@@ -125,15 +125,30 @@ impl GraphicsContext {
         */
         Ok(())
     }
+
+    // TODO
+    pub(crate) fn resize_viewport(&mut self) {
+        let logical_size = self.win_ctx.window().inner_size();
+        let physical_size = logical_size.to_physical(1.0);
+        // TODO: Get rid of `as`
+        self.screen_pass.inner.set_viewport(
+            0,
+            0,
+            physical_size.width as i32,
+            physical_size.height as i32,
+        );
+    }
 }
 
 pub trait WindowTrait {
     fn request_redraw(&self);
     fn swap_buffers(&self);
-    fn resize_viewport(&self);
 }
 
 /// Used for desktop
+///
+/// TODO: Wait... why is this different for wasm and not-wasm again?
+/// Oh, I think it's 'cause glutin doesn't quite handle wasm right yet.
 #[cfg(not(target_arch = "wasm32"))]
 impl WindowTrait for glutin::WindowedContext<glutin::PossiblyCurrent> {
     fn request_redraw(&self) {
@@ -142,8 +157,6 @@ impl WindowTrait for glutin::WindowedContext<glutin::PossiblyCurrent> {
     fn swap_buffers(&self) {
         self.swap_buffers().unwrap();
     }
-    // TODO
-    fn resize_viewport(&self) {}
 }
 
 /// Used for wasm
@@ -158,8 +171,6 @@ impl WindowTrait for winit::window::Window {
         web_sys::console::log_1(&wasm_bindgen::JsValue::from_str(&msg));
         */
     }
-    // TODO
-    fn resize_viewport(&self) {}
 }
 
 /*
