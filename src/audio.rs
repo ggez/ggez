@@ -43,6 +43,8 @@ pub(crate) struct RodioAudioContext {
 
 impl RodioAudioContext {
     /// Create new `RodioAudioContext`.
+    /// TODO: Use it.
+    #[allow(unused)]
     pub fn new() -> GameResult<Self> {
         let device = rodio::default_output_device().ok_or_else(|| {
             GameError::AudioError(String::from(

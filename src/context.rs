@@ -78,7 +78,7 @@ impl Context {
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
     fn from_conf(
         conf: conf::Conf,
-        mut fs: Filesystem,
+        fs: Filesystem,
     ) -> GameResult<(Context, glutin::event_loop::EventLoop<()>)> {
         let debug_id = DebugId::new();
         // TODO BUGGO https://github.com/rust-windowing/winit/issues/1255
@@ -151,8 +151,7 @@ impl Context {
     pub fn process_event(&mut self, event: &glutin::event::Event<()>) {
         match event.clone() {
             glutin_event::Event::WindowEvent { event, .. } => match event {
-                glutin_event::WindowEvent::Resized(logical_size) => {
-                    //let hidpi_factor = self.gfx_context.win_ctx.window().hidpi_factor();
+                glutin_event::WindowEvent::Resized(_logical_size) => {
                     self.gfx_context.resize_viewport();
                 }
                 glutin_event::WindowEvent::CursorMoved {
@@ -354,6 +353,8 @@ impl DebugId {
         DebugId(id)
     }
 
+    /* TODO: Are these still needed?  Maybe not, since our resources
+     * tend to contain a Rc to the GL context that created them.
     pub fn get(ctx: &Context) -> Self {
         DebugId(ctx.debug_id.0)
     }
@@ -364,6 +365,7 @@ impl DebugId {
             panic!("Tried to use a resource with a Context that did not create it; this should never happen!");
         }
     }
+    */
 }
 
 #[cfg(not(debug_assertions))]
