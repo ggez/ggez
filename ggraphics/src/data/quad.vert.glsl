@@ -9,13 +9,13 @@ const vec3 verts[6] = vec3[6](
     vec3(1.0f, 1.0f, 0.0)
 );
 const vec2 uvs[6] = vec2[6](
-    vec2(0.0f, 1.0f),
-    vec2(1.0f, 0.0f),
     vec2(0.0f, 0.0f),
-
-    vec2(0.0f, 1.0f),
     vec2(1.0f, 1.0f),
-    vec2(1.0f, 0.0f)
+    vec2(0.0f, 1.0f),
+
+    vec2(0.0f, 0.0f),
+    vec2(1.0f, 0.0f),
+    vec2(1.0f, 1.0f)
 );
 
 // TODO: We don't actually need layouts here, hmmm.

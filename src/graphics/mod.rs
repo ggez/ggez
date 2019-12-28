@@ -53,7 +53,6 @@ pub struct GraphicsContext {
     pub(crate) win_ctx: WindowCtx,
     pub(crate) screen_pass: RenderPass,
     pub(crate) passes: Vec<gg::RenderPass>,
-    projection: Matrix4,
 }
 
 impl GraphicsContext {
@@ -71,13 +70,11 @@ impl GraphicsContext {
                 inner: pass,
                 gl: ctx.clone(),
             };
-            let projection = Matrix4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
             Self {
                 ctx: ctx,
                 win_ctx,
                 screen_pass,
                 passes: vec![],
-                projection,
             }
         }
     }
@@ -611,24 +608,27 @@ pub struct DrawBatch {
 
 impl DrawBatch {
     /// Make a new DrawBatch with the default shader.
-    pub fn new(ctx: &mut Context) -> Self {
+    pub fn new(ctx: &mut Context, projection: Matrix4) -> Self {
         let shader = {
             let gl = gl_context(ctx);
             gl.default_shader()
         };
-        Self::new_with_shader(ctx, shader)
+        Self::new_with_shader(ctx, projection, shader)
     }
 
     /// Make a new DrawBatch with the given shader.
-    pub fn new_with_shader(ctx: &mut Context, shader: gg::Shader) -> Self {
+    pub fn new_with_shader(ctx: &mut Context, projection: Matrix4, shader: gg::Shader) -> Self {
         let gl = gl_context(ctx);
-        let projection = ctx.gfx_context.projection;
         let pipe = unsafe { gg::QuadPipeline::new(gl.clone(), shader, projection) };
         Self {
             current_image: None,
             current_sampler: None,
             pipe,
         }
+    }
+
+    pub fn set_projection(&mut self, projection: Matrix4) {
+        self.pipe.projection = projection
     }
 
     /// Add the given quad to the draw batch, with the given image and sampler.
@@ -691,6 +691,19 @@ impl RenderPass {
 pub fn default_shader(ctx: &Context) -> gg::Shader {
     let gl = gl_context(ctx);
     gl.default_shader()
+}
+
+/// TODO: Figure out and clean up.
+/// This returns an ortho projection where 1 pixel == 1 unit,
+/// with the origin at top-left and Y increasing downwards.
+/// It always returns the correct projection for the current size
+/// of the window.
+pub fn default_projection(ctx: &Context) -> Matrix4 {
+    let (w, h) = drawable_size(ctx);
+
+    // TODO: Why do we need to transpose this?
+    // It's a BUGGO either in our shader or in the glam function (which I wrote)
+    Matrix4::orthographic_rh_gl(0.0, w, h, 0.0, -1.0, 1.0).transpose()
 }
 
 /*

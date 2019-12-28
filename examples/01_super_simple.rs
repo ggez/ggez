@@ -15,13 +15,20 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         use ggraphics::Pipeline;
         let particle_image = graphics::Image::new(ctx, "/player.png")?;
-        let mut batch = graphics::DrawBatch::new(ctx);
-        batch.add_quad(&particle_image, gg::QuadData::empty());
+        let projection = graphics::default_projection(ctx);
+        let mut batch = graphics::DrawBatch::new(ctx, projection);
+        batch.add_quad(
+            &particle_image,
+            gg::QuadData {
+                dst_rect: [0.0, 0.0, 32.0, 32.0],
+                ..gg::QuadData::empty()
+            },
+        );
         batch.add_quad(
             &particle_image,
             gg::QuadData {
                 color: [1.0, 0.0, 0.0, 1.0],
-                dst_rect: [0.1, 0.0, 1.0, 1.0],
+                dst_rect: [4.0, 0.0, 32.0, 32.0],
                 ..gg::QuadData::empty()
             },
         );
@@ -29,7 +36,7 @@ impl MainState {
             &particle_image,
             gg::QuadData {
                 color: [0.0, 1.0, 0.0, 1.0],
-                dst_rect: [0.0, 0.1, 1.0, 1.0],
+                dst_rect: [0.0, 4.0, 32.0, 32.0],
                 ..gg::QuadData::empty()
             },
         );
