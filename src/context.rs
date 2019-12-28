@@ -152,8 +152,7 @@ impl Context {
         match event.clone() {
             glutin_event::Event::WindowEvent { event, .. } => match event {
                 glutin_event::WindowEvent::Resized(logical_size) => {
-                    let hidpi_factor = self.gfx_context.win_ctx.window().hidpi_factor();
-                    let physical_size = logical_size.to_physical(hidpi_factor as f64);
+                    //let hidpi_factor = self.gfx_context.win_ctx.window().hidpi_factor();
                     self.gfx_context.resize_viewport();
                 }
                 glutin_event::WindowEvent::CursorMoved {
