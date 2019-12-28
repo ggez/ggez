@@ -2,7 +2,7 @@
 // env RUST_LOG=info cargo run
 
 use ggraphics::*;
-use glam::{self, Vec2};
+use glam::{self, Mat4, Vec2};
 use glow;
 use oorandom;
 use winit;
@@ -55,7 +55,8 @@ impl GameState {
             // Render that texture to the screen
             let screen_pass = RenderPass::new_screen(&*ctx, 800, 600, Some((0.6, 0.6, 0.6, 1.0)));
             let shader = GlContext::default_shader(&ctx);
-            let mut pipeline = QuadPipeline::new(ctx.clone(), shader);
+            let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
+            let mut pipeline = QuadPipeline::new(ctx.clone(), shader, projection);
             pipeline.new_drawcall(particle_texture, SamplerSpec::default());
             pipelines.push(pipeline);
             //screen_pass.add_pipeline(pipeline);

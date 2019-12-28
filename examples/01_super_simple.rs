@@ -8,15 +8,14 @@ use ggez::{Context, GameResult};
 
 struct MainState {
     pos_x: f32,
-    batches: Vec<graphics::DrawBatch>,
+    batches: Vec<graphics::QuadBatch>,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        use ggraphics::Pipeline;
         let particle_image = graphics::Image::new(ctx, "/player.png")?;
         let projection = graphics::default_projection(ctx);
-        let mut batch = graphics::DrawBatch::new(ctx, projection);
+        let mut batch = graphics::QuadBatch::new(ctx, projection);
         batch.add_quad(
             &particle_image,
             gg::QuadData {

@@ -1,7 +1,6 @@
 use crate::context::DebugId;
 use crate::error::GameError;
 use crate::graphics::*;
-use gfx::traits::FactoryExt;
 use lyon;
 use lyon::tessellation as t;
 

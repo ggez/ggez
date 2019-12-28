@@ -2,7 +2,7 @@ use glam;
 use std::f32;
 use std::u32;
 
-//use crate::graphics::{FillOptions, StrokeOptions};
+use crate::graphics::{FillOptions, StrokeOptions};
 
 /// A 2 dimensional point representing a location
 pub(crate) type Point2 = glam::Vec2;
@@ -452,7 +452,6 @@ impl From<LinearColor> for [f32; 4] {
     }
 }
 
-/*
 /// Specifies whether a mesh should be drawn
 /// filled or as an outline.
 #[derive(Debug, Copy, Clone)]
@@ -474,7 +473,6 @@ impl DrawMode {
         DrawMode::Fill(FillOptions::default())
     }
 }
-*/
 
 #[cfg(test)]
 mod tests {

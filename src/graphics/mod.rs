@@ -33,13 +33,13 @@ use crate::context::Context;
 use crate::GameResult;
 
 pub(crate) mod drawparam;
-//pub(crate) mod mesh;
 pub(crate) mod image;
+pub(crate) mod mesh;
 pub(crate) mod types;
 
 pub use crate::graphics::drawparam::*;
 pub use crate::graphics::image::*;
-//pub use crate::graphics::mesh::*;
+pub use crate::graphics::mesh::*;
 pub use crate::graphics::types::*;
 
 pub type WindowCtx = glutin::WindowedContext<glutin::PossiblyCurrent>;
@@ -186,14 +186,14 @@ impl WindowTrait for winit::window::Window {
 /// Basically a render pipeline with some useful fluff around it.
 /// Handles auto-batching of DrawCall's so you don't have to.
 #[derive(Debug)]
-pub struct DrawBatch {
+pub struct QuadBatch {
     current_image: Option<Image>,
     current_sampler: Option<SamplerSpec>,
     pipe: gg::QuadPipeline,
 }
 
-impl DrawBatch {
-    /// Make a new DrawBatch with the default shader.
+impl QuadBatch {
+    /// Make a new QuadBatch with the default shader.
     pub fn new(ctx: &mut Context, projection: Matrix4) -> Self {
         let shader = {
             let gl = gl_context(ctx);
@@ -202,7 +202,7 @@ impl DrawBatch {
         Self::new_with_shader(ctx, projection, shader)
     }
 
-    /// Make a new DrawBatch with the given shader.
+    /// Make a new QuadBatch with the given shader.
     pub fn new_with_shader(ctx: &mut Context, projection: Matrix4, shader: gg::Shader) -> Self {
         let gl = gl_context(ctx);
         let pipe = unsafe { gg::QuadPipeline::new(gl.clone(), shader, projection) };
@@ -249,9 +249,9 @@ pub struct RenderPass {
 }
 
 impl RenderPass {
-    /// Draw the given `DrawBatch`es to the render pass's draw target.
+    /// Draw the given `QuadBatch`es to the render pass's draw target.
     /// Does not clear the target first.
-    pub fn draw(&mut self, batches: &mut [DrawBatch]) {
+    pub fn draw(&mut self, batches: &mut [QuadBatch]) {
         // TODO: Can we do this in terms of clear_draw()?  Not without making it
         // take an Option<Color> I suppose, which is a little redundant.  Alas.
         self.inner.set_clear_color(None);
@@ -265,7 +265,7 @@ impl RenderPass {
     /// ideally have to be done at once.)
     ///
     /// Set to `None` to not clear it at all.
-    pub fn clear_draw(&mut self, color: Color, batches: &mut [DrawBatch]) {
+    pub fn clear_draw(&mut self, color: Color, batches: &mut [QuadBatch]) {
         let color = Some((color.r, color.g, color.b, color.a));
         self.inner.set_clear_color(color);
         self.inner

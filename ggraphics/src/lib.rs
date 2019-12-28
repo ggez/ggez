@@ -67,39 +67,6 @@ pub struct GlContext {
     quad_shader: Shader,
 }
 
-fn ortho(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> [[f32; 4]; 4] {
-    let c0r0 = 2.0 / (right - left);
-    let c0r1 = 0.0;
-    let c0r2 = 0.0;
-    let c0r3 = 0.0;
-
-    let c1r0 = 0.0;
-    let c1r1 = 2.0 / (top - bottom);
-    let c1r2 = 0.0;
-    let c1r3 = 0.0;
-
-    let c2r0 = 0.0;
-    let c2r1 = 0.0;
-    let c2r2 = -2.0 / (far - near);
-    let c2r3 = 0.0;
-
-    let c3r0 = -(right + left) / (right - left);
-    let c3r1 = -(top + bottom) / (top - bottom);
-    let c3r2 = -(far + near) / (far - near);
-    let c3r3 = 1.0;
-
-    // our matrices are column-major, so here we are.
-    [
-        [c0r0, c0r1, c0r2, c0r3],
-        [c1r0, c1r1, c1r2, c1r3],
-        [c2r0, c2r1, c2r2, c2r3],
-        [c3r0, c3r1, c3r2, c3r3],
-    ]
-}
-
-fn ortho_mat(left: f32, right: f32, top: f32, bottom: f32, far: f32, near: f32) -> Mat4 {
-    Mat4::from_cols_array_2d(&ortho(left, right, top, bottom, far, near))
-}
 const VERTEX_SHADER_SOURCE: &str = include_str!("data/quad.vert.glsl");
 const FRAGMENT_SHADER_SOURCE: &str = include_str!("data/quad.frag.glsl");
 
@@ -657,19 +624,6 @@ impl QuadDrawCall {
         }
     }
 
-    /// Add a new instance to the quad data.
-    /// Instances are cached between `draw()` invocations.
-    pub fn add(&mut self, quad: QuadData) {
-        self.dirty = true;
-        self.instances.push(quad);
-    }
-
-    /// Empty all instances out of the instance buffer.
-    pub fn clear(&mut self) {
-        self.dirty = true;
-        self.instances.clear();
-    }
-
     /// Upload the array of instances to our VBO
     unsafe fn upload_instances(&mut self, gl: &Context) {
         // TODO: audit unsafe
@@ -680,6 +634,30 @@ impl QuadDrawCall {
         gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, bytes_slice, glow::STREAM_DRAW);
         gl.bind_buffer(glow::ARRAY_BUFFER, None);
         self.dirty = false;
+    }
+}
+
+/// Trait for a draw call...
+pub trait DrawCall {
+    /// Add a new instance to the quad data.
+    /// Instances are cached between `draw()` invocations.
+    fn add(&mut self, quad: QuadData);
+
+    /// Empty all instances out of the instance buffer.
+    fn clear(&mut self);
+    /// Draw all the instances at once.
+    unsafe fn draw(&mut self, gl: &Context);
+}
+
+impl DrawCall for QuadDrawCall {
+    fn add(&mut self, quad: QuadData) {
+        self.dirty = true;
+        self.instances.push(quad);
+    }
+
+    fn clear(&mut self) {
+        self.dirty = true;
+        self.instances.clear();
     }
 
     unsafe fn draw(&mut self, gl: &Context) {
@@ -713,35 +691,6 @@ impl QuadDrawCall {
             num_vertices as i32,
             num_instances as i32,
         );
-    }
-}
-
-/// Trait for a draw call...
-pub trait DrawCall {
-    /// Add a new instance to the quad data.
-    /// Instances are cached between `draw()` invocations.
-    fn add(&mut self, quad: QuadData);
-
-    /// Empty all instances out of the instance buffer.
-    fn clear(&mut self);
-    /// fdjsal
-    unsafe fn draw(&mut self, gl: &Context);
-}
-
-impl DrawCall for QuadDrawCall {
-    /// TODO: Refactor
-    fn add(&mut self, quad: QuadData) {
-        self.add(quad);
-    }
-
-    /// TODO: Refactor
-    fn clear(&mut self) {
-        self.clear();
-    }
-
-    /// TODO: Refactor
-    unsafe fn draw(&mut self, gl: &Context) {
-        self.draw(gl);
     }
 }
 
@@ -968,7 +917,6 @@ impl QuadPipeline {
     /// Create new pipeline with the given shader.
     pub unsafe fn new(ctx: Rc<GlContext>, shader: Shader, projection: Mat4) -> Self {
         let gl = &*ctx.gl;
-        //let projection = ortho_mat(-1.0, 1.0, 1.0, -1.0, 1.0, -1.0);
         let projection_location = gl
             .get_uniform_location(shader.program, "projection")
             .unwrap();
@@ -1111,7 +1059,7 @@ impl MeshPipeline {
     pub unsafe fn new(ctx: Rc<GlContext>, shader: Shader) -> Self {
         let gl = &*ctx.gl;
         //let projection = Mat4::identity();
-        let projection = ortho_mat(-1.0, 1.0, 1.0, -1.0, 1.0, -1.0);
+        let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
         let projection_location = gl
             .get_uniform_location(shader.program, "projection")
             .unwrap();
