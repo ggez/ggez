@@ -99,9 +99,10 @@ impl Context {
                 .with_inner_size(glutin::dpi::LogicalSize::new(800.0, 600.0));
             let windowed_context = glutin::ContextBuilder::new()
                 .with_gl(glutin::GlRequest::GlThenGles {
-                    opengl_version: (4, 3),
-                    opengles_version: (3, 0),
+                    opengl_version: (2, 1),
+                    opengles_version: (2, 0),
                 })
+                //.with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGl, (2, 1)))
                 .with_gl_profile(glutin::GlProfile::Core)
                 .with_vsync(true)
                 .build_windowed(wb, &el)

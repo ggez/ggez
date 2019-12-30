@@ -2,10 +2,9 @@ use crate::context::DebugId;
 use crate::error::GameError;
 use crate::graphics::*;
 use lyon;
-use lyon::tessellation as t;
+pub(crate) use lyon::tessellation as t;
 
-pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
-
+/*
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct Vertex {}
 
@@ -685,3 +684,4 @@ fn bbox_for_vertices(verts: &[Vertex]) -> Option<Rect> {
         y: y_min,
     })
 }
+*/

@@ -2,7 +2,7 @@ use glam;
 use std::f32;
 use std::u32;
 
-use crate::graphics::{FillOptions, StrokeOptions};
+pub use lyon::tessellation::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 
 /// A 2 dimensional point representing a location
 pub(crate) type Point2 = glam::Vec2;

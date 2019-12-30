@@ -34,12 +34,12 @@ use crate::GameResult;
 
 pub(crate) mod drawparam;
 pub(crate) mod image;
-pub(crate) mod mesh;
+//pub(crate) mod mesh;
 pub(crate) mod types;
 
 pub use crate::graphics::drawparam::*;
 pub use crate::graphics::image::*;
-pub use crate::graphics::mesh::*;
+//pub use crate::graphics::mesh::*;
 pub use crate::graphics::types::*;
 
 pub type WindowCtx = glutin::WindowedContext<glutin::PossiblyCurrent>;
