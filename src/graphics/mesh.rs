@@ -221,7 +221,9 @@ impl MeshBuilder {
         self.polyline_inner(mode, points, true, color)
     }
 
-    fn polyline_inner<P>(
+    /// Create a new mesh for a given polyline.
+    /// The points given must be in clockwise order.
+    pub fn polyline_inner<P>(
         &mut self,
         mode: DrawMode,
         points: &[P],
@@ -231,6 +233,26 @@ impl MeshBuilder {
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
+        let vb = VertexBuilder {
+            color: LinearColor::from(color),
+        };
+        self.polyline_with_vertex_builder(mode, points, is_closed, vb)
+    }
+
+    /// Create a new mesh for a given polyline using a custom vertex builder.
+    /// The points given must be in clockwise order.
+    pub fn polyline_with_vertex_builder<P, V>(
+        &mut self,
+        mode: DrawMode,
+        points: &[P],
+        is_closed: bool,
+        vb: V,
+    ) -> GameResult<&mut Self>
+    where
+        P: Into<mint::Point2<f32>> + Clone,
+        V: t::VertexConstructor<t::FillVertex, Vertex>
+            + t::VertexConstructor<t::StrokeVertex, Vertex>,
+    {
         {
             assert!(points.len() > 1);
             let buffers = &mut self.buffer;
@@ -238,9 +260,7 @@ impl MeshBuilder {
                 let mint_point: mint::Point2<f32> = p.into();
                 t::math::point(mint_point.x, mint_point.y)
             });
-            let vb = VertexBuilder {
-                color: LinearColor::from(color),
-            };
+
             match mode {
                 DrawMode::Fill(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -624,6 +644,16 @@ impl Mesh {
         self.buffer = vbuf;
         self.slice = slice;
     }
+
+    /// Returns a slice for this mesh that could be used for manual draw call submission
+    pub fn get_slice(&self) -> &gfx::Slice<gfx_device_gl::Resources> {
+        &self.slice
+    }
+
+    /// Returns a vertex buffer for this mesh that could be used for manual draw call submission
+    pub fn get_vertex_buffer(&self) -> gfx::handle::Buffer<gfx_device_gl::Resources, Vertex> {
+        self.buffer.clone()
+    }
 }
 
 impl Drawable for Mesh {
@@ -653,6 +683,156 @@ impl Drawable for Mesh {
     }
     fn blend_mode(&self) -> Option<BlendMode> {
         self.blend_mode
+    }
+}
+
+/// Mesh that will be rendered with hardware instancing.
+/// Use this when you have a lot of similar geometry which does not move around often.
+#[derive(Debug)]
+pub struct MeshBatch {
+    mesh: Mesh,
+    instance_properties: Vec<InstanceProperties>,
+    instance_buffer: Option<gfx::handle::Buffer<gfx_device_gl::Resources, InstanceProperties>>,
+}
+
+impl MeshBatch {
+    /// Creates a new mesh batch and allocates an instance buffer for it
+    pub fn new(
+        ctx: &mut Context,
+        mesh: Mesh,
+        instance_params: &[DrawParam],
+    ) -> GameResult<MeshBatch> {
+        let (instance_properties, instance_buffer) =
+            MeshBatch::create_instance_buffer(ctx, instance_params)?;
+
+        Ok(MeshBatch {
+            mesh: mesh,
+            instance_properties: instance_properties,
+            instance_buffer: instance_buffer,
+        })
+    }
+
+    /// Reset existing instance params to provided data and reallocate existing buffers
+    pub fn reset_instance_params(
+        &mut self,
+        ctx: &mut Context,
+        instance_params: &[DrawParam],
+    ) -> GameResult {
+        let (instance_properties, instance_buffer) =
+            MeshBatch::create_instance_buffer(ctx, instance_params)?;
+
+        self.instance_properties = instance_properties;
+        self.instance_buffer = instance_buffer;
+
+        Ok(())
+    }
+
+    /// Updates instance parameters in a batch without reallocating existing buffers
+    pub fn update_instance_params(
+        &mut self,
+        ctx: &mut Context,
+        instance_params: &[DrawParam],
+        offset_elements: usize,
+    ) -> GameResult {
+        assert!((instance_params.len() + offset_elements) < self.instance_properties.len());
+        for i in 0..instance_params.len() {
+            let primitive_param = DrawTransform::from(instance_params[i]);
+            self.instance_properties[i + offset_elements] =
+                primitive_param.to_instance_properties(ctx.gfx_context.is_srgb());
+        }
+
+        ctx.gfx_context.encoder.update_buffer(
+            &self.instance_buffer.as_ref().unwrap(),
+            self.instance_properties.as_slice(),
+            0,
+        )?;
+
+        Ok(())
+    }
+
+    fn create_instance_buffer(
+        ctx: &mut Context,
+        instance_params: &[DrawParam],
+    ) -> GameResult<(
+        Vec<InstanceProperties>,
+        Option<gfx::handle::Buffer<gfx_device_gl::Resources, InstanceProperties>>,
+    )> {
+        let instance_properties = instance_params
+            .iter()
+            .map(|i| {
+                let primitive_param = DrawTransform::from(*i);
+                primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
+            })
+            .collect::<Vec<_>>();
+
+        let instance_buffer = ctx.gfx_context.factory.create_buffer(
+            instance_properties.len(),
+            gfx::buffer::Role::Vertex,
+            gfx::memory::Usage::Dynamic,
+            gfx::memory::Bind::TRANSFER_DST,
+        )?;
+
+        ctx.gfx_context.encoder.update_buffer(
+            &instance_buffer,
+            instance_properties.as_slice(),
+            0,
+        )?;
+
+        Ok((instance_properties, Some(instance_buffer)))
+    }
+}
+
+impl Drawable for MeshBatch {
+    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
+        if !self.instance_properties.is_empty() {
+            self.mesh.debug_id.assert(ctx);
+
+            let mut slice = self.mesh.slice.clone();
+            slice.instances = Some((self.instance_properties.len() as u32, 0));
+
+            let gfx = &mut ctx.gfx_context;
+
+            let batch_transform: DrawTransform = param.into();
+            let current_transform = gfx.transform();
+
+            gfx.push_transform(batch_transform.matrix * current_transform);
+            gfx.calculate_transform_matrix();
+            gfx.update_globals()?;
+
+            // HACK this code has to restore the old instance buffer after drawing,
+            // otherwise something else will override the first instance data
+            let instance_buffer = self.instance_buffer.as_ref().unwrap();
+            let old_instance_buffer = gfx.data.rect_instance_properties.clone();
+
+            gfx.data.rect_instance_properties = instance_buffer.clone();
+            gfx.data.vbuf = self.mesh.buffer.clone();
+            let texture = self.mesh.image.texture.clone();
+            let sampler = gfx
+                .samplers
+                .get_or_insert(self.mesh.image.sampler_info, gfx.factory.as_mut());
+
+            let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(texture);
+            gfx.data.tex = (typed_thingy, sampler);
+
+            gfx.draw(Some(&slice))?;
+
+            gfx.data.rect_instance_properties = old_instance_buffer;
+
+            gfx.pop_transform();
+            gfx.calculate_transform_matrix();
+            gfx.update_globals()?;
+        }
+
+        Ok(())
+    }
+    fn dimensions(&self, ctx: &mut Context) -> Option<Rect> {
+        self.mesh.dimensions(ctx)
+    }
+    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
+        self.mesh.set_blend_mode(mode)
+    }
+    fn blend_mode(&self) -> Option<BlendMode> {
+        self.mesh.blend_mode()
     }
 }
 
