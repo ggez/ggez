@@ -1,6 +1,6 @@
 //! I guess these docs will never appear since we re-export the canvas
 //! module from graphics...
-use gfx::format::Swizzle;
+use gfx::format::{Format, Swizzle};
 use gfx::handle::RawRenderTargetView;
 use gfx::memory::{Bind, Usage};
 use gfx::texture::{AaMode, Kind};
@@ -39,13 +39,17 @@ where
 /// [`SpriteBatch`](spritebatch/struct.Spritebatch.html).
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
-impl Canvas {
+impl<S> CanvasGeneric<S>
+where
+    S: BackendSpec
+{
     /// Create a new `Canvas` with the given size and number of samples.
     pub fn new(
         ctx: &mut Context,
         width: u16,
         height: u16,
         samples: conf::NumSamples,
+        color_format: Format,
     ) -> GameResult<Canvas> {
         let debug_id = DebugId::get(ctx);
         let aa = match samples {
@@ -54,7 +58,6 @@ impl Canvas {
         };
         let kind = Kind::D2(width, height, aa);
         let levels = 1;
-        let color_format = ctx.gfx_context.color_format();
         let factory = &mut ctx.gfx_context.factory;
         let texture_create_info = gfx::texture::Info {
             kind,
@@ -98,12 +101,23 @@ impl Canvas {
         use crate::graphics;
         let (w, h) = graphics::drawable_size(ctx);
         // Default to no multisampling
-        Canvas::new(ctx, w as u16, h as u16, conf::NumSamples::One)
+        Canvas::new(
+            ctx,
+            w as u16,
+            h as u16,
+            conf::NumSamples::One,
+            get_window_color_format(ctx),
+        )
     }
 
     /// Gets the backend `Image` that is being rendered to.
     pub fn image(&self) -> &Image {
         &self.image
+    }
+
+    /// Gets the backend `Target` that is being rendered to.
+    pub fn target(&self) -> &RawRenderTargetView<S::Resources> {
+        &self.target
     }
 
     /// Get the filter mode for the image.
