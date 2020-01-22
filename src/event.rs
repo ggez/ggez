@@ -153,7 +153,6 @@ pub fn quit(ctx: &mut Context) {
     ctx.state_context.as_mut().unwrap().continuing = false;
 }
 
-
 /// State context for all the states
 #[derive(Debug)]
 pub struct StateContext {
@@ -171,7 +170,6 @@ impl StateContext {
         }
     }
 }
-
 
 /// Runs the game's main loop, calling event callbacks on the given state
 /// object as events occur.
@@ -195,7 +193,14 @@ where
     use crate::input::{keyboard, mouse};
 
     // Necessary to divorce the state context from the context.
-    let state_context = unsafe { (ctx.state_context.as_mut().expect("You must initialize a state context before pushing a state!") as *mut StateContext).as_mut() }.unwrap();
+    let state_context = unsafe {
+        (ctx.state_context
+            .as_mut()
+            .expect("You must initialize a state context before pushing a state!")
+            as *mut StateContext)
+            .as_mut()
+    }
+    .unwrap();
 
     while state_context.continuing {
         // If you are writing your own event loop, make sure

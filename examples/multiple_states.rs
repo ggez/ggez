@@ -4,9 +4,9 @@ use cgmath;
 use ggez;
 
 use ggez::event;
+use ggez::event::{KeyCode, KeyMods};
 use ggez::graphics;
 use ggez::{Context, GameResult};
-use ggez::event::{KeyMods, KeyCode};
 use std::env;
 use std::path;
 
@@ -105,7 +105,10 @@ impl event::EventHandler for PausedState {
 
         // Drawables are drawn from their top-left corner.
         let rect = ggez::graphics::screen_coordinates(ctx);
-        let dest_point = cgmath::Point2::new((rect.w - self.text.width(ctx) as f32) / 2.0, (rect.h - self.text.height(ctx) as f32) / 2.0);
+        let dest_point = cgmath::Point2::new(
+            (rect.w - self.text.width(ctx) as f32) / 2.0,
+            (rect.h - self.text.height(ctx) as f32) / 2.0,
+        );
         graphics::draw(ctx, &self.text, (dest_point,))?;
         graphics::present(ctx)?;
 
