@@ -148,31 +148,62 @@ pub trait EventHandler {
     fn resize_event(&mut self, _ctx: &mut Context, _width: f32, _height: f32) {}
 }
 
-/// Terminates the [`ggez::event::run()`](fn.run.html) loop by setting
-/// [`Context.continuing`](struct.Context.html#structfield.continuing)
-/// to `false`.
+/// Identical to `pop_state`.
 pub fn quit(ctx: &mut Context) {
-    ctx.continuing = false;
+    ctx.state_context.as_mut().unwrap().continuing = false;
 }
+
+
+/// State context for all the states
+#[derive(Debug)]
+pub struct StateContext {
+    /// Internal events loop.
+    pub(crate) events_loop: EventsLoop,
+    continuing: bool,
+}
+
+impl StateContext {
+    /// Construct a new `StateManager`
+    pub fn new(events_loop: EventsLoop) -> Self {
+        StateContext {
+            events_loop,
+            continuing: true,
+        }
+    }
+}
+
 
 /// Runs the game's main loop, calling event callbacks on the given state
 /// object as events occur.
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the [`timer`](../timer/index.html) module for more info.
-pub fn run<S>(ctx: &mut Context, events_loop: &mut EventsLoop, state: &mut S) -> GameResult
+pub fn run<S>(ctx: &mut Context, events_loop: EventsLoop, state: &mut S) -> GameResult
+where
+    S: EventHandler,
+{
+    ctx.create_state_context(events_loop);
+    push_state(ctx, state)
+}
+
+/// Push a state onto the context.
+#[allow(unsafe_code)]
+pub fn push_state<S>(ctx: &mut Context, state: &mut S) -> GameResult
 where
     S: EventHandler,
 {
     use crate::input::{keyboard, mouse};
 
-    while ctx.continuing {
+    // Necessary to divorce the state context from the context.
+    let state_context = unsafe { (ctx.state_context.as_mut().expect("You must initialize a state context before pushing a state!") as *mut StateContext).as_mut() }.unwrap();
+
+    while state_context.continuing {
         // If you are writing your own event loop, make sure
         // you include `timer_context.tick()` and
         // `ctx.process_event()` calls.  These update ggez's
         // internal state however necessary.
         ctx.timer_context.tick();
-        events_loop.poll_events(|event| {
+        state_context.events_loop.poll_events(|event| {
             ctx.process_event(&event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
@@ -281,5 +312,14 @@ where
         state.draw(ctx)?;
     }
 
+    state_context.continuing = true;
+
     Ok(())
+}
+
+/// Terminates the [`ggez::event::run()`](fn.run.html) loop by setting
+/// [`Context.continuing`](struct.Context.html#structfield.continuing)
+/// to `false`.
+pub fn pop_state(ctx: &mut Context) {
+    ctx.state_context.as_mut().unwrap().continuing = false;
 }

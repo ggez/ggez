@@ -6,7 +6,7 @@ pub use winit;
 use crate::audio;
 use crate::conf;
 use crate::error::GameResult;
-use crate::event::winit_event;
+use crate::event::{winit_event, StateContext};
 use crate::filesystem::Filesystem;
 use crate::graphics::{self, Point2};
 use crate::input::{gamepad, keyboard, mouse};
@@ -50,14 +50,13 @@ pub struct Context {
     pub mouse_context: mouse::MouseContext,
     /// Gamepad context
     pub gamepad_context: Box<dyn gamepad::GamepadContext>,
+    /// State context
+    pub state_context: Option<StateContext>,
 
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
     /// updating it will have no effect.
     pub(crate) conf: conf::Conf,
-    /// Controls whether or not the event loop should be running.
-    /// Set this with `ggez::event::quit()`.
-    pub continuing: bool,
 
     /// Context-specific unique ID.
     /// Compiles to nothing in release mode, and so
@@ -105,7 +104,7 @@ impl Context {
             conf,
             filesystem: fs,
             gfx_context: graphics_context,
-            continuing: true,
+            state_context: None,
             timer_context,
             audio_context,
             keyboard_context,
@@ -182,6 +181,11 @@ impl Context {
 
             _ => (),
         };
+    }
+
+    /// Create a state context
+    pub fn create_state_context(&mut self, events_loop: winit::EventsLoop) {
+        self.state_context = Some(StateContext::new(events_loop));
     }
 }
 
