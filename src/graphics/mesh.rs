@@ -221,9 +221,7 @@ impl MeshBuilder {
         self.polyline_inner(mode, points, true, color)
     }
 
-    /// Create a new mesh for a given polyline.
-    /// The points given must be in clockwise order.
-    pub fn polyline_inner<P>(
+    fn polyline_inner<P>(
         &mut self,
         mode: DrawMode,
         points: &[P],
@@ -686,109 +684,108 @@ impl Drawable for Mesh {
     }
 }
 
+/// An index of a particular instance in a `MeshBatch`
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct MeshIdx(usize);
+
 /// Mesh that will be rendered with hardware instancing.
 /// Use this when you have a lot of similar geometry which does not move around often.
 #[derive(Debug)]
 pub struct MeshBatch {
     mesh: Mesh,
-    instance_properties: Vec<InstanceProperties>,
+    instance_params: Vec<DrawParam>,
     instance_buffer: Option<gfx::handle::Buffer<gfx_device_gl::Resources, InstanceProperties>>,
+    instance_buffer_dirty: bool,
 }
 
 impl MeshBatch {
     /// Creates a new mesh batch and allocates an instance buffer for it
-    pub fn new(
-        ctx: &mut Context,
-        mesh: Mesh,
-        instance_params: &[DrawParam],
-    ) -> GameResult<MeshBatch> {
-        let (instance_properties, instance_buffer) =
-            MeshBatch::create_instance_buffer(ctx, instance_params)?;
-
+    pub fn new(mesh: Mesh) -> GameResult<MeshBatch> {
         Ok(MeshBatch {
             mesh: mesh,
-            instance_properties: instance_properties,
-            instance_buffer: instance_buffer,
+            instance_params: Vec::new(),
+            instance_buffer: None,
+            instance_buffer_dirty: true,
         })
     }
 
-    /// Reset existing instance params to provided data and reallocate existing buffers
-    pub fn reset_instance_params(
-        &mut self,
-        ctx: &mut Context,
-        instance_params: &[DrawParam],
-    ) -> GameResult {
-        let (instance_properties, instance_buffer) =
-            MeshBatch::create_instance_buffer(ctx, instance_params)?;
-
-        self.instance_properties = instance_properties;
-        self.instance_buffer = instance_buffer;
-
-        Ok(())
+    /// Removes all instances from the batch
+    pub fn clear(&mut self) {
+        self.instance_params.clear();
+        self.instance_buffer_dirty = true;
     }
 
-    /// Updates instance parameters in a batch without reallocating existing buffers
-    pub fn update_instance_params(
-        &mut self,
-        ctx: &mut Context,
-        instance_params: &[DrawParam],
-        offset_elements: usize,
-    ) -> GameResult {
-        assert!((instance_params.len() + offset_elements) < self.instance_properties.len());
-        for i in 0..instance_params.len() {
-            let primitive_param = DrawTransform::from(instance_params[i]);
-            self.instance_properties[i + offset_elements] =
-                primitive_param.to_instance_properties(ctx.gfx_context.is_srgb());
+    /// Adds a new instance to the mesh batch
+    ///
+    /// Returns a handle with which to modify the instance using
+    /// [`set()`](#method.set)
+    pub fn add<P>(&mut self, param: P) -> MeshIdx
+    where
+        P: Into<DrawParam>,
+    {
+        self.instance_params.push(param.into());
+        self.instance_buffer_dirty = true;
+        MeshIdx(self.instance_params.len() - 1)
+    }
+
+    /// Alters an instance in the batch to use the given draw params
+    pub fn set<P>(&mut self, handle: MeshIdx, param: P) -> GameResult
+    where
+        P: Into<DrawParam>,
+    {
+        if handle.0 < self.instance_params.len() {
+            self.instance_params[handle.0] = param.into();
+            self.instance_buffer_dirty = true;
+            Ok(())
+        } else {
+            Err(GameError::RenderError(String::from("Index out of bounds")))
+        }
+    }
+
+    fn flush(&mut self, ctx: &mut Context) -> GameResult {
+        let new_properties: Vec<InstanceProperties> = self
+            .instance_params
+            .iter()
+            .map(|param| {
+                let draw_transform = DrawTransform::from(*param);
+                draw_transform.to_instance_properties(ctx.gfx_context.is_srgb())
+            })
+            .collect();
+
+        if self.instance_buffer == None
+            || self.instance_buffer.as_ref().unwrap().len() < new_properties.len()
+        {
+            let new_buffer = ctx.gfx_context.factory.create_buffer(
+                new_properties.len(),
+                gfx::buffer::Role::Vertex,
+                gfx::memory::Usage::Dynamic,
+                gfx::memory::Bind::TRANSFER_DST,
+            )?;
+
+            self.instance_buffer = Some(new_buffer);
         }
 
         ctx.gfx_context.encoder.update_buffer(
             &self.instance_buffer.as_ref().unwrap(),
-            self.instance_properties.as_slice(),
+            new_properties.as_slice(),
             0,
         )?;
 
+        self.instance_buffer_dirty = false;
         Ok(())
     }
 
-    fn create_instance_buffer(
-        ctx: &mut Context,
-        instance_params: &[DrawParam],
-    ) -> GameResult<(
-        Vec<InstanceProperties>,
-        Option<gfx::handle::Buffer<gfx_device_gl::Resources, InstanceProperties>>,
-    )> {
-        let instance_properties = instance_params
-            .iter()
-            .map(|i| {
-                let primitive_param = DrawTransform::from(*i);
-                primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
-            })
-            .collect::<Vec<_>>();
-
-        let instance_buffer = ctx.gfx_context.factory.create_buffer(
-            instance_properties.len(),
-            gfx::buffer::Role::Vertex,
-            gfx::memory::Usage::Dynamic,
-            gfx::memory::Bind::TRANSFER_DST,
-        )?;
-
-        ctx.gfx_context.encoder.update_buffer(
-            &instance_buffer,
-            instance_properties.as_slice(),
-            0,
-        )?;
-
-        Ok((instance_properties, Some(instance_buffer)))
-    }
-}
-
-impl Drawable for MeshBatch {
-    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
-        if !self.instance_properties.is_empty() {
+    /// Draws the drawable onto the rendering target.
+    pub fn draw(&mut self, ctx: &mut Context, param: DrawParam) -> GameResult {
+        if !self.instance_params.is_empty() {
             self.mesh.debug_id.assert(ctx);
 
+            if !self.instance_params.is_empty() && self.instance_buffer_dirty {
+                self.flush(ctx)?;
+            }
+
             let mut slice = self.mesh.slice.clone();
-            slice.instances = Some((self.instance_properties.len() as u32, 0));
+            slice.instances = Some((self.instance_params.len() as u32, 0));
 
             let gfx = &mut ctx.gfx_context;
 
@@ -825,13 +822,19 @@ impl Drawable for MeshBatch {
 
         Ok(())
     }
-    fn dimensions(&self, ctx: &mut Context) -> Option<Rect> {
+
+    /// Returns a bounding box in the form of a `Rect`.
+    pub fn dimensions(&self, ctx: &mut Context) -> Option<Rect> {
         self.mesh.dimensions(ctx)
     }
-    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
+
+    /// Sets the blend mode to be used when drawing this drawable.
+    pub fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
         self.mesh.set_blend_mode(mode)
     }
-    fn blend_mode(&self) -> Option<BlendMode> {
+
+    /// Gets the blend mode to be used when drawing this drawable.
+    pub fn blend_mode(&self) -> Option<BlendMode> {
         self.mesh.blend_mode()
     }
 }
