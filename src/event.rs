@@ -162,7 +162,7 @@ pub struct StateContext {
 }
 
 impl StateContext {
-    /// Construct a new `StateManager`
+    /// Construct a new `StateContext`
     pub fn new(events_loop: EventsLoop) -> Self {
         StateContext {
             events_loop,

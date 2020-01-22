@@ -51,7 +51,7 @@ pub struct Context {
     /// Gamepad context
     pub gamepad_context: Box<dyn gamepad::GamepadContext>,
     /// State context
-    pub state_context: Option<StateContext>,
+    pub(crate) state_context: Option<StateContext>,
 
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
