@@ -50,6 +50,15 @@ For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatfor
 
 Check out the [projects list!](docs/Projects.md)
 
+## System dependencies
+
+On Ubuntu, you can install the dependencies with:
+```bash
+sudo apt-get install libudev-dev
+sudo apt-get install libasound2-dev
+```
+If you're on some other Linux platform, find the corresponding packages.
+
 ## Usage
 
 ggez requires rustc >= 1.36 and is distributed on
