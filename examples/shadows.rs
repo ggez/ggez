@@ -223,8 +223,9 @@ impl MainState {
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
+        let color_format = ggez::graphics::get_window_color_format(ctx);
         let foreground = Canvas::with_window_size(ctx)?;
-        let occlusions = Canvas::new(ctx, LIGHT_RAY_COUNT, 1, conf::NumSamples::One)?;
+        let occlusions = Canvas::new(ctx, LIGHT_RAY_COUNT, 1, conf::NumSamples::One, color_format)?;
         let mut shadows = Canvas::with_window_size(ctx)?;
         // The shadow map will be drawn on top using the multiply blend mode
         shadows.set_blend_mode(Some(BlendMode::Multiply));
