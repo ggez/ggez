@@ -686,7 +686,7 @@ impl Drawable for Mesh {
 
 /// An index of a particular instance in a `MeshBatch`
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct MeshIdx(usize);
+pub struct MeshIdx(pub usize);
 
 /// Mesh that will be rendered with hardware instancing.
 /// Use this when you have a lot of similar geometry which does not move around often.
@@ -720,13 +720,27 @@ impl MeshBatch {
         self.instance_buffer_dirty = true;
     }
 
+    /// Returns a reference to mesh instances
+    pub fn get_instance_params(&self) -> &[DrawParam] {
+        &self.instance_params
+    }
+
+    /// Returns a mutable reference to mesh instances.
+    ///
+    /// Please note that manually altering items in this slice
+    /// will not automatically invalidate the buffer, you will
+    /// have to manually call `flush()` or `flush_range()` later.
+    pub fn get_instance_params_mut(&mut self) -> &mut [DrawParam] {
+        &mut self.instance_params
+    }
+
     /// Adds a new instance to the mesh batch
     ///
     /// Returns a handle with which to modify the instance using
     /// [`set()`](#method.set)
     ///
     /// Calling this invalidates the entire buffer and will result in
-    /// flusing the entire buffer on the next [`graphics::draw()`](../fn.draw.html) call.
+    /// flusing it on the next [`graphics::draw()`](../fn.draw.html) call.
     pub fn add<P>(&mut self, param: P) -> MeshIdx
     where
         P: Into<DrawParam>,
@@ -795,11 +809,18 @@ impl MeshBatch {
         count: usize,
     ) -> GameResult {
         let first_param = first_handle.0;
-        if first_param < self.instance_params.len()
-            && (first_param + count) <= self.instance_params.len()
-        {
-            let new_properties: Vec<InstanceProperties> = self.instance_params
-                [first_param..(first_param + count)]
+        let slice_len = first_param + count;
+        if first_param < self.instance_params.len() && slice_len <= self.instance_params.len() {
+            let needs_new_buffer = self.instance_buffer == None
+                || self.instance_buffer.as_ref().unwrap().len() < slice_len;
+
+            let slice = if needs_new_buffer {
+                &self.instance_params
+            } else {
+                &self.instance_params[first_param..slice_len]
+            };
+
+            let new_properties: Vec<InstanceProperties> = slice
                 .iter()
                 .map(|param| {
                     let draw_transform = DrawTransform::from(*param);
@@ -807,9 +828,7 @@ impl MeshBatch {
                 })
                 .collect();
 
-            if self.instance_buffer == None
-                || self.instance_buffer.as_ref().unwrap().len() < new_properties.len()
-            {
+            if needs_new_buffer {
                 let new_buffer = ctx.gfx_context.factory.create_buffer(
                     new_properties.len(),
                     gfx::buffer::Role::Vertex,

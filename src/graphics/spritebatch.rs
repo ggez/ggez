@@ -38,7 +38,7 @@ pub struct SpriteBatch {
 
 /// An index of a particular sprite in a `SpriteBatch`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SpriteIdx(usize);
+pub struct SpriteIdx(pub usize);
 
 impl SpriteBatch {
     /// Creates a new `SpriteBatch`, drawing with the given image.
