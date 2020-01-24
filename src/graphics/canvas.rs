@@ -41,7 +41,7 @@ pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 impl<S> CanvasGeneric<S>
 where
-    S: BackendSpec
+    S: BackendSpec,
 {
     /// Create a new `Canvas` with the given size and number of samples.
     pub fn new(
