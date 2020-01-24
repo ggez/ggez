@@ -8,6 +8,13 @@ submit a PR, please!
  * <https://github.com/ozkriff/zemeroth>
  * <https://athorus.itch.io/ltd>: Le Train Dispatcher allows you to route trains in a fully simulated rail network. Particular care has been taken on the realistic management of light signals (block systems, switches protection), train physics and curve tracing.
  * <https://github.com/Piripant/sudoku>
+ * <https://github.com/mkhan45/gravity-sim-v2>: An n-body universal gravitation simulator using `specs` and `imgui-rs`
+ * <https://github.com/jackmordaunt/fog-of-chess>: Chess but with the fog of war.
+
+## Examples/tutorial code
+
+ * <https://github.com/Fudance/GGEZ_Specs>: A simple overview of integrating `ggez` and `specs` with some simple systems
+
 
 # 0.4.x
 

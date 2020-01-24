@@ -173,7 +173,7 @@ impl graphics::Drawable for SpriteBatch {
         let curr_transform = gfx.transform();
         let m: DrawTransform = param.into();
         // TODO: Verify this is correct with row/col matrixes
-        gfx.push_transform(m.matrix.post_transform(&curr_transform));
+        gfx.push_transform(m.matrix * curr_transform);
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {

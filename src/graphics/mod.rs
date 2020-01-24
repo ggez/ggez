@@ -47,8 +47,8 @@ pub(crate) mod shader;
 pub(crate) mod text;
 pub(crate) mod types;
 
-pub(crate) use euclid as eu;
 pub use mint;
+pub(crate) use nalgebra as na;
 
 pub mod spritebatch;
 
@@ -381,32 +381,19 @@ gfx_defines! {
 
 impl fmt::Display for InstanceProperties {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        //let matrix = eu::Transform3D::from_column_slice(&matrix_vec);
-        let matrix: eu::Transform3D<f32, (), ()> = eu::Transform3D::column_major(
-            self.col1[0],
-            self.col1[1],
-            self.col1[2],
-            self.col1[3],
-            self.col2[0],
-            self.col2[1],
-            self.col2[2],
-            self.col2[3],
-            self.col3[0],
-            self.col3[1],
-            self.col3[2],
-            self.col3[3],
-            self.col4[0],
-            self.col4[1],
-            self.col4[2],
-            self.col4[3],
-        );
+        let mut matrix_vec: Vec<f32> = vec![];
+        matrix_vec.extend(&self.col1);
+        matrix_vec.extend(&self.col2);
+        matrix_vec.extend(&self.col3);
+        matrix_vec.extend(&self.col4);
+        let matrix = na::Matrix4::from_column_slice(&matrix_vec);
         writeln!(
             f,
             "Src: ({},{}+{},{})",
             self.src[0], self.src[1], self.src[2], self.src[3]
         )?;
         writeln!(f, "Color: {:?}", self.color)?;
-        write!(f, "Matrix: {:?}", matrix)
+        write!(f, "Matrix: {}", matrix)
     }
 }
 
@@ -660,8 +647,7 @@ pub fn set_projection<M>(context: &mut Context, proj: M)
 where
     M: Into<mint::ColumnMatrix4<f32>>,
 {
-    let col_mat = proj.into();
-    let proj = Matrix4::from(mint::RowMatrix4::<f32>::from(col_mat));
+    let proj = Matrix4::from(proj.into());
     let gfx = &mut context.gfx_context;
     gfx.set_projection(proj);
 }
@@ -675,20 +661,16 @@ pub fn mul_projection<M>(context: &mut Context, transform: M)
 where
     M: Into<mint::ColumnMatrix4<f32>>,
 {
-    let col_mat = transform.into();
-    let transform = Matrix4::from(mint::RowMatrix4::<f32>::from(col_mat));
+    let transform = Matrix4::from(transform.into());
     let gfx = &mut context.gfx_context;
     let curr = gfx.projection();
-    // TODO: Verify the order of this is correct.
-    gfx.set_projection(transform.post_transform(&curr));
+    gfx.set_projection(transform * curr);
 }
 
 /// Gets a copy of the context's raw projection matrix
 pub fn projection(context: &Context) -> mint::ColumnMatrix4<f32> {
     let gfx = &context.gfx_context;
-    let row_mat: mint::RowMatrix4<f32> = gfx.projection().into();
-    let transform = mint::ColumnMatrix4::from(row_mat);
-    transform
+    gfx.projection().into()
 }
 
 /// Pushes a homogeneous transform matrix to the top of the transform
@@ -717,11 +699,10 @@ pub fn push_transform<M>(context: &mut Context, transform: Option<M>)
 where
     M: Into<mint::ColumnMatrix4<f32>>,
 {
+    let transform = transform.map(|transform| Matrix4::from(transform.into()));
     let gfx = &mut context.gfx_context;
     if let Some(t) = transform {
-        let col_mat = t.into();
-        let row_mat = mint::RowMatrix4::<f32>::from(col_mat);
-        gfx.push_transform(row_mat.into());
+        gfx.push_transform(t);
     } else {
         let copy = *gfx
             .modelview_stack
@@ -767,17 +748,14 @@ where
     M: Into<mint::ColumnMatrix4<f32>>,
 {
     let transform = transform.into();
-    let row_mat: mint::RowMatrix4<f32> = transform.into();
     let gfx = &mut context.gfx_context;
-    gfx.set_transform(Matrix4::from(row_mat));
+    gfx.set_transform(Matrix4::from(transform));
 }
 
 /// Gets a copy of the context's current transform matrix
 pub fn transform(context: &Context) -> mint::ColumnMatrix4<f32> {
     let gfx = &context.gfx_context;
-    let row_mat: mint::RowMatrix4<f32> = gfx.transform().into();
-    let col_mat: mint::ColumnMatrix4<f32> = row_mat.into();
-    col_mat
+    gfx.transform().into()
 }
 
 /// Premultiplies the given transform with the current model transform.
@@ -805,13 +783,10 @@ pub fn mul_transform<M>(context: &mut Context, transform: M)
 where
     M: Into<mint::ColumnMatrix4<f32>>,
 {
-    let col_mat = transform.into();
-    let row_mat: mint::RowMatrix4<f32> = col_mat.into();
-    let transform = Matrix4::from(row_mat);
+    let transform = Matrix4::from(transform.into());
     let gfx = &mut context.gfx_context;
     let curr = gfx.transform();
-    // TODO: Verify this is the right bloody way around
-    gfx.set_transform(curr.post_transform(&transform));
+    gfx.set_transform(curr * transform);
 }
 
 /// Sets the current model transform to the origin transform (no transformation)

@@ -53,7 +53,7 @@ toml = "0.5"
 log = "0.4"
 lyon = "0.14"
 smart-default = "0.5"
-euclid = {version = "0.20", features = ["mint"] }
+nalgebra = {version = "0.18", features = ["mint"]}
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5"
 gilrs = "0.7"
