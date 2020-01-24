@@ -699,7 +699,9 @@ pub struct MeshBatch {
 }
 
 impl MeshBatch {
-    /// Creates a new mesh batch and allocates an instance buffer for it
+    /// Creates a new mesh batch.
+    ///
+    /// Takes ownership of the `Mesh`.
     pub fn new(mesh: Mesh) -> GameResult<MeshBatch> {
         Ok(MeshBatch {
             mesh: mesh,
@@ -709,7 +711,10 @@ impl MeshBatch {
         })
     }
 
-    /// Removes all instances from the batch
+    /// Removes all instances from the batch.
+    ///
+    /// Calling this invalidates the entire buffer, however this will
+    /// not automatically deallocate graphics card memory or flush the buffer.
     pub fn clear(&mut self) {
         self.instance_params.clear();
         self.instance_buffer_dirty = true;
@@ -719,6 +724,9 @@ impl MeshBatch {
     ///
     /// Returns a handle with which to modify the instance using
     /// [`set()`](#method.set)
+    ///
+    /// Calling this invalidates the entire buffer and will result in
+    /// flusing the entire buffer on the next [`graphics::draw()`](../fn.draw.html) call.
     pub fn add<P>(&mut self, param: P) -> MeshIdx
     where
         P: Into<DrawParam>,
@@ -728,7 +736,13 @@ impl MeshBatch {
         MeshIdx(self.instance_params.len() - 1)
     }
 
-    /// Alters an instance in the batch to use the given draw params
+    /// Alters an instance in the batch to use the given draw params.
+    ///
+    /// Calling this invalidates the entire buffer and will result in
+    /// flusing it on the next [`graphics::draw()`](../fn.draw.html) call.
+    ///
+    /// This might cause performance issues with large batches, to avoid this
+    /// consider using `flush_range` to explicitly invalidate required data slice.
     pub fn set<P>(&mut self, handle: MeshIdx, param: P) -> GameResult
     where
         P: Into<DrawParam>,
@@ -742,37 +756,95 @@ impl MeshBatch {
         }
     }
 
-    fn flush(&mut self, ctx: &mut Context) -> GameResult {
-        let new_properties: Vec<InstanceProperties> = self
-            .instance_params
-            .iter()
-            .map(|param| {
-                let draw_transform = DrawTransform::from(*param);
-                draw_transform.to_instance_properties(ctx.gfx_context.is_srgb())
-            })
-            .collect();
-
-        if self.instance_buffer == None
-            || self.instance_buffer.as_ref().unwrap().len() < new_properties.len()
+    /// Alters a range of instances in the batch to use the given draw params
+    ///
+    /// Calling this invalidates the entire buffer and will result in
+    /// flusing it on the next [`graphics::draw()`](../fn.draw.html) call.
+    ///
+    /// This might cause performance issues with large batches, to avoid this
+    /// consider using `flush_range` to explicitly invalidate required data slice.
+    pub fn set_range<P>(&mut self, first_handle: MeshIdx, params: &[P]) -> GameResult
+    where
+        P: Into<DrawParam> + Copy,
+    {
+        let first_param = first_handle.0;
+        let num_params = params.len();
+        if first_param < self.instance_params.len()
+            && (first_param + num_params) <= self.instance_params.len()
         {
-            let new_buffer = ctx.gfx_context.factory.create_buffer(
-                new_properties.len(),
-                gfx::buffer::Role::Vertex,
-                gfx::memory::Usage::Dynamic,
-                gfx::memory::Bind::TRANSFER_DST,
-            )?;
-
-            self.instance_buffer = Some(new_buffer);
+            for i in 0..num_params {
+                self.instance_params[first_param + i] = params[i].into();
+            }
+            self.instance_buffer_dirty = true;
+            Ok(())
+        } else {
+            Err(GameError::RenderError(String::from("Range out of bounds")))
         }
+    }
 
-        ctx.gfx_context.encoder.update_buffer(
-            &self.instance_buffer.as_ref().unwrap(),
-            new_properties.as_slice(),
-            0,
-        )?;
+    /// Immediately sends specified slice of data in the batch to the graphics card.
+    ///
+    /// Calling this counts as a full buffer flush, but only flushes the data within
+    /// the provided range, anything outside of this range will not be touched.
+    ///
+    /// Use it for updating small portions of large batches.
+    pub fn flush_range(
+        &mut self,
+        ctx: &mut Context,
+        first_handle: MeshIdx,
+        count: usize,
+    ) -> GameResult {
+        let first_param = first_handle.0;
+        if first_param < self.instance_params.len()
+            && (first_param + count) <= self.instance_params.len()
+        {
+            let new_properties: Vec<InstanceProperties> = self.instance_params
+                [first_param..(first_param + count)]
+                .iter()
+                .map(|param| {
+                    let draw_transform = DrawTransform::from(*param);
+                    draw_transform.to_instance_properties(ctx.gfx_context.is_srgb())
+                })
+                .collect();
 
-        self.instance_buffer_dirty = false;
-        Ok(())
+            if self.instance_buffer == None
+                || self.instance_buffer.as_ref().unwrap().len() < new_properties.len()
+            {
+                let new_buffer = ctx.gfx_context.factory.create_buffer(
+                    new_properties.len(),
+                    gfx::buffer::Role::Vertex,
+                    gfx::memory::Usage::Dynamic,
+                    gfx::memory::Bind::TRANSFER_DST,
+                )?;
+
+                self.instance_buffer = Some(new_buffer);
+
+                ctx.gfx_context.encoder.update_buffer(
+                    &self.instance_buffer.as_ref().unwrap(),
+                    new_properties.as_slice(),
+                    0,
+                )?;
+            } else {
+                ctx.gfx_context.encoder.update_buffer(
+                    &self.instance_buffer.as_ref().unwrap(),
+                    new_properties.as_slice(),
+                    first_param,
+                )?;
+            }
+
+            self.instance_buffer_dirty = false;
+            Ok(())
+        } else {
+            Err(GameError::RenderError(String::from("Range out of bounds")))
+        }
+    }
+
+    /// Immediately sends all data in the batch to the graphics card.
+    ///
+    /// In general, [`graphics::draw()`](../fn.draw.html) on the `MeshBatch`
+    /// will do this automatically when buffer contents are updated.
+    pub fn flush(&mut self, ctx: &mut Context) -> GameResult {
+        self.flush_range(ctx, MeshIdx(0), self.instance_params.len())
     }
 
     /// Draws the drawable onto the rendering target.
