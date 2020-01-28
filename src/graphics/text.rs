@@ -439,11 +439,11 @@ impl Font {
         Ok(Font { font_id })
     }
 
-    /// Returns the baked-in bytes of default font (currently `DejaVuSerif.ttf`).
+    /// Returns the baked-in bytes of default font (currently `LiberationSans-Regular.ttf`).
     pub(crate) fn default_font_bytes() -> &'static [u8] {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/resources/DejaVuSerif.ttf"
+            "/resources/LiberationMono-Regular.ttf"
         ))
     }
 }

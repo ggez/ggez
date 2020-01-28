@@ -250,7 +250,7 @@ impl Assets {
         let player_image = graphics::Image::new(ctx, "/player.png")?;
         let shot_image = graphics::Image::new(ctx, "/shot.png")?;
         let rock_image = graphics::Image::new(ctx, "/rock.png")?;
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
+        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
 
         let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
         let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;

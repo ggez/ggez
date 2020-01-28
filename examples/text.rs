@@ -35,8 +35,8 @@ impl App {
         let mut rng = oorandom::Rand32::new(314159);
 
         // This is the simplest way to create a drawable text;
-        // the color, font, and scale will be default: white, DejaVuSerif, 16px unform.
-        // Note that you don't even have to load a font: DejaVuSerif is baked into `ggez` itself.
+        // the color, font, and scale will be default: white, LiberationMono-Regular, 16px unform.
+        // Note that you don't even have to load a font: LiberationMono-Regular is baked into `ggez` itself.
         let text = Text::new("Hello, World!");
         // Store the text in `App`s map, for drawing in main loop.
         texts.insert("0_hello", text);
@@ -50,7 +50,7 @@ impl App {
             text: "Small red fragment".to_string(),
             color: Some(Color::new(1.0, 0.0, 0.0, 1.0)),
             // `Font` is a handle to a loaded TTF, stored inside the `Context`.
-            // `Font::default()` always exists and maps to DejaVuSerif.
+            // `Font::default()` always exists and maps to LiberationMono-Regular.
             font: Some(graphics::Font::default()),
             scale: Some(Scale::uniform(10.0)),
             // This doesn't do anything at this point; can be used to omit fields in declarations.

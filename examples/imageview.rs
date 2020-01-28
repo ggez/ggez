@@ -52,7 +52,7 @@ impl MainState {
 
         let image = graphics::Image::new(ctx, "/dragon1.png").unwrap();
 
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf").unwrap();
+        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf").unwrap();
         let text = graphics::Text::new(("Hello world!", font, 48.0));
         let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
 

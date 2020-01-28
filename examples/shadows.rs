@@ -198,7 +198,7 @@ impl MainState {
         let background = graphics::Image::new(ctx, "/bg_top.png")?;
         let tile = graphics::Image::new(ctx, "/tile.png")?;
         let text = {
-            let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
+            let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
             graphics::Text::new(("SHADOWS...", font, 48.0))
         };
         let screen_size = {
