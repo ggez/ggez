@@ -1,16 +1,16 @@
 //! A more sophisticated example of how to use shaders
 //! and canvas's to do 2D GPU shadows.
 
-use cgmath;
 use gfx::{self, *};
 use ggez;
+use glam;
 
-use cgmath::{Point2, Vector2};
 use ggez::conf;
 use ggez::event;
 use ggez::graphics::{self, BlendMode, Canvas, DrawParam, Drawable, Shader};
 use ggez::timer;
 use ggez::{Context, GameResult};
+use glam::Vec2;
 use std::env;
 use std::path;
 
@@ -299,7 +299,7 @@ impl MainState {
         {
             let _shader_lock = graphics::use_shader(ctx, &self.shadows_shader);
 
-            let param = origin.scale(Vector2::new(
+            let param = origin.scale(Vec2::new(
                 (size.0 as f32) / (LIGHT_RAY_COUNT as f32),
                 size.1 as f32,
             ));
@@ -310,7 +310,7 @@ impl MainState {
         {
             let _shader_lock = graphics::use_shader(ctx, &self.lights_shader);
 
-            let param = origin.scale(Vector2::new(
+            let param = origin.scale(Vec2::new(
                 (size.0 as f32) / (LIGHT_RAY_COUNT as f32),
                 size.1 as f32,
             ));
@@ -335,8 +335,8 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let origin = DrawParam::new()
-            .dest(Point2::new(0.0, 0.0))
-            .scale(Vector2::new(0.5, 0.5));
+            .dest(Vec2::new(0.0, 0.0))
+            .scale(Vec2::new(0.5, 0.5));
         let canvas_origin = DrawParam::new();
 
         // First thing we want to do it to render all the foreground items (that
@@ -350,21 +350,19 @@ impl event::EventHandler for MainState {
             graphics::draw(
                 ctx,
                 &self.tile,
-                DrawParam::new().dest(Point2::new(598.0, 124.0)),
+                DrawParam::new().dest(Vec2::new(598.0, 124.0)),
             )?;
             graphics::draw(
                 ctx,
                 &self.tile,
-                DrawParam::new().dest(Point2::new(92.0, 350.0)),
+                DrawParam::new().dest(Vec2::new(92.0, 350.0)),
             )?;
             graphics::draw(
                 ctx,
                 &self.tile,
-                DrawParam::new()
-                    .dest(Point2::new(442.0, 468.0))
-                    .rotation(0.5),
+                DrawParam::new().dest(Vec2::new(442.0, 468.0)).rotation(0.5),
             )?;
-            graphics::draw(ctx, &self.text, (Point2::new(50.0, 200.0),))?;
+            graphics::draw(ctx, &self.text, (Vec2::new(50.0, 200.0),))?;
         }
 
         // Then we draw our light and shadow maps

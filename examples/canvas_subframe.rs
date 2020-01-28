@@ -2,8 +2,8 @@
 //!
 //! You really want to run this one in release mode.
 
-use cgmath;
 use ggez;
+use glam;
 
 use ggez::event;
 use ggez::graphics;
@@ -12,8 +12,8 @@ use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
-type Point2 = cgmath::Point2<f32>;
-type Vector2 = cgmath::Vector2<f32>;
+type Point2 = glam::Vec2;
+type Vector2 = glam::Vec2;
 
 struct MainState {
     spritebatch: graphics::spritebatch::SpriteBatch,
@@ -96,13 +96,13 @@ impl event::EventHandler for MainState {
 
         // Bounce the rect if necessary
         let (w, h) = graphics::size(ctx);
-        if self.draw_pt.x + (w as f32 / 2.0) > (w as f32) || self.draw_pt.x < 0.0 {
-            self.draw_vec.x *= -1.0;
+        if self.draw_pt.x() + (w as f32 / 2.0) > (w as f32) || self.draw_pt.x() < 0.0 {
+            self.draw_vec.set_x(self.draw_vec.x() * -1.0);
         }
-        if self.draw_pt.y + (h as f32 / 2.0) > (h as f32 / 2.0)
-            || self.draw_pt.y < -(h as f32 / 2.0)
+        if self.draw_pt.y() + (h as f32 / 2.0) > (h as f32 / 2.0)
+            || self.draw_pt.y() < -(h as f32 / 2.0)
         {
-            self.draw_vec.y *= -1.0;
+            self.draw_vec.set_y(self.draw_vec.y() * -1.0);
         }
         self.draw_pt = self.draw_pt + self.draw_vec;
         Ok(())
@@ -112,8 +112,8 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         self.draw_spritebatch(ctx)?;
         let dims = self.canvas.image().dimensions();
-        let src_x = self.draw_pt.x / dims.w;
-        let src_y = self.draw_pt.y / dims.h;
+        let src_x = self.draw_pt.x() / dims.w;
+        let src_y = self.draw_pt.y() / dims.h;
         graphics::draw(
             ctx,
             &self.canvas,

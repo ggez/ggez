@@ -1,15 +1,15 @@
 //! This example demonstrates how to use `Text` to draw TrueType font texts efficiently.
 
-use cgmath;
 use ggez;
+use glam;
 use oorandom;
 
-use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::graphics::{self, Align, Color, DrawParam, Font, Scale, Text, TextFragment};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
+use glam::Vec2;
 use std::collections::BTreeMap;
 use std::env;
 use std::f32;
@@ -80,10 +80,10 @@ impl App {
         // Text can be wrapped by setting it's bounds, in screen coordinates;
         // vertical bound will cut off the extra off the bottom.
         // Alignment within the bounds can be set by `Align` enum.
-        text.set_bounds(Point2::new(400.0, f32::INFINITY), Align::Left);
+        text.set_bounds(Vec2::new(400.0, f32::INFINITY), Align::Left);
         texts.insert("1_demo_text_2", text.clone());
 
-        text.set_bounds(Point2::new(500.0, f32::INFINITY), Align::Right);
+        text.set_bounds(Vec2::new(500.0, f32::INFINITY), Align::Right);
         texts.insert("1_demo_text_3", text.clone());
 
         // This can be used to set the font and scale unformatted fragments will use.
@@ -91,7 +91,7 @@ impl App {
         // Side note: TrueType fonts aren't very consistent between themselves in terms
         // of apparent scale - this font with default scale will appear too small.
         text.set_font(fancy_font.clone(), Scale::uniform(16.0))
-            .set_bounds(Point2::new(300.0, f32::INFINITY), Align::Center);
+            .set_bounds(Vec2::new(300.0, f32::INFINITY), Align::Center);
         texts.insert("1_demo_text_4", text);
 
         // These methods can be combined to easily create a variety of simple effects.
@@ -131,17 +131,13 @@ impl event::EventHandler for App {
         let fps = timer::fps(ctx);
         let fps_display = Text::new(format!("FPS: {}", fps));
         // When drawing through these calls, `DrawParam` will work as they are documented.
-        graphics::draw(
-            ctx,
-            &fps_display,
-            (Point2::new(200.0, 0.0), graphics::WHITE),
-        )?;
+        graphics::draw(ctx, &fps_display, (Vec2::new(200.0, 0.0), graphics::WHITE))?;
 
         let mut height = 0.0;
         for (_key, text) in &self.texts {
             // Calling `.queue()` for all bits of text that can share a `DrawParam`,
             // followed with `::draw_queued()` with said params, is the intended way.
-            graphics::queue_text(ctx, text, Point2::new(20.0, 20.0 + height), None);
+            graphics::queue_text(ctx, text, Vec2::new(20.0, 20.0 + height), None);
             height += 20.0 + text.height(ctx) as f32;
         }
         // When drawing via `draw_queued()`, `.offset` in `DrawParam` will be
@@ -174,18 +170,18 @@ impl event::EventHandler for App {
         graphics::queue_text(
             ctx,
             &wobble,
-            Point2::new(0.0, 0.0),
+            Vec2::new(0.0, 0.0),
             Some(Color::new(0.0, 1.0, 1.0, 1.0)),
         );
         let t = Text::new(format!(
             "width: {}\nheight: {}",
             wobble_width, wobble_height
         ));
-        graphics::queue_text(ctx, &t, Point2::new(0.0, 20.0), None);
+        graphics::queue_text(ctx, &t, Vec2::new(0.0, 20.0), None);
         graphics::draw_queued_text(
             ctx,
             DrawParam::new()
-                .dest(Point2::new(500.0, 300.0))
+                .dest(Vec2::new(500.0, 300.0))
                 .rotation(-0.5),
             None,
             graphics::FilterMode::Linear,

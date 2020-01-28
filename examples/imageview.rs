@@ -1,5 +1,5 @@
-use cgmath;
 use ggez;
+use glam;
 use oorandom;
 
 use ggez::audio;
@@ -32,17 +32,17 @@ impl MainState {
             colors.push(Color::from((r, g, b, 255)));
         }
 
-        let mut last_point = cgmath::Point2::new(400.0, 300.0);
+        let mut last_point = glam::Vec2::new(400.0, 300.0);
         let mut mb = graphics::MeshBuilder::new();
         for color in colors {
             let x = (self.rng.rand_i32() % 50) as f32;
             let y = (self.rng.rand_i32() % 50) as f32;
-            let point = cgmath::Point2::new(last_point.x + x, last_point.y + y);
+            let point = glam::Vec2::new(last_point.x() + x, last_point.y() + y);
             mb.line(&[last_point, point], 3.0, color)?;
             last_point = point;
         }
         let mesh = mb.build(ctx)?;
-        graphics::draw(ctx, &mesh, (cgmath::Point2::new(0.0, 0.0),))?;
+        graphics::draw(ctx, &mesh, (glam::Vec2::new(0.0, 0.0),))?;
 
         Ok(())
     }
@@ -96,11 +96,11 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         let color = Color::from((c, c, c, 255));
-        let dest_point = cgmath::Point2::new(0.0, 0.0);
+        let dest_point = glam::Vec2::new(0.0, 0.0);
         graphics::draw(ctx, &self.image, (dest_point, 0.0, color))?;
         graphics::draw(ctx, &self.text, (dest_point, 0.0, color))?;
 
-        let dest_point2 = cgmath::Point2::new(0.0, 256.0);
+        let dest_point2 = glam::Vec2::new(0.0, 256.0);
         let rectangle = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),

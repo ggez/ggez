@@ -1,14 +1,14 @@
 //! An example of how to draw to `Image`'s using the `Canvas` type.
 
-use cgmath;
 use ggez;
+use glam;
 
 use ggez::event;
 use ggez::graphics::{self, Color, DrawParam};
 use ggez::{Context, GameResult};
 
-type Point2 = cgmath::Point2<f32>;
-type Vector2 = cgmath::Vector2<f32>;
+type Point2 = glam::Vec2;
+type Vector2 = glam::Vec2;
 
 struct MainState {
     canvas: graphics::Canvas,

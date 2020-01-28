@@ -1,6 +1,6 @@
 //! A collection of semi-random shape and image drawing examples.
 
-use cgmath;
+use glam;
 
 use ggez;
 use ggez::event;
@@ -117,13 +117,13 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         // Draw an image.
-        let dst = cgmath::Point2::new(20.0, 20.0);
+        let dst = glam::Vec2::new(20.0, 20.0);
         graphics::draw(ctx, &self.image1, (dst,))?;
 
         // Draw an image with some options, and different filter modes.
-        let dst = cgmath::Point2::new(200.0, 100.0);
-        let dst2 = cgmath::Point2::new(400.0, 400.0);
-        let scale = cgmath::Vector2::new(10.0, 10.0);
+        let dst = glam::Vec2::new(200.0, 100.0);
+        let dst2 = glam::Vec2::new(400.0, 400.0);
+        let scale = glam::Vec2::new(10.0, 10.0);
 
         graphics::draw(
             ctx,

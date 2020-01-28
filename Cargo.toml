@@ -64,7 +64,8 @@ chrono = "0.4"
 fern = "0.5"
 oorandom = "11"
 structopt = "0.3"
-cgmath = { version = "0.17", features = ["mint"]}
+glam = { version = "0.8", features = ["mint"]}
+
 skeptic = "0.13"
 getrandom = "0.1"
 nalgebra = {version = "0.18", features = ["mint"] }
