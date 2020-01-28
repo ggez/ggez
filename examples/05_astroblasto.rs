@@ -9,9 +9,9 @@ use ggez::audio::SoundSource;
 use ggez::conf;
 use ggez::event::{self, EventHandler, KeyCode, KeyMods};
 use ggez::graphics;
+use ggez::nalgebra as na;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
-use nalgebra as na;
 use oorandom::Rand32;
 
 use std::env;

@@ -4,7 +4,7 @@
 //! Prints instructions to the console.
 
 use ggez;
-use nalgebra;
+use ggez::nalgebra as na;
 use structopt;
 
 use ggez::conf;
@@ -17,7 +17,6 @@ use structopt::StructOpt;
 use std::env;
 use std::path;
 
-use nalgebra as na;
 type Point2 = na::Point2<f32>;
 
 struct WindowSettings {

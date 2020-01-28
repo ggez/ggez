@@ -68,7 +68,6 @@ glam = { version = "0.8", features = ["mint"]}
 
 skeptic = "0.13"
 getrandom = "0.1"
-nalgebra = {version = "0.18", features = ["mint"] }
 
 [build-dependencies]
 skeptic = "0.13"

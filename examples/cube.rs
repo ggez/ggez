@@ -6,9 +6,8 @@
 
 #[macro_use]
 extern crate gfx;
-extern crate gfx_device_gl;
-extern crate ggez;
-extern crate nalgebra;
+use gfx_device_gl;
+use ggez;
 
 use gfx::texture;
 use gfx::traits::FactoryExt;
@@ -16,8 +15,8 @@ use gfx::Factory;
 
 use ggez::event;
 use ggez::graphics;
+use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
-use nalgebra as na;
 use std::env;
 use std::f32;
 use std::path;
