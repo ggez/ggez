@@ -261,7 +261,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
         let initial_transform = Matrix4::identity();
         let globals = Globals {
-            mvp_matrix: initial_projection.to_column_arrays(),
+            mvp_matrix: initial_projection.into(),
         };
 
         let mut gfx = Self {
@@ -359,9 +359,9 @@ where
             .last()
             .expect("Transform stack empty; should never happen");
         // TODO: Verify this is the correct order, row/column
-        let mvp = self.projection.post_transform(modelview);
+        let mvp = self.projection * modelview;
         // TODO: This too
-        self.shader_globals.mvp_matrix = mvp.to_column_arrays();
+        self.shader_globals.mvp_matrix = mvp.into();
     }
 
     /// Pushes a homogeneous transform matrix to the top of the transform
@@ -488,8 +488,7 @@ where
         }
 
         self.screen_rect = rect;
-        // TODO: Double-check the from_row_arrays here is correct
-        self.projection = Matrix4::from_row_arrays(ortho(
+        self.projection = Matrix4::from(ortho(
             rect.x,
             rect.x + rect.w,
             rect.y,

@@ -41,9 +41,9 @@ fn test_monospace_text_is_actually_monospace() {
     let font = graphics::Font::new(ctx, "/DejaVuSansMono.ttf").unwrap();
 
     let text1 = graphics::Text::new(("Hello 1", font, 24.0));
-    let text2 = graphics::Text::new(("Hello 2", font, 24.0));;
-    let text3 = graphics::Text::new(("Hello 3", font, 24.0));;
-    let text4 = graphics::Text::new(("Hello 4", font, 24.0));;
+    let text2 = graphics::Text::new(("Hello 2", font, 24.0));
+    let text3 = graphics::Text::new(("Hello 3", font, 24.0));
+    let text4 = graphics::Text::new(("Hello 4", font, 24.0));
 
     let width1 = text1.width(ctx);
     let width2 = text3.width(ctx);
