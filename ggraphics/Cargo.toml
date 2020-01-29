@@ -32,6 +32,6 @@ winit = {version = "0.20.0-alpha4", features=["web-sys"]}
 
 [dev-dependencies]
 image = {version = "0.22", default-features=false, features=["jpeg", "png_codec", "pnm", "tiff", "webp", "bmp", "hdr", "dxt"] }
-pretty_env_logger = "0.3"
+pretty_env_logger = "0.4"
 instant = "0.1"
 oorandom = "11"
