@@ -128,15 +128,9 @@ impl GraphicsContext {
 
     // TODO
     pub(crate) fn resize_viewport(&mut self) {
-        //let hidpi_factor = self..win_ctx.window().hidpi_factor();
-        let logical_size = self.win_ctx.window().inner_size();
-        let physical_size = logical_size.to_physical(1.0);
-        // grumble grumble heckin floating point "physical" sizes
-        // and no TryFrom impl
-        assert!(physical_size.width >= (std::i32::MIN as f64));
-        assert!(physical_size.height >= (std::i32::MIN as f64));
-        assert!(physical_size.width <= (std::i32::MAX as f64));
-        assert!(physical_size.height <= (std::i32::MAX as f64));
+        let physical_size = self.win_ctx.window().inner_size();
+        assert!(physical_size.width <= std::i32::MAX as u32);
+        assert!(physical_size.height <= std::i32::MAX as u32);
         self.screen_pass.inner.set_viewport(
             0,
             0,

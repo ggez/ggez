@@ -169,14 +169,13 @@ impl Context {
                         glutin_event::ElementState::Pressed => true,
                         glutin_event::ElementState::Released => false,
                     };
-                    self.mouse_context.set_button(button, pressed);
+                    self.mouse_context.set_button(*button, pressed);
                 }
                 glutin_event::WindowEvent::KeyboardInput {
                     input:
                         glutin_event::KeyboardInput {
                             state,
                             virtual_keycode: Some(keycode),
-                            modifiers,
                             ..
                         },
                     ..
@@ -185,11 +184,9 @@ impl Context {
                         glutin_event::ElementState::Pressed => true,
                         glutin_event::ElementState::Released => false,
                     };
-                    self.keyboard_context
-                        .set_modifiers(keyboard::KeyMods::from(modifiers));
-                    self.keyboard_context.set_key(keycode, pressed);
+                    self.keyboard_context.set_key(*keycode, pressed);
                 }
-                glutin_event::WindowEvent::HiDpiFactorChanged(_) => {
+                glutin_event::WindowEvent::ScaleFactorChanged { .. } => {
                     // Nope.
                 }
                 _ => (),
@@ -197,7 +194,7 @@ impl Context {
             glutin_event::Event::DeviceEvent { event, .. } => {
                 if let glutin_event::DeviceEvent::MouseMotion { delta: (x, y) } = event {
                     self.mouse_context
-                        .set_last_delta(Point2::new(x as f32, y as f32));
+                        .set_last_delta(Point2::new(*x as f32, *y as f32));
                 }
             }
 

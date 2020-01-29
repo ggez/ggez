@@ -26,7 +26,7 @@ pub use gilrs::Axis;
 pub use gilrs::Button;
 
 pub use crate::input::gamepad::GamepadId;
-pub use crate::input::keyboard::{KeyCode, KeyMods};
+pub use crate::input::keyboard::KeyCode;
 
 use glutin::event::*;
 /// `winit` event loop.
@@ -95,7 +95,7 @@ pub trait EventHandler {
         &mut self,
         ctx: &mut Context,
         keycode: KeyCode,
-        _keymods: KeyMods,
+        _keymods: ModifiersState,
         _repeat: bool,
     ) {
         if keycode == KeyCode::Escape {
@@ -104,7 +104,7 @@ pub trait EventHandler {
     }
 
     /// A keyboard button was released.
-    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: KeyCode, _keymods: KeyMods) {}
+    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: KeyCode, _keymods: ModifiersState) {}
 
     /// A unicode character was received, usually from keyboard input.
     /// This is the intended way of facilitating text input.
@@ -167,7 +167,7 @@ where
         let ctx = &mut ctx;
         let state = &mut state;
 
-        *control_flow = ControlFlow::Wait;
+        *control_flow = ControlFlow::Poll;
         // If you are writing your own event loop, make sure
         // you include `timer_context.tick()` and
         // `ctx.process_event()` calls.  These update ggez's
@@ -198,25 +198,23 @@ where
                         KeyboardInput {
                             state: ElementState::Pressed,
                             virtual_keycode: Some(keycode),
-                            modifiers,
                             ..
                         },
                     ..
                 } => {
                     let repeat = keyboard::is_key_repeated(ctx);
-                    state.key_down_event(ctx, keycode, modifiers.into(), repeat);
+                    state.key_down_event(ctx, keycode, ctx.keyboard_context.active_mods(), repeat);
                 }
                 WindowEvent::KeyboardInput {
                     input:
                         KeyboardInput {
                             state: ElementState::Released,
                             virtual_keycode: Some(keycode),
-                            modifiers,
                             ..
                         },
                     ..
                 } => {
-                    state.key_up_event(ctx, keycode, modifiers.into());
+                    state.key_up_event(ctx, keycode, ctx.keyboard_context.active_mods());
                 }
                 WindowEvent::MouseWheel { delta, .. } => {
                     let (x, y) = match delta {
@@ -247,18 +245,19 @@ where
                     let delta = mouse::delta(ctx);
                     state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                 }
-                WindowEvent::RedrawRequested => {
-                    state.draw(ctx).expect("TODO");
-                }
                 _x => {
                     // trace!("ignoring window event {:?}", x);
                 }
             },
-            Event::EventsCleared => {
+            Event::RedrawRequested(_) => {
+                state.draw(ctx).expect("TODO");
+            }
+            Event::MainEventsCleared => {
                 state.update(ctx).expect("TODO");
                 ctx.gfx_context.win_ctx.window().request_redraw();
             }
             Event::DeviceEvent { event, .. } => match event {
+                DeviceEvent::ModifiersChanged(mods) => ctx.keyboard_context.set_modifiers(mods),
                 _ => (),
             },
             _ => (),
