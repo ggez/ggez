@@ -47,6 +47,18 @@ render passes containing pipelines containing draw commands.
    portability layer.  Currently, the portability is not there.  :-(
  * Work on OpenGL 2 and comparable API's -- OpenGL ES 2, WebGL 1.
 
+## Structure
+
+It is set up more or less as hierarchy of "draw calls", which are
+run by "pipelines", which are contained in "render passes".  This is
+influenced by the structure of Vulkan, which is based pretty much off
+this hierarchy of costs:
+
+![](nvidia-2014-relative-costs.jpg)
+
+We map these costs more or less onto the structure described above:
+
+![](ggraphics.png)
 
 # License
 
