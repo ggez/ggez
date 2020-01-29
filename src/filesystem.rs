@@ -32,6 +32,7 @@ use std::io;
 use std::path;
 
 use directories::ProjectDirs;
+use log::*;
 
 use crate::conf;
 use crate::vfs::{self, VFS};

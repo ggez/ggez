@@ -13,6 +13,8 @@
 //! passed to the [`ContextBuilder`](../struct.ContextBuilder.html).
 
 use std::io;
+
+use serde_derive::{Deserialize, Serialize};
 use toml;
 
 use crate::error::GameResult;

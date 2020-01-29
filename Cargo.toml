@@ -44,7 +44,6 @@ members = ["ggraphics", "gvfs"]
 ggraphics = { path = "ggraphics", version = "0.0.2" }
 gvfs = { path = "gvfs", version = "0.1" }
 
-bitflags = "1"
 zip = { version = "0.5", default-features = false }
 directories = "2"
 glyph_brush = "0.6"

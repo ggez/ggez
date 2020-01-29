@@ -91,17 +91,11 @@
 #![warn(missing_copy_implementations)]
 
 #[macro_use]
-extern crate bitflags;
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
 extern crate smart_default;
 
+pub use ggraphics;
 pub use glam;
 pub use mint;
-pub use ggraphics;
 
 pub mod audio;
 pub mod conf;

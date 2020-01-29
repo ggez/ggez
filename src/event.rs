@@ -12,6 +12,7 @@
 
 use gilrs;
 use glutin::{self, dpi};
+use log::debug;
 
 // TODO LATER: I kinda hate all these re-exports.  I kinda hate
 // a lot of the details of the `EventHandler` and input now though,

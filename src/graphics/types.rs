@@ -1,6 +1,8 @@
-use glam;
 use std::f32;
 use std::u32;
+
+use glam;
+use serde_derive::{Deserialize, Serialize};
 
 pub use lyon::tessellation::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 

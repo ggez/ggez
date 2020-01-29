@@ -72,48 +72,10 @@ use glutin::event::ModifiersState;
 pub use glutin::event::VirtualKeyCode as KeyCode;
 use std::collections::HashSet;
 
-bitflags! {
-    /// Bitflags describing the state of keyboard modifiers, such as `Control` or `Shift`.
-    #[derive(Default)]
-    pub struct KeyMods: u8 {
-        /// No modifiers; equivalent to `KeyMods::default()` and
-        /// [`KeyMods::empty()`](struct.KeyMods.html#method.empty).
-        const NONE  = 0b0000_0000;
-        /// Left or right Shift key.
-        const SHIFT = 0b0000_0001;
-        /// Left or right Control key.
-        const CTRL  = 0b0000_0010;
-        /// Left or right Alt key.
-        const ALT   = 0b0000_0100;
-        /// Left or right Win/Cmd/equivalent key.
-        const LOGO  = 0b0000_1000;
-    }
-}
-
-impl From<ModifiersState> for KeyMods {
-    fn from(state: ModifiersState) -> Self {
-        let mut keymod = KeyMods::empty();
-        if state.shift() {
-            keymod |= Self::SHIFT;
-        }
-        if state.ctrl() {
-            keymod |= Self::CTRL;
-        }
-        if state.alt() {
-            keymod |= Self::ALT;
-        }
-        if state.logo() {
-            keymod |= Self::LOGO;
-        }
-        keymod
-    }
-}
-
 /// Tracks held down keyboard keys, active keyboard modifiers,
 /// and figures out if the system is sending repeat keystrokes.
 #[derive(Clone, Debug)]
 pub struct KeyboardContext {
-    //active_modifiers: KeyMods,
     active_modifiers: ModifiersState,
     /// A simple mapping of which key code has been pressed.
     /// We COULD use a `Vec<bool>` but turning Rust enums to and from
@@ -146,36 +108,6 @@ impl KeyboardContext {
         }
     }
 
-    /*
-        /// Take a modifier key code and alter our state.
-        ///
-        /// Double check that this edge handling is necessary;
-        /// winit sounds like it should do this for us,
-        /// see https://docs.rs/winit/0.18.0/winit/struct.KeyboardInput.html#structfield.modifiers
-        ///
-        /// ...more specifically, we should refactor all this to consistant-ify events a bit and
-        /// make winit do more of the work.
-        /// But to quote Scott Pilgrim, "This is... this is... Booooooring."
-        fn set_key_modifier(&mut self, key: KeyCode, pressed: bool) {
-            if pressed {
-                match key {
-                    KeyCode::LShift | KeyCode::RShift => self.active_modifiers |= KeyMods::SHIFT,
-                    KeyCode::LControl | KeyCode::RControl => self.active_modifiers |= KeyMods::CTRL,
-                    KeyCode::LAlt | KeyCode::RAlt => self.active_modifiers |= KeyMods::ALT,
-                    KeyCode::LWin | KeyCode::RWin => self.active_modifiers |= KeyMods::LOGO,
-                    _ => (),
-                }
-            } else {
-                match key {
-                    KeyCode::LShift | KeyCode::RShift => self.active_modifiers -= KeyMods::SHIFT,
-                    KeyCode::LControl | KeyCode::RControl => self.active_modifiers -= KeyMods::CTRL,
-                    KeyCode::LAlt | KeyCode::RAlt => self.active_modifiers -= KeyMods::ALT,
-                    KeyCode::LWin | KeyCode::RWin => self.active_modifiers -= KeyMods::LOGO,
-                    _ => (),
-                }
-            }
-        }
-    */
     pub(crate) fn set_modifiers(&mut self, keymods: ModifiersState) {
         self.active_modifiers = keymods;
     }
@@ -236,75 +168,6 @@ pub fn active_mods(ctx: &Context) -> ModifiersState {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /*
-    #[test]
-    fn key_mod_conversions() {
-        assert_eq!(
-            KeyMods::empty(),
-            KeyMods::from(ModifiersState {
-                shift: false,
-                ctrl: false,
-                alt: false,
-                logo: false,
-            })
-        );
-        assert_eq!(
-            KeyMods::SHIFT,
-            KeyMods::from(ModifiersState {
-                shift: true,
-                ctrl: false,
-                alt: false,
-                logo: false,
-            })
-        );
-        assert_eq!(
-            KeyMods::SHIFT | KeyMods::ALT,
-            KeyMods::from(ModifiersState {
-                shift: true,
-                ctrl: false,
-                alt: true,
-                logo: false,
-            })
-        );
-        assert_eq!(
-            KeyMods::SHIFT | KeyMods::ALT | KeyMods::CTRL,
-            KeyMods::from(ModifiersState {
-                shift: true,
-                ctrl: true,
-                alt: true,
-                logo: false,
-            })
-        );
-        assert_eq!(
-            KeyMods::SHIFT - KeyMods::ALT,
-            KeyMods::from(ModifiersState {
-                shift: true,
-                ctrl: false,
-                alt: false,
-                logo: false,
-            })
-        );
-        assert_eq!(
-            (KeyMods::SHIFT | KeyMods::ALT) - KeyMods::ALT,
-            KeyMods::from(ModifiersState {
-                shift: true,
-                ctrl: false,
-                alt: false,
-                logo: false,
-            })
-        );
-        assert_eq!(
-            KeyMods::SHIFT - (KeyMods::ALT | KeyMods::SHIFT),
-            KeyMods::from(ModifiersState {
-                shift: false,
-                ctrl: false,
-                alt: false,
-                logo: false,
-            })
-        );
-    }
-    */
 
     #[test]
     fn pressed_keys_tracking() {
