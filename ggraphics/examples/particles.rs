@@ -201,7 +201,7 @@ fn mainloop(
                     info!("Event::LoopDestroyed!");
                     return;
                 }
-                Event::EventsCleared => {
+                Event::MainEventsCleared => {
                     let now = Instant::now();
                     let dt = now - last_frame;
                     if dt >= target_dt {
@@ -226,11 +226,8 @@ fn mainloop(
                     }
                 }
                 Event::WindowEvent { ref event, .. } => match event {
-                    WindowEvent::Resized(logical_size) => {
-                        info!("WindowEvent::Resized: {:?}", logical_size);
-                        //let dpi_factor = windowed_context.window().hidpi_factor();
-                        let dpi_factor = 1.0;
-                        let physical_size = logical_size.to_physical(dpi_factor);
+                    WindowEvent::Resized(physical_size) => {
+                        info!("WindowEvent::Resized: {:?}", physical_size);
                         state.set_screen_viewport(
                             0,
                             0,
@@ -238,12 +235,6 @@ fn mainloop(
                             physical_size.height as i32,
                         );
                         //windowed_context.resize(logical_size.to_physical(dpi_factor));
-                    }
-                    WindowEvent::RedrawRequested => {
-                        for pass in state.passes.iter_mut() {
-                            pass.draw(&*state.ctx, state.pipelines.as_mut_slice());
-                        }
-                        window.swap_buffers();
                     }
                     WindowEvent::CloseRequested => {
                         info!("WindowEvent::CloseRequested");
@@ -265,6 +256,12 @@ fn mainloop(
                     }
                     _ => (),
                 },
+                Event::RedrawRequested(_) => {
+                    for pass in state.passes.iter_mut() {
+                        pass.draw(&*state.ctx, state.pipelines.as_mut_slice());
+                    }
+                    window.swap_buffers();
+                }
                 _ => (),
             }
         });

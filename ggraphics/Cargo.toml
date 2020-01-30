@@ -14,8 +14,8 @@ glam = "0.8"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 glow = {version = "0.4.0", default-features=false}
-glutin = "0.22.0-alpha5"
-winit = {version = "0.20.0-alpha4", features=["web-sys"]}
+glutin = "0.22.0"
+winit = {version = "0.20.0", features=["web-sys"]}
 
 
 #[target.'cfg(target_arch = "wasm32")'.dependencies]
