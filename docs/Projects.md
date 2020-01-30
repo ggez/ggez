@@ -10,6 +10,7 @@ submit a PR, please!
  * <https://github.com/Piripant/sudoku>
  * <https://github.com/mkhan45/gravity-sim-v2>: An n-body universal gravitation simulator using `specs` and `imgui-rs`
  * <https://github.com/jackmordaunt/fog-of-chess>: Chess but with the fog of war.
+ * <https://github.com/pickfire/bugs>: Game with lots of bugs (incomplete with broken AI feature gate)
 
 ## Examples/tutorial code
 
