@@ -31,7 +31,7 @@ impl Image {
         rgba_bytes: &[u8],
     ) -> GameResult<Self> {
         let texture =
-            ggraphics::TextureHandle::new(&*ctx.gfx_context.ctx, &rgba_bytes, width, height)
+            ggraphics::TextureHandle::new(&*ctx.gfx_context.glc, &rgba_bytes, width, height)
                 .into_shared();
         Ok(Self {
             texture,
@@ -40,6 +40,25 @@ impl Image {
         })
     }
 
+    /// Small helper for creating a new solid `Image` with the given color.
+    pub fn from_color(
+        ctx: &Context,
+        width: usize,
+        height: usize,
+        color: graphics::Color,
+    ) -> GameResult<Self> {
+        let mut rgba = Vec::with_capacity(width * height * 4);
+        let (r, g, b, a) = color.into();
+        for _y in 0..height {
+            for _x in 0..width {
+                rgba.extend(&[r, g, b, a][..]);
+            }
+        }
+
+        Self::from_rgba(ctx, width, height, &rgba)
+    }
+
+    /// Creates a new image by loading the file at the given path.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let img = {
             let mut buf = Vec::new();

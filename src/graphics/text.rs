@@ -1,7 +1,3 @@
-use glyph_brush::GlyphPositioner;
-use glyph_brush::{self, FontId, Layout, SectionText, VariedSection};
-pub use glyph_brush::{rusttype::Scale, GlyphBrush, HorizontalAlign as Align};
-use mint;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::f32;
@@ -9,6 +5,15 @@ use std::fmt;
 use std::io::Read;
 use std::path;
 use std::rc::Rc;
+
+use glyph_brush::{
+    self, FontId, GlyphBrushBuilder, GlyphPositioner, Layout, SectionText, VariedSection,
+};
+pub use glyph_brush::{rusttype::Scale, GlyphBrush, HorizontalAlign as Align};
+
+use ggraphics as gg;
+use log::*;
+use mint;
 
 use super::*;
 
@@ -161,8 +166,6 @@ impl Default for CachedMetrics {
 #[derive(Debug, Clone)]
 pub struct Text {
     fragments: Vec<TextFragment>,
-    blend_mode: Option<BlendMode>,
-    filter_mode: FilterMode,
     bounds: Point2,
     layout: Layout<glyph_brush::BuiltInLineBreaker>,
     font_id: FontId,
@@ -174,8 +177,6 @@ impl Default for Text {
     fn default() -> Self {
         Text {
             fragments: Vec::new(),
-            blend_mode: None,
-            filter_mode: FilterMode::Linear,
             bounds: Point2::new(f32::INFINITY, f32::INFINITY),
             layout: Layout::default(),
             font_id: FontId::default(),
@@ -231,7 +232,7 @@ impl Text {
         P: Into<mint::Point2<f32>>,
     {
         self.bounds = Point2::from(bounds.into());
-        if self.bounds.x == f32::INFINITY {
+        if self.bounds.x() == f32::INFINITY {
             // Layouts don't make any sense if we don't wrap text at all.
             self.layout = Layout::default();
         } else {
@@ -276,27 +277,27 @@ impl Text {
 
         let relative_dest_x = {
             // This positions text within bounds with relative_dest being to the left, always.
-            let mut dest_x = relative_dest.x;
-            if self.bounds.x != f32::INFINITY {
+            let mut dest_x = relative_dest.x();
+            if self.bounds.x() != f32::INFINITY {
                 use glyph_brush::Layout::Wrap;
                 match self.layout {
                     Wrap {
                         h_align: Align::Center,
                         ..
-                    } => dest_x += self.bounds.x * 0.5,
+                    } => dest_x += self.bounds.x() * 0.5,
                     Wrap {
                         h_align: Align::Right,
                         ..
-                    } => dest_x += self.bounds.x,
+                    } => dest_x += self.bounds.x(),
                     _ => (),
                 }
             }
             dest_x
         };
-        let relative_dest = (relative_dest_x, relative_dest.y);
+        let relative_dest = (relative_dest_x, relative_dest.y());
         VariedSection {
             screen_position: relative_dest,
-            bounds: (self.bounds.x, self.bounds.y),
+            bounds: (self.bounds.x(), self.bounds.y()),
             layout: self.layout,
             text: sections,
             ..Default::default()
@@ -370,7 +371,9 @@ impl Text {
 
     /// Returns the width and height of the formatted and wrapped text.
     pub fn dimensions(&self, context: &Context) -> (u32, u32) {
-        self.calculate_dimensions(&mut context.gfx_context.glyph_brush.borrow_mut())
+        // TODO
+        //self.calculate_dimensions(&mut context.gfx_context.glyph_brush.borrow_mut())
+        (0, 0)
     }
 
     /// Returns the width of formatted and wrapped text, in screen coordinates.
@@ -384,29 +387,62 @@ impl Text {
     }
 }
 
-impl Drawable for Text {
-    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
-        // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
-        queue_text(ctx, self, Point2::new(0.0, 0.0), Some(param.color));
-        draw_queued_text(ctx, param, self.blend_mode, self.filter_mode)
+#[derive(Debug)]
+pub struct TextBatch {
+    pub glyph_brush: GlyphBrush<'static, gg::QuadData>,
+    pub glyph_cache: Image,
+
+    current_sampler: Option<SamplerSpec>,
+    pipe: gg::QuadPipeline,
+}
+
+impl TextBatch {
+    /// Make a new QuadBatch with the default shader.
+    pub fn new(ctx: &mut Context, projection: Matrix4) -> Self {
+        let shader = {
+            let gl = gl_context(ctx);
+            gl.default_shader()
+        };
+        Self::new_with_shader(ctx, projection, shader)
     }
 
-    fn dimensions(&self, ctx: &mut Context) -> Option<Rect> {
-        let (w, h) = self.dimensions(ctx);
-        Some(Rect {
-            w: w as _,
-            h: h as _,
-            x: 0.0,
-            y: 0.0,
-        })
+    /// Make a new QuadBatch with the given shader.
+    pub fn new_with_shader(ctx: &mut Context, projection: Matrix4, shader: gg::Shader) -> Self {
+        let gl = gl_context(ctx);
+        let pipe = unsafe { gg::QuadPipeline::new(gl.clone(), shader, projection) };
+
+        let glyph_brush =
+            GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec()).build();
+        let (glyph_cache_width, glyph_cache_height) = glyph_brush.texture_dimensions();
+        let image = Image::from_color(
+            ctx,
+            glyph_cache_width as usize,
+            glyph_cache_height as usize,
+            BLACK,
+        )
+        .expect("TODO");
+        Self {
+            glyph_brush,
+            glyph_cache: image,
+            current_sampler: None,
+            pipe,
+        }
     }
 
-    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
-        self.blend_mode = mode;
+    pub fn set_projection(&mut self, projection: Matrix4) {
+        self.pipe.projection = projection
     }
 
-    fn blend_mode(&self) -> Option<BlendMode> {
-        self.blend_mode
+    pub fn add(&mut self, image: &Image, sampler: SamplerSpec, text: Text) {
+        // TODO: Draw call batching
+        let dc = self.pipe.drawcalls.last_mut().expect("can't happen");
+        // TODO
+        //dc.add(quad);
+    }
+
+    /// Add with default sampler
+    pub fn add_text(&mut self, image: &Image, text: Text) {
+        self.add(image, SamplerSpec::default(), text);
     }
 }
 
@@ -454,6 +490,7 @@ impl Default for Font {
     }
 }
 
+/*
 /// Obtains the font cache.
 pub fn font_cache(context: &Context) -> FontCache {
     FontCache {
@@ -492,7 +529,9 @@ where
         None => brush.queue(section),
     }
 }
+*/
 
+/*
 /// Draws all of the [`Text`](struct.Text.html)s added via [`queue_text()`](fn.queue_text.html).
 ///
 /// the `DrawParam` applies to everything in the queue; offset is in
@@ -503,12 +542,7 @@ where
 /// `BlendMode` and `FilterMode`.  This is unfortunate but currently
 /// unavoidable, see [this issue](https://github.com/ggez/ggez/issues/561)
 /// for more info.
-pub fn draw_queued_text<D>(
-    ctx: &mut Context,
-    param: D,
-    blend: Option<BlendMode>,
-    filter: FilterMode,
-) -> GameResult
+pub fn draw_queued_text<D>(ctx: &mut Context, param: D, filter: FilterMode) -> GameResult
 where
     D: Into<DrawParam>,
 {
@@ -561,16 +595,17 @@ where
     }
     Ok(())
 }
+*/
 
+/// The function that gets called to add a glyph to the actual texture.
+/// `rect` is the position and `tex_data` is the actual data.
 fn update_texture<B>(
-    backend: &B,
-    encoder: &mut gfx::Encoder<B::Resources, B::CommandBuffer>,
-    texture: &gfx::handle::RawTexture<B::Resources>,
+    gl: gg::GlContext,
+    texture: &gg::Texture,
     rect: glyph_brush::rusttype::Rect<u32>,
     tex_data: &[u8],
-) where
-    B: BackendSpec,
-{
+) {
+    /*
     let offset = [rect.min.x as u16, rect.min.y as u16];
     let size = [rect.width() as u16, rect.height() as u16];
     let info = texture::ImageInfoCommon {
@@ -591,15 +626,13 @@ fn update_texture<B>(
             &typed_tex, None, info, &tex_data_chunks,
         )
         .unwrap();
+    */
 }
 
-/// I THINK what we're going to need to do is have a
-/// `SpriteBatch` that actually does the stuff and stores the
-/// UV's and verts and such, while
-///
-/// Basically, `glyph_brush`'s "`to_vertex`" callback is really
-/// `to_quad`; in the default code it
-fn to_vertex(v: glyph_brush::GlyphVertex) -> DrawParam {
+/// This is what maps glyph_brush's Vertex type to whatever our
+/// graphics pipeline wants to actually draw with.
+fn to_vertex(v: glyph_brush::GlyphVertex) -> gg::QuadData {
+    /*
     let src_rect = Rect {
         x: v.tex_coords.min.x,
         y: v.tex_coords.min.y,
@@ -613,6 +646,9 @@ fn to_vertex(v: glyph_brush::GlyphVertex) -> DrawParam {
         .src(src_rect)
         .dest(dest_pt)
         .color(v.color.into())
+    */
+    // TODO
+    gg::QuadData::default()
 }
 
 #[cfg(test)]

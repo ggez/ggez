@@ -35,11 +35,13 @@ use crate::GameResult;
 pub(crate) mod drawparam;
 pub(crate) mod image;
 //pub(crate) mod mesh;
+pub(crate) mod text;
 pub(crate) mod types;
 
 pub use crate::graphics::drawparam::*;
 pub use crate::graphics::image::*;
 //pub use crate::graphics::mesh::*;
+pub use crate::graphics::text::*;
 pub use crate::graphics::types::*;
 
 pub type WindowCtx = glutin::WindowedContext<glutin::PossiblyCurrent>;
@@ -49,30 +51,30 @@ pub type SamplerSpec = gg::SamplerSpec;
 #[derive(Debug)]
 pub struct GraphicsContext {
     // TODO: OMG these names
-    pub ctx: Rc<gg::GlContext>,
-    pub(crate) win_ctx: WindowCtx,
+    pub glc: Rc<gg::GlContext>,
+    pub(crate) win: WindowCtx,
     pub(crate) screen_pass: RenderPass,
     pub(crate) passes: Vec<gg::RenderPass>,
 }
 
 impl GraphicsContext {
-    pub(crate) fn new(gl: gg::glow::Context, win_ctx: WindowCtx) -> Self {
-        let mut ctx = Rc::new(gg::GlContext::new(gl));
+    pub(crate) fn new(gl: gg::glow::Context, win: WindowCtx) -> Self {
+        let mut glc = Rc::new(gg::GlContext::new(gl));
         unsafe {
-            let (w, h): (u32, u32) = win_ctx.window().inner_size().into();
+            let (w, h): (u32, u32) = win.window().inner_size().into();
             let pass = gg::RenderPass::new_screen(
-                Rc::get_mut(&mut ctx).expect("Can't happen"),
+                Rc::get_mut(&mut glc).expect("Can't happen"),
                 w as usize,
                 h as usize,
                 Some((0.1, 0.2, 0.3, 1.0)),
             );
             let screen_pass = RenderPass {
                 inner: pass,
-                gl: ctx.clone(),
+                gl: glc.clone(),
             };
             Self {
-                ctx: ctx,
-                win_ctx,
+                glc: glc,
+                win,
                 screen_pass,
                 passes: vec![],
             }
@@ -83,7 +85,7 @@ impl GraphicsContext {
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
         //use crate::conf::FullscreenType;
         // use glutin::dpi;
-        let window = self.win_ctx.window();
+        let window = self.win.window();
 
         window.set_maximized(mode.maximized);
 
@@ -128,7 +130,7 @@ impl GraphicsContext {
 
     // TODO
     pub(crate) fn resize_viewport(&mut self) {
-        let physical_size = self.win_ctx.window().inner_size();
+        let physical_size = self.win.window().inner_size();
         assert!(physical_size.width <= std::i32::MAX as u32);
         assert!(physical_size.height <= std::i32::MAX as u32);
         self.screen_pass.inner.set_viewport(
@@ -297,7 +299,7 @@ pub fn screen_pass(ctx: &mut Context) -> &mut RenderPass {
 ///
 /// Unsets any active canvas.
 pub fn present(ctx: &mut Context) -> GameResult<()> {
-    ctx.gfx_context.win_ctx.swap_buffers()?;
+    ctx.gfx_context.win.swap_buffers()?;
     Ok(())
 }
 
@@ -309,7 +311,7 @@ pub fn present(ctx: &mut Context) -> GameResult<()> {
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
 pub fn renderer_info(ctx: &Context) -> GameResult<String> {
-    let (vend, rend, vers, shader_vers) = ctx.gfx_context.ctx.get_info();
+    let (vend, rend, vers, shader_vers) = ctx.gfx_context.glc.get_info();
     Ok(format!(
         "GL context created info:
   Vendor: {}
@@ -353,7 +355,7 @@ pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult {
 
 /// Sets the window title.
 pub fn set_window_title(context: &Context, title: &str) {
-    context.gfx_context.win_ctx.window().set_title(title);
+    context.gfx_context.win.window().set_title(title);
 }
 
 /// Returns the size of the window in pixels as (width, height),
@@ -361,7 +363,7 @@ pub fn set_window_title(context: &Context, title: &str) {
 /// Returns zeros if the window doesn't exist.
 pub fn size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
-    let size = gfx.win_ctx.window().outer_size();
+    let size = gfx.win.window().outer_size();
     (size.width as f32, size.height as f32)
 }
 
@@ -369,7 +371,7 @@ pub fn size(context: &Context) -> (f32, f32) {
 /// Returns zeros if window doesn't exist.
 pub fn drawable_size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
-    let size = gfx.win_ctx.window().inner_size();
+    let size = gfx.win.window().inner_size();
     (size.width as f32, size.height as f32)
 }
 
@@ -401,12 +403,12 @@ pub fn set_resizable(context: &mut Context, resizable: bool) -> GameResult {
 /// to dip into Glutin itself.  But life isn't always ideal.
 pub fn window(context: &Context) -> &glutin::window::Window {
     let gfx = &context.gfx_context;
-    &gfx.win_ctx.window()
+    &gfx.win.window()
 }
 
 /// TODO: This is roughb ut works
 pub fn gl_context(context: &Context) -> Rc<gg::GlContext> {
-    context.gfx_context.ctx.clone()
+    context.gfx_context.glc.clone()
 }
 
 /*

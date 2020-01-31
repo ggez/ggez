@@ -255,7 +255,7 @@ where
             }
             Event::MainEventsCleared => {
                 state.update(ctx).expect("TODO");
-                ctx.gfx_context.win_ctx.window().request_redraw();
+                ctx.gfx_context.win.window().request_redraw();
             }
             Event::DeviceEvent { event, .. } => match event {
                 DeviceEvent::ModifiersChanged(mods) => ctx.keyboard_context.set_modifiers(mods),
