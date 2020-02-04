@@ -274,6 +274,38 @@ impl TextureHandle {
         }
     }
 
+    /// Replace part of the texture with the slice of RGBA bytes.
+    pub fn replace_subimage(
+        &mut self,
+        rgba: &[u8],
+        width: usize,
+        height: usize,
+        x_offset: usize,
+        y_offset: usize,
+    ) {
+        //assert_eq!(width * height * 4, rgba.len());
+        // TODO: asserts on offsets, sizes, etc.
+        let gl = &*self.ctx;
+        // Unsafety: Same as `new()`
+        unsafe {
+            gl.active_texture(glow::TEXTURE0);
+            gl.bind_texture(glow::TEXTURE_2D, Some(self.tex));
+            gl.tex_sub_image_2d_u8_slice(
+                glow::TEXTURE_2D,                 // Texture target
+                0,                                // mipmap level
+                i32::try_from(x_offset).unwrap(), // xoffset
+                i32::try_from(y_offset).unwrap(), // yoffset
+                i32::try_from(width).unwrap(),    // width
+                i32::try_from(height).unwrap(),   // height
+                glow::RGBA,                       // format to load the texture from
+                glow::UNSIGNED_BYTE,              // Type of each color element
+                Some(rgba),                       // Actual data
+            );
+
+            gl.bind_texture(glow::TEXTURE_2D, None);
+        }
+    }
+
     /// Turn this texture into a share-able, refcounted one.
     pub fn into_shared(self) -> Texture {
         Rc::new(self)
