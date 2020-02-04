@@ -208,31 +208,14 @@ impl TextureHandle {
     pub fn new(ctx: &GlContext, rgba: &[u8], width: usize, height: usize) -> Self {
         assert_eq!(width * height * 4, rgba.len());
         let gl = &*ctx.gl;
-        // Unsafety: This verifies size of user input, checks resource
-        // creation, and does no raw pointer-manipulation-y things outside
-        // of that.
-        unsafe {
-            let t = gl.create_texture().unwrap();
-            gl.active_texture(glow::TEXTURE0);
-            gl.bind_texture(glow::TEXTURE_2D, Some(t));
-            gl.tex_image_2d(
-                glow::TEXTURE_2D,                   // Texture target
-                0,                                  // mipmap level
-                i32::try_from(glow::RGBA).unwrap(), // format to store the texture in (can't fail)
-                i32::try_from(width).unwrap(),      // width
-                i32::try_from(height).unwrap(),     // height
-                0,                                  // border, must always be 0, lulz
-                glow::RGBA,                         // format to load the texture from
-                glow::UNSIGNED_BYTE,                // Type of each color element
-                Some(rgba),                         // Actual data
-            );
-
-            gl.bind_texture(glow::TEXTURE_2D, None);
-            Self {
-                ctx: ctx.gl.clone(),
-                tex: t,
-            }
-        }
+        // Unsafety: Takes no user inputs.
+        let t = unsafe { gl.create_texture().unwrap() };
+        let mut tex = Self {
+            ctx: ctx.gl.clone(),
+            tex: t,
+        };
+        tex.replace(rgba, width, height);
+        tex
     }
 
     /// Make a new empty texture with the given format.  Note that reading from the texture
@@ -264,6 +247,30 @@ impl TextureHandle {
         Self {
             ctx: ctx.gl.clone(),
             tex: t,
+        }
+    }
+
+    /// Replace the existing texture with the given slice of RGBA bytes.
+    pub fn replace(&mut self, rgba: &[u8], width: usize, height: usize) {
+        assert_eq!(width * height * 4, rgba.len());
+        let gl = &*self.ctx;
+        // Unsafety: Same as `new()`
+        unsafe {
+            gl.active_texture(glow::TEXTURE0);
+            gl.bind_texture(glow::TEXTURE_2D, Some(self.tex));
+            gl.tex_image_2d(
+                glow::TEXTURE_2D,                   // Texture target
+                0,                                  // mipmap level
+                i32::try_from(glow::RGBA).unwrap(), // format to store the texture in (can't fail)
+                i32::try_from(width).unwrap(),      // width
+                i32::try_from(height).unwrap(),     // height
+                0,                                  // border, must always be 0, lulz
+                glow::RGBA,                         // format to load the texture from
+                glow::UNSIGNED_BYTE,                // Type of each color element
+                Some(rgba),                         // Actual data
+            );
+
+            gl.bind_texture(glow::TEXTURE_2D, None);
         }
     }
 
@@ -349,7 +356,7 @@ impl ShaderHandle {
 /// We have to be *quite particular* about layout since this gets
 /// fed straight to the shader.
 #[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
 pub struct QuadData {
     /// Color to blend the result texture with.
     pub color: [f32; 4],
@@ -674,7 +681,9 @@ impl DrawCall for QuadDrawCall {
         // Will be if we ever do multi-texturing, I suppose.
         gl.active_texture(glow::TEXTURE0);
         gl.bind_texture(glow::TEXTURE_2D, Some(self.texture.tex));
-        gl.uniform_1_i32(Some(self.texture_location), 0);
+        // The texture location has to be cloned, since on WebGL it's
+        // not necessarily Copy.
+        gl.uniform_1_i32(Some(self.texture_location.clone()), 0);
 
         // bind sampler
         // This is FUCKING WHACKO.  I set the active texture
@@ -864,7 +873,7 @@ impl MeshDrawCall {
         // Will be if we ever do multi-texturing, I suppose.
         gl.active_texture(glow::TEXTURE0);
         gl.bind_texture(glow::TEXTURE_2D, Some(self.texture.tex));
-        gl.uniform_1_i32(Some(self.texture_location), 0);
+        gl.uniform_1_i32(Some(self.texture_location.clone()), 0);
 
         // bind sampler
         // This is FUCKING WHACKO.  I set the active texture
@@ -933,7 +942,7 @@ impl QuadPipeline {
     pub unsafe fn draw(&mut self, gl: &Context) {
         gl.use_program(Some(self.shader.program));
         gl.uniform_matrix_4_f32_slice(
-            Some(self.projection_location),
+            Some(self.projection_location.clone()),
             false,
             &self.projection.to_cols_array(),
         );
@@ -1076,7 +1085,7 @@ impl MeshPipeline {
     pub unsafe fn draw(&mut self, gl: &Context) {
         gl.use_program(Some(self.shader.program));
         gl.uniform_matrix_4_f32_slice(
-            Some(self.projection_location),
+            Some(self.projection_location.clone()),
             false,
             &self.projection.to_cols_array(),
         );

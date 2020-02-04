@@ -30,6 +30,7 @@ path = "src/lib.rs"
 # Useful for making smaller wasm binaries
 opt-level = "s"
 
+
 [features]
 default = ["c_dependencies"]
 bzip2 = ["zip/bzip2"]
