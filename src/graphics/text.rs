@@ -37,15 +37,39 @@ pub struct Font {
 ///
 /// This type can be useful to measure text efficiently without being tied to
 /// the `Context` lifetime.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct FontCache {
-    glyph_brush: Rc<RefCell<GlyphBrush<'static, DrawParam>>>,
+    glyph_brush: GlyphBrush<'static, DrawParam>,
+    glyph_image: crate::graphics::Image,
 }
 
 impl FontCache {
+    pub(crate) fn new(gl: &mut ggraphics::GlContext) -> Self {
+        let glyph_brush =
+            GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec()).build();
+        let (glyph_cache_width, glyph_cache_height) = glyph_brush.texture_dimensions();
+        let initial_contents =
+            vec![255; 4 * glyph_cache_width as usize * glyph_cache_height as usize];
+        let texture = ggraphics::TextureHandle::new(
+            gl,
+            &initial_contents,
+            glyph_cache_width as usize,
+            glyph_cache_height as usize,
+        )
+        .into_shared();
+        let glyph_image = Image {
+            texture,
+            width: glyph_cache_width as usize,
+            height: glyph_cache_height as usize,
+        };
+        Self {
+            glyph_brush,
+            glyph_image,
+        }
+    }
     /// Returns the width and height of the formatted and wrapped text.
-    pub fn dimensions(&self, text: &Text) -> (u32, u32) {
-        text.calculate_dimensions(&mut self.glyph_brush.borrow_mut())
+    pub fn dimensions(&mut self, text: &Text) -> (u32, u32) {
+        text.calculate_dimensions(&mut self.glyph_brush)
     }
 }
 
@@ -389,9 +413,6 @@ impl Text {
 
 #[derive(Debug)]
 pub struct TextBatch {
-    pub glyph_brush: GlyphBrush<'static, gg::QuadData>,
-    pub glyph_cache: Image,
-
     current_sampler: Option<SamplerSpec>,
     pipe: gg::QuadPipeline,
 }
@@ -411,19 +432,7 @@ impl TextBatch {
         let gl = gl_context(ctx);
         let pipe = unsafe { gg::QuadPipeline::new(gl.clone(), shader, projection) };
 
-        let glyph_brush =
-            GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec()).build();
-        let (glyph_cache_width, glyph_cache_height) = glyph_brush.texture_dimensions();
-        let image = Image::from_color(
-            ctx,
-            glyph_cache_width as usize,
-            glyph_cache_height as usize,
-            BLACK,
-        )
-        .expect("TODO");
         Self {
-            glyph_brush,
-            glyph_cache: image,
             current_sampler: None,
             pipe,
         }
@@ -447,6 +456,7 @@ impl TextBatch {
 }
 
 impl Font {
+    /* TODO: Add FontCache to Context?  Pipeline?  Whichever?
     /// Load a new TTF font from the given file.
     pub fn new<P>(context: &mut Context, path: P) -> GameResult<Font>
     where
@@ -459,18 +469,15 @@ impl Font {
 
         Font::new_glyph_font_bytes(context, &buf)
     }
+    */
 
     /// Loads a new TrueType font from given bytes and into a `gfx::GlyphBrush` owned
     /// by the `Context`.
-    pub fn new_glyph_font_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
+    pub fn new_glyph_font_bytes(cache: &mut FontCache, bytes: &[u8]) -> GameResult<Self> {
         // Take a Cow here to avoid this clone where unnecessary?
         // Nah, let's not complicate things more than necessary.
         let v = bytes.to_vec();
-        let font_id = context
-            .gfx_context
-            .glyph_brush
-            .borrow_mut()
-            .add_font_bytes(v);
+        let font_id = cache.glyph_brush.add_font_bytes(v);
 
         Ok(Font { font_id })
     }
@@ -600,55 +607,46 @@ where
 /// The function that gets called to add a glyph to the actual texture.
 /// `rect` is the position and `tex_data` is the actual data.
 fn update_texture<B>(
-    gl: gg::GlContext,
-    texture: &gg::Texture,
+    texture: &mut gg::Texture,
     rect: glyph_brush::rusttype::Rect<u32>,
     tex_data: &[u8],
 ) {
-    /*
-    let offset = [rect.min.x as u16, rect.min.y as u16];
-    let size = [rect.width() as u16, rect.height() as u16];
-    let info = texture::ImageInfoCommon {
-        xoffset: offset[0],
-        yoffset: offset[1],
-        zoffset: 0,
-        width: size[0],
-        height: size[1],
-        depth: 0,
-        format: (),
-        mipmap: 0,
-    };
-
-    let tex_data_chunks: Vec<[u8; 4]> = tex_data.iter().map(|c| [255, 255, 255, *c]).collect();
-    let typed_tex = backend.raw_to_typed_texture(texture.clone());
-    encoder
-        .update_texture::<<super::BuggoSurfaceFormat as gfx::format::Formatted>::Surface, super::BuggoSurfaceFormat>(
-            &typed_tex, None, info, &tex_data_chunks,
-        )
-        .unwrap();
-    */
+    let tex_bytes: Vec<[u8; 4]> = tex_data.iter().map(|c| [255, 255, 255, *c]).collect();
+    let full_tex_data = tex_bytes.concat();
+    texture.replace_subimage(
+        &full_tex_data,
+        rect.width() as usize,
+        rect.height() as usize,
+        rect.min.x as usize,
+        rect.min.y as usize,
+    );
 }
 
 /// This is what maps glyph_brush's Vertex type to whatever our
 /// graphics pipeline wants to actually draw with.
 fn to_vertex(v: glyph_brush::GlyphVertex) -> gg::QuadData {
-    /*
+    // TODO: Clean up a bit.
     let src_rect = Rect {
         x: v.tex_coords.min.x,
         y: v.tex_coords.min.y,
         w: v.tex_coords.max.x - v.tex_coords.min.x,
         h: v.tex_coords.max.y - v.tex_coords.min.y,
-    };
-    // it LOOKS like pixel_coords are the output coordinates?
-    // I'm not sure though...
-    let dest_pt = Point2::new(v.pixel_coords.min.x as f32, v.pixel_coords.min.y as f32);
-    DrawParam::default()
-        .src(src_rect)
-        .dest(dest_pt)
-        .color(v.color.into())
-    */
-    // TODO
-    gg::QuadData::default()
+    }
+    .into();
+    let dst_rect = Rect {
+        x: v.pixel_coords.min.x as f32,
+        y: v.pixel_coords.min.y as f32,
+        // TODO: Are these correct?
+        w: v.tex_coords.max.x - v.tex_coords.min.x,
+        h: v.tex_coords.max.y - v.tex_coords.min.y,
+    }
+    .into();
+    gg::QuadData {
+        src_rect,
+        dst_rect,
+        color: v.color.into(),
+        ..Default::default()
+    }
 }
 
 #[cfg(test)]

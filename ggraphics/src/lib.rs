@@ -275,8 +275,9 @@ impl TextureHandle {
     }
 
     /// Replace part of the texture with the slice of RGBA bytes.
+    /// TODO: YOLO mutating &self, let's see how it goes
     pub fn replace_subimage(
-        &mut self,
+        &self,
         rgba: &[u8],
         width: usize,
         height: usize,

@@ -72,6 +72,7 @@ impl GraphicsContext {
                 inner: pass,
                 gl: glc.clone(),
             };
+
             Self {
                 glc: glc,
                 win,
