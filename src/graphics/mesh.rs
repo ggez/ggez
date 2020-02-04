@@ -231,6 +231,26 @@ impl MeshBuilder {
     where
         P: Into<mint::Point2<f32>> + Clone,
     {
+        let vb = VertexBuilder {
+            color: LinearColor::from(color),
+        };
+        self.polyline_with_vertex_builder(mode, points, is_closed, vb)
+    }
+
+    /// Create a new mesh for a given polyline using a custom vertex builder.
+    /// The points given must be in clockwise order.
+    pub fn polyline_with_vertex_builder<P, V>(
+        &mut self,
+        mode: DrawMode,
+        points: &[P],
+        is_closed: bool,
+        vb: V,
+    ) -> GameResult<&mut Self>
+    where
+        P: Into<mint::Point2<f32>> + Clone,
+        V: t::VertexConstructor<t::FillVertex, Vertex>
+            + t::VertexConstructor<t::StrokeVertex, Vertex>,
+    {
         {
             assert!(points.len() > 1);
             let buffers = &mut self.buffer;
@@ -238,9 +258,7 @@ impl MeshBuilder {
                 let mint_point: mint::Point2<f32> = p.into();
                 t::math::point(mint_point.x, mint_point.y)
             });
-            let vb = VertexBuilder {
-                color: LinearColor::from(color),
-            };
+
             match mode {
                 DrawMode::Fill(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -624,6 +642,16 @@ impl Mesh {
         self.buffer = vbuf;
         self.slice = slice;
     }
+
+    /// Returns a slice for this mesh that could be used for manual draw call submission
+    pub fn get_slice(&self) -> &gfx::Slice<gfx_device_gl::Resources> {
+        &self.slice
+    }
+
+    /// Returns a vertex buffer for this mesh that could be used for manual draw call submission
+    pub fn get_vertex_buffer(&self) -> gfx::handle::Buffer<gfx_device_gl::Resources, Vertex> {
+        self.buffer.clone()
+    }
 }
 
 impl Drawable for Mesh {
@@ -653,6 +681,252 @@ impl Drawable for Mesh {
     }
     fn blend_mode(&self) -> Option<BlendMode> {
         self.blend_mode
+    }
+}
+
+/// An index of a particular instance in a `MeshBatch`
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct MeshIdx(pub usize);
+
+/// Mesh that will be rendered with hardware instancing.
+/// Use this when you have a lot of similar geometry which does not move around often.
+#[derive(Debug)]
+pub struct MeshBatch {
+    mesh: Mesh,
+    instance_params: Vec<DrawParam>,
+    instance_buffer: Option<gfx::handle::Buffer<gfx_device_gl::Resources, InstanceProperties>>,
+    instance_buffer_dirty: bool,
+}
+
+impl MeshBatch {
+    /// Creates a new mesh batch.
+    ///
+    /// Takes ownership of the `Mesh`.
+    pub fn new(mesh: Mesh) -> GameResult<MeshBatch> {
+        Ok(MeshBatch {
+            mesh: mesh,
+            instance_params: Vec::new(),
+            instance_buffer: None,
+            instance_buffer_dirty: true,
+        })
+    }
+
+    /// Removes all instances from the batch.
+    ///
+    /// Calling this invalidates the entire buffer, however this will
+    /// not automatically deallocate graphics card memory or flush the buffer.
+    pub fn clear(&mut self) {
+        self.instance_params.clear();
+        self.instance_buffer_dirty = true;
+    }
+
+    /// Returns a reference to mesh instances
+    pub fn get_instance_params(&self) -> &[DrawParam] {
+        &self.instance_params
+    }
+
+    /// Returns a mutable reference to mesh instances.
+    ///
+    /// Please note that manually altering items in this slice
+    /// will not automatically invalidate the buffer, you will
+    /// have to manually call `flush()` or `flush_range()` later.
+    pub fn get_instance_params_mut(&mut self) -> &mut [DrawParam] {
+        &mut self.instance_params
+    }
+
+    /// Adds a new instance to the mesh batch
+    ///
+    /// Returns a handle with which to modify the instance using
+    /// [`set()`](#method.set)
+    ///
+    /// Calling this invalidates the entire buffer and will result in
+    /// flusing it on the next [`graphics::draw()`](../fn.draw.html) call.
+    pub fn add<P>(&mut self, param: P) -> MeshIdx
+    where
+        P: Into<DrawParam>,
+    {
+        self.instance_params.push(param.into());
+        self.instance_buffer_dirty = true;
+        MeshIdx(self.instance_params.len() - 1)
+    }
+
+    /// Alters an instance in the batch to use the given draw params.
+    ///
+    /// Calling this invalidates the entire buffer and will result in
+    /// flusing it on the next [`graphics::draw()`](../fn.draw.html) call.
+    ///
+    /// This might cause performance issues with large batches, to avoid this
+    /// consider using `flush_range` to explicitly invalidate required data slice.
+    pub fn set<P>(&mut self, handle: MeshIdx, param: P) -> GameResult
+    where
+        P: Into<DrawParam>,
+    {
+        if handle.0 < self.instance_params.len() {
+            self.instance_params[handle.0] = param.into();
+            self.instance_buffer_dirty = true;
+            Ok(())
+        } else {
+            Err(GameError::RenderError(String::from("Index out of bounds")))
+        }
+    }
+
+    /// Alters a range of instances in the batch to use the given draw params
+    ///
+    /// Calling this invalidates the entire buffer and will result in
+    /// flusing it on the next [`graphics::draw()`](../fn.draw.html) call.
+    ///
+    /// This might cause performance issues with large batches, to avoid this
+    /// consider using `flush_range` to explicitly invalidate required data slice.
+    pub fn set_range<P>(&mut self, first_handle: MeshIdx, params: &[P]) -> GameResult
+    where
+        P: Into<DrawParam> + Copy,
+    {
+        let first_param = first_handle.0;
+        let num_params = params.len();
+        if first_param < self.instance_params.len()
+            && (first_param + num_params) <= self.instance_params.len()
+        {
+            for i in 0..num_params {
+                self.instance_params[first_param + i] = params[i].into();
+            }
+            self.instance_buffer_dirty = true;
+            Ok(())
+        } else {
+            Err(GameError::RenderError(String::from("Range out of bounds")))
+        }
+    }
+
+    /// Immediately sends specified slice of data in the batch to the graphics card.
+    ///
+    /// Calling this counts as a full buffer flush, but only flushes the data within
+    /// the provided range, anything outside of this range will not be touched.
+    ///
+    /// Use it for updating small portions of large batches.
+    pub fn flush_range(
+        &mut self,
+        ctx: &mut Context,
+        first_handle: MeshIdx,
+        count: usize,
+    ) -> GameResult {
+        let first_param = first_handle.0;
+        let slice_len = first_param + count;
+        if first_param < self.instance_params.len() && slice_len <= self.instance_params.len() {
+            let needs_new_buffer = self.instance_buffer == None
+                || self.instance_buffer.as_ref().unwrap().len() < slice_len;
+
+            let slice = if needs_new_buffer {
+                &self.instance_params
+            } else {
+                &self.instance_params[first_param..slice_len]
+            };
+
+            let new_properties: Vec<InstanceProperties> = slice
+                .iter()
+                .map(|param| {
+                    let draw_transform = DrawTransform::from(*param);
+                    draw_transform.to_instance_properties(ctx.gfx_context.is_srgb())
+                })
+                .collect();
+
+            if needs_new_buffer {
+                let new_buffer = ctx.gfx_context.factory.create_buffer(
+                    new_properties.len(),
+                    gfx::buffer::Role::Vertex,
+                    gfx::memory::Usage::Dynamic,
+                    gfx::memory::Bind::TRANSFER_DST,
+                )?;
+
+                self.instance_buffer = Some(new_buffer);
+
+                ctx.gfx_context.encoder.update_buffer(
+                    &self.instance_buffer.as_ref().unwrap(),
+                    new_properties.as_slice(),
+                    0,
+                )?;
+            } else {
+                ctx.gfx_context.encoder.update_buffer(
+                    &self.instance_buffer.as_ref().unwrap(),
+                    new_properties.as_slice(),
+                    first_param,
+                )?;
+            }
+
+            self.instance_buffer_dirty = false;
+            Ok(())
+        } else {
+            Err(GameError::RenderError(String::from("Range out of bounds")))
+        }
+    }
+
+    /// Immediately sends all data in the batch to the graphics card.
+    ///
+    /// In general, [`graphics::draw()`](../fn.draw.html) on the `MeshBatch`
+    /// will do this automatically when buffer contents are updated.
+    pub fn flush(&mut self, ctx: &mut Context) -> GameResult {
+        self.flush_range(ctx, MeshIdx(0), self.instance_params.len())
+    }
+
+    /// Draws the drawable onto the rendering target.
+    pub fn draw(&mut self, ctx: &mut Context, param: DrawParam) -> GameResult {
+        if !self.instance_params.is_empty() {
+            self.mesh.debug_id.assert(ctx);
+
+            if !self.instance_params.is_empty() && self.instance_buffer_dirty {
+                self.flush(ctx)?;
+            }
+
+            let mut slice = self.mesh.slice.clone();
+            slice.instances = Some((self.instance_params.len() as u32, 0));
+
+            let gfx = &mut ctx.gfx_context;
+
+            let batch_transform: DrawTransform = param.into();
+            let current_transform = gfx.transform();
+
+            gfx.push_transform(batch_transform.matrix * current_transform);
+            gfx.calculate_transform_matrix();
+            gfx.update_globals()?;
+
+            // HACK this code has to restore the old instance buffer after drawing,
+            // otherwise something else will override the first instance data
+            let instance_buffer = self.instance_buffer.as_ref().unwrap();
+            let old_instance_buffer = gfx.data.rect_instance_properties.clone();
+
+            gfx.data.rect_instance_properties = instance_buffer.clone();
+            gfx.data.vbuf = self.mesh.buffer.clone();
+            let texture = self.mesh.image.texture.clone();
+            let sampler = gfx
+                .samplers
+                .get_or_insert(self.mesh.image.sampler_info, gfx.factory.as_mut());
+
+            let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(texture);
+            gfx.data.tex = (typed_thingy, sampler);
+
+            gfx.draw(Some(&slice))?;
+
+            gfx.data.rect_instance_properties = old_instance_buffer;
+
+            gfx.pop_transform();
+            gfx.calculate_transform_matrix();
+            gfx.update_globals()?;
+        }
+
+        Ok(())
+    }
+
+    /// Returns a bounding box in the form of a `Rect`.
+    pub fn dimensions(&self, ctx: &mut Context) -> Option<Rect> {
+        self.mesh.dimensions(ctx)
+    }
+
+    /// Sets the blend mode to be used when drawing this drawable.
+    pub fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
+        self.mesh.set_blend_mode(mode)
+    }
+
+    /// Gets the blend mode to be used when drawing this drawable.
+    pub fn blend_mode(&self) -> Option<BlendMode> {
+        self.mesh.blend_mode()
     }
 }
 

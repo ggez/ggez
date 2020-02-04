@@ -114,6 +114,16 @@ where
             debug_id,
         })
     }
+
+    /// A helper function to get the raw gfx texture handle
+    pub fn get_raw_texture_handle(&self) -> gfx::handle::RawTexture<B::Resources> {
+        self.texture_handle.clone()
+    }
+
+    /// A helper function to get the raw gfx texture view
+    pub fn get_raw_texture_view(&self) -> gfx::handle::RawShaderResourceView<B::Resources> {
+        self.texture.clone()
+    }
 }
 
 /// In-GPU-memory image data available to be drawn on the screen,

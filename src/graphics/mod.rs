@@ -598,6 +598,11 @@ pub fn renderer_info(ctx: &Context) -> GameResult<String> {
     ))
 }
 
+/// Returns the screen color format used by the context
+pub fn get_window_color_format(ctx: &Context) -> gfx::format::Format {
+    ctx.gfx_context.color_format()
+}
+
 /// Returns a rectangle defining the coordinate system of the screen.
 /// It will be `Rect { x: left, y: top, w: width, h: height }`
 ///
