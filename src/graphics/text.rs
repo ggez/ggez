@@ -11,6 +11,7 @@ use glyph_brush::{
 };
 pub use glyph_brush::{rusttype::Scale, GlyphBrush, HorizontalAlign as Align};
 
+use gg::QuadData;
 use ggraphics as gg;
 use log::*;
 use mint;
@@ -39,7 +40,7 @@ pub struct Font {
 /// the `Context` lifetime.
 #[derive(Debug)]
 pub struct FontCache {
-    glyph_brush: GlyphBrush<'static, DrawParam>,
+    glyph_brush: GlyphBrush<'static, QuadData>,
     glyph_image: crate::graphics::Image,
 }
 
@@ -359,7 +360,7 @@ impl Text {
     }
 
     /// Calculates, caches, and returns width and height of formatted and wrapped text.
-    fn calculate_dimensions(&self, gb: &mut GlyphBrush<'static, DrawParam>) -> (u32, u32) {
+    fn calculate_dimensions(&self, gb: &mut GlyphBrush<'static, QuadData>) -> (u32, u32) {
         if let Ok(metrics) = self.cached_metrics.try_borrow() {
             if let (Some(width), Some(height)) = (metrics.width, metrics.height) {
                 return (width, height);
@@ -452,6 +453,74 @@ impl TextBatch {
     /// Add with default sampler
     pub fn add_text(&mut self, image: &Image, text: Text) {
         self.add(image, SamplerSpec::default(), text);
+    }
+
+    pub fn draw(
+        &mut self,
+        ctx: &mut Context,
+        param: impl Into<QuadData>,
+        cache: &mut FontCache,
+        sampler: SamplerSpec,
+        text: Text,
+    ) {
+        let param: QuadData = param.into();
+
+        let gb = &mut cache.glyph_brush;
+        //let encoder = &mut ctx.gfx_context.encoder;
+        //let gc = &ctx.gfx_context.glyph_cache.texture_handle;
+        let gc = &mut cache.glyph_image;
+        //let backend = &ctx.gfx_context.backend_spec;
+
+        let action = gb.process_queued(
+            |rect, tex_data| update_texture(&mut gc.texture, rect, tex_data),
+            to_vertex,
+        );
+        match action {
+            Ok(glyph_brush::BrushAction::ReDraw) => {
+                /*
+                let spritebatch = ctx.gfx_context.glyph_state.clone();
+                let spritebatch = &mut *spritebatch.borrow_mut();
+                spritebatch.set_blend_mode(blend);
+                spritebatch.set_filter(filter);
+                draw(ctx, &*spritebatch, param).unwrap();
+                */
+                // self.draw()
+            }
+            Ok(glyph_brush::BrushAction::Draw(drawparams)) => {
+                // Gotta clone the image to avoid double-borrow's.
+                /*
+                let spritebatch = ctx.gfx_context.glyph_state.clone();
+                let spritebatch = &mut *spritebatch.borrow_mut();
+                spritebatch.clear();
+                spritebatch.set_blend_mode(blend);
+                spritebatch.set_filter(filter);
+                for p in &drawparams {
+                    // Ignore returned sprite index.
+                    let _ = spritebatch.add(*p);
+                }
+                draw(ctx, &*spritebatch, param).unwrap();
+                */
+                // self.draw()
+            }
+            Err(glyph_brush::BrushError::TextureTooSmall { suggested }) => {
+                let (new_width, new_height) = suggested;
+                let data = vec![255; 4 * new_width as usize * new_height as usize];
+                let new_glyph_cache =
+                    Image::from_rgba(ctx, new_width as usize, new_height as usize, &data).unwrap();
+                cache.glyph_image = new_glyph_cache;
+                gb.resize_texture(new_width, new_height);
+                /*
+                ctx.gfx_context.glyph_cache = new_glyph_cache.clone();
+                let spritebatch = ctx.gfx_context.glyph_state.clone();
+                let spritebatch = &mut *spritebatch.borrow_mut();
+                let _ = spritebatch.set_image(new_glyph_cache);
+                ctx.gfx_context
+                    .glyph_brush
+                    .borrow_mut()
+                    .resize_texture(new_width, new_height);
+                */
+            }
+        }
     }
 }
 
@@ -606,7 +675,7 @@ where
 
 /// The function that gets called to add a glyph to the actual texture.
 /// `rect` is the position and `tex_data` is the actual data.
-fn update_texture<B>(
+fn update_texture(
     texture: &mut gg::Texture,
     rect: glyph_brush::rusttype::Rect<u32>,
     tex_data: &[u8],
@@ -629,6 +698,7 @@ fn to_vertex(v: glyph_brush::GlyphVertex) -> gg::QuadData {
     let src_rect = Rect {
         x: v.tex_coords.min.x,
         y: v.tex_coords.min.y,
+        // TODO: Are these correct?
         w: v.tex_coords.max.x - v.tex_coords.min.x,
         h: v.tex_coords.max.y - v.tex_coords.min.y,
     }
