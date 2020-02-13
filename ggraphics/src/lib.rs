@@ -275,9 +275,8 @@ impl TextureHandle {
     }
 
     /// Replace part of the texture with the slice of RGBA bytes.
-    /// TODO: YOLO mutating &self, let's see how it goes
     pub fn replace_subimage(
-        &self,
+        &mut self,
         rgba: &[u8],
         width: usize,
         height: usize,
@@ -381,6 +380,71 @@ impl ShaderHandle {
     /// Consume this shader and return a clone-able one
     pub fn into_shared(self) -> Shader {
         Rc::new(self)
+    }
+}
+
+/// A vertex in a mesh.  Other vertex types can be defined, but then you
+/// have to make your own version of MeshPipeline to go with them.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
+pub struct Vertex {
+    /// Color for that vertex
+    pub color: [f32; 4],
+    /// UV coordinates, if any
+    pub uv: [f32; 2],
+    /// Position
+    pub pos: [f32; 3],
+}
+
+unsafe impl bytemuck::Zeroable for Vertex {}
+
+unsafe impl bytemuck::Pod for Vertex {}
+
+/// Similar to a `TextureHandle`, this is drawable geometry with a given layout.
+#[derive(Debug)]
+pub struct MeshHandle {
+    ctx: Rc<glow::Context>,
+    vbo: GlBuffer,
+    vao: GlVertexArray,
+}
+
+impl PartialEq for MeshHandle {
+    fn eq(&self, rhs: &Self) -> bool {
+        // TODO: Compare ctx?  Is it worth it?  idk.
+        self.vao == rhs.vao
+    }
+}
+
+impl Drop for MeshHandle {
+    fn drop(&mut self) {
+        unsafe {
+            self.ctx.delete_vertex_array(self.vao);
+            self.ctx.delete_buffer(self.vbo);
+        }
+    }
+}
+
+/// A shared, clone-able texture type.
+pub type Mesh = Rc<MeshHandle>;
+
+impl MeshHandle {
+    /// Create a new texture from the given slice of `Vertex`'s, with the given index array
+    pub fn new(ctx: &GlContext, verts: &[Vertex], indices: &[u32]) -> Self {
+        let gl = &*ctx.gl;
+        unsafe {
+            let vao = gl.create_vertex_array().unwrap();
+            gl.bind_vertex_array(Some(vao));
+            let vbo = gl.create_buffer().unwrap();
+            gl.bind_buffer(glow::ARRAY_BUFFER, Some(vbo));
+
+            // TODO: Actually set vertex attrib pointers and fill data...
+            //
+            MeshHandle {
+                ctx: ctx.gl.clone(),
+                vao,
+                vbo,
+            }
+        }
     }
 }
 
@@ -736,8 +800,7 @@ impl DrawCall for QuadDrawCall {
     }
 }
 
-/// TODO: Make this actually a mesh
-/// and implement it in general
+/// A mesh that will be drawn multiple times with a single draw call.
 #[derive(Debug)]
 pub struct MeshDrawCall {
     ctx: Rc<GlContext>,
@@ -783,7 +846,7 @@ impl MeshDrawCall {
                 mem::size_of::<QuadData>() as i32,
                 offset as i32,
             );
-            gl.vertex_attrib_divisor(attrib_location, 1);
+            //gl.vertex_attrib_divisor(attrib_location, 1);
             gl.enable_vertex_attrib_array(attrib_location);
         }
     }
