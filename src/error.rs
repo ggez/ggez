@@ -31,7 +31,7 @@ pub enum GameError {
     /// Something went wrong in the renderer
     RenderError(String),
     /// Something went wrong in the audio playback
-    AudioError(String),
+    AudioError(String, Option<rodio::decoder::DecoderError>),
     /// Something went wrong trying to set or get window properties.
     WindowError(String),
     /// Something went wrong trying to create a window
@@ -108,7 +108,7 @@ impl From<zip::result::ZipError> for GameError {
 impl From<DecoderError> for GameError {
     fn from(e: DecoderError) -> GameError {
         let errstr = format!("Audio decoder error: {:?}", e);
-        GameError::AudioError(errstr)
+        GameError::AudioError(errstr, Some(e))
     }
 }
 

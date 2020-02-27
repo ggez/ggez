@@ -48,8 +48,9 @@ impl RodioAudioContext {
     pub fn new() -> GameResult<Self> {
         let device = rodio::default_output_device().ok_or_else(|| {
             GameError::AudioError(String::from(
-                "Could not initialize sound system using default output device (for some reason)",
-            ))
+                "Could not initialize sound system using default output device, no output device found?"),
+                None
+            )
         })?;
         Ok(Self { device })
     }
@@ -110,9 +111,18 @@ impl SoundData {
     }
 
     /// Indicates if the data can be played as a sound.
+    /// TODO: Deprecated, use check() instead
     pub fn can_play(&self) -> bool {
+        self.check().is_ok()
+    }
+
+    /// Returns `Ok` if the data can be played as a sound,
+    /// or a hopefully-helpful error otherwise.
+    pub fn check(&self) -> GameResult {
         let cursor = io::Cursor::new(self.clone());
-        rodio::Decoder::new(cursor).is_ok()
+        rodio::Decoder::new(cursor).map(|_| ()).map_err(|e| {
+            GameError::AudioError("Could not decode the given audio data".to_string(), Some(e))
+        })
     }
 }
 
@@ -295,11 +305,7 @@ impl Source {
 
     /// Creates a new `Source` using the given `SoundData` object.
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
-        if !data.can_play() {
-            return Err(GameError::AudioError(
-                "Could not decode the given audio data".to_string(),
-            ));
-        }
+        data.check()?;
         let sink = rodio::Sink::new(&context.audio_context.device());
         let cursor = io::Cursor::new(data);
         Ok(Source {
@@ -453,11 +459,7 @@ impl SpatialSource {
 
     /// Creates a new `SpatialSource` using the given `SoundData` object.
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
-        if !data.can_play() {
-            return Err(GameError::AudioError(
-                "Could not decode the given audio data".to_string(),
-            ));
-        }
+        data.check()?;
         let sink = rodio::SpatialSink::new(
             &context.audio_context.device(),
             [0.0, 0.0, 0.0],
