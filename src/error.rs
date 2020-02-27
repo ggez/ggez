@@ -65,10 +65,12 @@ impl fmt::Display for GameError {
 }
 
 impl Error for GameError {
-    fn cause(&self) -> Option<&dyn Error> {
-        match *self {
-            GameError::WindowCreationError(ref e) => Some(&**e),
-            GameError::IOError(ref e) => Some(&**e),
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::AudioError(_, Some(ref e)) => Some(e),
+            Self::WindowCreationError(e) => Some(e.as_ref()),
+            Self::IOError(e) => Some(e.as_ref()),
+            //ResourceNotFound(String, Vec<(std::path::PathBuf, GameError)>),
             _ => None,
         }
     }
