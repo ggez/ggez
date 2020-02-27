@@ -390,15 +390,60 @@ impl ShaderHandle {
 pub struct Vertex {
     /// Color for that vertex
     pub color: [f32; 4],
+    /// Position
+    pub pos: [f32; 4],
+    /// Normal
+    pub normal: [f32; 4],
     /// UV coordinates, if any
     pub uv: [f32; 2],
-    /// Position
-    pub pos: [f32; 3],
 }
 
 unsafe impl bytemuck::Zeroable for Vertex {}
 
 unsafe impl bytemuck::Pod for Vertex {}
+
+impl Vertex {
+    /// Returns an empty `Vertex` with default values.
+    pub const fn empty() -> Self {
+        Vertex {
+            color: [1.0, 1.0, 1.0, 1.0],
+            pos: [0.0, 0.0, 0.0, 0.0],
+            normal: [1.0, 1.0, 1.0, 1.0],
+            uv: [0.0, 0.0],
+        }
+    }
+
+    /// Returns a Vec of (element offset, element size)
+    /// pairs.  This is proooobably technically a little UB,
+    /// see https://github.com/rust-lang/rust/issues/48956#issuecomment-544506419
+    /// but with repr(C) it's probably safe enough.
+    ///
+    /// Also returns the name of the shader variable associated with each field...
+    unsafe fn layout() -> Vec<(&'static str, usize, usize)> {
+        // It'd be nice if we could make this `const` but
+        // doing const pointer arithmatic is unstable.
+        let thing = Vertex::empty();
+        let thing_base = &thing as *const _;
+        let pos_offset = (&thing.pos as *const _ as usize) - thing_base as usize;
+        let pos_size = mem::size_of_val(&thing.pos);
+
+        let normal_offset = (&thing.normal as *const _ as usize) - thing_base as usize;
+        let normal_size = mem::size_of_val(&thing.normal);
+
+        let color_offset = (&thing.color as *const _ as usize) - thing_base as usize;
+        let color_size = mem::size_of_val(&thing.color);
+
+        let uv_offset = (&thing.uv as *const _ as usize) - thing_base as usize;
+        let uv_size = mem::size_of_val(&thing.uv);
+
+        vec![
+            ("model_pos", pos_offset, pos_size),
+            ("model_normal", normal_offset, normal_size),
+            ("model_color", color_offset, color_size),
+            ("model_uv", uv_offset, uv_size),
+        ]
+    }
+}
 
 /// Similar to a `TextureHandle`, this is drawable geometry with a given layout.
 #[derive(Debug)]
@@ -429,16 +474,41 @@ pub type Mesh = Rc<MeshHandle>;
 
 impl MeshHandle {
     /// Create a new texture from the given slice of `Vertex`'s, with the given index array
-    pub fn new(ctx: &GlContext, verts: &[Vertex], indices: &[u32]) -> Self {
+    pub fn new(ctx: &GlContext, verts: &[Vertex], _indices: &[u32]) -> Self {
         let gl = &*ctx.gl;
         unsafe {
             let vao = gl.create_vertex_array().unwrap();
             gl.bind_vertex_array(Some(vao));
             let vbo = gl.create_buffer().unwrap();
+            // Upload data
             gl.bind_buffer(glow::ARRAY_BUFFER, Some(vbo));
 
-            // TODO: Actually set vertex attrib pointers and fill data...
-            //
+            let bytes_slice: &[u8] = bytemuck::try_cast_slice(verts).unwrap();
+            gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, bytes_slice, glow::STREAM_DRAW);
+
+            // Set vertex attrib pointers
+            // Hmmm, it's attached to a particular shader, so.
+            /*
+            let layout = Vertex::layout();
+            for (name, offset, size) in layout {
+                info!("Layout: {} offset, {} size", offset, size);
+                let element_size = mem::size_of::<f32>();
+                let attrib_location = gl
+                    .get_attrib_location(shader.program, name)
+                    // TODO: make this not always need a format!()
+                    .expect(&format!("Unknown attrib name in shader: {}", name));
+                gl.vertex_attrib_pointer_f32(
+                    attrib_location,
+                    (size / element_size) as i32,
+                    glow::FLOAT,
+                    false,
+                    mem::size_of::<QuadData>() as i32,
+                    offset as i32,
+                );
+                gl.enable_vertex_attrib_array(attrib_location);
+            }
+            */
+
             MeshHandle {
                 ctx: ctx.gl.clone(),
                 vao,
@@ -496,19 +566,19 @@ impl QuadData {
         // doing const pointer arithmatic is unstable.
         let thing = QuadData::empty();
         let thing_base = &thing as *const QuadData;
-        let offset_offset = (&thing.offset as *const [f32; 2] as usize) - thing_base as usize;
+        let offset_offset = (&thing.offset as *const _ as usize) - thing_base as usize;
         let offset_size = mem::size_of_val(&thing.offset);
 
-        let color_offset = (&thing.color as *const [f32; 4] as usize) - thing_base as usize;
+        let color_offset = (&thing.color as *const _ as usize) - thing_base as usize;
         let color_size = mem::size_of_val(&thing.color);
 
-        let src_rect_offset = (&thing.src_rect as *const [f32; 4] as usize) - thing_base as usize;
+        let src_rect_offset = (&thing.src_rect as *const _ as usize) - thing_base as usize;
         let src_rect_size = mem::size_of_val(&thing.src_rect);
 
-        let dst_rect_offset = (&thing.dst_rect as *const [f32; 4] as usize) - thing_base as usize;
+        let dst_rect_offset = (&thing.dst_rect as *const _ as usize) - thing_base as usize;
         let dst_rect_size = mem::size_of_val(&thing.dst_rect);
 
-        let rotation_offset = (&thing.rotation as *const f32 as usize) - thing_base as usize;
+        let rotation_offset = (&thing.rotation as *const _ as usize) - thing_base as usize;
         let rotation_size = mem::size_of_val(&thing.rotation);
 
         vec![
