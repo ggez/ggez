@@ -1,4 +1,4 @@
-//! A [`SpriteBatch`](spritebatch/struct.SpriteBatch.html) is a way to
+//! A [`SpriteBatch`](struct.SpriteBatch.html) is a way to
 //! efficiently draw a large number of copies of the same image, or part
 //! of the same image.  It's useful for implementing tiled maps,
 //! spritesheets, particles, and other such things.
