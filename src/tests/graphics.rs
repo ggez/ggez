@@ -30,6 +30,12 @@ fn save_screenshot() {
     .unwrap();
     graphics::draw(c, &tri_mesh, graphics::DrawParam::default()).unwrap();
     graphics::present(c).unwrap();
+
+    // Right now what we're screenshoting is not the front buffer, but the backbuffer.
+    // I.e. since we're double buffering we're always one picture in the past.
+    // Querying the front buffer can be much slower, so probably we should keep it as is.
+    graphics::present(c).unwrap();
+
     let screenshot = graphics::screenshot(c).unwrap();
     screenshot
         .encode(c, graphics::ImageFormat::Png, "/screenshot_test.png")
