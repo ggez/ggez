@@ -1,5 +1,6 @@
 use crate::tests;
 use crate::*;
+use cgmath::Point2;
 
 // use std::path;
 
@@ -12,31 +13,105 @@ fn image_encode() {
         .unwrap();
 }
 
+fn get_rgba_sample(rgba_buf: &[u8], width: usize, sample_pos: (usize, usize)) -> (u8, u8, u8, u8) {
+    (
+        rgba_buf[(width * sample_pos.1 + sample_pos.0) * 4 + 0],
+        rgba_buf[(width * sample_pos.1 + sample_pos.0) * 4 + 1],
+        rgba_buf[(width * sample_pos.1 + sample_pos.0) * 4 + 2],
+        rgba_buf[(width * sample_pos.1 + sample_pos.0) * 4 + 3],
+    )
+}
+
 #[test]
 fn save_screenshot() {
     let (c, _e) = &mut tests::make_context();
     graphics::clear(c, graphics::Color::new(0.1, 0.2, 0.3, 1.0));
-    // Draw a triangle on it so you can see which way is right-side up.
-    let tri_mesh = graphics::Mesh::new_polygon(
+
+    let width = graphics::drawable_size(c).0;
+    let height = graphics::drawable_size(c).1;
+
+    let color_topleft = graphics::WHITE;
+    let color_topright = graphics::Color::new(1.0, 0.0, 0.0, 1.0);
+    let color_bottomleft = graphics::Color::new(0.0, 1.0, 0.0, 1.0);
+    let color_bottomright = graphics::Color::new(0.0, 0.0, 1.0, 1.0);
+
+    let rect = graphics::Mesh::new_rectangle(
         c,
-        graphics::DrawMode::stroke(10.0),
-        &[
-            graphics::Point2::new(100.0, 100.0),
-            graphics::Point2::new(100.0, 200.0),
-            graphics::Point2::new(200.0, 100.0),
-        ],
+        graphics::DrawMode::fill(),
+        graphics::types::Rect {
+            x: 0.0,
+            y: 0.0,
+            w: width / 2.0,
+            h: height / 2.0,
+        },
         graphics::WHITE,
     )
     .unwrap();
-    graphics::draw(c, &tri_mesh, graphics::DrawParam::default()).unwrap();
-    graphics::present(c).unwrap();
 
-    // Right now what we're screenshoting is not the front buffer, but the backbuffer.
-    // I.e. since we're double buffering we're always one picture in the past.
-    // Querying the front buffer can be much slower, so probably we should keep it as is.
-    graphics::present(c).unwrap();
+    graphics::draw(c, &rect, graphics::DrawParam::new().color(color_topleft)).unwrap();
+    graphics::draw(
+        c,
+        &rect,
+        graphics::DrawParam::new()
+            .color(color_topright)
+            .dest(Point2::new(width / 2.0, 0.0)),
+    )
+    .unwrap();
+    graphics::draw(
+        c,
+        &rect,
+        graphics::DrawParam::new()
+            .color(color_bottomleft)
+            .dest(Point2::new(0.0, height / 2.0)),
+    )
+    .unwrap();
+    graphics::draw(
+        c,
+        &rect,
+        graphics::DrawParam::new()
+            .color(color_bottomright)
+            .dest(Point2::new(width / 2.0, height / 2.0)),
+    )
+    .unwrap();
+
+    // Don't do graphics::present(c) since calling it once (!) would mean that the result of our draw operation
+    // went to the front buffer and the active screen texture is actually empty.
+    c.gfx_context.encoder.flush(&mut *c.gfx_context.device);
 
     let screenshot = graphics::screenshot(c).unwrap();
+
+    // Check if screenshot has right general properties
+    assert_eq!(width as u16, screenshot.width);
+    assert_eq!(height as u16, screenshot.height);
+    assert_eq!(None, screenshot.blend_mode);
+
+    // Image comparision or rendered output is hard, but we *know* that top left should be white.
+    // So take a samples in the middle of each rectangle we drew and compare.
+    // Note that we only use fully saturated colors to avoid any issues with color spaces.
+    let rgba_buf = screenshot.to_rgba8(c).unwrap();
+    let width = screenshot.width as usize;
+    let quarter_size = (
+        screenshot.width as usize / 4,
+        screenshot.height as usize / 4,
+    );
+    assert_eq!(
+        color_topleft.to_rgba(),
+        get_rgba_sample(&rgba_buf, width, (quarter_size.0, quarter_size.1))
+    );
+    assert_eq!(
+        color_topright.to_rgba(),
+        get_rgba_sample(&rgba_buf, width, (quarter_size.0 * 3, quarter_size.1))
+    );
+    assert_eq!(
+        color_bottomleft.to_rgba(),
+        get_rgba_sample(&rgba_buf, width, (quarter_size.0, quarter_size.1 * 3))
+    );
+    assert_eq!(
+        color_bottomright.to_rgba(),
+        get_rgba_sample(&rgba_buf, width, (quarter_size.0 * 3, quarter_size.1 * 3))
+    );
+
+    // save screenshot (no check, just to see if it doesn't crash)
     screenshot
         .encode(c, graphics::ImageFormat::Png, "/screenshot_test.png")
         .unwrap();
