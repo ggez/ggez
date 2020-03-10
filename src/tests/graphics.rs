@@ -1,3 +1,4 @@
+use crate::graphics::Color;
 use crate::tests;
 use crate::*;
 use cgmath::Point2;
@@ -13,27 +14,35 @@ fn image_encode() {
         .unwrap();
 }
 
-fn get_rgba_sample(rgba_buf: &[u8], width: usize, sample_pos: (usize, usize)) -> (u8, u8, u8, u8) {
+fn get_rgba_sample(rgba_buf: &[u8], width: usize, sample_pos: Point2<f32>) -> (u8, u8, u8, u8) {
     (
-        rgba_buf[(width * sample_pos.1 + sample_pos.0) * 4 + 0],
-        rgba_buf[(width * sample_pos.1 + sample_pos.0) * 4 + 1],
-        rgba_buf[(width * sample_pos.1 + sample_pos.0) * 4 + 2],
-        rgba_buf[(width * sample_pos.1 + sample_pos.0) * 4 + 3],
+        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 0],
+        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 1],
+        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 2],
+        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 3],
     )
 }
 
 #[test]
 fn save_screenshot() {
     let (c, _e) = &mut tests::make_context();
-    graphics::clear(c, graphics::Color::new(0.1, 0.2, 0.3, 1.0));
+    graphics::clear(c, Color::new(0.1, 0.2, 0.3, 1.0));
 
     let width = graphics::drawable_size(c).0;
     let height = graphics::drawable_size(c).1;
 
-    let color_topleft = graphics::WHITE;
-    let color_topright = graphics::Color::new(1.0, 0.0, 0.0, 1.0);
-    let color_bottomleft = graphics::Color::new(0.0, 1.0, 0.0, 1.0);
-    let color_bottomright = graphics::Color::new(0.0, 0.0, 1.0, 1.0);
+    let topleft = graphics::DrawParam::new()
+        .color(graphics::WHITE)
+        .dest(Point2::new(0.0, 0.0));
+    let topright = graphics::DrawParam::new()
+        .color(Color::new(1.0, 0.0, 0.0, 1.0))
+        .dest(Point2::new(width / 2.0, 0.0));
+    let bottomleft = graphics::DrawParam::new()
+        .color(Color::new(0.0, 1.0, 0.0, 1.0))
+        .dest(Point2::new(0.0, height / 2.0));
+    let bottomright = graphics::DrawParam::new()
+        .color(Color::new(0.0, 0.0, 1.0, 1.0))
+        .dest(Point2::new(width / 2.0, height / 2.0));
 
     let rect = graphics::Mesh::new_rectangle(
         c,
@@ -48,31 +57,10 @@ fn save_screenshot() {
     )
     .unwrap();
 
-    graphics::draw(c, &rect, graphics::DrawParam::new().color(color_topleft)).unwrap();
-    graphics::draw(
-        c,
-        &rect,
-        graphics::DrawParam::new()
-            .color(color_topright)
-            .dest(Point2::new(width / 2.0, 0.0)),
-    )
-    .unwrap();
-    graphics::draw(
-        c,
-        &rect,
-        graphics::DrawParam::new()
-            .color(color_bottomleft)
-            .dest(Point2::new(0.0, height / 2.0)),
-    )
-    .unwrap();
-    graphics::draw(
-        c,
-        &rect,
-        graphics::DrawParam::new()
-            .color(color_bottomright)
-            .dest(Point2::new(width / 2.0, height / 2.0)),
-    )
-    .unwrap();
+    graphics::draw(c, &rect, topleft).unwrap();
+    graphics::draw(c, &rect, topright).unwrap();
+    graphics::draw(c, &rect, bottomleft).unwrap();
+    graphics::draw(c, &rect, bottomright).unwrap();
 
     // Don't do graphics::present(c) since calling it once (!) would mean that the result of our draw operation
     // went to the front buffer and the active screen texture is actually empty.
@@ -89,26 +77,23 @@ fn save_screenshot() {
     // So take a samples in the middle of each rectangle we drew and compare.
     // Note that we only use fully saturated colors to avoid any issues with color spaces.
     let rgba_buf = screenshot.to_rgba8(c).unwrap();
-    let width = screenshot.width as usize;
-    let quarter_size = (
-        screenshot.width as usize / 4,
-        screenshot.height as usize / 4,
+    let half_rect = cgmath::Vector2::new(width / 4.0, height / 4.0);
+    let width = width as usize;
+    assert_eq!(
+        topleft.color.to_rgba(),
+        get_rgba_sample(&rgba_buf, width, Point2::from(topleft.dest) + half_rect)
     );
     assert_eq!(
-        color_topleft.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, (quarter_size.0, quarter_size.1))
+        topright.color.to_rgba(),
+        get_rgba_sample(&rgba_buf, width, Point2::from(topright.dest) + half_rect)
     );
     assert_eq!(
-        color_topright.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, (quarter_size.0 * 3, quarter_size.1))
+        bottomleft.color.to_rgba(),
+        get_rgba_sample(&rgba_buf, width, Point2::from(bottomleft.dest) + half_rect)
     );
     assert_eq!(
-        color_bottomleft.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, (quarter_size.0, quarter_size.1 * 3))
-    );
-    assert_eq!(
-        color_bottomright.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, (quarter_size.0 * 3, quarter_size.1 * 3))
+        bottomright.color.to_rgba(),
+        get_rgba_sample(&rgba_buf, width, Point2::from(bottomright.dest) + half_rect)
     );
 
     // save screenshot (no check, just to see if it doesn't crash)
