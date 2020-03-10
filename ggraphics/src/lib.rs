@@ -449,8 +449,12 @@ impl Vertex {
 #[derive(Debug)]
 pub struct MeshHandle {
     ctx: Rc<glow::Context>,
-    vbo: GlBuffer,
+    /// Vertex array object -- contains vertex properties and buffer bindings
     vao: GlVertexArray,
+    /// Vertex buffer array -- contains verts
+    vbo: GlBuffer,
+    /// Element buffer array -- contains indices
+    ebo: GlBuffer,
 }
 
 impl PartialEq for MeshHandle {
@@ -474,21 +478,27 @@ pub type Mesh = Rc<MeshHandle>;
 
 impl MeshHandle {
     /// Create a new texture from the given slice of `Vertex`'s, with the given index array
-    pub fn new(ctx: &GlContext, verts: &[Vertex], _indices: &[u32]) -> Self {
+    pub fn new(ctx: &GlContext, shader: &Shader, verts: &[Vertex], indices: &[u32]) -> Self {
+        assert!(verts.len() > 0);
+        assert!(indices.len() > 0);
         let gl = &*ctx.gl;
         unsafe {
             let vao = gl.create_vertex_array().unwrap();
             gl.bind_vertex_array(Some(vao));
             let vbo = gl.create_buffer().unwrap();
-            // Upload data
+            let ebo = gl.create_buffer().unwrap();
+            // Upload verts
             gl.bind_buffer(glow::ARRAY_BUFFER, Some(vbo));
-
             let bytes_slice: &[u8] = bytemuck::try_cast_slice(verts).unwrap();
-            gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, bytes_slice, glow::STREAM_DRAW);
+            gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, bytes_slice, glow::STATIC_DRAW);
+
+            // Upload indices
+            gl.bind_buffer(glow::ARRAY_BUFFER, Some(ebo));
+            let bytes_slice: &[u8] = bytemuck::try_cast_slice(indices).unwrap();
+            gl.buffer_data_u8_slice(glow::ELEMENT_ARRAY_BUFFER, bytes_slice, glow::STATIC_DRAW);
 
             // Set vertex attrib pointers
             // Hmmm, it's attached to a particular shader, so.
-            /*
             let layout = Vertex::layout();
             for (name, offset, size) in layout {
                 info!("Layout: {} offset, {} size", offset, size);
@@ -507,14 +517,20 @@ impl MeshHandle {
                 );
                 gl.enable_vertex_attrib_array(attrib_location);
             }
-            */
+
+            gl.bind_vertex_array(None);
 
             MeshHandle {
                 ctx: ctx.gl.clone(),
                 vao,
                 vbo,
+                ebo,
             }
         }
+    }
+    /// Turn this mesh into a share-able, refcounted one.
+    pub fn into_shared(self) -> Mesh {
+        Rc::new(self)
     }
 }
 
@@ -844,8 +860,8 @@ impl DrawCall for QuadDrawCall {
         gl.bind_vertex_array(Some(self.vao));
 
         // Bind texture
-        // TODO: is this active_texture() call necessary?
-        // Will be if we ever do multi-texturing, I suppose.
+        // Is this active_texture() call necessary?
+        // Yes, especially if we ever do multi-texturing, I suppose.
         gl.active_texture(glow::TEXTURE0);
         gl.bind_texture(glow::TEXTURE_2D, Some(self.texture.tex));
         // The texture location has to be cloned, since on WebGL it's
@@ -878,6 +894,7 @@ pub struct MeshDrawCall {
     sampler: GlSampler,
     /// The instances that will be drawn.
     pub instances: Vec<QuadData>,
+    mesh: Mesh,
     vbo: GlBuffer,
     vao: GlVertexArray,
     instance_vbo: GlBuffer,
@@ -925,6 +942,7 @@ impl MeshDrawCall {
     pub fn new(
         ctx: Rc<GlContext>,
         texture: Texture,
+        mesh: Mesh,
         sampler: SamplerSpec,
         pipeline: &MeshPipeline,
     ) -> Self {
@@ -990,6 +1008,7 @@ impl MeshDrawCall {
                 ctx: ctx,
                 vbo,
                 vao,
+                mesh,
                 texture,
                 sampler,
                 instance_vbo,
@@ -1035,8 +1054,6 @@ impl MeshDrawCall {
         gl.bind_vertex_array(Some(self.vao));
 
         // Bind texture
-        // TODO: is this active_texture() call necessary?
-        // Will be if we ever do multi-texturing, I suppose.
         gl.active_texture(glow::TEXTURE0);
         gl.bind_texture(glow::TEXTURE_2D, Some(self.texture.tex));
         gl.uniform_1_i32(Some(self.texture_location.clone()), 0);
@@ -1045,9 +1062,11 @@ impl MeshDrawCall {
         // This is FUCKING WHACKO.  I set the active texture
         // unit to glow::TEXTURE0 , which sets it to texture
         // unit 0, then I bind the sampler to the number 0, which sets it
-        // to texture unit 0.  I think.  You have to dig into
-        // the ARB extension RFC to figure this out 'cause it isn't
-        // documented anywhere else I can find it.
+        // to texture unit 0.  I think.
+        // Since glow::TEXTURE0 != 0, it's Exciting to mix up the two.
+        //
+        // You have to dig into the ARB extension RFC to figure this out
+        // 'cause it isn't documented anywhere else I can find it.
         // Thanks, Khronos.
         gl.bind_sampler(0, Some(self.sampler));
         gl.draw_arrays_instanced(
@@ -1315,7 +1334,9 @@ impl Pipeline for MeshPipeline {
     }
     /// foo
     fn new_drawcall(&mut self, texture: Texture, sampler: SamplerSpec) -> &mut dyn DrawCall {
-        let x = MeshDrawCall::new(self.ctx.clone(), texture, sampler, self);
+        // BUGGO TODO: use real mesh and shaader here
+        let dummy_mesh = MeshHandle::new(&self.ctx, &self.shader, &[], &[]).into_shared();
+        let x = MeshDrawCall::new(self.ctx.clone(), texture, dummy_mesh, sampler, self);
         self.drawcalls.push(x);
         &mut *self.drawcalls.last_mut().unwrap()
     }
