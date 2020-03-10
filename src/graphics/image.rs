@@ -213,10 +213,18 @@ impl Image {
         let reader = gfx.factory.read_mapping(&dl_buffer)?;
 
         // intermediary buffer to avoid casting.
-        // Apparently this also at one point made the screenshot upside-down,
-        // but no longer?
         let mut data = Vec::with_capacity(self.width as usize * self.height as usize * 4);
-        data.extend(reader.into_iter().flatten());
+        // Assuming OpenGL backend whose typical readback option (glReadPixels) has origin at bottom left.
+        // Image formats on the other hand usually deal with top right.
+        for y in (0..self.height as usize).rev() {
+            data.extend(
+                reader
+                    .iter()
+                    .skip(y * self.width as usize)
+                    .take(self.width as usize)
+                    .flatten(),
+            );
+        }
         Ok(data)
     }
 
