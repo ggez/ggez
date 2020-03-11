@@ -91,7 +91,7 @@ impl GameState {
                     },
                 ];
                 let indices = vec![0, 1, 2];
-                MeshHandle::new(&ctx, &shader, &verts, &indices).into_shared()
+                MeshHandle::new(&ctx, &verts, &indices).into_shared()
             };
 
             let mut mesh_pipeline = MeshPipeline::new(ctx.clone(), shader.clone());

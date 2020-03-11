@@ -449,8 +449,6 @@ impl Vertex {
 #[derive(Debug)]
 pub struct MeshHandle {
     ctx: Rc<glow::Context>,
-    /// Vertex array object -- contains vertex properties and buffer bindings
-    vao: GlVertexArray,
     /// Vertex buffer array -- contains verts
     vbo: GlBuffer,
     /// Element buffer array -- contains indices
@@ -460,15 +458,15 @@ pub struct MeshHandle {
 impl PartialEq for MeshHandle {
     fn eq(&self, rhs: &Self) -> bool {
         // TODO: Compare ctx?  Is it worth it?  idk.
-        self.vao == rhs.vao
+        (self.vbo == rhs.vbo) && (self.ebo == rhs.ebo)
     }
 }
 
 impl Drop for MeshHandle {
     fn drop(&mut self) {
         unsafe {
-            self.ctx.delete_vertex_array(self.vao);
             self.ctx.delete_buffer(self.vbo);
+            self.ctx.delete_buffer(self.ebo);
         }
     }
 }
@@ -478,13 +476,12 @@ pub type Mesh = Rc<MeshHandle>;
 
 impl MeshHandle {
     /// Create a new texture from the given slice of `Vertex`'s, with the given index array
-    pub fn new(ctx: &GlContext, shader: &Shader, verts: &[Vertex], indices: &[u32]) -> Self {
+    pub fn new(ctx: &GlContext, verts: &[Vertex], indices: &[u32]) -> Self {
         assert!(verts.len() > 0);
         assert!(indices.len() > 0);
         let gl = &*ctx.gl;
         unsafe {
-            let vao = gl.create_vertex_array().unwrap();
-            gl.bind_vertex_array(Some(vao));
+            // The VAO doesn't get created until in the draw call
             let vbo = gl.create_buffer().unwrap();
             let ebo = gl.create_buffer().unwrap();
             // Upload verts
@@ -497,32 +494,8 @@ impl MeshHandle {
             let bytes_slice: &[u8] = bytemuck::try_cast_slice(indices).unwrap();
             gl.buffer_data_u8_slice(glow::ELEMENT_ARRAY_BUFFER, bytes_slice, glow::STATIC_DRAW);
 
-            // Set vertex attrib pointers
-            // Hmmm, it's attached to a particular shader, so.
-            let layout = Vertex::layout();
-            for (name, offset, size) in layout {
-                info!("Layout: {} offset, {} size", offset, size);
-                let element_size = mem::size_of::<f32>();
-                let attrib_location = gl
-                    .get_attrib_location(shader.program, name)
-                    // TODO: make this not always need a format!()
-                    .expect(&format!("Unknown attrib name in shader: {}", name));
-                gl.vertex_attrib_pointer_f32(
-                    attrib_location,
-                    (size / element_size) as i32,
-                    glow::FLOAT,
-                    false,
-                    mem::size_of::<QuadData>() as i32,
-                    offset as i32,
-                );
-                gl.enable_vertex_attrib_array(attrib_location);
-            }
-
-            gl.bind_vertex_array(None);
-
             MeshHandle {
                 ctx: ctx.gl.clone(),
-                vao,
                 vbo,
                 ebo,
             }
@@ -891,11 +864,10 @@ impl DrawCall for QuadDrawCall {
 pub struct MeshDrawCall {
     ctx: Rc<GlContext>,
     texture: Texture,
+    mesh: Mesh,
     sampler: GlSampler,
     /// The instances that will be drawn.
     pub instances: Vec<QuadData>,
-    mesh: Mesh,
-    vbo: GlBuffer,
     vao: GlVertexArray,
     instance_vbo: GlBuffer,
     texture_location: GlUniformLocation,
@@ -908,11 +880,10 @@ impl Drop for MeshDrawCall {
     fn drop(&mut self) {
         unsafe {
             self.ctx.gl.delete_vertex_array(self.vao);
-            self.ctx.gl.delete_buffer(self.vbo);
             self.ctx.gl.delete_buffer(self.instance_vbo);
             // Don't need to drop the sampler, it's owned by
             // the `GlContext`.
-            // And the texture takes care of itself.
+            // And the texture and mesh takes care of themselves.
         }
     }
 }
@@ -953,49 +924,83 @@ impl MeshDrawCall {
             let vao = gl.create_vertex_array().unwrap();
             gl.bind_vertex_array(Some(vao));
 
-            // Okay, it looks like which VBO is bound IS part of the VAO data,
-            // and it is stored *when glVertexAttribPointer is called*.
-            // According to https://open.gl/drawing at least.
-            // And, that stuff I THINK is stored IN THE ATTRIBUTE INFO,
-            // in this case `offset_attrib`, and then THAT gets attached
-            // to the VAO by enable_vertex_attrib_array()
-            let vbo = gl.create_buffer().unwrap();
-            gl.bind_buffer(glow::ARRAY_BUFFER, Some(vbo));
-
-            let dummy_attrib = gl
-                .get_attrib_location(pipeline.shader.program, "vertex_dummy")
+            // Here we tell our VAO what properties our various VBO's contain
+            // First, set mesh VBO...
+            // pos, color, norm, uv,
+            gl.bind_buffer(glow::ARRAY_BUFFER, Some(mesh.vbo));
+            /*
+            let attrib_location = gl
+                .get_attrib_location(pipeline.shader.program, "pos")
                 .unwrap();
             gl.vertex_attrib_pointer_f32(
-                dummy_attrib,
-                2,
+                attrib_location,
+                4, // TODO (size / element_size) as i32,
                 glow::FLOAT,
                 false,
-                // We can just say the stride of this guy is 0, since
-                // we never actually use it (yet).  That lets us use a
-                // widdle bitty awway for this instead of having an
-                // unused empty value for every vertex of every instance.
-                0,
-                0,
+                mem::size_of::<Vertex>() as i32,
+                offset as i32,
             );
-            gl.enable_vertex_attrib_array(dummy_attrib);
+            gl.enable_vertex_attrib_array(attrib_location);
+            */
 
-            // We DO need a buffer of per-vertex attributes, WebGL gets snippy
-            // if we just give it per-instance attributes and say "yeah each
-            // vertex just has nothing attached to it".  Which is exactly what
-            // we want for quad drawing, alas.
-            //
-            // But we can make a buffer that just contains one vec2(0,0) for each vertex
-            // and give it that, and that seems just fine.
-            // And we only need enough vertices to draw one quad and never have to alter it.
-            // We could reuse the same buffer for all MeshDrawCall's, tbh, but that seems
-            // a bit overkill.
-            let empty_slice: &[u8] = &[0; mem::size_of::<f32>() * 2 * 6];
-            gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, empty_slice, glow::STREAM_DRAW);
+            // Then set mesh EBO (index buffer)
+            gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(mesh.ebo));
+            /*
+            let attrib_location = gl
+                .get_attrib_location(pipeline.shader.program, "pos")
+                .unwrap();
+            gl.vertex_attrib_pointer_f32(
+                attrib_location,
+                4, // TODO (size / element_size) as i32,
+                glow::FLOAT,
+                false,
+                mem::size_of::<Vertex>() as i32,
+                offset as i32,
+            );
+            gl.enable_vertex_attrib_array(attrib_location);
+            */
 
-            // Now create another VBO containing per-instance data
+            // Then set the instance buffer
+            // model[4], src, model_color
             let instance_vbo = gl.create_buffer().unwrap();
             gl.bind_buffer(glow::ARRAY_BUFFER, Some(instance_vbo));
-            Self::set_vertex_pointers(&*ctx, &pipeline.shader);
+            MeshDrawCall::set_vertex_pointers(&*ctx, &*pipeline.shader);
+            /*
+            let attrib_location = gl
+                .get_attrib_location(pipeline.shader.program, "pos")
+                .unwrap();
+            gl.vertex_attrib_pointer_f32(
+                attrib_location,
+                4, // TODO (size / element_size) as i32,
+                glow::FLOAT,
+                false,
+                mem::size_of::<Vertex>() as i32,
+                offset as i32,
+            );
+            gl.enable_vertex_attrib_array(attrib_location);
+            gl.vertex_attrib_divisor(attrib_location, 1);
+            */
+
+            /*
+            let layout = Vertex::layout();
+            for (name, offset, size) in layout {
+                info!("Layout: {} offset, {} size", offset, size);
+                let element_size = mem::size_of::<f32>();
+                let attrib_location = gl
+                    .get_attrib_location(shader.program, name)
+                    // TODO: make this not always need a format!()
+                    .expect(&format!("Unknown attrib name in shader: {}", name));
+                gl.vertex_attrib_pointer_f32(
+                    attrib_location,
+                    (size / element_size) as i32,
+                    glow::FLOAT,
+                    false,
+                    mem::size_of::<QuadData>() as i32,
+                    offset as i32,
+                );
+                gl.enable_vertex_attrib_array(attrib_location);
+            }
+            */
 
             // We can't define locations for uniforms, yet.
             let texture_location = gl
@@ -1006,11 +1011,10 @@ impl MeshDrawCall {
 
             Self {
                 ctx: ctx,
-                vbo,
-                vao,
                 mesh,
                 texture,
                 sampler,
+                vao,
                 instance_vbo,
                 texture_location,
                 instances: vec![],
@@ -1335,7 +1339,7 @@ impl Pipeline for MeshPipeline {
     /// foo
     fn new_drawcall(&mut self, texture: Texture, sampler: SamplerSpec) -> &mut dyn DrawCall {
         // BUGGO TODO: use real mesh and shaader here
-        let dummy_mesh = MeshHandle::new(&self.ctx, &self.shader, &[], &[]).into_shared();
+        let dummy_mesh = MeshHandle::new(&self.ctx, &[], &[]).into_shared();
         let x = MeshDrawCall::new(self.ctx.clone(), texture, dummy_mesh, sampler, self);
         self.drawcalls.push(x);
         &mut *self.drawcalls.last_mut().unwrap()
