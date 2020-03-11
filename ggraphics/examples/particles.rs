@@ -36,14 +36,14 @@ struct GameState {
     rng: oorandom::Rand32,
     particles: Vec<Particle>,
     passes: Vec<RenderPass>,
-    pipelines: Vec<QuadPipeline>,
+    pipelines: Vec<Box<dyn Pipeline>>,
 }
 
 impl GameState {
     pub fn new(gl: glow::Context) -> Self {
         let ctx = Rc::new(GlContext::new(gl));
         let mut passes = vec![];
-        let mut pipelines = vec![];
+        let mut pipelines: Vec<Box<dyn Pipeline + 'static>> = vec![];
         unsafe {
             let particle_texture = {
                 let image_bytes = include_bytes!("../src/data/wabbit_alpha.png");
@@ -53,13 +53,60 @@ impl GameState {
                 TextureHandle::new(&ctx, &image_rgba_bytes, w as usize, h as usize).into_shared()
             };
             // Render that texture to the screen
-            let screen_pass = RenderPass::new_screen(&*ctx, 800, 600, Some((0.6, 0.6, 0.6, 1.0)));
             let shader = GlContext::default_shader(&ctx);
             let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
-            let mut pipeline = QuadPipeline::new(ctx.clone(), shader, projection);
-            pipeline.new_drawcall(particle_texture, SamplerSpec::default());
-            pipelines.push(pipeline);
-            //screen_pass.add_pipeline(pipeline);
+            let mut pipeline = QuadPipeline::new(ctx.clone(), shader.clone(), projection);
+            pipeline.new_drawcall(particle_texture.clone(), SamplerSpec::default());
+            pipelines.push(Box::new(pipeline));
+
+            // Make pipeline for meshes.
+            // TODO: This at least makes the resource dependencies clear:
+            // making a Mesh requires access to the shader (currently), since
+            // that Mesh contains the VAO which associates the buffers with the
+            // shader locations.
+            // But the shader itself is owned by the Pipeline.
+            // So what I THINK should happen is that the Mesh itself is JUST the
+            // VBO's, then the DrawCall contains the VAO that associates them to
+            // the shader, so that happens when the DrawCall is created.
+            // Yeah, that works.
+            let mesh = {
+                let verts = vec![
+                    Vertex {
+                        color: [1.0, 0.0, 0.0, 1.0],
+                        pos: [0.0, 0.0, 0.0, 0.0],
+                        normal: [1.0, 1.0, 1.0, 1.0],
+                        uv: [0.0, 0.0],
+                    },
+                    Vertex {
+                        color: [0.0, 1.0, 0.0, 1.0],
+                        pos: [1.0, 0.0, 0.0, 0.0],
+                        normal: [1.0, 1.0, 1.0, 0.0],
+                        uv: [0.0, 0.0],
+                    },
+                    Vertex {
+                        color: [0.0, 0.0, 1.0, 1.0],
+                        pos: [0.0, 1.0, 0.0, 0.0],
+                        normal: [1.0, 1.0, 1.0, 1.0],
+                        uv: [0.0, 0.0],
+                    },
+                ];
+                let indices = vec![0, 1, 2];
+                MeshHandle::new(&ctx, &shader, &verts, &indices).into_shared()
+            };
+
+            let mut mesh_pipeline = MeshPipeline::new(ctx.clone(), shader.clone());
+            let dc = MeshDrawCall::new(
+                ctx.clone(),
+                particle_texture.clone(),
+                mesh,
+                SamplerSpec::default(),
+                &mesh_pipeline,
+            );
+            mesh_pipeline.drawcalls.push(dc);
+            pipelines.push(Box::new(mesh_pipeline));
+
+            // Make render pass rendering to screen
+            let screen_pass = RenderPass::new_screen(&*ctx, 800, 600, Some((0.6, 0.6, 0.6, 1.0)));
             passes.push(screen_pass);
         }
 
@@ -69,7 +116,7 @@ impl GameState {
             rng,
             particles: vec![],
             passes,
-            pipelines,
+            pipelines: pipelines,
         }
     }
 
@@ -258,7 +305,7 @@ fn mainloop(
                 },
                 Event::RedrawRequested(_) => {
                     for pass in state.passes.iter_mut() {
-                        pass.draw(&*state.ctx, state.pipelines.as_mut_slice());
+                        pass.draw(&*state.ctx, state.pipelines.iter_mut().map(|p| &mut **p));
                     }
                     window.swap_buffers();
                 }

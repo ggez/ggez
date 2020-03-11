@@ -408,7 +408,7 @@ impl Vertex {
         Vertex {
             color: [1.0, 1.0, 1.0, 1.0],
             pos: [0.0, 0.0, 0.0, 0.0],
-            normal: [1.0, 1.0, 1.0, 1.0],
+            normal: [1.0, 1.0, 1.0, 0.0],
             uv: [0.0, 0.0],
         }
     }
@@ -1559,10 +1559,9 @@ impl RenderPass {
     }
 
     /// Draw the given pipelines
-    pub fn draw<'a, I, P>(&mut self, ctx: &GlContext, pipelines: I)
+    pub fn draw<'a, I>(&mut self, ctx: &GlContext, pipelines: I)
     where
-        I: IntoIterator<Item = &'a mut P>,
-        P: Pipeline + 'a,
+        I: IntoIterator<Item = &'a mut (dyn Pipeline + 'static)>,
     {
         // TODO: Audit unsafe
         unsafe {
