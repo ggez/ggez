@@ -23,9 +23,7 @@ fn get_rgba_sample(rgba_buf: &[u8], width: usize, sample_pos: Point2<f32>) -> (u
     )
 }
 
-#[test]
-fn save_screenshot() {
-    let (c, _e) = &mut tests::make_context();
+fn save_screenshot_test(c: &mut Context) {
     graphics::clear(c, Color::new(0.1, 0.2, 0.3, 1.0));
 
     let width = graphics::drawable_size(c).0;
@@ -101,6 +99,21 @@ fn save_screenshot() {
         .encode(c, graphics::ImageFormat::Png, "/screenshot_test.png")
         .unwrap();
 }
+
+#[test]
+fn save_screenshot() {
+    let (c, _e) = &mut tests::make_context();
+    save_screenshot_test(c);
+}
+
+// Not supported, see https://github.com/ggez/ggez/issues/751
+// #[test]
+// fn save_screenshot_with_antialiasing() {
+//     let cb = ContextBuilder::new("ggez_unit_tests", "ggez")
+//         .window_setup(conf::WindowSetup::default().samples(conf::NumSamples::Eight));
+//     let (c, _e) = &mut tests::make_context_from_contextbuilder(cb);
+//     save_screenshot_test(c);
+// }
 
 #[test]
 fn load_images() {

@@ -509,6 +509,11 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
 
     let gfx = &mut ctx.gfx_context;
     let (w, h, _depth, aa) = gfx.data.out.get_dimensions();
+    if aa != gfx_core::texture::AaMode::Single {
+        // Details see https://github.com/ggez/ggez/issues/751
+        return Err(GameError::RenderError("Can't take screenshots of anti aliased textures.\n(since neither copying or resolving them is supported right now)".to_string()));
+    }
+
     let surface_format = gfx.color_format();
     let gfx::format::Format(surface_type, channel_type) = surface_format;
 
