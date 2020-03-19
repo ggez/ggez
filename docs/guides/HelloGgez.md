@@ -75,7 +75,7 @@ Game loops are responsible for:
 
 `ggez` provides an [`EventHandler`](https://docs.rs/ggez/0.5.1/ggez/event/trait.EventHandler.html) as the default recommended interface to its internal loop to use in our games. Thanks `ggez`!
 
-You might have noticed [`EventHandler`](https://docs.rs/ggez/0.5.1/ggez/event/trait.EventHandler.html) is a Rust [Trait](https://doc.rust-lang.org/book/second-edition/ch10-02-traits.html).
+You might have noticed [`EventHandler`](https://docs.rs/ggez/0.5.1/ggez/event/trait.EventHandler.html) is a Rust [Trait](https://doc.rust-lang.org/book/ch10-02-traits.html).
 This means it is intended to be implemented on a struct.
 There are quite a few callbacks defined on the Trait, but only [2 are required: update and draw](https://docs.rs/ggez/0.5.1/ggez/event/trait.EventHandler.html#required-methods).
 
