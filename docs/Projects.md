@@ -12,6 +12,7 @@ submit a PR, please!
  * <https://github.com/jackmordaunt/fog-of-chess>: Chess but with the fog of war.
  * <https://github.com/pickfire/bugs>: Game with lots of bugs (incomplete with broken AI feature gate)
  * <https://github.com/Slals/gameoflife>: Game of Life with built in structures (submit PR to add structure and make life happen!)
+ * <https://github.com/outkine/ascension-rust>: A gravity-based platformer built with ggez, tiled, and nphysics2d. Download a playable build [here](https://outkine.itch.io/ascension-2).
 
 ## Examples/tutorial code
 
