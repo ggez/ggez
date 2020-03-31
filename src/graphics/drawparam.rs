@@ -2,8 +2,6 @@ use crate::graphics::*;
 
 use mint;
 
-type Vec3 = na::Vector3<f32>;
-
 /// A struct containing all the necessary info for drawing a [`Drawable`](trait.Drawable.html).
 ///
 /// This struct implements the `Default` trait, so to set only some parameter
@@ -111,6 +109,7 @@ impl DrawParam {
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
     fn to_na_matrix(&self) -> Matrix4 {
         // Calculate a matrix equivalent to doing this:
+        //  type Vec3 = na::Vector3<f32>;
         //  let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
         //  let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
         //  let offset_inverse =
