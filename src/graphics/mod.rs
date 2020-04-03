@@ -504,14 +504,16 @@ pub fn present(ctx: &mut Context) -> GameResult<()> {
 /// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to an `Image`.
 pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
-    // TODO LATER: This makes the screenshot upside-down form some reason...
-    // Probably because all our images are upside down, for coordinate reasons!
-    // How can we fix it?
     use gfx::memory::Bind;
     let debug_id = DebugId::get(ctx);
 
     let gfx = &mut ctx.gfx_context;
     let (w, h, _depth, aa) = gfx.data.out.get_dimensions();
+    if aa != gfx_core::texture::AaMode::Single {
+        // Details see https://github.com/ggez/ggez/issues/751
+        return Err(GameError::RenderError("Can't take screenshots of anti aliased textures.\n(since neither copying or resolving them is supported right now)".to_string()));
+    }
+
     let surface_format = gfx.color_format();
     let gfx::format::Format(surface_type, channel_type) = surface_format;
 
@@ -1059,5 +1061,4 @@ mod tests {
             assert_relative_eq!(real, expected);
         }
     }
-
 }
