@@ -32,13 +32,14 @@ put it in a subdirectory called `resources` in your project root:
 ```sh
 mkdir resources
 cd resources
-wget https://raw.githubusercontent.com/ggez/ggez/master/resources/DejaVuSerif.ttf
+wget https://raw.githubusercontent.com/ggez/ggez/master/resources/LiberationMono-Regular.ttf
 ```
 
 Then edit your `Cargo.toml` with your favorite super duper editor and under `[dependencies]` add:
 
 ```
 ggez = "0.5"
+glam = { version = "0.8.6", features = ["mint"] }
 ```
 
 Now run `cargo run` and it should build
