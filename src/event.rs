@@ -10,6 +10,7 @@
 //! source code for this module, or the [`eventloop`
 //! example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs).
 
+use anyhow;
 use gilrs;
 use winit::{self, dpi};
 
@@ -40,7 +41,6 @@ use self::winit_event::*;
 pub use winit::EventsLoop;
 
 use crate::context::Context;
-use crate::error::GameResult;
 
 /// A trait defining event callbacks.  This is your primary interface with
 /// `ggez`'s event loop.  Implement this trait for a type and
@@ -55,14 +55,14 @@ use crate::error::GameResult;
 pub trait EventHandler {
     /// Called upon each logic update to the game.
     /// This should be where the game's logic takes place.
-    fn update(&mut self, _ctx: &mut Context) -> GameResult;
+    fn update(&mut self, _ctx: &mut Context) -> anyhow::Result<()>;
 
     /// Called to do the drawing of your game.
     /// You probably want to start this with
     /// [`graphics::clear()`](../graphics/fn.clear.html) and end it
     /// with [`graphics::present()`](../graphics/fn.present.html) and
     /// maybe [`timer::yield_now()`](../timer/fn.yield_now.html).
-    fn draw(&mut self, _ctx: &mut Context) -> GameResult;
+    fn draw(&mut self, _ctx: &mut Context) -> anyhow::Result<()>;
 
     /// A mouse button was pressed
     fn mouse_button_down_event(
@@ -160,7 +160,7 @@ pub fn quit(ctx: &mut Context) {
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the [`timer`](../timer/index.html) module for more info.
-pub fn run<S>(ctx: &mut Context, events_loop: &mut EventsLoop, state: &mut S) -> GameResult
+pub fn run<S>(ctx: &mut Context, events_loop: &mut EventsLoop, state: &mut S) -> anyhow::Result<()>
 where
     S: EventHandler,
 {

@@ -33,6 +33,7 @@ multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 c_dependencies = ["bzip2", "mp3"]
 
 [dependencies]
+anyhow = "1.0.28"
 bitflags = "1"
 zip = { version = "0.5", default-features = false }
 directories = "2"

@@ -9,6 +9,7 @@ use gfx;
 use glutin;
 use winit;
 
+use anyhow;
 use gilrs;
 use image;
 use lyon;
