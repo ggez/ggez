@@ -66,6 +66,7 @@
 //! into sRGB for you to match everything else.  The purpose of this
 //! example is to show that this actually *works* correctly!
 
+use anyhow::Result;
 use ggez;
 use ggez::event;
 use ggez::graphics::{self, DrawParam};
@@ -110,11 +111,11 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, _ctx: &mut Context) -> Result<()> {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         graphics::clear(ctx, AQUA);
 
         // Draw a white square so we can see things
@@ -144,7 +145,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     use std::env;
     use std::path;
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {

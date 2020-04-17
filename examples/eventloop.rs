@@ -11,12 +11,13 @@
 use cgmath;
 use ggez;
 
+use anyhow::Result;
 use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
 use ggez::graphics::{self, DrawMode};
 use ggez::GameResult;
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     let cb = ggez::ContextBuilder::new("eventloop", "ggez");
     let (ctx, events_loop) = &mut cb.build()?;
 

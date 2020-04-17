@@ -4,6 +4,7 @@ use cgmath;
 use ggez;
 use rand;
 
+use anyhow::Result;
 use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
@@ -118,13 +119,13 @@ impl App {
 }
 
 impl event::EventHandler for App {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> Result<()> {
         const DESIRED_FPS: u32 = 60;
         while timer::check_update_time(ctx, DESIRED_FPS) {}
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         // `Text` can be used in "immediate mode", but it's slightly less efficient
@@ -204,7 +205,7 @@ impl event::EventHandler for App {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     if cfg!(debug_assertions) && env::var("yes_i_really_want_debug_mode").is_err() {
         eprintln!(
             "Note: Release mode will improve performance greatly.\n    \

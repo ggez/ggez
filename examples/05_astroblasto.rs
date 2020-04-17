@@ -2,6 +2,7 @@
 //! The idea is that this game is simple but still
 //! non-trivial enough to be interesting.
 
+use anyhow::Result;
 use ggez;
 use ggez::audio;
 use ggez::audio::SoundSource;
@@ -424,7 +425,7 @@ fn draw_actor(
 /// handling input events.
 /// **********************************************************************
 impl EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> Result<()> {
         const DESIRED_FPS: u32 = 60;
 
         while timer::check_update_time(ctx, DESIRED_FPS) {
@@ -481,7 +482,7 @@ impl EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         // Our drawing is quite simple.
         // Just clear the screen...
         graphics::clear(ctx, graphics::BLACK);
@@ -580,7 +581,7 @@ impl EventHandler for MainState {
 /// `ggez::event::run()` with our `EventHandler` type.
 /// **********************************************************************
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     // We add the CARGO_MANIFEST_DIR/resources to the resource paths
     // so that ggez will look in our cargo project directory for files.
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {

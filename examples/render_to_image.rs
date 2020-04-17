@@ -3,6 +3,7 @@
 use cgmath;
 use ggez;
 
+use anyhow::Result;
 use ggez::event;
 use ggez::graphics::{self, Color, DrawParam};
 use ggez::{Context, GameResult};
@@ -25,11 +26,11 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, _ctx: &mut Context) -> Result<()> {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         // first lets render to our canvas
         graphics::set_canvas(ctx, Some(&self.canvas));
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
@@ -74,7 +75,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     let cb = ggez::ContextBuilder::new("render_to_image", "ggez");
     let (ctx, event_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx)?;

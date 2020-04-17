@@ -4,6 +4,7 @@ use cgmath;
 use gfx::{self, *};
 use ggez;
 
+use anyhow::Result;
 use ggez::event;
 use ggez::graphics::{self, DrawMode};
 use ggez::timer;
@@ -39,12 +40,12 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> Result<()> {
         self.dim.rate = 0.5 + (((timer::ticks(ctx) as f32) / 100.0).cos() / 2.0);
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         let circle = graphics::Mesh::new_circle(
@@ -86,7 +87,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");

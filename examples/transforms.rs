@@ -2,6 +2,7 @@
 use ggez;
 use nalgebra;
 
+use anyhow::Result;
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};
 use ggez::{Context, GameResult};
@@ -80,12 +81,12 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, _ctx: &mut Context) -> Result<()> {
         self.pos_x = self.pos_x % 800.0 + 1.0;
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         let origin: na::Point2<f32> = na::Point2::origin();
@@ -122,7 +123,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");

@@ -4,6 +4,8 @@
 use std::env;
 use std::path;
 
+use anyhow::Result;
+
 use nalgebra as na;
 use rand::rngs::ThreadRng;
 use rand::{self, Rng};
@@ -77,7 +79,7 @@ impl GameState {
 }
 
 impl event::EventHandler for GameState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, _ctx: &mut Context) -> Result<()> {
         if self.click_timer > 0 {
             self.click_timer -= 1;
         }
@@ -110,7 +112,7 @@ impl event::EventHandler for GameState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         graphics::clear(ctx, Color::from((0.392, 0.584, 0.929)));
 
         if self.batched_drawing {
@@ -167,7 +169,7 @@ impl event::EventHandler for GameState {
     }
 }
 
-fn main() -> GameResult {
+fn main() -> Result<()> {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");

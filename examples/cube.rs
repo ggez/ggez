@@ -10,13 +10,15 @@ extern crate gfx_device_gl;
 extern crate ggez;
 extern crate nalgebra;
 
+use anyhow::Result;
+
 use gfx::texture;
 use gfx::traits::FactoryExt;
 use gfx::Factory;
 
 use ggez::event;
 use ggez::graphics;
-use ggez::{Context, GameResult};
+use ggez::Context;
 use nalgebra as na;
 use std::env;
 use std::f32;
@@ -205,12 +207,12 @@ void main() {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, _ctx: &mut Context) -> Result<()> {
         self.rotation += 0.01;
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         // Do gfx-rs drawing
         {
             let (_factory, device, encoder, _depthview, _colorview) = graphics::gfx_objects(ctx);
@@ -262,7 +264,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");

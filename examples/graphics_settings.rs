@@ -7,6 +7,7 @@ use ggez;
 use nalgebra;
 use structopt;
 
+use anyhow::Result;
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};
@@ -50,7 +51,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> Result<()> {
         const DESIRED_FPS: u32 = 60;
         while timer::check_update_time(ctx, DESIRED_FPS) {
             self.angle += 0.01;
@@ -68,7 +69,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         graphics::clear(ctx, graphics::BLACK);
         let rotation = timer::ticks(ctx) % 1000;
         let circle = graphics::Mesh::new_circle(
@@ -202,7 +203,7 @@ struct Opt {
     es: bool,
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     let opt = Opt::from_args();
 
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {

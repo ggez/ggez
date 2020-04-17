@@ -2,6 +2,7 @@ use cgmath;
 use ggez;
 use rand;
 
+use anyhow::Result;
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::event;
@@ -73,7 +74,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> Result<()> {
         const DESIRED_FPS: u32 = 60;
         while timer::check_update_time(ctx, DESIRED_FPS) {
             self.a += self.direction;
@@ -87,7 +88,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         let c = self.a as u8;
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
@@ -118,7 +119,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");

@@ -4,6 +4,7 @@
 
 use ggez;
 
+use anyhow::Result;
 use ggez::event;
 use ggez::graphics;
 use ggez::nalgebra::{Point2, Vector2};
@@ -26,7 +27,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> Result<()> {
         if timer::ticks(ctx) % 100 == 0 {
             println!("Delta frame time: {:?} ", timer::delta(ctx));
             println!("Average FPS: {}", timer::fps(ctx));
@@ -34,7 +35,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         graphics::clear(ctx, graphics::BLACK);
 
         let time = (timer::duration_to_f64(timer::time_since_start(ctx)) * 1000.0) as u32;
@@ -82,7 +83,7 @@ impl event::EventHandler for MainState {
 // Creating a context depends on loading a config file.
 // Loading a config file depends on having FS (or we can just fake our way around it
 // by creating an FS and then throwing it away; the costs are not huge.)
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     if cfg!(debug_assertions) && env::var("yes_i_really_want_debug_mode").is_err() {
         eprintln!(
             "Note: Release mode will improve performance greatly.\n    \

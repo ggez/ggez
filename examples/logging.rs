@@ -12,6 +12,7 @@ extern crate ggez;
 #[macro_use]
 extern crate log;
 
+use anyhow::Result;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::filesystem::{self, File};
@@ -81,7 +82,7 @@ impl App {
 /// Where the app meets the `ggez`.
 impl EventHandler for App {
     /// This is where the logic should happen.
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> Result<()> {
         const DESIRED_FPS: u32 = 60;
         // This tries to throttle updates to desired value.
         while timer::check_update_time(ctx, DESIRED_FPS) {
@@ -92,7 +93,7 @@ impl EventHandler for App {
     }
 
     /// Draws the screen. We don't really have anything to draw.
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         graphics::present(ctx)?;
         timer::yield_now();
@@ -127,7 +128,7 @@ impl EventHandler for App {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     // This creates a channel that can be used to asynchronously pass things between parts of the
     // app. There's some overhead, so using it somewhere that doesn't need async (read: threads)
     // is suboptimal. But, `fern`'s arbitrary logging requires a channel.

@@ -17,6 +17,9 @@
 use ggez;
 use rand;
 
+// Get anyhow
+use anyhow::Result;
+
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
 use ggez::event::{KeyCode, KeyMods};
@@ -215,7 +218,7 @@ impl Food {
     /// Note: this method of drawing does not scale. If you need to render
     /// a large number of shapes, use a SpriteBatch. This approach is fine for
     /// this example since there are a fairly limited number of calls.
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&self, ctx: &mut Context) -> GameResult {
         // First we set the color to draw with, in this case all food will be
         // colored blue.
         let color = [0.0, 0.0, 1.0, 1.0].into();
@@ -274,7 +277,7 @@ impl Snake {
             last_update_dir: Direction::Right,
             body: body,
             ate: None,
-            next_dir: None
+            next_dir: None,
         }
     }
 
@@ -347,7 +350,7 @@ impl Snake {
     /// Again, note that this approach to drawing is fine for the limited scope of this
     /// example, but larger scale games will likely need a more optimized render path
     /// using SpriteBatch or something similar that batches draw calls.
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&self, ctx: &mut Context) -> GameResult {
         // We first iterate through the body segments and draw them.
         for seg in self.body.iter() {
             // Again we set the color (in this case an orangey color)
@@ -411,7 +414,7 @@ impl GameState {
 impl event::EventHandler for GameState {
     /// Update will happen on every frame before it is drawn. This is where we update
     /// our game state to react to whatever is happening in the game world.
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, _ctx: &mut Context) -> Result<()> {
         // First we check to see if enough time has elapsed since our last update based on
         // the update rate we defined at the top.
         if Instant::now() - self.last_update >= Duration::from_millis(MILLIS_PER_UPDATE) {
@@ -445,7 +448,7 @@ impl event::EventHandler for GameState {
     }
 
     /// draw is where we should actually render the game's current state.
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         // First we clear the screen to a nice (well, maybe pretty glaring ;)) green
         graphics::clear(ctx, [0.0, 1.0, 0.0, 1.0].into());
         // Then we tell the snake and the food to draw themselves
@@ -485,7 +488,7 @@ impl event::EventHandler for GameState {
     }
 }
 
-fn main() -> GameResult {
+fn main() -> Result<()> {
     // Here we use a ContextBuilder to setup metadata about our game. First the title and author
     let (ctx, events_loop) = &mut ggez::ContextBuilder::new("snake", "Gray Olson")
         // Next we set up the window. This title will be displayed in the title bar of the window.

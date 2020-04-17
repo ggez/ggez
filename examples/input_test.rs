@@ -2,10 +2,11 @@
 
 use ggez;
 
+use anyhow::Result;
 use ggez::event::{self, Axis, Button, GamepadId, KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, DrawMode};
 use ggez::input;
-use ggez::{Context, GameResult};
+use ggez::Context;
 
 struct MainState {
     pos_x: f32,
@@ -24,7 +25,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> Result<()> {
         if input::keyboard::is_key_pressed(ctx, KeyCode::A) {
             println!("The A key is pressed");
             if input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::SHIFT) {
@@ -38,7 +39,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         let rectangle = graphics::Mesh::new_rectangle(
             ctx,
@@ -126,7 +127,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     let cb = ggez::ContextBuilder::new("input_test", "ggez");
     let (ctx, event_loop) = &mut cb.build()?;
 

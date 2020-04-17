@@ -4,6 +4,7 @@
 use ggez;
 use nalgebra;
 
+use anyhow::Result;
 use ggez::event;
 use ggez::graphics::{self, Color};
 use ggez::{Context, GameResult};
@@ -37,11 +38,11 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, _ctx: &mut Context) -> Result<()> {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         let dest_point = na::Point2::new(10.0, 10.0);
 
         if self.draw_with_canvas {
@@ -105,7 +106,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");

@@ -3,6 +3,7 @@
 use cgmath;
 use ggez;
 
+use anyhow::Result;
 use ggez::event;
 use ggez::graphics;
 use ggez::{Context, GameResult};
@@ -33,11 +34,11 @@ impl MainState {
 // The `EventHandler` trait also contains callbacks for event handling
 // that you can override if you wish, but the defaults are fine.
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, _ctx: &mut Context) -> Result<()> {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         // Drawables are drawn from their top-left corner.
@@ -63,7 +64,7 @@ impl event::EventHandler for MainState {
 // * Second, create a `ggez::game::Game` object which will
 // do the work of creating our MainState and running our game.
 // * Then, just call `game.run()` which runs the `Game` mainloop.
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     // We add the CARGO_MANIFEST_DIR/resources to the resource paths
     // so that ggez will look in our cargo project directory for files.
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {

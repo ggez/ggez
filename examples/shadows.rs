@@ -5,6 +5,7 @@ use cgmath;
 use gfx::{self, *};
 use ggez;
 
+use anyhow::Result;
 use cgmath::{Point2, Vector2};
 use ggez::conf;
 use ggez::event;
@@ -322,7 +323,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> Result<()> {
         if timer::ticks(ctx) % 100 == 0 {
             println!("Average FPS: {}", timer::fps(ctx));
         }
@@ -333,7 +334,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         let origin = DrawParam::new()
             .dest(Point2::new(0.0, 0.0))
             .scale(Vector2::new(0.5, 0.5));
@@ -407,7 +408,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");

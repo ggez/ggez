@@ -6,6 +6,7 @@ extern crate cgmath;
 extern crate ggez;
 extern crate rand;
 
+use anyhow::Result;
 use ggez::event;
 use ggez::graphics;
 use ggez::timer;
@@ -89,7 +90,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> Result<()> {
         if timer::ticks(ctx) % 100 == 0 {
             println!("Delta frame time: {:?} ", timer::delta(ctx));
             println!("Average FPS: {}", timer::fps(ctx));
@@ -109,7 +110,7 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw(&mut self, ctx: &mut Context) -> Result<()> {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         self.draw_spritebatch(ctx)?;
         let dims = self.canvas.image().dimensions();
@@ -127,7 +128,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-pub fn main() -> GameResult {
+pub fn main() -> Result<()> {
     if cfg!(debug_assertions) && env::var("yes_i_really_want_debug_mode").is_err() {
         eprintln!(
             "Note: Release mode will improve performance greatly.\n    \
