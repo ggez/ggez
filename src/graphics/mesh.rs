@@ -389,7 +389,7 @@ impl t::VertexConstructor<t::FillVertex, Vertex> for VertexBuilder {
     fn new_vertex(&mut self, vertex: t::FillVertex) -> Vertex {
         Vertex {
             pos: [vertex.position.x, vertex.position.y],
-            uv: [vertex.position.x, vertex.position.y],
+            uv: [0.0, 0.0],
             color: self.color.into(),
         }
     }
