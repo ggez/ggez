@@ -101,14 +101,15 @@ to common problems.
 ### Basic Project Template
 
 ```rust,no_run
-use ggez::{graphics, Context, ContextBuilder, GameResult};
+use anyhow;
+use ggez::{graphics, Context, ContextBuilder};
 use ggez::event::{self, EventHandler};
 
 fn main() {
     // Make a Context.
     let (mut ctx, mut event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
-		.build()
-		.expect("aieee, could not create ggez context!");
+        .build()
+        .expect("aieee, could not create ggez context!");
 
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
@@ -136,15 +137,15 @@ impl MyGame {
 }
 
 impl EventHandler for MyGame {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, _ctx: &mut Context) -> anyhow::Result<()> {
         // Update code here...
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
         graphics::clear(ctx, graphics::WHITE);
         // Draw code here...
-        graphics::present(ctx)
+        Ok(graphics::present(ctx)?)
     }
 }
 ```

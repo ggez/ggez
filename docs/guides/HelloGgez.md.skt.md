@@ -4,6 +4,7 @@
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 
+use anyhow;
 use ggez::*;
 use ggez::graphics::*;
 use ggez::event::*;
@@ -14,14 +15,14 @@ struct State {{
 }}
 
 impl EventHandler for State {{
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {{
+    fn update(&mut self, _ctx: &mut Context) -> anyhow::Result<()> {{
         Ok(())
     }}
 
     {}
 }}
 
-pub fn main() -> GameResult {{
+pub fn main() -> anyhow::Result<()> {{
     Ok(())
 }}
 ```
@@ -32,6 +33,7 @@ pub fn main() -> GameResult {{
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 
+use anyhow;
 use ggez::*;
 use ggez::graphics::*;
 
@@ -42,14 +44,14 @@ struct State {{
 }}
 
 impl event::EventHandler for State {{
-    fn draw(&mut self, _ctx: &mut Context) -> GameResult {{
+    fn draw(&mut self, _ctx: &mut Context) -> anyhow::Result<()> {{
         Ok(())
     }}
 
     {}
 }}
 
-pub fn main() -> GameResult {{
+pub fn main() -> anyhow::Result<()> {{
     Ok(())
 }}
 ```
@@ -60,6 +62,8 @@ pub fn main() -> GameResult {{
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 
+
+use anyhow;
 use ggez::*;
 use ggez::graphics::*;
 use ggez::event::*;
@@ -71,16 +75,16 @@ struct State {{
 }}
 
 impl EventHandler for State {{
-    fn update(&mut self, _c: &mut Context) -> GameResult {{
+    fn update(&mut self, _c: &mut Context) -> anyhow::Result<()> {{
         Ok(())
     }}
 
-    fn draw(&mut self, _c: &mut Context) -> GameResult {{
+    fn draw(&mut self, _c: &mut Context) -> anyhow::Result<()> {{
         Ok(())
     }}
 }}
 
-pub fn main() -> GameResult {{
+pub fn main() -> anyhow::Result<()> {{
     let (ref mut ctx, ref mut event_loop) = ContextBuilder::new("foo", "bar")
         .build()
         .unwrap();
@@ -97,6 +101,7 @@ pub fn main() -> GameResult {{
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 
+use anyhow;
 use ggez::*;
 use ggez::graphics::*;
 
@@ -113,6 +118,7 @@ fn main() {{
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 
+use anyhow;
 use ggez::*;
 use ggez::graphics::*;
 

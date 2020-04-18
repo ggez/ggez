@@ -220,17 +220,18 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 /// in your `update()` callback:
 ///
 /// ```rust
+/// # use anyhow;
 /// # use ggez::*;
 /// # fn update_game_physics() -> GameResult { Ok(()) }
 /// # struct State;
 /// # impl ggez::event::EventHandler for State {
-/// fn update(&mut self, ctx: &mut Context) -> GameResult {
+/// fn update(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
 ///     while(timer::check_update_time(ctx, 60)) {
 ///         update_game_physics()?;
 ///     }
 ///     Ok(())
 /// }
-/// # fn draw(&mut self, _ctx: &mut Context) -> GameResult { Ok(()) }
+/// # fn draw(&mut self, _ctx: &mut Context) -> anyhow::Result<()> { Ok(()) }
 /// # }
 /// ```
 pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {

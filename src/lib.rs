@@ -28,6 +28,7 @@
 //! ## Basic Project Template
 //!
 //! ```rust,no_run
+//! use anyhow;
 //! use ggez::{Context, ContextBuilder, GameResult};
 //! use ggez::event::{self, EventHandler};
 //! use ggez::graphics;
@@ -63,17 +64,17 @@
 //! }
 //!
 //! impl EventHandler for MyGame {
-//!     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+//!     fn update(&mut self, _ctx: &mut Context) -> anyhow::Result<()> {
 //!         // Update code here...
 //! #       Ok(())
 //!     }
 //!
-//!     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+//!     fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
 //!         graphics::clear(ctx, graphics::WHITE);
 //!
 //!         // Draw code here...
 //!
-//!         graphics::present(ctx)
+//!         Ok(graphics::present(ctx)?)
 //!     }
 //! }
 //!

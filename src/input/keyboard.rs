@@ -3,6 +3,7 @@
 //! Example:
 //!
 //! ```rust, compile
+//! use anyhow;
 //! use ggez::event::{self, EventHandler, KeyCode, KeyMods};
 //! use ggez::{graphics, nalgebra as na, timer};
 //! use ggez::input::keyboard;
@@ -13,7 +14,7 @@
 //! }
 //!
 //! impl EventHandler for MainState {
-//!     fn update(&mut self, ctx: &mut Context) -> GameResult {
+//!     fn update(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
 //!         // Increase or decrease `position_x` by 0.5, or by 5.0 if Shift is held.
 //!         if keyboard::is_key_pressed(ctx, KeyCode::Right) {
 //!             if keyboard::is_mod_active(ctx, KeyMods::SHIFT) {
@@ -29,7 +30,7 @@
 //!         Ok(())
 //!     }
 //!
-//!     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+//!     fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
 //!         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 //!         // Create a circle at `position_x` and draw
 //!         let circle = graphics::Mesh::new_circle(

@@ -4,6 +4,7 @@
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 
+use anyhow;
 use ggez::*;
 use ggez::graphics::*;
 use rand::*;
@@ -25,14 +26,14 @@ impl State {{
 }}
 
 impl event::EventHandler for State {{
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {{
+    fn update(&mut self, _ctx: &mut Context) -> anyhow::Result<()> {{
         Ok(())
     }}
 
     {}
 }}
 
-pub fn main() -> GameResult {{
+pub fn main() -> anyhow::Result<()> {{
     Ok(())
 }}
 ```
@@ -43,6 +44,7 @@ pub fn main() -> GameResult {{
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 
+use anyhow;
 use ggez::*;
 use ggez::graphics::*;
 use rand::*;
@@ -108,6 +110,7 @@ use ggez::graphics::*;
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 
+use anyhow;
 use ggez::*;
 use ggez::graphics::*;
 use ggez::event::*;
@@ -122,11 +125,11 @@ struct State {{
 }}
 
 impl event::EventHandler for State {{
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {{
+    fn update(&mut self, _ctx: &mut Context) -> anyhow::Result<()> {{
         Ok(())
     }}
 
-    fn draw(&mut self, _ctx: &mut Context) -> GameResult {{
+    fn draw(&mut self, _ctx: &mut Context) -> anyhow::Result<()> {{
         Ok(())
     }}
 }}

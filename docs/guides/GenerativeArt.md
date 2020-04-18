@@ -14,16 +14,17 @@ Modify `Cargo.toml` to include `ggez` in the dependencies.
 Just like in `Hello ggez!`, we're going to use a loop and a struct.
 Let's start with this code in `src/main.rs`:
 ```rust,no_run
+use anyhow;
 use ggez::*;
 
 struct State {
 }
 
 impl ggez::event::EventHandler for State {
-  fn update(&mut self, _ctx: &mut Context) -> GameResult {
+  fn update(&mut self, _ctx: &mut Context) -> anyhow::Result<()> {
       Ok(())
   }
-  fn draw(&mut self, ctx: &mut Context) -> GameResult {
+  fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
       graphics::present(ctx)?;
       Ok(())
   }
@@ -71,7 +72,7 @@ Geometry, it's all coming back now.
 
 Here is the code for a [circle](https://docs.rs/ggez/0.4.0/ggez/graphics/struct.Mesh.html#method.new_circle):
 ```rust,skt-draw,no_run
-fn draw(&mut self, ctx: &mut Context) -> GameResult {
+fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
     let circle = graphics::Mesh::new_circle(
         ctx,
         graphics::DrawMode::fill(),
@@ -108,7 +109,7 @@ And that's how a circle is drawn!
 
 Let's try it out with some quick code:
 ```rust,skt-draw,no_run
-fn draw(&mut self, ctx: &mut Context) -> GameResult {
+fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
     let circle = graphics::Mesh::new_circle(
         ctx,
         graphics::DrawMode::fill(),
@@ -152,7 +153,7 @@ And that's how a rectangle is drawn!
 
 Let's try it out with some quick code:
 ```rust,skt-draw,no_run
-fn draw(&mut self, ctx: &mut Context) -> GameResult {
+fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
     let rect = graphics::Mesh::new_rectangle(
         ctx,
         graphics::DrawMode::fill(),
@@ -227,7 +228,7 @@ We're using `Vec.push` to add 2 new values to our `Vec`.
 But we still don't see anything...
 You need to modify `draw` to illustrate your new `State`.
 ```rust,skt-draw,no_run
-fn draw(&mut self, ctx: &mut Context) -> GameResult {
+fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
     for shape in &self.shapes {
         // Make the shape...
         let mesh = match shape {

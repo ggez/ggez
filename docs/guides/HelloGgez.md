@@ -84,10 +84,10 @@ Let's add `EventHandler` to our `src/main.rs` file:
 struct State {}
 
 impl ggez::event::EventHandler for State {
-  fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+  fn update(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
       Ok(())
   }
-  fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+  fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
       Ok(())
   }
 }
@@ -129,7 +129,7 @@ warning: unused variable: `state`
 warning: unused variable: `ctx`
  --> src\main.rs:9:24
   |
-9 |   fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+9 |   fn update(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
   |                        ^^^
   |
   = note: to avoid this warning, consider using `_ctx` instead
@@ -137,7 +137,7 @@ warning: unused variable: `ctx`
 warning: unused variable: `ctx`
   --> src\main.rs:13:22
    |
-13 |   fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+13 |   fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
    |                      ^^^
    |
    = note: to avoid this warning, consider using `_ctx` instead
@@ -184,7 +184,7 @@ You should get 2 warnings:
 warning: unused variable: `ctx`
  --> src\main.rs:9:24
   |
-9 |   fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+9 |   fn update(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
   |                        ^^^
   |
   = note: #[warn(unused_variables)] on by default
@@ -193,7 +193,7 @@ warning: unused variable: `ctx`
 warning: unused variable: `ctx`
   --> src\main.rs:13:22
    |
-13 |   fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+13 |   fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
    |                      ^^^
    |
    = note: to avoid this warning, consider using `_ctx` instead
@@ -228,7 +228,7 @@ let state = &mut State { dt: std::time::Duration::new(0, 0) };
 So now that we have state to update, let's update it in our `update` callback!
 We'll use [`timer::delta`](https://docs.rs/ggez/0.4.0/ggez/timer/fn.delta.html) to get the delta time.
 ```rust,skt-update,no_run
-fn update(&mut self, ctx: &mut Context) -> GameResult {
+fn update(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
     self.dt = timer::delta(ctx);
     Ok(())
 }
@@ -236,7 +236,7 @@ fn update(&mut self, ctx: &mut Context) -> GameResult {
 
 To see the changes in `State`, you need to modify the `draw` callback.
 ```rust,skt-draw,no_run
-fn draw(&mut self, ctx: &mut Context) -> GameResult {
+fn draw(&mut self, ctx: &mut Context) -> anyhow::Result<()> {
     println!("Hello ggez! dt = {}ns", self.dt.subsec_nanos());
     Ok(())
 }
