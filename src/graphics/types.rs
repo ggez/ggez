@@ -73,6 +73,14 @@ impl Rect {
         }
     }
 
+    /// Gets the `Rect`'s center x and y coordinates as a `Point2`.
+    pub fn center(&self) -> mint::Point2<f32> {
+        mint::Point2 {
+            x: self.x + self.w / 2.0,
+            y: self.y + self.h / 2.0,
+        }
+    }
+
     /// Returns the left edge of the `Rect`
     pub const fn left(&self) -> f32 {
         self.x
