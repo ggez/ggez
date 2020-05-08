@@ -11,6 +11,13 @@
 //! thread.
 //! See
 //! <https://github.com/FNA-XNA/FNA/blob/76554b7ca3d7aa33229c12c6ab5bf3dbdb114d59/src/FNAPlatform/OpenGLDevice.cs#L10-L39> for more info
+//!
+//! TODO:
+//!  * Unheck mesh pipelines/drawcalls
+//!  * Unheck pipelines in general a little
+//!  * Unheck render passes a little, render to texture probably doesn't work
+//!  * Maybe make all these things store fewer vec's and instead get them passed in
+//!  * Look at all other todo's and figure out wtf to do
 
 // Next up:
 // Impl mesh pipelines
@@ -306,7 +313,7 @@ impl TextureHandle {
         }
     }
 
-    /// Turn this texture into a share-able, refcounted one.
+    /// Turn this texture handle into a share-able, refcounted one.
     pub fn into_shared(self) -> Texture {
         Rc::new(self)
     }
@@ -377,7 +384,7 @@ impl ShaderHandle {
         Self::new_raw(ctx.gl.clone(), vertex_src, fragment_src)
     }
 
-    /// Consume this shader and return a clone-able one
+    /// Turn this shader into a clone-able, refcounted one.
     pub fn into_shared(self) -> Shader {
         Rc::new(self)
     }

@@ -14,8 +14,8 @@ glam = "0.8"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 glow = {version = "0.4.0", default-features=false}
-glutin = "0.22.0"
-winit = {version = "0.20.0", features=["web-sys"]}
+glutin = "0.24.0"
+winit = {version = "0.22.0", features=["web-sys"]}
 
 
 #[target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -31,7 +31,7 @@ console_error_panic_hook = "0.1"
 winit = {version = "0.20.0-alpha4", features=["web-sys"]}
 
 [dev-dependencies]
-image = {version = "0.22", default-features=false, features=["jpeg", "png_codec", "pnm", "tiff", "webp", "bmp", "hdr", "dxt"] }
+image = {version = "0.23", default-features=false, features=[] }
 pretty_env_logger = "0.4"
 instant = "0.1"
 oorandom = "11"
