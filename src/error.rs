@@ -50,6 +50,8 @@ pub enum GameError {
     GamepadError(String),
     /// Something went wrong with the `lyon` shape-tesselation library.
     LyonError(String),
+    /// A loop using ['timer::check_update_time()'](../timer/fn.check_update_time.html) is unable to catch up.
+    TimeCatchupError(String),
 }
 
 impl fmt::Display for GameError {

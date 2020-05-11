@@ -286,6 +286,7 @@ where
                 }
             }
         }
+        ctx.timer_context.reset_incremental_update_counter();
         state.update(ctx)?;
         state.draw(ctx)?;
     }
