@@ -53,20 +53,10 @@ pub struct Filesystem {
 
 /// Represents a file, either in the filesystem, or in the resources zip file,
 /// or whatever.
+#[derive(Debug)]
 pub enum File {
     /// A wrapper for a VFile trait object.
     VfsFile(Box<dyn vfs::VFile>),
-}
-
-impl fmt::Debug for File {
-    // Make this more useful?
-    // But we can't seem to get a filename out of a file,
-    // soooooo.
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            File::VfsFile(ref _file) => write!(f, "VfsFile"),
-        }
-    }
 }
 
 impl io::Read for File {
