@@ -403,7 +403,7 @@ impl VFS for PhysicalFS {
 /// A structure that joins several VFS's together in order.
 ///
 /// So if a file isn't found in one FS it will search through them
-/// looking for it and return the
+/// looking for it and return the first one found.
 #[derive(Debug)]
 pub struct OverlayFS {
     roots: Vec<Box<dyn VFS>>,
@@ -562,7 +562,7 @@ impl Debug for dyn ZipArchiveAccess {
     }
 }
 
-/// A filesystem backed by a zip file.
+/// A read-only filesystem backed by a zip file.
 #[derive(Debug)]
 pub struct ZipFS {
     // It's... a bit jankity.
