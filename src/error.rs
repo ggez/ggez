@@ -50,6 +50,12 @@ pub enum GameError {
     GamepadError(String),
     /// Something went wrong with the `lyon` shape-tesselation library.
     LyonError(String),
+    /// A custom error type for use by users of ggez.
+    /// This lets you handle custom errors that may happen during your game (such as, trying to load a malformed file for a level)
+    /// using the same mechanism you handle ggez's other errors.
+    ///
+    /// Please include an informative message with the error.
+    CustomError(String),
 }
 
 impl fmt::Display for GameError {
@@ -63,6 +69,7 @@ impl fmt::Display for GameError {
                 s, paths
             ),
             GameError::WindowError(ref e) => write!(f, "Window creation error: {}", e),
+            GameError::CustomError(ref s) => write!(f, "Custom error: {}", s),
             _ => write!(f, "GameError {:?}", self),
         }
     }
