@@ -52,7 +52,7 @@ toml = "0.5"
 log = "0.4"
 lyon = "0.13"
 smart-default = "0.5"
-nalgebra = {version = "0.18", features = ["mint"] }
+nalgebra = {version = "0.21", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here.
 mint = "0.5"
 gilrs = "0.7"
@@ -68,4 +68,3 @@ skeptic = "0.13"
 
 [build-dependencies]
 skeptic = "0.13"
-
