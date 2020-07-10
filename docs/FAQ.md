@@ -1,25 +1,25 @@
 # Table of Contents
 
-* [Errors](#errors)
+* **[Errors](#errors)**
   * [I get `ResourceNotFound("/myfile", ...)` even though it's in the resource dir!](#errors_resource)
   * [Why do I get `WindowError("Could not create GL context")` when I try to run my game?](#errors_window)
-* [Graphics and GUIs](#gfx)
+* **[Graphics and GUIs](#gfx)**
   * [Can I do 3D stuff?](#gfx_3d)
   * [How do I make a GUI?](#gfx_gui)
   * [Resolution independence](#gfx_resolution)
-* [Libraries](#libraries)
+* **[Libraries](#libraries)**
   * [Can I use `specs`, `legion` or another entity-component system?](#library_ecs)
-* [Performance](#performance)
+* **[Performance](#performance)**
   * [Image/sound loading and font rendering is slow!](#perf_slow1)
   * [Text rendering is still slow!](#perf_text)
   * [That's lame, can't I just compile my game in debug mode but ggez with optimizations on?](#perf_debug)
   * [Drawing a few hundred images or shapes is slow!](#perf_drawing)
-* [Platform-specific](#platforms)
+* **[Platform-specific](#platforms)**
   * [How do I build on platform X?](#platform_build)
   * [Is Mac/iOS supported?](#platform_mac)
-* [Contributing to ggez](#contributing)
+* **[Contributing to ggez](#contributing)**
   * [If I write X, will you include it in ggez?](#contribute_inclusion)
-* [Miscellaneous](#misc)
+* **[Miscellaneous](#misc)**
   * [How do I load my `conf.toml` file?](#misc_conf)
   * [I get a console window when I launch my executable on Windows](#misc_win_console)
 
