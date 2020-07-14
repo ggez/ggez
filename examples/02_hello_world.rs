@@ -1,11 +1,11 @@
 //! Basic hello world example.
 
-use cgmath;
 use ggez;
 
 use ggez::event;
 use ggez::graphics;
 use ggez::{Context, GameResult};
+use ggez::nalgebra as na;
 use std::env;
 use std::path;
 
@@ -42,7 +42,8 @@ impl event::EventHandler for MainState {
 
         // Drawables are drawn from their top-left corner.
         let offset = self.frames as f32 / 10.0;
-        let dest_point = cgmath::Point2::new(offset, offset);
+        let dest_point = na::Point2::new(offset, offset);
+
         graphics::draw(ctx, &self.text, (dest_point,))?;
         graphics::present(ctx)?;
 
