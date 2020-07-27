@@ -4,7 +4,7 @@
 use std::env;
 use std::path;
 
-use nalgebra as na;
+use ggez::nalgebra as na;
 use rand::rngs::ThreadRng;
 use rand::{self, Rng};
 

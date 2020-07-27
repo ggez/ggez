@@ -17,7 +17,7 @@ use gfx::Factory;
 use ggez::event;
 use ggez::graphics;
 use ggez::{Context, GameResult};
-use nalgebra as na;
+use ggez::nalgebra as na;
 use std::env;
 use std::f32;
 use std::path;

@@ -17,7 +17,7 @@ use structopt::StructOpt;
 use std::env;
 use std::path;
 
-use nalgebra as na;
+use ggez::nalgebra as na;
 type Point2 = na::Point2<f32>;
 
 struct WindowSettings {
