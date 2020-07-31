@@ -9,6 +9,7 @@ use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
+
 // First we make a structure to contain the game's state
 struct MainState {
     frames: usize,
@@ -42,7 +43,10 @@ impl event::EventHandler for MainState {
 
         // Drawables are drawn from their top-left corner.
         let offset = self.frames as f32 / 10.0;
-        let dest_point = cgmath::Point2::new(offset, offset);
+        let dest_point = mint::Point2 {
+            x: (offset),
+            y: (offset),
+        };
         graphics::draw(ctx, &self.text, (dest_point,))?;
         graphics::present(ctx)?;
 
