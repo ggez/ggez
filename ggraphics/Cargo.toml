@@ -31,7 +31,7 @@ console_error_panic_hook = "0.1"
 winit = {version = "0.22", features=["web-sys"]}
 
 [dev-dependencies]
-image = {version = "0.23", default-features=false, features=[] }
+image = {version = "0.23", default-features=false, features=["png"] }
 pretty_env_logger = "0.4"
 instant = "0.1"
 oorandom = "11"

@@ -370,11 +370,11 @@ fn run_glutin() {
                 .with_title("Hello triangle!")
                 .with_inner_size(glutin::dpi::LogicalSize::new(800.0, 600.0));
             let windowed_context = glutin::ContextBuilder::new()
-                //.with_gl(glutin::GlRequest::Latest)
-                .with_gl(glutin::GlRequest::GlThenGles {
-                    opengl_version: (4, 3),
-                    opengles_version: (3, 0),
-                })
+                .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGlEs, (2, 0)))
+                //.with_gl(glutin::GlRequest::GlThenGles {
+                //    opengl_version: (4, 3),
+                //    opengles_version: (2, 0),
+                //})
                 .with_gl_profile(glutin::GlProfile::Core)
                 .with_vsync(true)
                 .build_windowed(wb, &el)

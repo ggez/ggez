@@ -74,8 +74,8 @@ pub struct GlContext {
     quad_shader: Shader,
 }
 
-const VERTEX_SHADER_SOURCE: &str = include_str!("data/quad.vert.glsl");
-const FRAGMENT_SHADER_SOURCE: &str = include_str!("data/quad.frag.glsl");
+const VERTEX_SHADER_SOURCE: &str = include_str!("data/quad_es100.vert.glsl");
+const FRAGMENT_SHADER_SOURCE: &str = include_str!("data/quad_es100.frag.glsl");
 
 impl GlContext {
     /// Create a new `GlContext` from the given `glow::Context`.  Does
