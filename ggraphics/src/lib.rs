@@ -297,16 +297,16 @@ impl TextureHandle {
         unsafe {
             gl.active_texture(glow::TEXTURE0);
             gl.bind_texture(glow::TEXTURE_2D, Some(self.tex));
-            gl.tex_sub_image_2d_u8_slice(
-                glow::TEXTURE_2D,                 // Texture target
-                0,                                // mipmap level
-                i32::try_from(x_offset).unwrap(), // xoffset
-                i32::try_from(y_offset).unwrap(), // yoffset
-                i32::try_from(width).unwrap(),    // width
-                i32::try_from(height).unwrap(),   // height
-                glow::RGBA,                       // format to load the texture from
-                glow::UNSIGNED_BYTE,              // Type of each color element
-                Some(rgba),                       // Actual data
+            gl.tex_sub_image_2d(
+                glow::TEXTURE_2D,                   // Texture target
+                0,                                  // mipmap level
+                i32::try_from(x_offset).unwrap(),   // xoffset
+                i32::try_from(y_offset).unwrap(),   // yoffset
+                i32::try_from(width).unwrap(),      // width
+                i32::try_from(height).unwrap(),     // height
+                glow::RGBA,                         // format to load the texture from
+                glow::UNSIGNED_BYTE,                // Type of each color element
+                glow::PixelUnpackData::Slice(rgba), // Actual data
             );
 
             gl.bind_texture(glow::TEXTURE_2D, None);
@@ -846,7 +846,7 @@ impl DrawCall for QuadDrawCall {
         gl.bind_texture(glow::TEXTURE_2D, Some(self.texture.tex));
         // The texture location has to be cloned, since on WebGL it's
         // not necessarily Copy.
-        gl.uniform_1_i32(Some(self.texture_location.clone()), 0);
+        gl.uniform_1_i32(Some(&self.texture_location), 0);
 
         // bind sampler
         // This is FUCKING WHACKO.  I set the active texture
@@ -1067,7 +1067,7 @@ impl MeshDrawCall {
         // Bind texture
         gl.active_texture(glow::TEXTURE0);
         gl.bind_texture(glow::TEXTURE_2D, Some(self.texture.tex));
-        gl.uniform_1_i32(Some(self.texture_location.clone()), 0);
+        gl.uniform_1_i32(Some(&self.texture_location), 0);
 
         // bind sampler
         // This is FUCKING WHACKO.  I set the active texture
@@ -1138,7 +1138,7 @@ impl QuadPipeline {
     pub unsafe fn draw(&mut self, gl: &Context) {
         gl.use_program(Some(self.shader.program));
         gl.uniform_matrix_4_f32_slice(
-            Some(self.projection_location.clone()),
+            Some(&self.projection_location),
             false,
             &self.projection.to_cols_array(),
         );
@@ -1281,7 +1281,7 @@ impl MeshPipeline {
     pub unsafe fn draw(&mut self, gl: &Context) {
         gl.use_program(Some(self.shader.program));
         gl.uniform_matrix_4_f32_slice(
-            Some(self.projection_location.clone()),
+            Some(&self.projection_location),
             false,
             &self.projection.to_cols_array(),
         );
