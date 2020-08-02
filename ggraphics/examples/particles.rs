@@ -19,6 +19,7 @@ struct Particle {
 }
 
 impl Particle {
+    /*
     fn into_quaddata(&self) -> QuadData {
         QuadData {
             offset: [0.5, 0.5],
@@ -29,6 +30,7 @@ impl Particle {
             rotation: self.rot,
         }
     }
+    */
 }
 
 struct GameState {
@@ -54,10 +56,12 @@ impl GameState {
             };
             // Render that texture to the screen
             let shader = GlContext::default_shader(&ctx);
-            let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
+            //let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
+            /*
             let mut pipeline = QuadPipeline::new(ctx.clone(), shader.clone(), projection);
             pipeline.new_drawcall(particle_texture.clone(), SamplerSpec::default());
             pipelines.push(Box::new(pipeline));
+            */
 
             // Make pipeline for meshes.
             // TODO: This at least makes the resource dependencies clear:
@@ -156,10 +160,15 @@ impl GameState {
                 for drawcall in pipeline.drawcalls_mut() {
                     // Copy all our particles into the draw call
                     drawcall.clear();
+                    /*
                     for particle in &self.particles {
-                        let q = particle.into_quaddata();
+                        //let q = particle.into_quaddata();
+                        let q = MeshData {
+                            projection: [0.0; 16],
+                        };
                         drawcall.add(q);
                     }
+                    */
                 }
             }
         }

@@ -514,6 +514,7 @@ impl MeshHandle {
     }
 }
 
+/*
 /// Data we need for each quad instance.
 /// DrawParam gets turned into this, eventually.
 /// We have to be *quite particular* about layout since this gets
@@ -586,6 +587,7 @@ impl QuadData {
         ]
     }
 }
+*/
 
 /// Filter modes a sampler may have.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -658,6 +660,7 @@ impl Default for SamplerSpec {
     }
 }
 
+/*
 /// A list of quads that will be drawn in one draw call.
 /// Each uses the same texture, same mesh (built in to the quad shader),
 /// and may have different `QuadData` inputs.
@@ -807,20 +810,8 @@ impl QuadDrawCall {
     }
 }
 
-/// Trait for a draw call...
-pub trait DrawCall {
-    /// Add a new instance to the quad data.
-    /// Instances are cached between `draw()` invocations.
-    fn add(&mut self, quad: QuadData);
-
-    /// Empty all instances out of the instance buffer.
-    fn clear(&mut self);
-    /// Draw all the instances at once.
-    unsafe fn draw(&mut self, gl: &Context);
-}
-
 impl DrawCall for QuadDrawCall {
-    fn add(&mut self, quad: QuadData) {
+    fn add(&mut self, quad: MeshData) {
         self.dirty = true;
         self.instances.push(quad);
     }
@@ -865,6 +856,57 @@ impl DrawCall for QuadDrawCall {
         );
     }
 }
+*/
+
+/// GLARGL
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
+pub struct MeshData {
+    /// Projection to apply to the verts in the mesh
+    pub projection: [f32; 16],
+}
+
+unsafe impl bytemuck::Zeroable for MeshData {}
+
+unsafe impl bytemuck::Pod for MeshData {}
+
+impl MeshData {
+    /// Returns an empty `QuadData` with default values.
+    pub const fn empty() -> Self {
+        MeshData {
+            projection: [0.0; 16],
+        }
+    }
+
+    /// Returns a Vec of (element offset, element size)
+    /// pairs.  This is proooobably technically a little UB,
+    /// see https://github.com/rust-lang/rust/issues/48956#issuecomment-544506419
+    /// but with repr(C) it's probably safe enough.
+    ///
+    /// Also returns the name of the shader variable associated with each field...
+    unsafe fn layout() -> Vec<(&'static str, usize, usize)> {
+        // It'd be nice if we could make this `const` but
+        // doing const pointer arithmatic is unstable.
+        let thing = MeshData::empty();
+        let thing_base = &thing as *const MeshData;
+        let projection_offset = (&thing.projection as *const _ as usize) - thing_base as usize;
+        let projection_size = mem::size_of_val(&thing.projection);
+
+        vec![("u_Projection", projection_offset, projection_size)]
+    }
+}
+
+/// Trait for a draw call...
+pub trait DrawCall {
+    /// Add a new instance to the quad data.
+    /// Instances are cached between `draw()` invocations.
+    fn add(&mut self, quad: MeshData);
+
+    /// Empty all instances out of the instance buffer.
+    fn clear(&mut self);
+    /// Draw all the instances at once.
+    unsafe fn draw(&mut self, gl: &Context);
+}
 
 /// A mesh that will be drawn multiple times with a single draw call.
 #[derive(Debug)]
@@ -874,7 +916,7 @@ pub struct MeshDrawCall {
     mesh: Mesh,
     sampler: GlSampler,
     /// The instances that will be drawn.
-    pub instances: Vec<QuadData>,
+    pub instances: Vec<MeshData>,
     vao: GlVertexArray,
     instance_vbo: GlBuffer,
     texture_location: GlUniformLocation,
@@ -898,7 +940,7 @@ impl Drop for MeshDrawCall {
 impl MeshDrawCall {
     unsafe fn set_vertex_pointers(ctx: &GlContext, shader: &ShaderHandle) {
         let gl = &*ctx.gl;
-        let layout = QuadData::layout();
+        let layout = MeshData::layout();
         for (name, offset, size) in layout {
             info!("Layout: {} offset, {} size", offset, size);
             let element_size = mem::size_of::<f32>();
@@ -908,7 +950,7 @@ impl MeshDrawCall {
                 (size / element_size) as i32,
                 glow::FLOAT,
                 false,
-                mem::size_of::<QuadData>() as i32,
+                mem::size_of::<MeshData>() as i32,
                 offset as i32,
             );
             //gl.vertex_attrib_divisor(attrib_location, 1);
@@ -1032,9 +1074,9 @@ impl MeshDrawCall {
 
     /// Add a new instance to the quad data.
     /// Instances are cached between `draw()` invocations.
-    pub fn add(&mut self, quad: QuadData) {
+    pub fn add(&mut self, mesh: MeshData) {
         self.dirty = true;
-        self.instances.push(quad);
+        self.instances.push(mesh);
     }
 
     /// Empty all instances out of the instance buffer.
@@ -1091,7 +1133,7 @@ impl MeshDrawCall {
 
 impl DrawCall for MeshDrawCall {
     /// TODO: Refactor
-    fn add(&mut self, quad: QuadData) {
+    fn add(&mut self, quad: MeshData) {
         self.add(quad);
     }
 
@@ -1106,6 +1148,7 @@ impl DrawCall for MeshDrawCall {
     }
 }
 
+/*
 /// A pipeline for drawing quads.
 #[derive(Debug)]
 pub struct QuadPipeline {
@@ -1147,6 +1190,7 @@ impl QuadPipeline {
         }
     }
 }
+*/
 
 /// TODO: Docs
 /// hnyrn
@@ -1167,6 +1211,7 @@ pub trait Pipeline: std::fmt::Debug {
     fn drawcalls_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = &'a mut dyn DrawCall> + 'a>;
 }
 
+/*
 /// aaaaa
 /// TODO: Docs
 #[derive(Debug)]
@@ -1246,6 +1291,7 @@ impl Pipeline for QuadPipeline {
         Box::new(i)
     }
 }
+*/
 
 /// A pipeline for drawing quads.
 #[derive(Debug)]
@@ -1266,7 +1312,7 @@ impl MeshPipeline {
         //let projection = Mat4::identity();
         let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
         let projection_location = gl
-            .get_uniform_location(shader.program, "projection")
+            .get_uniform_location(shader.program, "u_Projection")
             .unwrap();
         Self {
             ctx,
