@@ -40,7 +40,7 @@
 #![warn(missing_copy_implementations)]
 
 use std::cell::RefCell;
-use std::collections::{HashSet};
+use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::mem;
 use std::rc::Rc;
@@ -354,6 +354,10 @@ impl ShaderHandle {
             (glow::VERTEX_SHADER, vertex_src),
             (glow::FRAGMENT_SHADER, fragment_src),
         ];
+        println!(
+            "Vertex shader:\n{}\n\nFragment shader:\n{}",
+            vertex_src, fragment_src
+        );
 
         // TODO: Audit unsafe
         unsafe {
@@ -457,10 +461,10 @@ impl Vertex {
         let uv_size = mem::size_of_val(&thing.uv);
 
         vec![
-            ("vert_pos", pos_offset, pos_size),
-            ("vert_normal", normal_offset, normal_size),
-            ("vert_color", color_offset, color_size),
-            ("vert_uv", uv_offset, uv_size),
+            ("a_pos", pos_offset, pos_size),
+            ("a_normal", normal_offset, normal_size),
+            ("a_color", color_offset, color_size),
+            ("a_uv", uv_offset, uv_size),
         ]
     }
 }
@@ -525,7 +529,6 @@ impl MeshHandle {
         Rc::new(self)
     }
 }
-
 
 /// Filter modes a sampler may have.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -598,7 +601,6 @@ impl Default for SamplerSpec {
     }
 }
 
-
 /// Per-mesh uniform data for a mesh draw call.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
@@ -630,10 +632,15 @@ impl MeshData {
         // doing const pointer arithmatic is unstable.
         let thing = MeshData::empty();
         let thing_base = &thing as *const MeshData;
-        let model_transform_offset = (&thing.model_transform as *const _ as usize) - thing_base as usize;
+        let model_transform_offset =
+            (&thing.model_transform as *const _ as usize) - thing_base as usize;
         let model_transform_size = mem::size_of_val(&thing.model_transform);
 
-        vec![("u_ModelTransform", model_transform_offset, model_transform_size)]
+        vec![(
+            "u_ModelTransform",
+            model_transform_offset,
+            model_transform_size,
+        )]
     }
 }
 
@@ -737,7 +744,6 @@ impl MeshDrawCall {
             gl.enable_vertex_attrib_array(attrib_location);
             */
 
-
             let layout = Vertex::layout();
             for (name, offset, size) in layout {
                 info!("Layout: {} offset, {} size", offset, size);
@@ -764,7 +770,8 @@ impl MeshDrawCall {
                 .get_uniform_location(pipeline.shader.program, "u_Tex")
                 .unwrap();
 
-            let inst_uniform_location = gl.get_uniform_location(pipeline.shader.program, "u_ModelTransform")
+            let inst_uniform_location = gl
+                .get_uniform_location(pipeline.shader.program, "u_ModelTransform")
                 .unwrap();
 
             Self {
@@ -790,7 +797,6 @@ impl MeshDrawCall {
         self.instances.clear();
     }
 
-
     unsafe fn draw(&mut self, gl: &Context) {
         // Bind texture
         gl.active_texture(glow::TEXTURE0);
@@ -801,11 +807,15 @@ impl MeshDrawCall {
         // TODO
 
         // Bind buffers
-         gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.mesh.vbo));
-         gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(self.mesh.ebo));
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.mesh.vbo));
+        gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(self.mesh.ebo));
         // Draw stuff in a for loop, like a peasant.
         for i in &self.instances {
-            gl.uniform_matrix_4_f32_slice(Some(&self.inst_uniform_location), false, &i.model_transform);
+            gl.uniform_matrix_4_f32_slice(
+                Some(&self.inst_uniform_location),
+                false,
+                &i.model_transform,
+            );
             // TODO: Currently we don't actually use indices, we only want
             // to for large meshes.
             gl.draw_arrays(glow::TRIANGLES, 0, (self.instances.len() * 3) as i32);
@@ -830,7 +840,6 @@ impl DrawCall for MeshDrawCall {
     }
 }
 
-
 /// TODO: Docs
 /// hnyrn
 pub trait Pipeline: std::fmt::Debug {
@@ -849,7 +858,6 @@ pub trait Pipeline: std::fmt::Debug {
     ///  Returns iterator of mutable drawcalls.  The lifetimes are a PITA.
     fn drawcalls_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = &'a mut dyn DrawCall> + 'a>;
 }
-
 
 /// A pipeline for drawing arbitrary meshes
 #[derive(Debug)]
@@ -871,7 +879,7 @@ impl MeshPipeline {
         let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
         let projection_location = gl
             .get_uniform_location(shader.program, "u_Projection")
-            .unwrap();
+            .expect("shader does not have a u_Projection uniform for some reason, or we can't find it.  Is GLSL being braindead and removing 'unused' globals again?");
         Self {
             ctx,
             drawcalls: vec![],
