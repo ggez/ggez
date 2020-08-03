@@ -19,8 +19,9 @@ render passes containing pipelines containing draw commands.
 ## Goals
 
  * Work on desktop, and web via WASM with minimal extra effort
- * Work on OpenGL 4 and comparable API's -- OpenGL ES 3, WebGL 2.
- * Draws textured quads and maybe arbitrary meshes.
+ * ~~Work on OpenGL 4 and comparable API's -- OpenGL ES 3, WebGL 2.~~
+ * Work on OpenGL ES 2 and comparable API's -- OpenGL 2.1, WebGL 1.
+ * Draws textured quads and arbitrary meshes.
  * Support user-defined shaders and render passes.
 
 ## Anti-goals
@@ -43,9 +44,6 @@ render passes containing pipelines containing draw commands.
 ## Maybe someday goals
 
  * Mobile devices as a first-class target
- * Use `gfx-hal`, `rendy`, `wgpu` or some other next-gen graphics
-   portability layer.  Currently, the portability is not there.  :-(
- * Work on OpenGL 2 and comparable API's -- OpenGL ES 2, WebGL 1.
 
 ## Structure
 

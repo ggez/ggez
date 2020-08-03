@@ -1,5 +1,9 @@
 #version 100
+// Defined per draw call
 uniform mat4 u_Projection;
+
+// Defined per-mesh
+uniform mat4 u_ModelTransform;
 
 attribute vec4 a_Position;
 attribute vec4 a_Normal;
