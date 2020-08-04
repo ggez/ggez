@@ -617,7 +617,13 @@ impl MeshData {
     /// Returns an empty `MeshData` with default values.
     pub const fn empty() -> Self {
         MeshData {
-            model_transform: [0.0; 16],
+            //model_transform: [0.0; 16],
+            model_transform: [
+                1.0, 0.0, 0.0, 0.0, //
+                0.0, 1.0, 0.0, 0.0, //
+                0.0, 0.0, 1.0, 0.0, //
+                0.0, 0.0, 0.0, 1.0, //
+            ],
         }
     }
 

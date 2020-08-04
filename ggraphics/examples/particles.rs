@@ -160,15 +160,11 @@ impl GameState {
                 for drawcall in pipeline.drawcalls_mut() {
                     // Copy all our particles into the draw call
                     drawcall.clear();
-                    /*
-                    for particle in &self.particles {
+                    for _particle in &self.particles {
                         //let q = particle.into_quaddata();
-                        let q = MeshData {
-                            projection: [0.0; 16],
-                        };
+                        let q = MeshData::empty();
                         drawcall.add(q);
                     }
-                    */
                 }
             }
         }
