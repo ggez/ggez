@@ -99,13 +99,15 @@ impl GameState {
             };
 
             let mut mesh_pipeline = MeshPipeline::new(ctx.clone(), shader.clone());
-            let dc = MeshDrawCall::new(
+            let mut dc = MeshDrawCall::new(
                 ctx.clone(),
                 particle_texture.clone(),
                 mesh,
                 SamplerSpec::default(),
                 &mesh_pipeline,
             );
+            let q = MeshData::empty();
+            dc.add(q);
             mesh_pipeline.drawcalls.push(dc);
             pipelines.push(Box::new(mesh_pipeline));
 
@@ -151,6 +153,7 @@ impl GameState {
                 // gravity
                 particle.vel -= glam::vec2(0.0, 0.0005);
             }
+            /*
             // Clean out dead particles.
             self.particles.retain(|p| p.life > 0.0);
             // Copy particles into draw call, since they've changed.
@@ -167,6 +170,7 @@ impl GameState {
                     }
                 }
             }
+            */
         }
         self.particles.len()
     }
@@ -228,6 +232,7 @@ fn mainloop(
     use winit::event::{Event, WindowEvent};
     use winit::event_loop::ControlFlow;
     let mut state = GameState::new(gl);
+    state.add_particles(glam::vec2(-0.5, -1.0));
     let (vend, rend, vers, shader_vers) = state.ctx.get_info();
     info!(
         "GL context created.

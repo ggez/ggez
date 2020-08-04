@@ -824,6 +824,7 @@ impl MeshDrawCall {
             );
             // TODO: Currently we don't actually use indices, we only want
             // to for large meshes.
+            println!("FDASFSA");
             gl.draw_arrays(glow::TRIANGLES, 0, (self.instances.len() * 3) as i32);
         }
     }
