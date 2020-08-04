@@ -76,25 +76,32 @@ impl GameState {
             let mesh = {
                 let verts = vec![
                     Vertex {
-                        color: [1.0, 0.0, 0.0, 1.0],
                         pos: [0.0, 0.0, 0.0, 0.0],
-                        normal: [1.0, 1.0, 1.0, 1.0],
-                        uv: [0.0, 0.0],
-                    },
-                    Vertex {
-                        color: [0.0, 1.0, 0.0, 1.0],
-                        pos: [1.0, 0.0, 0.0, 0.0],
-                        normal: [1.0, 1.0, 1.0, 0.0],
-                        uv: [0.0, 0.0],
-                    },
-                    Vertex {
                         color: [0.0, 0.0, 1.0, 1.0],
+                        normal: [0.0, 0.0, 0.0, 0.0],
+                        uv: [0.0, 0.0],
+                    },
+                    Vertex {
+                        pos: [1.0, 0.0, 0.0, 0.0],
+                        color: [1.0, 0.0, 1.0, 1.0],
+                        normal: [0.0, 0.0, 0.0, 0.0],
+                        uv: [0.0, 0.0],
+                    },
+                    Vertex {
                         pos: [0.0, 1.0, 0.0, 0.0],
-                        normal: [1.0, 1.0, 1.0, 1.0],
+                        color: [0.0, 1.0, 1.0, 1.0],
+                        normal: [0.0, 0.0, 0.0, 0.0],
+                        uv: [0.0, 0.0],
+                    },
+
+                    Vertex {
+                        pos: [1.0, 1.0, 0.0, 0.0],
+                        color: [1.0, 1.0, 0.0, 1.0],
+                        normal: [0.0, 0.0, 0.0, 0.0],
                         uv: [0.0, 0.0],
                     },
                 ];
-                let indices = vec![0, 1, 2];
+                let indices = vec![0, 1, 2, 2, 3, 1];
                 MeshHandle::new(&ctx, &verts, &indices).into_shared()
             };
 

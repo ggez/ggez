@@ -354,10 +354,6 @@ impl ShaderHandle {
             (glow::VERTEX_SHADER, vertex_src),
             (glow::FRAGMENT_SHADER, fragment_src),
         ];
-        println!(
-            "Vertex shader:\n{}\n\nFragment shader:\n{}",
-            vertex_src, fragment_src
-        );
 
         // TODO: Audit unsafe
         unsafe {
@@ -409,10 +405,10 @@ impl ShaderHandle {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
 pub struct Vertex {
-    /// Color for that vertex
-    pub color: [f32; 4],
     /// Position
     pub pos: [f32; 4],
+    /// Color for that vertex
+    pub color: [f32; 4],
     /// Normal
     pub normal: [f32; 4],
     /// UV coordinates, if any
@@ -430,9 +426,9 @@ impl Vertex {
     /// bogus than a zero vector?
     pub const fn empty() -> Self {
         Vertex {
-            color: [1.0, 1.0, 1.0, 1.0],
             pos: [0.0, 0.0, 0.0, 0.0],
-            normal: [1.0, 0.0, 0.0, 0.0],
+            color: [1.0, 0.0, 0.0, 1.0],
+            normal: [0.0, 0.0, 0.0, 0.0],
             uv: [0.0, 0.0],
         }
     }
@@ -477,6 +473,8 @@ pub struct MeshHandle {
     vbo: GlBuffer,
     /// Element buffer array -- contains indices
     ebo: GlBuffer,
+    /// Number of indices to draw in the mesh
+    count: u16,
 }
 
 impl PartialEq for MeshHandle {
@@ -521,6 +519,7 @@ impl MeshHandle {
                 ctx: ctx.gl.clone(),
                 vbo,
                 ebo,
+                count: indices.len() as u16,
             }
         }
     }
@@ -825,7 +824,7 @@ impl MeshDrawCall {
             // TODO: Currently we don't actually use indices, we only want
             // to for large meshes.
             //gl.draw_arrays(glow::TRIANGLES, 0, (self.instances.len() * 3) as i32);
-            gl.draw_elements(glow::TRIANGLES, (self.instances.len() * 3) as i32, glow::UNSIGNED_SHORT, 0);
+            gl.draw_elements(glow::TRIANGLES, self.mesh.count as i32, glow::UNSIGNED_SHORT, 0);
         }
     }
 }
