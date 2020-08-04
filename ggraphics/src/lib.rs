@@ -809,7 +809,26 @@ impl MeshDrawCall {
         gl.uniform_1_i32(Some(&self.texture_location), 0);
 
         // Set sampler info
-        // TODO
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_MIN_FILTER,
+            self.sampler.min_filter.to_gl() as i32,
+        );
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_MAG_FILTER,
+            self.sampler.mag_filter.to_gl() as i32,
+        );
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_WRAP_S,
+            self.sampler.wrap.to_gl() as i32,
+        );
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_WRAP_T,
+            self.sampler.wrap.to_gl() as i32,
+        );
 
         // Bind buffers
         gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.mesh.vbo));
@@ -824,7 +843,12 @@ impl MeshDrawCall {
             // TODO: Currently we don't actually use indices, we only want
             // to for large meshes.
             //gl.draw_arrays(glow::TRIANGLES, 0, (self.instances.len() * 3) as i32);
-            gl.draw_elements(glow::TRIANGLES, self.mesh.count as i32, glow::UNSIGNED_SHORT, 0);
+            gl.draw_elements(
+                glow::TRIANGLES,
+                self.mesh.count as i32,
+                glow::UNSIGNED_SHORT,
+                0,
+            );
         }
     }
 }
