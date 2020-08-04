@@ -500,7 +500,7 @@ pub type Mesh = Rc<MeshHandle>;
 
 impl MeshHandle {
     /// Create a new texture from the given slice of `Vertex`'s, with the given index array
-    pub fn new(ctx: &GlContext, verts: &[Vertex], indices: &[u32]) -> Self {
+    pub fn new(ctx: &GlContext, verts: &[Vertex], indices: &[u16]) -> Self {
         assert!(verts.len() > 0);
         assert!(indices.len() > 0);
         let gl = &*ctx.gl;
@@ -824,8 +824,8 @@ impl MeshDrawCall {
             );
             // TODO: Currently we don't actually use indices, we only want
             // to for large meshes.
-            println!("FDASFSA");
-            gl.draw_arrays(glow::TRIANGLES, 0, (self.instances.len() * 3) as i32);
+            //gl.draw_arrays(glow::TRIANGLES, 0, (self.instances.len() * 3) as i32);
+            gl.draw_elements(glow::TRIANGLES, (self.instances.len() * 3) as i32, glow::UNSIGNED_SHORT, 0);
         }
     }
 }
