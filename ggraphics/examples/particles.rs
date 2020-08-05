@@ -38,14 +38,14 @@ struct GameState {
     rng: oorandom::Rand32,
     particles: Vec<Particle>,
     passes: Vec<RenderPass>,
-    pipelines: Vec<Box<dyn Pipeline>>,
+    pipelines: Vec<Box<dyn Pipeline<Instance = MeshInstance>>>,
 }
 
 impl GameState {
     pub fn new(gl: glow::Context) -> Self {
         let ctx = Rc::new(GlContext::new(gl));
         let mut passes = vec![];
-        let mut pipelines: Vec<Box<dyn Pipeline + 'static>> = vec![];
+        let mut pipelines: Vec<Box<dyn Pipeline<Instance = MeshInstance> + 'static>> = vec![];
         unsafe {
             let particle_texture = {
                 let image_bytes = include_bytes!("../src/data/wabbit_alpha.png");
@@ -115,7 +115,7 @@ impl GameState {
             );
             let q = MeshInstance::empty();
             dc.add(q);
-            mesh_pipeline.drawcalls.push(dc);
+            mesh_pipeline.batches.push(dc);
             pipelines.push(Box::new(mesh_pipeline));
 
             // Make render pass rendering to screen

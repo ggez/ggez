@@ -1218,9 +1218,10 @@ impl RenderPass {
     }
 
     /// Draw the given pipelines
-    pub fn draw<'a, I>(&mut self, ctx: &GlContext, pipelines: I)
+    pub fn draw<'a, Iter, Inst>(&mut self, ctx: &GlContext, pipelines: Iter)
     where
-        I: IntoIterator<Item = &'a mut (dyn Pipeline<Instance = MeshInstance> + 'static)>,
+        Iter: IntoIterator<Item = &'a mut (dyn Pipeline<Instance = Inst> + 'static)>,
+        Inst: 'a + bytemuck::Pod + bytemuck::Zeroable
     {
         // TODO: Audit unsafe
         unsafe {
