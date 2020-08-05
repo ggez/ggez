@@ -657,7 +657,7 @@ pub trait Batch {
     /// Empty all instances out of the instance buffer.
     fn clear(&mut self);
     /// Draw all the instances at once.
-    unsafe fn draw(&mut self, gl: &Context);
+    unsafe fn draw(&self, gl: &Context);
 }
 
 /// A mesh that will be drawn multiple times with a single draw call.
@@ -801,7 +801,7 @@ impl MeshBatch {
         self.instances.clear();
     }
 
-    unsafe fn draw(&mut self, gl: &Context) {
+    unsafe fn draw(&self, gl: &Context) {
         // Bind texture
         gl.active_texture(glow::TEXTURE0);
         gl.bind_texture(glow::TEXTURE_2D, Some(self.texture.tex));
@@ -865,30 +865,27 @@ impl Batch for MeshBatch {
     }
 
     /// TODO: Refactor
-    unsafe fn draw(&mut self, gl: &Context) {
-        self.draw(gl);
+    unsafe fn draw(&self, gl: &Context) {
+        MeshBatch::draw(self, gl);
     }
 }
 
 /// TODO: Docs
 /// hnyrn
 pub trait Pipeline: std::fmt::Debug {
-    /// Ideally we should be able to get rid of this...
-    type Instance: bytemuck::Pod + bytemuck::Zeroable;
+    /// The type of batch for this particular type of pipeline...
+    ///
+    /// so, CAN we have two different pipelines that use the same instance type
+    /// but different batch types?  Definitely.
+    /// Can we have two different pipeline of the same type that use the same batch type but
+    /// different instance types?
+    type BatchType: Batch;
     /// foo
-    unsafe fn draw(&mut self, gl: &Context);
+    unsafe fn draw(&self, gl: &Context);
     /// foo
-    fn new_batch(&mut self, texture: Texture, sampler: SamplerSpec) -> &mut dyn Batch<Instance = Self::Instance>;
-    /// this seems the way to do it...
-    fn get(&self, idx: usize) -> &dyn Batch<Instance = Self::Instance>;
-    /// Get mut
-    fn get_mut(&mut self, idx: usize) -> &mut dyn Batch<Instance = Self::Instance>;
-    /// clear all draw calls
-    fn clear(&mut self);
-    ///  Returns iterator of batches.  The lifetimes are a PITA.
-    fn batches<'a>(&'a self) -> Box<dyn Iterator<Item = &'a (dyn Batch<Instance = Self::Instance> + 'a)> + 'a>;
-    ///  Returns iterator of mutable batches.  The lifetimes are a PITA.
-    fn batches_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = &'a mut (dyn Batch<Instance = Self::Instance> + 'a)> + 'a>;
+    fn new_batch(&mut self, texture: Texture, sampler: SamplerSpec) -> Self::BatchType;
+    /// Replace batches in the pipeline with the given ones
+    fn set_batches(&mut self, bs: Vec<Self::BatchType>);
 }
 
 /// A pipeline for drawing arbitrary meshes
@@ -922,14 +919,14 @@ impl MeshPipeline {
     }
 
     /// Draw all the draw calls in the pipeline.
-    pub unsafe fn draw(&mut self, gl: &Context) {
+    pub unsafe fn draw(&self, gl: &Context) {
         gl.use_program(Some(self.shader.program));
         gl.uniform_matrix_4_f32_slice(
             Some(&self.projection_location),
             false,
             &self.projection.to_cols_array(),
         );
-        for dc in self.batches.iter_mut() {
+        for dc in self.batches.iter() {
             dc.draw(gl);
         }
     }
@@ -982,19 +979,29 @@ impl<'a> Iterator for MeshPipelineIterMut<'a> {
 }
 
 impl Pipeline for MeshPipeline {
-    type Instance = MeshInstance;
+    //type Instance = MeshInstance;
+    type BatchType = MeshBatch;
     /// foo
     /// TODO: Docs
-    unsafe fn draw(&mut self, gl: &Context) {
-        self.draw(gl);
+    unsafe fn draw(&self, gl: &Context) {
+        MeshPipeline::draw(self, gl);
     }
     /// foo
-    fn new_batch(&mut self, texture: Texture, sampler: SamplerSpec) -> &mut dyn Batch<Instance = MeshInstance> {
+    fn new_batch(&mut self, texture: Texture, sampler: SamplerSpec) -> Self::BatchType {
         // BUGGO TODO: use real mesh and shaader here
         let dummy_mesh = MeshHandle::new(&self.ctx, &[], &[]).into_shared();
         let x = MeshBatch::new(self.ctx.clone(), texture, dummy_mesh, sampler, self);
         self.batches.push(x);
-        &mut *self.batches.last_mut().unwrap()
+        //&mut *self.batches.last_mut().unwrap();
+        todo!()
+    }
+
+    fn set_batches(&mut self, bs: Vec<Self::BatchType>) {
+        todo!()
+    }
+
+    /*
+    fn set_batches(&self, bs: Vec<Self::BatchType>) {
     }
 
     fn clear(&mut self) {
@@ -1016,6 +1023,7 @@ impl Pipeline for MeshPipeline {
         let i = MeshPipelineIterMut::new(self);
         Box::new(i)
     }
+    */
 }
 
 /// A render target for drawing to a texture.
@@ -1203,8 +1211,8 @@ impl RenderPass {
     */
 
     /// Set the current clear color.  If this is not None,
-    /// the render target will be cleared to the returned
-    /// RGBA color before any drawing is done.
+    /// the render target will be cleared to the given
+    /// RGBA color each time `draw()` is called.
     pub fn set_clear_color(&mut self, color: Option<(f32, f32, f32, f32)>) {
         self.clear_color = color;
     }
@@ -1215,10 +1223,10 @@ impl RenderPass {
     }
 
     /// Draw the given pipelines
-    pub fn draw<'a, Iter, Inst>(&mut self, ctx: &GlContext, pipelines: Iter)
+    pub fn draw<B, Inst>(&mut self, ctx: &GlContext, pipelines: &[Box<dyn Pipeline<BatchType = B>>])
     where
-        Iter: IntoIterator<Item = &'a mut (dyn Pipeline<Instance = Inst> + 'a)>,
-        Inst: 'a + bytemuck::Pod + bytemuck::Zeroable
+        B: Batch<Instance=Inst>,
+        Inst: bytemuck::Pod + bytemuck::Zeroable
     {
         // TODO: Audit unsafe
         unsafe {

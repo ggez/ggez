@@ -38,14 +38,14 @@ struct GameState {
     rng: oorandom::Rand32,
     particles: Vec<Particle>,
     passes: Vec<RenderPass>,
-    pipelines: Vec<Box<dyn Pipeline<Instance = MeshInstance>>>,
+    pipelines: Vec<Box<dyn Pipeline<BatchType = MeshBatch>>>,
 }
 
 impl GameState {
     pub fn new(gl: glow::Context) -> Self {
         let ctx = Rc::new(GlContext::new(gl));
         let mut passes = vec![];
-        let mut pipelines: Vec<Box<dyn Pipeline<Instance = MeshInstance> + 'static>> = vec![];
+        let mut pipelines: Vec<Box<dyn Pipeline<BatchType = MeshBatch> + 'static>> = vec![];
         unsafe {
             let particle_texture = {
                 let image_bytes = include_bytes!("../src/data/wabbit_alpha.png");
@@ -322,7 +322,7 @@ fn mainloop(
                 },
                 Event::RedrawRequested(_) => {
                     for pass in state.passes.iter_mut() {
-                        pass.draw(&*state.ctx, state.pipelines.iter_mut().map(|p| &mut **p));
+                        pass.draw(&*state.ctx, &state.pipelines);
                     }
                     window.swap_buffers();
                 }
