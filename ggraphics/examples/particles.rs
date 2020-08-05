@@ -70,8 +70,8 @@ impl GameState {
             // shader locations.
             // But the shader itself is owned by the Pipeline.
             // So what I THINK should happen is that the Mesh itself is JUST the
-            // VBO's, then the DrawCall contains the VAO that associates them to
-            // the shader, so that happens when the DrawCall is created.
+            // VBO's, then the Batch contains the VAO that associates them to
+            // the shader, so that happens when the Batch is created.
             // Yeah, that works.
             let mesh = {
                 let verts = vec![
@@ -106,14 +106,14 @@ impl GameState {
             };
 
             let mut mesh_pipeline = MeshPipeline::new(ctx.clone(), shader.clone());
-            let mut dc = MeshDrawCall::new(
+            let mut dc = MeshBatch::new(
                 ctx.clone(),
                 particle_texture.clone(),
                 mesh,
                 SamplerSpec::default(),
                 &mesh_pipeline,
             );
-            let q = MeshData::empty();
+            let q = MeshInstance::empty();
             dc.add(q);
             mesh_pipeline.drawcalls.push(dc);
             pipelines.push(Box::new(mesh_pipeline));
@@ -172,7 +172,7 @@ impl GameState {
                     drawcall.clear();
                     for _particle in &self.particles {
                         //let q = particle.into_quaddata();
-                        let q = MeshData::empty();
+                        let q = MeshInstance::empty();
                         drawcall.add(q);
                     }
                 }
