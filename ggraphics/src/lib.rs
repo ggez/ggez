@@ -13,7 +13,7 @@
 //! <https://github.com/FNA-XNA/FNA/blob/76554b7ca3d7aa33229c12c6ab5bf3dbdb114d59/src/FNAPlatform/OpenGLDevice.cs#L10-L39> for more info
 //!
 //! TODO:
-//!  * Unheck mesh pipelines/drawcalls
+//!  * Unheck mesh pipelines/batches
 //!  * Unheck pipelines in general a little
 //!  * Unheck render passes a little, render to texture probably doesn't work
 //!  * Maybe make all these things store fewer vec's and instead get them passed in
@@ -651,9 +651,11 @@ impl MeshInstance {
 
 /// Trait for a draw call...
 pub trait Batch {
+    /// Type of the instance data contained by the batch
+    type Instance: bytemuck::Pod + bytemuck::Zeroable;
     /// Add a new instance to the quad data.
     /// Instances are cached between `draw()` invocations.
-    fn add(&mut self, quad: MeshInstance);
+    fn add(&mut self, quad: Self::Instance);
 
     /// Empty all instances out of the instance buffer.
     fn clear(&mut self);
@@ -768,7 +770,7 @@ impl MeshBatch {
                 gl.enable_vertex_attrib_array(attrib_location);
             }
 
-            // TODO: We have some uniforms that are set per-drawcall,
+            // TODO: We have some uniforms that are set per-batch,
             // and some that are set per-instance.  Currently we just kinda
             // mongle them both.
             let texture_location = gl
@@ -854,8 +856,9 @@ impl MeshBatch {
 }
 
 impl Batch for MeshBatch {
+    type Instance = MeshInstance;
     /// TODO: Refactor
-    fn add(&mut self, quad: MeshInstance) {
+    fn add(&mut self, quad: Self::Instance) {
         self.add(quad);
     }
 
@@ -873,20 +876,22 @@ impl Batch for MeshBatch {
 /// TODO: Docs
 /// hnyrn
 pub trait Pipeline: std::fmt::Debug {
+    /// Ideally we should be able to get rid of this...
+    type Instance: bytemuck::Pod + bytemuck::Zeroable;
     /// foo
     unsafe fn draw(&mut self, gl: &Context);
     /// foo
-    fn new_drawcall(&mut self, texture: Texture, sampler: SamplerSpec) -> &mut dyn Batch;
+    fn new_batch(&mut self, texture: Texture, sampler: SamplerSpec) -> &mut dyn Batch<Instance = Self::Instance>;
     /// this seems the way to do it...
-    fn get(&self, idx: usize) -> &dyn Batch;
+    fn get(&self, idx: usize) -> &dyn Batch<Instance = Self::Instance>;
     /// Get mut
-    fn get_mut(&mut self, idx: usize) -> &mut dyn Batch;
+    fn get_mut(&mut self, idx: usize) -> &mut dyn Batch<Instance = Self::Instance>;
     /// clear all draw calls
     fn clear(&mut self);
-    ///  Returns iterator of drawcalls.  The lifetimes are a PITA.
-    fn drawcalls<'a>(&'a self) -> Box<dyn Iterator<Item = &'a dyn Batch> + 'a>;
-    ///  Returns iterator of mutable drawcalls.  The lifetimes are a PITA.
-    fn drawcalls_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = &'a mut dyn Batch> + 'a>;
+    ///  Returns iterator of batches.  The lifetimes are a PITA.
+    fn batches<'a>(&'a self) -> Box<dyn Iterator<Item = &'a (dyn Batch<Instance = Self::Instance> + 'a)> + 'a>;
+    ///  Returns iterator of mutable batches.  The lifetimes are a PITA.
+    fn batches_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = &'a mut (dyn Batch<Instance = Self::Instance> + 'a)> + 'a>;
 }
 
 /// A pipeline for drawing arbitrary meshes
@@ -894,7 +899,7 @@ pub trait Pipeline: std::fmt::Debug {
 pub struct MeshPipeline {
     ctx: Rc<GlContext>,
     /// The draw calls in the pipeline.
-    pub drawcalls: Vec<MeshBatch>,
+    pub batches: Vec<MeshBatch>,
     /// The projection the pipeline will draw with.
     pub projection: Mat4,
     shader: Shader,
@@ -912,7 +917,7 @@ impl MeshPipeline {
             .expect("shader does not have a u_Projection uniform for some reason, or we can't find it.  Is GLSL being braindead and removing 'unused' globals again?");
         Self {
             ctx,
-            drawcalls: vec![],
+            batches: vec![],
             shader,
             projection,
             projection_location,
@@ -927,7 +932,7 @@ impl MeshPipeline {
             false,
             &self.projection.to_cols_array(),
         );
-        for dc in self.drawcalls.iter_mut() {
+        for dc in self.batches.iter_mut() {
             dc.draw(gl);
         }
     }
@@ -944,13 +949,13 @@ impl<'a> MeshPipelineIter<'a> {
     /// TODO: Docs
     pub fn new(p: &'a MeshPipeline) -> Self {
         Self {
-            i: p.drawcalls.iter(),
+            i: p.batches.iter(),
         }
     }
 }
 
 impl<'a> Iterator for MeshPipelineIter<'a> {
-    type Item = &'a dyn Batch;
+    type Item = &'a dyn Batch<Instance = MeshInstance>;
     fn next(&mut self) -> Option<Self::Item> {
         self.i.next().map(|x| x as _)
     }
@@ -967,49 +972,50 @@ impl<'a> MeshPipelineIterMut<'a> {
     /// TODO: Docs
     pub fn new(p: &'a mut MeshPipeline) -> Self {
         Self {
-            i: p.drawcalls.iter_mut(),
+            i: p.batches.iter_mut(),
         }
     }
 }
 
 impl<'a> Iterator for MeshPipelineIterMut<'a> {
-    type Item = &'a mut dyn Batch;
+    type Item = &'a mut dyn Batch<Instance = MeshInstance>;
     fn next(&mut self) -> Option<Self::Item> {
         self.i.next().map(|x| x as _)
     }
 }
 
 impl Pipeline for MeshPipeline {
+    type Instance = MeshInstance;
     /// foo
     /// TODO: Docs
     unsafe fn draw(&mut self, gl: &Context) {
         self.draw(gl);
     }
     /// foo
-    fn new_drawcall(&mut self, texture: Texture, sampler: SamplerSpec) -> &mut dyn Batch {
+    fn new_batch(&mut self, texture: Texture, sampler: SamplerSpec) -> &mut dyn Batch<Instance = MeshInstance> {
         // BUGGO TODO: use real mesh and shaader here
         let dummy_mesh = MeshHandle::new(&self.ctx, &[], &[]).into_shared();
         let x = MeshBatch::new(self.ctx.clone(), texture, dummy_mesh, sampler, self);
-        self.drawcalls.push(x);
-        &mut *self.drawcalls.last_mut().unwrap()
+        self.batches.push(x);
+        &mut *self.batches.last_mut().unwrap()
     }
 
     fn clear(&mut self) {
-        self.drawcalls.clear()
+        self.batches.clear()
     }
-    fn get(&self, idx: usize) -> &dyn Batch {
-        &self.drawcalls[idx]
+    fn get(&self, idx: usize) -> &dyn Batch<Instance = MeshInstance> {
+        &self.batches[idx]
     }
-    fn get_mut(&mut self, idx: usize) -> &mut dyn Batch {
-        &mut self.drawcalls[idx]
+    fn get_mut(&mut self, idx: usize) -> &mut dyn Batch <Instance = MeshInstance>{
+        &mut self.batches[idx]
     }
 
-    fn drawcalls<'a>(&'a self) -> Box<dyn Iterator<Item = &'a dyn Batch> + 'a> {
+    fn batches<'a>(&'a self) -> Box<dyn Iterator<Item = &'a (dyn Batch<Instance = MeshInstance> + 'a)> + 'a> {
         let i = MeshPipelineIter::new(self);
         Box::new(i)
     }
 
-    fn drawcalls_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = &'a mut dyn Batch> + 'a> {
+    fn batches_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = &'a mut (dyn Batch<Instance = MeshInstance> + 'a)> + 'a> {
         let i = MeshPipelineIterMut::new(self);
         Box::new(i)
     }
@@ -1214,7 +1220,7 @@ impl RenderPass {
     /// Draw the given pipelines
     pub fn draw<'a, I>(&mut self, ctx: &GlContext, pipelines: I)
     where
-        I: IntoIterator<Item = &'a mut (dyn Pipeline + 'static)>,
+        I: IntoIterator<Item = &'a mut (dyn Pipeline<Instance = MeshInstance> + 'static)>,
     {
         // TODO: Audit unsafe
         unsafe {
