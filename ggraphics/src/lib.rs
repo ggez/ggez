@@ -416,7 +416,6 @@ pub struct Vertex {
 }
 
 unsafe impl bytemuck::Zeroable for Vertex {}
-
 unsafe impl bytemuck::Pod for Vertex {}
 
 impl Vertex {
@@ -609,14 +608,12 @@ pub struct MeshInstance {
 }
 
 unsafe impl bytemuck::Zeroable for MeshInstance {}
-
 unsafe impl bytemuck::Pod for MeshInstance {}
 
 impl MeshInstance {
     /// Returns an empty `MeshInstance` with default values.
     pub const fn empty() -> Self {
         MeshInstance {
-            //model_transform: [0.0; 16],
             model_transform: [
                 1.0, 0.0, 0.0, 0.0, //
                 0.0, 1.0, 0.0, 0.0, //
@@ -1220,7 +1217,7 @@ impl RenderPass {
     /// Draw the given pipelines
     pub fn draw<'a, Iter, Inst>(&mut self, ctx: &GlContext, pipelines: Iter)
     where
-        Iter: IntoIterator<Item = &'a mut (dyn Pipeline<Instance = Inst> + 'static)>,
+        Iter: IntoIterator<Item = &'a mut (dyn Pipeline<Instance = Inst> + 'a)>,
         Inst: 'a + bytemuck::Pod + bytemuck::Zeroable
     {
         // TODO: Audit unsafe
