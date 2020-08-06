@@ -866,8 +866,8 @@ impl MeshPipeline {
     /// Create new pipeline with the given shader.
     pub unsafe fn new(ctx: Rc<GlContext>, shader: Shader) -> Self {
         let gl = &*ctx.gl;
-        //let projection = Mat4::identity();
-        let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
+        let projection = Mat4::identity();
+        //let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
         let projection_location = gl
             .get_uniform_location(shader.program, "u_Projection")
             .expect("shader does not have a u_Projection uniform for some reason, or we can't find it.  Is GLSL being braindead and removing 'unused' globals again?");
