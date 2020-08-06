@@ -2,7 +2,7 @@
 // env RUST_LOG=info cargo run
 
 use ggraphics::*;
-use glam::{self, Mat4, Vec2};
+use glam::{self, Mat4, Vec2, Vec3, Quat};
 use glow;
 use oorandom;
 use winit;
@@ -34,6 +34,7 @@ impl GameState {
         let ctx = Rc::new(GlContext::new(gl));
         let mut passes = vec![];
         let mut pipelines: Vec<Box<dyn Pipeline<BatchType = MeshBatch> + 'static>> = vec![];
+        let mut rng = oorandom::Rand32::new(12345);
         unsafe {
             let particle_texture = {
                 let image_bytes = include_bytes!("../src/data/wabbit_alpha.png");
@@ -64,28 +65,24 @@ impl GameState {
             let mesh = {
                 let verts = vec![
                     Vertex {
-                        pos: [0.0, 0.0, 0.0, 0.0],
+                        pos: [0.0, 0.0, 0.0, 1.0],
                         color: [0.0, 0.0, 1.0, 1.0],
-                        normal: [0.0, 0.0, 0.0, 0.0],
                         uv: [0.0, 0.0],
                     },
                     Vertex {
-                        pos: [1.0, 0.0, 0.0, 0.0],
+                        pos: [1.0, 0.0, 0.0, 1.0],
                         color: [1.0, 0.0, 1.0, 1.0],
-                        normal: [0.0, 0.0, 0.0, 0.0],
                         uv: [1.0, 0.0],
                     },
                     Vertex {
-                        pos: [0.0, 1.0, 0.0, 0.0],
+                        pos: [0.0, 1.0, 0.0, 1.0],
                         color: [0.0, 1.0, 1.0, 1.0],
-                        normal: [0.0, 0.0, 0.0, 0.0],
                         uv: [0.0, 1.0],
                     },
 
                     Vertex {
-                        pos: [1.0, 1.0, 0.0, 0.0],
+                        pos: [1.0, 1.0, 0.0, 1.0],
                         color: [1.0, 1.0, 0.0, 1.0],
-                        normal: [0.0, 0.0, 0.0, 0.0],
                         uv: [1.0, 1.0],
                     },
                 ];
@@ -101,8 +98,16 @@ impl GameState {
                 SamplerSpec::default(),
                 &mesh_pipeline,
             );
-            let q = MeshInstance::empty();
+            for _ in 0..100 {
+            let mut q = MeshInstance::empty();
+            let trans = Mat4::from_scale_rotation_translation(
+                Vec3::new(0.1, 0.1, 0.1),
+                Quat::from_rotation_z(rng.rand_float() * 2.0 * std::f32::consts::PI),
+                Vec3::new(rng.rand_float() * 2.0 - 1.0, rng.rand_float() * 2.0 - 1.0, 0.0)
+            );
+            q.model_transform = trans.to_cols_array();
             batch.add(q);
+            }
             mesh_pipeline.batches.push(batch);
             pipelines.push(Box::new(mesh_pipeline));
 
@@ -111,7 +116,6 @@ impl GameState {
             passes.push(screen_pass);
         }
 
-        let rng = oorandom::Rand32::new(12345);
         Self {
             ctx,
             rng,
