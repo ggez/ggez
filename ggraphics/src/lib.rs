@@ -409,8 +409,6 @@ pub struct Vertex {
     pub pos: [f32; 4],
     /// Color for that vertex
     pub color: [f32; 4],
-    /// Normal
-    pub normal: [f32; 4],
     /// UV coordinates, if any
     pub uv: [f32; 2],
 }
@@ -420,14 +418,10 @@ unsafe impl bytemuck::Pod for Vertex {}
 
 impl Vertex {
     /// Returns an empty `Vertex` with default values.
-    ///
-    /// TODO: The normal is pretty bogus, though maybe less
-    /// bogus than a zero vector?
     pub const fn empty() -> Self {
         Vertex {
             pos: [0.0, 0.0, 0.0, 0.0],
             color: [1.0, 0.0, 0.0, 1.0],
-            normal: [0.0, 0.0, 0.0, 0.0],
             uv: [0.0, 0.0],
         }
     }
@@ -446,9 +440,6 @@ impl Vertex {
         let pos_offset = (&thing.pos as *const _ as usize) - thing_base as usize;
         let pos_size = mem::size_of_val(&thing.pos);
 
-        let normal_offset = (&thing.normal as *const _ as usize) - thing_base as usize;
-        let normal_size = mem::size_of_val(&thing.normal);
-
         let color_offset = (&thing.color as *const _ as usize) - thing_base as usize;
         let color_size = mem::size_of_val(&thing.color);
 
@@ -457,7 +448,6 @@ impl Vertex {
 
         vec![
             ("a_pos", pos_offset, pos_size),
-            ("a_normal", normal_offset, normal_size),
             ("a_color", color_offset, color_size),
             ("a_uv", uv_offset, uv_size),
         ]
@@ -716,37 +706,9 @@ impl MeshBatch {
             // First, set mesh VBO...
             // pos, color, norm, uv,
             gl.bind_buffer(glow::ARRAY_BUFFER, Some(mesh.vbo));
-            /*
-            let attrib_location = gl
-                .get_attrib_location(pipeline.shader.program, "pos")
-                .unwrap();
-            gl.vertex_attrib_pointer_f32(
-                attrib_location,
-                4, // TODO (size / element_size) as i32,
-                glow::FLOAT,
-                false,
-                mem::size_of::<Vertex>() as i32,
-                offset as i32,
-            );
-            gl.enable_vertex_attrib_array(attrib_location);
-            */
 
             // Then set mesh EBO (index buffer)
             gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(mesh.ebo));
-            /*
-            let attrib_location = gl
-                .get_attrib_location(pipeline.shader.program, "pos")
-                .unwrap();
-            gl.vertex_attrib_pointer_f32(
-                attrib_location,
-                4, // TODO (size / element_size) as i32,
-                glow::FLOAT,
-                false,
-                mem::size_of::<Vertex>() as i32,
-                offset as i32,
-            );
-            gl.enable_vertex_attrib_array(attrib_location);
-            */
 
             let layout = Vertex::layout();
             for (name, offset, size) in layout {
@@ -932,51 +894,6 @@ impl MeshPipeline {
     }
 }
 
-/// aaaaa
-/// TODO: Docs
-#[derive(Debug)]
-pub struct MeshPipelineIter<'a> {
-    i: std::slice::Iter<'a, MeshBatch>,
-}
-
-impl<'a> MeshPipelineIter<'a> {
-    /// TODO: Docs
-    pub fn new(p: &'a MeshPipeline) -> Self {
-        Self {
-            i: p.batches.iter(),
-        }
-    }
-}
-
-impl<'a> Iterator for MeshPipelineIter<'a> {
-    type Item = &'a dyn Batch<Instance = MeshInstance>;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.i.next().map(|x| x as _)
-    }
-}
-
-/// Sigh
-/// TODO: Docs
-#[derive(Debug)]
-pub struct MeshPipelineIterMut<'a> {
-    i: std::slice::IterMut<'a, MeshBatch>,
-}
-
-impl<'a> MeshPipelineIterMut<'a> {
-    /// TODO: Docs
-    pub fn new(p: &'a mut MeshPipeline) -> Self {
-        Self {
-            i: p.batches.iter_mut(),
-        }
-    }
-}
-
-impl<'a> Iterator for MeshPipelineIterMut<'a> {
-    type Item = &'a mut dyn Batch<Instance = MeshInstance>;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.i.next().map(|x| x as _)
-    }
-}
 
 impl Pipeline for MeshPipeline {
     //type Instance = MeshInstance;
@@ -997,7 +914,7 @@ impl Pipeline for MeshPipeline {
     }
 
     fn set_batches(&mut self, bs: Vec<Self::BatchType>) {
-        todo!()
+        self.batches = bs;
     }
 
     /*
@@ -1058,7 +975,7 @@ impl TextureRenderTarget {
         // glue them all together.
         gl.bind_texture(glow::TEXTURE_2D, Some(t.tex));
         // We need to add filtering params to the texture, for Reasons.
-        // We might be able to use samplers instead, but not yet.
+        // TODO: These should probably be set from some kind of input...
         gl.tex_parameter_i32(
             glow::TEXTURE_2D,
             glow::TEXTURE_MAG_FILTER,
@@ -1158,16 +1075,7 @@ impl RenderTarget {
 #[derive(Debug)]
 pub struct RenderPass {
     target: RenderTarget,
-    /// This is sort of weird.  Basically to clear the render target
-    /// you have to bind it, then clear it.  So if we offer an independent
-    /// `clear()` method that will make it possible to forget to bind the
-    /// correct render target first, or it will change shared state, or
-    /// it will unnecessarily re-bind things.  So instead we ALWAYS clear
-    /// the render target if this is not None.
-    clear_color: Option<(f32, f32, f32, f32)>,
     viewport: (i32, i32, i32, i32),
-    // /// The pipelines to draw in the render pass.
-    // pub pipelines: Vec<Box<dyn Pipeline>>,
 }
 
 impl RenderPass {
@@ -1176,15 +1084,12 @@ impl RenderPass {
         ctx: &GlContext,
         width: usize,
         height: usize,
-        clear_color: Option<(f32, f32, f32, f32)>,
     ) -> Self {
         let target = RenderTarget::new_target(ctx, width, height);
 
         Self {
             target,
-            //pipelines: vec![],
             viewport: (0, 0, width as i32, height as i32),
-            clear_color,
         }
     }
 
@@ -1193,37 +1098,15 @@ impl RenderPass {
         _ctx: &GlContext,
         width: usize,
         height: usize,
-        clear_color: Option<(f32, f32, f32, f32)>,
     ) -> Self {
         Self {
             target: RenderTarget::Screen,
-            //pipelines: vec![],
             viewport: (0, 0, width as i32, height as i32),
-            clear_color,
         }
     }
 
-    /*
-    /// Add a new pipeline to the renderpass
-    pub fn add_pipeline(&mut self, pipeline: impl Pipeline + 'static) {
-        self.pipelines.push(Box::new(pipeline))
-    }
-    */
-
-    /// Set the current clear color.  If this is not None,
-    /// the render target will be cleared to the given
-    /// RGBA color each time `draw()` is called.
-    pub fn set_clear_color(&mut self, color: Option<(f32, f32, f32, f32)>) {
-        self.clear_color = color;
-    }
-
-    /// Get the current clear color.
-    pub fn clear_color(&self) -> Option<(f32, f32, f32, f32)> {
-        self.clear_color
-    }
-
     /// Draw the given pipelines
-    pub fn draw<B, Inst>(&mut self, ctx: &GlContext, pipelines: &[Box<dyn Pipeline<BatchType = B>>])
+    pub fn draw<B, Inst>(&mut self, ctx: &GlContext, clear_color: Option<(f32, f32, f32, f32)>, pipelines: &[Box<dyn Pipeline<BatchType = B>>])
     where
         B: Batch<Instance=Inst>,
         Inst: bytemuck::Pod + bytemuck::Zeroable
@@ -1235,7 +1118,7 @@ impl RenderPass {
             // TODO: Does this need to be set every time, or does it stick to the target binding?
             ctx.gl.viewport(x, y, w, h);
 
-            if let Some((r, g, b, a)) = self.clear_color {
+            if let Some((r, g, b, a)) = clear_color {
                 ctx.gl.clear_color(r, g, b, a);
                 ctx.gl
                     .clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
