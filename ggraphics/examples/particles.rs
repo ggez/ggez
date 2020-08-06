@@ -19,18 +19,6 @@ struct Particle {
 }
 
 impl Particle {
-    /*
-    fn into_quaddata(&self) -> QuadData {
-        QuadData {
-            offset: [0.5, 0.5],
-            //color: [1.0, 1.0, 1.0, 1.0],
-            color: [1.0, self.life, self.life, self.life],
-            src_rect: [0.0, 0.0, 1.0, 1.0],
-            dst_rect: [self.pos.x(), self.pos.y(), 0.1, 0.1],
-            rotation: self.rot,
-        }
-    }
-    */
 }
 
 struct GameState {
@@ -106,7 +94,7 @@ impl GameState {
             };
 
             let mut mesh_pipeline = MeshPipeline::new(ctx.clone(), shader.clone());
-            let mut dc = MeshBatch::new(
+            let mut batch = MeshBatch::new(
                 ctx.clone(),
                 particle_texture.clone(),
                 mesh,
@@ -114,12 +102,12 @@ impl GameState {
                 &mesh_pipeline,
             );
             let q = MeshInstance::empty();
-            dc.add(q);
-            mesh_pipeline.batches.push(dc);
+            batch.add(q);
+            mesh_pipeline.batches.push(batch);
             pipelines.push(Box::new(mesh_pipeline));
 
             // Make render pass rendering to screen
-            let screen_pass = RenderPass::new_screen(&*ctx, 800, 600, Some((0.6, 0.6, 0.6, 1.0)));
+            let screen_pass = RenderPass::new_screen(&*ctx, 800, 600);
             passes.push(screen_pass);
         }
 
@@ -322,7 +310,7 @@ fn mainloop(
                 },
                 Event::RedrawRequested(_) => {
                     for pass in state.passes.iter_mut() {
-                        pass.draw(&*state.ctx, &state.pipelines);
+                        pass.draw(&*state.ctx, Some((0.1, 0.2, 0.3, 1.0)), &state.pipelines);
                     }
                     window.swap_buffers();
                 }
