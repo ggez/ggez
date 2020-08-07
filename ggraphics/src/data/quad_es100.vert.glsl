@@ -1,4 +1,5 @@
 #version 100
+precision mediump float;
 
 // Defined per-mesh
 uniform mat4 u_Projection;
