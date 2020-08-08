@@ -2,7 +2,7 @@
 // env RUST_LOG=info cargo run
 
 use ggraphics::*;
-use glam::{self, Mat4, Vec2, Vec3, Quat};
+use glam::{self, Mat4, Quat, Vec2, Vec3};
 use glow;
 use oorandom;
 use winit;
@@ -18,8 +18,7 @@ struct Particle {
     life: f32,
 }
 
-impl Particle {
-}
+impl Particle {}
 
 struct GameState {
     ctx: Rc<GlContext>,
@@ -45,7 +44,7 @@ impl GameState {
             };
             // Render that texture to the screen
             let shader = GlContext::default_shader(&ctx);
-            //let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
+            let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
             /*
             let mut pipeline = QuadPipeline::new(ctx.clone(), shader.clone(), projection);
             pipeline.new_drawcall(particle_texture.clone(), SamplerSpec::default());
@@ -79,7 +78,6 @@ impl GameState {
                         color: [0.0, 1.0, 1.0, 1.0],
                         uv: [0.0, 1.0],
                     },
-
                     Vertex {
                         pos: [1.0, 1.0, 0.0, 1.0],
                         color: [1.0, 1.0, 0.0, 1.0],
@@ -99,14 +97,18 @@ impl GameState {
                 &mesh_pipeline,
             );
             for _ in 0..100 {
-            let mut q = MeshInstance::empty();
-            let trans = Mat4::from_scale_rotation_translation(
-                Vec3::new(0.1, 0.1, 0.1),
-                Quat::from_rotation_z(rng.rand_float() * 2.0 * std::f32::consts::PI),
-                Vec3::new(rng.rand_float() * 2.0 - 1.0, rng.rand_float() * 2.0 - 1.0, 0.0)
-            );
-            q.model_transform = trans.to_cols_array();
-            batch.add(q);
+                let mut q = MeshInstance::empty();
+                let trans = Mat4::from_scale_rotation_translation(
+                    Vec3::new(0.1, 0.1, 0.1),
+                    Quat::from_rotation_z(rng.rand_float() * 2.0 * std::f32::consts::PI),
+                    Vec3::new(
+                        rng.rand_float() * 2.0 - 1.0,
+                        rng.rand_float() * 2.0 - 1.0,
+                        0.0,
+                    ),
+                );
+                q.model_transform = trans.to_cols_array();
+                batch.add(q);
             }
             mesh_pipeline.batches.push(batch);
             pipelines.push(Box::new(mesh_pipeline));
