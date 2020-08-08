@@ -149,37 +149,6 @@ impl GlContext {
         }
     }
 
-    /*
-    /// Get a sampler given the given spec.  Samplers are cached, and
-    /// usually few in number, so you shouldn't free them and this handles
-    /// caching them for you.
-    pub fn get_sampler(&self, spec: &SamplerSpec) -> GlSampler {
-        let gl = &*self.gl;
-        // unsafety: This takes no inputs besides spec, which has
-        // constrained types.
-        *self
-            .samplers
-            .borrow_mut() // We don't store this borrow anywhere, so it should never panic
-            .entry(*spec)
-            .or_insert_with(|| unsafe {
-                let sampler = gl.create_sampler().unwrap();
-                gl.sampler_parameter_i32(
-                    sampler,
-                    glow::TEXTURE_MIN_FILTER,
-                    spec.min_filter.to_gl() as i32,
-                );
-                gl.sampler_parameter_i32(
-                    sampler,
-                    glow::TEXTURE_MAG_FILTER,
-                    spec.mag_filter.to_gl() as i32,
-                );
-                gl.sampler_parameter_i32(sampler, glow::TEXTURE_WRAP_S, spec.wrap.to_gl() as i32);
-                gl.sampler_parameter_i32(sampler, glow::TEXTURE_WRAP_T, spec.wrap.to_gl() as i32);
-                sampler
-            })
-    }
-    */
-
     /// Returns OpenGL version info.
     /// Vendor, renderer, GL version, GLSL version
     pub fn get_info(&self) -> (String, String, String, String) {
@@ -801,9 +770,6 @@ impl MeshBatch {
                 false,
                 &i.model_transform,
             );
-            // TODO: Currently we don't actually use indices, we only want
-            // to for large meshes.
-            //gl.draw_arrays(glow::TRIANGLES, 0, (self.instances.len() * 3) as i32);
             gl.draw_elements(
                 glow::TRIANGLES,
                 self.mesh.count as i32,
@@ -894,7 +860,6 @@ impl MeshPipeline {
     }
 }
 
-
 impl Pipeline for MeshPipeline {
     //type Instance = MeshInstance;
     type BatchType = MeshBatch;
@@ -916,31 +881,6 @@ impl Pipeline for MeshPipeline {
     fn set_batches(&mut self, bs: Vec<Self::BatchType>) {
         self.batches = bs;
     }
-
-    /*
-    fn set_batches(&self, bs: Vec<Self::BatchType>) {
-    }
-
-    fn clear(&mut self) {
-        self.batches.clear()
-    }
-    fn get(&self, idx: usize) -> &dyn Batch<Instance = MeshInstance> {
-        &self.batches[idx]
-    }
-    fn get_mut(&mut self, idx: usize) -> &mut dyn Batch <Instance = MeshInstance>{
-        &mut self.batches[idx]
-    }
-
-    fn batches<'a>(&'a self) -> Box<dyn Iterator<Item = &'a (dyn Batch<Instance = MeshInstance> + 'a)> + 'a> {
-        let i = MeshPipelineIter::new(self);
-        Box::new(i)
-    }
-
-    fn batches_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = &'a mut (dyn Batch<Instance = MeshInstance> + 'a)> + 'a> {
-        let i = MeshPipelineIterMut::new(self);
-        Box::new(i)
-    }
-    */
 }
 
 /// A render target for drawing to a texture.
@@ -1080,11 +1020,7 @@ pub struct RenderPass {
 
 impl RenderPass {
     /// Make a new render pass rendering to a texture.
-    pub unsafe fn new(
-        ctx: &GlContext,
-        width: usize,
-        height: usize,
-    ) -> Self {
+    pub unsafe fn new(ctx: &GlContext, width: usize, height: usize) -> Self {
         let target = RenderTarget::new_target(ctx, width, height);
 
         Self {
@@ -1094,11 +1030,7 @@ impl RenderPass {
     }
 
     /// Create a new rnder pass rendering to the screen.
-    pub unsafe fn new_screen(
-        _ctx: &GlContext,
-        width: usize,
-        height: usize,
-    ) -> Self {
+    pub unsafe fn new_screen(_ctx: &GlContext, width: usize, height: usize) -> Self {
         Self {
             target: RenderTarget::Screen,
             viewport: (0, 0, width as i32, height as i32),
@@ -1106,10 +1038,14 @@ impl RenderPass {
     }
 
     /// Draw the given pipelines
-    pub fn draw<B, Inst>(&mut self, ctx: &GlContext, clear_color: Option<(f32, f32, f32, f32)>, pipelines: &[Box<dyn Pipeline<BatchType = B>>])
-    where
-        B: Batch<Instance=Inst>,
-        Inst: bytemuck::Pod + bytemuck::Zeroable
+    pub fn draw<B, Inst>(
+        &mut self,
+        ctx: &GlContext,
+        clear_color: Option<(f32, f32, f32, f32)>,
+        pipelines: &[Box<dyn Pipeline<BatchType = B>>],
+    ) where
+        B: Batch<Instance = Inst>,
+        Inst: bytemuck::Pod + bytemuck::Zeroable,
     {
         // TODO: Audit unsafe
         unsafe {
