@@ -1,5 +1,4 @@
 pub(crate) use nalgebra as na;
-use serde::{Deserialize, Serialize};
 use std::f32;
 use std::u32;
 

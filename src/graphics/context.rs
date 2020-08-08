@@ -33,7 +33,7 @@ where
     srgb: bool,
 
     pub(crate) backend_spec: B,
-    pub(crate) window: glutin::WindowedContext,
+    pub(crate) window: glutin::WindowedContext<glutin::PossiblyCurrent>,
     pub(crate) multisample_samples: u8,
     pub(crate) device: Box<B::Device>,
     pub(crate) factory: Box<B::Factory>,
@@ -140,15 +140,17 @@ impl GraphicsContextGeneric<GlBackendSpec> {
                 width: w,
                 height: h,
             } = window
+                .window()
                 .get_outer_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
             let dpi::LogicalSize {
                 width: dw,
                 height: dh,
             } = window
+                .window()
                 .get_inner_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            let hidpi_factor = window.get_hidpi_factor();
+            let hidpi_factor = window.window().get_hidpi_factor();
             debug!(
                 "Window created, desired size {}x{}, hidpi factor {}.",
                 window_mode.width, window_mode.height, hidpi_factor
@@ -512,7 +514,7 @@ where
 
     /// Sets window mode from a WindowMode object.
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
-        let window = &self.window;
+        let window = &self.window.window();
 
         window.set_maximized(mode.maximized);
 

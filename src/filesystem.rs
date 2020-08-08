@@ -27,7 +27,6 @@
 //! don't assume it will be secure.
 
 use std::env;
-use std::fmt;
 use std::io;
 use std::path;
 

@@ -246,7 +246,7 @@ impl Image {
         let data = self.to_rgba8(ctx)?;
         let f = filesystem::create(ctx, path)?;
         let writer = &mut io::BufWriter::new(f);
-        let color_format = image::ColorType::RGBA(8);
+        let color_format = image::ColorType::Rgba8;
         match format {
             ImageFormat::Png => image::png::PNGEncoder::new(writer)
                 .encode(
