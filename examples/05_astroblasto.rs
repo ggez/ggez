@@ -10,7 +10,7 @@ use ggez::event::{self, EventHandler, KeyCode, KeyMods};
 use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
-use nalgebra as na;
+use ggez::nalgebra as na;
 use rand;
 
 use std::env;

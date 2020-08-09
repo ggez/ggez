@@ -7,7 +7,7 @@ use nalgebra;
 use ggez::event;
 use ggez::graphics::{self, Color};
 use ggez::{Context, GameResult};
-use nalgebra as na;
+use ggez::nalgebra as na;
 use std::env;
 use std::path;
 

@@ -5,7 +5,7 @@ use nalgebra;
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};
 use ggez::{Context, GameResult};
-use nalgebra as na;
+use ggez::nalgebra as na;
 use std::env;
 use std::path;
 
