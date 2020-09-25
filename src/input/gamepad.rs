@@ -43,6 +43,13 @@ impl GilrsGamepadContext {
         let gilrs = Gilrs::new()?;
         Ok(GilrsGamepadContext { gilrs })
     }
+
+    /// Returns a `GilrsGamepadContext` with the entered Gilrs
+    pub fn from(custom_gilrs: Gilrs) -> Self {
+        GilrsGamepadContext {
+            gilrs: custom_gilrs,
+        }
+    }
 }
 
 impl GamepadContext for GilrsGamepadContext {
