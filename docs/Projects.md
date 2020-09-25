@@ -8,7 +8,7 @@ submit a PR, please!
  * <https://github.com/ozkriff/zemeroth>
  * <https://athorus.itch.io/ltd>: Le Train Dispatcher allows you to route trains in a fully simulated rail network. Particular care has been taken on the realistic management of light signals (block systems, switches protection), train physics and curve tracing.
  * <https://github.com/Piripant/sudoku>
- * <https://github.com/mkhan45/gravity-sim-v2>: An n-body universal gravitation simulator using `specs` and `imgui-rs`
+ * <https://mkhan45.github.io/SIMple-Physics/tabs/about/>: A set of educational physics simulators using `specs`, `nphysics`, and `imgui-rs`
  * <https://github.com/jackmordaunt/fog-of-chess>: Chess but with the fog of war.
  * <https://github.com/pickfire/bugs>: Game with lots of bugs (incomplete with broken AI feature gate)
  * <https://github.com/Slals/gameoflife>: Game of Life with built in structures (submit PR to add structure and make life happen!)
