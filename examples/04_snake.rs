@@ -45,7 +45,7 @@ const SCREEN_SIZE: (f32, f32) = (
     GRID_SIZE.1 as f32 * GRID_CELL_SIZE.1 as f32,
 );
 
-// Here we're defining how many quickly we want our game to update. This will be
+// Here we're defining how often we want our game to update. This will be
 // important later so that we don't have our snake fly across the screen because
 // it's moving a full tile every frame.
 const UPDATES_PER_SECOND: f32 = 8.0;
