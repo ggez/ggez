@@ -114,7 +114,8 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         let mut window_builder = winit::WindowBuilder::new()
             .with_title(window_setup.title.clone())
             .with_dimensions(window_size)
-            .with_resizable(window_mode.resizable);
+            .with_resizable(window_mode.resizable)
+            .with_visibility(window_mode.visible);
 
         window_builder = if !window_setup.icon.is_empty() {
             let icon = load_icon(window_setup.icon.as_ref(), filesystem)?;
@@ -562,6 +563,14 @@ where
                 window.set_position(position.to_logical(hidpi_factor));
             }
         }
+
+        if mode.visible {
+            window.show();
+        }
+        else {
+            window.hide();
+        }
+
         Ok(())
     }
 
