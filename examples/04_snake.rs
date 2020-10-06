@@ -274,7 +274,7 @@ impl Snake {
             last_update_dir: Direction::Right,
             body: body,
             ate: None,
-            next_dir: None
+            next_dir: None,
         }
     }
 

@@ -126,7 +126,9 @@ impl DrawParam {
         let m11 = cosr * self.scale.y;
         let m03 = self.offset.x * (1.0 - m00) - self.offset.y * m01 + self.dest.x;
         let m13 = self.offset.y * (1.0 - m11) - self.offset.x * m10 + self.dest.y;
-        Matrix4::new(m00, m01, 0.0, m03,  m10, m11, 0.0, m13,  0.0, 0.0, 1.0, 0.0,  0.0, 0.0, 0.0, 1.0)
+        Matrix4::new(
+            m00, m01, 0.0, m03, m10, m11, 0.0, m13, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+        )
     }
 
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single

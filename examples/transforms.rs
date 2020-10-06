@@ -4,8 +4,8 @@ use nalgebra;
 
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};
-use ggez::{Context, GameResult};
 use ggez::nalgebra as na;
+use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 

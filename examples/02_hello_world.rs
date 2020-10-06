@@ -9,7 +9,6 @@ use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
-
 // First we make a structure to contain the game's state
 struct MainState {
     frames: usize,
