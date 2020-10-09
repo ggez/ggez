@@ -156,7 +156,7 @@ impl GameState {
     }
 
     pub fn add_particles(&mut self, source_pt: Vec2) {
-        const PARTICLE_COUNT: usize = 100;
+        const PARTICLE_COUNT: usize = 10000;
         for _ in 0..PARTICLE_COUNT {
             let particle = Particle {
                 pos: source_pt,
@@ -173,34 +173,42 @@ impl GameState {
     }
 
     pub fn update(&mut self, frametime: Duration) -> usize {
-        if frametime.as_secs_f64() < 0.017 {
-            // Update all our particle state
-            for particle in &mut self.particles {
-                particle.life -= frametime.as_secs_f32();
-                particle.pos += particle.vel;
-                particle.rot += particle.rvel;
-                // gravity
-                particle.vel -= glam::vec2(0.0, 0.0005);
+        return 0;
+        // Update all our particle state
+        for particle in &mut self.particles {
+            particle.life -= frametime.as_secs_f32();
+            particle.pos += particle.vel;
+            particle.rot += particle.rvel;
+            // gravity
+            particle.vel -= glam::vec2(0.0, 0.0005);
+
+            // Bounce off bottom and sides of screen
+            // Currently, 0,0 to 1,1
+            if particle.pos.y() < 0.0 {
+                particle.vel.set_y(-particle.vel.y());
             }
-            /*
-            // Clean out dead particles.
-            self.particles.retain(|p| p.life > 0.0);
-            // Copy particles into draw call, since they've changed.
-            // If our update framerate were faster than our drawing
-            // frame rate, we'd want to do this on draw rather than update.
-            for pipeline in self.pipelines.iter_mut() {
-                for drawcall in pipeline.drawcalls_mut() {
-                    // Copy all our particles into the draw call
-                    drawcall.clear();
-                    for _particle in &self.particles {
-                        //let q = particle.into_quaddata();
-                        let q = MeshInstance::empty();
-                        drawcall.add(q);
-                    }
+            if particle.pos.x() < 0.0 || particle.pos.x() > 1.0 {
+                particle.vel.set_x(-particle.vel.x());
+            }
+        }
+        /*
+        // Clean out dead particles.
+        self.particles.retain(|p| p.life > 0.0);
+        // Copy particles into draw call, since they've changed.
+        // If our update framerate were faster than our drawing
+        // frame rate, we'd want to do this on draw rather than update.
+        for pipeline in self.pipelines.iter_mut() {
+            for drawcall in pipeline.drawcalls_mut() {
+                // Copy all our particles into the draw call
+                drawcall.clear();
+                for _particle in &self.particles {
+                    //let q = particle.into_quaddata();
+                    let q = MeshInstance::empty();
+                    drawcall.add(q);
                 }
             }
-            */
         }
+        */
         self.particles.len()
     }
 
@@ -338,8 +346,8 @@ fn mainloop(
                     => {
                         // FUCJKLFSd;jflk;jds
                         // Winit doesn't actually give you a position with clicks.
-                        println!("Particles, whee");
                         state.add_particles(glam::vec2(0.5, 0.1));
+                        println!("Total particles: {}", state.particles.len());
                     }
                     _ => (),
                 },
