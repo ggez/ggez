@@ -165,7 +165,7 @@ impl GameState {
                     0.03 + self.rng.rand_float() * 0.005,
                 ),
                 rot: 0.0,
-                rvel: -0.1 + self.rng.rand_float() * 0.2,
+                rvel: -0.05 + self.rng.rand_float() * 0.1,
                 life: 1.5,
             };
             self.particles.push(particle);
@@ -261,7 +261,7 @@ fn mainloop(
     use winit::event::{Event, WindowEvent};
     use winit::event_loop::ControlFlow;
     let mut state = GameState::new(gl);
-    state.add_particles(glam::vec2(-0.5, -1.0));
+    state.add_particles(glam::vec2(0.5, 0.1));
     let (vend, rend, vers, shader_vers) = state.ctx.get_info();
     info!(
         "GL context created.
@@ -338,7 +338,8 @@ fn mainloop(
                     => {
                         // FUCJKLFSd;jflk;jds
                         // Winit doesn't actually give you a position with clicks.
-                        state.add_particles(glam::vec2(-0.5, -1.0));
+                        println!("Particles, whee");
+                        state.add_particles(glam::vec2(0.5, 0.1));
                     }
                     _ => (),
                 },
