@@ -26,15 +26,39 @@ struct GameState {
     particles: Vec<Particle>,
     passes: Vec<RenderPass>,
     pipelines: Vec<Box<dyn Pipeline<BatchType = MeshBatch>>>,
+
+    particle_texture: Texture,
+    particle_mesh: Mesh,
 }
 
 impl GameState {
+    fn update_mesh_pipeline(&mut self) {
+        // Mesh pipeline is always pipeline 0 here, for reasons
+        for batch in self.pipelines[0].batches().iter_mut() {
+            batch.clear();
+            for particle in self.particles.iter() {
+                let mut q = MeshInstance::empty();
+                let trans = Mat4::from_scale_rotation_translation(
+                    Vec3::new(0.1, 0.1, 0.1),
+                    Quat::from_rotation_z(particle.rot * 2.0 * std::f32::consts::PI),
+                    Vec3::new(
+                        particle.pos.x() * 2.0 - 1.0,
+                        particle.pos.y() * 2.0 - 1.0,
+                        0.0,
+                    ),
+                );
+                q.model_transform = trans.to_cols_array();
+                batch.add(q);
+            }
+        }
+    }
+
     pub fn new(gl: glow::Context) -> Self {
         let ctx = Rc::new(GlContext::new(gl));
         let mut passes = vec![];
         let mut pipelines: Vec<Box<dyn Pipeline<BatchType = MeshBatch> + 'static>> = vec![];
         let mut rng = oorandom::Rand32::new(12345);
-        unsafe {
+        let (particle_mesh, particle_texture) = unsafe {
             let particle_texture = {
                 let image_bytes = include_bytes!("../src/data/wabbit_alpha.png");
                 let image_rgba = image::load_from_memory(image_bytes).unwrap().to_rgba();
@@ -61,7 +85,7 @@ impl GameState {
             // VBO's, then the Batch contains the VAO that associates them to
             // the shader, so that happens when the Batch is created.
             // Yeah, that works.
-            let mesh = {
+            let particle_mesh = {
                 let verts = vec![
                     Vertex {
                         pos: [0.0, 0.0, 0.0, 1.0],
@@ -92,7 +116,7 @@ impl GameState {
             let mut batch = MeshBatch::new(
                 ctx.clone(),
                 particle_texture.clone(),
-                mesh,
+                particle_mesh.clone(),
                 SamplerSpec::default(),
                 &mesh_pipeline,
             );
@@ -116,7 +140,8 @@ impl GameState {
             // Make render pass rendering to screen
             let screen_pass = RenderPass::new_screen(&*ctx, 800, 600);
             passes.push(screen_pass);
-        }
+            (particle_mesh, particle_texture)
+        };
 
         Self {
             ctx,
@@ -124,6 +149,9 @@ impl GameState {
             particles: vec![],
             passes,
             pipelines: pipelines,
+
+            particle_mesh,
+            particle_texture,
         }
     }
 
@@ -315,6 +343,7 @@ fn mainloop(
                     _ => (),
                 },
                 Event::RedrawRequested(_) => {
+                    state.update_mesh_pipeline();
                     for pass in state.passes.iter_mut() {
                         pass.draw(&*state.ctx, Some((0.1, 0.2, 0.3, 1.0)), &state.pipelines);
                     }

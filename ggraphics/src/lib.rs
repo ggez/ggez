@@ -814,6 +814,8 @@ pub trait Pipeline: std::fmt::Debug {
     fn new_batch(&mut self, texture: Texture, sampler: SamplerSpec) -> Self::BatchType;
     /// Replace batches in the pipeline with the given ones
     fn set_batches(&mut self, bs: Vec<Self::BatchType>);
+    /// Return slice of batches for mutation
+    fn batches(&mut self) -> &mut Vec<Self::BatchType>;
 }
 
 /// A pipeline for drawing arbitrary meshes
@@ -880,6 +882,10 @@ impl Pipeline for MeshPipeline {
 
     fn set_batches(&mut self, bs: Vec<Self::BatchType>) {
         self.batches = bs;
+    }
+
+    fn batches(&mut self) -> &mut Vec<Self::BatchType> {
+        &mut self.batches
     }
 }
 
