@@ -909,6 +909,11 @@ pub fn drawable_size(context: &Context) -> (f32, f32) {
         .unwrap_or((0.0, 0.0))
 }
 
+/// Return raw window context
+pub fn window_raw(context: &mut Context) -> &mut glutin::WindowedContext<glutin::PossiblyCurrent> {
+    &mut context.gfx_context.window
+}
+
 /// Returns raw `gfx-rs` state objects, if you want to use `gfx-rs` to write
 /// your own graphics pipeline then this gets you the interfaces you need
 /// to do so.
