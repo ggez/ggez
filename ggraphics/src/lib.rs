@@ -56,7 +56,6 @@ use log::*;
 // Shortcuts for various OpenGL types.
 
 type GlTexture = <Context as glow::HasContext>::Texture;
-//type GlSampler = <Context as glow::HasContext>::Sampler;
 type GlProgram = <Context as glow::HasContext>::Program;
 //type GlVertexArray = <Context as glow::HasContext>::VertexArray;
 type GlFramebuffer = <Context as glow::HasContext>::Framebuffer;
@@ -72,8 +71,6 @@ type GlUniformLocation = <Context as glow::HasContext>::UniformLocation;
 pub struct GlContext {
     /// The OpenGL context.
     pub gl: Rc<glow::Context>,
-    // /// The list of render passes.
-    //pub passes: Vec<RenderPass>,
     /// Samplers are cached and managed entirely by the GlContext.
     /// You usually only need a few of them so there's no point freeing
     /// them separately, you just ask for the one you want and it gives
