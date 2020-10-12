@@ -69,11 +69,6 @@ impl GameState {
             // Render that texture to the screen
             let shader = GlContext::default_shader(&ctx);
             let projection = Mat4::orthographic_rh_gl(-1.0, 1.0, -1.0, 1.0, 1.0, -1.0);
-            /*
-            let mut pipeline = QuadPipeline::new(ctx.clone(), shader.clone(), projection);
-            pipeline.new_drawcall(particle_texture.clone(), SamplerSpec::default());
-            pipelines.push(Box::new(pipeline));
-            */
 
             // Make pipeline for meshes.
             // TODO: This at least makes the resource dependencies clear:
@@ -156,8 +151,14 @@ impl GameState {
     }
 
     pub fn add_particles(&mut self, source_pt: Vec2) {
-        const PARTICLE_COUNT: usize = 10000;
-        for _ in 0..PARTICLE_COUNT {
+        // What's a Nice Number bigger than 1 and smaller than 2?
+        // Well our choices are the Golden Ratio, or...
+        let particle_count = if self.particles.len() == 0 {
+            1000
+        } else {
+            (self.particles.len() as f32 * std::f32::consts::SQRT_2) as usize;
+        };
+        for _ in 0..particle_count {
             let particle = Particle {
                 pos: source_pt,
                 vel: glam::vec2(
@@ -173,7 +174,6 @@ impl GameState {
     }
 
     pub fn update(&mut self, frametime: Duration) -> usize {
-        return 0;
         // Update all our particle state
         for particle in &mut self.particles {
             particle.life -= frametime.as_secs_f32();
