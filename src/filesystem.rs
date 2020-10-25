@@ -29,6 +29,7 @@
 use std::env;
 use std::fmt;
 use std::io;
+use std::io::SeekFrom;
 use std::path;
 
 use directories::ProjectDirs;
@@ -87,6 +88,14 @@ impl io::Write for File {
     fn flush(&mut self) -> io::Result<()> {
         match *self {
             File::VfsFile(ref mut f) => f.flush(),
+        }
+    }
+}
+
+impl io::Seek for File {
+    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        match *self {
+            File::VfsFile(ref mut f) => f.seek(pos),
         }
     }
 }
