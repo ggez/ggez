@@ -156,7 +156,7 @@ impl GameState {
         let particle_count = if self.particles.len() == 0 {
             1000
         } else {
-            (self.particles.len() as f32 * std::f32::consts::SQRT_2) as usize;
+            (self.particles.len() as f32 * std::f32::consts::SQRT_2) as usize - self.particles.len()
         };
         for _ in 0..particle_count {
             let particle = Particle {
