@@ -6,6 +6,7 @@ use ggez::event::{self, Axis, Button, GamepadId, KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, DrawMode};
 use ggez::input;
 use ggez::{Context, GameResult};
+use glam::*;
 
 struct MainState {
     pos_x: f32,
@@ -51,7 +52,7 @@ impl event::EventHandler for MainState {
             },
             graphics::WHITE,
         )?;
-        graphics::draw(ctx, &rectangle, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
+        graphics::draw(ctx, &rectangle, (glam::Vec2::new(0.0, 0.0),))?;
         graphics::present(ctx)?;
         Ok(())
     }

@@ -69,8 +69,8 @@
 use ggez;
 use ggez::event;
 use ggez::graphics::{self, DrawParam};
-use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
+use glam::*;
 
 /// This is a nice aqua test color that will look a lot brighter
 /// than it should if we mess something up.
@@ -90,7 +90,7 @@ impl MainState {
         let demo_mesh = graphics::Mesh::new_circle(
             ctx,
             graphics::DrawMode::fill(),
-            na::Point2::new(0.0, 0.0),
+            Vec2::new(0.0, 0.0),
             100.0,
             2.0,
             AQUA,
@@ -133,7 +133,7 @@ impl event::EventHandler for MainState {
         graphics::draw(
             ctx,
             &self.square_mesh,
-            DrawParam::default().dest(na::Point2::new(200.0, 100.0)),
+            DrawParam::default().dest(Vec2::new(200.0, 100.0)),
         )?;
 
         // Draw things partially over the white square so we can see
@@ -144,38 +144,38 @@ impl event::EventHandler for MainState {
         graphics::draw(
             ctx,
             &self.demo_mesh,
-            DrawParam::default().dest(na::Point2::new(150.0, 200.0)),
+            DrawParam::default().dest(Vec2::new(150.0, 200.0)),
         )?;
 
         // image
         graphics::draw(
             ctx,
             &self.demo_image,
-            DrawParam::default().dest(na::Point2::new(450.0, 200.0)),
+            DrawParam::default().dest(Vec2::new(450.0, 200.0)),
         )?;
 
         // text
         graphics::draw(
             ctx,
             &self.demo_text,
-            DrawParam::default().dest(na::Point2::new(150.0, 135.0)),
+            DrawParam::default().dest(Vec2::new(150.0, 135.0)),
         )?;
 
         // spritebatch
         self.demo_spritebatch.add(
             DrawParam::default()
-                .dest(na::Point2::new(250.0, 350.0))
-                .scale(na::Vector2::new(0.25, 0.25)),
+                .dest(Vec2::new(250.0, 350.0))
+                .scale(Vec2::new(0.25, 0.25)),
         );
         self.demo_spritebatch.add(
             DrawParam::default()
-                .dest(na::Point2::new(250.0, 425.0))
-                .scale(na::Vector2::new(0.1, 0.1)),
+                .dest(Vec2::new(250.0, 425.0))
+                .scale(Vec2::new(0.1, 0.1)),
         );
         graphics::draw(
             ctx,
             &self.demo_spritebatch,
-            DrawParam::default().dest(na::Point2::new(0.0, 0.0)),
+            DrawParam::default().dest(Vec2::new(0.0, 0.0)),
         )?;
         self.demo_spritebatch.clear();
 

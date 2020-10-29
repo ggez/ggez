@@ -49,7 +49,6 @@ pub(crate) mod text;
 pub(crate) mod types;
 
 pub use mint;
-pub(crate) use nalgebra as na;
 
 pub mod spritebatch;
 
@@ -383,12 +382,7 @@ gfx_defines! {
 
 impl fmt::Display for InstanceProperties {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut matrix_vec: Vec<f32> = vec![];
-        matrix_vec.extend(&self.col1);
-        matrix_vec.extend(&self.col2);
-        matrix_vec.extend(&self.col3);
-        matrix_vec.extend(&self.col4);
-        let matrix = na::Matrix4::from_column_slice(&matrix_vec);
+        let matrix = Matrix4::from_cols_array_2d(&[self.col1, self.col2, self.col3, self.col4]);
         writeln!(
             f,
             "Src: ({},{}+{},{})",
@@ -777,7 +771,7 @@ pub fn transform(context: &Context) -> mint::ColumnMatrix4<f32> {
 /// transform matrix by turning it into a [`DrawTransform`](struct.DrawTransform.html):
 ///
 /// ```rust,no_run
-/// # use ggez::nalgebra as na;
+/// # use ggez::mint;
 /// # use ggez::*;
 /// # use ggez::graphics::*;
 /// # fn main() {

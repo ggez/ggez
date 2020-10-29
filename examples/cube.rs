@@ -15,8 +15,9 @@ use gfx::Factory;
 
 use ggez::event;
 use ggez::graphics;
-use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
+use glam::*;
+use nalgebra as na;
 use std::env;
 use std::f32;
 use std::path;
@@ -229,8 +230,8 @@ impl event::EventHandler for MainState {
         }
 
         // Do ggez drawing
-        let dest_point1 = na::Point2::new(10.0, 210.0);
-        let dest_point2 = na::Point2::new(10.0, 250.0);
+        let dest_point1 = Vec2::new(10.0, 210.0);
+        let dest_point2 = Vec2::new(10.0, 250.0);
         // graphics::draw(ctx, &self.text1, (dest_point1,))?;
         // graphics::draw(ctx, &self.text2, (dest_point2,))?;
 

@@ -54,7 +54,8 @@ toml = "0.5"
 log = "0.4"
 lyon = "0.14"
 smart-default = "0.6"
-nalgebra = {version = "0.23", features = ["mint"]}
+glam = { version = "0.9", features = ["mint"]}
+#nalgebra = {version = "0.23", features = ["mint"]}
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5"
 gilrs = "0.8"
@@ -65,7 +66,7 @@ chrono = "0.4"
 fern = "0.6"
 oorandom = "11"
 structopt = "0.3"
-glam = { version = "0.9", features = ["mint"]}
+nalgebra = "0.23"
 
 skeptic = "0.13"
 getrandom = "0.2"

@@ -19,7 +19,7 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// ```rust,no_run
 /// # use ggez::*;
 /// # use ggez::graphics::*;
-/// # use ggez::nalgebra::Point2;
+/// # use ggez::mint::Point2;
 /// # fn main() -> GameResult {
 /// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
 /// let mesh: Mesh = MeshBuilder::new()
@@ -31,7 +31,7 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// A more sophisticated example:
 ///
 /// ```rust,no_run
-/// use ggez::{Context, GameResult, nalgebra as na};
+/// use ggez::{Context, GameResult};
 /// use ggez::graphics::{self, DrawMode, MeshBuilder};
 ///
 /// fn draw_danger_signs(ctx: &mut Context) -> GameResult {

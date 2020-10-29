@@ -4,9 +4,9 @@ use ggez;
 
 use ggez::event;
 use ggez::graphics;
-use ggez::nalgebra::Point2;
 use ggez::timer;
 use ggez::{Context, GameResult};
+use glam::*;
 use oorandom::Rand32;
 use std::env;
 use std::f32::consts::PI;
@@ -24,13 +24,13 @@ impl MainState {
         let mesh = graphics::MeshBuilder::new()
             .circle(
                 graphics::DrawMode::stroke(4.0),
-                Point2::new(0.0, 0.0),
+                Vec2::new(0.0, 0.0),
                 8.0,
                 1.0,
                 (0, 0, 255).into(),
             )
             .line(
-                &[Point2::new(0.0, 0.0), Point2::new(8.0, 0.0)],
+                &[Vec2::new(0.0, 0.0), Vec2::new(8.0, 0.0)],
                 2.0,
                 (255, 255, 0).into(),
             )?
@@ -47,7 +47,7 @@ impl MainState {
                 let y = y as f32;
 
                 let p = graphics::DrawParam::new()
-                    .dest(Point2::new(x * 16.0, y * 16.0))
+                    .dest(Vec2::new(x * 16.0, y * 16.0))
                     .rotation(rng.rand_float() * TWO_PI);
 
                 mesh_batch.add(p);

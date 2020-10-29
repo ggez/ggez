@@ -231,7 +231,7 @@ impl Text {
         P: Into<mint::Point2<f32>>,
     {
         self.bounds = Point2::from(bounds.into());
-        if self.bounds.x == f32::INFINITY {
+        if self.bounds.x() == f32::INFINITY {
             // Layouts don't make any sense if we don't wrap text at all.
             self.layout = Layout::default();
         } else {
@@ -276,27 +276,27 @@ impl Text {
 
         let relative_dest_x = {
             // This positions text within bounds with relative_dest being to the left, always.
-            let mut dest_x = relative_dest.x;
-            if self.bounds.x != f32::INFINITY {
+            let mut dest_x = relative_dest.x();
+            if self.bounds.x() != f32::INFINITY {
                 use glyph_brush::Layout::Wrap;
                 match self.layout {
                     Wrap {
                         h_align: Align::Center,
                         ..
-                    } => dest_x += self.bounds.x * 0.5,
+                    } => dest_x += self.bounds.x() * 0.5,
                     Wrap {
                         h_align: Align::Right,
                         ..
-                    } => dest_x += self.bounds.x,
+                    } => dest_x += self.bounds.x(),
                     _ => (),
                 }
             }
             dest_x
         };
-        let relative_dest = (relative_dest_x, relative_dest.y);
+        let relative_dest = (relative_dest_x, relative_dest.y());
         VariedSection {
             screen_position: relative_dest,
-            bounds: (self.bounds.x, self.bounds.y),
+            bounds: (self.bounds.x(), self.bounds.y()),
             layout: self.layout,
             text: sections,
             ..Default::default()

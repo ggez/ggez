@@ -6,9 +6,9 @@ use ggez;
 
 use ggez::event;
 use ggez::graphics;
-use ggez::nalgebra::{Point2, Vector2};
 use ggez::timer;
 use ggez::{Context, GameResult};
+use glam::*;
 use std::env;
 use std::path;
 
@@ -44,8 +44,8 @@ impl event::EventHandler for MainState {
                 let x = x as f32;
                 let y = y as f32;
                 let p = graphics::DrawParam::new()
-                    .dest(Point2::new(x * 10.0, y * 10.0))
-                    .scale(Vector2::new(
+                    .dest(Vec2::new(x * 10.0, y * 10.0))
+                    .scale(Vec2::new(
                         ((time % cycle * 2) as f32 / cycle as f32 * 6.28)
                             .cos()
                             .abs()
@@ -60,16 +60,16 @@ impl event::EventHandler for MainState {
             }
         }
         let param = graphics::DrawParam::new()
-            .dest(Point2::new(
+            .dest(Vec2::new(
                 ((time % cycle) as f32 / cycle as f32 * 6.28).cos() * 50.0 - 350.0,
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin() * 50.0 - 450.0,
             ))
-            .scale(Vector2::new(
+            .scale(Vec2::new(
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
             ))
             .rotation((time % cycle) as f32 / cycle as f32 * 6.28)
-            .offset(Point2::new(750.0, 750.0));
+            .offset(Vec2::new(750.0, 750.0));
         graphics::draw(ctx, &self.spritebatch, param)?;
         self.spritebatch.clear();
 

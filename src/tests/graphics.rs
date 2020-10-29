@@ -168,8 +168,8 @@ fn test_transform_stack_order() {
     let t2 = p2.to_matrix();
     graphics::push_transform(ctx, Some(t1));
     graphics::mul_transform(ctx, t2);
-    let res = crate::nalgebra::Matrix4::<f32>::from(graphics::transform(ctx));
-    let m1: crate::nalgebra::Matrix4<f32> = t1.into();
-    let m2: crate::nalgebra::Matrix4<f32> = t2.into();
+    let res = crate::graphics::Matrix4::from(graphics::transform(ctx));
+    let m1: crate::graphics::Matrix4 = t1.into();
+    let m2: crate::graphics::Matrix4 = t2.into();
     assert_eq!(res, m2 * m1);
 }

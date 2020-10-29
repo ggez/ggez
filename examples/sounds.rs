@@ -5,8 +5,9 @@ use ggez::audio::SoundSource;
 use ggez::event;
 use ggez::graphics;
 use ggez::input;
-use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
+
+use glam::*;
 
 use std::env;
 use std::path;
@@ -78,12 +79,12 @@ impl event::EventHandler for MainState {
         graphics::queue_text(
             ctx,
             &graphics::Text::new("Press number keys 1-6 to play a sound, or escape to quit."),
-            na::Point2::origin(),
+            Vec2::zero(),
             None,
         );
         graphics::draw_queued_text(
             ctx,
-            (na::Point2::new(100.0, 100.0),),
+            (Vec2::new(100.0, 100.0),),
             None,
             graphics::FilterMode::Linear,
         )?;
