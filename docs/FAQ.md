@@ -76,6 +76,12 @@ Rendering text to a bitmap is actually pretty computationally expensive.  If you
 
 Ideally you'd be able to use a glyph cache to render letters to a texture once, and then just create a mesh that uses the bits of that texture to draw text.  There's a couple partial implementations, such as the [gfx_glyph crate](https://crates.io/crates/gfx_glyph).
 
+# That's lame, can't I just compile my game in debug mode but ggez with optimizations on?
+
+Actually, as of rustc 1.41, you can!  See
+<https://doc.rust-lang.org/cargo/reference/profiles.html#overrides> for info
+on how to do that.
+
 # Drawing a few hundred images or shapes is slow!
 
 Again, debug mode is slow.  Plus, each single draw call has some overhead.  If building in release mode still isn't fast enough, then look into using `SpriteBatch` to draw a bunch of chunks from a spritesheet (also known as an atlas).  If you're drawing geometry, instead of using `graphics::rectangle()` or `graphics::circle()` and such, which create a new `Mesh` on each call and then throw it away, create and store a `Mesh` and draw it many times, or use a `MeshBuilder` to build a single `Mesh` out of many separate shapes.
