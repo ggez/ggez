@@ -39,6 +39,7 @@
 #![warn(bare_trait_objects)]
 #![warn(missing_copy_implementations)]
 
+use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::convert::TryFrom;
@@ -585,7 +586,7 @@ impl MeshInstance {
     /// but with repr(C) it's probably safe enough.
     ///
     /// Also returns the name of the shader variable associated with each field...
-    unsafe fn layout() -> Vec<(&'static str, usize, usize)> {
+    unsafe fn _layout() -> Vec<(&'static str, usize, usize)> {
         // It'd be nice if we could make this `const` but
         // doing const pointer arithmatic is unstable.
         let thing = MeshInstance::empty();
@@ -616,7 +617,8 @@ pub trait Batch {
     unsafe fn draw(&self, gl: &Context);
 }
 
-/// A mesh that will be drawn multiple times with a single draw call.
+/// A mesh that will be drawn multiple times with different instance
+/// data each time.
 ///
 /// Since we don't actually have instanced drawing in ES 2, we still loop
 /// over a bunch of `MeshInstance` "instances" doing a separate draw call
@@ -638,9 +640,9 @@ pub struct MeshBatch {
 impl MeshBatch {
     /// Sets all the vertex pointers for the MeshInstance
     /// TODO: ...this is wrong, we need to set vertex pointers for the Vertex.
-    unsafe fn set_vertex_pointers(ctx: &GlContext, shader: &ShaderHandle) {
+    unsafe fn _set_vertex_pointers(ctx: &GlContext, shader: &ShaderHandle) {
         let gl = &*ctx.gl;
-        let layout = MeshInstance::layout();
+        let layout = MeshInstance::_layout();
         for (name, offset, size) in layout {
             info!("Layout: {} offset, {} size", offset, size);
             let element_size = mem::size_of::<f32>();
@@ -717,18 +719,21 @@ impl MeshBatch {
             }
         }
     }
+}
 
-    /// Add a new instance to the quad data.
-    /// Instances are cached between `draw()` invocations.
-    pub fn add(&mut self, mesh: MeshInstance) {
-        self.instances.push(mesh);
+impl Batch for MeshBatch {
+    type Instance = MeshInstance;
+    /// TODO: Docs
+    fn add(&mut self, quad: Self::Instance) {
+        self.instances.push(quad);
     }
 
-    /// Empty all instances out of the instance buffer.
-    pub fn clear(&mut self) {
+    /// TODO: docs
+    fn clear(&mut self) {
         self.instances.clear();
     }
 
+    /// TODO: docs
     unsafe fn draw(&self, gl: &Context) {
         // Bind texture
         gl.active_texture(glow::TEXTURE0);
@@ -777,26 +782,221 @@ impl MeshBatch {
     }
 }
 
-impl Batch for MeshBatch {
-    type Instance = MeshInstance;
-    /// TODO: Refactor
-    fn add(&mut self, quad: Self::Instance) {
-        self.add(quad);
+/// A bunch of quads that are drawn with a single draw call.
+///
+/// The cost of this is making a bunch of new quads and filling a
+/// new vertex buffer with the geometry data.  So we'll see how that goes.
+#[derive(Debug)]
+pub struct QuadBatch {
+    ctx: Rc<GlContext>,
+    texture: Texture,
+    mesh: Mesh,
+    mesh_stale: Cell<bool>,
+    sampler: SamplerSpec,
+    /// The "instances" that will be drawn.
+    ///
+    /// TODO: Different UV's for each instance
+    pub instances: Vec<MeshInstance>,
+    texture_location: GlUniformLocation,
+
+    inst_uniform_location: GlUniformLocation,
+}
+
+impl QuadBatch {
+    /// Sets all the vertex pointers for the MeshInstance
+    /// TODO: ...this is wrong, we need to set vertex pointers for the Vertex.
+    unsafe fn _set_vertex_pointers(ctx: &GlContext, shader: &ShaderHandle) {
+        let gl = &*ctx.gl;
+        let layout = MeshInstance::_layout();
+        for (name, offset, size) in layout {
+            info!("Layout: {} offset, {} size", offset, size);
+            let element_size = mem::size_of::<f32>();
+            let attrib_location = gl.get_attrib_location(shader.program, name).unwrap();
+            gl.vertex_attrib_pointer_f32(
+                attrib_location,
+                (size / element_size) as i32,
+                glow::FLOAT,
+                false,
+                mem::size_of::<MeshInstance>() as i32,
+                offset as i32,
+            );
+            gl.enable_vertex_attrib_array(attrib_location);
+        }
     }
 
-    /// TODO: Refactor
-    fn clear(&mut self) {
-        self.clear();
+    /// Re-create geometry for all our stuff.
+    fn rebuild_mesh(&self) {
+        self.mesh_stale.set(false);
+        // For now we do all the transforming on the CPU,
+        // might be a better way...?
+        let verts: &mut Vec<Vertex> = &mut Vec::with_capacity(16);
+        let indices = &mut Vec::with_capacity(16);
+        for instance in self.instances.iter() {
+            //mat4 mvp = u_ModelTransform * u_Projection;
+            //gl_Position = mvp * a_pos;
+            let quad = [
+                Vertex {
+                    pos: [0.0, 0.0, 0.0, 1.0],
+                    color: [0.0, 0.0, 1.0, 1.0],
+                    uv: [0.0, 0.0],
+                },
+                Vertex {
+                    pos: [1.0, 0.0, 0.0, 1.0],
+                    color: [1.0, 0.0, 1.0, 1.0],
+                    uv: [1.0, 0.0],
+                },
+                Vertex {
+                    pos: [0.0, 1.0, 0.0, 1.0],
+                    color: [0.0, 1.0, 1.0, 1.0],
+                    uv: [0.0, 1.0],
+                },
+                Vertex {
+                    pos: [1.0, 1.0, 0.0, 1.0],
+                    color: [1.0, 1.0, 0.0, 1.0],
+                    uv: [1.0, 1.0],
+                },
+            ];
+            let base = i16::try_from(verts.len()).unwrap();
+            let is = vec![base + 0, base + 1, base + 2, base + 2, base + 3, base + 1];
+            verts.extend(&quad[..]);
+            indices.extend(is)
+        }
     }
 
-    /// TODO: Refactor
-    unsafe fn draw(&self, gl: &Context) {
-        MeshBatch::draw(self, gl);
+    /// New empty `QuadBatch` using the given pipeline.
+    pub fn new(
+        ctx: Rc<GlContext>,
+        texture: Texture,
+        sampler: SamplerSpec,
+        pipeline: &MeshPipeline,
+    ) -> Self {
+        let gl = &*ctx.gl;
+        // TODO: Audit unsafe
+        unsafe {
+            let mesh = MeshHandle::new(&*ctx, &[], &[]).into_shared();
+            // Here we tell our VAO what properties our various VBO's contain
+            // First, set mesh VBO...
+            // pos, color, norm, uv,
+            gl.bind_buffer(glow::ARRAY_BUFFER, Some(mesh.vbo));
+
+            // Then set mesh EBO (index buffer)
+            gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(mesh.ebo));
+
+            let layout = Vertex::layout();
+            for (name, offset, size) in layout {
+                info!("Layout: {} offset, {} size", offset, size);
+                let element_size = mem::size_of::<f32>();
+                let attrib_location = gl
+                    .get_attrib_location(pipeline.shader.program, name)
+                    // TODO: make this not always need a format!()
+                    .expect(&format!("Unknown attrib name in shader: {}", name));
+                gl.vertex_attrib_pointer_f32(
+                    attrib_location,
+                    (size / element_size) as i32,
+                    glow::FLOAT,
+                    false,
+                    mem::size_of::<Vertex>() as i32,
+                    offset as i32,
+                );
+                gl.enable_vertex_attrib_array(attrib_location);
+            }
+
+            // TODO: We have some uniforms that are set per-batch,
+            // and some that are set per-instance.  Currently we just kinda
+            // mongle them both.
+            let texture_location = gl
+                .get_uniform_location(pipeline.shader.program, "u_Tex")
+                .unwrap();
+
+            let inst_uniform_location = gl
+                .get_uniform_location(pipeline.shader.program, "u_ModelTransform")
+                .unwrap();
+
+            Self {
+                ctx: ctx,
+                mesh,
+                mesh_stale: Cell::new(true),
+                texture,
+                sampler,
+                texture_location,
+                inst_uniform_location,
+                instances: vec![],
+            }
+        }
     }
 }
 
-/// TODO: Docs
-/// hnyrn
+impl Batch for QuadBatch {
+    type Instance = MeshInstance;
+    /// TODO: Docs
+    fn add(&mut self, quad: Self::Instance) {
+        self.instances.push(quad);
+        self.mesh_stale.set(true);
+    }
+
+    /// TODO: docs
+    fn clear(&mut self) {
+        self.instances.clear();
+        self.mesh_stale.set(true);
+    }
+
+    /// TODO: docs
+    unsafe fn draw(&self, gl: &Context) {
+        // Bind texture
+        gl.active_texture(glow::TEXTURE0);
+        gl.bind_texture(glow::TEXTURE_2D, Some(self.texture.tex));
+        gl.uniform_1_i32(Some(&self.texture_location), 0);
+
+        // Set sampler info
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_MIN_FILTER,
+            self.sampler.min_filter.to_gl() as i32,
+        );
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_MAG_FILTER,
+            self.sampler.mag_filter.to_gl() as i32,
+        );
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_WRAP_S,
+            self.sampler.wrap.to_gl() as i32,
+        );
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_WRAP_T,
+            self.sampler.wrap.to_gl() as i32,
+        );
+
+        // Bind buffers
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.mesh.vbo));
+        gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(self.mesh.ebo));
+
+        // Now we schlorp all our data from CPU memory into the GPU
+        // if we need to
+        if self.mesh_stale.get() {
+            self.rebuild_mesh();
+        }
+        // Draw stuff.
+        for i in &self.instances {
+            gl.uniform_matrix_4_f32_slice(
+                Some(&self.inst_uniform_location),
+                false,
+                &i.model_transform,
+            );
+            gl.draw_elements(
+                glow::TRIANGLES,
+                self.mesh.count as i32,
+                glow::UNSIGNED_SHORT,
+                0,
+            );
+        }
+    }
+}
+
+/// A Pipeline is basically a bunch of batches that are drawn all
+/// with the same shader.
 pub trait Pipeline: std::fmt::Debug {
     /// The type of batch for this particular type of pipeline...
     ///
@@ -860,7 +1060,6 @@ impl MeshPipeline {
 }
 
 impl Pipeline for MeshPipeline {
-    //type Instance = MeshInstance;
     type BatchType = MeshBatch;
     /// foo
     /// TODO: Docs
@@ -931,13 +1130,13 @@ impl TextureRenderTarget {
         );
 
         /*
-         * TODO: This panics for some reason
+        * TODO: This panics for some reason
         gl.bind_renderbuffer(glow::RENDERBUFFER, Some(depth));
         gl.renderbuffer_storage(
-            glow::RENDERBUFFER,
-            glow::DEPTH_COMPONENT,
-            width as i32,
-            height as i32,
+        glow::RENDERBUFFER,
+        glow::DEPTH_COMPONENT,
+        width as i32,
+        height as i32,
         );
         */
 
@@ -950,12 +1149,12 @@ impl TextureRenderTarget {
             0,
         );
         /*
-         * TODO: This panics for some reason
+        * TODO: This panics for some reason
         gl.framebuffer_renderbuffer(
-            glow::FRAMEBUFFER,
-            glow::DEPTH_ATTACHMENT,
-            glow::RENDERBUFFER,
-            Some(depth),
+        glow::FRAMEBUFFER,
+        glow::DEPTH_ATTACHMENT,
+        glow::RENDERBUFFER,
+        Some(depth),
         );
         */
 
