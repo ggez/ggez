@@ -1,14 +1,13 @@
 //! Basic hello world example.
 
-use cgmath;
 use ggez;
+use glam; // Requires feature "mint"
 
 use ggez::event;
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
-
 
 // First we make a structure to contain the game's state
 struct MainState {
@@ -20,7 +19,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         // The ttf file will be in your resources directory. Later, we
         // will mount that directory so we can omit it in the path here.
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
+        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
         let text = graphics::Text::new(("Hello world!", font, 48.0));
 
         let s = MainState { frames: 0, text };
@@ -43,10 +42,7 @@ impl event::EventHandler for MainState {
 
         // Drawables are drawn from their top-left corner.
         let offset = self.frames as f32 / 10.0;
-        let dest_point = mint::Point2 {
-            x: (offset),
-            y: (offset),
-        };
+        let dest_point = glam::Vec2::new(offset, offset);
         graphics::draw(ctx, &self.text, (dest_point,))?;
         graphics::present(ctx)?;
 

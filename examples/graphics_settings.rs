@@ -4,7 +4,6 @@
 //! Prints instructions to the console.
 
 use ggez;
-use nalgebra;
 use structopt;
 
 use ggez::conf;
@@ -12,13 +11,13 @@ use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};
 use ggez::timer;
 use ggez::{Context, GameResult};
+use glam;
 use structopt::StructOpt;
 
 use std::env;
 use std::path;
 
-use ggez::nalgebra as na;
-type Point2 = na::Point2<f32>;
+type Point2 = glam::Vec2;
 
 struct WindowSettings {
     toggle_fullscreen: bool,

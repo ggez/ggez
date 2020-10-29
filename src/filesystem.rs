@@ -27,8 +27,8 @@
 //! don't assume it will be secure.
 
 use std::env;
-use std::fmt;
 use std::io;
+use std::io::SeekFrom;
 use std::path;
 
 use directories::ProjectDirs;
@@ -53,20 +53,10 @@ pub struct Filesystem {
 
 /// Represents a file, either in the filesystem, or in the resources zip file,
 /// or whatever.
+#[derive(Debug)]
 pub enum File {
     /// A wrapper for a VFile trait object.
     VfsFile(Box<dyn vfs::VFile>),
-}
-
-impl fmt::Debug for File {
-    // Make this more useful?
-    // But we can't seem to get a filename out of a file,
-    // soooooo.
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            File::VfsFile(ref _file) => write!(f, "VfsFile"),
-        }
-    }
 }
 
 impl io::Read for File {
@@ -87,6 +77,14 @@ impl io::Write for File {
     fn flush(&mut self) -> io::Result<()> {
         match *self {
             File::VfsFile(ref mut f) => f.flush(),
+        }
+    }
+}
+
+impl io::Seek for File {
+    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        match *self {
+            File::VfsFile(ref mut f) => f.seek(pos),
         }
     }
 }

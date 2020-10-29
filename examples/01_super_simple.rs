@@ -3,8 +3,8 @@
 use ggez;
 use ggez::event;
 use ggez::graphics;
-use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
+use glam::*;
 
 struct MainState {
     pos_x: f32,
@@ -29,12 +29,12 @@ impl event::EventHandler for MainState {
         let circle = graphics::Mesh::new_circle(
             ctx,
             graphics::DrawMode::fill(),
-            na::Point2::new(0.0, 0.0),
+            Vec2::new(0.0, 0.0),
             100.0,
             2.0,
             graphics::WHITE,
         )?;
-        graphics::draw(ctx, &circle, (na::Point2::new(self.pos_x, 380.0),))?;
+        graphics::draw(ctx, &circle, (Vec2::new(self.pos_x, 380.0),))?;
 
         graphics::present(ctx)?;
         Ok(())

@@ -33,7 +33,7 @@ where
     srgb: bool,
 
     pub(crate) backend_spec: B,
-    pub(crate) window: glutin::WindowedContext,
+    pub(crate) window: glutin::WindowedContext<glutin::PossiblyCurrent>,
     pub(crate) multisample_samples: u8,
     pub(crate) device: Box<B::Device>,
     pub(crate) factory: Box<B::Factory>,
@@ -53,7 +53,7 @@ where
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
-    pub(crate) glyph_brush: GlyphBrush<'static, DrawParam>,
+    pub(crate) glyph_brush: Rc<RefCell<GlyphBrush<'static, DrawParam>>>,
     pub(crate) glyph_cache: ImageGeneric<B>,
     pub(crate) glyph_state: Rc<RefCell<spritebatch::SpriteBatch>>,
 }
@@ -140,15 +140,17 @@ impl GraphicsContextGeneric<GlBackendSpec> {
                 width: w,
                 height: h,
             } = window
+                .window()
                 .get_outer_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
             let dpi::LogicalSize {
                 width: dw,
                 height: dh,
             } = window
+                .window()
                 .get_inner_size()
                 .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            let hidpi_factor = window.get_hidpi_factor();
+            let hidpi_factor = window.window().get_hidpi_factor();
             debug!(
                 "Window created, desired size {}x{}, hidpi factor {}.",
                 window_mode.width, window_mode.height, hidpi_factor
@@ -261,7 +263,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
         let initial_transform = Matrix4::identity();
         let globals = Globals {
-            mvp_matrix: initial_projection.into(),
+            mvp_matrix: initial_projection.to_cols_array_2d(),
         };
 
         let mut gfx = Self {
@@ -294,7 +296,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             current_shader: Rc::new(RefCell::new(None)),
             shaders: vec![draw],
 
-            glyph_brush,
+            glyph_brush: Rc::new(RefCell::new(glyph_brush)),
             glyph_cache,
             glyph_state,
         };
@@ -321,15 +323,16 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 // having `winit` try to do the image loading for us.
 // see https://github.com/tomaka/winit/issues/661
 pub(crate) fn load_icon(icon_file: &Path, filesystem: &mut Filesystem) -> GameResult<winit::Icon> {
-    use ::image;
-    use ::image::GenericImageView;
+    #[rustfmt::skip]
+    use ::image as imgcrate;
+    use imgcrate::GenericImageView;
     use std::io::Read;
     use winit::Icon;
 
     let mut buf = Vec::new();
     let mut reader = filesystem.open(icon_file)?;
     let _ = reader.read_to_end(&mut buf)?;
-    let i = image::load_from_memory(&buf)?;
+    let i = imgcrate::load_from_memory(&buf)?;
     let image_data = i.to_rgba();
     Icon::from_rgba(image_data.to_vec(), i.width(), i.height()).map_err(|e| {
         let msg = format!("Could not load icon: {:?}", e);
@@ -357,8 +360,10 @@ where
             .modelview_stack
             .last()
             .expect("Transform stack empty; should never happen");
-        let mvp = self.projection * modelview;
-        self.shader_globals.mvp_matrix = mvp.into();
+        // TODO: Verify this is the correct order, row/column
+        let mvp = self.projection * (*modelview);
+        // TODO: This too
+        self.shader_globals.mvp_matrix = mvp.to_cols_array_2d();
     }
 
     /// Pushes a homogeneous transform matrix to the top of the transform
@@ -485,7 +490,7 @@ where
         }
 
         self.screen_rect = rect;
-        self.projection = Matrix4::from(ortho(
+        self.projection = Matrix4::from_cols_array_2d(&ortho(
             rect.x,
             rect.x + rect.w,
             rect.y,
@@ -509,7 +514,7 @@ where
 
     /// Sets window mode from a WindowMode object.
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
-        let window = &self.window;
+        let window = &self.window.window();
 
         window.set_maximized(mode.maximized);
 
@@ -534,9 +539,9 @@ where
         };
         window.set_max_dimensions(max_dimensions);
 
-        let monitor = window.get_current_monitor();
-        match mode.fullscreen_type {
-            FullscreenType::Windowed => {
+        let monitors = window.get_available_monitors();
+        match (mode.fullscreen_type, monitors.last()) {
+            (FullscreenType::Windowed, _) => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
                 window.set_inner_size(dpi::LogicalSize {
@@ -545,14 +550,14 @@ where
                 });
                 window.set_resizable(mode.resizable);
             }
-            FullscreenType::True => {
+            (FullscreenType::True, Some(monitor)) => {
                 window.set_fullscreen(Some(monitor));
                 window.set_inner_size(dpi::LogicalSize {
                     width: f64::from(mode.width),
                     height: f64::from(mode.height),
                 });
             }
-            FullscreenType::Desktop => {
+            (FullscreenType::Desktop, Some(monitor)) => {
                 let position = monitor.get_position();
                 let dimensions = monitor.get_dimensions();
                 let hidpi_factor = window.get_hidpi_factor();
@@ -561,6 +566,7 @@ where
                 window.set_inner_size(dimensions.to_logical(hidpi_factor));
                 window.set_position(position.to_logical(hidpi_factor));
             }
+            _ => panic!("Unable to detect monitor; if you are on Linux Wayland it may be this bug: https://github.com/rust-windowing/winit/issues/793"),
         }
         Ok(())
     }

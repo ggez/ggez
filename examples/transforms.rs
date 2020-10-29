@@ -1,11 +1,10 @@
 //! Demonstrates various projection and matrix fiddling/testing.
 use ggez;
-use nalgebra;
 
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};
 use ggez::{Context, GameResult};
-use ggez::nalgebra as na;
+use glam::*;
 use std::env;
 use std::path;
 
@@ -30,7 +29,7 @@ impl MainState {
                 let fx = x as f32;
                 let fy = y as f32;
                 let fsize = Self::GRID_SIZE as f32;
-                let point = na::Point2::new(fx * Self::GRID_INTERVAL, fy * Self::GRID_INTERVAL);
+                let point = Vec2::new(fx * Self::GRID_INTERVAL, fy * Self::GRID_INTERVAL);
                 let color = graphics::Color::new(fx / fsize, 0.0, fy / fsize, 1.0);
                 gridmesh_builder.circle(
                     DrawMode::fill(),
@@ -61,11 +60,11 @@ impl MainState {
     fn draw_coord_labels(&self, ctx: &mut Context) -> GameResult {
         for x in 0..Self::GRID_SIZE {
             for y in 0..Self::GRID_SIZE {
-                let point = na::Point2::new(
+                let point = Vec2::new(
                     x as f32 * Self::GRID_INTERVAL,
                     y as f32 * Self::GRID_INTERVAL,
                 );
-                let s = format!("({}, {})", point.x, point.y);
+                let s = format!("({}, {})", point.x(), point.y());
                 let t = graphics::Text::new(s);
                 graphics::queue_text(ctx, &t, point, None);
             }
@@ -88,14 +87,14 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
-        let origin: na::Point2<f32> = na::Point2::origin();
+        let origin = Vec2::zero();
         graphics::draw(ctx, &self.gridmesh, (origin, graphics::WHITE))?;
 
         let param = graphics::DrawParam::new()
-            .dest(na::Point2::new(400.0, 400.0))
+            .dest(Vec2::new(400.0, 400.0))
             .rotation(self.pos_x / 100.0)
-            .offset(na::Point2::new(0.5, 0.5))
-            .scale(na::Vector2::new(1.0, 1.0));
+            .offset(Vec2::new(0.5, 0.5))
+            .scale(Vec2::new(1.0, 1.0));
 
         self.draw_coord_labels(ctx)?;
 

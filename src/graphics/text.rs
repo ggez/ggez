@@ -1,6 +1,6 @@
 use glyph_brush::GlyphPositioner;
 use glyph_brush::{self, FontId, Layout, SectionText, VariedSection};
-pub use glyph_brush::{rusttype::Scale, HorizontalAlign as Align};
+pub use glyph_brush::{rusttype::Scale, GlyphBrush, HorizontalAlign as Align};
 use mint;
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -8,6 +8,7 @@ use std::f32;
 use std::fmt;
 use std::io::Read;
 use std::path;
+use std::rc::Rc;
 
 use super::*;
 
@@ -25,6 +26,22 @@ pub const DEFAULT_FONT_SCALE: f32 = 16.0;
 pub struct Font {
     font_id: FontId,
     // Add DebugId?  It makes Font::default() less convenient.
+}
+
+/// The font cache of the engine.
+///
+/// This type can be useful to measure text efficiently without being tied to
+/// the `Context` lifetime.
+#[derive(Clone, Debug)]
+pub struct FontCache {
+    glyph_brush: Rc<RefCell<GlyphBrush<'static, DrawParam>>>,
+}
+
+impl FontCache {
+    /// Returns the width and height of the formatted and wrapped text.
+    pub fn dimensions(&self, text: &Text) -> (u32, u32) {
+        text.calculate_dimensions(&mut self.glyph_brush.borrow_mut())
+    }
 }
 
 /// A piece of text with optional color, font and font scale information.
@@ -214,7 +231,7 @@ impl Text {
         P: Into<mint::Point2<f32>>,
     {
         self.bounds = Point2::from(bounds.into());
-        if self.bounds.x == f32::INFINITY {
+        if self.bounds.x() == f32::INFINITY {
             // Layouts don't make any sense if we don't wrap text at all.
             self.layout = Layout::default();
         } else {
@@ -259,27 +276,27 @@ impl Text {
 
         let relative_dest_x = {
             // This positions text within bounds with relative_dest being to the left, always.
-            let mut dest_x = relative_dest.x;
-            if self.bounds.x != f32::INFINITY {
+            let mut dest_x = relative_dest.x();
+            if self.bounds.x() != f32::INFINITY {
                 use glyph_brush::Layout::Wrap;
                 match self.layout {
                     Wrap {
                         h_align: Align::Center,
                         ..
-                    } => dest_x += self.bounds.x * 0.5,
+                    } => dest_x += self.bounds.x() * 0.5,
                     Wrap {
                         h_align: Align::Right,
                         ..
-                    } => dest_x += self.bounds.x,
+                    } => dest_x += self.bounds.x(),
                     _ => (),
                 }
             }
             dest_x
         };
-        let relative_dest = (relative_dest_x, relative_dest.y);
+        let relative_dest = (relative_dest_x, relative_dest.y());
         VariedSection {
             screen_position: relative_dest,
-            bounds: (self.bounds.x, self.bounds.y),
+            bounds: (self.bounds.x(), self.bounds.y()),
             layout: self.layout,
             text: sections,
             ..Default::default()
@@ -317,13 +334,20 @@ impl Text {
     }
 
     /// Calculates, caches, and returns width and height of formatted and wrapped text.
-    fn calculate_dimensions(&self, context: &mut Context) -> (u32, u32) {
+    fn calculate_dimensions(&self, gb: &mut GlyphBrush<'static, DrawParam>) -> (u32, u32) {
+        if let Ok(metrics) = self.cached_metrics.try_borrow() {
+            if let (Some(width), Some(height)) = (metrics.width, metrics.height) {
+                return (width, height);
+            }
+        }
         let mut max_width = 0;
         let mut max_height = 0;
         {
             let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
             use glyph_brush::GlyphCruncher;
-            let glyphs = context.gfx_context.glyph_brush.glyphs(varied_section);
+
+            let glyphs = gb.glyphs(varied_section);
+
             for positioned_glyph in glyphs {
                 if let Some(rect) = positioned_glyph.pixel_bounding_box() {
                     let font = positioned_glyph.font().expect("Glyph doesn't have a font");
@@ -345,22 +369,17 @@ impl Text {
     }
 
     /// Returns the width and height of the formatted and wrapped text.
-    pub fn dimensions(&self, context: &mut Context) -> (u32, u32) {
-        if let Ok(metrics) = self.cached_metrics.try_borrow() {
-            if let (Some(width), Some(height)) = (metrics.width, metrics.height) {
-                return (width, height);
-            }
-        }
-        self.calculate_dimensions(context)
+    pub fn dimensions(&self, context: &Context) -> (u32, u32) {
+        self.calculate_dimensions(&mut context.gfx_context.glyph_brush.borrow_mut())
     }
 
     /// Returns the width of formatted and wrapped text, in screen coordinates.
-    pub fn width(&self, context: &mut Context) -> u32 {
+    pub fn width(&self, context: &Context) -> u32 {
         self.dimensions(context).0
     }
 
     /// Returns the height of formatted and wrapped text, in screen coordinates.
-    pub fn height(&self, context: &mut Context) -> u32 {
+    pub fn height(&self, context: &Context) -> u32 {
         self.dimensions(context).1
     }
 }
@@ -411,16 +430,20 @@ impl Font {
         // Take a Cow here to avoid this clone where unnecessary?
         // Nah, let's not complicate things more than necessary.
         let v = bytes.to_vec();
-        let font_id = context.gfx_context.glyph_brush.add_font_bytes(v);
+        let font_id = context
+            .gfx_context
+            .glyph_brush
+            .borrow_mut()
+            .add_font_bytes(v);
 
         Ok(Font { font_id })
     }
 
-    /// Returns the baked-in bytes of default font (currently `DejaVuSerif.ttf`).
+    /// Returns the baked-in bytes of default font (currently `LiberationSans-Regular.ttf`).
     pub(crate) fn default_font_bytes() -> &'static [u8] {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/resources/DejaVuSerif.ttf"
+            "/resources/LiberationMono-Regular.ttf"
         ))
     }
 }
@@ -428,6 +451,13 @@ impl Font {
 impl Default for Font {
     fn default() -> Self {
         Font { font_id: FontId(0) }
+    }
+}
+
+/// Obtains the font cache.
+pub fn font_cache(context: &Context) -> FontCache {
+    FontCache {
+        glyph_brush: context.gfx_context.glyph_brush.clone(),
     }
 }
 
@@ -441,7 +471,11 @@ where
 {
     let p = Point2::from(relative_dest.into());
     let varied_section = batch.generate_varied_section(p, color);
-    context.gfx_context.glyph_brush.queue(varied_section);
+    context
+        .gfx_context
+        .glyph_brush
+        .borrow_mut()
+        .queue(varied_section);
 }
 
 /// Exposes `glyph_brush`'s drawing API in case `ggez`'s text drawing is insufficient.
@@ -452,7 +486,7 @@ where
     S: Into<Cow<'a, VariedSection<'a>>>,
     G: GlyphPositioner,
 {
-    let brush = &mut context.gfx_context.glyph_brush;
+    let brush = &mut context.gfx_context.glyph_brush.borrow_mut();
     match custom_layout {
         Some(layout) => brush.queue_custom_layout(section, layout),
         None => brush.queue(section),
@@ -485,7 +519,7 @@ where
     let gc = &ctx.gfx_context.glyph_cache.texture_handle;
     let backend = &ctx.gfx_context.backend_spec;
 
-    let action = gb.process_queued(
+    let action = gb.borrow_mut().process_queued(
         |rect, tex_data| update_texture::<GlBackendSpec>(backend, encoder, gc, rect, tex_data),
         to_vertex,
     );
@@ -521,6 +555,7 @@ where
             let _ = spritebatch.set_image(new_glyph_cache);
             ctx.gfx_context
                 .glyph_brush
+                .borrow_mut()
                 .resize_texture(new_width, new_height);
         }
     }

@@ -38,7 +38,7 @@ pub struct SpriteBatch {
 
 /// An index of a particular sprite in a `SpriteBatch`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SpriteIdx(usize);
+pub struct SpriteIdx(pub usize);
 
 impl SpriteBatch {
     /// Creates a new `SpriteBatch`, drawing with the given image.
@@ -172,6 +172,7 @@ impl graphics::Drawable for SpriteBatch {
         slice.instances = Some((self.sprites.len() as u32, 0));
         let curr_transform = gfx.transform();
         let m: DrawTransform = param.into();
+        // TODO: Verify this is correct with row/col matrixes
         gfx.push_transform(m.matrix * curr_transform);
         gfx.calculate_transform_matrix();
         gfx.update_globals()?;

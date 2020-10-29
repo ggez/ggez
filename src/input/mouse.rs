@@ -23,8 +23,8 @@ pub struct MouseContext {
 impl MouseContext {
     pub(crate) fn new() -> Self {
         Self {
-            last_position: Point2::origin(),
-            last_delta: Point2::origin(),
+            last_position: Point2::zero(),
+            last_delta: Point2::zero(),
             cursor_type: MouseCursor::Default,
             buttons_pressed: HashMap::new(),
             cursor_grabbed: false,

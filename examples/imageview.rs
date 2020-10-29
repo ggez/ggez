@@ -1,6 +1,6 @@
-use cgmath;
 use ggez;
-use rand;
+use glam;
+use oorandom;
 
 use ggez::audio;
 use ggez::audio::SoundSource;
@@ -18,30 +18,31 @@ struct MainState {
     image: graphics::Image,
     text: graphics::Text,
     pixel_sized_text: graphics::Text,
+    rng: oorandom::Rand32,
 }
 
 impl MainState {
-    fn draw_crazy_lines(&self, ctx: &mut Context) -> GameResult {
+    fn draw_crazy_lines(&mut self, ctx: &mut Context) -> GameResult {
         let num_lines = 100;
         let mut colors = Vec::new();
         for _ in 0..num_lines {
-            let r: u8 = rand::random();
-            let g: u8 = rand::random();
-            let b: u8 = rand::random();
+            let r = self.rng.rand_u32() as u8;
+            let b = self.rng.rand_u32() as u8;
+            let g = self.rng.rand_u32() as u8;
             colors.push(Color::from((r, g, b, 255)));
         }
 
-        let mut last_point = cgmath::Point2::new(400.0, 300.0);
+        let mut last_point = glam::Vec2::new(400.0, 300.0);
         let mut mb = graphics::MeshBuilder::new();
         for color in colors {
-            let x = (rand::random::<i32>() % 50) as f32;
-            let y = (rand::random::<i32>() % 50) as f32;
-            let point = cgmath::Point2::new(last_point.x + x, last_point.y + y);
+            let x = (self.rng.rand_i32() % 50) as f32;
+            let y = (self.rng.rand_i32() % 50) as f32;
+            let point = glam::Vec2::new(last_point.x() + x, last_point.y() + y);
             mb.line(&[last_point, point], 3.0, color)?;
             last_point = point;
         }
         let mesh = mb.build(ctx)?;
-        graphics::draw(ctx, &mesh, (cgmath::Point2::new(0.0, 0.0),))?;
+        graphics::draw(ctx, &mesh, (glam::Vec2::new(0.0, 0.0),))?;
 
         Ok(())
     }
@@ -51,7 +52,7 @@ impl MainState {
 
         let image = graphics::Image::new(ctx, "/dragon1.png").unwrap();
 
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf").unwrap();
+        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf").unwrap();
         let text = graphics::Text::new(("Hello world!", font, 48.0));
         let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
 
@@ -60,11 +61,14 @@ impl MainState {
         // "detached" sounds keep playing even after they are dropped
         let _ = sound.play_detached();
 
+        let rng = oorandom::Rand32::new(271828);
+
         let s = MainState {
             a: 0,
             direction: 1,
             image,
             text,
+            rng,
             pixel_sized_text,
         };
 
@@ -92,18 +96,18 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         let color = Color::from((c, c, c, 255));
-        let dest_point = cgmath::Point2::new(0.0, 0.0);
+        let dest_point = glam::Vec2::new(0.0, 0.0);
         graphics::draw(ctx, &self.image, (dest_point, 0.0, color))?;
         graphics::draw(ctx, &self.text, (dest_point, 0.0, color))?;
 
-        let dest_point2 = cgmath::Point2::new(0.0, 256.0);
+        let dest_point2 = glam::Vec2::new(0.0, 256.0);
         let rectangle = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
             Color::from((0, 0, 0, 255)),
         )?;
-        graphics::draw(ctx, &rectangle, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
+        graphics::draw(ctx, &rectangle, (glam::Vec2::new(0.0, 0.0),))?;
         graphics::draw(
             ctx,
             &self.pixel_sized_text,
