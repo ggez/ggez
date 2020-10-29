@@ -2,12 +2,11 @@
 //! to a canvas.
 
 use ggez;
-use nalgebra;
 
 use ggez::event;
 use ggez::graphics::{self, Color};
-use ggez::{Context, GameResult};
 use ggez::nalgebra as na;
+use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 

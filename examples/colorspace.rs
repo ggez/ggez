@@ -115,7 +115,7 @@ impl MainState {
             square_mesh,
             demo_image,
             demo_text,
-            demo_spritebatch
+            demo_spritebatch,
         };
         Ok(s)
     }
@@ -165,12 +165,12 @@ impl event::EventHandler for MainState {
         self.demo_spritebatch.add(
             DrawParam::default()
                 .dest(na::Point2::new(250.0, 350.0))
-                .scale(na::Vector2::new(0.25, 0.25))
+                .scale(na::Vector2::new(0.25, 0.25)),
         );
         self.demo_spritebatch.add(
             DrawParam::default()
                 .dest(na::Point2::new(250.0, 425.0))
-                .scale(na::Vector2::new(0.1, 0.1))
+                .scale(na::Vector2::new(0.1, 0.1)),
         );
         graphics::draw(
             ctx,

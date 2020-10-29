@@ -1,7 +1,7 @@
 use crate::graphics::Color;
 use crate::tests;
 use crate::*;
-use cgmath::Point2;
+use glam::Vec2;
 
 // use std::path;
 
@@ -14,12 +14,12 @@ fn image_encode() {
         .unwrap();
 }
 
-fn get_rgba_sample(rgba_buf: &[u8], width: usize, sample_pos: Point2<f32>) -> (u8, u8, u8, u8) {
+fn get_rgba_sample(rgba_buf: &[u8], width: usize, sample_pos: Vec2) -> (u8, u8, u8, u8) {
     (
-        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 0],
-        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 1],
-        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 2],
-        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 3],
+        rgba_buf[(width * sample_pos.y() as usize + sample_pos.x() as usize) * 4 + 0],
+        rgba_buf[(width * sample_pos.y() as usize + sample_pos.x() as usize) * 4 + 1],
+        rgba_buf[(width * sample_pos.y() as usize + sample_pos.x() as usize) * 4 + 2],
+        rgba_buf[(width * sample_pos.y() as usize + sample_pos.x() as usize) * 4 + 3],
     )
 }
 
@@ -31,16 +31,16 @@ fn save_screenshot_test(c: &mut Context) {
 
     let topleft = graphics::DrawParam::new()
         .color(graphics::WHITE)
-        .dest(Point2::new(0.0, 0.0));
+        .dest(Vec2::new(0.0, 0.0));
     let topright = graphics::DrawParam::new()
         .color(Color::new(1.0, 0.0, 0.0, 1.0))
-        .dest(Point2::new(width / 2.0, 0.0));
+        .dest(Vec2::new(width / 2.0, 0.0));
     let bottomleft = graphics::DrawParam::new()
         .color(Color::new(0.0, 1.0, 0.0, 1.0))
-        .dest(Point2::new(0.0, height / 2.0));
+        .dest(Vec2::new(0.0, height / 2.0));
     let bottomright = graphics::DrawParam::new()
         .color(Color::new(0.0, 0.0, 1.0, 1.0))
-        .dest(Point2::new(width / 2.0, height / 2.0));
+        .dest(Vec2::new(width / 2.0, height / 2.0));
 
     let rect = graphics::Mesh::new_rectangle(
         c,
@@ -75,23 +75,23 @@ fn save_screenshot_test(c: &mut Context) {
     // So take a samples in the middle of each rectangle we drew and compare.
     // Note that we only use fully saturated colors to avoid any issues with color spaces.
     let rgba_buf = screenshot.to_rgba8(c).unwrap();
-    let half_rect = cgmath::Vector2::new(width / 4.0, height / 4.0);
+    let half_rect = glam::Vec2::new(width / 4.0, height / 4.0);
     let width = width as usize;
     assert_eq!(
         topleft.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Point2::from(topleft.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, Vec2::from(topleft.dest) + half_rect)
     );
     assert_eq!(
         topright.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Point2::from(topright.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, Vec2::from(topright.dest) + half_rect)
     );
     assert_eq!(
         bottomleft.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Point2::from(bottomleft.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, Vec2::from(bottomleft.dest) + half_rect)
     );
     assert_eq!(
         bottomright.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Point2::from(bottomright.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, Vec2::from(bottomright.dest) + half_rect)
     );
 
     // save screenshot (no check, just to see if it doesn't crash)

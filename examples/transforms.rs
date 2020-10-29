@@ -1,11 +1,10 @@
 //! Demonstrates various projection and matrix fiddling/testing.
 use ggez;
-use nalgebra;
 
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};
-use ggez::{Context, GameResult};
 use ggez::nalgebra as na;
+use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
