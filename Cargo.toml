@@ -55,7 +55,6 @@ log = "0.4"
 lyon = "0.14"
 smart-default = "0.6"
 glam = { version = "0.9", features = ["mint"]}
-#nalgebra = {version = "0.23", features = ["mint"]}
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5"
 gilrs = "0.8"
