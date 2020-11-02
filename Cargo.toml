@@ -36,13 +36,13 @@ c_dependencies = ["bzip2", "mp3"]
 bitflags = "1"
 zip = { version = "0.5", default-features = false }
 directories = "2"
-gfx = "0.18"
-gfx_core = "0.9"
-gfx_device_gl = "0.16"
+gfx = { git = "https://github.com/sapir/gfx", branch="update-gfx-window-glutin-pre-ll", package="gfx" }
+gfx_core = { git = "https://github.com/sapir/gfx", branch="update-gfx-window-glutin-pre-ll", package="gfx_core" }
+gfx_device_gl = { git = "https://github.com/sapir/gfx", branch="update-gfx-window-glutin-pre-ll", package="gfx_device_gl" }
 glyph_brush = "0.5"
-gfx_window_glutin = "0.30"
-glutin = "0.20"
-winit = { version = "0.19.3" }
+gfx_window_glutin = { git = "https://github.com/sapir/gfx", branch="update-gfx-window-glutin-pre-ll", package="gfx_window_glutin" }
+glutin = "0.25.1"
+winit = "0.23.0"
 image = {version = "0.22", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
 "tga", "tiff", "webp", "bmp", "dxt", ] }
 rodio = { version = "0.11", default-features = false, features = ["flac", "vorbis", "wav"] }
