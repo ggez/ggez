@@ -7,7 +7,8 @@ use crate::graphics;
 use crate::graphics::Point2;
 use std::collections::HashMap;
 use winit::dpi;
-pub use winit::{MouseButton, MouseCursor};
+pub use winit::event::MouseButton;
+pub use winit::window::CursorIcon;
 
 /// Stores state information for the mouse.
 #[derive(Clone, Debug)]
@@ -15,7 +16,7 @@ pub struct MouseContext {
     last_position: Point2,
     last_delta: Point2,
     buttons_pressed: HashMap<MouseButton, bool>,
-    cursor_type: MouseCursor,
+    cursor_type: CursorIcon,
     cursor_grabbed: bool,
     cursor_hidden: bool,
 }
@@ -25,7 +26,7 @@ impl MouseContext {
         Self {
             last_position: Point2::origin(),
             last_delta: Point2::origin(),
-            cursor_type: MouseCursor::Default,
+            cursor_type: CursorIcon::Default,
             buttons_pressed: HashMap::new(),
             cursor_grabbed: false,
             cursor_hidden: false,
@@ -56,14 +57,14 @@ impl Default for MouseContext {
 }
 
 /// Returns the current mouse cursor type of the window.
-pub fn cursor_type(ctx: &Context) -> MouseCursor {
+pub fn cursor_type(ctx: &Context) -> CursorIcon {
     ctx.mouse_context.cursor_type
 }
 
 /// Modifies the mouse cursor type of the window.
-pub fn set_cursor_type(ctx: &mut Context, cursor_type: MouseCursor) {
+pub fn set_cursor_type(ctx: &mut Context, cursor_type: CursorIcon) {
     ctx.mouse_context.cursor_type = cursor_type;
-    graphics::window(ctx).set_cursor(cursor_type);
+    graphics::window(ctx).set_cursor_icon(cursor_type);
 }
 
 /// Get whether or not the mouse is grabbed (confined to the window)
@@ -75,7 +76,7 @@ pub fn cursor_grabbed(ctx: &Context) -> bool {
 pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
     ctx.mouse_context.cursor_grabbed = grabbed;
     graphics::window(ctx)
-        .grab_cursor(grabbed)
+        .set_cursor_grab(grabbed)
         .map_err(|e| GameError::WindowError(e.to_string()))
 }
 
@@ -87,7 +88,7 @@ pub fn cursor_hidden(ctx: &Context) -> bool {
 /// Set whether or not the mouse is hidden (invisible).
 pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
     ctx.mouse_context.cursor_hidden = hidden;
-    graphics::window(ctx).hide_cursor(hidden)
+    graphics::window(ctx).set_cursor_visible(!hidden)
 }
 
 /// Get the current position of the mouse cursor, in pixels.

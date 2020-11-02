@@ -68,9 +68,9 @@
 use crate::context::Context;
 
 use std::collections::HashSet;
-use winit::ModifiersState;
+use winit::event::ModifiersState;
 /// A key code.
-pub use winit::VirtualKeyCode as KeyCode;
+pub use winit::event::VirtualKeyCode as KeyCode;
 
 bitflags! {
     /// Bitflags describing the state of keyboard modifiers, such as `Control` or `Shift`.
@@ -93,16 +93,16 @@ bitflags! {
 impl From<ModifiersState> for KeyMods {
     fn from(state: ModifiersState) -> Self {
         let mut keymod = KeyMods::empty();
-        if state.shift {
+        if state.shift() {
             keymod |= Self::SHIFT;
         }
-        if state.ctrl {
+        if state.ctrl() {
             keymod |= Self::CTRL;
         }
-        if state.alt {
+        if state.alt() {
             keymod |= Self::ALT;
         }
-        if state.logo {
+        if state.logo() {
             keymod |= Self::LOGO;
         }
         keymod

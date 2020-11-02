@@ -75,14 +75,14 @@ impl fmt::Debug for Context {
 impl Context {
     /// Tries to create a new Context using settings from the given [`Conf`](../conf/struct.Conf.html) object.
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
-    fn from_conf(conf: conf::Conf, mut fs: Filesystem) -> GameResult<(Context, winit::EventsLoop)> {
+    fn from_conf(conf: conf::Conf, mut fs: Filesystem) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         let debug_id = DebugId::new();
         let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
             Box::new(audio::RodioAudioContext::new()?)
         } else {
             Box::new(audio::NullAudioContext::default())
         };
-        let events_loop = winit::EventsLoop::new();
+        let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
         let graphics_context = graphics::context::GraphicsContext::new(
@@ -125,13 +125,11 @@ impl Context {
     /// state it needs to, such as detecting window resizes.  If you are
     /// rolling your own event loop, you should call this on the events
     /// you receive before processing them yourself.
-    pub fn process_event(&mut self, event: &winit::Event) {
-        match event.clone() {
+    pub fn process_event(&mut self, event: &winit::event::Event<()>) {
+        match event {
             winit_event::Event::WindowEvent { event, .. } => match event {
-                winit_event::WindowEvent::Resized(logical_size) => {
-                    let hidpi_factor = self.gfx_context.window.get_hidpi_factor();
-                    let physical_size = logical_size.to_physical(hidpi_factor as f64);
-                    self.gfx_context.window.resize(physical_size);
+                winit_event::WindowEvent::Resized(physical_size) => {
+                    self.gfx_context.window.resize(*physical_size);
                     self.gfx_context.resize_viewport();
                 }
                 winit_event::WindowEvent::CursorMoved {
@@ -148,11 +146,11 @@ impl Context {
                         winit_event::ElementState::Pressed => true,
                         winit_event::ElementState::Released => false,
                     };
-                    self.mouse_context.set_button(button, pressed);
+                    self.mouse_context.set_button(*button, pressed);
                 }
                 winit_event::WindowEvent::KeyboardInput {
                     input:
-                        winit::KeyboardInput {
+                        winit::event::KeyboardInput {
                             state,
                             virtual_keycode: Some(keycode),
                             modifiers,
@@ -165,10 +163,10 @@ impl Context {
                         winit_event::ElementState::Released => false,
                     };
                     self.keyboard_context
-                        .set_modifiers(keyboard::KeyMods::from(modifiers));
-                    self.keyboard_context.set_key(keycode, pressed);
+                        .set_modifiers(keyboard::KeyMods::from(*modifiers));
+                    self.keyboard_context.set_key(*keycode, pressed);
                 }
-                winit_event::WindowEvent::HiDpiFactorChanged(_) => {
+                winit_event::WindowEvent::ScaleFactorChanged { .. } => {
                     // Nope.
                 }
                 _ => (),
@@ -176,7 +174,7 @@ impl Context {
             winit_event::Event::DeviceEvent { event, .. } => {
                 if let winit_event::DeviceEvent::MouseMotion { delta: (x, y) } = event {
                     self.mouse_context
-                        .set_last_delta(Point2::new(x as f32, y as f32));
+                        .set_last_delta(Point2::new(*x as f32, *y as f32));
                 }
             }
 
@@ -284,7 +282,7 @@ impl ContextBuilder {
     }
 
     /// Build the `Context`.
-    pub fn build(self) -> GameResult<(Context, winit::EventsLoop)> {
+    pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         let mut fs = Filesystem::new(self.game_id.as_ref(), self.author.as_ref())?;
 
         for path in &self.paths {
