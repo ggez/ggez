@@ -177,11 +177,6 @@ where
         let ctx = &mut ctx;
         let state = &mut state;
 
-        // If you are writing your own event loop, make sure
-        // you include `timer_context.tick()` and
-        // `ctx.process_event()` calls.  These update ggez's
-        // internal state however necessary.
-        ctx.timer_context.tick();
         ctx.process_event(&event);
         match event {
             Event::WindowEvent { event, .. } => match event {
@@ -275,7 +270,25 @@ where
             Event::Suspended => (),
             Event::NewEvents(_) => (),
             Event::UserEvent(_) => (),
-            Event::MainEventsCleared => (),
+            Event::MainEventsCleared => {
+                // If you are writing your own event loop, make sure
+                // you include `timer_context.tick()` and
+                // `ctx.process_event()` calls.  These update ggez's
+                // internal state however necessary.
+                ctx.timer_context.tick();
+
+                if let Err(e) = state.update(ctx) {
+                    // TODO: do something with the error
+                    *control_flow = ControlFlow::Exit;
+                    return;
+                }
+
+                if let Err(e) = state.draw(ctx) {
+                    // TODO: do something with the error
+                    *control_flow = ControlFlow::Exit;
+                    return;
+                }
+            }
             Event::RedrawRequested(_) => (),
             Event::RedrawEventsCleared => (),
             Event::LoopDestroyed => (),
@@ -297,18 +310,6 @@ where
                     _ => {}
                 }
             }
-        }
-
-        if let Err(e) = state.update(ctx) {
-            // TODO: do something with the error
-            *control_flow = ControlFlow::Exit;
-            return;
-        }
-
-        if let Err(e) = state.draw(ctx) {
-            // TODO: do something with the error
-            *control_flow = ControlFlow::Exit;
-            return;
         }
     });
 }
