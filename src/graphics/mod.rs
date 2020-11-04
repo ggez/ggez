@@ -30,6 +30,7 @@ use gfx::Device;
 use gfx::Factory;
 use gfx_device_gl;
 use glutin;
+use old_school_gfx_glutin_ext::*;
 
 use crate::conf;
 use crate::conf::WindowMode;
@@ -259,13 +260,11 @@ impl BackendSpec for GlBackendSpec {
         ),
         glutin::CreationError,
     > {
-        gfx_window_glutin::init_raw(
-            window_builder,
-            gl_builder,
-            events_loop,
-            color_format,
-            depth_format,
-        )
+        gl_builder
+            .with_gfx_color_raw(color_format)
+            .with_gfx_depth_raw(depth_format)
+            .build_windowed(window_builder, &events_loop)
+            .map(|i| i.init_gfx_raw(color_format, depth_format))
     }
 
     fn info(&self, device: &Self::Device) -> String {
@@ -294,17 +293,9 @@ impl BackendSpec for GlBackendSpec {
         gfx::handle::RawRenderTargetView<Self::Resources>,
         gfx::handle::RawDepthStencilView<Self::Resources>,
     )> {
-        // Basically taken from the definition of
-        // gfx_window_glutin::update_views()
         let dim = color_view.get_dimensions();
         assert_eq!(dim, depth_view.get_dimensions());
-        if let Some((cv, dv)) =
-            gfx_window_glutin::update_views_raw(window, dim, color_format, depth_format)
-        {
-            Some((cv, dv))
-        } else {
-            None
-        }
+        window.updated_views_raw(dim, color_format, depth_format)
     }
 }
 
@@ -887,9 +878,7 @@ pub fn window(context: &Context) -> &glutin::window::Window {
 pub fn size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     let window = gfx.window.window();
-    let logical_size = window
-        .outer_size()
-        .to_logical(window.scale_factor());
+    let logical_size = window.outer_size().to_logical(window.scale_factor());
     (logical_size.width, logical_size.height)
 }
 
@@ -898,9 +887,7 @@ pub fn size(context: &Context) -> (f32, f32) {
 pub fn drawable_size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     let window = gfx.window.window();
-    let logical_size = window
-        .inner_size()
-        .to_logical(window.scale_factor());
+    let logical_size = window.inner_size().to_logical(window.scale_factor());
     (logical_size.width, logical_size.height)
 }
 

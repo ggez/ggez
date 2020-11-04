@@ -8,9 +8,9 @@ use ggez::audio::SoundSource;
 use ggez::conf;
 use ggez::event::{self, EventHandler, KeyCode, KeyMods};
 use ggez::graphics;
+use ggez::nalgebra as na;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
-use ggez::nalgebra as na;
 use rand;
 
 use std::env;
@@ -596,8 +596,8 @@ pub fn main() -> GameResult {
         .window_mode(conf::WindowMode::default().dimensions(640.0, 480.0))
         .add_resource_path(resource_dir);
 
-    let (ctx, events_loop) = &mut cb.build()?;
+    let (mut ctx, events_loop) = cb.build()?;
 
-    let game = &mut MainState::new(ctx)?;
+    let game = MainState::new(&mut ctx)?;
     event::run(ctx, events_loop, game)
 }

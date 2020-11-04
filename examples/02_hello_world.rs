@@ -9,7 +9,6 @@ use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
-
 // First we make a structure to contain the game's state
 struct MainState {
     frames: usize,
@@ -79,8 +78,8 @@ pub fn main() -> GameResult {
     };
 
     let cb = ggez::ContextBuilder::new("helloworld", "ggez").add_resource_path(resource_dir);
-    let (ctx, event_loop) = &mut cb.build()?;
+    let (mut ctx, event_loop) = cb.build()?;
 
-    let state = &mut MainState::new(ctx)?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }
