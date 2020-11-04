@@ -260,11 +260,12 @@ impl BackendSpec for GlBackendSpec {
         ),
         glutin::CreationError,
     > {
-        gl_builder
+        let (w, dev, f, r, d) = gl_builder
             .with_gfx_color_raw(color_format)
             .with_gfx_depth_raw(depth_format)
             .build_windowed(window_builder, &events_loop)
-            .map(|i| i.init_gfx_raw(color_format, depth_format))
+            .map(|i| i.init_gfx_raw(color_format, depth_format))?;
+        Ok((unsafe { w.make_current().unwrap() }, dev, f, r, d))
     }
 
     fn info(&self, device: &Self::Device) -> String {
