@@ -5,6 +5,7 @@ use gfx::traits::FactoryExt;
 use gfx::Factory;
 use glutin;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
+use ::image as imgcrate;
 use winit::{self, dpi};
 
 use crate::conf::{FullscreenType, WindowMode, WindowSetup};
@@ -74,7 +75,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
     /// Create a new GraphicsContext
     pub(crate) fn new(
         filesystem: &mut Filesystem,
-        events_loop: &winit::EventsLoop,
+        events_loop: &winit::event_loop::EventLoop<()>,
         window_setup: &WindowSetup,
         window_mode: WindowMode,
         backend: GlBackendSpec,
@@ -109,11 +110,10 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_pixel_format(24, 8)
             .with_vsync(window_setup.vsync);
 
-        let window_size =
-            dpi::LogicalSize::from((f64::from(window_mode.width), f64::from(window_mode.height)));
-        let mut window_builder = winit::WindowBuilder::new()
+        let window_size = dpi::LogicalSize::<f64>::from((window_mode.width, window_mode.height));
+        let mut window_builder = winit::window::WindowBuilder::new()
             .with_title(window_setup.title.clone())
-            .with_dimensions(window_size)
+            .with_inner_size(window_size)
             .with_resizable(window_mode.resizable);
 
         window_builder = if !window_setup.icon.is_empty() {
@@ -136,24 +136,18 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         // since we have no good control over it.
         {
             // Log a bunch of OpenGL state info pulled out of winit and gfx
-            let dpi::LogicalSize {
+            let scale_factor = window.window().scale_factor();
+            let dpi::LogicalSize::<f32> {
                 width: w,
                 height: h,
-            } = window
-                .window()
-                .get_outer_size()
-                .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            let dpi::LogicalSize {
+            } = window.window().outer_size().to_logical(scale_factor);
+            let dpi::LogicalSize::<f32> {
                 width: dw,
                 height: dh,
-            } = window
-                .window()
-                .get_inner_size()
-                .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            let hidpi_factor = window.window().get_hidpi_factor();
+            } = window.window().inner_size().to_logical(scale_factor);
             debug!(
-                "Window created, desired size {}x{}, hidpi factor {}.",
-                window_mode.width, window_mode.height, hidpi_factor
+                "Window created, desired size {}x{}, scale factor {}.",
+                window_mode.width, window_mode.height, scale_factor
             );
             let (major, minor) = backend.version_tuple();
             debug!(
@@ -322,12 +316,13 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 // but still better than
 // having `winit` try to do the image loading for us.
 // see https://github.com/tomaka/winit/issues/661
-pub(crate) fn load_icon(icon_file: &Path, filesystem: &mut Filesystem) -> GameResult<winit::Icon> {
-    #[rustfmt::skip]
-    use ::image as imgcrate;
+pub(crate) fn load_icon(
+    icon_file: &Path,
+    filesystem: &mut Filesystem,
+) -> GameResult<winit::window::Icon> {
     use imgcrate::GenericImageView;
     use std::io::Read;
-    use winit::Icon;
+    use winit::window::Icon;
 
     let mut buf = Vec::new();
     let mut reader = filesystem.open(icon_file)?;
@@ -514,7 +509,7 @@ where
 
     /// Sets window mode from a WindowMode object.
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
-        let window = &self.window.window();
+        let window = self.window.window();
 
         window.set_maximized(mode.maximized);
 
@@ -527,7 +522,7 @@ where
         } else {
             None
         };
-        window.set_min_dimensions(min_dimensions);
+        window.set_min_inner_size(min_dimensions);
 
         let max_dimensions = if mode.max_width > 0.0 && mode.max_height > 0.0 {
             Some(dpi::LogicalSize {
@@ -537,11 +532,10 @@ where
         } else {
             None
         };
-        window.set_max_dimensions(max_dimensions);
+        window.set_max_inner_size(max_dimensions);
 
-        let monitors = window.get_available_monitors();
-        match (mode.fullscreen_type, monitors.last()) {
-            (FullscreenType::Windowed, _) => {
+        match mode.fullscreen_type {
+            FullscreenType::Windowed => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
                 window.set_inner_size(dpi::LogicalSize {
@@ -550,21 +544,20 @@ where
                 });
                 window.set_resizable(mode.resizable);
             }
-            (FullscreenType::True, Some(monitor)) => {
-                window.set_fullscreen(Some(monitor));
+            FullscreenType::True => {
+                window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
                 window.set_inner_size(dpi::LogicalSize {
                     width: f64::from(mode.width),
                     height: f64::from(mode.height),
                 });
             }
-            (FullscreenType::Desktop, Some(monitor)) => {
-                let position = monitor.get_position();
-                let dimensions = monitor.get_dimensions();
-                let hidpi_factor = window.get_hidpi_factor();
+            FullscreenType::Desktop => {
                 window.set_fullscreen(None);
                 window.set_decorations(false);
-                window.set_inner_size(dimensions.to_logical(hidpi_factor));
-                window.set_position(position.to_logical(hidpi_factor));
+                if let Some(monitor) = window.current_monitor() {
+                    window.set_inner_size(monitor.size());
+                    window.set_outer_position(monitor.position());
+                }
             }
             _ => panic!("Unable to detect monitor; if you are on Linux Wayland it may be this bug: https://github.com/rust-windowing/winit/issues/793"),
         }

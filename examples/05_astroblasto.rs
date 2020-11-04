@@ -22,7 +22,7 @@ type Vector2 = Vec2;
 
 /// *********************************************************************
 /// Basic stuff, make some helpers for vector functions.
-/// We use the nalgebra math library to provide lots of
+/// We use the glam math library to provide lots of
 /// math stuff.  This just adds some helpers.
 /// **********************************************************************
 
@@ -609,8 +609,8 @@ pub fn main() -> GameResult {
         .window_mode(conf::WindowMode::default().dimensions(640.0, 480.0))
         .add_resource_path(resource_dir);
 
-    let (ctx, events_loop) = &mut cb.build()?;
+    let (mut ctx, events_loop) = cb.build()?;
 
-    let game = &mut MainState::new(ctx)?;
+    let game = MainState::new(&mut ctx)?;
     event::run(ctx, events_loop, game)
 }

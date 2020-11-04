@@ -31,6 +31,7 @@ use gfx::Device;
 use gfx::Factory;
 use gfx_device_gl;
 use glutin;
+use old_school_gfx_glutin_ext::*;
 
 use crate::conf;
 use crate::conf::WindowMode;
@@ -144,9 +145,9 @@ pub trait BackendSpec: fmt::Debug {
     /// Creates the window.
     fn init<'a>(
         &self,
-        window_builder: glutin::WindowBuilder,
+        window_builder: glutin::window::WindowBuilder,
         gl_builder: glutin::ContextBuilder<'a, glutin::NotCurrent>,
-        events_loop: &glutin::EventsLoop,
+        events_loop: &glutin::event_loop::EventLoop<()>,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
     ) -> Result<
@@ -244,9 +245,9 @@ impl BackendSpec for GlBackendSpec {
 
     fn init<'a>(
         &self,
-        window_builder: glutin::WindowBuilder,
+        window_builder: glutin::window::WindowBuilder,
         gl_builder: glutin::ContextBuilder<'a, glutin::NotCurrent>,
-        events_loop: &glutin::EventsLoop,
+        events_loop: &glutin::event_loop::EventLoop<()>,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
     ) -> Result<
@@ -259,14 +260,11 @@ impl BackendSpec for GlBackendSpec {
         ),
         glutin::CreationError,
     > {
-        let (w, dev, f, r, d) = gfx_window_glutin::init_raw(
-            window_builder,
-            gl_builder,
-            events_loop,
-            color_format,
-            depth_format,
-        )?;
-        Ok((unsafe { w.make_current().unwrap() }, dev, f, r, d))
+        gl_builder
+            .with_gfx_color_raw(color_format)
+            .with_gfx_depth_raw(depth_format)
+            .build_windowed(window_builder, &events_loop)
+            .map(|i| i.init_gfx_raw(color_format, depth_format))
     }
 
     fn info(&self, device: &Self::Device) -> String {
@@ -295,17 +293,9 @@ impl BackendSpec for GlBackendSpec {
         gfx::handle::RawRenderTargetView<Self::Resources>,
         gfx::handle::RawDepthStencilView<Self::Resources>,
     )> {
-        // Basically taken from the definition of
-        // gfx_window_glutin::update_views()
         let dim = color_view.get_dimensions();
         assert_eq!(dim, depth_view.get_dimensions());
-        if let Some((cv, dv)) =
-            gfx_window_glutin::update_views_raw(window, dim, color_format, depth_format)
-        {
-            Some((cv, dv))
-        } else {
-            None
-        }
+        window.updated_views_raw(dim, color_format, depth_format)
     }
 }
 
@@ -877,9 +867,9 @@ pub fn set_window_title(context: &Context, title: &str) {
 /// Ideally you should not need to use this because ggez
 /// would provide all the functions you need without having
 /// to dip into Glutin itself.  But life isn't always ideal.
-pub fn window(context: &Context) -> &glutin::Window {
+pub fn window(context: &Context) -> &glutin::window::Window {
     let gfx = &context.gfx_context;
-    &gfx.window.window()
+    gfx.window.window()
 }
 
 /// Returns the size of the window in pixels as (width, height),
@@ -887,22 +877,18 @@ pub fn window(context: &Context) -> &glutin::Window {
 /// Returns zeros if the window doesn't exist.
 pub fn size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
-    gfx.window
-        .window()
-        .get_outer_size()
-        .map(|logical_size| (logical_size.width as f32, logical_size.height as f32))
-        .unwrap_or((0.0, 0.0))
+    let window = gfx.window.window();
+    let logical_size = window.outer_size().to_logical(window.scale_factor());
+    (logical_size.width, logical_size.height)
 }
 
 /// Returns the size of the window's underlying drawable in pixels as (width, height).
 /// Returns zeros if window doesn't exist.
 pub fn drawable_size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
-    gfx.window
-        .window()
-        .get_inner_size()
-        .map(|logical_size| (logical_size.width as f32, logical_size.height as f32))
-        .unwrap_or((0.0, 0.0))
+    let window = gfx.window.window();
+    let logical_size = window.inner_size().to_logical(window.scale_factor());
+    (logical_size.width, logical_size.height)
 }
 
 /// Return raw window context

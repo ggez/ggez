@@ -41,11 +41,10 @@ gfx = "0.18"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
 glyph_brush = "0.6"
-gfx_window_glutin = "0.31"
-glutin = "0.21"
-winit = { version = "0.19.3" }
-image = {version = "0.23", default-features = false, features = ["gif", "png", "pnm",
-"tga", "tiff", "webp", "bmp", "dxt", ] }
+old_school_gfx_glutin_ext = "0.25"
+glutin = "0.25.1"
+winit = "0.23.0"
+image = {version = "0.23", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "dxt", ] }
 # Keep at version 0.10 to avoid more heckin' syn dependencies
 rodio = { version = "0.12", default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
