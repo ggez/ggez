@@ -45,15 +45,14 @@ old_school_gfx_glutin_ext = "0.25"
 glutin = "0.25.1"
 winit = "0.23.0"
 image = {version = "0.23", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "dxt", ] }
-# Keep at version 0.10 to avoid more heckin' syn dependencies
-rodio = { version = "0.12", default-features = false, features = ["flac", "vorbis", "wav"] }
+rodio = { version = "0.13", default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
 serde_derive = "1"
 toml = "0.5"
 log = "0.4"
 lyon = "0.14"
 smart-default = "0.6"
-glam = { version = "0.9", features = ["mint"]}
+glam = { version = "0.10", features = ["mint"]}
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5"
 gilrs = "0.8"
