@@ -126,9 +126,18 @@ impl DrawParam {
         let m11 = cosr * self.scale.y;
         let m03 = self.offset.x * (1.0 - m00) - self.offset.y * m01 + self.dest.x;
         let m13 = self.offset.y * (1.0 - m11) - self.offset.x * m10 + self.dest.y;
+        // Welp, this transpose fixes some bug that makes nothing draw,
+        // that was introduced in commit 2c6b3cc03f34fb240f4246f5a68c75bd85b60eae.
+        // The best part is, I don't know if this code is wrong, or whether there's
+        // some reversed matrix multiply or such somewhere else that this cancel
+        // out.  Probably the former though.
         Matrix4::from_cols_array(&[
-            m00, m01, 0.0, m03, m10, m11, 0.0, m13, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+            m00, m01, 0.0, m03, // oh rustfmt you so fine
+            m10, m11, 0.0, m13, // you so fine you blow my mind
+            0.0, 0.0, 1.0, 0.0, // but leave my matrix formatting alone
+            0.0, 0.0, 0.0, 1.0, // plz
         ])
+        .transpose()
     }
 
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single
