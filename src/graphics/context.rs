@@ -115,6 +115,14 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_title(window_setup.title.clone())
             .with_inner_size(window_size)
             .with_resizable(window_mode.resizable);
+            
+        // We need to disable drag-and-drop on windows for multithreaded stuff like cpal to work.
+        // See winit bug here: https://github.com/rust-windowing/winit/pull/1524
+        #[cfg(target_os="windows")]
+        {
+            use winit::platform::windows::WindowBuilderExtWindows;
+            window_builder = window_builder.with_drag_and_drop(false);
+        }
 
         window_builder = if !window_setup.icon.is_empty() {
             let icon = load_icon(window_setup.icon.as_ref(), filesystem)?;
