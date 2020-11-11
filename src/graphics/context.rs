@@ -5,6 +5,7 @@ use gfx::traits::FactoryExt;
 use gfx::Factory;
 use glutin;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
+#[rustfmt::skip]
 use ::image as imgcrate;
 use winit::{self, dpi};
 
@@ -54,7 +55,7 @@ where
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
-    pub(crate) glyph_brush: Rc<RefCell<GlyphBrush<'static, DrawParam>>>,
+    pub(crate) glyph_brush: Rc<RefCell<GlyphBrush<DrawParam>>>,
     pub(crate) glyph_cache: ImageGeneric<B>,
     pub(crate) glyph_state: Rc<RefCell<spritebatch::SpriteBatch>>,
 }
@@ -115,10 +116,10 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_title(window_setup.title.clone())
             .with_inner_size(window_size)
             .with_resizable(window_mode.resizable);
-            
+
         // We need to disable drag-and-drop on windows for multithreaded stuff like cpal to work.
         // See winit bug here: https://github.com/rust-windowing/winit/pull/1524
-        #[cfg(target_os="windows")]
+        #[cfg(target_os = "windows")]
         {
             use winit::platform::windows::WindowBuilderExtWindows;
             window_builder = window_builder.with_drag_and_drop(false);
@@ -239,8 +240,9 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         };
 
         // Glyph cache stuff.
-        let glyph_brush =
-            GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec()).build();
+        let font_vec =
+            glyph_brush::ab_glyph::FontArc::try_from_slice(Font::default_font_bytes()).unwrap();
+        let glyph_brush = GlyphBrushBuilder::using_font(font_vec).build();
         let (glyph_cache_width, glyph_cache_height) = glyph_brush.texture_dimensions();
         let initial_contents =
             vec![255; 4 * glyph_cache_width as usize * glyph_cache_height as usize];
