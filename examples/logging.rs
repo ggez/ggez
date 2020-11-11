@@ -167,7 +167,7 @@ pub fn main() -> GameResult {
     trace!("Creating ggez context.");
 
     // This sets up `ggez` guts (including filesystem) and creates a window.
-    let (ctx, events_loop) = &mut ContextBuilder::new("logging", "ggez")
+    let (mut ctx, events_loop) = ContextBuilder::new("logging", "ggez")
         .window_setup(WindowSetup::default().title("Pretty console output!"))
         .window_mode(
             WindowMode::default()
@@ -178,16 +178,16 @@ pub fn main() -> GameResult {
 
     trace!("Context created, creating a file logger.");
 
-    let file_logger = FileLogger::new(ctx, "/out.log", log_rx)?;
+    let file_logger = FileLogger::new(&mut ctx, "/out.log", log_rx)?;
 
     trace!("File logger created, starting loop.");
 
     // Creates our state, and starts `ggez`' loop.
-    match App::new(ctx, file_logger) {
+    match App::new(&mut ctx, file_logger) {
         Err(e) => {
             error!("Could not initialize: {}", e);
         }
-        Ok(ref mut app) => match ggez::event::run(ctx, events_loop, app) {
+        Ok(app) => match ggez::event::run(ctx, events_loop, app) {
             Err(e) => {
                 error!("Error occurred: {}", e);
             }

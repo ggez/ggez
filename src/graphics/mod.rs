@@ -43,7 +43,7 @@ use crate::GameResult;
 pub(crate) mod canvas;
 pub(crate) mod context;
 pub(crate) mod drawparam;
-pub(crate) mod image;
+pub(crate) mod images;
 pub(crate) mod mesh;
 pub(crate) mod shader;
 pub(crate) mod text;
@@ -55,7 +55,7 @@ pub mod spritebatch;
 
 pub use crate::graphics::canvas::*;
 pub use crate::graphics::drawparam::*;
-pub use crate::graphics::image::*;
+pub use crate::graphics::images::*;
 pub use crate::graphics::mesh::*;
 pub use crate::graphics::shader::*;
 pub use crate::graphics::text::*;

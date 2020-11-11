@@ -5,7 +5,7 @@ use gfx::traits::FactoryExt;
 use gfx::Factory;
 use glutin;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
-use ::image as imgcrate;
+use image;
 use winit::{self, dpi};
 
 use crate::conf::{FullscreenType, WindowMode, WindowSetup};
@@ -320,14 +320,14 @@ pub(crate) fn load_icon(
     icon_file: &Path,
     filesystem: &mut Filesystem,
 ) -> GameResult<winit::window::Icon> {
-    use imgcrate::GenericImageView;
+    use image::GenericImageView;
     use std::io::Read;
     use winit::window::Icon;
 
     let mut buf = Vec::new();
     let mut reader = filesystem.open(icon_file)?;
     let _ = reader.read_to_end(&mut buf)?;
-    let i = imgcrate::load_from_memory(&buf)?;
+    let i = image::load_from_memory(&buf)?;
     let image_data = i.to_rgba();
     Icon::from_rgba(image_data.to_vec(), i.width(), i.height()).map_err(|e| {
         let msg = format!("Could not load icon: {:?}", e);
@@ -559,7 +559,6 @@ where
                     window.set_outer_position(monitor.position());
                 }
             }
-            _ => panic!("Unable to detect monitor; if you are on Linux Wayland it may be this bug: https://github.com/rust-windowing/winit/issues/793"),
         }
         Ok(())
     }
