@@ -569,7 +569,6 @@ where
                     window.set_outer_position(monitor.position());
                 }
             }
-            _ => panic!("Unable to detect monitor; if you are on Linux Wayland it may be this bug: https://github.com/rust-windowing/winit/issues/793"),
         }
         Ok(())
     }

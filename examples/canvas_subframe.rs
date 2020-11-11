@@ -45,8 +45,8 @@ impl MainState {
         graphics::clear(ctx, graphics::WHITE);
 
         // Freeze the animation so things are easier to see.
-        // let time = (timer::duration_to_f64(timer::time_since_start(ctx)) * 1000.0) as u32;
         let time = 2000;
+        //let time = (timer::duration_to_f64(timer::time_since_start(ctx)) * 1000.0) as u32;
         let cycle = 10_000;
         for x in 0..150 {
             for y in 0..150 {
@@ -143,7 +143,7 @@ pub fn main() -> GameResult {
 
     let cb = ggez::ContextBuilder::new("canvas_subframe", "ggez").add_resource_path(resource_dir);
 
-    let (ctx, events_loop) = &mut cb.build()?;
-    let state = &mut MainState::new(ctx)?;
+    let (mut ctx, events_loop) = cb.build()?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, events_loop, state)
 }

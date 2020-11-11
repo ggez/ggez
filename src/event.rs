@@ -163,7 +163,7 @@ pub fn quit(ctx: &mut Context) {
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the [`timer`](../timer/index.html) module for more info.
-pub fn run<S: 'static>(mut ctx: Context, event_loop: EventLoop<()>, mut state: S) -> GameResult
+pub fn run<S: 'static>(mut ctx: Context, event_loop: EventLoop<()>, mut state: S) -> !
 where
     S: EventHandler,
 {
@@ -273,13 +273,13 @@ where
                 ctx.timer_context.tick();
 
                 if let Err(e) = state.update(ctx) {
-                    // TODO: do something with the error
+                    error!("Error on EventHandler::update(): {:?}", e);
                     *control_flow = ControlFlow::Exit;
                     return;
                 }
 
                 if let Err(e) = state.draw(ctx) {
-                    // TODO: do something with the error
+                    error!("Error on EventHandler::draw(): {:?}", e);
                     *control_flow = ControlFlow::Exit;
                     return;
                 }
