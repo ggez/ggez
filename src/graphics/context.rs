@@ -111,10 +111,12 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_vsync(window_setup.vsync);
 
         let window_size = dpi::LogicalSize::<f64>::from((window_mode.width, window_mode.height));
+        use winit::platform::windows::WindowBuilderExtWindows;
         let mut window_builder = winit::window::WindowBuilder::new()
             .with_title(window_setup.title.clone())
             .with_inner_size(window_size)
-            .with_resizable(window_mode.resizable);
+            .with_resizable(window_mode.resizable)
+            .with_drag_and_drop(false);
 
         window_builder = if !window_setup.icon.is_empty() {
             let icon = load_icon(window_setup.icon.as_ref(), filesystem)?;
