@@ -114,9 +114,9 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         let window_size = dpi::LogicalSize::<f64>::from((window_mode.width, window_mode.height));
         let mut window_builder = winit::window::WindowBuilder::new()
             .with_title(window_setup.title.clone())
-            .with_dimensions(window_size)
+            .with_inner_size(window_size)
             .with_resizable(window_mode.resizable)
-            .with_visibility(window_mode.visible)
+            .with_visible(window_mode.visible)
             .with_inner_size(window_size)
             .with_resizable(window_mode.resizable);
 
@@ -574,12 +574,7 @@ where
             }
         }
 
-        if mode.visible {
-            window.show();
-        }
-        else {
-            window.hide();
-        }
+        window.set_visible(mode.visible);
 
         Ok(())
     }
