@@ -2,8 +2,8 @@ use crate::context::DebugId;
 use crate::error::GameError;
 use crate::graphics::*;
 use gfx::traits::FactoryExt;
-use lyon;
 use lyon::tessellation as t;
+use lyon::{self, math::Point as LPoint};
 
 pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 
@@ -112,21 +112,19 @@ impl MeshBuilder {
             };
             match mode {
                 DrawMode::Fill(fill_options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::fill_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &fill_options.with_tolerance(tolerance),
-                        builder,
+                        &mut t::BuffersBuilder::new(buffers, vb),
                     );
                 }
                 DrawMode::Stroke(options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::stroke_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &options.with_tolerance(tolerance),
-                        builder,
+                        &mut t::BuffersBuilder::new(buffers, vb),
                     );
                 }
             };
@@ -157,6 +155,8 @@ impl MeshBuilder {
             };
             match mode {
                 DrawMode::Fill(fill_options) => {
+                    todo!();
+                    /*
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::fill_ellipse(
                         t::math::point(point.x, point.y),
@@ -165,6 +165,7 @@ impl MeshBuilder {
                         &fill_options.with_tolerance(tolerance),
                         builder,
                     );
+                    */
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -239,6 +240,8 @@ impl MeshBuilder {
 
     /// Create a new mesh for a given polyline using a custom vertex builder.
     /// The points given must be in clockwise order.
+    ///
+    /// TODO: Make this generic again
     pub fn polyline_with_vertex_builder<P, V>(
         &mut self,
         mode: DrawMode,
@@ -248,8 +251,9 @@ impl MeshBuilder {
     ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
-        V: t::VertexConstructor<t::FillVertex, Vertex>
-            + t::VertexConstructor<t::StrokeVertex, Vertex>,
+        V: t::BasicVertexConstructor<Vertex>
+            + t::StrokeVertexConstructor<Vertex>
+            + t::FillVertexConstructor<Vertex>,
     {
         {
             assert!(points.len() > 1);
@@ -296,6 +300,7 @@ impl MeshBuilder {
         self
     }
 
+    /* TODO
     /// Create a new [`Mesh`](struct.Mesh.html) from a raw list of triangles.
     /// The length of the list must be a multiple of 3.
     ///
@@ -353,6 +358,7 @@ impl MeshBuilder {
         }
         Ok(self)
     }
+    */
 
     /// Takes an `Image` to apply to the mesh.
     pub fn texture(&mut self, texture: Image) -> &mut Self {
@@ -403,20 +409,30 @@ struct VertexBuilder {
     color: LinearColor,
 }
 
-impl t::VertexConstructor<t::FillVertex, Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, vertex: t::FillVertex) -> Vertex {
+impl t::BasicVertexConstructor<Vertex> for VertexBuilder {
+    fn new_vertex(&mut self, position: LPoint) -> Vertex {
         Vertex {
-            pos: [vertex.position.x, vertex.position.y],
-            uv: [vertex.position.x, vertex.position.y],
+            pos: [position.x, position.y],
+            uv: [position.x, position.y],
             color: self.color.into(),
         }
     }
 }
 
-impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, vertex: t::StrokeVertex) -> Vertex {
+impl t::StrokeVertexConstructor<Vertex> for VertexBuilder {
+    fn new_vertex(&mut self, position: LPoint, _attributes: t::StrokeAttributes) -> Vertex {
         Vertex {
-            pos: [vertex.position.x, vertex.position.y],
+            pos: [position.x, position.y],
+            uv: [0.0, 0.0],
+            color: self.color.into(),
+        }
+    }
+}
+
+impl t::FillVertexConstructor<Vertex> for VertexBuilder {
+    fn new_vertex(&mut self, position: LPoint, _attributes: t::FillAttributes) -> Vertex {
+        Vertex {
+            pos: [position.x, position.y],
             uv: [0.0, 0.0],
             color: self.color.into(),
         }
@@ -537,6 +553,8 @@ impl Mesh {
         mb.build(ctx)
     }
 
+    /*
+     * TODO: Needs MeshBuilder::triangles()
     /// Create a new `Mesh` from a raw list of triangle points.
     pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P], color: Color) -> GameResult<Mesh>
     where
@@ -546,6 +564,7 @@ impl Mesh {
         let _ = mb.triangles(triangles, color);
         mb.build(ctx)
     }
+    */
 
     /// Creates a `Mesh` from a raw list of triangles defined from points
     /// and indices, with the given UV texture coordinates.  You may also
