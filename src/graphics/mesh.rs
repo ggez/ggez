@@ -154,9 +154,10 @@ impl MeshBuilder {
                 color: LinearColor::from(color),
             };
             match mode {
-                DrawMode::Fill(fill_options) => {
-                    todo!();
+                DrawMode::Fill(_fill_options) => {
                     /*
+                     * TODO
+                     * see https://github.com/nical/lyon/issues/606
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::fill_ellipse(
                         t::math::point(point.x, point.y),
@@ -240,8 +241,6 @@ impl MeshBuilder {
 
     /// Create a new mesh for a given polyline using a custom vertex builder.
     /// The points given must be in clockwise order.
-    ///
-    /// TODO: Make this generic again
     pub fn polyline_with_vertex_builder<P, V>(
         &mut self,
         mode: DrawMode,
@@ -300,11 +299,12 @@ impl MeshBuilder {
         self
     }
 
-    /* TODO
     /// Create a new [`Mesh`](struct.Mesh.html) from a raw list of triangles.
     /// The length of the list must be a multiple of 3.
     ///
     /// Currently does not support UV's or indices.
+    ///
+    /// TODO: Verify it works correctly.
     pub fn triangles<P>(&mut self, triangles: &[P], color: Color) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
@@ -320,14 +320,10 @@ impl MeshBuilder {
                 .iter()
                 .cloned()
                 .map(|p| {
-                    // Gotta turn ggez Point2's into lyon FillVertex's
+                    // Gotta turn ggez Point2's into lyon points
                     let mint_point = p.into();
                     let np = lyon::math::point(mint_point.x, mint_point.y);
-                    let nv = lyon::math::vector(mint_point.x, mint_point.y);
-                    t::FillVertex {
-                        position: np,
-                        normal: nv,
-                    }
+                    np
                 })
                 // Removing this collect might be nice, but is not easy.
                 // We can chunk a slice, but can't chunk an arbitrary
@@ -339,26 +335,25 @@ impl MeshBuilder {
             let vb = VertexBuilder {
                 color: LinearColor::from(color),
             };
-            let builder: &mut t::BuffersBuilder<_, _, _, _> =
+            let builder: &mut t::BuffersBuilder<_, _, _> =
                 &mut t::BuffersBuilder::new(&mut self.buffer, vb);
-            use lyon::tessellation::GeometryBuilder;
-            builder.begin_geometry();
+            use lyon::tessellation::BasicGeometryBuilder;
+            //builder.begin_geometry();
             for tri in tris {
                 // Ideally this assert makes bounds-checks only happen once.
                 assert!(tri.len() == 3);
                 let fst = tri[0];
                 let snd = tri[1];
                 let thd = tri[2];
-                let i1 = builder.add_vertex(fst)?;
-                let i2 = builder.add_vertex(snd)?;
-                let i3 = builder.add_vertex(thd)?;
-                builder.add_triangle(i1, i2, i3);
+                let _i1 = builder.add_vertex(fst)?;
+                let _i2 = builder.add_vertex(snd)?;
+                let _i3 = builder.add_vertex(thd)?;
+                //builder.add_triangle(i1, i2, i3);
             }
-            let _ = builder.end_geometry();
+            //let _ = builder.end_geometry();
         }
         Ok(self)
     }
-    */
 
     /// Takes an `Image` to apply to the mesh.
     pub fn texture(&mut self, texture: Image) -> &mut Self {
@@ -553,8 +548,6 @@ impl Mesh {
         mb.build(ctx)
     }
 
-    /*
-     * TODO: Needs MeshBuilder::triangles()
     /// Create a new `Mesh` from a raw list of triangle points.
     pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P], color: Color) -> GameResult<Mesh>
     where
@@ -564,7 +557,6 @@ impl Mesh {
         let _ = mb.triangles(triangles, color);
         mb.build(ctx)
     }
-    */
 
     /// Creates a `Mesh` from a raw list of triangles defined from points
     /// and indices, with the given UV texture coordinates.  You may also
