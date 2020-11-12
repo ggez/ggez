@@ -2,12 +2,11 @@
 //! to a canvas.
 
 use ggez;
-use nalgebra;
 
 use ggez::event;
 use ggez::graphics::{self, Color};
 use ggez::{Context, GameResult};
-use ggez::nalgebra as na;
+use glam::*;
 use std::env;
 use std::path;
 
@@ -22,7 +21,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         // The ttf file will be in your resources directory. Later, we
         // will mount that directory so we can omit it in the path here.
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
+        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
         let text = graphics::Text::new(("Hello world!", font, 48.0));
         let canvas = graphics::Canvas::with_window_size(ctx)?;
 
@@ -42,7 +41,7 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let dest_point = na::Point2::new(10.0, 10.0);
+        let dest_point = Vec2::new(10.0, 10.0);
 
         if self.draw_with_canvas {
             println!("Drawing with canvas");
@@ -59,8 +58,6 @@ impl event::EventHandler for MainState {
                     .color(Color::from((0, 0, 0, 255))),
             )?;
             graphics::set_canvas(ctx, None);
-
-            // graphics::draw(ctx, &self.canvas, na::Point2::new(0.0, 0.0), 0.0)?;
 
             graphics::draw(
                 ctx,

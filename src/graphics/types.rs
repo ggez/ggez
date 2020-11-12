@@ -1,15 +1,15 @@
-pub(crate) use nalgebra as na;
+pub(crate) use glam;
 use std::f32;
 use std::u32;
 
 use crate::graphics::{FillOptions, StrokeOptions};
 
 /// A 2 dimensional point representing a location
-pub(crate) type Point2 = na::Point2<f32>;
+pub(crate) type Point2 = glam::Vec2;
 /// A 2 dimensional vector representing an offset of a location
-pub(crate) type Vector2 = na::Vector2<f32>;
+pub(crate) type Vector2 = glam::Vec2;
 /// A 4 dimensional matrix representing an arbitrary 3d transformation
-pub(crate) type Matrix4 = na::Matrix4<f32>;
+pub(crate) type Matrix4 = glam::Mat4;
 
 /// A simple 2D rectangle.
 ///
@@ -69,6 +69,14 @@ impl Rect {
         mint::Point2 {
             x: self.x,
             y: self.y,
+        }
+    }
+
+    /// Gets the `Rect`'s center x and y coordinates as a `Point2`.
+    pub fn center(&self) -> mint::Point2<f32> {
+        mint::Point2 {
+            x: self.x + self.w / 2.0,
+            y: self.y + self.h / 2.0,
         }
     }
 
@@ -141,27 +149,27 @@ impl Rect {
 
     /// Calculated the new Rect around the rotated one.
     pub fn rotate(&mut self, rotation: f32) {
-        let rotation = na::Rotation2::new(rotation);
+        let rotation = glam::Mat2::from_angle(rotation);
         let x0 = self.x;
         let y0 = self.y;
         let x1 = self.right();
         let y1 = self.bottom();
         let points = [
-            rotation * na::Point2::new(x0, y0),
-            rotation * na::Point2::new(x0, y1),
-            rotation * na::Point2::new(x1, y0),
-            rotation * na::Point2::new(x1, y1),
+            rotation * Point2::new(x0, y0),
+            rotation * Point2::new(x0, y1),
+            rotation * Point2::new(x1, y0),
+            rotation * Point2::new(x1, y1),
         ];
         let p0 = points[0];
-        let mut x_max = p0.x;
-        let mut x_min = p0.x;
-        let mut y_max = p0.y;
-        let mut y_min = p0.y;
+        let mut x_max = p0.x();
+        let mut x_min = p0.x();
+        let mut y_max = p0.y();
+        let mut y_min = p0.y();
         for p in &points {
-            x_max = f32::max(x_max, p.x);
-            x_min = f32::min(x_min, p.x);
-            y_max = f32::max(y_max, p.y);
-            y_min = f32::min(y_min, p.y);
+            x_max = f32::max(x_max, p.x());
+            x_min = f32::min(x_min, p.x());
+            y_max = f32::max(y_max, p.y());
+            y_min = f32::min(y_min, p.y());
         }
         *self = Rect {
             w: x_max - x_min,
@@ -228,7 +236,16 @@ impl From<Rect> for [f32; 4] {
 
 /// A RGBA color in the `sRGB` color space represented as `f32`'s in the range `[0.0-1.0]`
 ///
-/// For convenience, [`WHITE`](constant.WHITE.html) and [`BLACK`](constant.BLACK.html) are provided.
+/// For convenience, several colors are provided:
+/// [`WHITE`](constant.WHITE.html)
+/// [`BLACK`](constant.BLACK.html)
+/// [`RED`](constant.RED.html)
+/// [`GREEN`](constant.GREEN.html)
+/// [`BLUE`](constant.BLUE.html)
+/// [`CYAN`](constant.CYAN.html)
+/// [`MAGENTA`](constant.MAGENTA.html)
+/// [`YELLOW`](constant.YELLOW.html)
+
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Color {
     /// Red component
@@ -253,6 +270,54 @@ pub const WHITE: Color = Color {
 pub const BLACK: Color = Color {
     r: 0.0,
     g: 0.0,
+    b: 0.0,
+    a: 1.0,
+};
+
+/// Red
+pub const RED: Color = Color {
+    r: 1.0,
+    g: 0.0,
+    b: 0.0,
+    a: 1.0,
+};
+
+/// Green
+pub const GREEN: Color = Color {
+    r: 0.0,
+    g: 1.0,
+    b: 0.0,
+    a: 1.0,
+};
+
+/// Blue
+pub const BLUE: Color = Color {
+    r: 0.0,
+    g: 0.0,
+    b: 1.0,
+    a: 1.0,
+};
+
+/// Cyan
+pub const CYAN: Color = Color {
+    r: 0.0,
+    g: 1.0,
+    b: 1.0,
+    a: 1.0,
+};
+
+/// Magenta
+pub const MAGENTA: Color = Color {
+    r: 1.0,
+    g: 0.0,
+    b: 1.0,
+    a: 1.0,
+};
+
+/// Yellow
+pub const YELLOW: Color = Color {
+    r: 1.0,
+    g: 1.0,
     b: 0.0,
     a: 1.0,
 };

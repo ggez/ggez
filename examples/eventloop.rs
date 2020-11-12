@@ -8,8 +8,8 @@
 //!
 //! It is functionally identical to the `super_simple.rs` example apart from that.
 
-use cgmath;
 use ggez;
+use glam;
 
 use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
@@ -63,12 +63,12 @@ pub fn main() -> GameResult {
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),
-            cgmath::Point2::new(0.0, 0.0),
+            glam::Vec2::new(0.0, 0.0),
             100.0,
             2.0,
             graphics::WHITE,
         )?;
-        graphics::draw(ctx, &circle, (cgmath::Point2::new(position, 380.0),))?;
+        graphics::draw(ctx, &circle, (glam::Vec2::new(position, 380.0),))?;
         graphics::present(ctx)?;
         ggez::timer::yield_now();
     }
