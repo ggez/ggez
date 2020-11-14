@@ -32,6 +32,7 @@ use gfx::Factory;
 use gfx_device_gl;
 use glutin;
 use old_school_gfx_glutin_ext::*;
+use winit;
 
 use crate::conf;
 use crate::conf::WindowMode;
@@ -861,6 +862,19 @@ pub fn set_window_icon<P: AsRef<Path>>(context: &mut Context, path: Option<P>) -
 /// Sets the window title.
 pub fn set_window_title(context: &Context, title: &str) {
     context.gfx_context.window.window().set_title(title);
+}
+
+/// Sets the window position.
+pub fn set_window_position<P: Into<winit::dpi::Position>>(
+    context: &Context,
+    position: P,
+) -> GameResult<()> {
+    context
+        .gfx_context
+        .window
+        .window()
+        .set_outer_position(position);
+    Ok(())
 }
 
 /// Returns a reference to the Glutin window.
