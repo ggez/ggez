@@ -14,7 +14,7 @@ use glam::*;
 
 // NOTE: Using a high number here yields worse performance than adding more bunnies over
 // time - I think this is due to all of the RNG being run on the same tick...
-const INITIAL_BUNNIES: usize = 100;
+const INITIAL_BUNNIES: usize = 1000;
 const WIDTH: u16 = 1280;
 const HEIGHT: u16 = 720;
 const GRAVITY: f32 = 0.5;
@@ -179,8 +179,8 @@ fn main() -> GameResult {
     };
 
     let cb = ggez::ContextBuilder::new("bunnymark", "ggez").add_resource_path(resource_dir);
-    let (ctx, event_loop) = &mut cb.build()?;
+    let (mut ctx, event_loop) = cb.build()?;
 
-    let state = &mut GameState::new(ctx)?;
+    let state = GameState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }
