@@ -82,6 +82,11 @@ type BackendSpecInitResult<Device, Factory, Resources> = Result<
     glutin::CreationError,
 >;
 
+type MainTargetView<Resources> = Option<(
+    gfx::handle::RawRenderTargetView<Resources>,
+    gfx::handle::RawDepthStencilView<Resources>,
+)>;
+
 /// A trait providing methods for working with a particular backend, such as OpenGL,
 /// with associated gfx-rs types for that backend.  As a user you probably
 /// don't need to touch this unless you want to write a new graphics backend
@@ -173,10 +178,7 @@ pub trait BackendSpec: fmt::Debug {
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
         window: &glutin::WindowedContext,
-    ) -> Option<(
-        gfx::handle::RawRenderTargetView<Self::Resources>,
-        gfx::handle::RawDepthStencilView<Self::Resources>,
-    )>;
+    ) -> MainTargetView<Self::Resources>;
 }
 
 /// A backend specification for OpenGL.
@@ -283,10 +285,7 @@ impl BackendSpec for GlBackendSpec {
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
         window: &glutin::WindowedContext,
-    ) -> Option<(
-        gfx::handle::RawRenderTargetView<Self::Resources>,
-        gfx::handle::RawDepthStencilView<Self::Resources>,
-    )> {
+    ) -> MainTargetView<Self::Resources> {
         // Basically taken from the definition of
         // gfx_window_glutin::update_views()
         let dim = color_view.get_dimensions();
