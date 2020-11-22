@@ -148,7 +148,7 @@ void main() {
             Vertex::new([1, -1, -1], [0, 1]),
         ];
 
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let index_data: &[u16] = &[
              0,  1,  2,  2,  3,  0, // top
              4,  5,  6,  6,  7,  4, // bottom
