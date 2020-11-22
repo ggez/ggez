@@ -71,6 +71,17 @@ pub use crate::graphics::types::*;
 pub(crate) type BuggoSurfaceFormat = gfx::format::Srgba8;
 type ShaderResourceType = [f32; 4];
 
+type BackendSpecInitResult<Device, Factory, Resources> = Result<
+    (
+        glutin::WindowedContext,
+        Device,
+        Factory,
+        gfx::handle::RawRenderTargetView<Resources>,
+        gfx::handle::RawDepthStencilView<Resources>,
+    ),
+    glutin::CreationError,
+>;
+
 /// A trait providing methods for working with a particular backend, such as OpenGL,
 /// with associated gfx-rs types for that backend.  As a user you probably
 /// don't need to touch this unless you want to write a new graphics backend
@@ -149,16 +160,7 @@ pub trait BackendSpec: fmt::Debug {
         events_loop: &glutin::EventsLoop,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-    ) -> Result<
-        (
-            glutin::WindowedContext,
-            Self::Device,
-            Self::Factory,
-            gfx::handle::RawRenderTargetView<Self::Resources>,
-            gfx::handle::RawDepthStencilView<Self::Resources>,
-        ),
-        glutin::CreationError,
-    >;
+    ) -> BackendSpecInitResult<Self::Device, Self::Factory, Self::Resources>;
 
     /// Create an Encoder for the backend.
     fn encoder(factory: &mut Self::Factory) -> gfx::Encoder<Self::Resources, Self::CommandBuffer>;
@@ -249,16 +251,7 @@ impl BackendSpec for GlBackendSpec {
         events_loop: &glutin::EventsLoop,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-    ) -> Result<
-        (
-            glutin::WindowedContext,
-            Self::Device,
-            Self::Factory,
-            gfx::handle::RawRenderTargetView<Self::Resources>,
-            gfx::handle::RawDepthStencilView<Self::Resources>,
-        ),
-        glutin::CreationError,
-    > {
+    ) -> BackendSpecInitResult<Self::Device, Self::Factory, Self::Resources> {
         gfx_window_glutin::init_raw(
             window_builder,
             gl_builder,
