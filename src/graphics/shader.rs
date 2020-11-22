@@ -188,6 +188,8 @@ pub struct ShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFormat>>
 /// with a ggez graphics context
 pub type Shader<C> = ShaderGeneric<graphics::GlBackendSpec, C>;
 
+type ShaderHandlePtr<Spec> = Box<dyn ShaderHandle<Spec>>;
+
 pub(crate) fn create_shader<C, S, Spec>(
     vertex_source: &[u8],
     pixel_source: &[u8],
@@ -199,7 +201,7 @@ pub(crate) fn create_shader<C, S, Spec>(
     blend_modes: Option<&[BlendMode]>,
     color_format: format::Format,
     debug_id: DebugId,
-) -> GameResult<(ShaderGeneric<Spec, C>, Box<dyn ShaderHandle<Spec>>)>
+) -> GameResult<(ShaderGeneric<Spec, C>, ShaderHandlePtr<Spec>)>
 where
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
     S: Into<String>,
@@ -251,7 +253,7 @@ where
         psos,
         active_blend_mode: blend_modes[0],
     };
-    let draw: Box<dyn ShaderHandle<Spec>> = Box::new(program);
+    let draw: ShaderHandlePtr<Spec> = Box::new(program);
 
     let id = 0;
     let shader = ShaderGeneric {
