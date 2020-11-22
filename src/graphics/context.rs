@@ -597,10 +597,6 @@ where
     /// Simple shortcut to check whether the context's color
     /// format is SRGB or not.
     pub(crate) fn is_srgb(&self) -> bool {
-        if let gfx::format::Format(_, gfx::format::ChannelType::Srgb) = self.color_format() {
-            true
-        } else {
-            false
-        }
+        self.color_format().1 == gfx::format::ChannelType::Srgb
     }
 }
