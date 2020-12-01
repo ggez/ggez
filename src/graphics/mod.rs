@@ -72,6 +72,22 @@ pub use crate::graphics::types::*;
 pub(crate) type BuggoSurfaceFormat = gfx::format::Srgba8;
 type ShaderResourceType = [f32; 4];
 
+type BackendSpecInitResult<Device, Factory, Resources> = Result<
+    (
+        glutin::WindowedContext,
+        Device,
+        Factory,
+        gfx::handle::RawRenderTargetView<Resources>,
+        gfx::handle::RawDepthStencilView<Resources>,
+    ),
+    glutin::CreationError,
+>;
+
+type MainTargetView<Resources> = Option<(
+    gfx::handle::RawRenderTargetView<Resources>,
+    gfx::handle::RawDepthStencilView<Resources>,
+)>;
+
 /// A trait providing methods for working with a particular backend, such as OpenGL,
 /// with associated gfx-rs types for that backend.  As a user you probably
 /// don't need to touch this unless you want to write a new graphics backend
@@ -150,17 +166,7 @@ pub trait BackendSpec: fmt::Debug {
         events_loop: &glutin::event_loop::EventLoop<()>,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-    ) -> Result<
-        (
-            glutin::WindowedContext<glutin::PossiblyCurrent>,
-            Self::Device,
-            Self::Factory,
-            gfx::handle::RawRenderTargetView<Self::Resources>,
-            gfx::handle::RawDepthStencilView<Self::Resources>,
-        ),
-        glutin::CreationError,
-    >;
-
+    ) -> BackendSpecInitResult<Self::Device, Self::Factory, Self::Resources>;
     /// Create an Encoder for the backend.
     fn encoder(factory: &mut Self::Factory) -> gfx::Encoder<Self::Resources, Self::CommandBuffer>;
 
@@ -171,11 +177,8 @@ pub trait BackendSpec: fmt::Debug {
         depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-        window: &glutin::WindowedContext<glutin::PossiblyCurrent>,
-    ) -> Option<(
-        gfx::handle::RawRenderTargetView<Self::Resources>,
-        gfx::handle::RawDepthStencilView<Self::Resources>,
-    )>;
+        window: &glutin::WindowedContext,
+    ) -> MainTargetView<Self::Resources>;
 }
 
 /// A backend specification for OpenGL.
@@ -250,21 +253,14 @@ impl BackendSpec for GlBackendSpec {
         events_loop: &glutin::event_loop::EventLoop<()>,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-    ) -> Result<
-        (
-            glutin::WindowedContext<glutin::PossiblyCurrent>,
-            Self::Device,
-            Self::Factory,
-            gfx::handle::RawRenderTargetView<Self::Resources>,
-            gfx::handle::RawDepthStencilView<Self::Resources>,
-        ),
-        glutin::CreationError,
-    > {
-        gl_builder
-            .with_gfx_color_raw(color_format)
-            .with_gfx_depth_raw(depth_format)
-            .build_windowed(window_builder, &events_loop)
-            .map(|i| i.init_gfx_raw(color_format, depth_format))
+    ) -> BackendSpecInitResult<Self::Device, Self::Factory, Self::Resources> {
+        gfx_window_glutin::init_raw(
+            window_builder,
+            gl_builder,
+            events_loop,
+            color_format,
+            depth_format,
+        )
     }
 
     fn info(&self, device: &Self::Device) -> String {
@@ -288,11 +284,10 @@ impl BackendSpec for GlBackendSpec {
         depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-        window: &glutin::WindowedContext<glutin::PossiblyCurrent>,
-    ) -> Option<(
-        gfx::handle::RawRenderTargetView<Self::Resources>,
-        gfx::handle::RawDepthStencilView<Self::Resources>,
-    )> {
+        window: &glutin::WindowedContext,
+    ) -> MainTargetView<Self::Resources> {
+        // Basically taken from the definition of
+        // gfx_window_glutin::update_views()
         let dim = color_view.get_dimensions();
         assert_eq!(dim, depth_view.get_dimensions());
         window.updated_views_raw(dim, color_format, depth_format)

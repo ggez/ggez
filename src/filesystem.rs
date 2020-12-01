@@ -523,7 +523,7 @@ mod tests {
     fn headless_test_create_delete_file() {
         let mut fs = dummy_fs_for_tests();
         let test_file = path::Path::new("/testfile.txt");
-        let bytes = "test".as_bytes();
+        let bytes = b"test";
 
         {
             let mut file = fs.create(test_file).unwrap();
