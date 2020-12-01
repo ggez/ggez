@@ -149,7 +149,7 @@ impl Image {
             let mut buf = Vec::new();
             let mut reader = context.filesystem.open(path)?;
             let _ = reader.read_to_end(&mut buf)?;
-            image::load_from_memory(&buf)?.to_rgba()
+            image::load_from_memory(&buf)?.to_rgba8()
         };
         let (width, height) = img.dimensions();
         Self::from_rgba8(context, width as u16, height as u16, &img)

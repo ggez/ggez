@@ -161,15 +161,15 @@ impl Rect {
             rotation * Point2::new(x1, y1),
         ];
         let p0 = points[0];
-        let mut x_max = p0.x();
-        let mut x_min = p0.x();
-        let mut y_max = p0.y();
-        let mut y_min = p0.y();
+        let mut x_max = p0.x;
+        let mut x_min = p0.x;
+        let mut y_max = p0.y;
+        let mut y_min = p0.y;
         for p in &points {
-            x_max = f32::max(x_max, p.x());
-            x_min = f32::min(x_min, p.x());
-            y_max = f32::max(y_max, p.y());
-            y_min = f32::min(y_min, p.y());
+            x_max = f32::max(x_max, p.x);
+            x_min = f32::min(x_min, p.x);
+            y_max = f32::max(y_max, p.y);
+            y_min = f32::min(y_min, p.y);
         }
         *self = Rect {
             w: x_max - x_min,
