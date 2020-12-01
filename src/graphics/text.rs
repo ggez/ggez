@@ -1,6 +1,6 @@
 use glyph_brush::GlyphPositioner;
-use glyph_brush::{self, FontId, Layout, SectionText, VariedSection};
-pub use glyph_brush::{rusttype::Scale, HorizontalAlign as Align};
+use glyph_brush::{self, FontId, Layout, Section, Text as GbText};
+pub use glyph_brush::{ab_glyph::PxScale, GlyphBrush, HorizontalAlign as Align};
 use mint;
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -8,6 +8,7 @@ use std::f32;
 use std::fmt;
 use std::io::Read;
 use std::path;
+use std::rc::Rc;
 
 use super::*;
 
@@ -27,6 +28,22 @@ pub struct Font {
     // Add DebugId?  It makes Font::default() less convenient.
 }
 
+/// The font cache of the engine.
+///
+/// This type can be useful to measure text efficiently without being tied to
+/// the `Context` lifetime.
+#[derive(Clone, Debug)]
+pub struct FontCache {
+    glyph_brush: Rc<RefCell<GlyphBrush<DrawParam>>>,
+}
+
+impl FontCache {
+    /// Returns the width and height of the formatted and wrapped text.
+    pub fn dimensions(&self, text: &Text) -> (u32, u32) {
+        text.calculate_dimensions(&mut self.glyph_brush.borrow_mut())
+    }
+}
+
 /// A piece of text with optional color, font and font scale information.
 /// Drawing text generally involves one or more of these.
 /// These options take precedence over any similar field/argument.
@@ -41,7 +58,7 @@ pub struct TextFragment {
     /// Fragment's font, defaults to text's font.
     pub font: Option<Font>,
     /// Fragment's scale, defaults to text's scale.
-    pub scale: Option<Scale>,
+    pub scale: Option<PxScale>,
 }
 
 impl Default for TextFragment {
@@ -74,7 +91,7 @@ impl TextFragment {
     }
 
     /// Set fragment's scale, overrides text's scale.
-    pub fn scale(mut self, scale: Scale) -> TextFragment {
+    pub fn scale(mut self, scale: PxScale) -> TextFragment {
         self.scale = Some(scale);
         self
     }
@@ -112,7 +129,7 @@ where
     T: Into<TextFragment>,
 {
     fn from((text, font, scale): (T, Font, f32)) -> TextFragment {
-        text.into().font(font).scale(Scale::uniform(scale))
+        text.into().font(font).scale(PxScale::from(scale))
     }
 }
 
@@ -149,7 +166,7 @@ pub struct Text {
     bounds: Point2,
     layout: Layout<glyph_brush::BuiltInLineBreaker>,
     font_id: FontId,
-    font_scale: Scale,
+    font_scale: PxScale,
     cached_metrics: RefCell<CachedMetrics>,
 }
 
@@ -162,7 +179,7 @@ impl Default for Text {
             bounds: Point2::new(f32::INFINITY, f32::INFINITY),
             layout: Layout::default(),
             font_id: FontId::default(),
-            font_scale: Scale::uniform(DEFAULT_FONT_SCALE),
+            font_scale: PxScale::from(DEFAULT_FONT_SCALE),
             cached_metrics: RefCell::new(CachedMetrics::default()),
         }
     }
@@ -214,7 +231,7 @@ impl Text {
         P: Into<mint::Point2<f32>>,
     {
         self.bounds = Point2::from(bounds.into());
-        if self.bounds.x == f32::INFINITY {
+        if self.bounds.x() == f32::INFINITY {
             // Layouts don't make any sense if we don't wrap text at all.
             self.layout = Layout::default();
         } else {
@@ -225,7 +242,7 @@ impl Text {
     }
 
     /// Specifies text's font and font scale; used for fragments that don't have their own.
-    pub fn set_font(&mut self, font: Font, font_scale: Scale) -> &mut Text {
+    pub fn set_font(&mut self, font: Font, font_scale: PxScale) -> &mut Text {
         self.font_id = font.font_id;
         self.font_scale = font_scale;
         self.invalidate_cached_metrics();
@@ -233,12 +250,8 @@ impl Text {
     }
 
     /// Converts `Text` to a type `glyph_brush` can understand and queue.
-    fn generate_varied_section(
-        &self,
-        relative_dest: Point2,
-        color: Option<Color>,
-    ) -> VariedSection {
-        let sections: Vec<SectionText> = self
+    fn generate_varied_section(&self, relative_dest: Point2, color: Option<Color>) -> Section {
+        let sections: Vec<GbText> = self
             .fragments
             .iter()
             .map(|fragment| {
@@ -248,38 +261,37 @@ impl Text {
                     .map(|font| font.font_id)
                     .unwrap_or(self.font_id);
                 let scale = fragment.scale.unwrap_or(self.font_scale);
-                SectionText {
-                    text: &fragment.text,
-                    color: <[f32; 4]>::from(color),
-                    font_id,
-                    scale,
-                }
+                GbText::default()
+                    .with_text(&fragment.text)
+                    .with_font_id(font_id)
+                    .with_scale(scale)
+                    .with_color(<[f32; 4]>::from(color))
             })
             .collect();
 
         let relative_dest_x = {
             // This positions text within bounds with relative_dest being to the left, always.
-            let mut dest_x = relative_dest.x;
-            if self.bounds.x != f32::INFINITY {
+            let mut dest_x = relative_dest.x();
+            if self.bounds.x() != f32::INFINITY {
                 use glyph_brush::Layout::Wrap;
                 match self.layout {
                     Wrap {
                         h_align: Align::Center,
                         ..
-                    } => dest_x += self.bounds.x * 0.5,
+                    } => dest_x += self.bounds.x() * 0.5,
                     Wrap {
                         h_align: Align::Right,
                         ..
-                    } => dest_x += self.bounds.x,
+                    } => dest_x += self.bounds.x(),
                     _ => (),
                 }
             }
             dest_x
         };
-        let relative_dest = (relative_dest_x, relative_dest.y);
-        VariedSection {
+        let relative_dest = (relative_dest_x, relative_dest.y());
+        Section {
             screen_position: relative_dest,
-            bounds: (self.bounds.x, self.bounds.y),
+            bounds: (self.bounds.x(), self.bounds.y()),
             layout: self.layout,
             text: sections,
             ..Default::default()
@@ -317,50 +329,41 @@ impl Text {
     }
 
     /// Calculates, caches, and returns width and height of formatted and wrapped text.
-    fn calculate_dimensions(&self, context: &mut Context) -> (u32, u32) {
-        let mut max_width = 0;
-        let mut max_height = 0;
-        {
-            let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
-            use glyph_brush::GlyphCruncher;
-            let glyphs = context.gfx_context.glyph_brush.glyphs(varied_section);
-            for positioned_glyph in glyphs {
-                if let Some(rect) = positioned_glyph.pixel_bounding_box() {
-                    let font = positioned_glyph.font().expect("Glyph doesn't have a font");
-                    let v_metrics = font.v_metrics(positioned_glyph.scale());
-                    let max_y = positioned_glyph.position().y + positioned_glyph.scale().y
-                        - v_metrics.ascent;
-                    let max_y = max_y.ceil() as u32;
-                    max_width = std::cmp::max(max_width, rect.max.x as u32);
-                    max_height = std::cmp::max(max_height, max_y);
-                }
-            }
-        }
-        let (width, height) = (max_width, max_height);
-        if let Ok(mut metrics) = self.cached_metrics.try_borrow_mut() {
-            metrics.width = Some(width);
-            metrics.height = Some(height);
-        }
-        (width, height)
-    }
-
-    /// Returns the width and height of the formatted and wrapped text.
-    pub fn dimensions(&self, context: &mut Context) -> (u32, u32) {
+    fn calculate_dimensions(&self, gb: &mut GlyphBrush<DrawParam>) -> (u32, u32) {
         if let Ok(metrics) = self.cached_metrics.try_borrow() {
             if let (Some(width), Some(height)) = (metrics.width, metrics.height) {
                 return (width, height);
             }
         }
-        self.calculate_dimensions(context)
+        let mut max_width = 0;
+        let mut max_height = 0;
+        {
+            let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
+            use glyph_brush::GlyphCruncher;
+            if let Some(bounds) = gb.glyph_bounds(varied_section) {
+                max_width = bounds.width().ceil() as u32;
+                max_height = bounds.height().ceil() as u32;
+            }
+        }
+        if let Ok(mut metrics) = self.cached_metrics.try_borrow_mut() {
+            metrics.width = Some(max_width);
+            metrics.height = Some(max_height);
+        }
+        (max_width, max_height)
+    }
+
+    /// Returns the width and height of the formatted and wrapped text.
+    pub fn dimensions(&self, context: &Context) -> (u32, u32) {
+        self.calculate_dimensions(&mut context.gfx_context.glyph_brush.borrow_mut())
     }
 
     /// Returns the width of formatted and wrapped text, in screen coordinates.
-    pub fn width(&self, context: &mut Context) -> u32 {
+    pub fn width(&self, context: &Context) -> u32 {
         self.dimensions(context).0
     }
 
     /// Returns the height of formatted and wrapped text, in screen coordinates.
-    pub fn height(&self, context: &mut Context) -> u32 {
+    pub fn height(&self, context: &Context) -> u32 {
         self.dimensions(context).1
     }
 }
@@ -410,17 +413,17 @@ impl Font {
     pub fn new_glyph_font_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
         // Take a Cow here to avoid this clone where unnecessary?
         // Nah, let's not complicate things more than necessary.
-        let v = bytes.to_vec();
-        let font_id = context.gfx_context.glyph_brush.add_font_bytes(v);
+        let font = glyph_brush::ab_glyph::FontArc::try_from_vec(bytes.to_vec()).unwrap();
+        let font_id = context.gfx_context.glyph_brush.borrow_mut().add_font(font);
 
         Ok(Font { font_id })
     }
 
-    /// Returns the baked-in bytes of default font (currently `DejaVuSerif.ttf`).
+    /// Returns the baked-in bytes of default font (currently `LiberationSans-Regular.ttf`).
     pub(crate) fn default_font_bytes() -> &'static [u8] {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/resources/DejaVuSerif.ttf"
+            "/resources/LiberationMono-Regular.ttf"
         ))
     }
 }
@@ -428,6 +431,13 @@ impl Font {
 impl Default for Font {
     fn default() -> Self {
         Font { font_id: FontId(0) }
+    }
+}
+
+/// Obtains the font cache.
+pub fn font_cache(context: &Context) -> FontCache {
+    FontCache {
+        glyph_brush: context.gfx_context.glyph_brush.clone(),
     }
 }
 
@@ -441,7 +451,11 @@ where
 {
     let p = Point2::from(relative_dest.into());
     let varied_section = batch.generate_varied_section(p, color);
-    context.gfx_context.glyph_brush.queue(varied_section);
+    context
+        .gfx_context
+        .glyph_brush
+        .borrow_mut()
+        .queue(varied_section);
 }
 
 /// Exposes `glyph_brush`'s drawing API in case `ggez`'s text drawing is insufficient.
@@ -449,10 +463,10 @@ where
 /// level control over how text is drawn.
 pub fn queue_text_raw<'a, S, G>(context: &mut Context, section: S, custom_layout: Option<&G>)
 where
-    S: Into<Cow<'a, VariedSection<'a>>>,
+    S: Into<Cow<'a, Section<'a>>>,
     G: GlyphPositioner,
 {
-    let brush = &mut context.gfx_context.glyph_brush;
+    let brush = &mut context.gfx_context.glyph_brush.borrow_mut();
     match custom_layout {
         Some(layout) => brush.queue_custom_layout(section, layout),
         None => brush.queue(section),
@@ -485,7 +499,7 @@ where
     let gc = &ctx.gfx_context.glyph_cache.texture_handle;
     let backend = &ctx.gfx_context.backend_spec;
 
-    let action = gb.process_queued(
+    let action = gb.borrow_mut().process_queued(
         |rect, tex_data| update_texture::<GlBackendSpec>(backend, encoder, gc, rect, tex_data),
         to_vertex,
     );
@@ -521,6 +535,7 @@ where
             let _ = spritebatch.set_image(new_glyph_cache);
             ctx.gfx_context
                 .glyph_brush
+                .borrow_mut()
                 .resize_texture(new_width, new_height);
         }
     }
@@ -531,12 +546,12 @@ fn update_texture<B>(
     backend: &B,
     encoder: &mut gfx::Encoder<B::Resources, B::CommandBuffer>,
     texture: &gfx::handle::RawTexture<B::Resources>,
-    rect: glyph_brush::rusttype::Rect<u32>,
+    rect: glyph_brush::Rectangle<u32>,
     tex_data: &[u8],
 ) where
     B: BackendSpec,
 {
-    let offset = [rect.min.x as u16, rect.min.y as u16];
+    let offset = [rect.min[0] as u16, rect.min[1] as u16];
     let size = [rect.width() as u16, rect.height() as u16];
     let info = texture::ImageInfoCommon {
         xoffset: offset[0],
@@ -577,7 +592,7 @@ fn to_vertex(v: glyph_brush::GlyphVertex) -> DrawParam {
     DrawParam::default()
         .src(src_rect)
         .dest(dest_pt)
-        .color(v.color.into())
+        .color(v.extra.color.into())
 }
 
 #[cfg(test)]

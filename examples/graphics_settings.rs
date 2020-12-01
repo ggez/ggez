@@ -4,21 +4,20 @@
 //! Prints instructions to the console.
 
 use ggez;
-use nalgebra;
-use structopt;
 
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};
 use ggez::timer;
 use ggez::{Context, GameResult};
-use structopt::StructOpt;
+
+use argh::FromArgs;
+use glam;
 
 use std::env;
 use std::path;
 
-use ggez::nalgebra as na;
-type Point2 = na::Point2<f32>;
+type Point2 = glam::Vec2;
 
 struct WindowSettings {
     toggle_fullscreen: bool,
@@ -191,19 +190,19 @@ fn print_help() {
     println!("    ");
 }
 
-#[derive(StructOpt, Debug)]
-#[structopt(name = "graphics_settings")]
+/// Print out graphics settings.
+#[derive(FromArgs, Debug)]
 struct Opt {
-    /// What level of MSAA to try to use (1, 2, 4, 8)
-    #[structopt(short = "m", long = "msaa", default_value = "1")]
+    /// what level of MSAA to try to use (1, 2, 4, 8)
+    #[argh(option, short = 'm', long = "msaa", default = "1")]
     msaa: u32,
-    /// Try to use OpenGL ES 3.0 instead of regular OpenGL.
-    #[structopt(long = "es")]
+    /// try to use OpenGL ES 3.0 instead of regular OpenGL.
+    #[argh(switch, long = "es")]
     es: bool,
 }
 
 pub fn main() -> GameResult {
-    let opt = Opt::from_args();
+    let opt: Opt = argh::from_env();
 
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);

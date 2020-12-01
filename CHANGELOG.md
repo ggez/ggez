@@ -1,18 +1,65 @@
-# Unreleased
+# 0.6.0
 
 ## Added
 
+Nothing
+
 ## Changed
 
+ * Switched `rand` in the examples to `oorandom`, for basically
+   aesthetic reasons.  (Not advertising at all, honest.)
+ * Version bumped `lyon` to 0.14
+ * Version bumped `glyph_brush` to 0.6
  * Minimum rustc version is now 1.36
+
 
 ## Deprecated
 
+Nothing
+
 ## Removed
+
+Nothing
 
 ## Fixed
 
+Nothing
+
 ## Broken
+
+Nothing
+
+# 0.5.2
+
+## Added
+
+Nothing
+
+## Changed
+
+ * Various small doc additions/cleanups
+ * Simplified dev-dependencies for examples (rand -> oorandom, cgmath
+   and nalgebra -> glam)
+ * Made packaged download smaller and changed default font from DejaVu
+   to Liberation, takes the crate size from about 950 kb to about 150
+   kb
+
+
+## Deprecated
+
+Nothing
+
+## Removed
+
+Nothing
+
+## Fixed
+
+Nothing
+
+## Broken
+
+Nothing
 
 # 0.5.1
 

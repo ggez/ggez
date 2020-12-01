@@ -1,7 +1,7 @@
 [package]
 name = "ggez"
 description = "A lightweight game framework for making 2D games with minimum friction, inspired by Love2D."
-version = "0.5.1"
+version = "0.6.0-norelease"
 homepage = "http://ggez.rs"
 repository = "https://github.com/ggez/ggez"
 documentation = "https://docs.rs/ggez"
@@ -17,6 +17,7 @@ license = "MIT"
 readme = "README.md"
 categories = ["game-engines"]
 build = "build.rs"
+exclude = ["resources", "!LiberationMono-Regular.ttf"]
 
 [badges]
 maintenance = { status = "passively-maintained" }
@@ -35,36 +36,36 @@ c_dependencies = ["bzip2", "mp3"]
 [dependencies]
 bitflags = "1"
 zip = { version = "0.5", default-features = false }
-directories = "2"
+directories = "3"
 gfx = "0.18"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
-glyph_brush = "0.5"
-gfx_window_glutin = "0.30"
-glutin = "0.20"
-winit = { version = "0.19.3" }
-image = {version = "0.22", default-features = false, features = ["gif_codec", "jpeg", "ico", "png_codec", "pnm",
-"tga", "tiff", "webp", "bmp", "dxt", ] }
-rodio = { version = "0.11", default-features = false, features = ["flac", "vorbis", "wav"] }
+glyph_brush = "0.7"
+old_school_gfx_glutin_ext = "0.25"
+glutin = "0.25.1"
+winit = "0.23.0"
+image = {version = "0.23", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "dxt", ] }
+rodio = { version = "0.13", default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
 serde_derive = "1"
 toml = "0.5"
 log = "0.4"
-lyon = "0.13"
-smart-default = "0.5"
-nalgebra = {version = "0.18", features = ["mint"] }
-# Has to be the same version of mint that nalgebra uses here.
+lyon = "0.16"
+smart-default = "0.6"
+glam = { version = "0.10", features = ["mint"]}
+# Has to be the same version of mint that our math lib uses here.
 mint = "0.5"
-gilrs = "0.7"
-approx = "0.3"
+gilrs = "0.8"
+approx = "0.4"
 
 [dev-dependencies]
 chrono = "0.4"
-fern = "0.5"
-rand = "0.7"
-structopt = "0.2"
-cgmath = { version = "0.17", features = ["mint"]}
+fern = "0.6"
+oorandom = "11"
+argh = "0.1"
+
 skeptic = "0.13"
+getrandom = "0.2"
 
 [build-dependencies]
 skeptic = "0.13"

@@ -23,8 +23,8 @@ pub enum GameError {
     FilesystemError(String),
     /// An error in the config file
     ConfigError(String),
-    /// Happens when an `winit::EventsLoopProxy` attempts to
-    /// wake up an `winit::EventsLoop` that no longer exists.
+    /// Happens when an `winit::event_loop::EventLoopProxy` attempts to
+    /// wake up an `winit::event_loop::EventLoop` that no longer exists.
     EventLoopError(String),
     /// An error trying to load a resource, such as getting an invalid image file.
     ResourceLoadError(String),
@@ -90,7 +90,7 @@ impl From<std::io::Error> for GameError {
 
 impl From<toml::de::Error> for GameError {
     fn from(e: toml::de::Error) -> GameError {
-        let errstr = format!("TOML decode error: {}", e);
+        let errstr = format!("TOML decode error: {}", e.to_string());
 
         GameError::ConfigError(errstr)
     }
@@ -98,14 +98,14 @@ impl From<toml::de::Error> for GameError {
 
 impl From<toml::ser::Error> for GameError {
     fn from(e: toml::ser::Error) -> GameError {
-        let errstr = format!("TOML error (possibly encoding?): {}", e);
+        let errstr = format!("TOML error (possibly encoding?): {}", e.to_string());
         GameError::ConfigError(errstr)
     }
 }
 
 impl From<zip::result::ZipError> for GameError {
     fn from(e: zip::result::ZipError) -> GameError {
-        let errstr = format!("Zip error: {}", e);
+        let errstr = format!("Zip error: {}", e.to_string());
         GameError::ResourceLoadError(errstr)
     }
 }
@@ -119,7 +119,7 @@ impl From<DecoderError> for GameError {
 
 impl From<image::ImageError> for GameError {
     fn from(e: image::ImageError) -> GameError {
-        let errstr = format!("Image load error: {}", e);
+        let errstr = format!("Image load error: {}", e.to_string());
         GameError::ResourceLoadError(errstr)
     }
 }
@@ -156,7 +156,7 @@ where
 
 impl From<gfx::CombinedError> for GameError {
     fn from(e: gfx::CombinedError) -> GameError {
-        let errstr = format!("Texture+view load error: {}", e);
+        let errstr = format!("Texture+view load error: {}", e.to_string());
         GameError::VideoError(errstr)
     }
 }
@@ -195,8 +195,8 @@ impl From<gfx::shade::ProgramError> for GameError {
     }
 }
 
-impl From<winit::EventsLoopClosed> for GameError {
-    fn from(_: glutin::EventsLoopClosed) -> GameError {
+impl<T> From<winit::event_loop::EventLoopClosed<T>> for GameError {
+    fn from(_: glutin::event_loop::EventLoopClosed<T>) -> GameError {
         let e = "An event loop proxy attempted to wake up an event loop that no longer exists."
             .to_owned();
         GameError::EventLoopError(e)

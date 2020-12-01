@@ -11,7 +11,7 @@ use mint;
 /// # use ggez::*;
 /// # use ggez::graphics::*;
 /// # fn t<P>(ctx: &mut Context, drawable: &P) where P: Drawable {
-/// let my_dest = nalgebra::Point2::new(13.0, 37.0);
+/// let my_dest = mint::Point2::new(13.0, 37.0);
 /// graphics::draw(ctx, drawable, DrawParam::default().dest(my_dest) );
 /// # }
 /// ```
@@ -126,9 +126,18 @@ impl DrawParam {
         let m11 = cosr * self.scale.y;
         let m03 = self.offset.x * (1.0 - m00) - self.offset.y * m01 + self.dest.x;
         let m13 = self.offset.y * (1.0 - m11) - self.offset.x * m10 + self.dest.y;
-        Matrix4::new(
-            m00, m01, 0.0, m03, m10, m11, 0.0, m13, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-        )
+        // Welp, this transpose fixes some bug that makes nothing draw,
+        // that was introduced in commit 2c6b3cc03f34fb240f4246f5a68c75bd85b60eae.
+        // The best part is, I don't know if this code is wrong, or whether there's
+        // some reversed matrix multiply or such somewhere else that this cancel
+        // out.  Probably the former though.
+        Matrix4::from_cols_array(&[
+            m00, m01, 0.0, m03, // oh rustfmt you so fine
+            m10, m11, 0.0, m13, // you so fine you blow my mind
+            0.0, 0.0, 1.0, 0.0, // but leave my matrix formatting alone
+            0.0, 0.0, 0.0, 1.0, // plz
+        ])
+        .transpose()
     }
 
     /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single
@@ -227,7 +236,7 @@ pub(crate) struct DrawTransform {
 impl Default for DrawTransform {
     fn default() -> Self {
         DrawTransform {
-            matrix: na::one(),
+            matrix: Matrix4::identity(),
             src: Rect::one(),
             color: WHITE,
         }
@@ -236,18 +245,20 @@ impl Default for DrawTransform {
 
 impl From<DrawParam> for DrawTransform {
     fn from(param: DrawParam) -> Self {
-        let transform = param.to_matrix();
+        // TODO: Double-check this all lines up
+        let transform = param.to_na_matrix();
         DrawTransform {
             src: param.src,
             color: param.color,
-            matrix: transform.into(),
+            matrix: transform,
         }
     }
 }
 
 impl DrawTransform {
     pub(crate) fn to_instance_properties(&self, srgb: bool) -> InstanceProperties {
-        let mat: [[f32; 4]; 4] = self.matrix.into();
+        // TODO: Verify 'row arrays' is correct here.
+        let mat: [[f32; 4]; 4] = self.matrix.to_cols_array_2d();
         let color: [f32; 4] = if srgb {
             let linear_color: types::LinearColor = self.color.into();
             linear_color.into()

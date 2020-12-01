@@ -11,7 +11,7 @@ mod graphics;
 mod mesh;
 mod text;
 
-pub fn make_context_from_contextbuilder(mut cb: ContextBuilder) -> (Context, event::EventsLoop) {
+pub fn make_context_from_contextbuilder(mut cb: ContextBuilder) -> (Context, event::EventLoop<()>) {
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
@@ -21,7 +21,7 @@ pub fn make_context_from_contextbuilder(mut cb: ContextBuilder) -> (Context, eve
 }
 
 /// Make a basic `Context` with sane defaults.
-pub fn make_context() -> (Context, event::EventsLoop) {
+pub fn make_context() -> (Context, event::EventLoop<()>) {
     let cb = ContextBuilder::new("ggez_unit_tests", "ggez");
     make_context_from_contextbuilder(cb)
 }

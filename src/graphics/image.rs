@@ -1,8 +1,9 @@
 use std::io::Read;
 use std::path;
 
-use ::image;
 use gfx;
+#[rustfmt::skip]
+use ::image;
 
 use crate::context::{Context, DebugId};
 use crate::error::GameError;
@@ -112,6 +113,16 @@ where
             height,
             debug_id,
         })
+    }
+
+    /// A helper function to get the raw gfx texture handle
+    pub fn get_raw_texture_handle(&self) -> gfx::handle::RawTexture<B::Resources> {
+        self.texture_handle.clone()
+    }
+
+    /// A helper function to get the raw gfx texture view
+    pub fn get_raw_texture_view(&self) -> gfx::handle::RawShaderResourceView<B::Resources> {
+        self.texture.clone()
     }
 }
 
@@ -243,9 +254,9 @@ impl Image {
         let data = self.to_rgba8(ctx)?;
         let f = filesystem::create(ctx, path)?;
         let writer = &mut io::BufWriter::new(f);
-        let color_format = image::ColorType::RGBA(8);
+        let color_format = image::ColorType::Rgba8;
         match format {
-            ImageFormat::Png => image::png::PNGEncoder::new(writer)
+            ImageFormat::Png => image::png::PngEncoder::new(writer)
                 .encode(
                     &data,
                     u32::from(self.width),
@@ -330,7 +341,7 @@ impl Drawable for Image {
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
-        let real_scale = nalgebra::Vector2::new(
+        let real_scale = Vector2::new(
             param.scale.x * src_width * f32::from(self.width),
             param.scale.y * src_height * f32::from(self.height),
         );

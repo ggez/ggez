@@ -38,7 +38,7 @@ fn test_calculated_text_height() {
 #[test]
 fn test_monospace_text_is_actually_monospace() {
     let (ctx, _ev) = &mut tests::make_context();
-    let font = graphics::Font::new(ctx, "/DejaVuSansMono.ttf").unwrap();
+    let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf").unwrap();
 
     let text1 = graphics::Text::new(("Hello 1", font, 24.0));
     let text2 = graphics::Text::new(("Hello 2", font, 24.0));

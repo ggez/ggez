@@ -58,7 +58,7 @@ fn playing_returns_correct_value_based_on_state() {
     let mut sound = audio::Source::new(c, "/pew.ogg").unwrap();
     assert!(!sound.playing());
 
-    sound.play().unwrap();
+    sound.play(c).unwrap();
     assert!(sound.playing());
 
     sound.pause();
@@ -67,7 +67,7 @@ fn playing_returns_correct_value_based_on_state() {
     sound.resume();
     assert!(sound.playing());
 
-    sound.stop();
+    sound.stop(c);
     assert!(!sound.playing());
 }
 
@@ -78,7 +78,7 @@ fn paused_returns_correct_value_based_on_state() {
     let mut sound = audio::Source::new(c, "/pew.ogg").unwrap();
     assert!(!sound.paused());
 
-    sound.play().unwrap();
+    sound.play(c).unwrap();
     assert!(!sound.paused());
 
     sound.pause();
@@ -90,22 +90,24 @@ fn paused_returns_correct_value_based_on_state() {
     sound.pause();
     assert!(sound.paused());
 
-    sound.stop();
+    sound.stop(c);
     assert!(!sound.paused());
 }
 
 #[test]
 fn volume_persists_after_stop() {
-    let (c, _e) = &mut tests::make_context();
+    let (mut c, _e) = tests::make_context();
     let filename = "/pew.ogg";
-    test_volume_after_stop(audio::Source::new(c, filename).unwrap());
-    test_volume_after_stop(audio::SpatialSource::new(c, filename).unwrap());
+    let s1 = audio::Source::new(&mut c, filename).unwrap();
+    test_volume_after_stop(&mut c, s1);
+    let s2 = audio::SpatialSource::new(&mut c, filename).unwrap();
+    test_volume_after_stop(&mut c, s2);
 
-    fn test_volume_after_stop(mut sound: impl SoundSource) {
+    fn test_volume_after_stop(c: &mut Context, mut sound: impl SoundSource) {
         let volume = 0.8;
         sound.set_volume(volume);
         assert_eq!(sound.volume(), volume);
-        sound.stop();
+        sound.stop(c);
         assert_eq!(sound.volume(), volume);
     }
 }
@@ -114,15 +116,17 @@ fn volume_persists_after_stop() {
 fn volume_persists_after_play() {
     let (c, _e) = &mut tests::make_context();
     let filename = "/pew.ogg";
-    test_volume(audio::Source::new(c, filename).unwrap());
-    test_volume(audio::SpatialSource::new(c, filename).unwrap());
+    let s1 = audio::Source::new(c, filename).unwrap();
+    test_volume(c, s1);
+    let s2 = audio::SpatialSource::new(c, filename).unwrap();
+    test_volume(c, s2);
 
-    fn test_volume(mut sound: impl SoundSource) {
+    fn test_volume(c: &mut Context, mut sound: impl SoundSource) {
         let volume = 0.8;
         assert_eq!(sound.volume(), 1.0);
         sound.set_volume(volume);
         assert_eq!(sound.volume(), volume);
-        sound.play().unwrap();
+        sound.play(c).unwrap();
         assert_eq!(sound.volume(), volume);
     }
 }
