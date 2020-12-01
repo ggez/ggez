@@ -75,7 +75,7 @@ type ShaderResourceType = [f32; 4];
 
 type BackendSpecInitResult<Device, Factory, Resources> = Result<
     (
-        glutin::WindowedContext,
+        glutin::WindowedContext<glutin::PossiblyCurrent>,
         Device,
         Factory,
         gfx::handle::RawRenderTargetView<Resources>,
@@ -178,7 +178,7 @@ pub trait BackendSpec: fmt::Debug {
         depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-        window: &glutin::WindowedContext,
+        window: &glutin::WindowedContext<glutin::PossiblyCurrent>,
     ) -> MainTargetView<Self::Resources>;
 }
 
@@ -255,13 +255,11 @@ impl BackendSpec for GlBackendSpec {
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
     ) -> BackendSpecInitResult<Self::Device, Self::Factory, Self::Resources> {
-        gfx_window_glutin::init_raw(
-            window_builder,
-            gl_builder,
-            events_loop,
-            color_format,
-            depth_format,
-        )
+        gl_builder
+            .with_gfx_color_raw(color_format)
+            .with_gfx_depth_raw(depth_format)
+            .build_windowed(window_builder, &events_loop)
+            .map(|i| i.init_gfx_raw(color_format, depth_format))
     }
 
     fn info(&self, device: &Self::Device) -> String {
@@ -285,7 +283,7 @@ impl BackendSpec for GlBackendSpec {
         depth_view: &gfx::handle::RawDepthStencilView<Self::Resources>,
         color_format: gfx::format::Format,
         depth_format: gfx::format::Format,
-        window: &glutin::WindowedContext,
+        window: &glutin::WindowedContext<glutin::PossiblyCurrent>,
     ) -> MainTargetView<Self::Resources> {
         // Basically taken from the definition of
         // gfx_window_glutin::update_views()
