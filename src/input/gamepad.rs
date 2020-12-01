@@ -45,6 +45,13 @@ impl GilrsGamepadContext {
     }
 }
 
+impl From<Gilrs> for GilrsGamepadContext {
+    /// Converts from a `Gilrs` custom instance to a `GilrsGamepadContext`
+    fn from(gilrs: Gilrs) -> Self {
+        Self { gilrs }
+    }
+}
+
 impl GamepadContext for GilrsGamepadContext {
     fn next_event(&mut self) -> Option<Event> {
         self.gilrs.next_event()
