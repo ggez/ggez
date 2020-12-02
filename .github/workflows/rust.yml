@@ -1,22 +1,91 @@
-name: Rust
+name: CI
 
 on:
   push:
-    branches: [ master, devel ]
+    branches: [master, devel]
   pull_request:
-    branches: [ master, devel ]
+    branches: [master, devel]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+
   build:
-
-    runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        os: [windows-2019, ubuntu-20.04, macos-10.15]
+        toolchain: [stable, beta]
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose -- headless
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Get Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.toolchain }}
+        override: true
+
+    - name: Install alsa
+      if: ${{ runner.os == 'Linux' }}
+      run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
+
+    - name: Install udev
+      if: ${{ runner.os == 'Linux' }}
+      run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
+
+    - name: Run cargo check --all-targets w/ -D warnings
+      run: cargo check --all-targets
+      env:
+        RUSTFLAGS: "-D warnings"
+
+    - name: Run cargo test w/ -D warnings
+      if: ${{ runner.os == 'Linux' }}
+      run: cargo test headless
+      env:
+        RUSTFLAGS: "-D warnings"
+
+  rustfmt:
+    runs-on: ubuntu-20.04
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Get nightly Rust toolchain with rustfmt
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        override: true
+        components: rustfmt
+
+    - name: Run cargo fmt --all -- --check
+      run: cargo fmt --all -- --check
+
+  clippy:
+    runs-on: ubuntu-20.04
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Get stable Rust toolchain with clippy
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        components: clippy
+
+    - name: Install alsa
+      run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
+
+    - name: Install udev
+      run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
+
+    - name: Run cargo clippy --all-targets -- -D warnings
+      run: cargo clippy --all-targets -- -D warnings
