@@ -24,7 +24,7 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
 /// let mesh: Mesh = MeshBuilder::new()
 ///     .line(&[Point2::new(20.0, 20.0), Point2::new(40.0, 20.0)], 4.0, (255, 0, 0).into())?
-///     .circle(DrawMode::fill(), Point2::new(60.0, 38.0), 40.0, 1.0, (0, 255, 0).into())
+///     .circle(DrawMode::fill(), Point2::new(60.0, 38.0), 40.0, 1.0, (0, 255, 0).into())?
 ///     .build(ctx)?;
 /// # Ok(()) }
 /// ```
@@ -100,7 +100,7 @@ impl MeshBuilder {
         radius: f32,
         tolerance: f32,
         color: Color,
-    ) -> &mut Self
+    ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>>,
     {
@@ -129,7 +129,7 @@ impl MeshBuilder {
                 }
             };
         }
-        self
+        Ok(self)
     }
 
     /// Create a new mesh for an ellipse.
@@ -143,7 +143,7 @@ impl MeshBuilder {
         radius2: f32,
         tolerance: f32,
         color: Color,
-    ) -> &mut Self
+    ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>>,
     {
@@ -180,7 +180,7 @@ impl MeshBuilder {
                 }
             };
         }
-        self
+        Ok(self)
     }
 
     /// Create a new mesh for a series of connected lines.
@@ -278,7 +278,12 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a rectangle.
-    pub fn rectangle(&mut self, mode: DrawMode, bounds: Rect, color: Color) -> &mut Self {
+    pub fn rectangle(
+        &mut self,
+        mode: DrawMode,
+        bounds: Rect,
+        color: Color,
+    ) -> GameResult<&mut Self> {
         {
             let buffers = &mut self.buffer;
             let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
@@ -296,7 +301,7 @@ impl MeshBuilder {
                 }
             };
         }
-        self
+        Ok(self)
     }
 
     /// Create a new [`Mesh`](struct.Mesh.html) from a raw list of triangles.
@@ -356,9 +361,9 @@ impl MeshBuilder {
     }
 
     /// Takes an `Image` to apply to the mesh.
-    pub fn texture(&mut self, texture: Image) -> &mut Self {
+    pub fn texture(&mut self, texture: Image) -> GameResult<&mut Self> {
         self.image = Some(texture);
-        self
+        Ok(self)
     }
 
     /// Creates a `Mesh` from a raw list of triangles defined from vertices
@@ -369,7 +374,12 @@ impl MeshBuilder {
     /// This is the most primitive mesh-creation method, but allows you full
     /// control over the tesselation and texturing.  It has the same constraints
     /// as `Mesh::from_raw()`.
-    pub fn raw<V>(&mut self, verts: &[V], indices: &[u32], texture: Option<Image>) -> &mut Self
+    pub fn raw<V>(
+        &mut self,
+        verts: &[V],
+        indices: &[u32],
+        texture: Option<Image>,
+    ) -> GameResult<&mut Self>
     where
         V: Into<Vertex> + Clone,
     {
@@ -384,7 +394,7 @@ impl MeshBuilder {
         self.buffer.vertices.extend(vertices);
         self.buffer.indices.extend(indices);
         self.image = texture;
-        self
+        Ok(self)
     }
 
     /// Takes the accumulated geometry and load it into GPU memory,
