@@ -87,25 +87,25 @@ impl event::EventHandler for GameState {
             bunny.position += bunny.velocity;
             bunny.velocity += Vec2::new(0.0, GRAVITY);
 
-            if bunny.position.x() > self.max_x {
+            if bunny.position.x > self.max_x {
                 bunny.velocity *= Vec2::new(-1.0, 0.);
-                bunny.position.set_x(self.max_x);
-            } else if bunny.position.x() < 0.0 {
+                bunny.position.x = self.max_x;
+            } else if bunny.position.x < 0.0 {
                 bunny.velocity *= Vec2::new(-1.0, 0.0);
-                bunny.position.set_x(0.0);
+                bunny.position.x = 0.0;
             }
 
-            if bunny.position.y() > self.max_y {
-                bunny.velocity.set_y(bunny.position.y() * -0.8);
-                bunny.position.set_y(self.max_y);
+            if bunny.position.y > self.max_y {
+                bunny.velocity.y = bunny.position.y * -0.8;
+                bunny.position.y = self.max_y;
 
                 // Flip a coin
                 if self.rng.rand_i32() > 0 {
                     bunny.velocity -= Vec2::new(0.0, 3.0 + (self.rng.rand_float() * 4.0));
                 }
-            } else if bunny.position.y() < 0.0 {
-                bunny.velocity.set_y(0.0);
-                bunny.position.set_y(0.0);
+            } else if bunny.position.y < 0.0 {
+                bunny.velocity.y = 0.0;
+                bunny.position.y = 0.0;
             }
         }
 
