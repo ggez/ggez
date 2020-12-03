@@ -204,14 +204,14 @@ fn wrap_actor_position(actor: &mut Actor, sx: f32, sy: f32) {
     // Wrap screen
     let screen_x_bounds = sx / 2.0;
     let screen_y_bounds = sy / 2.0;
-    if actor.pos.x() > screen_x_bounds {
+    if actor.pos.x > screen_x_bounds {
         actor.pos -= Vec2::new(sx, 0.0);
-    } else if actor.pos.x() < -screen_x_bounds {
+    } else if actor.pos.x < -screen_x_bounds {
         actor.pos += Vec2::new(sx, 0.0);
     };
-    if actor.pos.y() > screen_y_bounds {
+    if actor.pos.y > screen_y_bounds {
         actor.pos -= Vec2::new(0.0, sy);
-    } else if actor.pos.y() < -screen_y_bounds {
+    } else if actor.pos.y < -screen_y_bounds {
         actor.pos += Vec2::new(0.0, sy);
     }
 }
@@ -225,8 +225,8 @@ fn handle_timed_life(actor: &mut Actor, dt: f32) {
 /// to the screen coordinate system, which has Y
 /// pointing downward and the origin at the top-left,
 fn world_to_screen_coords(screen_width: f32, screen_height: f32, point: Point2) -> Point2 {
-    let x = point.x() + screen_width / 2.0;
-    let y = screen_height - (point.y() + screen_height / 2.0);
+    let x = point.x + screen_width / 2.0;
+    let y = screen_height - (point.y + screen_height / 2.0);
     Point2::new(x, y)
 }
 
