@@ -4,7 +4,6 @@
 //! Prints instructions to the console.
 
 use ggez;
-use nalgebra;
 use structopt;
 
 use ggez::conf;

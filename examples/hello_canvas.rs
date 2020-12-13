@@ -2,7 +2,6 @@
 //! to a canvas.
 
 use ggez;
-use nalgebra;
 
 use ggez::event;
 use ggez::graphics::{self, Color};

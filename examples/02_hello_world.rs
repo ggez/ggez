@@ -1,6 +1,5 @@
 //! Basic hello world example.
 
-use cgmath;
 use ggez;
 
 use ggez::event;
