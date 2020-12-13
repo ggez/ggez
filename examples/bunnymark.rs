@@ -6,7 +6,7 @@ use std::path;
 
 use ggez::nalgebra as na;
 use rand::rngs::ThreadRng;
-use rand::{self, Rng};
+use rand::Rng;
 
 use ggez::graphics::{spritebatch::SpriteBatch, Color, Image};
 use ggez::Context;

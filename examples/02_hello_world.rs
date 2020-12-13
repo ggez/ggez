@@ -1,7 +1,5 @@
 //! Basic hello world example.
 
-use ggez;
-
 use ggez::event;
 use ggez::graphics;
 use ggez::{Context, GameResult};

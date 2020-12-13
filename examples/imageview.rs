@@ -1,7 +1,3 @@
-use cgmath;
-use ggez;
-use rand;
-
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::event;

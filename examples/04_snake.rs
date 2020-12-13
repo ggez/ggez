@@ -12,12 +12,7 @@
 //! Author: @termhn
 //! Original repo: https://github.com/termhn/ggez_snake
 
-// First we'll import the crates we need for our game;
-// in this case that is just `ggez` and `rand`.
-use ggez;
-use rand;
-
-// Next we need to actually `use` the pieces of ggez that we are going
+// First we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
 use ggez::event::{KeyCode, KeyMods};
 use ggez::{event, graphics, Context, GameResult};

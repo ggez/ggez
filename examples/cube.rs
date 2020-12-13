@@ -6,9 +6,6 @@
 
 #[macro_use]
 extern crate gfx;
-extern crate gfx_device_gl;
-extern crate ggez;
-extern crate nalgebra;
 
 use gfx::texture;
 use gfx::traits::FactoryExt;

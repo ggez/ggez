@@ -1,8 +1,5 @@
 //! An example of how to draw to `Image`'s using the `Canvas` type.
 
-use cgmath;
-use ggez;
-
 use ggez::event;
 use ggez::graphics::{self, Color, DrawParam};
 use ggez::{Context, GameResult};

@@ -2,8 +2,6 @@
 //!
 //! You really want to run this one in release mode.
 
-use ggez;
-
 use ggez::event;
 use ggez::graphics;
 use ggez::nalgebra::{Point2, Vector2};

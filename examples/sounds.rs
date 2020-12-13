@@ -1,5 +1,3 @@
-use ggez;
-
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::event;

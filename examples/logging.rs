@@ -6,11 +6,7 @@
 //! `fern` provides a way to write log output to a `std::sync::mpsc::Sender`, so we can use a
 //! matching `std::sync::mpsc::Receiver` to get formatted log strings for file output.
 
-extern crate chrono;
-extern crate fern;
-extern crate ggez;
-#[macro_use]
-extern crate log;
+use log::*;
 
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event::{EventHandler, KeyCode, KeyMods};
