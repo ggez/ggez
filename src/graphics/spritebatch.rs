@@ -18,7 +18,6 @@ use crate::error::GameResult;
 use crate::graphics::shader::BlendMode;
 use crate::graphics::types::FilterMode;
 use crate::graphics::{self, transform_rect, BackendSpec, DrawParam, DrawTransform, Rect};
-use gfx;
 use gfx::Factory;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
