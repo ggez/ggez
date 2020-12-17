@@ -25,6 +25,7 @@ use std::fmt;
 use std::path::Path;
 use std::u16;
 
+use gfx;
 use gfx::texture;
 use gfx::Device;
 use gfx::Factory;
