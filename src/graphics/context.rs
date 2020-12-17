@@ -3,7 +3,6 @@ use std::rc::Rc;
 
 use gfx::traits::FactoryExt;
 use gfx::Factory;
-use glutin;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
 #[rustfmt::skip]
 use ::image as imgcrate;
