@@ -1,7 +1,6 @@
 use std::io::Read;
 use std::path;
 
-use gfx;
 #[rustfmt::skip]
 use ::image;
 
