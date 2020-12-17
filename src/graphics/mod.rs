@@ -25,14 +25,10 @@ use std::fmt;
 use std::path::Path;
 use std::u16;
 
-use gfx;
 use gfx::texture;
 use gfx::Device;
 use gfx::Factory;
-use gfx_device_gl;
-use glutin;
 use old_school_gfx_glutin_ext::*;
-use winit;
 
 use crate::conf;
 use crate::conf::WindowMode;
