@@ -1,7 +1,6 @@
 use glyph_brush::GlyphPositioner;
 use glyph_brush::{self, FontId, Layout, Section, Text as GbText};
 pub use glyph_brush::{ab_glyph::PxScale, GlyphBrush, HorizontalAlign as Align};
-use mint;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::f32;
