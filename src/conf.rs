@@ -13,7 +13,6 @@
 //! passed to the [`ContextBuilder`](../struct.ContextBuilder.html).
 
 use std::io;
-use toml;
 
 use crate::error::GameResult;
 
