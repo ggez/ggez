@@ -1,7 +1,5 @@
 use crate::graphics::*;
 
-use mint;
-
 /// A struct containing all the necessary info for drawing a [`Drawable`](trait.Drawable.html).
 ///
 /// This struct implements the `Default` trait, so to set only some parameter

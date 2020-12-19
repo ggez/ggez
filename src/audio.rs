@@ -14,9 +14,6 @@ use std::time;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use mint;
-use rodio;
-
 use crate::context::Context;
 use crate::error::GameError;
 use crate::error::GameResult;

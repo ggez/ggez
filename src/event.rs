@@ -10,7 +10,6 @@
 //! source code for this module, or the [`eventloop`
 //! example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs).
 
-use gilrs;
 use winit::{self, dpi};
 
 // TODO LATER: I kinda hate all these re-exports.  I kinda hate

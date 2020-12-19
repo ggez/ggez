@@ -1,20 +1,9 @@
 //! Error types and conversion functions.
-
-use std;
 use std::error::Error;
 use std::fmt;
 use std::sync::Arc;
 
-use gfx;
-use glutin;
-use winit;
-
-use gilrs;
-use image;
-use lyon;
 use rodio::decoder::DecoderError;
-use toml;
-use zip;
 
 /// An enum containing all kinds of game framework errors.
 #[derive(Debug, Clone)]
