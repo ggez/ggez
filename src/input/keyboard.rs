@@ -50,7 +50,7 @@
 //!         match key {
 //!             // Quit if Shift+Ctrl+Q is pressed.
 //!             KeyCode::Q => {
-//!                 if mods.contains(KeyMods::SHIFT & KeyMods::CTRL) {
+//!                 if mods.contains(KeyMods::SHIFT) && mods.contains(KeyMods::CTRL) {
 //!                     println!("Terminating!");
 //!                     event::quit(ctx);
 //!                 } else if mods.contains(KeyMods::SHIFT) || mods.contains(KeyMods::CTRL) {
