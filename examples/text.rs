@@ -1,9 +1,5 @@
 //! This example demonstrates how to use `Text` to draw TrueType font texts efficiently.
 
-use cgmath;
-use ggez;
-use rand;
-
 use cgmath::Point2;
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;

@@ -2,10 +2,6 @@
 //!
 //! You really want to run this one in release mode.
 
-extern crate cgmath;
-extern crate ggez;
-extern crate rand;
-
 use ggez::event;
 use ggez::graphics;
 use ggez::timer;

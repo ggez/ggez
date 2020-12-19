@@ -66,7 +66,6 @@
 //! into sRGB for you to match everything else.  The purpose of this
 //! example is to show that this actually *works* correctly!
 
-use ggez;
 use ggez::event;
 use ggez::graphics::{self, DrawParam};
 use ggez::nalgebra as na;

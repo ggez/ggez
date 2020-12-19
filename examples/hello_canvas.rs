@@ -1,9 +1,6 @@
 //! Basic hello world example, drawing
 //! to a canvas.
 
-use ggez;
-use nalgebra;
-
 use ggez::event;
 use ggez::graphics::{self, Color};
 use ggez::nalgebra as na;

@@ -1,6 +1,5 @@
 //! The simplest possible example that does something.
 
-use ggez;
 use ggez::event;
 use ggez::graphics;
 use ggez::nalgebra as na;

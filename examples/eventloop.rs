@@ -8,9 +8,6 @@
 //!
 //! It is functionally identical to the `super_simple.rs` example apart from that.
 
-use cgmath;
-use ggez;
-
 use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
 use ggez::graphics::{self, DrawMode};

@@ -4,8 +4,6 @@
 //! It doesn't use an event loop, it just runs once and exits,
 //! printing a bunch of stuff to the console.
 
-use ggez;
-
 use ggez::{conf, filesystem, ContextBuilder, GameResult};
 use std::env;
 use std::io::{Read, Write};

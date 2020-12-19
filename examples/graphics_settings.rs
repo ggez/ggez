@@ -3,10 +3,6 @@
 //!
 //! Prints instructions to the console.
 
-use ggez;
-use nalgebra;
-use structopt;
-
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};

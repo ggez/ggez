@@ -1,8 +1,5 @@
 //! Basic hello world example.
 
-use cgmath;
-use ggez;
-
 use ggez::event;
 use ggez::graphics;
 use ggez::{Context, GameResult};

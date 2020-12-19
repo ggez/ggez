@@ -1,7 +1,4 @@
 //! Demonstrates various projection and matrix fiddling/testing.
-use ggez;
-use nalgebra;
-
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};
 use ggez::nalgebra as na;

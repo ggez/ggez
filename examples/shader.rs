@@ -1,8 +1,6 @@
 //! A very simple shader example.
 
-use cgmath;
-use gfx::{self, *};
-use ggez;
+use gfx::*;
 
 use ggez::event;
 use ggez::graphics::{self, DrawMode};
