@@ -145,12 +145,16 @@ impl Image {
     /// Load a new image from the file at the given path. The documentation for the
     /// [`filesystem`](../filesystem/index.html) module explains how the path must be specified.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
-        let img = {
-            let mut buf = Vec::new();
-            let mut reader = context.filesystem.open(path)?;
-            let _ = reader.read_to_end(&mut buf)?;
-            image::load_from_memory(&buf)?.to_rgba()
-        };
+        let mut buf = Vec::new();
+        let mut reader = context.filesystem.open(path)?;
+        let _ = reader.read_to_end(&mut buf)?;
+        Self::from_bytes(context, &buf)
+    }
+
+    /// Creates a new `Image` from the given buffer, which should contain an image encoded
+    /// in a supported image file format.
+    pub fn from_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
+        let img = image::load_from_memory(&bytes)?.to_rgba();
         let (width, height) = img.dimensions();
         Self::from_rgba8(context, width as u16, height as u16, &img)
     }
