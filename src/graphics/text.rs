@@ -47,7 +47,7 @@ impl FontCache {
 /// Drawing text generally involves one or more of these.
 /// These options take precedence over any similar field/argument.
 /// Implements `From` for `char`, `&str`, `String` and
-/// `(String, Font, Scale)`.
+/// `(String, Font, PxScale)`.
 #[derive(Clone, Debug)]
 pub struct TextFragment {
     /// Text string itself.

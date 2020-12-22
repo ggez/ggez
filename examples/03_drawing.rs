@@ -62,7 +62,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
         120.0,
         1.0,
         Color::new(1.0, 1.0, 0.0, 1.0),
-    );
+    )?;
 
     mb.circle(
         DrawMode::fill(),
@@ -70,7 +70,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
         40.0,
         1.0,
         Color::new(1.0, 0.0, 1.0, 1.0),
-    );
+    )?;
 
     mb.build(ctx)
 }
@@ -98,7 +98,7 @@ fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
     let triangle_indices = vec![0, 1, 2];
 
     let i = graphics::Image::new(ctx, "/rock.png")?;
-    mb.raw(&triangle_verts, &triangle_indices, Some(i));
+    mb.raw(&triangle_verts, &triangle_indices, Some(i))?;
     mb.build(ctx)
 }
 
@@ -180,9 +180,9 @@ pub fn main() -> GameResult {
 
     let cb = ggez::ContextBuilder::new("drawing", "ggez").add_resource_path(resource_dir);
 
-    let (ctx, events_loop) = &mut cb.build()?;
+    let (mut ctx, events_loop) = cb.build()?;
 
-    println!("{}", graphics::renderer_info(ctx)?);
-    let state = &mut MainState::new(ctx).unwrap();
+    println!("{}", graphics::renderer_info(&mut ctx)?);
+    let state = MainState::new(&mut ctx).unwrap();
     event::run(ctx, events_loop, state)
 }

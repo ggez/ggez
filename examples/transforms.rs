@@ -37,7 +37,7 @@ impl MainState {
                     Self::GRID_POINT_RADIUS,
                     2.0,
                     color,
-                );
+                )?;
             }
         }
         let gridmesh = gridmesh_builder.build(ctx)?;
@@ -64,7 +64,7 @@ impl MainState {
                     x as f32 * Self::GRID_INTERVAL,
                     y as f32 * Self::GRID_INTERVAL,
                 );
-                let s = format!("({}, {})", point.x(), point.y());
+                let s = format!("({}, {})", point.x, point.y);
                 let t = graphics::Text::new(s);
                 graphics::queue_text(ctx, &t, point, None);
             }
@@ -135,7 +135,7 @@ pub fn main() -> GameResult {
                 .title("transforms -- Press spacebar to cycle projection!"),
         )
         .add_resource_path(resource_dir);
-    let (ctx, event_loop) = &mut cb.build()?;
-    let state = &mut MainState::new(ctx)?;
+    let (mut ctx, event_loop) = cb.build()?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }

@@ -106,7 +106,7 @@ impl MainState {
             text: "-".to_string(),
             color: Some(AQUA),
             font: Some(graphics::Font::default()),
-            scale: Some(graphics::Scale::uniform(300.0)),
+            scale: Some(graphics::PxScale::from(300.0)),
         });
         let demo_spritebatch = graphics::spritebatch::SpriteBatch::new(demo_image.clone());
 
@@ -195,8 +195,9 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("super_simple", "ggez").add_resource_path(resource_dir);
-    let (ctx, event_loop) = &mut cb.build()?;
-    let state = &mut MainState::new(ctx)?;
+    let cb = ggez::ContextBuilder::new("colorspace", "ggez").add_resource_path(resource_dir);
+    let (mut ctx, event_loop) = cb.build()?;
+
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }

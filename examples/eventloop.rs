@@ -18,7 +18,7 @@ use ggez::GameResult;
 
 pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("eventloop", "ggez");
-    let (ctx, events_loop) = &mut cb.build()?;
+    let (ref mut ctx, events_loop) = cb.build()?;
 
     let mut position: f32 = 1.0;
 

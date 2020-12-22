@@ -28,7 +28,7 @@ impl MainState {
                 8.0,
                 1.0,
                 (0, 0, 255).into(),
-            )
+            )?
             .line(
                 &[Vec2::new(0.0, 0.0), Vec2::new(8.0, 0.0)],
                 2.0,
@@ -117,8 +117,8 @@ pub fn main() -> GameResult {
     };
 
     let cb = ggez::ContextBuilder::new("spritebatch", "ggez").add_resource_path(resource_dir);
-    let (ctx, event_loop) = &mut cb.build()?;
+    let (mut ctx, event_loop) = cb.build()?;
 
-    let state = &mut MainState::new(ctx)?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }

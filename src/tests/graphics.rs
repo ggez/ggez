@@ -16,10 +16,10 @@ fn image_encode() {
 
 fn get_rgba_sample(rgba_buf: &[u8], width: usize, sample_pos: Vec2) -> (u8, u8, u8, u8) {
     (
-        rgba_buf[(width * sample_pos.y() as usize + sample_pos.x() as usize) * 4 + 0],
-        rgba_buf[(width * sample_pos.y() as usize + sample_pos.x() as usize) * 4 + 1],
-        rgba_buf[(width * sample_pos.y() as usize + sample_pos.x() as usize) * 4 + 2],
-        rgba_buf[(width * sample_pos.y() as usize + sample_pos.x() as usize) * 4 + 3],
+        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 0],
+        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 1],
+        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 2],
+        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 3],
     )
 }
 

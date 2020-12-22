@@ -494,7 +494,7 @@ impl event::EventHandler for GameState {
 
 fn main() -> GameResult {
     // Here we use a ContextBuilder to setup metadata about our game. First the title and author
-    let (ctx, events_loop) = &mut ggez::ContextBuilder::new("snake", "Gray Olson")
+    let (ctx, events_loop) = ggez::ContextBuilder::new("snake", "Gray Olson")
         // Next we set up the window. This title will be displayed in the title bar of the window.
         .window_setup(ggez::conf::WindowSetup::default().title("Snake!"))
         // Now we get to set the size of the window, which we use our SCREEN_SIZE constant from earlier to help with
@@ -504,7 +504,7 @@ fn main() -> GameResult {
         .build()?;
 
     // Next we create a new instance of our GameState struct, which implements EventHandler
-    let state = &mut GameState::new();
+    let state = GameState::new();
     // And finally we actually run our game, passing in our context and state.
     event::run(ctx, events_loop, state)
 }

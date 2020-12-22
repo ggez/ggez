@@ -37,7 +37,7 @@ impl MainState {
         for color in colors {
             let x = (self.rng.rand_i32() % 50) as f32;
             let y = (self.rng.rand_i32() % 50) as f32;
-            let point = glam::Vec2::new(last_point.x() + x, last_point.y() + y);
+            let point = glam::Vec2::new(last_point.x + x, last_point.y + y);
             mb.line(&[last_point, point], 3.0, color)?;
             last_point = point;
         }
@@ -59,7 +59,7 @@ impl MainState {
         let pixel_sized_text = graphics::Text::new(("This text is 32 pixels high", font, 32.0));
 
         // "detached" sounds keep playing even after they are dropped
-        let _ = sound.play_detached();
+        let _ = sound.play_detached(ctx);
 
         let rng = oorandom::Rand32::new(271828);
 
@@ -132,8 +132,8 @@ pub fn main() -> GameResult {
     };
 
     let cb = ggez::ContextBuilder::new("imageview", "ggez").add_resource_path(resource_dir);
-    let (ctx, event_loop) = &mut cb.build()?;
+    let (mut ctx, event_loop) = cb.build()?;
 
-    let state = &mut MainState::new(ctx)?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }

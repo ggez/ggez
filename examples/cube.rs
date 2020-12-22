@@ -272,7 +272,7 @@ pub fn main() -> GameResult {
 
     let cb = ggez::ContextBuilder::new("cube", "ggez").add_resource_path(resource_dir);
 
-    let (ctx, events_loop) = &mut cb.build()?;
-    let state = &mut MainState::new(ctx);
+    let (mut ctx, events_loop) = cb.build()?;
+    let state = MainState::new(&mut ctx);
     event::run(ctx, events_loop, state)
 }

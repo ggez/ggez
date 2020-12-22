@@ -112,7 +112,7 @@ impl event::EventHandler for MainState {
                     DrawMode::fill(),
                     graphics::Rect::new(fx, fy, 5.0, 5.0),
                     color,
-                );
+                )?;
             }
         }
         let mesh = mb.build(ctx)?;
@@ -232,11 +232,11 @@ pub fn main() -> GameResult {
         .backend(backend)
         .add_resource_path(resource_dir);
 
-    let (ctx, events_loop) = &mut cb.build()?;
+    let (mut ctx, events_loop) = cb.build()?;
 
-    println!("Renderer: {}", graphics::renderer_info(ctx).unwrap());
+    println!("Renderer: {}", graphics::renderer_info(&ctx).unwrap());
 
     print_help();
-    let state = &mut MainState::new(ctx)?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, events_loop, state)
 }
