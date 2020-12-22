@@ -25,8 +25,8 @@ pub fn context_build_tests() {
         }
         let (c, _e) = cb.clone().build().unwrap();
         let (w, h) = graphics::drawable_size(&c);
-        assert_eq!(w, cb.conf.window_mode.width.into());
-        assert_eq!(h, cb.conf.window_mode.height.into());
+        assert_eq!(w, cb.conf.window_mode.width);
+        assert_eq!(h, cb.conf.window_mode.height);
         // Can't really test whether or not the window is resizable?
     }
 }

@@ -69,8 +69,8 @@
 use ggez;
 use ggez::event;
 use ggez::graphics::{self, DrawParam};
-use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
+use glam::*;
 
 /// This is a nice aqua test color that will look a lot brighter
 /// than it should if we mess something up.
@@ -82,6 +82,7 @@ struct MainState {
     square_mesh: graphics::Mesh,
     demo_image: graphics::Image,
     demo_text: graphics::Text,
+    demo_spritebatch: graphics::spritebatch::SpriteBatch,
 }
 
 impl MainState {
@@ -89,7 +90,7 @@ impl MainState {
         let demo_mesh = graphics::Mesh::new_circle(
             ctx,
             graphics::DrawMode::fill(),
-            na::Point2::new(0.0, 0.0),
+            Vec2::new(0.0, 0.0),
             100.0,
             2.0,
             AQUA,
@@ -107,12 +108,14 @@ impl MainState {
             font: Some(graphics::Font::default()),
             scale: Some(graphics::Scale::uniform(300.0)),
         });
+        let demo_spritebatch = graphics::spritebatch::SpriteBatch::new(demo_image.clone());
 
         let s = MainState {
             demo_mesh,
             square_mesh,
             demo_image,
             demo_text,
+            demo_spritebatch,
         };
         Ok(s)
     }
@@ -130,29 +133,51 @@ impl event::EventHandler for MainState {
         graphics::draw(
             ctx,
             &self.square_mesh,
-            DrawParam::default().dest(na::Point2::new(200.0, 100.0)),
+            DrawParam::default().dest(Vec2::new(200.0, 100.0)),
         )?;
 
         // Draw things partially over the white square so we can see
         // where they are; they SHOULD be the same color as the
         // background.
+
+        // mesh
         graphics::draw(
             ctx,
             &self.demo_mesh,
-            DrawParam::default().dest(na::Point2::new(150.0, 200.0)),
+            DrawParam::default().dest(Vec2::new(150.0, 200.0)),
         )?;
 
+        // image
         graphics::draw(
             ctx,
             &self.demo_image,
-            DrawParam::default().dest(na::Point2::new(450.0, 200.0)),
+            DrawParam::default().dest(Vec2::new(450.0, 200.0)),
         )?;
 
+        // text
         graphics::draw(
             ctx,
             &self.demo_text,
-            DrawParam::default().dest(na::Point2::new(150.0, 135.0)),
+            DrawParam::default().dest(Vec2::new(150.0, 135.0)),
         )?;
+
+        // spritebatch
+        self.demo_spritebatch.add(
+            DrawParam::default()
+                .dest(Vec2::new(250.0, 350.0))
+                .scale(Vec2::new(0.25, 0.25)),
+        );
+        self.demo_spritebatch.add(
+            DrawParam::default()
+                .dest(Vec2::new(250.0, 425.0))
+                .scale(Vec2::new(0.1, 0.1)),
+        );
+        graphics::draw(
+            ctx,
+            &self.demo_spritebatch,
+            DrawParam::default().dest(Vec2::new(0.0, 0.0)),
+        )?;
+        self.demo_spritebatch.clear();
 
         graphics::present(ctx)?;
         Ok(())

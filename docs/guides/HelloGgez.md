@@ -21,7 +21,7 @@ You did know this was a Rust library right? 😉
 Open up your terminal and make sure it is in the location where you want to create your new project folder.
 
 ```bash
-cargo new hello_ggez
+cargo new --bin hello_ggez
 cd hello_ggez
 ```
 
@@ -35,7 +35,7 @@ version = "0.1.0"
 authors = ["Awesome Person awesome@person.com"]
 
 [dependencies]
-ggez = "0.5"
+ggez = "0.5.1"
 ```
 
 ### ✔ Check Project Setup
@@ -84,10 +84,10 @@ Let's add `EventHandler` to our `src/main.rs` file:
 struct State {}
 
 impl ggez::event::EventHandler for State {
-  fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+  fn update(&mut self, ctx: &mut Context) -> GameResult {
       Ok(())
   }
-  fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+  fn draw(&mut self, ctx: &mut Context) -> GameResult {
       Ok(())
   }
 }
@@ -107,7 +107,7 @@ But, we're not going to write any bugs right? 😉
 In your main, you will need to create an instance of `State`.
 ```rust,skt-definition-no-main,no_run
 pub fn main() {
-    let state = &mut State { };
+    let state = &mut State {};
 }
 ```
 
@@ -237,7 +237,7 @@ fn update(&mut self, ctx: &mut Context) -> GameResult {
 To see the changes in `State`, you need to modify the `draw` callback.
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    println!("Hello ggez! dt = {}ns", self.dt.subsec_nanos());
+    println!("Hello ggez! dt = {}ns", self.dt.as_nanos());
     Ok(())
 }
 ```
@@ -257,7 +257,7 @@ You've successfully bootstrapped a `ggez` program.
 If you are looking to push yourself a bit further on your own, these challenges are for you.
 
 * Display the time in milliseconds or seconds instead of nanoseconds
+* Change the size or title of the window that appears
 * Print the text to the window instead of the console
 * Limit the framerate to 30fps
 * Use another callback on `EventHandler` to do something fun
-* Change the size or title of the window that appears

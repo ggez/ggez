@@ -6,7 +6,7 @@ use oorandom;
 
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
-use ggez::graphics::{self, Align, Color, DrawParam, Font, Scale, Text, TextFragment};
+use ggez::graphics::{self, Align, Color, DrawParam, Font, PxScale, Text, TextFragment};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use glam::Vec2;
@@ -52,7 +52,7 @@ impl App {
             // `Font` is a handle to a loaded TTF, stored inside the `Context`.
             // `Font::default()` always exists and maps to LiberationMono-Regular.
             font: Some(graphics::Font::default()),
-            scale: Some(Scale::uniform(10.0)),
+            scale: Some(PxScale::from(10.0)),
             // This doesn't do anything at this point; can be used to omit fields in declarations.
             ..Default::default()
         });
@@ -71,7 +71,7 @@ impl App {
         text.add(
             TextFragment::new(" fancy fragment")
                 .font(fancy_font)
-                .scale(Scale::uniform(25.0)),
+                .scale(PxScale::from(25.0)),
         )
         .add(" and a default one, for symmetry");
         // Store a copy of the built text, retain original for further modifications.
@@ -90,7 +90,7 @@ impl App {
         // Color is specified when drawing (or queueing), via `DrawParam`.
         // Side note: TrueType fonts aren't very consistent between themselves in terms
         // of apparent scale - this font with default scale will appear too small.
-        text.set_font(fancy_font.clone(), Scale::uniform(16.0))
+        text.set_font(fancy_font.clone(), PxScale::from(16.0))
             .set_bounds(Vec2::new(300.0, f32::INFINITY), Align::Center);
         texts.insert("1_demo_text_4", text);
 
@@ -107,7 +107,7 @@ impl App {
         let mut wonky_text = Text::default();
         for ch in wonky_string.chars() {
             wonky_text
-                .add(TextFragment::new(ch).scale(Scale::uniform(10.0 + 24.0 * rng.rand_float())));
+                .add(TextFragment::new(ch).scale(PxScale::from(10.0 + 24.0 * rng.rand_float())));
         }
         texts.insert("3_wonky", wonky_text);
 
@@ -138,6 +138,7 @@ impl event::EventHandler for App {
             // Calling `.queue()` for all bits of text that can share a `DrawParam`,
             // followed with `::draw_queued()` with said params, is the intended way.
             graphics::queue_text(ctx, text, Vec2::new(20.0, 20.0 + height), None);
+            //height += 20.0 + text.height(ctx) as f32;
             height += 20.0 + text.height(ctx) as f32;
         }
         // When drawing via `draw_queued()`, `.offset` in `DrawParam` will be
@@ -162,7 +163,7 @@ impl event::EventHandler for App {
         let mut wobble = Text::default();
         for ch in wobble_string.chars() {
             wobble.add(
-                TextFragment::new(ch).scale(Scale::uniform(10.0 + 6.0 * self.rng.rand_float())),
+                TextFragment::new(ch).scale(PxScale::from(10.0 + 6.0 * self.rng.rand_float())),
             );
         }
         let wobble_width = wobble.width(ctx);
@@ -213,7 +214,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let (ctx, events_loop) = &mut ContextBuilder::new("text_cached", "ggez")
+    let (mut ctx, events_loop) = ContextBuilder::new("text_cached", "ggez")
         .window_setup(WindowSetup::default().title("Cached text example!"))
         .window_mode(
             WindowMode::default()
@@ -223,6 +224,6 @@ pub fn main() -> GameResult {
         .add_resource_path(resource_dir)
         .build()?;
 
-    let state = &mut App::new(ctx)?;
+    let state = App::new(&mut ctx)?;
     event::run(ctx, events_loop, state)
 }

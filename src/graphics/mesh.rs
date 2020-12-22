@@ -2,8 +2,8 @@ use crate::context::DebugId;
 use crate::error::GameError;
 use crate::graphics::*;
 use gfx::traits::FactoryExt;
-use lyon;
 use lyon::tessellation as t;
+use lyon::{self, math::Point as LPoint};
 
 pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 
@@ -19,19 +19,19 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// ```rust,no_run
 /// # use ggez::*;
 /// # use ggez::graphics::*;
-/// # use ggez::nalgebra::Point2;
+/// # use ggez::mint::Point2;
 /// # fn main() -> GameResult {
 /// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
 /// let mesh: Mesh = MeshBuilder::new()
 ///     .line(&[Point2::new(20.0, 20.0), Point2::new(40.0, 20.0)], 4.0, (255, 0, 0).into())?
-///     .circle(DrawMode::fill(), Point2::new(60.0, 38.0), 40.0, 1.0, (0, 255, 0).into())
+///     .circle(DrawMode::fill(), Point2::new(60.0, 38.0), 40.0, 1.0, (0, 255, 0).into())?
 ///     .build(ctx)?;
 /// # Ok(()) }
 /// ```
 /// A more sophisticated example:
 ///
 /// ```rust,no_run
-/// use ggez::{Context, GameResult, nalgebra as na};
+/// use ggez::{Context, GameResult};
 /// use ggez::graphics::{self, DrawMode, MeshBuilder};
 ///
 /// fn draw_danger_signs(ctx: &mut Context) -> GameResult {
@@ -100,7 +100,7 @@ impl MeshBuilder {
         radius: f32,
         tolerance: f32,
         color: Color,
-    ) -> &mut Self
+    ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>>,
     {
@@ -112,26 +112,24 @@ impl MeshBuilder {
             };
             match mode {
                 DrawMode::Fill(fill_options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::fill_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &fill_options.with_tolerance(tolerance),
-                        builder,
+                        &mut t::BuffersBuilder::new(buffers, vb),
                     );
                 }
                 DrawMode::Stroke(options) => {
-                    let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::stroke_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &options.with_tolerance(tolerance),
-                        builder,
+                        &mut t::BuffersBuilder::new(buffers, vb),
                     );
                 }
             };
         }
-        self
+        Ok(self)
     }
 
     /// Create a new mesh for an ellipse.
@@ -145,7 +143,7 @@ impl MeshBuilder {
         radius2: f32,
         tolerance: f32,
         color: Color,
-    ) -> &mut Self
+    ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>>,
     {
@@ -156,7 +154,10 @@ impl MeshBuilder {
                 color: LinearColor::from(color),
             };
             match mode {
-                DrawMode::Fill(fill_options) => {
+                DrawMode::Fill(_fill_options) => {
+                    /*
+                     * TODO
+                     * see https://github.com/nical/lyon/issues/606
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let _ = t::basic_shapes::fill_ellipse(
                         t::math::point(point.x, point.y),
@@ -165,6 +166,7 @@ impl MeshBuilder {
                         &fill_options.with_tolerance(tolerance),
                         builder,
                     );
+                    */
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -178,7 +180,7 @@ impl MeshBuilder {
                 }
             };
         }
-        self
+        Ok(self)
     }
 
     /// Create a new mesh for a series of connected lines.
@@ -248,8 +250,9 @@ impl MeshBuilder {
     ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
-        V: t::VertexConstructor<t::FillVertex, Vertex>
-            + t::VertexConstructor<t::StrokeVertex, Vertex>,
+        V: t::BasicVertexConstructor<Vertex>
+            + t::StrokeVertexConstructor<Vertex>
+            + t::FillVertexConstructor<Vertex>,
     {
         {
             assert!(points.len() > 1);
@@ -275,7 +278,12 @@ impl MeshBuilder {
     }
 
     /// Create a new mesh for a rectangle.
-    pub fn rectangle(&mut self, mode: DrawMode, bounds: Rect, color: Color) -> &mut Self {
+    pub fn rectangle(
+        &mut self,
+        mode: DrawMode,
+        bounds: Rect,
+        color: Color,
+    ) -> GameResult<&mut Self> {
         {
             let buffers = &mut self.buffer;
             let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
@@ -293,13 +301,15 @@ impl MeshBuilder {
                 }
             };
         }
-        self
+        Ok(self)
     }
 
     /// Create a new [`Mesh`](struct.Mesh.html) from a raw list of triangles.
     /// The length of the list must be a multiple of 3.
     ///
     /// Currently does not support UV's or indices.
+    ///
+    /// TODO: Verify it works correctly.
     pub fn triangles<P>(&mut self, triangles: &[P], color: Color) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
@@ -315,14 +325,10 @@ impl MeshBuilder {
                 .iter()
                 .cloned()
                 .map(|p| {
-                    // Gotta turn ggez Point2's into lyon FillVertex's
+                    // Gotta turn ggez Point2's into lyon points
                     let mint_point = p.into();
                     let np = lyon::math::point(mint_point.x, mint_point.y);
-                    let nv = lyon::math::vector(mint_point.x, mint_point.y);
-                    t::FillVertex {
-                        position: np,
-                        normal: nv,
-                    }
+                    np
                 })
                 // Removing this collect might be nice, but is not easy.
                 // We can chunk a slice, but can't chunk an arbitrary
@@ -334,30 +340,30 @@ impl MeshBuilder {
             let vb = VertexBuilder {
                 color: LinearColor::from(color),
             };
-            let builder: &mut t::BuffersBuilder<_, _, _, _> =
+            let builder: &mut t::BuffersBuilder<_, _, _> =
                 &mut t::BuffersBuilder::new(&mut self.buffer, vb);
-            use lyon::tessellation::GeometryBuilder;
-            builder.begin_geometry();
+            use lyon::tessellation::BasicGeometryBuilder;
+            //builder.begin_geometry();
             for tri in tris {
                 // Ideally this assert makes bounds-checks only happen once.
                 assert!(tri.len() == 3);
                 let fst = tri[0];
                 let snd = tri[1];
                 let thd = tri[2];
-                let i1 = builder.add_vertex(fst)?;
-                let i2 = builder.add_vertex(snd)?;
-                let i3 = builder.add_vertex(thd)?;
-                builder.add_triangle(i1, i2, i3);
+                let _i1 = builder.add_vertex(fst)?;
+                let _i2 = builder.add_vertex(snd)?;
+                let _i3 = builder.add_vertex(thd)?;
+                //builder.add_triangle(i1, i2, i3);
             }
-            let _ = builder.end_geometry();
+            //let _ = builder.end_geometry();
         }
         Ok(self)
     }
 
     /// Takes an `Image` to apply to the mesh.
-    pub fn texture(&mut self, texture: Image) -> &mut Self {
+    pub fn texture(&mut self, texture: Image) -> GameResult<&mut Self> {
         self.image = Some(texture);
-        self
+        Ok(self)
     }
 
     /// Creates a `Mesh` from a raw list of triangles defined from vertices
@@ -368,7 +374,12 @@ impl MeshBuilder {
     /// This is the most primitive mesh-creation method, but allows you full
     /// control over the tesselation and texturing.  It has the same constraints
     /// as `Mesh::from_raw()`.
-    pub fn raw<V>(&mut self, verts: &[V], indices: &[u32], texture: Option<Image>) -> &mut Self
+    pub fn raw<V>(
+        &mut self,
+        verts: &[V],
+        indices: &[u32],
+        texture: Option<Image>,
+    ) -> GameResult<&mut Self>
     where
         V: Into<Vertex> + Clone,
     {
@@ -383,7 +394,7 @@ impl MeshBuilder {
         self.buffer.vertices.extend(vertices);
         self.buffer.indices.extend(indices);
         self.image = texture;
-        self
+        Ok(self)
     }
 
     /// Takes the accumulated geometry and load it into GPU memory,
@@ -403,20 +414,30 @@ struct VertexBuilder {
     color: LinearColor,
 }
 
-impl t::VertexConstructor<t::FillVertex, Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, vertex: t::FillVertex) -> Vertex {
+impl t::BasicVertexConstructor<Vertex> for VertexBuilder {
+    fn new_vertex(&mut self, position: LPoint) -> Vertex {
         Vertex {
-            pos: [vertex.position.x, vertex.position.y],
-            uv: [vertex.position.x, vertex.position.y],
+            pos: [position.x, position.y],
+            uv: [position.x, position.y],
             color: self.color.into(),
         }
     }
 }
 
-impl t::VertexConstructor<t::StrokeVertex, Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, vertex: t::StrokeVertex) -> Vertex {
+impl t::StrokeVertexConstructor<Vertex> for VertexBuilder {
+    fn new_vertex(&mut self, position: LPoint, _attributes: t::StrokeAttributes) -> Vertex {
         Vertex {
-            pos: [vertex.position.x, vertex.position.y],
+            pos: [position.x, position.y],
+            uv: [0.0, 0.0],
+            color: self.color.into(),
+        }
+    }
+}
+
+impl t::FillVertexConstructor<Vertex> for VertexBuilder {
+    fn new_vertex(&mut self, position: LPoint, _attributes: t::FillAttributes) -> Vertex {
+        Vertex {
+            pos: [position.x, position.y],
             uv: [0.0, 0.0],
             color: self.color.into(),
         }

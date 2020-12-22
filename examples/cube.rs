@@ -15,15 +15,15 @@ use gfx::Factory;
 
 use ggez::event;
 use ggez::graphics;
-use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
+use glam::*;
 use std::env;
 use std::f32;
 use std::path;
 
-type Isometry3 = na::Isometry3<f32>;
-type Point3 = na::Point3<f32>;
-type Vector3 = na::Vector3<f32>;
+type Isometry3 = Mat4;
+type Point3 = Vec3;
+type Vector3 = Vec3;
 // ColorFormat and DepthFormat are hardwired into ggez's drawing code,
 // and there isn't a way to easily change them, so for the moment we just have
 // to know what they are and use the same settings.
@@ -63,10 +63,10 @@ impl Vertex {
 
 fn default_view() -> Isometry3 {
     // Eye location, target location, up-vector
-    Isometry3::look_at_rh(
-        &Point3::new(1.5f32, -5.0, 3.0),
-        &Point3::new(0f32, 0.0, 0.0),
-        &Vector3::z_axis(),
+    Mat4::look_at_rh(
+        Point3::new(1.5f32, -5.0, 3.0),
+        Point3::new(0f32, 0.0, 0.0),
+        Vector3::unit_z(),
     )
 }
 
@@ -147,7 +147,7 @@ void main() {
             Vertex::new([1, -1, -1], [0, 1]),
         ];
 
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let index_data: &[u16] = &[
              0,  1,  2,  2,  3,  0, // top
              4,  5,  6,  6,  7,  4, // bottom
@@ -176,14 +176,14 @@ void main() {
         // Create pipeline state object
         let pso = factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap();
 
-        // Aspect ratio, FOV, znear, zfar
-        let proj = na::Perspective3::new(4.0 / 3.0, f32::consts::PI / 4.0, 1.0, 10.0);
-        let transform = proj.as_matrix() * default_view().to_homogeneous();
+        // FOV, spect ratio, znear, zfar
+        let proj = Mat4::perspective_rh(f32::consts::PI / 4.0, 4.0 / 3.0, 1.0, 10.0);
+        let transform = proj * default_view();
 
         // Bundle all the data together.
         let data = pipe::Data {
             vbuf,
-            transform: transform.into(),
+            transform: transform.to_cols_array_2d(),
             locals: factory.create_constant_buffer(1),
             color: (texture_view, factory.create_sampler(sinfo)),
             // We use the (undocumented-but-useful) gfx::memory::Typed here
@@ -215,11 +215,11 @@ impl event::EventHandler for MainState {
             let (_factory, device, encoder, _depthview, _colorview) = graphics::gfx_objects(ctx);
             encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0]);
 
-            let rotation = na::Matrix4::from_scaled_axis(na::Vector3::z() * self.rotation);
+            let rotation = Mat4::from_rotation_z(self.rotation);
 
             let locals = Locals {
                 transform: self.data.transform,
-                rotation: rotation.into(),
+                rotation: rotation.to_cols_array_2d(),
             };
             encoder.update_constant_buffer(&self.data.locals, &locals);
             encoder.clear_depth(&self.data.out_depth, 1.0);
@@ -229,8 +229,8 @@ impl event::EventHandler for MainState {
         }
 
         // Do ggez drawing
-        let dest_point1 = na::Point2::new(10.0, 210.0);
-        let dest_point2 = na::Point2::new(10.0, 250.0);
+        let dest_point1 = Vec2::new(10.0, 210.0);
+        let dest_point2 = Vec2::new(10.0, 250.0);
         // graphics::draw(ctx, &self.text1, (dest_point1,))?;
         // graphics::draw(ctx, &self.text2, (dest_point2,))?;
 

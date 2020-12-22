@@ -16,8 +16,6 @@ use std::fs;
 use std::io::{self, Read, Seek, Write};
 use std::path::{self, Path, PathBuf};
 
-use zip;
-
 use crate::error::{GameError, GameResult};
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
@@ -953,8 +951,8 @@ mod tests {
         let _bytes = finished_zip_bytes.seek(io::SeekFrom::Start(0)).unwrap();
         let zfs = ZipFS::from_read(finished_zip_bytes).unwrap();
 
-        assert!(zfs.exists(Path::new("/fake_file_name.txt".into())));
-        assert!(!zfs.exists(Path::new("fake_file_name.txt".into())));
+        assert!(zfs.exists(Path::new("/fake_file_name.txt")));
+        assert!(!zfs.exists(Path::new("fake_file_name.txt")));
 
         let mut contents = String::new();
         let _bytes = zfs

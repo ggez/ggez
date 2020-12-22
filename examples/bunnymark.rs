@@ -4,23 +4,24 @@
 use std::env;
 use std::path;
 
-use ggez::nalgebra as na;
 use oorandom::Rand32;
 
 use ggez::graphics::{spritebatch::SpriteBatch, Color, Image};
 use ggez::Context;
 use ggez::*;
 
+use glam::*;
+
 // NOTE: Using a high number here yields worse performance than adding more bunnies over
 // time - I think this is due to all of the RNG being run on the same tick...
-const INITIAL_BUNNIES: usize = 100;
+const INITIAL_BUNNIES: usize = 1000;
 const WIDTH: u16 = 1280;
 const HEIGHT: u16 = 720;
 const GRAVITY: f32 = 0.5;
 
 struct Bunny {
-    position: na::Point2<f32>,
-    velocity: na::Vector2<f32>,
+    position: Vec2,
+    velocity: Vec2,
 }
 
 impl Bunny {
@@ -29,8 +30,8 @@ impl Bunny {
         let y_vel = (rng.rand_float() * 5.0) - 2.5;
 
         Bunny {
-            position: na::Point2::new(0.0, 0.0),
-            velocity: na::Vector2::new(x_vel, y_vel),
+            position: Vec2::new(0.0, 0.0),
+            velocity: Vec2::new(x_vel, y_vel),
         }
     }
 }
@@ -84,23 +85,23 @@ impl event::EventHandler for GameState {
 
         for bunny in &mut self.bunnies {
             bunny.position += bunny.velocity;
-            bunny.velocity.y += GRAVITY;
+            bunny.velocity += Vec2::new(0.0, GRAVITY);
 
             if bunny.position.x > self.max_x {
-                bunny.velocity.x *= -1.0;
+                bunny.velocity *= Vec2::new(-1.0, 0.);
                 bunny.position.x = self.max_x;
             } else if bunny.position.x < 0.0 {
-                bunny.velocity.x *= -1.0;
+                bunny.velocity *= Vec2::new(-1.0, 0.0);
                 bunny.position.x = 0.0;
             }
 
             if bunny.position.y > self.max_y {
-                bunny.velocity.y *= -0.8;
+                bunny.velocity.y = bunny.position.y * -0.8;
                 bunny.position.y = self.max_y;
 
                 // Flip a coin
                 if self.rng.rand_i32() > 0 {
-                    bunny.velocity.y -= 3.0 + (self.rng.rand_float() * 4.0);
+                    bunny.velocity -= Vec2::new(0.0, 3.0 + (self.rng.rand_float() * 4.0));
                 }
             } else if bunny.position.y < 0.0 {
                 bunny.velocity.y = 0.0;
@@ -119,7 +120,7 @@ impl event::EventHandler for GameState {
             for bunny in &self.bunnies {
                 self.bunnybatch.add((bunny.position,));
             }
-            graphics::draw(ctx, &self.bunnybatch, (na::Point2::new(0.0, 0.0),))?;
+            graphics::draw(ctx, &self.bunnybatch, (Vec2::new(0.0, 0.0),))?;
         } else {
             for bunny in &self.bunnies {
                 graphics::draw(ctx, &self.texture, (bunny.position,))?;
@@ -178,8 +179,8 @@ fn main() -> GameResult {
     };
 
     let cb = ggez::ContextBuilder::new("bunnymark", "ggez").add_resource_path(resource_dir);
-    let (ctx, event_loop) = &mut cb.build()?;
+    let (mut ctx, event_loop) = cb.build()?;
 
-    let state = &mut GameState::new(ctx)?;
+    let state = GameState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }

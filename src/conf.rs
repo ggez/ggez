@@ -13,7 +13,6 @@
 //! passed to the [`ContextBuilder`](../struct.ContextBuilder.html).
 
 use std::io;
-use toml;
 
 use crate::error::GameResult;
 
@@ -49,6 +48,7 @@ pub enum FullscreenType {
 ///     min_height: 0.0,
 ///     max_height: 0.0,
 ///     resizable: false,
+///     visible: true,
 /// }
 /// # , WindowMode::default());}
 /// ```
@@ -84,6 +84,9 @@ pub struct WindowMode {
     /// Whether or not the window is resizable
     #[default = false]
     pub resizable: bool,
+    /// Whether this window should displayed (true) or hidden (false)
+    #[default = true]
+    pub visible: bool,
 }
 
 impl WindowMode {
@@ -129,6 +132,12 @@ impl WindowMode {
     /// Set resizable.
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
+        self
+    }
+
+    /// Set visibility
+    pub fn visible(mut self, visible: bool) -> Self {
+        self.visible = visible;
         self
     }
 }

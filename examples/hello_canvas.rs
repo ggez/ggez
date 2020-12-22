@@ -2,12 +2,11 @@
 //! to a canvas.
 
 use ggez;
-use nalgebra;
 
 use ggez::event;
 use ggez::graphics::{self, Color};
 use ggez::{Context, GameResult};
-use nalgebra as na;
+use glam::*;
 use std::env;
 use std::path;
 
@@ -42,7 +41,7 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let dest_point = na::Point2::new(10.0, 10.0);
+        let dest_point = Vec2::new(10.0, 10.0);
 
         if self.draw_with_canvas {
             println!("Drawing with canvas");
@@ -59,8 +58,6 @@ impl event::EventHandler for MainState {
                     .color(Color::from((0, 0, 0, 255))),
             )?;
             graphics::set_canvas(ctx, None);
-
-            // graphics::draw(ctx, &self.canvas, na::Point2::new(0.0, 0.0), 0.0)?;
 
             graphics::draw(
                 ctx,

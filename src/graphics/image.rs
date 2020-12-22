@@ -1,7 +1,6 @@
 use std::io::Read;
 use std::path;
 
-use gfx;
 #[rustfmt::skip]
 use ::image;
 
@@ -145,12 +144,16 @@ impl Image {
     /// Load a new image from the file at the given path. The documentation for the
     /// [`filesystem`](../filesystem/index.html) module explains how the path must be specified.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
-        let img = {
-            let mut buf = Vec::new();
-            let mut reader = context.filesystem.open(path)?;
-            let _ = reader.read_to_end(&mut buf)?;
-            image::load_from_memory(&buf)?.to_rgba()
-        };
+        let mut buf = Vec::new();
+        let mut reader = context.filesystem.open(path)?;
+        let _ = reader.read_to_end(&mut buf)?;
+        Self::from_bytes(context, &buf)
+    }
+
+    /// Creates a new `Image` from the given buffer, which should contain an image encoded
+    /// in a supported image file format.
+    pub fn from_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
+        let img = image::load_from_memory(&bytes)?.to_rgba();
         let (width, height) = img.dimensions();
         Self::from_rgba8(context, width as u16, height as u16, &img)
     }
@@ -224,10 +227,18 @@ impl Image {
         let reader = gfx.factory.read_mapping(&dl_buffer)?;
 
         // intermediary buffer to avoid casting.
-        // Apparently this also at one point made the screenshot upside-down,
-        // but no longer?
         let mut data = Vec::with_capacity(self.width as usize * self.height as usize * 4);
-        data.extend(reader.into_iter().flatten());
+        // Assuming OpenGL backend whose typical readback option (glReadPixels) has origin at bottom left.
+        // Image formats on the other hand usually deal with top right.
+        for y in (0..self.height as usize).rev() {
+            data.extend(
+                reader
+                    .iter()
+                    .skip(y * self.width as usize)
+                    .take(self.width as usize)
+                    .flatten(),
+            );
+        }
         Ok(data)
     }
 
@@ -246,9 +257,9 @@ impl Image {
         let data = self.to_rgba8(ctx)?;
         let f = filesystem::create(ctx, path)?;
         let writer = &mut io::BufWriter::new(f);
-        let color_format = image::ColorType::RGBA(8);
+        let color_format = image::ColorType::Rgba8;
         match format {
-            ImageFormat::Png => image::png::PNGEncoder::new(writer)
+            ImageFormat::Png => image::png::PngEncoder::new(writer)
                 .encode(
                     &data,
                     u32::from(self.width),
@@ -389,8 +400,8 @@ mod tests {
     #[test]
     fn test_invalid_image_size() {
         let (ctx, _) = &mut ContextBuilder::new("unittest", "unittest").build().unwrap();
-        let _i = assert!(Image::from_rgba8(ctx, 0, 0, &vec![]).is_err());
-        let _i = assert!(Image::from_rgba8(ctx, 3432, 432, &vec![]).is_err());
-        let _i = Image::from_rgba8(ctx, 2, 2, &vec![99; 16]).unwrap();
+        let _i = assert!(Image::from_rgba8(ctx, 0, 0, &[]).is_err());
+        let _i = assert!(Image::from_rgba8(ctx, 3432, 432, &[]).is_err());
+        let _i = Image::from_rgba8(ctx, 2, 2, &[99; 16]).unwrap();
     }
 }

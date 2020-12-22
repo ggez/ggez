@@ -1,4 +1,4 @@
-//! A [`SpriteBatch`](spritebatch/struct.SpriteBatch.html) is a way to
+//! A [`SpriteBatch`](struct.SpriteBatch.html) is a way to
 //! efficiently draw a large number of copies of the same image, or part
 //! of the same image.  It's useful for implementing tiled maps,
 //! spritesheets, particles, and other such things.
@@ -18,7 +18,6 @@ use crate::error::GameResult;
 use crate::graphics::shader::BlendMode;
 use crate::graphics::types::FilterMode;
 use crate::graphics::{self, transform_rect, BackendSpec, DrawParam, DrawTransform, Rect};
-use gfx;
 use gfx::Factory;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.

@@ -1,12 +1,11 @@
 //! A collection of semi-random shape and image drawing examples.
 
-use glam;
+use glam::*;
 
 use ggez;
 use ggez::event;
 use ggez::graphics;
 use ggez::graphics::{Color, DrawMode, DrawParam};
-use ggez::nalgebra::Point2;
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
@@ -46,11 +45,11 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
 
     mb.line(
         &[
-            Point2::new(200.0, 200.0),
-            Point2::new(400.0, 200.0),
-            Point2::new(400.0, 400.0),
-            Point2::new(200.0, 400.0),
-            Point2::new(200.0, 300.0),
+            Vec2::new(200.0, 200.0),
+            Vec2::new(400.0, 200.0),
+            Vec2::new(400.0, 400.0),
+            Vec2::new(200.0, 400.0),
+            Vec2::new(200.0, 300.0),
         ],
         4.0,
         Color::new(1.0, 0.0, 0.0, 1.0),
@@ -58,7 +57,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
 
     mb.ellipse(
         DrawMode::fill(),
-        Point2::new(600.0, 200.0),
+        Vec2::new(600.0, 200.0),
         50.0,
         120.0,
         1.0,
@@ -67,7 +66,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
 
     mb.circle(
         DrawMode::fill(),
-        Point2::new(600.0, 380.0),
+        Vec2::new(600.0, 380.0),
         40.0,
         1.0,
         Color::new(1.0, 0.0, 1.0, 1.0),
@@ -139,7 +138,7 @@ impl event::EventHandler for MainState {
             graphics::DrawParam::new()
                 .dest(dst2)
                 .rotation(self.rotation)
-                .offset(Point2::new(0.5, 0.5))
+                .offset(Vec2::new(0.5, 0.5))
                 .scale(scale),
         )?;
 

@@ -1,16 +1,26 @@
-# 0.6.0
+# 0.6.0 (unpublished)
 
 ## Added
 
-Nothing
+ * Added a `CustomError` variant to `GameError`.
+ * Added function to allow custom gamepad definitions
+ * Added function to fetch raw window
+ * Added function to set window position on the screen
 
 ## Changed
 
  * Switched `rand` in the examples to `oorandom`, for basically
    aesthetic reasons.  (Not advertising at all, honest.)
- * Version bumped `lyon` to 0.14
- * Version bumped `glyph_brush` to 0.6
- * Minimum rustc version is now 1.36
+ * Version bumped `rodio` to 0.13
+ * Version bumped `lyon` to 0.16
+ * Version bumped `glyph_brush` to 0.7
+ * Version bumped `winit` to 0.23, which brings many fixes, better
+   Wayland handling, and a slightly different style of event loop
+   with some different constraints and type names.
+ * `winit` update has also changed and smoothed over some of the issues
+   with high-DPI handling.
+ * Updated just about every other dependency under the sun
+ * Minimum rustc version is now 1.36 (verify)
 
 
 ## Deprecated
@@ -19,47 +29,17 @@ Nothing
 
 ## Removed
 
-Nothing
+ * removed `ggez::nalgebra` crate re-export.  All math in the public API
+   should now be `mint` types, and it is a bug if they are not.
 
 ## Fixed
 
-Nothing
+ * Many things
 
 ## Broken
 
-Nothing
+Nothing (yet)
 
-# 0.5.2
-
-## Added
-
-Nothing
-
-## Changed
-
- * Various small doc additions/cleanups
- * Simplified dev-dependencies for examples (rand -> oorandom, cgmath
-   and nalgebra -> glam)
- * Made packaged download smaller and changed default font from DejaVu
-   to Liberation, takes the crate size from about 950 kb to about 150
-   kb
-
-
-## Deprecated
-
-Nothing
-
-## Removed
-
-Nothing
-
-## Fixed
-
-Nothing
-
-## Broken
-
-Nothing
 
 # 0.5.1
 

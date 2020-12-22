@@ -12,17 +12,18 @@ use ggez::graphics;
 use ggez::nalgebra as na;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
+use glam::*;
 use oorandom::Rand32;
 
 use std::env;
 use std::path;
 
-type Point2 = na::Point2<f32>;
-type Vector2 = na::Vector2<f32>;
+type Point2 = Vec2;
+type Vector2 = Vec2;
 
 /// *********************************************************************
 /// Basic stuff, make some helpers for vector functions.
-/// We use the nalgebra math library to provide lots of
+/// We use the glam math library to provide lots of
 /// math stuff.  This just adds some helpers.
 /// **********************************************************************
 
@@ -89,9 +90,9 @@ const MAX_ROCK_VEL: f32 = 50.0;
 fn create_player() -> Actor {
     Actor {
         tag: ActorType::Player,
-        pos: Point2::origin(),
+        pos: Point2::zero(),
         facing: 0.,
-        velocity: na::zero(),
+        velocity: Vector2::zero(),
         ang_vel: 0.,
         bbox_size: PLAYER_BBOX,
         life: PLAYER_LIFE,
@@ -101,9 +102,9 @@ fn create_player() -> Actor {
 fn create_rock() -> Actor {
     Actor {
         tag: ActorType::Rock,
-        pos: Point2::origin(),
+        pos: Point2::zero(),
         facing: 0.,
-        velocity: na::zero(),
+        velocity: Vector2::zero(),
         ang_vel: 0.,
         bbox_size: ROCK_BBOX,
         life: ROCK_LIFE,
@@ -113,9 +114,9 @@ fn create_rock() -> Actor {
 fn create_shot() -> Actor {
     Actor {
         tag: ActorType::Shot,
-        pos: Point2::origin(),
+        pos: Point2::zero(),
         facing: 0.,
-        velocity: na::zero(),
+        velocity: Vector2::zero(),
         ang_vel: SHOT_ANG_VEL,
         bbox_size: SHOT_BBOX,
         life: SHOT_LIFE,
@@ -187,11 +188,11 @@ const MAX_PHYSICS_VEL: f32 = 250.0;
 
 fn update_actor_position(actor: &mut Actor, dt: f32) {
     // Clamp the velocity to the max efficiently
-    let norm_sq = actor.velocity.norm_squared();
+    let norm_sq = actor.velocity.length_squared();
     if norm_sq > MAX_PHYSICS_VEL.powi(2) {
         actor.velocity = actor.velocity / norm_sq.sqrt() * MAX_PHYSICS_VEL;
     }
-    let dv = actor.velocity * (dt);
+    let dv = actor.velocity * dt;
     actor.pos += dv;
     actor.facing += actor.ang_vel;
 }
@@ -204,14 +205,14 @@ fn wrap_actor_position(actor: &mut Actor, sx: f32, sy: f32) {
     let screen_x_bounds = sx / 2.0;
     let screen_y_bounds = sy / 2.0;
     if actor.pos.x > screen_x_bounds {
-        actor.pos.x -= sx;
+        actor.pos -= Vec2::new(sx, 0.0);
     } else if actor.pos.x < -screen_x_bounds {
-        actor.pos.x += sx;
+        actor.pos += Vec2::new(sx, 0.0);
     };
     if actor.pos.y > screen_y_bounds {
-        actor.pos.y -= sy;
+        actor.pos -= Vec2::new(0.0, sy);
     } else if actor.pos.y < -screen_y_bounds {
-        actor.pos.y += sy;
+        actor.pos += Vec2::new(0.0, sy);
     }
 }
 
@@ -354,7 +355,7 @@ impl MainState {
         Ok(s)
     }
 
-    fn fire_player_shot(&mut self) {
+    fn fire_player_shot(&mut self, ctx: &Context) {
         self.player_shot_timeout = PLAYER_SHOT_TIME;
 
         let player = &self.player;
@@ -362,12 +363,11 @@ impl MainState {
         shot.pos = player.pos;
         shot.facing = player.facing;
         let direction = vec_from_angle(shot.facing);
-        shot.velocity.x = SHOT_SPEED * direction.x;
-        shot.velocity.y = SHOT_SPEED * direction.y;
+        shot.velocity = SHOT_SPEED * direction;
 
         self.shots.push(shot);
 
-        let _ = self.assets.shot_sound.play();
+        let _ = self.assets.shot_sound.play(ctx);
     }
 
     fn clear_dead_stuff(&mut self) {
@@ -375,20 +375,20 @@ impl MainState {
         self.rocks.retain(|r| r.life > 0.0);
     }
 
-    fn handle_collisions(&mut self) {
+    fn handle_collisions(&mut self, ctx: &Context) {
         for rock in &mut self.rocks {
             let pdistance = rock.pos - self.player.pos;
-            if pdistance.norm() < (self.player.bbox_size + rock.bbox_size) {
+            if pdistance.length() < (self.player.bbox_size + rock.bbox_size) {
                 self.player.life = 0.0;
             }
             for shot in &mut self.shots {
                 let distance = shot.pos - rock.pos;
-                if distance.norm() < (shot.bbox_size + rock.bbox_size) {
+                if distance.length() < (shot.bbox_size + rock.bbox_size) {
                     shot.life = 0.0;
                     rock.life = 0.0;
                     self.score += 1;
 
-                    let _ = self.assets.hit_sound.play();
+                    let _ = self.assets.hit_sound.play(ctx);
                 }
             }
         }
@@ -448,7 +448,7 @@ impl EventHandler for MainState {
             player_handle_input(&mut self.player, &self.input, seconds);
             self.player_shot_timeout -= seconds;
             if self.input.fire && self.player_shot_timeout < 0.0 {
-                self.fire_player_shot();
+                self.fire_player_shot(ctx);
             }
 
             // Update the physics for all actors.
@@ -477,7 +477,7 @@ impl EventHandler for MainState {
             // collision detection, object death, and if
             // we have killed all the rocks in the level,
             // spawn more of them.
-            self.handle_collisions();
+            self.handle_collisions(ctx);
 
             self.clear_dead_stuff();
 
@@ -610,8 +610,8 @@ pub fn main() -> GameResult {
         .window_mode(conf::WindowMode::default().dimensions(640.0, 480.0))
         .add_resource_path(resource_dir);
 
-    let (ctx, events_loop) = &mut cb.build()?;
+    let (mut ctx, events_loop) = cb.build()?;
 
-    let game = &mut MainState::new(ctx)?;
+    let game = MainState::new(&mut ctx)?;
     event::run(ctx, events_loop, game)
 }
