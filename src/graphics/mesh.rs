@@ -587,6 +587,19 @@ impl Mesh {
         mb.build(ctx)
     }
 
+    /// Create a new mesh for a rounded rectangle
+    pub fn new_rounded_rectangle(
+        ctx: &mut Context,
+        mode: DrawMode,
+        bounds: Rect,
+        radius: f32,
+        color: Color,
+    ) -> GameResult<Mesh> {
+        let mut mb = MeshBuilder::new();
+        let _ = mb.rounded_rectangle(mode, bounds, radius, color);
+        mb.build(ctx)
+    }
+
     /// Create a new `Mesh` from a raw list of triangle points.
     pub fn from_triangles<P>(ctx: &mut Context, triangles: &[P], color: Color) -> GameResult<Mesh>
     where
