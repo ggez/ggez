@@ -99,12 +99,13 @@ pub struct TimeContext {
     incremental_updates_count: usize,
 }
 
-// How many frames we log update times for.
+/// How many frames we log update times for.
 const TIME_LOG_FRAMES: usize = 200;
+
 /// The maxmimum number of times we can call
-/// [`check_update_time()`](fn.check_update_time.html) per call to 
-/// [`update()`](../event/trait.EventHandler.html#tymethod.update) 
-const MAX_INCREMENTAL_UPDATES: usize = 200;
+/// [`check_update_time()`](fn.check_update_time.html) per call to
+/// [`update()`](../event/trait.EventHandler.html#tymethod.update)
+const MAX_INCREMENTAL_UPDATES: usize = 20;
 
 impl TimeContext {
     /// Creates a new `TimeContext` and initializes the start to this instant.
@@ -138,12 +139,12 @@ impl TimeContext {
     }
 
     /// Zeroes the incremental update counter
-    /// 
+    ///
     /// You generally shouldn't call this function yourself, it is used in the
     /// game's main loop to track the number of calls to
-    /// [`check_update_time()`](fn.check_update_time.html) per call to 
-    /// [`update()`](../event/trait.EventHandler.html#tymethod.update) 
-    pub fn reset_incremental_update_counter(&mut self){
+    /// [`check_update_time()`](fn.check_update_time.html) per call to
+    /// [`update()`](../event/trait.EventHandler.html#tymethod.update)
+    pub fn reset_incremental_update_counter(&mut self) {
         self.incremental_updates_count = 0;
     }
 }
@@ -233,10 +234,12 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 /// in a row even in the same frame, then taking into account the
 /// residual 6.67 ms to catch up to the next frame before returning
 /// `Ok(true)` again. If this function is called more then
-/// MAX_INCREMENTAL_UPDATES per call to 'update()', it will return a
-/// `TimeCatchupError`(). This is generally used to indicate that a loop
+/// MAX_INCREMENTAL_UPDATES per call to 'update()' (default 20), it will return a
+/// `TimeCatchupError`. This is generally used to indicate that a loop
 /// using check_update_time takes longer than the specified update time
-/// to execute (see below).
+/// to execute (see below).  This way if the game's update takes more than
+/// one frame time to execute, it will not hang forever trying to catch up with
+/// its own timer.
 ///
 /// The intention is for it to be called in a while loop
 /// in your `update()` callback:
@@ -258,7 +261,7 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> GameResult<bool> {
     let timedata = &mut ctx.timer_context;
 
-    timedata.incremental_updates_count = timedata.incremental_updates_count+1;
+    timedata.incremental_updates_count = timedata.incremental_updates_count + 1;
     if timedata.incremental_updates_count > MAX_INCREMENTAL_UPDATES {
         return Err(GameError::TimeCatchupError(format!(
             "The number of calls to check_update_time() per call to update() exceeded the max of {}.

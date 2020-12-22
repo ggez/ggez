@@ -306,9 +306,8 @@ where
             }
         }
         ctx.timer_context.reset_incremental_update_counter();
-        state.update(ctx)?;
-        state.draw(ctx)?;
-    }
-
-    Ok(())
+        // TODO: D:
+        state.update(ctx).expect("Update failed somehow");
+        state.draw(ctx).expect("Draw failed somehow");
+    })
 }

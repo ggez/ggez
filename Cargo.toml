@@ -41,9 +41,9 @@ gfx = "0.18"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
 glyph_brush = "0.7"
-old_school_gfx_glutin_ext = "0.25"
-glutin = "0.25.1"
-winit = "0.23.0"
+old_school_gfx_glutin_ext = "0.26"
+glutin = "0.26"
+winit = "0.24"
 image = {version = "0.23", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "dxt", ] }
 rodio = { version = "0.13", default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
