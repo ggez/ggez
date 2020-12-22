@@ -51,12 +51,12 @@ serde_derive = "1"
 toml = "0.5"
 log = "0.4"
 lyon = "0.13"
-smart-default = "0.5"
-nalgebra = {version = "0.18", features = ["mint"] }
+smart-default = "0.6"
+nalgebra = {version = "0.23", features = ["mint"] }
 # Has to be the same version of mint that nalgebra uses here.
 mint = "0.5"
-gilrs = "0.7"
-approx = "0.3"
+gilrs = "0.8"
+approx = "0.4"
 
 [dev-dependencies]
 chrono = "0.4"
