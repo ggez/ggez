@@ -277,7 +277,7 @@ impl MeshBuilder {
         Ok(self)
     }
 
-    /// Create a new mesh for a rounded rectangle.
+    /// Create a new mesh for a rectangle.
     pub fn rectangle(
         &mut self,
         mode: DrawMode,
@@ -304,7 +304,7 @@ impl MeshBuilder {
         Ok(self)
     }
 
-    /// Create a new mesh for a rectangle.
+    /// Create a new mesh for a rounded rectangle.
     pub fn rounded_rectangle(
         &mut self,
         mode: DrawMode,
