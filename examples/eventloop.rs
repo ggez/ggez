@@ -28,6 +28,7 @@ pub fn main() -> GameResult {
         // Without this the FPS timer functions and such won't work.
         ctx.timer_context.tick();
         // Handle events. Refer to `winit` docs for more information.
+        /* FIXME
         events_loop.poll_events(|event| {
             // This tells `ggez` to update it's internal states, should the event require that.
             // These include cursor position, view updating on resize, etc.
@@ -54,6 +55,7 @@ pub fn main() -> GameResult {
                 x => println!("Device event fired: {:?}", x),
             }
         });
+        */
 
         // Update
         position += 1.0;

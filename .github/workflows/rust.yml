@@ -44,7 +44,7 @@ jobs:
 
     - name: Run cargo test w/ -D warnings
       if: ${{ runner.os == 'Linux' }}
-      run: cargo test headless
+      run: cargo test headless -- --test-threads=1
       env:
         RUSTFLAGS: "-D warnings"
 
