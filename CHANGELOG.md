@@ -6,6 +6,7 @@
  * Added function to allow custom gamepad definitions
  * Added function to fetch raw window
  * Added function to set window position on the screen
+ * Added generators for rounded rectangle meshes
 
 ## Changed
 
