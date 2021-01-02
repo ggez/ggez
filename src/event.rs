@@ -271,6 +271,25 @@ where
                 // internal state however necessary.
                 ctx.timer_context.tick();
 
+                // Handle gamepad events if necessary.
+                if ctx.conf.modules.gamepad {
+                    while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.next_event() {
+                        match event {
+                            gilrs::EventType::ButtonPressed(button, _) => {
+                                state.gamepad_button_down_event(ctx, button, GamepadId(id));
+                            }
+                            gilrs::EventType::ButtonReleased(button, _) => {
+                                state.gamepad_button_up_event(ctx, button, GamepadId(id));
+                            }
+                            gilrs::EventType::AxisChanged(axis, value, _) => {
+                                state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                ctx.timer_context.reset_incremental_update_counter();
+
                 if let Err(e) = state.update(ctx) {
                     error!("Error on EventHandler::update(): {:?}", e);
                     *control_flow = ControlFlow::Exit;
@@ -287,27 +306,5 @@ where
             Event::RedrawEventsCleared => (),
             Event::LoopDestroyed => (),
         }
-
-        // Handle gamepad events if necessary.
-        if ctx.conf.modules.gamepad {
-            while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.next_event() {
-                match event {
-                    gilrs::EventType::ButtonPressed(button, _) => {
-                        state.gamepad_button_down_event(ctx, button, GamepadId(id));
-                    }
-                    gilrs::EventType::ButtonReleased(button, _) => {
-                        state.gamepad_button_up_event(ctx, button, GamepadId(id));
-                    }
-                    gilrs::EventType::AxisChanged(axis, value, _) => {
-                        state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
-                    }
-                    _ => {}
-                }
-            }
-        }
-        ctx.timer_context.reset_incremental_update_counter();
-        // TODO: D:
-        state.update(ctx).expect("Update failed somehow");
-        state.draw(ctx).expect("Draw failed somehow");
     })
 }
