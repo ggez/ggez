@@ -240,8 +240,10 @@ impl ContextBuilder {
     /// Sets all the config options, overriding any previous
     /// ones from [`window_setup()`](#method.window_setup),
     /// [`window_mode()`](#method.window_mode), and
-    /// [`backend()`](#method.backend).
-    pub fn conf(mut self, conf: conf::Conf) -> Self {
+    /// [`backend()`](#method.backend).  These are used as
+    /// defaults and are overridden by any external config
+    /// file found.
+    pub fn default_conf(mut self, conf: conf::Conf) -> Self {
         self.conf = conf;
         self
     }
