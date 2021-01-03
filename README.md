@@ -1,5 +1,11 @@
+![Maintenance](https://img.shields.io/badge/maintenance-passively--maintained-yellowgreen.svg)
+
+# ggez
+
 [![ggez logo](docs/ggez-logo-maroon-full.svg)](http://ggez.rs/)
-# What is this?
+
+## What is this?
+
 [![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez)
 [![Build status](https://ci.appveyor.com/api/projects/status/3v9lsq6n9li7kxim/branch/master?svg=true)](https://ci.appveyor.com/project/svenstaro/ggez/branch/master)
 [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez)
@@ -25,7 +31,7 @@ component system.  Instead the goal is to allow you to use
 whichever libraries you want to provide these functions, or build
 your own libraries atop ggez.
 
-## Features
+### Features
 
 * Filesystem abstraction that lets you load resources from folders or zip files
 * Hardware-accelerated 2D rendering built on the `gfx-rs` graphics engine
@@ -37,7 +43,7 @@ your own libraries atop ggez.
 * Math library integration with `mint`.
 * Some more advanced graphics options: shaders, sprite batches and render targets
 
-## Supported platforms
+### Supported platforms
 
  * Fully supported: Windows, Linux
  * Not officially supported but might work anyway: Mac, iOS
@@ -46,18 +52,18 @@ your own libraries atop ggez.
 
 For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
 
-## Who's using ggez?
+### Who's using ggez?
 
 Check out the [projects list!](docs/Projects.md)
 
-## Usage
+### Usage
 
 ggez requires rustc >= 1.40 and is distributed on
 crates.io. To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
-```text
-ggez = "0.5"
+```
+ggez = "0.6"
 ```
 
 ggez consists of three main parts: A `Context` object which
@@ -75,11 +81,11 @@ main loop.
 See the [API docs](https://docs.rs/ggez/) for full documentation, or the [examples](/examples) directory for a number of commented examples of varying complexity.  Most examples show off
 a single feature of ggez, while `astroblasto` and `snake` are small but complete games.
 
-## Getting started
+### Getting started
 
 For a quick tutorial on ggez, see the [Hello ggez](https://github.com/ggez/ggez/blob/master/docs/guides/HelloGgez.md) guide in the `docs/` directory.
 
-## Examples
+### Examples
 
 See the `examples/` directory in the source.  Most examples show off
 a single feature of ggez, while `astroblasto` is a small  but
@@ -88,7 +94,7 @@ complete Asteroids-like game.
 To run the examples, just check out the source and execute `cargo run --example`
 in the root directory:
 
-```text
+```
 git clone https://github.com/ggez/ggez.git
 cd ggez
 cargo run --example 05_astroblasto
@@ -98,17 +104,17 @@ If this doesn't work, see the
 [FAQ](https://github.com/ggez/ggez/blob/master/docs/FAQ.md) for solutions
 to common problems.
 
-### Basic Project Template
+#### Basic Project Template
 
-```rust,no_run
+```rust
 use ggez::{graphics, Context, ContextBuilder, GameResult};
 use ggez::event::{self, EventHandler};
 
 fn main() {
     // Make a Context.
     let (mut ctx, mut event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
-		.build()
-		.expect("aieee, could not create ggez context!");
+        .build()
+        .expect("aieee, could not create ggez context!");
 
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
@@ -149,7 +155,7 @@ impl EventHandler for MyGame {
 }
 ```
 
-## Implementation details
+### Implementation details
 
 ggez is built upon `winit` for windowing and events, `rodio` for
 sound, and a 2D drawing engine implemented in `gfx` using the OpenGL
@@ -160,7 +166,7 @@ and Linux.
 
 ggez is Pure Rust(tm).
 
-## Help!
+### Help!
 
 Sources of information:
 
@@ -172,3 +178,5 @@ Sources of information:
 
  * open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
  * say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community)
+
+License: MIT

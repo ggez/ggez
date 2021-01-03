@@ -28,7 +28,7 @@
 # Errors
 
 <a name="errors_resource">
- 
+
 ## I get `ResourceNotFound("/myfile", ...)` even though it's in the resource dir!
 
 Okay, first, look at [the docs](https://docs.rs/ggez/) for the
@@ -51,7 +51,7 @@ path, you can use `Filesystem::mount()` or
 `ContextBuilder::add_resource_path()`; see the examples for examples.
 
 <a name="errors_window">
- 
+
 ## Why do I get `WindowError("Could not create GL context")` when I try to run my game?
 
 Basically this means "the graphics driver couldn't give ggez the
@@ -78,11 +78,11 @@ and there's no promises that things like `SpriteBatch` and `Canvas`
 will work.
 
 <a name="gfx">
- 
+
 # Graphics and GUIs
 
 <a name="gfx_3d">
- 
+
 ## Can I do 3D stuff?
 
 Yes; ggez uses `gfx-rs` for its drawing, and you can access the underlying `gfx-rs` drawing functions to draw whatever you want without disrupting ggez's drawing state.  See the `cube` example.
@@ -90,7 +90,7 @@ Yes; ggez uses `gfx-rs` for its drawing, and you can access the underlying `gfx-
 In general, ggez is designed to focus on 2D graphics.  We want it to be possible for you to create a 3D engine using ggez for everything EXCEPT drawing, but we don't really want to make a full 3D drawing engine.  If you want 3D drawing and don't feel like doing it yourself, check out [Amethyst](https://crates.io/crates/amethyst).
 
 <a name="gfx_gui">
- 
+
 ## How do I make a GUI?
 
 As of 2017 we know of no good ui options thus far besides "implement
@@ -100,7 +100,7 @@ draw using ggez".
 Contributions are welcome! ;-)
 
 <a name="gfx_resolution">
- 
+
 ## Resolution independence
 
 By default ggez uses a pixel coordinate system but you can change that
@@ -113,11 +113,11 @@ graphics::set_screen_coordinates(&mut context, Rect::new(0.0, 0.0, 1.0, 1.0)).un
 and scaling your `Image`s with `graphics::DrawParam`.
 
 <a name="libraries">
- 
+
 # Libraries
 
 <a name="library_ecs">
- 
+
 ## Can I use `specs`, `legion` or another entity-component system?
 
 Sure!  ggez doesn't include such a thing itself, since it's more or less out of scope for this, but it is specifically
@@ -127,7 +127,7 @@ demonstrates how to use ggez with `specs` for ECS, `warmy` for resource loading,
 # Performance
 
 <a name="perf_slow1">
- 
+
 ## Image/sound loading and font rendering is slow!
 
 Are you running in debug or release mode?  Rust in general is very
@@ -155,7 +155,7 @@ opt-level = 3: 450 fps
 ```
 
 <a name="perf_text">
- 
+
 ## Text rendering is still slow!
 
 Rendering text to a bitmap is actually pretty computationally expensive.  If you call `Text::new()` every single frame it's going to take a relatively large amount of time, and larger bitmaps and more text will take longer.
@@ -163,7 +163,7 @@ Rendering text to a bitmap is actually pretty computationally expensive.  If you
 Ideally you'd be able to use a glyph cache to render letters to a texture once, and then just create a mesh that uses the bits of that texture to draw text.  There's a couple partial implementations, such as the [gfx_glyph crate](https://crates.io/crates/gfx_glyph).
 
 <a name="perf_debug">
- 
+
 ## That's lame, can't I just compile my game in debug mode but ggez with optimizations on?
 
 Actually, as of rustc 1.41, you can!  See
@@ -171,7 +171,7 @@ Actually, as of rustc 1.41, you can!  See
 on how to do that.
 
 <a name="perf_drawing">
- 
+
 ## Drawing a few hundred images or shapes is slow!
 
 Again, debug mode is slow.  Plus, each single draw call has some overhead.  If building in release mode still isn't fast enough, then look into using `SpriteBatch` to draw a bunch of chunks from a spritesheet (also known as an atlas).  If you're drawing geometry, instead of using `graphics::rectangle()` or `graphics::circle()` and such, which create a new `Mesh` on each call and then throw it away, create and store a `Mesh` and draw it many times, or use a `MeshBuilder` to build a single `Mesh` out of many separate shapes.
@@ -181,7 +181,7 @@ Again, debug mode is slow.  Plus, each single draw call has some overhead.  If b
 # Platform-specific
 
 <a name="platform_build">
- 
+
 ## How do I build on platform X?
 
 See the [build
@@ -209,7 +209,7 @@ for a company that doesn't treat you like dirt.
 # Contributing
 
 <a name="contribute_inclusion">
- 
+
 ## If I write X, will you include it in ggez?
 
 Maybe, if it's something that fits in with ggez's goals: a simple and flexible 2D game framework with a LÖVE-ish API,
@@ -238,11 +238,11 @@ example, search for `gfx` on `crates.io` and see how messy the results are.
 For a fuller discussion of this, see [issue #373](https://github.com/ggez/ggez/issues/373).
 
 <a name="misc">
- 
+
 # Miscellaneous
 
 <a name="misc_conf">
- 
+
 ## How do I load my `conf.toml` file?
 
 When you create a `Context` it will automatically look for a
@@ -252,10 +252,10 @@ one, use that to override all the defaults you give it.
 The `files` example should demonstrate this, and more.
 
 <a name="misc_win_console">
- 
+
 ## I get a console window when I launch my executable on Windows
 
-You can disable the console entirely by adding the following at 
+You can disable the console entirely by adding the following at
 the top of your `main.rs` file:
 
 ```rust

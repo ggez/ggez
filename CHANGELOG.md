@@ -1,4 +1,4 @@
-# 0.6.0 (unpublished)
+# 0.6.0 (Release candidate)
 
 ## Added
 
@@ -23,7 +23,6 @@
  * Updated just about every other dependency under the sun
  * Minimum rustc version is now 1.36 (verify)
 
-
 ## Deprecated
 
 Nothing
@@ -35,7 +34,7 @@ Nothing
 
 ## Fixed
 
- * Many things
+ * Too many things to count
 
 ## Broken
 
