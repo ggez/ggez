@@ -244,26 +244,14 @@ mod tests {
         let alt = winit::event::ModifiersState::ALT;
         let ctrl = winit::event::ModifiersState::CTRL;
 
-        assert_eq!(
-            KeyMods::empty(),
-            KeyMods::from(ModifiersState::empty())
-        );
-        assert_eq!(
-            KeyMods::SHIFT,
-            KeyMods::from(shift)
-        );
-        assert_eq!(
-            KeyMods::SHIFT | KeyMods::ALT,
-            KeyMods::from(shift | alt)
-        );
+        assert_eq!(KeyMods::empty(), KeyMods::from(ModifiersState::empty()));
+        assert_eq!(KeyMods::SHIFT, KeyMods::from(shift));
+        assert_eq!(KeyMods::SHIFT | KeyMods::ALT, KeyMods::from(shift | alt));
         assert_eq!(
             KeyMods::SHIFT | KeyMods::ALT | KeyMods::CTRL,
             KeyMods::from(shift | alt | ctrl)
         );
-        assert_eq!(
-            KeyMods::SHIFT - KeyMods::ALT,
-            KeyMods::from(shift)
-        );
+        assert_eq!(KeyMods::SHIFT - KeyMods::ALT, KeyMods::from(shift));
         assert_eq!(
             (KeyMods::SHIFT | KeyMods::ALT) - KeyMods::ALT,
             KeyMods::from(shift)

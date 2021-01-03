@@ -273,7 +273,9 @@ where
 
                 // Handle gamepad events if necessary.
                 if ctx.conf.modules.gamepad {
-                    while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.next_event() {
+                    while let Some(gilrs::Event { id, event, .. }) =
+                        ctx.gamepad_context.next_event()
+                    {
                         match event {
                             gilrs::EventType::ButtonPressed(button, _) => {
                                 state.gamepad_button_down_event(ctx, button, GamepadId(id));
