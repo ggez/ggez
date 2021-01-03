@@ -38,7 +38,7 @@ pub struct FontCache {
 
 impl FontCache {
     /// Returns the width and height of the formatted and wrapped text.
-    pub fn dimensions(&self, text: &Text) -> (u32, u32) {
+    pub fn dimensions(&self, text: &Text) -> Rect {
         text.calculate_dimensions(&mut self.glyph_brush.borrow_mut())
     }
 }
@@ -137,8 +137,8 @@ where
 #[derive(Clone, Debug)]
 struct CachedMetrics {
     string: Option<String>,
-    width: Option<u32>,
-    height: Option<u32>,
+    width: Option<f32>,
+    height: Option<f32>,
 }
 
 impl Default for CachedMetrics {
@@ -328,42 +328,52 @@ impl Text {
     }
 
     /// Calculates, caches, and returns width and height of formatted and wrapped text.
-    fn calculate_dimensions(&self, gb: &mut GlyphBrush<DrawParam>) -> (u32, u32) {
+    fn calculate_dimensions(&self, gb: &mut GlyphBrush<DrawParam>) -> Rect {
         if let Ok(metrics) = self.cached_metrics.try_borrow() {
             if let (Some(width), Some(height)) = (metrics.width, metrics.height) {
-                return (width, height);
+                return Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    w: width,
+                    h: height,
+                };
             }
         }
-        let mut max_width = 0;
-        let mut max_height = 0;
+        let mut max_width = 0.0;
+        let mut max_height = 0.0;
         {
             let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
             use glyph_brush::GlyphCruncher;
             if let Some(bounds) = gb.glyph_bounds(varied_section) {
-                max_width = bounds.width().ceil() as u32;
-                max_height = bounds.height().ceil() as u32;
+                max_width = bounds.width().ceil();
+                max_height = bounds.height().ceil();
             }
         }
         if let Ok(mut metrics) = self.cached_metrics.try_borrow_mut() {
             metrics.width = Some(max_width);
             metrics.height = Some(max_height);
         }
-        (max_width, max_height)
+        Rect {
+            x: 0.0,
+            y: 0.0,
+            w: max_width,
+            h: max_height,
+        }
     }
 
-    /// Returns the width and height of the formatted and wrapped text.
-    pub fn dimensions(&self, context: &Context) -> (u32, u32) {
+    /// Returns a Rect containing the width and height of the formatted and wrapped text.
+    pub fn dimensions(&self, context: &Context) -> Rect {
         self.calculate_dimensions(&mut context.gfx_context.glyph_brush.borrow_mut())
     }
 
     /// Returns the width of formatted and wrapped text, in screen coordinates.
-    pub fn width(&self, context: &Context) -> u32 {
-        self.dimensions(context).0
+    pub fn width(&self, context: &Context) -> f32 {
+        self.dimensions(context).w
     }
 
     /// Returns the height of formatted and wrapped text, in screen coordinates.
-    pub fn height(&self, context: &Context) -> u32 {
-        self.dimensions(context).1
+    pub fn height(&self, context: &Context) -> f32 {
+        self.dimensions(context).h
     }
 }
 
@@ -375,13 +385,7 @@ impl Drawable for Text {
     }
 
     fn dimensions(&self, ctx: &mut Context) -> Option<Rect> {
-        let (w, h) = self.dimensions(ctx);
-        Some(Rect {
-            w: w as _,
-            h: h as _,
-            x: 0.0,
-            y: 0.0,
-        })
+        Some(self.dimensions(ctx))
     }
 
     fn set_blend_mode(&mut self, mode: Option<BlendMode>) {

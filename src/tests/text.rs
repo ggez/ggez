@@ -13,7 +13,7 @@ fn test_calculated_text_width() {
     let expected_width = text.width(ctx);
     // For now we just test against a known value, since rendering it
     // is odd.
-    assert_eq!(expected_width, 123);
+    assert_eq!(expected_width, 123.0);
     // let rendered_width = graphics::Text::new((text, font, 24)).unwrap().width();
 
     // println!("Text: {:?}, expected: {}, rendered: {}", text, expected_width, rendered_width);
