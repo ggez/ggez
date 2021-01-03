@@ -14,6 +14,10 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// have to be connected to each other, and will all be
 /// drawn at once.
 ///
+/// Note that this doesn't try very hard to handle degenerate cases.  It can easily break if you
+/// tell it to do things that result in a circle of radius 0, a line of width 0, an infintessimally
+/// skinny triangle, or other mathematically inconvenient things like that.
+///
 /// The following example shows how to build a mesh containing a line and a circle:
 ///
 /// ```rust,no_run
@@ -322,11 +326,17 @@ impl MeshBuilder {
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::fill_rounded_rectangle(&rect, &radii, &fill_options, builder);
+                    let _ = t::basic_shapes::fill_rounded_rectangle(
+                        &rect,
+                        &radii,
+                        &fill_options,
+                        builder,
+                    );
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::stroke_rounded_rectangle(&rect, &radii, &options, builder);
+                    let _ =
+                        t::basic_shapes::stroke_rounded_rectangle(&rect, &radii, &options, builder);
                 }
             };
         }

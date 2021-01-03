@@ -622,7 +622,8 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
 }
 
 /// Sets the raw projection matrix to the given homogeneous
-/// transformation matrix.
+/// transformation matrix.  For an introduction to graphics matrices,
+/// a good source is this: <http://ncase.me/matrix/>
 ///
 /// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
 /// after calling this to apply these changes and recalculate the
