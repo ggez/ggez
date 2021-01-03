@@ -17,7 +17,7 @@ pub fn context_build_tests() {
         conf::Conf::default().modules(conf::ModuleConf::default().audio(false)),
     ];
     for conf in confs.into_iter() {
-        let mut cb = ContextBuilder::new("ggez_unit_tests", "ggez").conf(conf);
+        let mut cb = ContextBuilder::new("ggez_unit_tests", "ggez").default_conf(conf);
         if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
             let mut path = path::PathBuf::from(manifest_dir);
             path.push("resources");

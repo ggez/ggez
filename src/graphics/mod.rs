@@ -901,6 +901,34 @@ pub fn window_raw(context: &mut Context) -> &mut glutin::WindowedContext<glutin:
     &mut context.gfx_context.window
 }
 
+/// Deletes all cached font data.
+///
+/// Suggest this only gets used if you're sure you actually need it.
+pub fn clear_font_cache(ctx: &mut Context) {
+    use glyph_brush::GlyphBrushBuilder;
+    use std::cell::RefCell;
+    use std::convert::TryInto;
+    use std::rc::Rc;
+    let font_vec =
+        glyph_brush::ab_glyph::FontArc::try_from_slice(Font::default_font_bytes()).unwrap();
+    let glyph_brush = GlyphBrushBuilder::using_font(font_vec).build();
+    let (glyph_cache_width, glyph_cache_height) = glyph_brush.texture_dimensions();
+    let initial_contents = vec![255; 4 * glyph_cache_width as usize * glyph_cache_height as usize];
+    let glyph_cache = Image::from_rgba8(
+        ctx,
+        glyph_cache_width.try_into().unwrap(),
+        glyph_cache_height.try_into().unwrap(),
+        &initial_contents,
+    )
+    .unwrap();
+    let glyph_state = Rc::new(RefCell::new(spritebatch::SpriteBatch::new(
+        glyph_cache.clone(),
+    )));
+    ctx.gfx_context.glyph_brush = Rc::new(RefCell::new(glyph_brush));
+    ctx.gfx_context.glyph_cache = glyph_cache;
+    ctx.gfx_context.glyph_state = glyph_state;
+}
+
 /// Returns raw `gfx-rs` state objects, if you want to use `gfx-rs` to write
 /// your own graphics pipeline then this gets you the interfaces you need
 /// to do so.
