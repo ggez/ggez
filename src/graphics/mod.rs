@@ -980,20 +980,30 @@ pub trait Drawable {
 
 /// Applies `DrawParam` to `Rect`.
 pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
-    let w = param.src.w * param.scale.x * rect.w;
-    let h = param.src.h * param.scale.y * rect.h;
-    let offset_x = w * param.offset.x;
-    let offset_y = h * param.offset.y;
-    let dest_x = param.dest.x - offset_x;
-    let dest_y = param.dest.y - offset_y;
-    let mut r = Rect {
-        w,
-        h,
-        x: dest_x + rect.x * param.scale.x,
-        y: dest_y + rect.y * param.scale.y,
-    };
-    r.rotate(param.rotation);
-    r
+    match param.trans {
+        Transform::Values {
+            scale,
+            offset,
+            dest,
+            rotation,
+        } => {
+            let w = param.src.w * scale.x * rect.w;
+            let h = param.src.h * scale.y * rect.h;
+            let offset_x = w * offset.x;
+            let offset_y = h * offset.y;
+            let dest_x = dest.x - offset_x;
+            let dest_y = dest.y - offset_y;
+            let mut r = Rect {
+                w,
+                h,
+                x: dest_x + rect.x * scale.x,
+                y: dest_y + rect.y * scale.y,
+            };
+            r.rotate(rotation);
+            r
+        }
+        Transform::Matrix(_m) => todo!("Fix me"),
+    }
 }
 
 #[cfg(test)]
