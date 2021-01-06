@@ -16,8 +16,8 @@ use crate::context::Context;
 use crate::error;
 use crate::error::GameResult;
 use crate::graphics::shader::BlendMode;
-use crate::graphics::types::{FilterMode, Matrix4};
-use crate::graphics::{self, transform_rect2, BackendSpec, DrawParam, DrawTransform, Rect};
+use crate::graphics::types::FilterMode;
+use crate::graphics::{self, transform_rect, BackendSpec, DrawParam, DrawTransform, Rect};
 use gfx::Factory;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
@@ -31,7 +31,7 @@ use gfx::Factory;
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpriteBatch {
     image: graphics::Image,
-    sprites: Vec<graphics::DrawTransform>,
+    sprites: Vec<graphics::DrawParam>,
     blend_mode: Option<BlendMode>,
 }
 
@@ -59,7 +59,7 @@ impl SpriteBatch {
     /// [`set()`](#method.set)
     pub fn add<P>(&mut self, param: P) -> SpriteIdx
     where
-        P: Into<graphics::DrawTransform>,
+        P: Into<graphics::DrawParam>,
     {
         self.sprites.push(param.into());
         SpriteIdx(self.sprites.len() - 1)
@@ -68,7 +68,7 @@ impl SpriteBatch {
     /// Alters a sprite in the batch to use the given draw params
     pub fn set<P>(&mut self, handle: SpriteIdx, param: P) -> GameResult
     where
-        P: Into<graphics::DrawTransform>,
+        P: Into<graphics::DrawParam>,
     {
         if handle.0 < self.sprites.len() {
             self.sprites[handle.0] = param.into();
@@ -98,21 +98,13 @@ impl SpriteBatch {
             .map(|param| {
                 // Copy old params
                 let mut new_param = *param;
-                /*
                 let src_width = param.src.w;
                 let src_height = param.src.h;
                 let real_scale = graphics::Vector2::new(
                     src_width * param.scale.x * f32::from(image.width),
                     src_height * param.scale.y * f32::from(image.height),
                 );
-                */
-                let src_width = param.src.w;
-                let src_height = param.src.h;
-                let sx = src_width * f32::from(src_width);
-                let sy = src_height * f32::from(src_height);
-                // TODO: Verify this is the correct mul order
-                let real_scale = param.matrix * Matrix4::from_scale(glam::Vec3::new(sx, sy, 1.0));
-                new_param.matrix = real_scale.into();
+                new_param.scale = real_scale.into();
                 new_param.color = new_param.color;
                 let primitive_param = graphics::DrawTransform::from(new_param);
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
@@ -209,7 +201,7 @@ impl graphics::Drawable for SpriteBatch {
         let dimensions = self.image.dimensions();
         self.sprites
             .iter()
-            .map(|&param| transform_rect2(dimensions, param))
+            .map(|&param| transform_rect(dimensions, param))
             .fold(None, |acc: Option<Rect>, rect| {
                 Some(if let Some(acc) = acc {
                     acc.combine_with(rect)

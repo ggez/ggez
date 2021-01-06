@@ -340,6 +340,8 @@ impl Drawable for Image {
         self.debug_id.assert(ctx);
 
         let gfx = &mut ctx.gfx_context;
+        let src_width = param.src.w;
+        let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
         /*
@@ -349,8 +351,6 @@ impl Drawable for Image {
         );
         */
 
-        let src_width = param.src.w;
-        let src_height = param.src.h;
         let sx = src_width * f32::from(self.width);
         let sy = src_height * f32::from(self.height);
         // TODO: Verify this is the correct mul order

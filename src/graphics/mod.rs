@@ -996,20 +996,6 @@ pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
     r
 }
 
-/// Applies `DrawParam` to `Rect`.
-pub fn transform_rect2(rect: Rect, param: DrawTransform) -> Rect {
-    let pos = glam::Vec4::new(rect.x, rect.y, 0.0, 0.0);
-    let offset = glam::Vec4::new(rect.w, rect.h, 0.0, 0.0);
-    let new_pos = param.matrix * pos;
-    let new_offset = param.matrix * offset;
-    Rect {
-        x: new_pos.x,
-        y: new_pos.y,
-        w: new_offset.x,
-        h: new_offset.y,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::graphics::{transform_rect, DrawParam, Rect};
