@@ -41,6 +41,7 @@ impl Transform {
         Transform::Matrix(self.to_bare_matrix())
     }
 
+    /// Same as `to_matrix()` but just returns a bare `mint` matrix.
     pub fn to_bare_matrix(&self) -> mint::ColumnMatrix4<f32> {
         match self {
             Transform::Matrix(m) => *m,

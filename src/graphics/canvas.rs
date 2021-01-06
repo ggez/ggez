@@ -156,9 +156,7 @@ impl Drawable for Canvas {
                     x: dest.x,
                     y: dest.y + f32::from(self.image.height()) * new_scale.y,
                 };
-                let mut new_param = param;
-                new_param.dest(new_dest);
-                new_param.scale(new_scale);
+                let new_param = param.dest(new_dest).scale(new_scale);
                 self.image.draw(ctx, new_param)
             }
             Transform::Matrix(_) => self.image.draw(ctx, param),

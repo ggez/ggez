@@ -17,7 +17,9 @@ use crate::error;
 use crate::error::GameResult;
 use crate::graphics::shader::BlendMode;
 use crate::graphics::types::FilterMode;
-use crate::graphics::{self, transform_rect, BackendSpec, DrawParam, DrawTransform, Rect};
+use crate::graphics::{
+    self, transform_rect, BackendSpec, DrawParam, DrawTransform, Rect, Transform,
+};
 use gfx::Factory;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
@@ -97,15 +99,18 @@ impl SpriteBatch {
             .iter()
             .map(|param| {
                 // Copy old params
-                let mut new_param = *param;
                 let src_width = param.src.w;
                 let src_height = param.src.h;
-                let real_scale = graphics::Vector2::new(
-                    src_width * param.scale.x * f32::from(image.width),
-                    src_height * param.scale.y * f32::from(image.height),
-                );
-                new_param.scale = real_scale.into();
-                new_param.color = new_param.color;
+                let new_param = match param.trans {
+                    Transform::Values { scale, .. } => {
+                        let new_scale = mint::Vector2 {
+                            x: scale.x * src_width * f32::from(image.width),
+                            y: scale.y * src_height * f32::from(image.height),
+                        };
+                        param.scale(new_scale)
+                    }
+                    Transform::Matrix(_) => *param,
+                };
                 let primitive_param = graphics::DrawTransform::from(new_param);
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
             })
