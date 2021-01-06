@@ -1,5 +1,91 @@
 use crate::graphics::*;
 
+/// A struct that represents where to put a `Drawable`.
+///
+/// This can either be a set of individual components, or
+/// a single `Matrix4` transform.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Transform {
+    /// Transform made of individual values
+    Values {
+        /// The position to draw the graphic expressed as a `Point2`.
+        dest: mint::Point2<f32>,
+        /// The orientation of the graphic in radians.
+        rotation: f32,
+        /// The x/y scale factors expressed as a `Vector2`.
+        scale: mint::Vector2<f32>,
+        /// An offset from the center for transform operations like scale/rotation,
+        /// with `0,0` meaning the origin and `1,1` meaning the opposite corner from the origin.
+        /// By default these operations are done from the top-left corner, so to rotate something
+        /// from the center specify `Point2::new(0.5, 0.5)` here.
+        offset: mint::Point2<f32>,
+    },
+    /// Transform made of an arbitrary matrix
+    Matrix(mint::ColumnMatrix4<f32>),
+}
+
+impl Default for Transform {
+    fn default() -> Self {
+        Transform::Values {
+            dest: mint::Point2 { x: 0.0, y: 0.0 },
+            rotation: 0.0,
+            scale: mint::Vector2 { x: 1.0, y: 1.0 },
+            offset: mint::Point2 { x: 0.0, y: 0.0 },
+        }
+    }
+}
+
+impl Transform {
+    /// Crunches the transform down to a single matrix, if it's not one already.
+    pub fn to_matrix(&self) -> Self {
+        Transform::Matrix(self.to_bare_matrix())
+    }
+
+    pub fn to_bare_matrix(&self) -> mint::ColumnMatrix4<f32> {
+        match self {
+            Transform::Matrix(m) => *m,
+            Transform::Values {
+                dest,
+                rotation,
+                scale,
+                offset,
+            } => {
+                // Calculate a matrix equivalent to doing this:
+                //  type Vec3 = na::Vector3<f32>;
+                //  let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
+                //  let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
+                //  let offset_inverse =
+                //      Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
+                //  let axis_angle = Vec3::z() * self.rotation;
+                //  let rotation = Matrix4::new_rotation(axis_angle);
+                //  let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
+                //  translate * offset * rotation * scale * offset_inverse
+                let cosr = rotation.cos();
+                let sinr = rotation.sin();
+                let m00 = cosr * scale.x;
+                let m01 = -sinr * scale.y;
+                let m10 = sinr * scale.x;
+                let m11 = cosr * scale.y;
+                let m03 = offset.x * (1.0 - m00) - offset.y * m01 + dest.x;
+                let m13 = offset.y * (1.0 - m11) - offset.x * m10 + dest.y;
+                // Welp, this transpose fixes some bug that makes nothing draw,
+                // that was introduced in commit 2c6b3cc03f34fb240f4246f5a68c75bd85b60eae.
+                // The best part is, I don't know if this code is wrong, or whether there's
+                // some reversed matrix multiply or such somewhere else that this cancel
+                // out.  Probably the former though.
+                Matrix4::from_cols_array(&[
+                    m00, m01, 0.0, m03, // oh rustfmt you so fine
+                    m10, m11, 0.0, m13, // you so fine you blow my mind
+                    0.0, 0.0, 1.0, 0.0, // but leave my matrix formatting alone
+                    0.0, 0.0, 0.0, 1.0, // plz
+                ])
+                .transpose()
+                .into()
+            }
+        }
+    }
+}
+
 /// A struct containing all the necessary info for drawing a [`Drawable`](trait.Drawable.html).
 ///
 /// This struct implements the `Default` trait, so to set only some parameter
@@ -20,31 +106,18 @@ pub struct DrawParam {
     /// A portion of the drawable to clip, as a fraction of the whole image.
     /// Defaults to the whole image `(0,0 to 1,1)` if omitted.
     pub src: Rect,
-    /// The position to draw the graphic expressed as a `Point2`.
-    pub dest: mint::Point2<f32>,
-    /// The orientation of the graphic in radians.
-    pub rotation: f32,
-    /// The x/y scale factors expressed as a `Vector2`.
-    pub scale: mint::Vector2<f32>,
-    /// An offset from the center for transform operations like scale/rotation,
-    /// with `0,0` meaning the origin and `1,1` meaning the opposite corner from the origin.
-    /// By default these operations are done from the top-left corner, so to rotate something
-    /// from the center specify `Point2::new(0.5, 0.5)` here.
-    pub offset: mint::Point2<f32>,
-    /// A color to draw the target with.
     /// Default: white.
     pub color: Color,
+    /// Where to put the `Drawable`.
+    pub trans: Transform,
 }
 
 impl Default for DrawParam {
     fn default() -> Self {
         DrawParam {
             src: Rect::one(),
-            dest: mint::Point2 { x: 0.0, y: 0.0 },
-            rotation: 0.0,
-            scale: mint::Vector2 { x: 1.0, y: 1.0 },
-            offset: mint::Point2 { x: 0.0, y: 0.0 },
             color: WHITE,
+            trans: Transform::default(),
         }
     }
 }
@@ -67,8 +140,12 @@ impl DrawParam {
         P: Into<mint::Point2<f32>>,
     {
         let p: mint::Point2<f32> = dest.into();
-        self.dest = p;
-        self
+        if let Transform::Values { ref mut dest, .. } = self.trans {
+            *dest = p;
+            self
+        } else {
+            panic!("Cannot set values for a DrawParam matrix")
+        }
     }
 
     /// Set the drawable color.  This will be blended with whatever
@@ -79,9 +156,16 @@ impl DrawParam {
     }
 
     /// Set the rotation of the drawable.
-    pub fn rotation(mut self, rotation: f32) -> Self {
-        self.rotation = rotation;
-        self
+    pub fn rotation(mut self, rot: f32) -> Self {
+        if let Transform::Values {
+            ref mut rotation, ..
+        } = self.trans
+        {
+            *rotation = rot;
+            self
+        } else {
+            panic!("Cannot set values for a DrawParam matrix")
+        }
     }
 
     /// Set the scaling factors of the drawable.
@@ -90,8 +174,12 @@ impl DrawParam {
         V: Into<mint::Vector2<f32>>,
     {
         let p: mint::Vector2<f32> = scale.into();
-        self.scale = p;
-        self
+        if let Transform::Values { ref mut scale, .. } = self.trans {
+            *scale = p;
+            self
+        } else {
+            panic!("Cannot set values for a DrawParam matrix")
+        }
     }
 
     /// Set the transformation offset of the drawable.
@@ -100,49 +188,12 @@ impl DrawParam {
         P: Into<mint::Point2<f32>>,
     {
         let p: mint::Point2<f32> = offset.into();
-        self.offset = p;
-        self
-    }
-
-    /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
-    fn to_na_matrix(&self) -> Matrix4 {
-        // Calculate a matrix equivalent to doing this:
-        //  type Vec3 = na::Vector3<f32>;
-        //  let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
-        //  let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
-        //  let offset_inverse =
-        //      Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
-        //  let axis_angle = Vec3::z() * self.rotation;
-        //  let rotation = Matrix4::new_rotation(axis_angle);
-        //  let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
-        //  translate * offset * rotation * scale * offset_inverse
-        let cosr = self.rotation.cos();
-        let sinr = self.rotation.sin();
-        let m00 = cosr * self.scale.x;
-        let m01 = -sinr * self.scale.y;
-        let m10 = sinr * self.scale.x;
-        let m11 = cosr * self.scale.y;
-        let m03 = self.offset.x * (1.0 - m00) - self.offset.y * m01 + self.dest.x;
-        let m13 = self.offset.y * (1.0 - m11) - self.offset.x * m10 + self.dest.y;
-        // Welp, this transpose fixes some bug that makes nothing draw,
-        // that was introduced in commit 2c6b3cc03f34fb240f4246f5a68c75bd85b60eae.
-        // The best part is, I don't know if this code is wrong, or whether there's
-        // some reversed matrix multiply or such somewhere else that this cancel
-        // out.  Probably the former though.
-        Matrix4::from_cols_array(&[
-            m00, m01, 0.0, m03, // oh rustfmt you so fine
-            m10, m11, 0.0, m13, // you so fine you blow my mind
-            0.0, 0.0, 1.0, 0.0, // but leave my matrix formatting alone
-            0.0, 0.0, 0.0, 1.0, // plz
-        ])
-        .transpose()
-    }
-
-    /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single
-    ///matrix.  Because of this it only contains the transform part (rotation/scale/etc),
-    /// with no src/dest/color info.
-    pub fn to_matrix(&self) -> mint::ColumnMatrix4<f32> {
-        self.to_na_matrix().into()
+        if let Transform::Values { ref mut offset, .. } = self.trans {
+            *offset = p;
+            self
+        } else {
+            panic!("Cannot set values for a DrawParam matrix")
+        }
     }
 }
 
@@ -244,11 +295,11 @@ impl Default for DrawTransform {
 impl From<DrawParam> for DrawTransform {
     fn from(param: DrawParam) -> Self {
         // TODO: Double-check this all lines up
-        let transform = param.to_na_matrix();
+        let transform = param.trans.to_bare_matrix();
         DrawTransform {
             src: param.src,
             color: param.color,
-            matrix: transform,
+            matrix: transform.into(),
         }
     }
 }
