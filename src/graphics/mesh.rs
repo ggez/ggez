@@ -728,7 +728,7 @@ impl Mesh {
 }
 
 impl Drawable for Mesh {
-    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
+    fn draw(&self, ctx: &mut Context, param: DrawTransform) -> GameResult {
         self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;
         gfx.update_instance_properties(param.into())?;

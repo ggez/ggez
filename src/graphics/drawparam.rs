@@ -104,8 +104,8 @@ impl DrawParam {
         self
     }
 
-    /// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
-    fn to_na_matrix(&self) -> Matrix4 {
+    /// A [`DrawParam`](struct.DrawParam.html) that has had all the transformations crunched down to a single matrix.
+    fn to_matrix_internal(&self) -> Matrix4 {
         // Calculate a matrix equivalent to doing this:
         //  type Vec3 = na::Vector3<f32>;
         //  let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
@@ -142,7 +142,7 @@ impl DrawParam {
     ///matrix.  Because of this it only contains the transform part (rotation/scale/etc),
     /// with no src/dest/color info.
     pub fn to_matrix(&self) -> mint::ColumnMatrix4<f32> {
-        self.to_na_matrix().into()
+        self.to_matrix_internal().into()
     }
 }
 
@@ -150,27 +150,27 @@ impl DrawParam {
 /// Note that this takes a single-element tuple.
 /// It's a little weird but keeps the trait implementations
 /// from clashing.
-impl<P> From<(P,)> for DrawParam
+impl<P> From<(P,)> for DrawTransform
 where
     P: Into<mint::Point2<f32>>,
 {
     fn from(location: (P,)) -> Self {
-        DrawParam::new().dest(location.0)
+        DrawParam::new().dest(location.0).into()
     }
 }
 
 /// Create a `DrawParam` from a location and color
-impl<P> From<(P, Color)> for DrawParam
+impl<P> From<(P, Color)> for DrawTransform
 where
     P: Into<mint::Point2<f32>>,
 {
     fn from((location, color): (P, Color)) -> Self {
-        DrawParam::new().dest(location).color(color)
+        DrawParam::new().dest(location).color(color).into()
     }
 }
 
 /// Create a `DrawParam` from a location, rotation and color
-impl<P> From<(P, f32, Color)> for DrawParam
+impl<P> From<(P, f32, Color)> for DrawTransform
 where
     P: Into<mint::Point2<f32>>,
 {
@@ -179,11 +179,12 @@ where
             .dest(location)
             .rotation(rotation)
             .color(color)
+            .into()
     }
 }
 
 /// Create a `DrawParam` from a location, rotation, offset and color
-impl<P> From<(P, f32, P, Color)> for DrawParam
+impl<P> From<(P, f32, P, Color)> for DrawTransform
 where
     P: Into<mint::Point2<f32>>,
 {
@@ -193,11 +194,12 @@ where
             .rotation(rotation)
             .offset(offset)
             .color(color)
+            .into()
     }
 }
 
-/// Create a `DrawParam` from a location, rotation, offset, scale and color
-impl<P, V> From<(P, f32, P, V, Color)> for DrawParam
+/// Create a `DrawTransform` from a location, rotation, offset, scale and color
+impl<P, V> From<(P, f32, P, V, Color)> for DrawTransform
 where
     P: Into<mint::Point2<f32>>,
     V: Into<mint::Vector2<f32>>,
@@ -209,6 +211,7 @@ where
             .offset(offset)
             .scale(scale)
             .color(color)
+            .into()
     }
 }
 
@@ -219,8 +222,10 @@ where
 /// hard to extract scale and rotation and such, so meh.
 ///
 /// It's still useful for a couple internal things though, so it's kept around.
+///
+/// TODO: Docs
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub(crate) struct DrawTransform {
+pub struct DrawTransform {
     /// The transform matrix for the DrawParams
     pub matrix: Matrix4,
     /// A portion of the drawable to clip, as a fraction of the whole image.
@@ -243,8 +248,7 @@ impl Default for DrawTransform {
 
 impl From<DrawParam> for DrawTransform {
     fn from(param: DrawParam) -> Self {
-        // TODO: Double-check this all lines up
-        let transform = param.to_na_matrix();
+        let transform = param.to_matrix_internal();
         DrawTransform {
             src: param.src,
             color: param.color,

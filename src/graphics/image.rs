@@ -336,7 +336,7 @@ impl fmt::Debug for Image {
 }
 
 impl Drawable for Image {
-    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
+    fn draw(&self, ctx: &mut Context, param: DrawTransform) -> GameResult {
         self.debug_id.assert(ctx);
 
         let gfx = &mut ctx.gfx_context;
@@ -344,13 +344,20 @@ impl Drawable for Image {
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
+        /*
         let real_scale = Vector2::new(
             param.scale.x * src_width * f32::from(self.width),
             param.scale.y * src_height * f32::from(self.height),
         );
+        */
+
+        let sx = src_width * f32::from(self.width);
+        let sy = src_height * f32::from(self.height);
+        // TODO: Verify this is the correct mul order
+        let real_scale = param.matrix * Matrix4::from_scale(glam::Vec3::new(sx, sy, 1.0));
 
         let mut new_param = param;
-        new_param.scale = real_scale.into();
+        new_param.matrix = real_scale;
 
         gfx.update_instance_properties(new_param.into())?;
         let sampler = gfx

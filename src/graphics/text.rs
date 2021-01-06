@@ -378,7 +378,7 @@ impl Text {
 }
 
 impl Drawable for Text {
-    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
+    fn draw(&self, ctx: &mut Context, param: DrawTransform) -> GameResult {
         // Converts fraction-of-bounding-box to screen coordinates, as required by `draw_queued()`.
         queue_text(ctx, self, Point2::new(0.0, 0.0), Some(param.color));
         draw_queued_text(ctx, param, self.blend_mode, self.filter_mode)
@@ -493,9 +493,9 @@ pub fn draw_queued_text<D>(
     filter: FilterMode,
 ) -> GameResult
 where
-    D: Into<DrawParam>,
+    D: Into<DrawTransform>,
 {
-    let param: DrawParam = param.into();
+    let param: DrawTransform = param.into();
 
     let gb = &mut ctx.gfx_context.glyph_brush;
     let encoder = &mut ctx.gfx_context.encoder;

@@ -142,13 +142,15 @@ where
 }
 
 impl Drawable for Canvas {
-    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
+    fn draw(&self, ctx: &mut Context, param: DrawTransform) -> GameResult {
         self.debug_id.assert(ctx);
         // Gotta flip the image on the Y axis here
         // to account for OpenGL's origin being at the bottom-left.
         let mut flipped_param = param;
+        /* TODO: FIXME: BUGGO: AUGH
         flipped_param.scale.y *= -1.0;
         flipped_param.dest.y += f32::from(self.image.height()) * param.scale.y;
+        */
         self.image.draw(ctx, flipped_param)?;
         Ok(())
     }
