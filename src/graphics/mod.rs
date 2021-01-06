@@ -454,7 +454,7 @@ pub fn clear(ctx: &mut Context, color: Color) {
 pub fn draw<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult
 where
     D: Drawable,
-    T: Into<DrawTransform>,
+    T: Into<DrawParam>,
 {
     let params = params.into();
     drawable.draw(ctx, params)
@@ -960,7 +960,7 @@ pub fn gfx_objects(
 /// All types that can be drawn on the screen implement the `Drawable` trait.
 pub trait Drawable {
     /// Draws the drawable onto the rendering target.
-    fn draw(&self, ctx: &mut Context, param: DrawTransform) -> GameResult;
+    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult;
 
     /// Returns a bounding box in the form of a `Rect`.
     ///
