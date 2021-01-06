@@ -342,18 +342,10 @@ impl Drawable for Image {
         let gfx = &mut ctx.gfx_context;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
-        /*
-        let real_scale = Vector2::new(
-            param.scale.x * src_width * f32::from(self.width),
-            param.scale.y * src_height * f32::from(self.height),
-        );
-        */
-
         let src_width = param.src.w;
         let src_height = param.src.h;
         let sx = src_width * f32::from(self.width);
         let sy = src_height * f32::from(self.height);
-        // TODO: Verify this is the correct mul order
         let real_scale = param.matrix * Matrix4::from_scale(glam::Vec3::new(sx, sy, 1.0));
 
         let mut new_param = param;

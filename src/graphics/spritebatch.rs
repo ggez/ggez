@@ -17,7 +17,7 @@ use crate::error;
 use crate::error::GameResult;
 use crate::graphics::shader::BlendMode;
 use crate::graphics::types::{FilterMode, Matrix4};
-use crate::graphics::{self, transform_rect2, BackendSpec, DrawParam, DrawTransform, Rect};
+use crate::graphics::{self, transform_rect, BackendSpec, DrawTransform, Rect};
 use gfx::Factory;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
@@ -97,23 +97,13 @@ impl SpriteBatch {
             .iter()
             .map(|param| {
                 // Copy old params
-                let mut new_param = *param;
-                /*
                 let src_width = param.src.w;
                 let src_height = param.src.h;
-                let real_scale = graphics::Vector2::new(
-                    src_width * param.scale.x * f32::from(image.width),
-                    src_height * param.scale.y * f32::from(image.height),
-                );
-                */
-                let src_width = param.src.w;
-                let src_height = param.src.h;
-                let sx = src_width * f32::from(src_width);
-                let sy = src_height * f32::from(src_height);
-                // TODO: Verify this is the correct mul order
+                let sx = src_width * f32::from(image.width);
+                let sy = src_height * f32::from(image.height);
                 let real_scale = param.matrix * Matrix4::from_scale(glam::Vec3::new(sx, sy, 1.0));
+                let mut new_param = *param;
                 new_param.matrix = real_scale.into();
-                new_param.color = new_param.color;
                 let primitive_param = graphics::DrawTransform::from(new_param);
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
             })
@@ -209,7 +199,7 @@ impl graphics::Drawable for SpriteBatch {
         let dimensions = self.image.dimensions();
         self.sprites
             .iter()
-            .map(|&param| transform_rect2(dimensions, param))
+            .map(|&param| transform_rect(dimensions, param))
             .fold(None, |acc: Option<Rect>, rect| {
                 Some(if let Some(acc) = acc {
                     acc.combine_with(rect)

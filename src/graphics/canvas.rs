@@ -147,10 +147,12 @@ impl Drawable for Canvas {
         // Gotta flip the image on the Y axis here
         // to account for OpenGL's origin being at the bottom-left.
         let mut flipped_param = param;
-        /* TODO: FIXME: BUGGO: AUGH
-        flipped_param.scale.y *= -1.0;
-        flipped_param.dest.y += f32::from(self.image.height()) * param.scale.y;
-        */
+        flipped_param.matrix = flipped_param.matrix
+            * glam::Mat4::from_scale_rotation_translation(
+                glam::Vec3::new(1.0, -1.0, 1.0),
+                glam::Quat::identity(),
+                glam::Vec3::new(0.0, f32::from(self.image.height()), 0.0),
+            );
         self.image.draw(ctx, flipped_param)?;
         Ok(())
     }

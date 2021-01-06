@@ -978,26 +978,8 @@ pub trait Drawable {
     fn blend_mode(&self) -> Option<BlendMode>;
 }
 
-/// Applies `DrawParam` to `Rect`.
-pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
-    let w = param.src.w * param.scale.x * rect.w;
-    let h = param.src.h * param.scale.y * rect.h;
-    let offset_x = w * param.offset.x;
-    let offset_y = h * param.offset.y;
-    let dest_x = param.dest.x - offset_x;
-    let dest_y = param.dest.y - offset_y;
-    let mut r = Rect {
-        w,
-        h,
-        x: dest_x + rect.x * param.scale.x,
-        y: dest_y + rect.y * param.scale.y,
-    };
-    r.rotate(param.rotation);
-    r
-}
-
-/// Applies `DrawParam` to `Rect`.
-pub fn transform_rect2(rect: Rect, param: DrawTransform) -> Rect {
+/// Applies a `DrawTransform` to a `Rect`.
+pub fn transform_rect(rect: Rect, param: DrawTransform) -> Rect {
     let pos = glam::Vec4::new(rect.x, rect.y, 0.0, 0.0);
     let offset = glam::Vec4::new(rect.w, rect.h, 0.0, 0.0);
     let new_pos = param.matrix * pos;
@@ -1012,7 +994,7 @@ pub fn transform_rect2(rect: Rect, param: DrawTransform) -> Rect {
 
 #[cfg(test)]
 mod tests {
-    use crate::graphics::{transform_rect, DrawParam, Rect};
+    use crate::graphics::{transform_rect, DrawParam, DrawTransform, Rect};
     use approx::assert_relative_eq;
     use std::f32::consts::PI;
 
@@ -1025,7 +1007,7 @@ mod tests {
                 w: 1.0,
                 h: 1.0,
             };
-            let param = DrawParam::new();
+            let param = DrawTransform::default();
             let real = transform_rect(r, param);
             let expected = r;
             assert_relative_eq!(real, expected);
@@ -1038,7 +1020,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().scale([0.5, 0.5]);
-            let real = transform_rect(r, param);
+            let real = transform_rect(r, param.into());
             let expected = Rect {
                 x: -0.5,
                 y: -0.5,
@@ -1055,7 +1037,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().offset([0.5, 0.5]);
-            let real = transform_rect(r, param);
+            let real = transform_rect(r, param.into());
             let expected = Rect {
                 x: -1.5,
                 y: -1.5,
@@ -1072,7 +1054,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().rotation(PI * 0.5);
-            let real = transform_rect(r, param);
+            let real = transform_rect(r, param.into());
             let expected = Rect {
                 x: -1.0,
                 y: 1.0,
@@ -1092,7 +1074,7 @@ mod tests {
                 .scale([0.5, 0.5])
                 .offset([0.0, 1.0])
                 .rotation(PI * 0.5);
-            let real = transform_rect(r, param);
+            let real = transform_rect(r, param.into());
             let expected = Rect {
                 x: 0.5,
                 y: -0.5,
