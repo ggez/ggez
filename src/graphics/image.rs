@@ -336,20 +336,24 @@ impl fmt::Debug for Image {
 }
 
 impl Drawable for Image {
-    fn draw(&self, ctx: &mut Context, param: DrawTransform) -> GameResult {
+    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
 
         let gfx = &mut ctx.gfx_context;
-        // We have to mess with the scale to make everything
-        // be its-unit-size-in-pixels.
         let src_width = param.src.w;
         let src_height = param.src.h;
-        let sx = src_width * f32::from(self.width);
-        let sy = src_height * f32::from(self.height);
-        let real_scale = param.matrix * Matrix4::from_scale(glam::Vec3::new(sx, sy, 1.0));
-
-        let mut new_param = param;
-        new_param.matrix = real_scale;
+        // We have to mess with the scale to make everything
+        // be its-unit-size-in-pixels.
+        let new_param = match param.trans {
+            Transform::Values { scale, .. } => {
+                let new_scale = mint::Vector2 {
+                    x: scale.x * src_width * f32::from(self.width),
+                    y: scale.y * src_height * f32::from(self.height),
+                };
+                param.scale(new_scale)
+            }
+            Transform::Matrix(_) => param,
+        };
 
         gfx.update_instance_properties(new_param.into())?;
         let sampler = gfx

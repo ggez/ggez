@@ -454,7 +454,7 @@ pub fn clear(ctx: &mut Context, color: Color) {
 pub fn draw<D, T>(ctx: &mut Context, drawable: &D, params: T) -> GameResult
 where
     D: Drawable,
-    T: Into<DrawTransform>,
+    T: Into<DrawParam>,
 {
     let params = params.into();
     drawable.draw(ctx, params)
@@ -960,7 +960,7 @@ pub fn gfx_objects(
 /// All types that can be drawn on the screen implement the `Drawable` trait.
 pub trait Drawable {
     /// Draws the drawable onto the rendering target.
-    fn draw(&self, ctx: &mut Context, param: DrawTransform) -> GameResult;
+    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult;
 
     /// Returns a bounding box in the form of a `Rect`.
     ///
@@ -978,17 +978,31 @@ pub trait Drawable {
     fn blend_mode(&self) -> Option<BlendMode>;
 }
 
-/// Applies a `DrawTransform` to a `Rect`.
-pub fn transform_rect(rect: Rect, param: DrawTransform) -> Rect {
-    let pos = glam::Vec4::new(rect.x, rect.y, 0.0, 0.0);
-    let offset = glam::Vec4::new(rect.w, rect.h, 0.0, 0.0);
-    let new_pos = param.matrix * pos;
-    let new_offset = param.matrix * offset;
-    Rect {
-        x: new_pos.x,
-        y: new_pos.y,
-        w: new_offset.x,
-        h: new_offset.y,
+/// Applies `DrawParam` to `Rect`.
+pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
+    match param.trans {
+        Transform::Values {
+            scale,
+            offset,
+            dest,
+            rotation,
+        } => {
+            let w = param.src.w * scale.x * rect.w;
+            let h = param.src.h * scale.y * rect.h;
+            let offset_x = w * offset.x;
+            let offset_y = h * offset.y;
+            let dest_x = dest.x - offset_x;
+            let dest_y = dest.y - offset_y;
+            let mut r = Rect {
+                w,
+                h,
+                x: dest_x + rect.x * scale.x,
+                y: dest_y + rect.y * scale.y,
+            };
+            r.rotate(rotation);
+            r
+        }
+        Transform::Matrix(_m) => todo!("Fix me"),
     }
 }
 

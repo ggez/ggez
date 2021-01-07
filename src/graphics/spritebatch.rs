@@ -16,8 +16,10 @@ use crate::context::Context;
 use crate::error;
 use crate::error::GameResult;
 use crate::graphics::shader::BlendMode;
-use crate::graphics::types::{FilterMode, Matrix4};
-use crate::graphics::{self, transform_rect, BackendSpec, DrawTransform, Rect};
+use crate::graphics::types::FilterMode;
+use crate::graphics::{
+    self, transform_rect, BackendSpec, DrawParam, DrawTransform, Rect, Transform,
+};
 use gfx::Factory;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
@@ -31,7 +33,7 @@ use gfx::Factory;
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpriteBatch {
     image: graphics::Image,
-    sprites: Vec<graphics::DrawTransform>,
+    sprites: Vec<graphics::DrawParam>,
     blend_mode: Option<BlendMode>,
 }
 
@@ -59,7 +61,7 @@ impl SpriteBatch {
     /// [`set()`](#method.set)
     pub fn add<P>(&mut self, param: P) -> SpriteIdx
     where
-        P: Into<graphics::DrawTransform>,
+        P: Into<graphics::DrawParam>,
     {
         self.sprites.push(param.into());
         SpriteIdx(self.sprites.len() - 1)
@@ -68,7 +70,7 @@ impl SpriteBatch {
     /// Alters a sprite in the batch to use the given draw params
     pub fn set<P>(&mut self, handle: SpriteIdx, param: P) -> GameResult
     where
-        P: Into<graphics::DrawTransform>,
+        P: Into<graphics::DrawParam>,
     {
         if handle.0 < self.sprites.len() {
             self.sprites[handle.0] = param.into();
@@ -99,11 +101,16 @@ impl SpriteBatch {
                 // Copy old params
                 let src_width = param.src.w;
                 let src_height = param.src.h;
-                let sx = src_width * f32::from(image.width);
-                let sy = src_height * f32::from(image.height);
-                let real_scale = param.matrix * Matrix4::from_scale(glam::Vec3::new(sx, sy, 1.0));
-                let mut new_param = *param;
-                new_param.matrix = real_scale.into();
+                let new_param = match param.trans {
+                    Transform::Values { scale, .. } => {
+                        let new_scale = mint::Vector2 {
+                            x: scale.x * src_width * f32::from(image.width),
+                            y: scale.y * src_height * f32::from(image.height),
+                        };
+                        param.scale(new_scale)
+                    }
+                    Transform::Matrix(_) => *param,
+                };
                 let primitive_param = graphics::DrawTransform::from(new_param);
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
             })
@@ -151,7 +158,7 @@ impl SpriteBatch {
 }
 
 impl graphics::Drawable for SpriteBatch {
-    fn draw(&self, ctx: &mut Context, param: DrawTransform) -> GameResult {
+    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
         self.flush(ctx, &self.image)?;
