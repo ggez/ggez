@@ -154,7 +154,7 @@ impl Drawable for Canvas {
                 };
                 let new_dest = mint::Point2 {
                     x: dest.x,
-                    y: dest.y + f32::from(self.image.height()) * new_scale.y,
+                    y: dest.y + f32::from(self.image.height()) * scale.y,
                 };
                 let new_param = param.dest(new_dest).scale(new_scale);
                 self.image.draw(ctx, new_param)
