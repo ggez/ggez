@@ -241,7 +241,7 @@ pub struct Color {
     pub a: f32,
 }
 
-/// White
+/// White color constant
 pub const WHITE: Color = Color {
     r: 1.0,
     g: 1.0,
@@ -249,7 +249,31 @@ pub const WHITE: Color = Color {
     a: 1.0,
 };
 
-/// Black
+/// Red color constant
+pub const RED: Color = Color {
+    r: 1.0,
+    g: 0.0,
+    b: 0.0,
+    a: 0.0,
+};
+
+/// Green color constant
+pub const GREEN: Color = Color {
+    r: 0.0,
+    g: 1.0,
+    b: 0.0,
+    a: 0.0,
+};
+
+/// Blue color constant
+pub const BLUE: Color = Color {
+    r: 0.0,
+    g: 0.0,
+    b: 1.0,
+    a: 0.0,
+};
+
+/// Black color constant
 pub const BLACK: Color = Color {
     r: 0.0,
     g: 0.0,
