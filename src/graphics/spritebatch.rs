@@ -174,11 +174,8 @@ impl graphics::Drawable for SpriteBatch {
 
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.sprites.len() as u32, 0));
-        let curr_transform = gfx.transform();
         let m: DrawTransform = param.into();
-        gfx.push_transform(curr_transform * m.matrix);
-        gfx.calculate_transform_matrix();
-        gfx.update_globals()?;
+        gfx.set_global_mvp(m.matrix)?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.blend_mode();
             if current_mode != mode {
@@ -194,9 +191,7 @@ impl graphics::Drawable for SpriteBatch {
         if let Some(mode) = previous_mode {
             gfx.set_blend_mode(mode)?;
         }
-        gfx.pop_transform();
-        gfx.calculate_transform_matrix();
-        gfx.update_globals()?;
+        gfx.set_global_mvp(graphics::Matrix4::identity())?;
         Ok(())
     }
     fn dimensions(&self, _ctx: &mut Context) -> Option<Rect> {

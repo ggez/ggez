@@ -26,7 +26,7 @@ where
 {
     shader_globals: Globals,
     pub(crate) projection: Matrix4,
-    pub(crate) modelview_stack: Vec<Matrix4>,
+    pub(crate) modelview: Matrix4,
     pub(crate) white_image: ImageGeneric<B>,
     pub(crate) screen_rect: Rect,
     color_format: gfx::format::Format,
@@ -275,7 +275,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         let mut gfx = Self {
             shader_globals: globals,
             projection: initial_projection,
-            modelview_stack: vec![initial_transform],
+            modelview: initial_transform,
             white_image,
             screen_rect: Rect::new(left, top, right - left, bottom - top),
             color_format,
@@ -318,8 +318,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             h,
         };
         gfx.set_projection_rect(rect);
-        gfx.calculate_transform_matrix();
-        gfx.update_globals()?;
+        gfx.set_global_mvp(Matrix4::identity());
         Ok(gfx)
     }
 }
@@ -359,58 +358,13 @@ where
         Ok(())
     }
 
-    /// Recalculates the context's Model-View-Projection matrix based on
-    /// the matrices on the top of the respective stacks and the projection
-    /// matrix.
-    pub(crate) fn calculate_transform_matrix(&mut self) {
-        let modelview = self
-            .modelview_stack
-            .last()
-            .expect("Transform stack empty; should never happen");
-        // TODO: Verify this is the correct order, row/column
-        let mvp = self.projection * (*modelview);
+    /// Sets the shader MVP matrix to the current projection multiplied by
+    /// the given matrix, and updates the uniform buffer.
+    pub(crate) fn set_global_mvp(&mut self, matrix: Matrix4) -> GameResult {
+        let mvp = self.projection * matrix;
         // TODO: This too
         self.shader_globals.mvp_matrix = mvp.to_cols_array_2d();
-    }
-
-    /// Pushes a homogeneous transform matrix to the top of the transform
-    /// (model) matrix stack.
-    pub(crate) fn push_transform(&mut self, t: Matrix4) {
-        self.modelview_stack.push(t);
-    }
-
-    /// Pops the current transform matrix off the top of the transform
-    /// (model) matrix stack.  Will never pop the last transform.
-    pub(crate) fn pop_transform(&mut self) {
-        if self.modelview_stack.len() > 1 {
-            let _ = self.modelview_stack.pop();
-        }
-    }
-
-    /// Sets the current model-view transform matrix.
-    pub(crate) fn set_transform(&mut self, t: Matrix4) {
-        assert!(
-            !self.modelview_stack.is_empty(),
-            "Tried to set a transform on an empty transform stack!"
-        );
-        let last = self
-            .modelview_stack
-            .last_mut()
-            .expect("Transform stack empty; should never happen!");
-        *last = t;
-    }
-
-    /// Gets a copy of the current transform matrix.
-    pub(crate) fn transform(&self) -> Matrix4 {
-        assert!(
-            !self.modelview_stack.is_empty(),
-            "Tried to get a transform on an empty transform stack!"
-        );
-        let last = self
-            .modelview_stack
-            .last()
-            .expect("Transform stack empty; should never happen!");
-        *last
+        self.update_globals()
     }
 
     /// Converts the given `DrawParam` into an `InstanceProperties` object and

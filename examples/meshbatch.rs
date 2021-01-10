@@ -75,16 +75,21 @@ impl event::EventHandler for MainState {
         let delta_time = (timer::duration_to_f64(timer::delta(ctx)) * 1000.0) as f32;
         let instances = self.mesh_batch.get_instance_params_mut();
         for i in 0..50 {
-            let rotation = &mut instances[i].rotation;
-            if (i % 2) == 0 {
-                *rotation += 0.001 * TWO_PI * delta_time;
-                if *rotation > TWO_PI {
-                    *rotation -= TWO_PI;
-                }
-            } else {
-                *rotation -= 0.001 * TWO_PI * delta_time;
-                if *rotation < 0.0 {
-                    *rotation += TWO_PI;
+            if let graphics::Transform::Values {
+                ref mut rotation, ..
+            } = instances[i].trans
+            {
+                //let rotation = &mut instances[i].rotation;
+                if (i % 2) == 0 {
+                    *rotation += 0.001 * TWO_PI * delta_time;
+                    if *rotation > TWO_PI {
+                        *rotation -= TWO_PI;
+                    }
+                } else {
+                    *rotation -= 0.001 * TWO_PI * delta_time;
+                    if *rotation < 0.0 {
+                        *rotation += TWO_PI;
+                    }
                 }
             }
         }
