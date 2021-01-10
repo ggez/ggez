@@ -196,6 +196,24 @@ impl DrawParam {
             panic!("Cannot set values for a DrawParam matrix")
         }
     }
+
+    pub(crate) fn to_instance_properties(&self, srgb: bool) -> InstanceProperties {
+        let mat: [[f32; 4]; 4] = *self.trans.to_bare_matrix().as_ref();
+        let color: [f32; 4] = if srgb {
+            let linear_color: types::LinearColor = self.color.into();
+            linear_color.into()
+        } else {
+            self.color.into()
+        };
+        InstanceProperties {
+            src: self.src.into(),
+            col1: mat[0],
+            col2: mat[1],
+            col3: mat[2],
+            col4: mat[3],
+            color,
+        }
+    }
 }
 
 /// Create a `DrawParam` from a location.
@@ -261,67 +279,5 @@ where
             .offset(offset)
             .scale(scale)
             .color(color)
-    }
-}
-
-/// A [`DrawParam`](struct.DrawParam.html) that has been crunched down to a single matrix.
-/// This is a lot less useful for doing transformations than I'd hoped; basically, we sometimes
-/// have to modify parameters of a `DrawParam` based *on* the parameters of a `DrawParam`, for
-/// instance when scaling images so that they are in units of pixels.  This makes it really
-/// hard to extract scale and rotation and such, so meh.
-///
-/// It's still useful for a couple internal things though, so it's kept around.
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub(crate) struct DrawTransform {
-    /// The transform matrix for the DrawParams
-    pub matrix: Matrix4,
-    /// A portion of the drawable to clip, as a fraction of the whole image.
-    /// Defaults to the whole image (1.0) if omitted.
-    pub src: Rect,
-    /// A color to draw the target with.
-    /// Default: white.
-    pub color: Color,
-}
-
-impl Default for DrawTransform {
-    fn default() -> Self {
-        DrawTransform {
-            matrix: Matrix4::identity(),
-            src: Rect::one(),
-            color: WHITE,
-        }
-    }
-}
-
-impl From<DrawParam> for DrawTransform {
-    fn from(param: DrawParam) -> Self {
-        // TODO: Double-check this all lines up
-        let transform = param.trans.to_bare_matrix();
-        DrawTransform {
-            src: param.src,
-            color: param.color,
-            matrix: transform.into(),
-        }
-    }
-}
-
-impl DrawTransform {
-    pub(crate) fn to_instance_properties(&self, srgb: bool) -> InstanceProperties {
-        // TODO: Verify 'row arrays' is correct here.
-        let mat: [[f32; 4]; 4] = self.matrix.to_cols_array_2d();
-        let color: [f32; 4] = if srgb {
-            let linear_color: types::LinearColor = self.color.into();
-            linear_color.into()
-        } else {
-            self.color.into()
-        };
-        InstanceProperties {
-            src: self.src.into(),
-            col1: mat[0],
-            col2: mat[1],
-            col3: mat[2],
-            col4: mat[3],
-            color,
-        }
     }
 }

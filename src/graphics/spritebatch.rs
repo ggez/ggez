@@ -17,9 +17,7 @@ use crate::error;
 use crate::error::GameResult;
 use crate::graphics::shader::BlendMode;
 use crate::graphics::types::FilterMode;
-use crate::graphics::{
-    self, transform_rect, BackendSpec, DrawParam, DrawTransform, Rect, Transform,
-};
+use crate::graphics::{self, transform_rect, BackendSpec, DrawParam, Matrix4, Rect, Transform};
 use gfx::Factory;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
@@ -111,7 +109,7 @@ impl SpriteBatch {
                     }
                     Transform::Matrix(_) => *param,
                 };
-                let primitive_param = graphics::DrawTransform::from(new_param);
+                let primitive_param = new_param;
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
             })
             .collect::<Vec<_>>();
@@ -174,8 +172,10 @@ impl graphics::Drawable for SpriteBatch {
 
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.sprites.len() as u32, 0));
-        let m: DrawTransform = param.into();
-        gfx.set_global_mvp(m.matrix)?;
+        // It's a little silly converting this mint matrix back to a glam
+        // one but it's simpler than the alternative.
+        let m = Matrix4::from(param.trans.to_bare_matrix());
+        gfx.set_global_mvp(m)?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.blend_mode();
             if current_mode != mode {

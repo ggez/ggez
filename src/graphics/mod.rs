@@ -872,7 +872,7 @@ pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
 
 #[cfg(test)]
 mod tests {
-    use crate::graphics::{transform_rect, DrawParam, DrawTransform, Rect};
+    use crate::graphics::{transform_rect, DrawParam, Rect};
     use approx::assert_relative_eq;
     use std::f32::consts::PI;
 
@@ -885,7 +885,7 @@ mod tests {
                 w: 1.0,
                 h: 1.0,
             };
-            let param = DrawTransform::default();
+            let param = DrawParam::default();
             let real = transform_rect(r, param);
             let expected = r;
             assert_relative_eq!(real, expected);

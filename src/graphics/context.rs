@@ -366,7 +366,7 @@ where
 
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
     /// sends it to the graphics card at the front of the instance buffer.
-    pub(crate) fn update_instance_properties(&mut self, draw_params: DrawTransform) -> GameResult {
+    pub(crate) fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult {
         let mut new_draw_params = draw_params;
         new_draw_params.color = draw_params.color;
         let properties = new_draw_params.to_instance_properties(self.srgb);
