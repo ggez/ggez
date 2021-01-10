@@ -367,9 +367,7 @@ where
             .modelview_stack
             .last()
             .expect("Transform stack empty; should never happen");
-        // TODO: Verify this is the correct order, row/column
         let mvp = self.projection * (*modelview);
-        // TODO: This too
         self.shader_globals.mvp_matrix = mvp.to_cols_array_2d();
     }
 

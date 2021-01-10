@@ -243,7 +243,6 @@ impl Default for DrawTransform {
 
 impl From<DrawParam> for DrawTransform {
     fn from(param: DrawParam) -> Self {
-        // TODO: Double-check this all lines up
         let transform = param.to_na_matrix();
         DrawTransform {
             src: param.src,
@@ -255,7 +254,6 @@ impl From<DrawParam> for DrawTransform {
 
 impl DrawTransform {
     pub(crate) fn to_instance_properties(&self, srgb: bool) -> InstanceProperties {
-        // TODO: Verify 'row arrays' is correct here.
         let mat: [[f32; 4]; 4] = self.matrix.to_cols_array_2d();
         let color: [f32; 4] = if srgb {
             let linear_color: types::LinearColor = self.color.into();
