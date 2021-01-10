@@ -620,6 +620,21 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
     gfx.update_globals()
 }
 
+/// Premultiplies the given transformation matrix with the current projection matrix
+///
+/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
+/// after calling this to apply these changes and recalculate the
+/// underlying MVP matrix.
+pub fn mul_projection<M>(context: &mut Context, transform: M)
+where
+    M: Into<mint::ColumnMatrix4<f32>>,
+{
+    let transform = Matrix4::from(transform.into());
+    let gfx = &mut context.gfx_context;
+    let curr = gfx.projection();
+    gfx.set_projection(transform * curr);
+}
+
 /// Sets the raw projection matrix to the given homogeneous
 /// transformation matrix.  For an introduction to graphics matrices,
 /// a good source is this: <http://ncase.me/matrix/>
@@ -634,21 +649,6 @@ where
     let proj = Matrix4::from(proj.into());
     let gfx = &mut context.gfx_context;
     gfx.set_projection(proj);
-}
-
-/// Premultiplies the given transformation matrix with the current projection matrix
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-pub fn mul_projection<M>(context: &mut Context, transform: M)
-where
-    M: Into<mint::ColumnMatrix4<f32>>,
-{
-    let transform = Matrix4::from(transform.into());
-    let gfx = &mut context.gfx_context;
-    let curr = gfx.projection();
-    gfx.set_projection(transform * curr);
 }
 
 /// Gets a copy of the context's raw projection matrix

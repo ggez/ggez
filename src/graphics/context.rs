@@ -26,7 +26,6 @@ where
 {
     shader_globals: Globals,
     pub(crate) projection: Matrix4,
-    pub(crate) modelview: Matrix4,
     pub(crate) white_image: ImageGeneric<B>,
     pub(crate) screen_rect: Rect,
     color_format: gfx::format::Format,
@@ -267,7 +266,6 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         let top = 0.0;
         let bottom = window_mode.height;
         let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
-        let initial_transform = Matrix4::identity();
         let globals = Globals {
             mvp_matrix: initial_projection.to_cols_array_2d(),
         };
@@ -275,7 +273,6 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         let mut gfx = Self {
             shader_globals: globals,
             projection: initial_projection,
-            modelview: initial_transform,
             white_image,
             screen_rect: Rect::new(left, top, right - left, bottom - top),
             color_format,
@@ -318,7 +315,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             h,
         };
         gfx.set_projection_rect(rect);
-        gfx.set_global_mvp(Matrix4::identity());
+        gfx.set_global_mvp(Matrix4::identity())?;
         Ok(gfx)
     }
 }
