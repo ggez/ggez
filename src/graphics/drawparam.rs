@@ -20,7 +20,12 @@ pub enum Transform {
         /// from the center specify `Point2::new(0.5, 0.5)` here.
         offset: mint::Point2<f32>,
     },
-    /// Transform made of an arbitrary matrix
+    /// Transform made of an arbitrary matrix.
+    ///
+    /// It should represent the final model matrix of the given drawable.  This is useful for
+    /// situations where, for example, you build your own hierarchy system, where you calculate
+    /// matrices of each hierarchy item and store a calculated world-space model matrix of an item.
+    /// This lets you implement transform stacks, skeletal animations, etc.
     Matrix(mint::ColumnMatrix4<f32>),
 }
 
@@ -61,8 +66,9 @@ impl Transform {
                 //  let rotation = Matrix4::new_rotation(axis_angle);
                 //  let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
                 //  translate * offset * rotation * scale * offset_inverse
-                let cosr = rotation.cos();
-                let sinr = rotation.sin();
+                //
+                //  Doing the bits manually is faster though, or at least was last I checked.
+                let (sinr, cosr) = rotation.sin_cos();
                 let m00 = cosr * scale.x;
                 let m01 = -sinr * scale.y;
                 let m10 = sinr * scale.x;
@@ -136,12 +142,12 @@ impl DrawParam {
     }
 
     /// Set the dest point
-    pub fn dest<P>(mut self, dest: P) -> Self
+    pub fn dest<P>(mut self, dest_: P) -> Self
     where
         P: Into<mint::Point2<f32>>,
     {
-        let p: mint::Point2<f32> = dest.into();
         if let Transform::Values { ref mut dest, .. } = self.trans {
+            let p: mint::Point2<f32> = dest_.into();
             *dest = p;
             self
         } else {
@@ -170,12 +176,12 @@ impl DrawParam {
     }
 
     /// Set the scaling factors of the drawable.
-    pub fn scale<V>(mut self, scale: V) -> Self
+    pub fn scale<V>(mut self, scale_: V) -> Self
     where
         V: Into<mint::Vector2<f32>>,
     {
-        let p: mint::Vector2<f32> = scale.into();
         if let Transform::Values { ref mut scale, .. } = self.trans {
+            let p: mint::Vector2<f32> = scale_.into();
             *scale = p;
             self
         } else {
@@ -184,12 +190,12 @@ impl DrawParam {
     }
 
     /// Set the transformation offset of the drawable.
-    pub fn offset<P>(mut self, offset: P) -> Self
+    pub fn offset<P>(mut self, offset_: P) -> Self
     where
         P: Into<mint::Point2<f32>>,
     {
-        let p: mint::Point2<f32> = offset.into();
         if let Transform::Values { ref mut offset, .. } = self.trans {
+            let p: mint::Point2<f32> = offset_.into();
             *offset = p;
             self
         } else {

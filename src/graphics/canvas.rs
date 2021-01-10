@@ -150,7 +150,7 @@ impl Drawable for Canvas {
             Transform::Values { scale, dest, .. } => {
                 let new_scale = mint::Vector2 {
                     x: scale.x,
-                    y: scale.y * -1.0,
+                    y: -scale.y,
                 };
                 let new_dest = mint::Point2 {
                     x: dest.x,
