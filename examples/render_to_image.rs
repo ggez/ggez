@@ -36,7 +36,7 @@ impl event::EventHandler for MainState {
         graphics::draw(
             ctx,
             &self.text,
-            (Point2::new(400.0, 300.0), graphics::WHITE),
+            (Point2::new(400.0, 300.0), Color::WHITE),
         )?;
 
         // now lets render our scene once in the top left and in the bottom

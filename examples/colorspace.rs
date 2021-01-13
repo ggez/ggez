@@ -68,7 +68,7 @@
 
 use ggez;
 use ggez::event;
-use ggez::graphics::{self, DrawParam};
+use ggez::graphics::{self, Color, DrawParam};
 use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
 
@@ -97,7 +97,7 @@ impl MainState {
             ctx,
             graphics::DrawMode::fill(),
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
-            graphics::WHITE,
+            Color::WHITE,
         )?;
         let demo_image = graphics::Image::solid(ctx, 200, AQUA)?;
         let s = MainState {

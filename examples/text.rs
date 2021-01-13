@@ -133,11 +133,7 @@ impl event::EventHandler for App {
         let fps = timer::fps(ctx);
         let fps_display = Text::new(format!("FPS: {}", fps));
         // When drawing through these calls, `DrawParam` will work as they are documented.
-        graphics::draw(
-            ctx,
-            &fps_display,
-            (Point2::new(200.0, 0.0), graphics::WHITE),
-        )?;
+        graphics::draw(ctx, &fps_display, (Point2::new(200.0, 0.0), Color::WHITE))?;
 
         let mut height = 0.0;
         for (_key, text) in &self.texts {

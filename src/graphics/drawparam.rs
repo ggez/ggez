@@ -46,7 +46,7 @@ impl Default for DrawParam {
             rotation: 0.0,
             scale: mint::Vector2 { x: 1.0, y: 1.0 },
             offset: mint::Point2 { x: 0.0, y: 0.0 },
-            color: WHITE,
+            color: Color::WHITE,
         }
     }
 }
@@ -229,7 +229,7 @@ impl Default for DrawTransform {
         DrawTransform {
             matrix: na::one(),
             src: Rect::one(),
-            color: WHITE,
+            color: Color::WHITE,
         }
     }
 }

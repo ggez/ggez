@@ -3,7 +3,7 @@ use ggez;
 use nalgebra;
 
 use ggez::event::{self, KeyCode, KeyMods};
-use ggez::graphics::{self, DrawMode};
+use ggez::graphics::{self, Color, DrawMode};
 use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
 use std::env;
@@ -89,7 +89,7 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         let origin: na::Point2<f32> = na::Point2::origin();
-        graphics::draw(ctx, &self.gridmesh, (origin, graphics::WHITE))?;
+        graphics::draw(ctx, &self.gridmesh, (origin, Color::WHITE))?;
 
         let param = graphics::DrawParam::new()
             .dest(na::Point2::new(400.0, 400.0))

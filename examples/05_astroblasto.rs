@@ -7,7 +7,7 @@ use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::conf;
 use ggez::event::{self, EventHandler, KeyCode, KeyMods};
-use ggez::graphics;
+use ggez::graphics::{self, Color};
 use ggez::nalgebra as na;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
@@ -484,7 +484,7 @@ impl EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Our drawing is quite simple.
         // Just clear the screen...
-        graphics::clear(ctx, graphics::BLACK);
+        graphics::clear(ctx, Color::BLACK);
 
         // Loop over all objects drawing them...
         {
@@ -511,8 +511,8 @@ impl EventHandler for MainState {
         let score_str = format!("Score: {}", self.score);
         let level_display = graphics::Text::new((level_str, self.assets.font, 32.0));
         let score_display = graphics::Text::new((score_str, self.assets.font, 32.0));
-        graphics::draw(ctx, &level_display, (level_dest, 0.0, graphics::WHITE))?;
-        graphics::draw(ctx, &score_display, (score_dest, 0.0, graphics::WHITE))?;
+        graphics::draw(ctx, &level_display, (level_dest, 0.0, Color::WHITE))?;
+        graphics::draw(ctx, &score_display, (score_dest, 0.0, Color::WHITE))?;
 
         // Then we flip the screen...
         graphics::present(ctx)?;

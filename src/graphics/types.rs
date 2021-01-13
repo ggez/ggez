@@ -241,23 +241,23 @@ pub struct Color {
     pub a: f32,
 }
 
-/// White
-pub const WHITE: Color = Color {
-    r: 1.0,
-    g: 1.0,
-    b: 1.0,
-    a: 1.0,
-};
-
-/// Black
-pub const BLACK: Color = Color {
-    r: 0.0,
-    g: 0.0,
-    b: 0.0,
-    a: 1.0,
-};
-
 impl Color {
+    /// White
+    pub const WHITE: Color = Color {
+        r: 1.0,
+        g: 1.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    /// Black
+    pub const BLACK: Color = Color {
+        r: 0.0,
+        g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
     /// Create a new `Color` from four `f32`'s in the range `[0.0-1.0]`
     pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color { r, g, b, a }

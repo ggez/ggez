@@ -5,7 +5,7 @@ use gfx::{self, *};
 use ggez;
 
 use ggez::event;
-use ggez::graphics::{self, DrawMode};
+use ggez::graphics::{self, Color, DrawMode};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
@@ -53,7 +53,7 @@ impl event::EventHandler for MainState {
             cgmath::Point2::new(100.0, 300.0),
             100.0,
             2.0,
-            graphics::WHITE,
+            Color::WHITE,
         )?;
         graphics::draw(ctx, &circle, (cgmath::Point2::new(0.0, 0.0),))?;
 
@@ -66,7 +66,7 @@ impl event::EventHandler for MainState {
                 cgmath::Point2::new(400.0, 300.0),
                 100.0,
                 2.0,
-                graphics::WHITE,
+                Color::WHITE,
             )?;
             graphics::draw(ctx, &circle, (cgmath::Point2::new(0.0, 0.0),))?;
         }
@@ -77,7 +77,7 @@ impl event::EventHandler for MainState {
             cgmath::Point2::new(700.0, 300.0),
             100.0,
             2.0,
-            graphics::WHITE,
+            Color::WHITE,
         )?;
         graphics::draw(ctx, &circle, (cgmath::Point2::new(0.0, 0.0),))?;
 

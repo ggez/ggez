@@ -30,7 +30,7 @@ fn save_screenshot_test(c: &mut Context) {
     let height = graphics::drawable_size(c).1;
 
     let topleft = graphics::DrawParam::new()
-        .color(graphics::WHITE)
+        .color(graphics::Color::WHITE)
         .dest(Point2::new(0.0, 0.0));
     let topright = graphics::DrawParam::new()
         .color(Color::new(1.0, 0.0, 0.0, 1.0))
@@ -51,7 +51,7 @@ fn save_screenshot_test(c: &mut Context) {
             w: width / 2.0,
             h: height / 2.0,
         },
-        graphics::WHITE,
+        graphics::Color::WHITE,
     )
     .unwrap();
 

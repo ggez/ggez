@@ -2,7 +2,7 @@
 
 use ggez;
 use ggez::event;
-use ggez::graphics;
+use ggez::graphics::{self, Color};
 use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
 
@@ -32,7 +32,7 @@ impl event::EventHandler for MainState {
             na::Point2::new(0.0, 0.0),
             100.0,
             2.0,
-            graphics::WHITE,
+            Color::WHITE,
         )?;
         graphics::draw(ctx, &circle, (na::Point2::new(self.pos_x, 380.0),))?;
 

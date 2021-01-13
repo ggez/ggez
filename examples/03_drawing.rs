@@ -4,8 +4,7 @@ use cgmath;
 
 use ggez;
 use ggez::event;
-use ggez::graphics;
-use ggez::graphics::{Color, DrawMode, DrawParam};
+use ggez::graphics::{self, Color, DrawMode, DrawParam};
 use ggez::nalgebra::Point2;
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -146,7 +145,7 @@ impl event::EventHandler for MainState {
         // Create and draw a filled rectangle mesh.
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         let r1 =
-            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, graphics::WHITE)?;
+            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, Color::WHITE)?;
         graphics::draw(ctx, &r1, DrawParam::default())?;
 
         // Create and draw a stroked rectangle mesh.

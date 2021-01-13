@@ -8,7 +8,7 @@ use ggez;
 use cgmath::{Point2, Vector2};
 use ggez::conf;
 use ggez::event;
-use ggez::graphics::{self, BlendMode, Canvas, DrawParam, Drawable, Shader};
+use ggez::graphics::{self, BlendMode, Canvas, Color, DrawParam, Drawable, Shader};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
@@ -384,7 +384,7 @@ impl event::EventHandler for MainState {
         // Now lets finally render to screen starting with out background, then
         // the shadows and lights overtop and finally our foreground.
         graphics::set_canvas(ctx, None);
-        graphics::clear(ctx, graphics::WHITE);
+        graphics::clear(ctx, Color::WHITE);
         graphics::draw(ctx, &self.background, DrawParam::default())?;
         graphics::draw(ctx, &self.shadows, DrawParam::default())?;
         graphics::draw(ctx, &self.foreground, DrawParam::default())?;
