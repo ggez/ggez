@@ -617,7 +617,8 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
-    gfx.update_globals()
+    gfx.set_global_mvp(Matrix4::identity())
+    //gfx.update_globals()
 }
 
 /// Premultiplies the given transformation matrix with the current projection matrix
