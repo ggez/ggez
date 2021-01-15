@@ -359,7 +359,6 @@ where
     /// the given matrix, and updates the uniform buffer.
     pub(crate) fn set_global_mvp(&mut self, matrix: Matrix4) -> GameResult {
         let mvp = self.projection * matrix;
-        // TODO: This too
         self.shader_globals.mvp_matrix = mvp.to_cols_array_2d();
         self.update_globals()
     }

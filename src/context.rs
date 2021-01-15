@@ -151,12 +151,14 @@ impl Context {
                     };
                     self.mouse_context.set_button(*button, pressed);
                 }
+                winit_event::WindowEvent::ModifiersChanged(mods) => self
+                    .keyboard_context
+                    .set_modifiers(keyboard::KeyMods::from(*mods)),
                 winit_event::WindowEvent::KeyboardInput {
                     input:
                         winit::event::KeyboardInput {
                             state,
                             virtual_keycode: Some(keycode),
-                            modifiers,
                             ..
                         },
                     ..
@@ -165,8 +167,6 @@ impl Context {
                         winit_event::ElementState::Pressed => true,
                         winit_event::ElementState::Released => false,
                     };
-                    self.keyboard_context
-                        .set_modifiers(keyboard::KeyMods::from(*modifiers));
                     self.keyboard_context.set_key(*keycode, pressed);
                 }
                 winit_event::WindowEvent::ScaleFactorChanged { .. } => {

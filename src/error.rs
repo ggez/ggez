@@ -39,8 +39,6 @@ pub enum GameError {
     GamepadError(String),
     /// Something went wrong with the `lyon` shape-tesselation library.
     LyonError(String),
-    /// A loop using ['timer::check_update_time()'](../timer/fn.check_update_time.html) is unable to catch up.
-    TimeCatchupError(String),
     /// A custom error type for use by users of ggez.
     /// This lets you handle custom errors that may happen during your game (such as, trying to load a malformed file for a level)
     /// using the same mechanism you handle ggez's other errors.

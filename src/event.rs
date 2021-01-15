@@ -197,30 +197,31 @@ where
                 WindowEvent::ReceivedCharacter(ch) => {
                     state.text_input_event(ctx, ch);
                 }
+                WindowEvent::ModifiersChanged(mods) => {
+                    ctx.keyboard_context.set_modifiers(KeyMods::from(mods))
+                }
                 WindowEvent::KeyboardInput {
                     input:
                         KeyboardInput {
                             state: ElementState::Pressed,
                             virtual_keycode: Some(keycode),
-                            modifiers,
                             ..
                         },
                     ..
                 } => {
                     let repeat = keyboard::is_key_repeated(ctx);
-                    state.key_down_event(ctx, keycode, modifiers.into(), repeat);
+                    state.key_down_event(ctx, keycode, ctx.keyboard_context.active_mods(), repeat);
                 }
                 WindowEvent::KeyboardInput {
                     input:
                         KeyboardInput {
                             state: ElementState::Released,
                             virtual_keycode: Some(keycode),
-                            modifiers,
                             ..
                         },
                     ..
                 } => {
-                    state.key_up_event(ctx, keycode, modifiers.into());
+                    state.key_up_event(ctx, keycode, ctx.keyboard_context.active_mods());
                 }
                 WindowEvent::MouseWheel { delta, .. } => {
                     let (x, y) = match delta {
@@ -290,7 +291,6 @@ where
                         }
                     }
                 }
-                ctx.timer_context.reset_incremental_update_counter();
 
                 if let Err(e) = state.update(ctx) {
                     error!("Error on EventHandler::update(): {:?}", e);

@@ -219,6 +219,7 @@ impl Text {
 
     /// Returns a mutable slice with all fragments.
     pub fn fragments_mut(&mut self) -> &mut [TextFragment] {
+        self.invalidate_cached_metrics();
         &mut self.fragments
     }
 
