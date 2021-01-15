@@ -627,8 +627,23 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
-    gfx.calculate_transform_matrix();
-    gfx.update_globals()
+    gfx.set_global_mvp(Matrix4::identity())
+    //gfx.update_globals()
+}
+
+/// Premultiplies the given transformation matrix with the current projection matrix
+///
+/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
+/// after calling this to apply these changes and recalculate the
+/// underlying MVP matrix.
+pub fn mul_projection<M>(context: &mut Context, transform: M)
+where
+    M: Into<mint::ColumnMatrix4<f32>>,
+{
+    let transform = Matrix4::from(transform.into());
+    let gfx = &mut context.gfx_context;
+    let curr = gfx.projection();
+    gfx.set_projection(transform * curr);
 }
 
 /// Sets the raw projection matrix to the given homogeneous
@@ -647,160 +662,10 @@ where
     gfx.set_projection(proj);
 }
 
-/// Premultiplies the given transformation matrix with the current projection matrix
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-pub fn mul_projection<M>(context: &mut Context, transform: M)
-where
-    M: Into<mint::ColumnMatrix4<f32>>,
-{
-    let transform = Matrix4::from(transform.into());
-    let gfx = &mut context.gfx_context;
-    let curr = gfx.projection();
-    gfx.set_projection(transform * curr);
-}
-
 /// Gets a copy of the context's raw projection matrix
 pub fn projection(context: &Context) -> mint::ColumnMatrix4<f32> {
     let gfx = &context.gfx_context;
     gfx.projection().into()
-}
-
-/// Pushes a homogeneous transform matrix to the top of the transform
-/// (model) matrix stack of the `Context`. If no matrix is given, then
-/// pushes a copy of the current transform matrix to the top of the stack.
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-///
-/// A [`DrawParam`](struct.DrawParam.html) can be converted into an appropriate
-/// transform matrix by turning it into a [`DrawTransform`](struct.DrawTransform.html):
-///
-/// ```rust,no_run
-/// # use ggez::*;
-/// # use ggez::graphics::*;
-/// # fn main() {
-/// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
-/// let param = /* DrawParam building */
-/// #   DrawParam::new();
-/// let transform = param.to_matrix();
-/// graphics::push_transform(ctx, Some(transform));
-/// # }
-/// ```
-pub fn push_transform<M>(context: &mut Context, transform: Option<M>)
-where
-    M: Into<mint::ColumnMatrix4<f32>>,
-{
-    let transform = transform.map(|transform| Matrix4::from(transform.into()));
-    let gfx = &mut context.gfx_context;
-    if let Some(t) = transform {
-        gfx.push_transform(t);
-    } else {
-        let copy = *gfx
-            .modelview_stack
-            .last()
-            .expect("Matrix stack empty, should never happen");
-        gfx.push_transform(copy);
-    }
-}
-
-/// Pops the transform matrix off the top of the transform
-/// (model) matrix stack of the `Context`.
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-pub fn pop_transform(context: &mut Context) {
-    let gfx = &mut context.gfx_context;
-    gfx.pop_transform();
-}
-
-/// Sets the current model transformation to the given homogeneous
-/// transformation matrix.
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-///
-/// A [`DrawParam`](struct.DrawParam.html) can be converted into an appropriate
-/// transform matrix with `DrawParam::to_matrix()`.
-/// ```rust,no_run
-/// # use ggez::*;
-/// # use ggez::graphics::*;
-/// # fn main() {
-/// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
-/// let param = /* DrawParam building */
-/// #   DrawParam::new();
-/// let transform = param.to_matrix();
-/// graphics::set_transform(ctx, transform);
-/// # }
-/// ```
-pub fn set_transform<M>(context: &mut Context, transform: M)
-where
-    M: Into<mint::ColumnMatrix4<f32>>,
-{
-    let transform = transform.into();
-    let gfx = &mut context.gfx_context;
-    gfx.set_transform(Matrix4::from(transform));
-}
-
-/// Gets a copy of the context's current transform matrix
-pub fn transform(context: &Context) -> mint::ColumnMatrix4<f32> {
-    let gfx = &context.gfx_context;
-    gfx.transform().into()
-}
-
-/// Premultiplies the given transform with the current model transform.
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-///
-/// A [`DrawParam`](struct.DrawParam.html) can be converted into an appropriate
-/// transform matrix by turning it into a [`DrawTransform`](struct.DrawTransform.html):
-///
-/// ```rust,no_run
-/// # use ggez::mint;
-/// # use ggez::*;
-/// # use ggez::graphics::*;
-/// # fn main() {
-/// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
-/// let param = /* DrawParam building */
-/// #   DrawParam::new();
-/// let transform = param.to_matrix();
-/// graphics::mul_transform(ctx, transform);
-/// # }
-/// ```
-pub fn mul_transform<M>(context: &mut Context, transform: M)
-where
-    M: Into<mint::ColumnMatrix4<f32>>,
-{
-    let transform = Matrix4::from(transform.into());
-    let gfx = &mut context.gfx_context;
-    let curr = gfx.transform();
-    gfx.set_transform(curr * transform);
-}
-
-/// Sets the current model transform to the origin transform (no transformation)
-///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
-pub fn origin(context: &mut Context) {
-    let gfx = &mut context.gfx_context;
-    gfx.set_transform(Matrix4::identity());
-}
-
-/// Calculates the new total transformation (Model-View-Projection) matrix
-/// based on the matrices at the top of the transform and view matrix stacks
-/// and sends it to the graphics card.
-pub fn apply_transformations(context: &mut Context) -> GameResult {
-    let gfx = &mut context.gfx_context;
-    gfx.calculate_transform_matrix();
-    gfx.update_globals()
 }
 
 /// Sets the blend mode of the currently active shader program
@@ -990,20 +855,30 @@ pub trait Drawable {
 
 /// Applies `DrawParam` to `Rect`.
 pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
-    let w = param.src.w * param.scale.x * rect.w;
-    let h = param.src.h * param.scale.y * rect.h;
-    let offset_x = w * param.offset.x;
-    let offset_y = h * param.offset.y;
-    let dest_x = param.dest.x - offset_x;
-    let dest_y = param.dest.y - offset_y;
-    let mut r = Rect {
-        w,
-        h,
-        x: dest_x + rect.x * param.scale.x,
-        y: dest_y + rect.y * param.scale.y,
-    };
-    r.rotate(param.rotation);
-    r
+    match param.trans {
+        Transform::Values {
+            scale,
+            offset,
+            dest,
+            rotation,
+        } => {
+            let w = param.src.w * scale.x * rect.w;
+            let h = param.src.h * scale.y * rect.h;
+            let offset_x = w * offset.x;
+            let offset_y = h * offset.y;
+            let dest_x = dest.x - offset_x;
+            let dest_y = dest.y - offset_y;
+            let mut r = Rect {
+                w,
+                h,
+                x: dest_x + rect.x * scale.x,
+                y: dest_y + rect.y * scale.y,
+            };
+            r.rotate(rotation);
+            r
+        }
+        Transform::Matrix(_m) => todo!("Fix me"),
+    }
 }
 
 #[cfg(test)]
@@ -1021,7 +896,7 @@ mod tests {
                 w: 1.0,
                 h: 1.0,
             };
-            let param = DrawParam::new();
+            let param = DrawParam::default();
             let real = transform_rect(r, param);
             let expected = r;
             assert_relative_eq!(real, expected);
@@ -1034,7 +909,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().scale([0.5, 0.5]);
-            let real = transform_rect(r, param);
+            let real = transform_rect(r, param.into());
             let expected = Rect {
                 x: -0.5,
                 y: -0.5,
@@ -1051,7 +926,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().offset([0.5, 0.5]);
-            let real = transform_rect(r, param);
+            let real = transform_rect(r, param.into());
             let expected = Rect {
                 x: -1.5,
                 y: -1.5,
@@ -1068,7 +943,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().rotation(PI * 0.5);
-            let real = transform_rect(r, param);
+            let real = transform_rect(r, param.into());
             let expected = Rect {
                 x: -1.0,
                 y: 1.0,
@@ -1088,7 +963,7 @@ mod tests {
                 .scale([0.5, 0.5])
                 .offset([0.0, 1.0])
                 .rotation(PI * 0.5);
-            let real = transform_rect(r, param);
+            let real = transform_rect(r, param.into());
             let expected = Rect {
                 x: 0.5,
                 y: -0.5,

@@ -895,10 +895,7 @@ impl MeshBatch {
 
             let new_properties: Vec<InstanceProperties> = slice
                 .iter()
-                .map(|param| {
-                    let draw_transform = DrawTransform::from(*param);
-                    draw_transform.to_instance_properties(ctx.gfx_context.is_srgb())
-                })
+                .map(|param| param.to_instance_properties(ctx.gfx_context.is_srgb()))
                 .collect();
 
             if needs_new_buffer {
@@ -953,12 +950,10 @@ impl MeshBatch {
 
             let gfx = &mut ctx.gfx_context;
 
-            let batch_transform: DrawTransform = param.into();
-            let current_transform = gfx.transform();
-
-            gfx.push_transform(batch_transform.matrix * current_transform);
-            gfx.calculate_transform_matrix();
-            gfx.update_globals()?;
+            // In the batch we multiply the transform for each item in the batch
+            // with the transform given in the `DrawParam` here.
+            let batch_transform = Matrix4::from(param.trans.to_bare_matrix());
+            gfx.set_global_mvp(batch_transform)?;
 
             // HACK this code has to restore the old instance buffer after drawing,
             // otherwise something else will override the first instance data
@@ -979,9 +974,8 @@ impl MeshBatch {
 
             gfx.data.rect_instance_properties = old_instance_buffer;
 
-            gfx.pop_transform();
-            gfx.calculate_transform_matrix();
-            gfx.update_globals()?;
+            // Undo the change we've made to the global MVP
+            gfx.set_global_mvp(Matrix4::identity())?;
         }
 
         Ok(())
