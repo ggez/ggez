@@ -291,7 +291,6 @@ where
                         }
                     }
                 }
-                ctx.timer_context.reset_incremental_update_counter();
 
                 if let Err(e) = state.update(ctx) {
                     error!("Error on EventHandler::update(): {:?}", e);

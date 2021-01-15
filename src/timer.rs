@@ -15,8 +15,6 @@
 //! see <http://gafferongames.com/game-physics/fix-your-timestep/>
 
 use crate::context::Context;
-use crate::error::GameError;
-use crate::error::GameResult;
 
 use std::cmp;
 use std::f64;
@@ -96,16 +94,10 @@ pub struct TimeContext {
     frame_durations: LogBuffer<time::Duration>,
     residual_update_dt: time::Duration,
     frame_count: usize,
-    incremental_updates_count: usize,
 }
 
 /// How many frames we log update times for.
 const TIME_LOG_FRAMES: usize = 200;
-
-/// The maxmimum number of times we can call
-/// [`check_update_time()`](fn.check_update_time.html) per call to
-/// [`update()`](../event/trait.EventHandler.html#tymethod.update)
-const MAX_INCREMENTAL_UPDATES: usize = 20;
 
 impl TimeContext {
     /// Creates a new `TimeContext` and initializes the start to this instant.
@@ -117,7 +109,6 @@ impl TimeContext {
             frame_durations: LogBuffer::new(TIME_LOG_FRAMES, initial_dt),
             residual_update_dt: time::Duration::from_secs(0),
             frame_count: 0,
-            incremental_updates_count: 0,
         }
     }
 
@@ -136,16 +127,6 @@ impl TimeContext {
         self.frame_count += 1;
 
         self.residual_update_dt += time_since_last;
-    }
-
-    /// Zeroes the incremental update counter
-    ///
-    /// You generally shouldn't call this function yourself, it is used in the
-    /// game's main loop to track the number of calls to
-    /// [`check_update_time()`](fn.check_update_time.html) per call to
-    /// [`update()`](../event/trait.EventHandler.html#tymethod.update)
-    pub fn reset_incremental_update_counter(&mut self) {
-        self.incremental_updates_count = 0;
     }
 }
 
@@ -225,6 +206,8 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 /// Check whether or not the desired amount of time has elapsed
 /// since the last frame.
 ///
+/// TODO: Heckin docs
+///
 /// This function will return Ok(true) if the time since the last
 /// [`update()`](../event/trait.EventHandler.html#tymethod.update)
 /// call has been equal to or greater to the update FPS indicated by
@@ -258,25 +241,15 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 /// # fn draw(&mut self, _ctx: &mut Context) -> GameResult { Ok(()) }
 /// # }
 /// ```
-pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> GameResult<bool> {
+pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
     let timedata = &mut ctx.timer_context;
-
-    timedata.incremental_updates_count = timedata.incremental_updates_count + 1;
-    if timedata.incremental_updates_count > MAX_INCREMENTAL_UPDATES {
-        return Err(GameError::TimeCatchupError(format!(
-            "The number of calls to check_update_time() per call to update() exceeded the max of {}.
-             This is most likely caused by a check_update_time loop that is taking longer \
-             to execute then the specified update time"
-            , MAX_INCREMENTAL_UPDATES
-        )));
-    }
 
     let target_dt = fps_as_duration(target_fps);
     if timedata.residual_update_dt > target_dt {
         timedata.residual_update_dt -= target_dt;
-        Ok(true)
+        true
     } else {
-        Ok(false)
+        false
     }
 }
 
