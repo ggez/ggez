@@ -171,6 +171,7 @@ impl MeshBuilder {
                         builder,
                     );
                     */
+                    unimplemented!()
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
@@ -347,8 +348,6 @@ impl MeshBuilder {
     /// The length of the list must be a multiple of 3.
     ///
     /// Currently does not support UV's or indices.
-    ///
-    /// TODO: Verify it works correctly.
     pub fn triangles<P>(&mut self, triangles: &[P], color: Color) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,

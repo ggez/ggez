@@ -22,6 +22,7 @@
    with high-DPI handling.
  * Updated just about every other dependency under the sun
  * Minimum rustc version is now 1.36 (verify)
+ * Audio API in general changed a little for `rodio` API differences.
 
 ## Deprecated
 

@@ -67,7 +67,7 @@ fn playing_returns_correct_value_based_on_state() {
     sound.resume();
     assert!(sound.playing());
 
-    sound.stop(c);
+    sound.stop(c).unwrap();
     assert!(!sound.playing());
 }
 
@@ -90,7 +90,7 @@ fn paused_returns_correct_value_based_on_state() {
     sound.pause();
     assert!(sound.paused());
 
-    sound.stop(c);
+    sound.stop(c).unwrap();
     assert!(!sound.paused());
 }
 
@@ -107,7 +107,7 @@ fn volume_persists_after_stop() {
         let volume = 0.8;
         sound.set_volume(volume);
         assert_eq!(sound.volume(), volume);
-        sound.stop(c);
+        sound.stop(c).unwrap();
         assert_eq!(sound.volume(), volume);
     }
 }

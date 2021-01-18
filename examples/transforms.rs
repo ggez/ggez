@@ -100,36 +100,6 @@ impl event::EventHandler for MainState {
 
         graphics::draw(ctx, &self.angle, param)?;
 
-        /*
-         * FIXME!
-        let time = timer::time_since_start(ctx).as_secs_f64();
-
-        let camera_zoom = time.sin().abs() as f32;
-        let camera_transform = graphics::DrawParam::default()
-            .scale(Vec2::new(camera_zoom, camera_zoom))
-            .to_matrix();
-        graphics::push_transform(ctx, Some(camera_transform));
-        graphics::apply_transformations(ctx)?;
-
-        let text = graphics::Text::new(String::from("Hello"));
-        let text_rect = text.dimensions(ctx);
-        let text_center = Vec2::new(text_rect.w, text_rect.h) / 2.0;
-        let text_position = Vec2::new(100.0, 100.0);
-        let border_rect = text_rect;
-        let border = graphics::Mesh::new_rectangle(
-            ctx,
-            graphics::DrawMode::stroke(1.0),
-            border_rect,
-            graphics::WHITE,
-        )?;
-        let draw_params = graphics::DrawParam::default()
-            .offset(text_center.clone())
-            .dest(Vec2::from(text_position - text_center))
-            .rotation(time.rem(std::f64::consts::TAU) as f32);
-        graphics::draw(ctx, &text, draw_params)?;
-        graphics::draw(ctx, &border, draw_params)?;
-        */
-
         graphics::present(ctx)?;
         Ok(())
     }
