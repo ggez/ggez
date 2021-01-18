@@ -21,7 +21,7 @@
  * `winit` update has also changed and smoothed over some of the issues
    with high-DPI handling.
  * Updated just about every other dependency under the sun
- * Minimum rustc version is now 1.36 (verify)
+ * Minimum rustc version is now 1.42
  * Audio API in general changed a little for `rodio` API differences.
 
 ## Deprecated

@@ -4,11 +4,7 @@ rust:
   - stable
   - beta
   - nightly
-<<<<<<< HEAD
-  - 1.40.0
-=======
   - 1.42.0
->>>>>>> devel
 os:
   - linux
   - osx
