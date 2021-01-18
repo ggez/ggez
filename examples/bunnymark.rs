@@ -96,7 +96,7 @@ impl event::EventHandler for GameState {
             }
 
             if bunny.position.y > self.max_y {
-                bunny.velocity.y = bunny.position.y * -0.8;
+                bunny.velocity.y *= -0.8;
                 bunny.position.y = self.max_y;
 
                 // Flip a coin

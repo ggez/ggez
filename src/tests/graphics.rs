@@ -29,18 +29,20 @@ fn save_screenshot_test(c: &mut Context) {
     let width = graphics::drawable_size(c).0;
     let height = graphics::drawable_size(c).1;
 
-    let topleft = graphics::DrawParam::new()
-        .color(graphics::WHITE)
-        .dest(Vec2::new(0.0, 0.0));
+    let tl = Vec2::new(0.0, 0.0);
+    let tr = Vec2::new(width / 2.0, 0.0);
+    let bl = Vec2::new(0.0, height / 2.0);
+    let br = Vec2::new(width / 2.0, height / 2.0);
+    let topleft = graphics::DrawParam::new().color(graphics::WHITE).dest(tl);
     let topright = graphics::DrawParam::new()
         .color(Color::new(1.0, 0.0, 0.0, 1.0))
-        .dest(Vec2::new(width / 2.0, 0.0));
+        .dest(tr);
     let bottomleft = graphics::DrawParam::new()
         .color(Color::new(0.0, 1.0, 0.0, 1.0))
-        .dest(Vec2::new(0.0, height / 2.0));
+        .dest(bl);
     let bottomright = graphics::DrawParam::new()
         .color(Color::new(0.0, 0.0, 1.0, 1.0))
-        .dest(Vec2::new(width / 2.0, height / 2.0));
+        .dest(br);
 
     let rect = graphics::Mesh::new_rectangle(
         c,
@@ -79,19 +81,19 @@ fn save_screenshot_test(c: &mut Context) {
     let width = width as usize;
     assert_eq!(
         topleft.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Vec2::from(topleft.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, tl + half_rect)
     );
     assert_eq!(
         topright.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Vec2::from(topright.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, tr + half_rect)
     );
     assert_eq!(
         bottomleft.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Vec2::from(bottomleft.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, bl + half_rect)
     );
     assert_eq!(
         bottomright.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Vec2::from(bottomright.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, br + half_rect)
     );
 
     // save screenshot (no check, just to see if it doesn't crash)
@@ -161,20 +163,4 @@ fn sanity_check_window_sizes() {
 
         c.process_event(&event);
     });
-}
-
-/// Ensure that the transform stack applies operations in the correct order.
-#[test]
-fn test_transform_stack_order() {
-    let (ctx, _e) = &mut tests::make_context();
-    let p1 = graphics::DrawParam::default();
-    let p2 = graphics::DrawParam::default();
-    let t1 = p1.to_matrix();
-    let t2 = p2.to_matrix();
-    graphics::push_transform(ctx, Some(t1));
-    graphics::mul_transform(ctx, t2);
-    let res = crate::graphics::Matrix4::from(graphics::transform(ctx));
-    let m1: crate::graphics::Matrix4 = t1.into();
-    let m2: crate::graphics::Matrix4 = t2.into();
-    assert_eq!(res, m2 * m1);
 }

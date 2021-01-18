@@ -3,11 +3,9 @@ use ggez;
 
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, DrawMode};
-use ggez::timer;
 use ggez::{Context, GameResult};
 use glam::*;
 use std::env;
-use std::ops::Rem;
 use std::path;
 
 struct MainState {

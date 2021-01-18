@@ -90,7 +90,7 @@ pub fn main() -> GameResult {
         if let Err(e) = filesystem::open(ctx, "/jfkdlasfjdsa") {
             // The error message contains a big hairy list of each
             // directory tried and what error it got from it.
-            println!("Got the error: {:?}", e);
+            println!("Got the error: {:#?}", e);
         } else {
             println!("Wait, it does exist?  Weird.")
         }

@@ -118,7 +118,7 @@ impl App {
 impl event::EventHandler for App {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
-        while timer::check_update_time(ctx, DESIRED_FPS)? {}
+        while timer::check_update_time(ctx, DESIRED_FPS) {}
         Ok(())
     }
 

@@ -440,7 +440,7 @@ impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
 
-        while timer::check_update_time(ctx, DESIRED_FPS)? {
+        while timer::check_update_time(ctx, DESIRED_FPS) {
             let seconds = 1.0 / (DESIRED_FPS as f32);
 
             // Update the player state based on the user input.
