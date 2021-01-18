@@ -342,8 +342,7 @@ impl Text {
         let glyph_positions: Vec<mint::Point2<f32>> = {
             let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
             use glyph_brush::GlyphCruncher;
-            gb
-                .glyphs(varied_section)
+            gb.glyphs(varied_section)
                 .map(|glyph| glyph.glyph.position)
                 .map(|pos| mint::Point2 { x: pos.x, y: pos.y })
                 .collect()
