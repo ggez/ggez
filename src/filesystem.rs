@@ -130,7 +130,7 @@ impl Filesystem {
 
         // <root>/resources.zip
         {
-            resources_zip_path = root_path.clone();
+            resources_zip_path = root_path;
             resources_zip_path.push("resources.zip");
             if resources_zip_path.exists() {
                 trace!("Resources zip file: {:?}", resources_zip_path);

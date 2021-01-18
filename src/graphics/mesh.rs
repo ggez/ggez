@@ -355,10 +355,9 @@ impl MeshBuilder {
     {
         {
             if (triangles.len() % 3) != 0 {
-                let msg = format!(
-                    "Called Mesh::triangles() with points that have a length not a multiple of 3."
-                );
-                return Err(GameError::LyonError(msg));
+                return Err(GameError::LyonError(String::from(
+                    "Called Mesh::triangles() with points that have a length not a multiple of 3.",
+                )));
             }
             let tris = triangles
                 .iter()
@@ -366,8 +365,7 @@ impl MeshBuilder {
                 .map(|p| {
                     // Gotta turn ggez Point2's into lyon points
                     let mint_point = p.into();
-                    let np = lyon::math::point(mint_point.x, mint_point.y);
-                    np
+                    lyon::math::point(mint_point.x, mint_point.y)
                 })
                 // Removing this collect might be nice, but is not easy.
                 // We can chunk a slice, but can't chunk an arbitrary
@@ -659,7 +657,7 @@ impl Mesh {
             return Err(GameError::LyonError(msg));
         }
         if verts.len() < 3 {
-            let msg = format!("Trying to build mesh with < 3 vertices, this is usually due to invalid input to a `Mesh` or MeshBuilder`.");
+            let msg = String::from("Trying to build mesh with < 3 vertices, this is usually due to invalid input to a `Mesh` or MeshBuilder`.");
             return Err(GameError::LyonError(msg));
         }
         if indices.len() < 3 {
@@ -668,7 +666,7 @@ impl Mesh {
         }
 
         if indices.len() % 3 != 0 {
-            let msg = format!("Trying to build mesh with an array of indices that is not a multiple of 3, this is usually due to invalid input to a `Mesh` or MeshBuilder`.");
+            let msg = String::from("Trying to build mesh with an array of indices that is not a multiple of 3, this is usually due to invalid input to a `Mesh` or MeshBuilder`.");
             return Err(GameError::LyonError(msg));
         }
 
@@ -731,7 +729,7 @@ impl Drawable for Mesh {
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
         let gfx = &mut ctx.gfx_context;
-        gfx.update_instance_properties(param.into())?;
+        gfx.update_instance_properties(param)?;
 
         gfx.data.vbuf = self.buffer.clone();
         let texture = self.image.texture.clone();
@@ -777,7 +775,7 @@ impl MeshBatch {
     /// Takes ownership of the `Mesh`.
     pub fn new(mesh: Mesh) -> GameResult<MeshBatch> {
         Ok(MeshBatch {
-            mesh: mesh,
+            mesh,
             instance_params: Vec::new(),
             instance_buffer: None,
             instance_buffer_dirty: true,
@@ -859,8 +857,8 @@ impl MeshBatch {
         if first_param < self.instance_params.len()
             && (first_param + num_params) <= self.instance_params.len()
         {
-            for i in 0..num_params {
-                self.instance_params[first_param + i] = params[i].into();
+            for (i, item) in params.iter().enumerate().take(num_params) {
+                self.instance_params[first_param + i] = (*item).into();
             }
             self.instance_buffer_dirty = true;
             Ok(())

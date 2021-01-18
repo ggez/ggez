@@ -294,7 +294,6 @@ impl Text {
             bounds: (self.bounds.x, self.bounds.y),
             layout: self.layout,
             text: sections,
-            ..Default::default()
         }
     }
 

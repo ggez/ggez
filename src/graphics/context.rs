@@ -303,7 +303,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             glyph_cache,
             glyph_state,
         };
-        gfx.set_window_mode(window_mode)?;
+        gfx.set_window_mode(window_mode);
 
         // Calculate and apply the actual initial projection matrix
         let w = window_mode.width;
@@ -470,7 +470,7 @@ where
     }
 
     /// Sets window mode from a WindowMode object.
-    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
+    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) {
         let window = self.window.window();
 
         window.set_maximized(mode.maximized);
@@ -524,8 +524,6 @@ where
         }
 
         window.set_visible(mode.visible);
-
-        Ok(())
     }
 
     /// Communicates changes in the viewport size between glutin and gfx.

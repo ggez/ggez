@@ -174,12 +174,12 @@ impl Context {
                 }
                 _ => (),
             },
-            winit_event::Event::DeviceEvent { event, .. } => {
-                if let winit_event::DeviceEvent::MouseMotion { delta: (x, y) } = event {
-                    self.mouse_context
-                        .set_last_delta(Point2::new(*x as f32, *y as f32));
-                }
-            }
+            winit_event::Event::DeviceEvent {
+                event: winit_event::DeviceEvent::MouseMotion { delta: (x, y) },
+                ..
+            } => self
+                .mouse_context
+                .set_last_delta(Point2::new(*x as f32, *y as f32)),
 
             _ => (),
         };

@@ -106,7 +106,6 @@
 //! use ggez::{graphics, Context, ContextBuilder, GameResult};
 //! use ggez::event::{self, EventHandler};
 //!
-//! fn main() {
 //!     // Make a Context.
 //!     let (mut ctx, mut event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
 //!         .build()
@@ -122,7 +121,6 @@
 //!         Ok(_) => println!("Exited cleanly."),
 //!         Err(e) => println!("Error occured: {}", e)
 //!     }
-//! }
 //!
 //! struct MyGame {
 //!     // Your state here...

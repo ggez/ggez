@@ -22,7 +22,6 @@ use std::fmt;
 use std::path::Path;
 use std::u16;
 
-use gfx;
 use gfx::texture;
 use gfx::Device;
 use gfx::Factory;
@@ -684,7 +683,7 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
 /// it to be.
 pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult {
     let gfx = &mut context.gfx_context;
-    gfx.set_window_mode(mode)?;
+    gfx.set_window_mode(mode);
     // Save updated mode.
     context.conf.window_mode = mode;
     Ok(())

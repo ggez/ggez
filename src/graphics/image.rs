@@ -355,7 +355,7 @@ impl Drawable for Image {
             Transform::Matrix(_) => param,
         };
 
-        gfx.update_instance_properties(new_param.into())?;
+        gfx.update_instance_properties(new_param)?;
         let sampler = gfx
             .samplers
             .get_or_insert(self.sampler_info, gfx.factory.as_mut());
