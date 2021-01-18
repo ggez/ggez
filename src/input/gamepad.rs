@@ -3,6 +3,7 @@
 //! This is going to be a bit of a work-in-progress as gamepad input
 //! gets fleshed out.  The `gilrs` crate needs help to add better
 //! cross-platform support.  Why not give it a hand?
+use gilrs::ConnectedGamepadsIterator;
 use std::fmt;
 
 pub use gilrs::{self, Event, Gamepad, Gilrs};
@@ -21,6 +22,9 @@ pub trait GamepadContext {
 
     /// returns the `Gamepad` associated with an id.
     fn gamepad(&self, id: GamepadId) -> Gamepad;
+
+    /// returns an iterator over the connected `Gamepad`s.
+    fn gamepads(&self) -> GamepadsIterator;
 }
 
 /// A structure that contains gamepad state using `gilrs`.
@@ -41,6 +45,13 @@ impl GilrsGamepadContext {
     }
 }
 
+impl From<Gilrs> for GilrsGamepadContext {
+    /// Converts from a `Gilrs` custom instance to a `GilrsGamepadContext`
+    fn from(gilrs: Gilrs) -> Self {
+        Self { gilrs }
+    }
+}
+
 impl GamepadContext for GilrsGamepadContext {
     fn next_event(&mut self) -> Option<Event> {
         self.gilrs.next_event()
@@ -48,6 +59,34 @@ impl GamepadContext for GilrsGamepadContext {
 
     fn gamepad(&self, id: GamepadId) -> Gamepad {
         self.gilrs.gamepad(id.0)
+    }
+
+    fn gamepads(&self) -> GamepadsIterator {
+        GamepadsIterator {
+            wrapped: self.gilrs.gamepads(),
+        }
+    }
+}
+
+/// An iterator of the connected gamepads
+pub struct GamepadsIterator<'a> {
+    wrapped: ConnectedGamepadsIterator<'a>,
+}
+
+impl<'a> fmt::Debug for GamepadsIterator<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<GamepadsIterator: {:p}>", self)
+    }
+}
+
+impl<'a> Iterator for GamepadsIterator<'a> {
+    type Item = (GamepadId, Gamepad<'a>);
+
+    fn next(&mut self) -> Option<(GamepadId, Gamepad<'a>)> {
+        match self.wrapped.next() {
+            Some((id, gp)) => Some((GamepadId(id), gp)),
+            None => None,
+        }
     }
 }
 
@@ -65,11 +104,20 @@ impl GamepadContext for NullGamepadContext {
     fn gamepad(&self, _id: GamepadId) -> Gamepad {
         panic!("Gamepad module disabled")
     }
+
+    fn gamepads(&self) -> GamepadsIterator {
+        panic!("Gamepad module disabled")
+    }
 }
 
 /// Returns the `Gamepad` associated with an `id`.
 pub fn gamepad(ctx: &Context, id: GamepadId) -> Gamepad {
     ctx.gamepad_context.gamepad(id)
+}
+
+/// Return an iterator of all the `Gamepads` that are connected.
+pub fn gamepads(ctx: &Context) -> GamepadsIterator {
+    ctx.gamepad_context.gamepads()
 }
 
 // Properties gamepads might want:

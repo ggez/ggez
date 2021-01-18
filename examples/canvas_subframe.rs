@@ -2,6 +2,9 @@
 //!
 //! You really want to run this one in release mode.
 
+use ggez;
+use glam;
+
 use ggez::event;
 use ggez::graphics;
 use ggez::timer;
@@ -9,8 +12,8 @@ use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
-type Point2 = cgmath::Point2<f32>;
-type Vector2 = cgmath::Vector2<f32>;
+type Point2 = glam::Vec2;
+type Vector2 = glam::Vec2;
 
 struct MainState {
     spritebatch: graphics::spritebatch::SpriteBatch,
@@ -42,8 +45,8 @@ impl MainState {
         graphics::clear(ctx, graphics::WHITE);
 
         // Freeze the animation so things are easier to see.
-        // let time = (timer::duration_to_f64(timer::time_since_start(ctx)) * 1000.0) as u32;
         let time = 2000;
+        //let time = (timer::duration_to_f64(timer::time_since_start(ctx)) * 1000.0) as u32;
         let cycle = 10_000;
         for x in 0..150 {
             for y in 0..150 {
@@ -94,12 +97,12 @@ impl event::EventHandler for MainState {
         // Bounce the rect if necessary
         let (w, h) = graphics::size(ctx);
         if self.draw_pt.x + (w as f32 / 2.0) > (w as f32) || self.draw_pt.x < 0.0 {
-            self.draw_vec.x *= -1.0;
+            self.draw_vec.x = self.draw_vec.x * -1.0;
         }
         if self.draw_pt.y + (h as f32 / 2.0) > (h as f32 / 2.0)
             || self.draw_pt.y < -(h as f32 / 2.0)
         {
-            self.draw_vec.y *= -1.0;
+            self.draw_vec.y = self.draw_vec.y * -1.0;
         }
         self.draw_pt = self.draw_pt + self.draw_vec;
         Ok(())
@@ -140,7 +143,7 @@ pub fn main() -> GameResult {
 
     let cb = ggez::ContextBuilder::new("canvas_subframe", "ggez").add_resource_path(resource_dir);
 
-    let (ctx, events_loop) = &mut cb.build()?;
-    let state = &mut MainState::new(ctx)?;
+    let (mut ctx, events_loop) = cb.build()?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, events_loop, state)
 }

@@ -1,13 +1,16 @@
 //! A more sophisticated example of how to use shaders
 //! and canvas's to do 2D GPU shadows.
 
-use gfx::*;
-use cgmath::{Point2, Vector2};
+use gfx::{self, *};
+use ggez;
+use glam;
+
 use ggez::conf;
 use ggez::event;
 use ggez::graphics::{self, BlendMode, Canvas, DrawParam, Drawable, Shader};
 use ggez::timer;
 use ggez::{Context, GameResult};
+use glam::Vec2;
 use std::env;
 use std::path;
 
@@ -195,7 +198,7 @@ impl MainState {
         let background = graphics::Image::new(ctx, "/bg_top.png")?;
         let tile = graphics::Image::new(ctx, "/tile.png")?;
         let text = {
-            let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf")?;
+            let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
             graphics::Text::new(("SHADOWS...", font, 48.0))
         };
         let screen_size = {
@@ -220,8 +223,9 @@ impl MainState {
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
+        let color_format = ggez::graphics::get_window_color_format(ctx);
         let foreground = Canvas::with_window_size(ctx)?;
-        let occlusions = Canvas::new(ctx, LIGHT_RAY_COUNT, 1, conf::NumSamples::One)?;
+        let occlusions = Canvas::new(ctx, LIGHT_RAY_COUNT, 1, conf::NumSamples::One, color_format)?;
         let mut shadows = Canvas::with_window_size(ctx)?;
         // The shadow map will be drawn on top using the multiply blend mode
         shadows.set_blend_mode(Some(BlendMode::Multiply));
@@ -296,7 +300,7 @@ impl MainState {
         {
             let _shader_lock = graphics::use_shader(ctx, &self.shadows_shader);
 
-            let param = origin.scale(Vector2::new(
+            let param = origin.scale(Vec2::new(
                 (size.0 as f32) / (LIGHT_RAY_COUNT as f32),
                 size.1 as f32,
             ));
@@ -307,7 +311,7 @@ impl MainState {
         {
             let _shader_lock = graphics::use_shader(ctx, &self.lights_shader);
 
-            let param = origin.scale(Vector2::new(
+            let param = origin.scale(Vec2::new(
                 (size.0 as f32) / (LIGHT_RAY_COUNT as f32),
                 size.1 as f32,
             ));
@@ -332,8 +336,8 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let origin = DrawParam::new()
-            .dest(Point2::new(0.0, 0.0))
-            .scale(Vector2::new(0.5, 0.5));
+            .dest(Vec2::new(0.0, 0.0))
+            .scale(Vec2::new(0.5, 0.5));
         let canvas_origin = DrawParam::new();
 
         // First thing we want to do it to render all the foreground items (that
@@ -347,21 +351,19 @@ impl event::EventHandler for MainState {
             graphics::draw(
                 ctx,
                 &self.tile,
-                DrawParam::new().dest(Point2::new(598.0, 124.0)),
+                DrawParam::new().dest(Vec2::new(598.0, 124.0)),
             )?;
             graphics::draw(
                 ctx,
                 &self.tile,
-                DrawParam::new().dest(Point2::new(92.0, 350.0)),
+                DrawParam::new().dest(Vec2::new(92.0, 350.0)),
             )?;
             graphics::draw(
                 ctx,
                 &self.tile,
-                DrawParam::new()
-                    .dest(Point2::new(442.0, 468.0))
-                    .rotation(0.5),
+                DrawParam::new().dest(Vec2::new(442.0, 468.0)).rotation(0.5),
             )?;
-            graphics::draw(ctx, &self.text, (Point2::new(50.0, 200.0),))?;
+            graphics::draw(ctx, &self.text, (Vec2::new(50.0, 200.0),))?;
         }
 
         // Then we draw our light and shadow maps
@@ -414,8 +416,8 @@ pub fn main() -> GameResult {
     };
 
     let cb = ggez::ContextBuilder::new("shadows", "ggez").add_resource_path(resource_dir);
-    let (ctx, event_loop) = &mut cb.build()?;
+    let (mut ctx, event_loop) = cb.build()?;
 
-    let state = &mut MainState::new(ctx)?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }

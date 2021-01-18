@@ -1,18 +1,46 @@
-# Unreleased
+# 0.6.0 (Release candidate)
 
 ## Added
 
+ * Added a `CustomError` variant to `GameError`.
+ * Added function to allow custom gamepad definitions
+ * Added function to fetch raw window
+ * Added function to set window position on the screen
+ * Added generators for rounded rectangle meshes
+
 ## Changed
 
- * Minimum rustc version is now 1.36
+ * Switched `rand` in the examples to `oorandom`, for basically
+   aesthetic reasons.  (Not advertising at all, honest.)
+ * Version bumped `rodio` to 0.13
+ * Version bumped `lyon` to 0.16
+ * Version bumped `glyph_brush` to 0.7
+ * Version bumped `winit` to 0.23, which brings many fixes, better
+   Wayland handling, and a slightly different style of event loop
+   with some different constraints and type names.
+ * `winit` update has also changed and smoothed over some of the issues
+   with high-DPI handling.
+ * Updated just about every other dependency under the sun
+ * Minimum rustc version is now 1.36 (verify)
+ * Audio API in general changed a little for `rodio` API differences.
 
 ## Deprecated
 
+Nothing
+
 ## Removed
+
+ * removed `ggez::nalgebra` crate re-export.  All math in the public API
+   should now be `mint` types, and it is a bug if they are not.
 
 ## Fixed
 
+ * Too many things to count
+
 ## Broken
+
+Nothing (yet)
+
 
 # 0.5.1
 

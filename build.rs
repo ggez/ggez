@@ -1,4 +1,3 @@
-use skeptic;
 use std::path::PathBuf;
 
 fn main() {

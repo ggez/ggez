@@ -96,7 +96,7 @@ pub struct TimeContext {
     frame_count: usize,
 }
 
-// How many frames we log update times for.
+/// How many frames we log update times for.
 const TIME_LOG_FRAMES: usize = 200;
 
 impl TimeContext {
@@ -206,17 +206,25 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 /// Check whether or not the desired amount of time has elapsed
 /// since the last frame.
 ///
-/// This function will return true if the time since the last
+/// TODO: Heckin docs
+///
+/// This function will return Ok(true) if the time since the last
 /// [`update()`](../event/trait.EventHandler.html#tymethod.update)
 /// call has been equal to or greater to the update FPS indicated by
 /// the `target_fps`.  It keeps track of fractional frames, so if you
 /// want 60 fps (16.67 ms/frame) and the game stutters so that there
-/// is 40 ms between `update()` calls, this will return `true` twice
+/// is 40 ms between `update()` calls, this will return `Ok(true)` twice
 /// in a row even in the same frame, then taking into account the
 /// residual 6.67 ms to catch up to the next frame before returning
-/// `true` again.
+/// `Ok(true)` again. If this function is called more then
+/// MAX_INCREMENTAL_UPDATES per call to 'update()' (default 20), it will return a
+/// `TimeCatchupError`. This is generally used to indicate that a loop
+/// using check_update_time takes longer than the specified update time
+/// to execute (see below).  This way if the game's update takes more than
+/// one frame time to execute, it will not hang forever trying to catch up with
+/// its own timer.
 ///
-/// The intention is to for it to be called in a while loop
+/// The intention is for it to be called in a while loop
 /// in your `update()` callback:
 ///
 /// ```rust
@@ -225,7 +233,7 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 /// # struct State;
 /// # impl ggez::event::EventHandler for State {
 /// fn update(&mut self, ctx: &mut Context) -> GameResult {
-///     while(timer::check_update_time(ctx, 60)) {
+///     while(timer::check_update_time(ctx, 60)?) {
 ///         update_game_physics()?;
 ///     }
 ///     Ok(())

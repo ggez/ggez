@@ -3,8 +3,9 @@ use ggez::audio::SoundSource;
 use ggez::event;
 use ggez::graphics;
 use ggez::input;
-use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
+
+use glam::*;
 
 use std::env;
 use std::path;
@@ -27,9 +28,9 @@ impl MainState {
     // then the same ones for `SpatialSource`.
 
     /// Plays the sound multiple times
-    fn play_detached(&mut self, _ctx: &mut Context) {
+    fn play_detached(&mut self, ctx: &mut Context) {
         // "detached" sounds keep playing even after they are dropped
-        let _ = self.sound.play_detached();
+        let _ = self.sound.play_detached(ctx);
     }
 
     /// Waits until the sound is done playing before playing again.
@@ -42,23 +43,23 @@ impl MainState {
     fn play_fadein(&mut self, ctx: &mut Context) {
         let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
         sound.set_fade_in(Duration::from_millis(1000));
-        sound.play_detached().unwrap();
+        sound.play_detached(ctx).unwrap();
     }
 
     fn play_highpitch(&mut self, ctx: &mut Context) {
         let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
         sound.set_pitch(2.0);
-        sound.play_detached().unwrap();
+        sound.play_detached(ctx).unwrap();
     }
     fn play_lowpitch(&mut self, ctx: &mut Context) {
         let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
         sound.set_pitch(0.5);
-        sound.play_detached().unwrap();
+        sound.play_detached(ctx).unwrap();
     }
 
     /// Plays the sound and prints out stats until it's done.
-    fn play_stats(&mut self, _ctx: &mut Context) {
-        let _ = self.sound.play();
+    fn play_stats(&mut self, ctx: &mut Context) {
+        let _ = self.sound.play(ctx);
         while self.sound.playing() {
             println!("Elapsed time: {:?}", self.sound.elapsed())
         }
@@ -76,12 +77,12 @@ impl event::EventHandler for MainState {
         graphics::queue_text(
             ctx,
             &graphics::Text::new("Press number keys 1-6 to play a sound, or escape to quit."),
-            na::Point2::origin(),
+            Vec2::zero(),
             None,
         );
         graphics::draw_queued_text(
             ctx,
-            (na::Point2::new(100.0, 100.0),),
+            (Vec2::new(100.0, 100.0),),
             None,
             graphics::FilterMode::Linear,
         )?;
@@ -119,9 +120,9 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("imageview", "ggez").add_resource_path(resource_dir);
-    let (ctx, event_loop) = &mut cb.build()?;
+    let cb = ggez::ContextBuilder::new("sounds", "ggez").add_resource_path(resource_dir);
+    let (mut ctx, event_loop) = cb.build()?;
 
-    let state = &mut MainState::new(ctx)?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }

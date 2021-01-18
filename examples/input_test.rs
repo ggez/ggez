@@ -4,6 +4,7 @@ use ggez::event::{self, Axis, Button, GamepadId, KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, DrawMode};
 use ggez::input;
 use ggez::{Context, GameResult};
+use glam::*;
 
 struct MainState {
     pos_x: f32,
@@ -49,7 +50,7 @@ impl event::EventHandler for MainState {
             },
             graphics::WHITE,
         )?;
-        graphics::draw(ctx, &rectangle, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
+        graphics::draw(ctx, &rectangle, (glam::Vec2::new(0.0, 0.0),))?;
         graphics::present(ctx)?;
         Ok(())
     }
@@ -126,8 +127,8 @@ impl event::EventHandler for MainState {
 
 pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("input_test", "ggez");
-    let (ctx, event_loop) = &mut cb.build()?;
+    let (ctx, event_loop) = cb.build()?;
 
-    let state = &mut MainState::new();
+    let state = MainState::new();
     event::run(ctx, event_loop, state)
 }

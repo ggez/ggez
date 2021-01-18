@@ -17,8 +17,7 @@ use crate::error;
 use crate::error::GameResult;
 use crate::graphics::shader::BlendMode;
 use crate::graphics::types::FilterMode;
-use crate::graphics::{self, transform_rect, BackendSpec, DrawParam, DrawTransform, Rect};
-use gfx;
+use crate::graphics::{self, transform_rect, BackendSpec, DrawParam, Matrix4, Rect, Transform};
 use gfx::Factory;
 
 /// A `SpriteBatch` draws a number of copies of the same image, using a single draw call.
@@ -38,7 +37,7 @@ pub struct SpriteBatch {
 
 /// An index of a particular sprite in a `SpriteBatch`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SpriteIdx(usize);
+pub struct SpriteIdx(pub usize);
 
 impl SpriteBatch {
     /// Creates a new `SpriteBatch`, drawing with the given image.
@@ -98,16 +97,19 @@ impl SpriteBatch {
             .iter()
             .map(|param| {
                 // Copy old params
-                let mut new_param = *param;
                 let src_width = param.src.w;
                 let src_height = param.src.h;
-                let real_scale = graphics::Vector2::new(
-                    src_width * param.scale.x * f32::from(image.width),
-                    src_height * param.scale.y * f32::from(image.height),
-                );
-                new_param.scale = real_scale.into();
-                new_param.color = new_param.color;
-                let primitive_param = graphics::DrawTransform::from(new_param);
+                let new_param = match param.trans {
+                    Transform::Values { scale, .. } => {
+                        let new_scale = mint::Vector2 {
+                            x: scale.x * src_width * f32::from(image.width),
+                            y: scale.y * src_height * f32::from(image.height),
+                        };
+                        param.scale(new_scale)
+                    }
+                    Transform::Matrix(_) => *param,
+                };
+                let primitive_param = new_param;
                 primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
             })
             .collect::<Vec<_>>();
@@ -170,11 +172,10 @@ impl graphics::Drawable for SpriteBatch {
 
         let mut slice = gfx.quad_slice.clone();
         slice.instances = Some((self.sprites.len() as u32, 0));
-        let curr_transform = gfx.transform();
-        let m: DrawTransform = param.into();
-        gfx.push_transform(m.matrix * curr_transform);
-        gfx.calculate_transform_matrix();
-        gfx.update_globals()?;
+        // It's a little silly converting this mint matrix back to a glam
+        // one but it's simpler than the alternative.
+        let m = Matrix4::from(param.trans.to_bare_matrix());
+        gfx.set_global_mvp(m)?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.blend_mode();
             if current_mode != mode {
@@ -190,9 +191,7 @@ impl graphics::Drawable for SpriteBatch {
         if let Some(mode) = previous_mode {
             gfx.set_blend_mode(mode)?;
         }
-        gfx.pop_transform();
-        gfx.calculate_transform_matrix();
-        gfx.update_globals()?;
+        gfx.set_global_mvp(graphics::Matrix4::identity())?;
         Ok(())
     }
     fn dimensions(&self, _ctx: &mut Context) -> Option<Rect> {

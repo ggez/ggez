@@ -16,8 +16,6 @@ use std::fs;
 use std::io::{self, Read, Seek, Write};
 use std::path::{self, Path, PathBuf};
 
-use zip;
-
 use crate::error::{GameError, GameResult};
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
@@ -527,11 +525,8 @@ impl VFS for OverlayFS {
 }
 
 trait ZipArchiveAccess {
-    fn by_name<'a>(&'a mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile<'a>>;
-    fn by_index<'a>(
-        &'a mut self,
-        file_number: usize,
-    ) -> zip::result::ZipResult<zip::read::ZipFile<'a>>;
+    fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile<'_>>;
+    fn by_index(&mut self, file_number: usize) -> zip::result::ZipResult<zip::read::ZipFile<'_>>;
     fn len(&self) -> usize;
 }
 
@@ -581,7 +576,7 @@ impl ZipFS {
     pub fn new(filename: &Path) -> GameResult<Self> {
         let f = fs::File::open(filename)?;
         let archive = Box::new(zip::ZipArchive::new(f)?);
-        ZipFS::from_boxed_archive(archive, Some(filename.into()))
+        Ok(ZipFS::from_boxed_archive(archive, Some(filename.into())))
     }
 
     /// Creates a `ZipFS` from any `Read+Seek` object, most useful with an
@@ -591,13 +586,10 @@ impl ZipFS {
         R: Read + Seek + 'static,
     {
         let archive = Box::new(zip::ZipArchive::new(reader)?);
-        ZipFS::from_boxed_archive(archive, None)
+        Ok(ZipFS::from_boxed_archive(archive, None))
     }
 
-    fn from_boxed_archive(
-        mut archive: Box<dyn ZipArchiveAccess>,
-        source: Option<PathBuf>,
-    ) -> GameResult<Self> {
+    fn from_boxed_archive(mut archive: Box<dyn ZipArchiveAccess>, source: Option<PathBuf>) -> Self {
         let idx = (0..archive.len())
             .map(|i| {
                 archive
@@ -607,11 +599,11 @@ impl ZipFS {
                     .to_string()
             })
             .collect();
-        Ok(Self {
+        Self {
             source,
             archive: RefCell::new(archive),
             index: idx,
-        })
+        }
     }
 }
 
@@ -953,8 +945,8 @@ mod tests {
         let _bytes = finished_zip_bytes.seek(io::SeekFrom::Start(0)).unwrap();
         let zfs = ZipFS::from_read(finished_zip_bytes).unwrap();
 
-        assert!(zfs.exists(Path::new("/fake_file_name.txt".into())));
-        assert!(!zfs.exists(Path::new("fake_file_name.txt".into())));
+        assert!(zfs.exists(Path::new("/fake_file_name.txt")));
+        assert!(!zfs.exists(Path::new("fake_file_name.txt")));
 
         let mut contents = String::new();
         let _bytes = zfs
