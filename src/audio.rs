@@ -146,7 +146,7 @@ impl AsRef<[u8]> for SoundData {
 pub trait SoundSource {
     /// Plays the audio source; restarts the sound if currently playing
     fn play(&mut self, ctx: &Context) -> GameResult {
-        self.stop(ctx);
+        self.stop(ctx)?;
         self.play_later()
     }
 
@@ -175,7 +175,7 @@ pub trait SoundSource {
     fn resume(&self);
 
     /// Stops playback
-    fn stop(&mut self, ctx: &Context);
+    fn stop(&mut self, ctx: &Context) -> GameResult;
 
     /// Returns whether or not the source is stopped
     /// -- that is, has no more data to play.
@@ -298,7 +298,7 @@ impl Source {
                 "Could not decode the given audio data".to_string(),
             ));
         }
-        let sink = rodio::Sink::try_new(&context.audio_context.device()).unwrap();
+        let sink = rodio::Sink::try_new(&context.audio_context.device())?;
         let cursor = io::Cursor::new(data);
         Ok(Source {
             sink,
@@ -343,10 +343,10 @@ impl SoundSource for Source {
     }
 
     fn play_detached(&mut self, ctx: &Context) -> GameResult {
-        self.stop(ctx);
+        self.stop(ctx)?;
         self.play_later()?;
 
-        let new_sink = rodio::Sink::try_new(ctx.audio_context.device()).unwrap();
+        let new_sink = rodio::Sink::try_new(ctx.audio_context.device())?;
         let old_sink = mem::replace(&mut self.sink, new_sink);
         old_sink.detach();
 
@@ -372,7 +372,7 @@ impl SoundSource for Source {
         self.sink.play()
     }
 
-    fn stop(&mut self, ctx: &Context) {
+    fn stop(&mut self, ctx: &Context) -> GameResult {
         // Sinks cannot be reused after calling `.stop()`. See
         // https://github.com/tomaka/rodio/issues/171 for information.
         // To stop the current sound we have to drop the old sink and
@@ -388,11 +388,12 @@ impl SoundSource for Source {
         let volume = self.volume();
 
         let device = ctx.audio_context.device();
-        self.sink = rodio::Sink::try_new(&device).unwrap();
+        self.sink = rodio::Sink::try_new(&device)?;
         self.state.play_time.store(0, Ordering::SeqCst);
 
         // Restore information from the previous link.
         self.set_volume(volume);
+        Ok(())
     }
 
     fn stopped(&self) -> bool {
@@ -460,8 +461,7 @@ impl SpatialSource {
             [0.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
-        )
-        .unwrap();
+        )?;
 
         let cursor = io::Cursor::new(data);
 
@@ -512,7 +512,7 @@ impl SoundSource for SpatialSource {
     }
 
     fn play_detached(&mut self, ctx: &Context) -> GameResult {
-        self.stop(ctx);
+        self.stop(ctx)?;
         self.play_later()?;
 
         let device = ctx.audio_context.device();
@@ -521,8 +521,7 @@ impl SoundSource for SpatialSource {
             self.emitter_position.into(),
             self.left_ear.into(),
             self.right_ear.into(),
-        )
-        .unwrap();
+        )?;
         let old_sink = mem::replace(&mut self.sink, new_sink);
         old_sink.detach();
 
@@ -553,7 +552,7 @@ impl SoundSource for SpatialSource {
         self.sink.play()
     }
 
-    fn stop(&mut self, ctx: &Context) {
+    fn stop(&mut self, ctx: &Context) -> GameResult {
         // Sinks cannot be reused after calling `.stop()`. See
         // https://github.com/tomaka/rodio/issues/171 for information.
         // To stop the current sound we have to drop the old sink and
@@ -574,12 +573,12 @@ impl SoundSource for SpatialSource {
             self.emitter_position.into(),
             self.left_ear.into(),
             self.right_ear.into(),
-        )
-        .unwrap();
+        )?;
         self.state.play_time.store(0, Ordering::SeqCst);
 
         // Restore information from the previous link.
         self.set_volume(volume);
+        Ok(())
     }
 
     fn stopped(&self) -> bool {

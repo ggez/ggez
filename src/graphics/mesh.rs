@@ -671,7 +671,9 @@ impl Mesh {
         }
 
         let verts: Vec<Vertex> = verts.iter().cloned().map(Into::into).collect();
-        let rect = bbox_for_vertices(&verts).expect("No vertices in MeshBuilder");
+        let rect = bbox_for_vertices(&verts).expect(
+            "No vertices in MeshBuilder; should never happen since we already checked this",
+        );
         let (vbuf, slice) = ctx
             .gfx_context
             .factory
@@ -907,13 +909,13 @@ impl MeshBatch {
                 self.instance_buffer = Some(new_buffer);
 
                 ctx.gfx_context.encoder.update_buffer(
-                    &self.instance_buffer.as_ref().unwrap(),
+                    &self.instance_buffer.as_ref().expect("Can never fail"),
                     new_properties.as_slice(),
                     0,
                 )?;
             } else {
                 ctx.gfx_context.encoder.update_buffer(
-                    &self.instance_buffer.as_ref().unwrap(),
+                    &self.instance_buffer.as_ref().expect("Should never fail"),
                     new_properties.as_slice(),
                     first_param,
                 )?;
@@ -955,7 +957,7 @@ impl MeshBatch {
 
             // HACK this code has to restore the old instance buffer after drawing,
             // otherwise something else will override the first instance data
-            let instance_buffer = self.instance_buffer.as_ref().unwrap();
+            let instance_buffer = self.instance_buffer.as_ref().expect("Should never fail");
             let old_instance_buffer = gfx.data.rect_instance_properties.clone();
 
             gfx.data.rect_instance_properties = instance_buffer.clone();

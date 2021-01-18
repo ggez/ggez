@@ -241,8 +241,8 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         };
 
         // Glyph cache stuff.
-        let font_vec =
-            glyph_brush::ab_glyph::FontArc::try_from_slice(Font::default_font_bytes()).unwrap();
+        let font_vec = glyph_brush::ab_glyph::FontArc::try_from_slice(Font::default_font_bytes())
+            .expect("Invalid default font bytes, should never happen");
         let glyph_brush = GlyphBrushBuilder::using_font(font_vec).build();
         let (glyph_cache_width, glyph_cache_height) = glyph_brush.texture_dimensions();
         let initial_contents =

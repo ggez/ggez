@@ -4,6 +4,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use rodio::decoder::DecoderError;
+use rodio::PlayError;
 
 /// An enum containing all kinds of game framework errors.
 #[derive(Debug, Clone)]
@@ -109,6 +110,13 @@ impl From<zip::result::ZipError> for GameError {
 impl From<DecoderError> for GameError {
     fn from(e: DecoderError) -> GameError {
         let errstr = format!("Audio decoder error: {:?}", e);
+        GameError::AudioError(errstr)
+    }
+}
+
+impl From<PlayError> for GameError {
+    fn from(e: PlayError) -> GameError {
+        let errstr = format!("Audio playing error: {:?}", e);
         GameError::AudioError(errstr)
     }
 }
