@@ -17,7 +17,7 @@ pub fn context_build_tests() {
         conf::Conf::default().modules(conf::ModuleConf::default().audio(false)),
     ];
     for conf in confs.into_iter() {
-        let mut cb = ContextBuilder::new("ggez_unit_tests", "ggez").conf(conf);
+        let mut cb = ContextBuilder::new("ggez_unit_tests", "ggez").default_conf(conf);
         if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
             let mut path = path::PathBuf::from(manifest_dir);
             path.push("resources");
@@ -25,8 +25,8 @@ pub fn context_build_tests() {
         }
         let (c, _e) = cb.clone().build().unwrap();
         let (w, h) = graphics::drawable_size(&c);
-        assert_eq!(w, cb.conf.window_mode.width.into());
-        assert_eq!(h, cb.conf.window_mode.height.into());
+        assert_eq!(w, cb.conf.window_mode.width);
+        assert_eq!(h, cb.conf.window_mode.height);
         // Can't really test whether or not the window is resizable?
     }
 }

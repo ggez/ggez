@@ -13,5 +13,5 @@ API.  (Doing this for packages that aren't publically exposed is PROBABLY okay..
  * clippy
  * Search for and remove all `expect()` and `unwrap()` calls
  * Search for and address all `TODO` and `BUGGO` comments
- * Make sure readme is updated (should be the same as the top-level crate docs)
+ * Make sure readme is updated.  Should be the same as the top-level crate docs `cargo-readme` can make life simpler for this.
  * Make sure changelog is up to date, ideally including full links to issues or commits (not just github issue numbers)

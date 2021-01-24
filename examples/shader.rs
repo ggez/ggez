@@ -1,8 +1,8 @@
 //! A very simple shader example.
 
-use cgmath;
 use gfx::{self, *};
 use ggez;
+use glam;
 
 use ggez::event;
 use ggez::graphics::{self, Color, DrawMode};
@@ -50,12 +50,12 @@ impl event::EventHandler for MainState {
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),
-            cgmath::Point2::new(100.0, 300.0),
+            glam::Vec2::new(100.0, 300.0),
             100.0,
             2.0,
             Color::WHITE,
         )?;
-        graphics::draw(ctx, &circle, (cgmath::Point2::new(0.0, 0.0),))?;
+        graphics::draw(ctx, &circle, (glam::Vec2::new(0.0, 0.0),))?;
 
         {
             let _lock = graphics::use_shader(ctx, &self.shader);
@@ -63,23 +63,23 @@ impl event::EventHandler for MainState {
             let circle = graphics::Mesh::new_circle(
                 ctx,
                 DrawMode::fill(),
-                cgmath::Point2::new(400.0, 300.0),
+                glam::Vec2::new(400.0, 300.0),
                 100.0,
                 2.0,
                 Color::WHITE,
             )?;
-            graphics::draw(ctx, &circle, (cgmath::Point2::new(0.0, 0.0),))?;
+            graphics::draw(ctx, &circle, (glam::Vec2::new(0.0, 0.0),))?;
         }
 
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),
-            cgmath::Point2::new(700.0, 300.0),
+            glam::Vec2::new(700.0, 300.0),
             100.0,
             2.0,
             Color::WHITE,
         )?;
-        graphics::draw(ctx, &circle, (cgmath::Point2::new(0.0, 0.0),))?;
+        graphics::draw(ctx, &circle, (glam::Vec2::new(0.0, 0.0),))?;
 
         graphics::present(ctx)?;
         Ok(())
@@ -96,8 +96,8 @@ pub fn main() -> GameResult {
     };
 
     let cb = ggez::ContextBuilder::new("shader", "ggez").add_resource_path(resource_dir);
-    let (ctx, event_loop) = &mut cb.build()?;
+    let (mut ctx, event_loop) = cb.build()?;
 
-    let state = &mut MainState::new(ctx)?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }

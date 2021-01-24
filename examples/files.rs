@@ -4,8 +4,6 @@
 //! It doesn't use an event loop, it just runs once and exits,
 //! printing a bunch of stuff to the console.
 
-use ggez;
-
 use ggez::{conf, filesystem, ContextBuilder, GameResult};
 use std::env;
 use std::io::{Read, Write};
@@ -90,7 +88,7 @@ pub fn main() -> GameResult {
         if let Err(e) = filesystem::open(ctx, "/jfkdlasfjdsa") {
             // The error message contains a big hairy list of each
             // directory tried and what error it got from it.
-            println!("Got the error: {:?}", e);
+            println!("Got the error: {:#?}", e);
         } else {
             println!("Wait, it does exist?  Weird.")
         }

@@ -1,11 +1,10 @@
 //! Demonstrates various projection and matrix fiddling/testing.
 use ggez;
-use nalgebra;
 
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, Color, DrawMode};
-use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
+use glam::*;
 use std::env;
 use std::path;
 
@@ -30,7 +29,7 @@ impl MainState {
                 let fx = x as f32;
                 let fy = y as f32;
                 let fsize = Self::GRID_SIZE as f32;
-                let point = na::Point2::new(fx * Self::GRID_INTERVAL, fy * Self::GRID_INTERVAL);
+                let point = Vec2::new(fx * Self::GRID_INTERVAL, fy * Self::GRID_INTERVAL);
                 let color = graphics::Color::new(fx / fsize, 0.0, fy / fsize, 1.0);
                 gridmesh_builder.circle(
                     DrawMode::fill(),
@@ -38,7 +37,7 @@ impl MainState {
                     Self::GRID_POINT_RADIUS,
                     2.0,
                     color,
-                );
+                )?;
             }
         }
         let gridmesh = gridmesh_builder.build(ctx)?;
@@ -61,7 +60,7 @@ impl MainState {
     fn draw_coord_labels(&self, ctx: &mut Context) -> GameResult {
         for x in 0..Self::GRID_SIZE {
             for y in 0..Self::GRID_SIZE {
-                let point = na::Point2::new(
+                let point = Vec2::new(
                     x as f32 * Self::GRID_INTERVAL,
                     y as f32 * Self::GRID_INTERVAL,
                 );
@@ -88,18 +87,19 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
-        let origin: na::Point2<f32> = na::Point2::origin();
+        let origin = Vec2::zero();
         graphics::draw(ctx, &self.gridmesh, (origin, Color::WHITE))?;
 
         let param = graphics::DrawParam::new()
-            .dest(na::Point2::new(400.0, 400.0))
+            .dest(Vec2::new(400.0, 400.0))
             .rotation(self.pos_x / 100.0)
-            .offset(na::Point2::new(0.5, 0.5))
-            .scale(na::Vector2::new(1.0, 1.0));
+            .offset(Vec2::new(0.5, 0.5))
+            .scale(Vec2::new(1.0, 1.0));
 
         self.draw_coord_labels(ctx)?;
 
         graphics::draw(ctx, &self.angle, param)?;
+
         graphics::present(ctx)?;
         Ok(())
     }
@@ -136,7 +136,7 @@ pub fn main() -> GameResult {
                 .title("transforms -- Press spacebar to cycle projection!"),
         )
         .add_resource_path(resource_dir);
-    let (ctx, event_loop) = &mut cb.build()?;
-    let state = &mut MainState::new(ctx)?;
+    let (mut ctx, event_loop) = cb.build()?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }

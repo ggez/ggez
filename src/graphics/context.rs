@@ -3,8 +3,9 @@ use std::rc::Rc;
 
 use gfx::traits::FactoryExt;
 use gfx::Factory;
-use glutin;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
+#[rustfmt::skip]
+use ::image as imgcrate;
 use winit::{self, dpi};
 
 use crate::conf::{FullscreenType, WindowMode, WindowSetup};
@@ -25,7 +26,6 @@ where
 {
     shader_globals: Globals,
     pub(crate) projection: Matrix4,
-    pub(crate) modelview_stack: Vec<Matrix4>,
     pub(crate) white_image: ImageGeneric<B>,
     pub(crate) screen_rect: Rect,
     color_format: gfx::format::Format,
@@ -33,7 +33,7 @@ where
     srgb: bool,
 
     pub(crate) backend_spec: B,
-    pub(crate) window: glutin::WindowedContext,
+    pub(crate) window: glutin::WindowedContext<glutin::PossiblyCurrent>,
     pub(crate) multisample_samples: u8,
     pub(crate) device: Box<B::Device>,
     pub(crate) factory: Box<B::Factory>,
@@ -53,7 +53,7 @@ where
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
-    pub(crate) glyph_brush: GlyphBrush<'static, DrawParam>,
+    pub(crate) glyph_brush: Rc<RefCell<GlyphBrush<DrawParam>>>,
     pub(crate) glyph_cache: ImageGeneric<B>,
     pub(crate) glyph_state: Rc<RefCell<spritebatch::SpriteBatch>>,
 }
@@ -74,7 +74,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
     /// Create a new GraphicsContext
     pub(crate) fn new(
         filesystem: &mut Filesystem,
-        events_loop: &winit::EventsLoop,
+        events_loop: &winit::event_loop::EventLoop<()>,
         window_setup: &WindowSetup,
         window_mode: WindowMode,
         backend: GlBackendSpec,
@@ -109,12 +109,22 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_pixel_format(24, 8)
             .with_vsync(window_setup.vsync);
 
-        let window_size =
-            dpi::LogicalSize::from((f64::from(window_mode.width), f64::from(window_mode.height)));
-        let mut window_builder = winit::WindowBuilder::new()
+        let window_size = dpi::LogicalSize::<f64>::from((window_mode.width, window_mode.height));
+        let mut window_builder = winit::window::WindowBuilder::new()
             .with_title(window_setup.title.clone())
-            .with_dimensions(window_size)
+            .with_inner_size(window_size)
+            .with_resizable(window_mode.resizable)
+            .with_visible(window_mode.visible)
+            .with_inner_size(window_size)
             .with_resizable(window_mode.resizable);
+
+        // We need to disable drag-and-drop on windows for multithreaded stuff like cpal to work.
+        // See winit bug here: https://github.com/rust-windowing/winit/pull/1524
+        #[cfg(target_os = "windows")]
+        {
+            use winit::platform::windows::WindowBuilderExtWindows;
+            window_builder = window_builder.with_drag_and_drop(false);
+        }
 
         window_builder = if !window_setup.icon.is_empty() {
             let icon = load_icon(window_setup.icon.as_ref(), filesystem)?;
@@ -136,22 +146,18 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         // since we have no good control over it.
         {
             // Log a bunch of OpenGL state info pulled out of winit and gfx
-            let dpi::LogicalSize {
+            let scale_factor = window.window().scale_factor();
+            let dpi::LogicalSize::<f32> {
                 width: w,
                 height: h,
-            } = window
-                .get_outer_size()
-                .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            let dpi::LogicalSize {
+            } = window.window().outer_size().to_logical(scale_factor);
+            let dpi::LogicalSize::<f32> {
                 width: dw,
                 height: dh,
-            } = window
-                .get_inner_size()
-                .ok_or_else(|| GameError::VideoError("Window doesn't exist!".to_owned()))?;
-            let hidpi_factor = window.get_hidpi_factor();
+            } = window.window().inner_size().to_logical(scale_factor);
             debug!(
-                "Window created, desired size {}x{}, hidpi factor {}.",
-                window_mode.width, window_mode.height, hidpi_factor
+                "Window created, desired size {}x{}, scale factor {}.",
+                window_mode.width, window_mode.height, scale_factor
             );
             let (major, minor) = backend.version_tuple();
             debug!(
@@ -235,8 +241,9 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         };
 
         // Glyph cache stuff.
-        let glyph_brush =
-            GlyphBrushBuilder::using_font_bytes(Font::default_font_bytes().to_vec()).build();
+        let font_vec = glyph_brush::ab_glyph::FontArc::try_from_slice(Font::default_font_bytes())
+            .expect("Invalid default font bytes, should never happen");
+        let glyph_brush = GlyphBrushBuilder::using_font(font_vec).build();
         let (glyph_cache_width, glyph_cache_height) = glyph_brush.texture_dimensions();
         let initial_contents =
             vec![255; 4 * glyph_cache_width as usize * glyph_cache_height as usize];
@@ -259,15 +266,13 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         let top = 0.0;
         let bottom = window_mode.height;
         let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
-        let initial_transform = Matrix4::identity();
         let globals = Globals {
-            mvp_matrix: initial_projection.into(),
+            mvp_matrix: initial_projection.to_cols_array_2d(),
         };
 
         let mut gfx = Self {
             shader_globals: globals,
             projection: initial_projection,
-            modelview_stack: vec![initial_transform],
             white_image,
             screen_rect: Rect::new(left, top, right - left, bottom - top),
             color_format,
@@ -294,11 +299,11 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             current_shader: Rc::new(RefCell::new(None)),
             shaders: vec![draw],
 
-            glyph_brush,
+            glyph_brush: Rc::new(RefCell::new(glyph_brush)),
             glyph_cache,
             glyph_state,
         };
-        gfx.set_window_mode(window_mode)?;
+        gfx.set_window_mode(window_mode);
 
         // Calculate and apply the actual initial projection matrix
         let w = window_mode.width;
@@ -310,8 +315,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             h,
         };
         gfx.set_projection_rect(rect);
-        gfx.calculate_transform_matrix();
-        gfx.update_globals()?;
+        gfx.set_global_mvp(Matrix4::identity())?;
         Ok(gfx)
     }
 }
@@ -320,17 +324,19 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 // but still better than
 // having `winit` try to do the image loading for us.
 // see https://github.com/tomaka/winit/issues/661
-pub(crate) fn load_icon(icon_file: &Path, filesystem: &mut Filesystem) -> GameResult<winit::Icon> {
-    use ::image;
-    use ::image::GenericImageView;
+pub(crate) fn load_icon(
+    icon_file: &Path,
+    filesystem: &mut Filesystem,
+) -> GameResult<winit::window::Icon> {
+    use imgcrate::GenericImageView;
     use std::io::Read;
-    use winit::Icon;
+    use winit::window::Icon;
 
     let mut buf = Vec::new();
     let mut reader = filesystem.open(icon_file)?;
     let _ = reader.read_to_end(&mut buf)?;
-    let i = image::load_from_memory(&buf)?;
-    let image_data = i.to_rgba();
+    let i = imgcrate::load_from_memory(&buf)?;
+    let image_data = i.to_rgba8();
     Icon::from_rgba(image_data.to_vec(), i.width(), i.height()).map_err(|e| {
         let msg = format!("Could not load icon: {:?}", e);
         GameError::ResourceLoadError(msg)
@@ -349,61 +355,17 @@ where
         Ok(())
     }
 
-    /// Recalculates the context's Model-View-Projection matrix based on
-    /// the matrices on the top of the respective stacks and the projection
-    /// matrix.
-    pub(crate) fn calculate_transform_matrix(&mut self) {
-        let modelview = self
-            .modelview_stack
-            .last()
-            .expect("Transform stack empty; should never happen");
-        let mvp = self.projection * modelview;
-        self.shader_globals.mvp_matrix = mvp.into();
-    }
-
-    /// Pushes a homogeneous transform matrix to the top of the transform
-    /// (model) matrix stack.
-    pub(crate) fn push_transform(&mut self, t: Matrix4) {
-        self.modelview_stack.push(t);
-    }
-
-    /// Pops the current transform matrix off the top of the transform
-    /// (model) matrix stack.  Will never pop the last transform.
-    pub(crate) fn pop_transform(&mut self) {
-        if self.modelview_stack.len() > 1 {
-            let _ = self.modelview_stack.pop();
-        }
-    }
-
-    /// Sets the current model-view transform matrix.
-    pub(crate) fn set_transform(&mut self, t: Matrix4) {
-        assert!(
-            !self.modelview_stack.is_empty(),
-            "Tried to set a transform on an empty transform stack!"
-        );
-        let last = self
-            .modelview_stack
-            .last_mut()
-            .expect("Transform stack empty; should never happen!");
-        *last = t;
-    }
-
-    /// Gets a copy of the current transform matrix.
-    pub(crate) fn transform(&self) -> Matrix4 {
-        assert!(
-            !self.modelview_stack.is_empty(),
-            "Tried to get a transform on an empty transform stack!"
-        );
-        let last = self
-            .modelview_stack
-            .last()
-            .expect("Transform stack empty; should never happen!");
-        *last
+    /// Sets the shader MVP matrix to the current projection multiplied by
+    /// the given matrix, and updates the uniform buffer.
+    pub(crate) fn set_global_mvp(&mut self, matrix: Matrix4) -> GameResult {
+        let mvp = self.projection * matrix;
+        self.shader_globals.mvp_matrix = mvp.to_cols_array_2d();
+        self.update_globals()
     }
 
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
     /// sends it to the graphics card at the front of the instance buffer.
-    pub(crate) fn update_instance_properties(&mut self, draw_params: DrawTransform) -> GameResult {
+    pub(crate) fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult {
         let mut new_draw_params = draw_params;
         new_draw_params.color = draw_params.color;
         let properties = new_draw_params.to_instance_properties(self.srgb);
@@ -485,7 +447,7 @@ where
         }
 
         self.screen_rect = rect;
-        self.projection = Matrix4::from(ortho(
+        self.projection = Matrix4::from_cols_array_2d(&ortho(
             rect.x,
             rect.x + rect.w,
             rect.y,
@@ -508,8 +470,8 @@ where
     }
 
     /// Sets window mode from a WindowMode object.
-    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
-        let window = &self.window;
+    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) {
+        let window = self.window.window();
 
         window.set_maximized(mode.maximized);
 
@@ -522,7 +484,7 @@ where
         } else {
             None
         };
-        window.set_min_dimensions(min_dimensions);
+        window.set_min_inner_size(min_dimensions);
 
         let max_dimensions = if mode.max_width > 0.0 && mode.max_height > 0.0 {
             Some(dpi::LogicalSize {
@@ -532,9 +494,8 @@ where
         } else {
             None
         };
-        window.set_max_dimensions(max_dimensions);
+        window.set_max_inner_size(max_dimensions);
 
-        let monitor = window.get_current_monitor();
         match mode.fullscreen_type {
             FullscreenType::Windowed => {
                 window.set_fullscreen(None);
@@ -546,23 +507,23 @@ where
                 window.set_resizable(mode.resizable);
             }
             FullscreenType::True => {
-                window.set_fullscreen(Some(monitor));
+                window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
                 window.set_inner_size(dpi::LogicalSize {
                     width: f64::from(mode.width),
                     height: f64::from(mode.height),
                 });
             }
             FullscreenType::Desktop => {
-                let position = monitor.get_position();
-                let dimensions = monitor.get_dimensions();
-                let hidpi_factor = window.get_hidpi_factor();
                 window.set_fullscreen(None);
                 window.set_decorations(false);
-                window.set_inner_size(dimensions.to_logical(hidpi_factor));
-                window.set_position(position.to_logical(hidpi_factor));
+                if let Some(monitor) = window.current_monitor() {
+                    window.set_inner_size(monitor.size());
+                    window.set_outer_position(monitor.position());
+                }
             }
         }
-        Ok(())
+
+        window.set_visible(mode.visible);
     }
 
     /// Communicates changes in the viewport size between glutin and gfx.
@@ -597,10 +558,6 @@ where
     /// Simple shortcut to check whether the context's color
     /// format is SRGB or not.
     pub(crate) fn is_srgb(&self) -> bool {
-        if let gfx::format::Format(_, gfx::format::ChannelType::Srgb) = self.color_format() {
-            true
-        } else {
-            false
-        }
+        self.color_format().1 == gfx::format::ChannelType::Srgb
     }
 }

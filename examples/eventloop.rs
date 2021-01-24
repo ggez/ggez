@@ -8,8 +8,8 @@
 //!
 //! It is functionally identical to the `super_simple.rs` example apart from that.
 
-use cgmath;
 use ggez;
+use glam;
 
 use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
@@ -18,7 +18,7 @@ use ggez::GameResult;
 
 pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("eventloop", "ggez");
-    let (ctx, events_loop) = &mut cb.build()?;
+    let (ref mut ctx, mut events_loop) = cb.build()?;
 
     let mut position: f32 = 1.0;
 
@@ -28,7 +28,8 @@ pub fn main() -> GameResult {
         // Without this the FPS timer functions and such won't work.
         ctx.timer_context.tick();
         // Handle events. Refer to `winit` docs for more information.
-        events_loop.poll_events(|event| {
+        use winit::platform::run_return::EventLoopExtRunReturn;
+        events_loop.run_return(|event, _window_target, control_flow| {
             // This tells `ggez` to update it's internal states, should the event require that.
             // These include cursor position, view updating on resize, etc.
             ctx.process_event(&event);
@@ -43,8 +44,9 @@ pub fn main() -> GameResult {
                             },
                         ..
                     } => match keycode {
-                        event::KeyCode::Escape => event::quit(ctx),
-
+                        event::KeyCode::Escape => {
+                            *control_flow = winit::event_loop::ControlFlow::Exit
+                        }
                         _ => (),
                     },
                     // `CloseRequested` and `KeyboardInput` events won't appear here.
@@ -63,12 +65,12 @@ pub fn main() -> GameResult {
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),
-            cgmath::Point2::new(0.0, 0.0),
+            glam::Vec2::new(0.0, 0.0),
             100.0,
             2.0,
             Color::WHITE,
         )?;
-        graphics::draw(ctx, &circle, (cgmath::Point2::new(position, 380.0),))?;
+        graphics::draw(ctx, &circle, (glam::Vec2::new(position, 380.0),))?;
         graphics::present(ctx)?;
         ggez::timer::yield_now();
     }

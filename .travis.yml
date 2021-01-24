@@ -4,7 +4,7 @@ rust:
   - stable
   - beta
   - nightly
-  - 1.36.0
+  - 1.42.0
 os:
   - linux
   - osx
@@ -19,7 +19,7 @@ addons:
 cache: cargo
 
 script:
-  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then cargo test --test skeptic; cargo test headless; cargo test --doc; fi
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then cargo test -j2 --test skeptic; cargo test -j 2 headless; cargo test -j 2 --doc; fi
 #  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then cargo test --verbose headless --no-default-features; fi
 
 before_install:
@@ -35,6 +35,6 @@ after_success: |
     # cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
 
     # Uncomment the following two lines create and upload a report for codecov.io
-    cargo tarpaulin --out Xml
-    bash <(curl -s https://codecov.io/bash)
+    #cargo tarpaulin --out Xml
+    #bash <(curl -s https://codecov.io/bash)
   fi

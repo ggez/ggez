@@ -10,7 +10,6 @@
 //! source code for this module, or the [`eventloop`
 //! example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs).
 
-use gilrs;
 use winit::{self, dpi};
 
 // TODO LATER: I kinda hate all these re-exports.  I kinda hate
@@ -18,7 +17,7 @@ use winit::{self, dpi};
 // and look forward to ripping it all out and replacing it with newer winit.
 
 /// A mouse button.
-pub use winit::MouseButton;
+pub use winit::event::MouseButton;
 
 /// An analog axis of some device (gamepad thumbstick, joystick...).
 pub use gilrs::Axis;
@@ -27,7 +26,7 @@ pub use gilrs::Button;
 
 /// `winit` events; nested in a module for re-export neatness.
 pub mod winit_event {
-    pub use super::winit::{
+    pub use super::winit::event::{
         DeviceEvent, ElementState, Event, KeyboardInput, ModifiersState, MouseScrollDelta,
         TouchPhase, WindowEvent,
     };
@@ -37,7 +36,7 @@ pub use crate::input::keyboard::{KeyCode, KeyMods};
 
 use self::winit_event::*;
 /// `winit` event loop.
-pub use winit::EventsLoop;
+pub use winit::event_loop::{ControlFlow, EventLoop};
 
 use crate::context::Context;
 use crate::error::GameResult;
@@ -87,6 +86,9 @@ pub trait EventHandler {
     /// The mouse was moved; it provides both absolute x and y coordinates in the window,
     /// and relative x and y coordinates compared to its last position.
     fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32, _dx: f32, _dy: f32) {}
+
+    /// mouse entered or left window area
+    fn mouse_enter_or_leave(&mut self, _ctx: &mut Context, _entered: bool) {}
 
     /// The mousewheel was scrolled, vertically (y, positive away from and negative toward the user)
     /// or horizontally (x, positive to the right and negative to the left).
@@ -160,126 +162,151 @@ pub fn quit(ctx: &mut Context) {
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the [`timer`](../timer/index.html) module for more info.
-pub fn run<S>(ctx: &mut Context, events_loop: &mut EventsLoop, state: &mut S) -> GameResult
+pub fn run<S: 'static>(mut ctx: Context, event_loop: EventLoop<()>, mut state: S) -> !
 where
     S: EventHandler,
 {
     use crate::input::{keyboard, mouse};
 
-    while ctx.continuing {
-        // If you are writing your own event loop, make sure
-        // you include `timer_context.tick()` and
-        // `ctx.process_event()` calls.  These update ggez's
-        // internal state however necessary.
-        ctx.timer_context.tick();
-        events_loop.poll_events(|event| {
-            ctx.process_event(&event);
-            match event {
-                Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::Resized(logical_size) => {
-                        // let actual_size = logical_size;
-                        state.resize_event(
-                            ctx,
-                            logical_size.width as f32,
-                            logical_size.height as f32,
-                        );
+    event_loop.run(move |event, _, control_flow| {
+        if !ctx.continuing {
+            *control_flow = ControlFlow::Exit;
+            return;
+        }
+
+        *control_flow = ControlFlow::Poll;
+
+        let ctx = &mut ctx;
+        let state = &mut state;
+
+        ctx.process_event(&event);
+        match event {
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::Resized(logical_size) => {
+                    // let actual_size = logical_size;
+                    state.resize_event(ctx, logical_size.width as f32, logical_size.height as f32);
+                }
+                WindowEvent::CloseRequested => {
+                    if !state.quit_event(ctx) {
+                        quit(ctx);
                     }
-                    WindowEvent::CloseRequested => {
-                        if !state.quit_event(ctx) {
-                            quit(ctx);
+                }
+                WindowEvent::Focused(gained) => {
+                    state.focus_event(ctx, gained);
+                }
+                WindowEvent::ReceivedCharacter(ch) => {
+                    state.text_input_event(ctx, ch);
+                }
+                WindowEvent::ModifiersChanged(mods) => {
+                    ctx.keyboard_context.set_modifiers(KeyMods::from(mods))
+                }
+                WindowEvent::KeyboardInput {
+                    input:
+                        KeyboardInput {
+                            state: ElementState::Pressed,
+                            virtual_keycode: Some(keycode),
+                            ..
+                        },
+                    ..
+                } => {
+                    let repeat = keyboard::is_key_repeated(ctx);
+                    state.key_down_event(ctx, keycode, ctx.keyboard_context.active_mods(), repeat);
+                }
+                WindowEvent::KeyboardInput {
+                    input:
+                        KeyboardInput {
+                            state: ElementState::Released,
+                            virtual_keycode: Some(keycode),
+                            ..
+                        },
+                    ..
+                } => {
+                    state.key_up_event(ctx, keycode, ctx.keyboard_context.active_mods());
+                }
+                WindowEvent::MouseWheel { delta, .. } => {
+                    let (x, y) = match delta {
+                        MouseScrollDelta::LineDelta(x, y) => (x, y),
+                        MouseScrollDelta::PixelDelta(pos) => {
+                            let scale_factor = ctx.gfx_context.window.window().scale_factor();
+                            let dpi::LogicalPosition { x, y } = pos.to_logical::<f32>(scale_factor);
+                            (x, y)
+                        }
+                    };
+                    state.mouse_wheel_event(ctx, x, y);
+                }
+                WindowEvent::MouseInput {
+                    state: element_state,
+                    button,
+                    ..
+                } => {
+                    let position = mouse::position(ctx);
+                    match element_state {
+                        ElementState::Pressed => {
+                            state.mouse_button_down_event(ctx, button, position.x, position.y)
+                        }
+                        ElementState::Released => {
+                            state.mouse_button_up_event(ctx, button, position.x, position.y)
                         }
                     }
-                    WindowEvent::Focused(gained) => {
-                        state.focus_event(ctx, gained);
-                    }
-                    WindowEvent::ReceivedCharacter(ch) => {
-                        state.text_input_event(ctx, ch);
-                    }
-                    WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(keycode),
-                                modifiers,
-                                ..
-                            },
-                        ..
-                    } => {
-                        let repeat = keyboard::is_key_repeated(ctx);
-                        state.key_down_event(ctx, keycode, modifiers.into(), repeat);
-                    }
-                    WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                state: ElementState::Released,
-                                virtual_keycode: Some(keycode),
-                                modifiers,
-                                ..
-                            },
-                        ..
-                    } => {
-                        state.key_up_event(ctx, keycode, modifiers.into());
-                    }
-                    WindowEvent::MouseWheel { delta, .. } => {
-                        let (x, y) = match delta {
-                            MouseScrollDelta::LineDelta(x, y) => (x, y),
-                            MouseScrollDelta::PixelDelta(dpi::LogicalPosition { x, y }) => {
-                                (x as f32, y as f32)
+                }
+                WindowEvent::CursorMoved { .. } => {
+                    let position = mouse::position(ctx);
+                    let delta = mouse::delta(ctx);
+                    state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
+                }
+                _x => {
+                    // trace!("ignoring window event {:?}", x);
+                }
+            },
+            Event::DeviceEvent { event, .. } => match event {
+                _ => (),
+            },
+            Event::Resumed => (),
+            Event::Suspended => (),
+            Event::NewEvents(_) => (),
+            Event::UserEvent(_) => (),
+            Event::MainEventsCleared => {
+                // If you are writing your own event loop, make sure
+                // you include `timer_context.tick()` and
+                // `ctx.process_event()` calls.  These update ggez's
+                // internal state however necessary.
+                ctx.timer_context.tick();
+
+                // Handle gamepad events if necessary.
+                if ctx.conf.modules.gamepad {
+                    while let Some(gilrs::Event { id, event, .. }) =
+                        ctx.gamepad_context.next_event()
+                    {
+                        match event {
+                            gilrs::EventType::ButtonPressed(button, _) => {
+                                state.gamepad_button_down_event(ctx, button, GamepadId(id));
                             }
-                        };
-                        state.mouse_wheel_event(ctx, x, y);
-                    }
-                    WindowEvent::MouseInput {
-                        state: element_state,
-                        button,
-                        ..
-                    } => {
-                        let position = mouse::position(ctx);
-                        match element_state {
-                            ElementState::Pressed => {
-                                state.mouse_button_down_event(ctx, button, position.x, position.y)
+                            gilrs::EventType::ButtonReleased(button, _) => {
+                                state.gamepad_button_up_event(ctx, button, GamepadId(id));
                             }
-                            ElementState::Released => {
-                                state.mouse_button_up_event(ctx, button, position.x, position.y)
+                            gilrs::EventType::AxisChanged(axis, value, _) => {
+                                state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
                             }
+                            _ => {}
                         }
                     }
-                    WindowEvent::CursorMoved { .. } => {
-                        let position = mouse::position(ctx);
-                        let delta = mouse::delta(ctx);
-                        state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
-                    }
-                    _x => {
-                        // trace!("ignoring window event {:?}", x);
-                    }
-                },
-                Event::DeviceEvent { event, .. } => match event {
-                    _ => (),
-                },
-                Event::Awakened => (),
-                Event::Suspended(_) => (),
-            }
-        });
-        // Handle gamepad events if necessary.
-        if ctx.conf.modules.gamepad {
-            while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad_context.next_event() {
-                match event {
-                    gilrs::EventType::ButtonPressed(button, _) => {
-                        state.gamepad_button_down_event(ctx, button, GamepadId(id));
-                    }
-                    gilrs::EventType::ButtonReleased(button, _) => {
-                        state.gamepad_button_up_event(ctx, button, GamepadId(id));
-                    }
-                    gilrs::EventType::AxisChanged(axis, value, _) => {
-                        state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
-                    }
-                    _ => {}
+                }
+
+                if let Err(e) = state.update(ctx) {
+                    error!("Error on EventHandler::update(): {:?}", e);
+                    *control_flow = ControlFlow::Exit;
+                    return;
+                }
+
+                if let Err(e) = state.draw(ctx) {
+                    error!("Error on EventHandler::draw(): {:?}", e);
+                    *control_flow = ControlFlow::Exit;
+                    return;
                 }
             }
+            Event::RedrawRequested(_) => (),
+            Event::RedrawEventsCleared => (),
+            Event::LoopDestroyed => (),
         }
-        state.update(ctx)?;
-        state.draw(ctx)?;
-    }
-
-    Ok(())
+    })
 }

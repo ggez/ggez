@@ -13,9 +13,11 @@
 //! Original repo: https://github.com/termhn/ggez_snake
 
 // First we'll import the crates we need for our game;
-// in this case that is just `ggez` and `rand`.
+// in this case that is just `ggez` and `oorandom` (and `getrandom`
+// to seed the RNG.)
+use getrandom;
 use ggez;
-use rand;
+use oorandom::Rand32;
 
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
@@ -25,10 +27,6 @@ use ggez::{event, graphics, Context, GameResult};
 // We'll bring in some things from `std` to help us in the future.
 use std::collections::LinkedList;
 use std::time::{Duration, Instant};
-
-// And finally bring the `Rng` trait into scope so that we can generate
-// some random numbers later.
-use rand::Rng;
 
 // The first thing we want to do is set up some constants that will help us out later.
 
@@ -45,7 +43,7 @@ const SCREEN_SIZE: (f32, f32) = (
     GRID_SIZE.1 as f32 * GRID_CELL_SIZE.1 as f32,
 );
 
-// Here we're defining how many quickly we want our game to update. This will be
+// Here we're defining how often we want our game to update. This will be
 // important later so that we don't have our snake fly across the screen because
 // it's moving a full tile every frame.
 const UPDATES_PER_SECOND: f32 = 8.0;
@@ -94,13 +92,12 @@ impl GridPosition {
 
     /// As well as a helper function that will give us a random `GridPosition` from
     /// `(0, 0)` to `(max_x, max_y)`
-    pub fn random(max_x: i16, max_y: i16) -> Self {
-        let mut rng = rand::thread_rng();
+    pub fn random(rng: &mut Rand32, max_x: i16, max_y: i16) -> Self {
         // We can use `.into()` to convert from `(i16, i16)` to a `GridPosition` since
         // we implement `From<(i16, i16)>` for `GridPosition` below.
         (
-            rng.gen_range::<i16, i16, i16>(0, max_x),
-            rng.gen_range::<i16, i16, i16>(0, max_y),
+            rng.rand_range(0..(max_x as u32)) as i16,
+            rng.rand_range(0..(max_y as u32)) as i16,
         )
             .into()
     }
@@ -382,6 +379,8 @@ struct GameState {
     food: Food,
     /// Whether the game is over or not
     gameover: bool,
+    /// Our RNG state
+    rng: Rand32,
     /// And we track the last time we updated so that we can limit
     /// our update rate.
     last_update: Instant,
@@ -393,14 +392,19 @@ impl GameState {
         // First we put our snake a quarter of the way across our grid in the x axis
         // and half way down the y axis. This works well since we start out moving to the right.
         let snake_pos = (GRID_SIZE.0 / 4, GRID_SIZE.1 / 2).into();
+        // And we seed our RNG with the system RNG.
+        let mut seed: [u8; 8] = [0; 8];
+        getrandom::getrandom(&mut seed[..]).expect("Could not create RNG seed");
+        let mut rng = Rand32::new(u64::from_ne_bytes(seed));
         // Then we choose a random place to put our piece of food using the helper we made
         // earlier.
-        let food_pos = GridPosition::random(GRID_SIZE.0, GRID_SIZE.1);
+        let food_pos = GridPosition::random(&mut rng, GRID_SIZE.0, GRID_SIZE.1);
 
         GameState {
             snake: Snake::new(snake_pos),
             food: Food::new(food_pos),
             gameover: false,
+            rng,
             last_update: Instant::now(),
         }
     }
@@ -412,35 +416,38 @@ impl event::EventHandler for GameState {
     /// Update will happen on every frame before it is drawn. This is where we update
     /// our game state to react to whatever is happening in the game world.
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        // First we check to see if enough time has elapsed since our last update based on
-        // the update rate we defined at the top.
-        if Instant::now() - self.last_update >= Duration::from_millis(MILLIS_PER_UPDATE) {
-            // Then we check to see if the game is over. If not, we'll update. If so, we'll just do nothing.
-            if !self.gameover {
-                // Here we do the actual updating of our game world. First we tell the snake to update itself,
-                // passing in a reference to our piece of food.
-                self.snake.update(&self.food);
-                // Next we check if the snake ate anything as it updated.
-                if let Some(ate) = self.snake.ate {
-                    // If it did, we want to know what it ate.
-                    match ate {
-                        // If it ate a piece of food, we randomly select a new position for our piece of food
-                        // and move it to this new position.
-                        Ate::Food => {
-                            let new_food_pos = GridPosition::random(GRID_SIZE.0, GRID_SIZE.1);
-                            self.food.pos = new_food_pos;
-                        }
-                        // If it ate itself, we set our gameover state to true.
-                        Ate::Itself => {
-                            self.gameover = true;
-                        }
+        // First we check to see if enough time has elapsed since our last update based
+        // on the update rate we defined at the top.
+        // if not, we do nothing and return early.
+        if !(Instant::now() - self.last_update >= Duration::from_millis(MILLIS_PER_UPDATE)) {
+            return Ok(());
+        }
+        // Then we check to see if the game is over. If not, we'll update. If so, we'll just do nothing.
+        if !self.gameover {
+            // Here we do the actual updating of our game world. First we tell the snake to update itself,
+            // passing in a reference to our piece of food.
+            self.snake.update(&self.food);
+            // Next we check if the snake ate anything as it updated.
+            if let Some(ate) = self.snake.ate {
+                // If it did, we want to know what it ate.
+                match ate {
+                    // If it ate a piece of food, we randomly select a new position for our piece of food
+                    // and move it to this new position.
+                    Ate::Food => {
+                        let new_food_pos =
+                            GridPosition::random(&mut self.rng, GRID_SIZE.0, GRID_SIZE.1);
+                        self.food.pos = new_food_pos;
+                    }
+                    // If it ate itself, we set our gameover state to true.
+                    Ate::Itself => {
+                        self.gameover = true;
                     }
                 }
             }
-            // If we updated, we set our last_update to be now
-            self.last_update = Instant::now();
         }
-        // Finally we return `Ok` to indicate we didn't run into any errors
+        // If we updated, we set our last_update to be now
+        self.last_update = Instant::now();
+
         Ok(())
     }
 
@@ -487,7 +494,7 @@ impl event::EventHandler for GameState {
 
 fn main() -> GameResult {
     // Here we use a ContextBuilder to setup metadata about our game. First the title and author
-    let (ctx, events_loop) = &mut ggez::ContextBuilder::new("snake", "Gray Olson")
+    let (ctx, events_loop) = ggez::ContextBuilder::new("snake", "Gray Olson")
         // Next we set up the window. This title will be displayed in the title bar of the window.
         .window_setup(ggez::conf::WindowSetup::default().title("Snake!"))
         // Now we get to set the size of the window, which we use our SCREEN_SIZE constant from earlier to help with
@@ -497,7 +504,7 @@ fn main() -> GameResult {
         .build()?;
 
     // Next we create a new instance of our GameState struct, which implements EventHandler
-    let state = &mut GameState::new();
+    let state = GameState::new();
     // And finally we actually run our game, passing in our context and state.
     event::run(ctx, events_loop, state)
 }

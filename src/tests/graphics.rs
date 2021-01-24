@@ -1,7 +1,7 @@
 use crate::graphics::Color;
 use crate::tests;
 use crate::*;
-use cgmath::Point2;
+use glam::Vec2;
 
 // use std::path;
 
@@ -14,7 +14,7 @@ fn image_encode() {
         .unwrap();
 }
 
-fn get_rgba_sample(rgba_buf: &[u8], width: usize, sample_pos: Point2<f32>) -> (u8, u8, u8, u8) {
+fn get_rgba_sample(rgba_buf: &[u8], width: usize, sample_pos: Vec2) -> (u8, u8, u8, u8) {
     (
         rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 0],
         rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 1],
@@ -29,18 +29,20 @@ fn save_screenshot_test(c: &mut Context) {
     let width = graphics::drawable_size(c).0;
     let height = graphics::drawable_size(c).1;
 
-    let topleft = graphics::DrawParam::new()
-        .color(graphics::Color::WHITE)
-        .dest(Point2::new(0.0, 0.0));
+    let tl = Vec2::new(0.0, 0.0);
+    let tr = Vec2::new(width / 2.0, 0.0);
+    let bl = Vec2::new(0.0, height / 2.0);
+    let br = Vec2::new(width / 2.0, height / 2.0);
+    let topleft = graphics::DrawParam::new().color(Color::WHITE).dest(tl);
     let topright = graphics::DrawParam::new()
         .color(Color::new(1.0, 0.0, 0.0, 1.0))
-        .dest(Point2::new(width / 2.0, 0.0));
+        .dest(tr);
     let bottomleft = graphics::DrawParam::new()
         .color(Color::new(0.0, 1.0, 0.0, 1.0))
-        .dest(Point2::new(0.0, height / 2.0));
+        .dest(bl);
     let bottomright = graphics::DrawParam::new()
         .color(Color::new(0.0, 0.0, 1.0, 1.0))
-        .dest(Point2::new(width / 2.0, height / 2.0));
+        .dest(br);
 
     let rect = graphics::Mesh::new_rectangle(
         c,
@@ -75,23 +77,23 @@ fn save_screenshot_test(c: &mut Context) {
     // So take a samples in the middle of each rectangle we drew and compare.
     // Note that we only use fully saturated colors to avoid any issues with color spaces.
     let rgba_buf = screenshot.to_rgba8(c).unwrap();
-    let half_rect = cgmath::Vector2::new(width / 4.0, height / 4.0);
+    let half_rect = glam::Vec2::new(width / 4.0, height / 4.0);
     let width = width as usize;
     assert_eq!(
         topleft.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Point2::from(topleft.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, tl + half_rect)
     );
     assert_eq!(
         topright.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Point2::from(topright.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, tr + half_rect)
     );
     assert_eq!(
         bottomleft.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Point2::from(bottomleft.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, bl + half_rect)
     );
     assert_eq!(
         bottomright.color.to_rgba(),
-        get_rgba_sample(&rgba_buf, width, Point2::from(bottomright.dest) + half_rect)
+        get_rgba_sample(&rgba_buf, width, br + half_rect)
     );
 
     // save screenshot (no check, just to see if it doesn't crash)
@@ -127,49 +129,38 @@ fn load_images() {
 
 #[test]
 fn sanity_check_window_sizes() {
-    let (c, e) = &mut tests::make_context();
+    let (mut c, e) = tests::make_context();
 
     // Make sure that window sizes are what we ask for, and not what hidpi gives us.
     let w = c.conf.window_mode.width;
     let h = c.conf.window_mode.height;
-    let size = graphics::drawable_size(c);
+    let size = graphics::drawable_size(&mut c);
     assert_eq!(w, size.0);
     assert_eq!(h, size.1);
 
-    let outer_size = graphics::size(c);
+    let outer_size = graphics::size(&mut c);
     assert!(size.0 <= outer_size.0);
     assert!(size.1 <= outer_size.1);
 
     // Make sure resizing the window works.
     let w = 100.0;
     let h = 200.0;
-    graphics::set_drawable_size(c, w, h).unwrap();
+    graphics::set_drawable_size(&mut c, w, h).unwrap();
     // ahahaha this apparently REQUIRES a delay between setting
     // the size and it actually altering, at least on Linux X11
     std::thread::sleep(std::time::Duration::from_millis(100));
     // Maybe we need to run the event pump too?  It seems VERY flaky.
     // Sometimes you need one, sometimes you need both...
-    e.poll_events(|event| {
+    e.run(move |event, _, control_flow| {
+        if let winit::event::Event::RedrawEventsCleared = event {
+            let size = graphics::drawable_size(&mut c);
+            assert_eq!(w, size.0);
+            assert_eq!(h, size.1);
+
+            *control_flow = winit::event_loop::ControlFlow::Exit;
+            return;
+        }
+
         c.process_event(&event);
     });
-
-    let size = graphics::drawable_size(c);
-    assert_eq!(w, size.0);
-    assert_eq!(h, size.1);
-}
-
-/// Ensure that the transform stack applies operations in the correct order.
-#[test]
-fn test_transform_stack_order() {
-    let (ctx, _e) = &mut tests::make_context();
-    let p1 = graphics::DrawParam::default();
-    let p2 = graphics::DrawParam::default();
-    let t1 = p1.to_matrix();
-    let t2 = p2.to_matrix();
-    graphics::push_transform(ctx, Some(t1));
-    graphics::mul_transform(ctx, t2);
-    let res = crate::nalgebra::Matrix4::<f32>::from(graphics::transform(ctx));
-    let m1: crate::nalgebra::Matrix4<f32> = t1.into();
-    let m2: crate::nalgebra::Matrix4<f32> = t2.into();
-    assert_eq!(res, m2 * m1);
 }
