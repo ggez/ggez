@@ -1,7 +1,7 @@
 //! The simplest possible example that does something.
 
 use ggez::event;
-use ggez::graphics;
+use ggez::graphics::{self, Color};
 use ggez::{Context, GameResult};
 use glam::*;
 
@@ -31,7 +31,7 @@ impl event::EventHandler for MainState {
             Vec2::new(0.0, 0.0),
             100.0,
             2.0,
-            graphics::WHITE,
+            Color::WHITE,
         )?;
         graphics::draw(ctx, &circle, (Vec2::new(self.pos_x, 380.0),))?;
 

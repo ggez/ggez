@@ -11,9 +11,6 @@ use std::rc::Rc;
 
 use super::*;
 
-/// Default size for fonts.
-pub const DEFAULT_FONT_SCALE: f32 = 16.0;
-
 /// A handle referring to a loaded Truetype font.
 ///
 /// This is just an integer referring to a loaded font stored in the
@@ -178,7 +175,7 @@ impl Default for Text {
             bounds: Point2::new(f32::INFINITY, f32::INFINITY),
             layout: Layout::default(),
             font_id: FontId::default(),
-            font_scale: PxScale::from(DEFAULT_FONT_SCALE),
+            font_scale: PxScale::from(Font::DEFAULT_FONT_SCALE),
             cached_metrics: RefCell::new(CachedMetrics::default()),
         }
     }
@@ -255,7 +252,7 @@ impl Text {
             .fragments
             .iter()
             .map(|fragment| {
-                let color = fragment.color.or(color).unwrap_or(WHITE);
+                let color = fragment.color.or(color).unwrap_or(Color::WHITE);
                 let font_id = fragment
                     .font
                     .map(|font| font.font_id)
@@ -398,6 +395,9 @@ impl Drawable for Text {
 }
 
 impl Font {
+    /// Default size for fonts.
+    pub const DEFAULT_FONT_SCALE: f32 = 16.0;
+
     /// Load a new TTF font from the given file.
     pub fn new<P>(context: &mut Context, path: P) -> GameResult<Font>
     where

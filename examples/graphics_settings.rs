@@ -7,7 +7,7 @@ use ggez;
 
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
-use ggez::graphics::{self, DrawMode};
+use ggez::graphics::{self, Color, DrawMode};
 use ggez::timer;
 use ggez::{Context, GameResult};
 
@@ -68,7 +68,7 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, graphics::BLACK);
+        graphics::clear(ctx, Color::BLACK);
         let rotation = timer::ticks(ctx) % 1000;
         let circle = graphics::Mesh::new_circle(
             ctx,
@@ -76,17 +76,17 @@ impl event::EventHandler for MainState {
             Point2::new(0.0, 0.0),
             100.0,
             4.0,
-            graphics::WHITE,
+            Color::WHITE,
         )?;
         graphics::draw(
             ctx,
             &self.image,
-            (Point2::new(400.0, 300.0), 0.0, graphics::WHITE),
+            (Point2::new(400.0, 300.0), 0.0, Color::WHITE),
         )?;
         graphics::draw(
             ctx,
             &circle,
-            (Point2::new(400.0, 300.0), rotation as f32, graphics::WHITE),
+            (Point2::new(400.0, 300.0), rotation as f32, Color::WHITE),
         )?;
 
         // Let's draw a grid so we can see where the window bounds are.
