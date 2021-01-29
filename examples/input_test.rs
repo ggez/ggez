@@ -65,10 +65,15 @@ impl event::EventHandler for MainState {
         println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
     }
 
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, xrel: f32, yrel: f32) {
+    fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32, xrel: f32, yrel: f32) {
         if self.mouse_down {
-            self.pos_x = x;
-            self.pos_y = y;
+            // Mouse coordinates are PHYSICAL coordinates, but here we want logical coordinates
+            // so we need to divide through the scale factor.
+            // In more advanced/realistic scenarios you may need to calculate the logical coordinates
+            // using ggez::graphics::screen_coordinates.
+            let scale_f = graphics::window(ctx).scale_factor() as f32;
+            self.pos_x = x / scale_f;
+            self.pos_y = y / scale_f;
         }
         println!(
             "Mouse motion, x: {}, y: {}, relative x: {}, relative y: {}",
