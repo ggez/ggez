@@ -55,10 +55,6 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32)  {
-        println!("width: {}, height: {}", width, height);
-    }
-
     fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         self.mouse_down = true;
         println!("Mouse button pressed: {:?}, x: {}, y: {}", button, x, y);
