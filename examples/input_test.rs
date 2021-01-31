@@ -144,7 +144,7 @@ impl event::EventHandler for MainState {
 
 pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("input_test", "ggez");
-    let (mut ctx, event_loop) = cb.build()?;
+    let (ctx, event_loop) = cb.build()?;
 
     // remove the comment to see how physical mouse coordinates can differ
     // from logical game coordinates when the screen coordinate system changes
