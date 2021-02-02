@@ -197,13 +197,17 @@ pub extern crate mint;
 
 pub mod audio;
 pub mod conf;
-mod context;
 pub mod error;
 pub mod event;
 pub mod filesystem;
 pub mod graphics;
 pub mod input;
 pub mod timer;
+
+#[cfg(feature = "physics")]
+pub mod physics;
+
+mod context;
 mod vfs;
 
 #[cfg(test)]
