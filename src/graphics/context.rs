@@ -476,15 +476,11 @@ where
 
         window.set_maximized(mode.maximized);
 
-        // we need the scale_factor to counter hidpi-measures, so that our window
-        // is ACTUALLY as big as we asked for
-        let scale_factor = window.scale_factor();
-
         // TODO LATER: find out if single-dimension constraints are possible?
         let min_dimensions = if mode.min_width > 0.0 && mode.min_height > 0.0 {
-            Some(dpi::LogicalSize {
-                width: f64::from(mode.min_width) / scale_factor,
-                height: f64::from(mode.min_height) / scale_factor,
+            Some(dpi::PhysicalSize {
+                width: f64::from(mode.min_width),
+                height: f64::from(mode.min_height),
             })
         } else {
             None
@@ -492,9 +488,9 @@ where
         window.set_min_inner_size(min_dimensions);
 
         let max_dimensions = if mode.max_width > 0.0 && mode.max_height > 0.0 {
-            Some(dpi::LogicalSize {
-                width: f64::from(mode.max_width) / scale_factor,
-                height: f64::from(mode.max_height) / scale_factor,
+            Some(dpi::PhysicalSize {
+                width: f64::from(mode.max_width),
+                height: f64::from(mode.max_height),
             })
         } else {
             None
@@ -505,9 +501,9 @@ where
             FullscreenType::Windowed => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
-                window.set_inner_size(dpi::LogicalSize {
-                    width: f64::from(mode.width) / scale_factor,
-                    height: f64::from(mode.height) / scale_factor,
+                window.set_inner_size(dpi::PhysicalSize {
+                    width: f64::from(mode.width),
+                    height: f64::from(mode.height),
                 });
                 window.set_resizable(mode.resizable);
             }
