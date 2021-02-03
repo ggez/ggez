@@ -307,9 +307,8 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         gfx.set_window_mode(window_mode);
 
         // Calculate and apply the actual initial projection matrix
-        let phys_size = gfx.window.window().inner_size();
-        let w = phys_size.width as f32;
-        let h = phys_size.height as f32;
+        let w = window_mode.width;
+        let h = window_mode.height;
         let rect = Rect {
             x: 0.0,
             y: 0.0,

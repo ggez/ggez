@@ -54,10 +54,10 @@ pub enum FullscreenType {
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq)]
 pub struct WindowMode {
-    /// Logical window width
+    /// Window width
     #[default = 800.0]
     pub width: f32,
-    /// Logical window height
+    /// Window height
     #[default = 600.0]
     pub height: f32,
     /// Whether or not to maximize the window
@@ -90,9 +90,7 @@ pub struct WindowMode {
 }
 
 impl WindowMode {
-    /// Set default window size, or screen resolution in true fullscreen mode.
-    /// Note that the physical window dimensions also depend on the
-    /// [`scale_factor`](https://docs.rs/winit/0.24.0/winit/window/struct.Window.html#method.scale_factor) of the window.
+    /// Set default window size.
     pub fn dimensions(mut self, width: f32, height: f32) -> Self {
         self.width = width;
         self.height = height;
