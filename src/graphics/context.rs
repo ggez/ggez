@@ -303,6 +303,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             glyph_cache,
             glyph_state,
         };
+        // this also resizes the window, so that it's ACTUALLY (physically) as big as WindowMode states
         gfx.set_window_mode(window_mode);
 
         // Calculate and apply the actual initial projection matrix
@@ -476,11 +477,15 @@ where
 
         window.set_maximized(mode.maximized);
 
+        // we need the scale_factor to counter hidpi-measures, so that our window
+        // is ACTUALLY as big as we asked for
+        let scale_factor = window.scale_factor();
+
         // TODO LATER: find out if single-dimension constraints are possible?
         let min_dimensions = if mode.min_width > 0.0 && mode.min_height > 0.0 {
             Some(dpi::LogicalSize {
-                width: f64::from(mode.min_width),
-                height: f64::from(mode.min_height),
+                width: f64::from(mode.min_width) / scale_factor,
+                height: f64::from(mode.min_height) / scale_factor,
             })
         } else {
             None
@@ -489,8 +494,8 @@ where
 
         let max_dimensions = if mode.max_width > 0.0 && mode.max_height > 0.0 {
             Some(dpi::LogicalSize {
-                width: f64::from(mode.max_width),
-                height: f64::from(mode.max_height),
+                width: f64::from(mode.max_width) / scale_factor,
+                height: f64::from(mode.max_height) / scale_factor,
             })
         } else {
             None
@@ -502,17 +507,17 @@ where
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
                 window.set_inner_size(dpi::LogicalSize {
-                    width: f64::from(mode.width),
-                    height: f64::from(mode.height),
+                    width: f64::from(mode.width) / scale_factor,
+                    height: f64::from(mode.height) / scale_factor,
                 });
                 window.set_resizable(mode.resizable);
             }
             FullscreenType::True => {
                 window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
-                window.set_inner_size(dpi::LogicalSize {
-                    width: f64::from(mode.width),
-                    height: f64::from(mode.height),
-                });
+                if let Some(monitor) = window.current_monitor() {
+                    window.set_inner_size(monitor.size());
+                    window.set_outer_position(monitor.position());
+                }
             }
             FullscreenType::Desktop => {
                 window.set_fullscreen(None);

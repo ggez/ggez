@@ -757,8 +757,8 @@ pub fn window(context: &Context) -> &glutin::window::Window {
 pub fn size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     let window = gfx.window.window();
-    let logical_size = window.outer_size().to_logical(window.scale_factor());
-    (logical_size.width, logical_size.height)
+    let physical_size = window.outer_size();
+    (physical_size.width as f32, physical_size.height as f32)
 }
 
 /// Returns the size of the window's underlying drawable in pixels as (width, height).
@@ -766,8 +766,8 @@ pub fn size(context: &Context) -> (f32, f32) {
 pub fn drawable_size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     let window = gfx.window.window();
-    let logical_size = window.inner_size().to_logical(window.scale_factor());
-    (logical_size.width, logical_size.height)
+    let physical_size = window.inner_size();
+    (physical_size.width as f32, physical_size.height as f32)
 }
 
 /// Return raw window context
