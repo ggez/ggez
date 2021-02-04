@@ -869,8 +869,7 @@ pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
                 y: rect.y - offset.y * rect.h,
             };
             // apply the scale
-            let real_scale = (param.src.w * scale.x,
-                              param.src.h * scale.y);
+            let real_scale = (param.src.w * scale.x, param.src.h * scale.y);
             r.w = real_scale.0 * rect.w;
             r.h = real_scale.1 * rect.h;
             r.x *= real_scale.0;
