@@ -67,7 +67,7 @@ impl event::EventHandler for MainState {
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
             ))
             .rotation((time % cycle) as f32 / cycle as f32 * 6.28)
-            .offset(Vec2::new(750.0, 750.0));
+            .offset(Vec2::new(0.4, 0.4)); // CAUTION: using an offset here is currently very slow
         graphics::draw(ctx, &self.spritebatch, param)?;
         self.spritebatch.clear();
 
