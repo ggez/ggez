@@ -109,14 +109,12 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_pixel_format(24, 8)
             .with_vsync(window_setup.vsync);
 
-        let window_size = dpi::LogicalSize::<f64>::from((window_mode.width, window_mode.height));
+        let window_size = dpi::PhysicalSize::<f64>::from((window_mode.width, window_mode.height));
         let mut window_builder = winit::window::WindowBuilder::new()
             .with_title(window_setup.title.clone())
             .with_inner_size(window_size)
             .with_resizable(window_mode.resizable)
-            .with_visible(window_mode.visible)
-            .with_inner_size(window_size)
-            .with_resizable(window_mode.resizable);
+            .with_visible(window_mode.visible);
 
         // We need to disable drag-and-drop on windows for multithreaded stuff like cpal to work.
         // See winit bug here: https://github.com/rust-windowing/winit/pull/1524
@@ -303,7 +301,6 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             glyph_cache,
             glyph_state,
         };
-        // this also resizes the window, so that it's ACTUALLY (physically) as big as WindowMode states
         gfx.set_window_mode(window_mode);
 
         // Calculate and apply the actual initial projection matrix
