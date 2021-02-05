@@ -301,7 +301,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             glyph_cache,
             glyph_state,
         };
-        gfx.set_window_mode(window_mode);
+        gfx.set_window_mode(window_mode)?;
 
         // Calculate and apply the actual initial projection matrix
         let w = window_mode.width;
@@ -468,7 +468,7 @@ where
     }
 
     /// Sets window mode from a WindowMode object.
-    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) {
+    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
         let window = self.window.window();
 
         window.set_maximized(mode.maximized);
@@ -493,6 +493,7 @@ where
             None
         };
         window.set_max_inner_size(max_dimensions);
+        window.set_visible(mode.visible);
 
         match mode.fullscreen_type {
             FullscreenType::Windowed => {
@@ -505,10 +506,21 @@ where
                 window.set_resizable(mode.resizable);
             }
             FullscreenType::True => {
-                window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
                 if let Some(monitor) = window.current_monitor() {
-                    window.set_inner_size(monitor.size());
-                    window.set_outer_position(monitor.position());
+                    let v_modes = monitor.video_modes();
+                    // try to find a video mode with a matching resolution
+                    let mut match_found = false;
+                    for v_mode in v_modes {
+                        let size = v_mode.size();
+                        if (size.width, size.height) == (mode.width as u32, mode.height as u32) {
+                            window.set_fullscreen(Some(winit::window::Fullscreen::Exclusive(v_mode)));
+                            match_found = true;
+                            break;
+                        }
+                    }
+                    if !match_found {
+                        return Err(GameError::WindowError(format!("resolution {}x{} is not supported by this monitor", mode.width, mode.height)));
+                    }
                 }
             }
             FullscreenType::Desktop => {
@@ -521,7 +533,7 @@ where
             }
         }
 
-        window.set_visible(mode.visible);
+        Ok(())
     }
 
     /// Communicates changes in the viewport size between glutin and gfx.
