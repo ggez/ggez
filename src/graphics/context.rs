@@ -513,13 +513,17 @@ where
                     for v_mode in v_modes {
                         let size = v_mode.size();
                         if (size.width, size.height) == (mode.width as u32, mode.height as u32) {
-                            window.set_fullscreen(Some(winit::window::Fullscreen::Exclusive(v_mode)));
+                            window
+                                .set_fullscreen(Some(winit::window::Fullscreen::Exclusive(v_mode)));
                             match_found = true;
                             break;
                         }
                     }
                     if !match_found {
-                        return Err(GameError::WindowError(format!("resolution {}x{} is not supported by this monitor", mode.width, mode.height)));
+                        return Err(GameError::WindowError(format!(
+                            "resolution {}x{} is not supported by this monitor",
+                            mode.width, mode.height
+                        )));
                     }
                 }
             }
