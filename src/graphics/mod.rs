@@ -701,6 +701,9 @@ pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -
 }
 
 /// Sets the window size/resolution to the specified width and height.
+///
+/// Note:   These dimensions are only interpreted as resolutions in true fullscreen mode.
+///         If the selected resolution is not supported this function will return an Error.
 pub fn set_drawable_size(context: &mut Context, width: f32, height: f32) -> GameResult {
     let window_mode = context.conf.window_mode.dimensions(width, height);
     set_mode(context, window_mode)
