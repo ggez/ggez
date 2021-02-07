@@ -350,9 +350,9 @@ impl Text {
             panic!();
         }
         if let Ok(metrics) = self.cached_metrics.try_borrow() {
-            return std::cell::Ref::map(metrics, |metrics| &metrics.glyph_positions);
+            std::cell::Ref::map(metrics, |metrics| &metrics.glyph_positions)
         } else {
-            panic!();
+            panic!()
         }
     }
 
