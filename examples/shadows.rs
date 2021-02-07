@@ -400,7 +400,7 @@ impl event::EventHandler for MainState {
     }
 
     fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32, _xrel: f32, _yrel: f32) {
-        let (w, h) = graphics::size(ctx);
+        let (w, h) = graphics::drawable_size(ctx);
         let (x, y) = (x / w as f32, 1.0 - y / h as f32);
         self.torch.pos = [x, y];
     }
