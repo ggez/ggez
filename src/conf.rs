@@ -435,14 +435,6 @@ impl Conf {
     }
 }
 
-/// Returns an iterator providing all resolutions supported on the current monitor.
-pub fn supported_resolutions(ctx: &crate::Context) -> impl Iterator<Item=winit::dpi::PhysicalSize<u32>> {
-    let gfx = &ctx.gfx_context;
-    let window = gfx.window.window();
-    let monitor = window.current_monitor().unwrap();
-    monitor.video_modes().map(|v_mode| v_mode.size())
-}
-
 #[cfg(test)]
 mod tests {
     use crate::conf;
