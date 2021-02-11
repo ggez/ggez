@@ -114,14 +114,12 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_pixel_format(24, 8)
             .with_vsync(window_setup.vsync);
 
-        let window_size = dpi::LogicalSize::<f64>::from((window_mode.width, window_mode.height));
+        let window_size = dpi::PhysicalSize::<f64>::from((window_mode.width, window_mode.height));
         let mut window_builder = winit::window::WindowBuilder::new()
             .with_title(window_setup.title.clone())
             .with_inner_size(window_size)
             .with_resizable(window_mode.resizable)
-            .with_visible(window_mode.visible)
-            .with_inner_size(window_size)
-            .with_resizable(window_mode.resizable);
+            .with_visible(window_mode.visible);
 
         // We need to disable drag-and-drop on windows for multithreaded stuff like cpal to work.
         // See winit bug here: https://github.com/rust-windowing/winit/pull/1524
@@ -308,7 +306,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             glyph_cache,
             glyph_state,
         };
-        gfx.set_window_mode(window_mode);
+        gfx.set_window_mode(window_mode)?;
 
         // Calculate and apply the actual initial projection matrix
         let w = window_mode.width;
@@ -475,14 +473,14 @@ where
     }
 
     /// Sets window mode from a WindowMode object.
-    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) {
+    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
         let window = self.window.window();
 
         window.set_maximized(mode.maximized);
 
         // TODO LATER: find out if single-dimension constraints are possible?
         let min_dimensions = if mode.min_width > 0.0 && mode.min_height > 0.0 {
-            Some(dpi::LogicalSize {
+            Some(dpi::PhysicalSize {
                 width: f64::from(mode.min_width),
                 height: f64::from(mode.min_height),
             })
@@ -492,7 +490,7 @@ where
         window.set_min_inner_size(min_dimensions);
 
         let max_dimensions = if mode.max_width > 0.0 && mode.max_height > 0.0 {
-            Some(dpi::LogicalSize {
+            Some(dpi::PhysicalSize {
                 width: f64::from(mode.max_width),
                 height: f64::from(mode.max_height),
             })
@@ -500,23 +498,39 @@ where
             None
         };
         window.set_max_inner_size(max_dimensions);
+        window.set_visible(mode.visible);
 
         match mode.fullscreen_type {
             FullscreenType::Windowed => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
-                window.set_inner_size(dpi::LogicalSize {
+                window.set_inner_size(dpi::PhysicalSize {
                     width: f64::from(mode.width),
                     height: f64::from(mode.height),
                 });
                 window.set_resizable(mode.resizable);
             }
             FullscreenType::True => {
-                window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
-                window.set_inner_size(dpi::LogicalSize {
-                    width: f64::from(mode.width),
-                    height: f64::from(mode.height),
-                });
+                if let Some(monitor) = window.current_monitor() {
+                    let v_modes = monitor.video_modes();
+                    // try to find a video mode with a matching resolution
+                    let mut match_found = false;
+                    for v_mode in v_modes {
+                        let size = v_mode.size();
+                        if (size.width, size.height) == (mode.width as u32, mode.height as u32) {
+                            window
+                                .set_fullscreen(Some(winit::window::Fullscreen::Exclusive(v_mode)));
+                            match_found = true;
+                            break;
+                        }
+                    }
+                    if !match_found {
+                        return Err(GameError::WindowError(format!(
+                            "resolution {}x{} is not supported by this monitor",
+                            mode.width, mode.height
+                        )));
+                    }
+                }
             }
             FullscreenType::Desktop => {
                 window.set_fullscreen(None);
@@ -528,7 +542,7 @@ where
             }
         }
 
-        window.set_visible(mode.visible);
+        Ok(())
     }
 
     /// Communicates changes in the viewport size between glutin and gfx.

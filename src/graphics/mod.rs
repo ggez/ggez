@@ -681,33 +681,37 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
 /// [`set_screen_coordinates()`](fn.set_screen_coordinates.html) after
 /// changing the window size to make sure everything is what you want
 /// it to be.
-pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult {
+pub fn set_mode(context: &mut Context, mut mode: WindowMode) -> GameResult {
     let gfx = &mut context.gfx_context;
-    gfx.set_window_mode(mode);
+    let result = gfx.set_window_mode(mode);
+    if let Err(GameError::WindowError(_)) = result {
+        // true fullscreen could not be set because the video mode matching the resolution is missing
+        // so keep the old one
+        mode.fullscreen_type = context.conf.window_mode.fullscreen_type;
+    }
     // Save updated mode.
     context.conf.window_mode = mode;
-    Ok(())
+    result
 }
 
 /// Sets the window to fullscreen or back.
 pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -> GameResult {
-    let mut window_mode = context.conf.window_mode;
-    window_mode.fullscreen_type = fullscreen;
+    let window_mode = context.conf.window_mode.fullscreen_type(fullscreen);
     set_mode(context, window_mode)
 }
 
 /// Sets the window size/resolution to the specified width and height.
+///
+/// Note:   These dimensions are only interpreted as resolutions in true fullscreen mode.
+///         If the selected resolution is not supported this function will return an Error.
 pub fn set_drawable_size(context: &mut Context, width: f32, height: f32) -> GameResult {
-    let mut window_mode = context.conf.window_mode;
-    window_mode.width = width;
-    window_mode.height = height;
+    let window_mode = context.conf.window_mode.dimensions(width, height);
     set_mode(context, window_mode)
 }
 
 /// Sets whether or not the window is resizable.
 pub fn set_resizable(context: &mut Context, resizable: bool) -> GameResult {
-    let mut window_mode = context.conf.window_mode;
-    window_mode.resizable = resizable;
+    let window_mode = context.conf.window_mode.resizable(resizable);
     set_mode(context, window_mode)
 }
 
@@ -751,14 +755,24 @@ pub fn window(context: &Context) -> &glutin::window::Window {
     gfx.window.window()
 }
 
+/// Returns an iterator providing all resolutions supported by the current monitor.
+pub fn supported_resolutions(
+    ctx: &crate::Context,
+) -> impl Iterator<Item = winit::dpi::PhysicalSize<u32>> {
+    let gfx = &ctx.gfx_context;
+    let window = gfx.window.window();
+    let monitor = window.current_monitor().unwrap();
+    monitor.video_modes().map(|v_mode| v_mode.size())
+}
+
 /// Returns the size of the window in pixels as (width, height),
 /// including borders, titlebar, etc.
 /// Returns zeros if the window doesn't exist.
 pub fn size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     let window = gfx.window.window();
-    let logical_size = window.outer_size().to_logical(window.scale_factor());
-    (logical_size.width, logical_size.height)
+    let physical_size = window.outer_size();
+    (physical_size.width as f32, physical_size.height as f32)
 }
 
 /// Returns the size of the window's underlying drawable in pixels as (width, height).
@@ -766,8 +780,8 @@ pub fn size(context: &Context) -> (f32, f32) {
 pub fn drawable_size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     let window = gfx.window.window();
-    let logical_size = window.inner_size().to_logical(window.scale_factor());
-    (logical_size.width, logical_size.height)
+    let physical_size = window.inner_size();
+    (physical_size.width as f32, physical_size.height as f32)
 }
 
 /// Return raw window context
