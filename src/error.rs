@@ -23,7 +23,7 @@ pub enum GameError {
     /// Something went wrong in the renderer
     RenderError(String),
     /// Something went wrong in the audio playback
-    AudioError(Option<Arc<dyn Error + 'static>>, String),
+    AudioError(Option<Arc<dyn Error + Send + 'static>>, String),
     /// Something went wrong trying to set or get window properties.
     WindowError(String),
     /// Something went wrong trying to create a window
