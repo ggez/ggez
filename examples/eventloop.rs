@@ -32,7 +32,7 @@ pub fn main() -> GameResult {
         events_loop.run_return(|event, _window_target, control_flow| {
             // This tells `ggez` to update it's internal states, should the event require that.
             // These include cursor position, view updating on resize, etc.
-            ctx.process_event(&event);
+            event::process_event(ctx, &event);
             match event {
                 Event::WindowEvent { event, .. } => match event {
                     WindowEvent::CloseRequested => event::quit(ctx),
