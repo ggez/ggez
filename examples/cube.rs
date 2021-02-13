@@ -5,7 +5,7 @@
 //! drawing code entirely and write your own.
 
 #![allow(clippy::single_component_path_imports)]
-use gfx;
+use gfx; //single component path import required for macro's use.
 use gfx::*;
 
 use gfx::texture;

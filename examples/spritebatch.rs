@@ -1,6 +1,7 @@
 //! An example of how to use a `SpriteBatch`.
 //!
 //! You really want to run this one in release mode.
+#![allow(clippy::unnecessary_wraps)]
 
 use ggez::event;
 use ggez::graphics::{self, Color};

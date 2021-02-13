@@ -3,8 +3,6 @@
 //!
 //! Prints instructions to the console.
 
-use ggez;
-
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, Color, DrawMode};
@@ -12,7 +10,6 @@ use ggez::timer;
 use ggez::{Context, GameResult};
 
 use argh::FromArgs;
-use glam;
 
 use std::env;
 use std::path;
