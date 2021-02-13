@@ -258,9 +258,7 @@ where
                     // trace!("ignoring window event {:?}", x);
                 }
             },
-            Event::DeviceEvent { event, .. } => match event {
-                _ => (),
-            },
+            Event::DeviceEvent { .. } => (),
             Event::Resumed => (),
             Event::Suspended => (),
             Event::NewEvents(_) => (),

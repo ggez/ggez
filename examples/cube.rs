@@ -4,10 +4,9 @@
 //! the underlying `gfx-rs` data types, so you can bypass ggez's
 //! drawing code entirely and write your own.
 
+#![allow(clippy::single_component_path_imports)]
 use gfx;
 use gfx::*;
-use gfx_device_gl;
-use ggez;
 
 use gfx::texture;
 use gfx::traits::FactoryExt;

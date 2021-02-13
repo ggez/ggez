@@ -1,8 +1,6 @@
 //! A very simple shader example.
 
 use gfx::{self, *};
-use ggez;
-use glam;
 
 use ggez::event;
 use ggez::graphics::{self, Color, DrawMode};

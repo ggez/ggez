@@ -43,6 +43,7 @@ impl<S> CanvasGeneric<S>
 where
     S: BackendSpec,
 {
+    #[allow(clippy::new_ret_no_self)]
     /// Create a new `Canvas` with the given size and number of samples.
     pub fn new(
         ctx: &mut Context,

@@ -1,7 +1,3 @@
-use ggez;
-use glam;
-use oorandom;
-
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::event;
@@ -50,11 +46,11 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         filesystem::print_all(ctx);
 
-        let image = graphics::Image::new(ctx, "/dragon1.png").unwrap();
+        let image = graphics::Image::new(ctx, "/dragon1.png")?;
 
-        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf").unwrap();
+        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
         let text = graphics::Text::new(("Hello world!", font, 48.0));
-        let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
+        let mut sound = audio::Source::new(ctx, "/sound.ogg")?;
 
         let pixel_sized_text = graphics::Text::new(("This text is 32 pixels high", font, 32.0));
 
