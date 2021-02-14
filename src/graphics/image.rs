@@ -344,15 +344,20 @@ impl Drawable for Image {
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
+        let scale_x = src_width * f32::from(self.width);
+        let scale_y = src_height * f32::from(self.height);
         let new_param = match param.trans {
             Transform::Values { scale, .. } => {
                 let new_scale = mint::Vector2 {
-                    x: scale.x * src_width * f32::from(self.width),
-                    y: scale.y * src_height * f32::from(self.height),
+                    x: scale.x * scale_x,
+                    y: scale.y * scale_y,
                 };
                 param.scale(new_scale)
             }
-            Transform::Matrix(_) => param,
+            Transform::Matrix(m) => {
+                let m_scale = Matrix4::from_scale((scale_x, scale_y, 1.0).into());
+                param.transform(Matrix4::from(m) * m_scale)
+            }
         };
 
         gfx.update_instance_properties(new_param)?;
