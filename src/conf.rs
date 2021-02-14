@@ -23,6 +23,8 @@ pub enum FullscreenType {
     Windowed,
     /// True fullscreen, which used to be preferred 'cause it can have
     /// small performance benefits over windowed fullscreen.
+    ///
+    /// Also it allows us to set different resolutions.
     True,
     /// Windowed fullscreen, generally preferred over real fullscreen
     /// these days 'cause it plays nicer with multiple monitors.

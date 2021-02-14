@@ -163,6 +163,6 @@ fn sanity_check_window_sizes() {
             return;
         }
 
-        c.process_event(&event);
+        event::process_event(&mut c, &event);
     });
 }

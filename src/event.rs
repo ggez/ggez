@@ -12,10 +12,6 @@
 
 use winit::{self, dpi};
 
-// TODO LATER: I kinda hate all these re-exports.  I kinda hate
-// a lot of the details of the `EventHandler` and input now though,
-// and look forward to ripping it all out and replacing it with newer winit.
-
 /// A mouse button.
 pub use winit::event::MouseButton;
 
@@ -179,7 +175,7 @@ where
         let ctx = &mut ctx;
         let state = &mut state;
 
-        ctx.process_event(&event);
+        process_event(ctx, &event);
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(logical_size) => {
@@ -307,4 +303,66 @@ where
             Event::LoopDestroyed => (),
         }
     })
+}
+
+/// Feeds an `Event` into the `Context` so it can update any internal
+/// state it needs to, such as detecting window resizes.  If you are
+/// rolling your own event loop, you should call this on the events
+/// you receive before processing them yourself.
+pub fn process_event(ctx: &mut Context, event: &winit::event::Event<()>) {
+    match event {
+        winit_event::Event::WindowEvent { event, .. } => match event {
+            winit_event::WindowEvent::Resized(physical_size) => {
+                ctx.gfx_context.window.resize(*physical_size);
+                ctx.gfx_context.resize_viewport();
+            }
+            winit_event::WindowEvent::CursorMoved {
+                position: logical_position,
+                ..
+            } => {
+                ctx.mouse_context
+                    .set_last_position(crate::graphics::Point2::new(
+                        logical_position.x as f32,
+                        logical_position.y as f32,
+                    ));
+            }
+            winit_event::WindowEvent::MouseInput { button, state, .. } => {
+                let pressed = match state {
+                    winit_event::ElementState::Pressed => true,
+                    winit_event::ElementState::Released => false,
+                };
+                ctx.mouse_context.set_button(*button, pressed);
+            }
+            winit_event::WindowEvent::ModifiersChanged(mods) => ctx
+                .keyboard_context
+                .set_modifiers(crate::input::keyboard::KeyMods::from(*mods)),
+            winit_event::WindowEvent::KeyboardInput {
+                input:
+                    winit::event::KeyboardInput {
+                        state,
+                        virtual_keycode: Some(keycode),
+                        ..
+                    },
+                ..
+            } => {
+                let pressed = match state {
+                    winit_event::ElementState::Pressed => true,
+                    winit_event::ElementState::Released => false,
+                };
+                ctx.keyboard_context.set_key(*keycode, pressed);
+            }
+            winit_event::WindowEvent::ScaleFactorChanged { .. } => {
+                // Nope.
+            }
+            _ => (),
+        },
+        winit_event::Event::DeviceEvent {
+            event: winit_event::DeviceEvent::MouseMotion { delta: (x, y) },
+            ..
+        } => ctx
+            .mouse_context
+            .set_last_delta(crate::graphics::Point2::new(*x as f32, *y as f32)),
+
+        _ => (),
+    };
 }
