@@ -6,8 +6,7 @@
 
 ## What is this?
 
-[![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez)
-[![Build status](https://ci.appveyor.com/api/projects/status/3v9lsq6n9li7kxim/branch/master?svg=true)](https://ci.appveyor.com/project/svenstaro/ggez/branch/master)
+![Build status](https://github.com/ggez/ggez/workflows/CI/badge.svg)
 [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ggez/ggez/blob/master/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
