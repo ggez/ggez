@@ -23,7 +23,7 @@ pub enum GameError {
     /// Something went wrong in the renderer
     RenderError(String),
     /// Something went wrong in the audio playback
-    AudioError(Option<Arc<dyn Error + Send + 'static>>, String),
+    AudioError(String),
     /// Something went wrong trying to set or get window properties.
     WindowError(String),
     /// Something went wrong trying to create a window
@@ -37,7 +37,7 @@ pub enum GameError {
     /// Something went wrong compiling shaders
     ShaderProgramError(gfx::shade::ProgramError),
     /// Something went wrong with the `gilrs` gamepad-input library.
-    GamepadError(Arc<gilrs::Error>),
+    GamepadError(String),
     /// Something went wrong with the `lyon` shape-tesselation library.
     LyonError(String),
     /// A custom error type for use by users of ggez.
@@ -66,13 +66,11 @@ impl fmt::Display for GameError {
 }
 
 impl Error for GameError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
+    fn cause(&self) -> Option<&dyn Error> {
         match *self {
             GameError::WindowCreationError(ref e) => Some(&**e),
             GameError::IOError(ref e) => Some(&**e),
             GameError::ShaderProgramError(ref e) => Some(e),
-            GameError::GamepadError(ref e) => Some(&**e),
-            GameError::AudioError(Some(ref e), _) => Some(&**e),
             _ => None,
         }
     }
@@ -112,14 +110,14 @@ impl From<zip::result::ZipError> for GameError {
 impl From<DecoderError> for GameError {
     fn from(e: DecoderError) -> GameError {
         let errstr = format!("Audio decoder error: {:?}", e);
-        GameError::AudioError(Some(Arc::new(e)), errstr)
+        GameError::AudioError(errstr)
     }
 }
 
 impl From<PlayError> for GameError {
     fn from(e: PlayError) -> GameError {
         let errstr = format!("Audio playing error: {:?}", e);
-        GameError::AudioError(Some(Arc::new(e)), errstr)
+        GameError::AudioError(errstr)
     }
 }
 
@@ -223,7 +221,8 @@ impl From<glutin::ContextError> for GameError {
 
 impl From<gilrs::Error> for GameError {
     fn from(s: gilrs::Error) -> GameError {
-        GameError::GamepadError(Arc::new(s))
+        let errstr = format!("Gamepad error: {}", s);
+        GameError::GamepadError(errstr)
     }
 }
 
