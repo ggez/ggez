@@ -204,6 +204,15 @@ impl DrawParam {
         }
     }
 
+    /// Set the transformation matrix of the drawable.
+    pub fn transform<M>(mut self, transform: M) -> Self
+    where
+        M: Into<mint::ColumnMatrix4<f32>>,
+    {
+        self.trans = Transform::Matrix(transform.into());
+        self
+    }
+
     pub(crate) fn to_instance_properties(&self, srgb: bool) -> InstanceProperties {
         let mat: [[f32; 4]; 4] = *self.trans.to_bare_matrix().as_ref();
         let color: [f32; 4] = if srgb {
