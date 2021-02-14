@@ -1,5 +1,3 @@
-![Maintenance](https://img.shields.io/badge/maintenance-passively--maintained-yellowgreen.svg)
-
 # ggez
 
 [![ggez logo](docs/ggez-logo-maroon-full.svg)](http://ggez.rs/)
@@ -11,6 +9,7 @@
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ggez/ggez/blob/master/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
 [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
+![Maintenance](https://img.shields.io/badge/maintenance-passively--maintained-yellowgreen.svg)
 
 ggez is a Rust library to create a Good Game Easily.
 
