@@ -4,6 +4,7 @@ use std::path;
 
 #[test]
 #[ignore]
+#[allow(clippy::float_cmp)]
 pub fn context_build_tests() {
     let confs = vec![
         conf::Conf::default().window_mode(conf::WindowMode::default().dimensions(800.0, 600.0)),

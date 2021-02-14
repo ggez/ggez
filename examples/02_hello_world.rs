@@ -1,8 +1,5 @@
 //! Basic hello world example.
 
-use ggez;
-use glam; // Requires feature "mint"
-
 use ggez::event;
 use ggez::graphics;
 use ggez::{Context, GameResult};

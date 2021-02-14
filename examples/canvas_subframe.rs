@@ -2,9 +2,6 @@
 //!
 //! You really want to run this one in release mode.
 
-use ggez;
-use glam;
-
 use ggez::event;
 use ggez::graphics::{self, Color};
 use ggez::timer;
@@ -97,14 +94,14 @@ impl event::EventHandler for MainState {
         // Bounce the rect if necessary
         let (w, h) = graphics::size(ctx);
         if self.draw_pt.x + (w as f32 / 2.0) > (w as f32) || self.draw_pt.x < 0.0 {
-            self.draw_vec.x = self.draw_vec.x * -1.0;
+            self.draw_vec.x *= -1.0;
         }
         if self.draw_pt.y + (h as f32 / 2.0) > (h as f32 / 2.0)
             || self.draw_pt.y < -(h as f32 / 2.0)
         {
-            self.draw_vec.y = self.draw_vec.y * -1.0;
+            self.draw_vec.y *= -1.0;
         }
-        self.draw_pt = self.draw_pt + self.draw_vec;
+        self.draw_pt += self.draw_vec;
         Ok(())
     }
 

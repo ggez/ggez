@@ -769,6 +769,7 @@ impl VFS for ZipFS {
         }
     }
 
+    #[allow(clippy::needless_collect)]
     /// Zip files don't have real directories, so we (incorrectly) hack it by
     /// just looking for a path prefix for now.
     fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {

@@ -817,6 +817,7 @@ pub fn clear_font_cache(ctx: &mut Context) {
     ctx.gfx_context.glyph_state = glyph_state;
 }
 
+#[allow(clippy::type_complexity)]
 /// Returns raw `gfx-rs` state objects, if you want to use `gfx-rs` to write
 /// your own graphics pipeline then this gets you the interfaces you need
 /// to do so.
@@ -922,7 +923,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().scale([0.5, 0.5]);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: -0.5,
                 y: -0.5,
@@ -939,7 +940,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().offset([0.5, 0.5]);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: -1.5,
                 y: -1.5,
@@ -956,7 +957,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().rotation(PI * 0.5);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: -1.0,
                 y: 1.0,
@@ -976,7 +977,7 @@ mod tests {
                 .scale([0.5, 0.5])
                 .offset([0.0, 1.0])
                 .rotation(PI * 0.5);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: 0.5,
                 y: -0.5,

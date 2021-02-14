@@ -2,8 +2,6 @@
 //! and canvas's to do 2D GPU shadows.
 
 use gfx::{self, *};
-use ggez;
-use glam;
 
 use ggez::conf;
 use ggez::event;

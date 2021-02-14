@@ -2,7 +2,6 @@
 
 use glam::*;
 
-use ggez;
 use ggez::event;
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
 use ggez::timer;
@@ -181,7 +180,7 @@ pub fn main() -> GameResult {
 
     let (mut ctx, events_loop) = cb.build()?;
 
-    println!("{}", graphics::renderer_info(&mut ctx)?);
+    println!("{}", graphics::renderer_info(&ctx)?);
     let state = MainState::new(&mut ctx).unwrap();
     event::run(ctx, events_loop, state)
 }

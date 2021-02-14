@@ -544,10 +544,10 @@ mod tests {
         assert_eq!(black, b1);
         let b2: u32 = black.to_rgba_u32();
         assert_eq!(b2, 0x0000_00FFu32);
-        assert_eq!(black, Color::from_rgb_u32(0x00_0000u32));
-        assert_eq!(black, Color::from_rgba_u32(0x00_0000FFu32));
+        assert_eq!(black, Color::from_rgb_u32(0x0000_0000u32));
+        assert_eq!(black, Color::from_rgba_u32(0x0000_00FFu32));
 
-        let puce1 = Color::from_rgb_u32(0xCC_8899u32);
+        let puce1 = Color::from_rgb_u32(0x00CC_8899u32);
         let puce2 = Color::from_rgba_u32(0xCC88_99FFu32);
         let puce3 = Color::from((0xCC, 0x88, 0x99, 255));
         let puce4 = Color::new(0.80, 0.53333336, 0.60, 1.0);

@@ -190,6 +190,7 @@ pub type Shader<C> = ShaderGeneric<graphics::GlBackendSpec, C>;
 
 type ShaderHandlePtr<Spec> = Box<dyn ShaderHandle<Spec>>;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn create_shader<C, S, Spec>(
     vertex_source: &[u8],
     pixel_source: &[u8],
@@ -270,6 +271,7 @@ where
     Spec: graphics::BackendSpec,
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
 {
+    #[allow(clippy::new_ret_no_self)]
     /// Create a new `Shader` given source files, constants and a name.
     ///
     /// In order to use a specific blend mode when this shader is being

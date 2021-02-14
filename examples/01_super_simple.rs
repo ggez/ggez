@@ -1,4 +1,5 @@
 //! The simplest possible example that does something.
+#![allow(clippy::unnecessary_wraps)]
 
 use ggez::event;
 use ggez::graphics::{self, Color};
