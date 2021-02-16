@@ -111,7 +111,8 @@ impl event::EventHandler for MainState {
     ) {
         if let event::KeyCode::Space = keycode {
             self.screen_bounds_idx = (self.screen_bounds_idx + 1) % self.screen_bounds.len();
-            graphics::set_screen_coordinates(ctx, self.screen_bounds[self.screen_bounds_idx]).unwrap();
+            graphics::set_screen_coordinates(ctx, self.screen_bounds[self.screen_bounds_idx])
+                .unwrap();
         }
     }
 }

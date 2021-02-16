@@ -40,9 +40,11 @@ pub fn main() -> GameResult {
                                 ..
                             },
                         ..
-                    } => if let event::KeyCode::Escape = keycode {
-                        *control_flow = winit::event_loop::ControlFlow::Exit
-                    },
+                    } => {
+                        if let event::KeyCode::Escape = keycode {
+                            *control_flow = winit::event_loop::ControlFlow::Exit
+                        }
+                    }
                     // `CloseRequested` and `KeyboardInput` events won't appear here.
                     x => println!("Other window event fired: {:?}", x),
                 },
