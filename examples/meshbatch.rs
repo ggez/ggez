@@ -72,7 +72,6 @@ impl event::EventHandler for MainState {
 
         // Update first 50 instances in the mesh batch
         let delta_time = (timer::duration_to_f64(timer::delta(ctx)) * 1000.0) as f32;
-
         let instances = self.mesh_batch.get_instance_params_mut();
         for i in 0..50 {
             if let graphics::Transform::Values {
