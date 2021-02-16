@@ -181,6 +181,7 @@
 #![deny(unsafe_code)]
 #![warn(bare_trait_objects)]
 #![warn(missing_copy_implementations)]
+#![allow(clippy::float_cmp)]
 
 #[macro_use]
 extern crate bitflags;

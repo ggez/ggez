@@ -1,7 +1,5 @@
 //! An example of how to use a `MeshBatch`.
 
-use ggez;
-
 use ggez::event;
 use ggez::graphics::{self, Color};
 use ggez::timer;
@@ -65,6 +63,7 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
+    #![allow(clippy::needless_range_loop)]
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         if timer::ticks(ctx) % 100 == 0 {
             println!("Delta frame time: {:?} ", timer::delta(ctx));
@@ -73,6 +72,7 @@ impl event::EventHandler for MainState {
 
         // Update first 50 instances in the mesh batch
         let delta_time = (timer::duration_to_f64(timer::delta(ctx)) * 1000.0) as f32;
+
         let instances = self.mesh_batch.get_instance_params_mut();
         for i in 0..50 {
             if let graphics::Transform::Values {

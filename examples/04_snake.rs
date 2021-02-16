@@ -13,10 +13,8 @@
 //! Original repo: https://github.com/termhn/ggez_snake
 
 // First we'll import the crates we need for our game;
-// in this case that is just `ggez` and `oorandom` (and `getrandom`
+// in this case that is just `oorandom` (and `getrandom`
 // to seed the RNG.)
-use getrandom;
-use ggez;
 use oorandom::Rand32;
 
 // Next we need to actually `use` the pieces of ggez that we are going
@@ -79,7 +77,7 @@ where
 {
     fn modulo(&self, n: T) -> T {
         // Because of our trait bounds, we can now apply these operators.
-        (self.clone() % n.clone() + n.clone()) % n.clone()
+        (self.clone() % n.clone() + n.clone()) % n
     }
 }
 
@@ -269,7 +267,7 @@ impl Snake {
             head: Segment::new(pos),
             dir: Direction::Right,
             last_update_dir: Direction::Right,
-            body: body,
+            body,
             ate: None,
             next_dir: None,
         }
@@ -279,11 +277,7 @@ impl Snake {
     /// the snake eats a given piece of Food based
     /// on its current position
     fn eats(&self, food: &Food) -> bool {
-        if self.head.pos == food.pos {
-            true
-        } else {
-            false
-        }
+        self.head.pos == food.pos
     }
 
     /// A helper function that determines whether
@@ -331,7 +325,7 @@ impl Snake {
         // which gives the illusion that the snake is moving. In reality, all the segments stay
         // stationary, we just add a segment to the front and remove one from the back. If we eat
         // a piece of food, then we leave the last segment so that we extend our body by one.
-        if let None = self.ate {
+        if self.ate.is_none() {
             self.body.pop_back();
         }
         // And set our last_update_dir to the direction we just moved.
@@ -419,7 +413,7 @@ impl event::EventHandler for GameState {
         // First we check to see if enough time has elapsed since our last update based
         // on the update rate we defined at the top.
         // if not, we do nothing and return early.
-        if !(Instant::now() - self.last_update >= Duration::from_millis(MILLIS_PER_UPDATE)) {
+        if Instant::now() - self.last_update < Duration::from_millis(MILLIS_PER_UPDATE) {
             return Ok(());
         }
         // Then we check to see if the game is over. If not, we'll update. If so, we'll just do nothing.

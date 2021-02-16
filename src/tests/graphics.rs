@@ -16,7 +16,7 @@ fn image_encode() {
 
 fn get_rgba_sample(rgba_buf: &[u8], width: usize, sample_pos: Vec2) -> (u8, u8, u8, u8) {
     (
-        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 0],
+        rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4],
         rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 1],
         rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 2],
         rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 3],
@@ -134,11 +134,11 @@ fn sanity_check_window_sizes() {
     // Make sure that window sizes are what we ask for, and not what hidpi gives us.
     let w = c.conf.window_mode.width;
     let h = c.conf.window_mode.height;
-    let size = graphics::drawable_size(&mut c);
+    let size = graphics::drawable_size(&c);
     assert_eq!(w, size.0);
     assert_eq!(h, size.1);
 
-    let outer_size = graphics::size(&mut c);
+    let outer_size = graphics::size(&c);
     assert!(size.0 <= outer_size.0);
     assert!(size.1 <= outer_size.1);
 
@@ -153,7 +153,7 @@ fn sanity_check_window_sizes() {
     // Sometimes you need one, sometimes you need both...
     e.run(move |event, _, control_flow| {
         if let winit::event::Event::RedrawEventsCleared = event {
-            let size = graphics::drawable_size(&mut c);
+            let size = graphics::drawable_size(&c);
             assert_eq!(w, size.0);
             assert_eq!(h, size.1);
 

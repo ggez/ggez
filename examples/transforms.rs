@@ -1,6 +1,4 @@
 //! Demonstrates various projection and matrix fiddling/testing.
-use ggez;
-
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, Color, DrawMode};
 use ggez::{Context, GameResult};
@@ -111,13 +109,9 @@ impl event::EventHandler for MainState {
         _keymod: KeyMods,
         _repeat: bool,
     ) {
-        match keycode {
-            event::KeyCode::Space => {
-                self.screen_bounds_idx = (self.screen_bounds_idx + 1) % self.screen_bounds.len();
-                graphics::set_screen_coordinates(ctx, self.screen_bounds[self.screen_bounds_idx])
-                    .unwrap();
-            }
-            _ => (),
+        if let event::KeyCode::Space = keycode {
+            self.screen_bounds_idx = (self.screen_bounds_idx + 1) % self.screen_bounds.len();
+            graphics::set_screen_coordinates(ctx, self.screen_bounds[self.screen_bounds_idx]).unwrap();
         }
     }
 }

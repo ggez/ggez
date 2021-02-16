@@ -1,8 +1,6 @@
 //! Basic hello world example, drawing
 //! to a canvas.
 
-use ggez;
-
 use ggez::event;
 use ggez::graphics::{self, Color};
 use ggez::{Context, GameResult};

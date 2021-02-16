@@ -2,8 +2,6 @@
 //! The idea is that this game is simple but still
 //! non-trivial enough to be interesting.
 
-use getrandom;
-use ggez;
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::conf;

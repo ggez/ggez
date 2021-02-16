@@ -545,7 +545,7 @@ mod tests {
         let b2: u32 = black.to_rgba_u32();
         assert_eq!(b2, 0x0000_00FFu32);
         assert_eq!(black, Color::from_rgb_u32(0x00_0000u32));
-        assert_eq!(black, Color::from_rgba_u32(0x00_0000FFu32));
+        assert_eq!(black, Color::from_rgba_u32(0x0000_00FF_u32));
 
         let puce1 = Color::from_rgb_u32(0xCC_8899u32);
         let puce2 = Color::from_rgba_u32(0xCC88_99FFu32);

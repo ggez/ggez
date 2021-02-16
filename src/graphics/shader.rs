@@ -190,6 +190,7 @@ pub type Shader<C> = ShaderGeneric<graphics::GlBackendSpec, C>;
 
 type ShaderHandlePtr<Spec> = Box<dyn ShaderHandle<Spec>>;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn create_shader<C, S, Spec>(
     vertex_source: &[u8],
     pixel_source: &[u8],
@@ -276,6 +277,7 @@ where
     /// used, you must include that blend mode as part of the
     /// `blend_modes` parameter at creation. If `None` is given, only the
     /// default [`Alpha`](enum.BlendMode.html#variant.Alpha) blend mode is used.
+    #[allow(clippy::new_ret_no_self)]
     pub fn new<P: AsRef<Path>, S: Into<String>>(
         ctx: &mut Context,
         vertex_path: P,

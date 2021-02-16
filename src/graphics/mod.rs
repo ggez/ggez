@@ -810,6 +810,7 @@ pub fn clear_font_cache(ctx: &mut Context) {
 /// Returns all the relevant objects at once;
 /// getting them one by one is awkward 'cause it tends to create double-borrows
 /// on the Context object.
+#[allow(clippy::type_complexity)]
 pub fn gfx_objects(
     context: &mut Context,
 ) -> (
@@ -908,7 +909,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().scale([0.5, 0.5]);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: -0.5,
                 y: -0.5,
@@ -925,7 +926,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().offset([0.5, 0.5]);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: -1.5,
                 y: -1.5,
@@ -942,7 +943,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().rotation(PI * 0.5);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: -1.0,
                 y: 1.0,
@@ -962,7 +963,7 @@ mod tests {
                 .scale([0.5, 0.5])
                 .offset([0.0, 1.0])
                 .rotation(PI * 0.5);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: 0.5,
                 y: -0.5,

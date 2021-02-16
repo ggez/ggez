@@ -67,6 +67,7 @@ struct App {
 
 impl App {
     /// Creates an instance, takes ownership of passed FileLogger.
+    #[allow(clippy::unnecessary_wraps)] // More complex application load fonts/graphics that can fail
     fn new(_ctx: &mut Context, logger: FileLogger) -> GameResult<App> {
         Ok(App {
             file_logger: logger,

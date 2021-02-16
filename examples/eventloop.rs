@@ -8,9 +8,6 @@
 //!
 //! It is functionally identical to the `super_simple.rs` example apart from that.
 
-use ggez;
-use glam;
-
 use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
 use ggez::graphics::{self, Color, DrawMode};
@@ -43,11 +40,8 @@ pub fn main() -> GameResult {
                                 ..
                             },
                         ..
-                    } => match keycode {
-                        event::KeyCode::Escape => {
-                            *control_flow = winit::event_loop::ControlFlow::Exit
-                        }
-                        _ => (),
+                    } => if let event::KeyCode::Escape = keycode {
+                        *control_flow = winit::event_loop::ControlFlow::Exit
                     },
                     // `CloseRequested` and `KeyboardInput` events won't appear here.
                     x => println!("Other window event fired: {:?}", x),

@@ -10,6 +10,7 @@ struct MainState {
 }
 
 impl MainState {
+    #[allow(clippy::unnecessary_wraps)] // More complex application load fonts/graphics that can fail
     fn new() -> GameResult<MainState> {
         let s = MainState { pos_x: 0.0 };
         Ok(s)

@@ -44,6 +44,7 @@ where
     S: BackendSpec,
 {
     /// Create a new `Canvas` with the given size and number of samples.
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(
         ctx: &mut Context,
         width: u16,
