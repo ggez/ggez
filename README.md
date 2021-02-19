@@ -109,7 +109,8 @@ to common problems.
 #### Basic Project Template
 
 ```rust
-use ggez::{graphics, Context, ContextBuilder, GameResult};
+use ggez::{Context, ContextBuilder, GameResult};
+use ggez::graphics::{self, Color};
 use ggez::event::{self, EventHandler};
 
 fn main() {
@@ -147,7 +148,7 @@ impl EventHandler for MyGame {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx, graphics::WHITE);
+        graphics::clear(ctx, Color::WHITE);
         // Draw code here...
         graphics::present(ctx)
     }
