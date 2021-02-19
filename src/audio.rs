@@ -42,8 +42,8 @@ pub(crate) struct RodioAudioContext {
 impl RodioAudioContext {
     /// Create new `RodioAudioContext`.
     pub fn new() -> GameResult<Self> {
-        let (stream, stream_handle) = rodio::OutputStream::try_default().map_err(|e| {
-            GameError::AudioError(Some(Arc::new(e)), String::from(
+        let (stream, stream_handle) = rodio::OutputStream::try_default().map_err(|_e| {
+            GameError::AudioError(String::from(
                 "Could not initialize sound system using default output device (for some reason)",
             ))
         })?;
@@ -295,7 +295,6 @@ impl Source {
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
         if !data.can_play() {
             return Err(GameError::AudioError(
-                None,
                 "Could not decode the given audio data".to_string(),
             ));
         }
@@ -454,7 +453,6 @@ impl SpatialSource {
     pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
         if !data.can_play() {
             return Err(GameError::AudioError(
-                None,
                 "Could not decode the given audio data".to_string(),
             ));
         }

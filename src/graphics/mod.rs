@@ -876,19 +876,25 @@ pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
             dest,
             rotation,
         } => {
-            let w = param.src.w * scale.x * rect.w;
-            let h = param.src.h * scale.y * rect.h;
-            let offset_x = w * offset.x;
-            let offset_y = h * offset.y;
-            let dest_x = dest.x - offset_x;
-            let dest_y = dest.y - offset_y;
+            // first apply the offset
             let mut r = Rect {
-                w,
-                h,
-                x: dest_x + rect.x * scale.x,
-                y: dest_y + rect.y * scale.y,
+                w: rect.w,
+                h: rect.h,
+                x: rect.x - offset.x * rect.w,
+                y: rect.y - offset.y * rect.h,
             };
+            // apply the scale
+            let real_scale = (param.src.w * scale.x, param.src.h * scale.y);
+            r.w = real_scale.0 * rect.w;
+            r.h = real_scale.1 * rect.h;
+            r.x *= real_scale.0;
+            r.y *= real_scale.1;
+            // apply the rotation
             r.rotate(rotation);
+            // apply the destination translation
+            r.x += dest.x;
+            r.y += dest.y;
+
             r
         }
         Transform::Matrix(_m) => todo!("Fix me"),
@@ -983,6 +989,70 @@ mod tests {
                 y: -0.5,
                 w: 0.5,
                 h: 1.0,
+            };
+            assert_relative_eq!(real, expected);
+        }
+        {
+            let r = Rect {
+                x: -1.0,
+                y: -1.0,
+                w: 2.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new()
+                .scale([0.5, 0.5])
+                .offset([0.0, 1.0])
+                .rotation(PI * 0.5)
+                .dest([1.0, 0.0]);
+            let real = transform_rect(r, param.into());
+            let expected = Rect {
+                x: 1.5,
+                y: -0.5,
+                w: 0.5,
+                h: 1.0,
+            };
+            assert_relative_eq!(real, expected);
+        }
+        {
+            let r = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 1.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new()
+                .offset([0.5, 0.5])
+                .rotation(PI * 1.5)
+                .dest([1.0, 0.5]);
+            let real = transform_rect(r, param.into());
+            let expected = Rect {
+                x: 0.5,
+                y: 0.0,
+                w: 1.0,
+                h: 1.0,
+            };
+            assert_relative_eq!(real, expected);
+        }
+        {
+            let r = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 1.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new()
+                .offset([0.5, 0.5])
+                .rotation(PI * 0.25)
+                .scale([2.0, 1.0])
+                .dest([1.0, 2.0]);
+            let real = transform_rect(r, param.into());
+            let sqrt = (2f32).sqrt() / 2.;
+            let unit = sqrt + sqrt / 2.;
+            let expected = Rect {
+                x: -unit + 1.,
+                y: -unit + 2.,
+                w: 2. * unit,
+                h: 2. * unit,
             };
             assert_relative_eq!(real, expected);
         }
