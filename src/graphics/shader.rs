@@ -122,7 +122,7 @@ impl From<BlendMode> for Blend {
                     destination: Factor::One,
                 },
                 alpha: BlendChannel {
-                    equation: Equation::Min,
+                    equation: Equation::Add,
                     source: Factor::OneMinus(BlendValue::SourceAlpha),
                     destination: Factor::OneMinus(BlendValue::SourceAlpha),
                 },
