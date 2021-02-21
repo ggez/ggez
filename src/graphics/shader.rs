@@ -67,6 +67,8 @@ pub enum BlendMode {
     Lighten,
     /// When combining two fragments, choose the darker value
     Darken,
+    /// When using premultiplied alpha, use this.
+    Premultiplied,
 }
 
 impl From<BlendMode> for Blend {
@@ -113,6 +115,18 @@ impl From<BlendMode> for Blend {
                     destination: Factor::OneMinus(BlendValue::SourceAlpha),
                 },
             },
+            BlendMode::Premultiplied => Blend {
+                color: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::One,
+                    destination: Factor::One,
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Min,
+                    source: Factor::OneMinus(BlendValue::SourceAlpha),
+                    destination: Factor::OneMinus(BlendValue::SourceAlpha),
+                },
+            }
         }
     }
 }

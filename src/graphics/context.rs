@@ -190,6 +190,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             BlendMode::Replace,
             BlendMode::Lighten,
             BlendMode::Darken,
+            BlendMode::Premultiplied,
         ];
         let multisample_samples = window_setup.samples as u8;
         let (vs_text, fs_text) = backend.shaders();
