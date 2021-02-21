@@ -126,7 +126,7 @@ impl From<BlendMode> for Blend {
                     source: Factor::OneMinus(BlendValue::SourceAlpha),
                     destination: Factor::OneMinus(BlendValue::SourceAlpha),
                 },
-            }
+            },
         }
     }
 }
