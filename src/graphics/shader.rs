@@ -117,9 +117,9 @@ impl From<BlendMode> for Blend {
             },
             BlendMode::Premultiplied => Blend {
                 color: BlendChannel {
-                    equation: Equation::Sub,
+                    equation: Equation::Add,
                     source: Factor::One,
-                    destination: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                    destination: Factor::OneMinus(BlendValue::SourceAlpha),
                 },
                 alpha: BlendChannel {
                     equation: Equation::Sub,
