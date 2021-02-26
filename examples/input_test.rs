@@ -1,7 +1,7 @@
 //! Example that just prints out all the input events.
 
 use ggez::event::{self, Axis, Button, GamepadId, KeyCode, KeyMods, MouseButton};
-use ggez::graphics::{self, DrawMode};
+use ggez::graphics::{self, Color, DrawMode};
 use ggez::input;
 use ggez::{Context, GameResult};
 use glam::*;
@@ -48,7 +48,7 @@ impl event::EventHandler for MainState {
                 w: 400.0,
                 h: 300.0,
             },
-            graphics::WHITE,
+            Color::WHITE,
         )?;
         graphics::draw(ctx, &rectangle, (glam::Vec2::new(0.0, 0.0),))?;
         graphics::present(ctx)?;

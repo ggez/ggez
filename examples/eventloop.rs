@@ -13,7 +13,7 @@ use glam;
 
 use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
-use ggez::graphics::{self, DrawMode};
+use ggez::graphics::{self, Color, DrawMode};
 use ggez::GameResult;
 
 pub fn main() -> GameResult {
@@ -68,7 +68,7 @@ pub fn main() -> GameResult {
             glam::Vec2::new(0.0, 0.0),
             100.0,
             2.0,
-            graphics::WHITE,
+            Color::WHITE,
         )?;
         graphics::draw(ctx, &circle, (glam::Vec2::new(position, 380.0),))?;
         graphics::present(ctx)?;

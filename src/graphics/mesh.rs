@@ -108,6 +108,10 @@ impl MeshBuilder {
     where
         P: Into<mint::Point2<f32>>,
     {
+        assert!(
+            tolerance > 0.0,
+            "Tolerances <= 0 are invalid, see https://github.com/ggez/ggez/issues/892"
+        );
         {
             let point = point.into();
             let buffers = &mut self.buffer;
@@ -151,6 +155,10 @@ impl MeshBuilder {
     where
         P: Into<mint::Point2<f32>>,
     {
+        assert!(
+            tolerance > 0.0,
+            "Tolerances <= 0 are invalid, see https://github.com/ggez/ggez/issues/892"
+        );
         {
             let buffers = &mut self.buffer;
             let point = point.into();

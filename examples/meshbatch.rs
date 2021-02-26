@@ -3,7 +3,7 @@
 use ggez;
 
 use ggez::event;
-use ggez::graphics;
+use ggez::graphics::{self, Color};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use glam::*;
@@ -98,7 +98,7 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, graphics::BLACK);
+        graphics::clear(ctx, Color::BLACK);
 
         // Flush the first 50 instances in the batch to make our changes visible
         // to the graphics card.

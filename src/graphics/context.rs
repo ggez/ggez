@@ -104,7 +104,12 @@ impl GraphicsContextGeneric<GlBackendSpec> {
                 backend.version_tuple(),
             ))
             .with_gl_profile(glutin::GlProfile::Core)
-            .with_multisampling(window_setup.samples as u16)
+            .with_multisampling(match window_setup.samples as u16 {
+                // Fix for https://github.com/ggez/ggez/issues/552
+                // 1 isn't multisampling but glutin wants a 0 to disable it
+                1 => 0,
+                n => n,
+            })
             // 24 color bits, 8 alpha bits
             .with_pixel_format(24, 8)
             .with_vsync(window_setup.vsync);

@@ -111,7 +111,7 @@ impl event::EventHandler for MainState {
         graphics::draw(
             ctx,
             &self.pixel_sized_text,
-            (dest_point2, 0.0, graphics::WHITE),
+            (dest_point2, 0.0, Color::WHITE),
         )?;
 
         self.draw_crazy_lines(ctx)?;

@@ -5,7 +5,7 @@ submit a PR, please!
 
 ## Games!
 
-None yet!
+* <https://github.com/erwan-b/game-of-life>: A `ggez` / `imgui-rs` implementation of Conway's game of life, fast and simple
 
 ## Example/tutorial code
 

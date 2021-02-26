@@ -76,3 +76,64 @@ fn test_mesh_points_clockwise() {
     // the `Mesh` building functions yet, so this will never fail.
     //assert!(trapezoid_mesh.is_err());
 }
+
+// Tests for bug https://github.com/ggez/ggez/issues/892
+#[test]
+#[should_panic]
+fn test_mesh_circle_tolerance_zero() {
+    let mut mb = graphics::MeshBuilder::new();
+    let _circle = mb
+        .circle(
+            graphics::DrawMode::fill(),
+            graphics::Point2::new(0.0, 0.0),
+            10.0,
+            0.0,
+            [1.0, 0.0, 0.0, 1.0].into(),
+        )
+        .unwrap();
+}
+
+#[test]
+fn test_mesh_circle_tolerance_nonzero() {
+    let mut mb = graphics::MeshBuilder::new();
+    let _circle = mb
+        .circle(
+            graphics::DrawMode::fill(),
+            graphics::Point2::new(0.0, 0.0),
+            10.0,
+            1.0,
+            [1.0, 0.0, 0.0, 1.0].into(),
+        )
+        .unwrap();
+}
+
+#[test]
+#[should_panic]
+fn test_mesh_ellipse_tolerance_zero() {
+    let mut mb = graphics::MeshBuilder::new();
+    let _ellipse = mb
+        .ellipse(
+            graphics::DrawMode::fill(),
+            graphics::Point2::new(0.0, 0.0),
+            10.0,
+            15.0,
+            0.0,
+            [1.0, 0.0, 0.0, 1.0].into(),
+        )
+        .unwrap();
+}
+
+#[test]
+fn test_mesh_ellipse_tolerance_nonzero() {
+    let mut mb = graphics::MeshBuilder::new();
+    let _ellipse = mb
+        .ellipse(
+            graphics::DrawMode::fill(),
+            graphics::Point2::new(0.0, 0.0),
+            10.0,
+            15.0,
+            1.0,
+            [1.0, 0.0, 0.0, 1.0].into(),
+        )
+        .unwrap();
+}

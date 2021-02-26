@@ -33,7 +33,7 @@ fn save_screenshot_test(c: &mut Context) {
     let tr = Vec2::new(width / 2.0, 0.0);
     let bl = Vec2::new(0.0, height / 2.0);
     let br = Vec2::new(width / 2.0, height / 2.0);
-    let topleft = graphics::DrawParam::new().color(graphics::WHITE).dest(tl);
+    let topleft = graphics::DrawParam::new().color(Color::WHITE).dest(tl);
     let topright = graphics::DrawParam::new()
         .color(Color::new(1.0, 0.0, 0.0, 1.0))
         .dest(tr);
@@ -53,7 +53,7 @@ fn save_screenshot_test(c: &mut Context) {
             w: width / 2.0,
             h: height / 2.0,
         },
-        graphics::WHITE,
+        graphics::Color::WHITE,
     )
     .unwrap();
 

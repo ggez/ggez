@@ -165,7 +165,7 @@ pub struct WindowSetup {
     #[default(String::from("An easy, good game"))]
     pub title: String,
     /// Number of samples to use for multisample anti-aliasing.
-    #[default(NumSamples::Zero)]
+    #[default(NumSamples::One)]
     pub samples: NumSamples,
     /// Whether or not to enable vsync.
     #[default = true]
@@ -292,8 +292,6 @@ impl Backend {
 /// The possible number of samples for multisample anti-aliasing.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum NumSamples {
-    /// Multisampling disabled.
-    Zero = 0,
     /// One sample
     One = 1,
     /// Two samples
@@ -311,7 +309,6 @@ impl NumSamples {
     /// Returns `None` if `i` is invalid.
     pub fn from_u32(i: u32) -> Option<NumSamples> {
         match i {
-            0 => Some(NumSamples::Zero),
             1 => Some(NumSamples::One),
             2 => Some(NumSamples::Two),
             4 => Some(NumSamples::Four),

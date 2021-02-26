@@ -11,9 +11,6 @@ use std::rc::Rc;
 
 use super::*;
 
-/// Default size for fonts.
-pub const DEFAULT_FONT_SCALE: f32 = 16.0;
-
 /// A handle referring to a loaded Truetype font.
 ///
 /// This is just an integer referring to a loaded font stored in the
@@ -139,6 +136,7 @@ struct CachedMetrics {
     string: Option<String>,
     width: Option<f32>,
     height: Option<f32>,
+    glyph_positions: Vec<mint::Point2<f32>>,
 }
 
 impl Default for CachedMetrics {
@@ -147,6 +145,7 @@ impl Default for CachedMetrics {
             string: None,
             width: None,
             height: None,
+            glyph_positions: Vec::new(),
         }
     }
 }
@@ -178,7 +177,7 @@ impl Default for Text {
             bounds: Point2::new(f32::INFINITY, f32::INFINITY),
             layout: Layout::default(),
             font_id: FontId::default(),
-            font_scale: PxScale::from(DEFAULT_FONT_SCALE),
+            font_scale: PxScale::from(Font::DEFAULT_FONT_SCALE),
             cached_metrics: RefCell::new(CachedMetrics::default()),
         }
     }
@@ -255,7 +254,7 @@ impl Text {
             .fragments
             .iter()
             .map(|fragment| {
-                let color = fragment.color.or(color).unwrap_or(WHITE);
+                let color = fragment.color.or(color).unwrap_or(Color::WHITE);
                 let font_id = fragment
                     .font
                     .map(|font| font.font_id)
@@ -325,6 +324,41 @@ impl Text {
             metrics.string = Some(string_accm.clone());
         }
         string_accm
+    }
+
+    /// Calculates, caches, and returns position of the glyphs
+    fn calculate_glyph_positions(
+        &self,
+        gb: &mut GlyphBrush<DrawParam>,
+    ) -> std::cell::Ref<Vec<mint::Point2<f32>>> {
+        if let Ok(metrics) = self.cached_metrics.try_borrow() {
+            if !metrics.glyph_positions.is_empty() {
+                return std::cell::Ref::map(metrics, |metrics| &metrics.glyph_positions);
+            }
+        }
+        let glyph_positions: Vec<mint::Point2<f32>> = {
+            let varied_section = self.generate_varied_section(Point2::new(0.0, 0.0), None);
+            use glyph_brush::GlyphCruncher;
+            gb.glyphs(varied_section)
+                .map(|glyph| glyph.glyph.position)
+                .map(|pos| mint::Point2 { x: pos.x, y: pos.y })
+                .collect()
+        };
+        if let Ok(mut metrics) = self.cached_metrics.try_borrow_mut() {
+            metrics.glyph_positions = glyph_positions;
+        } else {
+            panic!();
+        }
+        if let Ok(metrics) = self.cached_metrics.try_borrow() {
+            std::cell::Ref::map(metrics, |metrics| &metrics.glyph_positions)
+        } else {
+            panic!()
+        }
+    }
+
+    /// Returns a Vec containing the coordinates of the formatted and wrapped text.
+    pub fn glyph_positions(&self, context: &Context) -> std::cell::Ref<Vec<mint::Point2<f32>>> {
+        self.calculate_glyph_positions(&mut context.gfx_context.glyph_brush.borrow_mut())
     }
 
     /// Calculates, caches, and returns width and height of formatted and wrapped text.
@@ -398,6 +432,9 @@ impl Drawable for Text {
 }
 
 impl Font {
+    /// Default size for fonts.
+    pub const DEFAULT_FONT_SCALE: f32 = 16.0;
+
     /// Load a new TTF font from the given file.
     pub fn new<P>(context: &mut Context, path: P) -> GameResult<Font>
     where

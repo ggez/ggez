@@ -6,7 +6,7 @@ use ggez;
 use glam;
 
 use ggez::event;
-use ggez::graphics;
+use ggez::graphics::{self, Color};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
@@ -42,7 +42,7 @@ impl MainState {
 impl MainState {
     fn draw_spritebatch(&mut self, ctx: &mut Context) -> GameResult {
         graphics::set_canvas(ctx, Some(&self.canvas));
-        graphics::clear(ctx, graphics::WHITE);
+        graphics::clear(ctx, Color::WHITE);
 
         // Freeze the animation so things are easier to see.
         let time = 2000;

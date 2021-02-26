@@ -123,7 +123,7 @@ impl Default for DrawParam {
     fn default() -> Self {
         DrawParam {
             src: Rect::one(),
-            color: WHITE,
+            color: Color::WHITE,
             trans: Transform::default(),
         }
     }
