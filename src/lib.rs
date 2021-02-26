@@ -158,7 +158,7 @@
 //! and drawing must be done in the main thread), and portable to Windows
 //! and Linux.
 //!
-//! ggez is Pure Rust(tm).
+//! ggez is pure Rust™.
 //!
 //! ## Help!
 //!
@@ -170,8 +170,8 @@
 //!
 //!  If you still have problems or questions, feel free to ask!  Easiest ways are:
 //!
-//!  * open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
-//!  * say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community)
+//!  * Open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
+//!  * Say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community) or the [Rust Gamedev server](https://discord.gg/yNtPTb2)
 
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
