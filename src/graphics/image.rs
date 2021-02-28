@@ -155,7 +155,12 @@ impl Image {
     pub fn from_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
         let img = image::load_from_memory(&bytes)?.to_rgba8();
         let (width, height) = img.dimensions();
-        Self::from_rgba8(context, width as u16, height as u16, &img)
+        use std::convert::TryFrom;
+        let better_width = u16::try_from(width)
+            .map_err(|_| GameError::ResourceLoadError(String::from("Image width > u16::MAX")))?;
+        let better_height = u16::try_from(height)
+            .map_err(|_| GameError::ResourceLoadError(String::from("Image height > u16::MAX")))?;
+        Self::from_rgba8(context, better_width, better_height, &img)
     }
 
     /// Creates a new `Image` from the given buffer of `u8` RGBA values.
