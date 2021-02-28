@@ -44,7 +44,9 @@ impl Rect {
     }
 
     /// Create a new rect from `i32` coordinates.
-    pub const fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
+    /// Loses precision if the integers are too big to fit
+    /// in `f32`'s.
+    pub fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
         Rect {
             x: x as f32,
             y: y as f32,
@@ -380,6 +382,8 @@ impl From<(f32, f32, f32, f32)> for Color {
 
 impl From<Color> for (u8, u8, u8, u8) {
     /// Convert a `Color` into a `(R, G, B, A)` tuple of `u8`'s in the range of `[0-255]`.
+    ///
+    /// Does the Wrong Thing if the `Color`'s values are not in the range `[0.0,1.0]`
     fn from(color: Color) -> Self {
         let r = (color.r * 255.0) as u8;
         let g = (color.g * 255.0) as u8;
@@ -392,6 +396,8 @@ impl From<Color> for (u8, u8, u8, u8) {
 impl From<Color> for (u8, u8, u8) {
     /// Convert a `Color` into a `(R, G, B)` tuple of `u8`'s in the range of `[0-255]`,
     /// ignoring the alpha term.
+    ///
+    /// Does the Wrong Thing if the `Color`'s values are not in the range `[0.0,1.0]`
     fn from(color: Color) -> Self {
         let (r, g, b, _) = color.into();
         (r, g, b)

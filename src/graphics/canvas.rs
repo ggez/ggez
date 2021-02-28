@@ -1,5 +1,7 @@
 //! I guess these docs will never appear since we re-export the canvas
 //! module from graphics...
+use std::convert::TryFrom;
+
 use gfx::format::{Format, Swizzle};
 use gfx::handle::RawRenderTargetView;
 use gfx::memory::{Bind, Usage};
@@ -55,7 +57,7 @@ where
         let debug_id = DebugId::get(ctx);
         let aa = match samples {
             conf::NumSamples::One => AaMode::Single,
-            s => AaMode::Multi(s as u8),
+            s => AaMode::Multi(s.into()),
         };
         let kind = Kind::D2(width, height, aa);
         let levels = 1;
@@ -104,7 +106,7 @@ where
         // Default to no multisampling
         Canvas::new(
             ctx,
-            w as u16,
+            w as u16
             h as u16,
             conf::NumSamples::One,
             get_window_color_format(ctx),

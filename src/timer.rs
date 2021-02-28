@@ -17,6 +17,7 @@
 use crate::context::Context;
 
 use std::cmp;
+use std::convert::TryFrom;
 use std::f64;
 use std::thread;
 use std::time;
@@ -151,9 +152,9 @@ pub fn average_delta(ctx: &Context) -> time::Duration {
     // If our buffer is actually full, divide by its size.
     // Otherwise divide by the number of samples we've added
     if tc.frame_durations.samples > tc.frame_durations.size {
-        sum / (tc.frame_durations.size as u32)
+        sum / u32::try_from(tc.frame_durations.size).unwrap()
     } else {
-        sum / (tc.frame_durations.samples as u32)
+        sum / u32::try_from(tc.frame_durations.samples).unwrap()
     }
 }
 

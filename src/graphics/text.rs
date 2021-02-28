@@ -3,6 +3,7 @@ use glyph_brush::{self, FontId, Layout, Section, Text as GbText};
 pub use glyph_brush::{ab_glyph::PxScale, GlyphBrush, HorizontalAlign as Align};
 use std::borrow::Cow;
 use std::cell::RefCell;
+use std::convert::TryFrom;
 use std::f32;
 use std::fmt;
 use std::io::Read;
@@ -567,8 +568,12 @@ where
         Err(glyph_brush::BrushError::TextureTooSmall { suggested }) => {
             let (new_width, new_height) = suggested;
             let data = vec![255; 4 * new_width as usize * new_height as usize];
-            let new_glyph_cache =
-                Image::from_rgba8(ctx, new_width as u16, new_height as u16, &data)?;
+            let new_glyph_cache = Image::from_rgba8(
+                ctx,
+                u16::try_from(new_width).unwrap(),
+                u16::try_from(new_height).unwrap(),
+                &data,
+            )?;
             ctx.gfx_context.glyph_cache = new_glyph_cache.clone();
             let spritebatch = ctx.gfx_context.glyph_state.clone();
             let spritebatch = &mut *spritebatch.borrow_mut();
@@ -591,8 +596,14 @@ fn update_texture<B>(
 ) where
     B: BackendSpec,
 {
-    let offset = [rect.min[0] as u16, rect.min[1] as u16];
-    let size = [rect.width() as u16, rect.height() as u16];
+    let offset = [
+        u16::try_from(rect.min[0]).unwrap(),
+        u16::try_from(rect.min[1]).unwrap(),
+    ];
+    let size = [
+        u16::try_from(rect.width()).unwrap(),
+        u16::try_from(rect.height()).unwrap(),
+    ];
     let info = texture::ImageInfoCommon {
         xoffset: offset[0],
         yoffset: offset[1],
@@ -628,7 +639,10 @@ fn to_vertex(v: glyph_brush::GlyphVertex) -> DrawParam {
     };
     // it LOOKS like pixel_coords are the output coordinates?
     // I'm not sure though...
-    let dest_pt = Point2::new(v.pixel_coords.min.x as f32, v.pixel_coords.min.y as f32);
+    let dest_pt = Point2::new(
+        f32::from(v.pixel_coords.min.x),
+        f32::from(v.pixel_coords.min.y),
+    );
     DrawParam::default()
         .src(src_rect)
         .dest(dest_pt)

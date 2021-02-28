@@ -104,11 +104,11 @@ impl GraphicsContextGeneric<GlBackendSpec> {
                 backend.version_tuple(),
             ))
             .with_gl_profile(glutin::GlProfile::Core)
-            .with_multisampling(match window_setup.samples as u16 {
+            .with_multisampling(match window_setup.samples.into() {
                 // Fix for https://github.com/ggez/ggez/issues/552
                 // 1 isn't multisampling but glutin wants a 0 to disable it
                 1 => 0,
-                n => n,
+                n => u16::from(n),
             })
             // 24 color bits, 8 alpha bits
             .with_pixel_format(24, 8)
@@ -191,7 +191,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             BlendMode::Lighten,
             BlendMode::Darken,
         ];
-        let multisample_samples = window_setup.samples as u8;
+        let multisample_samples = window_setup.samples.into();
         let (vs_text, fs_text) = backend.shaders();
         let (shader, draw) = create_shader(
             vs_text,
@@ -248,13 +248,17 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .expect("Invalid default font bytes, should never happen");
         let glyph_brush = GlyphBrushBuilder::using_font(font_vec).build();
         let (glyph_cache_width, glyph_cache_height) = glyph_brush.texture_dimensions();
-        let initial_contents =
-            vec![255; 4 * glyph_cache_width as usize * glyph_cache_height as usize];
+        use std::convert::{TryFrom, TryInto};
+        let initial_contents = vec![
+            255;
+            4 * usize::try_from(glyph_cache_width).unwrap()
+                * usize::try_from(glyph_cache_height).unwrap()
+        ];
         let glyph_cache = ImageGeneric::make_raw(
             &mut factory,
             &sampler_info,
-            glyph_cache_width as u16,
-            glyph_cache_height as u16,
+            glyph_cache_width.try_into().unwrap(),
+            glyph_cache_height.try_into().unwrap(),
             &initial_contents,
             color_format,
             debug_id,

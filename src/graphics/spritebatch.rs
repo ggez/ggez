@@ -12,6 +12,8 @@
 //! If you use it, it's recommended to crank up the `opt-level` for
 //! debug mode in your game's `Cargo.toml`.
 
+use std::convert::TryFrom;
+
 use crate::context::Context;
 use crate::error;
 use crate::error::GameResult;
@@ -185,7 +187,7 @@ impl graphics::Drawable for SpriteBatch {
         gfx.data.tex = (typed_thingy, sampler);
 
         let mut slice = gfx.quad_slice.clone();
-        slice.instances = Some((self.sprites.len() as u32, 0));
+        slice.instances = Some((u32::try_from(self.sprites.len()).unwrap(), 0));
         // It's a little silly converting this mint matrix back to a glam
         // one but it's simpler than the alternative.
         let m = Matrix4::from(new_param.trans.to_bare_matrix());

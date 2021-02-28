@@ -12,9 +12,10 @@
 //! If no file is found, it will create a `Conf` object from the settings
 //! passed to the [`ContextBuilder`](../struct.ContextBuilder.html).
 
+use std::convert::TryFrom;
 use std::io;
 
-use crate::error::GameResult;
+use crate::error::{GameError, GameResult};
 
 /// Possible fullscreen modes.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -306,18 +307,25 @@ pub enum NumSamples {
     Sixteen = 16,
 }
 
-impl NumSamples {
-    /// Create a `NumSamples` from a number.
-    /// Returns `None` if `i` is invalid.
-    pub fn from_u32(i: u32) -> Option<NumSamples> {
+impl TryFrom<u8> for NumSamples {
+    type Error = GameError;
+    fn try_from(i: u8) -> Result<Self, Self::Error> {
         match i {
-            1 => Some(NumSamples::One),
-            2 => Some(NumSamples::Two),
-            4 => Some(NumSamples::Four),
-            8 => Some(NumSamples::Eight),
-            16 => Some(NumSamples::Sixteen),
-            _ => None,
+            1 => Ok(NumSamples::One),
+            2 => Ok(NumSamples::Two),
+            4 => Ok(NumSamples::Four),
+            8 => Ok(NumSamples::Eight),
+            16 => Ok(NumSamples::Sixteen),
+            _ => Err(GameError::ConfigError(String::from(
+                "Invalid number of samples",
+            ))),
         }
+    }
+}
+
+impl Into<u8> for NumSamples {
+    fn into(self) -> u8 {
+        self as u8
     }
 }
 

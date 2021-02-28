@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::io::Read;
 use std::path;
 
@@ -55,8 +56,8 @@ where
         }
         // Check for overflow, which might happen on 32-bit systems.
         // Textures can be max u16*u16, pixels, but then have 4 bytes per pixel.
-        let uwidth = width as usize;
-        let uheight = height as usize;
+        let uwidth = usize::from(width);
+        let uheight = usize::from(height);
         let expected_bytes = uwidth
             .checked_mul(uheight)
             .and_then(|size| size.checked_mul(4))
@@ -155,7 +156,6 @@ impl Image {
     pub fn from_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
         let img = image::load_from_memory(&bytes)?.to_rgba8();
         let (width, height) = img.dimensions();
-        use std::convert::TryFrom;
         let better_width = u16::try_from(width)
             .map_err(|_| GameError::ResourceLoadError(String::from("Image width > u16::MAX")))?;
         let better_height = u16::try_from(height)
@@ -206,7 +206,7 @@ impl Image {
         // common operation.
         let dl_buffer = gfx
             .factory
-            .create_download_buffer::<[u8; 4]>(w as usize * h as usize)?;
+            .create_download_buffer::<[u8; 4]>(usize::from(w) * usize::from(h))?;
 
         let factory = &mut *gfx.factory;
         let mut local_encoder = GlBackendSpec::encoder(factory);
@@ -218,8 +218,8 @@ impl Image {
                 xoffset: 0,
                 yoffset: 0,
                 zoffset: 0,
-                width: w as u16,
-                height: h as u16,
+                width: u16::from(w),
+                height: u16::from(h),
                 depth: 0,
                 format: gfx.color_format(),
                 mipmap: 0,
@@ -232,15 +232,16 @@ impl Image {
         let reader = gfx.factory.read_mapping(&dl_buffer)?;
 
         // intermediary buffer to avoid casting.
-        let mut data = Vec::with_capacity(self.width as usize * self.height as usize * 4);
+        // TODO: This can overflow on 32-bit platforms
+        let mut data = Vec::with_capacity(usize::from(self.width) * usize::from(self.height) * 4);
         // Assuming OpenGL backend whose typical readback option (glReadPixels) has origin at bottom left.
         // Image formats on the other hand usually deal with top right.
-        for y in (0..self.height as usize).rev() {
+        for y in (0..usize::from(self.height)).rev() {
             data.extend(
                 reader
                     .iter()
-                    .skip(y * self.width as usize)
-                    .take(self.width as usize)
+                    .skip(y * usize::from(self.width))
+                    .take(usize::from(self.width))
                     .flatten(),
             );
         }
@@ -281,7 +282,7 @@ impl Image {
     pub fn solid(context: &mut Context, size: u16, color: Color) -> GameResult<Self> {
         let (r, g, b, a) = color.into();
         let pixel_array: [u8; 4] = [r, g, b, a];
-        let size_squared = size as usize * size as usize;
+        let size_squared = usize::from(size) * usize::from(size);
         let mut buffer = Vec::with_capacity(size_squared);
         for _i in 0..size_squared {
             buffer.extend(&pixel_array[..]);

@@ -244,9 +244,9 @@ impl ContextBuilder {
 }
 
 #[cfg(debug_assertions)]
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU32, Ordering};
 #[cfg(debug_assertions)]
-static DEBUG_ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
+static DEBUG_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
 
 /// This is a type that contains a unique ID for each `Context` and
 /// is contained in each thing created from the `Context` which
@@ -264,10 +264,10 @@ pub(crate) struct DebugId;
 #[cfg(debug_assertions)]
 impl DebugId {
     pub fn new() -> Self {
-        let id = DEBUG_ID_COUNTER.fetch_add(1, Ordering::SeqCst) as u32;
+        let id = DEBUG_ID_COUNTER.fetch_add(1, Ordering::SeqCst);
         // fetch_add() wraps on overflow so we check for overflow explicitly.
         // JUST IN CASE YOU TRY TO CREATE 2^32 CONTEXTS IN ONE PROGRAM!  muahahahahaaa
-        assert!(DEBUG_ID_COUNTER.load(Ordering::SeqCst) as u32 > id);
+        assert!(DEBUG_ID_COUNTER.load(Ordering::SeqCst) > id);
         DebugId(id)
     }
 
