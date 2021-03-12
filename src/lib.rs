@@ -142,7 +142,7 @@
 //!     }
 //!
 //!     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-//!         graphics::clear(ctx, graphics::WHITE);
+//!         graphics::clear(ctx, graphics::Color::WHITE);
 //!         // Draw code here...
 //!         graphics::present(ctx)
 //!     }
