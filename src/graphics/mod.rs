@@ -1004,7 +1004,7 @@ mod tests {
                 .offset([0.0, 1.0])
                 .rotation(PI * 0.5)
                 .dest([1.0, 0.0]);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: 1.5,
                 y: -0.5,
@@ -1024,7 +1024,7 @@ mod tests {
                 .offset([0.5, 0.5])
                 .rotation(PI * 1.5)
                 .dest([1.0, 0.5]);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: 0.5,
                 y: 0.0,
@@ -1045,7 +1045,7 @@ mod tests {
                 .rotation(PI * 0.25)
                 .scale([2.0, 1.0])
                 .dest([1.0, 2.0]);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let sqrt = (2f32).sqrt() / 2.;
             let unit = sqrt + sqrt / 2.;
             let expected = Rect {
