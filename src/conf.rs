@@ -237,6 +237,7 @@ pub enum Backend {
     /// Defaults to OpenGL 3.2, which is supported by basically
     /// every machine since 2009 or so (apart from the ones that don't).
     #[default]
+    #[allow(clippy::upper_case_acronyms)]
     OpenGL {
         /// OpenGL major version
         #[default = 3]
@@ -250,6 +251,7 @@ pub enum Backend {
     /// than 3.0 starts to running into sticky limitations, particularly
     /// with instanced drawing (used for `SpriteBatch`), but might be
     /// possible.
+    #[allow(clippy::upper_case_acronyms)]
     OpenGLES {
         /// OpenGL ES major version
         #[default = 3]

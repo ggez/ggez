@@ -93,6 +93,7 @@ impl OpenOptions {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub trait VFS: Debug {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: OpenOptions) -> GameResult<Box<dyn VFile>>;
@@ -154,6 +155,7 @@ pub trait VMetadata {
 /// It IS allowed to have symlinks in it!  They're surprisingly
 /// difficult to get rid of.
 #[derive(Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct PhysicalFS {
     root: PathBuf,
     readonly: bool,
@@ -388,6 +390,7 @@ impl VFS for PhysicalFS {
 
 /// A structure that joins several VFS's together in order.
 #[derive(Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct OverlayFS {
     roots: VecDeque<Box<dyn VFS>>,
 }
@@ -556,6 +559,7 @@ impl Debug for dyn ZipArchiveAccess {
 
 /// A filesystem backed by a zip file.
 #[derive(Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct ZipFS {
     // It's... a bit jankity.
     // Zip files aren't really designed to be virtual filesystems,

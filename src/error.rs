@@ -29,6 +29,7 @@ pub enum GameError {
     /// Something went wrong trying to create a window
     WindowCreationError(Arc<glutin::CreationError>),
     /// Something went wrong trying to read from a file
+    #[allow(clippy::upper_case_acronyms)]
     IOError(Arc<std::io::Error>),
     /// Something went wrong trying to load/render a font
     FontError(String),
