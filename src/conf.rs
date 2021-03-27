@@ -325,9 +325,9 @@ impl TryFrom<u8> for NumSamples {
     }
 }
 
-impl Into<u8> for NumSamples {
-    fn into(self) -> u8 {
-        self as u8
+impl From<NumSamples> for u8 {
+    fn from(ns: NumSamples) -> u8 {
+        ns as u8
     }
 }
 
