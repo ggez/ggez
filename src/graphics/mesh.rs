@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use crate::context::DebugId;
 use crate::error::GameError;
 use crate::graphics::*;
@@ -395,22 +397,17 @@ impl MeshBuilder {
             let vb = VertexBuilder {
                 color: LinearColor::from(color),
             };
-            let builder: &mut t::BuffersBuilder<_, _, _> =
-                &mut t::BuffersBuilder::new(&mut self.buffer, vb);
-            use lyon::tessellation::BasicGeometryBuilder;
-            //builder.begin_geometry();
             for tri in tris {
                 // Ideally this assert makes bounds-checks only happen once.
                 assert!(tri.len() == 3);
-                let fst = tri[0];
-                let snd = tri[1];
-                let thd = tri[2];
-                let _i1 = builder.add_vertex(fst)?;
-                let _i2 = builder.add_vertex(snd)?;
-                let _i3 = builder.add_vertex(thd)?;
-                //builder.add_triangle(i1, i2, i3);
+                let first_index: u32 = self.buffer.vertices.len().try_into().unwrap();
+                self.buffer.vertices.push(vb.new_vertex(tri[0]));
+                self.buffer.vertices.push(vb.new_vertex(tri[1]));
+                self.buffer.vertices.push(vb.new_vertex(tri[2]));
+                self.buffer.indices.push(first_index);
+                self.buffer.indices.push(first_index + 1);
+                self.buffer.indices.push(first_index + 2);
             }
-            //let _ = builder.end_geometry();
         }
         Ok(self)
     }
