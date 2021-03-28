@@ -120,7 +120,8 @@ impl MeshBuilder {
             };
             match mode {
                 DrawMode::Fill(fill_options) => {
-                    let _ = t::basic_shapes::fill_circle(
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &fill_options.with_tolerance(tolerance),
@@ -128,7 +129,8 @@ impl MeshBuilder {
                     );
                 }
                 DrawMode::Stroke(options) => {
-                    let _ = t::basic_shapes::stroke_circle(
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &options.with_tolerance(tolerance),
@@ -166,27 +168,26 @@ impl MeshBuilder {
                 color: LinearColor::from(color),
             };
             match mode {
-                DrawMode::Fill(_fill_options) => {
-                    /*
-                     * TODO
-                     * see https://github.com/nical/lyon/issues/606
+                DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::fill_ellipse(
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
                         t::math::Angle { radians: 0.0 },
+                        t::path::Winding::Positive,
                         &fill_options.with_tolerance(tolerance),
                         builder,
                     );
-                    */
-                    unimplemented!()
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::stroke_ellipse(
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
                         t::math::Angle { radians: 0.0 },
+                        t::path::Winding::Positive,
                         &options.with_tolerance(tolerance),
                         builder,
                     );
@@ -306,11 +307,13 @@ impl MeshBuilder {
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::fill_rectangle(&rect, &fill_options, builder);
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_rectangle(&rect, &fill_options, builder);
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::stroke_rectangle(&rect, &options, builder);
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_rectangle(&rect, &options, builder);
                 }
             };
         }
