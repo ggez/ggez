@@ -2,6 +2,8 @@ use crate::context::DebugId;
 use crate::error::GameError;
 use crate::graphics::*;
 use gfx::traits::FactoryExt;
+use lyon::path::builder::PathBuilder;
+use lyon::path::Polygon;
 use lyon::tessellation as t;
 use lyon::{self, math::Point as LPoint};
 
@@ -264,27 +266,33 @@ impl MeshBuilder {
     ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
-        V: t::BasicVertexConstructor<Vertex>
-            + t::StrokeVertexConstructor<Vertex>
-            + t::FillVertexConstructor<Vertex>,
+        V: t::StrokeVertexConstructor<Vertex> + t::FillVertexConstructor<Vertex>,
     {
         {
             assert!(points.len() > 1);
             let buffers = &mut self.buffer;
-            let points = points.iter().cloned().map(|p| {
-                let mint_point: mint::Point2<f32> = p.into();
-                t::math::point(mint_point.x, mint_point.y)
-            });
-
+            let points: Vec<LPoint> = points
+                .iter()
+                .cloned()
+                .map(|p| {
+                    let mint_point: mint::Point2<f32> = p.into();
+                    t::math::point(mint_point.x, mint_point.y)
+                })
+                .collect();
+            let polygon = Polygon {
+                points: &points,
+                closed: is_closed,
+            };
             match mode {
                 DrawMode::Fill(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let tessellator = &mut t::FillTessellator::new();
-                    let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)?;
+                    let _ = tessellator.tessellate_polygon(polygon, &options, builder)?;
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
+                    let tessellator = &mut t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_polygon(polygon, &options, builder)?;
                 }
             };
         }
