@@ -461,8 +461,8 @@ struct VertexBuilder {
     color: LinearColor,
 }
 
-impl t::BasicVertexConstructor<Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, position: LPoint) -> Vertex {
+impl VertexBuilder {
+    fn new_vertex(self, position: LPoint) -> Vertex {
         Vertex {
             pos: [position.x, position.y],
             uv: [position.x, position.y],
@@ -472,7 +472,8 @@ impl t::BasicVertexConstructor<Vertex> for VertexBuilder {
 }
 
 impl t::StrokeVertexConstructor<Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, position: LPoint, _attributes: t::StrokeAttributes) -> Vertex {
+    fn new_vertex(&mut self, vertex: t::StrokeVertex) -> Vertex {
+        let position = vertex.position();
         Vertex {
             pos: [position.x, position.y],
             uv: [0.0, 0.0],
@@ -482,7 +483,8 @@ impl t::StrokeVertexConstructor<Vertex> for VertexBuilder {
 }
 
 impl t::FillVertexConstructor<Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, position: LPoint, _attributes: t::FillAttributes) -> Vertex {
+    fn new_vertex(&mut self, vertex: t::FillVertex) -> Vertex {
+        let position = vertex.position();
         Vertex {
             pos: [position.x, position.y],
             uv: [0.0, 0.0],
