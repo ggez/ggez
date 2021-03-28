@@ -339,24 +339,24 @@ impl MeshBuilder {
         {
             let buffers = &mut self.buffer;
             let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
-            let radii = t::basic_shapes::BorderRadii::new_all_same(radius);
+            let radii = t::path::builder::BorderRadii::new(radius);
             let vb = VertexBuilder {
                 color: LinearColor::from(color),
             };
+            let mut path_builder = t::path::Path::builder();
+            path_builder.add_rounded_rectangle(&rect, &radii, t::path::Winding::Positive);
+            let path = path_builder.build();
+
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::fill_rounded_rectangle(
-                        &rect,
-                        &radii,
-                        &fill_options,
-                        builder,
-                    );
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_path(&path, &fill_options, builder);
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ =
-                        t::basic_shapes::stroke_rounded_rectangle(&rect, &radii, &options, builder);
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_path(&path, &options, builder);
                 }
             };
         }
