@@ -25,6 +25,7 @@ None yet!
  * <https://github.com/outkine/ascension-rust>: A gravity-based platformer built with ggez, tiled, and nphysics2d. Download a playable build [here](https://outkine.itch.io/ascension-2).
  * <https://github.com/gliderkite/semeion>: Generic framework that allows you to build your 2D environment simulation. For a complete example check out [formicarium](https://github.com/gliderkite/formicarium).
  * <https://github.com/eisendaniel/boids>: A `rust`/`ggez` implementation of the boids flocking algorithm with simple user input/interactivity
+ * <https://github.com/PSteinhaus/Cell-Graph-Risk>: A local multiplayer strategy game based upon a custom physics simulation focusing on elastic graphs.
 
 ## Examples/tutorial code
 
