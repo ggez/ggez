@@ -443,6 +443,9 @@ impl MeshBuilder {
 
     /// Takes the accumulated geometry and load it into GPU memory,
     /// creating a single `Mesh`.
+    ///
+    /// Note that this returns a `GameResult<Mesh>`, since the build can fail,
+    /// for example when trying to build an empty `MeshBuilder`.
     pub fn build(&self, ctx: &mut Context) -> GameResult<Mesh> {
         Mesh::from_raw(
             ctx,
