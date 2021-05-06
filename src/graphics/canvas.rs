@@ -106,7 +106,7 @@ where
         // Default to no multisampling
         Canvas::new(
             ctx,
-            w as u16
+            w as u16,
             h as u16,
             conf::NumSamples::One,
             get_window_color_format(ctx),
