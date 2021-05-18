@@ -57,3 +57,33 @@ duplication at all.
 
 If you've written something cool and want to show it off, but it doesn't fulfill the listed guidelines, consider making it its own project
 and submitting a PR to add it to the `docs/Projects.md` file!
+
+# Maintainer's Code of Conduct
+
+Maintainers are the ones who accept or deny pull requests, make
+releases, and generally choose long-term goals and designs.
+
+Currently there is no real process for how maintainers are chosen,
+besides an existing maintainer saying "hey, are you interested?".  These
+communications should be done in public if possible, because it's a
+public project.  Example: <https://github.com/ggez/ggez/issues/875>
+
+Here are rules for how to act when speaking for ggez as a maintainer.
+People notice this project from time to time, and it has a reputation
+for friendliness, ease of use that is worth almost as much as any
+technical merit.  This tries to sum up how to maintain and carry forward
+that reputation.  Change the rules if you need to, but try to have good
+reasons for it.
+
+As a maintainer, you promise:
+
+ * I will be polite, even when noobs annoy me
+ * I will not bash other projects, even when they do dumb stuff
+ * I will uphold the Code of Conduct fairly and justly, even when I
+   would rather hold a grudge
+ * I will not abuse ggez or associated tools for personal gain, even
+   when it would be really easy
+ * I will try to prefer solutions that do 90% of the work with 10% of
+   the code, even when it would be really fun to do the other 90%
+ * I will keep the project about its core values: make good games,
+   easily
