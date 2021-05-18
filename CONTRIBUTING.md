@@ -63,17 +63,25 @@ and submitting a PR to add it to the `docs/Projects.md` file!
 Maintainers are the ones who accept or deny pull requests, make
 releases, and generally choose long-term goals and designs.
 
+The best thing I've ever seen for how to successfully run an open source
+project has been the talk titled "Making Night In The Woods Better With
+Open Source", at GDC 2017.  It is viewable here:
+<https://www.youtube.com/watch?v=Qsiu-zzDYww> I've tried to do what it
+says to do, and it seems to have worked pretty well.
+
 Currently there is no real process for how maintainers are chosen,
 besides an existing maintainer saying "hey, are you interested?".  These
 communications should be done in public if possible, because it's a
 public project.  Example: <https://github.com/ggez/ggez/issues/875>
+Try to be a little conservative please, it's a lot easier to add
+maintainers than remove them.
 
 Here are rules for how to act when speaking for ggez as a maintainer.
 People notice this project from time to time, and it has a reputation
 for friendliness, ease of use that is worth almost as much as any
 technical merit.  This tries to sum up how to maintain and carry forward
-that reputation.  Change the rules if you need to, but try to have good
-reasons for it.
+that reputation, so people keep doing cool stuff with the project.
+Change the rules if you need to, but try to have good reasons for it.
 
 As a maintainer, you promise:
 
