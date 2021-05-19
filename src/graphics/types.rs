@@ -238,14 +238,8 @@ impl From<Rect> for [f32; 4] {
 /// A RGBA color in the `sRGB` color space represented as `f32`'s in the range `[0.0-1.0]`
 ///
 /// For convenience, several colors are provided:
-/// [`WHITE`](constant.WHITE.html)
-/// [`BLACK`](constant.BLACK.html)
-/// [`RED`](constant.RED.html)
-/// [`GREEN`](constant.GREEN.html)
-/// [`BLUE`](constant.BLUE.html)
-/// [`CYAN`](constant.CYAN.html)
-/// [`MAGENTA`](constant.MAGENTA.html)
-/// [`YELLOW`](constant.YELLOW.html)
+/// [`WHITE`](`Color::WHITE`)
+/// [`BLACK`](`Color::BLACK`)
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Color {
@@ -260,7 +254,7 @@ pub struct Color {
 }
 
 impl Color {
-    /// White
+    /// White (#FFFFFFFF)
     pub const WHITE: Color = Color {
         r: 1.0,
         g: 1.0,
@@ -268,7 +262,7 @@ impl Color {
         a: 1.0,
     };
 
-    /// Black
+    /// Black (#000000FF)
     pub const BLACK: Color = Color {
         r: 0.0,
         g: 0.0,
