@@ -2,6 +2,7 @@
 //! resize windows, etc.
 //!
 //! Prints instructions to the console.
+use std::convert::TryFrom;
 
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
@@ -192,7 +193,7 @@ fn print_help() {
 struct Opt {
     /// what level of MSAA to try to use (1, 2, 4, 8)
     #[argh(option, short = 'm', long = "msaa", default = "1")]
-    msaa: u32,
+    msaa: u8,
     /// try to use OpenGL ES 3.0 instead of regular OpenGL.
     #[argh(switch, long = "es")]
     es: bool,
@@ -222,7 +223,7 @@ pub fn main() -> GameResult {
         )
         .window_setup(
             conf::WindowSetup::default().samples(
-                conf::NumSamples::from_u32(opt.msaa)
+                conf::NumSamples::try_from(opt.msaa)
                     .expect("Option msaa needs to be 1, 2, 4, 8 or 16!"),
             ),
         )

@@ -1,7 +1,5 @@
 //! I guess these docs will never appear since we re-export the canvas
 //! module from graphics...
-use std::convert::TryFrom;
-
 use gfx::format::{Format, Swizzle};
 use gfx::handle::RawRenderTargetView;
 use gfx::memory::{Bind, Usage};
@@ -106,7 +104,7 @@ where
         // Default to no multisampling
         Canvas::new(
             ctx,
-            w as u16
+            w as u16,
             h as u16,
             conf::NumSamples::One,
             get_window_color_format(ctx),

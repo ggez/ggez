@@ -639,10 +639,7 @@ fn to_vertex(v: glyph_brush::GlyphVertex) -> DrawParam {
     };
     // it LOOKS like pixel_coords are the output coordinates?
     // I'm not sure though...
-    let dest_pt = Point2::new(
-        f32::from(v.pixel_coords.min.x),
-        f32::from(v.pixel_coords.min.y),
-    );
+    let dest_pt = Point2::new(v.pixel_coords.min.x, v.pixel_coords.min.y);
     DrawParam::default()
         .src(src_rect)
         .dest(dest_pt)

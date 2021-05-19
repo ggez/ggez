@@ -42,7 +42,7 @@ Test to make sure everything is correct by running `cargo run`.
 
 If there are no errors and you see a window you are good.
 
-## [`ggez::graphics`](https://docs.rs/ggez/0.5.1/ggez/graphics/)
+## [ggez::graphics](https://docs.rs/ggez/0.5.1/ggez/graphics/)
 
 Glancing over the docs for [`ggez::graphics`](https://docs.rs/ggez/0.5.1/ggez/graphics/) you can see there is a lot of functionality there.
 The basic shapes can be found in [`graphics::Mesh`](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Mesh.html#methods)
