@@ -38,7 +38,7 @@
 //!             na::Point2::new(self.position_x, 380.0),
 //!             100.0,
 //!             2.0,
-//!             graphics::Color::WHITE,
+//!             graphics::WHITE,
 //!         )?;
 //!         graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
 //!         graphics::present(ctx)?;

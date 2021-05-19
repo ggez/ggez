@@ -76,7 +76,7 @@ graphics::Mesh::new_circle(
     mint::Point2{x: 200.0, y: 300.0},
     100.0,
     0.1,
-    graphics::Color::WHITE,
+    graphics::WHITE,
 )?;
 ```
 
@@ -103,14 +103,14 @@ And that's how a circle is drawn!
 Let's try it out with some quick code:
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    graphics::clear(ctx, graphics::Color::BLACK);
+    graphics::clear(ctx, graphics::BLACK);
     let circle = graphics::Mesh::new_circle(
         ctx,
         graphics::DrawMode::fill(),
         mint::Point2{x: 200.0, y: 300.0},
         100.0,
         0.1,
-        graphics::Color::WHITE,
+        graphics::WHITE,
     )?;
     graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
     graphics::present(ctx)?;
@@ -130,7 +130,7 @@ graphics::Mesh::new_rectangle(
     ctx,
     graphics::DrawMode::fill(),
     graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
-    graphics::Color::WHITE,
+    graphics::WHITE,
 )?;
 ```
 
@@ -148,12 +148,12 @@ And that's how a rectangle is drawn!
 Let's try it out with some quick code:
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    graphics::clear(ctx, graphics::Color::BLACK);
+    graphics::clear(ctx, graphics::BLACK);
     let rect = graphics::Mesh::new_rectangle(
         ctx,
         graphics::DrawMode::fill(),
         graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
-        graphics::Color::WHITE,
+        graphics::WHITE,
     )?;
     graphics::draw(ctx, &rect, graphics::DrawParam::default())?;
     graphics::present(ctx)?;
@@ -224,15 +224,15 @@ But we still don't see anything...
 You need to modify `draw` to illustrate your new `State`.
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    graphics::clear(ctx, graphics::Color::BLACK);
+    graphics::clear(ctx, graphics::BLACK);
     for shape in &self.shapes {
         // Make the shape...
         let mesh = match shape {
             &Shape::Rectangle(rect) => {
-                Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, graphics::Color::WHITE)?
+                Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, graphics::WHITE)?
             }
             &Shape::Circle(origin, radius) => {
-                Mesh::new_circle(ctx, graphics::DrawMode::fill(), origin, radius, 0.1, graphics::Color::WHITE)?
+                Mesh::new_circle(ctx, graphics::DrawMode::fill(), origin, radius, 0.1, graphics::WHITE)?
             }
         };
 
