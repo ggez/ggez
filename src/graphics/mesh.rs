@@ -1,7 +1,11 @@
+use std::convert::TryInto;
+
 use crate::context::DebugId;
 use crate::error::GameError;
 use crate::graphics::*;
 use gfx::traits::FactoryExt;
+use lyon::path::builder::PathBuilder;
+use lyon::path::Polygon;
 use lyon::tessellation as t;
 use lyon::{self, math::Point as LPoint};
 
@@ -120,7 +124,8 @@ impl MeshBuilder {
             };
             match mode {
                 DrawMode::Fill(fill_options) => {
-                    let _ = t::basic_shapes::fill_circle(
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &fill_options.with_tolerance(tolerance),
@@ -128,7 +133,8 @@ impl MeshBuilder {
                     );
                 }
                 DrawMode::Stroke(options) => {
-                    let _ = t::basic_shapes::stroke_circle(
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &options.with_tolerance(tolerance),
@@ -166,27 +172,26 @@ impl MeshBuilder {
                 color: LinearColor::from(color),
             };
             match mode {
-                DrawMode::Fill(_fill_options) => {
-                    /*
-                     * TODO
-                     * see https://github.com/nical/lyon/issues/606
+                DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::fill_ellipse(
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
                         t::math::Angle { radians: 0.0 },
+                        t::path::Winding::Positive,
                         &fill_options.with_tolerance(tolerance),
                         builder,
                     );
-                    */
-                    unimplemented!()
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::stroke_ellipse(
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
                         t::math::Angle { radians: 0.0 },
+                        t::path::Winding::Positive,
                         &options.with_tolerance(tolerance),
                         builder,
                     );
@@ -263,27 +268,33 @@ impl MeshBuilder {
     ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
-        V: t::BasicVertexConstructor<Vertex>
-            + t::StrokeVertexConstructor<Vertex>
-            + t::FillVertexConstructor<Vertex>,
+        V: t::StrokeVertexConstructor<Vertex> + t::FillVertexConstructor<Vertex>,
     {
         {
             assert!(points.len() > 1);
             let buffers = &mut self.buffer;
-            let points = points.iter().cloned().map(|p| {
-                let mint_point: mint::Point2<f32> = p.into();
-                t::math::point(mint_point.x, mint_point.y)
-            });
-
+            let points: Vec<LPoint> = points
+                .iter()
+                .cloned()
+                .map(|p| {
+                    let mint_point: mint::Point2<f32> = p.into();
+                    t::math::point(mint_point.x, mint_point.y)
+                })
+                .collect();
+            let polygon = Polygon {
+                points: &points,
+                closed: is_closed,
+            };
             match mode {
                 DrawMode::Fill(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let tessellator = &mut t::FillTessellator::new();
-                    let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)?;
+                    let _ = tessellator.tessellate_polygon(polygon, &options, builder)?;
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
+                    let tessellator = &mut t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_polygon(polygon, &options, builder)?;
                 }
             };
         }
@@ -306,11 +317,13 @@ impl MeshBuilder {
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::fill_rectangle(&rect, &fill_options, builder);
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_rectangle(&rect, &fill_options, builder);
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::stroke_rectangle(&rect, &options, builder);
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_rectangle(&rect, &options, builder);
                 }
             };
         }
@@ -328,24 +341,24 @@ impl MeshBuilder {
         {
             let buffers = &mut self.buffer;
             let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
-            let radii = t::basic_shapes::BorderRadii::new_all_same(radius);
+            let radii = t::path::builder::BorderRadii::new(radius);
             let vb = VertexBuilder {
                 color: LinearColor::from(color),
             };
+            let mut path_builder = t::path::Path::builder();
+            path_builder.add_rounded_rectangle(&rect, &radii, t::path::Winding::Positive);
+            let path = path_builder.build();
+
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::fill_rounded_rectangle(
-                        &rect,
-                        &radii,
-                        &fill_options,
-                        builder,
-                    );
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_path(&path, &fill_options, builder);
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ =
-                        t::basic_shapes::stroke_rounded_rectangle(&rect, &radii, &options, builder);
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_path(&path, &options, builder);
                 }
             };
         }
@@ -384,22 +397,17 @@ impl MeshBuilder {
             let vb = VertexBuilder {
                 color: LinearColor::from(color),
             };
-            let builder: &mut t::BuffersBuilder<_, _, _> =
-                &mut t::BuffersBuilder::new(&mut self.buffer, vb);
-            use lyon::tessellation::BasicGeometryBuilder;
-            //builder.begin_geometry();
             for tri in tris {
                 // Ideally this assert makes bounds-checks only happen once.
                 assert!(tri.len() == 3);
-                let fst = tri[0];
-                let snd = tri[1];
-                let thd = tri[2];
-                let _i1 = builder.add_vertex(fst)?;
-                let _i2 = builder.add_vertex(snd)?;
-                let _i3 = builder.add_vertex(thd)?;
-                //builder.add_triangle(i1, i2, i3);
+                let first_index: u32 = self.buffer.vertices.len().try_into().unwrap();
+                self.buffer.vertices.push(vb.new_vertex(tri[0]));
+                self.buffer.vertices.push(vb.new_vertex(tri[1]));
+                self.buffer.vertices.push(vb.new_vertex(tri[2]));
+                self.buffer.indices.push(first_index);
+                self.buffer.indices.push(first_index + 1);
+                self.buffer.indices.push(first_index + 2);
             }
-            //let _ = builder.end_geometry();
         }
         Ok(self)
     }
@@ -461,8 +469,8 @@ struct VertexBuilder {
     color: LinearColor,
 }
 
-impl t::BasicVertexConstructor<Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, position: LPoint) -> Vertex {
+impl VertexBuilder {
+    fn new_vertex(self, position: LPoint) -> Vertex {
         Vertex {
             pos: [position.x, position.y],
             uv: [position.x, position.y],
@@ -472,7 +480,8 @@ impl t::BasicVertexConstructor<Vertex> for VertexBuilder {
 }
 
 impl t::StrokeVertexConstructor<Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, position: LPoint, _attributes: t::StrokeAttributes) -> Vertex {
+    fn new_vertex(&mut self, vertex: t::StrokeVertex) -> Vertex {
+        let position = vertex.position();
         Vertex {
             pos: [position.x, position.y],
             uv: [0.0, 0.0],
@@ -482,7 +491,8 @@ impl t::StrokeVertexConstructor<Vertex> for VertexBuilder {
 }
 
 impl t::FillVertexConstructor<Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, position: LPoint, _attributes: t::FillAttributes) -> Vertex {
+    fn new_vertex(&mut self, vertex: t::FillVertex) -> Vertex {
+        let position = vertex.position();
         Vertex {
             pos: [position.x, position.y],
             uv: [0.0, 0.0],
