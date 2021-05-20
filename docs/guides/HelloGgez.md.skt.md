@@ -81,10 +81,10 @@ impl EventHandler for State {{
 }}
 
 pub fn main() -> GameResult {{
-    let (ref mut ctx, ref mut event_loop) = ContextBuilder::new("foo", "bar")
+    let (ctx, event_loop) = ContextBuilder::new("foo", "bar")
         .build()
         .unwrap();
-    let state = &mut State {{ dt: Duration::default() }};
+    let state = State {{ dt: Duration::default() }};
     {}
 
     Ok(())

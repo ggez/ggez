@@ -72,7 +72,7 @@ pub fn main() -> GameResult {{
 use ggez::*;
 use ggez::graphics::*;
 
-mod scope_hack {{  
+mod scope_hack {{
     use super::*;
 
     pub enum Shape {{

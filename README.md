@@ -108,7 +108,7 @@ to common problems.
 
 #### Basic Project Template
 
-```rust
+```rust,no_run
 use ggez::{Context, ContextBuilder, GameResult};
 use ggez::graphics::{self, Color};
 use ggez::event::{self, EventHandler};

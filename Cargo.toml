@@ -63,10 +63,10 @@ chrono = "0.4"
 fern = "0.6"
 oorandom = "11"
 argh = "0.1"
+rand = "0.8.3"
 
 skeptic = "0.13"
 getrandom = "0.2"
 
 [build-dependencies]
 skeptic = "0.13"
-
