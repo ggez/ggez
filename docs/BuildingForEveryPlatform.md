@@ -38,7 +38,7 @@ wget https://raw.githubusercontent.com/ggez/ggez/master/resources/LiberationMono
 Then edit your `Cargo.toml` with your favorite super duper editor and under `[dependencies]` add:
 
 ```
-ggez = "0.5"
+ggez = "0.6.0"
 glam = { version = "0.8.6", features = ["mint"] }
 ```
 
@@ -89,4 +89,3 @@ Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
 # Web/wasm/emscripten
 
 Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/71
-

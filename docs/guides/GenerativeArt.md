@@ -29,10 +29,10 @@ impl ggez::event::EventHandler for State {
 }
 
 fn main() {
-    let state = &mut State {};
+    let state = State {};
     let cb = ggez::ContextBuilder::new("generative_art", "awesome_person");
-    let (ref mut ctx, ref mut event_loop) = &mut cb.build().unwrap();
-    event::run(ctx, event_loop, state).unwrap();
+    let (ctx, event_loop) = cb.build().unwrap();
+    event::run(ctx, event_loop, state);
 }
 ```
 
@@ -69,7 +69,7 @@ Circles are represented by 2 pieces of information: origin, and radius.
 Geometry, it's all coming back now.
 
 Here is the code for a [circle](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Mesh.html#method.new_circle):
-```rust,skt-draw,no_run
+```rust,skt-expression,no_run
 graphics::Mesh::new_circle(
     ctx,
     graphics::DrawMode::fill(),
@@ -209,13 +209,13 @@ fn main() {
         mint::Point2{x: 400.0, y: 40.0},
         30.0,
     ));
-    let state = &mut State { shapes: shapes };
+    let state = State { shapes: shapes };
     let c = conf::Conf::new();
-    let (ref mut ctx, ref mut event_loop) = ContextBuilder::new("generative_art", "awesome_person")
-        .conf(c)
+    let (ctx, event_loop) = ContextBuilder::new("generative_art", "awesome_person")
+        .default_conf(c)
         .build()
         .unwrap();
-    event::run(ctx, event_loop, state).unwrap();
+    event::run(ctx, event_loop, state);
 }
 ```
 We're using `Vec.push` to add 2 new values to our `Vec`.
@@ -249,7 +249,7 @@ We see 2 shapes on the screen now.
 
 Let's go another step further.
 We are going to allow the computer to randomly generate art for us.
-Random numbers can be generated using the [rand crate](https://docs.rs/rand/0.7.3/rand/).
+Random numbers can be generated using the [rand crate](https://docs.rs/rand/0.8.3/rand/).
 
 We don't want 2 shapes fixed in location.
 We want 2 shapes randomly generated!
@@ -257,8 +257,8 @@ We want 2 shapes randomly generated!
 Include `rand` in your `Cargo.toml`:
 ```toml
 [dependencies]
-ggez = "0.5.1"
-rand = "0.7.3"
+ggez = "0.6.0"
+rand = "0.8.3"
 ```
 
 At the top of `main.rs` `use` `rand`:
@@ -269,17 +269,17 @@ use rand::{thread_rng, Rng};
 Change how the 2 shapes are created to include randomness:
 ```rust,skt-expression,no_run
 shapes.push(Shape::Rectangle(ggez::graphics::Rect::new(
-    thread_rng().gen_range(0.0, 800.0),
-    thread_rng().gen_range(0.0, 600.0),
-    thread_rng().gen_range(0.0, 800.0),
-    thread_rng().gen_range(0.0, 600.0),
+    thread_rng().gen_range(0.0..800.0),
+    thread_rng().gen_range(0.0..600.0),
+    thread_rng().gen_range(0.0..800.0),
+    thread_rng().gen_range(0.0..600.0),
 )));
 shapes.push(Shape::Circle(
     mint::Point2{
-        x: thread_rng().gen_range(0.0, 800.0),
-        y: thread_rng().gen_range(0.0, 600.0),
+        x: thread_rng().gen_range(0.0..800.0),
+        y: thread_rng().gen_range(0.0..600.0),
     },
-    thread_rng().gen_range(0.0, 300.0),
+    thread_rng().gen_range(0.0..300.0),
 ));
 ```
 Run `cargo run` a couple times and see how the shapes move around and change shape.
@@ -293,18 +293,18 @@ let mut shapes = Vec::new();
 for _ in 0..8 {
     if thread_rng().gen::<bool>() {
         shapes.push(Shape::Rectangle(ggez::graphics::Rect::new(
-            thread_rng().gen_range(0.0, 800.0),
-            thread_rng().gen_range(0.0, 600.0),
-            thread_rng().gen_range(0.0, 800.0),
-            thread_rng().gen_range(0.0, 600.0),
+            thread_rng().gen_range(0.0..800.0),
+            thread_rng().gen_range(0.0..600.0),
+            thread_rng().gen_range(0.0..800.0),
+            thread_rng().gen_range(0.0..600.0),
         )));
     } else {
         shapes.push(Shape::Circle(
             mint::Point2{
-                x: thread_rng().gen_range(0.0, 800.0),
-                y: thread_rng().gen_range(0.0, 600.0),
+                x: thread_rng().gen_range(0.0..800.0),
+                y: thread_rng().gen_range(0.0..600.0),
             },
-            thread_rng().gen_range(0.0, 300.0),
+            thread_rng().gen_range(0.0..300.0),
         ));
     }
 }
