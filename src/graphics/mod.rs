@@ -99,7 +99,7 @@ pub trait BackendSpec: fmt::Debug {
     /// A helper function to take a RawShaderResourceView and turn it into a typed one based on
     /// the surface type defined in a `BackendSpec`.
     ///
-    /// But right now we only allow surfaces that use [f32;4] colors, so we can freely
+    /// But right now we only allow surfaces that use \[f32;4\] colors, so we can freely
     /// hardcode this in the `ShaderResourceType` type.
     fn raw_to_typed_shader_resource(
         &self,
