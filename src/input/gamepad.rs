@@ -83,10 +83,7 @@ impl<'a> Iterator for GamepadsIterator<'a> {
     type Item = (GamepadId, Gamepad<'a>);
 
     fn next(&mut self) -> Option<(GamepadId, Gamepad<'a>)> {
-        match self.wrapped.next() {
-            Some((id, gp)) => Some((GamepadId(id), gp)),
-            None => None,
-        }
+        self.wrapped.next().map(|(id, gp)| (GamepadId(id), gp))
     }
 }
 
