@@ -480,8 +480,6 @@ where
     pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
         let window = self.window.window();
 
-        window.set_maximized(mode.maximized);
-
         // TODO LATER: find out if single-dimension constraints are possible?
         let min_dimensions = if mode.min_width > 0.0 && mode.min_height > 0.0 {
             Some(dpi::PhysicalSize {
@@ -513,6 +511,7 @@ where
                     height: f64::from(mode.height),
                 });
                 window.set_resizable(mode.resizable);
+                window.set_maximized(mode.maximized);
             }
             FullscreenType::True => {
                 if let Some(monitor) = window.current_monitor() {
