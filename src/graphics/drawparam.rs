@@ -103,7 +103,7 @@ impl Transform {
 /// # use ggez::*;
 /// # use ggez::graphics::*;
 /// # fn t<P>(ctx: &mut Context, drawable: &P) where P: Drawable {
-/// let my_dest = mint::Point2::new(13.0, 37.0);
+/// let my_dest = glam::vec2(13.0, 37.0);
 /// graphics::draw(ctx, drawable, DrawParam::default().dest(my_dest) );
 /// # }
 /// ```

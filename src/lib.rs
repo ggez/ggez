@@ -102,24 +102,24 @@
 //! ### Basic Project Template
 //!
 //! ```rust,no_run
-//! use ggez::{graphics, Context, ContextBuilder, GameResult};
+//! use ggez::{Context, ContextBuilder, GameResult};
+//! use ggez::graphics::{self, Color};
 //! use ggez::event::{self, EventHandler};
 //!
+//! fn main() {
 //!     // Make a Context.
-//!     let (mut ctx, mut event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
+//!     let (mut ctx, event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
 //!         .build()
 //!         .expect("aieee, could not create ggez context!");
 //!
 //!     // Create an instance of your event handler.
 //!     // Usually, you should provide it with the Context object to
 //!     // use when setting your game up.
-//!     let mut my_game = MyGame::new(&mut ctx);
+//!     let my_game = MyGame::new(&mut ctx);
 //!
 //!     // Run!
-//!     match event::run(&mut ctx, &mut event_loop, &mut my_game) {
-//!         Ok(_) => println!("Exited cleanly."),
-//!         Err(e) => println!("Error occured: {}", e)
-//!     }
+//!     event::run(ctx, event_loop, my_game);
+//! }
 //!
 //! struct MyGame {
 //!     // Your state here...
@@ -141,7 +141,7 @@
 //!     }
 //!
 //!     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-//!         graphics::clear(ctx, graphics::Color::WHITE);
+//!         graphics::clear(ctx, Color::WHITE);
 //!         // Draw code here...
 //!         graphics::present(ctx)
 //!     }

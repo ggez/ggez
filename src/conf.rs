@@ -155,7 +155,7 @@ impl WindowMode {
 /// # fn main() { assert_eq!(
 /// WindowSetup {
 ///     title: "An easy, good game".to_owned(),
-///     samples: NumSamples::Zero,
+///     samples: NumSamples::One,
 ///     vsync: true,
 ///     icon: "".to_owned(),
 ///     srgb: true,

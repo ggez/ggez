@@ -27,12 +27,11 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// ```rust,no_run
 /// # use ggez::*;
 /// # use ggez::graphics::*;
-/// # use ggez::mint::Point2;
 /// # fn main() -> GameResult {
 /// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
 /// let mesh: Mesh = MeshBuilder::new()
-///     .line(&[Point2::new(20.0, 20.0), Point2::new(40.0, 20.0)], 4.0, (255, 0, 0).into())?
-///     .circle(DrawMode::fill(), Point2::new(60.0, 38.0), 40.0, 1.0, (0, 255, 0).into())?
+///     .line(&[glam::vec2(20.0, 20.0), glam::vec2(40.0, 20.0)], 4.0, (255, 0, 0).into())?
+///     .circle(DrawMode::fill(), glam::vec2(60.0, 38.0), 40.0, 1.0, (0, 255, 0).into())?
 ///     .build(ctx)?;
 /// # Ok(()) }
 /// ```
@@ -48,24 +47,24 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 ///         // Add vertices for 3 lines (in an approximate equilateral triangle).
 ///         .line(
 ///             &[
-///                 na::Point2::new(0.0, 0.0),
-///                 na::Point2::new(-30.0, 52.0),
-///                 na::Point2::new(30.0, 52.0),
-///                 na::Point2::new(0.0, 0.0),
+///                 glam::vec2(0.0, 0.0),
+///                 glam::vec2(-30.0, 52.0),
+///                 glam::vec2(30.0, 52.0),
+///                 glam::vec2(0.0, 0.0),
 ///             ],
 ///             1.0,
 ///             graphics::Color::WHITE,
 ///         )?
 ///         // Add vertices for an exclamation mark!
-///         .ellipse(DrawMode::fill(), na::Point2::new(0.0, 25.0), 2.0, 15.0, 2.0, graphics::Color::WHITE,)
-///         .circle(DrawMode::fill(), na::Point2::new(0.0, 45.0), 2.0, 2.0, graphics::Color::WHITE,)
+///         .ellipse(DrawMode::fill(), glam::vec2(0.0, 25.0), 2.0, 15.0, 2.0, graphics::Color::WHITE,)?
+///         .circle(DrawMode::fill(), glam::vec2(0.0, 45.0), 2.0, 2.0, graphics::Color::WHITE,)?
 ///         // Finalize then unwrap. Unwrapping via `?` operator either yields the final `Mesh`,
 ///         // or propagates the error (note return type).
 ///         .build(ctx)?;
 ///     // Draw 3 meshes in a line, 1st and 3rd tilted by 1 radian.
-///     graphics::draw(ctx, &mesh, (na::Point2::new(50.0, 50.0), -1.0, graphics::Color::WHITE))?;
-///     graphics::draw(ctx, &mesh, (na::Point2::new(150.0, 50.0), 0.0, graphics::Color::WHITE))?;
-///     graphics::draw(ctx, &mesh, (na::Point2::new(250.0, 50.0), 1.0, graphics::Color::WHITE))?;
+///     graphics::draw(ctx, &mesh, (glam::vec2(50.0, 50.0), -1.0, graphics::Color::WHITE))?;
+///     graphics::draw(ctx, &mesh, (glam::vec2(150.0, 50.0), 0.0, graphics::Color::WHITE))?;
+///     graphics::draw(ctx, &mesh, (glam::vec2(250.0, 50.0), 1.0, graphics::Color::WHITE))?;
 ///     Ok(())
 /// }
 /// ```

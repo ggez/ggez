@@ -4,7 +4,7 @@
 //!
 //! ```rust, compile
 //! use ggez::event::{self, EventHandler, KeyCode, KeyMods};
-//! use ggez::{graphics, nalgebra as na, timer};
+//! use ggez::{graphics, timer};
 //! use ggez::input::keyboard;
 //! use ggez::{Context, GameResult};
 //!
@@ -35,7 +35,7 @@
 //!         let circle = graphics::Mesh::new_circle(
 //!             ctx,
 //!             graphics::DrawMode::fill(),
-//!             na::Point2::new(self.position_x, 380.0),
+//!             glam::vec2(self.position_x, 380.0),
 //!             100.0,
 //!             2.0,
 //!             graphics::Color::WHITE,
