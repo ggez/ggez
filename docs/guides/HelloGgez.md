@@ -107,7 +107,7 @@ But, we're not going to write any bugs right? 😉
 In your main, you will need to create an instance of `State`.
 ```rust,skt-definition-no-main,no_run
 pub fn main() {
-    let state = &mut State {};
+    let state = State {};
 }
 ```
 
@@ -118,29 +118,25 @@ Test to make sure everything is correct by running `cargo run`.
 You should see this:
 ```
 warning: unused variable: `state`
-  --> src\main.rs:19:9
+  --> src\main.rs:15:9
    |
-19 |     let state = &mut State { };
-   |         ^^^^^
+15 |     let state = &mut State {};
+   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_state`
    |
-   = note: #[warn(unused_variables)] on by default
-   = note: to avoid this warning, consider using `_state` instead
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `ctx`
+ --> src\main.rs:6:26
+  |
+6 |     fn update(&mut self, ctx: &mut Context) -> GameResult {
+  |                          ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
 
 warning: unused variable: `ctx`
  --> src\main.rs:9:24
   |
-9 |   fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-  |                        ^^^
-  |
-  = note: to avoid this warning, consider using `_ctx` instead
+9 |     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+  |                        ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
 
-warning: unused variable: `ctx`
-  --> src\main.rs:13:22
-   |
-13 |   fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-   |                      ^^^
-   |
-   = note: to avoid this warning, consider using `_ctx` instead
 ```
 
 And then nothing should happen after it runs.
@@ -158,7 +154,7 @@ To do that, you need to create a [`Context`](https://docs.rs/ggez/0.6.0/ggez/str
 Add this to the end of your `main` fn:
 ```rust,skt-expression,no_run
 let c = conf::Conf::new();
-let (ref mut ctx, ref mut event_loop) = ContextBuilder::new("hello_ggez", "awesome_person")
+let (ctx, event_loop) = ContextBuilder::new("hello_ggez", "awesome_person")
     .default_conf(c)
     .build()
     .unwrap();
@@ -182,21 +178,18 @@ Once again run `cargo run`
 You should get 2 warnings:
 ```
 warning: unused variable: `ctx`
- --> src\main.rs:9:24
+ --> src\main.rs:6:26
   |
-9 |   fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-  |                        ^^^
+6 |     fn update(&mut self, ctx: &mut Context) -> GameResult {
+  |                          ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
   |
-  = note: #[warn(unused_variables)] on by default
-  = note: to avoid this warning, consider using `_ctx` instead
+  = note: `#[warn(unused_variables)]` on by default
 
 warning: unused variable: `ctx`
-  --> src\main.rs:13:22
-   |
-13 |   fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-   |                      ^^^
-   |
-   = note: to avoid this warning, consider using `_ctx` instead
+ --> src\main.rs:9:24
+  |
+9 |     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+  |                        ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
 ```
 
 And a window will pop-up.
@@ -222,7 +215,9 @@ struct State {
 
 Now in `main`, you need to update the `State` instantiation to include `dt`:
 ```rust,skt-expression,no_run
-let state = &mut State { dt: std::time::Duration::new(0, 0) };
+let state = State {
+    dt: std::time::Duration::new(0, 0),
+};
 ```
 
 So now that we have state to update, let's update it in our `update` callback!
