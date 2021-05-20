@@ -180,6 +180,7 @@
 #![deny(unsafe_code)]
 #![warn(bare_trait_objects)]
 #![warn(missing_copy_implementations)]
+#![allow(clippy::needless_doctest_main)]
 
 #[macro_use]
 extern crate bitflags;
