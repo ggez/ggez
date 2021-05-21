@@ -2,7 +2,6 @@ use std::convert::TryFrom;
 use std::io::Read;
 use std::path;
 
-use glam::Quat;
 #[rustfmt::skip]
 use ::image;
 
