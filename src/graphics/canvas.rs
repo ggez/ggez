@@ -37,6 +37,12 @@ where
 /// by using shaders that render to an image.
 /// If you just want to draw multiple things efficiently, look at
 /// [`SpriteBatch`](spritebatch/struct.Spritebatch.html).
+///
+/// Note that if the canvas is not of the same size as the screen, and you want
+/// to render using coordinates relative to the canvas' coordinate system, you
+/// need to call [`graphics::set_screen_coordinates`](fn.set_screen_coordinates.html)
+/// and pass in a rectangle with position (0, 0) and a size equal to that of the
+/// canvas.
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 impl<S> CanvasGeneric<S>
