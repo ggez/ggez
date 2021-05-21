@@ -60,15 +60,18 @@ impl event::EventHandler for MainState {
         }
         let param = graphics::DrawParam::new()
             .dest(Vec2::new(
-                ((time % cycle) as f32 / cycle as f32 * 6.28).cos() * 50.0 - 350.0,
-                ((time % cycle) as f32 / cycle as f32 * 6.28).sin() * 50.0 - 450.0,
+                ((time % cycle) as f32 / cycle as f32 * 6.28).cos() * 50.0 + 250.0,
+                ((time % cycle) as f32 / cycle as f32 * 6.28).sin() * 50.0 + 150.0,
             ))
             .scale(Vec2::new(
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
             ))
             .rotation((time % cycle) as f32 / cycle as f32 * 6.28)
-            .offset(Vec2::new(0.4, 0.4)); // CAUTION: using an offset here is currently very slow
+            // WARNING: Using an offset != (0.,0.) on a spritebatch may come with a significant performance cost.
+            // This is due to the fact that the total dimensions of everything drawn by it have to be calculated.
+            // See SpriteBatch::draw and SpriteBatch::dimensions for more information.
+            .offset(Vec2::new(0.5, 0.5));
         graphics::draw(ctx, &self.spritebatch, param)?;
         self.spritebatch.clear();
 
