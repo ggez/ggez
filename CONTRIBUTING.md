@@ -14,7 +14,7 @@ Please [report bugs](https://github.com/ggez/ggez/issues) and open issues genero
 
 ### Finding things to work on
 
-Known bugs and feature requests are all in the [issue tracker](https://github.com/ggez/ggez/issues) so that's a good place to start looking for places to help.  Bugs marked `*EASY*` are fairly self-contained and probably don't need lots and lots of research.  Bugs marked `*LESS EASY*` will require a bit of finesse, or larger/broader changes to the library.
+Known bugs and feature requests are all in the [issue tracker](https://github.com/ggez/ggez/issues) so that's a good place to start looking for places to help.  Bugs marked `*GOOD FIRST ISSUE*` are fairly self-contained and probably don't need lots and lots of research. Others, especially those marked `*HARD*`, will often require a bit of finesse, or larger/broader changes to the library.
 
 ### Submitting a pull request
 
