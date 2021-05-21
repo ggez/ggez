@@ -151,23 +151,7 @@ where
 impl Drawable for Canvas {
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
-        // Gotta flip the image on the Y axis here
-        // to account for OpenGL's origin being at the bottom-left.
-        match param.trans {
-            Transform::Values { scale, dest, .. } => {
-                let new_scale = mint::Vector2 {
-                    x: scale.x,
-                    y: -scale.y,
-                };
-                let new_dest = mint::Point2 {
-                    x: dest.x,
-                    y: dest.y + f32::from(self.image.height()) * scale.y,
-                };
-                let new_param = param.dest(new_dest).scale(new_scale);
-                self.image.draw(ctx, new_param)
-            }
-            Transform::Matrix(_) => self.image.draw(ctx, param),
-        }
+        self.image.draw(ctx, param)
     }
     fn dimensions(&self, _: &mut Context) -> Option<Rect> {
         Some(self.image.dimensions())

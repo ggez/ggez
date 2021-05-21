@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 use std::io::Read;
 use std::path;
 
+use glam::Quat;
 #[rustfmt::skip]
 use ::image;
 
@@ -353,12 +354,16 @@ impl Drawable for Image {
         let scale_x = src_width * f32::from(self.width);
         let scale_y = src_height * f32::from(self.height);
         let new_param = match param.trans {
-            Transform::Values { scale, .. } => {
+            Transform::Values { scale, dest, .. } => {
                 let new_scale = mint::Vector2 {
                     x: scale.x * scale_x,
-                    y: scale.y * scale_y,
+                    y: scale.y * scale_y * -1.0,
                 };
-                param.scale(new_scale)
+                let new_dest = mint::Point2 {
+                    x: dest.x,
+                    y: dest.y + f32::from(self.height()) * scale.y,
+                };
+                param.scale(new_scale).dest(new_dest)
             }
             Transform::Matrix(m) => {
                 let m_scale = Matrix4::from_scale((scale_x, scale_y, 1.0).into());
