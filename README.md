@@ -9,11 +9,11 @@
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ggez/ggez/blob/master/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
 [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
-![Maintenance](https://img.shields.io/badge/maintenance-passively--maintained-yellowgreen.svg)
+![Maintenance](https://img.shields.io/badge/maintenance-actively--maintained-green.svg)
 
 ggez is a Rust library to create a Good Game Easily.
 
-The current version is 0.6.0-rc0.  This is a RELEASE CANDIDATE version,
+The current version is 0.6.0-rc1.  This is a RELEASE CANDIDATE version,
 which means that the API should be stable but there are still known bugs
 to address.  See the release milestone on the issue tracker for details.
 
