@@ -228,7 +228,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             &sampler_info,
             1,
             1,
-            &[255, 255, 255, 255],
+            vec![255, 255, 255, 255],
             color_format,
             debug_id,
         )?;
@@ -259,7 +259,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             &sampler_info,
             glyph_cache_width.try_into().unwrap(),
             glyph_cache_height.try_into().unwrap(),
-            &initial_contents,
+            initial_contents,
             color_format,
             debug_id,
         )?;

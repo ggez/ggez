@@ -806,7 +806,7 @@ pub fn clear_font_cache(ctx: &mut Context) {
         ctx,
         glyph_cache_width.try_into().unwrap(),
         glyph_cache_height.try_into().unwrap(),
-        &initial_contents,
+        initial_contents,
     )
     .unwrap();
     let glyph_state = Rc::new(RefCell::new(spritebatch::SpriteBatch::new(

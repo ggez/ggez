@@ -572,7 +572,7 @@ where
                 ctx,
                 u16::try_from(new_width).unwrap(),
                 u16::try_from(new_height).unwrap(),
-                &data,
+                data,
             )?;
             ctx.gfx_context.glyph_cache = new_glyph_cache.clone();
             let spritebatch = ctx.gfx_context.glyph_state.clone();

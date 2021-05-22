@@ -42,7 +42,7 @@ where
         sampler_info: &texture::SamplerInfo,
         width: u16,
         height: u16,
-        rgba: &[u8],
+        mut rgba: Vec<u8>,
         color_format: gfx::format::Format,
         debug_id: DebugId,
     ) -> GameResult<Self> {
@@ -79,14 +79,8 @@ where
             return Err(GameError::ResourceLoadError(msg));
         }
 
-        // TODO: This can overflow on 32-bit platforms
-        let rgba = rgba
-            .chunks(4 * usize::from(width))
-            .rev()
-            .flatten()
-            .copied()
-            .collect::<Vec<u8>>();
-        let rgba = rgba.as_slice();
+        // OpenGL's origin is bottom-left meanwhile ggez is top-left
+        flip_pixel_data(&mut rgba, uwidth, uheight);
 
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
         use gfx::memory::Bind;
@@ -104,7 +98,7 @@ where
         let raw_tex = factory.create_texture_raw(
             texinfo,
             Some(channel_type),
-            Some((&[rgba], gfx::texture::Mipmap::Provided)),
+            Some((&[&rgba], gfx::texture::Mipmap::Provided)),
         )?;
         let resource_desc = gfx::texture::ResourceDesc {
             channel: channel_type,
@@ -136,6 +130,37 @@ where
     }
 }
 
+/// Fast non-allocating function for flipping pixel data in an image vertically
+fn flip_pixel_data(rgba: &mut Vec<u8>, width: usize, height: usize) {
+    // cast the buffer into u32 so we can easily access the pixels themselves
+    // splits the pixel buffer into an upper (first) and a lower (second) half
+    let pixels: (&mut [u32], &mut [u32]) =
+        bytemuck::cast_slice_mut(rgba.as_mut_slice()).split_at_mut(width * height / 2);
+
+    // When the image has an uneven height, it will split the buffer in the middle of a row.
+    // This will decrease pixel count so that the x,y in the loop will never enter the split row since
+    // for uneven height images the middle row will stay the same anyway
+    let pixel_count = if height % 2 == 0 {
+        width * height / 2
+    } else {
+        width * height / 2 - width / 2
+    };
+    // Even though we removed uwidth / 2 from pixel_count,
+    // the second half of the buffer's size will still contain that data so
+    // we need to offset the index on that by the size of said data
+    let second_set_offset = if height % 2 == 0 { 0 } else { width / 2 };
+    for i in 0..pixel_count {
+        let x = i % width;
+        let y = i / width;
+        let reverse_y = height / 2 - y - 1;
+
+        let idx = (y * width) + x;
+        let second_idx = (reverse_y * width) + x + second_set_offset;
+
+        std::mem::swap(&mut pixels.0[idx], &mut pixels.1[second_idx]);
+    }
+}
+
 /// In-GPU-memory image data available to be drawn on the screen,
 /// using the OpenGL backend.
 ///
@@ -158,19 +183,19 @@ impl Image {
         let mut buf = Vec::new();
         let mut reader = context.filesystem.open(path)?;
         let _ = reader.read_to_end(&mut buf)?;
-        Self::from_bytes(context, &buf)
+        Self::from_bytes(context, buf)
     }
 
     /// Creates a new `Image` from the given buffer, which should contain an image encoded
     /// in a supported image file format.
-    pub fn from_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
+    pub fn from_bytes(context: &mut Context, bytes: Vec<u8>) -> GameResult<Self> {
         let img = image::load_from_memory(&bytes)?.to_rgba8();
         let (width, height) = img.dimensions();
         let better_width = u16::try_from(width)
             .map_err(|_| GameError::ResourceLoadError(String::from("Image width > u16::MAX")))?;
         let better_height = u16::try_from(height)
             .map_err(|_| GameError::ResourceLoadError(String::from("Image height > u16::MAX")))?;
-        Self::from_rgba8(context, better_width, better_height, &img)
+        Self::from_rgba8(context, better_width, better_height, img.into_raw())
     }
 
     /// Creates a new `Image` from the given buffer of `u8` RGBA values.
@@ -184,7 +209,7 @@ impl Image {
         context: &mut Context,
         width: u16,
         height: u16,
-        rgba: &[u8],
+        rgba: Vec<u8>,
     ) -> GameResult<Self> {
         let debug_id = DebugId::get(context);
         let color_format = context.gfx_context.color_format();
@@ -297,7 +322,7 @@ impl Image {
         for _i in 0..size_squared {
             buffer.extend(&pixel_array[..]);
         }
-        Image::from_rgba8(context, size, size, &buffer)
+        Image::from_rgba8(context, size, size, buffer)
     }
 
     /// Return the width of the image.
@@ -428,8 +453,8 @@ mod tests {
     #[test]
     fn test_invalid_image_size() {
         let (ctx, _) = &mut ContextBuilder::new("unittest", "unittest").build().unwrap();
-        let _i = assert!(Image::from_rgba8(ctx, 0, 0, &[]).is_err());
-        let _i = assert!(Image::from_rgba8(ctx, 3432, 432, &[]).is_err());
-        let _i = Image::from_rgba8(ctx, 2, 2, &[99; 16]).unwrap();
+        let _i = assert!(Image::from_rgba8(ctx, 0, 0, vec![]).is_err());
+        let _i = assert!(Image::from_rgba8(ctx, 3432, 432, vec![]).is_err());
+        let _i = Image::from_rgba8(ctx, 2, 2, vec![99; 16]).unwrap();
     }
 }
