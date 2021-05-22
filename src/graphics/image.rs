@@ -401,6 +401,7 @@ impl Drawable for Image {
                 scale,
                 dest,
                 rotation,
+                offset,
                 ..
             } => {
                 let new_scale = mint::Vector2 {
@@ -412,7 +413,11 @@ impl Drawable for Image {
                     y: dest.y + f32::from(self.height()) * scale.y
                         - (1.0 - rotation.cos()) * f32::from(self.height),
                 };
-                param.scale(new_scale).dest(new_dest)
+                let new_offset = mint::Point2 {
+                    x: offset.x,
+                    y: -offset.y,
+                };
+                param.scale(new_scale).dest(new_dest).offset(new_offset)
             }
             Transform::Matrix(m) => {
                 // TODO Same flipping as above
