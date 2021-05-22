@@ -149,13 +149,14 @@ fn flip_pixel_data(rgba: &mut Vec<u8>, width: usize, height: usize) {
     // the second half of the buffer's size will still contain that data so
     // we need to offset the index on that by the size of said data
     let second_set_offset = if height % 2 == 0 {
+        // even height (evenness on width doesn't matter)
         0
+    } else if width % 2 == 0 {
+        // uneven height but even width
+        width / 2
     } else {
-        if width % 2 == 0 {
-            width / 2
-        } else {
-            width / 2 + 1
-        }
+        // uneven height and uneven width
+        width / 2 + 1
     };
     for i in 0..pixel_count {
         let x = i % width;
