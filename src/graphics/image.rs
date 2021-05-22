@@ -78,6 +78,16 @@ where
             );
             return Err(GameError::ResourceLoadError(msg));
         }
+
+        // TODO: This can overflow on 32-bit platforms
+        let rgba = rgba
+            .chunks(4 * usize::from(width))
+            .rev()
+            .flatten()
+            .copied()
+            .collect::<Vec<u8>>();
+        let rgba = rgba.as_slice();
+
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
         use gfx::memory::Bind;
         let gfx::format::Format(surface_format, channel_type) = color_format;
