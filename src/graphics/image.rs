@@ -397,18 +397,25 @@ impl Drawable for Image {
         let scale_x = src_width * f32::from(self.width);
         let scale_y = src_height * f32::from(self.height);
         let new_param = match param.trans {
-            Transform::Values { scale, dest, .. } => {
+            Transform::Values {
+                scale,
+                dest,
+                rotation,
+                ..
+            } => {
                 let new_scale = mint::Vector2 {
                     x: scale.x * scale_x,
                     y: scale.y * scale_y * -1.0,
                 };
                 let new_dest = mint::Point2 {
-                    x: dest.x,
-                    y: dest.y + f32::from(self.height()) * scale.y,
+                    x: dest.x - rotation.sin() * f32::from(self.height),
+                    y: dest.y + f32::from(self.height()) * scale.y
+                        - (1.0 - rotation.cos()) * f32::from(self.height),
                 };
                 param.scale(new_scale).dest(new_dest)
             }
             Transform::Matrix(m) => {
+                // TODO Same flipping as above
                 let m_scale = Matrix4::from_scale((scale_x, scale_y, 1.0).into());
                 param.transform(Matrix4::from(m) * m_scale)
             }
