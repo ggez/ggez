@@ -425,6 +425,13 @@ impl Drawable for Image {
                 param.transform(Matrix4::from(m) * m_scale)
             }
         };
+        let new_src = Rect {
+            x: param.src.x,
+            y: (1.0 - param.src.h) - param.src.y,
+            w: param.src.w,
+            h: param.src.h,
+        };
+        let new_param = new_param.src(new_src);
 
         gfx.update_instance_properties(new_param)?;
         let sampler = gfx
