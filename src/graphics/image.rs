@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 use std::io::Read;
 use std::path;
 
+use glam::Quat;
 #[rustfmt::skip]
 use ::image;
 
@@ -396,35 +397,28 @@ impl Drawable for Image {
         // be its-unit-size-in-pixels.
         let scale_x = src_width * f32::from(self.width);
         let scale_y = src_height * f32::from(self.height);
-        let new_param = match param.trans {
-            Transform::Values {
-                scale,
-                dest,
-                rotation,
-                offset,
-                ..
-            } => {
-                let new_scale = mint::Vector2 {
-                    x: scale.x * scale_x,
-                    y: scale.y * scale_y * -1.0,
-                };
-                let new_dest = mint::Point2 {
-                    x: dest.x - rotation.sin() * f32::from(self.height) * scale.y * src_height,
-                    y: dest.y + f32::from(self.height()) * scale.y * src_height
-                        - (1.0 - rotation.cos()) * f32::from(self.height) * scale.y * src_height,
-                };
-                let new_offset = mint::Point2 {
-                    x: offset.x,
-                    y: -offset.y,
-                };
-                param.scale(new_scale).dest(new_dest).offset(new_offset)
-            }
+        let new_mat = match param.trans {
+            Transform::Values { scale, .. } => Matrix4::from(
+                param
+                    .scale(mint::Vector2 {
+                        x: scale.x * scale_x,
+                        y: scale.y * scale_y,
+                    })
+                    .trans
+                    .to_bare_matrix(),
+            ),
             Transform::Matrix(m) => {
-                // TODO Same flipping as above
-                let m_scale = Matrix4::from_scale((scale_x, scale_y, 1.0).into());
-                param.transform(Matrix4::from(m) * m_scale)
+                Matrix4::from(m) * Matrix4::from_scale(glam::vec3(scale_x, scale_y, 1.0))
             }
         };
+        let new_param = param.transform(
+            new_mat
+                * glam::Mat4::from_scale_rotation_translation(
+                    glam::vec3(1.0, -1.0, 1.0),
+                    Quat::identity(),
+                    glam::vec3(0.0, 1.0, 0.0),
+                ),
+        );
         let new_src = Rect {
             x: param.src.x,
             y: (1.0 - param.src.h) - param.src.y,
