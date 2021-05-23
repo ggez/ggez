@@ -411,7 +411,8 @@ impl Drawable for Image {
                 let new_dest = mint::Point2 {
                     x: dest.x - rotation.sin() * f32::from(self.height),
                     y: dest.y + f32::from(self.height()) * scale.y
-                        - (1.0 - rotation.cos()) * f32::from(self.height),
+                        - (1.0 - rotation.cos()) * f32::from(self.height)
+                        - (1.0 - param.src.h) * f32::from(self.height),
                 };
                 let new_offset = mint::Point2 {
                     x: offset.x,
