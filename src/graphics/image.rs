@@ -149,13 +149,13 @@ impl Image {
         let mut buf = Vec::new();
         let mut reader = context.filesystem.open(path)?;
         let _ = reader.read_to_end(&mut buf)?;
-        Self::from_bytes(context, buf)
+        Self::from_bytes(context, &buf)
     }
 
     /// Creates a new `Image` from the given buffer, which should contain an image encoded
     /// in a supported image file format.
-    pub fn from_bytes(context: &mut Context, bytes: Vec<u8>) -> GameResult<Self> {
-        let img = image::load_from_memory(&bytes)?.to_rgba8();
+    pub fn from_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
+        let img = image::load_from_memory(bytes)?.to_rgba8();
         let (width, height) = img.dimensions();
         let better_width = u16::try_from(width)
             .map_err(|_| GameError::ResourceLoadError(String::from("Image width > u16::MAX")))?;
