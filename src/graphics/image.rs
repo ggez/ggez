@@ -161,7 +161,7 @@ impl Image {
             .map_err(|_| GameError::ResourceLoadError(String::from("Image width > u16::MAX")))?;
         let better_height = u16::try_from(height)
             .map_err(|_| GameError::ResourceLoadError(String::from("Image height > u16::MAX")))?;
-        Self::from_rgba8(context, better_width, better_height, &img.into_raw())
+        Self::from_rgba8(context, better_width, better_height, &img)
     }
 
     /// Creates a new `Image` from the given buffer of `u8` RGBA values.
