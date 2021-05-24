@@ -207,7 +207,7 @@ impl Image {
         // common operation.
         let dl_buffer = gfx
             .factory
-            .create_download_buffer::<[u8; 4]>(usize::from(w) * usize::from(h))?;
+            .create_download_buffer::<u8>(usize::from(w) * usize::from(h) * 4)?;
 
         let factory = &mut *gfx.factory;
         let mut local_encoder = GlBackendSpec::encoder(factory);
@@ -230,23 +230,8 @@ impl Image {
         )?;
         local_encoder.flush(&mut *gfx.device);
 
-        let reader = gfx.factory.read_mapping(&dl_buffer)?;
-
-        // intermediary buffer to avoid casting.
-        // TODO: This can overflow on 32-bit platforms
-        let mut data = Vec::with_capacity(usize::from(self.width) * usize::from(self.height) * 4);
-        // Assuming OpenGL backend whose typical readback option (glReadPixels) has origin at bottom left.
-        // Image formats on the other hand usually deal with top right.
-        for y in (0..usize::from(self.height)).rev() {
-            data.extend(
-                reader
-                    .iter()
-                    .skip(y * usize::from(self.width))
-                    .take(usize::from(self.width))
-                    .flatten(),
-            );
-        }
-        Ok(data)
+        let reader = gfx.factory.read_mapping(&dl_buffer)?.to_vec();
+        Ok(reader.to_vec())
     }
 
     /// Encode the `Image` to the given file format and
