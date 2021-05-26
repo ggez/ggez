@@ -207,8 +207,8 @@ impl Drawable for Canvas {
 
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
-        let scale_x = param.src.w * self.width() as f32;
-        let scale_y = param.src.h * self.height() as f32;
+        let scale_x = param.src.w * f32::from(self.width());
+        let scale_y = param.src.h * f32::from(self.height());
 
         let param = param.transform(
             glam::Mat4::from(param.trans.to_bare_matrix())
