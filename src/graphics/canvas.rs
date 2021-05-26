@@ -207,25 +207,15 @@ impl Drawable for Canvas {
 
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
-        let scale_x = param.src.w * f32::from(self.width());
-        let scale_y = param.src.h * f32::from(self.height());
+        let scale_x = param.src.w * self.width() as f32;
+        let scale_y = param.src.h * self.height() as f32;
 
-        let mat = glam::Mat4::from(param.trans.to_bare_matrix());
-        let new_param = param.transform(
-            mat * Matrix4::from_scale(glam::vec3(scale_x, scale_y, 1.0))
-                * glam::Mat4::from_scale_rotation_translation(
-                    glam::vec3(1.0, -1.0, 1.0),
-                    Quat::identity(),
-                    glam::vec3(0.0, 1.0, 0.0),
-                ),
+        let param = param.transform(
+            glam::Mat4::from(param.trans.to_bare_matrix())
+                * Matrix4::from_scale(glam::vec3(scale_x, scale_y, 1.0)),
         );
-        let new_src = Rect {
-            x: param.src.x,
-            y: (1.0 - param.src.h) - param.src.y,
-            w: param.src.w,
-            h: param.src.h,
-        };
-        let new_param = new_param.src(new_src);
+
+        let new_param = flip_draw_param_vertical(param);
 
         image::draw_image_raw(&self.image, ctx, new_param)
     }
@@ -240,44 +230,26 @@ impl Drawable for Canvas {
     }
 }
 
-/// Fast non-allocating function for flipping pixel data in an image vertically
-fn flip_pixel_data(rgba: &mut Vec<u8>, width: usize, height: usize) {
-    // cast the buffer into u32 so we can easily access the pixels themselves
-    // splits the pixel buffer into an upper (first) and a lower (second) half
-    let pixels: (&mut [u32], &mut [u32]) =
-        bytemuck::cast_slice_mut(rgba.as_mut_slice()).split_at_mut(width * height / 2);
-
-    // When the image has an uneven height, it will split the buffer in the middle of a row.
-    // This will decrease pixel count so that the x,y in the loop will never enter the split row since
-    // for uneven height images the middle row will stay the same anyway
-    let pixel_count = if height % 2 == 0 {
-        width * height / 2
+fn flip_draw_param_vertical(param: DrawParam) -> DrawParam {
+    let param = if let Transform::Matrix(mat) = param.trans {
+        param.transform(
+            glam::Mat4::from(mat)
+                * glam::Mat4::from_scale_rotation_translation(
+                    glam::vec3(1.0, -1.0, 1.0),
+                    Quat::identity(),
+                    glam::vec3(0.0, 1.0, 0.0),
+                ),
+        )
     } else {
-        width * height / 2 - width / 2
+        panic!("Can not be called with a non-matrix DrawParam");
     };
-    // Even though we removed uwidth / 2 from pixel_count,
-    // the second half of the buffer's size will still contain that data so
-    // we need to offset the index on that by the size of said data
-    let second_set_offset = if height % 2 == 0 {
-        // even height (evenness on width doesn't matter)
-        0
-    } else if width % 2 == 0 {
-        // uneven height but even width
-        width / 2
-    } else {
-        // uneven height and uneven width
-        width / 2 + 1
+    let new_src = Rect {
+        x: param.src.x,
+        y: (1.0 - param.src.h) - param.src.y,
+        w: param.src.w,
+        h: param.src.h,
     };
-    for i in 0..pixel_count {
-        let x = i % width;
-        let y = i / width;
-        let reverse_y = height / 2 - y - 1;
-
-        let idx = (y * width) + x;
-        let second_idx = (reverse_y * width) + x + second_set_offset;
-
-        std::mem::swap(&mut pixels.0[idx], &mut pixels.1[second_idx]);
-    }
+    param.src(new_src)
 }
 
 /// Set the `Canvas` to render to. Specifying `Option::None` will cause all

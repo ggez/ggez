@@ -30,7 +30,6 @@ use old_school_gfx_glutin_ext::*;
 use crate::conf;
 use crate::conf::WindowMode;
 use crate::context::Context;
-use crate::context::DebugId;
 use crate::GameError;
 use crate::GameResult;
 
@@ -490,8 +489,8 @@ pub fn present(ctx: &mut Context) -> GameResult<()> {
 /// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to an `Image`.
 pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
-    use gfx::memory::Bind;
-    let debug_id = DebugId::get(ctx);
+    use gfx::memory::Typed;
+    use gfx::traits::FactoryExt;
 
     let gfx = &mut ctx.gfx_context;
     let (w, h, _depth, aa) = gfx.data.out.get_dimensions();
@@ -501,19 +500,11 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     }
 
     let surface_format = gfx.color_format();
-    let gfx::format::Format(surface_type, channel_type) = surface_format;
 
-    let texture_kind = gfx::texture::Kind::D2(w, h, aa);
-    let texture_info = gfx::texture::Info {
-        kind: texture_kind,
-        levels: 1,
-        format: surface_type,
-        bind: Bind::TRANSFER_SRC | Bind::TRANSFER_DST | Bind::SHADER_RESOURCE,
-        usage: gfx::memory::Usage::Data,
-    };
-    let target_texture = gfx
+    let dl_buffer = gfx
         .factory
-        .create_texture_raw(texture_info, Some(channel_type), None)?;
+        .create_download_buffer::<u8>(usize::from(w) * usize::from(h) * 4)?;
+
     let image_info = gfx::texture::ImageInfoCommon {
         xoffset: 0,
         yoffset: 0,
@@ -528,38 +519,61 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     let mut local_encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
         gfx.factory.create_command_buffer().into();
 
-    local_encoder.copy_texture_to_texture_raw(
+    local_encoder.copy_texture_to_buffer_raw(
         gfx.data.out.get_texture(),
         None,
         image_info,
-        &target_texture,
-        None,
-        image_info,
+        &dl_buffer.raw(),
+        0,
     )?;
 
     local_encoder.flush(&mut *gfx.device);
 
-    let resource_desc = gfx::texture::ResourceDesc {
-        channel: channel_type,
-        layer: None,
-        min: 0,
-        max: 0,
-        swizzle: gfx::format::Swizzle::new(),
-    };
-    let shader_resource = gfx
-        .factory
-        .view_texture_as_shader_resource_raw(&target_texture, resource_desc)?;
-    let image = Image {
-        texture: shader_resource,
-        texture_handle: target_texture,
-        sampler_info: gfx.default_sampler_info,
-        blend_mode: None,
-        width: w,
-        height: h,
-        debug_id,
-    };
+    let mut data = gfx.factory.read_mapping(&dl_buffer)?.to_vec();
+    flip_pixel_data(&mut data, w as usize, h as usize);
+    let image = Image::from_rgba8(ctx, w, h, &data)?;
 
     Ok(image)
+}
+
+/// Fast non-allocating function for flipping pixel data in an image vertically
+fn flip_pixel_data(rgba: &mut Vec<u8>, width: usize, height: usize) {
+    // cast the buffer into u32 so we can easily access the pixels themselves
+    // splits the pixel buffer into an upper (first) and a lower (second) half
+    let pixels: (&mut [u32], &mut [u32]) =
+        bytemuck::cast_slice_mut(rgba.as_mut_slice()).split_at_mut(width * height / 2);
+
+    // When the image has an uneven height, it will split the buffer in the middle of a row.
+    // This will decrease pixel count so that the x,y in the loop will never enter the split row since
+    // for uneven height images the middle row will stay the same anyway
+    let pixel_count = if height % 2 == 0 {
+        width * height / 2
+    } else {
+        width * height / 2 - width / 2
+    };
+    // Even though we removed uwidth / 2 from pixel_count,
+    // the second half of the buffer's size will still contain that data so
+    // we need to offset the index on that by the size of said data
+    let second_set_offset = if height % 2 == 0 {
+        // even height (evenness on width doesn't matter)
+        0
+    } else if width % 2 == 0 {
+        // uneven height but even width
+        width / 2
+    } else {
+        // uneven height and uneven width
+        width / 2 + 1
+    };
+    for i in 0..pixel_count {
+        let x = i % width;
+        let y = i / width;
+        let reverse_y = height / 2 - y - 1;
+
+        let idx = (y * width) + x;
+        let second_idx = (reverse_y * width) + x + second_set_offset;
+
+        std::mem::swap(&mut pixels.0[idx], &mut pixels.1[second_idx]);
+    }
 }
 
 // **********************************************************************
