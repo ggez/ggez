@@ -58,29 +58,6 @@ struct GridPosition {
     y: i16,
 }
 
-/// This is a trait that provides a modulus function that works for negative values
-/// rather than just the standard remainder op (%) which does not. We'll use this
-/// to get our snake to wrap from one side of the game board around to the other
-/// when it goes off the top, bottom, left, or right side of the screen.
-trait ModuloSigned {
-    fn modulo(&self, n: Self) -> Self;
-}
-
-/// Here we implement our `ModuloSigned` trait for any type T which implements
-/// `Add` (the `+` operator) with an output type T and Rem (the `%` operator)
-/// that also has an output type of T, and that can be cloned. These are the bounds
-/// that we need in order to implement a modulus function that works for negative numbers
-/// as well.
-impl<T> ModuloSigned for T
-where
-    T: std::ops::Add<Output = T> + std::ops::Rem<Output = T> + Clone,
-{
-    fn modulo(&self, n: T) -> T {
-        // Because of our trait bounds, we can now apply these operators.
-        (self.clone() % n.clone() + n.clone()) % n
-    }
-}
-
 impl GridPosition {
     /// We make a standard helper function so that we can create a new `GridPosition`
     /// more easily.
@@ -101,16 +78,17 @@ impl GridPosition {
     }
 
     /// We'll make another helper function that takes one grid position and returns a new one after
-    /// making one move in the direction of `dir`. We use our `SignedModulo` trait
-    /// above, which is now implemented on `i16` because it satisfies the trait bounds,
-    /// to automatically wrap around within our grid size if the move would have otherwise
-    /// moved us off the board to the top, bottom, left, or right.
+    /// making one move in the direction of `dir`.
+    /// We use the [rem_euclid()](https://doc.rust-lang.org/std/primitive.i16.html#method.rem_euclid)
+    /// API when crossing the top/left limits, as the standard remainder function (`%`) returns a
+    /// negative value when the left operand is negative.
+    /// Only the Up/Left cases require rem_euclid(); for consistency, it's used for all of them.
     pub fn new_from_move(pos: GridPosition, dir: Direction) -> Self {
         match dir {
-            Direction::Up => GridPosition::new(pos.x, (pos.y - 1).modulo(GRID_SIZE.1)),
-            Direction::Down => GridPosition::new(pos.x, (pos.y + 1).modulo(GRID_SIZE.1)),
-            Direction::Left => GridPosition::new((pos.x - 1).modulo(GRID_SIZE.0), pos.y),
-            Direction::Right => GridPosition::new((pos.x + 1).modulo(GRID_SIZE.0), pos.y),
+            Direction::Up => GridPosition::new(pos.x, (pos.y - 1).rem_euclid(GRID_SIZE.1)),
+            Direction::Down => GridPosition::new(pos.x, (pos.y + 1).rem_euclid(GRID_SIZE.1)),
+            Direction::Left => GridPosition::new((pos.x - 1).rem_euclid(GRID_SIZE.0), pos.y),
+            Direction::Right => GridPosition::new((pos.x + 1).rem_euclid(GRID_SIZE.0), pos.y),
         }
     }
 }
