@@ -78,6 +78,7 @@ where
             );
             return Err(GameError::ResourceLoadError(msg));
         }
+
         let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
         use gfx::memory::Bind;
         let gfx::format::Format(surface_format, channel_type) = color_format;
@@ -94,7 +95,7 @@ where
         let raw_tex = factory.create_texture_raw(
             texinfo,
             Some(channel_type),
-            Some((&[rgba], gfx::texture::Mipmap::Provided)),
+            Some((&[&rgba], gfx::texture::Mipmap::Provided)),
         )?;
         let resource_desc = gfx::texture::ResourceDesc {
             channel: channel_type,
@@ -154,7 +155,7 @@ impl Image {
     /// Creates a new `Image` from the given buffer, which should contain an image encoded
     /// in a supported image file format.
     pub fn from_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
-        let img = image::load_from_memory(&bytes)?.to_rgba8();
+        let img = image::load_from_memory(bytes)?.to_rgba8();
         let (width, height) = img.dimensions();
         let better_width = u16::try_from(width)
             .map_err(|_| GameError::ResourceLoadError(String::from("Image width > u16::MAX")))?;
@@ -206,7 +207,7 @@ impl Image {
         // common operation.
         let dl_buffer = gfx
             .factory
-            .create_download_buffer::<[u8; 4]>(usize::from(w) * usize::from(h))?;
+            .create_download_buffer::<u8>(usize::from(w) * usize::from(h) * 4)?;
 
         let factory = &mut *gfx.factory;
         let mut local_encoder = GlBackendSpec::encoder(factory);
@@ -229,23 +230,8 @@ impl Image {
         )?;
         local_encoder.flush(&mut *gfx.device);
 
-        let reader = gfx.factory.read_mapping(&dl_buffer)?;
-
-        // intermediary buffer to avoid casting.
-        // TODO: This can overflow on 32-bit platforms
-        let mut data = Vec::with_capacity(usize::from(self.width) * usize::from(self.height) * 4);
-        // Assuming OpenGL backend whose typical readback option (glReadPixels) has origin at bottom left.
-        // Image formats on the other hand usually deal with top right.
-        for y in (0..usize::from(self.height)).rev() {
-            data.extend(
-                reader
-                    .iter()
-                    .skip(y * usize::from(self.width))
-                    .take(usize::from(self.width))
-                    .flatten(),
-            );
-        }
-        Ok(data)
+        let reader = gfx.factory.read_mapping(&dl_buffer)?.to_vec();
+        Ok(reader.to_vec())
     }
 
     /// Encode the `Image` to the given file format and
@@ -345,7 +331,6 @@ impl Drawable for Image {
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
 
-        let gfx = &mut ctx.gfx_context;
         let src_width = param.src.w;
         let src_height = param.src.h;
         // We have to mess with the scale to make everything
@@ -353,45 +338,16 @@ impl Drawable for Image {
         let scale_x = src_width * f32::from(self.width);
         let scale_y = src_height * f32::from(self.height);
         let new_param = match param.trans {
-            Transform::Values { scale, .. } => {
-                let new_scale = mint::Vector2 {
-                    x: scale.x * scale_x,
-                    y: scale.y * scale_y,
-                };
-                param.scale(new_scale)
-            }
-            Transform::Matrix(m) => {
-                let m_scale = Matrix4::from_scale((scale_x, scale_y, 1.0).into());
-                param.transform(Matrix4::from(m) * m_scale)
-            }
+            Transform::Values { scale, .. } => param.scale(mint::Vector2 {
+                x: scale.x * scale_x,
+                y: scale.y * scale_y,
+            }),
+            Transform::Matrix(m) => param.transform(
+                Matrix4::from(m) * Matrix4::from_scale(glam::vec3(scale_x, scale_y, 1.0)),
+            ),
         };
 
-        gfx.update_instance_properties(new_param)?;
-        let sampler = gfx
-            .samplers
-            .get_or_insert(self.sampler_info, gfx.factory.as_mut());
-        gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-        let typed_thingy = gfx
-            .backend_spec
-            .raw_to_typed_shader_resource(self.texture.clone());
-        gfx.data.tex = (typed_thingy, sampler);
-        let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
-            let current_mode = gfx.blend_mode();
-            if current_mode != mode {
-                gfx.set_blend_mode(mode)?;
-                Some(current_mode)
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-
-        gfx.draw(None)?;
-        if let Some(mode) = previous_mode {
-            gfx.set_blend_mode(mode)?;
-        }
-        Ok(())
+        draw_image_raw(self, ctx, new_param)
     }
 
     fn dimensions(&self, _: &mut Context) -> Option<graphics::Rect> {
@@ -405,6 +361,37 @@ impl Drawable for Image {
     fn blend_mode(&self) -> Option<BlendMode> {
         self.blend_mode
     }
+}
+
+pub(crate) fn draw_image_raw(image: &Image, ctx: &mut Context, param: DrawParam) -> GameResult {
+    let gfx = &mut ctx.gfx_context;
+
+    gfx.update_instance_properties(param)?;
+    let sampler = gfx
+        .samplers
+        .get_or_insert(image.sampler_info, gfx.factory.as_mut());
+    gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
+    let typed_thingy = gfx
+        .backend_spec
+        .raw_to_typed_shader_resource(image.texture.clone());
+    gfx.data.tex = (typed_thingy, sampler);
+    let previous_mode: Option<BlendMode> = if let Some(mode) = image.blend_mode {
+        let current_mode = gfx.blend_mode();
+        if current_mode != mode {
+            gfx.set_blend_mode(mode)?;
+            Some(current_mode)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    gfx.draw(None)?;
+    if let Some(mode) = previous_mode {
+        gfx.set_blend_mode(mode)?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]
