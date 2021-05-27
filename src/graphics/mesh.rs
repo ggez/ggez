@@ -440,6 +440,8 @@ impl MeshBuilder {
         // Can we remove the clone here?
         // I can't find a way to, because `into()` consumes its source and
         // `Borrow` or `AsRef` aren't really right.
+        // EDIT: We can, but at a small cost to user-friendlyness, see:
+        //       https://github.com/ggez/ggez/issues/940
         let vertices = verts.iter().cloned().map(|v: V| -> Vertex { v.into() });
         let indices = indices.iter().map(|i| (*i) + next_idx);
         self.buffer.vertices.extend(vertices);
