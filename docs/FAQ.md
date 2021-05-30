@@ -9,6 +9,7 @@
   * [Resolution independence](#gfx_resolution)
 * **[Libraries](#libraries)**
   * [Can I use `specs`, `legion` or another entity-component system?](#library_ecs)
+  * [What is mint and how do I use `Into<mint::Point2<f32>>` and other `Into<mint::T>` types?](#library_mint)
 * **[Performance](#performance)**
   * [Image/sound loading and font rendering is slow!](#perf_slow1)
   * [Text rendering is still slow!](#perf_text)
@@ -123,6 +124,29 @@ and scaling your `Image`s with `graphics::DrawParam`.
 Sure!  ggez doesn't include such a thing itself, since it's more or less out of scope for this, but it is specifically
 designed to make it easy to Lego together with other tools.  The [game template](https://github.com/ggez/game-template) repo
 demonstrates how to use ggez with `specs` for ECS, `warmy` for resource loading, and other nice crates. This template is available with `legion` in place of `specs` as well [here](https://github.com/Quetzal2/game-template).
+
+<a name="library_mint">
+
+## What is mint and how do I use `Into<mint::Point2<f32>>` and other `Into<mint::T>` types?
+
+</a>
+mint stands for "Math INteroperability Types" which means that it provides types for other math libraries to convert to and from with. What you are supposed to do is to add a math library of your choice to your game such as glam or nalgebra, usually with a "mint" feature.
+ For example. You can add <code>glam = { version = "0.15.2", features = ["mint"] }</code> in your Cargo.toml, then when you try to pass something to, say <code>DrawParam::new().dest(my_point)</code>, you will be able to pass a glam type like <code>DrawParam::new().dest(glam::vec2(10.0, 15.0))</code> to set the destination to x=10 and y=15.
+Going the other way around is a bit more verbose, you need to do <code>glam::Vec2::from(my_draw_param.dest)</code>
+
+Another example, moving a draw param's destination diagonally by 1 down and 1 right.
+
+```rust
+let dest = glam::Vec2::from(my_draw_param.dest);
+let new_dest = dest + glam::vec2(1.0, 1.0);
+DrawParam::new().dest(new_dest)
+```
+
+or simply
+
+```rust
+DrawParam::new().dest(glam::Vec2::from(my_draw_param.dest) + glam::vec2(1.0, 1.0))
+```
 
 # Performance
 
