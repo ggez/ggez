@@ -288,12 +288,14 @@ where
 
                 if let Err(e) = state.update(ctx) {
                     error!("Error on EventHandler::update(): {:?}", e);
+                    eprintln!("Error on EventHandler::update(): {:?}", e);
                     *control_flow = ControlFlow::Exit;
                     return;
                 }
 
                 if let Err(e) = state.draw(ctx) {
                     error!("Error on EventHandler::draw(): {:?}", e);
+                    eprintln!("Error on EventHandler::draw(): {:?}", e);
                     *control_flow = ControlFlow::Exit;
                     return;
                 }
