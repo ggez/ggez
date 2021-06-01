@@ -239,6 +239,19 @@ impl PhysicalFS {
             Err(GameError::FilesystemError(msg))
         }
     }
+
+    /// Creates the PhysicalFS's root directory if necessary.
+    /// Idempotent.
+    /// This way we can not create the directory until it's
+    /// actually used, though it IS a tiny bit of a performance
+    /// malus.
+    fn create_root(&self) -> GameResult {
+        if !self.root.exists() {
+            fs::create_dir_all(&self.root).map_err(GameError::from)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl Debug for PhysicalFS {
@@ -263,6 +276,10 @@ impl VFS for PhysicalFS {
             return Err(GameError::FilesystemError(msg));
         }
 
+        if open_options.create {
+            self.create_root()?;
+        }
+
         let p = self.to_absolute(path)?;
         open_options
             .to_fs_openoptions()
@@ -280,6 +297,8 @@ impl VFS for PhysicalFS {
                     .to_string(),
             ));
         }
+
+        self.create_root()?;
 
         let p = self.to_absolute(path)?;
         //println!("Creating {:?}", p);
