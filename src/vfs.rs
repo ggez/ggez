@@ -275,7 +275,11 @@ impl VFS for PhysicalFS {
             );
             return Err(GameError::FilesystemError(msg));
         }
-        self.create_root()?;
+
+        if open_options.create {
+            self.create_root()?;
+        }
+
         let p = self.to_absolute(path)?;
         open_options
             .to_fs_openoptions()
@@ -293,7 +297,9 @@ impl VFS for PhysicalFS {
                     .to_string(),
             ));
         }
+
         self.create_root()?;
+
         let p = self.to_absolute(path)?;
         //println!("Creating {:?}", p);
         fs::DirBuilder::new()
@@ -310,7 +316,6 @@ impl VFS for PhysicalFS {
             ));
         }
 
-        self.create_root()?;
         let p = self.to_absolute(path)?;
         if p.is_dir() {
             fs::remove_dir(p).map_err(GameError::from)
@@ -329,7 +334,6 @@ impl VFS for PhysicalFS {
             ));
         }
 
-        self.create_root()?;
         let p = self.to_absolute(path)?;
         if p.is_dir() {
             fs::remove_dir_all(p).map_err(GameError::from)
@@ -348,7 +352,6 @@ impl VFS for PhysicalFS {
 
     /// Get the file's metadata
     fn metadata(&self, path: &Path) -> GameResult<Box<dyn VMetadata>> {
-        self.create_root()?;
         let p = self.to_absolute(path)?;
         p.metadata()
             .map(|m| Box::new(PhysicalMetadata(m)) as Box<dyn VMetadata>)
@@ -357,7 +360,6 @@ impl VFS for PhysicalFS {
 
     /// Retrieve the path entries in this path
     fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
-        self.create_root()?;
         let p = self.to_absolute(path)?;
         // This is inconvenient because path() returns the full absolute
         // path of the bloody file, which is NOT what we want!
