@@ -2,11 +2,10 @@
 
 Greetings, one and all.  Today we shall explore how to build and
 deploy a `ggez` game for every possible platform.  For platforms like
-Linux it's pretty darn simple.  For ones like Android it gets
-harder and you have to jump through hoops.  The purpose of this is to
-document the hoops and give you a cookbook on the best jumping methods
-and trajectories.  We will progress generally from the easiest to
-hardest jumps.
+Linux it's pretty darn simple, but sometimes you have to jump through a
+couple hoops.  The purpose of this is to document the hoops and give you
+a cookbook on the best jumping methods and trajectories.  We will
+progress generally from the easiest to hardest jumps.
 
 ## Project setup
 
@@ -80,7 +79,7 @@ Should just build.  We recommend using the MSVC toolchain whenever possible, the
 
 ## Distributing
 
-Just copy-paste the exe and resource files to the destination computer.
+Just copy-paste the exe and resource directory to the destination computer.
 
 # Android
 

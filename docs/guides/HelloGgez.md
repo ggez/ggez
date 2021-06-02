@@ -35,7 +35,7 @@ version = "0.1.0"
 authors = ["Awesome Person awesome@person.com"]
 
 [dependencies]
-ggez = "0.6.0"
+ggez = "0.6"
 ```
 
 ### ✔ Check Project Setup
@@ -211,9 +211,11 @@ struct State {
     dt: std::time::Duration,
 }
 ```
+
 `dt` is going to represent the time each frame has taken. It stands for "delta time" and is a useful metric for games to handle variable frame rates.
 
 Now in `main`, you need to update the `State` instantiation to include `dt`:
+
 ```rust,skt-expression,no_run
 let state = State {
     dt: std::time::Duration::new(0, 0),
@@ -222,6 +224,7 @@ let state = State {
 
 So now that we have state to update, let's update it in our `update` callback!
 We'll use [`timer::delta`](https://docs.rs/ggez/0.6.0/ggez/timer/fn.delta.html) to get the delta time.
+
 ```rust,skt-update,no_run
 fn update(&mut self, ctx: &mut Context) -> GameResult {
     self.dt = timer::delta(ctx);
