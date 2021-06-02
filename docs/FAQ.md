@@ -38,10 +38,10 @@ files.  Note that paths **must start with leading slash**; relative
 paths are not allowed!  Also note that it expects the `resources/`
 directory to be beside the *executable*, not in the cargo root dir,
 which is annoying because cargo tends to put the executable in
-`target/debug/whatever`.  You can add the cargo root dir to the lookup
-path by pulling it from the environment variable, see the examples for
-how.  Sorry, there's no especially good way of doing it automatically;
-we've tried.
+`target/debug/whatever`.  You can add the cargo root dir to the
+filesystem lookup path by pulling it from the environment variable, see
+the examples for how.  Sorry, there's no especially good way of doing it
+automatically; we've tried.
 
 If that doesn't help, call `Context::print_resource_stats()`.  That
 should print out all the files it can find, and where it is finding
@@ -68,8 +68,9 @@ on the issue tracker.
 Great, how do you troubleshoot it?
 
 On Linux, the program `glxinfo` will give you more info than you ever
-wanted about exactly what your graphics driver supports, and if you
-dig enough through it you can find what version of OpenGL it supports.
+wanted about exactly what features your graphics driver supports, and if
+you dig enough through it you can find what version of OpenGL it has
+available.
 
 To request different graphics settings you can change the appropriate
 entries in the `Conf` object before creating your `Context`.  If you
@@ -94,9 +95,13 @@ In general, ggez is designed to focus on 2D graphics.  We want it to be possible
 
 ## How do I make a GUI?
 
-As of 2017 we know of no good ui options thus far besides "implement
-it yourself" or "write a backend for Conrod or something so it can
-draw using ggez".
+There's no *great* way to do it currently, but as of 2021 there's a few
+GUI libraries that are able to use `ggez` as a drawing backend.
+`raui` seems to offer a `ggez` backend natively, though we have no idea
+how well it works, and `iced` used to have one but it seems to have
+vanished with a code rewrite.  There's several other IMGUI-style
+GUI crates that have pluggable drawing backends, maybe some of them
+can either be drawn with `ggez` or are easy to write new backends for.
 
 Contributions are welcome! ;-)
 
@@ -121,20 +126,34 @@ and scaling your `Image`s with `graphics::DrawParam`.
 
 ## Can I use `specs`, `legion` or another entity-component system?
 
-Sure!  ggez doesn't include such a thing itself, since it's more or less out of scope for this, but it is specifically
-designed to make it easy to Lego together with other tools.  The [game template](https://github.com/ggez/game-template) repo
-demonstrates how to use ggez with `specs` for ECS, `warmy` for resource loading, and other nice crates. This template is available with `legion` in place of `specs` as well [here](https://github.com/Quetzal2/game-template).
+Sure!  ggez doesn't include such a thing itself, since it's more or less
+out of scope for this, but it is specifically designed to make it easy
+to Lego together with other tools.  The [game
+template](https://github.com/ggez/game-template) repo is a little old
+but demonstrates how to use ggez with `specs` for ECS, `warmy` for
+resource loading, and other nice crates. This template is available with
+`legion` in place of `specs` as well
+[here](https://github.com/Quetzal2/game-template).
 
 <a name="library_mint">
 
 ## What is mint and how do I use `Into<mint::Point2<f32>>` and other `Into<mint::T>` types?
 
 </a>
-mint stands for "Math INteroperability Types" which means that it provides types for other math libraries to convert to and from with. What you are supposed to do is to add a math library of your choice to your game such as glam or nalgebra, usually with a "mint" feature.
- For example. You can add <code>glam = { version = "0.15.2", features = ["mint"] }</code> in your Cargo.toml, then when you try to pass something to, say <code>DrawParam::new().dest(my_point)</code>, you will be able to pass a glam type like <code>DrawParam::new().dest(glam::vec2(10.0, 15.0))</code> to set the destination to x=10 and y=15.
-Going the other way around is a bit more verbose, you need to do <code>glam::Vec2::from(my_draw_param.dest)</code>
+mint stands for "Math INteroperability Types" which means that it
+provides types for other math libraries to convert to and from with.
+What you are supposed to do is to add a math library of your choice to
+your game such as glam or nalgebra, usually with a "mint" feature.  For
+example. You can add `glam = { version = "0.15.2", features =
+["mint"] }` in your Cargo.toml, then when you try to pass
+something to, say `DrawParam::new().dest(my_point)`, you will
+be able to pass a glam type like
+`DrawParam::new().dest(glam::vec2(10.0, 15.0))` to set the
+destination to x=10 and y=15.  Going the other way around is a bit more
+verbose, you need to do `glam::Vec2::from(my_draw_param.dest)`
 
-Another example, moving a draw param's destination diagonally by 1 down and 1 right.
+Another example, moving a draw param's destination diagonally by 1 down
+and 1 right.
 
 ```rust
 let dest = glam::Vec2::from(my_draw_param.dest);
@@ -178,14 +197,6 @@ opt-level = 2: 430 fps
 opt-level = 3: 450 fps
 ```
 
-<a name="perf_text">
-
-## Text rendering is still slow!
-
-Rendering text to a bitmap is actually pretty computationally expensive.  If you call `Text::new()` every single frame it's going to take a relatively large amount of time, and larger bitmaps and more text will take longer.
-
-Ideally you'd be able to use a glyph cache to render letters to a texture once, and then just create a mesh that uses the bits of that texture to draw text.  There's a couple partial implementations, such as the [gfx_glyph crate](https://crates.io/crates/gfx_glyph).
-
 <a name="perf_debug">
 
 ## That's lame, can't I just compile my game in debug mode but ggez with optimizations on?
@@ -218,12 +229,12 @@ If your question is not answered there, open an
 
 Apple will be supported when they treat programmers trying to use
 their systems as something other than third-class citizens.  See
-https://drewdevault.com/2017/10/26/Fuck-you-nvidia.html for the
+<https://drewdevault.com/2017/10/26/Fuck-you-nvidia.html> for the
 general message, but replace "NVidia" with "Apple" and make it an
 ongoing problem of continual exploitation that has made Apple the
 richest company in the world off of the work of others.
 
-That said, ggez will probably build and run fine on Mac, and pull
+That said, `ggez` will probably build and run fine on Mac, and pull
 requests for Mac-specific bugs will be accepted as long as they don't
 break anything else.  In the mean time, consider writing your software
 for a company that doesn't treat you like dirt.
@@ -236,28 +247,40 @@ for a company that doesn't treat you like dirt.
 
 ## If I write X, will you include it in ggez?
 
-Maybe, if it's something that fits in with ggez's goals: a simple and flexible 2D game framework with a LÖVE-ish API,
-which provides all the basics you need in one package without dictating too much about the more complicated tools.
+Maybe, if it's something that fits in with ggez's goals: a simple and
+flexible 2D game framework with a LÖVE-ish API, which provides all the
+basics you need in one package without dictating too much about the more
+complicated tools.
 
 Examples of things that would be included:
 
- * Sprite batches -- extension of existing functionality, follows LÖVE's example, large performance win
- * Glyph cache -- replaces existing functionality with a more capable version, large performance win
- * Sound mixer -- Follows LÖVE's example, fundamental functionality that should be provided, not tool-specific
+ * Sprite batches -- extension of existing functionality, follows LÖVE's
+   example, large performance win
+ * Glyph cache -- replaces existing functionality with a more capable
+   version, large performance win
+ * Sound mixer -- Follows LÖVE's example, fundamental functionality that
+   should be provided, not tool-specific
 
 Examples of things that would not be included:
 
- * Map loader for the Tiled map editor -- No reason we should force a user into a particular tool format
- * Sprite animation engine -- Makes assumptions about the sort of game the user will create, easily made its own crate
- * GUI library -- A large and complicated problem, and it doesn't need to be part of ggez to solve the problem
+ * Map loader for the Tiled map editor -- No reason we should force a
+   user into a particular tool format
+ * Sprite animation engine -- Makes assumptions about the sort of game
+   the user will create, easily made its own crate
+ * GUI library -- A large and complicated problem, and it doesn't need
+   to be part of ggez to solve the problem
 
-Part of the goal of this sort of setup is to make it easy for people to write more sophisticated tools atop ggez!  By all
-means, write your Tiled map drawer or your aseprite sprite loader!  Submit a PR to add it to the `docs/Projects.md` file!
-We'd love to have an ecosystem of awesome tools.
+Part of the goal of this sort of setup is to make it easy for people to
+write more sophisticated tools atop ggez!  By all means, write your
+Tiled map drawer or your aseprite sprite loader!  Submit a PR to add it
+to the `docs/Projects.md` file!  We'd love to have an ecosystem of
+awesome tools.
 
-One favor to ask: If you're making a crate to do `foo`, please don't name it `ggez-foo`.  It makes it harder to search for
-ggez on crates.io and get things that are officially supported by the maintainers, such as `ggez-goodies`.  For an
-example, search for `gfx` on `crates.io` and see how messy the results are.
+One favor to ask: If you're making a crate to do `foo`, please don't
+name it `ggez-foo`.  It makes it harder to search for ggez on crates.io
+and get things that are officially supported by the maintainers, such as
+`ggez-goodies`.  For an example, search for `gfx` on `crates.io` and see
+how messy the results are.
 
 For a fuller discussion of this, see [issue #373](https://github.com/ggez/ggez/issues/373).
 
