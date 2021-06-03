@@ -87,9 +87,9 @@ const MAX_ROCK_VEL: f32 = 50.0;
 fn create_player() -> Actor {
     Actor {
         tag: ActorType::Player,
-        pos: Point2::zero(),
+        pos: Point2::ZERO,
         facing: 0.,
-        velocity: Vector2::zero(),
+        velocity: Vector2::ZERO,
         ang_vel: 0.,
         bbox_size: PLAYER_BBOX,
         life: PLAYER_LIFE,
@@ -99,9 +99,9 @@ fn create_player() -> Actor {
 fn create_rock() -> Actor {
     Actor {
         tag: ActorType::Rock,
-        pos: Point2::zero(),
+        pos: Point2::ZERO,
         facing: 0.,
-        velocity: Vector2::zero(),
+        velocity: Vector2::ZERO,
         ang_vel: 0.,
         bbox_size: ROCK_BBOX,
         life: ROCK_LIFE,
@@ -111,9 +111,9 @@ fn create_rock() -> Actor {
 fn create_shot() -> Actor {
     Actor {
         tag: ActorType::Shot,
-        pos: Point2::zero(),
+        pos: Point2::ZERO,
         facing: 0.,
-        velocity: Vector2::zero(),
+        velocity: Vector2::ZERO,
         ang_vel: SHOT_ANG_VEL,
         bbox_size: SHOT_BBOX,
         life: SHOT_LIFE,
