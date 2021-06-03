@@ -46,6 +46,22 @@ where
 /// need to call [`graphics::set_screen_coordinates`](fn.set_screen_coordinates.html)
 /// and pass in a rectangle with position (0, 0) and a size equal to that of the
 /// canvas.
+///
+/// If you draw onto a canvas using BlendMode::Alpha you need to set its blend mode to 
+/// `BlendMode::Premultiplied` before drawing it to a new surface. This is a side effect
+/// of the premultiplication of RGBA values when the canvas was rendered to.
+/// This requirement holds for both drawing
+/// the `Canvas` directly or converting it to an `Image` first.
+/// ```
+/// let mut canvas = Canvas::new(width, height, conf::NumSamples::One, get_window_color_format(ctx));
+/// graphics::set_canvas(ctx, Some(&canvas));
+/// 
+/// // Draw to canvas here...
+/// 
+/// graphics::present(ctx);
+/// graphics::set_canvas(ctx, None);
+/// canvas.set_blend_mode(Some(BlendMode::Premultiplied));
+/// ```
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 impl<S> CanvasGeneric<S>
