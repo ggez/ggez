@@ -252,7 +252,7 @@ fn flip_draw_param_vertical(param: DrawParam) -> DrawParam {
             glam::Mat4::from(mat)
                 * glam::Mat4::from_scale_rotation_translation(
                     glam::vec3(1.0, -1.0, 1.0),
-                    Quat::identity(),
+                    Quat::IDENTITY,
                     glam::vec3(0.0, 1.0, 0.0),
                 ),
         )
