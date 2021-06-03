@@ -996,7 +996,7 @@ impl MeshBatch {
             gfx.data.rect_instance_properties = old_instance_buffer;
 
             // Undo the change we've made to the global MVP
-            gfx.set_global_mvp(Matrix4::identity())?;
+            gfx.set_global_mvp(Matrix4::IDENTITY)?;
         }
 
         Ok(())

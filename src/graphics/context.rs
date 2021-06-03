@@ -273,7 +273,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
         let right = window_mode.width;
         let top = 0.0;
         let bottom = window_mode.height;
-        let initial_projection = Matrix4::identity(); // not the actual initial projection matrix, just placeholder
+        let initial_projection = Matrix4::IDENTITY; // not the actual initial projection matrix, just placeholder
         let globals = Globals {
             mvp_matrix: initial_projection.to_cols_array_2d(),
         };
@@ -323,7 +323,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             h,
         };
         gfx.set_projection_rect(rect);
-        gfx.set_global_mvp(Matrix4::identity())?;
+        gfx.set_global_mvp(Matrix4::IDENTITY)?;
         Ok(gfx)
     }
 }
