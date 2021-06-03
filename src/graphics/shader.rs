@@ -87,7 +87,18 @@ impl From<BlendMode> for Blend {
                     destination: Factor::One,
                 },
             },
-            BlendMode::Alpha => blend::ALPHA,
+            BlendMode::Alpha => Blend {
+                color: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                    destination: Factor::OneMinus(BlendValue::SourceAlpha),
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::OneMinus(BlendValue::DestAlpha),
+                    destination: Factor::One,
+                },
+            },
             BlendMode::Invert => blend::INVERT,
             BlendMode::Multiply => blend::MULTIPLY,
             BlendMode::Replace => blend::REPLACE,
