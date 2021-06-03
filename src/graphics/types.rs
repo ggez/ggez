@@ -240,6 +240,12 @@ impl From<Rect> for [f32; 4] {
 /// For convenience, several colors are provided:
 /// [`WHITE`](`Color::WHITE`)
 /// [`BLACK`](`Color::BLACK`)
+/// [`RED`](`Color::RED`)
+/// [`GREEN`](`Color::GREEN`)
+/// [`BLUE`](`Color::BLUE`)
+/// [`CYAN`](`Color::CYAN`)
+/// [`MAGENTA`](`Color::MAGENTA`)
+/// [`YELLOW`](`Color::YELLOW`)
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Color {
@@ -266,6 +272,54 @@ impl Color {
     pub const BLACK: Color = Color {
         r: 0.0,
         g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    /// Red
+    pub const RED: Color = Color {
+        r: 1.0,
+        g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    /// Green
+    pub const GREEN: Color = Color {
+        r: 0.0,
+        g: 1.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    /// Blue
+    pub const BLUE: Color = Color {
+        r: 0.0,
+        g: 0.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    /// Cyan
+    pub const CYAN: Color = Color {
+        r: 0.0,
+        g: 1.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    /// Magenta
+    pub const MAGENTA: Color = Color {
+        r: 1.0,
+        g: 0.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    /// Yellow
+    pub const YELLOW: Color = Color {
+        r: 1.0,
+        g: 1.0,
         b: 0.0,
         a: 1.0,
     };
