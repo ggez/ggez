@@ -77,7 +77,7 @@ impl event::EventHandler for MainState {
         graphics::queue_text(
             ctx,
             &graphics::Text::new("Press number keys 1-6 to play a sound, or escape to quit."),
-            Vec2::zero(),
+            Vec2::ZERO,
             None,
         );
         graphics::draw_queued_text(

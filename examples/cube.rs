@@ -65,7 +65,7 @@ fn default_view() -> Isometry3 {
     Mat4::look_at_rh(
         Point3::new(1.5f32, -5.0, 3.0),
         Point3::new(0f32, 0.0, 0.0),
-        Vector3::unit_z(),
+        Vector3::Z,
     )
 }
 
