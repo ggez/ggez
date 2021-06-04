@@ -354,9 +354,12 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                 ctx.keyboard_context.set_key(*keycode, pressed);
             }
             winit_event::WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                // actively set the new_inner_size to be the current inner size
+                // actively set the new_inner_size to be the desired size
                 // to stop winit from resizing our window
-                **new_inner_size = ctx.gfx_context.window.window().inner_size();
+                **new_inner_size = winit::dpi::PhysicalSize::<u32>::from([
+                    ctx.conf.window_mode.width,
+                    ctx.conf.window_mode.height,
+                ]);
             }
             _ => (),
         },
