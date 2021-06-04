@@ -153,7 +153,7 @@ fn sanity_check_window_sizes() {
     std::thread::sleep(std::time::Duration::from_millis(100));
     // Maybe we need to run the event pump too?  It seems VERY flaky.
     // Sometimes you need one, sometimes you need both...
-    e.run(move |event, _, control_flow| {
+    e.run(move |mut event, _, control_flow| {
         if let winit::event::Event::RedrawEventsCleared = event {
             let size = graphics::drawable_size(&c);
             assert_eq!(w, size.0);
@@ -163,6 +163,6 @@ fn sanity_check_window_sizes() {
             return;
         }
 
-        event::process_event(&mut c, &event);
+        event::process_event(&mut c, &mut event);
     });
 }
