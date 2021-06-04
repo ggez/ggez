@@ -164,7 +164,7 @@ where
 {
     use crate::input::{keyboard, mouse};
 
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(move |mut event, _, control_flow| {
         if !ctx.continuing {
             *control_flow = ControlFlow::Exit;
             return;
@@ -175,7 +175,7 @@ where
         let ctx = &mut ctx;
         let state = &mut state;
 
-        process_event(ctx, &event);
+        process_event(ctx, &mut event);
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(logical_size) => {
@@ -311,7 +311,7 @@ where
 /// state it needs to, such as detecting window resizes.  If you are
 /// rolling your own event loop, you should call this on the events
 /// you receive before processing them yourself.
-pub fn process_event(ctx: &mut Context, event: &winit::event::Event<()>) {
+pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
     match event {
         winit_event::Event::WindowEvent { event, .. } => match event {
             winit_event::WindowEvent::Resized(physical_size) => {
@@ -353,8 +353,10 @@ pub fn process_event(ctx: &mut Context, event: &winit::event::Event<()>) {
                 };
                 ctx.keyboard_context.set_key(*keycode, pressed);
             }
-            winit_event::WindowEvent::ScaleFactorChanged { .. } => {
-                // Nope.
+            winit_event::WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                // actively set the new_inner_size to be the current inner size
+                // to stop winit from resizing our window
+                **new_inner_size = ctx.gfx_context.window.window().inner_size();
             }
             _ => (),
         },
