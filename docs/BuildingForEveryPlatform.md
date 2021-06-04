@@ -81,6 +81,13 @@ Should just build.  We recommend using the MSVC toolchain whenever possible, the
 
 Just copy-paste the exe and resource directory to the destination computer.
 
+# MacOS/iOS
+
+At the moment we unfortunately cannot provide support for developing on
+mac (none of the developers have hardware). While `ggez` tries not to do
+anything that would make it *not* work on Mac, it is a DIY target. If
+you resolve this issue feel free to open a PR.
+
 # Android
 
 Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
