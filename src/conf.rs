@@ -57,10 +57,10 @@ pub enum FullscreenType {
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq)]
 pub struct WindowMode {
-    /// Window width
+    /// Window width in physical pixels
     #[default = 800.0]
     pub width: f32,
-    /// Window height
+    /// Window height in physical pixels
     #[default = 600.0]
     pub height: f32,
     /// Whether or not to maximize the window

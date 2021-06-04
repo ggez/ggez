@@ -714,7 +714,7 @@ pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -
     set_mode(context, window_mode)
 }
 
-/// Sets the window size/resolution to the specified width and height.
+/// Sets the window size (in physical pixels) / resolution to the specified width and height.
 ///
 /// Note:   These dimensions are only interpreted as resolutions in true fullscreen mode.
 ///         If the selected resolution is not supported this function will return an Error.
@@ -789,7 +789,7 @@ pub fn size(context: &Context) -> (f32, f32) {
     (physical_size.width as f32, physical_size.height as f32)
 }
 
-/// Returns the size of the window's underlying drawable in pixels as (width, height).
+/// Returns the size of the window's underlying drawable in physical pixels as (width, height).
 /// Returns zeros if window doesn't exist.
 pub fn drawable_size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
