@@ -762,8 +762,22 @@ impl Drawable for Mesh {
 
         let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(texture);
         gfx.data.tex = (typed_thingy, sampler);
+        let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
+            let current_mode = gfx.blend_mode();
+            if current_mode != mode {
+                gfx.set_blend_mode(mode)?;
+                Some(current_mode)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         gfx.draw(Some(&self.slice))?;
+        if let Some(mode) = previous_mode {
+            gfx.set_blend_mode(mode)?;
+        }
 
         Ok(())
     }

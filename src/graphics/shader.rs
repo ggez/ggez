@@ -68,6 +68,10 @@ pub enum BlendMode {
     /// When combining two fragments, choose the darker value
     Darken,
     /// When using premultiplied alpha, use this.
+    ///
+    /// You usually want to use this blend mode for drawing canvases
+    /// containing semi-transparent imagery.
+    /// For an explanation on this see: https://github.com/ggez/ggez/issues/694#issuecomment-853724926
     Premultiplied,
 }
 
