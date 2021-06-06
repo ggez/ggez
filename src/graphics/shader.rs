@@ -78,16 +78,27 @@ pub enum BlendMode {
 impl From<BlendMode> for Blend {
     fn from(bm: BlendMode) -> Self {
         match bm {
-            BlendMode::Add => blend::ADD,
+            BlendMode::Add => Blend {
+                color: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                    destination: Factor::ZeroPlus(BlendValue::DestAlpha),
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::OneMinus(BlendValue::DestAlpha),
+                    destination: Factor::One,
+                },
+            },
             BlendMode::Subtract => Blend {
                 color: BlendChannel {
-                    equation: Equation::Sub,
+                    equation: Equation::RevSub,
                     source: Factor::One,
                     destination: Factor::One,
                 },
                 alpha: BlendChannel {
-                    equation: Equation::Sub,
-                    source: Factor::One,
+                    equation: Equation::Add,
+                    source: Factor::OneMinus(BlendValue::DestAlpha),
                     destination: Factor::One,
                 },
             },

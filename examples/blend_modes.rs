@@ -24,7 +24,7 @@ impl MainState {
             ctx,
             graphics::DrawMode::fill(),
             Vec2::new(0.0, 0.0),
-            50.0,
+            45.0,
             0.5,
             Color::WHITE,
         )?;
@@ -49,7 +49,7 @@ impl MainState {
             Color::new(0., 0., 0.8, 0.8),
         ];
 
-        const OFFSET: f32 = 30.;
+        const OFFSET: f32 = 24.;
         const REL_POSITIONS: [[f32; 2]; 3] = [
             [-OFFSET, -OFFSET / 2.],
             [OFFSET, -OFFSET / 2.],
@@ -83,7 +83,7 @@ impl MainState {
     fn draw_venn_diagrams(&mut self, ctx: &mut Context) -> GameResult<()> {
         let (w, h) = graphics::drawable_size(ctx);
         let y = h / 4.;
-        const MODE_COUNT: usize = 6;
+        const MODE_COUNT: usize = 7;
         let x_step = w / (MODE_COUNT + 1) as f32;
 
         // draw with Alpha
@@ -102,13 +102,17 @@ impl MainState {
         self.circle.set_blend_mode(Some(BlendMode::Multiply));
         self.draw_venn(ctx, [x_step * 4., y].into(), "Multiply")?;
 
+        // draw with Invert
+        self.circle.set_blend_mode(Some(BlendMode::Invert));
+        self.draw_venn(ctx, [x_step * 5., y].into(), "Invert")?;
+
         // draw with Darken
         self.circle.set_blend_mode(Some(BlendMode::Darken));
-        self.draw_venn(ctx, [x_step * 5., y].into(), "Darken")?;
+        self.draw_venn(ctx, [x_step * 6., y].into(), "Darken")?;
 
         // draw with Lighten
         self.circle.set_blend_mode(Some(BlendMode::Lighten));
-        self.draw_venn(ctx, [x_step * 6., y].into(), "Lighten")?;
+        self.draw_venn(ctx, [x_step * 7., y].into(), "Lighten")?;
 
         Ok(())
     }
