@@ -378,7 +378,7 @@ impl event::EventHandler for MainState {
             self.render_light(ctx, light, origin, canvas_origin)?;
         }
 
-        // Now lets finally render to screen starting with out background, then
+        // Now lets finally render to screen starting out with background, then
         // the shadows and lights overtop and finally our foreground.
         graphics::set_canvas(ctx, None);
         graphics::clear(ctx, Color::WHITE);

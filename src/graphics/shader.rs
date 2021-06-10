@@ -120,7 +120,7 @@ impl From<BlendMode> for Blend {
             BlendMode::Lighten => Blend {
                 color: BlendChannel {
                     equation: Equation::Max,
-                    source: Factor::One,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
                     destination: Factor::One,
                 },
                 alpha: BlendChannel {
@@ -132,7 +132,7 @@ impl From<BlendMode> for Blend {
             BlendMode::Darken => Blend {
                 color: BlendChannel {
                     equation: Equation::Min,
-                    source: Factor::One,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
                     destination: Factor::One,
                 },
                 alpha: BlendChannel {

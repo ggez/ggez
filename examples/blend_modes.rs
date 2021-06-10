@@ -161,7 +161,8 @@ impl EventHandler for MainState {
                 .dest(Vec2::new(8., 4.))
                 .color(Color::WHITE),
         )?;
-        let text = graphics::Text::new(("drawn onto a (transparent black) canvas:", self.font, 20.0));
+        let text =
+            graphics::Text::new(("drawn onto a (transparent black) canvas:", self.font, 20.0));
         graphics::draw(
             ctx,
             &text,
