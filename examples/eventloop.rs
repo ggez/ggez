@@ -21,7 +21,7 @@ pub fn main() -> GameResult {
     let mut position: f32 = 1.0;
 
     // Handle events. Refer to `winit` docs for more information.
-    events_loop.run(move |event, _window_target, control_flow| {
+    events_loop.run(move |mut event, _window_target, control_flow| {
         if !ctx.continuing {
             *control_flow = ControlFlow::Exit;
             return;
@@ -33,7 +33,7 @@ pub fn main() -> GameResult {
 
         // This tells `ggez` to update it's internal states, should the event require that.
         // These include cursor position, view updating on resize, etc.
-        event::process_event(ctx, &event);
+        event::process_event(ctx, &mut event);
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => event::quit(ctx),
