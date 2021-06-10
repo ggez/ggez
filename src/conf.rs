@@ -52,6 +52,7 @@ pub enum FullscreenType {
 ///     max_height: 0.0,
 ///     resizable: false,
 ///     visible: true,
+///     resize_on_scale_factor_change: false,
 /// }
 /// # , WindowMode::default());}
 /// ```
@@ -90,6 +91,17 @@ pub struct WindowMode {
     /// Whether this window should displayed (true) or hidden (false)
     #[default = true]
     pub visible: bool,
+    /// Whether this window should change its size in physical pixels
+    /// when its hidpi factor changes, i.e. when [`WindowEvent::ScaleFactorChanged`](https://docs.rs/winit/0.25.0/winit/event/enum.WindowEvent.html#variant.ScaleFactorChanged)
+    /// is fired.
+    ///
+    /// You usually want this to be false, since the window suddenly changing size may break your game.
+    /// Setting this to true may be desirable if you plan for it and want your window to behave like
+    /// windows of other programs when being dragged from one screen to another, for example.
+    ///
+    /// For more context on this take a look at [this conversation](https://github.com/ggez/ggez/pull/949#issuecomment-854731226).
+    #[default = false]
+    pub resize_on_scale_factor_change: bool,
 }
 
 impl WindowMode {
@@ -141,6 +153,12 @@ impl WindowMode {
     /// Set visibility
     pub fn visible(mut self, visible: bool) -> Self {
         self.visible = visible;
+        self
+    }
+
+    /// Set whether to resize when the hidpi factor changes
+    pub fn resize_on_scale_factor_change(mut self, resize_on_scale_factor_change: bool) -> Self {
+        self.resize_on_scale_factor_change = resize_on_scale_factor_change;
         self
     }
 }
