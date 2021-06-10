@@ -40,6 +40,8 @@ impl<F> Structure<F> for EmptyConst {
 unsafe impl Pod for EmptyConst {}
 
 /// An enum for specifying default and custom blend modes
+///
+/// If you want to know what these actually do take a look at the implementation of `From<BlendMode> for Blend`
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum BlendMode {
     /// When combining two fragments, add their values together, saturating
@@ -59,9 +61,9 @@ pub enum BlendMode {
     /// A white source color and a white value results in plain invert. The output
     /// alpha is same as destination alpha.
     Invert,
-    /// When combining two fragments, multiply their values together.
+    /// When combining two fragments, multiply their values together (including alpha)
     Multiply,
-    /// When combining two fragments, choose the source value
+    /// When combining two fragments, choose the source value (including source alpha)
     Replace,
     /// When combining two fragments, choose the lighter value
     Lighten,
