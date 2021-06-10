@@ -44,9 +44,9 @@ impl MainState {
 
     fn draw_venn(&self, ctx: &mut Context, pos: Vec2, name: &str) -> GameResult<()> {
         const TRI_COLORS: [Color; 3] = [
-            Color::new(0.8, 0., 0., 0.8),
-            Color::new(0., 0.8, 0., 0.8),
-            Color::new(0., 0., 0.8, 0.8),
+            Color::new(0.8, 0., 0., 0.5),
+            Color::new(0., 0.8, 0., 0.5),
+            Color::new(0., 0., 0.8, 0.5),
         ];
 
         const OFFSET: f32 = 24.;
@@ -83,7 +83,7 @@ impl MainState {
     fn draw_venn_diagrams(&mut self, ctx: &mut Context) -> GameResult<()> {
         let (w, h) = graphics::drawable_size(ctx);
         let y = h / 4.;
-        const MODE_COUNT: usize = 7;
+        const MODE_COUNT: usize = 8;
         let x_step = w / (MODE_COUNT + 1) as f32;
 
         // draw with Alpha
@@ -106,13 +106,17 @@ impl MainState {
         self.circle.set_blend_mode(Some(BlendMode::Invert));
         self.draw_venn(ctx, [x_step * 5., y].into(), "Invert")?;
 
+        // draw with Replace
+        self.circle.set_blend_mode(Some(BlendMode::Replace));
+        self.draw_venn(ctx, [x_step * 6., y].into(), "Replace")?;
+
         // draw with Darken
         self.circle.set_blend_mode(Some(BlendMode::Darken));
-        self.draw_venn(ctx, [x_step * 6., y].into(), "Darken")?;
+        self.draw_venn(ctx, [x_step * 7., y].into(), "Darken")?;
 
         // draw with Lighten
         self.circle.set_blend_mode(Some(BlendMode::Lighten));
-        self.draw_venn(ctx, [x_step * 7., y].into(), "Lighten")?;
+        self.draw_venn(ctx, [x_step * 8., y].into(), "Lighten")?;
 
         Ok(())
     }
@@ -127,7 +131,6 @@ impl EventHandler for MainState {
         graphics::clear(ctx, Color::new(0.3, 0.3, 0.3, 1.0));
 
         // draw everything directly onto the screen once
-
         self.draw_venn_diagrams(ctx)?;
 
         // also draw everything onto the canvas
@@ -200,7 +203,7 @@ pub fn main() -> GameResult {
     };
 
     let cb = ggez::ContextBuilder::new("blend_modes", "ggez")
-        .window_mode(ggez::conf::WindowMode::default().dimensions(1300., 600.))
+        .window_mode(ggez::conf::WindowMode::default().dimensions(1400., 600.))
         .window_setup(
             ggez::conf::WindowSetup::default()
                 .title("blend modes -- Press a button to change the canvas blend mode!"),

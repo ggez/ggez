@@ -82,7 +82,7 @@ impl From<BlendMode> for Blend {
                 color: BlendChannel {
                     equation: Equation::Add,
                     source: Factor::ZeroPlus(BlendValue::SourceAlpha),
-                    destination: Factor::ZeroPlus(BlendValue::DestAlpha),
+                    destination: Factor::One,
                 },
                 alpha: BlendChannel {
                     equation: Equation::Add,
@@ -93,12 +93,12 @@ impl From<BlendMode> for Blend {
             BlendMode::Subtract => Blend {
                 color: BlendChannel {
                     equation: Equation::RevSub,
-                    source: Factor::One,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
                     destination: Factor::One,
                 },
                 alpha: BlendChannel {
                     equation: Equation::Add,
-                    source: Factor::OneMinus(BlendValue::DestAlpha),
+                    source: Factor::Zero,
                     destination: Factor::One,
                 },
             },
@@ -125,8 +125,8 @@ impl From<BlendMode> for Blend {
                 },
                 alpha: BlendChannel {
                     equation: Equation::Add,
-                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
-                    destination: Factor::OneMinus(BlendValue::SourceAlpha),
+                    source: Factor::OneMinus(BlendValue::DestAlpha),
+                    destination: Factor::One,
                 },
             },
             BlendMode::Darken => Blend {
@@ -137,8 +137,8 @@ impl From<BlendMode> for Blend {
                 },
                 alpha: BlendChannel {
                     equation: Equation::Add,
-                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
-                    destination: Factor::OneMinus(BlendValue::SourceAlpha),
+                    source: Factor::OneMinus(BlendValue::DestAlpha),
+                    destination: Factor::One,
                 },
             },
             BlendMode::Premultiplied => Blend {
