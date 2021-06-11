@@ -6,13 +6,14 @@
 * **[Graphics and GUIs](#gfx)**
   * [Can I do 3D stuff?](#gfx_3d)
   * [How do I make a GUI?](#gfx_gui)
-  * [Resolution independence](#gfx_resolution)
+  * [Resolution independence (or "Why do things not end up where I want them to be?")](#gfx_resolution)
+* **[Input](#input)**
+  * [Returned mouse coordinates are wrong!](#mouse_coords)
 * **[Libraries](#libraries)**
   * [Can I use `specs`, `legion` or another entity-component system?](#library_ecs)
   * [What is mint and how do I use `Into<mint::Point2<f32>>` and other `Into<mint::T>` types?](#library_mint)
 * **[Performance](#performance)**
   * [Image/sound loading and font rendering is slow!](#perf_slow1)
-  * [Text rendering is still slow!](#perf_text)
   * [That's lame, can't I just compile my game in debug mode but ggez with optimizations on?](#perf_debug)
   * [Drawing a few hundred images or shapes is slow!](#perf_drawing)
 * **[Platform-specific](#platforms)**
@@ -107,16 +108,44 @@ Contributions are welcome! ;-)
 
 <a name="gfx_resolution">
 
-## Resolution independence
+## Resolution independence (or "Why do things not end up where I want them to be?")
 
-By default ggez uses a pixel coordinate system but you can change that
-by calling something like
+By default ggez uses a coordinate system corresponding to the window size
+in physical pixels, but you can change that by calling something like
 
 ```rust
 graphics::set_screen_coordinates(&mut context, Rect::new(0.0, 0.0, 1.0, 1.0)).unwrap();
 ```
 
 and scaling your `Image`s with `graphics::DrawParam`.
+ 
+Please note that updating your coordinate system like this may also
+be necessary [when drawing onto canvases of custom sizes](https://github.com/ggez/ggez/blob/aed56921fbca8ac8192b492f0a46d92e4a0a95bb/src/graphics/canvas.rs#L44-L48).
+
+<a name="input">
+
+# Input
+
+<a name="mouse_coords">
+
+## Returned mouse coordinates are wrong!
+
+This issue tends to come up when your screen coordinate system becomes
+different from what it initially was, or when the physical window size
+is changed, for example by maximizing the window.
+
+The underlying reason for this is that mouse coordinates are returned
+as positions given in physical pixels on the screen, instead of being
+given as logical positions inside your current screen coordinate system.
+
+When created, a window starts out with a coordinate system perfectly
+corresponding to its physical size in pixels. That's why, initially,
+translating mouse coordinates to logical coordinates is not necessary
+at all. Both systems are just the same.
+ 
+But once physical and logical coordinates get out of sync problems
+start to arise. If you want more info on how to navigate this issue
+take a look at the [`input_test`](../examples/input_test.rs) and [`graphics_settings`](../examples/graphics_settings.rs) examples.
 
 <a name="libraries">
 
@@ -144,8 +173,13 @@ mint stands for "Math INteroperability Types" which means that it
 provides types for other math libraries to convert to and from with.
 What you are supposed to do is to add a math library of your choice to
 your game such as glam or nalgebra, usually with a "mint" feature.  For
-example. You can add `glam = { version = "0.15.2", features =
-["mint"] }` in your Cargo.toml, then when you try to pass
+example. You can add
+ 
+ ```rust
+ glam = { version = "0.15.2", features = ["mint"] }
+ ```
+ 
+ in your Cargo.toml, then when you try to pass
 something to, say `DrawParam::new().dest(my_point)`, you will
 be able to pass a glam type like
 `DrawParam::new().dest(glam::vec2(10.0, 15.0))` to set the
