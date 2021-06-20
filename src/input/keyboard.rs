@@ -154,7 +154,7 @@ impl KeyboardContext {
     /// winit sounds like it should do this for us,
     /// see https://docs.rs/winit/0.18.0/winit/struct.KeyboardInput.html#structfield.modifiers
     ///
-    /// ...more specifically, we should refactor all this to consistant-ify events a bit and
+    /// ...more specifically, we should refactor all this to consistent-ify events a bit and
     /// make winit do more of the work.
     /// But to quote Scott Pilgrim, "This is... this is... Booooooring."
     fn set_key_modifier(&mut self, key: KeyCode, pressed: bool) {

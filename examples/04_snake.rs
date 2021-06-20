@@ -269,7 +269,7 @@ impl Snake {
             head: Segment::new(pos),
             dir: Direction::Right,
             last_update_dir: Direction::Right,
-            body: body,
+            body,
             ate: None,
             next_dir: None,
         }

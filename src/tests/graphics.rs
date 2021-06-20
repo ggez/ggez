@@ -73,7 +73,7 @@ fn save_screenshot_test(c: &mut Context) {
     assert_eq!(height as u16, screenshot.height);
     assert_eq!(None, screenshot.blend_mode);
 
-    // Image comparision or rendered output is hard, but we *know* that top left should be white.
+    // Image comparison or rendered output is hard, but we *know* that top left should be white.
     // So take a samples in the middle of each rectangle we drew and compare.
     // Note that we only use fully saturated colors to avoid any issues with color spaces.
     let rgba_buf = screenshot.to_rgba8(c).unwrap();

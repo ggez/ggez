@@ -98,7 +98,7 @@ pub trait EventHandler {
     ///
     /// The default implementation of this will call `ggez::event::quit()`
     /// when the escape key is pressed.  If you override this with
-    /// your own event handler you have to re-implment that
+    /// your own event handler you have to re-implement that
     /// functionality yourself.
     fn key_down_event(
         &mut self,

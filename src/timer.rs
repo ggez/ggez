@@ -233,7 +233,7 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 /// # struct State;
 /// # impl ggez::event::EventHandler for State {
 /// fn update(&mut self, ctx: &mut Context) -> GameResult {
-///     while(timer::check_update_time(ctx, 60)?) {
+///     while timer::check_update_time(ctx, 60)? {
 ///         update_game_physics()?;
 ///     }
 ///     Ok(())

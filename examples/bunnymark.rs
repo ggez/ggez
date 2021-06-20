@@ -141,18 +141,6 @@ impl event::EventHandler for GameState {
         Ok(())
     }
 
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        keycode: event::KeyCode,
-        _keymods: event::KeyMods,
-        _repeat: bool,
-    ) {
-        if keycode == event::KeyCode::Space {
-            self.batched_drawing = !self.batched_drawing;
-        }
-    }
-
     fn mouse_button_down_event(
         &mut self,
         _ctx: &mut Context,
@@ -165,6 +153,18 @@ impl event::EventHandler for GameState {
                 self.bunnies.push(Bunny::new(&mut self.rng));
             }
             self.click_timer = 10;
+        }
+    }
+
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: event::KeyCode,
+        _keymods: event::KeyMods,
+        _repeat: bool,
+    ) {
+        if keycode == event::KeyCode::Space {
+            self.batched_drawing = !self.batched_drawing;
         }
     }
 }

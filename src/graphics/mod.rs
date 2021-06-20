@@ -240,6 +240,17 @@ impl BackendSpec for GlBackendSpec {
         }
     }
 
+    fn info(&self, device: &Self::Device) -> String {
+        let info = device.get_info();
+        format!(
+            "Driver vendor: {}, renderer {}, version {:?}, shading language {:?}",
+            info.platform_name.vendor,
+            info.platform_name.renderer,
+            info.version,
+            info.shading_language
+        )
+    }
+
     fn init<'a>(
         &self,
         window_builder: glutin::window::WindowBuilder,
@@ -251,19 +262,8 @@ impl BackendSpec for GlBackendSpec {
         gl_builder
             .with_gfx_color_raw(color_format)
             .with_gfx_depth_raw(depth_format)
-            .build_windowed(window_builder, &events_loop)
+            .build_windowed(window_builder, events_loop)
             .map(|i| i.init_gfx_raw(color_format, depth_format))
-    }
-
-    fn info(&self, device: &Self::Device) -> String {
-        let info = device.get_info();
-        format!(
-            "Driver vendor: {}, renderer {}, version {:?}, shading language {:?}",
-            info.platform_name.vendor,
-            info.platform_name.renderer,
-            info.version,
-            info.shading_language
-        )
     }
 
     fn encoder(factory: &mut Self::Factory) -> gfx::Encoder<Self::Resources, Self::CommandBuffer> {

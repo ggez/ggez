@@ -117,9 +117,9 @@
 //!     let mut my_game = MyGame::new(&mut ctx);
 //!
 //!     // Run!
-//!     match event::run(&mut ctx, &mut event_loop, &mut my_game) {
+//!     match event::run(ctx, event_loop, &mut my_game) {
 //!         Ok(_) => println!("Exited cleanly."),
-//!         Err(e) => println!("Error occured: {}", e)
+//!         Err(e) => println!("Error occurred: {}", e)
 //!     }
 //!
 //! struct MyGame {

@@ -230,7 +230,7 @@ impl From<gilrs::Error> for GameError {
 impl From<lyon::lyon_tessellation::TessellationError> for GameError {
     fn from(s: lyon::lyon_tessellation::TessellationError) -> GameError {
         let errstr = format!(
-            "Error while tesselating shape (did you give it an infinity or NaN?): {:?}",
+            "Error while tessellating shape (did you give it an infinity or NaN?): {:?}",
             s
         );
         GameError::LyonError(errstr)

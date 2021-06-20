@@ -299,7 +299,7 @@ impl Source {
                 "Could not decode the given audio data".to_string(),
             ));
         }
-        let sink = rodio::Sink::try_new(&context.audio_context.device())?;
+        let sink = rodio::Sink::try_new(context.audio_context.device())?;
         let cursor = io::Cursor::new(data);
         Ok(Source {
             sink,
@@ -389,7 +389,7 @@ impl SoundSource for Source {
         let volume = self.volume();
 
         let device = ctx.audio_context.device();
-        self.sink = rodio::Sink::try_new(&device)?;
+        self.sink = rodio::Sink::try_new(device)?;
         self.state.play_time.store(0, Ordering::SeqCst);
 
         // Restore information from the previous link.
@@ -459,7 +459,7 @@ impl SpatialSource {
             ));
         }
         let sink = rodio::SpatialSink::try_new(
-            &context.audio_context.device(),
+            context.audio_context.device(),
             [0.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
@@ -519,7 +519,7 @@ impl SoundSource for SpatialSource {
 
         let device = ctx.audio_context.device();
         let new_sink = rodio::SpatialSink::try_new(
-            &device,
+            device,
             self.emitter_position.into(),
             self.left_ear.into(),
             self.right_ear.into(),
@@ -561,7 +561,7 @@ impl SoundSource for SpatialSource {
         // create a new one in its place.
         // This is most ugly because in order to create a new sink
         // we need a `device`. However, we can only get the default
-        // device without having access to a context. Currently that's
+        // device without having access to a context. Currently, that's
         // fine because the `RodioAudioContext` uses the default device too,
         // but it may cause problems in the future if devices become
         // customizable.
@@ -571,7 +571,7 @@ impl SoundSource for SpatialSource {
 
         let device = ctx.audio_context.device();
         self.sink = rodio::SpatialSink::try_new(
-            &device,
+            device,
             self.emitter_position.into(),
             self.left_ear.into(),
             self.right_ear.into(),

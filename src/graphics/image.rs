@@ -153,7 +153,7 @@ impl Image {
     /// Creates a new `Image` from the given buffer, which should contain an image encoded
     /// in a supported image file format.
     pub fn from_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
-        let img = image::load_from_memory(&bytes)?.to_rgba8();
+        let img = image::load_from_memory(bytes)?.to_rgba8();
         let (width, height) = img.dimensions();
         Self::from_rgba8(context, width as u16, height as u16, &img)
     }

@@ -12,7 +12,6 @@ use ggez::{Context, ContextBuilder, GameResult};
 use glam::Vec2;
 use std::collections::BTreeMap;
 use std::env;
-use std::f32;
 use std::path;
 
 /// Creates a random RGB color.
@@ -35,7 +34,7 @@ impl App {
         let mut rng = oorandom::Rand32::new(314159);
 
         // This is the simplest way to create a drawable text;
-        // the color, font, and scale will be default: white, LiberationMono-Regular, 16px unform.
+        // the color, font, and scale will be default: white, LiberationMono-Regular, 16px uniform.
         // Note that you don't even have to load a font: LiberationMono-Regular is baked into `ggez` itself.
         let text = Text::new("Hello, World!");
         // Store the text in `App`s map, for drawing in main loop.

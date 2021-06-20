@@ -123,7 +123,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .with_inner_size(window_size)
             .with_resizable(window_mode.resizable);
 
-        // We need to disable drag-and-drop on windows for multithreaded stuff like cpal to work.
+        // We need to disable drag-and-drop on Windows for multithreaded stuff like cpal to work.
         // See winit bug here: https://github.com/rust-windowing/winit/pull/1524
         #[cfg(target_os = "windows")]
         {

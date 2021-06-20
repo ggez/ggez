@@ -595,17 +595,17 @@ mod tests {
         let mut r1 = Rect::new(0.0, 0.0, 64.0, 64.0);
         let r2 = Rect::new(64.0, 64.0, 64.0, 64.0);
         r1.translate(glam::Vec2::new(64.0, 64.0));
-        assert!(r1 == r2);
+        assert_eq!(r1, r2);
 
         let mut r1 = Rect::new(0.0, 0.0, 64.0, 64.0);
         let r2 = Rect::new(0.0, 0.0, 128.0, 128.0);
         r1.scale(2.0, 2.0);
-        assert!(r1 == r2);
+        assert_eq!(r1, r2);
 
         let mut r1 = Rect::new(32.0, 32.0, 64.0, 64.0);
         let r2 = Rect::new(64.0, 64.0, 64.0, 64.0);
         r1.move_to(Point2::new(64.0, 64.0));
-        assert!(r1 == r2);
+        assert_eq!(r1, r2);
     }
 
     #[test]

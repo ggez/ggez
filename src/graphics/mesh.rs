@@ -390,7 +390,7 @@ impl MeshBuilder {
             //builder.begin_geometry();
             for tri in tris {
                 // Ideally this assert makes bounds-checks only happen once.
-                assert!(tri.len() == 3);
+                assert_eq!(tri.len(), 3);
                 let fst = tri[0];
                 let snd = tri[1];
                 let thd = tri[2];
@@ -427,8 +427,8 @@ impl MeshBuilder {
     where
         V: Into<Vertex> + Clone,
     {
-        assert!(self.buffer.vertices.len() + verts.len() < (std::u32::MAX as usize));
-        assert!(self.buffer.indices.len() + indices.len() < (std::u32::MAX as usize));
+        assert!(self.buffer.vertices.len() + verts.len() < (u32::MAX as usize));
+        assert!(self.buffer.indices.len() + indices.len() < (u32::MAX as usize));
         let next_idx = self.buffer.vertices.len() as u32;
         // Can we remove the clone here?
         // I can't find a way to, because `into()` consumes its source and
@@ -649,14 +649,14 @@ impl Mesh {
         V: Into<Vertex> + Clone,
     {
         // Sanity checks to return early with helpful error messages.
-        if verts.len() > (std::u32::MAX as usize) {
+        if verts.len() > (u32::MAX as usize) {
             let msg = format!(
                 "Tried to build a mesh with {} vertices, max is u32::MAX",
                 verts.len()
             );
             return Err(GameError::LyonError(msg));
         }
-        if indices.len() > (std::u32::MAX as usize) {
+        if indices.len() > (u32::MAX as usize) {
             let msg = format!(
                 "Tried to build a mesh with {} indices, max is u32::MAX",
                 indices.len()
@@ -820,7 +820,7 @@ impl MeshBatch {
     /// [`set()`](#method.set)
     ///
     /// Calling this invalidates the entire buffer and will result in
-    /// flusing it on the next [`graphics::draw()`](../fn.draw.html) call.
+    /// flushing it on the next [`graphics::draw()`](../fn.draw.html) call.
     pub fn add<P>(&mut self, param: P) -> MeshIdx
     where
         P: Into<DrawParam>,
@@ -833,7 +833,7 @@ impl MeshBatch {
     /// Alters an instance in the batch to use the given draw params.
     ///
     /// Calling this invalidates the entire buffer and will result in
-    /// flusing it on the next [`graphics::draw()`](../fn.draw.html) call.
+    /// flushing it on the next [`graphics::draw()`](../fn.draw.html) call.
     ///
     /// This might cause performance issues with large batches, to avoid this
     /// consider using `flush_range` to explicitly invalidate required data slice.
@@ -853,7 +853,7 @@ impl MeshBatch {
     /// Alters a range of instances in the batch to use the given draw params
     ///
     /// Calling this invalidates the entire buffer and will result in
-    /// flusing it on the next [`graphics::draw()`](../fn.draw.html) call.
+    /// flushing it on the next [`graphics::draw()`](../fn.draw.html) call.
     ///
     /// This might cause performance issues with large batches, to avoid this
     /// consider using `flush_range` to explicitly invalidate required data slice.
@@ -916,13 +916,13 @@ impl MeshBatch {
                 self.instance_buffer = Some(new_buffer);
 
                 ctx.gfx_context.encoder.update_buffer(
-                    &self.instance_buffer.as_ref().expect("Can never fail"),
+                    self.instance_buffer.as_ref().expect("Can never fail"),
                     new_properties.as_slice(),
                     0,
                 )?;
             } else {
                 ctx.gfx_context.encoder.update_buffer(
-                    &self.instance_buffer.as_ref().expect("Should never fail"),
+                    self.instance_buffer.as_ref().expect("Should never fail"),
                     new_properties.as_slice(),
                     first_param,
                 )?;
