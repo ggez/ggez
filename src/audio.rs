@@ -165,6 +165,9 @@ pub trait SoundSource {
     /// Sets the speed ratio (by adjusting the playback speed)
     fn set_pitch(&mut self, ratio: f32);
 
+    /// Sets the amount of time to skip in the sound
+    fn set_skip_amount(&mut self, dur: time::Duration);
+
     /// Gets whether or not the source is set to repeat.
     fn repeat(&self) -> bool;
 
@@ -212,6 +215,7 @@ pub(crate) struct SourceState {
     repeat: bool,
     fade_in: time::Duration,
     speed: f32,
+    skip_amount: time::Duration,
     query_interval: time::Duration,
     play_time: Arc<AtomicUsize>,
 }
@@ -224,6 +228,7 @@ impl SourceState {
             repeat: false,
             fade_in: time::Duration::from_millis(0),
             speed: 1.0,
+            skip_amount: time::Duration::new(0, 0),
             query_interval: time::Duration::from_millis(100),
             play_time: Arc::new(AtomicUsize::new(0)),
         }
@@ -241,6 +246,10 @@ impl SourceState {
     /// Sets the pitch ratio (by adjusting the playback speed).
     pub fn set_pitch(&mut self, ratio: f32) {
         self.speed = ratio;
+    }
+
+    pub fn set_skip_amount(&mut self, dur: time::Duration) {
+        self.skip_amount = dur;
     }
 
     /// Gets whether or not the source is set to repeat.
@@ -325,6 +334,7 @@ impl SoundSource for Source {
                 .repeat_infinite()
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
+                .skip_duration(self.state.skip_amount)
                 .periodic_access(self.state.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
@@ -333,6 +343,7 @@ impl SoundSource for Source {
             let sound = rodio::Decoder::new(cursor)?
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
+                .skip_duration(self.state.skip_amount)
                 .periodic_access(self.state.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
@@ -361,6 +372,9 @@ impl SoundSource for Source {
     }
     fn set_pitch(&mut self, ratio: f32) {
         self.state.set_pitch(ratio)
+    }
+    fn set_skip_amount(&mut self, dur: time::Duration) {
+        self.state.set_skip_amount(dur)
     }
     fn repeat(&self) -> bool {
         self.state.repeat()
@@ -494,6 +508,7 @@ impl SoundSource for SpatialSource {
                 .repeat_infinite()
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
+                .skip_duration(self.state.skip_amount)
                 .periodic_access(self.state.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
@@ -502,6 +517,7 @@ impl SoundSource for SpatialSource {
             let sound = rodio::Decoder::new(cursor)?
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
+                .skip_duration(self.state.skip_amount)
                 .periodic_access(self.state.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
@@ -538,6 +554,10 @@ impl SoundSource for SpatialSource {
 
     fn set_pitch(&mut self, ratio: f32) {
         self.state.set_pitch(ratio)
+    }
+
+    fn set_skip_amount(&mut self, dur: time::Duration) {
+        self.state.set_skip_amount(dur)
     }
 
     fn repeat(&self) -> bool {
