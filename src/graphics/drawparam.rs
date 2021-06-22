@@ -42,14 +42,14 @@ impl Default for Transform {
 
 impl Transform {
     /// Crunches the transform down to a single matrix, if it's not one already.
-    pub fn to_matrix(&self) -> Self {
+    pub fn to_matrix(self) -> Self {
         Transform::Matrix(self.to_bare_matrix())
     }
 
     /// Same as `to_matrix()` but just returns a bare `mint` matrix.
-    pub fn to_bare_matrix(&self) -> mint::ColumnMatrix4<f32> {
+    pub fn to_bare_matrix(self) -> mint::ColumnMatrix4<f32> {
         match self {
-            Transform::Matrix(m) => *m,
+            Transform::Matrix(m) => m,
             Transform::Values {
                 dest,
                 rotation,
@@ -213,7 +213,7 @@ impl DrawParam {
         self
     }
 
-    pub(crate) fn to_instance_properties(&self, srgb: bool) -> InstanceProperties {
+    pub(crate) fn to_instance_properties(self, srgb: bool) -> InstanceProperties {
         let mat: [[f32; 4]; 4] = *self.trans.to_bare_matrix().as_ref();
         let color: [f32; 4] = if srgb {
             let linear_color: types::LinearColor = self.color.into();

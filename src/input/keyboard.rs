@@ -338,28 +338,28 @@ mod tests {
     #[test]
     fn repeated_keys_tracking() {
         let mut keyboard = KeyboardContext::new();
-        assert_eq!(keyboard.is_key_repeated(), false);
+        assert!(!keyboard.is_key_repeated());
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.is_key_repeated(), false);
+        assert!(!keyboard.is_key_repeated());
         keyboard.set_key(KeyCode::A, false);
-        assert_eq!(keyboard.is_key_repeated(), false);
+        assert!(!keyboard.is_key_repeated());
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.is_key_repeated(), false);
+        assert!(!keyboard.is_key_repeated());
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.is_key_repeated(), true);
+        assert!(keyboard.is_key_repeated());
         keyboard.set_key(KeyCode::A, false);
-        assert_eq!(keyboard.is_key_repeated(), false);
+        assert!(!keyboard.is_key_repeated());
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.is_key_repeated(), false);
+        assert!(!keyboard.is_key_repeated());
         keyboard.set_key(KeyCode::B, true);
-        assert_eq!(keyboard.is_key_repeated(), false);
+        assert!(!keyboard.is_key_repeated(),);
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.is_key_repeated(), false);
+        assert!(!keyboard.is_key_repeated());
         keyboard.set_key(KeyCode::A, true);
-        assert_eq!(keyboard.is_key_repeated(), true);
+        assert!(keyboard.is_key_repeated());
         keyboard.set_key(KeyCode::B, true);
-        assert_eq!(keyboard.is_key_repeated(), false);
+        assert!(!keyboard.is_key_repeated());
         keyboard.set_key(KeyCode::B, true);
-        assert_eq!(keyboard.is_key_repeated(), true);
+        assert!(keyboard.is_key_repeated());
     }
 }
