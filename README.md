@@ -45,6 +45,16 @@ your own libraries atop ggez.
 * Math library integration with `mint`.
 * Some more advanced graphics options: shaders, sprite batches and render targets
 
+### Non-Features (i.e. things to add from elsewhere if needed)
+
+* [Physics](https://arewegameyet.rs/ecosystem/physics/)
+* Animation (check out [keyframe](https://github.com/HannesMann/keyframe); it works really well with ggez)
+* [GUI](https://arewegameyet.rs/ecosystem/ui/)
+* [Assets manager](https://github.com/a1phyr/assets_manager)
+* [AI](https://arewegameyet.rs/ecosystem/ai/)
+* [ECS](https://arewegameyet.rs/ecosystem/ecs/)
+* [Networking](https://arewegameyet.rs/ecosystem/networking/)
+
 ### Supported platforms
 
  * Fully supported: Windows, Linux
