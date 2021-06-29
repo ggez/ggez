@@ -154,6 +154,11 @@ where
 
     /// Dumps the flipped `Canvas`'s data to a `Vec` of `u8` RBGA8 values.
     pub fn to_rgba8(&self, ctx: &mut Context) -> GameResult<Vec<u8>> {
+        // first flush the command buffer to make sure the canvas is up to date before being serialized
+        // fixes https://github.com/ggez/ggez/issues/813
+        let gfx = &mut ctx.gfx_context;
+        gfx.encoder.flush(&mut *gfx.device);
+        
         let mut pixel_data = self.image.to_rgba8(ctx)?;
         flip_pixel_data(
             &mut pixel_data,
