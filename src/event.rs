@@ -36,6 +36,7 @@ pub use winit::event_loop::{ControlFlow, EventLoop};
 
 use crate::context::Context;
 use crate::error::GameResult;
+use crate::GameError;
 
 /// A trait defining event callbacks.  This is your primary interface with
 /// `ggez`'s event loop.  Implement this trait for a type and
@@ -144,6 +145,14 @@ pub trait EventHandler {
     /// Called when the user resizes the window, or when it is resized
     /// via [`graphics::set_mode()`](../graphics/fn.set_mode.html).
     fn resize_event(&mut self, _ctx: &mut Context, _width: f32, _height: f32) {}
+
+    /// Something went wrong, causing a `GameError`.
+    /// If this returns true, the error was fatal, so the event loop ends, aborting the game.
+    fn on_error(&mut self, _ctx: &mut Context, e: GameError) -> bool {
+        error!("Error: {:?}", e);
+        eprintln!("Error: {:?}", e);
+        true
+    }
 }
 
 /// Terminates the [`ggez::event::run()`](fn.run.html) loop by setting
@@ -287,17 +296,21 @@ where
                 }
 
                 if let Err(e) = state.update(ctx) {
-                    error!("Error on EventHandler::update(): {:?}", e);
-                    eprintln!("Error on EventHandler::update(): {:?}", e);
-                    *control_flow = ControlFlow::Exit;
-                    return;
+                    error!("Error on EventHandler::update()");
+                    eprintln!("Error on EventHandler::update()");
+                    if state.on_error(ctx, e) {
+                        *control_flow = ControlFlow::Exit;
+                        return;
+                    }
                 }
 
                 if let Err(e) = state.draw(ctx) {
-                    error!("Error on EventHandler::draw(): {:?}", e);
-                    eprintln!("Error on EventHandler::draw(): {:?}", e);
-                    *control_flow = ControlFlow::Exit;
-                    return;
+                    error!("Error on EventHandler::draw()");
+                    eprintln!("Error on EventHandler::draw()");
+                    if state.on_error(ctx, e) {
+                        *control_flow = ControlFlow::Exit;
+                        return;
+                    }
                 }
             }
             Event::RedrawRequested(_) => (),
