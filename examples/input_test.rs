@@ -22,7 +22,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler for MainState {
+impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         if input::keyboard::is_key_pressed(ctx, KeyCode::A) {
             println!("The A key is pressed");
