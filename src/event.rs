@@ -35,8 +35,16 @@ use self::winit_event::*;
 pub use winit::event_loop::{ControlFlow, EventLoop};
 
 use crate::context::Context;
-use crate::error::GameResult;
-use crate::GameError;
+
+/// Used in [`EventHandler::on_error()`](trait.EventHandler.html#method.on_error)
+/// to specify where an error originated
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum ErrorOrigin {
+    /// error originated in `update()`
+    Update,
+    /// error originated in `draw()`
+    Draw,
+}
 
 /// A trait defining event callbacks.  This is your primary interface with
 /// `ggez`'s event loop.  Implement this trait for a type and
@@ -45,20 +53,23 @@ use crate::GameError;
 /// [`event::run()`](fn.run.html) to run the game's mainloop.
 ///
 /// The default event handlers do nothing, apart from
-/// [`key_down_event()`](#tymethod.key_down_event), which will by
+/// [`key_down_event()`](#method.key_down_event), which will by
 /// default exit the game if the escape key is pressed.  Just
 /// override the methods you want to use.
-pub trait EventHandler {
+pub trait EventHandler<E>
+where
+    E: std::error::Error,
+{
     /// Called upon each logic update to the game.
     /// This should be where the game's logic takes place.
-    fn update(&mut self, _ctx: &mut Context) -> GameResult;
+    fn update(&mut self, _ctx: &mut Context) -> Result<(), E>;
 
     /// Called to do the drawing of your game.
     /// You probably want to start this with
     /// [`graphics::clear()`](../graphics/fn.clear.html) and end it
     /// with [`graphics::present()`](../graphics/fn.present.html) and
     /// maybe [`timer::yield_now()`](../timer/fn.yield_now.html).
-    fn draw(&mut self, _ctx: &mut Context) -> GameResult;
+    fn draw(&mut self, _ctx: &mut Context) -> Result<(), E>;
 
     /// A mouse button was pressed
     fn mouse_button_down_event(
@@ -148,9 +159,7 @@ pub trait EventHandler {
 
     /// Something went wrong, causing a `GameError`.
     /// If this returns true, the error was fatal, so the event loop ends, aborting the game.
-    fn on_error(&mut self, _ctx: &mut Context, e: GameError) -> bool {
-        error!("Error: {:?}", e);
-        eprintln!("Error: {:?}", e);
+    fn on_error(&mut self, _ctx: &mut Context, _origin: ErrorOrigin, _e: E) -> bool {
         true
     }
 }
@@ -167,9 +176,10 @@ pub fn quit(ctx: &mut Context) {
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the [`timer`](../timer/index.html) module for more info.
-pub fn run<S: 'static>(mut ctx: Context, event_loop: EventLoop<()>, mut state: S) -> !
+pub fn run<S: 'static, E>(mut ctx: Context, event_loop: EventLoop<()>, mut state: S) -> !
 where
-    S: EventHandler,
+    S: EventHandler<E>,
+    E: std::error::Error,
 {
     use crate::input::{keyboard, mouse};
 
@@ -296,18 +306,18 @@ where
                 }
 
                 if let Err(e) = state.update(ctx) {
-                    error!("Error on EventHandler::update()");
-                    eprintln!("Error on EventHandler::update()");
-                    if state.on_error(ctx, e) {
+                    error!("Error on EventHandler::update(): {:?}", e);
+                    eprintln!("Error on EventHandler::update(): {:?}", e);
+                    if state.on_error(ctx, ErrorOrigin::Update, e) {
                         *control_flow = ControlFlow::Exit;
                         return;
                     }
                 }
 
                 if let Err(e) = state.draw(ctx) {
-                    error!("Error on EventHandler::draw()");
-                    eprintln!("Error on EventHandler::draw()");
-                    if state.on_error(ctx, e) {
+                    error!("Error on EventHandler::draw(): {:?}", e);
+                    eprintln!("Error on EventHandler::draw(): {:?}", e);
+                    if state.on_error(ctx, ErrorOrigin::Draw, e) {
                         *control_flow = ControlFlow::Exit;
                         return;
                     }

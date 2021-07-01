@@ -77,7 +77,7 @@ impl GameState {
     }
 }
 
-impl event::EventHandler for GameState {
+impl event::EventHandler<ggez::GameError> for GameState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         if self.click_timer > 0 {
             self.click_timer -= 1;
