@@ -83,7 +83,7 @@ Let's add `EventHandler` to our `src/main.rs` file:
 ```rust,skt-definition,no_run
 struct State {}
 
-impl ggez::event::EventHandler for State {
+impl ggez::event::EventHandler<GameError> for State {
   fn update(&mut self, ctx: &mut Context) -> GameResult {
       Ok(())
   }
@@ -102,6 +102,7 @@ What is included in your state is very dependent on the game you are making.
 [`Context`](https://docs.rs/ggez/0.6.0/ggez/struct.Context.html) is how `ggez` gives you access to hardware such as mouse, keyboard, timers, graphics, sound, etc..
 
 [`GameResult`](https://docs.rs/ggez/0.6.0/ggez/error/type.GameResult.html) is a utility provided by `ggez` to signify if there was an error or not.
+Internally it's just a `Result<(), GameError>`, which is why we implement `EventHandler` with `GameError`, so that [`on_error`](https://docs.rs/ggez/0.6.0/ggez/event/trait.EventHandler.html#method.on_error) knows what to expect.
 But, we're not going to write any bugs right? 😉
 
 In your main, you will need to create an instance of `State`.

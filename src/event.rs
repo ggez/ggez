@@ -56,6 +56,9 @@ pub enum ErrorOrigin {
 /// [`key_down_event()`](#method.key_down_event), which will by
 /// default exit the game if the escape key is pressed.  Just
 /// override the methods you want to use.
+///
+/// For the error type simply choose [`GameError`](../error/enum.GameError.html),
+/// or something more generic, if your situation requires it.
 pub trait EventHandler<E>
 where
     E: std::error::Error,

@@ -19,7 +19,7 @@ use ggez::*;
 
 struct State {}
 
-impl ggez::event::EventHandler for State {
+impl ggez::event::EventHandler<GameError> for State {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }

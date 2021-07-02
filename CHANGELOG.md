@@ -2,6 +2,8 @@
 
 ## Added
 
+ * Added `MeshBatch`
+ * Added a `Premultiplied` blend mode, [which greatly improves `Canvas` usability](https://github.com/ggez/ggez/issues/301#issuecomment-854603057)
  * Added a `CustomError` variant to `GameError`.
  * Added function to allow custom gamepad definitions
  * Added function to fetch raw window
@@ -10,9 +12,12 @@
  * Tried to make more error types conveniently comply with
    `std::error::Error`
  * Added functions to fetch positions of text glyphs
+ * Added `visible` to `WindowMode` to allow ggez to run without a visible window
 
 ## Changed
 
+ * `FullscreenType::True` now causes the game to be rendered exclusively on the current monitor, which also allows
+   to set different resolutions  
  * Switched `rand` in the examples to `oorandom`, for basically
    aesthetic reasons.  (Not advertising at all, honest.)
  * Version bumped `rodio` to 0.13
@@ -38,6 +43,8 @@ Nothing
 
 ## Fixed
 
+ * ggez no longer creates empty directories (for resources and other things), unless necessary
+ * Setting `DrawParam`s now results in consistent behaviour everywhere, including `SpriteBatch` and `Canvas`
  * Too many things to count
 
 ## Broken
