@@ -15,18 +15,15 @@
 // First we'll import the crates we need for our game;
 // in this case that is just `ggez` and `oorandom` (and `getrandom`
 // to seed the RNG.)
-use getrandom;
-use ggez;
 use oorandom::Rand32;
 
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
 use ggez::event::{KeyCode, KeyMods};
-use ggez::{event, graphics, Context, GameResult};
+use ggez::{event, graphics, timer, Context, GameResult};
 
 // We'll bring in some things from `std` to help us in the future.
 use std::collections::LinkedList;
-use std::time::{Duration, Instant};
 
 // The first thing we want to do is set up some constants that will help us out later.
 
@@ -46,9 +43,7 @@ const SCREEN_SIZE: (f32, f32) = (
 // Here we're defining how often we want our game to update. This will be
 // important later so that we don't have our snake fly across the screen because
 // it's moving a full tile every frame.
-const UPDATES_PER_SECOND: f32 = 8.0;
-// And we get the milliseconds of delay that this update rate corresponds to.
-const MILLIS_PER_UPDATE: u64 = (1.0 / UPDATES_PER_SECOND * 1000.0) as u64;
+const DESIRED_FPS: u32 = 8;
 
 /// Now we define a struct that will hold an entity's position on our game board
 /// or grid which we defined above. We'll use signed integers because we only want
@@ -58,29 +53,6 @@ const MILLIS_PER_UPDATE: u64 = (1.0 / UPDATES_PER_SECOND * 1000.0) as u64;
 struct GridPosition {
     x: i16,
     y: i16,
-}
-
-/// This is a trait that provides a modulus function that works for negative values
-/// rather than just the standard remainder op (%) which does not. We'll use this
-/// to get our snake to wrap from one side of the game board around to the other
-/// when it goes off the top, bottom, left, or right side of the screen.
-trait ModuloSigned {
-    fn modulo(&self, n: Self) -> Self;
-}
-
-/// Here we implement our `ModuloSigned` trait for any type T which implements
-/// `Add` (the `+` operator) with an output type T and Rem (the `%` operator)
-/// that also has an output type of T, and that can be cloned. These are the bounds
-/// that we need in order to implement a modulus function that works for negative numbers
-/// as well.
-impl<T> ModuloSigned for T
-where
-    T: std::ops::Add<Output = T> + std::ops::Rem<Output = T> + Clone,
-{
-    fn modulo(&self, n: T) -> T {
-        // Because of our trait bounds, we can now apply these operators.
-        (self.clone() % n.clone() + n.clone()) % n.clone()
-    }
 }
 
 impl GridPosition {
@@ -103,16 +75,17 @@ impl GridPosition {
     }
 
     /// We'll make another helper function that takes one grid position and returns a new one after
-    /// making one move in the direction of `dir`. We use our `SignedModulo` trait
-    /// above, which is now implemented on `i16` because it satisfies the trait bounds,
-    /// to automatically wrap around within our grid size if the move would have otherwise
-    /// moved us off the board to the top, bottom, left, or right.
+    /// making one move in the direction of `dir`.
+    /// We use the [rem_euclid()](https://doc.rust-lang.org/std/primitive.i16.html#method.rem_euclid)
+    /// API when crossing the top/left limits, as the standard remainder function (`%`) returns a
+    /// negative value when the left operand is negative.
+    /// Only the Up/Left cases require rem_euclid(); for consistency, it's used for all of them.
     pub fn new_from_move(pos: GridPosition, dir: Direction) -> Self {
         match dir {
-            Direction::Up => GridPosition::new(pos.x, (pos.y - 1).modulo(GRID_SIZE.1)),
-            Direction::Down => GridPosition::new(pos.x, (pos.y + 1).modulo(GRID_SIZE.1)),
-            Direction::Left => GridPosition::new((pos.x - 1).modulo(GRID_SIZE.0), pos.y),
-            Direction::Right => GridPosition::new((pos.x + 1).modulo(GRID_SIZE.0), pos.y),
+            Direction::Up => GridPosition::new(pos.x, (pos.y - 1).rem_euclid(GRID_SIZE.1)),
+            Direction::Down => GridPosition::new(pos.x, (pos.y + 1).rem_euclid(GRID_SIZE.1)),
+            Direction::Left => GridPosition::new((pos.x - 1).rem_euclid(GRID_SIZE.0), pos.y),
+            Direction::Right => GridPosition::new((pos.x + 1).rem_euclid(GRID_SIZE.0), pos.y),
         }
     }
 }
@@ -269,7 +242,7 @@ impl Snake {
             head: Segment::new(pos),
             dir: Direction::Right,
             last_update_dir: Direction::Right,
-            body: body,
+            body,
             ate: None,
             next_dir: None,
         }
@@ -279,11 +252,7 @@ impl Snake {
     /// the snake eats a given piece of Food based
     /// on its current position
     fn eats(&self, food: &Food) -> bool {
-        if self.head.pos == food.pos {
-            true
-        } else {
-            false
-        }
+        self.head.pos == food.pos
     }
 
     /// A helper function that determines whether
@@ -331,7 +300,7 @@ impl Snake {
         // which gives the illusion that the snake is moving. In reality, all the segments stay
         // stationary, we just add a segment to the front and remove one from the back. If we eat
         // a piece of food, then we leave the last segment so that we extend our body by one.
-        if let None = self.ate {
+        if self.ate.is_none() {
             self.body.pop_back();
         }
         // And set our last_update_dir to the direction we just moved.
@@ -381,9 +350,6 @@ struct GameState {
     gameover: bool,
     /// Our RNG state
     rng: Rand32,
-    /// And we track the last time we updated so that we can limit
-    /// our update rate.
-    last_update: Instant,
 }
 
 impl GameState {
@@ -405,48 +371,44 @@ impl GameState {
             food: Food::new(food_pos),
             gameover: false,
             rng,
-            last_update: Instant::now(),
         }
     }
 }
 
 /// Now we implement EventHandler for GameState. This provides an interface
 /// that ggez will call automatically when different events happen.
-impl event::EventHandler for GameState {
+impl event::EventHandler<ggez::GameError> for GameState {
     /// Update will happen on every frame before it is drawn. This is where we update
     /// our game state to react to whatever is happening in the game world.
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        // First we check to see if enough time has elapsed since our last update based
-        // on the update rate we defined at the top.
-        // if not, we do nothing and return early.
-        if !(Instant::now() - self.last_update >= Duration::from_millis(MILLIS_PER_UPDATE)) {
-            return Ok(());
-        }
-        // Then we check to see if the game is over. If not, we'll update. If so, we'll just do nothing.
-        if !self.gameover {
-            // Here we do the actual updating of our game world. First we tell the snake to update itself,
-            // passing in a reference to our piece of food.
-            self.snake.update(&self.food);
-            // Next we check if the snake ate anything as it updated.
-            if let Some(ate) = self.snake.ate {
-                // If it did, we want to know what it ate.
-                match ate {
-                    // If it ate a piece of food, we randomly select a new position for our piece of food
-                    // and move it to this new position.
-                    Ate::Food => {
-                        let new_food_pos =
-                            GridPosition::random(&mut self.rng, GRID_SIZE.0, GRID_SIZE.1);
-                        self.food.pos = new_food_pos;
-                    }
-                    // If it ate itself, we set our gameover state to true.
-                    Ate::Itself => {
-                        self.gameover = true;
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
+        // Rely on ggez's built-in timer for deciding when to update the game, and how many times.
+        // If the update is early, there will be no cycles, otherwises, the logic will run once for each
+        // frame fitting in the time since the last update.
+        while timer::check_update_time(ctx, DESIRED_FPS) {
+            // We check to see if the game is over. If not, we'll update. If so, we'll just do nothing.
+            if !self.gameover {
+                // Here we do the actual updating of our game world. First we tell the snake to update itself,
+                // passing in a reference to our piece of food.
+                self.snake.update(&self.food);
+                // Next we check if the snake ate anything as it updated.
+                if let Some(ate) = self.snake.ate {
+                    // If it did, we want to know what it ate.
+                    match ate {
+                        // If it ate a piece of food, we randomly select a new position for our piece of food
+                        // and move it to this new position.
+                        Ate::Food => {
+                            let new_food_pos =
+                                GridPosition::random(&mut self.rng, GRID_SIZE.0, GRID_SIZE.1);
+                            self.food.pos = new_food_pos;
+                        }
+                        // If it ate itself, we set our gameover state to true.
+                        Ate::Itself => {
+                            self.gameover = true;
+                        }
                     }
                 }
             }
         }
-        // If we updated, we set our last_update to be now
-        self.last_update = Instant::now();
 
         Ok(())
     }

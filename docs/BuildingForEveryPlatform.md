@@ -2,11 +2,10 @@
 
 Greetings, one and all.  Today we shall explore how to build and
 deploy a `ggez` game for every possible platform.  For platforms like
-Linux it's pretty darn simple.  For ones like Android it gets
-harder and you have to jump through hoops.  The purpose of this is to
-document the hoops and give you a cookbook on the best jumping methods
-and trajectories.  We will progress generally from the easiest to
-hardest jumps.
+Linux it's pretty darn simple, but sometimes you have to jump through a
+couple hoops.  The purpose of this is to document the hoops and give you
+a cookbook on the best jumping methods and trajectories.  We will
+progress generally from the easiest to hardest jumps.
 
 ## Project setup
 
@@ -38,7 +37,7 @@ wget https://raw.githubusercontent.com/ggez/ggez/master/resources/LiberationMono
 Then edit your `Cargo.toml` with your favorite super duper editor and under `[dependencies]` add:
 
 ```
-ggez = "0.5"
+ggez = "0.6.0"
 glam = { version = "0.8.6", features = ["mint"] }
 ```
 
@@ -80,7 +79,14 @@ Should just build.  We recommend using the MSVC toolchain whenever possible, the
 
 ## Distributing
 
-Just copy-paste the exe and resource files to the destination computer.
+Just copy-paste the exe and resource directory to the destination computer.
+
+# MacOS/iOS
+
+At the moment we unfortunately cannot provide support for developing on
+mac (none of the developers have hardware). While `ggez` tries not to do
+anything that would make it *not* work on Mac, it is a DIY target. If
+you resolve this issue feel free to open a PR.
 
 # Android
 
@@ -89,4 +95,3 @@ Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
 # Web/wasm/emscripten
 
 Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/71
-

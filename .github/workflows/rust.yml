@@ -87,5 +87,5 @@ jobs:
     - name: Install udev
       run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
 
-    - name: Run cargo clippy --all-targets -- -D warnings
-      run: cargo clippy --all-targets -- -D warnings
+    - name: Run cargo clippy --all-targets --package ggez -- -D warnings
+      run: cargo clippy --all-targets --package ggez -- -D warnings

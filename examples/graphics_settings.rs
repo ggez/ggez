@@ -2,8 +2,7 @@
 //! resize windows, etc.
 //!
 //! Prints instructions to the console.
-
-use ggez;
+use std::convert::TryFrom;
 
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
@@ -12,7 +11,6 @@ use ggez::timer;
 use ggez::{Context, GameResult};
 
 use argh::FromArgs;
-use glam;
 
 use std::env;
 use std::path;
@@ -48,7 +46,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler for MainState {
+impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         while timer::check_update_time(ctx, DESIRED_FPS) {
@@ -195,7 +193,7 @@ fn print_help() {
 struct Opt {
     /// what level of MSAA to try to use (1, 2, 4, 8)
     #[argh(option, short = 'm', long = "msaa", default = "1")]
-    msaa: u32,
+    msaa: u8,
     /// try to use OpenGL ES 3.0 instead of regular OpenGL.
     #[argh(switch, long = "es")]
     es: bool,
@@ -225,7 +223,7 @@ pub fn main() -> GameResult {
         )
         .window_setup(
             conf::WindowSetup::default().samples(
-                conf::NumSamples::from_u32(opt.msaa)
+                conf::NumSamples::try_from(opt.msaa)
                     .expect("Option msaa needs to be 1, 2, 4, 8 or 16!"),
             ),
         )

@@ -12,10 +12,6 @@
 
 use winit::{self, dpi};
 
-// TODO LATER: I kinda hate all these re-exports.  I kinda hate
-// a lot of the details of the `EventHandler` and input now though,
-// and look forward to ripping it all out and replacing it with newer winit.
-
 /// A mouse button.
 pub use winit::event::MouseButton;
 
@@ -39,7 +35,16 @@ use self::winit_event::*;
 pub use winit::event_loop::{ControlFlow, EventLoop};
 
 use crate::context::Context;
-use crate::error::GameResult;
+
+/// Used in [`EventHandler::on_error()`](trait.EventHandler.html#method.on_error)
+/// to specify where an error originated
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum ErrorOrigin {
+    /// error originated in `update()`
+    Update,
+    /// error originated in `draw()`
+    Draw,
+}
 
 /// A trait defining event callbacks.  This is your primary interface with
 /// `ggez`'s event loop.  Implement this trait for a type and
@@ -48,20 +53,26 @@ use crate::error::GameResult;
 /// [`event::run()`](fn.run.html) to run the game's mainloop.
 ///
 /// The default event handlers do nothing, apart from
-/// [`key_down_event()`](#tymethod.key_down_event), which will by
+/// [`key_down_event()`](#method.key_down_event), which will by
 /// default exit the game if the escape key is pressed.  Just
 /// override the methods you want to use.
-pub trait EventHandler {
+///
+/// For the error type simply choose [`GameError`](../error/enum.GameError.html),
+/// or something more generic, if your situation requires it.
+pub trait EventHandler<E>
+where
+    E: std::error::Error,
+{
     /// Called upon each logic update to the game.
     /// This should be where the game's logic takes place.
-    fn update(&mut self, _ctx: &mut Context) -> GameResult;
+    fn update(&mut self, _ctx: &mut Context) -> Result<(), E>;
 
     /// Called to do the drawing of your game.
     /// You probably want to start this with
     /// [`graphics::clear()`](../graphics/fn.clear.html) and end it
     /// with [`graphics::present()`](../graphics/fn.present.html) and
     /// maybe [`timer::yield_now()`](../timer/fn.yield_now.html).
-    fn draw(&mut self, _ctx: &mut Context) -> GameResult;
+    fn draw(&mut self, _ctx: &mut Context) -> Result<(), E>;
 
     /// A mouse button was pressed
     fn mouse_button_down_event(
@@ -148,6 +159,12 @@ pub trait EventHandler {
     /// Called when the user resizes the window, or when it is resized
     /// via [`graphics::set_mode()`](../graphics/fn.set_mode.html).
     fn resize_event(&mut self, _ctx: &mut Context, _width: f32, _height: f32) {}
+
+    /// Something went wrong, causing a `GameError`.
+    /// If this returns true, the error was fatal, so the event loop ends, aborting the game.
+    fn on_error(&mut self, _ctx: &mut Context, _origin: ErrorOrigin, _e: E) -> bool {
+        true
+    }
 }
 
 /// Terminates the [`ggez::event::run()`](fn.run.html) loop by setting
@@ -162,13 +179,14 @@ pub fn quit(ctx: &mut Context) {
 ///
 /// It does not try to do any type of framerate limiting.  See the
 /// documentation for the [`timer`](../timer/index.html) module for more info.
-pub fn run<S: 'static>(mut ctx: Context, event_loop: EventLoop<()>, mut state: S) -> !
+pub fn run<S: 'static, E>(mut ctx: Context, event_loop: EventLoop<()>, mut state: S) -> !
 where
-    S: EventHandler,
+    S: EventHandler<E>,
+    E: std::error::Error,
 {
     use crate::input::{keyboard, mouse};
 
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(move |mut event, _, control_flow| {
         if !ctx.continuing {
             *control_flow = ControlFlow::Exit;
             return;
@@ -179,7 +197,7 @@ where
         let ctx = &mut ctx;
         let state = &mut state;
 
-        ctx.process_event(&event);
+        process_event(ctx, &mut event);
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(logical_size) => {
@@ -258,9 +276,7 @@ where
                     // trace!("ignoring window event {:?}", x);
                 }
             },
-            Event::DeviceEvent { event, .. } => match event {
-                _ => (),
-            },
+            Event::DeviceEvent { .. } => (),
             Event::Resumed => (),
             Event::Suspended => (),
             Event::NewEvents(_) => (),
@@ -294,14 +310,20 @@ where
 
                 if let Err(e) = state.update(ctx) {
                     error!("Error on EventHandler::update(): {:?}", e);
-                    *control_flow = ControlFlow::Exit;
-                    return;
+                    eprintln!("Error on EventHandler::update(): {:?}", e);
+                    if state.on_error(ctx, ErrorOrigin::Update, e) {
+                        *control_flow = ControlFlow::Exit;
+                        return;
+                    }
                 }
 
                 if let Err(e) = state.draw(ctx) {
                     error!("Error on EventHandler::draw(): {:?}", e);
-                    *control_flow = ControlFlow::Exit;
-                    return;
+                    eprintln!("Error on EventHandler::draw(): {:?}", e);
+                    if state.on_error(ctx, ErrorOrigin::Draw, e) {
+                        *control_flow = ControlFlow::Exit;
+                        return;
+                    }
                 }
             }
             Event::RedrawRequested(_) => (),
@@ -309,4 +331,73 @@ where
             Event::LoopDestroyed => (),
         }
     })
+}
+
+/// Feeds an `Event` into the `Context` so it can update any internal
+/// state it needs to, such as detecting window resizes.  If you are
+/// rolling your own event loop, you should call this on the events
+/// you receive before processing them yourself.
+pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
+    match event {
+        winit_event::Event::WindowEvent { event, .. } => match event {
+            winit_event::WindowEvent::Resized(physical_size) => {
+                ctx.gfx_context.window.resize(*physical_size);
+                ctx.gfx_context.resize_viewport();
+            }
+            winit_event::WindowEvent::CursorMoved {
+                position: logical_position,
+                ..
+            } => {
+                ctx.mouse_context
+                    .set_last_position(crate::graphics::Point2::new(
+                        logical_position.x as f32,
+                        logical_position.y as f32,
+                    ));
+            }
+            winit_event::WindowEvent::MouseInput { button, state, .. } => {
+                let pressed = match state {
+                    winit_event::ElementState::Pressed => true,
+                    winit_event::ElementState::Released => false,
+                };
+                ctx.mouse_context.set_button(*button, pressed);
+            }
+            winit_event::WindowEvent::ModifiersChanged(mods) => ctx
+                .keyboard_context
+                .set_modifiers(crate::input::keyboard::KeyMods::from(*mods)),
+            winit_event::WindowEvent::KeyboardInput {
+                input:
+                    winit::event::KeyboardInput {
+                        state,
+                        virtual_keycode: Some(keycode),
+                        ..
+                    },
+                ..
+            } => {
+                let pressed = match state {
+                    winit_event::ElementState::Pressed => true,
+                    winit_event::ElementState::Released => false,
+                };
+                ctx.keyboard_context.set_key(*keycode, pressed);
+            }
+            winit_event::WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                if !ctx.conf.window_mode.resize_on_scale_factor_change {
+                    // actively set the new_inner_size to be the desired size
+                    // to stop winit from resizing our window
+                    **new_inner_size = winit::dpi::PhysicalSize::<u32>::from([
+                        ctx.conf.window_mode.width,
+                        ctx.conf.window_mode.height,
+                    ]);
+                }
+            }
+            _ => (),
+        },
+        winit_event::Event::DeviceEvent {
+            event: winit_event::DeviceEvent::MouseMotion { delta: (x, y) },
+            ..
+        } => ctx
+            .mouse_context
+            .set_last_delta(crate::graphics::Point2::new(*x as f32, *y as f32)),
+
+        _ => (),
+    };
 }

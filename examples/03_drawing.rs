@@ -2,7 +2,6 @@
 
 use glam::*;
 
-use ggez;
 use ggez::event;
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
 use ggez::timer;
@@ -101,7 +100,7 @@ fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
     mb.build(ctx)
 }
 
-impl event::EventHandler for MainState {
+impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
 
@@ -181,7 +180,7 @@ pub fn main() -> GameResult {
 
     let (mut ctx, events_loop) = cb.build()?;
 
-    println!("{}", graphics::renderer_info(&mut ctx)?);
+    println!("{}", graphics::renderer_info(&ctx)?);
     let state = MainState::new(&mut ctx).unwrap();
     event::run(ctx, events_loop, state)
 }

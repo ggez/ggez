@@ -4,6 +4,7 @@ use crate::tests;
 use crate::*;
 
 #[test]
+#[allow(clippy::float_cmp)]
 fn test_calculated_text_width() {
     let (ctx, _ev) = &mut tests::make_context();
     let font = graphics::Font::default();
@@ -23,6 +24,7 @@ fn test_calculated_text_width() {
 /// Make sure that the "height" of text with ascenders/descenders
 /// is the same as text without
 #[test]
+#[allow(clippy::float_cmp)]
 fn test_calculated_text_height() {
     let (ctx, _ev) = &mut tests::make_context();
     let font = graphics::Font::default();
@@ -36,6 +38,7 @@ fn test_calculated_text_height() {
 }
 
 #[test]
+#[allow(clippy::float_cmp)]
 fn test_monospace_text_is_actually_monospace() {
     let (ctx, _ev) = &mut tests::make_context();
     let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf").unwrap();

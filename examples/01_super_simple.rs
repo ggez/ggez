@@ -1,4 +1,5 @@
 //! The simplest possible example that does something.
+#![allow(clippy::unnecessary_wraps)]
 
 use ggez::event;
 use ggez::graphics::{self, Color};
@@ -16,7 +17,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler for MainState {
+impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         self.pos_x = self.pos_x % 800.0 + 1.0;
         Ok(())

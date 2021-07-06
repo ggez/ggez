@@ -103,6 +103,7 @@ fn volume_persists_after_stop() {
     let s2 = audio::SpatialSource::new(&mut c, filename).unwrap();
     test_volume_after_stop(&mut c, s2);
 
+    #[allow(clippy::float_cmp)]
     fn test_volume_after_stop(c: &mut Context, mut sound: impl SoundSource) {
         let volume = 0.8;
         sound.set_volume(volume);
@@ -121,6 +122,7 @@ fn volume_persists_after_play() {
     let s2 = audio::SpatialSource::new(c, filename).unwrap();
     test_volume(c, s2);
 
+    #[allow(clippy::float_cmp)]
     fn test_volume(c: &mut Context, mut sound: impl SoundSource) {
         let volume = 0.8;
         assert_eq!(sound.volume(), 1.0);

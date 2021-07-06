@@ -1,6 +1,4 @@
 //! Demonstrates various projection and matrix fiddling/testing.
-use ggez;
-
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, Color, DrawMode};
 use ggez::{Context, GameResult};
@@ -78,7 +76,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler for MainState {
+impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         self.pos_x = self.pos_x % 800.0 + 1.0;
         Ok(())
@@ -87,7 +85,7 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
-        let origin = Vec2::zero();
+        let origin = Vec2::ZERO;
         graphics::draw(ctx, &self.gridmesh, (origin, Color::WHITE))?;
 
         let param = graphics::DrawParam::new()
@@ -111,13 +109,10 @@ impl event::EventHandler for MainState {
         _keymod: KeyMods,
         _repeat: bool,
     ) {
-        match keycode {
-            event::KeyCode::Space => {
-                self.screen_bounds_idx = (self.screen_bounds_idx + 1) % self.screen_bounds.len();
-                graphics::set_screen_coordinates(ctx, self.screen_bounds[self.screen_bounds_idx])
-                    .unwrap();
-            }
-            _ => (),
+        if let event::KeyCode::Space = keycode {
+            self.screen_bounds_idx = (self.screen_bounds_idx + 1) % self.screen_bounds.len();
+            graphics::set_screen_coordinates(ctx, self.screen_bounds[self.screen_bounds_idx])
+                .unwrap();
         }
     }
 }

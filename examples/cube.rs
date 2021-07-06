@@ -4,10 +4,9 @@
 //! the underlying `gfx-rs` data types, so you can bypass ggez's
 //! drawing code entirely and write your own.
 
-use gfx;
+#![allow(clippy::single_component_path_imports)]
+use gfx; //single component path import required for macro's use.
 use gfx::*;
-use gfx_device_gl;
-use ggez;
 
 use gfx::texture;
 use gfx::traits::FactoryExt;
@@ -66,7 +65,7 @@ fn default_view() -> Isometry3 {
     Mat4::look_at_rh(
         Point3::new(1.5f32, -5.0, 3.0),
         Point3::new(0f32, 0.0, 0.0),
-        Vector3::unit_z(),
+        Vector3::Z,
     )
 }
 
@@ -203,7 +202,7 @@ void main() {
     }
 }
 
-impl event::EventHandler for MainState {
+impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         self.rotation += 0.01;
         Ok(())

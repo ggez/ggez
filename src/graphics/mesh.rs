@@ -1,7 +1,11 @@
+use std::convert::TryInto;
+
 use crate::context::DebugId;
 use crate::error::GameError;
 use crate::graphics::*;
 use gfx::traits::FactoryExt;
+use lyon::path::builder::PathBuilder;
+use lyon::path::Polygon;
 use lyon::tessellation as t;
 use lyon::{self, math::Point as LPoint};
 
@@ -23,12 +27,11 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 /// ```rust,no_run
 /// # use ggez::*;
 /// # use ggez::graphics::*;
-/// # use ggez::mint::Point2;
 /// # fn main() -> GameResult {
 /// # let ctx = &mut ContextBuilder::new("foo", "bar").build().unwrap().0;
 /// let mesh: Mesh = MeshBuilder::new()
-///     .line(&[Point2::new(20.0, 20.0), Point2::new(40.0, 20.0)], 4.0, (255, 0, 0).into())?
-///     .circle(DrawMode::fill(), Point2::new(60.0, 38.0), 40.0, 1.0, (0, 255, 0).into())?
+///     .line(&[glam::vec2(20.0, 20.0), glam::vec2(40.0, 20.0)], 4.0, (255, 0, 0).into())?
+///     .circle(DrawMode::fill(), glam::vec2(60.0, 38.0), 40.0, 1.0, (0, 255, 0).into())?
 ///     .build(ctx)?;
 /// # Ok(()) }
 /// ```
@@ -44,24 +47,24 @@ pub use self::t::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 ///         // Add vertices for 3 lines (in an approximate equilateral triangle).
 ///         .line(
 ///             &[
-///                 na::Point2::new(0.0, 0.0),
-///                 na::Point2::new(-30.0, 52.0),
-///                 na::Point2::new(30.0, 52.0),
-///                 na::Point2::new(0.0, 0.0),
+///                 glam::vec2(0.0, 0.0),
+///                 glam::vec2(-30.0, 52.0),
+///                 glam::vec2(30.0, 52.0),
+///                 glam::vec2(0.0, 0.0),
 ///             ],
 ///             1.0,
-///             graphics::WHITE,
+///             graphics::Color::WHITE,
 ///         )?
 ///         // Add vertices for an exclamation mark!
-///         .ellipse(DrawMode::fill(), na::Point2::new(0.0, 25.0), 2.0, 15.0, 2.0, graphics::WHITE,)
-///         .circle(DrawMode::fill(), na::Point2::new(0.0, 45.0), 2.0, 2.0, graphics::WHITE,)
+///         .ellipse(DrawMode::fill(), glam::vec2(0.0, 25.0), 2.0, 15.0, 2.0, graphics::Color::WHITE,)?
+///         .circle(DrawMode::fill(), glam::vec2(0.0, 45.0), 2.0, 2.0, graphics::Color::WHITE,)?
 ///         // Finalize then unwrap. Unwrapping via `?` operator either yields the final `Mesh`,
 ///         // or propagates the error (note return type).
 ///         .build(ctx)?;
 ///     // Draw 3 meshes in a line, 1st and 3rd tilted by 1 radian.
-///     graphics::draw(ctx, &mesh, (na::Point2::new(50.0, 50.0), -1.0, graphics::WHITE))?;
-///     graphics::draw(ctx, &mesh, (na::Point2::new(150.0, 50.0), 0.0, graphics::WHITE))?;
-///     graphics::draw(ctx, &mesh, (na::Point2::new(250.0, 50.0), 1.0, graphics::WHITE))?;
+///     graphics::draw(ctx, &mesh, (glam::vec2(50.0, 50.0), -1.0, graphics::Color::WHITE))?;
+///     graphics::draw(ctx, &mesh, (glam::vec2(150.0, 50.0), 0.0, graphics::Color::WHITE))?;
+///     graphics::draw(ctx, &mesh, (glam::vec2(250.0, 50.0), 1.0, graphics::Color::WHITE))?;
 ///     Ok(())
 /// }
 /// ```
@@ -120,7 +123,8 @@ impl MeshBuilder {
             };
             match mode {
                 DrawMode::Fill(fill_options) => {
-                    let _ = t::basic_shapes::fill_circle(
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &fill_options.with_tolerance(tolerance),
@@ -128,7 +132,8 @@ impl MeshBuilder {
                     );
                 }
                 DrawMode::Stroke(options) => {
-                    let _ = t::basic_shapes::stroke_circle(
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_circle(
                         t::math::point(point.x, point.y),
                         radius,
                         &options.with_tolerance(tolerance),
@@ -166,27 +171,26 @@ impl MeshBuilder {
                 color: LinearColor::from(color),
             };
             match mode {
-                DrawMode::Fill(_fill_options) => {
-                    /*
-                     * TODO
-                     * see https://github.com/nical/lyon/issues/606
+                DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::fill_ellipse(
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
                         t::math::Angle { radians: 0.0 },
+                        t::path::Winding::Positive,
                         &fill_options.with_tolerance(tolerance),
                         builder,
                     );
-                    */
-                    unimplemented!()
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::stroke_ellipse(
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_ellipse(
                         t::math::point(point.x, point.y),
                         t::math::vector(radius1, radius2),
                         t::math::Angle { radians: 0.0 },
+                        t::path::Winding::Positive,
                         &options.with_tolerance(tolerance),
                         builder,
                     );
@@ -263,27 +267,33 @@ impl MeshBuilder {
     ) -> GameResult<&mut Self>
     where
         P: Into<mint::Point2<f32>> + Clone,
-        V: t::BasicVertexConstructor<Vertex>
-            + t::StrokeVertexConstructor<Vertex>
-            + t::FillVertexConstructor<Vertex>,
+        V: t::StrokeVertexConstructor<Vertex> + t::FillVertexConstructor<Vertex>,
     {
         {
             assert!(points.len() > 1);
             let buffers = &mut self.buffer;
-            let points = points.iter().cloned().map(|p| {
-                let mint_point: mint::Point2<f32> = p.into();
-                t::math::point(mint_point.x, mint_point.y)
-            });
-
+            let points: Vec<LPoint> = points
+                .iter()
+                .cloned()
+                .map(|p| {
+                    let mint_point: mint::Point2<f32> = p.into();
+                    t::math::point(mint_point.x, mint_point.y)
+                })
+                .collect();
+            let polygon = Polygon {
+                points: &points,
+                closed: is_closed,
+            };
             match mode {
                 DrawMode::Fill(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
                     let tessellator = &mut t::FillTessellator::new();
-                    let _ = t::basic_shapes::fill_polyline(points, tessellator, &options, builder)?;
+                    let _ = tessellator.tessellate_polygon(polygon, &options, builder)?;
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::stroke_polyline(points, is_closed, &options, builder);
+                    let tessellator = &mut t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_polygon(polygon, &options, builder)?;
                 }
             };
         }
@@ -306,11 +316,13 @@ impl MeshBuilder {
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::fill_rectangle(&rect, &fill_options, builder);
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_rectangle(&rect, &fill_options, builder);
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::stroke_rectangle(&rect, &options, builder);
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_rectangle(&rect, &options, builder);
                 }
             };
         }
@@ -328,24 +340,24 @@ impl MeshBuilder {
         {
             let buffers = &mut self.buffer;
             let rect = t::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
-            let radii = t::basic_shapes::BorderRadii::new_all_same(radius);
+            let radii = t::path::builder::BorderRadii::new(radius);
             let vb = VertexBuilder {
                 color: LinearColor::from(color),
             };
+            let mut path_builder = t::path::Path::builder();
+            path_builder.add_rounded_rectangle(&rect, &radii, t::path::Winding::Positive);
+            let path = path_builder.build();
+
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ = t::basic_shapes::fill_rounded_rectangle(
-                        &rect,
-                        &radii,
-                        &fill_options,
-                        builder,
-                    );
+                    let mut tessellator = t::FillTessellator::new();
+                    let _ = tessellator.tessellate_path(&path, &fill_options, builder);
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut t::BuffersBuilder::new(buffers, vb);
-                    let _ =
-                        t::basic_shapes::stroke_rounded_rectangle(&rect, &radii, &options, builder);
+                    let mut tessellator = t::StrokeTessellator::new();
+                    let _ = tessellator.tessellate_path(&path, &options, builder);
                 }
             };
         }
@@ -384,22 +396,17 @@ impl MeshBuilder {
             let vb = VertexBuilder {
                 color: LinearColor::from(color),
             };
-            let builder: &mut t::BuffersBuilder<_, _, _> =
-                &mut t::BuffersBuilder::new(&mut self.buffer, vb);
-            use lyon::tessellation::BasicGeometryBuilder;
-            //builder.begin_geometry();
             for tri in tris {
                 // Ideally this assert makes bounds-checks only happen once.
                 assert!(tri.len() == 3);
-                let fst = tri[0];
-                let snd = tri[1];
-                let thd = tri[2];
-                let _i1 = builder.add_vertex(fst)?;
-                let _i2 = builder.add_vertex(snd)?;
-                let _i3 = builder.add_vertex(thd)?;
-                //builder.add_triangle(i1, i2, i3);
+                let first_index: u32 = self.buffer.vertices.len().try_into().unwrap();
+                self.buffer.vertices.push(vb.new_vertex(tri[0]));
+                self.buffer.vertices.push(vb.new_vertex(tri[1]));
+                self.buffer.vertices.push(vb.new_vertex(tri[2]));
+                self.buffer.indices.push(first_index);
+                self.buffer.indices.push(first_index + 1);
+                self.buffer.indices.push(first_index + 2);
             }
-            //let _ = builder.end_geometry();
         }
         Ok(self)
     }
@@ -433,6 +440,8 @@ impl MeshBuilder {
         // Can we remove the clone here?
         // I can't find a way to, because `into()` consumes its source and
         // `Borrow` or `AsRef` aren't really right.
+        // EDIT: We can, but at a small cost to user-friendlyness, see:
+        //       https://github.com/ggez/ggez/issues/940
         let vertices = verts.iter().cloned().map(|v: V| -> Vertex { v.into() });
         let indices = indices.iter().map(|i| (*i) + next_idx);
         self.buffer.vertices.extend(vertices);
@@ -443,6 +452,9 @@ impl MeshBuilder {
 
     /// Takes the accumulated geometry and load it into GPU memory,
     /// creating a single `Mesh`.
+    ///
+    /// Note that this returns a `GameResult<Mesh>`, since the build can fail,
+    /// for example when trying to build an empty `MeshBuilder`.
     pub fn build(&self, ctx: &mut Context) -> GameResult<Mesh> {
         Mesh::from_raw(
             ctx,
@@ -458,8 +470,8 @@ struct VertexBuilder {
     color: LinearColor,
 }
 
-impl t::BasicVertexConstructor<Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, position: LPoint) -> Vertex {
+impl VertexBuilder {
+    fn new_vertex(self, position: LPoint) -> Vertex {
         Vertex {
             pos: [position.x, position.y],
             uv: [position.x, position.y],
@@ -469,7 +481,8 @@ impl t::BasicVertexConstructor<Vertex> for VertexBuilder {
 }
 
 impl t::StrokeVertexConstructor<Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, position: LPoint, _attributes: t::StrokeAttributes) -> Vertex {
+    fn new_vertex(&mut self, vertex: t::StrokeVertex) -> Vertex {
+        let position = vertex.position();
         Vertex {
             pos: [position.x, position.y],
             uv: [0.0, 0.0],
@@ -479,7 +492,8 @@ impl t::StrokeVertexConstructor<Vertex> for VertexBuilder {
 }
 
 impl t::FillVertexConstructor<Vertex> for VertexBuilder {
-    fn new_vertex(&mut self, position: LPoint, _attributes: t::FillAttributes) -> Vertex {
+    fn new_vertex(&mut self, vertex: t::FillVertex) -> Vertex {
+        let position = vertex.position();
         Vertex {
             pos: [position.x, position.y],
             uv: [0.0, 0.0],
@@ -748,8 +762,22 @@ impl Drawable for Mesh {
 
         let typed_thingy = gfx.backend_spec.raw_to_typed_shader_resource(texture);
         gfx.data.tex = (typed_thingy, sampler);
+        let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
+            let current_mode = gfx.blend_mode();
+            if current_mode != mode {
+                gfx.set_blend_mode(mode)?;
+                Some(current_mode)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         gfx.draw(Some(&self.slice))?;
+        if let Some(mode) = previous_mode {
+            gfx.set_blend_mode(mode)?;
+        }
 
         Ok(())
     }
@@ -982,7 +1010,7 @@ impl MeshBatch {
             gfx.data.rect_instance_properties = old_instance_buffer;
 
             // Undo the change we've made to the global MVP
-            gfx.set_global_mvp(Matrix4::identity())?;
+            gfx.set_global_mvp(Matrix4::IDENTITY)?;
         }
 
         Ok(())

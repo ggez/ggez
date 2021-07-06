@@ -14,6 +14,7 @@ fn image_encode() {
         .unwrap();
 }
 
+#[allow(clippy::identity_op)]
 fn get_rgba_sample(rgba_buf: &[u8], width: usize, sample_pos: Vec2) -> (u8, u8, u8, u8) {
     (
         rgba_buf[(width * sample_pos.y as usize + sample_pos.x as usize) * 4 + 0],
@@ -128,17 +129,18 @@ fn load_images() {
 }
 
 #[test]
+#[allow(clippy::float_cmp)]
 fn sanity_check_window_sizes() {
     let (mut c, e) = tests::make_context();
 
     // Make sure that window sizes are what we ask for, and not what hidpi gives us.
     let w = c.conf.window_mode.width;
     let h = c.conf.window_mode.height;
-    let size = graphics::drawable_size(&mut c);
+    let size = graphics::drawable_size(&c);
     assert_eq!(w, size.0);
     assert_eq!(h, size.1);
 
-    let outer_size = graphics::size(&mut c);
+    let outer_size = graphics::size(&c);
     assert!(size.0 <= outer_size.0);
     assert!(size.1 <= outer_size.1);
 
@@ -151,9 +153,9 @@ fn sanity_check_window_sizes() {
     std::thread::sleep(std::time::Duration::from_millis(100));
     // Maybe we need to run the event pump too?  It seems VERY flaky.
     // Sometimes you need one, sometimes you need both...
-    e.run(move |event, _, control_flow| {
+    e.run(move |mut event, _, control_flow| {
         if let winit::event::Event::RedrawEventsCleared = event {
-            let size = graphics::drawable_size(&mut c);
+            let size = graphics::drawable_size(&c);
             assert_eq!(w, size.0);
             assert_eq!(h, size.1);
 
@@ -161,6 +163,6 @@ fn sanity_check_window_sizes() {
             return;
         }
 
-        c.process_event(&event);
+        event::process_event(&mut c, &mut event);
     });
 }

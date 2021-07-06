@@ -42,14 +42,14 @@ impl Default for Transform {
 
 impl Transform {
     /// Crunches the transform down to a single matrix, if it's not one already.
-    pub fn to_matrix(&self) -> Self {
+    pub fn to_matrix(self) -> Self {
         Transform::Matrix(self.to_bare_matrix())
     }
 
     /// Same as `to_matrix()` but just returns a bare `mint` matrix.
-    pub fn to_bare_matrix(&self) -> mint::ColumnMatrix4<f32> {
+    pub fn to_bare_matrix(self) -> mint::ColumnMatrix4<f32> {
         match self {
-            Transform::Matrix(m) => *m,
+            Transform::Matrix(m) => m,
             Transform::Values {
                 dest,
                 rotation,
@@ -57,24 +57,25 @@ impl Transform {
                 offset,
             } => {
                 // Calculate a matrix equivalent to doing this:
-                //  type Vec3 = na::Vector3<f32>;
-                //  let translate = Matrix4::new_translation(&Vec3::new(self.dest.x, self.dest.y, 0.0));
-                //  let offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
-                //  let offset_inverse =
-                //      Matrix4::new_translation(&Vec3::new(-self.offset.x, -self.offset.y, 0.0));
-                //  let axis_angle = Vec3::z() * self.rotation;
-                //  let rotation = Matrix4::new_rotation(axis_angle);
-                //  let scale = Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
-                //  translate * offset * rotation * scale * offset_inverse
+                // type Vec3 = na::Vector3<f32>;
+                // let o = offset;
+                // let translate = na::Matrix4::new_translation(&Vec3::new(dest.x, dest.y, 0.0));
+                // let offset = na::Matrix4::new_translation(&Vec3::new(offset.x, offset.y, 0.0));
+                // let offset_inverse =
+                //     na::Matrix4::new_translation(&Vec3::new(-o.x, -o.y, 0.0));
+                // let axis_angle = Vec3::z() * *rotation;
+                // let rotation = na::Matrix4::new_rotation(axis_angle);
+                // let scale = na::Matrix4::new_nonuniform_scaling(&Vec3::new(scale.x, scale.y, 1.0));
+                // translate * rotation * scale * offset_inverse
                 //
-                //  Doing the bits manually is faster though, or at least was last I checked.
+                // Doing the bits manually is faster though, or at least was last I checked.
                 let (sinr, cosr) = rotation.sin_cos();
                 let m00 = cosr * scale.x;
                 let m01 = -sinr * scale.y;
                 let m10 = sinr * scale.x;
                 let m11 = cosr * scale.y;
-                let m03 = offset.x * (1.0 - m00) - offset.y * m01 + dest.x;
-                let m13 = offset.y * (1.0 - m11) - offset.x * m10 + dest.y;
+                let m03 = offset.x * (-m00) - offset.y * m01 + dest.x;
+                let m13 = offset.y * (-m11) - offset.x * m10 + dest.y;
                 // Welp, this transpose fixes some bug that makes nothing draw,
                 // that was introduced in commit 2c6b3cc03f34fb240f4246f5a68c75bd85b60eae.
                 // The best part is, I don't know if this code is wrong, or whether there's
@@ -102,7 +103,7 @@ impl Transform {
 /// # use ggez::*;
 /// # use ggez::graphics::*;
 /// # fn t<P>(ctx: &mut Context, drawable: &P) where P: Drawable {
-/// let my_dest = mint::Point2::new(13.0, 37.0);
+/// let my_dest = glam::vec2(13.0, 37.0);
 /// graphics::draw(ctx, drawable, DrawParam::default().dest(my_dest) );
 /// # }
 /// ```
@@ -203,7 +204,16 @@ impl DrawParam {
         }
     }
 
-    pub(crate) fn to_instance_properties(&self, srgb: bool) -> InstanceProperties {
+    /// Set the transformation matrix of the drawable.
+    pub fn transform<M>(mut self, transform: M) -> Self
+    where
+        M: Into<mint::ColumnMatrix4<f32>>,
+    {
+        self.trans = Transform::Matrix(transform.into());
+        self
+    }
+
+    pub(crate) fn to_instance_properties(self, srgb: bool) -> InstanceProperties {
         let mat: [[f32; 4]; 4] = *self.trans.to_bare_matrix().as_ref();
         let color: [f32; 4] = if srgb {
             let linear_color: types::LinearColor = self.color.into();

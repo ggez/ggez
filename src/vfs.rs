@@ -93,6 +93,7 @@ impl OpenOptions {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub trait VFS: Debug {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: OpenOptions) -> GameResult<Box<dyn VFile>>;
@@ -154,6 +155,7 @@ pub trait VMetadata {
 /// It IS allowed to have symlinks in it!  They're surprisingly
 /// difficult to get rid of.
 #[derive(Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct PhysicalFS {
     root: PathBuf,
     readonly: bool,
@@ -273,7 +275,11 @@ impl VFS for PhysicalFS {
             );
             return Err(GameError::FilesystemError(msg));
         }
-        self.create_root()?;
+
+        if open_options.create {
+            self.create_root()?;
+        }
+
         let p = self.to_absolute(path)?;
         open_options
             .to_fs_openoptions()
@@ -291,7 +297,9 @@ impl VFS for PhysicalFS {
                     .to_string(),
             ));
         }
+
         self.create_root()?;
+
         let p = self.to_absolute(path)?;
         //println!("Creating {:?}", p);
         fs::DirBuilder::new()
@@ -308,7 +316,6 @@ impl VFS for PhysicalFS {
             ));
         }
 
-        self.create_root()?;
         let p = self.to_absolute(path)?;
         if p.is_dir() {
             fs::remove_dir(p).map_err(GameError::from)
@@ -327,7 +334,6 @@ impl VFS for PhysicalFS {
             ));
         }
 
-        self.create_root()?;
         let p = self.to_absolute(path)?;
         if p.is_dir() {
             fs::remove_dir_all(p).map_err(GameError::from)
@@ -346,7 +352,6 @@ impl VFS for PhysicalFS {
 
     /// Get the file's metadata
     fn metadata(&self, path: &Path) -> GameResult<Box<dyn VMetadata>> {
-        self.create_root()?;
         let p = self.to_absolute(path)?;
         p.metadata()
             .map(|m| Box::new(PhysicalMetadata(m)) as Box<dyn VMetadata>)
@@ -355,7 +360,6 @@ impl VFS for PhysicalFS {
 
     /// Retrieve the path entries in this path
     fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
-        self.create_root()?;
         let p = self.to_absolute(path)?;
         // This is inconvenient because path() returns the full absolute
         // path of the bloody file, which is NOT what we want!
@@ -388,6 +392,7 @@ impl VFS for PhysicalFS {
 
 /// A structure that joins several VFS's together in order.
 #[derive(Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct OverlayFS {
     roots: VecDeque<Box<dyn VFS>>,
 }
@@ -556,6 +561,7 @@ impl Debug for dyn ZipArchiveAccess {
 
 /// A filesystem backed by a zip file.
 #[derive(Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct ZipFS {
     // It's... a bit jankity.
     // Zip files aren't really designed to be virtual filesystems,
@@ -769,6 +775,7 @@ impl VFS for ZipFS {
         }
     }
 
+    #[allow(clippy::needless_collect)]
     /// Zip files don't have real directories, so we (incorrectly) hack it by
     /// just looking for a path prefix for now.
     fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {

@@ -24,7 +24,7 @@ impl State {{
     }}
 }}
 
-impl event::EventHandler for State {{
+impl event::EventHandler<GameError> for State {{
     fn update(&mut self, _ctx: &mut Context) -> GameResult {{
         Ok(())
     }}
@@ -72,7 +72,7 @@ pub fn main() -> GameResult {{
 use ggez::*;
 use ggez::graphics::*;
 
-mod scope_hack {{  
+mod scope_hack {{
     use super::*;
 
     pub enum Shape {{
@@ -121,7 +121,7 @@ struct State {{
     shapes: Vec<Shape>,
 }}
 
-impl event::EventHandler for State {{
+impl event::EventHandler<GameError> for State {{
     fn update(&mut self, _ctx: &mut Context) -> GameResult {{
         Ok(())
     }}

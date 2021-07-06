@@ -17,6 +17,7 @@
 use crate::context::Context;
 
 use std::cmp;
+use std::convert::TryFrom;
 use std::f64;
 use std::thread;
 use std::time;
@@ -151,9 +152,9 @@ pub fn average_delta(ctx: &Context) -> time::Duration {
     // If our buffer is actually full, divide by its size.
     // Otherwise divide by the number of samples we've added
     if tc.frame_durations.samples > tc.frame_durations.size {
-        sum / (tc.frame_durations.size as u32)
+        sum / u32::try_from(tc.frame_durations.size).unwrap()
     } else {
-        sum / (tc.frame_durations.samples as u32)
+        sum / u32::try_from(tc.frame_durations.samples).unwrap()
     }
 }
 
@@ -205,42 +206,6 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 
 /// Check whether or not the desired amount of time has elapsed
 /// since the last frame.
-///
-/// TODO: Heckin docs
-///
-/// This function will return Ok(true) if the time since the last
-/// [`update()`](../event/trait.EventHandler.html#tymethod.update)
-/// call has been equal to or greater to the update FPS indicated by
-/// the `target_fps`.  It keeps track of fractional frames, so if you
-/// want 60 fps (16.67 ms/frame) and the game stutters so that there
-/// is 40 ms between `update()` calls, this will return `Ok(true)` twice
-/// in a row even in the same frame, then taking into account the
-/// residual 6.67 ms to catch up to the next frame before returning
-/// `Ok(true)` again. If this function is called more then
-/// MAX_INCREMENTAL_UPDATES per call to 'update()' (default 20), it will return a
-/// `TimeCatchupError`. This is generally used to indicate that a loop
-/// using check_update_time takes longer than the specified update time
-/// to execute (see below).  This way if the game's update takes more than
-/// one frame time to execute, it will not hang forever trying to catch up with
-/// its own timer.
-///
-/// The intention is for it to be called in a while loop
-/// in your `update()` callback:
-///
-/// ```rust
-/// # use ggez::*;
-/// # fn update_game_physics() -> GameResult { Ok(()) }
-/// # struct State;
-/// # impl ggez::event::EventHandler for State {
-/// fn update(&mut self, ctx: &mut Context) -> GameResult {
-///     while(timer::check_update_time(ctx, 60)?) {
-///         update_game_physics()?;
-///     }
-///     Ok(())
-/// }
-/// # fn draw(&mut self, _ctx: &mut Context) -> GameResult { Ok(()) }
-/// # }
-/// ```
 pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
     let timedata = &mut ctx.timer_context;
 

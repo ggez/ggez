@@ -1,7 +1,7 @@
 [package]
 name = "ggez"
 description = "A lightweight game framework for making 2D games with minimum friction, inspired by Love2D."
-version = "0.6.0-rc1"
+version = "0.6.0-rc2"
 homepage = "http://ggez.rs"
 repository = "https://github.com/ggez/ggez"
 documentation = "https://docs.rs/ggez"
@@ -20,7 +20,7 @@ build = "build.rs"
 exclude = ["resources", "!LiberationMono-Regular.ttf"]
 
 [badges]
-maintenance = { status = "passively-maintained" }
+maintenance = { status = "actively-maintained" }
 
 [lib]
 name = "ggez"
@@ -45,28 +45,29 @@ old_school_gfx_glutin_ext = "0.26"
 glutin = "0.26"
 winit = "0.24"
 image = {version = "0.23", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "dxt", ] }
-rodio = { version = "0.13", default-features = false, features = ["flac", "vorbis", "wav"] }
+rodio = { version = "0.14", default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
 serde_derive = "1"
 toml = "0.5"
 log = "0.4"
-lyon = "0.16"
+lyon = "0.17.5"
 smart-default = "0.6"
-glam = { version = "0.12", features = ["mint"]}
+glam = { version = "0.15", features = ["mint"]}
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5"
 gilrs = "0.8"
-approx = "0.4"
+approx = "0.5"
+bytemuck = "1.5.1"
 
 [dev-dependencies]
 chrono = "0.4"
 fern = "0.6"
 oorandom = "11"
 argh = "0.1"
+rand = "0.8.3"
 
 skeptic = "0.13"
 getrandom = "0.2"
 
 [build-dependencies]
 skeptic = "0.13"
-

@@ -12,6 +12,8 @@
 //! If you use it, it's recommended to crank up the `opt-level` for
 //! debug mode in your game's `Cargo.toml`.
 
+use std::convert::TryFrom;
+
 use crate::context::Context;
 use crate::error;
 use crate::error::GameResult;
@@ -157,6 +159,20 @@ impl SpriteBatch {
 
 impl graphics::Drawable for SpriteBatch {
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
+        // scale the offset according to the dimensions of the spritebatch
+        // but only if there is an offset (it's too expensive to calculate the dimensions to always to this)
+        let mut new_param = param;
+        if let Transform::Values { offset, .. } = param.trans {
+            if offset != [0.0, 0.0].into() {
+                if let Some(dim) = self.dimensions(ctx) {
+                    let new_offset = mint::Vector2 {
+                        x: offset.x * dim.w + dim.x,
+                        y: offset.y * dim.h + dim.y,
+                    };
+                    new_param = param.offset(new_offset);
+                }
+            }
+        }
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
         self.flush(ctx, &self.image)?;
@@ -171,10 +187,10 @@ impl graphics::Drawable for SpriteBatch {
         gfx.data.tex = (typed_thingy, sampler);
 
         let mut slice = gfx.quad_slice.clone();
-        slice.instances = Some((self.sprites.len() as u32, 0));
+        slice.instances = Some((u32::try_from(self.sprites.len()).unwrap(), 0));
         // It's a little silly converting this mint matrix back to a glam
         // one but it's simpler than the alternative.
-        let m = Matrix4::from(param.trans.to_bare_matrix());
+        let m = Matrix4::from(new_param.trans.to_bare_matrix());
         gfx.set_global_mvp(m)?;
         let previous_mode: Option<BlendMode> = if let Some(mode) = self.blend_mode {
             let current_mode = gfx.blend_mode();
@@ -191,7 +207,7 @@ impl graphics::Drawable for SpriteBatch {
         if let Some(mode) = previous_mode {
             gfx.set_blend_mode(mode)?;
         }
-        gfx.set_global_mvp(graphics::Matrix4::identity())?;
+        gfx.set_global_mvp(graphics::Matrix4::IDENTITY)?;
         Ok(())
     }
     fn dimensions(&self, _ctx: &mut Context) -> Option<Rect> {

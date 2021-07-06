@@ -1,9 +1,5 @@
 //! This example demonstrates how to use `Text` to draw TrueType font texts efficiently.
 
-use ggez;
-use glam;
-use oorandom;
-
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::graphics::{self, Align, Color, DrawParam, Font, PxScale, Text, TextFragment};
@@ -28,6 +24,7 @@ struct App {
 }
 
 impl App {
+    #[allow(clippy::needless_update)]
     fn new(ctx: &mut Context) -> GameResult<App> {
         let mut texts = BTreeMap::new();
 
@@ -90,7 +87,7 @@ impl App {
         // Color is specified when drawing (or queueing), via `DrawParam`.
         // Side note: TrueType fonts aren't very consistent between themselves in terms
         // of apparent scale - this font with default scale will appear too small.
-        text.set_font(fancy_font.clone(), PxScale::from(16.0))
+        text.set_font(fancy_font, PxScale::from(16.0))
             .set_bounds(Vec2::new(300.0, f32::INFINITY), Align::Center);
         texts.insert("1_demo_text_4", text);
 
@@ -115,7 +112,7 @@ impl App {
     }
 }
 
-impl event::EventHandler for App {
+impl event::EventHandler<ggez::GameError> for App {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         while timer::check_update_time(ctx, DESIRED_FPS) {}
@@ -134,7 +131,7 @@ impl event::EventHandler for App {
         graphics::draw(ctx, &fps_display, (Vec2::new(200.0, 0.0), Color::WHITE))?;
 
         let mut height = 0.0;
-        for (_key, text) in &self.texts {
+        for text in self.texts.values() {
             // Calling `.queue()` for all bits of text that can share a `DrawParam`,
             // followed with `::draw_queued()` with said params, is the intended way.
             graphics::queue_text(ctx, text, Vec2::new(20.0, 20.0 + height), None);

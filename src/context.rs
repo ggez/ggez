@@ -6,9 +6,8 @@ pub use winit;
 use crate::audio;
 use crate::conf;
 use crate::error::GameResult;
-use crate::event::winit_event;
 use crate::filesystem::Filesystem;
-use crate::graphics::{self, Point2};
+use crate::graphics;
 use crate::input::{gamepad, keyboard, mouse};
 use crate::timer;
 
@@ -119,70 +118,6 @@ impl Context {
         };
 
         Ok((ctx, events_loop))
-    }
-
-    // TODO LATER: This should be a function in `ggez::event`, per the
-    // "functions are stable, methods and fields are unstable" promise
-    // given above.
-    /// Feeds an `Event` into the `Context` so it can update any internal
-    /// state it needs to, such as detecting window resizes.  If you are
-    /// rolling your own event loop, you should call this on the events
-    /// you receive before processing them yourself.
-    pub fn process_event(&mut self, event: &winit::event::Event<()>) {
-        match event {
-            winit_event::Event::WindowEvent { event, .. } => match event {
-                winit_event::WindowEvent::Resized(physical_size) => {
-                    self.gfx_context.window.resize(*physical_size);
-                    self.gfx_context.resize_viewport();
-                }
-                winit_event::WindowEvent::CursorMoved {
-                    position: logical_position,
-                    ..
-                } => {
-                    self.mouse_context.set_last_position(Point2::new(
-                        logical_position.x as f32,
-                        logical_position.y as f32,
-                    ));
-                }
-                winit_event::WindowEvent::MouseInput { button, state, .. } => {
-                    let pressed = match state {
-                        winit_event::ElementState::Pressed => true,
-                        winit_event::ElementState::Released => false,
-                    };
-                    self.mouse_context.set_button(*button, pressed);
-                }
-                winit_event::WindowEvent::ModifiersChanged(mods) => self
-                    .keyboard_context
-                    .set_modifiers(keyboard::KeyMods::from(*mods)),
-                winit_event::WindowEvent::KeyboardInput {
-                    input:
-                        winit::event::KeyboardInput {
-                            state,
-                            virtual_keycode: Some(keycode),
-                            ..
-                        },
-                    ..
-                } => {
-                    let pressed = match state {
-                        winit_event::ElementState::Pressed => true,
-                        winit_event::ElementState::Released => false,
-                    };
-                    self.keyboard_context.set_key(*keycode, pressed);
-                }
-                winit_event::WindowEvent::ScaleFactorChanged { .. } => {
-                    // Nope.
-                }
-                _ => (),
-            },
-            winit_event::Event::DeviceEvent {
-                event: winit_event::DeviceEvent::MouseMotion { delta: (x, y) },
-                ..
-            } => self
-                .mouse_context
-                .set_last_delta(Point2::new(*x as f32, *y as f32)),
-
-            _ => (),
-        };
     }
 }
 
@@ -309,9 +244,9 @@ impl ContextBuilder {
 }
 
 #[cfg(debug_assertions)]
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU32, Ordering};
 #[cfg(debug_assertions)]
-static DEBUG_ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
+static DEBUG_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
 
 /// This is a type that contains a unique ID for each `Context` and
 /// is contained in each thing created from the `Context` which
@@ -329,10 +264,10 @@ pub(crate) struct DebugId;
 #[cfg(debug_assertions)]
 impl DebugId {
     pub fn new() -> Self {
-        let id = DEBUG_ID_COUNTER.fetch_add(1, Ordering::SeqCst) as u32;
+        let id = DEBUG_ID_COUNTER.fetch_add(1, Ordering::SeqCst);
         // fetch_add() wraps on overflow so we check for overflow explicitly.
         // JUST IN CASE YOU TRY TO CREATE 2^32 CONTEXTS IN ONE PROGRAM!  muahahahahaaa
-        assert!(DEBUG_ID_COUNTER.load(Ordering::SeqCst) as u32 > id);
+        assert!(DEBUG_ID_COUNTER.load(Ordering::SeqCst) > id);
         DebugId(id)
     }
 

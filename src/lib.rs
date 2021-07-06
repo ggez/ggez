@@ -2,8 +2,7 @@
 //!
 //! # What is this?
 //!
-//! [![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez)
-//! [![Build status](https://ci.appveyor.com/api/projects/status/3v9lsq6n9li7kxim/branch/master?svg=true)](https://ci.appveyor.com/project/svenstaro/ggez/branch/master)
+//! ![Build status](https://github.com/ggez/ggez/workflows/CI/badge.svg)
 //! [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez)
 //! [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ggez/ggez/blob/master/LICENSE)
 //! [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
@@ -103,24 +102,24 @@
 //! ### Basic Project Template
 //!
 //! ```rust,no_run
-//! use ggez::{graphics, Context, ContextBuilder, GameResult};
+//! use ggez::{Context, ContextBuilder, GameResult};
+//! use ggez::graphics::{self, Color};
 //! use ggez::event::{self, EventHandler};
 //!
+//! fn main() {
 //!     // Make a Context.
-//!     let (mut ctx, mut event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
+//!     let (mut ctx, event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
 //!         .build()
 //!         .expect("aieee, could not create ggez context!");
 //!
 //!     // Create an instance of your event handler.
 //!     // Usually, you should provide it with the Context object to
 //!     // use when setting your game up.
-//!     let mut my_game = MyGame::new(&mut ctx);
+//!     let my_game = MyGame::new(&mut ctx);
 //!
 //!     // Run!
-//!     match event::run(&mut ctx, &mut event_loop, &mut my_game) {
-//!         Ok(_) => println!("Exited cleanly."),
-//!         Err(e) => println!("Error occured: {}", e)
-//!     }
+//!     event::run(ctx, event_loop, my_game);
+//! }
 //!
 //! struct MyGame {
 //!     // Your state here...
@@ -142,7 +141,7 @@
 //!     }
 //!
 //!     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-//!         graphics::clear(ctx, graphics::WHITE);
+//!         graphics::clear(ctx, Color::WHITE);
 //!         // Draw code here...
 //!         graphics::present(ctx)
 //!     }
@@ -158,7 +157,7 @@
 //! and drawing must be done in the main thread), and portable to Windows
 //! and Linux.
 //!
-//! ggez is Pure Rust(tm).
+//! ggez is pure Rust™.
 //!
 //! ## Help!
 //!
@@ -170,8 +169,8 @@
 //!
 //!  If you still have problems or questions, feel free to ask!  Easiest ways are:
 //!
-//!  * open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
-//!  * say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community)
+//!  * Open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
+//!  * Say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community) or the [Rust Gamedev server](https://discord.gg/yNtPTb2)
 
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
@@ -181,6 +180,7 @@
 #![deny(unsafe_code)]
 #![warn(bare_trait_objects)]
 #![warn(missing_copy_implementations)]
+#![allow(clippy::needless_doctest_main)]
 
 #[macro_use]
 extern crate bitflags;

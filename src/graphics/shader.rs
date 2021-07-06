@@ -40,6 +40,8 @@ impl<F> Structure<F> for EmptyConst {
 unsafe impl Pod for EmptyConst {}
 
 /// An enum for specifying default and custom blend modes
+///
+/// If you want to know what these actually do take a look at the implementation of `From<BlendMode> for Blend`
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum BlendMode {
     /// When combining two fragments, add their values together, saturating
@@ -59,58 +61,98 @@ pub enum BlendMode {
     /// A white source color and a white value results in plain invert. The output
     /// alpha is same as destination alpha.
     Invert,
-    /// When combining two fragments, multiply their values together.
+    /// When combining two fragments, multiply their values together (including alpha)
     Multiply,
-    /// When combining two fragments, choose the source value
+    /// When combining two fragments, choose the source value (including source alpha)
     Replace,
     /// When combining two fragments, choose the lighter value
     Lighten,
     /// When combining two fragments, choose the darker value
     Darken,
+    /// When using premultiplied alpha, use this.
+    ///
+    /// You usually want to use this blend mode for drawing canvases
+    /// containing semi-transparent imagery.
+    /// For an explanation on this see: https://github.com/ggez/ggez/issues/694#issuecomment-853724926
+    Premultiplied,
 }
 
 impl From<BlendMode> for Blend {
     fn from(bm: BlendMode) -> Self {
         match bm {
-            BlendMode::Add => blend::ADD,
-            BlendMode::Subtract => Blend {
+            BlendMode::Add => Blend {
                 color: BlendChannel {
-                    equation: Equation::Sub,
-                    source: Factor::One,
+                    equation: Equation::Add,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
                     destination: Factor::One,
                 },
                 alpha: BlendChannel {
-                    equation: Equation::Sub,
-                    source: Factor::One,
+                    equation: Equation::Add,
+                    source: Factor::OneMinus(BlendValue::DestAlpha),
                     destination: Factor::One,
                 },
             },
-            BlendMode::Alpha => blend::ALPHA,
+            BlendMode::Subtract => Blend {
+                color: BlendChannel {
+                    equation: Equation::RevSub,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                    destination: Factor::One,
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::Zero,
+                    destination: Factor::One,
+                },
+            },
+            BlendMode::Alpha => Blend {
+                color: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                    destination: Factor::OneMinus(BlendValue::SourceAlpha),
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::OneMinus(BlendValue::DestAlpha),
+                    destination: Factor::One,
+                },
+            },
             BlendMode::Invert => blend::INVERT,
             BlendMode::Multiply => blend::MULTIPLY,
             BlendMode::Replace => blend::REPLACE,
             BlendMode::Lighten => Blend {
                 color: BlendChannel {
                     equation: Equation::Max,
-                    source: Factor::One,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
                     destination: Factor::One,
                 },
                 alpha: BlendChannel {
                     equation: Equation::Add,
-                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
-                    destination: Factor::OneMinus(BlendValue::SourceAlpha),
+                    source: Factor::OneMinus(BlendValue::DestAlpha),
+                    destination: Factor::One,
                 },
             },
             BlendMode::Darken => Blend {
                 color: BlendChannel {
                     equation: Equation::Min,
-                    source: Factor::One,
+                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
                     destination: Factor::One,
                 },
                 alpha: BlendChannel {
                     equation: Equation::Add,
-                    source: Factor::ZeroPlus(BlendValue::SourceAlpha),
+                    source: Factor::OneMinus(BlendValue::DestAlpha),
+                    destination: Factor::One,
+                },
+            },
+            BlendMode::Premultiplied => Blend {
+                color: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::One,
                     destination: Factor::OneMinus(BlendValue::SourceAlpha),
+                },
+                alpha: BlendChannel {
+                    equation: Equation::Add,
+                    source: Factor::OneMinus(BlendValue::DestAlpha),
+                    destination: Factor::One,
                 },
             },
         }
@@ -190,6 +232,7 @@ pub type Shader<C> = ShaderGeneric<graphics::GlBackendSpec, C>;
 
 type ShaderHandlePtr<Spec> = Box<dyn ShaderHandle<Spec>>;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn create_shader<C, S, Spec>(
     vertex_source: &[u8],
     pixel_source: &[u8],
@@ -270,6 +313,7 @@ where
     Spec: graphics::BackendSpec,
     C: 'static + Pod + Structure<ConstFormat> + Clone + Copy,
 {
+    #[allow(clippy::new_ret_no_self)]
     /// Create a new `Shader` given source files, constants and a name.
     ///
     /// In order to use a specific blend mode when this shader is being

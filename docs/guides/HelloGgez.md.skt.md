@@ -13,7 +13,7 @@ struct State {{
     pub dt: Duration,
 }}
 
-impl EventHandler for State {{
+impl EventHandler<GameError> for State {{
     fn update(&mut self, _ctx: &mut Context) -> GameResult {{
         Ok(())
     }}
@@ -41,7 +41,7 @@ struct State {{
     pub dt: Duration,
 }}
 
-impl event::EventHandler for State {{
+impl event::EventHandler<GameError> for State {{
     fn draw(&mut self, _ctx: &mut Context) -> GameResult {{
         Ok(())
     }}
@@ -70,7 +70,7 @@ struct State {{
     pub dt: Duration,
 }}
 
-impl EventHandler for State {{
+impl EventHandler<GameError> for State {{
     fn update(&mut self, _c: &mut Context) -> GameResult {{
         Ok(())
     }}
@@ -81,10 +81,10 @@ impl EventHandler for State {{
 }}
 
 pub fn main() -> GameResult {{
-    let (ref mut ctx, ref mut event_loop) = ContextBuilder::new("foo", "bar")
+    let (ctx, event_loop) = ContextBuilder::new("foo", "bar")
         .build()
         .unwrap();
-    let state = &mut State {{ dt: Duration::default() }};
+    let state = State {{ dt: Duration::default() }};
     {}
 
     Ok(())

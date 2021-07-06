@@ -66,6 +66,7 @@ struct App {
 }
 
 impl App {
+    #[allow(clippy::new_ret_no_self, clippy::unnecessary_wraps)]
     /// Creates an instance, takes ownership of passed FileLogger.
     fn new(_ctx: &mut Context, logger: FileLogger) -> GameResult<App> {
         Ok(App {
@@ -75,7 +76,7 @@ impl App {
 }
 
 /// Where the app meets the `ggez`.
-impl EventHandler for App {
+impl EventHandler<ggez::GameError> for App {
     /// This is where the logic should happen.
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;

@@ -66,7 +66,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler for MainState {
+impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
@@ -77,7 +77,7 @@ impl event::EventHandler for MainState {
         graphics::queue_text(
             ctx,
             &graphics::Text::new("Press number keys 1-6 to play a sound, or escape to quit."),
-            Vec2::zero(),
+            Vec2::ZERO,
             None,
         );
         graphics::draw_queued_text(

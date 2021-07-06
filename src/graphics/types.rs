@@ -44,7 +44,9 @@ impl Rect {
     }
 
     /// Create a new rect from `i32` coordinates.
-    pub const fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
+    /// Loses precision if the integers are too big to fit
+    /// in `f32`'s.
+    pub fn new_i32(x: i32, y: i32, w: i32, h: i32) -> Self {
         Rect {
             x: x as f32,
             y: y as f32,
@@ -236,14 +238,14 @@ impl From<Rect> for [f32; 4] {
 /// A RGBA color in the `sRGB` color space represented as `f32`'s in the range `[0.0-1.0]`
 ///
 /// For convenience, several colors are provided:
-/// [`WHITE`](constant.WHITE.html)
-/// [`BLACK`](constant.BLACK.html)
-/// [`RED`](constant.RED.html)
-/// [`GREEN`](constant.GREEN.html)
-/// [`BLUE`](constant.BLUE.html)
-/// [`CYAN`](constant.CYAN.html)
-/// [`MAGENTA`](constant.MAGENTA.html)
-/// [`YELLOW`](constant.YELLOW.html)
+/// [`WHITE`](`Color::WHITE`)
+/// [`BLACK`](`Color::BLACK`)
+/// [`RED`](`Color::RED`)
+/// [`GREEN`](`Color::GREEN`)
+/// [`BLUE`](`Color::BLUE`)
+/// [`CYAN`](`Color::CYAN`)
+/// [`MAGENTA`](`Color::MAGENTA`)
+/// [`YELLOW`](`Color::YELLOW`)
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Color {
@@ -258,7 +260,7 @@ pub struct Color {
 }
 
 impl Color {
-    /// White
+    /// White (#FFFFFFFF)
     pub const WHITE: Color = Color {
         r: 1.0,
         g: 1.0,
@@ -266,10 +268,58 @@ impl Color {
         a: 1.0,
     };
 
-    /// Black
+    /// Black (#000000FF)
     pub const BLACK: Color = Color {
         r: 0.0,
         g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    /// Red
+    pub const RED: Color = Color {
+        r: 1.0,
+        g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    /// Green
+    pub const GREEN: Color = Color {
+        r: 0.0,
+        g: 1.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    /// Blue
+    pub const BLUE: Color = Color {
+        r: 0.0,
+        g: 0.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    /// Cyan
+    pub const CYAN: Color = Color {
+        r: 0.0,
+        g: 1.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    /// Magenta
+    pub const MAGENTA: Color = Color {
+        r: 1.0,
+        g: 0.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    /// Yellow
+    pub const YELLOW: Color = Color {
+        r: 1.0,
+        g: 1.0,
         b: 0.0,
         a: 1.0,
     };
@@ -380,6 +430,8 @@ impl From<(f32, f32, f32, f32)> for Color {
 
 impl From<Color> for (u8, u8, u8, u8) {
     /// Convert a `Color` into a `(R, G, B, A)` tuple of `u8`'s in the range of `[0-255]`.
+    ///
+    /// Does the Wrong Thing if the `Color`'s values are not in the range `[0.0,1.0]`
     fn from(color: Color) -> Self {
         let r = (color.r * 255.0) as u8;
         let g = (color.g * 255.0) as u8;
@@ -392,6 +444,8 @@ impl From<Color> for (u8, u8, u8, u8) {
 impl From<Color> for (u8, u8, u8) {
     /// Convert a `Color` into a `(R, G, B)` tuple of `u8`'s in the range of `[0-255]`,
     /// ignoring the alpha term.
+    ///
+    /// Does the Wrong Thing if the `Color`'s values are not in the range `[0.0,1.0]`
     fn from(color: Color) -> Self {
         let (r, g, b, _) = color.into();
         (r, g, b)
@@ -544,10 +598,10 @@ mod tests {
         assert_eq!(black, b1);
         let b2: u32 = black.to_rgba_u32();
         assert_eq!(b2, 0x0000_00FFu32);
-        assert_eq!(black, Color::from_rgb_u32(0x00_0000u32));
-        assert_eq!(black, Color::from_rgba_u32(0x00_0000FFu32));
+        assert_eq!(black, Color::from_rgb_u32(0x0000_0000u32));
+        assert_eq!(black, Color::from_rgba_u32(0x0000_00FFu32));
 
-        let puce1 = Color::from_rgb_u32(0xCC_8899u32);
+        let puce1 = Color::from_rgb_u32(0x00CC_8899u32);
         let puce2 = Color::from_rgba_u32(0xCC88_99FFu32);
         let puce3 = Color::from((0xCC, 0x88, 0x99, 255));
         let puce4 = Color::new(0.80, 0.53333336, 0.60, 1.0);

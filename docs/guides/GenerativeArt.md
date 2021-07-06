@@ -3,7 +3,7 @@
 This is a guide to create a program that randomly generates shapes to display.
 
 At the end of this guide you will:
-*  Have used the [`graphics`](https://docs.rs/ggez/0.5.1/ggez/graphics/) module of `ggez` to draw shapes
+*  Have used the [`graphics`](https://docs.rs/ggez/0.6.0/ggez/graphics/) module of `ggez` to draw shapes
 
 ## Project Setup
 
@@ -13,26 +13,27 @@ Modify `Cargo.toml` to include `ggez` in the dependencies.
 
 Just like in `Hello ggez!`, we're going to use a loop and a struct.
 Let's start with this code in `src/main.rs`:
+
 ```rust,no_run
 use ggez::*;
 
 struct State {}
 
-impl ggez::event::EventHandler for State {
-  fn update(&mut self, _ctx: &mut Context) -> GameResult {
-      Ok(())
-  }
-  fn draw(&mut self, ctx: &mut Context) -> GameResult {
-      graphics::present(ctx)?;
-      Ok(())
-  }
+impl ggez::event::EventHandler<GameError> for State {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+        Ok(())
+    }
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        graphics::present(ctx)?;
+        Ok(())
+    }
 }
 
 fn main() {
-    let state = &mut State {};
+    let state = State {};
     let cb = ggez::ContextBuilder::new("generative_art", "awesome_person");
-    let (ref mut ctx, ref mut event_loop) = &mut cb.build().unwrap();
-    event::run(ctx, event_loop, state).unwrap();
+    let (ctx, event_loop) = cb.build().unwrap();
+    event::run(ctx, event_loop, state);
 }
 ```
 
@@ -42,41 +43,41 @@ Test to make sure everything is correct by running `cargo run`.
 
 If there are no errors and you see a window you are good.
 
-## [`ggez::graphics`](https://docs.rs/ggez/0.5.1/ggez/graphics/)
+## [ggez::graphics](https://docs.rs/ggez/0.6.0/ggez/graphics/)
 
-Glancing over the docs for [`ggez::graphics`](https://docs.rs/ggez/0.5.1/ggez/graphics/) you can see there is a lot of functionality there.
-The basic shapes can be found in [`graphics::Mesh`](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Mesh.html#methods)
+Glancing over the docs for [`ggez::graphics`](https://docs.rs/ggez/0.6.0/ggez/graphics/) you can see there is a lot of functionality there.
+The basic shapes can be found in [`graphics::Mesh`](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#methods)
 
 So which shapes are in `Mesh`?
 
-* [line](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Mesh.html#method.new_line)
-* [circle](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Mesh.html#method.new_circle)
-* [ellipse](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Mesh.html#method.new_ellipse)
-* [polygon](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Mesh.html#method.new_polygon)
-* [rectangle](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Mesh.html#method.new_rectangle)
+* [line](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_line)
+* [circle](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_circle)
+* [ellipse](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_ellipse)
+* [polygon](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_polygon)
+* [rectangle](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_rectangle)
 
 We are just going to touch on 2 shapes in this guide: the circle and the rectangle.
 
 Additionally there are 2 other methods we will look at.
 These 2 are used to show and erase the screen:
 
-* [clear](https://docs.rs/ggez/0.5.1/ggez/graphics/fn.clear.html)
-* [present](https://docs.rs/ggez/0.5.1/ggez/graphics/fn.present.html)
+* [clear](https://docs.rs/ggez/0.6.0/ggez/graphics/fn.clear.html)
+* [present](https://docs.rs/ggez/0.6.0/ggez/graphics/fn.present.html)
 
 ### ⚫ The Circle
 
 Circles are represented by 2 pieces of information: origin, and radius.
 Geometry, it's all coming back now.
 
-Here is the code for a [circle](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Mesh.html#method.new_circle):
-```rust,skt-draw,no_run
+Here is the code for a [circle](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_circle):
+```rust,skt-expression,no_run
 graphics::Mesh::new_circle(
     ctx,
     graphics::DrawMode::fill(),
     mint::Point2{x: 200.0, y: 300.0},
     100.0,
     0.1,
-    graphics::WHITE,
+    graphics::Color::WHITE,
 )?;
 ```
 
@@ -86,7 +87,7 @@ Why did I just write like a million?!
 Well, `ctx` is needed to tell `ggez` where you are drawing to.
 `ctx` is what is passed into `update` and `draw` already.
 
-[`graphics::DrawMode::fill()`](https://docs.rs/ggez/0.5.1/ggez/graphics/enum.DrawMode.html) is choosing between outlining the circle or filling it in.
+[`graphics::DrawMode::fill()`](https://docs.rs/ggez/0.6.0/ggez/graphics/enum.DrawMode.html) is choosing between outlining the circle or filling it in.
 
 Point, now here is one we expected.
 This is the origin of the circle.
@@ -103,14 +104,14 @@ And that's how a circle is drawn!
 Let's try it out with some quick code:
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    graphics::clear(ctx, graphics::BLACK);
+    graphics::clear(ctx, graphics::Color::BLACK);
     let circle = graphics::Mesh::new_circle(
         ctx,
         graphics::DrawMode::fill(),
         mint::Point2{x: 200.0, y: 300.0},
         100.0,
         0.1,
-        graphics::WHITE,
+        graphics::Color::WHITE,
     )?;
     graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
     graphics::present(ctx)?;
@@ -124,21 +125,21 @@ If you see a circle on the screen when you run `cargo run` you're good!
 
 Rectangles are represented by 3 pieces of information: origin, width, and height.
 
-Here is the code for a [rectangle](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Mesh.html#method.new_rectangle):
+Here is the code for a [rectangle](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_rectangle):
 ```rust,skt-expression,no_run
 graphics::Mesh::new_rectangle(
     ctx,
     graphics::DrawMode::fill(),
     graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
-    graphics::WHITE,
+    graphics::Color::WHITE,
 )?;
 ```
 
 It might seem weird that there are less parameters for more required information than a circle,
 but this is correct.
 
-[`Rect`](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Rect.html) is a convenient type that represents a... rectangle!
-[`graphics::Rect::new(500.0, 250.0, 200.0, 100.0)`](https://docs.rs/ggez/0.5.1/ggez/graphics/struct.Rect.html) positions the rectangle's top-left corner at `x: 500, y: 250` and
+[`Rect`](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Rect.html) is a convenient type that represents a... rectangle!
+[`graphics::Rect::new(500.0, 250.0, 200.0, 100.0)`](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Rect.html) positions the rectangle's top-left corner at `x: 500, y: 250` and
 specifies `width: 200, height: 100`.
 
 And that's how a rectangle is drawn!
@@ -148,12 +149,12 @@ And that's how a rectangle is drawn!
 Let's try it out with some quick code:
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    graphics::clear(ctx, graphics::BLACK);
+    graphics::clear(ctx, graphics::Color::BLACK);
     let rect = graphics::Mesh::new_rectangle(
         ctx,
         graphics::DrawMode::fill(),
         graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
-        graphics::WHITE,
+        graphics::Color::WHITE,
     )?;
     graphics::draw(ctx, &rect, graphics::DrawParam::default())?;
     graphics::present(ctx)?;
@@ -209,13 +210,13 @@ fn main() {
         mint::Point2{x: 400.0, y: 40.0},
         30.0,
     ));
-    let state = &mut State { shapes: shapes };
+    let state = State { shapes: shapes };
     let c = conf::Conf::new();
-    let (ref mut ctx, ref mut event_loop) = ContextBuilder::new("generative_art", "awesome_person")
-        .conf(c)
+    let (ctx, event_loop) = ContextBuilder::new("generative_art", "awesome_person")
+        .default_conf(c)
         .build()
         .unwrap();
-    event::run(ctx, event_loop, state).unwrap();
+    event::run(ctx, event_loop, state);
 }
 ```
 We're using `Vec.push` to add 2 new values to our `Vec`.
@@ -224,15 +225,15 @@ But we still don't see anything...
 You need to modify `draw` to illustrate your new `State`.
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    graphics::clear(ctx, graphics::BLACK);
+    graphics::clear(ctx, graphics::Color::BLACK);
     for shape in &self.shapes {
         // Make the shape...
         let mesh = match shape {
             &Shape::Rectangle(rect) => {
-                Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, graphics::WHITE)?
+                graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, graphics::Color::WHITE)?
             }
             &Shape::Circle(origin, radius) => {
-                Mesh::new_circle(ctx, graphics::DrawMode::fill(), origin, radius, 0.1, graphics::WHITE)?
+                graphics::Mesh::new_circle(ctx, graphics::DrawMode::fill(), origin, radius, 0.1, graphics::Color::WHITE)?
             }
         };
 
@@ -249,37 +250,38 @@ We see 2 shapes on the screen now.
 
 Let's go another step further.
 We are going to allow the computer to randomly generate art for us.
-Random numbers can be generated using the [rand crate](https://docs.rs/rand/0.7.3/rand/).
+Random numbers can be generated using the [rand crate](https://docs.rs/rand/0.8.3/rand/).
 
 We don't want 2 shapes fixed in location.
 We want 2 shapes randomly generated!
 
-Include `rand` in your `Cargo.toml`:
+Include your favorite RNG in your `Cargo.toml`:
 ```toml
 [dependencies]
-ggez = "0.5.1"
-rand = "0.7.3"
+ggez = "0.6.0"
+oorandom = "11"
 ```
 
-At the top of `main.rs` `use` `rand`:
+At the top of `main.rs` add a `use` statement for the RNG:
 ```rust,skt-definition,no_run
-use rand::{thread_rng, Rng};
+use oorandom::Rand32;
 ```
 
 Change how the 2 shapes are created to include randomness:
 ```rust,skt-expression,no_run
+    let mut rng = Rand32::new(4); // Random number chosen by fair die roll
 shapes.push(Shape::Rectangle(ggez::graphics::Rect::new(
-    thread_rng().gen_range(0.0, 800.0),
-    thread_rng().gen_range(0.0, 600.0),
-    thread_rng().gen_range(0.0, 800.0),
-    thread_rng().gen_range(0.0, 600.0),
+    rng.rand_float() * 800.0,
+    rng.rand_float() * 600.0,
+    rng.rand_float() * 800.0,
+    rng.rand_float() * 600.0,
 )));
 shapes.push(Shape::Circle(
     mint::Point2{
-        x: thread_rng().gen_range(0.0, 800.0),
-        y: thread_rng().gen_range(0.0, 600.0),
+        x: rng.rand_float() * 800.0,
+        y: rng.rand_float() * 600.0,
     },
-    thread_rng().gen_range(0.0, 300.0),
+    rng.rand_float() * 300.0,
 ));
 ```
 Run `cargo run` a couple times and see how the shapes move around and change shape.
@@ -291,33 +293,34 @@ Modify your `main.rs`:
 ```rust,skt-expression,no_run
 let mut shapes = Vec::new();
 for _ in 0..8 {
-    if thread_rng().gen::<bool>() {
+    if rng.rand_i32() >= 0 {
         shapes.push(Shape::Rectangle(ggez::graphics::Rect::new(
-            thread_rng().gen_range(0.0, 800.0),
-            thread_rng().gen_range(0.0, 600.0),
-            thread_rng().gen_range(0.0, 800.0),
-            thread_rng().gen_range(0.0, 600.0),
+            rng.rand_float() * 800.0,
+            rng.rand_float() * 600.0,
+            rng.rand_float() * 800.0,
+            rng.rand_float() * 600.0,
         )));
     } else {
         shapes.push(Shape::Circle(
             mint::Point2{
-                x: thread_rng().gen_range(0.0, 800.0),
-                y: thread_rng().gen_range(0.0, 600.0),
+                x: rng.rand_float() * 800.0,
+                y: rng.rand_float() * 600.0,
             },
-            thread_rng().gen_range(0.0, 300.0),
+            rng.rand_float() * 300.0,
         ));
     }
 }
 ```
 Now we are creating 8 shapes of random type, size, and position.
 
-run `cargo run` a couple more times.
+Run `cargo run` a couple more times.  Add the `getrandom` crate or some
+other source of true randomness to seed the RNG.
 Bask in the expressiveness and technique of your computer.
 Print it out, put it on a canvas, and sell it to your local museum.
 
 ## 💪 Challenges
 
 Optional activities for those that want more:
-* Randomize colors
-* Include more shapes: lines, polygons, ellipse
-* Draw a new shape every 5 seconds instead of upfront
+ * Randomize colors
+ * Include more shapes: lines, polygons, ellipse
+ * Draw a new shape every 5 seconds instead of upfront

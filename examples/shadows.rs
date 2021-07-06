@@ -2,8 +2,6 @@
 //! and canvas's to do 2D GPU shadows.
 
 use gfx::{self, *};
-use ggez;
-use glam;
 
 use ggez::conf;
 use ggez::event;
@@ -322,7 +320,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler for MainState {
+impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         if timer::ticks(ctx) % 100 == 0 {
             println!("Average FPS: {}", timer::fps(ctx));
@@ -380,7 +378,7 @@ impl event::EventHandler for MainState {
             self.render_light(ctx, light, origin, canvas_origin)?;
         }
 
-        // Now lets finally render to screen starting with out background, then
+        // Now lets finally render to screen starting out with background, then
         // the shadows and lights overtop and finally our foreground.
         graphics::set_canvas(ctx, None);
         graphics::clear(ctx, Color::WHITE);
@@ -400,7 +398,7 @@ impl event::EventHandler for MainState {
     }
 
     fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32, _xrel: f32, _yrel: f32) {
-        let (w, h) = graphics::size(ctx);
+        let (w, h) = graphics::drawable_size(ctx);
         let (x, y) = (x / w as f32, 1.0 - y / h as f32);
         self.torch.pos = [x, y];
     }

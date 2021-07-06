@@ -30,7 +30,6 @@ use old_school_gfx_glutin_ext::*;
 use crate::conf;
 use crate::conf::WindowMode;
 use crate::context::Context;
-use crate::context::DebugId;
 use crate::GameError;
 use crate::GameResult;
 
@@ -99,7 +98,7 @@ pub trait BackendSpec: fmt::Debug {
     /// A helper function to take a RawShaderResourceView and turn it into a typed one based on
     /// the surface type defined in a `BackendSpec`.
     ///
-    /// But right now we only allow surfaces that use [f32;4] colors, so we can freely
+    /// But right now we only allow surfaces that use \[f32;4\] colors, so we can freely
     /// hardcode this in the `ShaderResourceType` type.
     fn raw_to_typed_shader_resource(
         &self,
@@ -490,8 +489,8 @@ pub fn present(ctx: &mut Context) -> GameResult<()> {
 /// Take a screenshot by outputting the current render surface
 /// (screen or selected canvas) to an `Image`.
 pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
-    use gfx::memory::Bind;
-    let debug_id = DebugId::get(ctx);
+    use gfx::memory::Typed;
+    use gfx::traits::FactoryExt;
 
     let gfx = &mut ctx.gfx_context;
     let (w, h, _depth, aa) = gfx.data.out.get_dimensions();
@@ -501,19 +500,11 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     }
 
     let surface_format = gfx.color_format();
-    let gfx::format::Format(surface_type, channel_type) = surface_format;
 
-    let texture_kind = gfx::texture::Kind::D2(w, h, aa);
-    let texture_info = gfx::texture::Info {
-        kind: texture_kind,
-        levels: 1,
-        format: surface_type,
-        bind: Bind::TRANSFER_SRC | Bind::TRANSFER_DST | Bind::SHADER_RESOURCE,
-        usage: gfx::memory::Usage::Data,
-    };
-    let target_texture = gfx
+    let dl_buffer = gfx
         .factory
-        .create_texture_raw(texture_info, Some(channel_type), None)?;
+        .create_download_buffer::<u8>(usize::from(w) * usize::from(h) * 4)?;
+
     let image_info = gfx::texture::ImageInfoCommon {
         xoffset: 0,
         yoffset: 0,
@@ -528,38 +519,61 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     let mut local_encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
         gfx.factory.create_command_buffer().into();
 
-    local_encoder.copy_texture_to_texture_raw(
+    local_encoder.copy_texture_to_buffer_raw(
         gfx.data.out.get_texture(),
         None,
         image_info,
-        &target_texture,
-        None,
-        image_info,
+        &dl_buffer.raw(),
+        0,
     )?;
 
     local_encoder.flush(&mut *gfx.device);
 
-    let resource_desc = gfx::texture::ResourceDesc {
-        channel: channel_type,
-        layer: None,
-        min: 0,
-        max: 0,
-        swizzle: gfx::format::Swizzle::new(),
-    };
-    let shader_resource = gfx
-        .factory
-        .view_texture_as_shader_resource_raw(&target_texture, resource_desc)?;
-    let image = Image {
-        texture: shader_resource,
-        texture_handle: target_texture,
-        sampler_info: gfx.default_sampler_info,
-        blend_mode: None,
-        width: w,
-        height: h,
-        debug_id,
-    };
+    let mut data = gfx.factory.read_mapping(&dl_buffer)?.to_vec();
+    flip_pixel_data(&mut data, w as usize, h as usize);
+    let image = Image::from_rgba8(ctx, w, h, &data)?;
 
     Ok(image)
+}
+
+/// Fast non-allocating function for flipping pixel data in an image vertically
+fn flip_pixel_data(rgba: &mut Vec<u8>, width: usize, height: usize) {
+    // cast the buffer into u32 so we can easily access the pixels themselves
+    // splits the pixel buffer into an upper (first) and a lower (second) half
+    let pixels: (&mut [u32], &mut [u32]) =
+        bytemuck::cast_slice_mut(rgba.as_mut_slice()).split_at_mut(width * height / 2);
+
+    // When the image has an uneven height, it will split the buffer in the middle of a row.
+    // This will decrease pixel count so that the x,y in the loop will never enter the split row since
+    // for uneven height images the middle row will stay the same anyway
+    let pixel_count = if height % 2 == 0 {
+        width * height / 2
+    } else {
+        width * height / 2 - width / 2
+    };
+    // Even though we removed uwidth / 2 from pixel_count,
+    // the second half of the buffer's size will still contain that data so
+    // we need to offset the index on that by the size of said data
+    let second_set_offset = if height % 2 == 0 {
+        // even height (evenness on width doesn't matter)
+        0
+    } else if width % 2 == 0 {
+        // uneven height but even width
+        width / 2
+    } else {
+        // uneven height and uneven width
+        width / 2 + 1
+    };
+    for i in 0..pixel_count {
+        let x = i % width;
+        let y = i / width;
+        let reverse_y = height / 2 - y - 1;
+
+        let idx = (y * width) + x;
+        let second_idx = (reverse_y * width) + x + second_set_offset;
+
+        std::mem::swap(&mut pixels.0[idx], &mut pixels.1[second_idx]);
+    }
 }
 
 // **********************************************************************
@@ -626,7 +640,7 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
-    gfx.set_global_mvp(Matrix4::identity())
+    gfx.set_global_mvp(Matrix4::IDENTITY)
     //gfx.update_globals()
 }
 
@@ -681,33 +695,37 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
 /// [`set_screen_coordinates()`](fn.set_screen_coordinates.html) after
 /// changing the window size to make sure everything is what you want
 /// it to be.
-pub fn set_mode(context: &mut Context, mode: WindowMode) -> GameResult {
+pub fn set_mode(context: &mut Context, mut mode: WindowMode) -> GameResult {
     let gfx = &mut context.gfx_context;
-    gfx.set_window_mode(mode);
+    let result = gfx.set_window_mode(mode);
+    if let Err(GameError::WindowError(_)) = result {
+        // true fullscreen could not be set because the video mode matching the resolution is missing
+        // so keep the old one
+        mode.fullscreen_type = context.conf.window_mode.fullscreen_type;
+    }
     // Save updated mode.
     context.conf.window_mode = mode;
-    Ok(())
+    result
 }
 
 /// Sets the window to fullscreen or back.
 pub fn set_fullscreen(context: &mut Context, fullscreen: conf::FullscreenType) -> GameResult {
-    let mut window_mode = context.conf.window_mode;
-    window_mode.fullscreen_type = fullscreen;
+    let window_mode = context.conf.window_mode.fullscreen_type(fullscreen);
     set_mode(context, window_mode)
 }
 
-/// Sets the window size/resolution to the specified width and height.
+/// Sets the window size (in physical pixels) / resolution to the specified width and height.
+///
+/// Note:   These dimensions are only interpreted as resolutions in true fullscreen mode.
+///         If the selected resolution is not supported this function will return an Error.
 pub fn set_drawable_size(context: &mut Context, width: f32, height: f32) -> GameResult {
-    let mut window_mode = context.conf.window_mode;
-    window_mode.width = width;
-    window_mode.height = height;
+    let window_mode = context.conf.window_mode.dimensions(width, height);
     set_mode(context, window_mode)
 }
 
 /// Sets whether or not the window is resizable.
 pub fn set_resizable(context: &mut Context, resizable: bool) -> GameResult {
-    let mut window_mode = context.conf.window_mode;
-    window_mode.resizable = resizable;
+    let window_mode = context.conf.window_mode.resizable(resizable);
     set_mode(context, window_mode)
 }
 
@@ -751,23 +769,33 @@ pub fn window(context: &Context) -> &glutin::window::Window {
     gfx.window.window()
 }
 
+/// Returns an iterator providing all resolutions supported by the current monitor.
+pub fn supported_resolutions(
+    ctx: &crate::Context,
+) -> impl Iterator<Item = winit::dpi::PhysicalSize<u32>> {
+    let gfx = &ctx.gfx_context;
+    let window = gfx.window.window();
+    let monitor = window.current_monitor().unwrap();
+    monitor.video_modes().map(|v_mode| v_mode.size())
+}
+
 /// Returns the size of the window in pixels as (width, height),
 /// including borders, titlebar, etc.
 /// Returns zeros if the window doesn't exist.
 pub fn size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     let window = gfx.window.window();
-    let logical_size = window.outer_size().to_logical(window.scale_factor());
-    (logical_size.width, logical_size.height)
+    let physical_size = window.outer_size();
+    (physical_size.width as f32, physical_size.height as f32)
 }
 
-/// Returns the size of the window's underlying drawable in pixels as (width, height).
+/// Returns the size of the window's underlying drawable in physical pixels as (width, height).
 /// Returns zeros if window doesn't exist.
 pub fn drawable_size(context: &Context) -> (f32, f32) {
     let gfx = &context.gfx_context;
     let window = gfx.window.window();
-    let logical_size = window.inner_size().to_logical(window.scale_factor());
-    (logical_size.width, logical_size.height)
+    let physical_size = window.inner_size();
+    (physical_size.width as f32, physical_size.height as f32)
 }
 
 /// Return raw window context
@@ -803,6 +831,7 @@ pub fn clear_font_cache(ctx: &mut Context) {
     ctx.gfx_context.glyph_state = glyph_state;
 }
 
+#[allow(clippy::type_complexity)]
 /// Returns raw `gfx-rs` state objects, if you want to use `gfx-rs` to write
 /// your own graphics pipeline then this gets you the interfaces you need
 /// to do so.
@@ -861,19 +890,25 @@ pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
             dest,
             rotation,
         } => {
-            let w = param.src.w * scale.x * rect.w;
-            let h = param.src.h * scale.y * rect.h;
-            let offset_x = w * offset.x;
-            let offset_y = h * offset.y;
-            let dest_x = dest.x - offset_x;
-            let dest_y = dest.y - offset_y;
+            // first apply the offset
             let mut r = Rect {
-                w,
-                h,
-                x: dest_x + rect.x * scale.x,
-                y: dest_y + rect.y * scale.y,
+                w: rect.w,
+                h: rect.h,
+                x: rect.x - offset.x * rect.w,
+                y: rect.y - offset.y * rect.h,
             };
+            // apply the scale
+            let real_scale = (param.src.w * scale.x, param.src.h * scale.y);
+            r.w = real_scale.0 * rect.w;
+            r.h = real_scale.1 * rect.h;
+            r.x *= real_scale.0;
+            r.y *= real_scale.1;
+            // apply the rotation
             r.rotate(rotation);
+            // apply the destination translation
+            r.x += dest.x;
+            r.y += dest.y;
+
             r
         }
         Transform::Matrix(_m) => todo!("Fix me"),
@@ -908,7 +943,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().scale([0.5, 0.5]);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: -0.5,
                 y: -0.5,
@@ -925,7 +960,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().offset([0.5, 0.5]);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: -1.5,
                 y: -1.5,
@@ -942,7 +977,7 @@ mod tests {
                 h: 1.0,
             };
             let param = DrawParam::new().rotation(PI * 0.5);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: -1.0,
                 y: 1.0,
@@ -962,12 +997,76 @@ mod tests {
                 .scale([0.5, 0.5])
                 .offset([0.0, 1.0])
                 .rotation(PI * 0.5);
-            let real = transform_rect(r, param.into());
+            let real = transform_rect(r, param);
             let expected = Rect {
                 x: 0.5,
                 y: -0.5,
                 w: 0.5,
                 h: 1.0,
+            };
+            assert_relative_eq!(real, expected);
+        }
+        {
+            let r = Rect {
+                x: -1.0,
+                y: -1.0,
+                w: 2.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new()
+                .scale([0.5, 0.5])
+                .offset([0.0, 1.0])
+                .rotation(PI * 0.5)
+                .dest([1.0, 0.0]);
+            let real = transform_rect(r, param);
+            let expected = Rect {
+                x: 1.5,
+                y: -0.5,
+                w: 0.5,
+                h: 1.0,
+            };
+            assert_relative_eq!(real, expected);
+        }
+        {
+            let r = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 1.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new()
+                .offset([0.5, 0.5])
+                .rotation(PI * 1.5)
+                .dest([1.0, 0.5]);
+            let real = transform_rect(r, param);
+            let expected = Rect {
+                x: 0.5,
+                y: 0.0,
+                w: 1.0,
+                h: 1.0,
+            };
+            assert_relative_eq!(real, expected);
+        }
+        {
+            let r = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 1.0,
+                h: 1.0,
+            };
+            let param = DrawParam::new()
+                .offset([0.5, 0.5])
+                .rotation(PI * 0.25)
+                .scale([2.0, 1.0])
+                .dest([1.0, 2.0]);
+            let real = transform_rect(r, param);
+            let sqrt = (2f32).sqrt() / 2.;
+            let unit = sqrt + sqrt / 2.;
+            let expected = Rect {
+                x: -unit + 1.,
+                y: -unit + 2.,
+                w: 2. * unit,
+                h: 2. * unit,
             };
             assert_relative_eq!(real, expected);
         }

@@ -4,8 +4,7 @@
 
 ## What is this?
 
-[![Build Status](https://travis-ci.org/ggez/ggez.svg?branch=master)](https://travis-ci.org/ggez/ggez)
-[![Build status](https://ci.appveyor.com/api/projects/status/3v9lsq6n9li7kxim/branch/master?svg=true)](https://ci.appveyor.com/project/svenstaro/ggez/branch/master)
+![Build status](https://github.com/ggez/ggez/workflows/CI/badge.svg)
 [![Docs Status](https://docs.rs/ggez/badge.svg)](https://docs.rs/ggez)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ggez/ggez/blob/master/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
@@ -46,6 +45,16 @@ your own libraries atop ggez.
 * Math library integration with `mint`.
 * Some more advanced graphics options: shaders, sprite batches and render targets
 
+### Non-Features (i.e. things to add from elsewhere if needed)
+
+* [Physics](https://arewegameyet.rs/ecosystem/physics/)
+* Animation (check out [keyframe](https://github.com/HannesMann/keyframe); it works really well with ggez)
+* [GUI](https://arewegameyet.rs/ecosystem/ui/)
+* [Assets manager](https://github.com/a1phyr/assets_manager)
+* [AI](https://arewegameyet.rs/ecosystem/ai/)
+* [ECS](https://arewegameyet.rs/ecosystem/ecs/)
+* [Networking](https://arewegameyet.rs/ecosystem/networking/)
+
 ### Supported platforms
 
  * Fully supported: Windows, Linux
@@ -66,7 +75,7 @@ crates.io. To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```
-ggez = "0.6"
+ggez = "0.6.0-rc1"
 ```
 
 ggez consists of three main parts: A `Context` object which
@@ -109,8 +118,9 @@ to common problems.
 
 #### Basic Project Template
 
-```rust
-use ggez::{graphics, Context, ContextBuilder, GameResult};
+```rust,no_run
+use ggez::{Context, ContextBuilder, GameResult};
+use ggez::graphics::{self, Color};
 use ggez::event::{self, EventHandler};
 
 fn main() {
@@ -141,14 +151,14 @@ impl MyGame {
     }
 }
 
-impl EventHandler for MyGame {
+impl EventHandler<ggez::GameError> for MyGame {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         // Update code here...
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx, graphics::WHITE);
+        graphics::clear(ctx, Color::WHITE);
         // Draw code here...
         graphics::present(ctx)
     }
@@ -164,7 +174,7 @@ thread-safe (though platform constraints mean the event-handling loop
 and drawing must be done in the main thread), and portable to Windows
 and Linux.
 
-ggez is Pure Rust(tm).
+ggez is pure Rust™.
 
 ### Help!
 
@@ -176,7 +186,7 @@ Sources of information:
 
  If you still have problems or questions, feel free to ask!  Easiest ways are:
 
- * open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
- * say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community)
+ * Open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
+ * Say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community) or the [Rust Gamedev server](https://discord.gg/yNtPTb2)
 
 License: MIT

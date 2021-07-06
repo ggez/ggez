@@ -1,8 +1,5 @@
 //! An example of how to draw to `Image`'s using the `Canvas` type.
 
-use ggez;
-use glam;
-
 use ggez::event;
 use ggez::graphics::{self, Color, DrawParam};
 use ggez::{Context, GameResult};
@@ -24,7 +21,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler for MainState {
+impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
@@ -39,8 +36,8 @@ impl event::EventHandler for MainState {
         // right
         let window_size = graphics::size(ctx);
         let scale = Vector2::new(
-            0.5 * window_size.0 as f32 / self.canvas.image().width() as f32,
-            0.5 * window_size.1 as f32 / self.canvas.image().height() as f32,
+            0.5 * window_size.0 as f32 / self.canvas.width() as f32,
+            0.5 * window_size.1 as f32 / self.canvas.height() as f32,
         );
         // let scale = Vector2::new(1.0, 1.0);
         graphics::set_canvas(ctx, None);

@@ -1,16 +1,19 @@
 //! I guess these docs will never appear since we re-export the canvas
 //! module from graphics...
+use std::path;
+
 use gfx::format::{Format, Swizzle};
 use gfx::handle::RawRenderTargetView;
 use gfx::memory::{Bind, Usage};
 use gfx::texture::{AaMode, Kind};
 use gfx::Factory;
+use glam::Quat;
 
-use crate::conf;
 use crate::context::DebugId;
 use crate::error::*;
 use crate::graphics::*;
 use crate::Context;
+use crate::{conf, filesystem};
 
 /// A generic canvas independent of graphics backend. This type should
 /// never need to be used directly; use [`graphics::Canvas`](type.Canvas.html)
@@ -37,12 +40,35 @@ where
 /// by using shaders that render to an image.
 /// If you just want to draw multiple things efficiently, look at
 /// [`SpriteBatch`](spritebatch/struct.Spritebatch.html).
+///
+/// Note that if the canvas is not of the same size as the screen, and you want
+/// to render using coordinates relative to the canvas' coordinate system, you
+/// need to call [`graphics::set_screen_coordinates`](fn.set_screen_coordinates.html)
+/// and pass in a rectangle with position (0, 0) and a size equal to that of the
+/// canvas.
+///
+/// If you draw onto a canvas using BlendMode::Alpha you need to set its blend mode to
+/// `BlendMode::Premultiplied` before drawing it to a new surface. This is a side effect
+/// of the premultiplication of RGBA values when the canvas was rendered to.
+/// This requirement holds for both drawing
+/// the `Canvas` directly or converting it to an `Image` first.
+/// ```
+/// let mut canvas = Canvas::new(width, height, conf::NumSamples::One, get_window_color_format(ctx));
+/// graphics::set_canvas(ctx, Some(&canvas));
+///
+/// // Draw to canvas here...
+///
+/// graphics::present(ctx);
+/// graphics::set_canvas(ctx, None);
+/// canvas.set_blend_mode(Some(BlendMode::Premultiplied));
+/// ```
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 impl<S> CanvasGeneric<S>
 where
     S: BackendSpec,
 {
+    #[allow(clippy::new_ret_no_self)]
     /// Create a new `Canvas` with the given size and number of samples.
     pub fn new(
         ctx: &mut Context,
@@ -54,7 +80,7 @@ where
         let debug_id = DebugId::get(ctx);
         let aa = match samples {
             conf::NumSamples::One => AaMode::Single,
-            s => AaMode::Multi(s as u8),
+            s => AaMode::Multi(s.into()),
         };
         let kind = Kind::D2(width, height, aa);
         let levels = 1;
@@ -110,9 +136,15 @@ where
         )
     }
 
-    /// Gets the backend `Image` that is being rendered to.
-    pub fn image(&self) -> &Image {
+    /// Gets the backend `Image` that is being rendered to. Note that this will be flipped but otherwise the same, use the [`to_image`](#method.to_image) function for the unflipped version.
+    pub fn raw_image(&self) -> &Image {
         &self.image
+    }
+
+    /// Creates an `Image` with the content of its raw counterpart but transformed to behave like a normal `Image`.
+    pub fn to_image(&self, ctx: &mut Context) -> GameResult<Image> {
+        let pixel_data = self.to_rgba8(ctx)?;
+        Image::from_rgba8(ctx, self.image.width, self.image.height, &pixel_data)
     }
 
     /// Gets the backend `Target` that is being rendered to.
@@ -120,7 +152,66 @@ where
         &self.target
     }
 
-    /// Get the filter mode for the image.
+    /// Dumps the flipped `Canvas`'s data to a `Vec` of `u8` RBGA8 values.
+    pub fn to_rgba8(&self, ctx: &mut Context) -> GameResult<Vec<u8>> {
+        // first flush to make sure the canvas is up to date before being serialized
+        // fixes https://github.com/ggez/ggez/issues/813
+        let gfx = &mut ctx.gfx_context;
+        gfx.encoder.flush(&mut *gfx.device);
+
+        let mut pixel_data = self.image.to_rgba8(ctx)?;
+        flip_pixel_data(
+            &mut pixel_data,
+            self.image.width as usize,
+            self.image.height as usize,
+        );
+        Ok(pixel_data)
+    }
+
+    /// Encode the `Canvas`'s content to the given file format and
+    /// write it out to the given path.
+    ///
+    /// See the [`filesystem`](../filesystem/index.html) module docs for where exactly
+    /// the file will end up.
+    pub fn encode<P: AsRef<path::Path>>(
+        &self,
+        ctx: &mut Context,
+        format: ImageFormat,
+        path: P,
+    ) -> GameResult {
+        use std::io;
+        let data = self.to_rgba8(ctx)?;
+        let f = filesystem::create(ctx, path)?;
+        let writer = &mut io::BufWriter::new(f);
+        let color_format = ::image::ColorType::Rgba8;
+        match format {
+            ImageFormat::Png => ::image::png::PngEncoder::new(writer)
+                .encode(
+                    &data,
+                    u32::from(self.width()),
+                    u32::from(self.height()),
+                    color_format,
+                )
+                .map_err(Into::into),
+        }
+    }
+
+    /// Return the width of the canvas.
+    pub fn width(&self) -> u16 {
+        self.image.width
+    }
+
+    /// Return the height of the canvas.
+    pub fn height(&self) -> u16 {
+        self.image.height
+    }
+
+    /// Returns the dimensions of the canvas.
+    pub fn dimensions(&self) -> Rect {
+        Rect::new(0.0, 0.0, f32::from(self.width()), f32::from(self.height()))
+    }
+
+    /// Get the filter mode for the canvas.
     pub fn filter(&self) -> FilterMode {
         self.image.filter()
     }
@@ -129,38 +220,25 @@ where
     pub fn set_filter(&mut self, mode: FilterMode) {
         self.image.set_filter(mode)
     }
-
-    /// Destroys the `Canvas` and returns the `Image` it contains.
-    pub fn into_inner(self) -> Image {
-        // TODO: This texture is created with different settings
-        // than the default; does that matter?
-        // Test; we really just need to add Bind::TRANSFER_SRC
-        // and change the Usage's to match to make them identical.
-        // Ask termhn maybe?
-        self.image
-    }
 }
 
 impl Drawable for Canvas {
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
-        // Gotta flip the image on the Y axis here
-        // to account for OpenGL's origin being at the bottom-left.
-        match param.trans {
-            Transform::Values { scale, dest, .. } => {
-                let new_scale = mint::Vector2 {
-                    x: scale.x,
-                    y: -scale.y,
-                };
-                let new_dest = mint::Point2 {
-                    x: dest.x,
-                    y: dest.y + f32::from(self.image.height()) * scale.y,
-                };
-                let new_param = param.dest(new_dest).scale(new_scale);
-                self.image.draw(ctx, new_param)
-            }
-            Transform::Matrix(_) => self.image.draw(ctx, param),
-        }
+
+        // We have to mess with the scale to make everything
+        // be its-unit-size-in-pixels.
+        let scale_x = param.src.w * f32::from(self.width());
+        let scale_y = param.src.h * f32::from(self.height());
+
+        let param = param.transform(
+            glam::Mat4::from(param.trans.to_bare_matrix())
+                * Matrix4::from_scale(glam::vec3(scale_x, scale_y, 1.0)),
+        );
+
+        let new_param = flip_draw_param_vertical(param);
+
+        image::draw_image_raw(&self.image, ctx, new_param)
     }
     fn dimensions(&self, _: &mut Context) -> Option<Rect> {
         Some(self.image.dimensions())
@@ -171,6 +249,28 @@ impl Drawable for Canvas {
     fn blend_mode(&self) -> Option<BlendMode> {
         self.image.blend_mode
     }
+}
+
+fn flip_draw_param_vertical(param: DrawParam) -> DrawParam {
+    let param = if let Transform::Matrix(mat) = param.trans {
+        param.transform(
+            glam::Mat4::from(mat)
+                * glam::Mat4::from_scale_rotation_translation(
+                    glam::vec3(1.0, -1.0, 1.0),
+                    Quat::IDENTITY,
+                    glam::vec3(0.0, 1.0, 0.0),
+                ),
+        )
+    } else {
+        panic!("Can not be called with a non-matrix DrawParam");
+    };
+    let new_src = Rect {
+        x: param.src.x,
+        y: (1.0 - param.src.h) - param.src.y,
+        w: param.src.w,
+        h: param.src.h,
+    };
+    param.src(new_src)
 }
 
 /// Set the `Canvas` to render to. Specifying `Option::None` will cause all

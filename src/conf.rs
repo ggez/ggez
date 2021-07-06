@@ -12,9 +12,10 @@
 //! If no file is found, it will create a `Conf` object from the settings
 //! passed to the [`ContextBuilder`](../struct.ContextBuilder.html).
 
+use std::convert::TryFrom;
 use std::io;
 
-use crate::error::GameResult;
+use crate::error::{GameError, GameResult};
 
 /// Possible fullscreen modes.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -23,6 +24,8 @@ pub enum FullscreenType {
     Windowed,
     /// True fullscreen, which used to be preferred 'cause it can have
     /// small performance benefits over windowed fullscreen.
+    ///
+    /// Also it allows us to set different resolutions.
     True,
     /// Windowed fullscreen, generally preferred over real fullscreen
     /// these days 'cause it plays nicer with multiple monitors.
@@ -49,15 +52,16 @@ pub enum FullscreenType {
 ///     max_height: 0.0,
 ///     resizable: false,
 ///     visible: true,
+///     resize_on_scale_factor_change: false,
 /// }
 /// # , WindowMode::default());}
 /// ```
 #[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq)]
 pub struct WindowMode {
-    /// Window width
+    /// Window width in physical pixels
     #[default = 800.0]
     pub width: f32,
-    /// Window height
+    /// Window height in physical pixels
     #[default = 600.0]
     pub height: f32,
     /// Whether or not to maximize the window
@@ -87,6 +91,17 @@ pub struct WindowMode {
     /// Whether this window should displayed (true) or hidden (false)
     #[default = true]
     pub visible: bool,
+    /// Whether this window should change its size in physical pixels
+    /// when its hidpi factor changes, i.e. when [`WindowEvent::ScaleFactorChanged`](https://docs.rs/winit/0.25.0/winit/event/enum.WindowEvent.html#variant.ScaleFactorChanged)
+    /// is fired.
+    ///
+    /// You usually want this to be false, since the window suddenly changing size may break your game.
+    /// Setting this to true may be desirable if you plan for it and want your window to behave like
+    /// windows of other programs when being dragged from one screen to another, for example.
+    ///
+    /// For more context on this take a look at [this conversation](https://github.com/ggez/ggez/pull/949#issuecomment-854731226).
+    #[default = false]
+    pub resize_on_scale_factor_change: bool,
 }
 
 impl WindowMode {
@@ -140,6 +155,12 @@ impl WindowMode {
         self.visible = visible;
         self
     }
+
+    /// Set whether to resize when the hidpi factor changes
+    pub fn resize_on_scale_factor_change(mut self, resize_on_scale_factor_change: bool) -> Self {
+        self.resize_on_scale_factor_change = resize_on_scale_factor_change;
+        self
+    }
 }
 
 /// A builder structure containing window settings
@@ -152,7 +173,7 @@ impl WindowMode {
 /// # fn main() { assert_eq!(
 /// WindowSetup {
 ///     title: "An easy, good game".to_owned(),
-///     samples: NumSamples::Zero,
+///     samples: NumSamples::One,
 ///     vsync: true,
 ///     icon: "".to_owned(),
 ///     srgb: true,
@@ -234,6 +255,7 @@ pub enum Backend {
     /// Defaults to OpenGL 3.2, which is supported by basically
     /// every machine since 2009 or so (apart from the ones that don't).
     #[default]
+    #[allow(clippy::upper_case_acronyms)]
     OpenGL {
         /// OpenGL major version
         #[default = 3]
@@ -247,6 +269,7 @@ pub enum Backend {
     /// than 3.0 starts to running into sticky limitations, particularly
     /// with instanced drawing (used for `SpriteBatch`), but might be
     /// possible.
+    #[allow(clippy::upper_case_acronyms)]
     OpenGLES {
         /// OpenGL ES major version
         #[default = 3]
@@ -304,18 +327,25 @@ pub enum NumSamples {
     Sixteen = 16,
 }
 
-impl NumSamples {
-    /// Create a `NumSamples` from a number.
-    /// Returns `None` if `i` is invalid.
-    pub fn from_u32(i: u32) -> Option<NumSamples> {
+impl TryFrom<u8> for NumSamples {
+    type Error = GameError;
+    fn try_from(i: u8) -> Result<Self, Self::Error> {
         match i {
-            1 => Some(NumSamples::One),
-            2 => Some(NumSamples::Two),
-            4 => Some(NumSamples::Four),
-            8 => Some(NumSamples::Eight),
-            16 => Some(NumSamples::Sixteen),
-            _ => None,
+            1 => Ok(NumSamples::One),
+            2 => Ok(NumSamples::Two),
+            4 => Ok(NumSamples::Four),
+            8 => Ok(NumSamples::Eight),
+            16 => Ok(NumSamples::Sixteen),
+            _ => Err(GameError::ConfigError(String::from(
+                "Invalid number of samples",
+            ))),
         }
+    }
+}
+
+impl From<NumSamples> for u8 {
+    fn from(ns: NumSamples) -> u8 {
+        ns as u8
     }
 }
 
