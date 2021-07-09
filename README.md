@@ -13,7 +13,7 @@
 
 ggez is a Rust library to create a Good Game Easily.
 
-The current version is 0.6.0-rc1.  This is a RELEASE CANDIDATE version,
+The current version is 0.6.0-rc2.  This is a RELEASE CANDIDATE version,
 which means that the API should be stable but there are still known bugs
 to address.  See the release milestone on the issue tracker for details.
 
@@ -75,7 +75,7 @@ crates.io. To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```
-ggez = "0.6.0-rc1"
+ggez = "0.6.0-rc2"
 ```
 
 ggez consists of three main parts: A `Context` object which
