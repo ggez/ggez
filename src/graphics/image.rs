@@ -199,20 +199,18 @@ impl Image {
         let w = self.width;
         let h = self.height;
 
-        // Note: In the GFX example, the download buffer is created ahead of time
-        // and updated on screen resize events. This may be preferable, but then
-        // the buffer also needs to be updated when we switch to/from a canvas.
-        // Unsure of the performance impact of creating this as it is needed.
-        // Probably okay for now though, since this probably won't be a super
-        // common operation.
-        let dl_buffer = gfx
-            .factory
-            .create_download_buffer::<u8>(usize::from(w) * usize::from(h) * 4)?;
+        let format = gfx.color_format();
 
-        let factory = &mut *gfx.factory;
-        let mut local_encoder = GlBackendSpec::encoder(factory);
+        let dl_buffer = &mut gfx.to_rgba8_buffer;
+        // check if it's big enough and recreate it if not
+        let size_needed = usize::from(w) * usize::from(h) * 4;
+        if dl_buffer.len() != size_needed {
+            *dl_buffer = gfx.factory.create_download_buffer::<u8>(size_needed)?;
+        }
 
-        local_encoder.copy_texture_to_buffer_raw(
+        let encoder = &mut gfx.encoder;
+
+        encoder.copy_texture_to_buffer_raw(
             &self.texture_handle,
             None,
             gfx::texture::RawImageInfo {
@@ -222,16 +220,16 @@ impl Image {
                 width: w,
                 height: h,
                 depth: 0,
-                format: gfx.color_format(),
+                format,
                 mipmap: 0,
             },
             dl_buffer.raw(),
             0,
         )?;
-        local_encoder.flush(&mut *gfx.device);
+        encoder.flush(&mut *gfx.device);
 
-        let reader = gfx.factory.read_mapping(&dl_buffer)?.to_vec();
-        Ok(reader.to_vec())
+        let reader = gfx.factory.read_mapping(dl_buffer)?.to_vec();
+        Ok(reader)
     }
 
     /// Encode the `Image` to the given file format and

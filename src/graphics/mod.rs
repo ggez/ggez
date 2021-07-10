@@ -501,9 +501,12 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
 
     let surface_format = gfx.color_format();
 
-    let dl_buffer = gfx
-        .factory
-        .create_download_buffer::<u8>(usize::from(w) * usize::from(h) * 4)?;
+    let dl_buffer = &mut gfx.to_rgba8_buffer;
+    // check if it's big enough and recreate it if not
+    let size_needed = usize::from(w) * usize::from(h) * 4;
+    if dl_buffer.len() != size_needed {
+        *dl_buffer = gfx.factory.create_download_buffer::<u8>(size_needed)?;
+    }
 
     let image_info = gfx::texture::ImageInfoCommon {
         xoffset: 0,
@@ -516,20 +519,19 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
         mipmap: 0,
     };
 
-    let mut local_encoder: gfx::Encoder<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> =
-        gfx.factory.create_command_buffer().into();
+    let encoder = &mut gfx.encoder;
 
-    local_encoder.copy_texture_to_buffer_raw(
+    encoder.copy_texture_to_buffer_raw(
         gfx.data.out.get_texture(),
         None,
         image_info,
-        &dl_buffer.raw(),
+        dl_buffer.raw(),
         0,
     )?;
 
-    local_encoder.flush(&mut *gfx.device);
+    encoder.flush(&mut *gfx.device);
 
-    let mut data = gfx.factory.read_mapping(&dl_buffer)?.to_vec();
+    let mut data = gfx.factory.read_mapping(dl_buffer)?.to_vec();
     flip_pixel_data(&mut data, w as usize, h as usize);
     let image = Image::from_rgba8(ctx, w, h, &data)?;
 
