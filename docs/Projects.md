@@ -6,6 +6,7 @@ submit a PR, please!
 ## Games!
 
 * <https://github.com/erwan-b/game-of-life>: A `ggez` / `imgui-rs` implementation of Conway's game of life, fast and simple
+* <https://github.com/gliderkite/semeion>: Generic framework that allows you to build your 2D environment simulation. For a complete example check out [formicarium](https://github.com/gliderkite/formicarium).
 
 ## Example/tutorial code
 
@@ -23,7 +24,6 @@ None yet!
  * <https://github.com/pickfire/bugs>: Game with lots of bugs (incomplete with broken AI feature gate)
  * <https://github.com/Slals/gameoflife>: Game of Life with built in structures (submit PR to add structure and make life happen!)
  * <https://github.com/outkine/ascension-rust>: A gravity-based platformer built with ggez, tiled, and nphysics2d. Download a playable build [here](https://outkine.itch.io/ascension-2).
- * <https://github.com/gliderkite/semeion>: Generic framework that allows you to build your 2D environment simulation. For a complete example check out [formicarium](https://github.com/gliderkite/formicarium).
  * <https://github.com/eisendaniel/boids>: A `rust`/`ggez` implementation of the boids flocking algorithm with simple user input/interactivity
  * <https://github.com/PSteinhaus/Cell-Graph-Risk>: A local multiplayer strategy game based upon a custom physics simulation focusing on elastic graphs.
 
