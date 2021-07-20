@@ -28,6 +28,7 @@ where
     pub(crate) projection: Matrix4,
     pub(crate) white_image: ImageGeneric<B>,
     pub(crate) screen_rect: Rect,
+    pub(crate) to_rgba8_buffer: gfx::handle::Buffer<B::Resources, u8>,
     color_format: gfx::format::Format,
     depth_format: gfx::format::Format,
     srgb: bool,
@@ -219,6 +220,8 @@ impl GraphicsContextGeneric<GlBackendSpec> {
 
         quad_slice.instances = Some((1, 0));
 
+        let to_rgba8_buffer = factory.create_download_buffer::<u8>(1)?;
+
         let globals_buffer = factory.create_constant_buffer(1);
         let mut samplers: SamplerCache<GlBackendSpec> = SamplerCache::new();
         let sampler_info =
@@ -283,6 +286,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             projection: initial_projection,
             white_image,
             screen_rect: Rect::new(left, top, right - left, bottom - top),
+            to_rgba8_buffer,
             color_format,
             depth_format,
             srgb,
