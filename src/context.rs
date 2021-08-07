@@ -130,6 +130,8 @@ pub struct ContextBuilder {
     pub(crate) game_id: String,
     pub(crate) author: String,
     pub(crate) conf: conf::Conf,
+    pub(crate) resources_dir_name: String,
+    pub(crate) resources_zip_name: String,
     pub(crate) paths: Vec<path::PathBuf>,
     pub(crate) memory_zip_files: Vec<Cow<'static, [u8]>>,
     pub(crate) load_conf_file: bool,
@@ -142,6 +144,8 @@ impl ContextBuilder {
             game_id: game_id.to_string(),
             author: author.to_string(),
             conf: conf::Conf::default(),
+            resources_dir_name: "resources".to_string(),
+            resources_zip_name: "resources.zip".to_string(),
             paths: vec![],
             memory_zip_files: vec![],
             load_conf_file: true,
@@ -180,6 +184,20 @@ impl ContextBuilder {
     /// file found.
     pub fn default_conf(mut self, conf: conf::Conf) -> Self {
         self.conf = conf;
+        self
+    }
+
+    /// Sets resources dir name.
+    /// Default resources dir name is `resources`.
+    pub fn change_resources_dir_name(mut self, new_name: impl ToString) -> Self {
+        self.resources_dir_name = new_name.to_string();
+        self
+    }
+
+    /// Sets resources zip name.
+    /// Default resources dir name is `resources.zip`.
+    pub fn change_resources_zip_name(mut self, new_name: impl ToString) -> Self {
+        self.resources_zip_name = new_name.to_string();
         self
     }
 
@@ -226,8 +244,8 @@ impl ContextBuilder {
         let mut fs = Filesystem::new(
             self.game_id.as_ref(),
             self.author.as_ref(),
-            "resources",
-            "resources.zip",
+            &self.resources_dir_name,
+            &self.resources_zip_name,
         )?;
 
         for path in &self.paths {
