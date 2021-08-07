@@ -223,7 +223,12 @@ impl ContextBuilder {
 
     /// Build the `Context`.
     pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
-        let mut fs = Filesystem::new(self.game_id.as_ref(), self.author.as_ref())?;
+        let mut fs = Filesystem::new(
+            self.game_id.as_ref(),
+            self.author.as_ref(),
+            "resources",
+            "resources.zip",
+        )?;
 
         for path in &self.paths {
             fs.mount(path, true);

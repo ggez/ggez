@@ -94,7 +94,12 @@ impl Filesystem {
     /// some platforms) the `author` as a portion of the user
     /// directory path.  This function is called automatically by
     /// ggez, the end user should never need to call it.
-    pub fn new(id: &str, author: &str) -> GameResult<Filesystem> {
+    pub fn new(
+        id: &str,
+        author: &str,
+        resources_dir_name: &str,
+        resources_zip_name: &str,
+    ) -> GameResult<Filesystem> {
         let mut root_path = env::current_exe()?;
 
         // Ditch the filename (if any)
@@ -122,7 +127,7 @@ impl Filesystem {
         // <game exe root>/resources/
         {
             resources_path = root_path.clone();
-            resources_path.push("resources");
+            resources_path.push(resources_dir_name);
             trace!("Resources path: {:?}", resources_path);
             let physfs = vfs::PhysicalFS::new(&resources_path, true);
             overlay.push_back(Box::new(physfs));
@@ -131,7 +136,7 @@ impl Filesystem {
         // <root>/resources.zip
         {
             resources_zip_path = root_path;
-            resources_zip_path.push("resources.zip");
+            resources_zip_path.push(resources_zip_name);
             if resources_zip_path.exists() {
                 trace!("Resources zip file: {:?}", resources_zip_path);
                 let zipfs = vfs::ZipFS::new(&resources_zip_path)?;
