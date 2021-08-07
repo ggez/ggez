@@ -95,7 +95,7 @@ where
         let raw_tex = factory.create_texture_raw(
             texinfo,
             Some(channel_type),
-            Some((&[&rgba], gfx::texture::Mipmap::Provided)),
+            Some((&[rgba], gfx::texture::Mipmap::Provided)),
         )?;
         let resource_desc = gfx::texture::ResourceDesc {
             channel: channel_type,
