@@ -213,6 +213,38 @@ fn sanitize_path(path: &path::Path) -> Option<PathBuf> {
     Some(accm)
 }
 
+/// We need to return a string.
+/// The reason is that the path in zip is `/` delimited, but the path
+/// delimiter in rust is environment dependent.
+/// For example, on Windows, `PathBuf` to str in rust make "foo\\bar.txt".
+fn sanitize_path_for_zip(path: &path::Path) -> Option<String> {
+    let mut c = path.components();
+    match c.next() {
+        Some(path::Component::RootDir) => (),
+        _ => return None,
+    }
+
+    fn is_normal_component(comp: path::Component) -> Option<&str> {
+        match comp {
+            path::Component::Normal(s) => s.to_str(),
+            _ => None,
+        }
+    }
+
+    // This could be done more cleverly but meh
+    let mut accm = String::new();
+    for component in c {
+        if let Some(s) = is_normal_component(component) {
+            accm.push_str(s);
+            accm.push('/');
+        } else {
+            return None;
+        }
+    }
+    let accm = accm.trim_end_matches('/').to_string();
+    Some(accm)
+}
+
 impl PhysicalFS {
     pub fn new(root: &Path, readonly: bool) -> Self {
         PhysicalFS {
@@ -537,9 +569,9 @@ trait ZipArchiveAccess {
 
 impl<T: Read + Seek> ZipArchiveAccess for zip::ZipArchive<T> {
     fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile> {
-        //let filename = sanitize_path(Path::new(name)).unwrap_or(PathBuf::from(&name));
-        let filename = sanitize_path(Path::new(name)).ok_or(zip::result::ZipError::FileNotFound)?;
-        self.by_name(filename.to_str().unwrap_or(name))
+        let filename =
+            sanitize_path_for_zip(Path::new(name)).ok_or(zip::result::ZipError::FileNotFound)?;
+        self.by_name(&filename)
     }
 
     fn by_index(&mut self, file_number: usize) -> zip::result::ZipResult<zip::read::ZipFile> {
