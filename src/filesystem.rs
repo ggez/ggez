@@ -157,7 +157,7 @@ impl Filesystem {
         {
             user_data_path = project_dirs.data_local_dir();
             trace!("User-local data path: {:?}", user_data_path);
-            let physfs = vfs::PhysicalFS::new(&user_data_path, true);
+            let physfs = vfs::PhysicalFS::new(user_data_path, true);
             overlay.push_back(Box::new(physfs));
         }
 
@@ -166,7 +166,7 @@ impl Filesystem {
         {
             user_config_path = project_dirs.config_dir();
             trace!("User-local configuration path: {:?}", user_config_path);
-            let physfs = vfs::PhysicalFS::new(&user_config_path, false);
+            let physfs = vfs::PhysicalFS::new(user_config_path, false);
             overlay.push_back(Box::new(physfs));
         }
 

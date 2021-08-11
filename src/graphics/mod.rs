@@ -250,7 +250,7 @@ impl BackendSpec for GlBackendSpec {
         gl_builder
             .with_gfx_color_raw(color_format)
             .with_gfx_depth_raw(depth_format)
-            .build_windowed(window_builder, &events_loop)
+            .build_windowed(window_builder, events_loop)
             .map(|i| i.init_gfx_raw(color_format, depth_format))
     }
 

@@ -944,13 +944,13 @@ impl MeshBatch {
                 self.instance_buffer = Some(new_buffer);
 
                 ctx.gfx_context.encoder.update_buffer(
-                    &self.instance_buffer.as_ref().expect("Can never fail"),
+                    self.instance_buffer.as_ref().expect("Can never fail"),
                     new_properties.as_slice(),
                     0,
                 )?;
             } else {
                 ctx.gfx_context.encoder.update_buffer(
-                    &self.instance_buffer.as_ref().expect("Should never fail"),
+                    self.instance_buffer.as_ref().expect("Should never fail"),
                     new_properties.as_slice(),
                     first_param,
                 )?;
