@@ -23,9 +23,9 @@
 //! See the source of the [`files` example](https://github.com/ggez/ggez/blob/master/examples/files.rs) for more details.
 //!
 //! The names of `resources/` and `resources.zip` can be changed with the methods
-//! [`change_resources_dir_name`](../struct.ContextBuilder.html#method.change_resources_dir_name)
+//! [`resources_dir_name`](../struct.ContextBuilder.html#method.resources_dir_name)
 //! and
-//! [`change_resources_zip_name`](../struct.ContextBuilder.html#method.change_resources_zip_name)
+//! [`resources_zip_name`](../struct.ContextBuilder.html#method.resources_zip_name)
 //!  of ContextBuilder.
 //!
 //! Note that the file lookups WILL follow symlinks!  This module's
