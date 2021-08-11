@@ -189,14 +189,14 @@ impl ContextBuilder {
 
     /// Sets resources dir name.
     /// Default resources dir name is `resources`.
-    pub fn change_resources_dir_name(mut self, new_name: impl ToString) -> Self {
+    pub fn resources_dir_name(mut self, new_name: impl ToString) -> Self {
         self.resources_dir_name = new_name.to_string();
         self
     }
 
     /// Sets resources zip name.
     /// Default resources dir name is `resources.zip`.
-    pub fn change_resources_zip_name(mut self, new_name: impl ToString) -> Self {
+    pub fn resources_zip_name(mut self, new_name: impl ToString) -> Self {
         self.resources_zip_name = new_name.to_string();
         self
     }
