@@ -762,6 +762,14 @@ pub fn set_window_position<P: Into<winit::dpi::Position>>(
     Ok(())
 }
 
+/// Gets the window position.
+pub fn get_window_position(context: &Context) -> GameResult<winit::dpi::PhysicalPosition<i32>> {
+    match context.gfx_context.window.window().outer_position() {
+        Ok(position) => Ok(position),
+        Err(e) => Err(GameError::WindowError(e.to_string())),
+    }
+}
+
 /// Returns a reference to the Glutin window.
 /// Ideally you should not need to use this because ggez
 /// would provide all the functions you need without having
