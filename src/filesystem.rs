@@ -524,7 +524,7 @@ mod tests {
 
     #[test]
     fn headless_test_read_dir() {
-        let mut f = dummy_fs_for_tests();
+        let f = dummy_fs_for_tests();
 
         let dir_contents_size = f.read_dir("/").unwrap().count();
         assert!(dir_contents_size > 0);
@@ -532,7 +532,7 @@ mod tests {
 
     #[test]
     fn headless_test_create_delete_file() {
-        let mut fs = dummy_fs_for_tests();
+        let fs = dummy_fs_for_tests();
         let test_file = path::Path::new("/testfile.txt");
         let bytes = b"test";
 
@@ -552,7 +552,7 @@ mod tests {
 
     #[test]
     fn headless_test_file_not_found() {
-        let mut fs = dummy_fs_for_tests();
+        let fs = dummy_fs_for_tests();
         {
             let rel_file = "testfile.txt";
             match fs.open(rel_file) {
@@ -575,7 +575,7 @@ mod tests {
 
     #[test]
     fn headless_test_write_config() {
-        let mut f = dummy_fs_for_tests();
+        let f = dummy_fs_for_tests();
         let conf = conf::Conf::new();
         // The config file should end up in
         // the resources directory with this
