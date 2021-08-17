@@ -2,7 +2,8 @@
 //! Includes tweening and frame-by-frame animation.
 
 use ggez::event;
-use ggez::graphics::{self, Color, Rect, DrawParam, FilterMode, Text, TextFragment};
+use ggez::graphics::{self, Color, DrawParam, FilterMode, Rect, Text, TextFragment};
+use ggez::input::keyboard::KeyCode;
 use ggez::mint::Point2;
 use ggez::{Context, GameResult};
 use glam::*;
@@ -10,7 +11,6 @@ use keyframe::{ease, functions::*, keyframes, AnimationSequence, EasingFunction}
 use keyframe_derive::CanTween;
 use std::env;
 use std::path;
-use ggez::input::keyboard::KeyCode;
 
 struct MainState {
     spritesheet: graphics::Image,
@@ -18,7 +18,7 @@ struct MainState {
     animation_type: AnimationType,
     ball_animation: AnimationSequence<Point2<f32>>,
     player_animation: AnimationSequence<TweenableRect>,
-    duration: f32
+    duration: f32,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -76,15 +76,14 @@ fn ball_sequence(ease_enum: &EasingEnum, duration: f32) -> AnimationSequence<Poi
                 (ball_pos_start, 0.0, EaseInOutCubic),
                 (ball_pos_end, duration, EaseInOutCubic)
             ],
-            EasingEnum::Bezier =>
-                {
-                    let bezier_function = BezierCurve::from([0.6, 0.04].into(), [0.98, 0.335].into());
-                    keyframes![
-                        (ball_pos_start, 0.0, bezier_function),
-                        (ball_pos_end, duration, bezier_function)
-                    ]
-                },
-            _ => panic!()
+            EasingEnum::Bezier => {
+                let bezier_function = BezierCurve::from([0.6, 0.04].into(), [0.98, 0.335].into());
+                keyframes![
+                    (ball_pos_start, 0.0, bezier_function),
+                    (ball_pos_end, duration, bezier_function)
+                ]
+            }
+            _ => panic!(),
         }
     }
 }
@@ -101,10 +100,8 @@ enum AnimationType {
 
 const FRAME_ROWS: i32 = 19;
 /// returns the src.y parameter for the animation
-fn src_y(anim_type: &AnimationType) -> f32
-{
-    let row = match anim_type
-    {
+fn src_y(anim_type: &AnimationType) -> f32 {
+    let row = match anim_type {
         AnimationType::Idle => 1,
         AnimationType::Run => 3,
         AnimationType::FrontFlip => 8,
@@ -117,15 +114,12 @@ fn src_y(anim_type: &AnimationType) -> f32
 
 const FRAME_COLUMNS: i32 = 14;
 /// returns the final src.x parameter for the last frame of the animation
-fn src_x_end(anim_type: &AnimationType) -> f32
-{
+fn src_x_end(anim_type: &AnimationType) -> f32 {
     (frame_count(anim_type) - 1) as f32 / FRAME_COLUMNS as f32
 }
 
-fn frame_count(anim_type: &AnimationType) -> i32
-{
-    match anim_type
-    {
+fn frame_count(anim_type: &AnimationType) -> i32 {
+    match anim_type {
         AnimationType::Idle => 7,
         AnimationType::Run => 8,
         AnimationType::FrontFlip => 14,
@@ -135,37 +129,40 @@ fn frame_count(anim_type: &AnimationType) -> i32
 }
 
 #[derive(CanTween, Clone, Copy)]
-struct TweenableRect
-{
+struct TweenableRect {
     x: f32,
     y: f32,
     w: f32,
     h: f32,
 }
 
-impl From<TweenableRect> for Rect
-{
+impl From<TweenableRect> for Rect {
     fn from(t_rect: TweenableRect) -> Self {
         Rect {
             x: t_rect.x,
             y: t_rect.y,
             w: t_rect.w,
-            h: t_rect.h
+            h: t_rect.h,
         }
     }
 }
 
-struct AnimationFloor<E: EasingFunction>
-{
+struct AnimationFloor<E: EasingFunction> {
     pre_easing: E,
-    frames: i32
+    frames: i32,
 }
 impl<E: EasingFunction> EasingFunction for AnimationFloor<E> {
     #[inline]
-    fn y(&self, x: f64) -> f64 { (self.pre_easing.y(x) * (self.frames) as f64).floor() / (self.frames-1) as f64 }
+    fn y(&self, x: f64) -> f64 {
+        (self.pre_easing.y(x) * (self.frames) as f64).floor() / (self.frames - 1) as f64
+    }
 }
 
-fn player_sequence(ease_enum: &EasingEnum, anim_type: &AnimationType, duration: f32) -> AnimationSequence<TweenableRect> {
+fn player_sequence(
+    ease_enum: &EasingEnum,
+    anim_type: &AnimationType,
+    duration: f32,
+) -> AnimationSequence<TweenableRect> {
     // create the two Rects that will serve as `from` and `to` for the DrawParam::src of the animation
     // the start for all animations is at the leftmost frame, starting at 0.0
     let src_x_start: f32 = 0.0;
@@ -176,76 +173,163 @@ fn player_sequence(ease_enum: &EasingEnum, anim_type: &AnimationType, duration: 
     // the height and width of the source rect are the proportions of a frame relative towards the whole sprite sheet
     let w = 1.0 / FRAME_COLUMNS as f32;
     let h = 1.0 / FRAME_ROWS as f32;
-    let src_rect_start = TweenableRect{ x: src_x_start, y: src_y, w, h };
-    let src_end_rect = TweenableRect{ x: src_x_end, y: src_y, w, h };
+    let src_rect_start = TweenableRect {
+        x: src_x_start,
+        y: src_y,
+        w,
+        h,
+    };
+    let src_end_rect = TweenableRect {
+        x: src_x_end,
+        y: src_y,
+        w,
+        h,
+    };
 
     let frames = frame_count(anim_type);
 
     if let EasingEnum::EaseInOut3Point = ease_enum {
-        let mid = ease(AnimationFloor { pre_easing: Linear, frames }, src_rect_start, src_end_rect, 0.33);
+        let mid = ease(
+            AnimationFloor {
+                pre_easing: Linear,
+                frames,
+            },
+            src_rect_start,
+            src_end_rect,
+            0.33,
+        );
         let mid_frames = (frames as f32 * 0.33).floor() as i32;
         // we need to adapt the frame count for each keyframe
         // only the frames that are to be played until the next keyframe count
         keyframes![
-            (src_rect_start, 0.0, AnimationFloor { pre_easing: EaseInOut, frames: mid_frames + 1 }),
-            (mid, 0.66 * duration, AnimationFloor { pre_easing: EaseInOut, frames: frames - mid_frames }),
+            (
+                src_rect_start,
+                0.0,
+                AnimationFloor {
+                    pre_easing: EaseInOut,
+                    frames: mid_frames + 1
+                }
+            ),
+            (
+                mid,
+                0.66 * duration,
+                AnimationFloor {
+                    pre_easing: EaseInOut,
+                    frames: frames - mid_frames
+                }
+            ),
             (src_end_rect, duration)
         ]
     } else {
         match ease_enum {
             EasingEnum::Linear => {
                 keyframes![
-                    (src_rect_start, 0.0, AnimationFloor { pre_easing: Linear, frames }),
-                    (src_end_rect, duration)    // we don't need to specify a second easing function,
-                                                // since this sequence won't be reversed, leading to
-                                                // it never being used anyway
+                    (
+                        src_rect_start,
+                        0.0,
+                        AnimationFloor {
+                            pre_easing: Linear,
+                            frames
+                        }
+                    ),
+                    (src_end_rect, duration) // we don't need to specify a second easing function,
+                                             // since this sequence won't be reversed, leading to
+                                             // it never being used anyway
                 ]
-            },
-            EasingEnum::EaseIn =>  {
+            }
+            EasingEnum::EaseIn => {
                 keyframes![
-                    (src_rect_start, 0.0, AnimationFloor { pre_easing: EaseIn, frames }),
+                    (
+                        src_rect_start,
+                        0.0,
+                        AnimationFloor {
+                            pre_easing: EaseIn,
+                            frames
+                        }
+                    ),
                     (src_end_rect, duration)
                 ]
-            },
-            EasingEnum::EaseInOut =>  {
+            }
+            EasingEnum::EaseInOut => {
                 keyframes![
-                    (src_rect_start, 0.0, AnimationFloor { pre_easing: EaseInOut, frames }),
+                    (
+                        src_rect_start,
+                        0.0,
+                        AnimationFloor {
+                            pre_easing: EaseInOut,
+                            frames
+                        }
+                    ),
                     (src_end_rect, duration)
                 ]
-            },
-            EasingEnum::EaseOut =>  {
+            }
+            EasingEnum::EaseOut => {
                 keyframes![
-                    (src_rect_start, 0.0, AnimationFloor { pre_easing: EaseOut, frames }),
+                    (
+                        src_rect_start,
+                        0.0,
+                        AnimationFloor {
+                            pre_easing: EaseOut,
+                            frames
+                        }
+                    ),
                     (src_end_rect, duration)
                 ]
-            },
-            EasingEnum::EaseInCubic =>  {
+            }
+            EasingEnum::EaseInCubic => {
                 keyframes![
-                    (src_rect_start, 0.0, AnimationFloor { pre_easing: EaseInCubic, frames }),
+                    (
+                        src_rect_start,
+                        0.0,
+                        AnimationFloor {
+                            pre_easing: EaseInCubic,
+                            frames
+                        }
+                    ),
                     (src_end_rect, duration)
                 ]
-            },
-            EasingEnum::EaseOutCubic =>  {
+            }
+            EasingEnum::EaseOutCubic => {
                 keyframes![
-                    (src_rect_start, 0.0, AnimationFloor { pre_easing: EaseOutCubic, frames }),
+                    (
+                        src_rect_start,
+                        0.0,
+                        AnimationFloor {
+                            pre_easing: EaseOutCubic,
+                            frames
+                        }
+                    ),
                     (src_end_rect, duration)
                 ]
-            },
-            EasingEnum::EaseInOutCubic =>  {
+            }
+            EasingEnum::EaseInOutCubic => {
                 keyframes![
-                    (src_rect_start, 0.0, AnimationFloor { pre_easing: EaseInOutCubic, frames }),
+                    (
+                        src_rect_start,
+                        0.0,
+                        AnimationFloor {
+                            pre_easing: EaseInOutCubic,
+                            frames
+                        }
+                    ),
                     (src_end_rect, duration)
                 ]
-            },
-            EasingEnum::Bezier =>
-                {
-                    let bezier_function = BezierCurve::from([0.6, 0.04].into(), [0.98, 0.335].into());
-                    keyframes![
-                        (src_rect_start, 0.0, AnimationFloor { pre_easing: bezier_function, frames }),
-                        (src_end_rect, duration)
-                    ]
-                },
-            _ => panic!()
+            }
+            EasingEnum::Bezier => {
+                let bezier_function = BezierCurve::from([0.6, 0.04].into(), [0.98, 0.335].into());
+                keyframes![
+                    (
+                        src_rect_start,
+                        0.0,
+                        AnimationFloor {
+                            pre_easing: bezier_function,
+                            frames
+                        }
+                    ),
+                    (src_end_rect, duration)
+                ]
+            }
+            _ => panic!(),
         }
     }
 }
@@ -269,9 +353,11 @@ impl MainState {
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         // advance the ball animation and reverse it once it reaches its end
-        self.ball_animation.advance_and_maybe_reverse(ggez::timer::delta(ctx).as_secs_f64());
+        self.ball_animation
+            .advance_and_maybe_reverse(ggez::timer::delta(ctx).as_secs_f64());
         // advance the player animation and wrap around back to the beginning once it reaches its end
-        self.player_animation.advance_and_maybe_wrap(ggez::timer::delta(ctx).as_secs_f64());
+        self.player_animation
+            .advance_and_maybe_wrap(ggez::timer::delta(ctx).as_secs_f64());
         Ok(())
     }
 
@@ -285,9 +371,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
             scale: Some(ggez::graphics::PxScale::from(40.0)),
             ..Default::default()
         });
-        graphics::draw(ctx, &t, DrawParam::default()
-            .dest([300.0, 60.0])
-            .color(Color::WHITE)
+        graphics::draw(
+            ctx,
+            &t,
+            DrawParam::default().dest([300.0, 60.0]).color(Color::WHITE),
         )?;
 
         let t = Text::new(TextFragment {
@@ -296,9 +383,12 @@ impl event::EventHandler<ggez::GameError> for MainState {
             scale: Some(ggez::graphics::PxScale::from(40.0)),
             ..Default::default()
         });
-        graphics::draw(ctx, &t, DrawParam::default()
-            .dest([300.0, 110.0])
-            .color(Color::WHITE)
+        graphics::draw(
+            ctx,
+            &t,
+            DrawParam::default()
+                .dest([300.0, 110.0])
+                .color(Color::WHITE),
         )?;
 
         let t = Text::new(TextFragment {
@@ -307,9 +397,12 @@ impl event::EventHandler<ggez::GameError> for MainState {
             scale: Some(ggez::graphics::PxScale::from(40.0)),
             ..Default::default()
         });
-        graphics::draw(ctx, &t, DrawParam::default()
-            .dest([300.0, 160.0])
-            .color(Color::WHITE)
+        graphics::draw(
+            ctx,
+            &t,
+            DrawParam::default()
+                .dest([300.0, 160.0])
+                .color(Color::WHITE),
         )?;
 
         // draw the animated ball
@@ -346,25 +439,37 @@ impl event::EventHandler<ggez::GameError> for MainState {
         _repeat: bool,
     ) {
         const DELTA: f32 = 0.2;
-        match keycode
-        {
+        match keycode {
             KeyCode::Up | KeyCode::Down => {
                 // easing change
                 let old_val: i32 = unsafe { std::mem::transmute(self.easing_enum.clone()) };
                 let max_val: i32 = unsafe { std::mem::transmute(EasingEnum::EaseInOut3Point) };
-                let new_val = new_enum_val_after_key(old_val, max_val, &KeyCode::Down, &KeyCode::Up, &keycode);
+                let new_val = new_enum_val_after_key(
+                    old_val,
+                    max_val,
+                    &KeyCode::Down,
+                    &KeyCode::Up,
+                    &keycode,
+                );
                 let new_easing_enum = unsafe { std::mem::transmute::<i32, EasingEnum>(new_val) };
 
                 if self.easing_enum != new_easing_enum {
-                self.easing_enum = new_easing_enum;
+                    self.easing_enum = new_easing_enum;
                 }
             }
             KeyCode::Left | KeyCode::Right => {
                 // animation change
                 let old_val: i32 = unsafe { std::mem::transmute(self.animation_type.clone()) };
                 let max_val: i32 = unsafe { std::mem::transmute(AnimationType::Crawl) };
-                let new_val = new_enum_val_after_key(old_val, max_val, &KeyCode::Left, &KeyCode::Right, &keycode);
-                let new_animation_type = unsafe { std::mem::transmute::<i32, AnimationType>(new_val) };
+                let new_val = new_enum_val_after_key(
+                    old_val,
+                    max_val,
+                    &KeyCode::Left,
+                    &KeyCode::Right,
+                    &keycode,
+                );
+                let new_animation_type =
+                    unsafe { std::mem::transmute::<i32, AnimationType>(new_val) };
 
                 if self.animation_type != new_animation_type {
                     self.animation_type = new_animation_type;
@@ -375,8 +480,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 self.duration += DELTA;
             }
             KeyCode::S => {
-                if self.duration - DELTA > 0.1
-                {
+                if self.duration - DELTA > 0.1 {
                     self.duration -= DELTA;
                 }
             }
@@ -384,13 +488,19 @@ impl event::EventHandler<ggez::GameError> for MainState {
         }
 
         self.ball_animation = ball_sequence(&self.easing_enum, self.duration);
-        self.player_animation = player_sequence(&self.easing_enum, &self.animation_type, self.duration);
+        self.player_animation =
+            player_sequence(&self.easing_enum, &self.animation_type, self.duration);
     }
 }
 
 // this could probably be done more elegantly using the num_derive and num_traits crates, but I'm unsure as to whether I really want to
-fn new_enum_val_after_key(old_val: i32, max_val: i32, dec_key: &KeyCode, inc_key: &KeyCode, key: &KeyCode) -> i32
-{
+fn new_enum_val_after_key(
+    old_val: i32,
+    max_val: i32,
+    dec_key: &KeyCode,
+    inc_key: &KeyCode,
+    key: &KeyCode,
+) -> i32 {
     let mut new_val = old_val;
     new_val += match key {
         _ if *key == *dec_key => -1,
@@ -400,9 +510,7 @@ fn new_enum_val_after_key(old_val: i32, max_val: i32, dec_key: &KeyCode, inc_key
 
     if new_val < 0 {
         new_val = max_val;
-    } else if new_val
-        > max_val
-    {
+    } else if new_val > max_val {
         new_val = 0;
     }
 
