@@ -23,6 +23,7 @@ struct MainState {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 #[repr(i32)]
 enum EasingEnum {
     Linear,
@@ -90,6 +91,7 @@ fn ball_sequence(ease_enum: &EasingEnum, duration: f32) -> AnimationSequence<Poi
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 #[repr(i32)]
 enum AnimationType {
     Idle,
