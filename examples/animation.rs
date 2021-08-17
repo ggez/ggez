@@ -1,5 +1,6 @@
 //! An example showcasing animation using `keyframe`.
 //! Includes tweening and frame-by-frame animation.
+//! Credit for the animation goes to [Dead Revolver](https://deadrevolver.itch.io/pixel-prototype-player-sprites)
 
 use ggez::event;
 use ggez::graphics::{self, Color, DrawParam, FilterMode, Rect, Text, TextFragment};
