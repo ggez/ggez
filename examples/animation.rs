@@ -353,6 +353,20 @@ impl MainState {
     }
 }
 
+fn draw_info(ctx: &mut Context, info: String, position: Point2<f32>) -> GameResult {
+    let t = Text::new(TextFragment {
+        text: info,
+        font: None,
+        scale: Some(ggez::graphics::PxScale::from(40.0)),
+        ..Default::default()
+    });
+    graphics::draw(
+        ctx,
+        &t,
+        DrawParam::default().dest(position).color(Color::WHITE),
+    )
+}
+
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         // advance the ball animation and reverse it once it reaches its end
@@ -368,44 +382,20 @@ impl event::EventHandler<ggez::GameError> for MainState {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         // draw some text showing the current parameters
-        let t = Text::new(TextFragment {
-            text: format!("Easing: {:?}", self.easing_enum),
-            font: None,
-            scale: Some(ggez::graphics::PxScale::from(40.0)),
-            ..Default::default()
-        });
-        graphics::draw(
+        draw_info(
             ctx,
-            &t,
-            DrawParam::default().dest([300.0, 60.0]).color(Color::WHITE),
+            format!("Easing: {:?}", self.easing_enum),
+            [300.0, 60.0].into(),
         )?;
-
-        let t = Text::new(TextFragment {
-            text: format!("Animation: {:?}", self.animation_type),
-            font: None,
-            scale: Some(ggez::graphics::PxScale::from(40.0)),
-            ..Default::default()
-        });
-        graphics::draw(
+        draw_info(
             ctx,
-            &t,
-            DrawParam::default()
-                .dest([300.0, 110.0])
-                .color(Color::WHITE),
+            format!("Animation: {:?}", self.animation_type),
+            [300.0, 110.0].into(),
         )?;
-
-        let t = Text::new(TextFragment {
-            text: format!("Duration: {:.2} s", self.duration),
-            font: None,
-            scale: Some(ggez::graphics::PxScale::from(40.0)),
-            ..Default::default()
-        });
-        graphics::draw(
+        draw_info(
             ctx,
-            &t,
-            DrawParam::default()
-                .dest([300.0, 160.0])
-                .color(Color::WHITE),
+            format!("Duration: {:.2} s", self.duration),
+            [300.0, 160.0].into(),
         )?;
 
         // draw the animated ball
