@@ -37,6 +37,20 @@ enum EasingEnum {
     EaseInOut3Point,
 }
 
+fn easing_function(ease_enum: &EasingEnum) -> Box<dyn EasingFunction + Send + Sync> {
+    match ease_enum {
+        EasingEnum::Linear => Box::new(Linear),
+        EasingEnum::EaseIn => Box::new(EaseIn),
+        EasingEnum::EaseInOut => Box::new(EaseInOut),
+        EasingEnum::EaseOut => Box::new(EaseOut),
+        EasingEnum::EaseInCubic => Box::new(EaseInCubic),
+        EasingEnum::EaseOutCubic => Box::new(EaseOutCubic),
+        EasingEnum::EaseInOutCubic => Box::new(EaseInOutCubic),
+        EasingEnum::Bezier => Box::new(BezierCurve::from([0.6, 0.04].into(), [0.98, 0.335].into())),
+        _ => panic!(),
+    }
+}
+
 fn ball_sequence(ease_enum: &EasingEnum, duration: f32) -> AnimationSequence<Point2<f32>> {
     let ball_pos_start: Point2<f32> = [120.0, 120.0].into();
     let ball_pos_end: Point2<f32> = [120.0, 420.0].into();
@@ -45,48 +59,14 @@ fn ball_sequence(ease_enum: &EasingEnum, duration: f32) -> AnimationSequence<Poi
         let mid_pos = ease(Linear, ball_pos_start, ball_pos_end, 0.33);
         keyframes![
             (ball_pos_start, 0.0, EaseInOut),
-            (mid_pos, 0.66 * duration, EaseInOut), // reach about a third of the height two thirds of the duration
+            (mid_pos, 0.66 * duration, EaseInOut), // reach about a third of the height at two thirds of the duration
             (ball_pos_end, duration, EaseInOut)
         ]
     } else {
-        match ease_enum {
-            EasingEnum::Linear => keyframes![
-                (ball_pos_start, 0.0, Linear),
-                (ball_pos_end, duration, Linear)
-            ],
-            EasingEnum::EaseIn => keyframes![
-                (ball_pos_start, 0.0, EaseIn),
-                (ball_pos_end, duration, EaseIn)
-            ],
-            EasingEnum::EaseInOut => keyframes![
-                (ball_pos_start, 0.0, EaseInOut),
-                (ball_pos_end, duration, EaseInOut)
-            ],
-            EasingEnum::EaseOut => keyframes![
-                (ball_pos_start, 0.0, EaseOut),
-                (ball_pos_end, duration, EaseOut)
-            ],
-            EasingEnum::EaseInCubic => keyframes![
-                (ball_pos_start, 0.0, EaseInCubic),
-                (ball_pos_end, duration, EaseInCubic)
-            ],
-            EasingEnum::EaseOutCubic => keyframes![
-                (ball_pos_start, 0.0, EaseOutCubic),
-                (ball_pos_end, duration, EaseOutCubic)
-            ],
-            EasingEnum::EaseInOutCubic => keyframes![
-                (ball_pos_start, 0.0, EaseInOutCubic),
-                (ball_pos_end, duration, EaseInOutCubic)
-            ],
-            EasingEnum::Bezier => {
-                let bezier_function = BezierCurve::from([0.6, 0.04].into(), [0.98, 0.335].into());
-                keyframes![
-                    (ball_pos_start, 0.0, bezier_function),
-                    (ball_pos_end, duration, bezier_function)
-                ]
-            }
-            _ => panic!(),
-        }
+        keyframes![
+            (ball_pos_start, 0.0, easing_function(ease_enum)),
+            (ball_pos_end, duration, easing_function(ease_enum)) // this second function is necessary here because the sequence might get reversed
+        ]
     }
 }
 
@@ -132,11 +112,18 @@ fn frame_count(anim_type: &AnimationType) -> i32 {
 }
 
 #[derive(CanTween, Clone, Copy)]
+/// necessary because we can't implement CanTween for graphics::Rect directly, as it's a foreign type
 struct TweenableRect {
     x: f32,
     y: f32,
     w: f32,
     h: f32,
+}
+
+impl TweenableRect {
+    fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
+        TweenableRect { x, y, w, h }
+    }
 }
 
 impl From<TweenableRect> for Rect {
@@ -150,11 +137,13 @@ impl From<TweenableRect> for Rect {
     }
 }
 
-struct AnimationFloor<E: EasingFunction> {
-    pre_easing: E,
+/// A fancy easing function, tweening something into one of `frames` many discrete states.
+/// The `pre_easing` is applied first, thereby making other `EasingFunction`s usable in the realm of frame-by-frame animation
+struct AnimationFloor {
+    pre_easing: Box<dyn EasingFunction + Send + Sync>,
     frames: i32,
 }
-impl<E: EasingFunction> EasingFunction for AnimationFloor<E> {
+impl EasingFunction for AnimationFloor {
     #[inline]
     fn y(&self, x: f64) -> f64 {
         (self.pre_easing.y(x) * (self.frames) as f64).floor() / (self.frames - 1) as f64
@@ -176,25 +165,17 @@ fn player_sequence(
     // the height and width of the source rect are the proportions of a frame relative towards the whole sprite sheet
     let w = 1.0 / FRAME_COLUMNS as f32;
     let h = 1.0 / FRAME_ROWS as f32;
-    let src_rect_start = TweenableRect {
-        x: src_x_start,
-        y: src_y,
-        w,
-        h,
-    };
-    let src_end_rect = TweenableRect {
-        x: src_x_end,
-        y: src_y,
-        w,
-        h,
-    };
+    let src_rect_start = TweenableRect::new(src_x_start, src_y, w, h);
+    let src_end_rect = TweenableRect::new(src_x_end, src_y, w, h);
 
     let frames = frame_count(anim_type);
 
     if let EasingEnum::EaseInOut3Point = ease_enum {
+        // first calculate the middle state of this sequence
+        // luckily we can use keyframe to help us with that
         let mid = ease(
             AnimationFloor {
-                pre_easing: Linear,
+                pre_easing: Box::new(Linear),
                 frames,
             },
             src_rect_start,
@@ -209,7 +190,7 @@ fn player_sequence(
                 src_rect_start,
                 0.0,
                 AnimationFloor {
-                    pre_easing: EaseInOut,
+                    pre_easing: Box::new(EaseInOut),
                     frames: mid_frames + 1
                 }
             ),
@@ -217,130 +198,32 @@ fn player_sequence(
                 mid,
                 0.66 * duration,
                 AnimationFloor {
-                    pre_easing: EaseInOut,
+                    pre_easing: Box::new(EaseInOut),
                     frames: frames - mid_frames
                 }
             ),
             (src_end_rect, duration)
         ]
     } else {
-        match ease_enum {
-            EasingEnum::Linear => {
-                keyframes![
-                    (
-                        src_rect_start,
-                        0.0,
-                        AnimationFloor {
-                            pre_easing: Linear,
-                            frames
-                        }
-                    ),
-                    (src_end_rect, duration) // we don't need to specify a second easing function,
-                                             // since this sequence won't be reversed, leading to
-                                             // it never being used anyway
-                ]
-            }
-            EasingEnum::EaseIn => {
-                keyframes![
-                    (
-                        src_rect_start,
-                        0.0,
-                        AnimationFloor {
-                            pre_easing: EaseIn,
-                            frames
-                        }
-                    ),
-                    (src_end_rect, duration)
-                ]
-            }
-            EasingEnum::EaseInOut => {
-                keyframes![
-                    (
-                        src_rect_start,
-                        0.0,
-                        AnimationFloor {
-                            pre_easing: EaseInOut,
-                            frames
-                        }
-                    ),
-                    (src_end_rect, duration)
-                ]
-            }
-            EasingEnum::EaseOut => {
-                keyframes![
-                    (
-                        src_rect_start,
-                        0.0,
-                        AnimationFloor {
-                            pre_easing: EaseOut,
-                            frames
-                        }
-                    ),
-                    (src_end_rect, duration)
-                ]
-            }
-            EasingEnum::EaseInCubic => {
-                keyframes![
-                    (
-                        src_rect_start,
-                        0.0,
-                        AnimationFloor {
-                            pre_easing: EaseInCubic,
-                            frames
-                        }
-                    ),
-                    (src_end_rect, duration)
-                ]
-            }
-            EasingEnum::EaseOutCubic => {
-                keyframes![
-                    (
-                        src_rect_start,
-                        0.0,
-                        AnimationFloor {
-                            pre_easing: EaseOutCubic,
-                            frames
-                        }
-                    ),
-                    (src_end_rect, duration)
-                ]
-            }
-            EasingEnum::EaseInOutCubic => {
-                keyframes![
-                    (
-                        src_rect_start,
-                        0.0,
-                        AnimationFloor {
-                            pre_easing: EaseInOutCubic,
-                            frames
-                        }
-                    ),
-                    (src_end_rect, duration)
-                ]
-            }
-            EasingEnum::Bezier => {
-                let bezier_function = BezierCurve::from([0.6, 0.04].into(), [0.98, 0.335].into());
-                keyframes![
-                    (
-                        src_rect_start,
-                        0.0,
-                        AnimationFloor {
-                            pre_easing: bezier_function,
-                            frames
-                        }
-                    ),
-                    (src_end_rect, duration)
-                ]
-            }
-            _ => panic!(),
-        }
+        // the simpler case: choose some easing function as the pre-easing of an AnimationFloor
+        // which operates on all frames, from the first to the last
+        let easing = AnimationFloor {
+            pre_easing: easing_function(ease_enum),
+            frames,
+        };
+        keyframes![
+            (src_rect_start, 0.0, easing),
+            (src_end_rect, duration) // we don't need to specify a second easing function,
+                                     // since this sequence won't be reversed, leading to
+                                     // it never being used anyway
+        ]
     }
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let mut img = graphics::Image::new(ctx, "/player_sheet.png")?;
-        img.set_filter(FilterMode::Nearest);
+        img.set_filter(FilterMode::Nearest); // because pixel art
         let s = MainState {
             spritesheet: img,
             easing_enum: EasingEnum::Linear,
@@ -369,12 +252,11 @@ fn draw_info(ctx: &mut Context, info: String, position: Point2<f32>) -> GameResu
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
+        let secs = ggez::timer::delta(ctx).as_secs_f64();
         // advance the ball animation and reverse it once it reaches its end
-        self.ball_animation
-            .advance_and_maybe_reverse(ggez::timer::delta(ctx).as_secs_f64());
+        self.ball_animation.advance_and_maybe_reverse(secs);
         // advance the player animation and wrap around back to the beginning once it reaches its end
-        self.player_animation
-            .advance_and_maybe_wrap(ggez::timer::delta(ctx).as_secs_f64());
+        self.player_animation.advance_and_maybe_wrap(secs);
         Ok(())
     }
 
