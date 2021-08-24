@@ -2,6 +2,9 @@
 //! Includes tweening and frame-by-frame animation.
 //! Credit for the animation goes to [Dead Revolver](https://deadrevolver.itch.io/pixel-prototype-player-sprites)
 
+#[macro_use]
+extern crate num_derive;
+
 use ggez::event;
 use ggez::graphics::{self, Color, DrawParam, FilterMode, Rect, Text, TextFragment};
 use ggez::input::keyboard::KeyCode;
@@ -10,6 +13,7 @@ use ggez::{Context, GameResult};
 use glam::*;
 use keyframe::{ease, functions::*, keyframes, AnimationSequence, EasingFunction};
 use keyframe_derive::CanTween;
+use num_traits::{FromPrimitive, ToPrimitive};
 use std::env;
 use std::path;
 
@@ -22,8 +26,7 @@ struct MainState {
     duration: f32,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-#[allow(dead_code)]
+#[derive(Debug, FromPrimitive, ToPrimitive, PartialEq)]
 #[repr(i32)]
 enum EasingEnum {
     Linear,
@@ -70,8 +73,7 @@ fn ball_sequence(ease_enum: &EasingEnum, duration: f32) -> AnimationSequence<Poi
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-#[allow(dead_code)]
+#[derive(Debug, FromPrimitive, ToPrimitive, PartialEq)]
 #[repr(i32)]
 enum AnimationType {
     Idle,
@@ -317,16 +319,13 @@ impl event::EventHandler<ggez::GameError> for MainState {
         match keycode {
             KeyCode::Up | KeyCode::Down => {
                 // easing change
-                let old_val: i32 = unsafe { std::mem::transmute(self.easing_enum.clone()) };
-                let max_val: i32 = unsafe { std::mem::transmute(EasingEnum::EaseInOut3Point) };
-                let new_val = new_enum_val_after_key(
-                    old_val,
-                    max_val,
+                let new_easing_enum = new_enum_after_key(
+                    &self.easing_enum,
+                    &EasingEnum::EaseInOut3Point,
                     &KeyCode::Down,
                     &KeyCode::Up,
                     &keycode,
                 );
-                let new_easing_enum = unsafe { std::mem::transmute::<i32, EasingEnum>(new_val) };
 
                 if self.easing_enum != new_easing_enum {
                     self.easing_enum = new_easing_enum;
@@ -334,17 +333,13 @@ impl event::EventHandler<ggez::GameError> for MainState {
             }
             KeyCode::Left | KeyCode::Right => {
                 // animation change
-                let old_val: i32 = unsafe { std::mem::transmute(self.animation_type.clone()) };
-                let max_val: i32 = unsafe { std::mem::transmute(AnimationType::Crawl) };
-                let new_val = new_enum_val_after_key(
-                    old_val,
-                    max_val,
+                let new_animation_type = new_enum_after_key(
+                    &self.animation_type,
+                    &AnimationType::Crawl,
                     &KeyCode::Left,
                     &KeyCode::Right,
                     &keycode,
                 );
-                let new_animation_type =
-                    unsafe { std::mem::transmute::<i32, AnimationType>(new_val) };
 
                 if self.animation_type != new_animation_type {
                     self.animation_type = new_animation_type;
@@ -368,28 +363,28 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 }
 
-// this could probably be done more elegantly using the num_derive and num_traits crates, but I'm unsure as to whether I really want to
-fn new_enum_val_after_key(
-    old_val: i32,
-    max_val: i32,
+fn new_enum_after_key<E: ToPrimitive + FromPrimitive>(
+    old_enum: &E,
+    max_enum: &E,
     dec_key: &KeyCode,
     inc_key: &KeyCode,
     key: &KeyCode,
-) -> i32 {
-    let mut new_val = old_val;
+) -> E {
+    let mut new_val = ToPrimitive::to_i32(old_enum).unwrap();
     new_val += match key {
         _ if *key == *dec_key => -1,
         _ if *key == *inc_key => 1,
         _ => 0,
     };
 
+    let max_val = ToPrimitive::to_i32(max_enum).unwrap();
     if new_val < 0 {
         new_val = max_val;
     } else if new_val > max_val {
         new_val = 0;
     }
 
-    new_val
+    FromPrimitive::from_i32(new_val).unwrap()
 }
 
 pub fn main() -> GameResult {
