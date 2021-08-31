@@ -269,7 +269,7 @@ where
                 }
                 WindowEvent::CursorMoved { .. } => {
                     let position = mouse::position(ctx);
-                    let delta = mouse::delta(ctx);
+                    let delta = mouse::last_delta(ctx);
                     state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                 }
                 _x => {
@@ -325,6 +325,10 @@ where
                         return;
                     }
                 }
+
+                // reset the mouse delta for the next frame
+                // necessary because it's calculated cumulatively each cycle
+                ctx.mouse_context.reset_delta();
             }
             Event::RedrawRequested(_) => (),
             Event::RedrawEventsCleared => (),
@@ -338,8 +342,8 @@ where
 /// rolling your own event loop, you should call this on the events
 /// you receive before processing them yourself.
 pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
-    match event {
-        winit_event::Event::WindowEvent { event, .. } => match event {
+    if let winit_event::Event::WindowEvent { event, .. } = event {
+        match event {
             winit_event::WindowEvent::Resized(physical_size) => {
                 ctx.gfx_context.window.resize(*physical_size);
                 ctx.gfx_context.resize_viewport();
@@ -348,6 +352,20 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                 position: logical_position,
                 ..
             } => {
+                let current_delta = crate::input::mouse::delta(ctx);
+                let current_pos = crate::input::mouse::position(ctx);
+                let diff = crate::graphics::Point2::new(
+                    logical_position.x as f32 - current_pos.x,
+                    logical_position.y as f32 - current_pos.y,
+                );
+                // Sum up the cumulative mouse change for this frame in `delta`:
+                ctx.mouse_context.set_delta(crate::graphics::Point2::new(
+                    current_delta.x + diff.x,
+                    current_delta.y + diff.y,
+                ));
+                // `last_delta` is not cumulative.
+                // It represents only the change between the last mouse event and the current one.
+                ctx.mouse_context.set_last_delta(diff);
                 ctx.mouse_context
                     .set_last_position(crate::graphics::Point2::new(
                         logical_position.x as f32,
@@ -390,14 +408,6 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                 }
             }
             _ => (),
-        },
-        winit_event::Event::DeviceEvent {
-            event: winit_event::DeviceEvent::MouseMotion { delta: (x, y) },
-            ..
-        } => ctx
-            .mouse_context
-            .set_last_delta(crate::graphics::Point2::new(*x as f32, *y as f32)),
-
-        _ => (),
+        }
     };
 }
