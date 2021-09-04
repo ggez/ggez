@@ -15,6 +15,7 @@ pub use winit::window::CursorIcon;
 pub struct MouseContext {
     last_position: Point2,
     last_delta: Point2,
+    delta: Point2,
     buttons_pressed: HashMap<MouseButton, bool>,
     cursor_type: CursorIcon,
     cursor_grabbed: bool,
@@ -26,6 +27,7 @@ impl MouseContext {
         Self {
             last_position: Point2::ZERO,
             last_delta: Point2::ZERO,
+            delta: Point2::ZERO,
             cursor_type: CursorIcon::Default,
             buttons_pressed: HashMap::new(),
             cursor_grabbed: false,
@@ -39,6 +41,17 @@ impl MouseContext {
 
     pub(crate) fn set_last_delta(&mut self, p: Point2) {
         self.last_delta = p;
+    }
+
+    /// Resets the value returned by [`mouse::delta`](fn.delta.html) to zero.
+    /// You shouldn't need to call this, except when you're running your own event loop.
+    /// In this case call it right at the end, after `draw` and `update` have finished.
+    pub fn reset_delta(&mut self) {
+        self.delta = Point2::ZERO;
+    }
+
+    pub(crate) fn set_delta(&mut self, p: Point2) {
+        self.delta = p;
     }
 
     pub(crate) fn set_button(&mut self, button: MouseButton, pressed: bool) {
@@ -114,8 +127,13 @@ where
         .map_err(|_| GameError::WindowError("Couldn't set mouse cursor position!".to_owned()))
 }
 
-/// Get the distance the cursor was moved during last frame, in pixels.
+/// Get the distance the cursor was moved during the current frame, in pixels.
 pub fn delta(ctx: &Context) -> mint::Point2<f32> {
+    ctx.mouse_context.delta.into()
+}
+
+/// Get the distance the cursor was moved between the latest two mouse_motion_events.
+pub(crate) fn last_delta(ctx: &Context) -> mint::Point2<f32> {
     ctx.mouse_context.last_delta.into()
 }
 

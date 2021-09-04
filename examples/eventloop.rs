@@ -73,6 +73,11 @@ pub fn main() -> GameResult {
                 .unwrap();
                 graphics::draw(ctx, &circle, (glam::Vec2::new(position, 380.0),)).unwrap();
                 graphics::present(ctx).unwrap();
+
+                // reset the mouse delta for the next frame
+                // necessary because it's calculated cumulatively each cycle
+                ctx.mouse_context.reset_delta();
+
                 ggez::timer::yield_now();
             }
 
