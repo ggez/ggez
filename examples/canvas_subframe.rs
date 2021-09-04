@@ -95,7 +95,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         }
 
         // Bounce the rect if necessary
-        let (w, h) = graphics::size(ctx);
+        let (w, h) = graphics::drawable_size(ctx);
         if self.draw_pt.x + (w as f32 / 2.0) > (w as f32) || self.draw_pt.x < 0.0 {
             self.draw_vec.x *= -1.0;
         }

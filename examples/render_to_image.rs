@@ -34,7 +34,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // now lets render our scene once in the top left and in the bottom
         // right
-        let window_size = graphics::size(ctx);
+        let window_size = graphics::drawable_size(ctx);
         let scale = Vector2::new(
             0.5 * window_size.0 as f32 / self.canvas.width() as f32,
             0.5 * window_size.1 as f32 / self.canvas.height() as f32,
