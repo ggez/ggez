@@ -146,16 +146,40 @@ impl Image {
     /// Load a new image from the file at the given path. The documentation for the
     /// [`filesystem`](../filesystem/index.html) module explains how the path must be specified.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+        let format = path
+            .as_ref()
+            .extension()
+            .map_or_else(|| None, image::ImageFormat::from_extension);
         let mut buf = Vec::new();
         let mut reader = context.filesystem.open(path)?;
         let _ = reader.read_to_end(&mut buf)?;
-        Self::from_bytes(context, &buf)
+        if let Some(format) = format {
+            Self::from_bytes_with_format(context, &buf, format)
+        } else {
+            // if no extension could be found try loading the image anyway using `image::load_from_memory`
+            Self::from_bytes(context, &buf)
+        }
     }
 
     /// Creates a new `Image` from the given buffer, which should contain an image encoded
     /// in a supported image file format.
     pub fn from_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
         let img = image::load_from_memory(bytes)?.to_rgba8();
+        Self::from_rgba_image(context, img)
+    }
+
+    /// Creates a new `Image` from the given buffer, which should contain an image encoded
+    /// in the given image file format.
+    pub fn from_bytes_with_format(
+        context: &mut Context,
+        bytes: &[u8],
+        format: image::ImageFormat,
+    ) -> GameResult<Self> {
+        let img = image::load_from_memory_with_format(bytes, format)?.to_rgba8();
+        Self::from_rgba_image(context, img)
+    }
+
+    fn from_rgba_image(context: &mut Context, img: image::RgbaImage) -> GameResult<Self> {
         let (width, height) = img.dimensions();
         let better_width = u16::try_from(width)
             .map_err(|_| GameError::ResourceLoadError(String::from("Image width > u16::MAX")))?;
