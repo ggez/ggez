@@ -82,6 +82,20 @@ impl SpriteBatch {
         }
     }
 
+    /// Returns a reference to the sprites.
+    pub fn get_sprites(&self) -> &[DrawParam] {
+        &self.sprites
+    }
+
+    /// Returns a mutable reference to the sprites.
+    ///
+    /// Please note that manually altering items in this slice
+    /// will not automatically invalidate the buffer, you will
+    /// have to manually call `flush()` or `flush_range()` later.
+    pub fn get_sprites_mut(&mut self) -> &mut [DrawParam] {
+        &mut self.sprites
+    }
+
     /// Immediately sends all data in the batch to the graphics card.
     ///
     /// Generally just calling [`graphics::draw()`](../fn.draw.html) on the `SpriteBatch`
