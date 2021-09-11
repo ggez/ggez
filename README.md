@@ -44,7 +44,7 @@ your own libraries atop ggez.
 ### Non-Features (i.e. things to add from elsewhere if needed)
 
 * [Physics](https://arewegameyet.rs/ecosystem/physics/)
-* Animation (check out [keyframe](https://github.com/HannesMann/keyframe); it works really well with ggez)
+* Animation (check out [keyframe](https://github.com/HannesMann/keyframe); [it works pretty well with ggez](/examples/animation.rs))
 * [GUI](https://arewegameyet.rs/ecosystem/ui/)
 * [Assets manager](https://github.com/a1phyr/assets_manager)
 * [AI](https://arewegameyet.rs/ecosystem/ai/)
@@ -54,11 +54,11 @@ your own libraries atop ggez.
 ### Supported platforms
 
  * Fully supported: Windows, Linux
- * Not officially supported but might work anyway: Mac, iOS
- * Work in progress: WebAssembly
- * Not officially supported yet (but maybe you can help!): Android
+ * Not officially supported but might work anyway: Mac
 
 For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
+
+If you want to run ggez on Android, iOS or the web using WebAssembly take a look at [good-web-game](https://github.com/not-fl3/good-web-game).
 
 ### Who's using ggez?
 
