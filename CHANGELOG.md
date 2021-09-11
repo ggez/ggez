@@ -1,4 +1,41 @@
-# 0.6.0 (Release candidate)
+# 0.6.1
+
+## Added
+
+ * Allowed `ContextBuilder` to rename resources folder and resources.zip
+ * Added `get_window_position`
+ * Added an example showcasing animation using keyframe
+ * Added support for the TGA image file format (and possibly some others by accident as well)
+
+## Changed
+
+ * Changed mouse move callback a little: it now returns the difference in movement relative to the last callback,
+   not the mouse position at the end of the previous frame
+ * Most of the filesystem functions now take `&Context` instead of a mutable one
+ * Version bumped `old_school_gfx_glutin_ext` to 0.27
+ * Version bumped `glutin` to 0.27
+ * Version bumped `winit` to 0.25
+ * Version bumped `glam` to 0.17.3
+
+## Deprecated
+
+Nothing
+
+## Removed
+
+Nothing
+
+## Fixed
+
+ * internal folder structure of the resources.zip file is now resolved correctly on Windows
+ * fixed `mouse::delta`: it now actually returns the difference in mouse position relative to the previous frame
+   instead of the raw mouse feedback it returned until now
+
+## Broken
+
+Nothing (hopefully)
+
+# 0.6.0
 
 ## Added
 
@@ -8,16 +45,22 @@
  * Added function to allow custom gamepad definitions
  * Added function to fetch raw window
  * Added function to set window position on the screen
+ * Added function to get supported resolutions of the current monitor
  * Added generators for rounded rectangle meshes
  * Tried to make more error types conveniently comply with
    `std::error::Error`
  * Added functions to fetch positions of text glyphs
  * Added `visible` to `WindowMode` to allow ggez to run without a visible window
+ * Added `on_error` function to `EventHandler`, making error handling more convenient
+ * Added a download buffer handle to the gfx context, to avoid possibly recreating it all the time,
+   which means things like taking multiple screenshots should work more smoothly now, as long as the target size doesn't change
 
 ## Changed
 
+ * `EventHandler` now takes an error type as a parameter, which allows you to use your own error types
  * `FullscreenType::True` now causes the game to be rendered exclusively on the current monitor, which also allows
    to set different resolutions  
+ * Changed blend modes massively in the hope that they're either more "correct" or helpful now
  * Switched `rand` in the examples to `oorandom`, for basically
    aesthetic reasons.  (Not advertising at all, honest.)
  * Version bumped `rodio` to 0.13
@@ -31,7 +74,7 @@
  * Updated just about every other dependency under the sun
  * Minimum rustc version is now 1.42
  * Audio API in general changed a little for `rodio` API differences.
-
+ 
 ## Deprecated
 
 Nothing
@@ -45,6 +88,7 @@ Nothing
 
  * ggez no longer creates empty directories (for resources and other things), unless necessary
  * Setting `DrawParam`s now results in consistent behaviour everywhere, including `SpriteBatch` and `Canvas`
+ * fixed a memory leak in `screenshot` and `to_rgba8`
  * Too many things to count
 
 ## Broken
