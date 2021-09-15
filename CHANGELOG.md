@@ -9,6 +9,10 @@
 
 ## Changed
 
+ * `MeshBatch::dimensions` now returns a rectangle containing all of its mesh instances
+   (instead of simply returning the dimensions of the underlying single mesh, as before)
+    * Drawing a `MeshBatch` with an offset != (0,0) results in such dimensions being calculated (just like in `SpriteBatch`),
+      which can be expensive, but leads to the offset being interpreted as a relative offset, instead of an absolute one
  * Changed mouse move callback a little: it now returns the difference in movement relative to the last callback,
    not the mouse position at the end of the previous frame
  * Most of the filesystem functions now take `&Context` instead of a mutable one
@@ -61,6 +65,8 @@ Nothing (hopefully)
  * `FullscreenType::True` now causes the game to be rendered exclusively on the current monitor, which also allows
    to set different resolutions  
  * Changed blend modes massively in the hope that they're either more "correct" or helpful now
+ * Changed the way `SpriteBatch` reacts to `DrawParam`s with an offset != (0,0): It now calculates its own dimensions
+   (a rectangle containing all sprites) and interprets the offset as a fraction of that
  * Switched `rand` in the examples to `oorandom`, for basically
    aesthetic reasons.  (Not advertising at all, honest.)
  * Version bumped `rodio` to 0.13
@@ -86,9 +92,13 @@ Nothing
 
 ## Fixed
 
+ * Fixed a mistake in the matrices created from `DrawParams` leading to them being slightly wrong when an offset was used
+   (this might fix a lot of very subtle rendering bugs)
  * ggez no longer creates empty directories (for resources and other things), unless necessary
- * Setting `DrawParam`s now results in consistent behaviour everywhere, including `SpriteBatch` and `Canvas`
- * fixed a memory leak in `screenshot` and `to_rgba8`
+ * Setting `DrawParam`s now results in consistent behaviour <del>everywhere</del> (ok, no, we missed `MeshBatch`,
+   which received this fix in 0.6.1), including `SpriteBatch` and `Canvas`
+ * Fixed a memory leak in `screenshot` and `to_rgba8`
+ * Fixed `transfrom_rect` (and added some more tests for it)   
  * Too many things to count
 
 ## Broken
