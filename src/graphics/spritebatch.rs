@@ -89,9 +89,9 @@ impl SpriteBatch {
 
     /// Returns a mutable reference to the sprites.
     ///
-    /// Please note that manually altering items in this slice
-    /// will not automatically invalidate the buffer, you will
-    /// have to manually call `flush()` or `flush_range()` later.
+    /// Unlike with `MeshBatch`, manually calling `flush` after altering sprites
+    /// in this slice is currently unnecessary, as `SpriteBatch` flushes automatically
+    /// on every draw call. This might change in the future though.
     pub fn get_sprites_mut(&mut self) -> &mut [DrawParam] {
         &mut self.sprites
     }
