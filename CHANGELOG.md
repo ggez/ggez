@@ -6,6 +6,7 @@
  * Added `get_window_position`
  * Added an example showcasing animation using keyframe
  * Added support for the TGA image file format (and possibly some others by accident as well)
+ * Added methods to access sprites inside of a `SpriteBatch` directly
 
 ## Changed
 
@@ -31,6 +32,7 @@ Nothing
 
 ## Fixed
 
+ * fixed color transformation from linear color back to sRGB
  * internal folder structure of the resources.zip file is now resolved correctly on Windows
  * fixed `mouse::delta`: it now actually returns the difference in mouse position relative to the previous frame
    instead of the raw mouse feedback it returned until now
