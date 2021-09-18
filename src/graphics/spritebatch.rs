@@ -82,6 +82,20 @@ impl SpriteBatch {
         }
     }
 
+    /// Returns a reference to the sprites.
+    pub fn get_sprites(&self) -> &[DrawParam] {
+        &self.sprites
+    }
+
+    /// Returns a mutable reference to the sprites.
+    ///
+    /// Unlike with `MeshBatch`, manually calling `flush` after altering sprites
+    /// in this slice is currently unnecessary, as `SpriteBatch` flushes automatically
+    /// on every draw call. This might change in the future though.
+    pub fn get_sprites_mut(&mut self) -> &mut [DrawParam] {
+        &mut self.sprites
+    }
+
     /// Immediately sends all data in the batch to the graphics card.
     ///
     /// Generally just calling [`graphics::draw()`](../fn.draw.html) on the `SpriteBatch`
