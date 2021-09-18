@@ -44,7 +44,7 @@ your own libraries atop ggez.
 ### Non-Features (i.e. things to add from elsewhere if needed)
 
 * [Physics](https://arewegameyet.rs/ecosystem/physics/)
-* Animation (check out [keyframe](https://github.com/HannesMann/keyframe); [it works pretty well with ggez](/examples/animation.rs))
+* Animation (check out [keyframe](https://github.com/HannesMann/keyframe); [it works pretty well with ggez](https://psteinhaus.github.io/ggez/web-examples/) ([source](https://github.com/PSteinhaus/PSteinhaus.github.io/tree/main/ggez/web-examples)))
 * [GUI](https://arewegameyet.rs/ecosystem/ui/)
 * [Assets manager](https://github.com/a1phyr/assets_manager)
 * [AI](https://arewegameyet.rs/ecosystem/ai/)
