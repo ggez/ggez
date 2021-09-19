@@ -38,14 +38,14 @@
 //! * Math library integration with `mint`.
 //! * Some more advanced graphics options: shaders, sprite batches and render targets
 //!
-//! ## Supported platforms
+//! ### Supported platforms
 //!
 //!  * Fully supported: Windows, Linux
-//!  * Not officially supported but might work anyway: Mac, iOS
-//!  * Work in progress: WebAssembly
-//!  * Not officially supported yet (but maybe you can help!): Android
+//!  * Not officially supported but might work anyway: Mac
 //!
 //! For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
+//!
+//! If you want to run ggez on Android, iOS or the web using WebAssembly take a look at [good-web-game](https://github.com/not-fl3/good-web-game).
 //!
 //! ## Who's using ggez?
 //!
@@ -134,7 +134,7 @@
 //!     }
 //! }
 //!
-//! impl EventHandler for MyGame {
+//! impl EventHandler<ggez::GameError> for MyGame {
 //!     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
 //!         // Update code here...
 //!         Ok(())

@@ -175,7 +175,7 @@ struct MainState {
 }
 
 /// The color cast things take when not illuminated
-const AMBIENT_COLOR: [f32; 4] = [0.25, 0.22, 0.34, 1.0];
+const AMBIENT_COLOR: [f32; 4] = [0.15, 0.12, 0.24, 1.0];
 /// The default color for the static light
 const STATIC_LIGHT_COLOR: [f32; 4] = [0.37, 0.69, 0.75, 1.0];
 /// The default color for the mouse-controlled torch
@@ -187,9 +187,9 @@ const LIGHT_RAY_COUNT: u16 = 1440;
 /// The strength of the light - how far it shines
 const LIGHT_STRENGTH: f32 = 0.0035;
 /// The factor at which the light glows - just for fun
-const LIGHT_GLOW_FACTOR: f32 = 0.0001;
+const LIGHT_GLOW_FACTOR: f32 = 0.00065;
 /// The rate at which the glow effect oscillates
-const LIGHT_GLOW_RATE: f32 = 50.0;
+const LIGHT_GLOW_RATE: f32 = 0.9;
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
@@ -326,9 +326,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
             println!("Average FPS: {}", timer::fps(ctx));
         }
 
-        self.torch.glow = LIGHT_GLOW_FACTOR * ((timer::ticks(ctx) as f32) / LIGHT_GLOW_RATE).cos();
-        self.static_light.glow =
-            LIGHT_GLOW_FACTOR * ((timer::ticks(ctx) as f32) / LIGHT_GLOW_RATE * 0.75).sin();
+        self.torch.glow = LIGHT_GLOW_FACTOR
+            * (timer::time_since_start(ctx).as_secs_f32() * LIGHT_GLOW_RATE).cos();
+        self.static_light.glow = LIGHT_GLOW_FACTOR
+            * (timer::time_since_start(ctx).as_secs_f32() * LIGHT_GLOW_RATE * 0.75).sin();
         Ok(())
     }
 

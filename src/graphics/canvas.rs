@@ -70,6 +70,8 @@ where
 {
     #[allow(clippy::new_ret_no_self)]
     /// Create a new `Canvas` with the given size and number of samples.
+    ///
+    /// WARNING: `Canvases with samples != NumSamples::One are currently broken, see https://github.com/ggez/ggez/issues/695
     pub fn new(
         ctx: &mut Context,
         width: u16,
@@ -80,7 +82,10 @@ where
         let debug_id = DebugId::get(ctx);
         let aa = match samples {
             conf::NumSamples::One => AaMode::Single,
-            s => AaMode::Multi(s.into()),
+            s => {
+                warn!("canvases with multisampling are currently broken! See https://github.com/ggez/ggez/issues/695");
+                AaMode::Multi(s.into())
+            }
         };
         let kind = Kind::D2(width, height, aa);
         let levels = 1;
