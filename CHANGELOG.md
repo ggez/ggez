@@ -3,6 +3,7 @@
 ## Added
 
  * Allowed `ContextBuilder` to rename resources folder and resources.zip
+ * Added `winit` re-export
  * Added `get_window_position`
  * Added an example showcasing animation using keyframe
  * Added support for the TGA image file format (and possibly some others by accident as well)
