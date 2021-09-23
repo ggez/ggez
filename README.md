@@ -58,7 +58,7 @@ your own libraries atop ggez.
 
 For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
 
-If you want to run ggez on Android, iOS or the web using WebAssembly take a look at [good-web-game](https://github.com/not-fl3/good-web-game).
+If you want to run ggez on Android, iOS or the web using WebAssembly take a look at [good-web-game](https://github.com/ggez/good-web-game).
 
 ### Who's using ggez?
 
@@ -66,12 +66,12 @@ Check out the [projects list!](docs/Projects.md)
 
 ### Usage
 
-ggez requires rustc >= 1.40 and is distributed on
+ggez requires rustc >= 1.42 and is distributed on
 crates.io. To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```
-ggez = "0.6.0"
+ggez = "0.6.1"
 ```
 
 ggez consists of three main parts: A `Context` object which

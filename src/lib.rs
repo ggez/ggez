@@ -1,4 +1,4 @@
-//! [![ggez logo](docs/ggez-logo-maroon-full.svg)](http://ggez.rs/)
+//! [![ggez logo](https://raw.githubusercontent.com/ggez/ggez/master/docs/ggez-logo-maroon-full.svg)](http://ggez.rs/)
 //!
 //! # What is this?
 //!
@@ -45,7 +45,7 @@
 //!
 //! For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
 //!
-//! If you want to run ggez on Android, iOS or the web using WebAssembly take a look at [good-web-game](https://github.com/not-fl3/good-web-game).
+//! If you want to run ggez on Android, iOS or the web using WebAssembly take a look at [good-web-game](https://github.com/ggez/good-web-game).
 //!
 //! ## Who's using ggez?
 //!
@@ -53,12 +53,12 @@
 //!
 //! ## Usage
 //!
-//! ggez requires rustc >= 1.40 and is distributed on
+//! ggez requires rustc >= 1.42 and is distributed on
 //! crates.io. To include it in your project, just add the dependency
 //! line to your `Cargo.toml` file:
 //!
 //! ```text
-//! ggez = "0.6"
+//! ggez = "0.6.1"
 //! ```
 //!
 //! ggez consists of three main parts: A `Context` object which
@@ -171,6 +171,8 @@
 //!
 //!  * Open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
 //!  * Say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community) or the [Rust Gamedev server](https://discord.gg/yNtPTb2)
+
+#![doc(html_logo_url = "https://raw.githubusercontent.com/ggez/ggez/master/docs/ggez-logo-maroon-logo-only.svg")]
 
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
