@@ -501,7 +501,7 @@ impl From<LinearColor> for Color {
             if component <= 0.003_130_8 {
                 component * 12.92
             } else {
-                (1.0 + a) * component.powf(1.0 / 2.4)
+                (1.0 + a) * component.powf(1.0 / 2.4) - a
             }
         }
         Color {

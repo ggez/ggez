@@ -250,7 +250,7 @@ impl BackendSpec for GlBackendSpec {
         gl_builder
             .with_gfx_color_raw(color_format)
             .with_gfx_depth_raw(depth_format)
-            .build_windowed(window_builder, &events_loop)
+            .build_windowed(window_builder, events_loop)
             .map(|i| i.init_gfx_raw(color_format, depth_format))
     }
 
@@ -760,6 +760,14 @@ pub fn set_window_position<P: Into<winit::dpi::Position>>(
         .window()
         .set_outer_position(position);
     Ok(())
+}
+
+/// Gets the window position.
+pub fn get_window_position(context: &Context) -> GameResult<winit::dpi::PhysicalPosition<i32>> {
+    match context.gfx_context.window.window().outer_position() {
+        Ok(position) => Ok(position),
+        Err(e) => Err(GameError::WindowError(e.to_string())),
+    }
 }
 
 /// Returns a reference to the Glutin window.

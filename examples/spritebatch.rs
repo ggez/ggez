@@ -71,7 +71,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
             // WARNING: Using an offset != (0.,0.) on a spritebatch may come with a significant performance cost.
             // This is due to the fact that the total dimensions of everything drawn by it have to be calculated.
             // See SpriteBatch::draw and SpriteBatch::dimensions for more information.
-            .offset(Vec2::new(0.5, 0.5));
+            .offset(Vec2::new(0.5, 0.5))
+            // src has no influence when applied globally to a spritebatch
+            .src(graphics::Rect::new(0.005, 0.005, 0.005, 0.005));
         graphics::draw(ctx, &self.spritebatch, param)?;
         self.spritebatch.clear();
 
