@@ -172,8 +172,9 @@
 //!  * Open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
 //!  * Say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community) or the [Rust Gamedev server](https://discord.gg/yNtPTb2)
 
-#![doc(html_logo_url = "https://raw.githubusercontent.com/ggez/ggez/master/docs/ggez-logo-maroon-logo-only.svg")]
-
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/ggez/ggez/master/docs/ggez-logo-maroon-logo-only.svg"
+)]
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 #![deny(unused_results)]
