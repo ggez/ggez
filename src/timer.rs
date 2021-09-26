@@ -206,6 +206,20 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 
 /// Check whether or not the desired amount of time has elapsed
 /// since the last frame.
+///
+/// The intention is to use this in your `update` call to control
+/// how often game logic is updated per frame (see [the astroblasto example](https://github.com/ggez/ggez/blob/30ea4a4ead67557d2ebb39550e17339323fc9c58/examples/05_astroblasto.rs#L438-L442)).
+///
+/// Calling this decreases a timer inside the context if the function returns true.
+/// If called in a loop it may therefore return true once, twice or not at all, depending on
+/// how much time elapsed since the last frame.
+///
+/// For more info on the idea behind this see <http://gafferongames.com/game-physics/fix-your-timestep/>.
+///
+/// Due to the global nature of this timer it's desirable to only use this function at one point
+/// of your code. If you want to limit the frame rate in both game logic and drawing consider writing
+/// your own event loop, or using a dirty bit for when to redraw graphics, which is set whenever the game
+/// logic runs.
 pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
     let timedata = &mut ctx.timer_context;
 
