@@ -434,7 +434,7 @@ fn draw_actor(
 /// ggez with callbacks for updating and drawing our game, as well as
 /// handling input events.
 /// **********************************************************************
-impl EventHandler<ggez::GameError> for MainState {
+impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
 

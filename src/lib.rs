@@ -134,7 +134,7 @@
 //!     }
 //! }
 //!
-//! impl EventHandler<ggez::GameError> for MyGame {
+//! impl EventHandler for MyGame {
 //!     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
 //!         // Update code here...
 //!         Ok(())

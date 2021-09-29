@@ -29,6 +29,7 @@ pub mod winit_event {
 }
 pub use crate::input::gamepad::GamepadId;
 pub use crate::input::keyboard::{KeyCode, KeyMods};
+use crate::GameError;
 
 use self::winit_event::*;
 /// `winit` event loop.
@@ -57,9 +58,9 @@ pub enum ErrorOrigin {
 /// default exit the game if the escape key is pressed.  Just
 /// override the methods you want to use.
 ///
-/// For the error type simply choose [`GameError`](../error/enum.GameError.html),
+/// For the error type simply choose the default [`GameError`](../error/enum.GameError.html),
 /// or something more generic, if your situation requires it.
-pub trait EventHandler<E>
+pub trait EventHandler<E = GameError>
 where
     E: std::error::Error,
 {
