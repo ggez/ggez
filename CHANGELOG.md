@@ -40,7 +40,7 @@ Nothing
 
 ## Broken
 
-Nothing (hopefully)
+ * bumping our dependencies on a patch release is technically a breaking change, sry for that
 
 # 0.6.0
 

@@ -77,7 +77,7 @@ To request different graphics settings you can change the appropriate
 entries in the `Conf` object before creating your `Context`.  If you
 request older versions of OpenGL you will also have to provide shaders
 written in the appropriate version of GLSL (which is a bit of a WIP)
-and there's no promises that things like `SpriteBatch` and `Canvas`
+and there're no promises that things like `SpriteBatch` and `Canvas`
 will work.
 
 <a name="gfx">
@@ -96,13 +96,14 @@ In general, ggez is designed to focus on 2D graphics.  We want it to be possible
 
 ## How do I make a GUI?
 
-There's no *great* way to do it currently, but as of 2021 there's a few
+There's no single optimal way to do it currently, but as of 2021 there's a few
 GUI libraries that are able to use `ggez` as a drawing backend.
 `raui` seems to offer a `ggez` backend natively, though we have no idea
-how well it works, and `iced` used to have one but it seems to have
-vanished with a code rewrite.  There's several other IMGUI-style
-GUI crates that have pluggable drawing backends, maybe some of them
-can either be drawn with `ggez` or are easy to write new backends for.
+how well it works, and `iced` used to have one, but it seems to have
+vanished with a code rewrite. [`egui`] seems to work well with `ggez`.
+
+There's several other IMGUI-style GUI crates that have pluggable drawing backends,
+maybe some of them can either be drawn with `ggez` or are easy to write new backends for.
 
 Contributions are welcome! ;-)
 
@@ -348,3 +349,5 @@ If you wish, you can also disable it only in release mode:
 ```rust
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 ```
+
+[`egui`]: (https://github.com/emilk/egui#integrations)
