@@ -37,8 +37,8 @@ wget https://raw.githubusercontent.com/ggez/ggez/master/resources/LiberationMono
 Then edit your `Cargo.toml` with your favorite super duper editor and under `[dependencies]` add:
 
 ```
-ggez = "0.6.0"
-glam = { version = "0.8.6", features = ["mint"] }
+ggez = "0.6.1"
+glam = { version = "0.17.3", features = ["mint"] }
 ```
 
 Now run `cargo run` and it should build
@@ -81,17 +81,23 @@ Should just build.  We recommend using the MSVC toolchain whenever possible, the
 
 Just copy-paste the exe and resource directory to the destination computer.
 
-# MacOS/iOS
+# MacOS
 
 At the moment we unfortunately cannot provide support for developing on
 mac (none of the developers have hardware). While `ggez` tries not to do
 anything that would make it *not* work on Mac, it is a DIY target. If
-you resolve this issue feel free to open a PR.
+you find any issues feel free to open a PR.
 
 # Android
 
 Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/70
 
+You might be able to use [`good-web-game`] though to run your `ggez` app on Android.
+
 # Web/wasm/emscripten
 
 Not officially supported yet. ;_; See https://github.com/ggez/ggez/issues/71
+
+You might be able to use [`good-web-game`] though to run your `ggez` app on wasm.
+
+[`good-web-game`]: https://github.com/ggez/good-web-game
