@@ -735,6 +735,10 @@ impl Mesh {
             .create_vertex_buffer_with_slice(verts, indices);
         self.buffer = vbuf;
         self.slice = slice;
+        // also update the bounding box
+        self.rect = bbox_for_vertices(verts).expect(
+            "couldn't calculate bounding box; should never happen as long as `verts` isn't empty",
+        );
     }
 
     /// Returns a slice for this mesh that could be used for manual draw call submission

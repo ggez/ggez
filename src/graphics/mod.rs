@@ -643,7 +643,6 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
     gfx.set_global_mvp(Matrix4::IDENTITY)
-    //gfx.update_globals()
 }
 
 /// Premultiplies the given transformation matrix with the current projection matrix
