@@ -350,4 +350,4 @@ If you wish, you can also disable it only in release mode:
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 ```
 
-[`egui`]: (https://github.com/emilk/egui#integrations)
+[`egui`]: https://github.com/emilk/egui#integrations
