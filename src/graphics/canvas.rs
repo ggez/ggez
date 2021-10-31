@@ -11,22 +11,10 @@ use glam::Quat;
 
 use crate::context::DebugId;
 use crate::error::*;
+use crate::graphics::context::Fragments;
 use crate::graphics::*;
 use crate::Context;
 use crate::{conf, filesystem};
-
-/// A generic canvas independent of graphics backend. This type should
-/// never need to be used directly; use [`graphics::Canvas`](type.Canvas.html)
-/// instead.
-#[derive(Debug)]
-pub struct CanvasGeneric<Spec>
-where
-    Spec: BackendSpec,
-{
-    target: RawRenderTargetView<Spec::Resources>,
-    image: Image,
-    debug_id: DebugId,
-}
 
 /// A canvas that can be rendered to instead of the screen (sometimes referred
 /// to as "render target" or "render to texture"). Set the canvas with the
@@ -62,12 +50,25 @@ where
 /// graphics::set_canvas(ctx, None);
 /// canvas.set_blend_mode(Some(BlendMode::Premultiplied));
 /// ```
-pub type Canvas = CanvasGeneric<GlBackendSpec>;
+#[derive(Debug)]
+pub struct Canvas {
+    target: RawRenderTargetView<gfx_device_gl::Resources>,
+    image: Image,
+    ms_canvas: Option<MultiSampledCanvas>,
+    debug_id: DebugId,
+}
 
-impl<S> CanvasGeneric<S>
-where
-    S: BackendSpec,
-{
+/// A generic non-multi-sampled canvas that cannot contain another canvas. This type should
+/// never need to be used directly; use [`graphics::Canvas`](type.Canvas.html)
+/// instead.
+#[derive(Debug)]
+struct MultiSampledCanvas {
+    target: RawRenderTargetView<gfx_device_gl::Resources>,
+    image: Image,
+    fragments: u8,
+}
+
+impl Canvas {
     #[allow(clippy::new_ret_no_self)]
     /// Create a new `Canvas` with the given size and number of samples.
     ///
@@ -80,14 +81,7 @@ where
         color_format: Format,
     ) -> GameResult<Canvas> {
         let debug_id = DebugId::get(ctx);
-        let aa = match samples {
-            conf::NumSamples::One => AaMode::Single,
-            s => {
-                warn!("canvases with multisampling are currently broken! See https://github.com/ggez/ggez/issues/695");
-                AaMode::Multi(s.into())
-            }
-        };
-        let kind = Kind::D2(width, height, aa);
+        let kind = Kind::D2(width, height, AaMode::Single);
         let levels = 1;
         let factory = &mut ctx.gfx_context.factory;
         let texture_create_info = gfx::texture::Info {
@@ -112,6 +106,41 @@ where
             layer: None,
         };
         let target = factory.view_texture_as_render_target_raw(&tex, render_desc)?;
+
+        let ms_canvas = match samples {
+            conf::NumSamples::One => None,
+            s => {
+                let aa = AaMode::Multi(s.into());
+                let fragments = aa.get_num_fragments();
+                let kind = Kind::D2(width, height, aa);
+                let texture_create_info = gfx::texture::Info {
+                    kind,
+                    levels,
+                    format: color_format.0,
+                    bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
+                    usage: Usage::Data,
+                };
+                let tex =
+                    factory.create_texture_raw(texture_create_info, Some(color_format.1), None)?;
+                let resource = factory.view_texture_as_shader_resource_raw(&tex, resource_desc)?;
+                let target = factory.view_texture_as_render_target_raw(&tex, render_desc)?;
+
+                Some(MultiSampledCanvas {
+                    target,
+                    image: Image {
+                        texture: resource,
+                        texture_handle: tex,
+                        sampler_info: ctx.gfx_context.default_sampler_info,
+                        blend_mode: None,
+                        width,
+                        height,
+                        debug_id,
+                    },
+                    fragments,
+                })
+            }
+        };
+
         Ok(Canvas {
             target,
             image: Image {
@@ -123,6 +152,7 @@ where
                 height,
                 debug_id,
             },
+            ms_canvas,
             debug_id,
         })
     }
@@ -141,7 +171,9 @@ where
         )
     }
 
-    /// Gets the backend `Image` that is being rendered to. Note that this will be flipped but otherwise the same, use the [`to_image`](#method.to_image) function for the unflipped version.
+    /// Gets the backend `Image` that is being rendered to.
+    ///
+    /// Note that this will be flipped but otherwise the same, use the [`to_image`](#method.to_image) function for the unflipped version.
     pub fn raw_image(&self) -> &Image {
         &self.image
     }
@@ -153,12 +185,16 @@ where
     }
 
     /// Gets the backend `Target` that is being rendered to.
-    pub fn target(&self) -> &RawRenderTargetView<S::Resources> {
-        &self.target
+    pub fn target(&self) -> &RawRenderTargetView<gfx_device_gl::Resources> {
+        match &self.ms_canvas {
+            Some(ms_canvas) => &ms_canvas.target,
+            _ => &self.target,
+        }
     }
 
     /// Dumps the flipped `Canvas`'s data to a `Vec` of `u8` RBGA8 values.
     pub fn to_rgba8(&self, ctx: &mut Context) -> GameResult<Vec<u8>> {
+        self.resolve(ctx)?;
         let mut pixel_data = self.image.to_rgba8(ctx)?;
         flip_pixel_data(
             &mut pixel_data,
@@ -220,11 +256,54 @@ where
     pub fn set_filter(&mut self, mode: FilterMode) {
         self.image.set_filter(mode)
     }
+
+    /// If the canvas is multi-sampled this function resolves the internal multi-sampled texture
+    /// into a non-multi-sampled texture that can actually be drawn.
+    ///
+    /// `ggez` calls this automatically when you try to draw the canvas onto another target, or when
+    /// you copy the underlying image using [`to_image()`](#method.to_image), [`to_rgba8()`](#method.to_rgba8) or [`encode()`](#method.encode).
+    ///
+    /// You shouldn't need to call this manually, unless you want to access the [raw image](#method.raw_image)
+    /// after something has been drawn on the canvas, but before the canvas has been drawn onto another target
+    /// itself.
+    pub fn resolve(&self, ctx: &mut Context) -> GameResult {
+        if let Some(ms_canvas) = &self.ms_canvas {
+            // save the old target to restore it after the resolve has finished
+            let old_target = std::mem::replace(&mut ctx.gfx_context.data.out, self.target.clone());
+            // set resolve shader
+            let r_shader_id = ctx.gfx_context.resolve_shader.shader_id();
+            let old_shader = std::mem::replace(
+                &mut *ctx.gfx_context.current_shader.borrow_mut(),
+                Some(r_shader_id),
+            );
+            let frags = Fragments {
+                fragments: ms_canvas.fragments as i32,
+            };
+            ctx.gfx_context.encoder.update_buffer(
+                &ctx.gfx_context.resolve_shader.buffer,
+                &[frags],
+                0,
+            )?;
+            // draw the multi-sampled image onto the resolve target
+            let param = DrawParam::new().transform(glam::Mat4::from_scale_rotation_translation(
+                glam::vec3(self.image.width as f32, -(self.image.height as f32), 1.0),
+                Quat::IDENTITY,
+                glam::vec3(0.0, self.image.height as f32, 0.0),
+            ));
+            crate::graphics::image::draw_image_raw(&ms_canvas.image, ctx, param)?;
+            // restore the old target
+            ctx.gfx_context.data.out = old_target;
+            // and the old shader
+            *ctx.gfx_context.current_shader.borrow_mut() = old_shader;
+        }
+        Ok(())
+    }
 }
 
 impl Drawable for Canvas {
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
+        self.resolve(ctx)?;
 
         // We have to mess with the scale to make everything
         // be its-unit-size-in-pixels.
@@ -238,7 +317,7 @@ impl Drawable for Canvas {
 
         let new_param = flip_draw_param_vertical(param);
 
-        image::draw_image_raw(&self.image, ctx, new_param)
+        crate::graphics::image::draw_image_raw(&self.image, ctx, new_param)
     }
     fn dimensions(&self, _: &mut Context) -> Option<Rect> {
         Some(self.image.dimensions())
@@ -279,7 +358,10 @@ pub fn set_canvas(ctx: &mut Context, target: Option<&Canvas>) {
     match target {
         Some(surface) => {
             surface.debug_id.assert(ctx);
-            ctx.gfx_context.data.out = surface.target.clone();
+            ctx.gfx_context.data.out = match &surface.ms_canvas {
+                Some(ms_canvas) => ms_canvas.target.clone(),
+                _ => surface.target.clone(),
+            };
         }
         None => {
             ctx.gfx_context.data.out = ctx.gfx_context.screen_render_target.clone();
