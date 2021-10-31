@@ -59,9 +59,9 @@ pub struct Canvas {
     debug_id: DebugId,
 }
 
-/// A generic non-multi-sampled canvas that cannot contain another canvas. This type should
-/// never need to be used directly; use [`graphics::Canvas`](type.Canvas.html)
-/// instead.
+/// A non-multi-sampled canvas that cannot contain another canvas.
+///
+/// Used by `Canvas` to store the multi-sampled texture.
 #[derive(Debug)]
 struct MultiSampledCanvas {
     target: RawRenderTargetView<gfx_device_gl::Resources>,
