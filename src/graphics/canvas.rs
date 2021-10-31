@@ -9,6 +9,7 @@ use gfx::texture::{AaMode, Kind};
 use gfx::Factory;
 use glam::Quat;
 
+use crate::conf::Backend::OpenGLES;
 use crate::context::DebugId;
 use crate::error::*;
 use crate::graphics::context::Fragments;
@@ -71,8 +72,6 @@ struct MultiSampledCanvas {
 impl Canvas {
     #[allow(clippy::new_ret_no_self)]
     /// Create a new `Canvas` with the given size and number of samples.
-    ///
-    /// WARNING: `Canvases with samples != NumSamples::One are currently broken, see https://github.com/ggez/ggez/issues/695
     pub fn new(
         ctx: &mut Context,
         width: u16,
@@ -110,6 +109,11 @@ impl Canvas {
         let ms_canvas = match samples {
             conf::NumSamples::One => None,
             s => {
+                // first check for GLES and panic if true, as GLES can't actually handle this workaround
+                if let OpenGLES { .. } = ctx.conf.backend {
+                    return Err(crate::error::GameError::CanvasMSAAError);
+                }
+
                 let aa = AaMode::Multi(s.into());
                 let fragments = aa.get_num_fragments();
                 let kind = Kind::D2(width, height, aa);
