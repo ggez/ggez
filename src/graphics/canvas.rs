@@ -17,6 +17,20 @@ use crate::graphics::*;
 use crate::Context;
 use crate::{conf, filesystem};
 
+/// A generic canvas independent of graphics backend. This type should
+/// never need to be used directly; use [`graphics::Canvas`](type.Canvas.html)
+/// instead.
+#[derive(Debug)]
+pub struct CanvasGeneric<Spec>
+where
+    Spec: BackendSpec,
+{
+    target: RawRenderTargetView<Spec::Resources>,
+    image: ImageGeneric<Spec>,
+    ms_canvas: Option<MultiSampledCanvasGeneric<Spec>>,
+    debug_id: DebugId,
+}
+
 /// A canvas that can be rendered to instead of the screen (sometimes referred
 /// to as "render target" or "render to texture"). Set the canvas with the
 /// [`graphics::set_canvas()`](fn.set_canvas.html) function, and then anything you
@@ -51,22 +65,66 @@ use crate::{conf, filesystem};
 /// graphics::set_canvas(ctx, None);
 /// canvas.set_blend_mode(Some(BlendMode::Premultiplied));
 /// ```
-#[derive(Debug)]
-pub struct Canvas {
-    target: RawRenderTargetView<gfx_device_gl::Resources>,
-    image: Image,
-    ms_canvas: Option<MultiSampledCanvas>,
-    debug_id: DebugId,
-}
+pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
 /// A non-multi-sampled canvas that cannot contain another canvas.
 ///
 /// Used by `Canvas` to store the multi-sampled texture.
 #[derive(Debug)]
-struct MultiSampledCanvas {
-    target: RawRenderTargetView<gfx_device_gl::Resources>,
-    image: Image,
+struct MultiSampledCanvasGeneric<Spec>
+where
+    Spec: BackendSpec,
+{
+    target: RawRenderTargetView<Spec::Resources>,
+    image: ImageGeneric<Spec>,
     fragments: u8,
+}
+
+type MultiSampledCanvas = MultiSampledCanvasGeneric<GlBackendSpec>;
+
+impl<S> CanvasGeneric<S>
+where
+    S: BackendSpec,
+{
+    /// Gets the backend `Image` that is being rendered to.
+    ///
+    /// Note that this will be flipped but otherwise the same, use the [`to_image`](#method.to_image) function for the unflipped version.
+    pub fn raw_image(&self) -> &ImageGeneric<S> {
+        &self.image
+    }
+
+    /// Gets the backend `Target` that is being rendered to.
+    pub fn target(&self) -> &RawRenderTargetView<S::Resources> {
+        match &self.ms_canvas {
+            Some(ms_canvas) => &ms_canvas.target,
+            _ => &self.target,
+        }
+    }
+
+    /// Return the width of the canvas.
+    pub fn width(&self) -> u16 {
+        self.image.width
+    }
+
+    /// Return the height of the canvas.
+    pub fn height(&self) -> u16 {
+        self.image.height
+    }
+
+    /// Returns the dimensions of the canvas.
+    pub fn dimensions(&self) -> Rect {
+        Rect::new(0.0, 0.0, f32::from(self.width()), f32::from(self.height()))
+    }
+
+    /// Get the filter mode for the canvas.
+    pub fn filter(&self) -> FilterMode {
+        self.image.filter()
+    }
+
+    /// Set the filter mode for the canvas.
+    pub fn set_filter(&mut self, mode: FilterMode) {
+        self.image.set_filter(mode)
+    }
 }
 
 impl Canvas {
@@ -175,25 +233,10 @@ impl Canvas {
         )
     }
 
-    /// Gets the backend `Image` that is being rendered to.
-    ///
-    /// Note that this will be flipped but otherwise the same, use the [`to_image`](#method.to_image) function for the unflipped version.
-    pub fn raw_image(&self) -> &Image {
-        &self.image
-    }
-
     /// Creates an `Image` with the content of its raw counterpart but transformed to behave like a normal `Image`.
     pub fn to_image(&self, ctx: &mut Context) -> GameResult<Image> {
         let pixel_data = self.to_rgba8(ctx)?;
         Image::from_rgba8(ctx, self.image.width, self.image.height, &pixel_data)
-    }
-
-    /// Gets the backend `Target` that is being rendered to.
-    pub fn target(&self) -> &RawRenderTargetView<gfx_device_gl::Resources> {
-        match &self.ms_canvas {
-            Some(ms_canvas) => &ms_canvas.target,
-            _ => &self.target,
-        }
     }
 
     /// Dumps the flipped `Canvas`'s data to a `Vec` of `u8` RBGA8 values.
@@ -234,31 +277,6 @@ impl Canvas {
                 )
                 .map_err(Into::into),
         }
-    }
-
-    /// Return the width of the canvas.
-    pub fn width(&self) -> u16 {
-        self.image.width
-    }
-
-    /// Return the height of the canvas.
-    pub fn height(&self) -> u16 {
-        self.image.height
-    }
-
-    /// Returns the dimensions of the canvas.
-    pub fn dimensions(&self) -> Rect {
-        Rect::new(0.0, 0.0, f32::from(self.width()), f32::from(self.height()))
-    }
-
-    /// Get the filter mode for the canvas.
-    pub fn filter(&self) -> FilterMode {
-        self.image.filter()
-    }
-
-    /// Set the filter mode for the canvas.
-    pub fn set_filter(&mut self, mode: FilterMode) {
-        self.image.set_filter(mode)
     }
 
     /// If the canvas is multi-sampled this function resolves the internal multi-sampled texture

@@ -125,6 +125,42 @@ where
     pub fn get_raw_texture_view(&self) -> gfx::handle::RawShaderResourceView<B::Resources> {
         self.texture.clone()
     }
+
+    /// Return the width of the image.
+    pub fn width(&self) -> u16 {
+        self.width
+    }
+
+    /// Return the height of the image.
+    pub fn height(&self) -> u16 {
+        self.height
+    }
+
+    /// Get the filter mode for the image.
+    pub fn filter(&self) -> FilterMode {
+        self.sampler_info.filter.into()
+    }
+
+    /// Set the filter mode for the image.
+    pub fn set_filter(&mut self, mode: FilterMode) {
+        self.sampler_info.filter = mode.into();
+    }
+
+    /// Returns the dimensions of the image.
+    pub fn dimensions(&self) -> Rect {
+        Rect::new(0.0, 0.0, f32::from(self.width()), f32::from(self.height()))
+    }
+
+    /// Gets the `Image`'s `WrapMode` along the X and Y axes.
+    pub fn wrap(&self) -> (WrapMode, WrapMode) {
+        (self.sampler_info.wrap_mode.0, self.sampler_info.wrap_mode.1)
+    }
+
+    /// Sets the `Image`'s `WrapMode` along the X and Y axes.
+    pub fn set_wrap(&mut self, wrap_x: WrapMode, wrap_y: WrapMode) {
+        self.sampler_info.wrap_mode.0 = wrap_x;
+        self.sampler_info.wrap_mode.1 = wrap_y;
+    }
 }
 
 /// In-GPU-memory image data available to be drawn on the screen,
@@ -297,45 +333,12 @@ impl Image {
         }
         Image::from_rgba8(context, size, size, &buffer)
     }
-
-    /// Return the width of the image.
-    pub fn width(&self) -> u16 {
-        self.width
-    }
-
-    /// Return the height of the image.
-    pub fn height(&self) -> u16 {
-        self.height
-    }
-
-    /// Get the filter mode for the image.
-    pub fn filter(&self) -> FilterMode {
-        self.sampler_info.filter.into()
-    }
-
-    /// Set the filter mode for the image.
-    pub fn set_filter(&mut self, mode: FilterMode) {
-        self.sampler_info.filter = mode.into();
-    }
-
-    /// Returns the dimensions of the image.
-    pub fn dimensions(&self) -> Rect {
-        Rect::new(0.0, 0.0, f32::from(self.width()), f32::from(self.height()))
-    }
-
-    /// Gets the `Image`'s `WrapMode` along the X and Y axes.
-    pub fn wrap(&self) -> (WrapMode, WrapMode) {
-        (self.sampler_info.wrap_mode.0, self.sampler_info.wrap_mode.1)
-    }
-
-    /// Sets the `Image`'s `WrapMode` along the X and Y axes.
-    pub fn set_wrap(&mut self, wrap_x: WrapMode, wrap_y: WrapMode) {
-        self.sampler_info.wrap_mode.0 = wrap_x;
-        self.sampler_info.wrap_mode.1 = wrap_y;
-    }
 }
 
-impl fmt::Debug for Image {
+impl<B> fmt::Debug for ImageGeneric<B>
+where
+    B: BackendSpec,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
