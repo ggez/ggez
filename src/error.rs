@@ -41,6 +41,8 @@ pub enum GameError {
     GamepadError(String),
     /// Something went wrong with the `lyon` shape-tesselation library.
     LyonError(String),
+    /// You tried to use MSAA on canvases with GLES, which isn't supported.
+    CanvasMSAAError,
     /// A custom error type for use by users of ggez.
     /// This lets you handle custom errors that may happen during your game (such as, trying to load a malformed file for a level)
     /// using the same mechanism you handle ggez's other errors.
@@ -61,6 +63,7 @@ impl fmt::Display for GameError {
             ),
             GameError::WindowError(ref e) => write!(f, "Window creation error: {}", e),
             GameError::CustomError(ref s) => write!(f, "Custom error: {}", s),
+            GameError::CanvasMSAAError => write!(f, "You tried to use MSAA on canvases with GLES, which isn't supported, as our implementation depends on a fragment shader workaround, which doesn't work with GLES 300"),
             _ => write!(f, "GameError {:?}", self),
         }
     }

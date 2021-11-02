@@ -433,6 +433,11 @@ pub fn resources_dir(ctx: &Context) -> &path::Path {
     &ctx.filesystem.resources_path
 }
 
+/// Return the full path to the user data directory
+pub fn zip_dir(ctx: &Context) -> &path::Path {
+    &ctx.filesystem.zip_path
+}
+
 /// Returns a list of all files and directories in the resource directory,
 /// in no particular order.
 ///
