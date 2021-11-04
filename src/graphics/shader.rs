@@ -73,7 +73,7 @@ pub enum BlendMode {
     ///
     /// You usually want to use this blend mode for drawing canvases
     /// containing semi-transparent imagery.
-    /// For an explanation on this see: https://github.com/ggez/ggez/issues/694#issuecomment-853724926
+    /// For an explanation on this see: <https://github.com/ggez/ggez/issues/694#issuecomment-853724926>
     Premultiplied,
 }
 
