@@ -14,10 +14,19 @@ pub enum Transform {
         rotation: f32,
         /// The x/y scale factors expressed as a `Vector2`.
         scale: mint::Vector2<f32>,
-        /// An offset from the center for transform operations like scale/rotation,
-        /// with `0,0` meaning the origin and `1,1` meaning the opposite corner from the origin.
+        /// An offset, which is applied before scaling and rotation happen.
+        /// There are two possible interpretations of this value:
+        ///
+        /// + `Image`, `Canvas` and the sprites inside a `SpriteBatch` use the relative interpretation
+        /// + `Mesh`, `MeshBatch`, `Spritebatch` (and thereby `Text` too) use the absolute interpretation
+        ///
+        /// The relative interpretation would be that `0.5,0.5` means "centered" and `1,1` means "bottom right".
         /// By default these operations are done from the top-left corner, so to rotate something
         /// from the center specify `Point2::new(0.5, 0.5)` here.
+        ///
+        /// The absolute interpretation considers the offset as a shift given in coordinates of the current coordinate system.
+        ///
+        /// For more info on this check the [FAQ](https://github.com/ggez/ggez/blob/devel/docs/FAQ.md#offsets)
         offset: mint::Point2<f32>,
     },
     /// Transform made of an arbitrary matrix.
