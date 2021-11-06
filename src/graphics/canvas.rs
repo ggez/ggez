@@ -67,7 +67,7 @@ where
 /// ```
 pub type Canvas = CanvasGeneric<GlBackendSpec>;
 
-/// A non-multi-sampled canvas that cannot contain another canvas.
+/// A multi-sampled canvas that cannot contain another canvas.
 ///
 /// Used by `Canvas` to store the multi-sampled texture.
 #[derive(Debug)]
