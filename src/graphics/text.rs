@@ -76,8 +76,8 @@ impl TextFragment {
     }
 
     /// Set fragment's color, overrides text's color.
-    pub fn color(mut self, color: Color) -> TextFragment {
-        self.color = Some(color);
+    pub fn color<C: Into<Color>>(mut self, color: C) -> TextFragment {
+        self.color = Some(color.into());
         self
     }
 
@@ -87,9 +87,9 @@ impl TextFragment {
         self
     }
 
-    /// Set fragment's scale, overrides text's scale.
-    pub fn scale(mut self, scale: PxScale) -> TextFragment {
-        self.scale = Some(scale);
+    /// Set fragment's scale, overrides text's scale. Default is 16.0
+    pub fn scale<S: Into<PxScale>>(mut self, scale: S) -> TextFragment {
+        self.scale = Some(scale.into());
         self
     }
 }
