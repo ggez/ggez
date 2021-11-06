@@ -35,7 +35,7 @@ version = "0.1.0"
 authors = ["Awesome Person awesome@person.com"]
 
 [dependencies]
-ggez = "0.6"
+ggez = "0.7"
 ```
 
 ### ✔ Check Project Setup
@@ -73,11 +73,11 @@ Game loops are responsible for:
 1. Updating state such as player position, health, etc.
 1. Drawing shapes, images, etc.
 
-`ggez` provides an [`EventHandler`](https://docs.rs/ggez/0.6.0/ggez/event/trait.EventHandler.html) as the default recommended interface to its internal loop to use in our games. Thanks `ggez`!
+`ggez` provides an [`EventHandler`](https://docs.rs/ggez/0.7.0/ggez/event/trait.EventHandler.html) as the default recommended interface to its internal loop to use in our games. Thanks `ggez`!
 
-You might have noticed [`EventHandler`](https://docs.rs/ggez/0.6.0/ggez/event/trait.EventHandler.html) is a Rust [Trait](https://doc.rust-lang.org/book/ch10-02-traits.html).
+You might have noticed [`EventHandler`](https://docs.rs/ggez/0.7.0/ggez/event/trait.EventHandler.html) is a Rust [Trait](https://doc.rust-lang.org/book/ch10-02-traits.html).
 This means it is intended to be implemented on a struct.
-There are quite a few callbacks defined on the Trait, but only [2 are required: update and draw](https://docs.rs/ggez/0.6.0/ggez/event/trait.EventHandler.html#required-methods).
+There are quite a few callbacks defined on the Trait, but only [2 are required: update and draw](https://docs.rs/ggez/0.7.0/ggez/event/trait.EventHandler.html#required-methods).
 
 Let's add `EventHandler` to our `src/main.rs` file:
 ```rust,skt-definition,no_run
@@ -99,10 +99,10 @@ You'll notice a couple new things here: `State`, `Context`, and `GameResult`.
 These could be player positions, scores, cards in your hand, etc..
 What is included in your state is very dependent on the game you are making.
 
-[`Context`](https://docs.rs/ggez/0.6.0/ggez/struct.Context.html) is how `ggez` gives you access to hardware such as mouse, keyboard, timers, graphics, sound, etc..
+[`Context`](https://docs.rs/ggez/0.7.0/ggez/struct.Context.html) is how `ggez` gives you access to hardware such as mouse, keyboard, timers, graphics, sound, etc..
 
-[`GameResult`](https://docs.rs/ggez/0.6.0/ggez/error/type.GameResult.html) is a utility provided by `ggez` to signify if there was an error or not.
-Internally it's just a `Result<(), GameError>`, which is why we implement `EventHandler` with `GameError`, so that [`on_error`](https://docs.rs/ggez/0.6.0/ggez/event/trait.EventHandler.html#method.on_error) knows what to expect.
+[`GameResult`](https://docs.rs/ggez/0.7.0/ggez/error/type.GameResult.html) is a utility provided by `ggez` to signify if there was an error or not.
+Internally it's just a `Result<(), GameError>`, which is why we implement `EventHandler` with `GameError`, so that [`on_error`](https://docs.rs/ggez/0.7.0/ggez/event/trait.EventHandler.html#method.on_error) knows what to expect.
 But, we're not going to write any bugs right? 😉
 
 In your main, you will need to create an instance of `State`.
@@ -150,7 +150,7 @@ Also, don't mind the loop does nothing right now.
 We'll get to that soon.
 
 Now is the time for us to interface with our hardware and do something fun.
-To do that, you need to create a [`Context`](https://docs.rs/ggez/0.6.0/ggez/struct.Context.html) courtesy of `ggez`.
+To do that, you need to create a [`Context`](https://docs.rs/ggez/0.7.0/ggez/struct.Context.html) courtesy of `ggez`.
 
 Add this to the end of your `main` fn:
 ```rust,skt-expression,no_run
@@ -162,8 +162,8 @@ let (ctx, event_loop) = ContextBuilder::new("hello_ggez", "awesome_person")
 ```
 
 This will create a `Context` with the `game_id` `hello_ggez` and the author `awesome_person`.
-It will also create an [`EventsLoop`](https://docs.rs/ggez/0.6.0/ggez/event/struct.EventsLoop.html).
-We'll need it in a minute to call [`run`](https://docs.rs/ggez/0.6.0/ggez/event/fn.run.html).
+It will also create an [`EventsLoop`](https://docs.rs/ggez/0.7.0/ggez/event/struct.EventsLoop.html).
+We'll need it in a minute to call [`run`](https://docs.rs/ggez/0.7.0/ggez/event/fn.run.html).
 Feel free to replace the author with yourself.
 You are awesome after all.
 
@@ -224,7 +224,7 @@ let state = State {
 ```
 
 So now that we have state to update, let's update it in our `update` callback!
-We'll use [`timer::delta`](https://docs.rs/ggez/0.6.0/ggez/timer/fn.delta.html) to get the delta time.
+We'll use [`timer::delta`](https://docs.rs/ggez/0.7.0/ggez/timer/fn.delta.html) to get the delta time.
 
 ```rust,skt-update,no_run
 fn update(&mut self, ctx: &mut Context) -> GameResult {

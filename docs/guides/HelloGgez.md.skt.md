@@ -13,7 +13,7 @@ struct State {{
     pub dt: Duration,
 }}
 
-impl EventHandler<GameError> for State {{
+impl EventHandler for State {{
     fn update(&mut self, _ctx: &mut Context) -> GameResult {{
         Ok(())
     }}
@@ -70,7 +70,7 @@ struct State {{
     pub dt: Duration,
 }}
 
-impl EventHandler<GameError> for State {{
+impl EventHandler for State {{
     fn update(&mut self, _c: &mut Context) -> GameResult {{
         Ok(())
     }}

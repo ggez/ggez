@@ -735,6 +735,10 @@ impl Mesh {
             .create_vertex_buffer_with_slice(verts, indices);
         self.buffer = vbuf;
         self.slice = slice;
+        // also update the bounding box
+        self.rect = bbox_for_vertices(verts).expect(
+            "couldn't calculate bounding box; should never happen as long as `verts` isn't empty",
+        );
     }
 
     /// Returns a slice for this mesh that could be used for manual draw call submission
@@ -976,21 +980,6 @@ impl MeshBatch {
         if !self.instance_params.is_empty() {
             self.mesh.debug_id.assert(ctx);
 
-            // scale the offset according to the dimensions of the spritebatch
-            // but only if there is an offset (it's too expensive to calculate the dimensions to always to this)
-            let mut new_param = param;
-            if let Transform::Values { offset, .. } = param.trans {
-                if offset != [0.0, 0.0].into() {
-                    if let Some(dim) = self.dimensions(ctx) {
-                        let new_offset = mint::Vector2 {
-                            x: offset.x * dim.w + dim.x,
-                            y: offset.y * dim.h + dim.y,
-                        };
-                        new_param = param.offset(new_offset);
-                    }
-                }
-            }
-
             if !self.instance_params.is_empty() && self.instance_buffer_dirty {
                 self.flush(ctx)?;
             }
@@ -1002,7 +991,7 @@ impl MeshBatch {
 
             // In the batch we multiply the transform for each item in the batch
             // with the transform given in the `DrawParam` here.
-            let batch_transform = Matrix4::from(new_param.trans.to_bare_matrix());
+            let batch_transform = Matrix4::from(param.trans.to_bare_matrix());
             gfx.set_global_mvp(batch_transform)?;
 
             // HACK this code has to restore the old instance buffer after drawing,

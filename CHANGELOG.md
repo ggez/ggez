@@ -1,3 +1,40 @@
+# 0.7.0
+
+## Added
+
+* Added `filesystem::zip_dir`
+* Expanded/improved documentation 
+
+## Changed
+
+* Switched `DrawParam::offset` behavior back to how it was pre-ggez 0.6; more details in the [FAQ](https://github.com/ggez/ggez/blob/devel/docs/FAQ.md#offsets)
+* Moved some generic functionality from `Image` to `ImageGeneric` and from `Canvas` to `CanvasGeneric`
+* Also moved some `Canvas` specific functionality from `CanvasGeneric` to `Canvas`
+* Made `GameError` the implicit default error type for the event handler
+* Made `TextFragment` functions take `Into<T>` for better usability
+* Changed Rust edition to 2021
+* Version bumped `bytemuck` to 1.7
+* Version bumped `glam` to 0.20
+
+## Deprecated
+
+Nothing
+
+## Removed
+
+* Multi-sampled canvases (which didn't work at all before) can no longer be created when using the GLES backend.
+  The reason for this is that we finally fixed them via a fragment shader workaround which isn't supported on GLES.
+
+## Fixed
+
+* Finally fixed/implemented MSAA on canvases. As `gfx` doesn't provide us with the necessary tools to do so directly, 
+  the implementation is internally based upon a fragment shader workaround, which doesn't work on GLES.
+* Made sure that the bounding box of `Mesh` is actually updated when `Mesh::set_vertices` is called
+
+## Broken
+
+Nothing we're aware of yet
+
 # 0.6.1
 
 ## Added
@@ -40,7 +77,7 @@ Nothing
 
 ## Broken
 
-Nothing (hopefully)
+ * bumping our dependencies on a patch release is technically a breaking change, sry for that
 
 # 0.6.0
 

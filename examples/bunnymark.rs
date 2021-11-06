@@ -15,8 +15,8 @@ use glam::*;
 // NOTE: Using a high number here yields worse performance than adding more bunnies over
 // time - I think this is due to all of the RNG being run on the same tick...
 const INITIAL_BUNNIES: usize = 1000;
-const WIDTH: u16 = 1280;
-const HEIGHT: u16 = 720;
+const WIDTH: u16 = 800;
+const HEIGHT: u16 = 600;
 const GRAVITY: f32 = 0.5;
 
 struct Bunny {

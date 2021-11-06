@@ -71,7 +71,7 @@ crates.io. To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```
-ggez = "0.6.1"
+ggez = "0.7"
 ```
 
 ggez consists of three main parts: A `Context` object which
@@ -147,7 +147,7 @@ impl MyGame {
     }
 }
 
-impl EventHandler<ggez::GameError> for MyGame {
+impl EventHandler for MyGame {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         // Update code here...
         Ok(())
@@ -183,6 +183,6 @@ Sources of information:
  If you still have problems or questions, feel free to ask!  Easiest ways are:
 
  * Open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
- * Say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community) or the [Rust Gamedev server](https://discord.gg/yNtPTb2)
+ * Say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community), the [Rust Gamedev server](https://discord.gg/yNtPTb2) or the [good-web-game Discord server](https://discord.gg/jum3Fjek2A)
 
 License: MIT

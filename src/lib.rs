@@ -43,13 +43,13 @@
 //!  * Fully supported: Windows, Linux
 //!  * Not officially supported but might work anyway: Mac
 //!
-//! For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
+//! For details, see [docs/BuildingForEveryPlatform.md](https://github.com/ggez/ggez/blob/master/docs/BuildingForEveryPlatform.md)
 //!
 //! If you want to run ggez on Android, iOS or the web using WebAssembly take a look at [good-web-game](https://github.com/ggez/good-web-game).
 //!
 //! ## Who's using ggez?
 //!
-//! Check out the [projects list!](docs/Projects.md)
+//! Check out the [projects list!](https://github.com/ggez/ggez/blob/master/docs/Projects.md)
 //!
 //! ## Usage
 //!
@@ -58,7 +58,7 @@
 //! line to your `Cargo.toml` file:
 //!
 //! ```text
-//! ggez = "0.6.1"
+//! ggez = "0.7"
 //! ```
 //!
 //! ggez consists of three main parts: A `Context` object which
@@ -73,7 +73,7 @@
 //! the `Context` and an instance of your `EventHandler` to run your game's
 //! main loop.
 //!
-//! See the [API docs](https://docs.rs/ggez/) for full documentation, or the [examples](/examples) directory for a number of commented examples of varying complexity.  Most examples show off
+//! See the [API docs](https://docs.rs/ggez/) for full documentation, or the [examples](https://github.com/ggez/ggez/tree/master/examples) directory for a number of commented examples of varying complexity.  Most examples show off
 //! a single feature of ggez, while `astroblasto` and `snake` are small but complete games.
 //!
 //! ## Getting started
@@ -134,7 +134,7 @@
 //!     }
 //! }
 //!
-//! impl EventHandler<ggez::GameError> for MyGame {
+//! impl EventHandler for MyGame {
 //!     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
 //!         // Update code here...
 //!         Ok(())

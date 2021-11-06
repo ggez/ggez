@@ -73,7 +73,7 @@ pub enum BlendMode {
     ///
     /// You usually want to use this blend mode for drawing canvases
     /// containing semi-transparent imagery.
-    /// For an explanation on this see: https://github.com/ggez/ggez/issues/694#issuecomment-853724926
+    /// For an explanation on this see: <https://github.com/ggez/ggez/issues/694#issuecomment-853724926>
     Premultiplied,
 }
 
@@ -221,8 +221,8 @@ pub type ShaderId = usize;
 /// [`Shader`](type.Shader.html) instead.
 #[derive(Clone)]
 pub struct ShaderGeneric<Spec: graphics::BackendSpec, C: Structure<ConstFormat>> {
-    id: ShaderId,
-    buffer: Buffer<Spec::Resources, C>,
+    pub(crate) id: ShaderId,
+    pub(crate) buffer: Buffer<Spec::Resources, C>,
     debug_id: DebugId,
 }
 

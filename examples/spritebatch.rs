@@ -60,18 +60,15 @@ impl event::EventHandler<ggez::GameError> for MainState {
         }
         let param = graphics::DrawParam::new()
             .dest(Vec2::new(
-                ((time % cycle) as f32 / cycle as f32 * 6.28).cos() * 50.0 + 250.0,
-                ((time % cycle) as f32 / cycle as f32 * 6.28).sin() * 50.0 + 150.0,
+                ((time % cycle) as f32 / cycle as f32 * 6.28).cos() * 50.0 + 100.0,
+                ((time % cycle) as f32 / cycle as f32 * 6.28).sin() * 50.0 - 150.0,
             ))
             .scale(Vec2::new(
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
                 ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
             ))
             .rotation((time % cycle) as f32 / cycle as f32 * 6.28)
-            // WARNING: Using an offset != (0.,0.) on a spritebatch may come with a significant performance cost.
-            // This is due to the fact that the total dimensions of everything drawn by it have to be calculated.
-            // See SpriteBatch::draw and SpriteBatch::dimensions for more information.
-            .offset(Vec2::new(0.5, 0.5))
+            .offset(Vec2::new(750.0, 750.0))
             // src has no influence when applied globally to a spritebatch
             .src(graphics::Rect::new(0.005, 0.005, 0.005, 0.005));
         graphics::draw(ctx, &self.spritebatch, param)?;

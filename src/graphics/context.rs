@@ -15,6 +15,13 @@ use crate::graphics::*;
 
 use crate::error::GameResult;
 
+// Define the input struct for our MSAA resolve shader.
+gfx_defines! {
+    constant Fragments {
+        fragments: i32 = "u_frags",
+    }
+}
+
 /// A structure that contains graphics state.
 /// For instance,
 /// window info, DPI, rendering pipeline state, etc.
@@ -51,6 +58,7 @@ where
     pub(crate) samplers: SamplerCache<B>,
 
     default_shader: ShaderId,
+    pub(crate) resolve_shader: ShaderGeneric<B, Fragments>,
     pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
     pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
 
@@ -194,7 +202,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             BlendMode::Premultiplied,
         ];
         let multisample_samples = window_setup.samples.into();
-        let (vs_text, fs_text) = backend.shaders();
+        let (vs_text, fs_text, fs_resolve_text) = backend.shaders();
         let (shader, draw) = create_shader(
             vs_text,
             fs_text,
@@ -207,6 +215,21 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             color_format,
             debug_id,
         )?;
+        let (mut resolve_shader, mut resolve_draw) = create_shader(
+            vs_text,
+            fs_resolve_text,
+            Fragments { fragments: 1 },
+            "Fragments",
+            &mut encoder,
+            &mut factory,
+            1,
+            Some(&[BlendMode::Replace]),
+            color_format,
+            debug_id,
+        )?;
+
+        resolve_shader.id = 1;
+        resolve_draw.set_blend_mode(BlendMode::Replace)?;
 
         let rect_inst_props = factory.create_buffer(
             1,
@@ -252,7 +275,6 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             .expect("Invalid default font bytes, should never happen");
         let glyph_brush = GlyphBrushBuilder::using_font(font_vec).build();
         let (glyph_cache_width, glyph_cache_height) = glyph_brush.texture_dimensions();
-        use std::convert::{TryFrom, TryInto};
         let initial_contents = vec![
             255;
             4 * usize::try_from(glyph_cache_width).unwrap()
@@ -308,8 +330,9 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             samplers,
 
             default_shader: shader.shader_id(),
+            resolve_shader,
             current_shader: Rc::new(RefCell::new(None)),
-            shaders: vec![draw],
+            shaders: vec![draw, resolve_draw],
 
             glyph_brush: Rc::new(RefCell::new(glyph_brush)),
             glyph_cache,

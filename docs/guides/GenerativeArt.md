@@ -3,7 +3,7 @@
 This is a guide to create a program that randomly generates shapes to display.
 
 At the end of this guide you will:
-*  Have used the [`graphics`](https://docs.rs/ggez/0.6.0/ggez/graphics/) module of `ggez` to draw shapes
+*  Have used the [`graphics`](https://docs.rs/ggez/0.7.0/ggez/graphics/) module of `ggez` to draw shapes
 
 ## Project Setup
 
@@ -43,33 +43,33 @@ Test to make sure everything is correct by running `cargo run`.
 
 If there are no errors and you see a window you are good.
 
-## [ggez::graphics](https://docs.rs/ggez/0.6.0/ggez/graphics/)
+## [ggez::graphics](https://docs.rs/ggez/0.7.0/ggez/graphics/)
 
-Glancing over the docs for [`ggez::graphics`](https://docs.rs/ggez/0.6.0/ggez/graphics/) you can see there is a lot of functionality there.
-The basic shapes can be found in [`graphics::Mesh`](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#methods)
+Glancing over the docs for [`ggez::graphics`](https://docs.rs/ggez/0.7.0/ggez/graphics/) you can see there is a lot of functionality there.
+The basic shapes can be found in [`graphics::Mesh`](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#methods)
 
 So which shapes are in `Mesh`?
 
-* [line](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_line)
-* [circle](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_circle)
-* [ellipse](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_ellipse)
-* [polygon](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_polygon)
-* [rectangle](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_rectangle)
+* [line](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_line)
+* [circle](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_circle)
+* [ellipse](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_ellipse)
+* [polygon](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_polygon)
+* [rectangle](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_rectangle)
 
 We are just going to touch on 2 shapes in this guide: the circle and the rectangle.
 
 Additionally there are 2 other methods we will look at.
 These 2 are used to show and erase the screen:
 
-* [clear](https://docs.rs/ggez/0.6.0/ggez/graphics/fn.clear.html)
-* [present](https://docs.rs/ggez/0.6.0/ggez/graphics/fn.present.html)
+* [clear](https://docs.rs/ggez/0.7.0/ggez/graphics/fn.clear.html)
+* [present](https://docs.rs/ggez/0.7.0/ggez/graphics/fn.present.html)
 
 ### ⚫ The Circle
 
 Circles are represented by 2 pieces of information: origin, and radius.
 Geometry, it's all coming back now.
 
-Here is the code for a [circle](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_circle):
+Here is the code for a [circle](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_circle):
 ```rust,skt-expression,no_run
 graphics::Mesh::new_circle(
     ctx,
@@ -87,7 +87,7 @@ Why did I just write like a million?!
 Well, `ctx` is needed to tell `ggez` where you are drawing to.
 `ctx` is what is passed into `update` and `draw` already.
 
-[`graphics::DrawMode::fill()`](https://docs.rs/ggez/0.6.0/ggez/graphics/enum.DrawMode.html) is choosing between outlining the circle or filling it in.
+[`graphics::DrawMode::fill()`](https://docs.rs/ggez/0.7.0/ggez/graphics/enum.DrawMode.html) is choosing between outlining the circle or filling it in.
 
 Point, now here is one we expected.
 This is the origin of the circle.
@@ -125,7 +125,7 @@ If you see a circle on the screen when you run `cargo run` you're good!
 
 Rectangles are represented by 3 pieces of information: origin, width, and height.
 
-Here is the code for a [rectangle](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Mesh.html#method.new_rectangle):
+Here is the code for a [rectangle](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_rectangle):
 ```rust,skt-expression,no_run
 graphics::Mesh::new_rectangle(
     ctx,
@@ -138,8 +138,8 @@ graphics::Mesh::new_rectangle(
 It might seem weird that there are less parameters for more required information than a circle,
 but this is correct.
 
-[`Rect`](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Rect.html) is a convenient type that represents a... rectangle!
-[`graphics::Rect::new(500.0, 250.0, 200.0, 100.0)`](https://docs.rs/ggez/0.6.0/ggez/graphics/struct.Rect.html) positions the rectangle's top-left corner at `x: 500, y: 250` and
+[`Rect`](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Rect.html) is a convenient type that represents a... rectangle!
+[`graphics::Rect::new(500.0, 250.0, 200.0, 100.0)`](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Rect.html) positions the rectangle's top-left corner at `x: 500, y: 250` and
 specifies `width: 200, height: 100`.
 
 And that's how a rectangle is drawn!
@@ -258,7 +258,7 @@ We want 2 shapes randomly generated!
 Include your favorite RNG in your `Cargo.toml`:
 ```toml
 [dependencies]
-ggez = "0.6.0"
+ggez = "0.7"
 oorandom = "11"
 ```
 

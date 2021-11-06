@@ -146,7 +146,7 @@ pub trait BackendSpec: fmt::Debug {
 
     /// Returns the text of the vertex and fragment shader files
     /// to create default shaders for this backend.
-    fn shaders(&self) -> (&'static [u8], &'static [u8]);
+    fn shaders(&self) -> (&'static [u8], &'static [u8], &'static [u8]);
 
     /// Returns a string containing some backend-dependent info.
     fn info(&self, device: &Self::Device) -> String;
@@ -225,15 +225,17 @@ impl BackendSpec for GlBackendSpec {
         self.api
     }
 
-    fn shaders(&self) -> (&'static [u8], &'static [u8]) {
+    fn shaders(&self) -> (&'static [u8], &'static [u8], &'static [u8]) {
         match self.api {
             glutin::Api::OpenGl => (
                 include_bytes!("shader/basic_150.glslv"),
                 include_bytes!("shader/basic_150.glslf"),
+                include_bytes!("shader/resolve_150.glslf"),
             ),
             glutin::Api::OpenGlEs => (
                 include_bytes!("shader/basic_es300.glslv"),
                 include_bytes!("shader/basic_es300.glslf"),
+                include_bytes!("shader/resolve_es300.glslf"),
             ),
             a => panic!("Unsupported API: {:?}, should never happen", a),
         }
@@ -643,7 +645,6 @@ pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
     gfx.set_global_mvp(Matrix4::IDENTITY)
-    //gfx.update_globals()
 }
 
 /// Premultiplies the given transformation matrix with the current projection matrix
@@ -819,7 +820,6 @@ pub fn window_raw(context: &mut Context) -> &mut glutin::WindowedContext<glutin:
 pub fn clear_font_cache(ctx: &mut Context) {
     use glyph_brush::GlyphBrushBuilder;
     use std::cell::RefCell;
-    use std::convert::TryInto;
     use std::rc::Rc;
     let font_vec =
         glyph_brush::ab_glyph::FontArc::try_from_slice(Font::default_font_bytes()).unwrap();

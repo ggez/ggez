@@ -7,6 +7,7 @@
   * [Can I do 3D stuff?](#gfx_3d)
   * [How do I make a GUI?](#gfx_gui)
   * [Resolution independence (or "Why do things not end up where I want them to be?")](#gfx_resolution)
+  * [Relative and absolute offsets with `DrawParam::offset`](#offsets)
 * **[Input](#input)**
   * [Returned mouse coordinates are wrong!](#mouse_coords)
 * **[Libraries](#libraries)**
@@ -77,7 +78,7 @@ To request different graphics settings you can change the appropriate
 entries in the `Conf` object before creating your `Context`.  If you
 request older versions of OpenGL you will also have to provide shaders
 written in the appropriate version of GLSL (which is a bit of a WIP)
-and there's no promises that things like `SpriteBatch` and `Canvas`
+and there're no promises that things like `SpriteBatch` and `Canvas`
 will work.
 
 <a name="gfx">
@@ -96,13 +97,14 @@ In general, ggez is designed to focus on 2D graphics.  We want it to be possible
 
 ## How do I make a GUI?
 
-There's no *great* way to do it currently, but as of 2021 there's a few
+There's no single optimal way to do it currently, but as of 2021 there's a few
 GUI libraries that are able to use `ggez` as a drawing backend.
 `raui` seems to offer a `ggez` backend natively, though we have no idea
-how well it works, and `iced` used to have one but it seems to have
-vanished with a code rewrite.  There's several other IMGUI-style
-GUI crates that have pluggable drawing backends, maybe some of them
-can either be drawn with `ggez` or are easy to write new backends for.
+how well it works, and `iced` used to have one, but it seems to have
+vanished with a code rewrite. [`egui`] seems to work well with `ggez`.
+
+There's several other IMGUI-style GUI crates that have pluggable drawing backends,
+maybe some of them can either be drawn with `ggez` or are easy to write new backends for.
 
 Contributions are welcome! ;-)
 
@@ -121,6 +123,58 @@ and scaling your `Image`s with `graphics::DrawParam`.
  
 Please note that updating your coordinate system like this may also
 be necessary [when drawing onto canvases of custom sizes](https://github.com/ggez/ggez/blob/aed56921fbca8ac8192b492f0a46d92e4a0a95bb/src/graphics/canvas.rs#L44-L48).
+
+<a name="offsets">
+
+## Relative and absolute offsets with `DrawParam::offset`
+
+Offset behavior in ggez has changed a bit in recent times.
+
+In ggez 0.6.1 `DrawParam::offset` used to be interpreted as a _relative_ offset for `Image`, `SpriteBatch`, `MeshBatch`, `Text` and `Canvas` and as an _absolute_ offset for `Mesh`.
+
+Then, we wanted to unify this and switch `Mesh` over to a relative interpretation as well, but we discovered, that [this
+relative interpretation can be really problematic for certain `Drawable`s](https://github.com/ggez/ggez/issues/736#issuecomment-945181003), so now the divide is as follows:
+
++ `Image`, `Canvas` and the sprites inside a `SpriteBatch` use the relative interpretation
++ `Mesh`, `MeshBatch`, `Spritebatch` (and thereby `Text` too) use the absolute interpretation
+
+This is how offsets worked before ggez 0.6 and it's how they work now, for good reasons.
+
+What this means for you is: If you want `DrawParam::offset` to be a relative offset (i.e. [1,1] means "bottom right", [0.5,0.5] means "centered", etc.) for any of the types mentioned as
+"absolute interpretations" above, then you'll have to adapt your offset like this:
+
+```rust
+// scale up and move the offset according to the dimensions of the Drawable
+// the move is necessary as the dimensions (i.e. the bounding box) may not
+// necessarily start at [0,0]
+let mut new_param = param;
+if let Transform::Values { offset, .. } = param.trans {
+    if let Some(dim) = drawable.dimensions(ctx) {
+        let new_offset = mint::Vector2 {
+            x: offset.x * dim.w + dim.x,
+            y: offset.y * dim.h + dim.y,
+        };
+        new_param = param.offset(new_offset);
+    }
+}
+```
+
+If, however, you find yourself desiring to use absolute offsets on any of the types declared
+to have "relative interpretation" here instead, you'll have to do almost the opposite:
+
+```rust
+// scale down the offset according to the dimensions of the Drawable
+let mut new_param = param;
+if let Transform::Values { offset, .. } = param.trans {
+    if let Some(dim) = drawable.dimensions(ctx) {
+        let new_offset = mint::Vector2 {
+            x: offset.x / dim.w,
+            y: offset.y / dim.h,
+        };
+        new_param = param.offset(new_offset);
+    }
+}
+```
 
 <a name="input">
 
@@ -348,3 +402,5 @@ If you wish, you can also disable it only in release mode:
 ```rust
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 ```
+
+[`egui`]: https://github.com/emilk/egui#integrations

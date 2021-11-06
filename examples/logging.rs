@@ -76,7 +76,7 @@ impl App {
 }
 
 /// Where the app meets the `ggez`.
-impl EventHandler<ggez::GameError> for App {
+impl EventHandler for App {
     /// This is where the logic should happen.
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
