@@ -125,6 +125,9 @@ where
         Ok(())
     }
 
+    /// A mouse button was released
+    fn touch_event(&mut self, _ctx: &mut Context) {}
+
     /// The mouse was moved; it provides both absolute x and y coordinates in the window,
     /// and relative x and y coordinates compared to its last position.
     fn mouse_motion_event(
@@ -405,6 +408,9 @@ where
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::MouseMotionEvent) {
                         return;
                     };
+                }
+                WindowEvent::Touch(_) => {
+                    state.touch_event(ctx);
                 }
                 _x => {
                     // trace!("ignoring window event {:?}", x);
