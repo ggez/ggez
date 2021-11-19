@@ -95,6 +95,9 @@ where
     ) {
     }
 
+    /// A mouse button was released
+    fn touch_event(&mut self, _ctx: &mut Context) {}
+
     /// The mouse was moved; it provides both absolute x and y coordinates in the window,
     /// and relative x and y coordinates compared to its last position.
     fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32, _dx: f32, _dy: f32) {}
@@ -272,6 +275,9 @@ where
                     let position = mouse::position(ctx);
                     let delta = mouse::last_delta(ctx);
                     state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
+                }
+                WindowEvent::Touch(_) => {
+                    state.touch_event(ctx);
                 }
                 _x => {
                     // trace!("ignoring window event {:?}", x);
