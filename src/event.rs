@@ -133,7 +133,9 @@ where
 
     /// An event from a touchscreen has been triggered; it provides the x and y location
     /// inside the window as well as the state of the tap (such as Started, Moved, Ended, etc)
-    fn touch_event(&mut self, _ctx: &mut Context, _phase: TouchPhase, _x: f64, _y: f64) {}
+    fn touch_event(&mut self, _ctx: &mut Context, _phase: TouchPhase, _x: f64, _y: f64) -> GameResult {
+        Ok(())
+    }
 
     /// A gamepad button was pressed; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
@@ -278,7 +280,10 @@ where
                     state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                 }
                 WindowEvent::Touch(touch) => {
-                    state.touch_event(ctx, touch.phase, touch.location.x, touch.location.y);
+                    let res = state.touch_event(ctx, touch.phase, touch.location.x, touch.location.y);
+                    if catch_error(ctx, res, state, control_flow, ErrorOrigin::TouchEvent) {
+                        return;
+                    };
                 }
                 _x => {
                     // trace!("ignoring window event {:?}", x);
