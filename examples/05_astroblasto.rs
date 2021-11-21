@@ -546,7 +546,7 @@ impl EventHandler for MainState {
         keycode: KeyCode,
         _keymod: KeyMods,
         _repeat: bool,
-    ) {
+    ) -> GameResult {
         match keycode {
             KeyCode::Up => {
                 self.input.yaxis = 1.0;
@@ -568,9 +568,15 @@ impl EventHandler for MainState {
             KeyCode::Escape => event::quit(ctx),
             _ => (), // Do nothing
         }
+        Ok(())
     }
 
-    fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _keymod: KeyMods) {
+    fn key_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: KeyCode,
+        _keymod: KeyMods,
+    ) -> GameResult {
         match keycode {
             KeyCode::Up => {
                 self.input.yaxis = 0.0;
@@ -583,6 +589,7 @@ impl EventHandler for MainState {
             }
             _ => (), // Do nothing
         }
+        Ok(())
     }
 }
 

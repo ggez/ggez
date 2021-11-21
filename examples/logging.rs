@@ -103,7 +103,7 @@ impl EventHandler for App {
         keycode: KeyCode,
         keymod: KeyMods,
         repeat: bool,
-    ) {
+    ) -> GameResult {
         // Log the keypress to info channel!
         info!(
             "Key down event: {:?}, modifiers: {:?}, repeat: {}",
@@ -113,14 +113,16 @@ impl EventHandler for App {
             // Escape key closes the app.
             ggez::event::quit(ctx);
         }
+        Ok(())
     }
 
     /// Called when window is resized.
-    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) -> GameResult {
         match graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height)) {
             Ok(()) => info!("Resized window to {} x {}", width, height),
             Err(e) => error!("Couldn't resize window: {}", e),
         }
+        Ok(())
     }
 }
 
