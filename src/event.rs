@@ -125,9 +125,6 @@ where
         Ok(())
     }
 
-    /// A mouse button was released
-    fn touch_event(&mut self, _ctx: &mut Context) {}
-
     /// The mouse was moved; it provides both absolute x and y coordinates in the window,
     /// and relative x and y coordinates compared to its last position.
     fn mouse_motion_event(
@@ -186,6 +183,10 @@ where
     fn text_input_event(&mut self, _ctx: &mut Context, _character: char) -> Result<(), E> {
         Ok(())
     }
+
+    /// An event from a touchscreen has been triggered; it provides the x and y location
+    /// inside the window as well as the state of the tap (such as Started, Moved, Ended, etc)
+    fn touch_event(&mut self, _ctx: &mut Context, _phase: TouchPhase, _x: f64, _y: f64) {}
 
     /// A gamepad button was pressed; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
@@ -409,8 +410,8 @@ where
                         return;
                     };
                 }
-                WindowEvent::Touch(_) => {
-                    state.touch_event(ctx);
+                WindowEvent::Touch(touch) => {
+                    state.touch_event(ctx, touch.phase, touch.location.x, touch.location.y);
                 }
                 _x => {
                     // trace!("ignoring window event {:?}", x);
