@@ -6,7 +6,7 @@ use std::convert::TryFrom;
 
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
-use ggez::graphics::{self, Color, DrawMode};
+use ggez::graphics::{self, Color, DrawMode, DrawParam};
 use ggez::timer;
 use ggez::{Context, GameResult};
 
@@ -79,7 +79,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
         graphics::draw(
             ctx,
             &self.image,
-            (Point2::new(400.0, 300.0), 0.0, Color::WHITE),
+            DrawParam::new()
+                .dest(Point2::new(400.0, 300.0))
+                .color(Color::WHITE), //.offset([0.5, 0.5]),
         )?;
         graphics::draw(
             ctx,
@@ -125,11 +127,17 @@ impl event::EventHandler<ggez::GameError> for MainState {
         _btn: event::MouseButton,
         x: f32,
         y: f32,
-    ) {
+    ) -> GameResult {
         println!("Button clicked at: {} {}", x, y);
+        Ok(())
     }
 
-    fn key_up_event(&mut self, ctx: &mut Context, keycode: KeyCode, _keymod: KeyMods) {
+    fn key_up_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: KeyCode,
+        _keymod: KeyMods,
+    ) -> GameResult {
         match keycode {
             KeyCode::F => {
                 self.window_settings.toggle_fullscreen = true;
@@ -160,9 +168,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
             }
             _ => {}
         }
+        Ok(())
     }
 
-    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) -> GameResult {
         println!("Resized screen to {}, {}", width, height);
         if self.window_settings.resize_projection {
             let new_rect = graphics::Rect::new(
@@ -173,6 +182,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             );
             graphics::set_screen_coordinates(ctx, new_rect).unwrap();
         }
+        Ok(())
     }
 }
 

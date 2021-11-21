@@ -314,7 +314,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         keycode: ggez::input::keyboard::KeyCode,
         _keymods: ggez::input::keyboard::KeyMods,
         _repeat: bool,
-    ) {
+    ) -> GameResult {
         const DELTA: f32 = 0.2;
         match keycode {
             KeyCode::Up | KeyCode::Down => {
@@ -360,6 +360,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         self.ball_animation = ball_sequence(&self.easing_enum, self.duration);
         self.player_animation =
             player_sequence(&self.easing_enum, &self.animation_type, self.duration);
+        Ok(())
     }
 }
 

@@ -147,10 +147,11 @@ impl event::EventHandler<ggez::GameError> for GameState {
         keycode: event::KeyCode,
         _keymods: event::KeyMods,
         _repeat: bool,
-    ) {
+    ) -> GameResult {
         if keycode == event::KeyCode::Space {
             self.batched_drawing = !self.batched_drawing;
         }
+        Ok(())
     }
 
     fn mouse_button_down_event(
@@ -159,13 +160,14 @@ impl event::EventHandler<ggez::GameError> for GameState {
         button: input::mouse::MouseButton,
         _x: f32,
         _y: f32,
-    ) {
+    ) -> GameResult {
         if button == input::mouse::MouseButton::Left && self.click_timer == 0 {
             for _ in 0..INITIAL_BUNNIES {
                 self.bunnies.push(Bunny::new(&mut self.rng));
             }
             self.click_timer = 10;
         }
+        Ok(())
     }
 }
 
