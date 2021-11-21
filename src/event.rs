@@ -61,6 +61,8 @@ pub enum ErrorOrigin {
     KeyUpEvent,
     /// error originated in `text_input_event()`
     TextInputEvent,
+    /// error originated in `touch_event()`
+    TouchEvent,
     /// error originated in `gamepad_button_down_event()`
     GamepadButtonDownEvent,
     /// error originated in `gamepad_button_up_event()`
@@ -186,7 +188,13 @@ where
 
     /// An event from a touchscreen has been triggered; it provides the x and y location
     /// inside the window as well as the state of the tap (such as Started, Moved, Ended, etc)
-    fn touch_event(&mut self, _ctx: &mut Context, _phase: TouchPhase, _x: f64, _y: f64) -> GameResult {
+    fn touch_event(
+        &mut self,
+        _ctx: &mut Context,
+        _phase: TouchPhase,
+        _x: f64,
+        _y: f64,
+    ) -> Result<(), E> {
         Ok(())
     }
 
@@ -413,7 +421,8 @@ where
                     };
                 }
                 WindowEvent::Touch(touch) => {
-                    let res = state.touch_event(ctx, touch.phase, touch.location.x, touch.location.y);
+                    let res =
+                        state.touch_event(ctx, touch.phase, touch.location.x, touch.location.y);
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::TouchEvent) {
                         return;
                     };
