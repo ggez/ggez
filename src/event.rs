@@ -188,13 +188,42 @@ where
 
     /// An event from a touchscreen has been triggered; it provides the x and y location
     /// inside the window as well as the state of the tap (such as Started, Moved, Ended, etc)
+    /// By default, touch events will trigger mouse behavior
     fn touch_event(
         &mut self,
-        _ctx: &mut Context,
-        _phase: TouchPhase,
-        _x: f64,
-        _y: f64,
+        ctx: &mut Context,
+        phase: TouchPhase,
+        x: f64,
+        y: f64,
     ) -> Result<(), E> {
+        let current_delta = crate::input::mouse::delta(ctx);
+        let current_pos = crate::input::mouse::position(ctx);
+        let diff = crate::graphics::Point2::new(x as f32 - current_pos.x, y as f32 - current_pos.y);
+        // Sum up the cumulative mouse change for this frame in `delta`:
+        ctx.mouse_context.set_delta(crate::graphics::Point2::new(
+            current_delta.x + diff.x,
+            current_delta.y + diff.y,
+        ));
+        // `last_delta` is not cumulative.
+        // It represents only the change between the last mouse event and the current one.
+        ctx.mouse_context.set_last_delta(diff);
+        ctx.mouse_context
+            .set_last_position(crate::graphics::Point2::new(x as f32, y as f32));
+
+        match phase {
+            TouchPhase::Started => {
+                ctx.mouse_context.set_button(MouseButton::Left, true);
+                self.mouse_button_down_event(ctx, MouseButton::Left, x as f32, y as f32)?;
+            }
+            TouchPhase::Moved => {
+                self.mouse_motion_event(ctx, x as f32, y as f32, diff.x, diff.y)?;
+            }
+            TouchPhase::Ended | TouchPhase::Cancelled => {
+                ctx.mouse_context.set_button(MouseButton::Left, false);
+                self.mouse_button_up_event(ctx, MouseButton::Left, x as f32, y as f32)?;
+            }
+        }
+
         Ok(())
     }
 
