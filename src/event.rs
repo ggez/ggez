@@ -61,6 +61,8 @@ pub enum ErrorOrigin {
     KeyUpEvent,
     /// error originated in `text_input_event()`
     TextInputEvent,
+    /// error originated in `touch_event()`
+    TouchEvent,
     /// error originated in `gamepad_button_down_event()`
     GamepadButtonDownEvent,
     /// error originated in `gamepad_button_up_event()`
@@ -181,6 +183,47 @@ where
     /// A unicode character was received, usually from keyboard input.
     /// This is the intended way of facilitating text input.
     fn text_input_event(&mut self, _ctx: &mut Context, _character: char) -> Result<(), E> {
+        Ok(())
+    }
+
+    /// An event from a touchscreen has been triggered; it provides the x and y location
+    /// inside the window as well as the state of the tap (such as Started, Moved, Ended, etc)
+    /// By default, touch events will trigger mouse behavior
+    fn touch_event(
+        &mut self,
+        ctx: &mut Context,
+        phase: TouchPhase,
+        x: f64,
+        y: f64,
+    ) -> Result<(), E> {
+        let current_delta = crate::input::mouse::delta(ctx);
+        let current_pos = crate::input::mouse::position(ctx);
+        let diff = crate::graphics::Point2::new(x as f32 - current_pos.x, y as f32 - current_pos.y);
+        // Sum up the cumulative mouse change for this frame in `delta`:
+        ctx.mouse_context.set_delta(crate::graphics::Point2::new(
+            current_delta.x + diff.x,
+            current_delta.y + diff.y,
+        ));
+        // `last_delta` is not cumulative.
+        // It represents only the change between the last mouse event and the current one.
+        ctx.mouse_context.set_last_delta(diff);
+        ctx.mouse_context
+            .set_last_position(crate::graphics::Point2::new(x as f32, y as f32));
+
+        match phase {
+            TouchPhase::Started => {
+                ctx.mouse_context.set_button(MouseButton::Left, true);
+                self.mouse_button_down_event(ctx, MouseButton::Left, x as f32, y as f32)?;
+            }
+            TouchPhase::Moved => {
+                self.mouse_motion_event(ctx, x as f32, y as f32, diff.x, diff.y)?;
+            }
+            TouchPhase::Ended | TouchPhase::Cancelled => {
+                ctx.mouse_context.set_button(MouseButton::Left, false);
+                self.mouse_button_up_event(ctx, MouseButton::Left, x as f32, y as f32)?;
+            }
+        }
+
         Ok(())
     }
 
@@ -403,6 +446,13 @@ where
                     let res =
                         state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::MouseMotionEvent) {
+                        return;
+                    };
+                }
+                WindowEvent::Touch(touch) => {
+                    let res =
+                        state.touch_event(ctx, touch.phase, touch.location.x, touch.location.y);
+                    if catch_error(ctx, res, state, control_flow, ErrorOrigin::TouchEvent) {
                         return;
                     };
                 }
