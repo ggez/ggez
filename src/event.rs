@@ -196,19 +196,7 @@ where
         x: f64,
         y: f64,
     ) -> Result<(), E> {
-        let current_delta = crate::input::mouse::delta(ctx);
-        let current_pos = crate::input::mouse::position(ctx);
-        let diff = crate::graphics::Point2::new(x as f32 - current_pos.x, y as f32 - current_pos.y);
-        // Sum up the cumulative mouse change for this frame in `delta`:
-        ctx.mouse_context.set_delta(crate::graphics::Point2::new(
-            current_delta.x + diff.x,
-            current_delta.y + diff.y,
-        ));
-        // `last_delta` is not cumulative.
-        // It represents only the change between the last mouse event and the current one.
-        ctx.mouse_context.set_last_delta(diff);
-        ctx.mouse_context
-            .set_last_position(crate::graphics::Point2::new(x as f32, y as f32));
+        crate::input::mouse::handle_move(ctx, x as f32, y as f32);
 
         match phase {
             TouchPhase::Started => {
@@ -216,6 +204,7 @@ where
                 self.mouse_button_down_event(ctx, MouseButton::Left, x as f32, y as f32)?;
             }
             TouchPhase::Moved => {
+                let diff = crate::input::mouse::last_delta(ctx);
                 self.mouse_motion_event(ctx, x as f32, y as f32, diff.x, diff.y)?;
             }
             TouchPhase::Ended | TouchPhase::Cancelled => {
@@ -575,28 +564,14 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                 ctx.gfx_context.resize_viewport();
             }
             winit_event::WindowEvent::CursorMoved {
-                position: logical_position,
+                position: physical_position,
                 ..
             } => {
-                let current_delta = crate::input::mouse::delta(ctx);
-                let current_pos = crate::input::mouse::position(ctx);
-                let diff = crate::graphics::Point2::new(
-                    logical_position.x as f32 - current_pos.x,
-                    logical_position.y as f32 - current_pos.y,
+                crate::input::mouse::handle_move(
+                    ctx,
+                    physical_position.x as f32,
+                    physical_position.y as f32,
                 );
-                // Sum up the cumulative mouse change for this frame in `delta`:
-                ctx.mouse_context.set_delta(crate::graphics::Point2::new(
-                    current_delta.x + diff.x,
-                    current_delta.y + diff.y,
-                ));
-                // `last_delta` is not cumulative.
-                // It represents only the change between the last mouse event and the current one.
-                ctx.mouse_context.set_last_delta(diff);
-                ctx.mouse_context
-                    .set_last_position(crate::graphics::Point2::new(
-                        logical_position.x as f32,
-                        logical_position.y as f32,
-                    ));
             }
             winit_event::WindowEvent::MouseInput { button, state, .. } => {
                 let pressed = match state {

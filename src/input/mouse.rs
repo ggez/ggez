@@ -141,3 +141,31 @@ pub(crate) fn last_delta(ctx: &Context) -> mint::Point2<f32> {
 pub fn button_pressed(ctx: &Context, button: MouseButton) -> bool {
     ctx.mouse_context.button_pressed(button)
 }
+
+/// Updates delta and position values.
+/// The inputs are interpreted as pixel coordinates inside the window.
+///
+/// This function is called internally whenever the mouse moves to a new location.
+/// It can also be used to simulate mouse input.
+/// (It gets called inside the default implementation of the
+/// [`touch_event`](../../event/trait.EventHandler.html#method.touch_event), for example.)
+/// Calling this function alone won't trigger a
+/// [`mouse_motion_event`](../../event/trait.EventHandler.html#method.mouse_motion_event) though.
+/// (Note that the default implementation of
+/// [`touch_event`](../../event/trait.EventHandler.html#method.touch_event) DOES trigger one, but
+/// it does so by invoking it on the `EventHandler` manually.)
+pub fn handle_move(ctx: &mut Context, new_x: f32, new_y: f32) {
+    let current_delta = crate::input::mouse::delta(ctx);
+    let current_pos = crate::input::mouse::position(ctx);
+    let diff = crate::graphics::Point2::new(new_x - current_pos.x, new_y - current_pos.y);
+    // Sum up the cumulative mouse change for this frame in `delta`:
+    ctx.mouse_context.set_delta(crate::graphics::Point2::new(
+        current_delta.x + diff.x,
+        current_delta.y + diff.y,
+    ));
+    // `last_delta` is not cumulative.
+    // It represents only the change between the last mouse event and the current one.
+    ctx.mouse_context.set_last_delta(diff);
+    ctx.mouse_context
+        .set_last_position(crate::graphics::Point2::new(new_x as f32, new_y as f32));
+}
