@@ -522,6 +522,11 @@ where
                 // reset the mouse delta for the next frame
                 // necessary because it's calculated cumulatively each cycle
                 ctx.mouse_context.reset_delta();
+
+				// Copy the state of the keyboard into the KeyboardContext
+                // and the mouse into the MouseContext
+                ctx.keyboard_context.save_keyboard_state();
+                ctx.mouse_context.save_mouse_state();
             }
             Event::RedrawRequested(_) => (),
             Event::RedrawEventsCleared => (),

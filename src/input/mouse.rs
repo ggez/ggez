@@ -5,7 +5,7 @@ use crate::error::GameError;
 use crate::error::GameResult;
 use crate::graphics;
 use crate::graphics::Point2;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use winit::dpi;
 pub use winit::event::MouseButton;
 pub use winit::window::CursorIcon;
@@ -16,10 +16,11 @@ pub struct MouseContext {
     last_position: Point2,
     last_delta: Point2,
     delta: Point2,
-    buttons_pressed: HashMap<MouseButton, bool>,
+    buttons_pressed: HashSet<MouseButton>,
     cursor_type: CursorIcon,
     cursor_grabbed: bool,
     cursor_hidden: bool,
+    previous_buttons_pressed: HashSet<MouseButton>,
 }
 
 impl MouseContext {
@@ -29,9 +30,10 @@ impl MouseContext {
             last_delta: Point2::ZERO,
             delta: Point2::ZERO,
             cursor_type: CursorIcon::Default,
-            buttons_pressed: HashMap::new(),
+            buttons_pressed: HashSet::new(),
             cursor_grabbed: false,
             cursor_hidden: false,
+            previous_buttons_pressed: HashSet::new(),
         }
     }
 
@@ -55,11 +57,27 @@ impl MouseContext {
     }
 
     pub(crate) fn set_button(&mut self, button: MouseButton, pressed: bool) {
-        let _ = self.buttons_pressed.insert(button, pressed);
+        if pressed {
+            let _ = self.buttons_pressed.insert(button);
+        } else {
+            let _ = self.buttons_pressed.remove(&button);
+        }
     }
 
     fn button_pressed(&self, button: MouseButton) -> bool {
-        *(self.buttons_pressed.get(&button).unwrap_or(&false))
+        self.buttons_pressed.contains(&button)
+    }
+
+    pub(crate) fn button_just_pressed(&self, button: MouseButton) -> bool {
+        self.buttons_pressed.contains(&button) && !self.previous_buttons_pressed.contains(&button)
+    }
+
+    pub(crate) fn button_just_released(&self, button: MouseButton) -> bool {
+        !self.buttons_pressed.contains(&button) && self.previous_buttons_pressed.contains(&button)
+    }
+
+    pub(crate) fn save_mouse_state(&mut self) {
+        self.previous_buttons_pressed = self.buttons_pressed.clone();
     }
 }
 
@@ -140,6 +158,16 @@ pub(crate) fn last_delta(ctx: &Context) -> mint::Point2<f32> {
 /// Returns whether or not the given mouse button is pressed.
 pub fn button_pressed(ctx: &Context, button: MouseButton) -> bool {
     ctx.mouse_context.button_pressed(button)
+}
+
+/// Returns whether or not the given mouse button has been pressed this frame.
+pub fn button_just_pressed(ctx: &Context, button: MouseButton) -> bool {
+    ctx.mouse_context.button_just_pressed(button)
+}
+
+/// Returns whether or not the given mouse button has been released this frame.
+pub fn button_just_released(ctx: &Context, button: MouseButton) -> bool {
+    ctx.mouse_context.button_just_released(button)
 }
 
 /// Updates delta and position values.

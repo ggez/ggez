@@ -122,6 +122,9 @@ pub struct KeyboardContext {
     // These two are necessary for tracking key-repeat.
     last_pressed: Option<KeyCode>,
     current_pressed: Option<KeyCode>,
+
+    // Represents the state of pressed_keys_set last frame.
+    previously_pressed_set: HashSet<KeyCode>,
 }
 
 impl KeyboardContext {
@@ -132,6 +135,7 @@ impl KeyboardContext {
             pressed_keys_set: HashSet::with_capacity(256),
             last_pressed: None,
             current_pressed: None,
+            previously_pressed_set: HashSet::with_capacity(256),
         }
     }
 
@@ -185,6 +189,14 @@ impl KeyboardContext {
         self.pressed_keys_set.contains(&key)
     }
 
+    pub(crate) fn is_key_just_pressed(&self, key: KeyCode) -> bool {
+        self.pressed_keys_set.contains(&key) && !self.previously_pressed_set.contains(&key)
+    }
+
+    pub(crate) fn is_key_just_released(&self, key: KeyCode) -> bool {
+        !self.pressed_keys_set.contains(&key) && self.previously_pressed_set.contains(&key)
+    }
+
     pub(crate) fn is_key_repeated(&self) -> bool {
         if self.last_pressed.is_some() {
             self.last_pressed == self.current_pressed
@@ -200,6 +212,10 @@ impl KeyboardContext {
     pub(crate) fn active_mods(&self) -> KeyMods {
         self.active_modifiers
     }
+
+    pub(crate) fn save_keyboard_state(&mut self) {
+        self.previously_pressed_set = self.pressed_keys_set.clone();
+    }
 }
 
 impl Default for KeyboardContext {
@@ -211,6 +227,16 @@ impl Default for KeyboardContext {
 /// Checks if a key is currently pressed down.
 pub fn is_key_pressed(ctx: &Context, key: KeyCode) -> bool {
     ctx.keyboard_context.is_key_pressed(key)
+}
+
+/// Checks if a key has been pressed down this frame.
+pub fn is_key_just_pressed(ctx: &Context, key: KeyCode) -> bool {
+    ctx.keyboard_context.is_key_just_pressed(key)
+}
+
+/// Checks if a key has been released this frame.
+pub fn is_key_just_released(ctx: &Context, key: KeyCode) -> bool {
+    ctx.keyboard_context.is_key_just_released(key)
 }
 
 /// Checks if the last keystroke sent by the system is repeated,
