@@ -7,6 +7,7 @@ use ggez::graphics::{self, Color};
 use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
+use std::f32::consts::TAU;
 use std::path;
 
 type Point2 = glam::Vec2;
@@ -53,29 +54,23 @@ impl MainState {
                     .dest(Point2::new(x * 10.0, y * 10.0))
                     // scale: graphics::Point::new(0.0625, 0.0625),
                     .scale(Vector2::new(
-                        ((time % cycle * 2) as f32 / cycle as f32 * 6.28)
-                            .cos()
-                            .abs()
-                            * 0.0625,
-                        ((time % cycle * 2) as f32 / cycle as f32 * 6.28)
-                            .cos()
-                            .abs()
-                            * 0.0625,
+                        ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
+                        ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
                     ))
-                    .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28));
+                    .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU));
                 self.spritebatch.add(p);
             }
         }
         let param = graphics::DrawParam::new()
             .dest(Point2::new(
-                ((time % cycle) as f32 / cycle as f32 * 6.28).cos() * 50.0 + 150.0,
-                ((time % cycle) as f32 / cycle as f32 * 6.28).sin() * 50.0 + 250.0,
+                ((time % cycle) as f32 / cycle as f32 * TAU).cos() * 50.0 + 150.0,
+                ((time % cycle) as f32 / cycle as f32 * TAU).sin() * 50.0 + 250.0,
             ))
             .scale(Vector2::new(
-                ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
-                ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
+                ((time % cycle) as f32 / cycle as f32 * TAU).sin().abs() * 2.0 + 1.0,
+                ((time % cycle) as f32 / cycle as f32 * TAU).sin().abs() * 2.0 + 1.0,
             ))
-            .rotation((time % cycle) as f32 / cycle as f32 * 6.28)
+            .rotation((time % cycle) as f32 / cycle as f32 * TAU)
             .offset(Point2::new(750., 750.));
         graphics::draw(ctx, &self.spritebatch, param)?;
         self.spritebatch.clear();
