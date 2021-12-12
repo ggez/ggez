@@ -76,7 +76,10 @@ impl MouseContext {
         !self.buttons_pressed.contains(&button) && self.previous_buttons_pressed.contains(&button)
     }
 
-    pub(crate) fn save_mouse_state(&mut self) {
+    /// Copies the current state of the mouse buttons into the context. If you are writing your own event loop
+    /// you need to call this at the end of every update in order to use the functions `is_button_just_pressed`
+    /// and `is_button_just_released`. Otherwise this is handled for you.
+    pub fn save_mouse_state(&mut self) {
         self.previous_buttons_pressed = self.buttons_pressed.clone();
     }
 }
