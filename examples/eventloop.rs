@@ -79,6 +79,14 @@ pub fn main() -> GameResult {
                 // necessary because it's calculated cumulatively each cycle
                 ctx.mouse_context.reset_delta();
 
+                // Copy the state of the keyboard into the KeyboardContext and
+                // the mouse into the MouseContext.
+                // Not required for this example but important if you want to
+                // use the functions keyboard::is_key_just_pressed/released and
+                // mouse::is_button_just_pressed/released.
+                ctx.keyboard_context.save_keyboard_state();
+                ctx.mouse_context.save_mouse_state();
+
                 ggez::timer::yield_now();
             }
 
