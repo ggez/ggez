@@ -162,8 +162,16 @@ pub trait SoundSource {
     /// Sets the fade-in time of the source
     fn set_fade_in(&mut self, dur: time::Duration);
 
-    /// Sets the time to be skipped at the beginning of the source
-    fn set_skip_duration(&mut self, dur: time::Duration);
+    /// Sets the time from which playback begins, skipping audio up to that point.
+    ///
+    /// Calls to [`elapsed()`](#tymethod.elapsed) will measure from this point, ignoring skipped time.
+    ///
+    /// Effects such as [`set_fade_in()`](#tymethod.set_fade_in) or [`set_pitch()`](#tymethod.set_pitch)
+    /// will apply from this new start.
+    ///
+    /// If [`set_repeat()`](#tymethod.set_repeat) is set to true, then after looping, the audio will return
+    /// to the original beginning of the source, rather than the time specified here.
+    fn set_start(&mut self, dur: time::Duration);
 
     /// Sets the speed ratio (by adjusting the playback speed)
     fn set_pitch(&mut self, ratio: f32);
@@ -243,7 +251,7 @@ impl SourceState {
         self.fade_in = dur;
     }
 
-    pub fn set_skip_duration(&mut self, dur: time::Duration) {
+    pub fn set_start(&mut self, dur: time::Duration) {
         self.skip_duration = dur;
     }
 
@@ -332,18 +340,18 @@ impl SoundSource for Source {
         if self.state.repeat {
             let sound = rodio::Decoder::new(cursor)?
                 .repeat_infinite()
+                .skip_duration(self.state.skip_duration)
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
-                .skip_duration(self.state.skip_duration)
                 .periodic_access(self.state.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
             self.sink.append(sound);
         } else {
             let sound = rodio::Decoder::new(cursor)?
+                .skip_duration(self.state.skip_duration)
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
-                .skip_duration(self.state.skip_duration)
                 .periodic_access(self.state.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
@@ -370,8 +378,8 @@ impl SoundSource for Source {
     fn set_fade_in(&mut self, dur: time::Duration) {
         self.state.set_fade_in(dur)
     }
-    fn set_skip_duration(&mut self, dur: time::Duration) {
-        self.state.set_skip_duration(dur)
+    fn set_start(&mut self, dur: time::Duration) {
+        self.state.set_start(dur)
     }
     fn set_pitch(&mut self, ratio: f32) {
         self.state.set_pitch(ratio)
@@ -506,18 +514,18 @@ impl SoundSource for SpatialSource {
         if self.state.repeat {
             let sound = rodio::Decoder::new(cursor)?
                 .repeat_infinite()
+                .skip_duration(self.state.skip_duration)
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
-                .skip_duration(self.state.skip_duration)
                 .periodic_access(self.state.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
             self.sink.append(sound);
         } else {
             let sound = rodio::Decoder::new(cursor)?
+                .skip_duration(self.state.skip_duration)
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
-                .skip_duration(self.state.skip_duration)
                 .periodic_access(self.state.query_interval, move |_| {
                     let _ = counter.fetch_add(period_mus, Ordering::SeqCst);
                 });
@@ -552,8 +560,8 @@ impl SoundSource for SpatialSource {
         self.state.set_fade_in(dur)
     }
 
-    fn set_skip_duration(&mut self, dur: time::Duration) {
-        self.state.set_skip_duration(dur)
+    fn set_start(&mut self, dur: time::Duration) {
+        self.state.set_start(dur)
     }
 
     fn set_pitch(&mut self, ratio: f32) {
