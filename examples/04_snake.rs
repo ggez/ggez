@@ -10,7 +10,7 @@
 //! that this example uses.
 //!
 //! Author: @termhn
-//! Original repo: https://github.com/termhn/ggez_snake
+//! Original repo: <https://github.com/termhn/ggez_snake>
 
 // First we'll import the crates we need for our game;
 // in this case that is just `ggez` and `oorandom` (and `getrandom`
