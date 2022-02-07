@@ -133,6 +133,10 @@ impl Rect {
             return false;
         }
 
+        if circle_distance.x <= (self.w / 2.0) || circle_distance.y <= (self.h / 2.0) {
+            return true;
+        }
+
         let corner_distance_sq =
             (circle_distance.x - self.w / 2.0).powi(2) + (circle_distance.y - self.h / 2.0).powi(2);
 
@@ -663,6 +667,7 @@ mod tests {
 
         assert!(r1.overlaps_circle(glam::vec2(133.5, 133.5), 8.0));
         assert!(!r1.overlaps_circle(glam::vec2(134.0, 134.0), 8.0));
+        assert!(r1.overlaps_circle(glam::vec2(64.0, 64.0), 2.0));
     }
 
     #[test]
