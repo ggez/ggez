@@ -203,6 +203,7 @@ impl Rect {
     }
 
     /// Returns a new `Rect` that includes all points of these two `Rect`s.
+    #[must_use]
     pub fn combine_with(self, other: Rect) -> Rect {
         let x = f32::min(self.x, other.x);
         let y = f32::min(self.y, other.y);

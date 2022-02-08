@@ -51,6 +51,7 @@ impl Default for Transform {
 
 impl Transform {
     /// Crunches the transform down to a single matrix, if it's not one already.
+    #[must_use]
     pub fn to_matrix(self) -> Self {
         Transform::Matrix(self.to_bare_matrix())
     }
@@ -146,12 +147,14 @@ impl DrawParam {
     }
 
     /// Set the source rect
+    #[must_use]
     pub fn src(mut self, src: Rect) -> Self {
         self.src = src;
         self
     }
 
     /// Set the dest point
+    #[must_use]
     pub fn dest<P>(mut self, dest_: P) -> Self
     where
         P: Into<mint::Point2<f32>>,
@@ -167,12 +170,14 @@ impl DrawParam {
 
     /// Set the drawable color.  This will be blended with whatever
     /// color the drawn object already is.
+    #[must_use]
     pub fn color(mut self, color: Color) -> Self {
         self.color = color;
         self
     }
 
     /// Set the rotation of the drawable.
+    #[must_use]
     pub fn rotation(mut self, rot: f32) -> Self {
         if let Transform::Values {
             ref mut rotation, ..
@@ -186,6 +191,7 @@ impl DrawParam {
     }
 
     /// Set the scaling factors of the drawable.
+    #[must_use]
     pub fn scale<V>(mut self, scale_: V) -> Self
     where
         V: Into<mint::Vector2<f32>>,
@@ -200,6 +206,7 @@ impl DrawParam {
     }
 
     /// Set the transformation offset of the drawable.
+    #[must_use]
     pub fn offset<P>(mut self, offset_: P) -> Self
     where
         P: Into<mint::Point2<f32>>,
@@ -214,6 +221,7 @@ impl DrawParam {
     }
 
     /// Set the transformation matrix of the drawable.
+    #[must_use]
     pub fn transform<M>(mut self, transform: M) -> Self
     where
         M: Into<mint::ColumnMatrix4<f32>>,

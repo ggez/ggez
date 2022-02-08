@@ -106,6 +106,7 @@ pub struct WindowMode {
 
 impl WindowMode {
     /// Set default window size, or screen resolution in true fullscreen mode.
+    #[must_use]
     pub fn dimensions(mut self, width: f32, height: f32) -> Self {
         self.width = width;
         self.height = height;
@@ -113,24 +114,28 @@ impl WindowMode {
     }
 
     /// Set whether the window should be maximized.
+    #[must_use]
     pub fn maximized(mut self, maximized: bool) -> Self {
         self.maximized = maximized;
         self
     }
 
     /// Set the fullscreen type.
+    #[must_use]
     pub fn fullscreen_type(mut self, fullscreen_type: FullscreenType) -> Self {
         self.fullscreen_type = fullscreen_type;
         self
     }
 
     /// Set whether a window should be borderless in windowed mode.
+    #[must_use]
     pub fn borderless(mut self, borderless: bool) -> Self {
         self.borderless = borderless;
         self
     }
 
     /// Set minimum window dimensions for windowed mode.
+    #[must_use]
     pub fn min_dimensions(mut self, width: f32, height: f32) -> Self {
         self.min_width = width;
         self.min_height = height;
@@ -138,6 +143,7 @@ impl WindowMode {
     }
 
     /// Set maximum window dimensions for windowed mode.
+    #[must_use]
     pub fn max_dimensions(mut self, width: f32, height: f32) -> Self {
         self.max_width = width;
         self.max_height = height;
@@ -145,18 +151,21 @@ impl WindowMode {
     }
 
     /// Set resizable.
+    #[must_use]
     pub fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
         self
     }
 
     /// Set visibility
+    #[must_use]
     pub fn visible(mut self, visible: bool) -> Self {
         self.visible = visible;
         self
     }
 
     /// Set whether to resize when the hidpi factor changes
+    #[must_use]
     pub fn resize_on_scale_factor_change(mut self, resize_on_scale_factor_change: bool) -> Self {
         self.resize_on_scale_factor_change = resize_on_scale_factor_change;
         self
@@ -204,30 +213,35 @@ pub struct WindowSetup {
 
 impl WindowSetup {
     /// Set window title.
+    #[must_use]
     pub fn title(mut self, title: &str) -> Self {
         self.title = title.to_owned();
         self
     }
 
     /// Set number of samples to use for multisample anti-aliasing.
+    #[must_use]
     pub fn samples(mut self, samples: NumSamples) -> Self {
         self.samples = samples;
         self
     }
 
     /// Set whether vsync is enabled.
+    #[must_use]
     pub fn vsync(mut self, vsync: bool) -> Self {
         self.vsync = vsync;
         self
     }
 
     /// Set the window's icon.
+    #[must_use]
     pub fn icon(mut self, icon: &str) -> Self {
         self.icon = icon.to_owned();
         self
     }
 
     /// Set sRGB color mode.
+    #[must_use]
     pub fn srgb(mut self, active: bool) -> Self {
         self.srgb = active;
         self
@@ -282,6 +296,7 @@ pub enum Backend {
 
 impl Backend {
     /// Set requested OpenGL/OpenGL ES version.
+    #[must_use]
     pub fn version(self, new_major: u8, new_minor: u8) -> Self {
         match self {
             Backend::OpenGL { .. } => Backend::OpenGL {
@@ -296,6 +311,7 @@ impl Backend {
     }
 
     /// Use OpenGL
+    #[must_use]
     pub fn gl(self) -> Self {
         match self {
             Backend::OpenGLES { major, minor } => Backend::OpenGL { major, minor },
@@ -304,6 +320,7 @@ impl Backend {
     }
 
     /// Use OpenGL ES
+    #[must_use]
     pub fn gles(self) -> Self {
         match self {
             Backend::OpenGL { major, minor } => Backend::OpenGLES { major, minor },
@@ -378,12 +395,14 @@ pub struct ModuleConf {
 
 impl ModuleConf {
     /// Sets whether or not to enable the gamepad input module.
+    #[must_use]
     pub fn gamepad(mut self, gamepad: bool) -> Self {
         self.gamepad = gamepad;
         self
     }
 
     /// Sets whether or not to enable the audio module.
+    #[must_use]
     pub fn audio(mut self, audio: bool) -> Self {
         self.audio = audio;
         self
@@ -442,18 +461,21 @@ impl Conf {
     }
 
     /// Sets the window mode
+    #[must_use]
     pub fn window_mode(mut self, window_mode: WindowMode) -> Self {
         self.window_mode = window_mode;
         self
     }
 
     /// Sets the backend
+    #[must_use]
     pub fn backend(mut self, backend: Backend) -> Self {
         self.backend = backend;
         self
     }
 
     /// Sets the backend
+    #[must_use]
     pub fn modules(mut self, modules: ModuleConf) -> Self {
         self.modules = modules;
         self
