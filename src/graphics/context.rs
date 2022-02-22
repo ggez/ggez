@@ -1,3 +1,6 @@
+//!
+
+use super::sampler::SamplerCache;
 use crate::{
     conf::{Backend, Conf, FullscreenType, WindowMode},
     error::GameResult,
@@ -6,7 +9,7 @@ use crate::{
     GameError,
 };
 use ::image as imgcrate;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 use winit::{self, dpi};
 
 #[derive(Debug)]
@@ -18,6 +21,7 @@ pub(crate) struct FrameContext {
 #[derive(Debug)]
 pub(crate) struct Pipelines {
     pub copy: wgpu::RenderPipeline,
+    pub default: Arc<wgpu::RenderPipeline>,
 }
 
 impl Pipelines {
@@ -62,6 +66,7 @@ impl Pipelines {
                 }),
                 multiview: None,
             }),
+            default: todo!(),
         }
     }
 }
@@ -79,6 +84,7 @@ pub struct GraphicsContext {
 
     pub(crate) pipelines: Pipelines,
     pub(crate) fcx: Option<FrameContext>,
+    pub(crate) sampler_cache: SamplerCache,
 }
 
 impl GraphicsContext {
@@ -140,6 +146,7 @@ impl GraphicsContext {
 
             pipelines,
             fcx: None,
+            sampler_cache: SamplerCache::new(),
         };
         this.set_window_mode(&conf.window_mode)?;
         Ok(this)

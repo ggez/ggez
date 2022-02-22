@@ -1,4 +1,5 @@
-use crate::Context;
+//!
+
 use std::{collections::HashMap, sync::Arc};
 
 /// Sampler state that is used when sampling images on the GPU.
@@ -98,6 +99,7 @@ impl From<FilterMode> for wgpu::FilterMode {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct SamplerCache {
     cache: HashMap<Sampler, Arc<wgpu::Sampler>>,
 }
@@ -109,10 +111,10 @@ impl SamplerCache {
         }
     }
 
-    pub fn get(&mut self, ctx: &Context, sampler: Sampler) -> Arc<wgpu::Sampler> {
+    pub fn get(&mut self, device: &wgpu::Device, sampler: Sampler) -> Arc<wgpu::Sampler> {
         self.cache
             .entry(sampler)
-            .or_insert_with(|| Arc::new(ctx.gfx_context.device.create_sampler(&sampler.into())))
+            .or_insert_with(|| Arc::new(device.create_sampler(&sampler.into())))
             .clone()
     }
 }

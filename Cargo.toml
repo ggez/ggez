@@ -69,6 +69,7 @@ approx = "0.5"
 bytemuck = "1.7"
 pollster = "0.2"
 memoffset = "0.6"
+crevice = "0.8"
 
 [dev-dependencies]
 chrono = "0.4"
