@@ -1,6 +1,12 @@
 This is a place for people to pimp their stuff that is built with ggez.  If you want your project listed here, add it and
 submit a PR, please!
 
+# 0.7.x
+
+## Games!
+
+* <https://github.com/ljedrz/hive>: an implementation of Hive - a bug-themed tabletop abstract strategy game.
+
 # 0.6.x
 
 ## Games!
