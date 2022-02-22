@@ -111,6 +111,7 @@ impl Image {
     }
 
     /// Creates a new image initialized with pixel data loaded from an encoded image (e.g. PNG or JPEG).
+    #[allow(unused_results)]
     pub fn from_file(ctx: &Context, file: &mut File, srgb: bool) -> GameResult<Self> {
         let mut encoded = Vec::new();
         std::io::Read::read_to_end(file, &mut encoded)?;

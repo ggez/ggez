@@ -57,12 +57,6 @@ pub struct Context {
     /// Controls whether or not the event loop should be running.
     /// Set this with `ggez::event::quit()`.
     pub continuing: bool,
-
-    /// Context-specific unique ID.
-    /// Compiles to nothing in release mode, and so
-    /// vanishes; meanwhile we get dead-code warnings.
-    #[allow(dead_code)]
-    debug_id: DebugId,
 }
 
 impl fmt::Debug for Context {
@@ -78,7 +72,6 @@ impl Context {
         conf: conf::Conf,
         mut fs: Filesystem,
     ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
-        let debug_id = DebugId::new();
         let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
             Box::new(audio::RodioAudioContext::new()?)
         } else {
@@ -86,8 +79,7 @@ impl Context {
         };
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
-        let graphics_context =
-            graphics::context::GraphicsContext::new(&mut fs, &events_loop, &conf, debug_id)?;
+        let graphics_context = graphics::context::GraphicsContext::new(&events_loop, &conf)?;
         let mouse_context = mouse::MouseContext::new();
         let keyboard_context = keyboard::KeyboardContext::new();
         let gamepad_context: Box<dyn gamepad::GamepadContext> = if conf.modules.gamepad {
@@ -106,8 +98,6 @@ impl Context {
             keyboard_context,
             gamepad_context,
             mouse_context,
-
-            debug_id,
         };
 
         Ok((ctx, events_loop))
@@ -256,60 +246,5 @@ impl ContextBuilder {
         };
 
         Context::from_conf(config, fs)
-    }
-}
-
-#[cfg(debug_assertions)]
-use std::sync::atomic::{AtomicU32, Ordering};
-#[cfg(debug_assertions)]
-static DEBUG_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
-
-/// This is a type that contains a unique ID for each `Context` and
-/// is contained in each thing created from the `Context` which
-/// becomes invalid when the `Context` goes away (for example, `Image` because
-/// it contains texture handles).  When compiling without assertions
-/// (in release mode) it is replaced with a zero-size type, compiles
-/// down to nothing, disappears entirely with a puff of optimization logic.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg(debug_assertions)]
-pub(crate) struct DebugId(u32);
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg(not(debug_assertions))]
-pub(crate) struct DebugId;
-
-#[cfg(debug_assertions)]
-impl DebugId {
-    pub fn new() -> Self {
-        let id = DEBUG_ID_COUNTER.fetch_add(1, Ordering::SeqCst);
-        // fetch_add() wraps on overflow so we check for overflow explicitly.
-        // JUST IN CASE YOU TRY TO CREATE 2^32 CONTEXTS IN ONE PROGRAM!  muahahahahaaa
-        assert!(DEBUG_ID_COUNTER.load(Ordering::SeqCst) > id);
-        DebugId(id)
-    }
-
-    pub fn get(ctx: &Context) -> Self {
-        DebugId(ctx.debug_id.0)
-    }
-
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn assert(&self, ctx: &Context) {
-        if *self != ctx.debug_id {
-            panic!("Tried to use a resource with a Context that did not create it; this should never happen!");
-        }
-    }
-}
-
-#[cfg(not(debug_assertions))]
-impl DebugId {
-    pub fn new() -> Self {
-        DebugId
-    }
-
-    pub fn get(_ctx: &Context) -> Self {
-        DebugId
-    }
-
-    pub fn assert(&self, _ctx: &Context) {
-        // Do nothing.
     }
 }

@@ -1,6 +1,5 @@
 use crate::{
     conf::{Backend, Conf, FullscreenType, WindowMode},
-    context::DebugId,
     error::GameResult,
     filesystem::Filesystem,
     graphics::*,
@@ -10,11 +9,13 @@ use ::image as imgcrate;
 use std::path::Path;
 use winit::{self, dpi};
 
+#[derive(Debug)]
 pub(crate) struct FrameContext {
     pub cmd: wgpu::CommandEncoder,
     pub present: Option<image::Image>,
 }
 
+#[derive(Debug)]
 pub(crate) struct Pipelines {
     pub copy: wgpu::RenderPipeline,
 }
@@ -66,6 +67,7 @@ impl Pipelines {
 }
 
 /// A concrete graphics context for WGPU rendering.
+#[derive(Debug)]
 pub struct GraphicsContext {
     pub(crate) window: winit::window::Window,
 
@@ -82,10 +84,8 @@ pub struct GraphicsContext {
 impl GraphicsContext {
     #[allow(unsafe_code)]
     pub(crate) fn new(
-        fs: &mut Filesystem,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
-        debug_id: DebugId,
     ) -> GameResult<Self> {
         let instance = wgpu::Instance::new(match conf.backend {
             Backend::Primary => wgpu::Backends::PRIMARY,
@@ -145,6 +145,7 @@ impl GraphicsContext {
         Ok(this)
     }
 
+    /// Sets the image that will be presented to the screen at the end of the frame.
     pub fn present(&mut self, image: image::Image) -> GameResult {
         if let Some(fcx) = &mut self.fcx {
             fcx.present = Some(image);

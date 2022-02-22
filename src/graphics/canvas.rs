@@ -75,7 +75,11 @@ impl<'a> Canvas<'a> {
     }
 }
 
+/// Describes the image load operation when starting a new canvas.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CanvasLoadOp {
+    /// Keep the existing contents of the image.
     DontClear,
+    /// Clear the image contents to a solid color.
     Clear(Color),
 }

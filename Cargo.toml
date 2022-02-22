@@ -68,6 +68,7 @@ gilrs = "0.8"
 approx = "0.5"
 bytemuck = "1.7"
 pollster = "0.2"
+memoffset = "0.6"
 
 [dev-dependencies]
 chrono = "0.4"
