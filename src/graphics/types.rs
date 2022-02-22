@@ -1,6 +1,3 @@
-use std::f32;
-use std::u32;
-
 use crate::graphics::{FillOptions, StrokeOptions};
 
 /// A 2 dimensional point representing a location
@@ -459,6 +456,17 @@ impl From<Color> for [f32; 4] {
     }
 }
 
+impl From<Color> for wgpu::Color {
+    fn from(color: Color) -> Self {
+        wgpu::Color {
+            r: color.r as f64,
+            g: color.g as f64,
+            b: color.b as f64,
+            a: color.a as f64,
+        }
+    }
+}
+
 /// A RGBA color in the *linear* color space,
 /// suitable for shoving into a shader.
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
@@ -549,29 +557,6 @@ pub enum FilterMode {
     /// Use nearest-neighbor interpolation (ie, pixelated)
     Nearest,
 }
-
-use gfx::texture::FilterMethod;
-
-impl From<FilterMethod> for FilterMode {
-    fn from(f: FilterMethod) -> Self {
-        match f {
-            FilterMethod::Scale => FilterMode::Nearest,
-            _other => FilterMode::Linear,
-        }
-    }
-}
-
-impl From<FilterMode> for FilterMethod {
-    fn from(f: FilterMode) -> Self {
-        match f {
-            FilterMode::Nearest => FilterMethod::Scale,
-            FilterMode::Linear => FilterMethod::Bilinear,
-        }
-    }
-}
-
-/// Specifies how to wrap textures.
-pub use gfx::texture::WrapMode;
 
 #[cfg(test)]
 mod tests {

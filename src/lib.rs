@@ -188,8 +188,6 @@
 #[macro_use]
 extern crate bitflags;
 #[macro_use]
-extern crate gfx;
-#[macro_use]
 extern crate log;
 #[macro_use]
 extern crate serde_derive;
@@ -208,9 +206,6 @@ pub mod graphics;
 pub mod input;
 pub mod timer;
 mod vfs;
-
-#[cfg(test)]
-pub mod tests;
 
 pub use crate::context::{winit, Context, ContextBuilder};
 pub use crate::error::*;

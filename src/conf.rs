@@ -234,82 +234,32 @@ impl WindowSetup {
     }
 }
 
-/// Possible backends.
-/// Currently, only OpenGL and OpenGL ES Core specs are supported,
-/// but this lets you specify which to use as well as the version numbers.
-///
-/// Defaults:
-///
-/// ```rust
-/// # use ggez::conf::*;
-/// # fn main() { assert_eq!(
-/// Backend::OpenGL {
-///     major: 3,
-///     minor: 2,
-/// }
-/// # , Backend::default()); }
-/// ```
+/// Possible graphics backends.
+/// The default is `Primary`.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, SmartDefault)]
 #[serde(tag = "type")]
 pub enum Backend {
-    /// Defaults to OpenGL 3.2, which is supported by basically
-    /// every machine since 2009 or so (apart from the ones that don't).
+    /// Primary comprises of Vulkan + Metal + DX12 (each as a fallback for the other).
+    ///
+    /// These APIs have first-class support from WGPU and from the platforms that support them.
     #[default]
-    #[allow(clippy::upper_case_acronyms)]
-    OpenGL {
-        /// OpenGL major version
-        #[default = 3]
-        major: u8,
-        /// OpenGL minor version
-        #[default = 2]
-        minor: u8,
-    },
-    /// OpenGL ES, defaults to 3.0.  Used for phones and other mobile
-    /// devices.  Using something older
-    /// than 3.0 starts to running into sticky limitations, particularly
-    /// with instanced drawing (used for `SpriteBatch`), but might be
-    /// possible.
-    #[allow(clippy::upper_case_acronyms)]
-    OpenGLES {
-        /// OpenGL ES major version
-        #[default = 3]
-        major: u8,
-        /// OpenGL ES minor version
-        #[default = 0]
-        minor: u8,
-    },
-}
-
-impl Backend {
-    /// Set requested OpenGL/OpenGL ES version.
-    pub fn version(self, new_major: u8, new_minor: u8) -> Self {
-        match self {
-            Backend::OpenGL { .. } => Backend::OpenGL {
-                major: new_major,
-                minor: new_minor,
-            },
-            Backend::OpenGLES { .. } => Backend::OpenGLES {
-                major: new_major,
-                minor: new_minor,
-            },
-        }
-    }
-
-    /// Use OpenGL
-    pub fn gl(self) -> Self {
-        match self {
-            Backend::OpenGLES { major, minor } => Backend::OpenGL { major, minor },
-            gl => gl,
-        }
-    }
-
-    /// Use OpenGL ES
-    pub fn gles(self) -> Self {
-        match self {
-            Backend::OpenGL { major, minor } => Backend::OpenGLES { major, minor },
-            es => es,
-        }
-    }
+    Primary,
+    /// Secondary comprises of OpenGL + DX11 (each as a fallback for the other).
+    ///
+    /// These APIs may have issues and may be deprecated by some platforms. This is not recommended.
+    Secondary,
+    /// Use the Khronos Vulkan API.
+    Vulkan,
+    /// Use the Apple Metal API.
+    Metal,
+    /// Use the Microsoft DirectX 12 API.
+    Dx12,
+    /// Use the Microsoft DirectX 11 API. This is not a recommended backend.
+    Dx11,
+    /// Use the Khronos OpenGL API. This is not a recommended backend.
+    Gl,
+    /// Use the WebGPU API. Targets the web.
+    BrowserWebGpu,
 }
 
 /// The possible number of samples for multisample anti-aliasing.

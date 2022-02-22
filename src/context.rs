@@ -38,7 +38,7 @@ pub struct Context {
     /// Filesystem state
     pub filesystem: Filesystem,
     /// Graphics state
-    pub(crate) gfx_context: crate::graphics::context::GraphicsContext,
+    pub gfx_context: crate::graphics::context::GraphicsContext,
     /// Timer state
     pub timer_context: timer::TimeContext,
     /// Audio context
@@ -86,15 +86,8 @@ impl Context {
         };
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
-        let backend_spec = graphics::GlBackendSpec::from(conf.backend);
-        let graphics_context = graphics::context::GraphicsContext::new(
-            &mut fs,
-            &events_loop,
-            &conf.window_setup,
-            conf.window_mode,
-            backend_spec,
-            debug_id,
-        )?;
+        let graphics_context =
+            graphics::context::GraphicsContext::new(&mut fs, &events_loop, &conf, debug_id)?;
         let mouse_context = mouse::MouseContext::new();
         let keyboard_context = keyboard::KeyboardContext::new();
         let gamepad_context: Box<dyn gamepad::GamepadContext> = if conf.modules.gamepad {

@@ -246,7 +246,7 @@ where
                     let (x, y) = match delta {
                         MouseScrollDelta::LineDelta(x, y) => (x, y),
                         MouseScrollDelta::PixelDelta(pos) => {
-                            let scale_factor = ctx.gfx_context.window.window().scale_factor();
+                            let scale_factor = ctx.gfx_context.window.scale_factor();
                             let dpi::LogicalPosition { x, y } = pos.to_logical::<f32>(scale_factor);
                             (x, y)
                         }
@@ -346,8 +346,7 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
     if let winit_event::Event::WindowEvent { event, .. } = event {
         match event {
             winit_event::WindowEvent::Resized(physical_size) => {
-                ctx.gfx_context.window.resize(*physical_size);
-                ctx.gfx_context.resize_viewport();
+                ctx.gfx_context.resize(*physical_size);
             }
             winit_event::WindowEvent::CursorMoved {
                 position: logical_position,

@@ -221,24 +221,6 @@ impl DrawParam {
         self.trans = Transform::Matrix(transform.into());
         self
     }
-
-    pub(crate) fn to_instance_properties(self, srgb: bool) -> InstanceProperties {
-        let mat: [[f32; 4]; 4] = *self.trans.to_bare_matrix().as_ref();
-        let color: [f32; 4] = if srgb {
-            let linear_color: types::LinearColor = self.color.into();
-            linear_color.into()
-        } else {
-            self.color.into()
-        };
-        InstanceProperties {
-            src: self.src.into(),
-            col1: mat[0],
-            col2: mat[1],
-            col3: mat[2],
-            col4: mat[3],
-            color,
-        }
-    }
 }
 
 /// Create a `DrawParam` from a location.

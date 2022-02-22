@@ -77,7 +77,7 @@ pub fn cursor_type(ctx: &Context) -> CursorIcon {
 /// Modifies the mouse cursor type of the window.
 pub fn set_cursor_type(ctx: &mut Context, cursor_type: CursorIcon) {
     ctx.mouse_context.cursor_type = cursor_type;
-    graphics::window(ctx).set_cursor_icon(cursor_type);
+    ctx.gfx_context.window.set_cursor_icon(cursor_type);
 }
 
 /// Get whether or not the mouse is grabbed (confined to the window)
@@ -88,7 +88,8 @@ pub fn cursor_grabbed(ctx: &Context) -> bool {
 /// Set whether or not the mouse is grabbed (confined to the window)
 pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
     ctx.mouse_context.cursor_grabbed = grabbed;
-    graphics::window(ctx)
+    ctx.gfx_context
+        .window
         .set_cursor_grab(grabbed)
         .map_err(|e| GameError::WindowError(e.to_string()))
 }
@@ -101,7 +102,7 @@ pub fn cursor_hidden(ctx: &Context) -> bool {
 /// Set whether or not the mouse is hidden (invisible).
 pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
     ctx.mouse_context.cursor_hidden = hidden;
-    graphics::window(ctx).set_cursor_visible(!hidden)
+    ctx.gfx_context.window.set_cursor_visible(!hidden)
 }
 
 /// Get the current position of the mouse cursor, in pixels.
@@ -119,7 +120,8 @@ where
 {
     let mintpoint = point.into();
     ctx.mouse_context.last_position = Point2::from(mintpoint);
-    graphics::window(ctx)
+    ctx.gfx_context
+        .window
         .set_cursor_position(dpi::LogicalPosition {
             x: f64::from(mintpoint.x),
             y: f64::from(mintpoint.y),
