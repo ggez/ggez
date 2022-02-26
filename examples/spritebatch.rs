@@ -37,7 +37,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, Color::BLACK);
 
-        let time = (timer::duration_to_f64(timer::time_since_start(ctx)) * 1000.0) as u32;
+        let time = (timer::time_since_start(ctx).as_secs_f64() * 1000.0) as u32;
         let cycle = 10_000;
         for x in 0..150 {
             for y in 0..150 {
