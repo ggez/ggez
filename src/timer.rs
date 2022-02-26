@@ -158,42 +158,20 @@ pub fn average_delta(ctx: &Context) -> time::Duration {
     }
 }
 
-/// A convenience function to convert a Rust `Duration` type
-/// to a (less precise but more useful) `f64`.
-///
-/// Does not make sure that the `Duration` is within the bounds
-/// of the `f64`.
-pub fn duration_to_f64(d: time::Duration) -> f64 {
-    let seconds = d.as_secs() as f64;
-    let nanos = f64::from(d.subsec_nanos());
-    seconds + (nanos * 1e-9)
-}
-
-/// A convenience function to create a Rust `Duration` type
-/// from a (less precise but more useful) `f64`.
-///
-/// Only handles positive numbers correctly.
-pub fn f64_to_duration(t: f64) -> time::Duration {
-    debug_assert!(t > 0.0, "f64_to_duration passed a negative number!");
-    let seconds = t.trunc();
-    let nanos = t.fract() * 1e9;
-    time::Duration::new(seconds as u64, nanos as u32)
-}
-
 /// Returns a `Duration` representing how long each
 /// frame should be to match the given fps.
 ///
 /// Approximately.
 fn fps_as_duration(fps: u32) -> time::Duration {
     let target_dt_seconds = 1.0 / f64::from(fps);
-    f64_to_duration(target_dt_seconds)
+    time::Duration::from_secs_f64(target_dt_seconds)
 }
 
 /// Gets the FPS of the game, averaged over the last
 /// 200 frames.
 pub fn fps(ctx: &Context) -> f64 {
     let duration_per_frame = average_delta(ctx);
-    let seconds_per_frame = duration_to_f64(duration_per_frame);
+    let seconds_per_frame = duration_per_frame.as_secs_f64();
     1.0 / seconds_per_frame
 }
 
@@ -245,7 +223,7 @@ pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
 /// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) callback
 /// to interpolate physics states for smooth rendering.
 /// (see <http://gafferongames.com/game-physics/fix-your-timestep/>)
-pub fn remaining_update_time(ctx: &mut Context) -> time::Duration {
+pub fn remaining_update_time(ctx: &Context) -> time::Duration {
     ctx.timer_context.residual_update_dt
 }
 
