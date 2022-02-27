@@ -318,6 +318,12 @@ where
                     }
                 }
 
+                if let Err(e) = ctx.gfx_context.begin_frame() {
+                    error!("Error on GraphicsContext::begin_frame(): {:?}", e);
+                    eprintln!("Error on GraphicsContext::begin_frame(): {:?}", e);
+                    *control_flow = ControlFlow::Exit;
+                }
+
                 if let Err(e) = state.draw(ctx) {
                     error!("Error on EventHandler::draw(): {:?}", e);
                     eprintln!("Error on EventHandler::draw(): {:?}", e);
@@ -325,6 +331,12 @@ where
                         *control_flow = ControlFlow::Exit;
                         return;
                     }
+                }
+
+                if let Err(e) = ctx.gfx_context.end_frame() {
+                    error!("Error on GraphicsContext::end_frame(): {:?}", e);
+                    eprintln!("Error on GraphicsContext::end_frame(): {:?}", e);
+                    *control_flow = ControlFlow::Exit;
                 }
 
                 // reset the mouse delta for the next frame

@@ -70,8 +70,12 @@ bytemuck = "1.7"
 pollster = "0.2"
 memoffset = "0.6"
 crevice = "0.8"
+typed-arena = "2.0"
+lazy_static = "1.4"
+thiserror = "1.0"
 
 [dev-dependencies]
+env_logger = "0.9"
 chrono = "0.4"
 fern = "0.6"
 oorandom = "11"

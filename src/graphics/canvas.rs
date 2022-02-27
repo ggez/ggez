@@ -1,26 +1,60 @@
 //!
 
 use super::{
-    context::GraphicsContext, image::Image, mesh::Mesh, shader, transform::Transform, Color, Rect,
+    context::{FrameArenas, GraphicsContext},
+    draw::{DrawParam, DrawUniforms},
+    gpu::{
+        arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcPipelineLayout},
+        bind_group::{BindGroupBuilder, BindGroupCache, BindGroupLayoutBuilder},
+        pipeline::PipelineCache,
+    },
+    image::Image,
+    instance::InstanceArray,
+    mesh::Mesh,
+    sampler::{Sampler, SamplerCache},
+    shader::{Shader, ShaderParams},
+    Color, Rect,
 };
 use crevice::std430::{AsStd430, Std430};
 use std::sync::Arc;
-use wgpu::util::DeviceExt;
+
+pub(crate) const Z_STEP: f32 = 0.001;
 
 /// A canvas represents a render pass and is how you render primitives onto images.
-#[derive(Debug)]
+#[allow(missing_debug_implementations)]
 pub struct Canvas<'a> {
     device: &'a wgpu::Device,
+    queue: &'a wgpu::Queue,
+    arenas: &'a FrameArenas,
+    bind_group_cache: &'a mut BindGroupCache,
+    pipeline_cache: &'a mut PipelineCache,
+    sampler_cache: &'a mut SamplerCache,
+
     pass: wgpu::RenderPass<'a>,
-    target: &'a Image,
-    resolve: Option<&'a Image>,
+    samples: u32,
+    format: wgpu::TextureFormat,
+    depth: bool,
 
-    default_pipeline: Arc<wgpu::RenderPipeline>,
-    uniform_arena: wgpu::Buffer,
+    uniform_arena: ArcBuffer,
     uniform_arena_cursor: u64,
-    bind_group: wgpu::BindGroup,
+    uniform_bind_group: &'a ArcBindGroup,
+    uniform_layout: ArcBindGroupLayout,
 
-    batch_mesh_id: Option<usize>,
+    instance_uniform_arena: ArcBuffer,
+    instance_uniform_arena_cursor: u64,
+    instance_uniform_bind_group: &'a ArcBindGroup,
+    instance_uniform_layout: ArcBindGroupLayout,
+
+    draw_shader: Shader,
+    instance_shader: Shader,
+    rect_mesh: Arc<Mesh>,
+    white_image: Image,
+
+    transform: glam::Mat4,
+    color: Color,
+    image_id: Option<u64>,
+    z_pos: f32,
+    shader_type: ShaderType,
 }
 
 impl<'a> Canvas<'a> {
@@ -36,10 +70,12 @@ impl<'a> Canvas<'a> {
         gfx: &'a mut GraphicsContext,
         load_op: CanvasLoadOp,
         image: &'a Image,
+        depth: Option<&'a Image>,
     ) -> Self {
         assert!(image.samples() == 1);
+        assert!(depth.map(|x| x.format().supports_depth()).unwrap_or(true));
 
-        Self::new(gfx, image, None, |cmd| {
+        Self::new(gfx, 1, image.format().into(), depth.is_some(), |cmd| {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
@@ -53,7 +89,16 @@ impl<'a> Canvas<'a> {
                         store: true,
                     },
                 }],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: depth.map(|depth| {
+                    wgpu::RenderPassDepthStencilAttachment {
+                        view: &depth.view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.),
+                            store: true,
+                        }),
+                        stencil_ops: None,
+                    }
+                }),
             })
         })
     }
@@ -66,130 +111,463 @@ impl<'a> Canvas<'a> {
         load_op: CanvasLoadOp,
         msaa_image: &'a Image,
         resolve_image: &'a Image,
+        depth: Option<&'a Image>,
     ) -> Self {
         assert!(msaa_image.samples() > 1);
-        assert!(resolve_image.samples() == 1);
+        assert_eq!(resolve_image.samples(), 1);
+        assert!(depth.map(|x| x.format().supports_depth()).unwrap_or(true));
 
-        Self::new(gfx, msaa_image, Some(resolve_image), |cmd| {
-            cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: msaa_image.view.as_ref(),
-                    resolve_target: Some(resolve_image.view.as_ref()),
-                    ops: wgpu::Operations {
-                        load: match load_op {
-                            CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                            CanvasLoadOp::Clear(color) => wgpu::LoadOp::Clear(color.into()),
+        Self::new(
+            gfx,
+            msaa_image.samples(),
+            msaa_image.format().into(),
+            depth.is_some(),
+            |cmd| {
+                cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: None,
+                    color_attachments: &[wgpu::RenderPassColorAttachment {
+                        view: msaa_image.view.as_ref(),
+                        resolve_target: Some(resolve_image.view.as_ref()),
+                        ops: wgpu::Operations {
+                            load: match load_op {
+                                CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
+                                CanvasLoadOp::Clear(color) => wgpu::LoadOp::Clear(color.into()),
+                            },
+                            store: true,
                         },
-                        store: true,
-                    },
-                }],
-                depth_stencil_attachment: None,
-            })
-        })
+                    }],
+                    depth_stencil_attachment: depth.map(|depth| {
+                        wgpu::RenderPassDepthStencilAttachment {
+                            view: &depth.view,
+                            depth_ops: Some(wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(1.),
+                                store: true,
+                            }),
+                            stencil_ops: None,
+                        }
+                    }),
+                })
+            },
+        )
     }
 
-    #[allow(unsafe_code)]
     fn new(
         gfx: &'a mut GraphicsContext,
-        target: &'a Image,
-        resolve: Option<&'a Image>,
+        samples: u32,
+        format: wgpu::TextureFormat,
+        depth: bool,
         create_pass: impl FnOnce(&'a mut wgpu::CommandEncoder) -> wgpu::RenderPass<'a>,
     ) -> Self {
         let device = &gfx.device;
-        let mut pass = create_pass(&mut gfx.fcx.as_mut().unwrap().cmd);
+        let queue = &gfx.queue;
+        let bind_group_cache = &mut gfx.bind_group_cache;
+        let pipeline_cache = &mut gfx.pipeline_cache;
+        let sampler_cache = &mut gfx.sampler_cache;
 
-        let default_pipeline = gfx.pipelines.default.clone();
+        let (arenas, pass) = gfx
+            .fcx
+            .as_mut()
+            .map(|fcx| (&fcx.arenas, create_pass(&mut fcx.cmd)))
+            .expect("creating canvas when not in frame");
 
-        let uniform_arena = device.create_buffer(&wgpu::BufferDescriptor {
+        let size = gfx
+            .window
+            .inner_size()
+            .to_logical(gfx.window.scale_factor());
+        let transform = glam::Mat4::orthographic_rh(0., size.width, size.height, 0., 0., 1000.);
+
+        let uniform_arena = ArcBuffer::new(device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: std::mem::size_of::<DrawUniforms>() as u64 * Self::MAX_DRAWS_PER_FRAME,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::MAP_WRITE,
-            mapped_at_creation: true,
-        });
+            size: DrawUniforms::std430_size_static() as u64 * Self::MAX_DRAWS_PER_FRAME,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        }));
+        let (uniform_bind_group, uniform_layout) = BindGroupBuilder::new()
+            .buffer(
+                &uniform_arena,
+                0,
+                wgpu::ShaderStages::VERTEX_FRAGMENT,
+                wgpu::BufferBindingType::Uniform,
+                true,
+                Some(DrawUniforms::std430_size_static() as _),
+            )
+            .create(device, bind_group_cache);
+        let uniform_bind_group = arenas.bind_groups.alloc(uniform_bind_group);
 
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: None,
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: true,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
+        let instance_uniform_arena =
+            ArcBuffer::new(device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: InstanceUniforms::std430_size_static() as u64 * Self::MAX_DRAWS_PER_FRAME,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            }));
+        let (instance_uniform_bind_group, instance_uniform_layout) = BindGroupBuilder::new()
+            .buffer(
+                &instance_uniform_arena,
+                0,
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform,
+                true,
+                Some(InstanceUniforms::std430_size_static() as _),
+            )
+            .create(device, bind_group_cache);
+        let instance_uniform_bind_group = arenas.bind_groups.alloc(instance_uniform_bind_group);
 
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                    buffer: &uniform_arena,
-                    offset: 0,
-                    size: None,
-                }),
-            }],
-        });
-
-        pass.set_pipeline(unsafe { &*(default_pipeline.as_ref() as *const _) });
-
-        Canvas {
+        let mut this = Canvas {
             device,
-            pass,
-            target,
-            resolve,
+            queue,
+            arenas,
+            bind_group_cache,
+            pipeline_cache,
+            sampler_cache,
 
-            default_pipeline,
+            pass,
+            samples,
+            format,
+            depth,
+
             uniform_arena,
             uniform_arena_cursor: 0,
-            bind_group,
+            uniform_bind_group,
+            uniform_layout,
 
-            batch_mesh_id: None,
-        }
+            instance_uniform_arena,
+            instance_uniform_arena_cursor: 0,
+            instance_uniform_bind_group,
+            instance_uniform_layout,
+
+            draw_shader: gfx.draw_shader.clone().unwrap(),
+            instance_shader: gfx.instance_shader.clone().unwrap(),
+            rect_mesh: gfx.rect_mesh.clone().unwrap(),
+            white_image: gfx.white_image.clone().unwrap(),
+
+            transform,
+            color: Color::WHITE,
+            image_id: None,
+            z_pos: 2.,
+            shader_type: ShaderType::Draw,
+        };
+
+        this.set_default_shader(ShaderType::Draw);
+        this.set_sampler(Sampler::linear_clamp());
+
+        this
+    }
+
+    /// Sets the shader to use when drawing, along with the provided parameters, **bound to bind group 3**.
+    pub fn set_shader_with_params<Uniforms: AsStd430 + 'static>(
+        &mut self,
+        shader: &Shader,
+        params: ShaderParams<Uniforms>,
+        ty: ShaderType,
+    ) {
+        let texture_layout = BindGroupLayoutBuilder::new()
+            .image(wgpu::ShaderStages::FRAGMENT)
+            .create(self.device, self.bind_group_cache);
+
+        let sampler_layout = BindGroupLayoutBuilder::new()
+            .sampler(wgpu::ShaderStages::FRAGMENT)
+            .create(self.device, self.bind_group_cache);
+
+        let instance_layout = BindGroupLayoutBuilder::new()
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+            )
+            .create(self.device, self.bind_group_cache);
+
+        let layout = match ty {
+            ShaderType::Draw => self.pipeline_cache.layout(
+                self.device,
+                &[
+                    self.uniform_layout.clone(),
+                    texture_layout,
+                    sampler_layout,
+                    params.layout.clone(),
+                ],
+            ),
+            ShaderType::Instance => self.pipeline_cache.layout(
+                self.device,
+                &[
+                    self.instance_uniform_layout.clone(),
+                    texture_layout,
+                    sampler_layout,
+                    instance_layout,
+                    params.layout.clone(),
+                ],
+            ),
+        };
+
+        self.set_shader_impl(shader, &layout, ty);
+
+        let bind_group = self.arenas.bind_groups.alloc(params.bind_group.clone());
+        self.pass
+            .set_bind_group(if ty == ShaderType::Draw { 3 } else { 4 }, bind_group, &[]);
     }
 
     /// Sets the shader to use when drawing.
-    pub fn set_shader<Uniforms: shader::AsStd430>(
-        &mut self,
-        shader: &'a shader::Shader,
-        params: &'a shader::ShaderParams<Uniforms>,
-    ) {
-        self.pass.set_pipeline(&shader.pipeline);
-        self.pass.set_bind_group(1, &params.bind_group, &[]);
+    pub fn set_shader(&mut self, shader: &Shader, ty: ShaderType) {
+        let texture_layout = BindGroupLayoutBuilder::new()
+            .image(wgpu::ShaderStages::FRAGMENT)
+            .create(self.device, self.bind_group_cache);
+
+        let sampler_layout = BindGroupLayoutBuilder::new()
+            .sampler(wgpu::ShaderStages::FRAGMENT)
+            .create(self.device, self.bind_group_cache);
+
+        let instance_layout = BindGroupLayoutBuilder::new()
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+            )
+            .create(self.device, self.bind_group_cache);
+
+        let layout = match ty {
+            ShaderType::Draw => self.pipeline_cache.layout(
+                self.device,
+                &[self.uniform_layout.clone(), texture_layout, sampler_layout],
+            ),
+            ShaderType::Instance => self.pipeline_cache.layout(
+                self.device,
+                &[
+                    self.instance_uniform_layout.clone(),
+                    texture_layout,
+                    sampler_layout,
+                    instance_layout,
+                ],
+            ),
+        };
+
+        self.set_shader_impl(shader, &layout, ty);
+    }
+
+    fn set_shader_impl(&mut self, shader: &Shader, layout: &ArcPipelineLayout, ty: ShaderType) {
+        self.shader_type = ty;
+        self.pass.set_pipeline(self.arenas.render_pipelines.alloc(
+            self.pipeline_cache.render_pipeline(
+                self.device,
+                layout.as_ref(),
+                shader.info(
+                    self.samples,
+                    self.format,
+                    Some(wgpu::BlendState::ALPHA_BLENDING),
+                    self.depth,
+                    true,
+                ),
+            ),
+        ));
+    }
+
+    /// Resets the active shader to the default.
+    pub fn set_default_shader(&mut self, ty: ShaderType) {
+        self.set_shader(
+            &match ty {
+                ShaderType::Draw => self.draw_shader.clone(),
+                ShaderType::Instance => self.instance_shader.clone(),
+            },
+            ty,
+        );
+    }
+
+    /// Sets the active sampler used to sample images.
+    pub fn set_sampler(&mut self, sampler: Sampler) {
+        let sampler = self.sampler_cache.get(self.device, sampler);
+
+        let (bind_group, _) = BindGroupBuilder::new()
+            .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
+            .create(self.device, self.bind_group_cache);
+
+        let bind_group = self.arenas.bind_groups.alloc(bind_group);
+
+        self.pass.set_bind_group(2, bind_group, &[]);
+    }
+
+    /// Sets the color that is multiplied against the image color.
+    pub fn set_color(&mut self, color: Color) {
+        self.color = color;
     }
 
     /// Draws a mesh.
-    #[allow(unsafe_code)]
-    pub fn draw_mesh(&mut self, mesh: &Mesh, src_rect: Rect, transform: Transform) {
+    pub fn draw_mesh<'b>(
+        &mut self,
+        mesh: &Mesh,
+        image: impl Into<Option<&'b Image>>,
+        mut param: DrawParam,
+    ) {
         let cursor = self.uniform_arena_cursor;
         self.uniform_arena_cursor += 1;
-
         let uniforms_size = DrawUniforms::std430_size_static() as u64;
         let byte_cursor = cursor * uniforms_size;
 
-        let uniforms = DrawUniforms {};
+        param.src_rect = if let Some(image) = image.into() {
+            self.set_image(image);
+            param.src_rect
+        } else {
+            self.set_image(&self.white_image.clone());
+            Rect::one()
+        };
 
-        self.uniform_arena
-            .slice(byte_cursor..(byte_cursor + uniforms_size))
-            .get_mapped_range_mut()
-            .copy_from_slice(uniforms.as_std430().as_bytes());
+        param.z = Some(param.z.unwrap_or_else(|| {
+            self.z_pos += Z_STEP;
+            self.z_pos
+        }));
 
-        self.pass.set_bind_group(
-            0,
-            unsafe { &*(&self.bind_group as *const _) },
-            &[byte_cursor as _],
+        let mut uniforms = DrawUniforms::from(param);
+        uniforms.transform = (self.transform * glam::Mat4::from(uniforms.transform)).into();
+
+        self.queue.write_buffer(
+            &self.uniform_arena,
+            byte_cursor,
+            uniforms.as_std430().as_bytes(),
         );
+
+        self.pass
+            .set_bind_group(0, self.uniform_bind_group, &[byte_cursor as _]);
+
+        let verts = self.arenas.buffers.alloc(mesh.verts.clone());
+        let inds = self.arenas.buffers.alloc(mesh.inds.clone());
+
+        self.pass.set_vertex_buffer(0, verts.slice(..));
+        self.pass
+            .set_index_buffer(inds.slice(..), wgpu::IndexFormat::Uint32);
+
+        if self.shader_type != ShaderType::Draw {
+            self.set_default_shader(ShaderType::Draw);
+        }
 
         self.pass.draw_indexed(0..mesh.index_count as u32, 0, 0..1);
     }
+
+    /// Draws a rectangle.
+    pub fn draw<'b>(&mut self, image: impl Into<Option<&'b Image>>, param: DrawParam) {
+        self.draw_mesh(&self.rect_mesh.clone(), image, param)
+    }
+
+    /// Draws a mesh instanced many times, using the [DrawParam]s found in `instances`.
+    ///
+    /// `z` specifies the base Z position of the instance array. Set to `None` to use the current Z cursor.
+    ///
+    /// `skip_z` specifies whether the Z span of the instance array should affect the Z cursor.
+    pub fn draw_mesh_instances<'b>(
+        &mut self,
+        mesh: &Mesh,
+        image: impl Into<Option<&'b Image>>,
+        instances: &InstanceArray,
+        z: Option<f32>,
+        skip_z: bool,
+    ) {
+        if instances.len() == 0 {
+            return;
+        }
+
+        let cursor = self.instance_uniform_arena_cursor;
+        self.instance_uniform_arena_cursor += 1;
+        let uniforms_size = InstanceUniforms::std430_size_static() as u64;
+        let byte_cursor = cursor * uniforms_size;
+
+        let z_pos = if let Some(z) = z {
+            z
+        } else {
+            self.z_pos + Z_STEP
+        };
+
+        if !skip_z {
+            self.z_pos = z_pos - 2. * instances.z_min + instances.z_max;
+        }
+
+        if let Some(image) = image.into() {
+            self.set_image(image);
+        } else {
+            self.set_image(&self.white_image.clone());
+        };
+
+        let transform = self.transform
+            * glam::Mat4::from_translation(glam::vec3(0., 0., z_pos - instances.z_min));
+        let uniforms = InstanceUniforms {
+            transform: transform.into(),
+        };
+
+        self.queue.write_buffer(
+            &self.instance_uniform_arena,
+            byte_cursor,
+            uniforms.as_std430().as_bytes(),
+        );
+
+        let (bind_group, _) = BindGroupBuilder::new()
+            .buffer(
+                &instances.buffer,
+                0,
+                wgpu::ShaderStages::VERTEX_FRAGMENT,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+                None,
+            )
+            .create(self.device, self.bind_group_cache);
+
+        let bind_group = self.arenas.bind_groups.alloc(bind_group);
+
+        self.pass
+            .set_bind_group(0, self.instance_uniform_bind_group, &[byte_cursor as _]);
+        self.pass.set_bind_group(3, bind_group, &[]);
+
+        let verts = self.arenas.buffers.alloc(mesh.verts.clone());
+        let inds = self.arenas.buffers.alloc(mesh.inds.clone());
+
+        self.pass.set_vertex_buffer(0, verts.slice(..));
+        self.pass
+            .set_index_buffer(inds.slice(..), wgpu::IndexFormat::Uint32);
+
+        if self.shader_type != ShaderType::Instance {
+            self.set_default_shader(ShaderType::Instance);
+        }
+
+        self.pass
+            .draw_indexed(0..mesh.index_count as u32, 0, 0..instances.len() as u32);
+    }
+
+    /// Same
+    pub fn draw_instances<'b>(
+        &mut self,
+        image: impl Into<Option<&'b Image>>,
+        instances: &InstanceArray,
+        z: Option<f32>,
+        skip_z: bool,
+    ) {
+        self.draw_mesh_instances(&self.rect_mesh.clone(), image, instances, z, skip_z)
+    }
+
+    /// Finish drawing with this canvas.
+    pub fn finish(self) {}
+
+    fn set_image(&mut self, image: &Image) {
+        if self
+            .image_id
+            .map(|id| id != image.view.id())
+            .unwrap_or(true)
+        {
+            self.image_id = Some(image.view.id());
+
+            let (bind_group, _) = BindGroupBuilder::new()
+                .image(&image.view, wgpu::ShaderStages::FRAGMENT)
+                .create(self.device, self.bind_group_cache);
+
+            let bind_group = self.arenas.bind_groups.alloc(bind_group);
+
+            self.pass.set_bind_group(1, bind_group, &[]);
+        }
+    }
 }
 
-#[derive(shader::AsStd430)]
-struct DrawUniforms {}
+/// Describes what part of the drawing pipeline the shader handles.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ShaderType {
+    /// The shader handles non-instanced draws.
+    Draw,
+    /// The shader handles instanced draws (i.e. using [InstanceArray]).
+    Instance,
+}
 
 /// Describes the image load operation when starting a new canvas.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -198,4 +576,9 @@ pub enum CanvasLoadOp {
     DontClear,
     /// Clear the image contents to a solid color.
     Clear(Color),
+}
+
+#[derive(crevice::std430::AsStd430)]
+struct InstanceUniforms {
+    pub transform: mint::ColumnMatrix4<f32>,
 }
