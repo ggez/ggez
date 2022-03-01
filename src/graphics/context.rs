@@ -56,6 +56,9 @@ pub struct GraphicsContext {
     pub(crate) fcx: Option<FrameContext>,
     pub(crate) glyph_brush: wgpu_glyph::GlyphBrush<wgpu::DepthStencilState>,
     pub(crate) fonts: HashMap<String, wgpu_glyph::FontId>,
+    pub(crate) staging_belt: wgpu::util::StagingBelt,
+    pub(crate) local_pool: futures::executor::LocalPool,
+    pub(crate) local_spawner: futures::executor::LocalSpawner,
 
     pub(crate) draw_shader: Option<Shader>,
     pub(crate) instance_shader: Option<Shader>,
@@ -140,6 +143,10 @@ impl GraphicsContext {
             })
             .build(&device, surface_format);
 
+        let staging_belt = wgpu::util::StagingBelt::new(1024);
+        let local_pool = futures::executor::LocalPool::new();
+        let local_spawner = local_pool.spawner();
+
         let mut this = GraphicsContext {
             window,
 
@@ -156,6 +163,9 @@ impl GraphicsContext {
             fcx: None,
             glyph_brush,
             fonts: HashMap::new(),
+            staging_belt,
+            local_pool,
+            local_spawner,
 
             draw_shader: None,
             instance_shader: None,
@@ -213,7 +223,7 @@ impl GraphicsContext {
         this.white_image = Some(Image::from_pixels(
             &this,
             &[255, 255, 255, 255],
-            ImageFormat::Rgba8,
+            ImageFormat::Rgba8Unorm,
             1,
             1,
         ));
@@ -315,8 +325,13 @@ impl GraphicsContext {
                 }
             }
 
+            self.staging_belt.finish();
             self.queue.submit([fcx.cmd.finish()]);
             frame.present();
+
+            use futures::task::SpawnExt;
+            self.local_spawner.spawn(self.staging_belt.recall())?;
+            self.local_pool.run_until_stalled();
 
             Ok(())
         } else {

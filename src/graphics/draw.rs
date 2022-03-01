@@ -46,8 +46,11 @@ impl DrawParam {
     }
 
     /// Sets the `color` field.
-    pub fn color(self, color: Color) -> Self {
-        DrawParam { color, ..self }
+    pub fn color(self, color: impl Into<Color>) -> Self {
+        DrawParam {
+            color: color.into(),
+            ..self
+        }
     }
 
     /// Sets the `src_rect` field.
@@ -116,7 +119,7 @@ impl From<DrawParam> for DrawUniforms {
         let mut transform = glam::Mat4::from_scale_rotation_translation(
             glam::vec3(param.scale.x, param.scale.y, 0.),
             glam::Quat::from_rotation_z(param.rotation),
-            glam::vec3(param.offset.x, param.offset.y, -param.z.unwrap_or(0.)),
+            glam::vec3(param.offset.x, param.offset.y, param.z.unwrap_or(0.)),
         );
 
         if let Some(t) = param.transform {

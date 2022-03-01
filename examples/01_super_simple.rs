@@ -1,7 +1,13 @@
 //! The simplest possible example that does something.
 #![allow(clippy::unnecessary_wraps)]
 
-use ggez::graphics::{self, draw::DrawParam, image::Image, Color, Rect};
+use ggez::graphics::{
+    self,
+    draw::DrawParam,
+    image::Image,
+    text::{FontData, Text, TextLayout},
+    Color, Rect,
+};
 use ggez::{
     event, filesystem,
     graphics::{
@@ -21,10 +27,15 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
+        ctx.gfx_context.add_font(
+            "monospace",
+            FontData::from_slice(include_bytes!("../resources/LiberationMono-Regular.ttf"))?,
+        );
+
         Ok(MainState {
             pos_x: 0.0,
-            frame: ScreenImage::new(&ctx.gfx_context, ImageFormat::Rgba8Srgb, 1., 1., 1),
-            depth: ScreenImage::new(&ctx.gfx_context, ImageFormat::Depth32, 1., 1., 1),
+            frame: ScreenImage::new(&ctx.gfx_context, None, 1., 1., 1),
+            depth: ScreenImage::new(&ctx.gfx_context, ImageFormat::Depth32Float, 1., 1., 1),
         })
     }
 }
@@ -54,7 +65,25 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .rotation_deg(30.),
         );
 
-        canvas.finish();
+        canvas.draw_text(
+            &[Text::new()
+                .text("Hello, world!")
+                .font("monospace")
+                .size(16.)
+                .color(Color::RED)],
+            glam::vec2(30., 70.),
+            TextLayout::tl_single_line(),
+        );
+
+        canvas.draw(
+            None,
+            DrawParam::new()
+                .color(Color::BLUE)
+                .dst_rect(Rect::new(40., 40., 10., 100.))
+                .rotation_deg(-10.),
+        );
+
+        canvas.finish()?;
 
         ctx.gfx_context.present(&frame)?;
 
@@ -64,7 +93,16 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
 pub fn main() -> GameResult {
     env_logger::init();
-    let cb = ggez::ContextBuilder::new("super_simple", "ggez");
+
+    let resource_dir = if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
+        let mut path = std::path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        path
+    } else {
+        std::path::PathBuf::from("./resources")
+    };
+
+    let cb = ggez::ContextBuilder::new("super_simple", "ggez").add_resource_path(resource_dir);
     let (mut ctx, event_loop) = cb.build()?;
     let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)

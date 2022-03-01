@@ -8,49 +8,10 @@ use super::{
 use crate::{GameError, GameResult};
 use std::{io::Read, num::NonZeroU32};
 
-/// Pixel format of an image.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum ImageFormat {
-    /// Single 8-bit channel (red). Most appropriate for grayscale images that do not need float precision.
-    R8,
-    /// Four 8-bit channels (RGBA), non-SRGB. Most appropriate for non-SRGB color images, e.g. texture maps.
-    Rgba8,
-    /// Four 8-bit channels (RGBA), SRGB. Most appropriate for SRGB color images, such as sprites.
-    Rgba8Srgb,
-    /// Single 32-bit float channel. Most appropriate for depth targets.
-    Depth32,
-    /// 32-bit channel split into 24 bits for depth and 8 bits for stencil.
-    /// Appropriate for both depth and stencil targets.
-    ///
-    /// Prefer `Depth32` if stencil is not needed.
-    Depth24Stencil8,
-}
-
-impl ImageFormat {
-    pub(crate) fn supports_depth(&self) -> bool {
-        matches!(self, ImageFormat::Depth32 | ImageFormat::Depth24Stencil8)
-    }
-
-    pub(crate) fn bytes_per_pixel(&self) -> u32 {
-        match self {
-            ImageFormat::R8 => 1,
-            ImageFormat::Rgba8 | ImageFormat::Rgba8Srgb => 4,
-            ImageFormat::Depth32 | ImageFormat::Depth24Stencil8 => 4,
-        }
-    }
-}
-
-impl From<ImageFormat> for wgpu::TextureFormat {
-    fn from(f: ImageFormat) -> Self {
-        match f {
-            ImageFormat::R8 => wgpu::TextureFormat::R8Unorm,
-            ImageFormat::Rgba8 => wgpu::TextureFormat::Rgba8Unorm,
-            ImageFormat::Rgba8Srgb => wgpu::TextureFormat::Rgba8UnormSrgb,
-            ImageFormat::Depth32 => wgpu::TextureFormat::Depth32Float,
-            ImageFormat::Depth24Stencil8 => wgpu::TextureFormat::Depth24PlusStencil8,
-        }
-    }
-}
+// maintaing a massive enum of all possible texture formats?
+// screw that.
+/// Describes the pixel format of an image.
+pub type ImageFormat = wgpu::TextureFormat;
 
 /// Handle to an image stored in GPU memory.
 #[derive(Debug, Clone)]
@@ -74,7 +35,7 @@ impl Image {
     ) -> Self {
         Self::new(
             gfx,
-            format,
+            format.into(),
             width,
             height,
             samples,
@@ -92,7 +53,7 @@ impl Image {
     ) -> Self {
         let image = Self::new(
             gfx,
-            format,
+            format.into(),
             width,
             height,
             1,
@@ -104,7 +65,9 @@ impl Image {
             pixels,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(NonZeroU32::new(format.bytes_per_pixel() * width).unwrap()),
+                bytes_per_row: Some(
+                    NonZeroU32::new(format.describe().block_size as u32 * width).unwrap(),
+                ),
                 rows_per_image: None,
             },
             wgpu::Extent3d {
@@ -131,9 +94,9 @@ impl Image {
             gfx,
             rgba8.as_ref(),
             if srgb {
-                ImageFormat::Rgba8Srgb
+                ImageFormat::Rgba8UnormSrgb
             } else {
-                ImageFormat::Rgba8
+                ImageFormat::Rgba8Unorm
             },
             width,
             height,
@@ -228,7 +191,7 @@ impl Image {
 #[derive(Debug, Clone)]
 pub struct ScreenImage {
     image: Image,
-    format: ImageFormat,
+    format: wgpu::TextureFormat,
     size: (f32, f32),
     samples: u32,
 }
@@ -238,9 +201,11 @@ impl ScreenImage {
     ///
     /// `width` and `height` specify the fraction of the framebuffer width and height that the [Image] will have.
     /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
+    ///
+    /// If `format` is `None` then the format will be inferred from the surface format.
     pub fn new(
         gfx: &GraphicsContext,
-        format: ImageFormat,
+        format: impl Into<Option<ImageFormat>>,
         width: f32,
         height: f32,
         samples: u32,
@@ -248,6 +213,11 @@ impl ScreenImage {
         assert!(width > 0.);
         assert!(height > 0.);
         assert!(samples > 0);
+
+        let format = format
+            .into()
+            .map(|x| x.into())
+            .unwrap_or(gfx.surface_format);
 
         ScreenImage {
             image: Self::create(gfx, format, (width, height), samples),
@@ -272,8 +242,20 @@ impl ScreenImage {
         (width, height)
     }
 
-    fn create(gfx: &GraphicsContext, format: ImageFormat, size: (f32, f32), samples: u32) -> Image {
+    fn create(
+        gfx: &GraphicsContext,
+        format: wgpu::TextureFormat,
+        size: (f32, f32),
+        samples: u32,
+    ) -> Image {
         let (width, height) = Self::size(gfx, size);
-        Image::new_canvas_image(gfx, format, width, height, samples)
+        Image::new(
+            gfx,
+            format,
+            width,
+            height,
+            samples,
+            wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        )
     }
 }

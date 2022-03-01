@@ -5,7 +5,7 @@ use std::sync::Arc;
 use thiserror::Error;
 
 /// An enum containing all kinds of game framework errors.
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug)]
 pub enum GameError {
     /// An error in the filesystem layout
     #[error("error in filesystem layout: {0}")]
@@ -54,6 +54,9 @@ pub enum GameError {
     /// Something went wrong with the `lyon` shape-tesselation library.
     #[error("lyon tesellation error: {0}")]
     LyonError(String),
+    /// Something went wrong when spawing a text with `futures`.
+    #[error("spawn error")]
+    SpawnError(#[from] futures::task::SpawnError),
     /// A custom error type for use by users of ggez.
     /// This lets you handle custom errors that may happen during your game (such as, trying to load a malformed file for a level)
     /// using the same mechanism you handle ggez's other errors.

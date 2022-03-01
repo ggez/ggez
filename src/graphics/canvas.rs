@@ -1,5 +1,7 @@
 //!
 
+use crate::{GameError, GameResult};
+
 use super::{
     context::{FrameArenas, GraphicsContext},
     draw::{DrawParam, DrawUniforms},
@@ -13,10 +15,11 @@ use super::{
     mesh::Mesh,
     sampler::{Sampler, SamplerCache},
     shader::{Shader, ShaderParams},
+    text::{Text, TextLayout},
     Color, Rect,
 };
 use crevice::std430::{AsStd430, Std430};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 pub(crate) const Z_STEP: f32 = 0.001;
 
@@ -29,11 +32,16 @@ pub struct Canvas<'a> {
     bind_group_cache: &'a mut BindGroupCache,
     pipeline_cache: &'a mut PipelineCache,
     sampler_cache: &'a mut SamplerCache,
+    glyph_brush: &'a mut wgpu_glyph::GlyphBrush<wgpu::DepthStencilState>,
+    fonts: &'a HashMap<String, wgpu_glyph::FontId>,
+    staging_belt: &'a mut wgpu::util::StagingBelt,
+    encoder: *mut wgpu::CommandEncoder,
 
     pass: wgpu::RenderPass<'a>,
     samples: u32,
     format: wgpu::TextureFormat,
-    depth: bool,
+    target: &'a Image,
+    depth: Option<&'a Image>,
 
     uniform_arena: ArcBuffer,
     uniform_arena_cursor: u64,
@@ -73,9 +81,11 @@ impl<'a> Canvas<'a> {
         depth: Option<&'a Image>,
     ) -> Self {
         assert!(image.samples() == 1);
-        assert!(depth.map(|x| x.format().supports_depth()).unwrap_or(true));
+        assert!(depth
+            .map(|x| x.format().describe().sample_type == wgpu::TextureSampleType::Depth)
+            .unwrap_or(true));
 
-        Self::new(gfx, 1, image.format().into(), depth.is_some(), |cmd| {
+        Self::new(gfx, 1, image.format().into(), image, depth, |cmd| {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
@@ -93,7 +103,7 @@ impl<'a> Canvas<'a> {
                     wgpu::RenderPassDepthStencilAttachment {
                         view: &depth.view,
                         depth_ops: Some(wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(1.),
+                            load: wgpu::LoadOp::Clear(0.),
                             store: true,
                         }),
                         stencil_ops: None,
@@ -115,13 +125,16 @@ impl<'a> Canvas<'a> {
     ) -> Self {
         assert!(msaa_image.samples() > 1);
         assert_eq!(resolve_image.samples(), 1);
-        assert!(depth.map(|x| x.format().supports_depth()).unwrap_or(true));
+        assert!(depth
+            .map(|x| x.format().describe().sample_type == wgpu::TextureSampleType::Depth)
+            .unwrap_or(true));
 
         Self::new(
             gfx,
             msaa_image.samples(),
             msaa_image.format().into(),
-            depth.is_some(),
+            msaa_image,
+            depth,
             |cmd| {
                 cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: None,
@@ -140,7 +153,7 @@ impl<'a> Canvas<'a> {
                         wgpu::RenderPassDepthStencilAttachment {
                             view: &depth.view,
                             depth_ops: Some(wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(1.),
+                                load: wgpu::LoadOp::Clear(0.),
                                 store: true,
                             }),
                             stencil_ops: None,
@@ -155,7 +168,8 @@ impl<'a> Canvas<'a> {
         gfx: &'a mut GraphicsContext,
         samples: u32,
         format: wgpu::TextureFormat,
-        depth: bool,
+        target: &'a Image,
+        depth: Option<&'a Image>,
         create_pass: impl FnOnce(&'a mut wgpu::CommandEncoder) -> wgpu::RenderPass<'a>,
     ) -> Self {
         let device = &gfx.device;
@@ -163,18 +177,26 @@ impl<'a> Canvas<'a> {
         let bind_group_cache = &mut gfx.bind_group_cache;
         let pipeline_cache = &mut gfx.pipeline_cache;
         let sampler_cache = &mut gfx.sampler_cache;
+        let glyph_brush = &mut gfx.glyph_brush;
+        let fonts = &gfx.fonts;
+        let staging_belt = &mut gfx.staging_belt;
 
-        let (arenas, pass) = gfx
-            .fcx
-            .as_mut()
-            .map(|fcx| (&fcx.arenas, create_pass(&mut fcx.cmd)))
-            .expect("creating canvas when not in frame");
+        let (arenas, pass, encoder) = {
+            let fcx = gfx.fcx.as_mut().expect("creating canvas when not in frame");
+
+            let encoder = (&mut fcx.cmd) as *mut _;
+            let arenas = &fcx.arenas;
+            let pass = create_pass(&mut fcx.cmd);
+
+            (arenas, pass, encoder)
+        };
 
         let size = gfx
             .window
             .inner_size()
             .to_logical(gfx.window.scale_factor());
-        let transform = glam::Mat4::orthographic_rh(0., size.width, size.height, 0., 0., 1000.);
+        let transform = glam::Mat4::orthographic_rh(0., size.width, size.height, 0., 0., 1000.)
+            * glam::Mat4::from_scale(glam::vec3(1., 1., -1.)); // idk
 
         let uniform_arena = ArcBuffer::new(device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
@@ -220,10 +242,15 @@ impl<'a> Canvas<'a> {
             bind_group_cache,
             pipeline_cache,
             sampler_cache,
+            glyph_brush,
+            fonts,
+            staging_belt,
+            encoder,
 
             pass,
             samples,
             format,
+            target,
             depth,
 
             uniform_arena,
@@ -353,7 +380,7 @@ impl<'a> Canvas<'a> {
                     self.samples,
                     self.format,
                     Some(wgpu::BlendState::ALPHA_BLENDING),
-                    self.depth,
+                    self.depth.is_some(),
                     true,
                 ),
             ),
@@ -399,7 +426,7 @@ impl<'a> Canvas<'a> {
         let cursor = self.uniform_arena_cursor;
         self.uniform_arena_cursor += 1;
         let uniforms_size = DrawUniforms::std430_size_static() as u64;
-        let byte_cursor = cursor * uniforms_size;
+        let byte_cursor = cursor * self.device.limits().min_uniform_buffer_offset_alignment as u64;
 
         param.src_rect = if let Some(image) = image.into() {
             self.set_image(image);
@@ -527,7 +554,7 @@ impl<'a> Canvas<'a> {
             .draw_indexed(0..mesh.index_count as u32, 0, 0..instances.len() as u32);
     }
 
-    /// Same
+    /// Equivalent of `draw` (as is to `draw_mesh`) for instanced rendering (i.e. as is to `draw_mesh_instances`).
     pub fn draw_instances<'b>(
         &mut self,
         image: impl Into<Option<&'b Image>>,
@@ -538,8 +565,105 @@ impl<'a> Canvas<'a> {
         self.draw_mesh_instances(&self.rect_mesh.clone(), image, instances, z, skip_z)
     }
 
+    /// Draws a section text that is fit and aligned into a given `rect` bounds.
+    ///
+    /// The section can be made up of multiple [Text], letting the user have complex formatting
+    /// in the same section of text (e.g. bolding, highlighting, headers, etc).
+    ///
+    /// [TextLayout] determines how the text is aligned in `rect` and whether the text wraps or not.
+    ///
+    /// Depth must be enabled to draw text.
+    pub fn draw_bounded_text(&mut self, text: &[Text], rect: Rect, layout: TextLayout) {
+        assert!(self.depth.is_some());
+
+        let mut section = wgpu_glyph::Section::default()
+            .with_screen_position((rect.x, rect.y))
+            .with_bounds((rect.w, rect.h))
+            .with_layout(match layout {
+                TextLayout::SingleLine { h_align, v_align } => {
+                    wgpu_glyph::Layout::default_single_line()
+                        .h_align(h_align.into())
+                        .v_align(v_align.into())
+                }
+                TextLayout::Wrap { h_align, v_align } => wgpu_glyph::Layout::default_wrap()
+                    .h_align(h_align.into())
+                    .v_align(v_align.into()),
+            });
+
+        for text in text {
+            let z = text.z.unwrap_or_else(|| {
+                self.z_pos += Z_STEP;
+                self.z_pos
+            });
+
+            section = section.add_text(wgpu_glyph::Text {
+                text: text.text,
+                scale: text.size.into(),
+                font_id: *self.fonts.get(text.font).expect("invalid font name"),
+                extra: wgpu_glyph::Extra {
+                    color: text.color.into(),
+                    z,
+                },
+            });
+        }
+
+        self.glyph_brush.queue(section);
+    }
+
+    /// Unbounded version of `draw_bounded_text`.
+    pub fn draw_text(
+        &mut self,
+        text: &[Text],
+        pos: impl Into<mint::Vector2<f32>>,
+        layout: TextLayout,
+    ) {
+        let pos = pos.into();
+        self.draw_bounded_text(
+            text,
+            Rect::new(pos.x, pos.y, f32::INFINITY, f32::INFINITY),
+            layout,
+        )
+    }
+
     /// Finish drawing with this canvas.
-    pub fn finish(self) {}
+    #[allow(unsafe_code)]
+    pub fn finish(self) -> GameResult<()> {
+        if self.depth.is_some() {
+            let Canvas {
+                device,
+                staging_belt,
+                glyph_brush,
+                encoder,
+                target,
+                depth,
+                transform,
+                pass,
+                ..
+            } = self;
+
+            std::mem::drop(pass);
+
+            glyph_brush
+                .draw_queued_with_transform(
+                    device,
+                    staging_belt,
+                    unsafe { encoder.as_mut().unwrap() },
+                    target.view.as_ref(),
+                    wgpu::RenderPassDepthStencilAttachment {
+                        view: depth.unwrap().view.as_ref(),
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: true,
+                        }),
+                        stencil_ops: None,
+                    },
+                    transform.to_cols_array(),
+                )
+                .map_err(|s| GameError::RenderError(s))?;
+        }
+
+        Ok(())
+    }
 
     fn set_image(&mut self, image: &Image) {
         if self

@@ -73,6 +73,7 @@ crevice = "0.8"
 typed-arena = "2.0"
 lazy_static = "1.4"
 thiserror = "1.0"
+futures = "0.3"
 
 [dev-dependencies]
 env_logger = "0.9"
