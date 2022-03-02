@@ -160,6 +160,11 @@ impl SpriteBatch {
         mem::replace(&mut self.image, image)
     }
 
+    /// Returns a reference to the spritebatch's image.
+    pub fn image(&self) -> &graphics::Image {
+        &self.image
+    }
+
     /// Get the filter mode for the SpriteBatch.
     pub fn filter(&self) -> FilterMode {
         self.image.filter()
