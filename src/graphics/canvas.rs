@@ -425,7 +425,6 @@ impl<'a> Canvas<'a> {
     ) {
         let cursor = self.uniform_arena_cursor;
         self.uniform_arena_cursor += 1;
-        let uniforms_size = DrawUniforms::std430_size_static() as u64;
         let byte_cursor = cursor * self.device.limits().min_uniform_buffer_offset_alignment as u64;
 
         param.src_rect = if let Some(image) = image.into() {

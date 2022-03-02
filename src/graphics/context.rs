@@ -203,18 +203,22 @@ impl GraphicsContext {
                 Vertex {
                     position: [0., 0.],
                     uv: [0., 0.],
+                    color: [1.; 4],
                 },
                 Vertex {
                     position: [1., 0.],
                     uv: [1., 0.],
+                    color: [1.; 4],
                 },
                 Vertex {
                     position: [0., 1.],
                     uv: [0., 1.],
+                    color: [1.; 4],
                 },
                 Vertex {
                     position: [1., 1.],
                     uv: [1., 1.],
+                    color: [1.; 4],
                 },
             ],
             &[0, 2, 1, 2, 3, 1],

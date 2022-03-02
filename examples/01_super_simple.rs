@@ -5,6 +5,7 @@ use ggez::graphics::{
     self,
     draw::DrawParam,
     image::Image,
+    mesh::{Mesh, MeshBuilder},
     text::{FontData, Text, TextLayout},
     Color, Rect,
 };
@@ -21,21 +22,29 @@ use glam::*;
 
 struct MainState {
     pos_x: f32,
+    circle: Mesh,
     frame: ScreenImage,
-    depth: ScreenImage,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.gfx_context.add_font(
-            "monospace",
-            FontData::from_slice(include_bytes!("../resources/LiberationMono-Regular.ttf"))?,
+        let circle = Mesh::from_data(
+            &ctx.gfx_context,
+            MeshBuilder::new()
+                .circle(
+                    graphics::DrawMode::fill(),
+                    vec2(0., 0.),
+                    100.,
+                    2.0,
+                    Color::WHITE,
+                )?
+                .build(),
         );
 
         Ok(MainState {
             pos_x: 0.0,
+            circle,
             frame: ScreenImage::new(&ctx.gfx_context, None, 1., 1., 1),
-            depth: ScreenImage::new(&ctx.gfx_context, ImageFormat::Depth32Float, 1., 1., 1),
         })
     }
 }
@@ -48,39 +57,18 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let frame = self.frame.image(&ctx.gfx_context);
-        let depth = self.depth.image(&ctx.gfx_context);
 
         let mut canvas = Canvas::from_image(
             &mut ctx.gfx_context,
             CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
             &frame,
-            Some(&depth),
-        );
-
-        canvas.draw(
             None,
-            DrawParam::new()
-                .color(Color::WHITE)
-                .dst_rect(Rect::new(30., 10., 50., 70.))
-                .rotation_deg(30.),
         );
 
-        canvas.draw_text(
-            &[Text::new()
-                .text("Hello, world!")
-                .font("monospace")
-                .size(16.)
-                .color(Color::RED)],
-            glam::vec2(30., 70.),
-            TextLayout::tl_single_line(),
-        );
-
-        canvas.draw(
+        canvas.draw_mesh(
+            &self.circle,
             None,
-            DrawParam::new()
-                .color(Color::BLUE)
-                .dst_rect(Rect::new(40., 40., 10., 100.))
-                .rotation_deg(-10.),
+            DrawParam::new().offset(vec2(self.pos_x, 300.)),
         );
 
         canvas.finish()?;
@@ -93,16 +81,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
 pub fn main() -> GameResult {
     env_logger::init();
-
-    let resource_dir = if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
-        let mut path = std::path::PathBuf::from(manifest_dir);
-        path.push("resources");
-        path
-    } else {
-        std::path::PathBuf::from("./resources")
-    };
-
-    let cb = ggez::ContextBuilder::new("super_simple", "ggez").add_resource_path(resource_dir);
+    let cb = ggez::ContextBuilder::new("super_simple", "ggez");
     let (mut ctx, event_loop) = cb.build()?;
     let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)

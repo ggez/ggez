@@ -1,7 +1,8 @@
 struct VertexOutput {
     [[builtin(position)]] position: vec4<f32>;
     [[location(0)]] uv: vec2<f32>;
-    [[location(1), interpolate(flat)]] idx: u32;
+    [[location(1)]] color: vec4<f32>;
+    [[location(2), interpolate(flat)]] idx: u32;
 };
 
 struct Uniforms {
@@ -35,6 +36,7 @@ fn vs_main(
     [[builtin(instance_index)]] in_instance_index: u32,
     [[location(0)]] position: vec2<f32>,
     [[location(1)]] uv: vec2<f32>,
+    [[location(2)]] color: vec4<f32>,
 ) -> VertexOutput {
     var instance = instances.instances[in_instance_index];
 
@@ -42,11 +44,12 @@ fn vs_main(
     out.position = uniforms.transform * instance.transform * vec4<f32>(position, 0.0, 1.0);
     out.position = out.position / out.position.w;
     out.uv = mix(instance.src_rect.xy, instance.src_rect.zw, uv);
+    out.color = color;
     out.idx = in_instance_index;
     return out;
 }
 
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    return instances.instances[in.idx].color * textureSample(t, s, in.uv);
+    return instances.instances[in.idx].color * in.color * textureSample(t, s, in.uv);
 }
