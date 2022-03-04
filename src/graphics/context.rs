@@ -53,6 +53,7 @@ pub struct GraphicsContext {
     pub(crate) pipeline_cache: PipelineCache,
     pub(crate) sampler_cache: SamplerCache,
 
+    pub(crate) vsync: bool,
     pub(crate) fcx: Option<FrameContext>,
     pub(crate) glyph_brush: wgpu_glyph::GlyphBrush<wgpu::DepthStencilState>,
     pub(crate) fonts: HashMap<String, wgpu_glyph::FontId>,
@@ -160,6 +161,7 @@ impl GraphicsContext {
             pipeline_cache,
             sampler_cache,
 
+            vsync: conf.window_setup.vsync,
             fcx: None,
             glyph_brush,
             fonts: HashMap::new(),
@@ -427,6 +429,21 @@ impl GraphicsContext {
                 }
             }
         }
+
+        self.surface.configure(
+            &self.device,
+            &wgpu::SurfaceConfiguration {
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                format: self.surface_format,
+                width: mode.width as _,
+                height: mode.width as _,
+                present_mode: if self.vsync {
+                    wgpu::PresentMode::Fifo
+                } else {
+                    wgpu::PresentMode::Mailbox
+                },
+            },
+        );
 
         Ok(())
     }

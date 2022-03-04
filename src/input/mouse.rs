@@ -71,24 +71,24 @@ impl Default for MouseContext {
 
 /// Returns the current mouse cursor type of the window.
 pub fn cursor_type(ctx: &Context) -> CursorIcon {
-    ctx.mouse_context.cursor_type
+    ctx.mouse.cursor_type
 }
 
 /// Modifies the mouse cursor type of the window.
 pub fn set_cursor_type(ctx: &mut Context, cursor_type: CursorIcon) {
-    ctx.mouse_context.cursor_type = cursor_type;
-    ctx.gfx_context.window.set_cursor_icon(cursor_type);
+    ctx.mouse.cursor_type = cursor_type;
+    ctx.gfx.window.set_cursor_icon(cursor_type);
 }
 
 /// Get whether or not the mouse is grabbed (confined to the window)
 pub fn cursor_grabbed(ctx: &Context) -> bool {
-    ctx.mouse_context.cursor_grabbed
+    ctx.mouse.cursor_grabbed
 }
 
 /// Set whether or not the mouse is grabbed (confined to the window)
 pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
-    ctx.mouse_context.cursor_grabbed = grabbed;
-    ctx.gfx_context
+    ctx.mouse.cursor_grabbed = grabbed;
+    ctx.gfx
         .window
         .set_cursor_grab(grabbed)
         .map_err(|e| GameError::WindowError(e.to_string()))
@@ -96,20 +96,20 @@ pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
 
 /// Set whether or not the mouse is hidden (invisible)
 pub fn cursor_hidden(ctx: &Context) -> bool {
-    ctx.mouse_context.cursor_hidden
+    ctx.mouse.cursor_hidden
 }
 
 /// Set whether or not the mouse is hidden (invisible).
 pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
-    ctx.mouse_context.cursor_hidden = hidden;
-    ctx.gfx_context.window.set_cursor_visible(!hidden)
+    ctx.mouse.cursor_hidden = hidden;
+    ctx.gfx.window.set_cursor_visible(!hidden)
 }
 
 /// Get the current position of the mouse cursor, in pixels.
 /// Complement to [`set_position()`](fn.set_position.html).
 /// Uses strictly window-only coordinates.
 pub fn position(ctx: &Context) -> mint::Point2<f32> {
-    ctx.mouse_context.last_position.into()
+    ctx.mouse.last_position.into()
 }
 
 /// Set the current position of the mouse cursor, in pixels.
@@ -119,8 +119,8 @@ where
     P: Into<mint::Point2<f32>>,
 {
     let mintpoint = point.into();
-    ctx.mouse_context.last_position = Point2::from(mintpoint);
-    ctx.gfx_context
+    ctx.mouse.last_position = Point2::from(mintpoint);
+    ctx.gfx
         .window
         .set_cursor_position(dpi::LogicalPosition {
             x: f64::from(mintpoint.x),
@@ -131,15 +131,15 @@ where
 
 /// Get the distance the cursor was moved during the current frame, in pixels.
 pub fn delta(ctx: &Context) -> mint::Point2<f32> {
-    ctx.mouse_context.delta.into()
+    ctx.mouse.delta.into()
 }
 
 /// Get the distance the cursor was moved between the latest two mouse_motion_events.
 pub(crate) fn last_delta(ctx: &Context) -> mint::Point2<f32> {
-    ctx.mouse_context.last_delta.into()
+    ctx.mouse.last_delta.into()
 }
 
 /// Returns whether or not the given mouse button is pressed.
 pub fn button_pressed(ctx: &Context, button: MouseButton) -> bool {
-    ctx.mouse_context.button_pressed(button)
+    ctx.mouse.button_pressed(button)
 }

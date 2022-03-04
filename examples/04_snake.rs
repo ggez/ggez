@@ -19,8 +19,15 @@ use oorandom::Rand32;
 
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
-use ggez::event::{KeyCode, KeyMods};
-use ggez::{event, graphics, timer, Context, GameResult};
+use ggez::{
+    event,
+    graphics::{self, canvas::CanvasLoadOp, draw::DrawParam, image::ScreenImage},
+    timer, Context, GameResult,
+};
+use ggez::{
+    event::{KeyCode, KeyMods},
+    graphics::canvas::Canvas,
+};
 
 // We'll bring in some things from `std` to help us in the future.
 use std::collections::LinkedList;
@@ -185,16 +192,17 @@ impl Food {
     /// Note: this method of drawing does not scale. If you need to render
     /// a large number of shapes, use a SpriteBatch. This approach is fine for
     /// this example since there are a fairly limited number of calls.
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&self, canvas: &mut Canvas) {
         // First we set the color to draw with, in this case all food will be
         // colored blue.
-        let color = [0.0, 0.0, 1.0, 1.0].into();
+        let color = [0.0, 0.0, 1.0, 1.0];
         // Then we draw a rectangle with the Fill draw mode, and we convert the
         // Food's position into a `ggez::Rect` using `.into()` which we can do
         // since we implemented `From<GridPosition>` for `Rect` earlier.
-        let rectangle =
-            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), self.pos.into(), color)?;
-        graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))
+        canvas.draw(
+            None,
+            DrawParam::new().dst_rect(self.pos.into()).color(color),
+        );
     }
 }
 
@@ -313,28 +321,25 @@ impl Snake {
     /// Again, note that this approach to drawing is fine for the limited scope of this
     /// example, but larger scale games will likely need a more optimized render path
     /// using SpriteBatch or something similar that batches draw calls.
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&self, canvas: &mut Canvas) {
         // We first iterate through the body segments and draw them.
         for seg in self.body.iter() {
             // Again we set the color (in this case an orangey color)
             // and then draw the Rect that we convert that Segment's position into
-            let rectangle = graphics::Mesh::new_rectangle(
-                ctx,
-                graphics::DrawMode::fill(),
-                seg.pos.into(),
-                [0.3, 0.3, 0.0, 1.0].into(),
-            )?;
-            graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
+            canvas.draw(
+                None,
+                DrawParam::new()
+                    .dst_rect(seg.pos.into())
+                    .color([0.3, 0.3, 0.0, 1.0]),
+            );
         }
         // And then we do the same for the head, instead making it fully red to distinguish it.
-        let rectangle = graphics::Mesh::new_rectangle(
-            ctx,
-            graphics::DrawMode::fill(),
-            self.head.pos.into(),
-            [1.0, 0.5, 0.0, 1.0].into(),
-        )?;
-        graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
-        Ok(())
+        canvas.draw(
+            None,
+            DrawParam::new()
+                .dst_rect(self.head.pos.into())
+                .color([1.0, 0.5, 0.0, 1.0]),
+        );
     }
 }
 
@@ -342,6 +347,7 @@ impl Snake {
 /// will implement ggez's `EventHandler` trait and will therefore drive
 /// everything else that happens in our game.
 struct GameState {
+    frame: ScreenImage,
     /// First we need a Snake
     snake: Snake,
     /// A piece of food
@@ -354,7 +360,9 @@ struct GameState {
 
 impl GameState {
     /// Our new function will set up the initial state of our game.
-    pub fn new() -> Self {
+    pub fn new(ctx: &mut Context) -> Self {
+        let frame = ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
+
         // First we put our snake a quarter of the way across our grid in the x axis
         // and half way down the y axis. This works well since we start out moving to the right.
         let snake_pos = (GRID_SIZE.0 / 4, GRID_SIZE.1 / 2).into();
@@ -367,6 +375,7 @@ impl GameState {
         let food_pos = GridPosition::random(&mut rng, GRID_SIZE.0, GRID_SIZE.1);
 
         GameState {
+            frame,
             snake: Snake::new(snake_pos),
             food: Food::new(food_pos),
             gameover: false,
@@ -415,14 +424,25 @@ impl event::EventHandler<ggez::GameError> for GameState {
 
     /// draw is where we should actually render the game's current state.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        // First we clear the screen to a nice (well, maybe pretty glaring ;)) green
-        graphics::clear(ctx, [0.0, 1.0, 0.0, 1.0].into());
+        let frame = self.frame.image(&ctx.gfx);
+
+        let mut canvas = Canvas::from_image(
+            &mut ctx.gfx,
+            CanvasLoadOp::Clear([0.0, 1.0, 0.0, 1.0].into()),
+            &frame,
+            None,
+        );
+
         // Then we tell the snake and the food to draw themselves
-        self.snake.draw(ctx)?;
-        self.food.draw(ctx)?;
+        self.snake.draw(&mut canvas);
+        self.food.draw(&mut canvas);
+
+        canvas.finish()?;
+
         // Finally we call graphics::present to cycle the gpu's framebuffer and display
         // the new frame we just drew.
-        graphics::present(ctx)?;
+        ctx.gfx.present(&frame)?;
+
         // We yield the current thread until the next update
         ggez::timer::yield_now();
         // And return success.
@@ -456,7 +476,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
 
 fn main() -> GameResult {
     // Here we use a ContextBuilder to setup metadata about our game. First the title and author
-    let (ctx, events_loop) = ggez::ContextBuilder::new("snake", "Gray Olson")
+    let (mut ctx, events_loop) = ggez::ContextBuilder::new("snake", "Gray Olson")
         // Next we set up the window. This title will be displayed in the title bar of the window.
         .window_setup(ggez::conf::WindowSetup::default().title("Snake!"))
         // Now we get to set the size of the window, which we use our SCREEN_SIZE constant from earlier to help with
@@ -466,7 +486,7 @@ fn main() -> GameResult {
         .build()?;
 
     // Next we create a new instance of our GameState struct, which implements EventHandler
-    let state = GameState::new();
+    let state = GameState::new(&mut ctx);
     // And finally we actually run our game, passing in our context and state.
     event::run(ctx, events_loop, state)
 }

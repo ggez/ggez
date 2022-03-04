@@ -217,7 +217,7 @@ where
                     state.text_input_event(ctx, ch);
                 }
                 WindowEvent::ModifiersChanged(mods) => {
-                    ctx.keyboard_context.set_modifiers(KeyMods::from(mods))
+                    ctx.keyboard.set_modifiers(KeyMods::from(mods))
                 }
                 WindowEvent::KeyboardInput {
                     input:
@@ -229,7 +229,7 @@ where
                     ..
                 } => {
                     let repeat = keyboard::is_key_repeated(ctx);
-                    state.key_down_event(ctx, keycode, ctx.keyboard_context.active_mods(), repeat);
+                    state.key_down_event(ctx, keycode, ctx.keyboard.active_mods(), repeat);
                 }
                 WindowEvent::KeyboardInput {
                     input:
@@ -240,13 +240,13 @@ where
                         },
                     ..
                 } => {
-                    state.key_up_event(ctx, keycode, ctx.keyboard_context.active_mods());
+                    state.key_up_event(ctx, keycode, ctx.keyboard.active_mods());
                 }
                 WindowEvent::MouseWheel { delta, .. } => {
                     let (x, y) = match delta {
                         MouseScrollDelta::LineDelta(x, y) => (x, y),
                         MouseScrollDelta::PixelDelta(pos) => {
-                            let scale_factor = ctx.gfx_context.window.scale_factor();
+                            let scale_factor = ctx.gfx.window.scale_factor();
                             let dpi::LogicalPosition { x, y } = pos.to_logical::<f32>(scale_factor);
                             (x, y)
                         }
@@ -287,13 +287,11 @@ where
                 // you include `timer_context.tick()` and
                 // `ctx.process_event()` calls.  These update ggez's
                 // internal state however necessary.
-                ctx.timer_context.tick();
+                ctx.timer.tick();
 
                 // Handle gamepad events if necessary.
                 if ctx.conf.modules.gamepad {
-                    while let Some(gilrs::Event { id, event, .. }) =
-                        ctx.gamepad_context.next_event()
-                    {
+                    while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad.next_event() {
                         match event {
                             gilrs::EventType::ButtonPressed(button, _) => {
                                 state.gamepad_button_down_event(ctx, button, GamepadId(id));
@@ -318,7 +316,7 @@ where
                     }
                 }
 
-                if let Err(e) = ctx.gfx_context.begin_frame() {
+                if let Err(e) = ctx.gfx.begin_frame() {
                     error!("Error on GraphicsContext::begin_frame(): {:?}", e);
                     eprintln!("Error on GraphicsContext::begin_frame(): {:?}", e);
                     *control_flow = ControlFlow::Exit;
@@ -333,7 +331,7 @@ where
                     }
                 }
 
-                if let Err(e) = ctx.gfx_context.end_frame() {
+                if let Err(e) = ctx.gfx.end_frame() {
                     error!("Error on GraphicsContext::end_frame(): {:?}", e);
                     eprintln!("Error on GraphicsContext::end_frame(): {:?}", e);
                     *control_flow = ControlFlow::Exit;
@@ -341,7 +339,7 @@ where
 
                 // reset the mouse delta for the next frame
                 // necessary because it's calculated cumulatively each cycle
-                ctx.mouse_context.reset_delta();
+                ctx.mouse.reset_delta();
             }
             Event::RedrawRequested(_) => (),
             Event::RedrawEventsCleared => (),
@@ -358,7 +356,7 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
     if let winit_event::Event::WindowEvent { event, .. } = event {
         match event {
             winit_event::WindowEvent::Resized(physical_size) => {
-                ctx.gfx_context.resize(*physical_size);
+                ctx.gfx.resize(*physical_size);
             }
             winit_event::WindowEvent::CursorMoved {
                 position: logical_position,
@@ -371,28 +369,27 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                     logical_position.y as f32 - current_pos.y,
                 );
                 // Sum up the cumulative mouse change for this frame in `delta`:
-                ctx.mouse_context.set_delta(crate::graphics::Point2::new(
+                ctx.mouse.set_delta(crate::graphics::Point2::new(
                     current_delta.x + diff.x,
                     current_delta.y + diff.y,
                 ));
                 // `last_delta` is not cumulative.
                 // It represents only the change between the last mouse event and the current one.
-                ctx.mouse_context.set_last_delta(diff);
-                ctx.mouse_context
-                    .set_last_position(crate::graphics::Point2::new(
-                        logical_position.x as f32,
-                        logical_position.y as f32,
-                    ));
+                ctx.mouse.set_last_delta(diff);
+                ctx.mouse.set_last_position(crate::graphics::Point2::new(
+                    logical_position.x as f32,
+                    logical_position.y as f32,
+                ));
             }
             winit_event::WindowEvent::MouseInput { button, state, .. } => {
                 let pressed = match state {
                     winit_event::ElementState::Pressed => true,
                     winit_event::ElementState::Released => false,
                 };
-                ctx.mouse_context.set_button(*button, pressed);
+                ctx.mouse.set_button(*button, pressed);
             }
             winit_event::WindowEvent::ModifiersChanged(mods) => ctx
-                .keyboard_context
+                .keyboard
                 .set_modifiers(crate::input::keyboard::KeyMods::from(*mods)),
             winit_event::WindowEvent::KeyboardInput {
                 input:
@@ -407,7 +404,7 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                     winit_event::ElementState::Pressed => true,
                     winit_event::ElementState::Released => false,
                 };
-                ctx.keyboard_context.set_key(*keycode, pressed);
+                ctx.keyboard.set_key(*keycode, pressed);
             }
             winit_event::WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                 if !ctx.conf.window_mode.resize_on_scale_factor_change {

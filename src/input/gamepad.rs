@@ -109,12 +109,12 @@ impl GamepadContext for NullGamepadContext {
 
 /// Returns the `Gamepad` associated with an `id`.
 pub fn gamepad(ctx: &Context, id: GamepadId) -> Gamepad {
-    ctx.gamepad_context.gamepad(id)
+    ctx.gamepad.gamepad(id)
 }
 
 /// Return an iterator of all the `Gamepads` that are connected.
 pub fn gamepads(ctx: &Context) -> GamepadsIterator {
-    ctx.gamepad_context.gamepads()
+    ctx.gamepad.gamepads()
 }
 
 // Properties gamepads might want:

@@ -55,7 +55,7 @@ pub fn main() -> GameResult {
             Event::MainEventsCleared => {
                 // Tell the timer stuff a frame has happened.
                 // Without this the FPS timer functions and such won't work.
-                ctx.timer_context.tick();
+                ctx.timer.tick();
 
                 // Update
                 position += 1.0;
@@ -76,7 +76,7 @@ pub fn main() -> GameResult {
 
                 // reset the mouse delta for the next frame
                 // necessary because it's calculated cumulatively each cycle
-                ctx.mouse_context.reset_delta();
+                ctx.mouse.reset_delta();
 
                 ggez::timer::yield_now();
             }

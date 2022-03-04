@@ -29,7 +29,7 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let circle = Mesh::from_data(
-            &ctx.gfx_context,
+            &ctx.gfx,
             MeshBuilder::new()
                 .circle(
                     graphics::DrawMode::fill(),
@@ -44,7 +44,7 @@ impl MainState {
         Ok(MainState {
             pos_x: 0.0,
             circle,
-            frame: ScreenImage::new(&ctx.gfx_context, None, 1., 1., 1),
+            frame: ScreenImage::new(&ctx.gfx, None, 1., 1., 1),
         })
     }
 }
@@ -56,10 +56,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let frame = self.frame.image(&ctx.gfx_context);
+        let frame = self.frame.image(&ctx.gfx);
 
         let mut canvas = Canvas::from_image(
-            &mut ctx.gfx_context,
+            &mut ctx.gfx,
             CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
             &frame,
             None,
@@ -73,7 +73,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         canvas.finish()?;
 
-        ctx.gfx_context.present(&frame)?;
+        ctx.gfx.present(&frame)?;
 
         Ok(())
     }

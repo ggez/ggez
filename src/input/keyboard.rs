@@ -210,28 +210,28 @@ impl Default for KeyboardContext {
 
 /// Checks if a key is currently pressed down.
 pub fn is_key_pressed(ctx: &Context, key: KeyCode) -> bool {
-    ctx.keyboard_context.is_key_pressed(key)
+    ctx.keyboard.is_key_pressed(key)
 }
 
 /// Checks if the last keystroke sent by the system is repeated,
 /// like when a key is held down for a period of time.
 pub fn is_key_repeated(ctx: &Context) -> bool {
-    ctx.keyboard_context.is_key_repeated()
+    ctx.keyboard.is_key_repeated()
 }
 
 /// Returns a reference to the set of currently pressed keys.
 pub fn pressed_keys(ctx: &Context) -> &HashSet<KeyCode> {
-    ctx.keyboard_context.pressed_keys()
+    ctx.keyboard.pressed_keys()
 }
 
 /// Checks if keyboard modifier (or several) is active.
 pub fn is_mod_active(ctx: &Context, keymods: KeyMods) -> bool {
-    ctx.keyboard_context.active_mods().contains(keymods)
+    ctx.keyboard.active_mods().contains(keymods)
 }
 
 /// Returns currently active keyboard modifiers.
 pub fn active_mods(ctx: &Context) -> KeyMods {
-    ctx.keyboard_context.active_mods()
+    ctx.keyboard.active_mods()
 }
 
 #[cfg(test)]
