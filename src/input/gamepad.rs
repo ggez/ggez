@@ -3,6 +3,8 @@
 //! This is going to be a bit of a work-in-progress as gamepad input
 //! gets fleshed out.  The `gilrs` crate needs help to add better
 //! cross-platform support.  Why not give it a hand?
+
+use crate::{context::Context, error::GameResult};
 use gilrs::ConnectedGamepadsIterator;
 use std::fmt;
 
@@ -11,9 +13,6 @@ pub use gilrs::{self, Event, Gamepad, Gilrs};
 /// A unique identifier for a particular GamePad
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct GamepadId(pub(crate) gilrs::GamepadId);
-
-use crate::context::Context;
-use crate::error::GameResult;
 
 /// Trait object defining a gamepad/joystick context.
 pub trait GamepadContext {
@@ -105,16 +104,6 @@ impl GamepadContext for NullGamepadContext {
     fn gamepads(&self) -> GamepadsIterator {
         panic!("Gamepad module disabled")
     }
-}
-
-/// Returns the `Gamepad` associated with an `id`.
-pub fn gamepad(ctx: &Context, id: GamepadId) -> Gamepad {
-    ctx.gamepad.gamepad(id)
-}
-
-/// Return an iterator of all the `Gamepads` that are connected.
-pub fn gamepads(ctx: &Context) -> GamepadsIterator {
-    ctx.gamepad.gamepads()
 }
 
 // Properties gamepads might want:

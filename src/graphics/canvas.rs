@@ -191,12 +191,10 @@ impl<'a> Canvas<'a> {
             (arenas, pass, encoder)
         };
 
-        let size = gfx
-            .window
-            .inner_size()
-            .to_logical(gfx.window.scale_factor());
-        let transform = glam::Mat4::orthographic_rh(0., size.width, size.height, 0., 0., 1000.)
-            * glam::Mat4::from_scale(glam::vec3(1., 1., -1.)); // idk
+        let size = gfx.window.inner_size();
+        let transform =
+            glam::Mat4::orthographic_rh(0., size.width as _, size.height as _, 0., 0., 1000.)
+                * glam::Mat4::from_scale(glam::vec3(1., 1., -1.)); // idk
 
         let uniform_arena = ArcBuffer::new(device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
@@ -427,20 +425,25 @@ impl<'a> Canvas<'a> {
         self.uniform_arena_cursor += 1;
         let byte_cursor = cursor * self.device.limits().min_uniform_buffer_offset_alignment as u64;
 
-        param.src_rect = if let Some(image) = image.into() {
+        let (src_rect, image_scale) = if let Some(image) = image.into() {
             self.set_image(image);
-            param.src_rect
+            (
+                param.src_rect,
+                glam::Vec2::new(image.width() as _, image.height() as _),
+            )
         } else {
             self.set_image(&self.white_image.clone());
-            Rect::one()
+            (Rect::one(), glam::Vec2::ONE)
         };
+
+        param.src_rect = src_rect;
 
         param.z = Some(param.z.unwrap_or_else(|| {
             self.z_pos += Z_STEP;
             self.z_pos
         }));
 
-        let mut uniforms = DrawUniforms::from(param);
+        let mut uniforms = DrawUniforms::from_param(param, image_scale.into());
         uniforms.transform = (self.transform * glam::Mat4::from(uniforms.transform)).into();
 
         self.queue.write_buffer(
@@ -503,16 +506,20 @@ impl<'a> Canvas<'a> {
             self.z_pos = z_pos - 2. * instances.z_min + instances.z_max;
         }
 
-        if let Some(image) = image.into() {
+        let image_scale = if let Some(image) = image.into() {
             self.set_image(image);
+            glam::Vec2::new(image.width() as _, image.height() as _)
         } else {
             self.set_image(&self.white_image.clone());
+            glam::Vec2::ONE
         };
 
         let transform = self.transform
             * glam::Mat4::from_translation(glam::vec3(0., 0., z_pos - instances.z_min));
         let uniforms = InstanceUniforms {
             transform: transform.into(),
+            pre_transform: glam::Mat4::from_scale(glam::vec3(image_scale.x, image_scale.y, 0.))
+                .into(),
         };
 
         self.queue.write_buffer(
@@ -704,4 +711,5 @@ pub enum CanvasLoadOp {
 #[derive(crevice::std430::AsStd430)]
 struct InstanceUniforms {
     pub transform: mint::ColumnMatrix4<f32>,
+    pub pre_transform: mint::ColumnMatrix4<f32>,
 }

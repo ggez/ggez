@@ -228,7 +228,7 @@ where
                         },
                     ..
                 } => {
-                    let repeat = keyboard::is_key_repeated(ctx);
+                    let repeat = ctx.keyboard.is_key_repeated();
                     state.key_down_event(ctx, keycode, ctx.keyboard.active_mods(), repeat);
                 }
                 WindowEvent::KeyboardInput {
@@ -258,7 +258,7 @@ where
                     button,
                     ..
                 } => {
-                    let position = mouse::position(ctx);
+                    let position = ctx.mouse.position();
                     match element_state {
                         ElementState::Pressed => {
                             state.mouse_button_down_event(ctx, button, position.x, position.y)
@@ -269,8 +269,8 @@ where
                     }
                 }
                 WindowEvent::CursorMoved { .. } => {
-                    let position = mouse::position(ctx);
-                    let delta = mouse::last_delta(ctx);
+                    let position = ctx.mouse.position();
+                    let delta = ctx.mouse.delta();
                     state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                 }
                 _x => {
@@ -362,8 +362,9 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                 position: logical_position,
                 ..
             } => {
-                let current_delta = crate::input::mouse::delta(ctx);
-                let current_pos = crate::input::mouse::position(ctx);
+                let current_delta = ctx.mouse.delta();
+                let current_pos = ctx.mouse.position();
+
                 let diff = crate::graphics::Point2::new(
                     logical_position.x as f32 - current_pos.x,
                     logical_position.y as f32 - current_pos.y,

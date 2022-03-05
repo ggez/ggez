@@ -1,25 +1,41 @@
 //! Basic hello world example.
 
-use ggez::event;
-use ggez::graphics;
-use ggez::{Context, GameResult};
-use std::env;
-use std::path;
+use ggez::graphics::image::ImageFormat;
+use ggez::{
+    event,
+    graphics::{
+        self,
+        canvas::{Canvas, CanvasLoadOp},
+        image::ScreenImage,
+        text::{FontData, Text, TextLayout},
+        Color,
+    },
+    Context, GameResult,
+};
+use std::{env, path};
 
 // First we make a structure to contain the game's state
 struct MainState {
+    frame: ScreenImage,
+    depth: ScreenImage,
     frames: usize,
-    text: graphics::Text,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        // The ttf file will be in your resources directory. Later, we
-        // will mount that directory so we can omit it in the path here.
-        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
-        let text = graphics::Text::new(("Hello world!", font, 48.0));
+        let frame = ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
+        let depth = ScreenImage::new(&ctx.gfx, ImageFormat::Depth32Float, 1., 1., 1);
 
-        let s = MainState { frames: 0, text };
+        ctx.gfx.add_font(
+            "LiberationMono",
+            FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+        );
+
+        let s = MainState {
+            frame,
+            depth,
+            frames: 0,
+        };
         Ok(s)
     }
 }
@@ -35,17 +51,34 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let frame = self.frame.image(&ctx.gfx);
+        let depth = self.depth.image(&ctx.gfx);
+
+        let mut canvas = Canvas::from_image(
+            &mut ctx.gfx,
+            CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
+            &frame,
+            Some(&depth),
+        );
 
         // Drawables are drawn from their top-left corner.
         let offset = self.frames as f32 / 10.0;
         let dest_point = glam::Vec2::new(offset, offset);
-        graphics::draw(ctx, &self.text, (dest_point,))?;
-        graphics::present(ctx)?;
+        canvas.draw_text(
+            &[Text::new()
+                .text("Hello, world!")
+                .font("LiberationMono")
+                .size(48.)],
+            dest_point,
+            TextLayout::tl_single_line(),
+        );
+
+        canvas.finish();
+        ctx.gfx.present(&frame);
 
         self.frames += 1;
         if (self.frames % 100) == 0 {
-            println!("FPS: {}", ggez::timer::fps(ctx));
+            println!("FPS: {}", ctx.timer.fps());
         }
 
         Ok(())

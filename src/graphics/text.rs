@@ -1,7 +1,11 @@
 //!
 
 use super::Color;
-use crate::{context::Context, filesystem, GameResult};
+use crate::{
+    context::Context,
+    filesystem::{self, Filesystem},
+    GameResult,
+};
 use std::{io::Read, path::Path};
 use wgpu_glyph::ab_glyph;
 
@@ -14,9 +18,9 @@ pub struct FontData {
 impl FontData {
     /// Loads font data from a given path in the filesystem.
     #[allow(unused_results)]
-    pub fn from_path(ctx: &Context, path: impl AsRef<Path>) -> GameResult<Self> {
+    pub fn from_path(fs: &Filesystem, path: impl AsRef<Path>) -> GameResult<Self> {
         let mut bytes = vec![];
-        filesystem::open(ctx, path)?.read_to_end(&mut bytes)?;
+        fs.open(path)?.read_to_end(&mut bytes);
         Ok(FontData {
             font: ab_glyph::FontArc::try_from_vec(bytes)?,
         })

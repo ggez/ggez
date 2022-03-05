@@ -70,7 +70,7 @@ impl Context {
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
     fn from_conf(
         conf: conf::Conf,
-        fs: Filesystem,
+        mut fs: Filesystem,
     ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
             Box::new(audio::RodioAudioContext::new()?)
@@ -79,7 +79,7 @@ impl Context {
         };
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
-        let graphics_context = graphics::context::GraphicsContext::new(&events_loop, &conf)?;
+        let graphics_context = graphics::context::GraphicsContext::new(&events_loop, &conf, &mut fs)?;
         let mouse_context = mouse::MouseContext::new();
         let keyboard_context = keyboard::KeyboardContext::new();
         let gamepad_context: Box<dyn gamepad::GamepadContext> = if conf.modules.gamepad {

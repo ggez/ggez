@@ -66,7 +66,7 @@ impl InstanceArray {
                 }
                 self.z_min = self.z_min.min(z);
                 self.z_max = self.z_max.max(z);
-                DrawUniforms::from(param.z(z))
+                DrawUniforms::from_param(param.z(z), glam::Vec2::ONE.into())
             })
             .collect::<Vec<_>>();
 
@@ -95,7 +95,7 @@ impl InstanceArray {
         self.z_min = self.z_min.min(instance.z.unwrap());
         self.z_max = self.z_max.max(instance.z.unwrap());
 
-        let instance = DrawUniforms::from(instance);
+        let instance = DrawUniforms::from_param(instance, glam::Vec2::ONE.into());
         gfx.queue.write_buffer(
             &self.buffer,
             self.len as u64 * DrawUniforms::std430_size_static() as u64,
@@ -115,7 +115,7 @@ impl InstanceArray {
         self.z_min = self.z_min.min(instance.z.unwrap());
         self.z_max = self.z_max.max(instance.z.unwrap());
 
-        let instance = DrawUniforms::from(instance);
+        let instance = DrawUniforms::from_param(instance, glam::Vec2::ONE.into());
         gfx.queue.write_buffer(
             &self.buffer,
             index as u64 * DrawUniforms::std430_size_static() as u64,

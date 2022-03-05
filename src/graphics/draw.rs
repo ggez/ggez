@@ -14,6 +14,10 @@ pub struct DrawParam {
     pub offset: mint::Point2<f32>,
     /// Scale of the mesh.
     pub scale: mint::Vector2<f32>,
+    /// Origin of the transformations.
+    pub origin: mint::Vector2<f32>,
+    /// When `true`, `scale` is based on the image size.
+    pub image_scale: bool,
     /// Rotation (in radians) of the mesh.
     pub rotation: f32,
     /// Z position (depth), useful for visual reordering of draws.
@@ -32,6 +36,8 @@ impl Default for DrawParam {
             src_rect: Rect::one(),
             offset: glam::Vec2::ZERO.into(),
             scale: glam::Vec2::ONE.into(),
+            origin: glam::Vec2::ZERO.into(),
+            image_scale: true,
             rotation: 0.,
             z: None,
             transform: None,
@@ -80,6 +86,22 @@ impl DrawParam {
             .scale(glam::vec2(dst_rect.w, dst_rect.h))
     }
 
+    /// Sets the `origin` field.
+    pub fn origin(self, origin: impl Into<mint::Vector2<f32>>) -> Self {
+        DrawParam {
+            origin: origin.into(),
+            ..self
+        }
+    }
+
+    /// Sets the `image_scale` field.
+    pub fn image_scale(self, image_scale: bool) -> Self {
+        DrawParam {
+            image_scale,
+            ..self
+        }
+    }
+
     /// Sets the `rotation` field.
     pub fn rotation(self, rotation: f32) -> Self {
         DrawParam { rotation, ..self }
@@ -114,13 +136,21 @@ pub(crate) struct DrawUniforms {
     pub transform: mint::ColumnMatrix4<f32>,
 }
 
-impl From<DrawParam> for DrawUniforms {
-    fn from(param: DrawParam) -> Self {
-        let mut transform = glam::Mat4::from_scale_rotation_translation(
-            glam::vec3(param.scale.x, param.scale.y, 0.),
-            glam::Quat::from_rotation_z(param.rotation),
-            glam::vec3(param.offset.x, param.offset.y, param.z.unwrap_or(0.)),
-        );
+impl DrawUniforms {
+    pub fn from_param(mut param: DrawParam, mut scale: mint::Vector2<f32>) -> Self {
+        if !param.image_scale {
+            scale.x = 1.;
+            scale.y = 1.;
+        }
+
+        let mut transform = glam::Mat4::from_translation(glam::vec3(
+            param.offset.x,
+            param.offset.y,
+            param.z.unwrap_or(0.),
+        )) * glam::Mat4::from_quat(glam::Quat::from_rotation_z(param.rotation))
+            * glam::Mat4::from_translation(glam::vec3(-param.origin.x, -param.origin.y, 0.))
+            * glam::Mat4::from_scale(glam::vec3(param.scale.x, param.scale.y, 0.))
+            * glam::Mat4::from_scale(glam::vec3(scale.x, scale.y, 0.));
 
         if let Some(t) = param.transform {
             transform = glam::Mat4::from(t) * transform;

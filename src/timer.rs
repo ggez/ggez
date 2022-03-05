@@ -15,12 +15,7 @@
 //! see <http://gafferongames.com/game-physics/fix-your-timestep/>
 
 use crate::context::Context;
-
-use std::cmp;
-use std::convert::TryFrom;
-use std::f64;
-use std::thread;
-use std::time;
+use std::{cmp, convert::TryFrom, f64, thread, time};
 
 /// A simple buffer that fills
 /// up to a limit and then holds the last
@@ -129,6 +124,88 @@ impl TimeContext {
 
         self.residual_update_dt += time_since_last;
     }
+
+    /// Get the time between the start of the last frame and the current one;
+    /// in other words, the length of the last frame.
+    pub fn delta(&self) -> time::Duration {
+        self.frame_durations.latest()
+    }
+
+    /// Gets the average time of a frame, averaged
+    /// over the last 200 frames.
+    pub fn average_delta(&self) -> time::Duration {
+        let sum: time::Duration = self.frame_durations.contents().iter().sum();
+        if self.frame_durations.samples > self.frame_durations.size {
+            sum / u32::try_from(self.frame_durations.size).unwrap()
+        } else {
+            sum / u32::try_from(self.frame_durations.samples).unwrap()
+        }
+    }
+
+    /// Gets the FPS of the game, averaged over the last
+    /// 200 frames.
+    pub fn fps(&self) -> f64 {
+        let duration_per_frame = self.average_delta();
+        let seconds_per_frame = duration_per_frame.as_secs_f64();
+        1.0 / seconds_per_frame
+    }
+
+    /// Returns the time since the game was initialized,
+    /// as reported by the system clock.
+    pub fn time_since_start(&self) -> time::Duration {
+        time::Instant::now() - self.init_instant
+    }
+
+    /// Check whether or not the desired amount of time has elapsed
+    /// since the last frame.
+    ///
+    /// The intention is to use this in your `update` call to control
+    /// how often game logic is updated per frame (see [the astroblasto example](https://github.com/ggez/ggez/blob/30ea4a4ead67557d2ebb39550e17339323fc9c58/examples/05_astroblasto.rs#L438-L442)).
+    ///
+    /// Calling this decreases a timer inside the context if the function returns true.
+    /// If called in a loop it may therefore return true once, twice or not at all, depending on
+    /// how much time elapsed since the last frame.
+    ///
+    /// For more info on the idea behind this see <http://gafferongames.com/game-physics/fix-your-timestep/>.
+    ///
+    /// Due to the global nature of this timer it's desirable to only use this function at one point
+    /// of your code. If you want to limit the frame rate in both game logic and drawing consider writing
+    /// your own event loop, or using a dirty bit for when to redraw graphics, which is set whenever the game
+    /// logic runs.
+    pub fn check_update_time(&mut self, target_fps: u32) -> bool {
+        let target_dt = fps_as_duration(target_fps);
+        if self.residual_update_dt > target_dt {
+            self.residual_update_dt -= target_dt;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Returns the fractional amount of a frame not consumed
+    /// by  [`check_update_time()`](fn.check_update_time.html).
+    /// For example, if the desired
+    /// update frame time is 40 ms (25 fps), and 45 ms have
+    /// passed since the last frame, [`check_update_time()`](fn.check_update_time.html)
+    /// will return `true` and `remaining_update_time()` will
+    /// return 5 ms -- the amount of time "overflowing" from one
+    /// frame to the next.
+    ///
+    /// The intention is for it to be called in your
+    /// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) callback
+    /// to interpolate physics states for smooth rendering.
+    /// (see <http://gafferongames.com/game-physics/fix-your-timestep/>)
+    pub fn remaining_update_time(&self) -> time::Duration {
+        self.residual_update_dt
+    }
+
+    /// Gets the number of times the game has gone through its event loop.
+    ///
+    /// Specifically, the number of times that [`TimeContext::tick()`](struct.TimeContext.html#method.tick)
+    /// has been called by it.
+    pub fn ticks(&self) -> usize {
+        self.frame_count
+    }
 }
 
 impl Default for TimeContext {
@@ -137,116 +214,13 @@ impl Default for TimeContext {
     }
 }
 
-/// Get the time between the start of the last frame and the current one;
-/// in other words, the length of the last frame.
-pub fn delta(ctx: &Context) -> time::Duration {
-    let tc = &ctx.timer;
-    tc.frame_durations.latest()
-}
-
-/// Gets the average time of a frame, averaged
-/// over the last 200 frames.
-pub fn average_delta(ctx: &Context) -> time::Duration {
-    let tc = &ctx.timer;
-    let sum: time::Duration = tc.frame_durations.contents().iter().sum();
-    // If our buffer is actually full, divide by its size.
-    // Otherwise divide by the number of samples we've added
-    if tc.frame_durations.samples > tc.frame_durations.size {
-        sum / u32::try_from(tc.frame_durations.size).unwrap()
-    } else {
-        sum / u32::try_from(tc.frame_durations.samples).unwrap()
-    }
-}
-
-/// A convenience function to convert a Rust `Duration` type
-/// to a (less precise but more useful) `f64`.
-///
-/// Does not make sure that the `Duration` is within the bounds
-/// of the `f64`.
-pub fn duration_to_f64(d: time::Duration) -> f64 {
-    let seconds = d.as_secs() as f64;
-    let nanos = f64::from(d.subsec_nanos());
-    seconds + (nanos * 1e-9)
-}
-
-/// A convenience function to create a Rust `Duration` type
-/// from a (less precise but more useful) `f64`.
-///
-/// Only handles positive numbers correctly.
-pub fn f64_to_duration(t: f64) -> time::Duration {
-    debug_assert!(t > 0.0, "f64_to_duration passed a negative number!");
-    let seconds = t.trunc();
-    let nanos = t.fract() * 1e9;
-    time::Duration::new(seconds as u64, nanos as u32)
-}
-
 /// Returns a `Duration` representing how long each
 /// frame should be to match the given fps.
 ///
 /// Approximately.
 fn fps_as_duration(fps: u32) -> time::Duration {
     let target_dt_seconds = 1.0 / f64::from(fps);
-    f64_to_duration(target_dt_seconds)
-}
-
-/// Gets the FPS of the game, averaged over the last
-/// 200 frames.
-pub fn fps(ctx: &Context) -> f64 {
-    let duration_per_frame = average_delta(ctx);
-    let seconds_per_frame = duration_to_f64(duration_per_frame);
-    1.0 / seconds_per_frame
-}
-
-/// Returns the time since the game was initialized,
-/// as reported by the system clock.
-pub fn time_since_start(ctx: &Context) -> time::Duration {
-    let tc = &ctx.timer;
-    time::Instant::now() - tc.init_instant
-}
-
-/// Check whether or not the desired amount of time has elapsed
-/// since the last frame.
-///
-/// The intention is to use this in your `update` call to control
-/// how often game logic is updated per frame (see [the astroblasto example](https://github.com/ggez/ggez/blob/30ea4a4ead67557d2ebb39550e17339323fc9c58/examples/05_astroblasto.rs#L438-L442)).
-///
-/// Calling this decreases a timer inside the context if the function returns true.
-/// If called in a loop it may therefore return true once, twice or not at all, depending on
-/// how much time elapsed since the last frame.
-///
-/// For more info on the idea behind this see <http://gafferongames.com/game-physics/fix-your-timestep/>.
-///
-/// Due to the global nature of this timer it's desirable to only use this function at one point
-/// of your code. If you want to limit the frame rate in both game logic and drawing consider writing
-/// your own event loop, or using a dirty bit for when to redraw graphics, which is set whenever the game
-/// logic runs.
-pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
-    let timedata = &mut ctx.timer;
-
-    let target_dt = fps_as_duration(target_fps);
-    if timedata.residual_update_dt > target_dt {
-        timedata.residual_update_dt -= target_dt;
-        true
-    } else {
-        false
-    }
-}
-
-/// Returns the fractional amount of a frame not consumed
-/// by  [`check_update_time()`](fn.check_update_time.html).
-/// For example, if the desired
-/// update frame time is 40 ms (25 fps), and 45 ms have
-/// passed since the last frame, [`check_update_time()`](fn.check_update_time.html)
-/// will return `true` and `remaining_update_time()` will
-/// return 5 ms -- the amount of time "overflowing" from one
-/// frame to the next.
-///
-/// The intention is for it to be called in your
-/// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) callback
-/// to interpolate physics states for smooth rendering.
-/// (see <http://gafferongames.com/game-physics/fix-your-timestep/>)
-pub fn remaining_update_time(ctx: &mut Context) -> time::Duration {
-    ctx.timer.residual_update_dt
+    time::Duration::from_secs_f64(target_dt_seconds)
 }
 
 /// Pauses the current thread for the target duration.
@@ -262,12 +236,4 @@ pub fn sleep(duration: time::Duration) {
 /// but it's handy to have here.
 pub fn yield_now() {
     thread::yield_now();
-}
-
-/// Gets the number of times the game has gone through its event loop.
-///
-/// Specifically, the number of times that [`TimeContext::tick()`](struct.TimeContext.html#method.tick)
-/// has been called by it.
-pub fn ticks(ctx: &Context) -> usize {
-    ctx.timer.frame_count
 }

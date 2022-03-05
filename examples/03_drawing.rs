@@ -1,35 +1,53 @@
 //! A collection of semi-random shape and image drawing examples.
 
+use ggez::graphics::canvas::{Canvas, CanvasLoadOp};
+use ggez::graphics::draw::DrawParam;
+use ggez::graphics::image::{Image, ImageFormat, ScreenImage};
+use ggez::graphics::mesh::{Mesh, MeshBuilder, MeshData, Vertex};
+use ggez::graphics::sampler::Sampler;
+use ggez::{
+    event,
+    graphics::{self, Color, DrawMode},
+    timer, Context, GameResult,
+};
 use glam::*;
-
-use ggez::event;
-use ggez::graphics::{self, Color, DrawMode, DrawParam};
-use ggez::timer;
-use ggez::{Context, GameResult};
-use std::env;
-use std::path;
+use std::{env, path};
 
 struct MainState {
-    image1: graphics::Image,
-    image2_linear: graphics::Image,
-    image2_nearest: graphics::Image,
-    meshes: Vec<graphics::Mesh>,
+    frame: ScreenImage,
+    image1: Image,
+    image2: Image,
+    meshes: Vec<(Option<Image>, Mesh)>,
     rotation: f32,
 }
 
 impl MainState {
     /// Load images and create meshes.
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image1 = graphics::Image::new(ctx, "/dragon1.png")?;
-        let image2_linear = graphics::Image::new(ctx, "/shot.png")?;
-        let mut image2_nearest = graphics::Image::new(ctx, "/shot.png")?;
-        image2_nearest.set_filter(graphics::FilterMode::Nearest);
+        let frame = ScreenImage::new(&ctx.gfx, ImageFormat::Rgba8Unorm, 1., 1., 1);
 
-        let meshes = vec![build_mesh(ctx)?, build_textured_triangle(ctx)?];
+        let image1 = Image::from_path(ctx, "/dragon1.png", true)?;
+        let image2 = Image::from_path(ctx, "/shot.png", true)?;
+
+        let mb = &mut MeshBuilder::new();
+        mb.rectangle(
+            graphics::DrawMode::stroke(1.0),
+            graphics::Rect::new(450.0, 450.0, 50.0, 50.0),
+            graphics::Color::new(1.0, 0.0, 0.0, 1.0),
+        )?;
+
+        let rock = Image::from_path(ctx, "/rock.png", true)?;
+
+        let meshes = vec![
+            (None, build_mesh(ctx)?),
+            (Some(rock), build_textured_triangle(ctx)?),
+            (None, Mesh::from_data(&ctx.gfx, mb.build())),
+        ];
+
         let s = MainState {
+            frame,
             image1,
-            image2_linear,
-            image2_nearest,
+            image2,
             meshes,
             rotation: 1.0,
         };
@@ -38,8 +56,8 @@ impl MainState {
     }
 }
 
-fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
-    let mb = &mut graphics::MeshBuilder::new();
+fn build_mesh(ctx: &mut Context) -> GameResult<Mesh> {
+    let mb = &mut MeshBuilder::new();
 
     mb.line(
         &[
@@ -70,24 +88,24 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
         Color::new(1.0, 0.0, 1.0, 1.0),
     )?;
 
-    mb.build(ctx)
+    Ok(Mesh::from_data(&ctx.gfx, mb.build()))
 }
 
-fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
-    let mb = &mut graphics::MeshBuilder::new();
+fn build_textured_triangle(ctx: &mut Context) -> GameResult<Mesh> {
+    let mb = &mut MeshBuilder::new();
     let triangle_verts = vec![
-        graphics::Vertex {
-            pos: [100.0, 100.0],
+        Vertex {
+            position: [100.0, 100.0],
             uv: [1.0, 1.0],
             color: [1.0, 0.0, 0.0, 1.0],
         },
-        graphics::Vertex {
-            pos: [0.0, 100.0],
+        Vertex {
+            position: [0.0, 100.0],
             uv: [0.0, 1.0],
             color: [0.0, 1.0, 0.0, 1.0],
         },
-        graphics::Vertex {
-            pos: [0.0, 0.0],
+        Vertex {
+            position: [0.0, 0.0],
             uv: [0.0, 0.0],
             color: [0.0, 0.0, 1.0, 1.0],
         },
@@ -95,74 +113,80 @@ fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
 
     let triangle_indices = vec![0, 1, 2];
 
-    let i = graphics::Image::new(ctx, "/rock.png")?;
-    mb.raw(&triangle_verts, &triangle_indices, Some(i))?;
-    mb.build(ctx)
+    Ok(Mesh::from_data(
+        &ctx.gfx,
+        MeshData {
+            vertices: &triangle_verts,
+            indices: &triangle_indices,
+        },
+    ))
 }
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
 
-        while timer::check_update_time(ctx, DESIRED_FPS) {
+        while ctx.timer.check_update_time(DESIRED_FPS) {
             self.rotation += 0.01;
         }
+
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let frame = self.frame.image(&ctx.gfx);
+
+        let mut canvas = Canvas::from_image(
+            &mut ctx.gfx,
+            CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
+            &frame,
+            None,
+        );
 
         // Draw an image.
         let dst = glam::Vec2::new(20.0, 20.0);
-        graphics::draw(ctx, &self.image1, (dst,))?;
+        canvas.draw(&self.image1, DrawParam::new().offset(dst));
 
         // Draw an image with some options, and different filter modes.
         let dst = glam::Vec2::new(200.0, 100.0);
         let dst2 = glam::Vec2::new(400.0, 400.0);
         let scale = glam::Vec2::new(10.0, 10.0);
 
-        graphics::draw(
-            ctx,
-            &self.image2_linear,
-            graphics::DrawParam::new()
-                .dest(dst)
+        canvas.draw(
+            &self.image2,
+            DrawParam::new()
+                .offset(dst)
+                .rotation(self.rotation)
+                .origin(vec2(0., 0.))
+                .scale(scale),
+        );
+        canvas.set_sampler(Sampler::nearest_clamp());
+        canvas.draw(
+            &self.image2,
+            DrawParam::new()
+                .offset(dst2)
                 .rotation(self.rotation)
                 .scale(scale),
-        )?;
-        graphics::draw(
-            ctx,
-            &self.image2_nearest,
-            graphics::DrawParam::new()
-                .dest(dst2)
-                .rotation(self.rotation)
-                .offset(Vec2::new(0.5, 0.5))
-                .scale(scale),
-        )?;
+        );
 
         // Create and draw a filled rectangle mesh.
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
-        let r1 =
-            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, Color::WHITE)?;
-        graphics::draw(ctx, &r1, DrawParam::default())?;
+        canvas.draw(None, DrawParam::new().dst_rect(rect).color(Color::WHITE));
 
         // Create and draw a stroked rectangle mesh.
-        let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
-        let r2 = graphics::Mesh::new_rectangle(
-            ctx,
-            graphics::DrawMode::stroke(1.0),
-            rect,
-            graphics::Color::new(1.0, 0.0, 0.0, 1.0),
-        )?;
-        graphics::draw(ctx, &r2, DrawParam::default())?;
+
+        canvas.draw_mesh(&self.meshes[2].1, None, DrawParam::default());
+        canvas.draw(None, DrawParam::new());
 
         // Draw some pre-made meshes
-        for m in &self.meshes {
-            graphics::draw(ctx, m, DrawParam::new())?;
+        for (image, mesh) in &self.meshes {
+            canvas.draw_mesh(mesh, image, DrawParam::new());
         }
 
         // Finished drawing, show it all on the screen!
-        graphics::present(ctx)?;
+        canvas.finish();
+        ctx.gfx.present(&frame);
+
         Ok(())
     }
 }
@@ -180,7 +204,6 @@ pub fn main() -> GameResult {
 
     let (mut ctx, events_loop) = cb.build()?;
 
-    println!("{}", graphics::renderer_info(&ctx)?);
     let state = MainState::new(&mut ctx).unwrap();
     event::run(ctx, events_loop, state)
 }

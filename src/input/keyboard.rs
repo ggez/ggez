@@ -66,9 +66,9 @@
 //! ```
 
 use crate::context::Context;
-
 use std::collections::HashSet;
 use winit::event::ModifiersState;
+
 /// A key code.
 pub use winit::event::VirtualKeyCode as KeyCode;
 
@@ -181,11 +181,14 @@ impl KeyboardContext {
         self.active_modifiers = keymods;
     }
 
-    pub(crate) fn is_key_pressed(&self, key: KeyCode) -> bool {
+    /// Checks if a key is currently pressed down.
+    pub fn is_key_pressed(&self, key: KeyCode) -> bool {
         self.pressed_keys_set.contains(&key)
     }
 
-    pub(crate) fn is_key_repeated(&self) -> bool {
+    /// Checks if the last keystroke sent by the system is repeated,
+    /// like when a key is held down for a period of time.
+    pub fn is_key_repeated(&self) -> bool {
         if self.last_pressed.is_some() {
             self.last_pressed == self.current_pressed
         } else {
@@ -193,11 +196,18 @@ impl KeyboardContext {
         }
     }
 
-    pub(crate) fn pressed_keys(&self) -> &HashSet<KeyCode> {
+    /// Returns a reference to the set of currently pressed keys.
+    pub fn pressed_keys(&self) -> &HashSet<KeyCode> {
         &self.pressed_keys_set
     }
 
-    pub(crate) fn active_mods(&self) -> KeyMods {
+    /// Checks if a keyboard modifier (or several) is active.
+    pub fn is_mod_active(&self, keymods: KeyMods) -> bool {
+        self.active_mods().contains(keymods)
+    }
+
+    /// Returns currently active keyboard modifiers.
+    pub fn active_mods(&self) -> KeyMods {
         self.active_modifiers
     }
 }
@@ -206,32 +216,6 @@ impl Default for KeyboardContext {
     fn default() -> Self {
         Self::new()
     }
-}
-
-/// Checks if a key is currently pressed down.
-pub fn is_key_pressed(ctx: &Context, key: KeyCode) -> bool {
-    ctx.keyboard.is_key_pressed(key)
-}
-
-/// Checks if the last keystroke sent by the system is repeated,
-/// like when a key is held down for a period of time.
-pub fn is_key_repeated(ctx: &Context) -> bool {
-    ctx.keyboard.is_key_repeated()
-}
-
-/// Returns a reference to the set of currently pressed keys.
-pub fn pressed_keys(ctx: &Context) -> &HashSet<KeyCode> {
-    ctx.keyboard.pressed_keys()
-}
-
-/// Checks if keyboard modifier (or several) is active.
-pub fn is_mod_active(ctx: &Context, keymods: KeyMods) -> bool {
-    ctx.keyboard.active_mods().contains(keymods)
-}
-
-/// Returns currently active keyboard modifiers.
-pub fn active_mods(ctx: &Context) -> KeyMods {
-    ctx.keyboard.active_mods()
 }
 
 #[cfg(test)]

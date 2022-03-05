@@ -22,6 +22,7 @@ use crate::{
 use ::image as imgcrate;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
+use winit::platform::macos::WindowBuilderExtMacOS;
 use winit::{self, dpi};
 
 pub(crate) struct FrameContext {
@@ -73,6 +74,7 @@ impl GraphicsContext {
     pub(crate) fn new(
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
+        filesystem: &mut Filesystem,
     ) -> GameResult<Self> {
         let instance = wgpu::Instance::new(match conf.backend {
             Backend::Primary => wgpu::Backends::PRIMARY,
@@ -85,15 +87,29 @@ impl GraphicsContext {
             Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
         });
 
-        let window = winit::window::WindowBuilder::new()
+        let mut window_builder = winit::window::WindowBuilder::new()
             .with_title(conf.window_setup.title.clone())
             .with_inner_size(dpi::PhysicalSize::<f64>::from((
                 conf.window_mode.width,
                 conf.window_mode.height,
             )))
             .with_resizable(conf.window_mode.resizable)
-            .with_visible(conf.window_mode.visible)
-            .build(event_loop)?;
+            .with_visible(conf.window_mode.visible);
+
+        #[cfg(target_os = "windows")]
+        {
+            use winit::platform::windows::WindowBuilderExtWindows;
+            window_builder = window_builder.with_drag_and_drop(false);
+        }
+
+        window_builder = if !conf.window_setup.icon.is_empty() {
+            let icon = load_icon(conf.window_setup.icon.as_ref(), filesystem)?;
+            window_builder.with_window_icon(Some(icon))
+        } else {
+            window_builder
+        };
+
+        let window = window_builder.build(&event_loop)?;
         let surface = unsafe { instance.create_surface(&window) };
 
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
@@ -430,13 +446,14 @@ impl GraphicsContext {
             }
         }
 
+        let size = window.inner_size();
         self.surface.configure(
             &self.device,
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: self.surface_format,
-                width: mode.width as _,
-                height: mode.width as _,
+                width: size.width,
+                height: size.height,
                 present_mode: if self.vsync {
                     wgpu::PresentMode::Fifo
                 } else {

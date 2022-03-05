@@ -38,3 +38,4 @@ The following platforms are untested, but the backend is compatible (i.e. no maj
 
 - iOS
 - Android
+- Web
