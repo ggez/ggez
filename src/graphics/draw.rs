@@ -134,6 +134,7 @@ pub(crate) struct DrawUniforms {
     pub color: mint::Vector4<f32>,
     pub src_rect: mint::Vector4<f32>,
     pub transform: mint::ColumnMatrix4<f32>,
+    pub origin: mint::Vector2<f32>,
 }
 
 impl DrawUniforms {
@@ -148,7 +149,6 @@ impl DrawUniforms {
             param.offset.y,
             param.z.unwrap_or(0.),
         )) * glam::Mat4::from_quat(glam::Quat::from_rotation_z(param.rotation))
-            * glam::Mat4::from_translation(glam::vec3(-param.origin.x, -param.origin.y, 0.))
             * glam::Mat4::from_scale(glam::vec3(param.scale.x, param.scale.y, 0.))
             * glam::Mat4::from_scale(glam::vec3(scale.x, scale.y, 0.));
 
@@ -165,6 +165,7 @@ impl DrawUniforms {
                 w: param.src_rect.y + param.src_rect.h,
             },
             transform: transform.into(),
+            origin: param.origin,
         }
     }
 }

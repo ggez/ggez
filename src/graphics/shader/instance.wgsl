@@ -14,10 +14,11 @@ struct DrawParam {
     color: vec4<f32>;
     src_rect: vec4<f32>;
     transform: mat4x4<f32>;
+    origin: vec2<f32>;
 };
 
 struct InstanceArray {
-    instances: [[stride(96)]] array<DrawParam>;
+    instances: [[stride(112)]] array<DrawParam>;
 };
 
 [[group(0), binding(0)]]
@@ -48,7 +49,10 @@ fn vs_main(
     );
 
     var out: VertexOutput;
-    out.position = uniforms.transform * instance.transform * uniforms.pre_transform * vec4<f32>(position, 0.0, 1.0);;
+    out.position = uniforms.transform
+        * instance.transform
+        * uniforms.pre_transform
+        * vec4<f32>(position - instance.origin, 0.0, 1.0);
     out.position = out.position / out.position.w;
     out.uv = mix(instance.src_rect.xy, instance.src_rect.zw, uv);
     out.color = color;

@@ -1,7 +1,5 @@
 //!
 
-use crate::{GameError, GameResult};
-
 use super::{
     context::{FrameArenas, GraphicsContext},
     draw::{DrawParam, DrawUniforms},
@@ -18,6 +16,7 @@ use super::{
     text::{Text, TextLayout},
     Color, Rect,
 };
+use crate::{GameError, GameResult};
 use crevice::std430::{AsStd430, Std430};
 use std::{collections::HashMap, sync::Arc};
 

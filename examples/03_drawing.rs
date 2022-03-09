@@ -18,6 +18,7 @@ struct MainState {
     image1: Image,
     image2: Image,
     meshes: Vec<(Option<Image>, Mesh)>,
+    rect: Mesh,
     rotation: f32,
 }
 
@@ -41,14 +42,16 @@ impl MainState {
         let meshes = vec![
             (None, build_mesh(ctx)?),
             (Some(rock), build_textured_triangle(ctx)?),
-            (None, Mesh::from_data(&ctx.gfx, mb.build())),
         ];
+
+        let rect = Mesh::from_data(&ctx.gfx, mb.build());
 
         let s = MainState {
             frame,
             image1,
             image2,
             meshes,
+            rect,
             rotation: 1.0,
         };
 
@@ -157,7 +160,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             DrawParam::new()
                 .offset(dst)
                 .rotation(self.rotation)
-                .origin(vec2(0., 0.))
+                .image_scale(true)
                 .scale(scale),
         );
         canvas.set_sampler(Sampler::nearest_clamp());
@@ -166,26 +169,27 @@ impl event::EventHandler<ggez::GameError> for MainState {
             DrawParam::new()
                 .offset(dst2)
                 .rotation(self.rotation)
-                .scale(scale),
+                .scale(scale)
+                .origin(vec2(0.5, 0.5)),
         );
+        canvas.set_sampler(Sampler::linear_clamp());
 
         // Create and draw a filled rectangle mesh.
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         canvas.draw(None, DrawParam::new().dst_rect(rect).color(Color::WHITE));
 
         // Create and draw a stroked rectangle mesh.
-
-        canvas.draw_mesh(&self.meshes[2].1, None, DrawParam::default());
+        canvas.draw_mesh(&self.rect, None, DrawParam::default());
         canvas.draw(None, DrawParam::new());
 
         // Draw some pre-made meshes
         for (image, mesh) in &self.meshes {
-            canvas.draw_mesh(mesh, image, DrawParam::new());
+            canvas.draw_mesh(mesh, image, DrawParam::new().image_scale(false));
         }
 
         // Finished drawing, show it all on the screen!
-        canvas.finish();
-        ctx.gfx.present(&frame);
+        canvas.finish()?;
+        ctx.gfx.present(&frame)?;
 
         Ok(())
     }
