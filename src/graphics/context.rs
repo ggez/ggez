@@ -350,7 +350,7 @@ impl GraphicsContextGeneric<GlBackendSpec> {
             h,
         };
         gfx.set_projection_rect(rect);
-        gfx.set_global_mvp(Matrix4::IDENTITY)?;
+        gfx.reset_global_mvp()?;
         Ok(gfx)
     }
 }
@@ -398,6 +398,13 @@ where
         self.update_globals()
     }
 
+    /// Sets the shader MVP matrix to the current projection (without any additional
+    /// transformation matrix) and updates the uniform buffer.
+    pub(crate) fn reset_global_mvp(&mut self) -> GameResult {
+        self.shader_globals.mvp_matrix = self.projection.to_cols_array_2d();
+        self.update_globals()
+    }
+
     /// Converts the given `DrawParam` into an `InstanceProperties` object and
     /// sends it to the graphics card at the front of the instance buffer.
     pub(crate) fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult {
@@ -437,7 +444,7 @@ where
     /// Shortcut function to set the projection matrix to an
     /// orthographic projection based on the given `Rect`.
     ///
-    /// Call `update_globals()` to apply it after calling this.
+    /// Call `set_global_mvp()` to apply it after calling this.
     pub(crate) fn set_projection_rect(&mut self, rect: Rect) {
         /// Creates an orthographic projection matrix.
         /// Because nalgebra gets frumple when you try to make
@@ -494,7 +501,7 @@ where
 
     /// Sets the raw projection matrix to the given Matrix.
     ///
-    /// Call `update_globals()` to apply after calling this.
+    /// Call `set_global_mvp()` to apply after calling this.
     pub(crate) fn set_projection(&mut self, mat: Matrix4) {
         self.projection = mat;
     }

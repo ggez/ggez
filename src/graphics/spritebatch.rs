@@ -212,7 +212,8 @@ impl graphics::Drawable for SpriteBatch {
         if let Some(mode) = previous_mode {
             gfx.set_blend_mode(mode)?;
         }
-        gfx.set_global_mvp(graphics::Matrix4::IDENTITY)?;
+        // undo the change to the global mvp matrix
+        gfx.reset_global_mvp()?;
         Ok(())
     }
     fn dimensions(&self, _ctx: &mut Context) -> Option<Rect> {

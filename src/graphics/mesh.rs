@@ -434,8 +434,8 @@ impl MeshBuilder {
     where
         V: Into<Vertex> + Clone,
     {
-        assert!(self.buffer.vertices.len() + verts.len() < (std::u32::MAX as usize));
-        assert!(self.buffer.indices.len() + indices.len() < (std::u32::MAX as usize));
+        assert!(self.buffer.vertices.len() + verts.len() < (u32::MAX as usize));
+        assert!(self.buffer.indices.len() + indices.len() < (u32::MAX as usize));
         let next_idx = self.buffer.vertices.len() as u32;
         // Can we remove the clone here?
         // I can't find a way to, because `into()` consumes its source and
@@ -663,14 +663,14 @@ impl Mesh {
         V: Into<Vertex> + Clone,
     {
         // Sanity checks to return early with helpful error messages.
-        if verts.len() > (std::u32::MAX as usize) {
+        if verts.len() > (u32::MAX as usize) {
             let msg = format!(
                 "Tried to build a mesh with {} vertices, max is u32::MAX",
                 verts.len()
             );
             return Err(GameError::LyonError(msg));
         }
-        if indices.len() > (std::u32::MAX as usize) {
+        if indices.len() > (u32::MAX as usize) {
             let msg = format!(
                 "Tried to build a mesh with {} indices, max is u32::MAX",
                 indices.len()
@@ -1014,7 +1014,7 @@ impl MeshBatch {
             gfx.data.rect_instance_properties = old_instance_buffer;
 
             // Undo the change we've made to the global MVP
-            gfx.set_global_mvp(Matrix4::IDENTITY)?;
+            gfx.reset_global_mvp()?;
         }
 
         Ok(())

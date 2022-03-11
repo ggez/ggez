@@ -644,14 +644,13 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
     let gfx = &mut context.gfx_context;
     gfx.set_projection_rect(rect);
-    gfx.set_global_mvp(Matrix4::IDENTITY)
+    gfx.reset_global_mvp()
 }
 
 /// Premultiplies the given transformation matrix with the current projection matrix
 ///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
+/// You must call [`apply_projection()`](fn.apply_projection.html)
+/// after calling this to apply these changes, i.e. to push them to the graphics card.
 pub fn mul_projection<M>(context: &mut Context, transform: M)
 where
     M: Into<mint::ColumnMatrix4<f32>>,
@@ -666,9 +665,8 @@ where
 /// transformation matrix.  For an introduction to graphics matrices,
 /// a good source is this: <http://ncase.me/matrix/>
 ///
-/// You must call [`apply_transformations(ctx)`](fn.apply_transformations.html)
-/// after calling this to apply these changes and recalculate the
-/// underlying MVP matrix.
+/// You must call [`apply_projection()`](fn.apply_projection.html)
+/// after calling this to apply these changes, i.e. to push them to the graphics card.
 pub fn set_projection<M>(context: &mut Context, proj: M)
 where
     M: Into<mint::ColumnMatrix4<f32>>,
@@ -678,7 +676,18 @@ where
     gfx.set_projection(proj);
 }
 
-/// Gets a copy of the context's raw projection matrix
+/// Sends the current Model-View-Projection matrix to the graphics card.
+///
+/// This matrix is set using [`set_projection()`](fn.set_projection.html) and/or
+/// [`mul_projection()`](fn.mul_projection.html).
+/// Alternatively it's also set (and sent to the graphics card) when
+/// [`set_screen_coordinates()`](fn.set_screen_coordinates.html) is called.
+pub fn apply_projection(context: &mut Context) -> GameResult {
+    let gfx = &mut context.gfx_context;
+    gfx.reset_global_mvp()
+}
+
+/// Gets a copy of the context's raw projection matrix.
 pub fn projection(context: &Context) -> mint::ColumnMatrix4<f32> {
     let gfx = &context.gfx_context;
     gfx.projection().into()
