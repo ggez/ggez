@@ -238,10 +238,10 @@ impl Image {
         rgba: &[u8],
     ) -> GameResult<Self> {
         let debug_id = DebugId::get(context);
-        let color_format = context.gfx_context.color_format();
+        let color_format = context.gfx.color_format();
         Self::make_raw(
-            &mut *context.gfx_context.factory,
-            &context.gfx_context.default_sampler_info,
+            &mut *context.gfx.factory,
+            &context.gfx.default_sampler_info,
             width,
             height,
             rgba,
@@ -255,7 +255,7 @@ impl Image {
         use gfx::memory::Typed;
         use gfx::traits::FactoryExt;
 
-        let gfx = &mut ctx.gfx_context;
+        let gfx = &mut ctx.gfx;
         let w = self.width;
         let h = self.height;
 
@@ -389,7 +389,7 @@ impl Drawable for Image {
 }
 
 pub(crate) fn draw_image_raw(image: &Image, ctx: &mut Context, param: DrawParam) -> GameResult {
-    let gfx = &mut ctx.gfx_context;
+    let gfx = &mut ctx.gfx;
 
     gfx.update_instance_properties(param)?;
     let sampler = gfx

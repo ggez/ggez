@@ -365,21 +365,21 @@ where
         blend_modes: Option<&[BlendMode]>,
     ) -> GameResult<Shader<C>> {
         let debug_id = DebugId::get(ctx);
-        let color_format = ctx.gfx_context.color_format();
+        let color_format = ctx.gfx.color_format();
         let (mut shader, draw) = create_shader(
             vertex_source,
             pixel_source,
             consts,
             name,
-            &mut ctx.gfx_context.encoder,
-            &mut *ctx.gfx_context.factory,
-            ctx.gfx_context.multisample_samples,
+            &mut ctx.gfx.encoder,
+            &mut *ctx.gfx.factory,
+            ctx.gfx.multisample_samples,
             blend_modes,
             color_format,
             debug_id,
         )?;
-        shader.id = ctx.gfx_context.shaders.len();
-        ctx.gfx_context.shaders.push(draw);
+        shader.id = ctx.gfx.shaders.len();
+        ctx.gfx.shaders.push(draw);
 
         Ok(shader)
     }
@@ -391,9 +391,7 @@ where
 {
     /// Send data to the GPU for use with the `Shader`
     pub fn send(&self, ctx: &mut Context, consts: C) -> GameResult {
-        ctx.gfx_context
-            .encoder
-            .update_buffer(&self.buffer, &[consts], 0)?;
+        ctx.gfx.encoder.update_buffer(&self.buffer, &[consts], 0)?;
         Ok(())
     }
 
@@ -499,7 +497,7 @@ where
     C: Structure<ConstFormat>,
 {
     ps.debug_id.assert(ctx);
-    let cell = Rc::clone(&ctx.gfx_context.current_shader);
+    let cell = Rc::clone(&ctx.gfx.current_shader);
     let previous_shader = *cell.borrow();
     set_shader(ctx, ps);
     ShaderLock {
@@ -514,7 +512,7 @@ where
     C: Structure<ConstFormat>,
 {
     ps.debug_id.assert(ctx);
-    *ctx.gfx_context.current_shader.borrow_mut() = Some(ps.id);
+    *ctx.gfx.current_shader.borrow_mut() = Some(ps.id);
 }
 
 /// Clears the the current shader for the `Context`, restoring the default shader.
@@ -522,7 +520,7 @@ where
 /// However, calling this and then dropping a [`ShaderLock`](struct.ShaderLock.html)
 /// will still set the shader to whatever was set when the `ShaderLock` was created.
 pub fn clear_shader(ctx: &mut Context) {
-    *ctx.gfx_context.current_shader.borrow_mut() = None;
+    *ctx.gfx.current_shader.borrow_mut() = None;
 }
 
 #[derive(Debug)]

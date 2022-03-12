@@ -696,14 +696,14 @@ impl Mesh {
             "No vertices in MeshBuilder; should never happen since we already checked this",
         );
         let (vbuf, slice) = ctx
-            .gfx_context
+            .gfx
             .factory
             .create_vertex_buffer_with_slice(&verts[..], indices);
         Ok(Mesh {
             buffer: vbuf,
             slice,
             blend_mode: None,
-            image: texture.unwrap_or_else(|| ctx.gfx_context.white_image.clone()),
+            image: texture.unwrap_or_else(|| ctx.gfx.white_image.clone()),
             debug_id: DebugId::get(ctx),
             rect,
         })
@@ -730,7 +730,7 @@ impl Mesh {
         // <https://docs.rs/gfx/0.17.1/gfx/traits/trait.Factory.html#tymethod.create_buffer_raw>,
         // and fill in the bits between with the appropriate values.
         let (vbuf, slice) = ctx
-            .gfx_context
+            .gfx
             .factory
             .create_vertex_buffer_with_slice(verts, indices);
         self.buffer = vbuf;
@@ -755,7 +755,7 @@ impl Mesh {
 impl Drawable for Mesh {
     fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
         self.debug_id.assert(ctx);
-        let gfx = &mut ctx.gfx_context;
+        let gfx = &mut ctx.gfx;
         gfx.update_instance_properties(param)?;
 
         gfx.data.vbuf = self.buffer.clone();
@@ -934,11 +934,11 @@ impl MeshBatch {
 
             let new_properties: Vec<InstanceProperties> = slice
                 .iter()
-                .map(|param| param.to_instance_properties(ctx.gfx_context.is_srgb()))
+                .map(|param| param.to_instance_properties(ctx.gfx.is_srgb()))
                 .collect();
 
             if needs_new_buffer {
-                let new_buffer = ctx.gfx_context.factory.create_buffer(
+                let new_buffer = ctx.gfx.factory.create_buffer(
                     new_properties.len(),
                     gfx::buffer::Role::Vertex,
                     gfx::memory::Usage::Dynamic,
@@ -947,13 +947,13 @@ impl MeshBatch {
 
                 self.instance_buffer = Some(new_buffer);
 
-                ctx.gfx_context.encoder.update_buffer(
+                ctx.gfx.encoder.update_buffer(
                     self.instance_buffer.as_ref().expect("Can never fail"),
                     new_properties.as_slice(),
                     0,
                 )?;
             } else {
-                ctx.gfx_context.encoder.update_buffer(
+                ctx.gfx.encoder.update_buffer(
                     self.instance_buffer.as_ref().expect("Should never fail"),
                     new_properties.as_slice(),
                     first_param,
@@ -987,7 +987,7 @@ impl MeshBatch {
             let mut slice = self.mesh.slice.clone();
             slice.instances = Some((self.instance_params.len() as u32, 0));
 
-            let gfx = &mut ctx.gfx_context;
+            let gfx = &mut ctx.gfx;
 
             // In the batch we multiply the transform for each item in the batch
             // with the transform given in the `DrawParam` here.

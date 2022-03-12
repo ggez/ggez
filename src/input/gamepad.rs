@@ -111,14 +111,14 @@ impl GamepadContext for NullGamepadContext {
 // TODO: Add deprecation version
 #[deprecated(note = "Use `Context::gamepad_context.gamepad` instead")]
 pub fn gamepad(ctx: &Context, id: GamepadId) -> Gamepad {
-    ctx.gamepad_context.gamepad(id)
+    ctx.gamepad.gamepad(id)
 }
 
 /// Return an iterator of all the `Gamepads` that are connected.
 // TODO: Add deprecation version
 #[deprecated(note = "Use `Context::gamepad_context.gamepads` instead")]
 pub fn gamepads(ctx: &Context) -> GamepadsIterator {
-    ctx.gamepad_context.gamepads()
+    ctx.gamepad.gamepads()
 }
 
 // Properties gamepads might want:

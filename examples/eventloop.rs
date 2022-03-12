@@ -56,7 +56,7 @@ pub fn main() -> GameResult {
             Event::MainEventsCleared => {
                 // Tell the timer stuff a frame has happened.
                 // Without this the FPS timer functions and such won't work.
-                ctx.timer_context.tick();
+                ctx.timer.tick();
 
                 // Update
                 position += 1.0;
@@ -77,15 +77,15 @@ pub fn main() -> GameResult {
 
                 // reset the mouse delta for the next frame
                 // necessary because it's calculated cumulatively each cycle
-                ctx.mouse_context.reset_delta();
+                ctx.mouse.reset_delta();
 
                 // Copy the state of the keyboard into the KeyboardContext and
                 // the mouse into the MouseContext.
                 // Not required for this example but important if you want to
                 // use the functions keyboard::is_key_just_pressed/released and
                 // mouse::is_button_just_pressed/released.
-                ctx.keyboard_context.save_keyboard_state();
-                ctx.mouse_context.save_mouse_state();
+                ctx.keyboard.save_keyboard_state();
+                ctx.mouse.save_mouse_state();
 
                 ggez::timer::yield_now();
             }

@@ -35,20 +35,20 @@ use crate::timer;
 /// public and stable API is `ggez`'s module-level functions and
 /// types.
 pub struct Context {
-    /// Filesystem state
+    /// Filesystem state.
     pub filesystem: Filesystem,
-    /// Graphics state
-    pub(crate) gfx_context: crate::graphics::context::GraphicsContext,
-    /// Timer state
-    pub timer_context: timer::TimeContext,
-    /// Audio context
-    pub audio_context: Box<dyn audio::AudioContext>,
-    /// Keyboard context
-    pub keyboard_context: keyboard::KeyboardContext,
-    /// Mouse context
-    pub mouse_context: mouse::MouseContext,
-    /// Gamepad context
-    pub gamepad_context: Box<dyn gamepad::GamepadContext>,
+    /// Graphics state.
+    pub(crate) gfx: crate::graphics::context::GraphicsContext,
+    /// Timer state.
+    pub timer: timer::TimeContext,
+    /// Audio context.
+    pub audio: Box<dyn audio::AudioContext>,
+    /// Keyboard context.
+    pub keyboard: keyboard::KeyboardContext,
+    /// Mouse context.
+    pub mouse: mouse::MouseContext,
+    /// Gamepad context.
+    pub gamepad: Box<dyn gamepad::GamepadContext>,
 
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
@@ -106,13 +106,13 @@ impl Context {
         let ctx = Context {
             conf,
             filesystem: fs,
-            gfx_context: graphics_context,
+            gfx: graphics_context,
             continuing: true,
-            timer_context,
-            audio_context,
-            keyboard_context,
-            gamepad_context,
-            mouse_context,
+            timer: timer_context,
+            audio: audio_context,
+            keyboard: keyboard_context,
+            gamepad: gamepad_context,
+            mouse: mouse_context,
 
             debug_id,
         };

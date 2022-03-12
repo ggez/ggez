@@ -92,23 +92,23 @@ impl Default for MouseContext {
 
 /// Returns the current mouse cursor type of the window.
 pub fn cursor_type(ctx: &Context) -> CursorIcon {
-    ctx.mouse_context.cursor_type
+    ctx.mouse.cursor_type
 }
 
 /// Modifies the mouse cursor type of the window.
 pub fn set_cursor_type(ctx: &mut Context, cursor_type: CursorIcon) {
-    ctx.mouse_context.cursor_type = cursor_type;
+    ctx.mouse.cursor_type = cursor_type;
     graphics::window(ctx).set_cursor_icon(cursor_type);
 }
 
 /// Get whether or not the mouse is grabbed (confined to the window)
 pub fn cursor_grabbed(ctx: &Context) -> bool {
-    ctx.mouse_context.cursor_grabbed
+    ctx.mouse.cursor_grabbed
 }
 
 /// Set whether or not the mouse is grabbed (confined to the window)
 pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
-    ctx.mouse_context.cursor_grabbed = grabbed;
+    ctx.mouse.cursor_grabbed = grabbed;
     graphics::window(ctx)
         .set_cursor_grab(grabbed)
         .map_err(|e| GameError::WindowError(e.to_string()))
@@ -116,12 +116,12 @@ pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
 
 /// Set whether or not the mouse is hidden (invisible)
 pub fn cursor_hidden(ctx: &Context) -> bool {
-    ctx.mouse_context.cursor_hidden
+    ctx.mouse.cursor_hidden
 }
 
 /// Set whether or not the mouse is hidden (invisible).
 pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
-    ctx.mouse_context.cursor_hidden = hidden;
+    ctx.mouse.cursor_hidden = hidden;
     graphics::window(ctx).set_cursor_visible(!hidden)
 }
 
@@ -129,7 +129,7 @@ pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
 /// Complement to [`set_position()`](fn.set_position.html).
 /// Uses strictly window-only coordinates.
 pub fn position(ctx: &Context) -> mint::Point2<f32> {
-    ctx.mouse_context.last_position.into()
+    ctx.mouse.last_position.into()
 }
 
 /// Set the current position of the mouse cursor, in pixels.
@@ -139,7 +139,7 @@ where
     P: Into<mint::Point2<f32>>,
 {
     let mintpoint = point.into();
-    ctx.mouse_context.last_position = Point2::from(mintpoint);
+    ctx.mouse.last_position = Point2::from(mintpoint);
     graphics::window(ctx)
         .set_cursor_position(dpi::LogicalPosition {
             x: f64::from(mintpoint.x),
@@ -150,27 +150,27 @@ where
 
 /// Get the distance the cursor was moved during the current frame, in pixels.
 pub fn delta(ctx: &Context) -> mint::Point2<f32> {
-    ctx.mouse_context.delta.into()
+    ctx.mouse.delta.into()
 }
 
 /// Get the distance the cursor was moved between the latest two mouse_motion_events.
 pub(crate) fn last_delta(ctx: &Context) -> mint::Point2<f32> {
-    ctx.mouse_context.last_delta.into()
+    ctx.mouse.last_delta.into()
 }
 
 /// Returns whether or not the given mouse button is pressed.
 pub fn button_pressed(ctx: &Context, button: MouseButton) -> bool {
-    ctx.mouse_context.button_pressed(button)
+    ctx.mouse.button_pressed(button)
 }
 
 /// Returns whether or not the given mouse button has been pressed this frame.
 pub fn button_just_pressed(ctx: &Context, button: MouseButton) -> bool {
-    ctx.mouse_context.button_just_pressed(button)
+    ctx.mouse.button_just_pressed(button)
 }
 
 /// Returns whether or not the given mouse button has been released this frame.
 pub fn button_just_released(ctx: &Context, button: MouseButton) -> bool {
-    ctx.mouse_context.button_just_released(button)
+    ctx.mouse.button_just_released(button)
 }
 
 /// Updates delta and position values.
@@ -190,13 +190,13 @@ pub fn handle_move(ctx: &mut Context, new_x: f32, new_y: f32) {
     let current_pos = crate::input::mouse::position(ctx);
     let diff = crate::graphics::Point2::new(new_x - current_pos.x, new_y - current_pos.y);
     // Sum up the cumulative mouse change for this frame in `delta`:
-    ctx.mouse_context.set_delta(crate::graphics::Point2::new(
+    ctx.mouse.set_delta(crate::graphics::Point2::new(
         current_delta.x + diff.x,
         current_delta.y + diff.y,
     ));
     // `last_delta` is not cumulative.
     // It represents only the change between the last mouse event and the current one.
-    ctx.mouse_context.set_last_delta(diff);
-    ctx.mouse_context
+    ctx.mouse.set_last_delta(diff);
+    ctx.mouse
         .set_last_position(crate::graphics::Point2::new(new_x as f32, new_y as f32));
 }

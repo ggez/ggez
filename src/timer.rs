@@ -225,14 +225,14 @@ impl Default for TimeContext {
 /// in other words, the length of the last frame.
 #[deprecated(note = "Use `Context::timer_context.delta` instead")]
 pub fn delta(ctx: &Context) -> time::Duration {
-    ctx.timer_context.delta()
+    ctx.timer.delta()
 }
 
 /// Gets the average time of a frame, averaged
 /// over the last 200 frames.
 #[deprecated(note = "Use `Context::timer_context.average_delta` instead")]
 pub fn average_delta(ctx: &Context) -> time::Duration {
-    ctx.timer_context.average_delta()
+    ctx.timer.average_delta()
 }
 
 /// Returns a `Duration` representing how long each
@@ -248,14 +248,14 @@ fn fps_as_duration(fps: u32) -> time::Duration {
 /// 200 frames.
 #[deprecated(note = "Use `Context::timer_context.fps` instead")]
 pub fn fps(ctx: &Context) -> f64 {
-    ctx.timer_context.fps()
+    ctx.timer.fps()
 }
 
 /// Returns the time since the game was initialized,
 /// as reported by the system clock.
 #[deprecated(note = "Use `Context::timer_context.time_since_start` instead")]
 pub fn time_since_start(ctx: &Context) -> time::Duration {
-    let tc = &ctx.timer_context;
+    let tc = &ctx.timer;
     time::Instant::now() - tc.init_instant
 }
 
@@ -277,7 +277,7 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 /// logic runs.
 #[deprecated(note = "Use `Context::timer_context.check_update_time` instead")]
 pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
-    let timedata = &mut ctx.timer_context;
+    let timedata = &mut ctx.timer;
 
     let target_dt = fps_as_duration(target_fps);
     if timedata.residual_update_dt > target_dt {
@@ -303,7 +303,7 @@ pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
 /// (see <http://gafferongames.com/game-physics/fix-your-timestep/>)
 #[deprecated(note = "Use `Context::timer_context.remaining_update_time` instead")]
 pub fn remaining_update_time(ctx: &Context) -> time::Duration {
-    ctx.timer_context.residual_update_dt
+    ctx.timer.residual_update_dt
 }
 
 /// Pauses the current thread for the target duration.
@@ -327,5 +327,5 @@ pub fn yield_now() {
 /// has been called by it.
 #[deprecated(note = "Use `Context::timer_context.ticks` instead")]
 pub fn ticks(ctx: &Context) -> usize {
-    ctx.timer_context.frame_count
+    ctx.timer.frame_count
 }

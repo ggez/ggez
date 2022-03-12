@@ -139,10 +139,6 @@ impl KeyboardContext {
         }
     }
 
-    pub fn set_modifiers(&mut self, keymods: KeyMods) {
-        self.active_modifiers = keymods;
-    }
-
     /// Checks if a key is currently pressed down.
     pub fn is_key_pressed(&self, key: KeyCode) -> bool {
         self.pressed_keys_set.contains(&key)
@@ -190,7 +186,7 @@ impl KeyboardContext {
         self.previously_pressed_set = self.pressed_keys_set.clone();
     }
 
-    fn set_key(&mut self, key: KeyCode, pressed: bool) {
+    pub(crate) fn set_key(&mut self, key: KeyCode, pressed: bool) {
         if pressed {
             let _ = self.pressed_keys_set.insert(key);
             self.last_pressed = self.current_pressed;
@@ -201,6 +197,10 @@ impl KeyboardContext {
         }
 
         self.set_key_modifier(key, pressed);
+    }
+
+    pub(crate) fn set_modifiers(&mut self, keymods: KeyMods) {
+        self.active_modifiers = keymods;
     }
 
     /// Take a modifier key code and alter our state.
@@ -242,44 +242,44 @@ impl Default for KeyboardContext {
 /// Checks if a key is currently pressed down.
 #[deprecated(note = "Use `Context::keyboard_context.is_key_pressed` instead")]
 pub fn is_key_pressed(ctx: &Context, key: KeyCode) -> bool {
-    ctx.keyboard_context.is_key_pressed(key)
+    ctx.keyboard.is_key_pressed(key)
 }
 
 /// Checks if a key has been pressed down this frame.
 #[deprecated(note = "Use `Context::keyboard_context.is_key_just_pressed` instead")]
 pub fn is_key_just_pressed(ctx: &Context, key: KeyCode) -> bool {
-    ctx.keyboard_context.is_key_just_pressed(key)
+    ctx.keyboard.is_key_just_pressed(key)
 }
 
 /// Checks if a key has been released this frame.
 #[deprecated(note = "Use `Context::keyboard_context.is_key_just_released` instead")]
 pub fn is_key_just_released(ctx: &Context, key: KeyCode) -> bool {
-    ctx.keyboard_context.is_key_just_released(key)
+    ctx.keyboard.is_key_just_released(key)
 }
 
 /// Checks if the last keystroke sent by the system is repeated,
 /// like when a key is held down for a period of time.
 #[deprecated(note = "Use `Context::keyboard_context.is_key_repeated` instead")]
 pub fn is_key_repeated(ctx: &Context) -> bool {
-    ctx.keyboard_context.is_key_repeated()
+    ctx.keyboard.is_key_repeated()
 }
 
 /// Returns a reference to the set of currently pressed keys.
 #[deprecated(note = "Use `Context::keyboard_context.pressed_keys` instead")]
 pub fn pressed_keys(ctx: &Context) -> &HashSet<KeyCode> {
-    ctx.keyboard_context.pressed_keys()
+    ctx.keyboard.pressed_keys()
 }
 
 /// Checks if keyboard modifier (or several) is active.
 #[deprecated(note = "Use `Context::keyboard_context.is_mod_active` instead")]
 pub fn is_mod_active(ctx: &Context, keymods: KeyMods) -> bool {
-    ctx.keyboard_context.is_mod_active(keymods)
+    ctx.keyboard.is_mod_active(keymods)
 }
 
 /// Returns currently active keyboard modifiers.
 #[deprecated(note = "Use `Context::keyboard_context.active_mods` instead")]
 pub fn active_mods(ctx: &Context) -> KeyMods {
-    ctx.keyboard_context.active_mods()
+    ctx.keyboard.active_mods()
 }
 
 #[cfg(test)]

@@ -126,11 +126,11 @@ impl SpriteBatch {
                     Transform::Matrix(_) => *param,
                 };
                 let primitive_param = new_param;
-                primitive_param.to_instance_properties(ctx.gfx_context.is_srgb())
+                primitive_param.to_instance_properties(ctx.gfx.is_srgb())
             })
             .collect::<Vec<_>>();
 
-        let gfx = &mut ctx.gfx_context;
+        let gfx = &mut ctx.gfx;
         if gfx.data.rect_instance_properties.len() < self.sprites.len() {
             gfx.data.rect_instance_properties = gfx.factory.create_buffer(
                 self.sprites.len(),
@@ -181,7 +181,7 @@ impl graphics::Drawable for SpriteBatch {
         // Awkwardly we must update values on all sprites and such.
         // Also awkwardly we have this chain of colors with differing priorities.
         self.flush(ctx, &self.image)?;
-        let gfx = &mut ctx.gfx_context;
+        let gfx = &mut ctx.gfx;
         let sampler = gfx
             .samplers
             .get_or_insert(self.image.sampler_info, gfx.factory.as_mut());

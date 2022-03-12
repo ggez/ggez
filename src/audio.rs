@@ -315,7 +315,7 @@ impl Source {
                 "Could not decode the given audio data".to_string(),
             ));
         }
-        let sink = rodio::Sink::try_new(context.audio_context.device())?;
+        let sink = rodio::Sink::try_new(context.audio.device())?;
         let cursor = io::Cursor::new(data);
         Ok(Source {
             sink,
@@ -365,7 +365,7 @@ impl SoundSource for Source {
         self.stop(ctx)?;
         self.play_later()?;
 
-        let new_sink = rodio::Sink::try_new(ctx.audio_context.device())?;
+        let new_sink = rodio::Sink::try_new(ctx.audio.device())?;
         let old_sink = mem::replace(&mut self.sink, new_sink);
         old_sink.detach();
 
@@ -409,7 +409,7 @@ impl SoundSource for Source {
         // We also need to carry over information from the previous sink.
         let volume = self.volume();
 
-        let device = ctx.audio_context.device();
+        let device = ctx.audio.device();
         self.sink = rodio::Sink::try_new(device)?;
         self.state.play_time.store(0, Ordering::SeqCst);
 
@@ -479,7 +479,7 @@ impl SpatialSource {
             ));
         }
         let sink = rodio::SpatialSink::try_new(
-            context.audio_context.device(),
+            context.audio.device(),
             [0.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
@@ -539,7 +539,7 @@ impl SoundSource for SpatialSource {
         self.stop(ctx)?;
         self.play_later()?;
 
-        let device = ctx.audio_context.device();
+        let device = ctx.audio.device();
         let new_sink = rodio::SpatialSink::try_new(
             device,
             self.emitter_position.into(),
@@ -595,7 +595,7 @@ impl SoundSource for SpatialSource {
         // We also need to carry over information from the previous sink.
         let volume = self.volume();
 
-        let device = ctx.audio_context.device();
+        let device = ctx.audio.device();
         self.sink = rodio::SpatialSink::try_new(
             device,
             self.emitter_position.into(),
