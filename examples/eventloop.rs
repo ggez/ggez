@@ -56,7 +56,7 @@ pub fn main() -> GameResult {
             Event::MainEventsCleared => {
                 // Tell the timer stuff a frame has happened.
                 // Without this the FPS timer functions and such won't work.
-                ctx.timer.tick();
+                ctx.time.tick();
 
                 // Update
                 position += 1.0;

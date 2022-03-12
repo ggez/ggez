@@ -81,7 +81,7 @@ impl EventHandler for App {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         // This tries to throttle updates to desired value.
-        while timer::check_update_time(ctx, DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             // Since we don't have any non-callback logic, all we do is append our logs.
             self.file_logger.update()?;
         }

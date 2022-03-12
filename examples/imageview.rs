@@ -75,13 +75,13 @@ impl MainState {
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
-        while timer::check_update_time(ctx, DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             self.a += self.direction;
             if self.a > 250 || self.a <= 0 {
                 self.direction *= -1;
 
-                println!("Delta frame time: {:?} ", timer::delta(ctx));
-                println!("Average FPS: {}", timer::fps(ctx));
+                println!("Delta frame time: {:?} ", ctx.time.delta());
+                println!("Average FPS: {}", ctx.time.fps());
             }
         }
         Ok(())

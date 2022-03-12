@@ -355,7 +355,7 @@ where
                         },
                     ..
                 } => {
-                    let repeat = keyboard::is_key_repeated(ctx);
+                    let repeat = ctx.keyboard.is_key_repeated();
                     let res =
                         state.key_down_event(ctx, keycode, ctx.keyboard.active_mods(), repeat);
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyDownEvent) {
@@ -455,7 +455,7 @@ where
                 // you include `timer_context.tick()` and
                 // `ctx.process_event()` calls.  These update ggez's
                 // internal state however necessary.
-                ctx.timer.tick();
+                ctx.time.tick();
 
                 // Handle gamepad events if necessary.
                 if ctx.conf.modules.gamepad {

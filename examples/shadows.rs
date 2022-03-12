@@ -6,7 +6,6 @@ use gfx::{self, *};
 use ggez::conf;
 use ggez::event;
 use ggez::graphics::{self, BlendMode, Canvas, Color, DrawParam, Drawable, Shader};
-use ggez::timer;
 use ggez::{Context, GameResult};
 use glam::Vec2;
 use std::env;
@@ -322,14 +321,14 @@ impl MainState {
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if timer::ticks(ctx) % 100 == 0 {
-            println!("Average FPS: {}", timer::fps(ctx));
+        if ctx.time.ticks() % 100 == 0 {
+            println!("Average FPS: {}", ctx.time.fps());
         }
 
-        self.torch.glow = LIGHT_GLOW_FACTOR
-            * (timer::time_since_start(ctx).as_secs_f32() * LIGHT_GLOW_RATE).cos();
+        self.torch.glow =
+            LIGHT_GLOW_FACTOR * (ctx.time.time_since_start().as_secs_f32() * LIGHT_GLOW_RATE).cos();
         self.static_light.glow = LIGHT_GLOW_FACTOR
-            * (timer::time_since_start(ctx).as_secs_f32() * LIGHT_GLOW_RATE * 0.75).sin();
+            * (ctx.time.time_since_start().as_secs_f32() * LIGHT_GLOW_RATE * 0.75).sin();
         Ok(())
     }
 

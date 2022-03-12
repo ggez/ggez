@@ -20,7 +20,7 @@ use oorandom::Rand32;
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
 use ggez::event::{KeyCode, KeyMods};
-use ggez::{event, graphics, timer, Context, GameResult};
+use ggez::{event, graphics, Context, GameResult};
 
 // We'll bring in some things from `std` to help us in the future.
 use std::collections::LinkedList;
@@ -384,7 +384,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
         // Rely on ggez's built-in timer for deciding when to update the game, and how many times.
         // If the update is early, there will be no cycles, otherwises, the logic will run once for each
         // frame fitting in the time since the last update.
-        while timer::check_update_time(ctx, DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             // We check to see if the game is over. If not, we'll update. If so, we'll just do nothing.
             if !self.gameover {
                 // Here we do the actual updating of our game world. First we tell the snake to update itself,

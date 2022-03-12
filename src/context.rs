@@ -40,7 +40,7 @@ pub struct Context {
     /// Graphics state.
     pub(crate) gfx: crate::graphics::context::GraphicsContext,
     /// Timer state.
-    pub timer: timer::TimeContext,
+    pub time: timer::TimeContext,
     /// Audio context.
     pub audio: Box<dyn audio::AudioContext>,
     /// Keyboard context.
@@ -108,7 +108,7 @@ impl Context {
             filesystem: fs,
             gfx: graphics_context,
             continuing: true,
-            timer: timer_context,
+            time: timer_context,
             audio: audio_context,
             keyboard: keyboard_context,
             gamepad: gamepad_context,

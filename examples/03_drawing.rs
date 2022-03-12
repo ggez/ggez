@@ -4,7 +4,6 @@ use glam::*;
 
 use ggez::event;
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
-use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
@@ -104,7 +103,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
 
-        while timer::check_update_time(ctx, DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             self.rotation += 0.01;
         }
         Ok(())

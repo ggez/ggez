@@ -2,7 +2,6 @@
 
 use ggez::event;
 use ggez::graphics::{self, Color};
-use ggez::timer;
 use ggez::{Context, GameResult};
 use glam::*;
 use oorandom::Rand32;
@@ -65,13 +64,13 @@ impl MainState {
 impl event::EventHandler<ggez::GameError> for MainState {
     #[allow(clippy::needless_range_loop)]
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if timer::ticks(ctx) % 100 == 0 {
-            println!("Delta frame time: {:?} ", timer::delta(ctx));
-            println!("Average FPS: {}", timer::fps(ctx));
+        if ctx.time.ticks() % 100 == 0 {
+            println!("Delta frame time: {:?} ", ctx.time.delta());
+            println!("Average FPS: {}", ctx.time.fps());
         }
 
         // Update first 50 instances in the mesh batch
-        let delta_time = (timer::delta(ctx).as_secs_f64() * 1000.0) as f32;
+        let delta_time = (ctx.time.delta().as_secs_f64() * 1000.0) as f32;
         let instances = self.mesh_batch.get_instance_params_mut();
         for i in 0..50 {
             if let graphics::Transform::Values {
