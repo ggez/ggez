@@ -494,8 +494,8 @@ impl<'a> Canvas<'a> {
                         scale: text.size.into(),
                         font_id: *self
                             .fonts
-                            .get(&text.font)
-                            .ok_or_else(|| GameError::FontSelectError(text.font.clone()))?,
+                            .get(text.font.as_ref())
+                            .ok_or_else(|| GameError::FontSelectError(text.font.to_string()))?,
                         extra: glyph_brush::Extra {
                             color: text.color.into(),
                             z: 0.,

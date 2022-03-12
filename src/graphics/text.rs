@@ -3,7 +3,7 @@
 use super::Color;
 use crate::{filesystem::Filesystem, GameResult};
 use glyph_brush::ab_glyph;
-use std::{io::Read, path::Path};
+use std::{borrow::Cow, io::Read, path::Path};
 
 /// Font data that can be used to create a new font in [super::context::GraphicsContext].
 #[derive(Debug)]
@@ -39,18 +39,18 @@ impl FontData {
 
 /// Parameters of a single piece of text, including font, color, size, and Z position.
 #[derive(Debug, Clone)]
-pub struct Text {
+pub struct Text<'a> {
     /// The text itself.
-    pub text: String,
+    pub text: Cow<'a, str>,
     /// Font name of the text.
-    pub font: String,
+    pub font: Cow<'a, str>,
     /// Pixel size of text.
     pub size: f32,
     /// Color of text.
     pub color: Color,
 }
 
-impl Default for Text {
+impl<'a> Default for Text<'a> {
     fn default() -> Self {
         Text {
             text: "".into(),
@@ -61,14 +61,14 @@ impl Default for Text {
     }
 }
 
-impl Text {
+impl<'a> Text<'a> {
     /// Equivalent to `Text::default()`.
     pub fn new() -> Self {
         Text::default()
     }
 
     /// Sets the `text` field.
-    pub fn text(self, text: impl Into<String>) -> Self {
+    pub fn text(self, text: impl Into<Cow<'a, str>>) -> Self {
         Text {
             text: text.into(),
             ..self
@@ -76,7 +76,7 @@ impl Text {
     }
 
     /// Sets the `font` field.
-    pub fn font(self, font: impl Into<String>) -> Self {
+    pub fn font(self, font: impl Into<Cow<'a, str>>) -> Self {
         Text {
             font: font.into(),
             ..self
