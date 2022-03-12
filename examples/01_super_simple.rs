@@ -1,23 +1,18 @@
 //! The simplest possible example that does something.
 #![allow(clippy::unnecessary_wraps)]
 
-use ggez::graphics::{
-    self,
-    draw::DrawParam,
-    image::Image,
-    mesh::{Mesh, MeshBuilder},
-    text::{FontData, Text, TextLayout},
-    Color, Rect,
-};
 use ggez::{
-    event, filesystem,
+    event,
     graphics::{
+        self,
         canvas::{Canvas, CanvasLoadOp},
-        image::{ImageFormat, ScreenImage},
-        sampler::Sampler,
+        draw::DrawParam,
+        image::ScreenImage,
+        mesh::{Mesh, MeshBuilder},
+        Color,
     },
+    Context, GameResult,
 };
-use ggez::{Context, GameResult};
 use glam::*;
 
 struct MainState {
@@ -62,7 +57,6 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &mut ctx.gfx,
             CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
             &frame,
-            None,
         );
 
         canvas.draw_mesh(
@@ -71,7 +65,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             DrawParam::new().offset(vec2(self.pos_x, 300.)),
         );
 
-        canvas.finish()?;
+        canvas.finish();
         ctx.gfx.present(&frame)?;
 
         Ok(())
