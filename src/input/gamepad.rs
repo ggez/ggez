@@ -20,10 +20,10 @@ pub trait GamepadContext {
     /// Returns a gamepad event.
     fn next_event(&mut self) -> Option<Event>;
 
-    /// returns the `Gamepad` associated with an id.
+    /// Returns the `Gamepad` associated with an `id`.
     fn gamepad(&self, id: GamepadId) -> Gamepad;
 
-    /// returns an iterator over the connected `Gamepad`s.
+    /// Return an iterator of all the `Gamepads` that are connected.
     fn gamepads(&self) -> GamepadsIterator;
 }
 
@@ -108,11 +108,15 @@ impl GamepadContext for NullGamepadContext {
 }
 
 /// Returns the `Gamepad` associated with an `id`.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::gamepad_context.gamepad` instead")]
 pub fn gamepad(ctx: &Context, id: GamepadId) -> Gamepad {
     ctx.gamepad_context.gamepad(id)
 }
 
 /// Return an iterator of all the `Gamepads` that are connected.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::gamepad_context.gamepads` instead")]
 pub fn gamepads(ctx: &Context) -> GamepadsIterator {
     ctx.gamepad_context.gamepads()
 }
