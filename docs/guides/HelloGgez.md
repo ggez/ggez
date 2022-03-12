@@ -162,7 +162,7 @@ let (ctx, event_loop) = ContextBuilder::new("hello_ggez", "awesome_person")
 ```
 
 This will create a `Context` with the `game_id` `hello_ggez` and the author `awesome_person`.
-It will also create an [`EventsLoop`](https://docs.rs/ggez/0.7.0/ggez/event/struct.EventsLoop.html).
+It will also create an [`EventLoop`](https://docs.rs/ggez/0.7.0/ggez/event/struct.EventLoop.html).
 We'll need it in a minute to call [`run`](https://docs.rs/ggez/0.7.0/ggez/event/fn.run.html).
 Feel free to replace the author with yourself.
 You are awesome after all.

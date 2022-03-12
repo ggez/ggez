@@ -181,7 +181,7 @@ impl EventHandler for MainState {
         _keycode: ggez::event::KeyCode,
         _keymod: ggez::event::KeyMods,
         repeat: bool,
-    ) {
+    ) -> GameResult {
         if !repeat {
             if let Some(BlendMode::Alpha) = self.canvas.blend_mode() {
                 self.canvas.set_blend_mode(Some(BlendMode::Premultiplied));
@@ -191,6 +191,7 @@ impl EventHandler for MainState {
                 println!("Drawing canvas with default alpha mode");
             }
         }
+        Ok(())
     }
 }
 

@@ -53,7 +53,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 &self.text,
                 graphics::DrawParam::new()
                     .dest(dest_point)
-                    .color(Color::from((0, 0, 0, 255))),
+                    .color(Color::from((0, 0, 0, 255)))
+                    .offset([15., 15.]),
             )?;
             graphics::set_canvas(ctx, None);
 
@@ -92,11 +93,12 @@ impl event::EventHandler<ggez::GameError> for MainState {
         _keycode: ggez::event::KeyCode,
         _keymod: ggez::event::KeyMods,
         repeat: bool,
-    ) {
+    ) -> GameResult {
         if !repeat {
             self.draw_with_canvas = !self.draw_with_canvas;
             println!("Canvas on: {}", self.draw_with_canvas);
         }
+        Ok(())
     }
 }
 

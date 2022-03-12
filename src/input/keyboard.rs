@@ -121,6 +121,9 @@ pub struct KeyboardContext {
     // These two are necessary for tracking key-repeat.
     last_pressed: Option<KeyCode>,
     current_pressed: Option<KeyCode>,
+
+    // Represents the state of pressed_keys_set last frame.
+    previously_pressed_set: HashSet<KeyCode>,
 }
 
 impl KeyboardContext {
@@ -131,6 +134,7 @@ impl KeyboardContext {
             pressed_keys_set: HashSet::with_capacity(256),
             last_pressed: None,
             current_pressed: None,
+            previously_pressed_set: HashSet::with_capacity(256),
         }
     }
 
@@ -208,6 +212,13 @@ impl KeyboardContext {
     /// Returns currently active keyboard modifiers.
     pub fn active_mods(&self) -> KeyMods {
         self.active_modifiers
+    }
+
+    /// Copies the current state of the keyboard into the context. If you are writing your own event loop
+    /// you need to call this at the end of every update in order to use the functions `is_key_just_pressed`
+    /// and `is_key_just_released`. Otherwise this is handled for you.
+    pub fn save_keyboard_state(&mut self) {
+        self.previously_pressed_set = self.pressed_keys_set.clone();
     }
 }
 

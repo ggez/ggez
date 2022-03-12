@@ -190,9 +190,8 @@ impl event::EventHandler<ggez::GameError> for App {
         Ok(())
     }
 
-    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) -> GameResult {
         graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height))
-            .unwrap();
     }
 }
 

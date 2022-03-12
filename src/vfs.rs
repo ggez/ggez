@@ -811,12 +811,15 @@ impl VFS for ZipFS {
     /// Zip files don't have real directories, so we (incorrectly) hack it by
     /// just looking for a path prefix for now.
     fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
-        let path = convenient_path_to_str(path)?;
+        let path = sanitize_path_for_zip(path).ok_or_else(|| {
+            let errmessage = format!("Invalid path format for resource: {:?}", path);
+            GameError::FilesystemError(errmessage)
+        })? + "/";
         let itr = self
             .index
             .iter()
-            .filter(|s| s.starts_with(path))
-            .map(|s| Ok(PathBuf::from(s)))
+            .filter(|&s| s.starts_with(&path) && s != &path)
+            .map(|s| Ok(PathBuf::from("/").join(s)))
             .collect::<Vec<_>>();
         Ok(Box::new(itr.into_iter()))
     }

@@ -114,6 +114,28 @@ impl Rect {
             && self.bottom() >= other.top()
     }
 
+    /// Checks whether the `Rect` overlaps a circle.
+    pub fn overlaps_circle(&self, point: impl Into<Point2>, radius: f32) -> bool {
+        let point: glam::Vec2 = point.into();
+        let rect_center: glam::Vec2 = self.center().into();
+        let circle_distance = (point - rect_center).abs();
+
+        if circle_distance.x > (self.w / 2.0 + radius)
+            || circle_distance.y > (self.h / 2.0 + radius)
+        {
+            return false;
+        }
+
+        if circle_distance.x <= (self.w / 2.0) || circle_distance.y <= (self.h / 2.0) {
+            return true;
+        }
+
+        let corner_distance_sq =
+            (circle_distance.x - self.w / 2.0).powi(2) + (circle_distance.y - self.h / 2.0).powi(2);
+
+        corner_distance_sq <= radius.powi(2)
+    }
+
     /// Translates the `Rect` by an offset of (x, y)
     pub fn translate<V>(&mut self, offset: V)
     where
@@ -174,6 +196,7 @@ impl Rect {
     }
 
     /// Returns a new `Rect` that includes all points of these two `Rect`s.
+    #[must_use]
     pub fn combine_with(self, other: Rect) -> Rect {
         let x = f32::min(self.x, other.x);
         let y = f32::min(self.y, other.y);
@@ -623,6 +646,10 @@ mod tests {
 
         let r2 = Rect::new(500.0, 0.0, 64.0, 64.0);
         assert!(!r1.overlaps(&r2));
+
+        assert!(r1.overlaps_circle(glam::vec2(133.5, 133.5), 8.0));
+        assert!(!r1.overlaps_circle(glam::vec2(134.0, 134.0), 8.0));
+        assert!(r1.overlaps_circle(glam::vec2(64.0, 64.0), 2.0));
     }
 
     #[test]

@@ -97,7 +97,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         keycode: input::keyboard::KeyCode,
         _keymod: input::keyboard::KeyMods,
         _repeat: bool,
-    ) {
+    ) -> GameResult {
         match keycode {
             input::keyboard::KeyCode::Key1 => self.play_detached(ctx),
             input::keyboard::KeyCode::Key2 => self.play_later(ctx),
@@ -108,6 +108,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             input::keyboard::KeyCode::Escape => event::quit(ctx),
             _ => (),
         }
+        Ok(())
     }
 }
 

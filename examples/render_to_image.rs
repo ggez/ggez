@@ -61,9 +61,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
         Ok(())
     }
 
-    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) -> GameResult {
         let new_rect = graphics::Rect::new(0.0, 0.0, width, height);
-        graphics::set_screen_coordinates(ctx, new_rect).unwrap();
+        graphics::set_screen_coordinates(ctx, new_rect)
     }
 }
 

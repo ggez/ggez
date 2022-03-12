@@ -2,8 +2,9 @@
 //! if for some reason you want to do that instead of using the `EventHandler`
 //! trait to do that for you.
 //!
-//! This is exactly how `ggez::event::run()` works, it really is not
-//! doing anything magical.  But, if you want a bit more power over
+//! This is how `ggez::event::run()` works, mostly, (if you want to see which parts were left out
+//! of this example, check [event.rs](https://github.com/ggez/ggez/blob/master/src/event.rs),
+//! it really is not doing anything magical.  But, if you want a bit more power over
 //! the control flow of your game, this is how you get it.
 //!
 //! It is functionally identical to the `super_simple.rs` example apart from that.
@@ -77,6 +78,14 @@ pub fn main() -> GameResult {
                 // reset the mouse delta for the next frame
                 // necessary because it's calculated cumulatively each cycle
                 ctx.mouse.reset_delta();
+
+                // Copy the state of the keyboard into the KeyboardContext and
+                // the mouse into the MouseContext.
+                // Not required for this example but important if you want to
+                // use the functions keyboard::is_key_just_pressed/released and
+                // mouse::is_button_just_pressed/released.
+                ctx.keyboard_context.save_keyboard_state();
+                ctx.mouse_context.save_mouse_state();
 
                 ggez::timer::yield_now();
             }

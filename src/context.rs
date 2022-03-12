@@ -136,24 +136,28 @@ impl ContextBuilder {
     }
 
     /// Sets the window setup settings.
+    #[must_use]
     pub fn window_setup(mut self, setup: conf::WindowSetup) -> Self {
         self.conf.window_setup = setup;
         self
     }
 
     /// Sets the window mode settings.
+    #[must_use]
     pub fn window_mode(mut self, mode: conf::WindowMode) -> Self {
         self.conf.window_mode = mode;
         self
     }
 
     /// Sets the graphics backend.
+    #[must_use]
     pub fn backend(mut self, backend: conf::Backend) -> Self {
         self.conf.backend = backend;
         self
     }
 
     /// Sets the modules configuration.
+    #[must_use]
     pub fn modules(mut self, modules: conf::ModuleConf) -> Self {
         self.conf.modules = modules;
         self
@@ -165,6 +169,7 @@ impl ContextBuilder {
     /// [`backend()`](#method.backend).  These are used as
     /// defaults and are overridden by any external config
     /// file found.
+    #[must_use]
     pub fn default_conf(mut self, conf: conf::Conf) -> Self {
         self.conf = conf;
         self
@@ -172,6 +177,7 @@ impl ContextBuilder {
 
     /// Sets resources dir name.
     /// Default resources dir name is `resources`.
+    #[must_use]
     pub fn resources_dir_name(mut self, new_name: impl ToString) -> Self {
         self.resources_dir_name = new_name.to_string();
         self
@@ -179,6 +185,7 @@ impl ContextBuilder {
 
     /// Sets resources zip name.
     /// Default resources dir name is `resources.zip`.
+    #[must_use]
     pub fn resources_zip_name(mut self, new_name: impl ToString) -> Self {
         self.resources_zip_name = new_name.to_string();
         self
@@ -186,6 +193,7 @@ impl ContextBuilder {
 
     /// Add a new read-only filesystem path to the places to search
     /// for resources.
+    #[must_use]
     pub fn add_resource_path<T>(mut self, path: T) -> Self
     where
         T: Into<path::PathBuf>,
@@ -204,6 +212,7 @@ impl ContextBuilder {
     ///     .add_zipfile_bytes(include_bytes!("../resources.zip").to_vec())
     ///     .build();
     /// ```
+    #[must_use]
     pub fn add_zipfile_bytes<B>(mut self, bytes: B) -> Self
     where
         B: Into<Cow<'static, [u8]>>,
@@ -217,6 +226,7 @@ impl ContextBuilder {
     /// exists and use its settings to override the provided values.
     /// Defaults to `true` which is usually what you want, but being
     /// able to fiddle with it is sometimes useful for debugging.
+    #[must_use]
     pub fn with_conf_file(mut self, load_conf_file: bool) -> Self {
         self.load_conf_file = load_conf_file;
         self

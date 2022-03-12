@@ -1,7 +1,7 @@
 //! Mouse utility functions.
 
 use crate::{error::GameError, error::GameResult, graphics::Point2};
-use std::collections::HashMap;
+use std::collections::HashSet;
 use winit::dpi;
 
 use crate::graphics::context::GraphicsContext;
@@ -14,10 +14,11 @@ pub struct MouseContext {
     last_position: Point2,
     last_delta: Point2,
     delta: Point2,
-    buttons_pressed: HashMap<MouseButton, bool>,
+    buttons_pressed: HashSet<MouseButton>,
     cursor_type: CursorIcon,
     cursor_grabbed: bool,
     cursor_hidden: bool,
+    previous_buttons_pressed: HashSet<MouseButton>,
 }
 
 impl MouseContext {
@@ -27,9 +28,10 @@ impl MouseContext {
             last_delta: Point2::ZERO,
             delta: Point2::ZERO,
             cursor_type: CursorIcon::Default,
-            buttons_pressed: HashMap::new(),
+            buttons_pressed: HashSet::new(),
             cursor_grabbed: false,
             cursor_hidden: false,
+            previous_buttons_pressed: HashSet::new(),
         }
     }
 
@@ -53,12 +55,18 @@ impl MouseContext {
     }
 
     pub(crate) fn set_button(&mut self, button: MouseButton, pressed: bool) {
-        let _ = self.buttons_pressed.insert(button, pressed);
+        if pressed {
+            let _ = self.buttons_pressed.insert(button);
+        } else {
+            let _ = self.buttons_pressed.remove(&button);
+        }
     }
 
-    /// Returns the current mouse cursor type of the window.
-    pub fn cursor_type(&self) -> CursorIcon {
-        self.cursor_type
+    /// Copies the current state of the mouse buttons into the context. If you are writing your own event loop
+    /// you need to call this at the end of every update in order to use the functions `is_button_just_pressed`
+    /// and `is_button_just_released`. Otherwise this is handled for you.
+    pub fn save_mouse_state(&mut self) {
+        self.previous_buttons_pressed = self.buttons_pressed.clone();
     }
 
     /// Modifies the mouse cursor type of the window.
@@ -131,7 +139,44 @@ impl MouseContext {
 
     /// Returns whether or not the given mouse button is pressed.
     pub fn button_pressed(&self, button: MouseButton) -> bool {
-        *(self.buttons_pressed.get(&button).unwrap_or(&false))
+        self.buttons_pressed.contains(&button)
+    }
+
+    /// Returns whether or not the given mouse button has been pressed this frame.
+    pub fn button_just_pressed(&self, button: MouseButton) -> bool {
+        self.buttons_pressed.contains(&button) && !self.previous_buttons_pressed.contains(&button)
+    }
+
+    /// Returns whether or not the given mouse button has been released this frame.
+    pub fn button_just_released(&self, button: MouseButton) -> bool {
+        !self.buttons_pressed.contains(&button) && self.previous_buttons_pressed.contains(&button)
+    }
+
+    /// Updates delta and position values.
+    /// The inputs are interpreted as pixel coordinates inside the window.
+    ///
+    /// This function is called internally whenever the mouse moves to a new location.
+    /// It can also be used to simulate mouse input.
+    /// (It gets called inside the default implementation of the
+    /// [`touch_event`](../../event/trait.EventHandler.html#method.touch_event), for example.)
+    /// Calling this function alone won't trigger a
+    /// [`mouse_motion_event`](../../event/trait.EventHandler.html#method.mouse_motion_event) though.
+    /// (Note that the default implementation of
+    /// [`touch_event`](../../event/trait.EventHandler.html#method.touch_event) DOES trigger one, but
+    /// it does so by invoking it on the `EventHandler` manually.)
+    pub fn handle_move(&mut self, new_x: f32, new_y: f32) {
+        let current_delta = self.delta();
+        let current_pos = self.position();
+        let diff = crate::graphics::Point2::new(new_x - current_pos.x, new_y - current_pos.y);
+        // Sum up the cumulative mouse change for this frame in `delta`:
+        self.set_delta(crate::graphics::Point2::new(
+            current_delta.x + diff.x,
+            current_delta.y + diff.y,
+        ));
+        // `last_delta` is not cumulative.
+        // It represents only the change between the last mouse event and the current one.
+        self.set_last_delta(diff);
+        self.set_last_position(crate::graphics::Point2::new(new_x as f32, new_y as f32));
     }
 }
 

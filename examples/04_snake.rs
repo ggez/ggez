@@ -10,7 +10,7 @@
 //! that this example uses.
 //!
 //! Author: @termhn
-//! Original repo: https://github.com/termhn/ggez_snake
+//! Original repo: <https://github.com/termhn/ggez_snake>
 
 // First we'll import the crates we need for our game;
 // in this case that is just `ggez` and `oorandom` (and `getrandom`
@@ -444,7 +444,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
         keycode: KeyCode,
         _keymod: KeyMods,
         _repeat: bool,
-    ) {
+    ) -> GameResult {
         // Here we attempt to convert the Keycode into a Direction using the helper
         // we defined earlier.
         if let Some(dir) = Direction::from_keycode(keycode) {
@@ -459,6 +459,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
                 self.snake.dir = dir;
             }
         }
+        Ok(())
     }
 }
 

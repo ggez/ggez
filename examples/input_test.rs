@@ -55,17 +55,38 @@ impl event::EventHandler<ggez::GameError> for MainState {
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
+    ) -> GameResult {
         self.mouse_down = true;
         println!("Mouse button pressed: {:?}, x: {}, y: {}", button, x, y);
+        Ok(())
     }
 
-    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+    fn mouse_button_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
+    ) -> GameResult {
         self.mouse_down = false;
         println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
+        Ok(())
     }
 
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, xrel: f32, yrel: f32) {
+    fn mouse_motion_event(
+        &mut self,
+        _ctx: &mut Context,
+        x: f32,
+        y: f32,
+        xrel: f32,
+        yrel: f32,
+    ) -> GameResult {
         if self.mouse_down {
             // Mouse coordinates are PHYSICAL coordinates, but here we want logical coordinates.
 
@@ -87,10 +108,12 @@ impl event::EventHandler<ggez::GameError> for MainState {
             "Mouse motion, x: {}, y: {}, relative x: {}, relative y: {}",
             x, y, xrel, yrel
         );
+        Ok(())
     }
 
-    fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) {
+    fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) -> GameResult {
         println!("Mousewheel event, x: {}, y: {}", x, y);
+        Ok(())
     }
 
     fn key_down_event(
@@ -99,42 +122,70 @@ impl event::EventHandler<ggez::GameError> for MainState {
         keycode: KeyCode,
         keymod: KeyMods,
         repeat: bool,
-    ) {
+    ) -> GameResult {
         println!(
             "Key pressed: {:?}, modifier {:?}, repeat: {}",
             keycode, keymod, repeat
         );
+        Ok(())
     }
 
-    fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, keymod: KeyMods) {
+    fn key_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: KeyCode,
+        keymod: KeyMods,
+    ) -> GameResult {
         println!("Key released: {:?}, modifier {:?}", keycode, keymod);
+        Ok(())
     }
 
-    fn text_input_event(&mut self, _ctx: &mut Context, ch: char) {
+    fn text_input_event(&mut self, _ctx: &mut Context, ch: char) -> GameResult {
         println!("Text input: {}", ch);
+        Ok(())
     }
 
-    fn gamepad_button_down_event(&mut self, _ctx: &mut Context, btn: Button, id: GamepadId) {
+    fn gamepad_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        btn: Button,
+        id: GamepadId,
+    ) -> GameResult {
         println!("Gamepad button pressed: {:?} Gamepad_Id: {:?}", btn, id);
+        Ok(())
     }
 
-    fn gamepad_button_up_event(&mut self, _ctx: &mut Context, btn: Button, id: GamepadId) {
+    fn gamepad_button_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        btn: Button,
+        id: GamepadId,
+    ) -> GameResult {
         println!("Gamepad button released: {:?} Gamepad_Id: {:?}", btn, id);
+        Ok(())
     }
 
-    fn gamepad_axis_event(&mut self, _ctx: &mut Context, axis: Axis, value: f32, id: GamepadId) {
+    fn gamepad_axis_event(
+        &mut self,
+        _ctx: &mut Context,
+        axis: Axis,
+        value: f32,
+        id: GamepadId,
+    ) -> GameResult {
         println!(
             "Axis Event: {:?} Value: {} Gamepad_Id: {:?}",
             axis, value, id
         );
+        Ok(())
     }
 
-    fn focus_event(&mut self, _ctx: &mut Context, gained: bool) {
+    fn focus_event(&mut self, _ctx: &mut Context, gained: bool) -> GameResult {
         if gained {
             println!("Focus gained");
         } else {
             println!("Focus lost");
         }
+        Ok(())
     }
 }
 
