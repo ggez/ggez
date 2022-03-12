@@ -24,7 +24,7 @@ impl GrowingBufferArena {
         let size = align(self.alignment, size);
         assert!(size <= self.desc.size);
 
-        for (_, (buffer, cursor)) in self.buffers.iter_mut().enumerate() {
+        for (buffer, cursor) in &mut self.buffers {
             if size <= self.desc.size - *cursor {
                 let offset = *cursor;
                 *cursor += size;
