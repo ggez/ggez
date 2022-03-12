@@ -8,7 +8,7 @@ use crate::conf;
 use crate::error::GameResult;
 use crate::filesystem::Filesystem;
 use crate::graphics;
-use crate::input::{gamepad, keyboard, mouse};
+use crate::input;
 use crate::timer;
 
 /// A `Context` is an object that holds on to global resources.
@@ -44,13 +44,8 @@ pub struct Context {
     /// Audio context.
     #[cfg(feature = "audio")]
     pub audio: audio::AudioContext,
-    /// Keyboard context.
-    pub keyboard: keyboard::KeyboardContext,
-    /// Mouse context.
-    pub mouse: mouse::MouseContext,
-    /// Gamepad context.
-    #[cfg(feature = "gamepad")]
-    pub gamepad: gamepad::GamepadContext,
+    /// Input context.
+    pub input: input::InputContext,
 
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
@@ -93,9 +88,7 @@ impl Context {
             backend_spec,
             debug_id,
         )?;
-        let mouse_context = mouse::MouseContext::new();
-        let keyboard_context = keyboard::KeyboardContext::new();
-        let gamepad_context = gamepad::GamepadContext::new()?;
+        let input_context = input::InputContext::new()?;
 
         let ctx = Context {
             conf,
@@ -104,9 +97,7 @@ impl Context {
             continuing: true,
             time: timer_context,
             audio: audio_context,
-            keyboard: keyboard_context,
-            gamepad: gamepad_context,
-            mouse: mouse_context,
+            input: input_context,
 
             debug_id,
         };

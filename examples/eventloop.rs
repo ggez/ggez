@@ -77,15 +77,15 @@ pub fn main() -> GameResult {
 
                 // reset the mouse delta for the next frame
                 // necessary because it's calculated cumulatively each cycle
-                ctx.mouse.reset_delta();
+                ctx.input.mouse.reset_delta();
 
                 // Copy the state of the keyboard into the KeyboardContext and
                 // the mouse into the MouseContext.
                 // Not required for this example but important if you want to
                 // use the functions keyboard::is_key_just_pressed/released and
                 // mouse::is_button_just_pressed/released.
-                ctx.keyboard.save_keyboard_state();
-                ctx.mouse.save_mouse_state();
+                ctx.input.keyboard.save_keyboard_state();
+                ctx.input.mouse.save_mouse_state();
 
                 ggez::timer::yield_now();
             }
