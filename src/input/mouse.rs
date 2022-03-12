@@ -1,6 +1,6 @@
 //! Mouse utility functions.
 
-use crate::{context::Context, error::GameError, error::GameResult, graphics, graphics::Point2};
+use crate::{error::GameError, error::GameResult, graphics::Point2};
 use std::collections::HashMap;
 use winit::dpi;
 
@@ -125,7 +125,7 @@ impl MouseContext {
     }
 
     /// Get the distance the cursor was moved between the latest two mouse_motion_events.
-    pub(crate) fn last_delta(&self) -> mint::Point2<f32> {
+    pub fn last_delta(&self) -> mint::Point2<f32> {
         self.last_delta.into()
     }
 

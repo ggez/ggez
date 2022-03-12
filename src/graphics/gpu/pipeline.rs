@@ -1,20 +1,7 @@
 use super::arc::{ArcBindGroupLayout, ArcPipelineLayout, ArcRenderPipeline, ArcShaderModule};
-use crate::graphics::mesh::Vertex;
 use std::collections::{hash_map::DefaultHasher, HashMap};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct RenderPipelineKey {
-    vs_id: u64,
-    fs_id: u64,
-    vs_entry: String,
-    fs_entry: String,
-    samples: u32,
-    format: wgpu::TextureFormat,
-    blend: Option<wgpu::BlendState>,
-    depth: bool,
-    vertices: bool,
-}
-
 pub struct RenderPipelineInfo {
     pub vs: ArcShaderModule,
     pub fs: ArcShaderModule,
@@ -25,11 +12,13 @@ pub struct RenderPipelineInfo {
     pub blend: Option<wgpu::BlendState>,
     pub depth: bool,
     pub vertices: bool,
+    pub topology: wgpu::PrimitiveTopology,
+    pub vertex_layout: wgpu::VertexBufferLayout<'static>,
 }
 
 #[derive(Debug)]
 pub struct PipelineCache {
-    pipelines: HashMap<RenderPipelineKey, ArcRenderPipeline>,
+    pipelines: HashMap<RenderPipelineInfo, ArcRenderPipeline>,
     layouts: HashMap<u64, ArcPipelineLayout>,
 }
 
@@ -47,22 +36,10 @@ impl PipelineCache {
         layout: &wgpu::PipelineLayout,
         info: RenderPipelineInfo,
     ) -> ArcRenderPipeline {
-        let key = RenderPipelineKey {
-            vs_id: info.vs.id(),
-            fs_id: info.fs.id(),
-            vs_entry: info.vs_entry.clone(),
-            fs_entry: info.fs_entry.clone(),
-            samples: info.samples,
-            format: info.format,
-            blend: info.blend,
-            depth: info.depth,
-            vertices: info.vertices,
-        };
-
-        let vertex_buffers = [Vertex::layout()];
+        let vertex_buffers = [info.vertex_layout.clone()];
 
         self.pipelines
-            .entry(key)
+            .entry(info.clone())
             .or_insert_with(|| {
                 ArcRenderPipeline::new(device.create_render_pipeline(
                     &wgpu::RenderPipelineDescriptor {
@@ -74,7 +51,7 @@ impl PipelineCache {
                             buffers: if info.vertices { &vertex_buffers } else { &[] },
                         },
                         primitive: wgpu::PrimitiveState {
-                            topology: wgpu::PrimitiveTopology::TriangleList,
+                            topology: info.topology,
                             strip_index_format: None,
                             front_face: wgpu::FrontFace::Ccw,
                             cull_mode: None,
@@ -86,7 +63,7 @@ impl PipelineCache {
                             Some(wgpu::DepthStencilState {
                                 format: wgpu::TextureFormat::Depth32Float,
                                 depth_write_enabled: true,
-                                depth_compare: wgpu::CompareFunction::Greater,
+                                depth_compare: wgpu::CompareFunction::Always,
                                 stencil: Default::default(),
                                 bias: Default::default(),
                             })

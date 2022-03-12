@@ -38,7 +38,7 @@ bitflags = "1"
 zip = { version = "0.5", default-features = false }
 directories = "3"
 wgpu = "0.12"
-wgpu_glyph = "0.16"
+glyph_brush = "0.7"
 winit = "0.26"
 image = { version = "0.23", default-features = false, features = [
    "gif",

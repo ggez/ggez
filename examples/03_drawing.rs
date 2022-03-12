@@ -1,14 +1,17 @@
 //! A collection of semi-random shape and image drawing examples.
 
-use ggez::graphics::canvas::{Canvas, CanvasLoadOp};
-use ggez::graphics::draw::DrawParam;
-use ggez::graphics::image::{Image, ImageFormat, ScreenImage};
-use ggez::graphics::mesh::{Mesh, MeshBuilder, MeshData, Vertex};
-use ggez::graphics::sampler::Sampler;
 use ggez::{
     event,
-    graphics::{self, Color, DrawMode},
-    timer, Context, GameResult,
+    graphics::{
+        self,
+        canvas::{Canvas, CanvasLoadOp},
+        draw::DrawParam,
+        image::{Image, ScreenImage},
+        mesh::{Mesh, MeshBuilder, MeshData, Vertex},
+        sampler::Sampler,
+        Color, DrawMode,
+    },
+    Context, GameResult,
 };
 use glam::*;
 use std::{env, path};
@@ -25,7 +28,7 @@ struct MainState {
 impl MainState {
     /// Load images and create meshes.
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let frame = ScreenImage::new(&ctx.gfx, ImageFormat::Rgba8Unorm, 1., 1., 1);
+        let frame = ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
 
         let image1 = Image::from_path(ctx, "/dragon1.png", true)?;
         let image2 = Image::from_path(ctx, "/shot.png", true)?;
@@ -95,7 +98,6 @@ fn build_mesh(ctx: &mut Context) -> GameResult<Mesh> {
 }
 
 fn build_textured_triangle(ctx: &mut Context) -> GameResult<Mesh> {
-    let mb = &mut MeshBuilder::new();
     let triangle_verts = vec![
         Vertex {
             position: [100.0, 100.0],
@@ -143,7 +145,6 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &mut ctx.gfx,
             CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
             &frame,
-            None,
         );
 
         // Draw an image.
@@ -188,7 +189,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         }
 
         // Finished drawing, show it all on the screen!
-        canvas.finish()?;
+        canvas.finish();
         ctx.gfx.present(&frame)?;
 
         Ok(())

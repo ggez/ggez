@@ -35,7 +35,7 @@
 use crate::{
     conf,
     vfs::{self, VFS},
-    Context, GameError, GameResult,
+    GameError, GameResult,
 };
 use directories::ProjectDirs;
 use std::{env, io, io::SeekFrom, path};

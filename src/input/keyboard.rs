@@ -65,7 +65,6 @@
 //! }
 //! ```
 
-use crate::context::Context;
 use std::collections::HashSet;
 use winit::event::ModifiersState;
 

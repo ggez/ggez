@@ -1,10 +1,13 @@
 //!
 
 use super::{
+    draw::DrawUniforms,
     gpu::{
-        arc::{ArcBindGroup, ArcBuffer, ArcRenderPipeline},
+        arc::{ArcBindGroup, ArcBuffer, ArcRenderPipeline, ArcShaderModule},
         bind_group::{BindGroupBuilder, BindGroupCache},
+        growing::GrowingBufferArena,
         pipeline::PipelineCache,
+        text::TextRenderer,
     },
     image::{Image, ImageFormat},
     mesh::{Mesh, Vertex},
@@ -20,9 +23,10 @@ use crate::{
     GameError,
 };
 use ::image as imgcrate;
+use crevice::std430::AsStd430;
+use glyph_brush::FontId;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
-use winit::platform::macos::WindowBuilderExtMacOS;
 use winit::{self, dpi};
 
 pub(crate) struct FrameContext {
@@ -56,15 +60,17 @@ pub struct GraphicsContext {
 
     pub(crate) vsync: bool,
     pub(crate) fcx: Option<FrameContext>,
-    pub(crate) glyph_brush: wgpu_glyph::GlyphBrush<wgpu::DepthStencilState>,
-    pub(crate) fonts: HashMap<String, wgpu_glyph::FontId>,
+    pub(crate) text: TextRenderer,
+    pub(crate) fonts: HashMap<String, FontId>,
     pub(crate) staging_belt: wgpu::util::StagingBelt,
+    pub(crate) uniform_arena: GrowingBufferArena,
     pub(crate) local_pool: futures::executor::LocalPool,
     pub(crate) local_spawner: futures::executor::LocalSpawner,
 
-    pub(crate) draw_shader: Option<Shader>,
-    pub(crate) instance_shader: Option<Shader>,
-    pub(crate) copy_shader: Option<Shader>,
+    pub(crate) draw_shader: ArcShaderModule,
+    pub(crate) instance_shader: ArcShaderModule,
+    pub(crate) text_shader: ArcShaderModule,
+    pub(crate) copy_shader: ArcShaderModule,
     pub(crate) rect_mesh: Option<Arc<Mesh>>,
     pub(crate) white_image: Option<Image>,
 }
@@ -150,19 +156,45 @@ impl GraphicsContext {
         let pipeline_cache = PipelineCache::new();
         let sampler_cache = SamplerCache::new();
 
-        let glyph_brush = wgpu_glyph::GlyphBrushBuilder::using_fonts(vec![])
-            .depth_stencil_state(wgpu::DepthStencilState {
-                format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Greater,
-                stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState::default(),
-            })
-            .build(&device, surface_format);
+        let text = TextRenderer::new(&device);
 
         let staging_belt = wgpu::util::StagingBelt::new(1024);
+        let uniform_arena = GrowingBufferArena::new(
+            &device,
+            device.limits().min_uniform_buffer_offset_alignment as u64,
+            wgpu::BufferDescriptor {
+                label: None,
+                size: 4096 * DrawUniforms::std430_size_static() as u64,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            },
+        );
         let local_pool = futures::executor::LocalPool::new();
         let local_spawner = local_pool.spawner();
+
+        let draw_shader =
+            ArcShaderModule::new(device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/draw.wgsl").into()),
+            }));
+
+        let instance_shader =
+            ArcShaderModule::new(device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance.wgsl").into()),
+            }));
+
+        let text_shader =
+            ArcShaderModule::new(device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/text.wgsl").into()),
+            }));
+
+        let copy_shader =
+            ArcShaderModule::new(device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/copy.wgsl").into()),
+            }));
 
         let mut this = GraphicsContext {
             window,
@@ -179,41 +211,22 @@ impl GraphicsContext {
 
             vsync: conf.window_setup.vsync,
             fcx: None,
-            glyph_brush,
+            text,
             fonts: HashMap::new(),
             staging_belt,
+            uniform_arena,
             local_pool,
             local_spawner,
 
-            draw_shader: None,
-            instance_shader: None,
-            copy_shader: None,
+            draw_shader,
+            instance_shader,
+            text_shader,
+            copy_shader,
             rect_mesh: None,
             white_image: None,
         };
 
         this.set_window_mode(&conf.window_mode)?;
-
-        this.draw_shader = Some(Shader::from_wgsl(
-            &this,
-            include_str!("shader/draw.wgsl"),
-            "vs_main",
-            "fs_main",
-        ));
-
-        this.instance_shader = Some(Shader::from_wgsl(
-            &this,
-            include_str!("shader/instance.wgsl"),
-            "vs_main",
-            "fs_main",
-        ));
-
-        this.copy_shader = Some(Shader::from_wgsl(
-            &this,
-            include_str!("shader/copy.wgsl"),
-            "vs_main",
-            "fs_main",
-        ));
 
         this.rect_mesh = Some(Arc::new(Mesh::new(
             &this,
@@ -268,7 +281,7 @@ impl GraphicsContext {
     /// Adds a new `font` with a given `name`.
     #[allow(unused_results)]
     pub fn add_font(&mut self, name: &str, font: FontData) {
-        let id = self.glyph_brush.add_font(font.font);
+        let id = self.text.glyph_brush.add_font(font.font);
         self.fonts.insert(name.to_string(), id);
     }
 
@@ -286,6 +299,9 @@ impl GraphicsContext {
             present: None,
             arenas: FrameArenas::default(),
         });
+
+        self.uniform_arena.free();
+        self.text.free();
 
         Ok(())
     }
@@ -329,12 +345,19 @@ impl GraphicsContext {
                     let copy = self.pipeline_cache.render_pipeline(
                         &self.device,
                         &layout,
-                        self.copy_shader.as_ref().unwrap().info(
+                        Shader {
+                            fragment: self.copy_shader.clone(),
+                            fs_entry: "fs_main".into(),
+                        }
+                        .info(
+                            self.copy_shader.clone(),
                             1,
                             self.surface_format,
                             None,
                             false,
                             false,
+                            wgpu::PrimitiveTopology::TriangleList,
+                            Vertex::layout(),
                         ),
                     );
 

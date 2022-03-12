@@ -44,7 +44,7 @@ pub enum GameError {
     IOError(#[from] Arc<std::io::Error>),
     /// Something went wrong trying to load a font
     #[error("failed to load font")]
-    FontError(#[from] wgpu_glyph::ab_glyph::InvalidFont),
+    FontError(#[from] glyph_brush::ab_glyph::InvalidFont),
     /// Something went wrong applying video settings.
     #[error("failed to apply video settings: {0}")]
     VideoError(String),
@@ -54,9 +54,15 @@ pub enum GameError {
     /// Something went wrong with the `lyon` shape-tesselation library.
     #[error("lyon tesellation error: {0}")]
     LyonError(String),
-    /// Something went wrong when spawing a text with `futures`.
+    /// Something went wrong when spawning a task with `futures`.
     #[error("spawn error")]
     SpawnError(#[from] futures::task::SpawnError),
+    /// Something went wrong when drawing text.
+    #[error("text rendering error")]
+    GlyphBrushError(#[from] glyph_brush::BrushError),
+    /// Attempted to draw text with a non-existent font name.
+    #[error("no such font '{0}'")]
+    FontSelectError(String),
     /// A custom error type for use by users of ggez.
     /// This lets you handle custom errors that may happen during your game (such as, trying to load a malformed file for a level)
     /// using the same mechanism you handle ggez's other errors.

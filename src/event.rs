@@ -185,8 +185,6 @@ where
     S: EventHandler<E>,
     E: std::error::Error,
 {
-    use crate::input::{keyboard, mouse};
-
     event_loop.run(move |mut event, _, control_flow| {
         if !ctx.continuing {
             *control_flow = ControlFlow::Exit;

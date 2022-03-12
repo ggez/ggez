@@ -4,7 +4,7 @@
 //! gets fleshed out.  The `gilrs` crate needs help to add better
 //! cross-platform support.  Why not give it a hand?
 
-use crate::{context::Context, error::GameResult};
+use crate::error::GameResult;
 use gilrs::ConnectedGamepadsIterator;
 use std::fmt;
 

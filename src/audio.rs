@@ -5,7 +5,7 @@
 //! `SoundData` connected to a particular sound channel ready to be played.
 
 use crate::filesystem::Filesystem;
-use crate::{context::Context, error::GameError, error::GameResult, filesystem};
+use crate::{context::Context, error::GameError, error::GameResult};
 use std::{
     fmt, io,
     io::Read,

@@ -29,11 +29,11 @@ fn vs_main(
     var out: VertexOutput;
     out.position = uniforms.transform * vec4<f32>(position - uniforms.origin, 0.0, 1.0);
     out.uv = mix(uniforms.src_rect.xy, uniforms.src_rect.zw, uv);
-    out.color = color;
+    out.color = uniforms.color * color;
     return out;
 }
 
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    return uniforms.color * in.color * textureSample(t, s, in.uv);
+    return in.color * textureSample(t, s, in.uv);
 }

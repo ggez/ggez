@@ -72,7 +72,6 @@ impl event::EventHandler<ggez::GameError> for MainState {
         );
 
         canvas.finish()?;
-
         ctx.gfx.present(&frame)?;
 
         Ok(())

@@ -1,13 +1,9 @@
 //!
 
 use super::Color;
-use crate::{
-    context::Context,
-    filesystem::{self, Filesystem},
-    GameResult,
-};
+use crate::{filesystem::Filesystem, GameResult};
+use glyph_brush::ab_glyph;
 use std::{io::Read, path::Path};
-use wgpu_glyph::ab_glyph;
 
 /// Font data that can be used to create a new font in [super::context::GraphicsContext].
 #[derive(Debug)]
@@ -20,7 +16,7 @@ impl FontData {
     #[allow(unused_results)]
     pub fn from_path(fs: &Filesystem, path: impl AsRef<Path>) -> GameResult<Self> {
         let mut bytes = vec![];
-        fs.open(path)?.read_to_end(&mut bytes);
+        fs.open(path)?.read_to_end(&mut bytes)?;
         Ok(FontData {
             font: ab_glyph::FontArc::try_from_vec(bytes)?,
         })
@@ -41,51 +37,48 @@ impl FontData {
     }
 }
 
-/// Parameters of a single piece of text.
-#[derive(Debug, Clone, Copy)]
-pub struct Text<'a> {
+/// Parameters of a single piece of text, including font, color, size, and Z position.
+#[derive(Debug, Clone)]
+pub struct Text {
     /// The text itself.
-    pub text: &'a str,
+    pub text: String,
     /// Font name of the text.
-    pub font: &'a str,
+    pub font: String,
     /// Pixel size of text.
     pub size: f32,
     /// Color of text.
     pub color: Color,
-    /// Optional Z position of text.
-    pub z: Option<f32>,
 }
 
-impl<'a> Default for Text<'a> {
+impl Default for Text {
     fn default() -> Self {
         Text {
-            text: "",
-            font: "",
+            text: "".into(),
+            font: "".into(),
             size: 16.,
             color: Color::BLACK,
-            z: None,
         }
     }
 }
 
-impl<'a> Text<'a> {
+impl Text {
     /// Equivalent to `Text::default()`.
     pub fn new() -> Self {
         Text::default()
     }
 
     /// Sets the `text` field.
-    pub fn text(self, text: &'a str) -> Self {
+    pub fn text(self, text: impl Into<String>) -> Self {
         Text {
-            text: text.as_ref(),
+            text: text.into(),
             ..self
         }
     }
 
     /// Sets the `font` field.
-    pub fn font(self, font: &'a str) -> Self {
+    pub fn font(self, font: impl Into<String>) -> Self {
         Text {
-            font: font.as_ref(),
+            font: font.into(),
             ..self
         }
     }
@@ -102,14 +95,6 @@ impl<'a> Text<'a> {
             ..self
         }
     }
-
-    /// Sets the `z` field.
-    pub fn z(self, z: impl Into<Option<f32>>) -> Self {
-        Text {
-            z: z.into(),
-            ..self
-        }
-    }
 }
 
 /// Describes text alignment along a single axis.
@@ -123,22 +108,22 @@ pub enum TextAlign {
     End,
 }
 
-impl From<TextAlign> for wgpu_glyph::HorizontalAlign {
+impl From<TextAlign> for glyph_brush::HorizontalAlign {
     fn from(align: TextAlign) -> Self {
         match align {
-            TextAlign::Begin => wgpu_glyph::HorizontalAlign::Left,
-            TextAlign::Middle => wgpu_glyph::HorizontalAlign::Center,
-            TextAlign::End => wgpu_glyph::HorizontalAlign::Right,
+            TextAlign::Begin => glyph_brush::HorizontalAlign::Left,
+            TextAlign::Middle => glyph_brush::HorizontalAlign::Center,
+            TextAlign::End => glyph_brush::HorizontalAlign::Right,
         }
     }
 }
 
-impl From<TextAlign> for wgpu_glyph::VerticalAlign {
+impl From<TextAlign> for glyph_brush::VerticalAlign {
     fn from(align: TextAlign) -> Self {
         match align {
-            TextAlign::Begin => wgpu_glyph::VerticalAlign::Top,
-            TextAlign::Middle => wgpu_glyph::VerticalAlign::Center,
-            TextAlign::End => wgpu_glyph::VerticalAlign::Bottom,
+            TextAlign::Begin => glyph_brush::VerticalAlign::Top,
+            TextAlign::Middle => glyph_brush::VerticalAlign::Center,
+            TextAlign::End => glyph_brush::VerticalAlign::Bottom,
         }
     }
 }

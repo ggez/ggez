@@ -14,18 +14,16 @@ use crevice::std430::Std430;
 use std::marker::PhantomData;
 use wgpu::util::DeviceExt;
 
-/// A vertex and fragment shader set that can be used to render primitives with various effects.
-#[derive(Debug, Clone)]
+/// A custom fragment shader that can be used to render with shader effects.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Shader {
-    pub(crate) vertex: ArcShaderModule,
-    pub(crate) vs_entry: String,
     pub(crate) fragment: ArcShaderModule,
     pub(crate) fs_entry: String,
 }
 
 impl Shader {
     /// Creates a shader from a WGSL string.
-    pub fn from_wgsl(gfx: &GraphicsContext, wgsl: &str, vs_entry: &str, fs_entry: &str) -> Self {
+    pub fn from_wgsl(gfx: &GraphicsContext, wgsl: &str, fs_entry: &str) -> Self {
         let module = ArcShaderModule::new(gfx.device.create_shader_module(
             &wgpu::ShaderModuleDescriptor {
                 label: None,
@@ -34,8 +32,6 @@ impl Shader {
         ));
 
         Shader {
-            vertex: module.clone(),
-            vs_entry: vs_entry.into(),
             fragment: module,
             fs_entry: fs_entry.into(),
         }
@@ -43,22 +39,27 @@ impl Shader {
 
     pub(crate) fn info(
         &self,
+        vs: ArcShaderModule,
         samples: u32,
         format: wgpu::TextureFormat,
         blend: Option<wgpu::BlendState>,
         depth: bool,
         vertices: bool,
+        topology: wgpu::PrimitiveTopology,
+        vertex_layout: wgpu::VertexBufferLayout<'static>,
     ) -> RenderPipelineInfo {
         RenderPipelineInfo {
-            vs: self.vertex.clone(),
+            vs,
             fs: self.fragment.clone(),
-            vs_entry: self.vs_entry.clone(),
+            vs_entry: "vs_main".into(),
             fs_entry: self.fs_entry.clone(),
             samples,
             format,
             blend,
             depth,
             vertices,
+            topology,
+            vertex_layout,
         }
     }
 }

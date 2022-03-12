@@ -1,7 +1,6 @@
 //!
 
 use super::{
-    canvas::Z_STEP,
     context::GraphicsContext,
     draw::{DrawParam, DrawUniforms},
     gpu::arc::ArcBuffer,
@@ -14,8 +13,6 @@ use crevice::std430::{AsStd430, Std430};
 #[derive(Debug)]
 pub struct InstanceArray {
     pub(crate) buffer: ArcBuffer,
-    pub(crate) z_min: f32,
-    pub(crate) z_max: f32,
     capacity: u32,
     len: u32,
 }
@@ -32,8 +29,6 @@ impl InstanceArray {
 
         InstanceArray {
             buffer,
-            z_min: 0.,
-            z_max: 0.,
             capacity,
             len: 0,
         }
@@ -55,19 +50,8 @@ impl InstanceArray {
             "exceeding instance array capacity"
         );
 
-        self.z_min = f32::INFINITY;
-        self.z_max = f32::NEG_INFINITY;
-        let mut z = 0.;
         let instances = instances
-            .map(|mut param| {
-                if param.z.is_none() {
-                    z += Z_STEP;
-                    param = param.z(z);
-                }
-                self.z_min = self.z_min.min(z);
-                self.z_max = self.z_max.max(z);
-                DrawUniforms::from_param(param.z(z), glam::Vec2::ONE.into())
-            })
+            .map(|param| DrawUniforms::from_param(param, glam::Vec2::ONE.into()))
             .collect::<Vec<_>>();
 
         self.len = instances.len() as u32;
@@ -82,18 +66,11 @@ impl InstanceArray {
     /// Pushes a new instance onto the end.
     ///
     /// Prefer `set` where bulk instances needs to be set.
-    pub fn push(&mut self, gfx: &GraphicsContext, mut instance: DrawParam) {
+    pub fn push(&mut self, gfx: &GraphicsContext, instance: DrawParam) {
         assert!(
             self.len < self.capacity,
             "exceeding instance array capacity"
         );
-
-        if instance.z.is_none() {
-            instance = instance.z((self.len + 1) as f32 * Z_STEP);
-        }
-
-        self.z_min = self.z_min.min(instance.z.unwrap());
-        self.z_max = self.z_max.max(instance.z.unwrap());
 
         let instance = DrawUniforms::from_param(instance, glam::Vec2::ONE.into());
         gfx.queue.write_buffer(
@@ -105,15 +82,8 @@ impl InstanceArray {
     }
 
     /// Updates an existing instance at a given index.
-    pub fn update(&mut self, gfx: &GraphicsContext, index: u32, mut instance: DrawParam) {
+    pub fn update(&mut self, gfx: &GraphicsContext, index: u32, instance: DrawParam) {
         assert!(index < self.len);
-
-        if instance.z.is_none() {
-            instance = instance.z((self.len + 1) as f32 * Z_STEP);
-        }
-
-        self.z_min = self.z_min.min(instance.z.unwrap());
-        self.z_max = self.z_max.max(instance.z.unwrap());
 
         let instance = DrawUniforms::from_param(instance, glam::Vec2::ONE.into());
         gfx.queue.write_buffer(
