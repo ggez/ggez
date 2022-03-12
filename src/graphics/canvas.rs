@@ -259,7 +259,7 @@ impl<'a> Canvas<'a> {
         this
     }
 
-    /// Sets the shader to use when drawing meshes, along with the provided parameters, **bound to bind group 3**.
+    /// Sets the shader to use when drawing meshes, along with the provided parameters, **bound to bind group 3 for non-instanced draws, and 4 for instanced draws**.
     pub fn set_shader_with_params<Uniforms: AsStd430 + 'static>(
         &mut self,
         shader: Shader,
@@ -279,7 +279,7 @@ impl<'a> Canvas<'a> {
         self.shader = shader;
     }
 
-    /// Sets the shader to use when drawing meshes, along with the provided parameters, **bound to bind group 3**.
+    /// Sets the shader to use when drawing text, along with the provided parameters, **bound to bind group 3**.
     pub fn set_text_shader_with_params<Uniforms: AsStd430 + 'static>(
         &mut self,
         shader: Shader,
@@ -293,7 +293,7 @@ impl<'a> Canvas<'a> {
         ));
     }
 
-    /// Sets the shader to use when drawing meshes.
+    /// Sets the shader to use when drawing text.
     pub fn set_text_shader(&mut self, shader: Shader) {
         self.dirty_pipeline = true;
         self.text_shader = shader;
@@ -307,10 +307,10 @@ impl<'a> Canvas<'a> {
         });
     }
 
-    /// Resets the active mesh shader to the default.
+    /// Resets the active text shader to the default.
     pub fn set_default_text_shader(&mut self) {
         self.set_text_shader(Shader {
-            fragment: self.draw_sm.clone(),
+            fragment: self.text_sm.clone(),
             fs_entry: "fs_main".into(),
         });
     }
