@@ -42,13 +42,15 @@ pub struct Context {
     /// Timer state.
     pub time: timer::TimeContext,
     /// Audio context.
-    pub audio: Box<dyn audio::AudioContext>,
+    #[cfg(feature = "audio")]
+    pub audio: audio::AudioContext,
     /// Keyboard context.
     pub keyboard: keyboard::KeyboardContext,
     /// Mouse context.
     pub mouse: mouse::MouseContext,
     /// Gamepad context.
-    pub gamepad: Box<dyn gamepad::GamepadContext>,
+    #[cfg(feature = "gamepad")]
+    pub gamepad: gamepad::GamepadContext,
 
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
@@ -79,11 +81,7 @@ impl Context {
         mut fs: Filesystem,
     ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         let debug_id = DebugId::new();
-        let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
-            Box::new(audio::RodioAudioContext::new()?)
-        } else {
-            Box::new(audio::NullAudioContext::default())
-        };
+        let audio_context = audio::AudioContext::new()?;
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
@@ -97,11 +95,7 @@ impl Context {
         )?;
         let mouse_context = mouse::MouseContext::new();
         let keyboard_context = keyboard::KeyboardContext::new();
-        let gamepad_context: Box<dyn gamepad::GamepadContext> = if conf.modules.gamepad {
-            Box::new(gamepad::GilrsGamepadContext::new()?)
-        } else {
-            Box::new(gamepad::NullGamepadContext::default())
-        };
+        let gamepad_context = gamepad::GamepadContext::new()?;
 
         let ctx = Context {
             conf,
@@ -170,13 +164,6 @@ impl ContextBuilder {
     #[must_use]
     pub fn backend(mut self, backend: conf::Backend) -> Self {
         self.conf.backend = backend;
-        self
-    }
-
-    /// Sets the modules configuration.
-    #[must_use]
-    pub fn modules(mut self, modules: conf::ModuleConf) -> Self {
-        self.conf.modules = modules;
         self
     }
 

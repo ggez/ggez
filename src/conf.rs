@@ -366,49 +366,6 @@ impl From<NumSamples> for u8 {
     }
 }
 
-/// Defines which submodules to enable in ggez.
-/// If one tries to use a submodule that is not enabled,
-/// it will panic.  Currently, not all subsystems can be
-/// disabled.
-///
-/// Defaults:
-///
-/// ```rust
-/// # use ggez::conf::*;
-/// # fn main() { assert_eq!(
-/// ModuleConf {
-///     gamepad: true,
-///     audio: true,
-/// }
-/// # , ModuleConf::default()); }
-/// ```
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, SmartDefault)]
-pub struct ModuleConf {
-    /// The gamepad input module.
-    #[default = true]
-    pub gamepad: bool,
-
-    /// The audio module.
-    #[default = true]
-    pub audio: bool,
-}
-
-impl ModuleConf {
-    /// Sets whether or not to enable the gamepad input module.
-    #[must_use]
-    pub fn gamepad(mut self, gamepad: bool) -> Self {
-        self.gamepad = gamepad;
-        self
-    }
-
-    /// Sets whether or not to enable the audio module.
-    #[must_use]
-    pub fn audio(mut self, audio: bool) -> Self {
-        self.audio = audio;
-        self
-    }
-}
-
 /// A structure containing configuration data
 /// for the game engine.
 ///
@@ -433,8 +390,6 @@ pub struct Conf {
     pub window_setup: WindowSetup,
     /// Graphics backend configuration
     pub backend: Backend,
-    /// Which modules to enable.
-    pub modules: ModuleConf,
 }
 
 impl Conf {
@@ -471,13 +426,6 @@ impl Conf {
     #[must_use]
     pub fn backend(mut self, backend: Backend) -> Self {
         self.backend = backend;
-        self
-    }
-
-    /// Sets the backend
-    #[must_use]
-    pub fn modules(mut self, modules: ModuleConf) -> Self {
-        self.modules = modules;
         self
     }
 }

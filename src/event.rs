@@ -296,7 +296,7 @@ where
     S: EventHandler<E>,
     E: std::error::Error,
 {
-    use crate::input::{keyboard, mouse};
+    use crate::input::mouse;
 
     event_loop.run(move |mut event, _, control_flow| {
         if !ctx.continuing {
@@ -458,48 +458,46 @@ where
                 ctx.time.tick();
 
                 // Handle gamepad events if necessary.
-                if ctx.conf.modules.gamepad {
-                    while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad.next_event() {
-                        match event {
-                            gilrs::EventType::ButtonPressed(button, _) => {
-                                let res =
-                                    state.gamepad_button_down_event(ctx, button, GamepadId(id));
-                                if catch_error(
-                                    ctx,
-                                    res,
-                                    state,
-                                    control_flow,
-                                    ErrorOrigin::GamepadButtonDownEvent,
-                                ) {
-                                    return;
-                                };
-                            }
-                            gilrs::EventType::ButtonReleased(button, _) => {
-                                let res = state.gamepad_button_up_event(ctx, button, GamepadId(id));
-                                if catch_error(
-                                    ctx,
-                                    res,
-                                    state,
-                                    control_flow,
-                                    ErrorOrigin::GamepadButtonUpEvent,
-                                ) {
-                                    return;
-                                };
-                            }
-                            gilrs::EventType::AxisChanged(axis, value, _) => {
-                                let res = state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
-                                if catch_error(
-                                    ctx,
-                                    res,
-                                    state,
-                                    control_flow,
-                                    ErrorOrigin::GamepadAxisEvent,
-                                ) {
-                                    return;
-                                };
-                            }
-                            _ => {}
+                #[cfg(feature = "gamepad")]
+                while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad.next_event() {
+                    match event {
+                        gilrs::EventType::ButtonPressed(button, _) => {
+                            let res = state.gamepad_button_down_event(ctx, button, GamepadId(id));
+                            if catch_error(
+                                ctx,
+                                res,
+                                state,
+                                control_flow,
+                                ErrorOrigin::GamepadButtonDownEvent,
+                            ) {
+                                return;
+                            };
                         }
+                        gilrs::EventType::ButtonReleased(button, _) => {
+                            let res = state.gamepad_button_up_event(ctx, button, GamepadId(id));
+                            if catch_error(
+                                ctx,
+                                res,
+                                state,
+                                control_flow,
+                                ErrorOrigin::GamepadButtonUpEvent,
+                            ) {
+                                return;
+                            };
+                        }
+                        gilrs::EventType::AxisChanged(axis, value, _) => {
+                            let res = state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
+                            if catch_error(
+                                ctx,
+                                res,
+                                state,
+                                control_flow,
+                                ErrorOrigin::GamepadAxisEvent,
+                            ) {
+                                return;
+                            };
+                        }
+                        _ => {}
                     }
                 }
 

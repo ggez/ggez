@@ -3,6 +3,7 @@
 //! It consists of two main types: [`SoundData`](struct.SoundData.html)
 //! is just an array of raw sound data bytes, and a [`Source`](struct.Source.html) is a
 //! `SoundData` connected to a particular sound channel ready to be played.
+#![cfg(feature = "audio")]
 
 use std::fmt;
 use std::io;
@@ -19,27 +20,16 @@ use crate::error::GameError;
 use crate::error::GameResult;
 use crate::filesystem;
 
-/// A trait object defining an audio context, allowing us to someday
-/// use something other than `rodio` if we really want.
-///
-/// End-users usually don't need to mess with this, but it's there
-/// if you want to bypass `ggez`'s sound functionality and write your
-/// own.
-pub trait AudioContext {
-    /// Returns the audio device.
-    fn device(&self) -> &rodio::OutputStreamHandle;
-}
-
 /// A struct that contains all information for tracking sound info.
 ///
 /// You generally don't have to create this yourself, it will be part
 /// of your `Context` object.
-pub(crate) struct RodioAudioContext {
+pub struct AudioContext {
     _stream: rodio::OutputStream,
     stream_handle: rodio::OutputStreamHandle,
 }
 
-impl RodioAudioContext {
+impl AudioContext {
     /// Create new `RodioAudioContext`.
     pub fn new() -> GameResult<Self> {
         let (stream, stream_handle) = rodio::OutputStream::try_default().map_err(|_e| {
@@ -54,27 +44,16 @@ impl RodioAudioContext {
     }
 }
 
-impl AudioContext for RodioAudioContext {
-    fn device(&self) -> &rodio::OutputStreamHandle {
+impl AudioContext {
+    /// Returns the audio device.
+    pub fn device(&self) -> &rodio::OutputStreamHandle {
         &self.stream_handle
     }
 }
 
-impl fmt::Debug for RodioAudioContext {
+impl fmt::Debug for AudioContext {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<RodioAudioContext: {:p}>", self)
-    }
-}
-
-/// A structure that implements `AudioContext` but does nothing; serves as a
-/// stub for when you don't need audio.  Will panic if you try to actually
-/// play sound from it.
-#[derive(Debug, Clone, Copy, Default)]
-pub(crate) struct NullAudioContext;
-
-impl AudioContext for NullAudioContext {
-    fn device(&self) -> &rodio::OutputStreamHandle {
-        panic!("Audio module disabled")
     }
 }
 

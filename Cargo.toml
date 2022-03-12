@@ -31,11 +31,13 @@ name = "ggez"
 path = "src/lib.rs"
 
 [features]
-default = ["c_dependencies"]
+default = ["c_dependencies", "audio", "gamepad"]
 bzip2 = ["zip/bzip2"]
 mp3 = ["rodio/mp3"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 c_dependencies = ["bzip2", "mp3"]
+audio = ["rodio"]
+gamepad = ["gilrs"]
 
 [dependencies]
 bitflags = "1"
@@ -49,7 +51,7 @@ old_school_gfx_glutin_ext = "0.28"
 glutin = "0.28"
 winit = "0.26"
 image = {version = "0.23.12", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "dxt", ] }
-rodio = { version = "0.14", default-features = false, features = ["flac", "vorbis", "wav"] }
+rodio = { version = "0.14", optional = true, default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
 serde_derive = "1"
 toml = "0.5"
@@ -59,7 +61,7 @@ smart-default = "0.6"
 glam = { version = "0.20", features = ["mint"]}
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5"
-gilrs = "0.8"
+gilrs = { version = "0.8", optional = true }
 approx = "0.5"
 bytemuck = "1.7"
 
