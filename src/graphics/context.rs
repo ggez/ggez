@@ -19,7 +19,6 @@ use crate::{
     conf::{Backend, Conf, FullscreenType, WindowMode},
     error::GameResult,
     filesystem::Filesystem,
-    graphics::*,
     GameError,
 };
 use ::image as imgcrate;
@@ -31,8 +30,10 @@ use winit::{self, dpi};
 
 pub(crate) struct FrameContext {
     pub cmd: wgpu::CommandEncoder,
-    pub present: Option<image::Image>,
+    pub present: Option<Image>,
     pub arenas: FrameArenas,
+    pub frame: wgpu::SurfaceTexture,
+    pub frame_view: wgpu::TextureView,
 }
 
 #[derive(Default)]
@@ -292,12 +293,21 @@ impl GraphicsContext {
             )));
         }
 
+        let frame = self.surface.get_current_texture().map_err(|_| {
+            GameError::RenderError(String::from("failed to get next swapchain image"))
+        })?;
+        let frame_view = frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
         self.fcx = Some(FrameContext {
             cmd: self
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor::default()),
             present: None,
             arenas: FrameArenas::default(),
+            frame,
+            frame_view,
         });
 
         self.uniform_arena.free();
@@ -308,20 +318,12 @@ impl GraphicsContext {
 
     pub(crate) fn end_frame(&mut self) -> GameResult {
         if let Some(mut fcx) = self.fcx.take() {
-            let frame = self.surface.get_current_texture().map_err(|_| {
-                GameError::RenderError(String::from("failed to get next swapchain image"))
-            })?;
-            let view = frame
-                .texture
-                .create_view(&wgpu::TextureViewDescriptor::default());
-
             let present = fcx.present.take();
-
-            {
+            if let Some(present) = present {
                 let mut present_pass = fcx.cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: None,
                     color_attachments: &[wgpu::RenderPassColorAttachment {
-                        view: &view,
+                        view: &fcx.frame_view,
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -331,48 +333,46 @@ impl GraphicsContext {
                     depth_stencil_attachment: None,
                 });
 
-                if let Some(present) = &present {
-                    let sampler = self
-                        .sampler_cache
-                        .get(&self.device, Sampler::linear_clamp());
+                let sampler = self
+                    .sampler_cache
+                    .get(&self.device, Sampler::linear_clamp());
 
-                    let (bind, layout) = BindGroupBuilder::new()
-                        .image(&present.view, wgpu::ShaderStages::FRAGMENT)
-                        .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
-                        .create(&self.device, &mut self.bind_group_cache);
+                let (bind, layout) = BindGroupBuilder::new()
+                    .image(&present.view, wgpu::ShaderStages::FRAGMENT)
+                    .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
+                    .create(&self.device, &mut self.bind_group_cache);
 
-                    let layout = self.pipeline_cache.layout(&self.device, &[layout]);
-                    let copy = self.pipeline_cache.render_pipeline(
-                        &self.device,
-                        &layout,
-                        Shader {
-                            fragment: self.copy_shader.clone(),
-                            fs_entry: "fs_main".into(),
-                        }
-                        .info(
-                            self.copy_shader.clone(),
-                            1,
-                            self.surface_format,
-                            None,
-                            false,
-                            false,
-                            wgpu::PrimitiveTopology::TriangleList,
-                            Vertex::layout(),
-                        ),
-                    );
+                let layout = self.pipeline_cache.layout(&self.device, &[layout]);
+                let copy = self.pipeline_cache.render_pipeline(
+                    &self.device,
+                    &layout,
+                    Shader {
+                        fragment: self.copy_shader.clone(),
+                        fs_entry: "fs_main".into(),
+                    }
+                    .info(
+                        self.copy_shader.clone(),
+                        1,
+                        self.surface_format,
+                        None,
+                        false,
+                        false,
+                        wgpu::PrimitiveTopology::TriangleList,
+                        Vertex::layout(),
+                    ),
+                );
 
-                    let copy = fcx.arenas.render_pipelines.alloc(copy);
-                    let bind = fcx.arenas.bind_groups.alloc(bind);
+                let copy = fcx.arenas.render_pipelines.alloc(copy);
+                let bind = fcx.arenas.bind_groups.alloc(bind);
 
-                    present_pass.set_pipeline(copy);
-                    present_pass.set_bind_group(0, bind, &[]);
-                    present_pass.draw(0..3, 0..1);
-                }
+                present_pass.set_pipeline(copy);
+                present_pass.set_bind_group(0, bind, &[]);
+                present_pass.draw(0..3, 0..1);
             }
 
             self.staging_belt.finish();
             self.queue.submit([fcx.cmd.finish()]);
-            frame.present();
+            fcx.frame.present();
 
             use futures::task::SpawnExt;
             self.local_spawner.spawn(self.staging_belt.recall())?;

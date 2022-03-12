@@ -60,7 +60,7 @@ pub struct Canvas<'a> {
 impl<'a> Canvas<'a> {
     /// Create a new [Canvas] from an image. This will allow for drawing to a single color image.
     ///
-    /// The image must be created for Canvas usage, i.e. [Image::new_canvas_image], or [ScreenImage], and must only have a sample count of 1.
+    /// The image must be created for Canvas usage, i.e. [Image::new_canvas_image()], or [ScreenImage], and must only have a sample count of 1.
     pub fn from_image(
         gfx: &'a mut GraphicsContext,
         load_op: CanvasLoadOp,
@@ -69,7 +69,7 @@ impl<'a> Canvas<'a> {
         assert!(gfx.fcx.is_some(), "starting Canvas outside of frame");
         assert!(image.samples() == 1);
 
-        Self::new(gfx, 1, image.format().into(), |cmd| {
+        Self::new(gfx, 1, image.format().into(), |cmd, _| {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
@@ -105,7 +105,7 @@ impl<'a> Canvas<'a> {
             gfx,
             msaa_image.samples(),
             msaa_image.format().into(),
-            |cmd| {
+            |cmd, _| {
                 cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: None,
                     color_attachments: &[wgpu::RenderPassColorAttachment {
@@ -125,11 +125,37 @@ impl<'a> Canvas<'a> {
         )
     }
 
-    fn new(
+    /// Create a new [Canvas] that renders directly to the window surface.
+    pub fn from_frame(gfx: &'a mut GraphicsContext, load_op: CanvasLoadOp) -> Self {
+        assert!(gfx.fcx.is_some(), "starting Canvas outside of frame");
+
+        Self::new(gfx, 1, gfx.surface_format, |cmd, view| {
+            cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: match load_op {
+                            CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
+                            CanvasLoadOp::Clear(color) => wgpu::LoadOp::Clear(color.into()),
+                        },
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            })
+        })
+    }
+
+    pub(crate) fn new(
         gfx: &'a mut GraphicsContext,
         samples: u32,
         format: wgpu::TextureFormat,
-        create_pass: impl FnOnce(&'a mut wgpu::CommandEncoder) -> wgpu::RenderPass<'a>,
+        create_pass: impl FnOnce(
+            &'a mut wgpu::CommandEncoder,
+            &'a wgpu::TextureView,
+        ) -> wgpu::RenderPass<'a>,
     ) -> Self {
         let device = &gfx.device;
         let queue = &gfx.queue;
@@ -143,8 +169,8 @@ impl<'a> Canvas<'a> {
         let (arenas, pass) = {
             let fcx = gfx.fcx.as_mut().expect("creating canvas when not in frame");
 
+            let pass = create_pass(&mut fcx.cmd, &fcx.frame_view);
             let arenas = &fcx.arenas;
-            let pass = create_pass(&mut fcx.cmd);
 
             (arenas, pass)
         };

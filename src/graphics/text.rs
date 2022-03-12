@@ -56,7 +56,7 @@ impl<'a> Default for Text<'a> {
             text: "".into(),
             font: "".into(),
             size: 16.,
-            color: Color::BLACK,
+            color: Color::WHITE,
         }
     }
 }

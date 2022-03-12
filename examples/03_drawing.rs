@@ -6,7 +6,7 @@ use ggez::{
         self,
         canvas::{Canvas, CanvasLoadOp},
         draw::DrawParam,
-        image::{Image, ScreenImage},
+        image::Image,
         mesh::{Mesh, MeshBuilder, MeshData, Vertex},
         sampler::Sampler,
         Color, DrawMode,
@@ -17,7 +17,6 @@ use glam::*;
 use std::{env, path};
 
 struct MainState {
-    frame: ScreenImage,
     image1: Image,
     image2: Image,
     meshes: Vec<(Option<Image>, Mesh)>,
@@ -28,8 +27,6 @@ struct MainState {
 impl MainState {
     /// Load images and create meshes.
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let frame = ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
-
         let image1 = Image::from_path(ctx, "/dragon1.png", true)?;
         let image2 = Image::from_path(ctx, "/shot.png", true)?;
 
@@ -50,7 +47,6 @@ impl MainState {
         let rect = Mesh::from_data(&ctx.gfx, mb.build());
 
         let s = MainState {
-            frame,
             image1,
             image2,
             meshes,
@@ -139,12 +135,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let frame = self.frame.image(&ctx.gfx);
-
-        let mut canvas = Canvas::from_image(
+        let mut canvas = Canvas::from_frame(
             &mut ctx.gfx,
             CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
-            &frame,
         );
 
         // Draw an image.
@@ -190,7 +183,6 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // Finished drawing, show it all on the screen!
         canvas.finish();
-        ctx.gfx.present(&frame)?;
 
         Ok(())
     }

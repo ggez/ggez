@@ -21,8 +21,8 @@ use oorandom::Rand32;
 // to need frequently.
 use ggez::{
     event,
-    graphics::{self, canvas::CanvasLoadOp, draw::DrawParam, image::ScreenImage},
-    timer, Context, GameResult,
+    graphics::{self, canvas::CanvasLoadOp, draw::DrawParam},
+    Context, GameResult,
 };
 use ggez::{
     event::{KeyCode, KeyMods},
@@ -347,7 +347,6 @@ impl Snake {
 /// will implement ggez's `EventHandler` trait and will therefore drive
 /// everything else that happens in our game.
 struct GameState {
-    frame: ScreenImage,
     /// First we need a Snake
     snake: Snake,
     /// A piece of food
@@ -360,9 +359,7 @@ struct GameState {
 
 impl GameState {
     /// Our new function will set up the initial state of our game.
-    pub fn new(ctx: &mut Context) -> Self {
-        let frame = ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
-
+    pub fn new(_ctx: &mut Context) -> Self {
         // First we put our snake a quarter of the way across our grid in the x axis
         // and half way down the y axis. This works well since we start out moving to the right.
         let snake_pos = (GRID_SIZE.0 / 4, GRID_SIZE.1 / 2).into();
@@ -375,7 +372,6 @@ impl GameState {
         let food_pos = GridPosition::random(&mut rng, GRID_SIZE.0, GRID_SIZE.1);
 
         GameState {
-            frame,
             snake: Snake::new(snake_pos),
             food: Food::new(food_pos),
             gameover: false,
@@ -393,7 +389,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
         // Rely on ggez's built-in timer for deciding when to update the game, and how many times.
         // If the update is early, there will be no cycles, otherwises, the logic will run once for each
         // frame fitting in the time since the last update.
-        while timer::check_update_time(ctx, DESIRED_FPS) {
+        while ctx.timer.check_update_time(DESIRED_FPS) {
             // We check to see if the game is over. If not, we'll update. If so, we'll just do nothing.
             if !self.gameover {
                 // Here we do the actual updating of our game world. First we tell the snake to update itself,
@@ -424,24 +420,16 @@ impl event::EventHandler<ggez::GameError> for GameState {
 
     /// draw is where we should actually render the game's current state.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let frame = self.frame.image(&ctx.gfx);
-
-        let mut canvas = Canvas::from_image(
+        let mut canvas = Canvas::from_frame(
             &mut ctx.gfx,
             CanvasLoadOp::Clear([0.0, 1.0, 0.0, 1.0].into()),
-            &frame,
-            None,
         );
 
         // Then we tell the snake and the food to draw themselves
         self.snake.draw(&mut canvas);
         self.food.draw(&mut canvas);
 
-        canvas.finish()?;
-
-        // Finally we call graphics::present to cycle the gpu's framebuffer and display
-        // the new frame we just drew.
-        ctx.gfx.present(&frame)?;
+        canvas.finish();
 
         // We yield the current thread until the next update
         ggez::timer::yield_now();

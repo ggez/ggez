@@ -19,10 +19,10 @@ pub type ImageFormat = wgpu::TextureFormat;
 pub struct Image {
     pub(crate) texture: ArcTexture,
     pub(crate) view: ArcTextureView,
-    format: ImageFormat,
-    width: u32,
-    height: u32,
-    samples: u32,
+    pub(crate) format: ImageFormat,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+    pub(crate) samples: u32,
 }
 
 impl Image {

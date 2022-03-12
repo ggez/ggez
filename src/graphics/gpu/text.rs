@@ -88,12 +88,12 @@ impl TextRenderer {
                     pixels,
                     wgpu::ImageDataLayout {
                         offset: 0,
-                        bytes_per_row: Some(NonZeroU32::new(self.cache_size.0).unwrap()),
+                        bytes_per_row: Some(NonZeroU32::new(rect.width()).unwrap()),
                         rows_per_image: None,
                     },
                     wgpu::Extent3d {
-                        width: rect.max[0] - rect.min[0],
-                        height: rect.max[1] - rect.min[1],
+                        width: rect.width(),
+                        height: rect.height(),
                         depth_or_array_layers: 1,
                     },
                 );

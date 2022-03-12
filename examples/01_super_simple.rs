@@ -7,7 +7,6 @@ use ggez::{
         self,
         canvas::{Canvas, CanvasLoadOp},
         draw::DrawParam,
-        image::ScreenImage,
         mesh::{Mesh, MeshBuilder},
         Color,
     },
@@ -18,7 +17,6 @@ use glam::*;
 struct MainState {
     pos_x: f32,
     circle: Mesh,
-    frame: ScreenImage,
 }
 
 impl MainState {
@@ -36,11 +34,7 @@ impl MainState {
                 .build(),
         );
 
-        Ok(MainState {
-            pos_x: 0.0,
-            circle,
-            frame: ScreenImage::new(&ctx.gfx, None, 1., 1., 1),
-        })
+        Ok(MainState { pos_x: 0.0, circle })
     }
 }
 
@@ -51,12 +45,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let frame = self.frame.image(&ctx.gfx);
-
-        let mut canvas = Canvas::from_image(
+        let mut canvas = Canvas::from_frame(
             &mut ctx.gfx,
             CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
-            &frame,
         );
 
         canvas.draw_mesh(
@@ -66,7 +57,6 @@ impl event::EventHandler<ggez::GameError> for MainState {
         );
 
         canvas.finish();
-        ctx.gfx.present(&frame)?;
 
         Ok(())
     }
