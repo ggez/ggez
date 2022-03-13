@@ -7,7 +7,7 @@ use super::{
 };
 use crevice::std430::{AsStd430, Std430};
 
-/// Array of instances for fast rendering.
+/// Array of instances for fast rendering of many meshes.
 ///
 /// Traditionally known as a "batch".
 #[derive(Debug)]
