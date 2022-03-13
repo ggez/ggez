@@ -1,15 +1,9 @@
-use std::{
-    any::TypeId,
-    collections::HashMap,
-    sync::{
-        atomic::{AtomicU64, Ordering::SeqCst},
-        Arc, RwLock,
-    },
+use std::sync::{
+    atomic::{AtomicU64, Ordering::SeqCst},
+    Arc,
 };
 
-lazy_static::lazy_static! {
-    static ref NEXT_ID: RwLock<HashMap<TypeId, AtomicU64>> = RwLock::new(HashMap::new());
-}
+static NEXT_ID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug)]
 pub struct ArcHandle<T: 'static> {
@@ -18,25 +12,14 @@ pub struct ArcHandle<T: 'static> {
 }
 
 impl<T: 'static> ArcHandle<T> {
-    #[allow(unused_results)]
     pub fn new(handle: T) -> Self {
-        let lock = NEXT_ID.read().expect("id read lock");
-        let id = if let Some(id) = lock.get(&TypeId::of::<T>()) {
-            id.fetch_add(1, SeqCst)
-        } else {
-            std::mem::drop(lock);
-            let mut write = NEXT_ID.write().expect("id write lock");
-            write.insert(TypeId::of::<T>(), AtomicU64::new(0));
-            write.get(&TypeId::of::<T>()).unwrap().fetch_add(1, SeqCst)
-        };
-
         ArcHandle {
             handle: Arc::new(handle),
-            id,
+            id: NEXT_ID.fetch_add(1, SeqCst),
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn id(&self) -> u64 {
         self.id
     }
