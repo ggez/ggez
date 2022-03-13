@@ -396,7 +396,11 @@ impl GraphicsContext {
                 format: self.surface_format,
                 width: size.width,
                 height: size.height,
-                present_mode: wgpu::PresentMode::Mailbox,
+                present_mode: if self.vsync {
+                    wgpu::PresentMode::Fifo
+                } else {
+                    wgpu::PresentMode::Mailbox
+                },
             },
         );
     }
