@@ -20,13 +20,8 @@ use oorandom::Rand32;
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
 use ggez::{
-    event,
-    graphics::{self, canvas::CanvasLoadOp, draw::DrawParam},
-    Context, GameResult,
-};
-use ggez::{
-    event::{KeyCode, KeyMods},
-    graphics::canvas::Canvas,
+    event::{self, KeyCode, KeyMods},
+    graphics, Context, GameResult,
 };
 
 // We'll bring in some things from `std` to help us in the future.
@@ -184,15 +179,13 @@ impl Food {
     }
 
     /// Here is the first time we see what drawing looks like with ggez.
-    /// We have a function that takes in a `&mut ggez::Context` which we use
-    /// with the helpers in `ggez::graphics` to do drawing. We also return a
-    /// `ggez::GameResult` so that we can use the `?` operator to bubble up
-    /// failure of drawing.
+    /// We have a function that takes in a `&mut ggez::graphics::Canvas` which we use
+    /// to do drawing.
     ///
     /// Note: this method of drawing does not scale. If you need to render
-    /// a large number of shapes, use a SpriteBatch. This approach is fine for
+    /// a large number of shapes, use an InstanceArray. This approach is fine for
     /// this example since there are a fairly limited number of calls.
-    fn draw(&self, canvas: &mut Canvas) {
+    fn draw(&self, canvas: &mut graphics::Canvas) {
         // First we set the color to draw with, in this case all food will be
         // colored blue.
         let color = [0.0, 0.0, 1.0, 1.0];
@@ -201,7 +194,9 @@ impl Food {
         // since we implemented `From<GridPosition>` for `Rect` earlier.
         canvas.draw(
             None,
-            DrawParam::new().dst_rect(self.pos.into()).color(color),
+            graphics::DrawParam::new()
+                .dst_rect(self.pos.into())
+                .color(color),
         );
     }
 }
@@ -320,15 +315,15 @@ impl Snake {
     ///
     /// Again, note that this approach to drawing is fine for the limited scope of this
     /// example, but larger scale games will likely need a more optimized render path
-    /// using SpriteBatch or something similar that batches draw calls.
-    fn draw(&self, canvas: &mut Canvas) {
+    /// using InstanceArray or something similar that batches draw calls.
+    fn draw(&self, canvas: &mut graphics::Canvas) {
         // We first iterate through the body segments and draw them.
         for seg in self.body.iter() {
             // Again we set the color (in this case an orangey color)
             // and then draw the Rect that we convert that Segment's position into
             canvas.draw(
                 None,
-                DrawParam::new()
+                graphics::DrawParam::new()
                     .dst_rect(seg.pos.into())
                     .color([0.3, 0.3, 0.0, 1.0]),
             );
@@ -336,7 +331,7 @@ impl Snake {
         // And then we do the same for the head, instead making it fully red to distinguish it.
         canvas.draw(
             None,
-            DrawParam::new()
+            graphics::DrawParam::new()
                 .dst_rect(self.head.pos.into())
                 .color([1.0, 0.5, 0.0, 1.0]),
         );
@@ -420,9 +415,9 @@ impl event::EventHandler<ggez::GameError> for GameState {
 
     /// draw is where we should actually render the game's current state.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = Canvas::from_frame(
+        let mut canvas = graphics::Canvas::from_frame(
             &mut ctx.gfx,
-            CanvasLoadOp::Clear([0.0, 1.0, 0.0, 1.0].into()),
+            graphics::CanvasLoadOp::Clear([0.0, 1.0, 0.0, 1.0].into()),
         );
 
         // Then we tell the snake and the food to draw themselves

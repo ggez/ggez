@@ -1,13 +1,6 @@
 //! Basic hello world example.
 
-use ggez::{
-    event,
-    graphics::{
-        canvas::{Canvas, CanvasLoadOp},
-        text::{FontData, Text, TextLayout},
-    },
-    Context, GameResult,
-};
+use ggez::{event, graphics, Context, GameResult};
 use std::{env, path};
 
 // First we make a structure to contain the game's state
@@ -19,7 +12,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.gfx.add_font(
             "LiberationMono",
-            FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
         );
 
         let s = MainState { frames: 0 };
@@ -38,21 +31,21 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = Canvas::from_frame(
+        let mut canvas = graphics::Canvas::from_frame(
             &mut ctx.gfx,
-            CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
+            graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
         );
 
         // Text is drawn from the top-left corner.
         let offset = self.frames as f32 / 10.0;
         let dest_point = glam::Vec2::new(offset, offset);
         canvas.draw_text(
-            &[Text::new()
+            &[graphics::Text::new()
                 .text("Hello, world!")
                 .font("LiberationMono")
                 .size(48.)],
             dest_point,
-            TextLayout::tl_single_line(),
+            graphics::TextLayout::tl_single_line(),
         )?;
 
         canvas.finish();
