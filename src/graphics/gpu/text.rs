@@ -2,7 +2,7 @@ use super::{
     arc::{ArcTexture, ArcTextureView},
     growing::GrowingBufferArena,
 };
-use crate::{graphics::context::FrameArenas, GameResult};
+use crate::graphics::context::FrameArenas;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
 use std::num::NonZeroU32;
 
@@ -71,7 +71,7 @@ impl TextRenderer {
         queue: &wgpu::Queue,
         arenas: &'a FrameArenas,
         pass: &mut wgpu::RenderPass<'a>,
-    ) -> GameResult<()> {
+    ) {
         let res = self.glyph_brush.process_queued(
             |rect, pixels| {
                 queue.write_texture(
@@ -127,8 +127,6 @@ impl TextRenderer {
                 let verts_buf = arenas.buffers.alloc(verts_alloc.buffer);
                 pass.set_vertex_buffer(0, verts_buf.slice(verts_alloc.offset..));
                 pass.draw(0..4, 0..verts.len() as u32);
-
-                Ok(())
             }
             Err(glyph_brush::BrushError::TextureTooSmall { suggested }) => {
                 self.cache_size = suggested;

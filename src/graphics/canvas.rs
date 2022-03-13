@@ -1,4 +1,10 @@
+//! Canvases are the main method of drawing meshes and text to images in ggez.
 //!
+//! They can draw to any image that is capable of being drawn to (i.e. has been created with [`Image::new_canvas_image()`] or [`ScreenImage`]),
+//! or they can draw directly to the screen.
+//!
+//! Canvases are also where you can bind your own custom shaders and samplers to use while drawing.
+//! Canvases *do not* automatically batch draws. To used batched (instanced) drawing, refer to [`InstanceArray`].
 
 use super::{
     context::{FrameArenas, GraphicsContext},
@@ -22,7 +28,7 @@ use crate::{GameError, GameResult};
 use crevice::std430::{AsStd430, Std430};
 use std::{collections::HashMap, hash::Hash, sync::Arc};
 
-/// A canvas represents a render pass and is how you render primitives onto images.
+/// A canvas represents a render pass and is how you render primitives such as meshes and text onto images.
 #[allow(missing_debug_implementations)]
 pub struct Canvas<'a> {
     device: &'a wgpu::Device,
@@ -42,6 +48,7 @@ pub struct Canvas<'a> {
 
     shader_ty: Option<ShaderType>,
     dirty_pipeline: bool,
+    queuing_text: bool,
     pass: wgpu::RenderPass<'a>,
     samples: u32,
     format: wgpu::TextureFormat,
@@ -239,6 +246,7 @@ impl<'a> Canvas<'a> {
 
             shader_ty: None,
             dirty_pipeline: true,
+            queuing_text: false,
             pass,
             samples,
             format,
@@ -265,6 +273,7 @@ impl<'a> Canvas<'a> {
         shader: Shader,
         params: ShaderParams<Uniforms>,
     ) {
+        self.flush_text_queue();
         self.dirty_pipeline = true;
         self.shader = shader;
         self.shader_bind_group = Some((
@@ -275,6 +284,7 @@ impl<'a> Canvas<'a> {
 
     /// Sets the shader to use when drawing meshes.
     pub fn set_shader(&mut self, shader: Shader) {
+        self.flush_text_queue();
         self.dirty_pipeline = true;
         self.shader = shader;
     }
@@ -285,6 +295,7 @@ impl<'a> Canvas<'a> {
         shader: Shader,
         params: ShaderParams<Uniforms>,
     ) {
+        self.flush_text_queue();
         self.dirty_pipeline = true;
         self.text_shader = shader;
         self.text_shader_bind_group = Some((
@@ -295,6 +306,7 @@ impl<'a> Canvas<'a> {
 
     /// Sets the shader to use when drawing text.
     pub fn set_text_shader(&mut self, shader: Shader) {
+        self.flush_text_queue();
         self.dirty_pipeline = true;
         self.text_shader = shader;
     }
@@ -317,6 +329,8 @@ impl<'a> Canvas<'a> {
 
     /// Sets the active sampler used to sample images.
     pub fn set_sampler(&mut self, sampler: Sampler) {
+        self.flush_text_queue();
+
         let sampler = self.sampler_cache.get(self.device, sampler);
 
         let (bind_group, _) = BindGroupBuilder::new()
@@ -328,13 +342,23 @@ impl<'a> Canvas<'a> {
         self.pass.set_bind_group(2, bind_group, &[]);
     }
 
+    /// Resets the active sampler to the default.
+    ///
+    /// This is equivalent to `set_sampler(Sampler::linear_clamp())`.
+    pub fn set_default_sampler(&mut self) {
+        self.set_sampler(Sampler::linear_clamp());
+    }
+
     /// Draws a mesh.
+    ///
+    /// If no [`Image`] is given then the image color will be white.
     pub fn draw_mesh<'b>(
         &mut self,
         mesh: &Mesh,
         image: impl Into<Option<&'b Image>>,
         mut param: DrawParam,
     ) {
+        self.flush_text_queue();
         self.update_pipeline(ShaderType::Draw);
 
         let alloc_size = self.device.limits().min_uniform_buffer_offset_alignment as u64;
@@ -389,22 +413,24 @@ impl<'a> Canvas<'a> {
         self.pass.draw_indexed(0..mesh.index_count as _, 0, 0..1);
     }
 
-    /// Draws a rectangle.
+    /// Draws a rectangle with a given [`Image`] and [`DrawParam`].
+    ///
+    /// Also see [`Canvas::draw_mesh()`].
     pub fn draw<'b>(&mut self, image: impl Into<Option<&'b Image>>, param: DrawParam) {
         self.draw_mesh(&self.rect_mesh.clone(), image, param)
     }
 
     /// Draws a mesh instanced many times, using the [DrawParam]s found in `instances`.
     ///
-    /// `z` specifies the base Z position of the instance array. Set to `None` to use the current Z cursor.
-    ///
-    /// `skip_z` specifies whether the Z span of the instance array should affect the Z cursor.
+    /// If no [`Image`] is given then the image color will be white.
     pub fn draw_mesh_instances<'b>(
         &mut self,
         mesh: &Mesh,
         image: impl Into<Option<&'b Image>>,
         instances: &InstanceArray,
     ) {
+        self.flush_text_queue();
+
         if instances.len() == 0 {
             return;
         }
@@ -476,7 +502,9 @@ impl<'a> Canvas<'a> {
             .draw_indexed(0..mesh.index_count as _, 0, 0..instances.len() as _);
     }
 
-    /// Equivalent of `draw` (as is to `draw_mesh`) for instanced rendering (i.e. as is to `draw_mesh_instances`).
+    /// Draws a rectangle instanced multiple times, as defined by the given [`InstanceArray`].
+    ///
+    /// Also see [`Canvas::draw_mesh_instances()`].
     pub fn draw_instances<'b>(
         &mut self,
         image: impl Into<Option<&'b Image>>,
@@ -491,12 +519,16 @@ impl<'a> Canvas<'a> {
     /// in the same section of text (e.g. bolding, highlighting, headers, etc).
     ///
     /// [TextLayout] determines how the text is aligned in `rect` and whether the text wraps or not.
+    ///
+    /// ## A tip for performance
+    /// Text rendering will automatically batch *as long as the text draws are consecutive*.
+    /// As such, to achieve the best performance, do all your text rendering in a single burst.
     pub fn draw_bounded_text(
         &mut self,
         text: &[Text],
         rect: Rect,
         layout: TextLayout,
-    ) -> GameResult<()> {
+    ) -> GameResult {
         self.update_pipeline(ShaderType::Text);
 
         self.text_renderer.queue(glyph_brush::Section {
@@ -534,13 +566,12 @@ impl<'a> Canvas<'a> {
         self.set_image(&self.text_renderer.cache_view.clone());
         self.pass.set_bind_group(0, self.text_uniforms, &[]);
 
-        self.text_renderer
-            .draw_queued(self.device, self.queue, self.arenas, &mut self.pass)?;
+        self.queuing_text = true;
 
         Ok(())
     }
 
-    /// Unbounded version of `draw_bounded_text`.
+    /// Unbounded version of [`Canvas::draw_bounded_text()`].
     pub fn draw_text(
         &mut self,
         text: &[Text],
@@ -556,7 +587,17 @@ impl<'a> Canvas<'a> {
     }
 
     /// Finish drawing with this canvas.
-    pub fn finish(self) {}
+    pub fn finish(mut self) {
+        self.flush_text_queue();
+    }
+
+    fn flush_text_queue(&mut self) {
+        if self.queuing_text {
+            self.queuing_text = false;
+            self.text_renderer
+                .draw_queued(self.device, self.queue, self.arenas, &mut self.pass);
+        }
+    }
 
     fn update_pipeline(&mut self, ty: ShaderType) {
         if self.dirty_pipeline || self.shader_ty != Some(ty) {
