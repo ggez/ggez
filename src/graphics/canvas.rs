@@ -70,7 +70,7 @@ impl<'a> Canvas<'a> {
     /// The image must be created for Canvas usage, i.e. [Image::new_canvas_image()], or [ScreenImage], and must only have a sample count of 1.
     pub fn from_image(
         gfx: &'a mut GraphicsContext,
-        load_op: CanvasLoadOp,
+        load_op: impl Into<CanvasLoadOp>,
         image: &'a Image,
     ) -> Self {
         assert!(gfx.fcx.is_some(), "starting Canvas outside of frame");
@@ -83,7 +83,7 @@ impl<'a> Canvas<'a> {
                     view: image.view.as_ref(),
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: match load_op {
+                        load: match load_op.into() {
                             CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
                             CanvasLoadOp::Clear(color) => wgpu::LoadOp::Clear(color.into()),
                         },
@@ -100,7 +100,7 @@ impl<'a> Canvas<'a> {
     /// Both images must be created for Canvas usage (see [Canvas::from_image]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
     pub fn from_msaa(
         gfx: &'a mut GraphicsContext,
-        load_op: CanvasLoadOp,
+        load_op: impl Into<CanvasLoadOp>,
         msaa_image: &'a Image,
         resolve_image: &'a Image,
     ) -> Self {
@@ -119,7 +119,7 @@ impl<'a> Canvas<'a> {
                         view: msaa_image.view.as_ref(),
                         resolve_target: Some(resolve_image.view.as_ref()),
                         ops: wgpu::Operations {
-                            load: match load_op {
+                            load: match load_op.into() {
                                 CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
                                 CanvasLoadOp::Clear(color) => wgpu::LoadOp::Clear(color.into()),
                             },
@@ -132,18 +132,18 @@ impl<'a> Canvas<'a> {
         )
     }
 
-    /// Create a new [Canvas] that renders directly to the window surface.
-    pub fn from_frame(gfx: &'a mut GraphicsContext, load_op: CanvasLoadOp) -> Self {
+    /// Create a new [Canvas] that renders to the default frame image.
+    pub fn from_frame(gfx: &'a mut GraphicsContext, load_op: impl Into<CanvasLoadOp>) -> Self {
         assert!(gfx.fcx.is_some(), "starting Canvas outside of frame");
 
-        Self::new(gfx, 1, gfx.surface_format, |cmd, view| {
+        Self::new(gfx, 1, gfx.surface_format, |cmd, frame| {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view,
+                    view: frame.view.as_ref(),
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: match load_op {
+                        load: match load_op.into() {
                             CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
                             CanvasLoadOp::Clear(color) => wgpu::LoadOp::Clear(color.into()),
                         },
@@ -159,10 +159,7 @@ impl<'a> Canvas<'a> {
         gfx: &'a mut GraphicsContext,
         samples: u32,
         format: wgpu::TextureFormat,
-        create_pass: impl FnOnce(
-            &'a mut wgpu::CommandEncoder,
-            &'a wgpu::TextureView,
-        ) -> wgpu::RenderPass<'a>,
+        create_pass: impl FnOnce(&'a mut wgpu::CommandEncoder, &'a Image) -> wgpu::RenderPass<'a>,
     ) -> Self {
         let device = &gfx.device;
         let queue = &gfx.queue;
@@ -176,7 +173,10 @@ impl<'a> Canvas<'a> {
         let (arenas, pass) = {
             let fcx = gfx.fcx.as_mut().expect("creating canvas when not in frame");
 
-            let pass = create_pass(&mut fcx.cmd, &fcx.frame_view);
+            let pass = create_pass(
+                &mut fcx.cmd,
+                &gfx.frame_image.as_ref().unwrap(/* invariant */),
+            );
             let arenas = &fcx.arenas;
 
             (arenas, pass)
@@ -379,7 +379,10 @@ impl<'a> Canvas<'a> {
             self.set_image(&image.view);
             (
                 param.src_rect,
-                glam::Vec2::new(image.width() as _, image.height() as _),
+                glam::Vec2::new(
+                    param.src_rect.w * image.width() as f32,
+                    param.src_rect.h * image.height() as f32,
+                ),
             )
         } else {
             self.set_image(&self.white_image.view.clone());
@@ -577,7 +580,7 @@ impl<'a> Canvas<'a> {
         text: &[Text],
         pos: impl Into<mint::Vector2<f32>>,
         layout: TextLayout,
-    ) -> GameResult<()> {
+    ) -> GameResult {
         let pos = pos.into();
         self.draw_bounded_text(
             text,
@@ -588,6 +591,10 @@ impl<'a> Canvas<'a> {
 
     /// Finish drawing with this canvas.
     pub fn finish(mut self) {
+        self.finalize();
+    }
+
+    fn finalize(&mut self) {
         self.flush_text_queue();
     }
 
@@ -706,6 +713,12 @@ impl<'a> Canvas<'a> {
     }
 }
 
+impl<'a> Drop for Canvas<'a> {
+    fn drop(&mut self) {
+        self.finalize();
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum ShaderType {
     Draw,
@@ -720,6 +733,22 @@ pub enum CanvasLoadOp {
     DontClear,
     /// Clear the image contents to a solid color.
     Clear(Color),
+}
+
+impl From<Option<Color>> for CanvasLoadOp {
+    fn from(color: Option<Color>) -> Self {
+        match color {
+            Some(color) => CanvasLoadOp::Clear(color),
+            None => CanvasLoadOp::DontClear,
+        }
+    }
+}
+
+impl From<Color> for CanvasLoadOp {
+    #[inline]
+    fn from(color: Color) -> Self {
+        CanvasLoadOp::Clear(color)
+    }
 }
 
 #[derive(crevice::std430::AsStd430)]

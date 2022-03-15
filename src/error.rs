@@ -63,6 +63,9 @@ pub enum GameError {
     /// Attempted to draw text with a non-existent font name.
     #[error("no such font '{0}'")]
     FontSelectError(String),
+    /// Something went wrong when asynchronously mapping a GPU buffer.
+    #[error("async buffer map error: {0}")]
+    BufferAsyncError(#[from] wgpu::BufferAsyncError),
     /// A custom error type for use by users of ggez.
     /// This lets you handle custom errors that may happen during your game (such as, trying to load a malformed file for a level)
     /// using the same mechanism you handle ggez's other errors.

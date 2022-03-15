@@ -14,6 +14,7 @@ use super::{
     sampler::{Sampler, SamplerCache},
     shader::Shader,
     text::FontData,
+    ScreenImage,
 };
 use crate::{
     conf::{Backend, Conf, FullscreenType, WindowMode},
@@ -30,7 +31,7 @@ use winit::{self, dpi};
 
 pub(crate) struct FrameContext {
     pub cmd: wgpu::CommandEncoder,
-    pub present: Option<Image>,
+    pub present: Image,
     pub arenas: FrameArenas,
     pub frame: wgpu::SurfaceTexture,
     pub frame_view: wgpu::TextureView,
@@ -60,6 +61,10 @@ pub struct GraphicsContext {
     pub(crate) sampler_cache: SamplerCache,
 
     pub(crate) vsync: bool,
+    pub(crate) window_mode: WindowMode,
+    pub(crate) frame: Option<ScreenImage>,
+    pub(crate) frame_image: Option<Image>,
+
     pub(crate) fcx: Option<FrameContext>,
     pub(crate) text: TextRenderer,
     pub(crate) fonts: HashMap<String, FontId>,
@@ -211,6 +216,10 @@ impl GraphicsContext {
             sampler_cache,
 
             vsync: conf.window_setup.vsync,
+            window_mode: conf.window_mode,
+            frame: None,
+            frame_image: None,
+
             fcx: None,
             text,
             fonts: HashMap::new(),
@@ -228,6 +237,9 @@ impl GraphicsContext {
         };
 
         this.set_window_mode(&conf.window_mode)?;
+
+        this.frame = Some(ScreenImage::new(&this, None, 1., 1., 1));
+        this.update_frame_image();
 
         this.rect_mesh = Some(Arc::new(Mesh::new(
             &this,
@@ -270,7 +282,7 @@ impl GraphicsContext {
     /// Sets the image that will be presented to the screen at the end of the frame.
     pub fn present(&mut self, image: &Image) -> GameResult {
         if let Some(fcx) = &mut self.fcx {
-            fcx.present = Some(image.clone());
+            fcx.present = image.clone();
             Ok(())
         } else {
             Err(GameError::RenderError(String::from(
@@ -284,6 +296,28 @@ impl GraphicsContext {
     pub fn add_font(&mut self, name: &str, font: FontData) {
         let id = self.text.glyph_brush.add_font(font.font);
         self.fonts.insert(name.to_string(), id);
+    }
+
+    /// Returns the size of the window’s underlying drawable in physical pixels as (width, height).
+    pub fn drawable_size(&self) -> (f32, f32) {
+        let size = self.window.inner_size();
+        (size.width as f32, size.height as f32)
+    }
+
+    /// Sets the window size (in physical pixels) / resolution to the specified width and height.
+    ///
+    /// Note:   These dimensions are only interpreted as resolutions in true fullscreen mode.
+    ///         If the selected resolution is not supported this function will return an Error.
+    pub fn set_drawable_size(&mut self, width: f32, height: f32) -> GameResult {
+        self.set_window_mode(&self.window_mode.dimensions(width, height))
+    }
+
+    /// Returns the default frame image.
+    ///
+    /// This is the image that is rendered to when `Canvas::from_frame` is used.
+    #[inline]
+    pub fn frame(&self) -> &Image {
+        self.frame_image.as_ref().unwrap(/* invariant */)
     }
 
     pub(crate) fn begin_frame(&mut self) -> GameResult {
@@ -304,7 +338,7 @@ impl GraphicsContext {
             cmd: self
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor::default()),
-            present: None,
+            present: self.frame().clone(),
             arenas: FrameArenas::default(),
             frame,
             frame_view,
@@ -318,57 +352,56 @@ impl GraphicsContext {
 
     pub(crate) fn end_frame(&mut self) -> GameResult {
         if let Some(mut fcx) = self.fcx.take() {
-            let present = fcx.present.take();
-            if let Some(present) = present {
-                let mut present_pass = fcx.cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: None,
-                    color_attachments: &[wgpu::RenderPassColorAttachment {
-                        view: &fcx.frame_view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                            store: true,
-                        },
-                    }],
-                    depth_stencil_attachment: None,
-                });
+            let mut present_pass = fcx.cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &fcx.frame_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            });
 
-                let sampler = self
-                    .sampler_cache
-                    .get(&self.device, Sampler::linear_clamp());
+            let sampler = self
+                .sampler_cache
+                .get(&self.device, Sampler::linear_clamp());
 
-                let (bind, layout) = BindGroupBuilder::new()
-                    .image(&present.view, wgpu::ShaderStages::FRAGMENT)
-                    .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
-                    .create(&self.device, &mut self.bind_group_cache);
+            let (bind, layout) = BindGroupBuilder::new()
+                .image(&fcx.present.view, wgpu::ShaderStages::FRAGMENT)
+                .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
+                .create(&self.device, &mut self.bind_group_cache);
 
-                let layout = self.pipeline_cache.layout(&self.device, &[layout]);
-                let copy = self.pipeline_cache.render_pipeline(
-                    &self.device,
-                    &layout,
-                    Shader {
-                        fragment: self.copy_shader.clone(),
-                        fs_entry: "fs_main".into(),
-                    }
-                    .info(
-                        self.copy_shader.clone(),
-                        1,
-                        self.surface_format,
-                        None,
-                        false,
-                        false,
-                        wgpu::PrimitiveTopology::TriangleList,
-                        Vertex::layout(),
-                    ),
-                );
+            let layout = self.pipeline_cache.layout(&self.device, &[layout]);
+            let copy = self.pipeline_cache.render_pipeline(
+                &self.device,
+                &layout,
+                Shader {
+                    fragment: self.copy_shader.clone(),
+                    fs_entry: "fs_main".into(),
+                }
+                .info(
+                    self.copy_shader.clone(),
+                    1,
+                    self.surface_format,
+                    None,
+                    false,
+                    false,
+                    wgpu::PrimitiveTopology::TriangleList,
+                    Vertex::layout(),
+                ),
+            );
 
-                let copy = fcx.arenas.render_pipelines.alloc(copy);
-                let bind = fcx.arenas.bind_groups.alloc(bind);
+            let copy = fcx.arenas.render_pipelines.alloc(copy);
+            let bind = fcx.arenas.bind_groups.alloc(bind);
 
-                present_pass.set_pipeline(copy);
-                present_pass.set_bind_group(0, bind, &[]);
-                present_pass.draw(0..3, 0..1);
-            }
+            present_pass.set_pipeline(copy);
+            present_pass.set_bind_group(0, bind, &[]);
+            present_pass.draw(0..3, 0..1);
+
+            std::mem::drop(present_pass);
 
             self.staging_belt.finish();
             self.queue.submit([fcx.cmd.finish()]);
@@ -403,6 +436,13 @@ impl GraphicsContext {
                 },
             },
         );
+        self.update_frame_image();
+    }
+
+    pub(crate) fn update_frame_image(&mut self) {
+        let mut frame = self.frame.take().unwrap(/* invariant */);
+        self.frame_image = Some(frame.image(self));
+        self.frame = Some(frame);
     }
 
     pub(crate) fn set_window_mode(&mut self, mode: &WindowMode) -> GameResult {
