@@ -72,9 +72,10 @@ impl<'a> Canvas<'a> {
         gfx: &'a mut GraphicsContext,
         load_op: CanvasLoadOp,
         image: &'a Image,
-    ) -> Self {
-        assert!(gfx.fcx.is_some(), "starting Canvas outside of frame");
-        assert!(image.samples() == 1);
+    ) -> GameResult<Self> {
+        if image.samples() > 1 {
+            return Err(GameError::RenderError(String::from("non-MSAA rendering requires an image with exactly 1 sample, for this image use Canvas::from_msaa instead")));
+        }
 
         Self::new(gfx, 1, image.format().into(), |cmd, _| {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -103,10 +104,24 @@ impl<'a> Canvas<'a> {
         load_op: CanvasLoadOp,
         msaa_image: &'a Image,
         resolve_image: &'a Image,
-    ) -> Self {
-        assert!(gfx.fcx.is_some(), "starting Canvas outside of frame");
-        assert!(msaa_image.samples() > 1);
-        assert_eq!(resolve_image.samples(), 1);
+    ) -> GameResult<Self> {
+        if msaa_image.samples() == 1 {
+            return Err(GameError::RenderError(String::from(
+                "MSAA rendering requires an image with more than 1 sample, for this image use Canvas::from_image instead",
+            )));
+        }
+
+        if resolve_image.samples() > 1 {
+            return Err(GameError::RenderError(String::from(
+                "can only resolve into an image with exactly 1 sample",
+            )));
+        }
+
+        if msaa_image.format() != resolve_image.format() {
+            return Err(GameError::RenderError(String::from(
+                "MSAA image and resolve image must be the same format",
+            )));
+        }
 
         Self::new(
             gfx,
@@ -133,9 +148,7 @@ impl<'a> Canvas<'a> {
     }
 
     /// Create a new [Canvas] that renders directly to the window surface.
-    pub fn from_frame(gfx: &'a mut GraphicsContext, load_op: CanvasLoadOp) -> Self {
-        assert!(gfx.fcx.is_some(), "starting Canvas outside of frame");
-
+    pub fn from_frame(gfx: &'a mut GraphicsContext, load_op: CanvasLoadOp) -> GameResult<Self> {
         Self::new(gfx, 1, gfx.surface_format, |cmd, view| {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
@@ -163,7 +176,13 @@ impl<'a> Canvas<'a> {
             &'a mut wgpu::CommandEncoder,
             &'a wgpu::TextureView,
         ) -> wgpu::RenderPass<'a>,
-    ) -> Self {
+    ) -> GameResult<Self> {
+        if gfx.fcx.is_none() {
+            return Err(GameError::RenderError(String::from(
+                "starting Canvas outside of a frame",
+            )));
+        }
+
         let device = &gfx.device;
         let queue = &gfx.queue;
         let bind_group_cache = &mut gfx.bind_group_cache;
@@ -174,7 +193,7 @@ impl<'a> Canvas<'a> {
         let uniform_arena = &mut gfx.uniform_arena;
 
         let (arenas, pass) = {
-            let fcx = gfx.fcx.as_mut().expect("creating canvas when not in frame");
+            let fcx = gfx.fcx.as_mut().unwrap(/* see above */);
 
             let pass = create_pass(&mut fcx.cmd, &fcx.frame_view);
             let arenas = &fcx.arenas;
@@ -264,7 +283,7 @@ impl<'a> Canvas<'a> {
 
         this.set_sampler(Sampler::linear_clamp());
 
-        this
+        Ok(this)
     }
 
     /// Sets the shader to use when drawing meshes, along with the provided parameters, **bound to bind group 3 for non-instanced draws, and 4 for instanced draws**.
