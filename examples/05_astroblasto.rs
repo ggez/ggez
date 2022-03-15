@@ -500,7 +500,7 @@ impl EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Our drawing is quite simple.
         // Just clear the screen...
-        let mut canvas = graphics::Canvas::from_frame(&mut ctx.gfx, Color::BLACK);
+        let mut canvas = graphics::Canvas::from_frame(&mut ctx.gfx, Color::BLACK)?;
 
         // Loop over all objects drawing them...
         {

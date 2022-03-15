@@ -274,7 +274,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas =
-            graphics::Canvas::from_frame(&mut ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
+            graphics::Canvas::from_frame(&mut ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]))?;
 
         canvas.set_sampler(graphics::Sampler::nearest_clamp()); // because pixel art
 

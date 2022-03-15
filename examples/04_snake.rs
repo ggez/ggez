@@ -418,7 +418,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
         let mut canvas = graphics::Canvas::from_frame(
             &mut ctx.gfx,
             graphics::CanvasLoadOp::Clear([0.0, 1.0, 0.0, 1.0].into()),
-        );
+        )?;
 
         // Then we tell the snake and the food to draw themselves
         self.snake.draw(&mut canvas);

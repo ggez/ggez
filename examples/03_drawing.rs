@@ -130,7 +130,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let mut canvas = graphics::Canvas::from_frame(
             &mut ctx.gfx,
             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
-        );
+        )?;
 
         // Draw an image.
         let dst = glam::Vec2::new(20.0, 20.0);
