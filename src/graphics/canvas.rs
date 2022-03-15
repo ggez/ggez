@@ -22,7 +22,7 @@ use super::{
     sampler::{Sampler, SamplerCache},
     shader::{Shader, ShaderParams},
     text::{Text, TextLayout},
-    Color, Rect,
+    BlendMode, Color, Rect,
 };
 use crate::{GameError, GameResult};
 use crevice::std430::{AsStd430, Std430};
@@ -49,6 +49,7 @@ pub struct Canvas<'a> {
     shader_ty: Option<ShaderType>,
     dirty_pipeline: bool,
     queuing_text: bool,
+    blend_mode: BlendMode,
     pass: wgpu::RenderPass<'a>,
     samples: u32,
     format: wgpu::TextureFormat,
@@ -192,7 +193,7 @@ impl<'a> Canvas<'a> {
         let fonts = &gfx.fonts;
         let uniform_arena = &mut gfx.uniform_arena;
 
-        let (arenas, pass) = {
+        let (arenas, mut pass) = {
             let fcx = gfx.fcx.as_mut().unwrap(/* see above */);
 
             let pass = create_pass(
@@ -203,6 +204,8 @@ impl<'a> Canvas<'a> {
 
             (arenas, pass)
         };
+
+        pass.set_blend_constant(wgpu::Color::WHITE);
 
         let size = gfx.window.inner_size();
         let transform = glam::Mat4::orthographic_rh(
@@ -269,6 +272,7 @@ impl<'a> Canvas<'a> {
             shader_ty: None,
             dirty_pipeline: true,
             queuing_text: false,
+            blend_mode: BlendMode::ALPHA,
             pass,
             samples,
             format,
@@ -369,6 +373,12 @@ impl<'a> Canvas<'a> {
     /// This is equivalent to `set_sampler(Sampler::linear_clamp())`.
     pub fn set_default_sampler(&mut self) {
         self.set_sampler(Sampler::linear_clamp());
+    }
+
+    /// Sets the active blend mode used when drawing images.
+    pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
+        self.dirty_pipeline = true;
+        self.blend_mode = blend_mode;
     }
 
     /// Draws a mesh.
@@ -702,7 +712,10 @@ impl<'a> Canvas<'a> {
                         },
                         self.samples,
                         self.format,
-                        Some(wgpu::BlendState::ALPHA_BLENDING),
+                        Some(wgpu::BlendState {
+                            color: self.blend_mode.color,
+                            alpha: self.blend_mode.alpha,
+                        }),
                         false,
                         true,
                         match ty {

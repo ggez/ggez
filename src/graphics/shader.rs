@@ -141,3 +141,147 @@ impl<Uniforms: AsStd430> Clone for ShaderParams<Uniforms> {
         }
     }
 }
+
+pub use wgpu::{BlendComponent, BlendFactor, BlendOperation};
+
+/// Describes the blend mode used when drawing images.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BlendMode {
+    /// The blend mode for the color channels.
+    pub color: BlendComponent,
+    /// The blend mode for the alpha channel.
+    pub alpha: BlendComponent,
+}
+
+impl BlendMode {
+    /// When combining two fragments, add their values together, saturating
+    /// at 1.0
+    pub const ADD: Self = BlendMode {
+        color: BlendComponent {
+            src_factor: BlendFactor::SrcAlpha,
+            dst_factor: BlendFactor::One,
+            operation: BlendOperation::Add,
+        },
+        alpha: BlendComponent {
+            src_factor: BlendFactor::OneMinusDstAlpha,
+            dst_factor: BlendFactor::One,
+            operation: BlendOperation::Add,
+        },
+    };
+
+    /// When combining two fragments, subtract the source value from the
+    /// destination value
+    pub const SUBTRACT: Self = BlendMode {
+        color: BlendComponent {
+            src_factor: BlendFactor::SrcAlpha,
+            dst_factor: BlendFactor::One,
+            operation: BlendOperation::ReverseSubtract,
+        },
+        alpha: BlendComponent {
+            src_factor: BlendFactor::Zero,
+            dst_factor: BlendFactor::One,
+            operation: BlendOperation::Add,
+        },
+    };
+
+    /// When combining two fragments, add the value of the source times its
+    /// alpha channel with the value of the destination multiplied by the inverse
+    /// of the source alpha channel. Has the usual transparency effect: mixes the
+    /// two colors using a fraction of each one specified by the alpha of the source.
+    pub const ALPHA: Self = BlendMode {
+        color: BlendComponent {
+            src_factor: BlendFactor::SrcAlpha,
+            dst_factor: BlendFactor::OneMinusSrcAlpha,
+            operation: BlendOperation::Add,
+        },
+        alpha: BlendComponent {
+            src_factor: BlendFactor::OneMinusDstAlpha,
+            dst_factor: BlendFactor::One,
+            operation: BlendOperation::Add,
+        },
+    };
+
+    /// When combining two fragments, subtract the destination color from a constant
+    /// color using the source color as weight. Has an invert effect with the constant
+    /// color as base and source color controlling displacement from the base color.
+    /// A white source color and a white value results in plain invert. The output
+    /// alpha is same as destination alpha.
+    pub const INVERT: Self = BlendMode {
+        color: BlendComponent {
+            src_factor: BlendFactor::Constant,
+            dst_factor: BlendFactor::Src,
+            operation: BlendOperation::Subtract,
+        },
+        alpha: BlendComponent {
+            src_factor: BlendFactor::Zero,
+            dst_factor: BlendFactor::One,
+            operation: BlendOperation::Add,
+        },
+    };
+
+    /// When combining two fragments, multiply their values together (including alpha)
+    pub const MULTIPLY: Self = BlendMode {
+        color: BlendComponent {
+            src_factor: BlendFactor::Dst,
+            dst_factor: BlendFactor::Zero,
+            operation: BlendOperation::Add,
+        },
+        alpha: BlendComponent {
+            src_factor: BlendFactor::DstAlpha,
+            dst_factor: BlendFactor::Zero,
+            operation: BlendOperation::Add,
+        },
+    };
+
+    /// When combining two fragments, choose the source value (including source alpha)
+    pub const REPLACE: Self = BlendMode {
+        color: wgpu::BlendState::REPLACE.color,
+        alpha: wgpu::BlendState::REPLACE.alpha,
+    };
+
+    /// When combining two fragments, choose the lighter value
+    pub const LIGHTEN: Self = BlendMode {
+        color: BlendComponent {
+            src_factor: BlendFactor::SrcAlpha,
+            dst_factor: BlendFactor::One,
+            operation: BlendOperation::Max,
+        },
+        alpha: BlendComponent {
+            src_factor: BlendFactor::OneMinusDstAlpha,
+            dst_factor: BlendFactor::One,
+            operation: BlendOperation::Add,
+        },
+    };
+
+    /// When combining two fragments, choose the darker value
+    pub const DARKEN: Self = BlendMode {
+        color: BlendComponent {
+            src_factor: BlendFactor::SrcAlpha,
+            dst_factor: BlendFactor::One,
+            operation: BlendOperation::Min,
+        },
+        alpha: BlendComponent {
+            src_factor: BlendFactor::OneMinusDstAlpha,
+            dst_factor: BlendFactor::One,
+            operation: BlendOperation::Add,
+        },
+    };
+
+    /// When using premultiplied alpha, use this.
+    ///
+    /// You usually want to use this blend mode for drawing canvases
+    /// containing semi-transparent imagery.
+    /// For an explanation on this see: <https://github.com/ggez/ggez/issues/694#issuecomment-853724926>
+    pub const PREMULTIPLIED: Self = BlendMode {
+        color: BlendComponent {
+            src_factor: BlendFactor::One,
+            dst_factor: BlendFactor::OneMinusSrcAlpha,
+            operation: BlendOperation::Add,
+        },
+        alpha: BlendComponent {
+            src_factor: BlendFactor::OneMinusDstAlpha,
+            dst_factor: BlendFactor::One,
+            operation: BlendOperation::Add,
+        },
+    };
+}
