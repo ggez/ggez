@@ -36,7 +36,7 @@ impl MainState {
             (Some(rock), build_textured_triangle(ctx)?),
         ];
 
-        let rect = graphics::Mesh::from_data(&ctx.gfx, mb.build());
+        let rect = graphics::Mesh::from_raw(&ctx.gfx, mb.build());
 
         let s = MainState {
             image1,
@@ -82,7 +82,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
         Color::new(1.0, 0.0, 1.0, 1.0),
     )?;
 
-    Ok(graphics::Mesh::from_data(&ctx.gfx, mb.build()))
+    Ok(graphics::Mesh::from_raw(&ctx.gfx, mb.build()))
 }
 
 fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
@@ -106,7 +106,7 @@ fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
 
     let triangle_indices = vec![0, 1, 2];
 
-    Ok(graphics::Mesh::from_data(
+    Ok(graphics::Mesh::from_raw(
         &ctx.gfx,
         graphics::MeshData {
             vertices: &triangle_verts,

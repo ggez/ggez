@@ -15,18 +15,14 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let circle = graphics::Mesh::from_data(
+        let circle = graphics::Mesh::new_circle(
             &ctx.gfx,
-            graphics::MeshBuilder::new()
-                .circle(
-                    graphics::DrawMode::fill(),
-                    vec2(0., 0.),
-                    100.,
-                    2.0,
-                    Color::WHITE,
-                )?
-                .build(),
-        );
+            graphics::DrawMode::fill(),
+            vec2(0., 0.),
+            100.0,
+            2.0,
+            Color::WHITE,
+        )?;
 
         Ok(MainState { pos_x: 0.0, circle })
     }

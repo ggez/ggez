@@ -41,10 +41,13 @@ fn vs_main(
 ) -> VertexOutput {
     var instance = instances.instances[in_instance_index];
     
+    var src_sz = instance.src_rect.zw - instance.src_rect.xy;
+
     var out: VertexOutput;
     out.position = uniforms.transform
         * instance.transform
         * uniforms.pre_transform
+        * mat4x4<f32>(src_sz.x, 0.0, 0.0, 0.0, 0.0, src_sz.y, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
         * vec4<f32>(position - instance.origin, 0.0, 1.0);
     out.position = out.position / out.position.w;
     out.uv = mix(instance.src_rect.xy, instance.src_rect.zw, uv);
