@@ -6,7 +6,7 @@
 extern crate num_derive;
 
 use ggez::event;
-use ggez::graphics::{self, Color, DrawParam, FilterMode, Rect, Text, TextFragment};
+use ggez::graphics::{self, Color};
 use ggez::input::keyboard::KeyCode;
 use ggez::mint::Point2;
 use ggez::{Context, GameResult};
@@ -18,6 +18,7 @@ use std::env;
 use std::path;
 
 struct MainState {
+    ball: graphics::Mesh,
     spritesheet: graphics::Image,
     easing_enum: EasingEnum,
     animation_type: AnimationType,
@@ -128,9 +129,9 @@ impl TweenableRect {
     }
 }
 
-impl From<TweenableRect> for Rect {
+impl From<TweenableRect> for graphics::Rect {
     fn from(t_rect: TweenableRect) -> Self {
-        Rect {
+        graphics::Rect {
             x: t_rect.x,
             y: t_rect.y,
             w: t_rect.w,
@@ -224,9 +225,23 @@ fn player_sequence(
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let mut img = graphics::Image::new(ctx, "/player_sheet.png")?;
-        img.set_filter(FilterMode::Nearest); // because pixel art
+        ctx.gfx.add_font(
+            "LiberationMono",
+            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+        );
+
+        let ball = graphics::Mesh::new_circle(
+            &ctx.gfx,
+            graphics::DrawMode::fill(),
+            Vec2::new(0.0, 0.0),
+            60.0,
+            1.0,
+            Color::WHITE,
+        )?;
+
+        let img = graphics::Image::from_path(ctx, "/player_sheet.png", true)?;
         let s = MainState {
+            ball,
             spritesheet: img,
             easing_enum: EasingEnum::Linear,
             animation_type: AnimationType::Idle,
@@ -238,23 +253,18 @@ impl MainState {
     }
 }
 
-fn draw_info(ctx: &mut Context, info: String, position: Point2<f32>) -> GameResult {
-    let t = Text::new(TextFragment {
-        text: info,
-        font: None,
-        scale: Some(ggez::graphics::PxScale::from(40.0)),
-        ..Default::default()
-    });
-    graphics::draw(
-        ctx,
-        &t,
-        DrawParam::default().dest(position).color(Color::WHITE),
-    )
+fn draw_info(canvas: &mut graphics::Canvas, info: String, position: Point2<f32>) -> GameResult {
+    let t = graphics::Text::new()
+        .text(info)
+        .font("LiberationMono")
+        .size(40.)
+        .color(Color::WHITE);
+    canvas.draw_text(&[t], position, graphics::TextLayout::tl_single_line())
 }
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        let secs = ggez::timer::delta(ctx).as_secs_f64();
+        let secs = ctx.timer.delta().as_secs_f64();
         // advance the ball animation and reverse it once it reaches its end
         self.ball_animation.advance_and_maybe_reverse(secs);
         // advance the player animation and wrap around back to the beginning once it reaches its end
@@ -263,48 +273,50 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let mut canvas =
+            graphics::Canvas::from_frame(&mut ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
+
+        canvas.set_sampler(graphics::Sampler::nearest_clamp()); // because pixel art
 
         // draw some text showing the current parameters
         draw_info(
-            ctx,
+            &mut canvas,
             format!("Easing: {:?}", self.easing_enum),
             [300.0, 60.0].into(),
         )?;
         draw_info(
-            ctx,
+            &mut canvas,
             format!("Animation: {:?}", self.animation_type),
             [300.0, 110.0].into(),
         )?;
         draw_info(
-            ctx,
+            &mut canvas,
             format!("Duration: {:.2} s", self.duration),
             [300.0, 160.0].into(),
         )?;
 
         // draw the animated ball
-        let ball = graphics::Mesh::new_circle(
-            ctx,
-            graphics::DrawMode::fill(),
-            Vec2::new(0.0, 0.0),
-            60.0,
-            1.0,
-            Color::WHITE,
-        )?;
         let ball_pos = self.ball_animation.now_strict().unwrap();
-        graphics::draw(ctx, &ball, (ball_pos,))?;
+        canvas.draw_mesh(
+            &self.ball,
+            None,
+            graphics::DrawParam::new().offset(ball_pos),
+        );
 
         // draw the player
-        let current_frame_src: Rect = self.player_animation.now_strict().unwrap().into();
+        let current_frame_src: graphics::Rect = self.player_animation.now_strict().unwrap().into();
         let scale = 3.0;
-        let draw_p = DrawParam::default()
-            .src(current_frame_src)
-            .scale(Vec2::new(scale, scale))
-            .dest([470.0, 460.0])
-            .offset([0.5, 1.0]);
-        graphics::draw(ctx, &self.spritesheet, draw_p)?;
+        canvas.draw(
+            &self.spritesheet,
+            graphics::DrawParam::new()
+                .src_rect(current_frame_src)
+                .scale([scale, scale])
+                .offset([470.0, 460.0])
+                .origin([0.5, 1.0]),
+        );
 
-        graphics::present(ctx)?;
+        canvas.finish();
+
         Ok(())
     }
 
