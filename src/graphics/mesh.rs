@@ -78,9 +78,128 @@ impl Mesh {
         }
     }
 
-    /// Create a new mesh from [MeshData].
-    pub fn from_data(gfx: &GraphicsContext, data: MeshData) -> Self {
-        Self::new(gfx, &data.vertices, &data.indices)
+    /// Create a new mesh from raw [MeshData].
+    pub fn from_raw(gfx: &GraphicsContext, raw: MeshData) -> Self {
+        Self::new(gfx, &raw.vertices, &raw.indices)
+    }
+
+    /// Create a new mesh for a line of one or more connected segments.
+    pub fn new_line(
+        gfx: &GraphicsContext,
+        points: &[impl Into<mint::Point2<f32>> + Clone],
+        width: f32,
+        color: Color,
+    ) -> GameResult<Self> {
+        Ok(Mesh::from_raw(
+            gfx,
+            MeshBuilder::new()
+                .polyline(DrawMode::stroke(width), points, color)?
+                .build(),
+        ))
+    }
+
+    /// Create a new mesh for a circle.
+    pub fn new_circle(
+        gfx: &GraphicsContext,
+        mode: DrawMode,
+        point: impl Into<mint::Point2<f32>>,
+        radius: f32,
+        tolerance: f32,
+        color: Color,
+    ) -> GameResult<Self> {
+        Ok(Mesh::from_raw(
+            gfx,
+            MeshBuilder::new()
+                .circle(mode, point, radius, tolerance, color)?
+                .build(),
+        ))
+    }
+
+    /// Create a new mesh for an ellipse.
+    pub fn new_ellipse(
+        gfx: &GraphicsContext,
+        mode: DrawMode,
+        point: impl Into<mint::Point2<f32>>,
+        radius1: f32,
+        radius2: f32,
+        tolerance: f32,
+        color: Color,
+    ) -> GameResult<Self> {
+        Ok(Mesh::from_raw(
+            gfx,
+            MeshBuilder::new()
+                .ellipse(mode, point, radius1, radius2, tolerance, color)?
+                .build(),
+        ))
+    }
+
+    /// Create a new mesh for a series of connected lines.
+    pub fn new_polyline(
+        gfx: &GraphicsContext,
+        mode: DrawMode,
+        points: &[impl Into<mint::Point2<f32>> + Clone],
+        color: Color,
+    ) -> GameResult<Self> {
+        Ok(Mesh::from_raw(
+            gfx,
+            MeshBuilder::new().polyline(mode, points, color)?.build(),
+        ))
+    }
+
+    /// Create a new mesh for closed polygon.
+    /// The points given must be in clockwise order,
+    /// otherwise at best the polygon will not draw.
+    pub fn new_polygon(
+        gfx: &GraphicsContext,
+        mode: DrawMode,
+        points: &[impl Into<mint::Point2<f32>> + Clone],
+        color: Color,
+    ) -> GameResult<Self> {
+        Ok(Mesh::from_raw(
+            gfx,
+            MeshBuilder::new().polygon(mode, points, color)?.build(),
+        ))
+    }
+
+    /// Create a new mesh for a rectangle.
+    pub fn new_rectangle(
+        gfx: &GraphicsContext,
+        mode: DrawMode,
+        bounds: Rect,
+        color: Color,
+    ) -> GameResult<Self> {
+        Ok(Mesh::from_raw(
+            gfx,
+            MeshBuilder::new().rectangle(mode, bounds, color)?.build(),
+        ))
+    }
+
+    /// Create a new mesh for a rounded rectangle.
+    pub fn new_rounded_rectangle(
+        gfx: &GraphicsContext,
+        mode: DrawMode,
+        bounds: Rect,
+        radius: f32,
+        color: Color,
+    ) -> GameResult<Self> {
+        Ok(Mesh::from_raw(
+            gfx,
+            MeshBuilder::new()
+                .rounded_rectangle(mode, bounds, radius, color)?
+                .build(),
+        ))
+    }
+
+    /// Create a new `Mesh` from a raw list of triangle points.
+    pub fn from_triangles(
+        gfx: &GraphicsContext,
+        triangles: &[impl Into<mint::Point2<f32>> + Clone],
+        color: Color,
+    ) -> GameResult<Self> {
+        Ok(Mesh::from_raw(
+            gfx,
+            MeshBuilder::new().triangles(triangles, color)?.build(),
+        ))
     }
 
     /// Update the vertices of the mesh.
