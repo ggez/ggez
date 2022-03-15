@@ -3,7 +3,7 @@
 use super::{
     context::GraphicsContext,
     gpu::arc::{ArcTexture, ArcTextureView},
-    Rect,
+    Color, Rect,
 };
 use crate::{Context, GameError, GameResult};
 use std::path::Path;
@@ -13,6 +13,9 @@ use std::{io::Read, num::NonZeroU32};
 // screw that.
 /// Describes the pixel format of an image.
 pub type ImageFormat = wgpu::TextureFormat;
+
+/// Describes the format of an encoded image.
+pub type ImageEncodingFormat = ::image::ImageFormat;
 
 /// Handle to an image stored in GPU memory.
 #[derive(Debug, Clone)]
@@ -40,7 +43,9 @@ impl Image {
             width,
             height,
             samples,
-            wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_SRC,
         )
     }
 
@@ -58,7 +63,9 @@ impl Image {
             width,
             height,
             1,
-            wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,
+            wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_SRC,
         );
 
         gfx.queue.write_texture(
@@ -79,6 +86,24 @@ impl Image {
         );
 
         image
+    }
+
+    /// A little helper function that creates a new `Image` that is just a solid square of the given size and color. Mainly useful for debugging.
+    pub fn from_solid(gfx: &GraphicsContext, size: u32, color: Color) -> Self {
+        let pixels = (0..(size * size))
+            .map(|_| {
+                let (r, g, b, a) = color.to_rgba();
+                [r, g, b, a]
+            })
+            .flatten()
+            .collect::<Vec<_>>();
+        Self::from_pixels(
+            gfx,
+            &pixels,
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+            size,
+            size,
+        )
     }
 
     /// Creates a new image initialized with pixel data loaded from an encoded image `Read` (e.g. PNG or JPEG).
@@ -149,6 +174,95 @@ impl Image {
             width,
             height,
             samples,
+        }
+    }
+
+    /// Reads the pixels of this `ImageView` and returns as `Vec<u8>`.
+    /// The format matches the GPU image format.
+    ///
+    /// **This is a very expensive operation - call sparingly.**
+    pub fn to_pixels(&self, gfx: &GraphicsContext) -> GameResult<Vec<u8>> {
+        let block_size = self.format.describe().block_size as u64;
+
+        let buffer = gfx.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: block_size * self.width as u64 * self.height as u64,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        });
+
+        let cmd = {
+            let mut encoder = gfx
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            encoder.copy_texture_to_buffer(
+                self.texture.as_image_copy(),
+                wgpu::ImageCopyBuffer {
+                    buffer: &buffer,
+                    layout: wgpu::ImageDataLayout {
+                        offset: 0,
+                        bytes_per_row: Some(
+                            NonZeroU32::new(block_size as u32 * self.width).unwrap(),
+                        ),
+                        rows_per_image: None,
+                    },
+                },
+                wgpu::Extent3d {
+                    width: self.width,
+                    height: self.height,
+                    depth_or_array_layers: 1,
+                },
+            );
+            encoder.finish()
+        };
+
+        gfx.queue.submit([cmd]);
+
+        // wait...
+        let fut = buffer.slice(..).map_async(wgpu::MapMode::Read);
+        gfx.device.poll(wgpu::Maintain::Wait);
+        pollster::block_on(fut)?;
+
+        let out = buffer.slice(..).get_mapped_range().to_vec();
+        Ok(out)
+    }
+
+    /// Encodes the `ImageView` to the given file format and return the encoded bytes.
+    ///
+    /// **This is a very expensive operation - call sparingly.**
+    pub fn encode(
+        &self,
+        ctx: &Context,
+        format: ImageEncodingFormat,
+        path: impl AsRef<std::path::Path>,
+    ) -> GameResult {
+        let color = match self.format {
+            ImageFormat::Rgba8Unorm | ImageFormat::Rgba8UnormSrgb => ::image::ColorType::Rgba8,
+            ImageFormat::Bgra8Unorm | ImageFormat::Bgra8UnormSrgb => ::image::ColorType::Bgra8,
+            ImageFormat::R8Unorm => ::image::ColorType::L8,
+            ImageFormat::R16Unorm => ::image::ColorType::L16,
+            format => {
+                return Err(GameError::RenderError(format!(
+                    "cannot ImageView::encode for the {:#?} GPU image format",
+                    format
+                )))
+            }
+        };
+
+        let pixels = self.to_pixels(&ctx.gfx)?;
+        let f = ctx.filesystem.create(path)?;
+        let writer = &mut std::io::BufWriter::new(f);
+
+        match format {
+            ImageEncodingFormat::Png => ::image::png::PngEncoder::new(writer)
+                .encode(&pixels, self.width, self.height, color)
+                .map_err(Into::into),
+            ImageEncodingFormat::Bmp => ::image::bmp::BmpEncoder::new(writer)
+                .encode(&pixels, self.width, self.height, color)
+                .map_err(Into::into),
+            _ => Err(GameError::RenderError(String::from(
+                "cannot ImageView::encode for formats other than Png and Bmp",
+            ))),
         }
     }
 
@@ -250,13 +364,6 @@ impl ScreenImage {
         samples: u32,
     ) -> Image {
         let (width, height) = Self::size(gfx, size);
-        Image::new(
-            gfx,
-            format,
-            width,
-            height,
-            samples,
-            wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
-        )
+        Image::new_canvas_image(gfx, format, width, height, samples)
     }
 }
