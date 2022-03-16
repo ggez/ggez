@@ -4,8 +4,9 @@ use super::{
     context::GraphicsContext,
     draw::{DrawParam, DrawUniforms},
     gpu::arc::ArcBuffer,
+    Image,
 };
-use crevice::std430::{AsStd430, Std430};
+use crevice::std140::{AsStd140, Std140};
 
 /// Array of instances for fast rendering of many meshes.
 ///
@@ -13,26 +14,34 @@ use crevice::std430::{AsStd430, Std430};
 #[derive(Debug)]
 pub struct InstanceArray {
     pub(crate) buffer: ArcBuffer,
+    pub(crate) image: Image,
     capacity: u32,
     len: u32,
 }
 
 impl InstanceArray {
     /// Creates a new [InstanceArray] capable of storing up to n-`capacity` instances.
-    pub fn new(gfx: &GraphicsContext, capacity: u32) -> Self {
+    ///
+    /// If `image` is `None`, a 1x1 white image will be used which can be used to draw solid rectangles.
+    pub fn new(gfx: &GraphicsContext, image: impl Into<Option<Image>>, capacity: u32) -> Self {
         assert!(capacity > 0);
 
         let buffer = ArcBuffer::new(gfx.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: DrawUniforms::std430_size_static() as u64 * capacity as u64,
+            size: DrawUniforms::std140_size_static() as u64 * capacity as u64,
             usage: wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST
                 | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         }));
 
+        let image = image
+            .into()
+            .unwrap_or_else(|| gfx.white_image.clone().unwrap(/* invariant */));
+
         InstanceArray {
             buffer,
+            image,
             capacity,
             len: 0,
         }
@@ -42,22 +51,30 @@ impl InstanceArray {
     ///
     /// Prefer this over `push` where possible.
     #[allow(unsafe_code)]
-    pub fn set(&mut self, gfx: &GraphicsContext, instances: &[DrawParam]) {
+    pub fn set<I>(&mut self, gfx: &GraphicsContext, instances: I)
+    where
+        I: IntoIterator<Item = DrawParam>,
+    {
+        let instances = instances
+            .into_iter()
+            .map(|param| {
+                DrawUniforms::from_param(
+                    param,
+                    [self.image.width() as f32, self.image.height() as f32].into(),
+                )
+                .as_std140()
+            })
+            .collect::<Vec<_>>();
         assert!(
             instances.len() <= self.capacity as usize,
             "exceeding instance array capacity"
         );
 
-        let instances = instances
-            .iter()
-            .map(|param| DrawUniforms::from_param(*param, glam::Vec2::ONE.into()).as_std430())
-            .collect::<Vec<_>>();
-
         self.len = instances.len() as u32;
         gfx.queue.write_buffer(&self.buffer, 0, unsafe {
             std::slice::from_raw_parts(
                 instances.as_ptr() as *const u8,
-                instances.len() * DrawUniforms::std430_size_static(),
+                instances.len() * DrawUniforms::std140_size_static(),
             )
         });
     }
@@ -71,11 +88,14 @@ impl InstanceArray {
             "exceeding instance array capacity"
         );
 
-        let instance = DrawUniforms::from_param(instance, glam::Vec2::ONE.into());
+        let instance = DrawUniforms::from_param(
+            instance,
+            [self.image.width() as f32, self.image.height() as f32].into(),
+        );
         gfx.queue.write_buffer(
             &self.buffer,
-            self.len as u64 * DrawUniforms::std430_size_static() as u64,
-            instance.as_std430().as_bytes(),
+            self.len as u64 * DrawUniforms::std140_size_static() as u64,
+            instance.as_std140().as_bytes(),
         );
         self.len += 1;
     }
@@ -84,11 +104,14 @@ impl InstanceArray {
     pub fn update(&mut self, gfx: &GraphicsContext, index: u32, instance: DrawParam) {
         assert!(index < self.len);
 
-        let instance = DrawUniforms::from_param(instance, glam::Vec2::ONE.into());
+        let instance = DrawUniforms::from_param(
+            instance,
+            [self.image.width() as f32, self.image.height() as f32].into(),
+        );
         gfx.queue.write_buffer(
             &self.buffer,
-            index as u64 * DrawUniforms::std430_size_static() as u64,
-            instance.as_std430().as_bytes(),
+            index as u64 * DrawUniforms::std140_size_static() as u64,
+            instance.as_std140().as_bytes(),
         );
     }
 
@@ -101,7 +124,7 @@ impl InstanceArray {
     ///
     /// If `new_capacity` is less than the `len`, the instances will be truncated.
     pub fn resize(&mut self, gfx: &GraphicsContext, new_capacity: u32) {
-        let mut resized = InstanceArray::new(gfx, new_capacity);
+        let mut resized = InstanceArray::new(gfx, self.image.clone(), new_capacity);
         resized.len = new_capacity.min(self.len);
 
         let cmd = {
@@ -111,7 +134,7 @@ impl InstanceArray {
                 0,
                 &resized.buffer,
                 0,
-                new_capacity.min(self.len) as u64 * DrawUniforms::std430_size_static() as u64,
+                new_capacity.min(self.len) as u64 * DrawUniforms::std140_size_static() as u64,
             );
             cmd.finish()
         };
@@ -120,15 +143,21 @@ impl InstanceArray {
         *self = resized;
     }
 
+    /// Returns this `InstanceArray`'s associated `image`.
+    #[inline]
+    pub fn image(&self) -> Image {
+        self.image.clone()
+    }
+
     /// Returns the number of instances this [InstanceArray] is capable of holding.
     /// This number was specified when creating the [InstanceArray].
-    #[inline(always)]
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.capacity as usize
     }
 
     /// Returns the number of instances.
-    #[inline(always)]
+    #[inline]
     pub fn len(&self) -> usize {
         self.len as usize
     }

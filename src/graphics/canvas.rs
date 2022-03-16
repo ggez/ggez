@@ -8,7 +8,7 @@
 
 use super::{
     context::{FrameArenas, GraphicsContext},
-    draw::{DrawParam, DrawUniforms, ZPosition},
+    draw::{DrawParam, DrawUniforms},
     gpu::{
         arc::{ArcBindGroupLayout, ArcShaderModule, ArcTextureView},
         bind_group::{BindGroupBuilder, BindGroupCache, BindGroupLayoutBuilder},
@@ -22,10 +22,10 @@ use super::{
     sampler::{Sampler, SamplerCache},
     shader::{Shader, ShaderParams},
     text::{Text, TextLayout},
-    BlendMode, Color, Rect,
+    BlendMode, Color, LinearColor, Rect,
 };
 use crate::{GameError, GameResult};
-use crevice::std430::{AsStd430, Std430};
+use crevice::std140::{AsStd140, Std140};
 use std::{collections::HashMap, hash::Hash, sync::Arc};
 
 /// A canvas represents a render pass and is how you render primitives such as meshes and text onto images.
@@ -87,7 +87,9 @@ impl<'a> Canvas<'a> {
                     ops: wgpu::Operations {
                         load: match load_op.into() {
                             CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                            CanvasLoadOp::Clear(color) => wgpu::LoadOp::Clear(color.into()),
+                            CanvasLoadOp::Clear(color) => {
+                                wgpu::LoadOp::Clear(LinearColor::from(color).into())
+                            }
                         },
                         store: true,
                     },
@@ -137,7 +139,9 @@ impl<'a> Canvas<'a> {
                         ops: wgpu::Operations {
                             load: match load_op.into() {
                                 CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                                CanvasLoadOp::Clear(color) => wgpu::LoadOp::Clear(color.into()),
+                                CanvasLoadOp::Clear(color) => {
+                                    wgpu::LoadOp::Clear(LinearColor::from(color).into())
+                                }
                             },
                             store: true,
                         },
@@ -162,7 +166,9 @@ impl<'a> Canvas<'a> {
                     ops: wgpu::Operations {
                         load: match load_op.into() {
                             CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                            CanvasLoadOp::Clear(color) => wgpu::LoadOp::Clear(color.into()),
+                            CanvasLoadOp::Clear(color) => {
+                                wgpu::LoadOp::Clear(LinearColor::from(color).into())
+                            }
                         },
                         store: true,
                     },
@@ -208,14 +214,8 @@ impl<'a> Canvas<'a> {
         pass.set_blend_constant(wgpu::Color::WHITE);
 
         let size = gfx.window.inner_size();
-        let transform = glam::Mat4::orthographic_rh(
-            0.,
-            size.width as _,
-            size.height as _,
-            0.,
-            ZPosition::MAX as f32,
-            ZPosition::MIN as f32,
-        );
+        let transform =
+            glam::Mat4::orthographic_rh(0., size.width as _, size.height as _, 0., 0., 1.);
 
         let shader = Shader {
             fragment: gfx.draw_shader.clone(),
@@ -229,14 +229,14 @@ impl<'a> Canvas<'a> {
 
         let text_uniforms = uniform_arena.allocate(
             device,
-            mint::ColumnMatrix4::<f32>::std430_size_static() as _,
+            mint::ColumnMatrix4::<f32>::std140_size_static() as _,
         );
 
         queue.write_buffer(
             &text_uniforms.buffer,
             text_uniforms.offset,
             (mint::ColumnMatrix4::<f32>::from(transform))
-                .as_std430()
+                .as_std140()
                 .as_bytes(),
         );
 
@@ -247,7 +247,7 @@ impl<'a> Canvas<'a> {
                 wgpu::ShaderStages::VERTEX,
                 wgpu::BufferBindingType::Uniform,
                 false,
-                Some(mint::ColumnMatrix4::<f32>::std430_size_static() as _),
+                Some(mint::ColumnMatrix4::<f32>::std140_size_static() as _),
             )
             .create(device, bind_group_cache);
 
@@ -294,7 +294,7 @@ impl<'a> Canvas<'a> {
     }
 
     /// Sets the shader to use when drawing meshes, along with the provided parameters, **bound to bind group 3 for non-instanced draws, and 4 for instanced draws**.
-    pub fn set_shader_with_params<Uniforms: AsStd430 + 'static>(
+    pub fn set_shader_with_params<Uniforms: AsStd140 + 'static>(
         &mut self,
         shader: Shader,
         params: ShaderParams<Uniforms>,
@@ -316,7 +316,7 @@ impl<'a> Canvas<'a> {
     }
 
     /// Sets the shader to use when drawing text, along with the provided parameters, **bound to bind group 3**.
-    pub fn set_text_shader_with_params<Uniforms: AsStd430 + 'static>(
+    pub fn set_text_shader_with_params<Uniforms: AsStd140 + 'static>(
         &mut self,
         shader: Shader,
         params: ShaderParams<Uniforms>,
@@ -384,11 +384,12 @@ impl<'a> Canvas<'a> {
     /// Draws a mesh.
     ///
     /// If no [`Image`] is given then the image color will be white.
+    #[allow(unsafe_code)]
     pub fn draw_mesh<'b>(
         &mut self,
         mesh: &Mesh,
         image: impl Into<Option<&'b Image>>,
-        mut param: DrawParam,
+        param: impl Into<DrawParam>,
     ) {
         self.flush_text_queue();
         self.update_pipeline(ShaderType::Draw);
@@ -407,30 +408,24 @@ impl<'a> Canvas<'a> {
             )
             .create(self.device, self.bind_group_cache);
 
-        let (src_rect, image_scale) = if let Some(image) = image.into() {
+        let (w, h) = if let Some(image) = image.into() {
             self.set_image(&image.view);
-            (
-                param.src_rect,
-                glam::Vec2::new(
-                    param.src_rect.w * image.width() as f32,
-                    param.src_rect.h * image.height() as f32,
-                ),
-            )
+            (image.width(), image.height())
         } else {
             self.set_image(&self.white_image.view.clone());
-            (Rect::one(), glam::Vec2::ONE)
+            (1, 1)
         };
 
-        param.src_rect = src_rect;
-
-        let mut uniforms = DrawUniforms::from_param(param, image_scale.into());
+        let mut uniforms = DrawUniforms::from_param(param.into(), [w as f32, h as f32].into());
         uniforms.transform = (self.transform * glam::Mat4::from(uniforms.transform)).into();
 
-        self.queue.write_buffer(
-            &uniform_alloc.buffer,
-            uniform_alloc.offset,
-            uniforms.as_std430().as_bytes(),
-        );
+        self.queue
+            .write_buffer(&uniform_alloc.buffer, uniform_alloc.offset, unsafe {
+                std::slice::from_raw_parts(
+                    (&uniforms) as *const _ as *const u8,
+                    std::mem::size_of::<DrawUniforms>(),
+                )
+            });
 
         self.pass.set_bind_group(
             0,
@@ -461,8 +456,8 @@ impl<'a> Canvas<'a> {
     pub fn draw_mesh_instances<'b>(
         &mut self,
         mesh: &Mesh,
-        image: impl Into<Option<&'b Image>>,
         instances: &InstanceArray,
+        param: DrawParam,
     ) {
         self.flush_text_queue();
 
@@ -486,24 +481,24 @@ impl<'a> Canvas<'a> {
             )
             .create(self.device, self.bind_group_cache);
 
-        let image_scale = if let Some(image) = image.into() {
-            self.set_image(&image.view);
-            glam::Vec2::new(image.width() as _, image.height() as _)
-        } else {
-            self.set_image(&self.white_image.view.clone());
-            glam::Vec2::ONE
-        };
+        self.set_image(&instances.image.view);
 
         let uniforms = InstanceUniforms {
-            transform: self.transform.into(),
-            pre_transform: glam::Mat4::from_scale(glam::vec3(image_scale.x, image_scale.y, 0.))
-                .into(),
+            transform: (self.transform
+                * glam::Mat4::from(DrawUniforms::from_param(param, [1., 1.].into()).transform))
+            .into(),
+            color: mint::Vector4::<f32> {
+                x: param.color.r,
+                y: param.color.g,
+                z: param.color.b,
+                w: param.color.a,
+            },
         };
 
         self.queue.write_buffer(
             &uniform_alloc.buffer,
             uniform_alloc.offset,
-            uniforms.as_std430().as_bytes(),
+            uniforms.as_std140().as_bytes(),
         );
 
         let (bind_group, _) = BindGroupBuilder::new()
@@ -540,12 +535,8 @@ impl<'a> Canvas<'a> {
     /// Draws a rectangle instanced multiple times, as defined by the given [`InstanceArray`].
     ///
     /// Also see [`Canvas::draw_mesh_instances()`].
-    pub fn draw_instances<'b>(
-        &mut self,
-        image: impl Into<Option<&'b Image>>,
-        instances: &InstanceArray,
-    ) {
-        self.draw_mesh_instances(&self.rect_mesh.clone(), image, instances)
+    pub fn draw_instances<'b>(&mut self, instances: &InstanceArray, param: DrawParam) {
+        self.draw_mesh_instances(&self.rect_mesh.clone(), instances, param)
     }
 
     /// Draws a section text that is fit and aligned into a given `rect` bounds.
@@ -786,8 +777,8 @@ impl From<Color> for CanvasLoadOp {
     }
 }
 
-#[derive(crevice::std430::AsStd430)]
+#[derive(crevice::std140::AsStd140)]
 struct InstanceUniforms {
     pub transform: mint::ColumnMatrix4<f32>,
-    pub pre_transform: mint::ColumnMatrix4<f32>,
+    pub color: mint::Vector4<f32>,
 }

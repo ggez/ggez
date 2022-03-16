@@ -23,7 +23,7 @@ use crate::{
     GameError,
 };
 use ::image as imgcrate;
-use crevice::std430::AsStd430;
+use crevice::std140::AsStd140;
 use glyph_brush::FontId;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
@@ -170,7 +170,7 @@ impl GraphicsContext {
             device.limits().min_uniform_buffer_offset_alignment as u64,
             wgpu::BufferDescriptor {
                 label: None,
-                size: 4096 * DrawUniforms::std430_size_static() as u64,
+                size: 4096 * DrawUniforms::std140_size_static() as u64,
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             },

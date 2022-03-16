@@ -10,7 +10,7 @@ use super::{
     image::Image,
     sampler::Sampler,
 };
-use crevice::std430::Std430;
+use crevice::std140::Std140;
 use std::marker::PhantomData;
 use wgpu::util::DeviceExt;
 
@@ -64,18 +64,18 @@ impl Shader {
     }
 }
 
-pub use crevice::std430::AsStd430;
+pub use crevice::std140::AsStd140;
 
 /// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
 #[derive(Debug)]
-pub struct ShaderParams<Uniforms: AsStd430> {
+pub struct ShaderParams<Uniforms: AsStd140> {
     pub(crate) uniforms: ArcBuffer,
     pub(crate) layout: ArcBindGroupLayout,
     pub(crate) bind_group: ArcBindGroup,
     _marker: PhantomData<Uniforms>,
 }
 
-impl<Uniforms: AsStd430> ShaderParams<Uniforms> {
+impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
     /// Creates a new [ShaderParams], initialized with the given uniforms, images, and samplers.
     pub fn new(
         gfx: &mut GraphicsContext,
@@ -87,7 +87,7 @@ impl<Uniforms: AsStd430> ShaderParams<Uniforms> {
             &wgpu::util::BufferInitDescriptor {
                 label: None,
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                contents: uniforms.as_std430().as_bytes(),
+                contents: uniforms.as_std140().as_bytes(),
             },
         ));
 
@@ -127,11 +127,11 @@ impl<Uniforms: AsStd430> ShaderParams<Uniforms> {
     /// Updates the uniform data.
     pub fn set_uniforms(&self, gfx: &GraphicsContext, uniforms: &Uniforms) {
         gfx.queue
-            .write_buffer(&self.uniforms, 0, uniforms.as_std430().as_bytes());
+            .write_buffer(&self.uniforms, 0, uniforms.as_std140().as_bytes());
     }
 }
 
-impl<Uniforms: AsStd430> Clone for ShaderParams<Uniforms> {
+impl<Uniforms: AsStd140> Clone for ShaderParams<Uniforms> {
     fn clone(&self) -> Self {
         Self {
             uniforms: self.uniforms.clone(),

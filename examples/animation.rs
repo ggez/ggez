@@ -297,11 +297,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // draw the animated ball
         let ball_pos = self.ball_animation.now_strict().unwrap();
-        canvas.draw_mesh(
-            &self.ball,
-            None,
-            graphics::DrawParam::new().offset(ball_pos),
-        );
+        canvas.draw_mesh(&self.ball, None, (ball_pos,));
 
         // draw the player
         let current_frame_src: graphics::Rect = self.player_animation.now_strict().unwrap().into();
@@ -309,10 +305,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.draw(
             &self.spritesheet,
             graphics::DrawParam::new()
-                .src_rect(current_frame_src)
+                .src(current_frame_src)
                 .scale([scale, scale])
-                .offset([470.0, 460.0])
-                .origin([0.5, 1.0]),
+                .dest([470.0, 460.0])
+                .offset([0.5, 1.0]),
         );
 
         canvas.finish();
