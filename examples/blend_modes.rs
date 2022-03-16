@@ -64,7 +64,7 @@ impl MainState {
                 &self.circle,
                 None,
                 graphics::DrawParam::new()
-                    .offset(pos + Vec2::from(REL_POSITIONS[i]))
+                    .dest(pos + Vec2::from(REL_POSITIONS[i]))
                     .color(TRI_COLORS[i]),
             );
         }
@@ -156,7 +156,7 @@ impl EventHandler for MainState {
         canvas.set_blend_mode(self.layer_blend);
         canvas.draw(
             &layer,
-            DrawParam::default().offset(mint::Point2 { x: 0., y: h / 2. }),
+            DrawParam::default().dest(mint::Point2 { x: 0., y: h / 2. }),
         );
 
         // draw text pointing out which is which

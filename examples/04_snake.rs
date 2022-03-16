@@ -195,7 +195,7 @@ impl Food {
         canvas.draw(
             None,
             graphics::DrawParam::new()
-                .dst_rect(self.pos.into())
+                .dest_rect(self.pos.into())
                 .color(color),
         );
     }
@@ -324,7 +324,7 @@ impl Snake {
             canvas.draw(
                 None,
                 graphics::DrawParam::new()
-                    .dst_rect(seg.pos.into())
+                    .dest_rect(seg.pos.into())
                     .color([0.3, 0.3, 0.0, 1.0]),
             );
         }
@@ -332,7 +332,7 @@ impl Snake {
         canvas.draw(
             None,
             graphics::DrawParam::new()
-                .dst_rect(self.head.pos.into())
+                .dest_rect(self.head.pos.into())
                 .color([1.0, 0.5, 0.0, 1.0]),
         );
     }

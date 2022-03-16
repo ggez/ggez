@@ -428,9 +428,9 @@ fn draw_actor(
     let pos = world_to_screen_coords(screen_w, screen_h, actor.pos);
     let image = assets.actor_image(actor);
     let drawparams = graphics::DrawParam::new()
-        .offset(pos)
+        .dest(pos)
         .rotation(actor.facing as f32)
-        .origin(Point2::new(0.5, 0.5));
+        .offset(Point2::new(0.5, 0.5));
     canvas.draw(image, drawparams);
 }
 

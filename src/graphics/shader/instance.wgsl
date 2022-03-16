@@ -6,18 +6,17 @@ struct VertexOutput {
 
 struct Uniforms {
     transform: mat4x4<f32>;
-    pre_transform: mat4x4<f32>;
+    color: vec4<f32>;
 };
 
 struct DrawParam {
     color: vec4<f32>;
     src_rect: vec4<f32>;
     transform: mat4x4<f32>;
-    origin: vec2<f32>;
 };
 
 struct InstanceArray {
-    instances: [[stride(112)]] array<DrawParam>;
+    instances: [[stride(96)]] array<DrawParam>;
 };
 
 [[group(0), binding(0)]]
@@ -40,18 +39,13 @@ fn vs_main(
     [[location(2)]] color: vec4<f32>,
 ) -> VertexOutput {
     var instance = instances.instances[in_instance_index];
-    
-    var src_sz = instance.src_rect.zw - instance.src_rect.xy;
 
     var out: VertexOutput;
     out.position = uniforms.transform
         * instance.transform
-        * uniforms.pre_transform
-        * mat4x4<f32>(src_sz.x, 0.0, 0.0, 0.0, 0.0, src_sz.y, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-        * vec4<f32>(position - instance.origin, 0.0, 1.0);
-    out.position = out.position / out.position.w;
+        * vec4<f32>(position, 0.0, 1.0);
     out.uv = mix(instance.src_rect.xy, instance.src_rect.zw, uv);
-    out.color = instance.color * color;
+    out.color = uniforms.color * instance.color * color;
     return out;
 }
 

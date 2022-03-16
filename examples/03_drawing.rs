@@ -134,7 +134,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // Draw an image.
         let dst = glam::Vec2::new(20.0, 20.0);
-        canvas.draw(&self.image1, graphics::DrawParam::new().offset(dst));
+        canvas.draw(&self.image1, graphics::DrawParam::new().dest(dst));
 
         // Draw an image with some options, and different filter modes.
         let dst = glam::Vec2::new(200.0, 100.0);
@@ -144,19 +144,18 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.draw(
             &self.image2,
             graphics::DrawParam::new()
-                .offset(dst)
+                .dest(dst)
                 .rotation(self.rotation)
-                .image_scale(true)
                 .scale(scale),
         );
         canvas.set_sampler(graphics::Sampler::nearest_clamp());
         canvas.draw(
             &self.image2,
             graphics::DrawParam::new()
-                .offset(dst2)
+                .dest(dst2)
                 .rotation(self.rotation)
                 .scale(scale)
-                .origin(vec2(0.5, 0.5)),
+                .offset(vec2(0.5, 0.5)),
         );
         canvas.set_default_sampler();
 
@@ -165,17 +164,21 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.draw(
             None,
             graphics::DrawParam::new()
-                .dst_rect(rect)
+                .dest(rect.point())
+                .scale(rect.size())
                 .color(Color::WHITE),
         );
 
         // Draw a stroked rectangle mesh.
         canvas.draw_mesh(&self.rect, None, graphics::DrawParam::default());
-        canvas.draw(None, graphics::DrawParam::new());
 
         // Draw some pre-made meshes
         for (image, mesh) in &self.meshes {
-            canvas.draw_mesh(mesh, image, graphics::DrawParam::new().image_scale(false));
+            canvas.draw_mesh(
+                mesh,
+                image,
+                graphics::DrawParam::new().mode(graphics::OffsetMode::Absolute),
+            );
         }
 
         // Finished drawing, show it all on the screen!

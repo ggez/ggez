@@ -61,7 +61,7 @@ impl GameState {
             bunnies.push(Bunny::new(&mut rng));
         }
 
-        let bunnybatch = InstanceArray::new(&ctx.gfx, INITIAL_BUNNIES as u32);
+        let bunnybatch = InstanceArray::new(&ctx.gfx, texture.clone(), INITIAL_BUNNIES as u32);
 
         Ok(GameState {
             rng,
@@ -120,11 +120,9 @@ impl event::EventHandler<ggez::GameError> for GameState {
 
             self.bunnybatch.set(
                 &ctx.gfx,
-                &self
-                    .bunnies
+                self.bunnies
                     .iter()
-                    .map(|bunny| graphics::DrawParam::new().offset(bunny.position))
-                    .collect::<Vec<_>>(),
+                    .map(|bunny| graphics::DrawParam::new().dest(bunny.position)),
             );
         }
 
@@ -132,12 +130,12 @@ impl event::EventHandler<ggez::GameError> for GameState {
             graphics::Canvas::from_frame(&mut ctx.gfx, Color::from((0.392, 0.584, 0.929)))?;
 
         if self.batched_drawing {
-            canvas.draw_instances(&self.texture, &self.bunnybatch);
+            canvas.draw_instances(&self.bunnybatch, graphics::DrawParam::default());
         } else {
             for bunny in &self.bunnies {
                 canvas.draw(
                     &self.texture,
-                    graphics::DrawParam::new().offset(bunny.position),
+                    graphics::DrawParam::new().dest(bunny.position),
                 );
             }
         }

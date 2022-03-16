@@ -58,6 +58,14 @@ impl Rect {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
+    /// Gets the `Rect`'s width and height as a `Vector2`.
+    pub const fn size(&self) -> mint::Vector2<f32> {
+        mint::Vector2 {
+            x: self.w,
+            y: self.h,
+        }
+    }
+
     /// Gets the `Rect`'s x and y coordinates as a `Point2`.
     pub const fn point(&self) -> mint::Point2<f32> {
         mint::Point2 {
@@ -475,17 +483,6 @@ impl From<Color> for [f32; 4] {
     }
 }
 
-impl From<Color> for wgpu::Color {
-    fn from(color: Color) -> Self {
-        wgpu::Color {
-            r: color.r as f64,
-            g: color.g as f64,
-            b: color.b as f64,
-            a: color.a as f64,
-        }
-    }
-}
-
 /// A RGBA color in the *linear* color space,
 /// suitable for shoving into a shader.
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
@@ -543,6 +540,17 @@ impl From<LinearColor> for Color {
 impl From<LinearColor> for [f32; 4] {
     fn from(color: LinearColor) -> Self {
         [color.r, color.g, color.b, color.a]
+    }
+}
+
+impl From<LinearColor> for wgpu::Color {
+    fn from(color: LinearColor) -> Self {
+        wgpu::Color {
+            r: color.r as f64,
+            g: color.g as f64,
+            b: color.b as f64,
+            a: color.a as f64,
+        }
     }
 }
 
