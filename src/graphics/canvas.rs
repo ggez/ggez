@@ -510,7 +510,7 @@ impl<'a> Canvas<'a> {
             .buffer(
                 &instances.buffer,
                 0,
-                wgpu::ShaderStages::VERTEX_FRAGMENT,
+                wgpu::ShaderStages::VERTEX,
                 wgpu::BufferBindingType::Storage { read_only: true },
                 false,
                 None,

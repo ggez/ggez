@@ -312,6 +312,11 @@ impl GraphicsContext {
         self.set_window_mode(&self.window_mode.dimensions(width, height))
     }
 
+    /// Sets the window title.
+    pub fn set_window_title(&self, title: &str) {
+        self.window.set_title(title);
+    }
+
     /// Returns the default frame image.
     ///
     /// This is the image that is rendered to when `Canvas::from_frame` is used.

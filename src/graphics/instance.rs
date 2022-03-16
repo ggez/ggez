@@ -20,10 +20,14 @@ pub struct InstanceArray {
 impl InstanceArray {
     /// Creates a new [InstanceArray] capable of storing up to n-`capacity` instances.
     pub fn new(gfx: &GraphicsContext, capacity: u32) -> Self {
+        assert!(capacity > 0);
+
         let buffer = ArcBuffer::new(gfx.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: DrawUniforms::std430_size_static() as u64 * capacity as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         }));
 
@@ -38,20 +42,15 @@ impl InstanceArray {
     ///
     /// Prefer this over `push` where possible.
     #[allow(unsafe_code)]
-    pub fn set<I>(&mut self, gfx: &GraphicsContext, instances: I)
-    where
-        I: IntoIterator<Item = DrawParam>,
-        I::IntoIter: ExactSizeIterator,
-    {
-        let instances = instances.into_iter();
-
+    pub fn set(&mut self, gfx: &GraphicsContext, instances: &[DrawParam]) {
         assert!(
             instances.len() <= self.capacity as usize,
             "exceeding instance array capacity"
         );
 
         let instances = instances
-            .map(|param| DrawUniforms::from_param(param, glam::Vec2::ONE.into()))
+            .iter()
+            .map(|param| DrawUniforms::from_param(*param, glam::Vec2::ONE.into()).as_std430())
             .collect::<Vec<_>>();
 
         self.len = instances.len() as u32;
@@ -96,6 +95,29 @@ impl InstanceArray {
     /// Clears all instance data.
     pub fn clear(&mut self) {
         self.len = 0;
+    }
+
+    /// Changes the capacity of this `InstanceArray` while preserving instances.
+    ///
+    /// If `new_capacity` is less than the `len`, the instances will be truncated.
+    pub fn resize(&mut self, gfx: &GraphicsContext, new_capacity: u32) {
+        let mut resized = InstanceArray::new(gfx, new_capacity);
+        resized.len = new_capacity.min(self.len);
+
+        let cmd = {
+            let mut cmd = gfx.device.create_command_encoder(&Default::default());
+            cmd.copy_buffer_to_buffer(
+                &self.buffer,
+                0,
+                &resized.buffer,
+                0,
+                new_capacity.min(self.len) as u64 * DrawUniforms::std430_size_static() as u64,
+            );
+            cmd.finish()
+        };
+
+        gfx.queue.submit([cmd]);
+        *self = resized;
     }
 
     /// Returns the number of instances this [InstanceArray] is capable of holding.
