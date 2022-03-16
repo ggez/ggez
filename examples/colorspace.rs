@@ -80,14 +80,18 @@ struct MainState {
     demo_mesh: graphics::Mesh,
     square_mesh: graphics::Mesh,
     demo_image: graphics::Image,
-    demo_text: graphics::Text,
-    demo_spritebatch: graphics::spritebatch::SpriteBatch,
+    demo_instances: graphics::InstanceArray,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
+        ctx.gfx.add_font(
+            "LiberationMono",
+            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+        );
+
         let demo_mesh = graphics::Mesh::new_circle(
-            ctx,
+            &ctx.gfx,
             graphics::DrawMode::fill(),
             Vec2::new(0.0, 0.0),
             100.0,
@@ -95,26 +99,32 @@ impl MainState {
             AQUA,
         )?;
         let square_mesh = graphics::Mesh::new_rectangle(
-            ctx,
+            &ctx.gfx,
             graphics::DrawMode::fill(),
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
             Color::WHITE,
         )?;
-        let demo_image = graphics::Image::solid(ctx, 200, AQUA)?;
-        let demo_text = graphics::Text::new(graphics::TextFragment {
-            text: "-".to_string(),
-            color: Some(AQUA),
-            font: Some(graphics::Font::default()),
-            scale: Some(graphics::PxScale::from(300.0)),
-        });
-        let demo_spritebatch = graphics::spritebatch::SpriteBatch::new(demo_image.clone());
+        let demo_image = graphics::Image::from_solid(&ctx.gfx, 200, AQUA);
+
+        let mut demo_instances = graphics::InstanceArray::new(&ctx.gfx, demo_image.clone(), 2);
+        demo_instances.push(
+            &ctx.gfx,
+            DrawParam::default()
+                .dest(Vec2::new(250.0, 350.0))
+                .scale(Vec2::new(0.25, 0.25)),
+        );
+        demo_instances.push(
+            &ctx.gfx,
+            DrawParam::default()
+                .dest(Vec2::new(250.0, 425.0))
+                .scale(Vec2::new(0.1, 0.1)),
+        );
 
         let s = MainState {
             demo_mesh,
             square_mesh,
             demo_image,
-            demo_text,
-            demo_spritebatch,
+            demo_instances,
         };
         Ok(s)
     }
@@ -126,59 +136,52 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, AQUA);
+        let mut canvas = graphics::Canvas::from_frame(&mut ctx.gfx, AQUA)?;
 
         // Draw a white square so we can see things
-        graphics::draw(
-            ctx,
+        canvas.draw_mesh(
             &self.square_mesh,
+            None,
             DrawParam::default().dest(Vec2::new(200.0, 100.0)),
-        )?;
+        );
 
         // Draw things partially over the white square so we can see
         // where they are; they SHOULD be the same color as the
         // background.
 
         // mesh
-        graphics::draw(
-            ctx,
+        canvas.draw_mesh(
             &self.demo_mesh,
+            None,
             DrawParam::default().dest(Vec2::new(150.0, 200.0)),
-        )?;
+        );
 
         // image
-        graphics::draw(
-            ctx,
+        canvas.draw(
             &self.demo_image,
             DrawParam::default().dest(Vec2::new(450.0, 200.0)),
-        )?;
+        );
 
         // text
-        graphics::draw(
-            ctx,
-            &self.demo_text,
-            DrawParam::default().dest(Vec2::new(150.0, 135.0)),
+        let text = graphics::Text::new()
+            .text("-")
+            .color(AQUA)
+            .font("LiberationMono")
+            .size(300.);
+        canvas.draw_text(
+            &[text],
+            Vec2::new(150., 135.),
+            graphics::TextLayout::tl_single_line(),
         )?;
 
         // spritebatch
-        self.demo_spritebatch.add(
-            DrawParam::default()
-                .dest(Vec2::new(250.0, 350.0))
-                .scale(Vec2::new(0.25, 0.25)),
-        );
-        self.demo_spritebatch.add(
-            DrawParam::default()
-                .dest(Vec2::new(250.0, 425.0))
-                .scale(Vec2::new(0.1, 0.1)),
-        );
-        graphics::draw(
-            ctx,
-            &self.demo_spritebatch,
+        canvas.draw_instances(
+            &self.demo_instances,
             DrawParam::default().dest(Vec2::new(0.0, 0.0)),
-        )?;
-        self.demo_spritebatch.clear();
+        );
 
-        graphics::present(ctx)?;
+        canvas.finish();
+
         Ok(())
     }
 }
