@@ -6,7 +6,7 @@ use std::path;
 
 use oorandom::Rand32;
 
-use ggez::graphics::{spritebatch::SpriteBatch, Color, Image};
+use ggez::graphics::{Color, Image, InstanceArray};
 use ggez::Context;
 use ggez::*;
 
@@ -44,7 +44,7 @@ struct GameState {
     max_y: f32,
 
     click_timer: i32,
-    bunnybatch: SpriteBatch,
+    bunnybatch: InstanceArray,
     batched_drawing: bool,
 }
 
@@ -52,16 +52,16 @@ impl GameState {
     fn new(ctx: &mut Context) -> ggez::GameResult<GameState> {
         // We just use the same RNG seed every time.
         let mut rng = Rand32::new(12345);
-        let texture = Image::new(ctx, "/wabbit_alpha.png")?;
+        let texture = Image::from_path(&ctx, "/wabbit_alpha.png", true)?;
         let mut bunnies = Vec::with_capacity(INITIAL_BUNNIES);
-        let max_x = (WIDTH - texture.width()) as f32;
-        let max_y = (HEIGHT - texture.height()) as f32;
+        let max_x = (WIDTH - texture.width() as u16) as f32;
+        let max_y = (HEIGHT - texture.height() as u16) as f32;
 
         for _ in 0..INITIAL_BUNNIES {
             bunnies.push(Bunny::new(&mut rng));
         }
 
-        let bunnybatch = SpriteBatch::new(texture.clone());
+        let bunnybatch = InstanceArray::new(&ctx.gfx, INITIAL_BUNNIES as u32);
 
         Ok(GameState {
             rng,
@@ -113,30 +113,43 @@ impl event::EventHandler<ggez::GameError> for GameState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, Color::from((0.392, 0.584, 0.929)));
+        if self.batched_drawing {
+            if self.bunnybatch.capacity() < self.bunnies.len() {
+                self.bunnybatch.resize(&ctx.gfx, self.bunnies.len() as u32);
+            }
+
+            self.bunnybatch.set(
+                &ctx.gfx,
+                &self
+                    .bunnies
+                    .iter()
+                    .map(|bunny| graphics::DrawParam::new().offset(bunny.position))
+                    .collect::<Vec<_>>(),
+            );
+        }
+
+        let mut canvas =
+            graphics::Canvas::from_frame(&mut ctx.gfx, Color::from((0.392, 0.584, 0.929)))?;
 
         if self.batched_drawing {
-            self.bunnybatch.clear();
-            for bunny in &self.bunnies {
-                self.bunnybatch.add((bunny.position,));
-            }
-            graphics::draw(ctx, &self.bunnybatch, (Vec2::new(0.0, 0.0),))?;
+            canvas.draw_instances(&self.texture, &self.bunnybatch);
         } else {
             for bunny in &self.bunnies {
-                graphics::draw(ctx, &self.texture, (bunny.position,))?;
+                canvas.draw(
+                    &self.texture,
+                    graphics::DrawParam::new().offset(bunny.position),
+                );
             }
         }
 
-        graphics::set_window_title(
-            ctx,
-            &format!(
-                "BunnyMark - {} bunnies - {:.0} FPS - batched drawing: {}",
-                self.bunnies.len(),
-                timer::fps(ctx),
-                self.batched_drawing
-            ),
-        );
-        graphics::present(ctx)?;
+        canvas.finish();
+
+        ctx.gfx.set_window_title(&format!(
+            "BunnyMark - {} bunnies - {:.0} FPS - batched drawing: {}",
+            self.bunnies.len(),
+            ctx.timer.fps(),
+            self.batched_drawing
+        ));
 
         Ok(())
     }
