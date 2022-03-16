@@ -1,6 +1,6 @@
 //!
 
-use super::{Color, Rect};
+use super::{Color, LinearColor, Rect};
 
 /// A struct that represents where to put a `Drawable`.
 ///
@@ -323,8 +323,10 @@ impl DrawUniforms {
             ),
         };
 
+        let color = LinearColor::from(param.color);
+
         DrawUniforms {
-            color: <[f32; 4]>::from(param.color).into(),
+            color: <[f32; 4]>::from(color).into(),
             src_rect: mint::Vector4 {
                 x: param.src.x,
                 y: param.src.y,

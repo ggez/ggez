@@ -2,7 +2,7 @@ use super::{
     arc::{ArcTexture, ArcTextureView},
     growing::GrowingBufferArena,
 };
-use crate::graphics::context::FrameArenas;
+use crate::graphics::{context::FrameArenas, Color, LinearColor};
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
 use std::num::NonZeroU32;
 
@@ -111,7 +111,7 @@ impl TextRenderer {
                     glyph.tex_coords.max.x,
                     glyph.tex_coords.max.y,
                 ],
-                color: glyph.extra.color,
+                color: LinearColor::from(Color::from(glyph.extra.color)).into(),
             },
         );
 

@@ -20,7 +20,7 @@ pub struct InstanceArray {
 }
 
 impl InstanceArray {
-    /// Creates a new [InstanceArray] capable of storing up to n-`capacity` instances.
+    /// Creates a new [InstanceArray] capable of storing up to n-`capacity` instances (this can be changed and is resized automatically when needed).
     ///
     /// If `image` is `None`, a 1x1 white image will be used which can be used to draw solid rectangles.
     pub fn new(gfx: &GraphicsContext, image: impl Into<Option<Image>>, capacity: u32) -> Self {
@@ -65,10 +65,11 @@ impl InstanceArray {
                 .as_std140()
             })
             .collect::<Vec<_>>();
-        assert!(
-            instances.len() <= self.capacity as usize,
-            "exceeding instance array capacity"
-        );
+
+        let len = instances.len() as u32;
+        if len > self.capacity {
+            self.resize_impl(gfx, len, false);
+        }
 
         self.len = instances.len() as u32;
         gfx.queue.write_buffer(&self.buffer, 0, unsafe {
@@ -83,10 +84,9 @@ impl InstanceArray {
     ///
     /// Prefer `set` where bulk instances needs to be set.
     pub fn push(&mut self, gfx: &GraphicsContext, instance: DrawParam) {
-        assert!(
-            self.len < self.capacity,
-            "exceeding instance array capacity"
-        );
+        if self.len == self.capacity {
+            self.resize(gfx, self.capacity + self.capacity / 2);
+        }
 
         let instance = DrawUniforms::from_param(
             instance,
@@ -102,7 +102,7 @@ impl InstanceArray {
 
     /// Updates an existing instance at a given index.
     pub fn update(&mut self, gfx: &GraphicsContext, index: u32, instance: DrawParam) {
-        assert!(index < self.len);
+        assert!(index < self.len, "index out of range");
 
         let instance = DrawUniforms::from_param(
             instance,
@@ -124,22 +124,28 @@ impl InstanceArray {
     ///
     /// If `new_capacity` is less than the `len`, the instances will be truncated.
     pub fn resize(&mut self, gfx: &GraphicsContext, new_capacity: u32) {
+        self.resize_impl(gfx, new_capacity, true)
+    }
+
+    fn resize_impl(&mut self, gfx: &GraphicsContext, new_capacity: u32, copy: bool) {
         let mut resized = InstanceArray::new(gfx, self.image.clone(), new_capacity);
         resized.len = new_capacity.min(self.len);
 
-        let cmd = {
-            let mut cmd = gfx.device.create_command_encoder(&Default::default());
-            cmd.copy_buffer_to_buffer(
-                &self.buffer,
-                0,
-                &resized.buffer,
-                0,
-                new_capacity.min(self.len) as u64 * DrawUniforms::std140_size_static() as u64,
-            );
-            cmd.finish()
-        };
+        if copy {
+            let cmd = {
+                let mut cmd = gfx.device.create_command_encoder(&Default::default());
+                cmd.copy_buffer_to_buffer(
+                    &self.buffer,
+                    0,
+                    &resized.buffer,
+                    0,
+                    new_capacity.min(self.len) as u64 * DrawUniforms::std140_size_static() as u64,
+                );
+                cmd.finish()
+            };
+            gfx.queue.submit([cmd]);
+        }
 
-        gfx.queue.submit([cmd]);
         *self = resized;
     }
 
