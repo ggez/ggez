@@ -213,9 +213,15 @@ impl<'a> Canvas<'a> {
 
         pass.set_blend_constant(wgpu::Color::WHITE);
 
-        let size = gfx.window.inner_size();
-        let transform =
-            glam::Mat4::orthographic_rh(0., size.width as _, size.height as _, 0., 0., 1.);
+        let screen = gfx.screen_coords;
+        let transform = glam::Mat4::orthographic_rh(
+            screen.left(),
+            screen.right(),
+            screen.bottom(),
+            screen.top(),
+            0.,
+            1.,
+        );
 
         let shader = Shader {
             fragment: gfx.draw_shader.clone(),

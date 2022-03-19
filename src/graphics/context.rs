@@ -14,10 +14,10 @@ use super::{
     sampler::{Sampler, SamplerCache},
     shader::Shader,
     text::FontData,
-    MeshData, ScreenImage,
+    MeshData, Rect, ScreenImage,
 };
 use crate::{
-    conf::{Backend, Conf, FullscreenType, WindowMode},
+    conf::{self, Backend, Conf, FullscreenType, WindowMode},
     error::GameResult,
     filesystem::Filesystem,
     GameError,
@@ -27,7 +27,10 @@ use crevice::std140::AsStd140;
 use glyph_brush::FontId;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
-use winit::{self, dpi};
+use winit::{
+    self,
+    dpi::{self, PhysicalPosition},
+};
 
 pub(crate) struct FrameContext {
     pub cmd: wgpu::CommandEncoder,
@@ -68,6 +71,7 @@ pub struct GraphicsContext {
 
     pub(crate) vsync: bool,
     pub(crate) window_mode: WindowMode,
+    pub(crate) screen_coords: Rect,
     pub(crate) frame: Option<ScreenImage>,
     pub(crate) frame_image: Option<Image>,
 
@@ -251,6 +255,13 @@ impl GraphicsContext {
         let white_image =
             Image::from_pixels_wgpu(&wgpu, &[255, 255, 255, 255], ImageFormat::Rgba8Unorm, 1, 1);
 
+        let screen_coords = Rect {
+            x: 0.,
+            y: 0.,
+            w: size.width as _,
+            h: size.height as _,
+        };
+
         let mut this = GraphicsContext {
             wgpu,
 
@@ -263,6 +274,7 @@ impl GraphicsContext {
 
             vsync: conf.window_setup.vsync,
             window_mode: conf.window_mode,
+            screen_coords,
             frame: None,
             frame_image: None,
 
@@ -326,12 +338,112 @@ impl GraphicsContext {
     /// Note:   These dimensions are only interpreted as resolutions in true fullscreen mode.
     ///         If the selected resolution is not supported this function will return an Error.
     pub fn set_drawable_size(&mut self, width: f32, height: f32) -> GameResult {
-        self.set_window_mode(&self.window_mode.dimensions(width, height))
+        self.set_mode(self.window_mode.dimensions(width, height))
     }
 
     /// Sets the window title.
     pub fn set_window_title(&self, title: &str) {
         self.window.set_title(title);
+    }
+
+    /// Returns the position of the system window, including the outer frame.
+    pub fn window_position(&self) -> GameResult<PhysicalPosition<i32>> {
+        self.window
+            .outer_position()
+            .map_err(|e| GameError::WindowError(e.to_string()))
+    }
+
+    /// Sets the window position.
+    pub fn set_window_position(&self, position: impl Into<winit::dpi::Position>) -> GameResult {
+        self.window.set_outer_position(position);
+        Ok(())
+    }
+
+    /// Returns the size of the window in pixels as (width, height),
+    /// including borders, titlebar, etc.
+    /// Returns zeros if the window doesn't exist.
+    pub fn size(&self) -> (f32, f32) {
+        let size = self.window.outer_size();
+        (size.width as f32, size.height as f32)
+    }
+
+    /// Returns an iterator providing all resolutions supported by the current monitor.
+    pub fn supported_resolutions(&self) -> impl Iterator<Item = winit::dpi::PhysicalSize<u32>> {
+        self.window
+            .current_monitor()
+            .unwrap()
+            .video_modes()
+            .map(|vm| vm.size())
+    }
+
+    /// Returns a reference to the Winit window.
+    #[inline]
+    pub fn window(&self) -> &winit::window::Window {
+        &self.window
+    }
+
+    /// Returns a rectangle defining the coordinate system of the screen. It will be `Rect { x: left, y: top, w: width, h: height }`.
+    pub fn screen_coordinates(&self) -> Rect {
+        self.screen_coords
+    }
+
+    /// Sets the bounds of the screen viewport.
+    ///
+    /// The default coordinate system has (0,0) at the top-left corner
+    /// with X increasing to the right and Y increasing down, with the
+    /// viewport scaled such that one coordinate unit is one pixel on the
+    /// screen.  This function lets you change this coordinate system to
+    /// be whatever you prefer.
+    ///
+    /// The `Rect`'s x and y will define the top-left corner of the screen,
+    /// and that plus its w and h will define the bottom-right corner.
+    pub fn set_screen_coordinates(&mut self, rect: Rect) {
+        self.screen_coords = rect;
+    }
+
+    /// Sets the window icon.
+    pub fn set_window_icon(
+        &mut self,
+        filesystem: &Filesystem,
+        path: Option<impl AsRef<Path>>,
+    ) -> GameResult {
+        let icon = match path {
+            Some(p) => Some(load_icon(p.as_ref(), filesystem)?),
+            None => None,
+        };
+        self.window.set_window_icon(icon);
+        Ok(())
+    }
+
+    /// Sets the window to fullscreen or back.
+    pub fn set_fullscreen(&mut self, fullscreen: conf::FullscreenType) -> GameResult {
+        let window_mode = self.window_mode.fullscreen_type(fullscreen);
+        self.set_mode(window_mode)
+    }
+
+    /// Sets whether or not the window is resizable.
+    pub fn set_resizable(&mut self, resizable: bool) -> GameResult {
+        let window_mode = self.window_mode.resizable(resizable);
+        self.set_mode(window_mode)
+    }
+
+    /// Sets the window mode, such as the size and other properties.
+    ///
+    /// Setting the window mode may have side effects, such as clearing
+    /// the screen or setting the screen coordinates viewport to some
+    /// undefined value (for example, the window was resized).  It is
+    /// recommended to call
+    /// [`set_screen_coordinates()`](fn.set_screen_coordinates.html) after
+    /// changing the window size to make sure everything is what you want
+    /// it to be.
+    pub fn set_mode(&mut self, mut mode: WindowMode) -> GameResult {
+        let old_fullscreen = self.window_mode.fullscreen_type;
+        let result = self.set_window_mode(&mode);
+        if let Err(GameError::WindowError(_)) = result {
+            mode.fullscreen_type = old_fullscreen;
+        }
+        self.window_mode = mode;
+        result
     }
 
     /// Returns the default frame image.
@@ -579,7 +691,7 @@ impl GraphicsContext {
 // see https://github.com/tomaka/winit/issues/661
 pub(crate) fn load_icon(
     icon_file: &Path,
-    filesystem: &mut Filesystem,
+    filesystem: &Filesystem,
 ) -> GameResult<winit::window::Icon> {
     use imgcrate::GenericImageView;
     use std::io::Read;
