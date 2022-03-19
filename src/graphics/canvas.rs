@@ -190,8 +190,8 @@ impl<'a> Canvas<'a> {
             )));
         }
 
-        let device = &gfx.device;
-        let queue = &gfx.queue;
+        let device = &gfx.wgpu.device;
+        let queue = &gfx.wgpu.queue;
         let bind_group_cache = &mut gfx.bind_group_cache;
         let pipeline_cache = &mut gfx.pipeline_cache;
         let sampler_cache = &mut gfx.sampler_cache;
@@ -281,8 +281,8 @@ impl<'a> Canvas<'a> {
             draw_sm: gfx.draw_shader.clone(),
             instance_sm: gfx.instance_shader.clone(),
             text_sm: gfx.text_shader.clone(),
-            rect_mesh: gfx.rect_mesh.clone().unwrap(),
-            white_image: gfx.white_image.clone().unwrap(),
+            rect_mesh: gfx.rect_mesh.clone(),
+            white_image: gfx.white_image.clone(),
 
             transform,
             image_id: None,
@@ -299,7 +299,7 @@ impl<'a> Canvas<'a> {
         shader: Shader,
         params: ShaderParams<Uniforms>,
     ) {
-        self.flush_text_queue();
+        self.flush_text();
         self.dirty_pipeline = true;
         self.shader = shader;
         self.shader_bind_group = Some((
@@ -310,7 +310,7 @@ impl<'a> Canvas<'a> {
 
     /// Sets the shader to use when drawing meshes.
     pub fn set_shader(&mut self, shader: Shader) {
-        self.flush_text_queue();
+        self.flush_text();
         self.dirty_pipeline = true;
         self.shader = shader;
     }
@@ -321,7 +321,7 @@ impl<'a> Canvas<'a> {
         shader: Shader,
         params: ShaderParams<Uniforms>,
     ) {
-        self.flush_text_queue();
+        self.flush_text();
         self.dirty_pipeline = true;
         self.text_shader = shader;
         self.text_shader_bind_group = Some((
@@ -332,7 +332,7 @@ impl<'a> Canvas<'a> {
 
     /// Sets the shader to use when drawing text.
     pub fn set_text_shader(&mut self, shader: Shader) {
-        self.flush_text_queue();
+        self.flush_text();
         self.dirty_pipeline = true;
         self.text_shader = shader;
     }
@@ -355,7 +355,7 @@ impl<'a> Canvas<'a> {
 
     /// Sets the active sampler used to sample images.
     pub fn set_sampler(&mut self, sampler: Sampler) {
-        self.flush_text_queue();
+        self.flush_text();
 
         let sampler = self.sampler_cache.get(self.device, sampler);
 
@@ -391,7 +391,7 @@ impl<'a> Canvas<'a> {
         image: impl Into<Option<&'b Image>>,
         param: impl Into<DrawParam>,
     ) {
-        self.flush_text_queue();
+        self.flush_text();
         self.update_pipeline(ShaderType::Draw);
 
         let alloc_size = self.device.limits().min_uniform_buffer_offset_alignment as u64;
@@ -459,7 +459,7 @@ impl<'a> Canvas<'a> {
         instances: &InstanceArray,
         param: DrawParam,
     ) {
-        self.flush_text_queue();
+        self.flush_text();
 
         if instances.len() == 0 {
             return;
@@ -612,21 +612,25 @@ impl<'a> Canvas<'a> {
         )
     }
 
+    /// Flushes the internal text queue.
+    ///
+    /// This is called automatically. The only situation you need to call this in
+    /// is when you are doing custom rendering with WGPU.
+    pub fn flush_text(&mut self) {
+        if self.queuing_text {
+            self.queuing_text = false;
+            self.text_renderer
+                .draw_queued(self.device, self.queue, self.arenas, &mut self.pass);
+        }
+    }
+
     /// Finish drawing with this canvas.
     pub fn finish(mut self) {
         self.finalize();
     }
 
     fn finalize(&mut self) {
-        self.flush_text_queue();
-    }
-
-    fn flush_text_queue(&mut self) {
-        if self.queuing_text {
-            self.queuing_text = false;
-            self.text_renderer
-                .draw_queued(self.device, self.queue, self.arenas, &mut self.pass);
-        }
+        self.flush_text();
     }
 
     fn update_pipeline(&mut self, ty: ShaderType) {

@@ -24,7 +24,7 @@ pub struct Shader {
 impl Shader {
     /// Creates a shader from a WGSL string.
     pub fn from_wgsl(gfx: &GraphicsContext, wgsl: &str, fs_entry: &str) -> Self {
-        let module = ArcShaderModule::new(gfx.device.create_shader_module(
+        let module = ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
             &wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(wgsl.into()),
@@ -83,7 +83,7 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
         images: &[&Image],
         samplers: &[Sampler],
     ) -> Self {
-        let uniforms = ArcBuffer::new(gfx.device.create_buffer_init(
+        let uniforms = ArcBuffer::new(gfx.wgpu.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: None,
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
@@ -93,7 +93,7 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
 
         let samplers = samplers
             .iter()
-            .map(|&sampler| gfx.sampler_cache.get(&gfx.device, sampler))
+            .map(|&sampler| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
             .collect::<Vec<_>>();
 
         let mut builder = BindGroupBuilder::new();
@@ -114,7 +114,7 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
             builder = builder.sampler(sampler, wgpu::ShaderStages::FRAGMENT);
         }
 
-        let (bind_group, layout) = builder.create(&gfx.device, &mut gfx.bind_group_cache);
+        let (bind_group, layout) = builder.create(&gfx.wgpu.device, &mut gfx.bind_group_cache);
 
         ShaderParams {
             uniforms,
@@ -126,7 +126,8 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
 
     /// Updates the uniform data.
     pub fn set_uniforms(&self, gfx: &GraphicsContext, uniforms: &Uniforms) {
-        gfx.queue
+        gfx.wgpu
+            .queue
             .write_buffer(&self.uniforms, 0, uniforms.as_std140().as_bytes());
     }
 }

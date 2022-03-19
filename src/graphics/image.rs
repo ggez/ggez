@@ -3,7 +3,7 @@
 use super::{
     context::GraphicsContext,
     gpu::arc::{ArcTexture, ArcTextureView},
-    Color, Rect,
+    Color, Rect, WgpuContext,
 };
 use crate::{Context, GameError, GameResult};
 use std::path::Path;
@@ -38,7 +38,7 @@ impl Image {
         samples: u32,
     ) -> Self {
         Self::new(
-            gfx,
+            &gfx.wgpu,
             format.into(),
             width,
             height,
@@ -57,8 +57,18 @@ impl Image {
         width: u32,
         height: u32,
     ) -> Self {
+        Self::from_pixels_wgpu(&gfx.wgpu, pixels, format, width, height)
+    }
+
+    pub(crate) fn from_pixels_wgpu(
+        wgpu: &WgpuContext,
+        pixels: &[u8],
+        format: ImageFormat,
+        width: u32,
+        height: u32,
+    ) -> Self {
         let image = Self::new(
-            gfx,
+            wgpu,
             format.into(),
             width,
             height,
@@ -68,7 +78,7 @@ impl Image {
                 | wgpu::TextureUsages::COPY_SRC,
         );
 
-        gfx.queue.write_texture(
+        wgpu.queue.write_texture(
             image.texture.as_image_copy(),
             pixels,
             wgpu::ImageDataLayout {
@@ -130,7 +140,7 @@ impl Image {
     }
 
     fn new(
-        gfx: &GraphicsContext,
+        wgpu: &WgpuContext,
         format: ImageFormat,
         width: u32,
         height: u32,
@@ -141,7 +151,7 @@ impl Image {
         assert!(height > 0);
         assert!(samples > 0);
 
-        let texture = ArcTexture::new(gfx.device.create_texture(&wgpu::TextureDescriptor {
+        let texture = ArcTexture::new(wgpu.device.create_texture(&wgpu::TextureDescriptor {
             label: None,
             size: wgpu::Extent3d {
                 width,
@@ -177,6 +187,12 @@ impl Image {
         }
     }
 
+    /// Returns the underlying [`wgpu::Texture`] and [`wgpu::TextureView`] for this [`Image`].
+    #[inline]
+    pub fn wgpu(&self) -> (&wgpu::Texture, &wgpu::TextureView) {
+        (&self.texture, &self.view)
+    }
+
     /// Reads the pixels of this `ImageView` and returns as `Vec<u8>`.
     /// The format matches the GPU image format.
     ///
@@ -184,7 +200,7 @@ impl Image {
     pub fn to_pixels(&self, gfx: &GraphicsContext) -> GameResult<Vec<u8>> {
         let block_size = self.format.describe().block_size as u64;
 
-        let buffer = gfx.device.create_buffer(&wgpu::BufferDescriptor {
+        let buffer = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: block_size * self.width as u64 * self.height as u64,
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
@@ -193,6 +209,7 @@ impl Image {
 
         let cmd = {
             let mut encoder = gfx
+                .wgpu
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
             encoder.copy_texture_to_buffer(
@@ -216,11 +233,11 @@ impl Image {
             encoder.finish()
         };
 
-        gfx.queue.submit([cmd]);
+        gfx.wgpu.queue.submit([cmd]);
 
         // wait...
         let fut = buffer.slice(..).map_async(wgpu::MapMode::Read);
-        gfx.device.poll(wgpu::Maintain::Wait);
+        gfx.wgpu.device.poll(wgpu::Maintain::Wait);
         pollster::block_on(fut)?;
 
         let out = buffer.slice(..).get_mapped_range().to_vec();

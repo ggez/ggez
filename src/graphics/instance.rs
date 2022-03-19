@@ -26,7 +26,7 @@ impl InstanceArray {
     pub fn new(gfx: &GraphicsContext, image: impl Into<Option<Image>>, capacity: u32) -> Self {
         assert!(capacity > 0);
 
-        let buffer = ArcBuffer::new(gfx.device.create_buffer(&wgpu::BufferDescriptor {
+        let buffer = ArcBuffer::new(gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: DrawUniforms::std140_size_static() as u64 * capacity as u64,
             usage: wgpu::BufferUsages::STORAGE
@@ -35,9 +35,7 @@ impl InstanceArray {
             mapped_at_creation: false,
         }));
 
-        let image = image
-            .into()
-            .unwrap_or_else(|| gfx.white_image.clone().unwrap(/* invariant */));
+        let image = image.into().unwrap_or_else(|| gfx.white_image.clone());
 
         InstanceArray {
             buffer,
@@ -72,7 +70,7 @@ impl InstanceArray {
         }
 
         self.len = instances.len() as u32;
-        gfx.queue.write_buffer(&self.buffer, 0, unsafe {
+        gfx.wgpu.queue.write_buffer(&self.buffer, 0, unsafe {
             std::slice::from_raw_parts(
                 instances.as_ptr() as *const u8,
                 instances.len() * DrawUniforms::std140_size_static(),
@@ -92,7 +90,7 @@ impl InstanceArray {
             instance,
             [self.image.width() as f32, self.image.height() as f32].into(),
         );
-        gfx.queue.write_buffer(
+        gfx.wgpu.queue.write_buffer(
             &self.buffer,
             self.len as u64 * DrawUniforms::std140_size_static() as u64,
             instance.as_std140().as_bytes(),
@@ -108,7 +106,7 @@ impl InstanceArray {
             instance,
             [self.image.width() as f32, self.image.height() as f32].into(),
         );
-        gfx.queue.write_buffer(
+        gfx.wgpu.queue.write_buffer(
             &self.buffer,
             index as u64 * DrawUniforms::std140_size_static() as u64,
             instance.as_std140().as_bytes(),
@@ -133,7 +131,7 @@ impl InstanceArray {
 
         if copy {
             let cmd = {
-                let mut cmd = gfx.device.create_command_encoder(&Default::default());
+                let mut cmd = gfx.wgpu.device.create_command_encoder(&Default::default());
                 cmd.copy_buffer_to_buffer(
                     &self.buffer,
                     0,
@@ -143,7 +141,7 @@ impl InstanceArray {
                 );
                 cmd.finish()
             };
-            gfx.queue.submit([cmd]);
+            gfx.wgpu.queue.submit([cmd]);
         }
 
         *self = resized;

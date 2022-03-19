@@ -1,13 +1,14 @@
 //!
 
-use super::{context::GraphicsContext, gpu::arc::ArcBuffer, Color, DrawMode, LinearColor, Rect};
+use super::{
+    context::GraphicsContext, gpu::arc::ArcBuffer, Color, DrawMode, LinearColor, Rect, WgpuContext,
+};
 use crate::{GameError, GameResult};
 use lyon::{
     math::Point as LPoint,
     path::{traits::PathBuilder, Polygon},
     tessellation as tess,
 };
-use std::sync::atomic::AtomicUsize;
 use wgpu::util::DeviceExt;
 
 /// Vertex format uploaded to vertex buffers.
@@ -50,8 +51,6 @@ impl Vertex {
     }
 }
 
-static NEXT_MESH_ID: AtomicUsize = AtomicUsize::new(0);
-
 /// Mesh data stored on the GPU as a vertex and index buffer.
 #[derive(Debug)]
 pub struct Mesh {
@@ -61,26 +60,23 @@ pub struct Mesh {
     pub(crate) inds_capacity: usize,
     pub(crate) vertex_count: usize,
     pub(crate) index_count: usize,
-    pub(crate) id: usize,
 }
 
 impl Mesh {
-    /// Create a new mesh from a list of vertices and indices.
-    pub fn new(gfx: &GraphicsContext, vertices: &[Vertex], indices: &[u32]) -> Self {
-        Mesh {
-            verts: Self::create_verts(gfx, vertices),
-            inds: Self::create_inds(gfx, indices),
-            verts_capacity: vertices.len(),
-            inds_capacity: indices.len(),
-            vertex_count: vertices.len(),
-            index_count: indices.len(),
-            id: NEXT_MESH_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
-        }
-    }
-
     /// Create a new mesh from raw [MeshData].
     pub fn from_raw(gfx: &GraphicsContext, raw: MeshData) -> Self {
-        Self::new(gfx, &raw.vertices, &raw.indices)
+        Self::from_raw_wgpu(&gfx.wgpu, raw)
+    }
+
+    pub(crate) fn from_raw_wgpu(wgpu: &WgpuContext, raw: MeshData) -> Self {
+        Mesh {
+            verts: Self::create_verts(wgpu, raw.vertices),
+            inds: Self::create_inds(wgpu, raw.indices),
+            verts_capacity: raw.vertices.len(),
+            inds_capacity: raw.indices.len(),
+            vertex_count: raw.vertices.len(),
+            index_count: raw.indices.len(),
+        }
     }
 
     /// Create a new mesh for a line of one or more connected segments.
@@ -208,10 +204,9 @@ impl Mesh {
         self.vertex_count = vertices.len();
         if vertices.len() > self.verts_capacity {
             self.verts_capacity = vertices.len();
-            self.verts = Self::create_verts(gfx, vertices);
-            self.update_id();
+            self.verts = Self::create_verts(&gfx.wgpu, vertices);
         } else {
-            gfx.queue.write_buffer(&self.verts, 0, unsafe {
+            gfx.wgpu.queue.write_buffer(&self.verts, 0, unsafe {
                 std::slice::from_raw_parts(
                     vertices as *const _ as *const u8,
                     vertices.len() * std::mem::size_of::<Vertex>(),
@@ -226,10 +221,9 @@ impl Mesh {
         self.index_count = indices.len();
         if indices.len() > self.inds_capacity {
             self.inds_capacity = indices.len();
-            self.inds = Self::create_inds(gfx, indices);
-            self.update_id();
+            self.inds = Self::create_inds(&gfx.wgpu, indices);
         } else {
-            gfx.queue.write_buffer(&self.inds, 0, unsafe {
+            gfx.wgpu.queue.write_buffer(&self.inds, 0, unsafe {
                 std::slice::from_raw_parts(
                     indices as *const _ as *const u8,
                     indices.len() * std::mem::size_of::<u32>(),
@@ -238,14 +232,10 @@ impl Mesh {
         }
     }
 
-    fn update_id(&mut self) {
-        self.id = NEXT_MESH_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-    }
-
     #[allow(unsafe_code)]
-    fn create_verts(gfx: &GraphicsContext, vertices: &[Vertex]) -> ArcBuffer {
+    fn create_verts(wgpu: &WgpuContext, vertices: &[Vertex]) -> ArcBuffer {
         ArcBuffer::new(
-            gfx.device
+            wgpu.device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: None,
                     contents: unsafe {
@@ -260,9 +250,9 @@ impl Mesh {
     }
 
     #[allow(unsafe_code)]
-    fn create_inds(gfx: &GraphicsContext, indices: &[u32]) -> ArcBuffer {
+    fn create_inds(wgpu: &WgpuContext, indices: &[u32]) -> ArcBuffer {
         ArcBuffer::new(
-            gfx.device
+            wgpu.device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: None,
                     contents: unsafe {

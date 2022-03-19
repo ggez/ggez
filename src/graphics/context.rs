@@ -14,7 +14,7 @@ use super::{
     sampler::{Sampler, SamplerCache},
     shader::Shader,
     text::FontData,
-    ScreenImage,
+    MeshData, ScreenImage,
 };
 use crate::{
     conf::{Backend, Conf, FullscreenType, WindowMode},
@@ -44,17 +44,23 @@ pub(crate) struct FrameArenas {
     pub bind_groups: TypedArena<ArcBindGroup>,
 }
 
+/// WGPU graphics context objects.
+#[derive(Debug)]
+#[allow(missing_docs)]
+pub struct WgpuContext {
+    pub instance: wgpu::Instance,
+    pub surface: wgpu::Surface,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
+}
+
 /// A concrete graphics context for WGPU rendering.
 #[allow(missing_debug_implementations)]
 pub struct GraphicsContext {
-    pub(crate) window: winit::window::Window,
+    pub(crate) wgpu: WgpuContext,
 
-    #[allow(unused)]
-    pub(crate) instance: wgpu::Instance,
-    pub(crate) surface: wgpu::Surface,
+    pub(crate) window: winit::window::Window,
     pub(crate) surface_format: wgpu::TextureFormat,
-    pub(crate) device: wgpu::Device,
-    pub(crate) queue: wgpu::Queue,
 
     pub(crate) bind_group_cache: BindGroupCache,
     pub(crate) pipeline_cache: PipelineCache,
@@ -77,8 +83,8 @@ pub struct GraphicsContext {
     pub(crate) instance_shader: ArcShaderModule,
     pub(crate) text_shader: ArcShaderModule,
     pub(crate) copy_shader: ArcShaderModule,
-    pub(crate) rect_mesh: Option<Arc<Mesh>>,
-    pub(crate) white_image: Option<Image>,
+    pub(crate) rect_mesh: Arc<Mesh>,
+    pub(crate) white_image: Image,
 }
 
 impl GraphicsContext {
@@ -141,10 +147,17 @@ impl GraphicsContext {
             None,
         ))?;
 
-        let surface_format = surface.get_preferred_format(&adapter).unwrap(/* invariant */);
+        let wgpu = WgpuContext {
+            instance,
+            surface,
+            device,
+            queue,
+        };
+
+        let surface_format = wgpu.surface.get_preferred_format(&adapter).unwrap(/* invariant */);
         let size = window.inner_size();
-        surface.configure(
-            &device,
+        wgpu.surface.configure(
+            &wgpu.device,
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: surface_format,
@@ -162,12 +175,12 @@ impl GraphicsContext {
         let pipeline_cache = PipelineCache::new();
         let sampler_cache = SamplerCache::new();
 
-        let text = TextRenderer::new(&device);
+        let text = TextRenderer::new(&wgpu.device);
 
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let uniform_arena = GrowingBufferArena::new(
-            &device,
-            device.limits().min_uniform_buffer_offset_alignment as u64,
+            &wgpu.device,
+            wgpu.device.limits().min_uniform_buffer_offset_alignment as u64,
             wgpu::BufferDescriptor {
                 label: None,
                 size: 4096 * DrawUniforms::std140_size_static() as u64,
@@ -178,38 +191,71 @@ impl GraphicsContext {
         let local_pool = futures::executor::LocalPool::new();
         let local_spawner = local_pool.spawner();
 
-        let draw_shader =
-            ArcShaderModule::new(device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+        let draw_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            &wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(include_str!("shader/draw.wgsl").into()),
-            }));
+            },
+        ));
 
-        let instance_shader =
-            ArcShaderModule::new(device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+        let instance_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            &wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance.wgsl").into()),
-            }));
+            },
+        ));
 
-        let text_shader =
-            ArcShaderModule::new(device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+        let text_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            &wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(include_str!("shader/text.wgsl").into()),
-            }));
+            },
+        ));
 
-        let copy_shader =
-            ArcShaderModule::new(device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+        let copy_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            &wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(include_str!("shader/copy.wgsl").into()),
-            }));
+            },
+        ));
+
+        let rect_mesh = Arc::new(Mesh::from_raw_wgpu(
+            &wgpu,
+            MeshData {
+                vertices: &[
+                    Vertex {
+                        position: [0., 0.],
+                        uv: [0., 0.],
+                        color: [1.; 4],
+                    },
+                    Vertex {
+                        position: [1., 0.],
+                        uv: [1., 0.],
+                        color: [1.; 4],
+                    },
+                    Vertex {
+                        position: [0., 1.],
+                        uv: [0., 1.],
+                        color: [1.; 4],
+                    },
+                    Vertex {
+                        position: [1., 1.],
+                        uv: [1., 1.],
+                        color: [1.; 4],
+                    },
+                ],
+                indices: &[0, 2, 1, 2, 3, 1],
+            },
+        ));
+
+        let white_image =
+            Image::from_pixels_wgpu(&wgpu, &[255, 255, 255, 255], ImageFormat::Rgba8Unorm, 1, 1);
 
         let mut this = GraphicsContext {
-            window,
+            wgpu,
 
-            instance,
-            surface,
+            window,
             surface_format,
-            device,
-            queue,
 
             bind_group_cache,
             pipeline_cache,
@@ -232,8 +278,8 @@ impl GraphicsContext {
             instance_shader,
             text_shader,
             copy_shader,
-            rect_mesh: None,
-            white_image: None,
+            rect_mesh,
+            white_image,
         };
 
         this.set_window_mode(&conf.window_mode)?;
@@ -241,42 +287,13 @@ impl GraphicsContext {
         this.frame = Some(ScreenImage::new(&this, None, 1., 1., 1));
         this.update_frame_image();
 
-        this.rect_mesh = Some(Arc::new(Mesh::new(
-            &this,
-            &[
-                Vertex {
-                    position: [0., 0.],
-                    uv: [0., 0.],
-                    color: [1.; 4],
-                },
-                Vertex {
-                    position: [1., 0.],
-                    uv: [1., 0.],
-                    color: [1.; 4],
-                },
-                Vertex {
-                    position: [0., 1.],
-                    uv: [0., 1.],
-                    color: [1.; 4],
-                },
-                Vertex {
-                    position: [1., 1.],
-                    uv: [1., 1.],
-                    color: [1.; 4],
-                },
-            ],
-            &[0, 2, 1, 2, 3, 1],
-        )));
-
-        this.white_image = Some(Image::from_pixels(
-            &this,
-            &[255, 255, 255, 255],
-            ImageFormat::Rgba8Unorm,
-            1,
-            1,
-        ));
-
         Ok(this)
+    }
+
+    /// Returns a reference to the underlying WGPU context.
+    #[inline]
+    pub fn wgpu(&self) -> &WgpuContext {
+        &self.wgpu
     }
 
     /// Sets the image that will be presented to the screen at the end of the frame.
@@ -325,6 +342,17 @@ impl GraphicsContext {
         self.frame_image.as_ref().unwrap(/* invariant */)
     }
 
+    /// Returns the image format of the window surface.
+    #[inline]
+    pub fn surface_format(&self) -> ImageFormat {
+        self.surface_format
+    }
+
+    /// Returns the current [`wgpu::CommandEncoder`] if there is a frame in progress.
+    pub fn commands(&mut self) -> Option<&mut wgpu::CommandEncoder> {
+        self.fcx.as_mut().map(|fcx| &mut fcx.cmd)
+    }
+
     pub(crate) fn begin_frame(&mut self) -> GameResult {
         if self.fcx.is_some() {
             return Err(GameError::RenderError(String::from(
@@ -332,7 +360,7 @@ impl GraphicsContext {
             )));
         }
 
-        let frame = self.surface.get_current_texture().map_err(|_| {
+        let frame = self.wgpu.surface.get_current_texture().map_err(|_| {
             GameError::RenderError(String::from("failed to get next swapchain image"))
         })?;
         let frame_view = frame
@@ -341,6 +369,7 @@ impl GraphicsContext {
 
         self.fcx = Some(FrameContext {
             cmd: self
+                .wgpu
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor::default()),
             present: self.frame().clone(),
@@ -372,16 +401,16 @@ impl GraphicsContext {
 
             let sampler = self
                 .sampler_cache
-                .get(&self.device, Sampler::linear_clamp());
+                .get(&self.wgpu.device, Sampler::linear_clamp());
 
             let (bind, layout) = BindGroupBuilder::new()
                 .image(&fcx.present.view, wgpu::ShaderStages::FRAGMENT)
                 .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
-                .create(&self.device, &mut self.bind_group_cache);
+                .create(&self.wgpu.device, &mut self.bind_group_cache);
 
-            let layout = self.pipeline_cache.layout(&self.device, &[layout]);
+            let layout = self.pipeline_cache.layout(&self.wgpu.device, &[layout]);
             let copy = self.pipeline_cache.render_pipeline(
-                &self.device,
+                &self.wgpu.device,
                 &layout,
                 Shader {
                     fragment: self.copy_shader.clone(),
@@ -409,7 +438,7 @@ impl GraphicsContext {
             std::mem::drop(present_pass);
 
             self.staging_belt.finish();
-            self.queue.submit([fcx.cmd.finish()]);
+            self.wgpu.queue.submit([fcx.cmd.finish()]);
             fcx.frame.present();
 
             use futures::task::SpawnExt;
@@ -426,9 +455,9 @@ impl GraphicsContext {
 
     pub(crate) fn resize(&mut self, _new_size: dpi::PhysicalSize<u32>) {
         let size = self.window.inner_size();
-        self.device.poll(wgpu::Maintain::Wait);
-        self.surface.configure(
-            &self.device,
+        self.wgpu.device.poll(wgpu::Maintain::Wait);
+        self.wgpu.surface.configure(
+            &self.wgpu.device,
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: self.surface_format,
@@ -519,8 +548,8 @@ impl GraphicsContext {
         }
 
         let size = window.inner_size();
-        self.surface.configure(
-            &self.device,
+        self.wgpu.surface.configure(
+            &self.wgpu.device,
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: self.surface_format,
