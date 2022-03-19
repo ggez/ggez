@@ -353,7 +353,10 @@ impl GraphicsContext {
         self.fcx.as_mut().map(|fcx| &mut fcx.cmd)
     }
 
-    pub(crate) fn begin_frame(&mut self) -> GameResult {
+    /// Begins a new frame.
+    ///
+    /// The only situation you need to call this in is when you are rolling your own event loop.
+    pub fn begin_frame(&mut self) -> GameResult {
         if self.fcx.is_some() {
             return Err(GameError::RenderError(String::from(
                 "cannot begin a new frame while another frame is still in progress; call end_frame first",
@@ -384,7 +387,10 @@ impl GraphicsContext {
         Ok(())
     }
 
-    pub(crate) fn end_frame(&mut self) -> GameResult {
+    /// Ends the current frame.
+    ///
+    /// The only situation you need to call this in is when you are rolling your own event loop.
+    pub fn end_frame(&mut self) -> GameResult {
         if let Some(mut fcx) = self.fcx.take() {
             let mut present_pass = fcx.cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
