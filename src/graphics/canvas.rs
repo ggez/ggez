@@ -618,11 +618,7 @@ impl<'a> Canvas<'a> {
         )
     }
 
-    /// Flushes the internal text queue.
-    ///
-    /// This is called automatically. The only situation you need to call this in
-    /// is when you are doing custom rendering with WGPU.
-    pub fn flush_text(&mut self) {
+    fn flush_text(&mut self) {
         if self.queuing_text {
             self.queuing_text = false;
             self.text_renderer

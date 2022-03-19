@@ -352,8 +352,6 @@ impl event::EventHandler<ggez::GameError> for MainState {
             graphics::TextLayout::tl_single_line(),
         )?;
 
-        canvas.flush_text();
-
         canvas.finish();
 
         self.frames += 1;
