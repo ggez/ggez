@@ -1,27 +1,21 @@
 //! A more sophisticated example of how to use shaders
 //! and canvas's to do 2D GPU shadows.
 
-use gfx::{self, *};
-
-use ggez::conf;
-use ggez::event;
-use ggez::graphics::{self, BlendMode, Canvas, Color, DrawParam, Drawable, Shader};
-use ggez::timer;
+use ggez::graphics::{self, AsStd140, BlendMode, Canvas, Color, DrawParam, Shader};
+use ggez::{event, graphics::ShaderParams};
 use ggez::{Context, GameResult};
 use glam::Vec2;
 use std::env;
 use std::path;
 
-gfx_defines! {
-    /// Constants used by the shaders to calculate stuff
-    constant Light {
-        light_color: [f32; 4] = "u_LightColor",
-        shadow_color: [f32; 4] = "u_ShadowColor",
-        pos: [f32; 2] = "u_Pos",
-        screen_size: [f32; 2] = "u_ScreenSize",
-        glow: f32 = "u_Glow",
-        strength: f32 = "u_Strength",
-    }
+#[derive(AsStd140)]
+struct Light {
+    light_color: mint::Vector4<f32>,
+    shadow_color: mint::Vector4<f32>,
+    pos: mint::Vector2<f32>,
+    screen_size: mint::Vector2<f32>,
+    glow: f32,
+    strength: f32,
 }
 
 /// Shader source for calculating a 1D shadow map that encodes half distances
@@ -31,42 +25,50 @@ gfx_defines! {
 /// and encoded in the red channel (it is halved because if the distance can be
 /// greater than 1.0 - think bottom left to top right corner, that sqrt(1) and
 /// will not get properly encoded).
-const OCCLUSIONS_SHADER_SOURCE: &[u8] = b"#version 150 core
-
-uniform sampler2D t_Texture;
-in vec2 v_Uv;
-out vec4 Target0;
-
-layout (std140) uniform Light {
-    vec4 u_LightColor;
-    vec4 u_ShadowColor;
-    vec2 u_Pos;
-    vec2 u_ScreenSize;
-    float u_Glow;
-    float u_Strength;
+const OCCLUSIONS_SHADER_SOURCE: &str = "
+struct VertexOutput {
+    [[builtin(position)]] position: vec4<f32>;
+    [[location(0)]] uv: vec2<f32>;
+    [[location(1)]] color: vec4<f32>;
 };
 
-void main() {
-    float dist = 1.0;
-    float theta = radians(v_Uv.x * 360.0);
-    vec2 dir = vec2(cos(theta), sin(theta));
-    for(int i = 0; i < 1024; i++) {
-        float fi = i;
-        float r = fi / 1024.0;
-        vec2 rel = r * dir;
-        vec2 p = clamp(u_Pos+rel, 0.0, 1.0);
-        if (texture(t_Texture, p).a > 0.8) {
-            dist = distance(u_Pos, p) * 0.5;
+struct Light {
+    light_color: vec4<f32>;
+    shadow_color: vec4<f32>;
+    pos: vec2<f32>;
+    screen_size: vec2<f32>;
+    glow: f32;
+    strength: f32;
+};
+
+[[group(1), binding(0)]]
+var t: texture_2d<f32>;
+
+[[group(2), binding(0)]]
+var s: sampler;
+
+[[group(3), binding(0)]]
+var<uniform> light: Light;
+
+[[stage(fragment)]]
+fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+    var dist = 1.0;
+    var theta = in.uv.x * 6.28318530718;
+    var dir = vec2<f32>(cos(theta), sin(theta));
+    for (var i: i32 = 0; i < 1024; i = i + 1) {
+        var fi = f32(i);
+        var r = fi / 1024.0;
+        var rel = r * dir;
+        var p = clamp(light.pos + rel, vec2<f32>(0.0), vec2<f32>(1.0));
+        if (textureSample(t, s, p).a > 0.8) {
+            dist = distance(light.pos, p) * 0.5;
             break;
         }
     }
-
-    float others = dist == 1.0 ? 0.0 : dist;
-    Target0 = vec4(dist, others, others, 1.0);
+    var others = select(dist, 0.0, dist == 1.0);
+    return vec4<f32>(dist, others, others, 1.0);
 }
 ";
-
-const VERTEX_SHADER_SOURCE: &[u8] = include_bytes!("../resources/basic_150.glslv");
 
 /// Shader for drawing shadows based on a 1D shadow map. It takes current
 /// fragment coordinates and converts them to polar coordinates centered
@@ -75,41 +77,49 @@ const VERTEX_SHADER_SOURCE: &[u8] = include_bytes!("../resources/basic_150.glslv
 /// closest reported shadow, then the output is the shadow color, else it calculates some
 /// shadow based on the distance from light source based on strength and glow
 /// uniform parameters.
-const SHADOWS_SHADER_SOURCE: &[u8] = b"#version 150 core
-
-uniform sampler2D t_Texture;
-in vec2 v_Uv;
-out vec4 Target0;
-
-layout (std140) uniform Light {
-    vec4 u_LightColor;
-    vec4 u_ShadowColor;
-    vec2 u_Pos;
-    vec2 u_ScreenSize;
-    float u_Glow;
-    float u_Strength;
+const SHADOWS_SHADER_SOURCE: &str = "
+struct VertexOutput {
+    [[builtin(position)]] position: vec4<f32>;
+    [[location(0)]] uv: vec2<f32>;
+    [[location(1)]] color: vec4<f32>;
 };
 
-void main() {
-    vec2 coord = gl_FragCoord.xy / u_ScreenSize;
-    vec2 rel = coord - u_Pos;
-    float theta = atan(rel.y, rel.x);
-    float ox = degrees(theta) / 360.0;
-    if (ox < 0) {
-        ox += 1.0;
-    }
-    float r = length(rel);
-    float occl = texture(t_Texture, vec2(ox, 0.5)).r * 2.0;
+struct Light {
+    light_color: vec4<f32>;
+    shadow_color: vec4<f32>;
+    pos: vec2<f32>;
+    screen_size: vec2<f32>;
+    glow: f32;
+    strength: f32;
+};
 
-    float intensity = 1.0;
-    if (r < occl) {
-        vec2 g = u_ScreenSize / u_ScreenSize.y;
-        float p = u_Strength + u_Glow;
-        float d = distance(g * coord, g * u_Pos);
-        intensity = 1.0 - clamp(p/(d*d), 0.0, 1.0);
-    }
+[[group(1), binding(0)]]
+var t: texture_2d<f32>;
 
-    Target0 = mix(vec4(1.0, 1.0, 1.0, 1.0), vec4(u_ShadowColor.rgb, 1.0), intensity);
+[[group(2), binding(0)]]
+var s: sampler;
+
+[[group(3), binding(0)]]
+var<uniform> light: Light;
+
+fn degrees(x: f32) -> f32 {
+    return x * 57.2957795130823208767981548141051703;
+}
+
+[[stage(fragment)]]
+fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+    var rel = light.pos - in.uv;
+    var theta = atan2(rel.y, rel.x);
+    var ox = (theta + 3.1415926) / 6.2831853;
+    var r = length(rel);
+    var occl = 1.0 - step(r, textureSample(t, s, vec2<f32>(ox, 0.5)).r * 2.0);
+
+    var g = light.screen_size / light.screen_size.y;
+    var p = light.strength + light.glow;
+    var d = distance(g * in.uv, g * light.pos);
+    var intensity = 1.0 - clamp(p/(d*d), 0.0, 1.0);
+
+    return light.shadow_color * vec4<f32>(vec3<f32>(mix(intensity, 1.0, occl)), 1.0);
 }
 ";
 
@@ -121,57 +131,78 @@ void main() {
 /// light based on the distance from light source based on strength and glow
 /// uniform parameters. It is meant to be used additively for drawing multiple
 /// lights.
-const LIGHTS_SHADER_SOURCE: &[u8] = b"#version 150 core
-
-uniform sampler2D t_Texture;
-in vec2 v_Uv;
-out vec4 Target0;
-
-layout (std140) uniform Light {
-    vec4 u_LightColor;
-    vec4 u_ShadowColor;
-    vec2 u_Pos;
-    vec2 u_ScreenSize;
-    float u_Glow;
-    float u_Strength;
+const LIGHTS_SHADER_SOURCE: &str = "
+struct VertexOutput {
+    [[builtin(position)]] position: vec4<f32>;
+    [[location(0)]] uv: vec2<f32>;
+    [[location(1)]] color: vec4<f32>;
 };
 
-void main() {
-    vec2 coord = gl_FragCoord.xy / u_ScreenSize;
-    vec2 rel = coord - u_Pos;
-    float theta = atan(rel.y, rel.x);
-    float ox = degrees(theta) / 360.0;
-    if (ox < 0) {
-        ox += 1.0;
-    }
-    float r = length(rel);
-    float occl = texture(t_Texture, vec2(ox, 0.5)).r * 2.0;
+struct Light {
+    light_color: vec4<f32>;
+    shadow_color: vec4<f32>;
+    pos: vec2<f32>;
+    screen_size: vec2<f32>;
+    glow: f32;
+    strength: f32;
+};
 
-    float intensity = 0.0;
-    if (r < occl) {
-        vec2 g = u_ScreenSize / u_ScreenSize.y;
-        float p = u_Strength + u_Glow;
-        float d = distance(g * coord, g * u_Pos);
-        intensity = clamp(p/(d*d), 0.0, 0.6);
-    }
+[[group(1), binding(0)]]
+var t: texture_2d<f32>;
 
-    Target0 = mix(vec4(0.0, 0.0, 0.0, 1.0), vec4(u_LightColor.rgb, 1.0), intensity);
+[[group(2), binding(0)]]
+var s: sampler;
+
+[[group(3), binding(0)]]
+var<uniform> light: Light;
+
+fn degrees(x: f32) -> f32 {
+    return x * 57.2957795130823208767981548141051703;
+}
+
+[[stage(fragment)]]
+fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+    var rel = light.pos - in.uv;
+    var theta = atan2(rel.y, rel.x);
+    var ox = (theta + 3.1415926) / 6.2831853;
+    var r = length(rel);
+    var occl = step(r, textureSample(t, s, vec2<f32>(ox, 0.5)).r * 2.0);
+
+    var g = light.screen_size / light.screen_size.y;
+    var p = light.strength + light.glow;
+    var d = distance(g * in.uv, g * light.pos);
+    var intensity = clamp(p/(d*d), 0.0, 0.6);
+
+    var blur = (2.5 / light.screen_size.x) * smoothStep(0.0, 1.0, r);
+    var sum = 0.0;
+    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox - 4.0 * blur, 0.5)).r * 2.0) * 0.05;
+    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox - 3.0 * blur, 0.5)).r * 2.0) * 0.09;
+    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox - 2.0 * blur, 0.5)).r * 2.0) * 0.12;
+    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox - 1.0 * blur, 0.5)).r * 2.0) * 0.15;
+    sum = sum + occl * 0.16;
+    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox + 1.0 * blur, 0.5)).r * 2.0) * 0.15;
+    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox + 2.0 * blur, 0.5)).r * 2.0) * 0.12;
+    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox + 3.0 * blur, 0.5)).r * 2.0) * 0.09;
+    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox + 4.0 * blur, 0.5)).r * 2.0) * 0.05;
+
+    return light.light_color * vec4<f32>(vec3<f32>(sum * intensity), 1.0);
 }
 ";
 
 struct MainState {
     background: graphics::Image,
     tile: graphics::Image,
-    text: graphics::Text,
     torch: Light,
+    torch_params: ShaderParams<Light>,
     static_light: Light,
-    foreground: Canvas,
-    occlusions: Canvas,
-    shadows: Canvas,
-    lights: Canvas,
-    occlusions_shader: Shader<Light>,
-    shadows_shader: Shader<Light>,
-    lights_shader: Shader<Light>,
+    static_light_params: ShaderParams<Light>,
+    foreground: graphics::ScreenImage,
+    occlusions: graphics::Image,
+    shadows: graphics::ScreenImage,
+    lights: graphics::ScreenImage,
+    occlusions_shader: Shader,
+    shadows_shader: Shader,
+    lights_shader: Shader,
 }
 
 /// The color cast things take when not illuminated
@@ -193,77 +224,60 @@ const LIGHT_GLOW_RATE: f32 = 0.9;
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let background = graphics::Image::new(ctx, "/bg_top.png")?;
-        let tile = graphics::Image::new(ctx, "/tile.png")?;
-        let text = {
-            let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
-            graphics::Text::new(("SHADOWS...", font, 48.0))
-        };
+        let background = graphics::Image::from_path(ctx, "/bg_top.png", true)?;
+        let tile = graphics::Image::from_path(ctx, "/tile.png", true)?;
+
+        ctx.gfx.add_font(
+            "LiberationMono",
+            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+        );
+
         let screen_size = {
-            let size = graphics::drawable_size(ctx);
+            let size = ctx.gfx.drawable_size();
             [size.0 as f32, size.1 as f32]
         };
+
         let torch = Light {
-            pos: [0.0, 0.0],
-            light_color: TORCH_COLOR,
-            shadow_color: AMBIENT_COLOR,
-            screen_size,
+            pos: [0.0, 0.0].into(),
+            light_color: TORCH_COLOR.into(),
+            shadow_color: AMBIENT_COLOR.into(),
+            screen_size: screen_size.into(),
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
-        let (w, h) = graphics::size(ctx);
-        let (x, y) = (100.0 / w as f32, 1.0 - 75.0 / h as f32);
+        let torch_params = ShaderParams::new(&mut ctx.gfx, &torch, &[], &[]);
+
+        let (w, h) = ctx.gfx.size();
+        let (x, y) = (100.0 / w as f32, 75.0 / h as f32);
+
         let static_light = Light {
-            pos: [x, y],
-            light_color: STATIC_LIGHT_COLOR,
-            shadow_color: AMBIENT_COLOR,
-            screen_size,
+            pos: [x, y].into(),
+            light_color: STATIC_LIGHT_COLOR.into(),
+            shadow_color: AMBIENT_COLOR.into(),
+            screen_size: screen_size.into(),
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
-        let color_format = ggez::graphics::get_window_color_format(ctx);
-        let foreground = Canvas::with_window_size(ctx)?;
-        let occlusions = Canvas::new(ctx, LIGHT_RAY_COUNT, 1, conf::NumSamples::One, color_format)?;
-        let mut shadows = Canvas::with_window_size(ctx)?;
-        // The shadow map will be drawn on top using the multiply blend mode
-        shadows.set_blend_mode(Some(BlendMode::Multiply));
-        let mut lights = Canvas::with_window_size(ctx)?;
-        // The light map will be drawn on top using the add blend mode
-        lights.set_blend_mode(Some(BlendMode::Add));
-        let occlusions_shader = Shader::from_u8(
-            ctx,
-            VERTEX_SHADER_SOURCE,
-            OCCLUSIONS_SHADER_SOURCE,
-            torch,
-            "Light",
-            None,
-        )
-        .unwrap();
-        let shadows_shader = Shader::from_u8(
-            ctx,
-            VERTEX_SHADER_SOURCE,
-            SHADOWS_SHADER_SOURCE,
-            torch,
-            "Light",
-            None,
-        )
-        .unwrap();
-        let lights_shader = Shader::from_u8(
-            ctx,
-            VERTEX_SHADER_SOURCE,
-            LIGHTS_SHADER_SOURCE,
-            torch,
-            "Light",
-            Some(&[BlendMode::Add]),
-        )
-        .unwrap();
+        let static_light_params = ShaderParams::new(&mut ctx.gfx, &static_light, &[], &[]);
+
+        let color_format = ctx.gfx.surface_format();
+        let foreground = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
+        let occlusions =
+            graphics::Image::new_canvas_image(&ctx.gfx, color_format, LIGHT_RAY_COUNT.into(), 1, 1);
+        let shadows = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
+        let lights = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
+
+        let occlusions_shader = Shader::from_wgsl(&ctx.gfx, OCCLUSIONS_SHADER_SOURCE, "main");
+        let shadows_shader = Shader::from_wgsl(&ctx.gfx, SHADOWS_SHADER_SOURCE, "main");
+        let lights_shader = Shader::from_wgsl(&ctx.gfx, LIGHTS_SHADER_SOURCE, "main");
 
         Ok(MainState {
             background,
             tile,
-            text,
             torch,
+            torch_params,
             static_light,
+            static_light_params,
             foreground,
             occlusions,
             shadows,
@@ -276,64 +290,66 @@ impl MainState {
     fn render_light(
         &mut self,
         ctx: &mut Context,
-        light: Light,
+        light: ShaderParams<Light>,
         origin: DrawParam,
         canvas_origin: DrawParam,
+        clear: Option<graphics::Color>,
     ) -> GameResult {
-        let size = graphics::size(ctx);
+        let foreground = self.foreground.image(&ctx.gfx);
+
+        let size = ctx.gfx.drawable_size();
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
-        graphics::set_canvas(ctx, Some(&self.occlusions));
-        {
-            let _shader_lock = graphics::use_shader(ctx, &self.occlusions_shader);
-
-            self.occlusions_shader.send(ctx, light)?;
-            graphics::draw(ctx, &self.foreground, canvas_origin)?;
-        }
+        let mut canvas = Canvas::from_image(&mut ctx.gfx, None, &self.occlusions)?;
+        canvas.set_shader_with_params(self.occlusions_shader.clone(), light.clone());
+        canvas.draw(&foreground, canvas_origin);
+        canvas.finish();
 
         // Now we render our shadow map and light map into their respective
         // canvases based on the occlusion map. These will then be drawn onto
         // the final render target using appropriate blending modes.
-        graphics::set_canvas(ctx, Some(&self.shadows));
-        {
-            let _shader_lock = graphics::use_shader(ctx, &self.shadows_shader);
+        let shadows = self.shadows.image(&ctx.gfx);
+        let mut canvas = Canvas::from_image(&mut ctx.gfx, clear, &shadows)?;
+        canvas.set_shader_with_params(self.shadows_shader.clone(), light.clone());
+        canvas.draw(
+            &self.occlusions,
+            origin.image_scale(false).scale([size.0, size.1]),
+        );
+        canvas.finish();
 
-            let param = origin.scale(Vec2::new(
-                (size.0 as f32) / (LIGHT_RAY_COUNT as f32),
-                size.1 as f32,
-            ));
-            self.shadows_shader.send(ctx, light)?;
-            graphics::draw(ctx, &self.occlusions, param)?;
-        }
-        graphics::set_canvas(ctx, Some(&self.lights));
-        {
-            let _shader_lock = graphics::use_shader(ctx, &self.lights_shader);
+        let lights = self.lights.image(&ctx.gfx);
+        let mut canvas = Canvas::from_image(&mut ctx.gfx, clear, &lights)?;
+        canvas.set_blend_mode(BlendMode::ADD);
+        canvas.set_shader_with_params(self.lights_shader.clone(), light.clone());
+        canvas.draw(
+            &self.occlusions,
+            origin.image_scale(false).scale([size.0, size.1]),
+        );
+        canvas.finish();
 
-            let param = origin.scale(Vec2::new(
-                (size.0 as f32) / (LIGHT_RAY_COUNT as f32),
-                size.1 as f32,
-            ));
-            self.lights_shader.send(ctx, light)?;
-            graphics::draw(ctx, &self.occlusions, param)?;
-        }
         Ok(())
     }
 }
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if timer::ticks(ctx) % 100 == 0 {
-            println!("Average FPS: {}", timer::fps(ctx));
+        if ctx.timer.ticks() % 100 == 0 {
+            println!("Average FPS: {}", ctx.timer.fps());
         }
 
         self.torch.glow = LIGHT_GLOW_FACTOR
-            * (timer::time_since_start(ctx).as_secs_f32() * LIGHT_GLOW_RATE).cos();
+            * (ctx.timer.time_since_start().as_secs_f32() * LIGHT_GLOW_RATE).cos();
         self.static_light.glow = LIGHT_GLOW_FACTOR
-            * (timer::time_since_start(ctx).as_secs_f32() * LIGHT_GLOW_RATE * 0.75).sin();
+            * (ctx.timer.time_since_start().as_secs_f32() * LIGHT_GLOW_RATE * 0.75).sin();
+
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        self.torch_params.set_uniforms(&ctx.gfx, &self.torch);
+        self.static_light_params
+            .set_uniforms(&ctx.gfx, &self.static_light);
+
         let origin = DrawParam::new()
             .dest(Vec2::new(0.0, 0.0))
             .scale(Vec2::new(0.5, 0.5));
@@ -344,57 +360,61 @@ impl event::EventHandler<ggez::GameError> for MainState {
         // use this canvas to:
         //  - run the occlusions shader to determine where the shadows are
         //  - render to screen once all the shadows are calculated and rendered
-        {
-            graphics::set_canvas(ctx, Some(&self.foreground));
-            graphics::clear(ctx, graphics::Color::new(0.0, 0.0, 0.0, 0.0));
-            graphics::draw(
-                ctx,
-                &self.tile,
-                DrawParam::new().dest(Vec2::new(598.0, 124.0)),
-            )?;
-            graphics::draw(
-                ctx,
-                &self.tile,
-                DrawParam::new().dest(Vec2::new(92.0, 350.0)),
-            )?;
-            graphics::draw(
-                ctx,
-                &self.tile,
-                DrawParam::new().dest(Vec2::new(442.0, 468.0)).rotation(0.5),
-            )?;
-            graphics::draw(ctx, &self.text, (Vec2::new(50.0, 200.0),))?;
-        }
+        let foreground = self.foreground.image(&ctx.gfx);
+        let mut canvas =
+            Canvas::from_image(&mut ctx.gfx, Color::new(0.0, 0.0, 0.0, 0.0), &foreground)?;
+        canvas.draw(&self.tile, DrawParam::new().dest(Vec2::new(598.0, 124.0)));
+        canvas.draw(&self.tile, DrawParam::new().dest(Vec2::new(92.0, 350.0)));
+        canvas.draw(
+            &self.tile,
+            DrawParam::new().dest(Vec2::new(442.0, 468.0)).rotation(0.5),
+        );
+        canvas.draw_text(
+            &[graphics::Text::new()
+                .text("SHADOWS...")
+                .size(48.0)
+                .font("LiberationMono")],
+            Vec2::new(50.0, 200.0),
+            graphics::TextLayout::tl_single_line(),
+        )?;
+        canvas.finish();
 
         // Then we draw our light and shadow maps
-        {
-            let torch = self.torch;
-            let light = self.static_light;
-
-            graphics::set_canvas(ctx, Some(&self.lights));
-            graphics::clear(ctx, graphics::Color::new(0.0, 0.0, 0.0, 1.0));
-
-            graphics::set_canvas(ctx, Some(&self.shadows));
-            graphics::clear(ctx, graphics::Color::new(0.0, 0.0, 0.0, 1.0));
-            self.render_light(ctx, torch, origin, canvas_origin)?;
-            self.render_light(ctx, light, origin, canvas_origin)?;
-        }
+        self.render_light(
+            ctx,
+            self.torch_params.clone(),
+            origin,
+            canvas_origin,
+            Some(Color::BLACK),
+        )?;
+        self.render_light(
+            ctx,
+            self.static_light_params.clone(),
+            origin,
+            canvas_origin,
+            None,
+        )?;
 
         // Now lets finally render to screen starting out with background, then
         // the shadows and lights overtop and finally our foreground.
-        graphics::set_canvas(ctx, None);
-        graphics::clear(ctx, Color::WHITE);
-        graphics::draw(ctx, &self.background, DrawParam::default())?;
-        graphics::draw(ctx, &self.shadows, DrawParam::default())?;
-        graphics::draw(ctx, &self.foreground, DrawParam::default())?;
-        graphics::draw(ctx, &self.lights, DrawParam::default())?;
-
+        let shadows = self.shadows.image(&ctx.gfx);
+        let foreground = self.foreground.image(&ctx.gfx);
+        let lights = self.lights.image(&ctx.gfx);
+        let mut canvas = Canvas::from_frame(&mut ctx.gfx, Color::WHITE)?;
+        canvas.draw(&self.background, DrawParam::default());
+        canvas.set_blend_mode(BlendMode::MULTIPLY);
+        canvas.draw(&shadows, DrawParam::default());
+        canvas.set_blend_mode(BlendMode::ALPHA);
+        canvas.draw(&foreground, DrawParam::default());
+        canvas.set_blend_mode(BlendMode::ADD);
+        canvas.draw(&lights, DrawParam::default());
         // Uncomment following line to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
         // the greyscale pixels are the half distances of the nearest shadows to
         // the mouse position (equally encoded in all color channels).
-        // graphics::draw(ctx, &self.occlusions, DrawParam::default())?;
+        // canvas.draw(&self.occlusions, DrawParam::default());
+        canvas.finish();
 
-        graphics::present(ctx)?;
         Ok(())
     }
 
@@ -406,9 +426,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
         _xrel: f32,
         _yrel: f32,
     ) -> GameResult {
-        let (w, h) = graphics::drawable_size(ctx);
-        let (x, y) = (x / w as f32, 1.0 - y / h as f32);
-        self.torch.pos = [x, y];
+        let (w, h) = ctx.gfx.drawable_size();
+        let (x, y) = (x / w as f32, y / h as f32);
+        self.torch.pos = [x, y].into();
         Ok(())
     }
 }
