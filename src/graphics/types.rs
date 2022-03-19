@@ -486,7 +486,7 @@ impl From<Color> for [f32; 4] {
 /// A RGBA color in the *linear* color space,
 /// suitable for shoving into a shader.
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub(crate) struct LinearColor {
+pub struct LinearColor {
     /// Red component
     pub r: f32,
     /// Green component
