@@ -174,11 +174,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // Draw some pre-made meshes
         for (image, mesh) in &self.meshes {
-            canvas.draw_mesh(
-                mesh,
-                image,
-                graphics::DrawParam::new().mode(graphics::OffsetMode::Absolute),
-            );
+            canvas.draw_mesh(mesh, image, graphics::DrawParam::new().image_scale(false));
         }
 
         // Finished drawing, show it all on the screen!

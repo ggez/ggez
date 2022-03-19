@@ -93,15 +93,6 @@ impl Transform {
     }
 }
 
-/// Mode specifying how the `offset` value of [`Transform`] should be handled.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum OffsetMode {
-    /// The offset is a fraction of the image size.
-    Relative,
-    /// The offset is absolute.
-    Absolute,
-}
-
 /// A struct containing all the necessary info for drawing with parameters.
 ///
 /// This struct implements the `Default` trait, so to set only some parameter
@@ -126,8 +117,8 @@ pub struct DrawParam {
     pub color: Color,
     /// Where to put the `Drawable`.
     pub transform: Transform,
-    /// Offset mode specifying how transform offset should be handled.
-    pub mode: OffsetMode,
+    /// Whether the scale should be relative to image size.
+    pub image_scale: bool,
 }
 
 impl Default for DrawParam {
@@ -136,7 +127,7 @@ impl Default for DrawParam {
             src: Rect::one(),
             color: Color::WHITE,
             transform: Transform::default(),
-            mode: OffsetMode::Relative,
+            image_scale: true,
         }
     }
 }
@@ -220,18 +211,18 @@ impl DrawParam {
         }
     }
 
-    /// Set the offset mode.
-    pub fn mode(mut self, mode: OffsetMode) -> Self {
-        self.mode = mode;
-        self
-    }
-
     /// Set the transformation matrix.
     pub fn transform<M>(mut self, transform: M) -> Self
     where
         M: Into<mint::ColumnMatrix4<f32>>,
     {
         self.transform = Transform::Matrix(transform.into());
+        self
+    }
+
+    /// Set the image sclae option.
+    pub fn image_scale(mut self, image_scale: bool) -> Self {
+        self.image_scale = image_scale;
         self
     }
 }
@@ -310,7 +301,12 @@ pub(crate) struct DrawUniforms {
 }
 
 impl DrawUniforms {
-    pub fn from_param(param: DrawParam, image_scale: mint::Vector2<f32>) -> Self {
+    pub fn from_param(param: DrawParam, mut image_scale: mint::Vector2<f32>) -> Self {
+        if !param.image_scale {
+            image_scale.x = 1.;
+            image_scale.y = 1.;
+        }
+
         let scale_x = param.src.w * image_scale.x;
         let scale_y = param.src.h * image_scale.y;
         let param = match param.transform {
