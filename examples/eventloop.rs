@@ -62,9 +62,9 @@ pub fn main() -> GameResult {
                 position += 1.0;
 
                 // Draw
-                graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+                ctx.gfx.begin_frame().unwrap();
                 let circle = graphics::Mesh::new_circle(
-                    ctx,
+                    &ctx.gfx,
                     DrawMode::fill(),
                     glam::Vec2::new(0.0, 0.0),
                     100.0,
@@ -72,8 +72,14 @@ pub fn main() -> GameResult {
                     Color::WHITE,
                 )
                 .unwrap();
-                graphics::draw(ctx, &circle, (glam::Vec2::new(position, 380.0),)).unwrap();
-                graphics::present(ctx).unwrap();
+                let mut canvas = graphics::Canvas::from_frame(
+                    &mut ctx.gfx,
+                    graphics::Color::from([0.1, 0.2, 0.3, 1.0]),
+                )
+                .unwrap();
+                canvas.draw_mesh(&circle, None, (glam::Vec2::new(position, 380.0),));
+                canvas.finish();
+                ctx.gfx.end_frame().unwrap();
 
                 // reset the mouse delta for the next frame
                 // necessary because it's calculated cumulatively each cycle
@@ -84,8 +90,8 @@ pub fn main() -> GameResult {
                 // Not required for this example but important if you want to
                 // use the functions keyboard::is_key_just_pressed/released and
                 // mouse::is_button_just_pressed/released.
-                ctx.keyboard_context.save_keyboard_state();
-                ctx.mouse_context.save_mouse_state();
+                ctx.keyboard.save_keyboard_state();
+                ctx.mouse.save_mouse_state();
 
                 ggez::timer::yield_now();
             }
