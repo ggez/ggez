@@ -241,52 +241,52 @@ impl Default for KeyboardContext {
 
 /// Checks if a key is currently pressed down.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `ctx.input.keyboard.is_key_pressed` instead")]
+#[deprecated(note = "Use `ctx.keyboard.is_key_pressed` instead")]
 pub fn is_key_pressed(ctx: &Context, key: KeyCode) -> bool {
-    ctx.input.keyboard.is_key_pressed(key)
+    ctx.keyboard.is_key_pressed(key)
 }
 
 /// Checks if a key has been pressed down this frame.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `ctx.input.keyboard.is_key_just_pressed` instead")]
+#[deprecated(note = "Use `ctx.keyboard.is_key_just_pressed` instead")]
 pub fn is_key_just_pressed(ctx: &Context, key: KeyCode) -> bool {
-    ctx.input.keyboard.is_key_just_pressed(key)
+    ctx.keyboard.is_key_just_pressed(key)
 }
 
 /// Checks if a key has been released this frame.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `ctx.input.keyboard.is_key_just_released` instead")]
+#[deprecated(note = "Use `ctx.keyboard.is_key_just_released` instead")]
 pub fn is_key_just_released(ctx: &Context, key: KeyCode) -> bool {
-    ctx.input.keyboard.is_key_just_released(key)
+    ctx.keyboard.is_key_just_released(key)
 }
 
 /// Checks if the last keystroke sent by the system is repeated,
 /// like when a key is held down for a period of time.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `ctx.input.keyboard.is_key_repeated` instead")]
+#[deprecated(note = "Use `ctx.keyboard.is_key_repeated` instead")]
 pub fn is_key_repeated(ctx: &Context) -> bool {
-    ctx.input.keyboard.is_key_repeated()
+    ctx.keyboard.is_key_repeated()
 }
 
 /// Returns a reference to the set of currently pressed keys.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `ctx.input.keyboard.pressed_keys` instead")]
+#[deprecated(note = "Use `ctx.keyboard.pressed_keys` instead")]
 pub fn pressed_keys(ctx: &Context) -> &HashSet<KeyCode> {
-    ctx.input.keyboard.pressed_keys()
+    ctx.keyboard.pressed_keys()
 }
 
 /// Checks if keyboard modifier (or several) is active.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `ctx.input.keyboard.is_mod_active` instead")]
+#[deprecated(note = "Use `ctx.keyboard.is_mod_active` instead")]
 pub fn is_mod_active(ctx: &Context, keymods: KeyMods) -> bool {
-    ctx.input.keyboard.is_mod_active(keymods)
+    ctx.keyboard.is_mod_active(keymods)
 }
 
 /// Returns currently active keyboard modifiers.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `ctx.input.keyboard.active_mods` instead")]
+#[deprecated(note = "Use `ctx.keyboard.active_mods` instead")]
 pub fn active_mods(ctx: &Context) -> KeyMods {
-    ctx.input.keyboard.active_mods()
+    ctx.keyboard.active_mods()
 }
 
 #[cfg(test)]

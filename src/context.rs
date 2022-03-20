@@ -44,8 +44,12 @@ pub struct Context {
     /// Audio context.
     #[cfg(feature = "audio")]
     pub audio: audio::AudioContext,
-    /// Input context.
-    pub input: input::InputContext,
+    /// Keyboard input context.
+    pub keyboard: input::keyboard::KeyboardContext,
+    /// Mouse input context.
+    pub mouse: input::mouse::MouseContext,
+    /// Gamepad input context.
+    pub gamepad: input::gamepad::GamepadContext,
 
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
@@ -88,7 +92,6 @@ impl Context {
             backend_spec,
             debug_id,
         )?;
-        let input_context = input::InputContext::new()?;
 
         let ctx = Context {
             conf,
@@ -97,7 +100,9 @@ impl Context {
             continuing: true,
             time: timer_context,
             audio: audio_context,
-            input: input_context,
+            keyboard: input::keyboard::KeyboardContext::new(),
+            mouse: input::mouse::MouseContext::new(),
+            gamepad: input::gamepad::GamepadContext::new()?,
 
             debug_id,
         };
