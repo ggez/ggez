@@ -3,6 +3,7 @@ use std::fmt;
 /// without having to mess around figuring it out.
 pub use winit;
 
+#[cfg(feature = "audio")]
 use crate::audio;
 use crate::conf;
 use crate::error::GameResult;
@@ -49,6 +50,7 @@ pub struct Context {
     /// Mouse input context.
     pub mouse: input::mouse::MouseContext,
     /// Gamepad input context.
+    #[cfg(feature = "gamepad")]
     pub gamepad: input::gamepad::GamepadContext,
 
     /// The Conf object the Context was created with.
@@ -80,6 +82,7 @@ impl Context {
         mut fs: Filesystem,
     ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         let debug_id = DebugId::new();
+        #[cfg(feature = "audio")]
         let audio_context = audio::AudioContext::new()?;
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
@@ -99,9 +102,11 @@ impl Context {
             gfx: graphics_context,
             continuing: true,
             time: timer_context,
+            #[cfg(feature = "audio")]
             audio: audio_context,
             keyboard: input::keyboard::KeyboardContext::new(),
             mouse: input::mouse::MouseContext::new(),
+            #[cfg(feature = "gamepad")]
             gamepad: input::gamepad::GamepadContext::new()?,
 
             debug_id,

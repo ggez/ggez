@@ -29,7 +29,7 @@ pub struct AudioContext {
 }
 
 impl AudioContext {
-    /// Create new `RodioAudioContext`.
+    /// Create new `AudioContext`.
     pub fn new() -> GameResult<Self> {
         let (stream, stream_handle) = rodio::OutputStream::try_default().map_err(|_e| {
             GameError::AudioError(String::from(
