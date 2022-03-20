@@ -15,6 +15,13 @@ use winit::{self, dpi};
 /// A mouse button.
 pub use winit::event::MouseButton;
 
+/// An analog axis of some device (gamepad thumbstick, joystick...).
+#[cfg(feature = "gamepad")]
+pub use gilrs::Axis;
+/// A button of some device (gamepad, joystick...).
+#[cfg(feature = "gamepad")]
+pub use gilrs::Button;
+
 /// `winit` events; nested in a module for re-export neatness.
 pub mod winit_event {
     pub use super::winit::event::{
