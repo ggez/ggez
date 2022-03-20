@@ -1,5 +1,7 @@
 //!
 
+use std::marker::PhantomData;
+
 use super::{
     context::GraphicsContext,
     gpu::{
@@ -11,7 +13,6 @@ use super::{
     sampler::Sampler,
 };
 use crevice::std140::Std140;
-use std::marker::PhantomData;
 use wgpu::util::DeviceExt;
 
 /// A custom fragment shader that can be used to render with shader effects.
@@ -67,7 +68,7 @@ impl Shader {
 pub use crevice::std140::AsStd140;
 
 /// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ShaderParams<Uniforms: AsStd140> {
     pub(crate) uniforms: ArcBuffer,
     pub(crate) layout: ArcBindGroupLayout,

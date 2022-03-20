@@ -1,396 +1,170 @@
-//! Canvases are the main method of drawing meshes and text to images in ggez.
-//!
-//! They can draw to any image that is capable of being drawn to (i.e. has been created with [`Image::new_canvas_image()`] or [`ScreenImage`]),
-//! or they can draw directly to the screen.
-//!
-//! Canvases are also where you can bind your own custom shaders and samplers to use while drawing.
-//! Canvases *do not* automatically batch draws. To used batched (instanced) drawing, refer to [`InstanceArray`].
+use crevice::std140::AsStd140;
+
+use crate::GameResult;
 
 use super::{
-    context::{FrameArenas, GraphicsContext},
-    draw::{DrawParam, DrawUniforms},
-    gpu::{
-        arc::{ArcBindGroupLayout, ArcBuffer, ArcShaderModule, ArcTextureView},
-        bind_group::{BindGroupBuilder, BindGroupCache, BindGroupLayoutBuilder},
-        growing::GrowingBufferArena,
-        pipeline::PipelineCache,
-        text::{TextRenderer, TextVertex},
-    },
-    image::Image,
-    instance::InstanceArray,
-    mesh::{Mesh, Vertex},
-    sampler::{Sampler, SamplerCache},
-    shader::{Shader, ShaderParams},
-    text::{Text, TextLayout},
-    BlendMode, Color, LinearColor, Rect,
+    gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
+    internal_canvas::InternalCanvas,
+    BlendMode, Color, DrawParam, GraphicsContext, Image, InstanceArray, Mesh, Rect, Sampler,
+    ScreenImage, Shader, ShaderParams, Text, TextLayout, ZIndex,
 };
-use crate::{GameError, GameResult};
-use crevice::std140::{AsStd140, Std140};
-use std::{collections::HashMap, hash::Hash, sync::Arc};
+use std::collections::BTreeMap;
 
-/// A canvas represents a render pass and is how you render primitives such as meshes and text onto images.
-#[allow(missing_debug_implementations)]
-pub struct Canvas<'a> {
-    device: &'a wgpu::Device,
-    queue: &'a wgpu::Queue,
-    arenas: &'a FrameArenas,
-    bind_group_cache: &'a mut BindGroupCache,
-    pipeline_cache: &'a mut PipelineCache,
-    sampler_cache: &'a mut SamplerCache,
-    text_renderer: &'a mut TextRenderer,
-    fonts: &'a HashMap<String, glyph_brush::FontId>,
-    uniform_arena: &'a mut GrowingBufferArena,
+/// Canvases are the main method of drawing meshes and text to images in ggez.
+///
+/// They can draw to any image that is capable of being drawn to (i.e. has been created with [`Image::new_canvas_image()`] or [`ScreenImage`]),
+/// or they can draw directly to the screen.
+///
+/// Canvases are also where you can bind your own custom shaders and samplers to use while drawing.
+/// Canvases *do not* automatically batch draws. To used batched (instanced) drawing, refer to [`InstanceArray`].
+#[derive(Debug)]
+pub struct Canvas {
+    draws: BTreeMap<ZIndex, Vec<DrawCommand>>,
+    state: DrawState,
+    defaults: DefaultResources,
 
-    shader: Shader,
-    shader_bind_group: Option<(&'a wgpu::BindGroup, ArcBindGroupLayout)>,
-    text_shader: Shader,
-    text_shader_bind_group: Option<(&'a wgpu::BindGroup, ArcBindGroupLayout)>,
-
-    shader_ty: Option<ShaderType>,
-    dirty_pipeline: bool,
-    queuing_text: bool,
-    blend_mode: BlendMode,
-    pass: wgpu::RenderPass<'a>,
-    samples: u32,
-    format: wgpu::TextureFormat,
-    text_uniforms_buf: ArcBuffer,
-    text_uniforms: &'a wgpu::BindGroup,
-
-    draw_sm: ArcShaderModule,
-    instance_sm: ArcShaderModule,
-    text_sm: ArcShaderModule,
-    rect_mesh: Arc<Mesh>,
-    white_image: Image,
-
-    transform: glam::Mat4,
-    image_id: Option<u64>,
+    target: Image,
+    resolve: Option<Image>,
+    load_op: CanvasLoadOp,
 }
 
-impl<'a> Canvas<'a> {
+impl Canvas {
     /// Create a new [Canvas] from an image. This will allow for drawing to a single color image.
     ///
     /// The image must be created for Canvas usage, i.e. [Image::new_canvas_image()], or [ScreenImage], and must only have a sample count of 1.
     pub fn from_image(
-        gfx: &'a mut GraphicsContext,
+        gfx: &GraphicsContext,
+        image: Image,
         load_op: impl Into<CanvasLoadOp>,
-        image: &'a Image,
-    ) -> GameResult<Self> {
-        if image.samples() > 1 {
-            return Err(GameError::RenderError(String::from("non-MSAA rendering requires an image with exactly 1 sample, for this image use Canvas::from_msaa instead")));
-        }
+    ) -> Self {
+        Canvas::new(gfx, image, None, load_op.into())
+    }
 
-        Self::new(gfx, 1, image.format().into(), |cmd, _, _| {
-            cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: image.view.as_ref(),
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: match load_op.into() {
-                            CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                            CanvasLoadOp::Clear(color) => {
-                                wgpu::LoadOp::Clear(LinearColor::from(color).into())
-                            }
-                        },
-                        store: true,
-                    },
-                }],
-                depth_stencil_attachment: None,
-            })
-        })
+    /// Helper for [`Canvas::from_image`] for construction of a [`Canvas`] from a [`ScreenImage`].
+    pub fn from_screen_image(
+        gfx: &GraphicsContext,
+        image: &mut ScreenImage,
+        load_op: impl Into<CanvasLoadOp>,
+    ) -> Self {
+        let image = image.image(gfx);
+        Canvas::from_image(gfx, image, load_op)
     }
 
     /// Create a new [Canvas] from an MSAA image and a resolve target. This will allow for drawing with MSAA to a color image, then resolving the samples into a secondary target.
     ///
     /// Both images must be created for Canvas usage (see [Canvas::from_image]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
     pub fn from_msaa(
-        gfx: &'a mut GraphicsContext,
+        gfx: &GraphicsContext,
+        msaa_image: Image,
+        resolve: Image,
         load_op: impl Into<CanvasLoadOp>,
-        msaa_image: &'a Image,
-        resolve_image: &'a Image,
-    ) -> GameResult<Self> {
-        if msaa_image.samples() == 1 {
-            return Err(GameError::RenderError(String::from(
-                "MSAA rendering requires an image with more than 1 sample, for this image use Canvas::from_image instead",
-            )));
-        }
+    ) -> Self {
+        Canvas::new(gfx, msaa_image, Some(resolve), load_op.into())
+    }
 
-        if resolve_image.samples() > 1 {
-            return Err(GameError::RenderError(String::from(
-                "can only resolve into an image with exactly 1 sample",
-            )));
-        }
-
-        if msaa_image.format() != resolve_image.format() {
-            return Err(GameError::RenderError(String::from(
-                "MSAA image and resolve image must be the same format",
-            )));
-        }
-
-        Self::new(
-            gfx,
-            msaa_image.samples(),
-            msaa_image.format().into(),
-            |cmd, _, _| {
-                cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: None,
-                    color_attachments: &[wgpu::RenderPassColorAttachment {
-                        view: msaa_image.view.as_ref(),
-                        resolve_target: Some(resolve_image.view.as_ref()),
-                        ops: wgpu::Operations {
-                            load: match load_op.into() {
-                                CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                                CanvasLoadOp::Clear(color) => {
-                                    wgpu::LoadOp::Clear(LinearColor::from(color).into())
-                                }
-                            },
-                            store: true,
-                        },
-                    }],
-                    depth_stencil_attachment: None,
-                })
-            },
-        )
+    /// Helper for [`Canvas::from_msaa`] for construction of an MSAA [`Canvas`] from a [`ScreenImage`].
+    pub fn from_screen_msaa(
+        gfx: &GraphicsContext,
+        msaa_image: &mut ScreenImage,
+        resolve: &mut ScreenImage,
+        load_op: impl Into<CanvasLoadOp>,
+    ) -> Self {
+        let msaa = msaa_image.image(gfx);
+        let resolve = resolve.image(gfx);
+        Canvas::from_msaa(gfx, msaa, resolve, load_op)
     }
 
     /// Create a new [Canvas] that renders directly to the window surface.
-    pub fn from_frame(
-        gfx: &'a mut GraphicsContext,
-        load_op: impl Into<CanvasLoadOp>,
-    ) -> GameResult<Self> {
-        let samples = gfx.frame_msaa_image.as_ref().unwrap(/* invariant */).samples();
-        Self::new(
-            gfx,
-            samples,
-            gfx.surface_format,
-            |cmd, frame, frame_msaa| {
-                let (view, resolve) = if frame_msaa.samples() > 1 {
-                    (frame_msaa.view.as_ref(), Some(frame.view.as_ref()))
-                } else {
-                    (frame.view.as_ref(), None)
-                };
-
-                cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: None,
-                    color_attachments: &[wgpu::RenderPassColorAttachment {
-                        view,
-                        resolve_target: resolve,
-                        ops: wgpu::Operations {
-                            load: match load_op.into() {
-                                CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                                CanvasLoadOp::Clear(color) => {
-                                    wgpu::LoadOp::Clear(LinearColor::from(color).into())
-                                }
-                            },
-                            store: true,
-                        },
-                    }],
-                    depth_stencil_attachment: None,
-                })
-            },
-        )
+    pub fn from_frame(gfx: &GraphicsContext, load_op: impl Into<CanvasLoadOp>) -> Self {
+        // these unwraps will never fail
+        let samples = gfx.frame_msaa_image.as_ref().unwrap().samples();
+        let (target, resolve) = if samples > 1 {
+            (
+                gfx.frame_msaa_image.clone().unwrap(),
+                Some(gfx.frame_image.clone().unwrap()),
+            )
+        } else {
+            (gfx.frame_image.clone().unwrap(), None)
+        };
+        Canvas::new(gfx, target, resolve, load_op.into())
     }
 
-    pub(crate) fn new(
-        gfx: &'a mut GraphicsContext,
-        samples: u32,
-        format: wgpu::TextureFormat,
-        create_pass: impl FnOnce(
-            &'a mut wgpu::CommandEncoder,
-            &'a Image,
-            &'a Image,
-        ) -> wgpu::RenderPass<'a>,
-    ) -> GameResult<Self> {
-        if gfx.fcx.is_none() {
-            return Err(GameError::RenderError(String::from(
-                "starting Canvas outside of a frame",
-            )));
-        }
+    fn new(
+        gfx: &GraphicsContext,
+        target: Image,
+        resolve: Option<Image>,
+        load_op: CanvasLoadOp,
+    ) -> Self {
+        let defaults = DefaultResources::new(gfx);
 
-        let device = &gfx.wgpu.device;
-        let queue = &gfx.wgpu.queue;
-        let bind_group_cache = &mut gfx.bind_group_cache;
-        let pipeline_cache = &mut gfx.pipeline_cache;
-        let sampler_cache = &mut gfx.sampler_cache;
-        let text_renderer = &mut gfx.text;
-        let fonts = &gfx.fonts;
-        let uniform_arena = &mut gfx.uniform_arena;
-
-        let (arenas, mut pass) = {
-            let fcx = gfx.fcx.as_mut().unwrap(/* see above */);
-
-            let pass = create_pass(
-                &mut fcx.cmd,
-                &gfx.frame_image.as_ref().unwrap(/* invariant */),
-                &gfx.frame_msaa_image.as_ref().unwrap(/* invariant */),
-            );
-            let arenas = &fcx.arenas;
-
-            (arenas, pass)
+        let state = DrawState {
+            shader: defaults.shader.clone(),
+            params: None,
+            text_shader: defaults.text_shader.clone(),
+            text_params: None,
+            sampler: Sampler::linear_clamp(),
+            blend_mode: BlendMode::ALPHA,
+            projection: glam::Mat4::IDENTITY.into(),
         };
-
-        pass.set_blend_constant(wgpu::Color::WHITE);
-
-        let size = gfx.window.inner_size();
-        let screen_coords = Rect {
-            x: 0.,
-            y: 0.,
-            w: size.width as _,
-            h: size.height as _,
-        };
-        let transform = screen_to_mat(screen_coords);
-
-        let shader = Shader {
-            fragment: gfx.draw_shader.clone(),
-            fs_entry: "fs_main".into(),
-        };
-
-        let text_shader = Shader {
-            fragment: gfx.text_shader.clone(),
-            fs_entry: "fs_main".into(),
-        };
-
-        let text_uniforms = uniform_arena.allocate(
-            device,
-            mint::ColumnMatrix4::<f32>::std140_size_static() as _,
-        );
-
-        queue.write_buffer(
-            &text_uniforms.buffer,
-            text_uniforms.offset,
-            (mint::ColumnMatrix4::<f32>::from(transform))
-                .as_std140()
-                .as_bytes(),
-        );
-        let text_uniforms_buf = text_uniforms.buffer;
-
-        let (text_uniforms, _) = BindGroupBuilder::new()
-            .buffer(
-                &text_uniforms_buf,
-                text_uniforms.offset,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Uniform,
-                false,
-                Some(mint::ColumnMatrix4::<f32>::std140_size_static() as _),
-            )
-            .create(device, bind_group_cache);
-
-        let text_uniforms = arenas.bind_groups.alloc(text_uniforms);
 
         let mut this = Canvas {
-            device,
-            queue,
-            arenas,
-            bind_group_cache,
-            pipeline_cache,
-            sampler_cache,
-            text_renderer,
-            fonts,
-            uniform_arena,
+            draws: BTreeMap::new(),
+            state,
+            defaults,
 
-            shader,
-            shader_bind_group: None,
-            text_shader,
-            text_shader_bind_group: None,
-
-            shader_ty: None,
-            dirty_pipeline: true,
-            queuing_text: false,
-            blend_mode: BlendMode::ALPHA,
-            pass,
-            samples,
-            format,
-            text_uniforms_buf,
-            text_uniforms,
-
-            draw_sm: gfx.draw_shader.clone(),
-            instance_sm: gfx.instance_shader.clone(),
-            text_sm: gfx.text_shader.clone(),
-            rect_mesh: gfx.rect_mesh.clone(),
-            white_image: gfx.white_image.clone(),
-
-            transform,
-            image_id: None,
+            target,
+            resolve,
+            load_op,
         };
 
-        this.set_sampler(Sampler::linear_clamp());
+        let size = gfx.drawable_size();
+        this.set_screen_coordinates(Rect {
+            x: 0.,
+            y: 0.,
+            w: size.0,
+            h: size.1,
+        });
 
-        Ok(this)
-    }
-
-    /// Sets the shader to use when drawing meshes, along with the provided parameters, **bound to bind group 3 for non-instanced draws, and 4 for instanced draws**.
-    pub fn set_shader_with_params<Uniforms: AsStd140 + 'static>(
-        &mut self,
-        shader: Shader,
-        params: ShaderParams<Uniforms>,
-    ) {
-        self.flush_text();
-        self.dirty_pipeline = true;
-        self.shader = shader;
-        self.shader_bind_group = Some((
-            self.arenas.bind_groups.alloc(params.bind_group.clone()),
-            params.layout.clone(),
-        ));
+        this
     }
 
     /// Sets the shader to use when drawing meshes.
     pub fn set_shader(&mut self, shader: Shader) {
-        self.flush_text();
-        self.dirty_pipeline = true;
-        self.shader = shader;
+        self.state.shader = shader;
     }
 
-    /// Sets the shader to use when drawing text, along with the provided parameters, **bound to bind group 3**.
-    pub fn set_text_shader_with_params<Uniforms: AsStd140 + 'static>(
-        &mut self,
-        shader: Shader,
-        params: ShaderParams<Uniforms>,
-    ) {
-        self.flush_text();
-        self.dirty_pipeline = true;
-        self.text_shader = shader;
-        self.text_shader_bind_group = Some((
-            self.arenas.bind_groups.alloc(params.bind_group.clone()),
-            params.layout.clone(),
-        ));
+    /// Sets the shader parameters to use when drawing meshes.
+    ///
+    /// **Bound to bind group 3 for non-instanced draws, and 4 for instanced draws.**
+    pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
+        self.state.params = Some((params.bind_group.clone(), params.layout.clone()));
     }
 
     /// Sets the shader to use when drawing text.
     pub fn set_text_shader(&mut self, shader: Shader) {
-        self.flush_text();
-        self.dirty_pipeline = true;
-        self.text_shader = shader;
+        self.state.text_shader = shader;
+    }
+
+    /// Sets the shader parameters to use when drawing text.
+    ///
+    /// **Bound to bind group 3.**
+    pub fn set_text_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
+        self.state.text_params = Some((params.bind_group.clone(), params.layout.clone()));
     }
 
     /// Resets the active mesh shader to the default.
     pub fn set_default_shader(&mut self) {
-        self.set_shader(Shader {
-            fragment: self.draw_sm.clone(),
-            fs_entry: "fs_main".into(),
-        });
+        self.state.shader = self.defaults.shader.clone();
     }
 
     /// Resets the active text shader to the default.
     pub fn set_default_text_shader(&mut self) {
-        self.set_text_shader(Shader {
-            fragment: self.text_sm.clone(),
-            fs_entry: "fs_main".into(),
-        });
+        self.state.text_shader = self.defaults.text_shader.clone();
     }
 
     /// Sets the active sampler used to sample images.
     pub fn set_sampler(&mut self, sampler: Sampler) {
-        self.flush_text();
-
-        let sampler = self.sampler_cache.get(self.device, sampler);
-
-        let (bind_group, _) = BindGroupBuilder::new()
-            .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
-            .create(self.device, self.bind_group_cache);
-
-        let bind_group = self.arenas.bind_groups.alloc(bind_group);
-
-        self.pass.set_bind_group(2, bind_group, &[]);
+        self.state.sampler = sampler;
     }
 
     /// Resets the active sampler to the default.
@@ -402,14 +176,13 @@ impl<'a> Canvas<'a> {
 
     /// Sets the active blend mode used when drawing images.
     pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
-        self.dirty_pipeline = true;
-        self.blend_mode = blend_mode;
+        self.state.blend_mode = blend_mode;
     }
 
     /// Gets a copy of the canvas's raw projection matrix.
     #[inline]
     pub fn projection(&self) -> mint::ColumnMatrix4<f32> {
-        self.transform.into()
+        self.state.projection.into()
     }
 
     /// Sets the bounds of the screen viewport. This is a shortcut for `set_projection`
@@ -431,177 +204,84 @@ impl<'a> Canvas<'a> {
     /// transformation matrix.  For an introduction to graphics matrices,
     /// a good source is this: <http://ncase.me/matrix/>
     pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
-        self.transform = proj.into().into();
-        self.queue.write_buffer(
-            &self.text_uniforms_buf,
-            0,
-            mint::ColumnMatrix4::<f32>::from(self.transform)
-                .as_std140()
-                .as_bytes(),
-        );
+        self.state.projection = proj.into().into();
     }
 
     /// Premultiplies the given transformation matrix with the current projection matrix.
     pub fn mul_projection(&mut self, transform: impl Into<mint::ColumnMatrix4<f32>>) {
-        self.set_projection(glam::Mat4::from(transform.into()) * self.transform);
+        self.set_projection(
+            glam::Mat4::from(transform.into()) * glam::Mat4::from(self.state.projection),
+        );
     }
 
     /// Draws a mesh.
     ///
     /// If no [`Image`] is given then the image color will be white.
-    #[allow(unsafe_code)]
-    pub fn draw_mesh<'b>(
+    pub fn draw_mesh(
         &mut self,
-        mesh: &Mesh,
-        image: impl Into<Option<&'b Image>>,
+        mesh: Mesh,
+        image: impl Into<Option<Image>>,
         param: impl Into<DrawParam>,
     ) {
-        self.flush_text();
-        self.update_pipeline(ShaderType::Draw);
-
-        let alloc_size = self.device.limits().min_uniform_buffer_offset_alignment as u64;
-        let uniform_alloc = self.uniform_arena.allocate(self.device, alloc_size);
-
-        let (uniform_bind_group, _) = BindGroupBuilder::new()
-            .buffer(
-                &uniform_alloc.buffer,
-                0,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Uniform,
-                true,
-                Some(alloc_size),
-            )
-            .create(self.device, self.bind_group_cache);
-
-        let (w, h) = if let Some(image) = image.into() {
-            self.set_image(&image.view);
-            (image.width(), image.height())
-        } else {
-            self.set_image(&self.white_image.view.clone());
-            (1, 1)
-        };
-
-        let mut uniforms = DrawUniforms::from_param(param.into(), [w as f32, h as f32].into());
-        uniforms.transform = (self.transform * glam::Mat4::from(uniforms.transform)).into();
-
-        self.queue
-            .write_buffer(&uniform_alloc.buffer, uniform_alloc.offset, unsafe {
-                std::slice::from_raw_parts(
-                    (&uniforms) as *const _ as *const u8,
-                    std::mem::size_of::<DrawUniforms>(),
-                )
-            });
-
-        self.pass.set_bind_group(
-            0,
-            self.arenas.bind_groups.alloc(uniform_bind_group),
-            &[uniform_alloc.offset as u32],
-        );
-
-        let verts = self.arenas.buffers.alloc(mesh.verts.clone());
-        let inds = self.arenas.buffers.alloc(mesh.inds.clone());
-
-        self.pass.set_vertex_buffer(0, verts.slice(..));
-        self.pass
-            .set_index_buffer(inds.slice(..), wgpu::IndexFormat::Uint32);
-
-        self.pass.draw_indexed(0..mesh.index_count as _, 0, 0..1);
+        let param = param.into();
+        self.draws.entry(param.z).or_default().push(DrawCommand {
+            state: self.state.clone(),
+            draw: Draw::Mesh {
+                mesh,
+                image: image.into().unwrap_or_else(|| self.defaults.image.clone()),
+                param,
+            },
+        });
     }
 
     /// Draws a rectangle with a given [`Image`] and [`DrawParam`].
     ///
     /// Also see [`Canvas::draw_mesh()`].
-    pub fn draw<'b>(&mut self, image: impl Into<Option<&'b Image>>, param: DrawParam) {
-        self.draw_mesh(&self.rect_mesh.clone(), image, param)
+    pub fn draw(&mut self, image: impl Into<Option<Image>>, param: impl Into<DrawParam>) {
+        let param = param.into();
+        self.draws.entry(param.z).or_default().push(DrawCommand {
+            state: self.state.clone(),
+            draw: Draw::Mesh {
+                mesh: self.defaults.mesh.clone(),
+                image: image.into().unwrap_or_else(|| self.defaults.image.clone()),
+                param,
+            },
+        });
     }
 
     /// Draws a mesh instanced many times, using the [DrawParam]s found in `instances`.
     ///
     /// If no [`Image`] is given then the image color will be white.
-    pub fn draw_mesh_instances<'b>(
+    pub fn draw_mesh_instances(
         &mut self,
-        mesh: &Mesh,
-        instances: &InstanceArray,
-        param: DrawParam,
+        mesh: Mesh,
+        instances: InstanceArray,
+        param: impl Into<DrawParam>,
     ) {
-        self.flush_text();
-
-        if instances.len() == 0 {
-            return;
-        }
-
-        self.update_pipeline(ShaderType::Instance);
-
-        let alloc_size = self.device.limits().min_uniform_buffer_offset_alignment as u64;
-        let uniform_alloc = self.uniform_arena.allocate(self.device, alloc_size);
-
-        let (uniform_bind_group, _) = BindGroupBuilder::new()
-            .buffer(
-                &uniform_alloc.buffer,
-                0,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Uniform,
-                true,
-                Some(alloc_size),
-            )
-            .create(self.device, self.bind_group_cache);
-
-        self.set_image(&instances.image.view);
-
-        let uniforms = InstanceUniforms {
-            transform: (self.transform
-                * glam::Mat4::from(DrawUniforms::from_param(param, [1., 1.].into()).transform))
-            .into(),
-            color: mint::Vector4::<f32> {
-                x: param.color.r,
-                y: param.color.g,
-                z: param.color.b,
-                w: param.color.a,
+        let param = param.into();
+        self.draws.entry(param.z).or_default().push(DrawCommand {
+            state: self.state.clone(),
+            draw: Draw::MeshInstances {
+                mesh,
+                instances,
+                param,
             },
-        };
-
-        self.queue.write_buffer(
-            &uniform_alloc.buffer,
-            uniform_alloc.offset,
-            uniforms.as_std140().as_bytes(),
-        );
-
-        let (bind_group, _) = BindGroupBuilder::new()
-            .buffer(
-                &instances.buffer,
-                0,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-                None,
-            )
-            .create(self.device, self.bind_group_cache);
-
-        let bind_group = self.arenas.bind_groups.alloc(bind_group);
-
-        self.pass.set_bind_group(
-            0,
-            self.arenas.bind_groups.alloc(uniform_bind_group),
-            &[uniform_alloc.offset as u32],
-        );
-        self.pass.set_bind_group(3, bind_group, &[]);
-
-        let verts = self.arenas.buffers.alloc(mesh.verts.clone());
-        let inds = self.arenas.buffers.alloc(mesh.inds.clone());
-
-        self.pass.set_vertex_buffer(0, verts.slice(..));
-        self.pass
-            .set_index_buffer(inds.slice(..), wgpu::IndexFormat::Uint32);
-
-        self.pass
-            .draw_indexed(0..mesh.index_count as _, 0, 0..instances.len() as _);
+        });
     }
 
     /// Draws a rectangle instanced multiple times, as defined by the given [`InstanceArray`].
     ///
     /// Also see [`Canvas::draw_mesh_instances()`].
-    pub fn draw_instances<'b>(&mut self, instances: &InstanceArray, param: DrawParam) {
-        self.draw_mesh_instances(&self.rect_mesh.clone(), instances, param)
+    pub fn draw_instances(&mut self, instances: InstanceArray, param: impl Into<DrawParam>) {
+        let param = param.into();
+        self.draws.entry(param.z).or_default().push(DrawCommand {
+            state: self.state.clone(),
+            draw: Draw::MeshInstances {
+                mesh: self.defaults.mesh.clone(),
+                instances,
+                param,
+            },
+        });
     }
 
     /// Draws a section text that is fit and aligned into a given `rect` bounds.
@@ -614,52 +294,15 @@ impl<'a> Canvas<'a> {
     /// ## A tip for performance
     /// Text rendering will automatically batch *as long as the text draws are consecutive*.
     /// As such, to achieve the best performance, do all your text rendering in a single burst.
-    pub fn draw_bounded_text(
-        &mut self,
-        text: &[Text],
-        rect: Rect,
-        layout: TextLayout,
-    ) -> GameResult {
-        self.update_pipeline(ShaderType::Text);
-
-        self.text_renderer.queue(glyph_brush::Section {
-            screen_position: (rect.x, rect.y),
-            bounds: (rect.w, rect.h),
-            layout: match layout {
-                TextLayout::SingleLine { h_align, v_align } => {
-                    glyph_brush::Layout::default_single_line()
-                        .h_align(h_align.into())
-                        .v_align(v_align.into())
-                }
-                TextLayout::Wrap { h_align, v_align } => glyph_brush::Layout::default_wrap()
-                    .h_align(h_align.into())
-                    .v_align(v_align.into()),
+    pub fn draw_bounded_text(&mut self, text: &[Text], rect: Rect, layout: TextLayout, z: ZIndex) {
+        self.draws.entry(z).or_default().push(DrawCommand {
+            state: self.state.clone(),
+            draw: Draw::BoundedText {
+                text: text.to_vec(),
+                rect,
+                layout,
             },
-            text: text
-                .iter()
-                .map(|text| {
-                    Ok(glyph_brush::Text {
-                        text: &text.text,
-                        scale: text.size.into(),
-                        font_id: *self
-                            .fonts
-                            .get(text.font.as_ref())
-                            .ok_or_else(|| GameError::FontSelectError(text.font.to_string()))?,
-                        extra: glyph_brush::Extra {
-                            color: text.color.into(),
-                            z: 0.,
-                        },
-                    })
-                })
-                .collect::<GameResult<Vec<_>>>()?,
         });
-
-        self.set_image(&self.text_renderer.cache_view.clone());
-        self.pass.set_bind_group(0, self.text_uniforms, &[]);
-
-        self.queuing_text = true;
-
-        Ok(())
     }
 
     /// Unbounded version of [`Canvas::draw_bounded_text()`].
@@ -668,153 +311,100 @@ impl<'a> Canvas<'a> {
         text: &[Text],
         pos: impl Into<mint::Vector2<f32>>,
         layout: TextLayout,
-    ) -> GameResult {
+        z: ZIndex,
+    ) {
         let pos = pos.into();
         self.draw_bounded_text(
             text,
             Rect::new(pos.x, pos.y, f32::INFINITY, f32::INFINITY),
             layout,
+            z,
         )
     }
 
-    fn flush_text(&mut self) {
-        if self.queuing_text {
-            self.queuing_text = false;
-            self.text_renderer
-                .draw_queued(self.device, self.queue, self.arenas, &mut self.pass);
+    /// Finish drawing with this canvas and submit all the draw calls.
+    pub fn finish(mut self, gfx: &mut GraphicsContext) -> GameResult {
+        self.finalize(gfx)
+    }
+
+    fn finalize(&mut self, gfx: &mut GraphicsContext) -> GameResult {
+        let mut canvas = if let Some(resolve) = &self.resolve {
+            InternalCanvas::from_msaa(gfx, self.load_op, &self.target, resolve)?
+        } else {
+            InternalCanvas::from_image(gfx, self.load_op, &self.target)?
+        };
+
+        let mut state = self.state.clone();
+
+        // apply initial state
+        canvas.set_shader(state.shader.clone());
+        if let Some((bind_group, layout)) = &state.params {
+            canvas.set_shader_params(bind_group.clone(), layout.clone());
         }
-    }
 
-    /// Finish drawing with this canvas.
-    pub fn finish(mut self) {
-        self.finalize();
-    }
+        canvas.set_text_shader(state.text_shader.clone());
+        if let Some((bind_group, layout)) = &state.text_params {
+            canvas.set_text_shader_params(bind_group.clone(), layout.clone());
+        }
 
-    fn finalize(&mut self) {
-        self.flush_text();
-    }
+        canvas.set_sampler(state.sampler);
+        canvas.set_blend_mode(state.blend_mode);
+        canvas.set_projection(state.projection);
 
-    fn update_pipeline(&mut self, ty: ShaderType) {
-        if self.dirty_pipeline || self.shader_ty != Some(ty) {
-            self.dirty_pipeline = false;
-            self.shader_ty = Some(ty);
+        for (_, draws) in &self.draws {
+            for draw in draws {
+                if draw.state.shader != state.shader {
+                    canvas.set_shader(state.shader.clone());
+                }
 
-            let texture_layout = BindGroupLayoutBuilder::new()
-                .image(wgpu::ShaderStages::FRAGMENT)
-                .create(self.device, self.bind_group_cache);
+                if draw.state.params != state.params {
+                    if let Some((bind_group, layout)) = &draw.state.params {
+                        canvas.set_shader_params(bind_group.clone(), layout.clone());
+                    }
+                }
 
-            let sampler_layout = BindGroupLayoutBuilder::new()
-                .sampler(wgpu::ShaderStages::FRAGMENT)
-                .create(self.device, self.bind_group_cache);
+                if draw.state.text_shader != state.text_shader {
+                    canvas.set_text_shader(state.text_shader.clone());
+                }
 
-            let instance_layout = BindGroupLayoutBuilder::new()
-                .buffer(
-                    wgpu::ShaderStages::VERTEX,
-                    wgpu::BufferBindingType::Storage { read_only: true },
-                    false,
-                )
-                .create(self.device, self.bind_group_cache);
+                if draw.state.text_params != state.text_params {
+                    if let Some((bind_group, layout)) = &draw.state.text_params {
+                        canvas.set_text_shader_params(bind_group.clone(), layout.clone());
+                    }
+                }
 
-            let uniform_layout = BindGroupLayoutBuilder::new()
-                .buffer(
-                    wgpu::ShaderStages::VERTEX,
-                    wgpu::BufferBindingType::Uniform,
-                    ty != ShaderType::Text,
-                )
-                .create(self.device, self.bind_group_cache);
+                if draw.state.sampler != state.sampler {
+                    canvas.set_sampler(draw.state.sampler);
+                }
 
-            let mut groups = vec![uniform_layout, texture_layout, sampler_layout];
+                if draw.state.blend_mode != state.blend_mode {
+                    canvas.set_blend_mode(draw.state.blend_mode);
+                }
 
-            if ty == ShaderType::Instance {
-                groups.push(instance_layout);
+                if draw.state.projection != state.projection {
+                    canvas.set_projection(draw.state.projection);
+                }
+
+                state = draw.state.clone();
+
+                match &draw.draw {
+                    Draw::Mesh { mesh, image, param } => canvas.draw_mesh(mesh, image, *param),
+                    Draw::MeshInstances {
+                        mesh,
+                        instances,
+                        param,
+                    } => canvas.draw_mesh_instances(mesh, instances, *param),
+                    Draw::BoundedText { text, rect, layout } => {
+                        canvas.draw_bounded_text(&text, *rect, *layout)?
+                    }
+                }
             }
-
-            let shader = match ty {
-                ShaderType::Draw | ShaderType::Instance => {
-                    if let Some((bind_group, bind_group_layout)) = &self.shader_bind_group {
-                        self.pass.set_bind_group(
-                            if ty == ShaderType::Draw { 3 } else { 4 },
-                            bind_group,
-                            &[],
-                        );
-
-                        groups.push(bind_group_layout.clone());
-                    }
-
-                    &self.shader
-                }
-                ShaderType::Text => {
-                    if let Some((bind_group, bind_group_layout)) = &self.text_shader_bind_group {
-                        self.pass.set_bind_group(3, bind_group, &[]);
-                        groups.push(bind_group_layout.clone());
-                    }
-
-                    &self.text_shader
-                }
-            };
-
-            let layout = self.pipeline_cache.layout(self.device, &groups);
-            let pipeline = self
-                .arenas
-                .render_pipelines
-                .alloc(self.pipeline_cache.render_pipeline(
-                    self.device,
-                    layout.as_ref(),
-                    shader.info(
-                        match ty {
-                            ShaderType::Draw => self.draw_sm.clone(),
-                            ShaderType::Instance => self.instance_sm.clone(),
-                            ShaderType::Text => self.text_sm.clone(),
-                        },
-                        self.samples,
-                        self.format,
-                        Some(wgpu::BlendState {
-                            color: self.blend_mode.color,
-                            alpha: self.blend_mode.alpha,
-                        }),
-                        false,
-                        true,
-                        match ty {
-                            ShaderType::Text => wgpu::PrimitiveTopology::TriangleStrip,
-                            _ => wgpu::PrimitiveTopology::TriangleList,
-                        },
-                        match ty {
-                            ShaderType::Text => TextVertex::layout(),
-                            _ => Vertex::layout(),
-                        },
-                    ),
-                ));
-
-            self.pass.set_pipeline(pipeline);
         }
+
+        canvas.finish();
+
+        Ok(())
     }
-
-    fn set_image(&mut self, view: &ArcTextureView) {
-        if self.image_id.map(|id| id != view.id()).unwrap_or(true) {
-            self.image_id = Some(view.id());
-
-            let (bind_group, _) = BindGroupBuilder::new()
-                .image(&view, wgpu::ShaderStages::FRAGMENT)
-                .create(self.device, self.bind_group_cache);
-
-            let bind_group = self.arenas.bind_groups.alloc(bind_group);
-
-            self.pass.set_bind_group(1, bind_group, &[]);
-        }
-    }
-}
-
-impl<'a> Drop for Canvas<'a> {
-    fn drop(&mut self) {
-        self.finalize();
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum ShaderType {
-    Draw,
-    Instance,
-    Text,
 }
 
 /// Describes the image load operation when starting a new canvas.
@@ -842,10 +432,72 @@ impl From<Color> for CanvasLoadOp {
     }
 }
 
-#[derive(crevice::std140::AsStd140)]
-struct InstanceUniforms {
-    pub transform: mint::ColumnMatrix4<f32>,
-    pub color: mint::Vector4<f32>,
+#[derive(Debug, Clone)]
+struct DrawState {
+    shader: Shader,
+    params: Option<(ArcBindGroup, ArcBindGroupLayout)>,
+    text_shader: Shader,
+    text_params: Option<(ArcBindGroup, ArcBindGroupLayout)>,
+    sampler: Sampler,
+    blend_mode: BlendMode,
+    projection: mint::ColumnMatrix4<f32>,
+}
+
+#[derive(Debug)]
+enum Draw {
+    Mesh {
+        mesh: Mesh,
+        image: Image,
+        param: DrawParam,
+    },
+    MeshInstances {
+        mesh: Mesh,
+        instances: InstanceArray,
+        param: DrawParam,
+    },
+    BoundedText {
+        text: Vec<Text>,
+        rect: Rect,
+        layout: TextLayout,
+    },
+}
+
+#[derive(Debug)]
+struct DrawCommand {
+    state: DrawState,
+    draw: Draw,
+}
+
+#[derive(Debug)]
+struct DefaultResources {
+    shader: Shader,
+    text_shader: Shader,
+    mesh: Mesh,
+    image: Image,
+}
+
+impl DefaultResources {
+    fn new(gfx: &GraphicsContext) -> Self {
+        let shader = Shader {
+            fragment: gfx.draw_shader.clone(),
+            fs_entry: "fs_main".into(),
+        };
+
+        let text_shader = Shader {
+            fragment: gfx.text_shader.clone(),
+            fs_entry: "fs_main".into(),
+        };
+
+        let mesh = gfx.rect_mesh.clone();
+        let image = gfx.white_image.clone();
+
+        DefaultResources {
+            shader,
+            text_shader,
+            mesh,
+            image,
+        }
+    }
 }
 
 fn screen_to_mat(screen: Rect) -> glam::Mat4 {

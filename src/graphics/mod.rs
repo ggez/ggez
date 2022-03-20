@@ -6,6 +6,7 @@ pub(crate) mod draw;
 pub(crate) mod gpu;
 pub(crate) mod image;
 pub(crate) mod instance;
+pub(crate) mod internal_canvas;
 pub(crate) mod mesh;
 pub(crate) mod sampler;
 pub(crate) mod shader;

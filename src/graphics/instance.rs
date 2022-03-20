@@ -11,7 +11,7 @@ use crevice::std140::{AsStd140, Std140};
 /// Array of instances for fast rendering of many meshes.
 ///
 /// Traditionally known as a "batch".
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InstanceArray {
     pub(crate) buffer: ArcBuffer,
     pub(crate) image: Image,

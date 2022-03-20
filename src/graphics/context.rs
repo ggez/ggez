@@ -25,7 +25,7 @@ use crate::{
 use ::image as imgcrate;
 use crevice::std140::AsStd140;
 use glyph_brush::FontId;
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{collections::HashMap, path::Path};
 use typed_arena::Arena as TypedArena;
 use winit::{
     self,
@@ -88,7 +88,7 @@ pub struct GraphicsContext {
     pub(crate) instance_shader: ArcShaderModule,
     pub(crate) text_shader: ArcShaderModule,
     pub(crate) copy_shader: ArcShaderModule,
-    pub(crate) rect_mesh: Arc<Mesh>,
+    pub(crate) rect_mesh: Mesh,
     pub(crate) white_image: Image,
 }
 
@@ -224,7 +224,7 @@ impl GraphicsContext {
             },
         ));
 
-        let rect_mesh = Arc::new(Mesh::from_raw_wgpu(
+        let rect_mesh = Mesh::from_raw_wgpu(
             &wgpu,
             MeshData {
                 vertices: &[
@@ -251,7 +251,7 @@ impl GraphicsContext {
                 ],
                 indices: &[0, 2, 1, 2, 3, 1],
             },
-        ));
+        );
 
         let white_image =
             Image::from_pixels_wgpu(&wgpu, &[255, 255, 255, 255], ImageFormat::Rgba8Unorm, 1, 1);

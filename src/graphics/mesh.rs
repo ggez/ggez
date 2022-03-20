@@ -52,13 +52,10 @@ impl Vertex {
 }
 
 /// Mesh data stored on the GPU as a vertex and index buffer.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Mesh {
     pub(crate) verts: ArcBuffer,
     pub(crate) inds: ArcBuffer,
-    pub(crate) verts_capacity: usize,
-    pub(crate) inds_capacity: usize,
-    pub(crate) vertex_count: usize,
     pub(crate) index_count: usize,
 }
 
@@ -72,9 +69,6 @@ impl Mesh {
         Mesh {
             verts: Self::create_verts(wgpu, raw.vertices),
             inds: Self::create_inds(wgpu, raw.indices),
-            verts_capacity: raw.vertices.len(),
-            inds_capacity: raw.indices.len(),
-            vertex_count: raw.vertices.len(),
             index_count: raw.indices.len(),
         }
     }
@@ -196,40 +190,6 @@ impl Mesh {
             gfx,
             MeshBuilder::new().triangles(triangles, color)?.build(),
         ))
-    }
-
-    /// Update the vertices of the mesh.
-    #[allow(unsafe_code)]
-    pub fn set_vertices(&mut self, gfx: &GraphicsContext, vertices: &[Vertex]) {
-        self.vertex_count = vertices.len();
-        if vertices.len() > self.verts_capacity {
-            self.verts_capacity = vertices.len();
-            self.verts = Self::create_verts(&gfx.wgpu, vertices);
-        } else {
-            gfx.wgpu.queue.write_buffer(&self.verts, 0, unsafe {
-                std::slice::from_raw_parts(
-                    vertices as *const _ as *const u8,
-                    vertices.len() * std::mem::size_of::<Vertex>(),
-                )
-            });
-        }
-    }
-
-    /// Update the indices of the mesh.
-    #[allow(unsafe_code)]
-    pub fn set_indices(&mut self, gfx: &GraphicsContext, indices: &[u32]) {
-        self.index_count = indices.len();
-        if indices.len() > self.inds_capacity {
-            self.inds_capacity = indices.len();
-            self.inds = Self::create_inds(&gfx.wgpu, indices);
-        } else {
-            gfx.wgpu.queue.write_buffer(&self.inds, 0, unsafe {
-                std::slice::from_raw_parts(
-                    indices as *const _ as *const u8,
-                    indices.len() * std::mem::size_of::<u32>(),
-                )
-            });
-        }
     }
 
     #[allow(unsafe_code)]

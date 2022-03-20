@@ -93,6 +93,12 @@ impl Transform {
     }
 }
 
+/// Value describing the Z "coordinate" of a draw.
+///
+/// Greater values correspond to the foreground, and lower values
+/// correspond to the background.
+pub type ZIndex = i32;
+
 /// A struct containing all the necessary info for drawing with parameters.
 ///
 /// This struct implements the `Default` trait, so to set only some parameter
@@ -119,6 +125,10 @@ pub struct DrawParam {
     pub transform: Transform,
     /// Whether the scale should be relative to image size.
     pub image_scale: bool,
+    /// The Z coordinate of the draw.
+    ///
+    /// This has no effect when passed into [`InstanceArray`].
+    pub z: ZIndex,
 }
 
 impl Default for DrawParam {
@@ -128,6 +138,7 @@ impl Default for DrawParam {
             color: Color::WHITE,
             transform: Transform::default(),
             image_scale: true,
+            z: 0,
         }
     }
 }
@@ -220,9 +231,15 @@ impl DrawParam {
         self
     }
 
-    /// Set the image sclae option.
+    /// Set the image scale option.
     pub fn image_scale(mut self, image_scale: bool) -> Self {
         self.image_scale = image_scale;
+        self
+    }
+
+    /// Set the Z coordinate.
+    pub fn z(mut self, z: ZIndex) -> Self {
+        self.z = z;
         self
     }
 }
