@@ -416,15 +416,15 @@ impl event::EventHandler<ggez::GameError> for GameState {
     /// draw is where we should actually render the game's current state.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(
-            &mut ctx.gfx,
+            &ctx.gfx,
             graphics::CanvasLoadOp::Clear([0.0, 1.0, 0.0, 1.0].into()),
-        )?;
+        );
 
         // Then we tell the snake and the food to draw themselves
         self.snake.draw(&mut canvas);
         self.food.draw(&mut canvas);
 
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         // We yield the current thread until the next update
         ggez::timer::yield_now();

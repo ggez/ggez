@@ -4,9 +4,9 @@
 //! Prints instructions to the console.
 use std::convert::TryFrom;
 
-use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
+use ggez::{conf, graphics::Rect};
 use ggez::{Context, GameResult};
 
 use argh::FromArgs;
@@ -27,6 +27,7 @@ struct MainState {
     zoom: f32,
     image: graphics::Image,
     window_settings: WindowSettings,
+    screen_coords: Rect,
 }
 
 impl MainState {
@@ -39,6 +40,12 @@ impl MainState {
                 toggle_fullscreen: false,
                 is_fullscreen: false,
                 resize_projection: false,
+            },
+            screen_coords: Rect {
+                x: 0.,
+                y: 0.,
+                w: ctx.gfx.drawable_size().0,
+                h: ctx.gfx.drawable_size().1,
             },
         };
         Ok(s)
@@ -65,6 +72,17 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::BLACK);
+        canvas.set_screen_coordinates(self.screen_coords);
+
+        canvas.draw(
+            self.image.clone(),
+            DrawParam::new()
+                .dest(Point2::new(400.0, 300.0))
+                .color(Color::WHITE), //.offset([0.5, 0.5]),
+        );
+
+        let rotation = ctx.timer.ticks() % 1000;
         let circle = graphics::Mesh::new_circle(
             &ctx.gfx,
             DrawMode::stroke(3.0),
@@ -73,6 +91,11 @@ impl event::EventHandler<ggez::GameError> for MainState {
             4.0,
             Color::WHITE,
         )?;
+        canvas.draw_mesh(
+            circle.clone(),
+            None,
+            (Point2::new(400.0, 300.0), rotation as f32, Color::WHITE),
+        );
 
         // Let's draw a grid so we can see where the window bounds are.
         const COUNT: i32 = 10;
@@ -101,25 +124,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
             }
         }
         let mesh = graphics::Mesh::from_raw(&ctx.gfx, mb.build());
+        canvas.draw_mesh(mesh, None, (ggez::mint::Point2 { x: 0.0, y: 0.0 },));
 
-        let mut canvas = graphics::Canvas::from_frame(&mut ctx.gfx, Color::BLACK)?;
-
-        let rotation = ctx.timer.ticks() % 1000;
-        canvas.draw(
-            &self.image,
-            DrawParam::new()
-                .dest(Point2::new(400.0, 300.0))
-                .color(Color::WHITE), //.offset([0.5, 0.5]),
-        );
-        canvas.draw_mesh(
-            &circle,
-            None,
-            (Point2::new(400.0, 300.0), rotation as f32, Color::WHITE),
-        );
-
-        canvas.draw_mesh(&mesh, None, (ggez::mint::Point2 { x: 0.0, y: 0.0 },));
-
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         Ok(())
     }
@@ -152,7 +159,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 let (w, h) = ctx.gfx.drawable_size();
                 let new_rect =
                     graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
-                ctx.gfx.set_screen_coordinates(new_rect);
+                self.screen_coords = new_rect;
             }
             KeyCode::Down => {
                 self.zoom -= 0.1;
@@ -160,7 +167,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 let (w, h) = ctx.gfx.drawable_size();
                 let new_rect =
                     graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
-                ctx.gfx.set_screen_coordinates(new_rect);
+                self.screen_coords = new_rect;
             }
             KeyCode::Space => {
                 self.window_settings.resize_projection = !self.window_settings.resize_projection;
@@ -174,7 +181,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         Ok(())
     }
 
-    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) -> GameResult {
+    fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) -> GameResult {
         println!("Resized screen to {}, {}", width, height);
         if self.window_settings.resize_projection {
             let new_rect = graphics::Rect::new(
@@ -183,7 +190,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 width as f32 * self.zoom,
                 height as f32 * self.zoom,
             );
-            ctx.gfx.set_screen_coordinates(new_rect);
+            self.screen_coords = new_rect;
         }
         Ok(())
     }

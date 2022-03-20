@@ -300,32 +300,33 @@ impl MainState {
         let size = ctx.gfx.drawable_size();
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
-        let mut canvas = Canvas::from_image(&mut ctx.gfx, None, &self.occlusions)?;
-        canvas.set_shader_with_params(self.occlusions_shader.clone(), light.clone());
-        canvas.draw(&foreground, canvas_origin);
-        canvas.finish();
+        let mut canvas = Canvas::from_image(&ctx.gfx, self.occlusions.clone(), None);
+        canvas.set_shader(self.occlusions_shader.clone());
+        canvas.set_shader_params(light.clone());
+        canvas.draw(foreground.clone(), canvas_origin);
+        canvas.finish(&mut ctx.gfx)?;
 
         // Now we render our shadow map and light map into their respective
         // canvases based on the occlusion map. These will then be drawn onto
         // the final render target using appropriate blending modes.
-        let shadows = self.shadows.image(&ctx.gfx);
-        let mut canvas = Canvas::from_image(&mut ctx.gfx, clear, &shadows)?;
-        canvas.set_shader_with_params(self.shadows_shader.clone(), light.clone());
+        let mut canvas = Canvas::from_screen_image(&ctx.gfx, &mut self.shadows, clear);
+        canvas.set_shader(self.shadows_shader.clone());
+        canvas.set_shader_params(light.clone());
         canvas.draw(
-            &self.occlusions,
+            self.occlusions.clone(),
             origin.image_scale(false).scale([size.0, size.1]),
         );
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
-        let lights = self.lights.image(&ctx.gfx);
-        let mut canvas = Canvas::from_image(&mut ctx.gfx, clear, &lights)?;
+        let mut canvas = Canvas::from_screen_image(&ctx.gfx, &mut self.lights, clear);
         canvas.set_blend_mode(BlendMode::ADD);
-        canvas.set_shader_with_params(self.lights_shader.clone(), light.clone());
+        canvas.set_shader(self.lights_shader.clone());
+        canvas.set_shader_params(light.clone());
         canvas.draw(
-            &self.occlusions,
+            self.occlusions.clone(),
             origin.image_scale(false).scale([size.0, size.1]),
         );
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         Ok(())
     }
@@ -362,11 +363,17 @@ impl event::EventHandler<ggez::GameError> for MainState {
         //  - render to screen once all the shadows are calculated and rendered
         let foreground = self.foreground.image(&ctx.gfx);
         let mut canvas =
-            Canvas::from_image(&mut ctx.gfx, Color::new(0.0, 0.0, 0.0, 0.0), &foreground)?;
-        canvas.draw(&self.tile, DrawParam::new().dest(Vec2::new(598.0, 124.0)));
-        canvas.draw(&self.tile, DrawParam::new().dest(Vec2::new(92.0, 350.0)));
+            Canvas::from_image(&ctx.gfx, foreground.clone(), Color::new(0.0, 0.0, 0.0, 0.0));
         canvas.draw(
-            &self.tile,
+            self.tile.clone(),
+            DrawParam::new().dest(Vec2::new(598.0, 124.0)),
+        );
+        canvas.draw(
+            self.tile.clone(),
+            DrawParam::new().dest(Vec2::new(92.0, 350.0)),
+        );
+        canvas.draw(
+            self.tile.clone(),
             DrawParam::new().dest(Vec2::new(442.0, 468.0)).rotation(0.5),
         );
         canvas.draw_text(
@@ -376,8 +383,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .font("LiberationMono")],
             Vec2::new(50.0, 200.0),
             graphics::TextLayout::tl_single_line(),
-        )?;
-        canvas.finish();
+            0,
+        );
+        canvas.finish(&mut ctx.gfx)?;
 
         // Then we draw our light and shadow maps
         self.render_light(
@@ -400,20 +408,20 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let shadows = self.shadows.image(&ctx.gfx);
         let foreground = self.foreground.image(&ctx.gfx);
         let lights = self.lights.image(&ctx.gfx);
-        let mut canvas = Canvas::from_frame(&mut ctx.gfx, Color::WHITE)?;
-        canvas.draw(&self.background, DrawParam::default());
+        let mut canvas = Canvas::from_frame(&ctx.gfx, Color::WHITE);
+        canvas.draw(self.background.clone(), DrawParam::default());
         canvas.set_blend_mode(BlendMode::MULTIPLY);
-        canvas.draw(&shadows, DrawParam::default());
+        canvas.draw(shadows.clone(), DrawParam::default());
         canvas.set_blend_mode(BlendMode::ALPHA);
-        canvas.draw(&foreground, DrawParam::default());
+        canvas.draw(foreground.clone(), DrawParam::default());
         canvas.set_blend_mode(BlendMode::ADD);
-        canvas.draw(&lights, DrawParam::default());
+        canvas.draw(lights.clone(), DrawParam::default());
         // Uncomment following line to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
         // the greyscale pixels are the half distances of the nearest shadows to
         // the mouse position (equally encoded in all color channels).
         // canvas.draw(&self.occlusions, DrawParam::default());
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         Ok(())
     }

@@ -113,34 +113,25 @@ impl event::EventHandler<ggez::GameError> for GameState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        if self.batched_drawing {
-            if self.bunnybatch.capacity() < self.bunnies.len() {
-                self.bunnybatch.resize(&ctx.gfx, self.bunnies.len() as u32);
-            }
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from((0.392, 0.584, 0.929)));
 
+        if self.batched_drawing {
             self.bunnybatch.set(
                 &ctx.gfx,
                 self.bunnies
                     .iter()
                     .map(|bunny| graphics::DrawParam::new().dest(bunny.position)),
             );
-        }
 
-        let mut canvas =
-            graphics::Canvas::from_frame(&mut ctx.gfx, Color::from((0.392, 0.584, 0.929)))?;
-
-        if self.batched_drawing {
-            canvas.draw_instances(&self.bunnybatch, graphics::DrawParam::default());
+            canvas.draw_instances(self.bunnybatch.clone(), graphics::DrawParam::default());
         } else {
             for bunny in &self.bunnies {
                 canvas.draw(
-                    &self.texture,
+                    self.texture.clone(),
                     graphics::DrawParam::new().dest(bunny.position),
                 );
             }
         }
-
-        canvas.finish();
 
         ctx.gfx.set_window_title(&format!(
             "BunnyMark - {} bunnies - {:.0} FPS - batched drawing: {}",
@@ -148,6 +139,8 @@ impl event::EventHandler<ggez::GameError> for GameState {
             ctx.timer.fps(),
             self.batched_drawing
         ));
+
+        canvas.finish(&mut ctx.gfx)?;
 
         Ok(())
     }

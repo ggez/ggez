@@ -32,9 +32,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(
-            &mut ctx.gfx,
+            &ctx.gfx,
             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
-        )?;
+        );
 
         // Text is drawn from the top-left corner.
         let offset = self.frames as f32 / 10.0;
@@ -46,9 +46,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .size(48.)],
             dest_point,
             graphics::TextLayout::tl_single_line(),
-        )?;
+            0,
+        );
 
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         self.frames += 1;
         if (self.frames % 100) == 0 {

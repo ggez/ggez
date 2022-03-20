@@ -431,7 +431,7 @@ fn draw_actor(
         .dest(pos)
         .rotation(actor.facing as f32)
         .offset(Point2::new(0.5, 0.5));
-    canvas.draw(image, drawparams);
+    canvas.draw(image.clone(), drawparams);
 }
 
 /// **********************************************************************
@@ -500,7 +500,7 @@ impl EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Our drawing is quite simple.
         // Just clear the screen...
-        let mut canvas = graphics::Canvas::from_frame(&mut ctx.gfx, Color::BLACK)?;
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::BLACK);
 
         // Loop over all objects drawing them...
         {
@@ -533,7 +533,8 @@ impl EventHandler for MainState {
                 .color(Color::WHITE)],
             level_dest,
             graphics::TextLayout::tl_single_line(),
-        )?;
+            0,
+        );
 
         canvas.draw_text(
             &[graphics::Text::new()
@@ -542,9 +543,10 @@ impl EventHandler for MainState {
                 .color(Color::WHITE)],
             score_dest,
             graphics::TextLayout::tl_single_line(),
-        )?;
+            0,
+        );
 
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         // And yield the timeslice
         // This tells the OS that we're done using the CPU but it should

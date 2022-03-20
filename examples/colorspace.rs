@@ -136,11 +136,11 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(&mut ctx.gfx, AQUA)?;
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, AQUA);
 
         // Draw a white square so we can see things
         canvas.draw_mesh(
-            &self.square_mesh,
+            self.square_mesh.clone(),
             None,
             DrawParam::default().dest(Vec2::new(200.0, 100.0)),
         );
@@ -151,14 +151,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // mesh
         canvas.draw_mesh(
-            &self.demo_mesh,
+            self.demo_mesh.clone(),
             None,
             DrawParam::default().dest(Vec2::new(150.0, 200.0)),
         );
 
         // image
         canvas.draw(
-            &self.demo_image,
+            self.demo_image.clone(),
             DrawParam::default().dest(Vec2::new(450.0, 200.0)),
         );
 
@@ -172,15 +172,16 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &[text],
             Vec2::new(150., 135.),
             graphics::TextLayout::tl_single_line(),
-        )?;
+            0,
+        );
 
         // spritebatch
         canvas.draw_instances(
-            &self.demo_instances,
+            self.demo_instances.clone(),
             DrawParam::default().dest(Vec2::new(0.0, 0.0)),
         );
 
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         Ok(())
     }

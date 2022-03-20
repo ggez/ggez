@@ -64,8 +64,8 @@ impl MainState {
                 .flatten(),
         );
 
-        let canvas_image = self.canvas_image.image(&ctx.gfx);
-        let mut canvas = graphics::Canvas::from_image(&mut ctx.gfx, Color::WHITE, &canvas_image)?;
+        let mut canvas =
+            graphics::Canvas::from_screen_image(&ctx.gfx, &mut self.canvas_image, Color::WHITE);
 
         let param = graphics::DrawParam::new()
             .dest(Point2::new(
@@ -79,8 +79,8 @@ impl MainState {
             .rotation((time % cycle) as f32 / cycle as f32 * TAU)
             .offset(Point2::new(750., 750.));
 
-        canvas.draw_instances(&self.instances, param);
-        canvas.finish();
+        canvas.draw_instances(self.instances.clone(), param);
+        canvas.finish(&mut ctx.gfx)?;
 
         Ok(())
     }
@@ -109,20 +109,19 @@ impl event::EventHandler<ggez::GameError> for MainState {
         self.draw_spritebatch(ctx)?;
 
         let canvas_image = self.canvas_image.image(&ctx.gfx);
-        let mut canvas =
-            graphics::Canvas::from_frame(&mut ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]))?;
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
 
         let src_x = self.draw_pt.x / canvas_image.width() as f32;
         let src_y = self.draw_pt.y / canvas_image.height() as f32;
 
         canvas.draw(
-            &canvas_image,
+            canvas_image.clone(),
             graphics::DrawParam::new()
                 .dest(self.draw_pt)
                 .src(graphics::Rect::new(src_x, src_y, 0.5, 0.5)),
         );
 
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         Ok(())
     }

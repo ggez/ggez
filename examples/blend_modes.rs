@@ -61,7 +61,7 @@ impl MainState {
         // draw the diagram
         for i in 0..3 {
             canvas.draw_mesh(
-                &self.circle,
+                self.circle.clone(),
                 None,
                 graphics::DrawParam::new()
                     .dest(pos + Vec2::from(REL_POSITIONS[i]))
@@ -81,7 +81,8 @@ impl MainState {
             &[text],
             pos + text_offset,
             graphics::TextLayout::tl_single_line(),
-        )?;
+            0,
+        );
         Ok(())
     }
 
@@ -141,13 +142,12 @@ impl EventHandler for MainState {
         // draw everything onto self.layer
         let layer = self.layer.image(&ctx.gfx);
         let mut canvas =
-            graphics::Canvas::from_image(&mut ctx.gfx, Color::new(0., 0., 0., 0.), &layer)?;
+            graphics::Canvas::from_image(&ctx.gfx, layer.clone(), Color::new(0., 0., 0., 0.));
         self.draw_venn_diagrams((w, h), &mut canvas)?;
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         // now start drawing to the screen
-        let mut canvas =
-            graphics::Canvas::from_frame(&mut ctx.gfx, Color::new(0.3, 0.3, 0.3, 1.0))?;
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::new(0.3, 0.3, 0.3, 1.0));
 
         // draw everything directly onto the screen once
         self.draw_venn_diagrams((w, h), &mut canvas)?;
@@ -155,7 +155,7 @@ impl EventHandler for MainState {
         // draw layer onto the screen
         canvas.set_blend_mode(self.layer_blend);
         canvas.draw(
-            &layer,
+            layer.clone(),
             DrawParam::default().dest(mint::Point2 { x: 0., y: h / 2. }),
         );
 
@@ -171,7 +171,8 @@ impl EventHandler for MainState {
             &[text],
             Vec2::new(8., 4.),
             graphics::TextLayout::tl_single_line(),
-        )?;
+            0,
+        );
         let text = graphics::Text::new()
             .text("drawn onto a (transparent black) canvas:")
             .font("LiberationMono")
@@ -181,9 +182,10 @@ impl EventHandler for MainState {
             &[text],
             Vec2::new(8., 4. + y),
             graphics::TextLayout::tl_single_line(),
-        )?;
+            0,
+        );
 
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         Ok(())
     }

@@ -253,13 +253,13 @@ impl MainState {
     }
 }
 
-fn draw_info(canvas: &mut graphics::Canvas, info: String, position: Point2<f32>) -> GameResult {
+fn draw_info(canvas: &mut graphics::Canvas, info: String, position: Point2<f32>) {
     let t = graphics::Text::new()
         .text(info)
         .font("LiberationMono")
         .size(40.)
         .color(Color::WHITE);
-    canvas.draw_text(&[t], position, graphics::TextLayout::tl_single_line())
+    canvas.draw_text(&[t], position, graphics::TextLayout::tl_single_line(), 0)
 }
 
 impl event::EventHandler<ggez::GameError> for MainState {
@@ -273,8 +273,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas =
-            graphics::Canvas::from_frame(&mut ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]))?;
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
 
         canvas.set_sampler(graphics::Sampler::nearest_clamp()); // because pixel art
 
@@ -283,27 +282,27 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &mut canvas,
             format!("Easing: {:?}", self.easing_enum),
             [300.0, 60.0].into(),
-        )?;
+        );
         draw_info(
             &mut canvas,
             format!("Animation: {:?}", self.animation_type),
             [300.0, 110.0].into(),
-        )?;
+        );
         draw_info(
             &mut canvas,
             format!("Duration: {:.2} s", self.duration),
             [300.0, 160.0].into(),
-        )?;
+        );
 
         // draw the animated ball
         let ball_pos = self.ball_animation.now_strict().unwrap();
-        canvas.draw_mesh(&self.ball, None, (ball_pos,));
+        canvas.draw_mesh(self.ball.clone(), None, (ball_pos,));
 
         // draw the player
         let current_frame_src: graphics::Rect = self.player_animation.now_strict().unwrap().into();
         let scale = 3.0;
         canvas.draw(
-            &self.spritesheet,
+            self.spritesheet.clone(),
             graphics::DrawParam::new()
                 .src(current_frame_src)
                 .scale([scale, scale])
@@ -311,7 +310,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .offset([0.5, 1.0]),
         );
 
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         Ok(())
     }

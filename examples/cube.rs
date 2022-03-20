@@ -332,7 +332,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             pass.draw_indexed(0..36, 0, 0..1);
         }
 
-        let mut canvas = graphics::Canvas::from_frame(&mut ctx.gfx, None)?;
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, None);
 
         // Do ggez drawing
         let dest_point1 = Vec2::new(10.0, 210.0);
@@ -343,16 +343,18 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .text("You can mix ggez and gfx drawing;")],
             dest_point1,
             graphics::TextLayout::tl_single_line(),
-        )?;
+            0,
+        );
         canvas.draw_text(
             &[graphics::Text::new()
                 .font("LiberationMono")
                 .text("it basically draws gfx stuff first, then ggez")],
             dest_point2,
             graphics::TextLayout::tl_single_line(),
-        )?;
+            0,
+        );
 
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         self.frames += 1;
         if (self.frames % 10) == 0 {

@@ -128,13 +128,13 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(
-            &mut ctx.gfx,
+            &ctx.gfx,
             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
-        )?;
+        );
 
         // Draw an image.
         let dst = glam::Vec2::new(20.0, 20.0);
-        canvas.draw(&self.image1, graphics::DrawParam::new().dest(dst));
+        canvas.draw(self.image1.clone(), graphics::DrawParam::new().dest(dst));
 
         // Draw an image with some options, and different filter modes.
         let dst = glam::Vec2::new(200.0, 100.0);
@@ -142,7 +142,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let scale = glam::Vec2::new(10.0, 10.0);
 
         canvas.draw(
-            &self.image2,
+            self.image2.clone(),
             graphics::DrawParam::new()
                 .dest(dst)
                 .rotation(self.rotation)
@@ -150,7 +150,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         );
         canvas.set_sampler(graphics::Sampler::nearest_clamp());
         canvas.draw(
-            &self.image2,
+            self.image2.clone(),
             graphics::DrawParam::new()
                 .dest(dst2)
                 .rotation(self.rotation)
@@ -170,15 +170,19 @@ impl event::EventHandler<ggez::GameError> for MainState {
         );
 
         // Draw a stroked rectangle mesh.
-        canvas.draw_mesh(&self.rect, None, graphics::DrawParam::default());
+        canvas.draw_mesh(self.rect.clone(), None, graphics::DrawParam::default());
 
         // Draw some pre-made meshes
         for (image, mesh) in &self.meshes {
-            canvas.draw_mesh(mesh, image, graphics::DrawParam::new().image_scale(false));
+            canvas.draw_mesh(
+                mesh.clone(),
+                image.clone(),
+                graphics::DrawParam::new().image_scale(false),
+            );
         }
 
         // Finished drawing, show it all on the screen!
-        canvas.finish();
+        canvas.finish(&mut ctx.gfx)?;
 
         Ok(())
     }
