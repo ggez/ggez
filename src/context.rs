@@ -36,7 +36,7 @@ use crate::timer;
 /// types.
 pub struct Context {
     /// Filesystem state.
-    pub filesystem: Filesystem,
+    pub fs: Filesystem,
     /// Graphics state.
     pub(crate) gfx: crate::graphics::context::GraphicsContext,
     /// Timer state.
@@ -92,7 +92,7 @@ impl Context {
 
         let ctx = Context {
             conf,
-            filesystem: fs,
+            fs,
             gfx: graphics_context,
             continuing: true,
             time: timer_context,

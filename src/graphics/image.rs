@@ -8,7 +8,6 @@ use ::image;
 use crate::context::{Context, DebugId};
 use crate::error::GameError;
 use crate::error::GameResult;
-use crate::filesystem;
 use crate::graphics;
 use crate::graphics::shader::*;
 use crate::graphics::*;
@@ -187,7 +186,7 @@ impl Image {
             .extension()
             .map_or_else(|| None, image::ImageFormat::from_extension);
         let mut buf = Vec::new();
-        let mut reader = context.filesystem.open(path)?;
+        let mut reader = context.fs.open(path)?;
         let _ = reader.read_to_end(&mut buf)?;
         if let Some(format) = format {
             Self::from_bytes_with_format(context, &buf, format)
@@ -305,7 +304,7 @@ impl Image {
     ) -> GameResult {
         use std::io;
         let data = self.to_rgba8(ctx)?;
-        let f = filesystem::create(ctx, path)?;
+        let f = ctx.fs.create(path)?;
         let writer = &mut io::BufWriter::new(f);
         let color_format = image::ColorType::Rgba8;
         match format {

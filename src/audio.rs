@@ -18,7 +18,6 @@ use std::sync::Arc;
 use crate::context::Context;
 use crate::error::GameError;
 use crate::error::GameResult;
-use crate::filesystem;
 
 /// A struct that contains all information for tracking sound info.
 ///
@@ -66,7 +65,7 @@ impl SoundData {
     /// Load the file at the given path and create a new `SoundData` from it.
     pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
-        let file = &mut filesystem::open(context, path)?;
+        let file = &mut context.fs.open(path)?;
         SoundData::from_read(file)
     }
 

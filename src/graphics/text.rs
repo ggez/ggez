@@ -422,8 +422,7 @@ impl Font {
     where
         P: AsRef<path::Path> + fmt::Debug,
     {
-        use crate::filesystem;
-        let mut stream = filesystem::open(context, path.as_ref())?;
+        let mut stream = context.fs.open(path.as_ref())?;
         let mut buf = Vec::new();
         let _ = stream.read_to_end(&mut buf)?;
 

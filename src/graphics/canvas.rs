@@ -9,13 +9,13 @@ use gfx::texture::{AaMode, Kind};
 use gfx::Factory;
 use glam::Quat;
 
+use crate::conf;
 use crate::conf::Backend::OpenGLES;
 use crate::context::DebugId;
 use crate::error::*;
 use crate::graphics::context::Fragments;
 use crate::graphics::*;
 use crate::Context;
-use crate::{conf, filesystem};
 
 /// A generic canvas independent of graphics backend. This type should
 /// never need to be used directly; use [`graphics::Canvas`](type.Canvas.html)
@@ -264,7 +264,7 @@ impl Canvas {
     ) -> GameResult {
         use std::io;
         let data = self.to_rgba8(ctx)?;
-        let f = filesystem::create(ctx, path)?;
+        let f = ctx.fs.create(path)?;
         let writer = &mut io::BufWriter::new(f);
         let color_format = ::image::ColorType::Rgba8;
         match format {

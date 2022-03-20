@@ -51,10 +51,10 @@ const CONFIG_NAME: &str = "/conf.toml";
 #[derive(Debug)]
 pub struct Filesystem {
     vfs: vfs::OverlayFS,
-    resources_path: path::PathBuf,
-    zip_path: path::PathBuf,
-    user_config_path: path::PathBuf,
-    user_data_path: path::PathBuf,
+    resources_dir: path::PathBuf,
+    zip_dir: path::PathBuf,
+    user_config_dir: path::PathBuf,
+    user_data_dir: path::PathBuf,
 }
 
 /// Represents a file, either in the filesystem, or in the resources zip file,
@@ -172,10 +172,10 @@ impl Filesystem {
 
         let fs = Filesystem {
             vfs: overlay,
-            resources_path,
-            zip_path: resources_zip_path,
-            user_config_path: user_config_path.to_path_buf(),
-            user_data_path: user_data_path.to_path_buf(),
+            resources_dir: resources_path,
+            zip_dir: resources_zip_path,
+            user_config_dir: user_config_path.to_path_buf(),
+            user_data_dir: user_data_path.to_path_buf(),
         };
 
         Ok(fs)
@@ -183,7 +183,7 @@ impl Filesystem {
 
     /// Opens the given `path` and returns the resulting `File`
     /// in read-only mode.
-    pub(crate) fn open<P: AsRef<path::Path>>(&self, path: P) -> GameResult<File> {
+    pub fn open<P: AsRef<path::Path>>(&self, path: P) -> GameResult<File> {
         self.vfs.open(path.as_ref()).map(|f| File::VfsFile(f))
     }
 
@@ -191,7 +191,7 @@ impl Filesystem {
     /// [`filesystem::OpenOptions`](struct.OpenOptions.html).
     /// Note that even if you open a file read-write, it can only
     /// write to files in the "user" directory.
-    pub(crate) fn open_options<P: AsRef<path::Path>>(
+    pub fn open_options<P: AsRef<path::Path>>(
         &self,
         path: P,
         options: OpenOptions,
@@ -210,35 +210,35 @@ impl Filesystem {
 
     /// Creates a new file in the user directory and opens it
     /// to be written to, truncating it if it already exists.
-    pub(crate) fn create<P: AsRef<path::Path>>(&self, path: P) -> GameResult<File> {
+    pub fn create<P: AsRef<path::Path>>(&self, path: P) -> GameResult<File> {
         self.vfs.create(path.as_ref()).map(|f| File::VfsFile(f))
     }
 
     /// Create an empty directory in the user dir
     /// with the given name.  Any parents to that directory
     /// that do not exist will be created.
-    pub(crate) fn create_dir<P: AsRef<path::Path>>(&self, path: P) -> GameResult<()> {
+    pub fn create_dir<P: AsRef<path::Path>>(&self, path: P) -> GameResult<()> {
         self.vfs.mkdir(path.as_ref())
     }
 
     /// Deletes the specified file in the user dir.
-    pub(crate) fn delete<P: AsRef<path::Path>>(&self, path: P) -> GameResult<()> {
+    pub fn delete<P: AsRef<path::Path>>(&self, path: P) -> GameResult<()> {
         self.vfs.rm(path.as_ref())
     }
 
     /// Deletes the specified directory in the user dir,
     /// and all its contents!
-    pub(crate) fn delete_dir<P: AsRef<path::Path>>(&self, path: P) -> GameResult<()> {
+    pub fn delete_dir<P: AsRef<path::Path>>(&self, path: P) -> GameResult<()> {
         self.vfs.rmrf(path.as_ref())
     }
 
     /// Check whether a file or directory exists.
-    pub(crate) fn exists<P: AsRef<path::Path>>(&self, path: P) -> bool {
+    pub fn exists<P: AsRef<path::Path>>(&self, path: P) -> bool {
         self.vfs.exists(path.as_ref())
     }
 
     /// Check whether a path points at a file.
-    pub(crate) fn is_file<P: AsRef<path::Path>>(&self, path: P) -> bool {
+    pub fn is_file<P: AsRef<path::Path>>(&self, path: P) -> bool {
         self.vfs
             .metadata(path.as_ref())
             .map(|m| m.is_file())
@@ -246,7 +246,7 @@ impl Filesystem {
     }
 
     /// Check whether a path points at a directory.
-    pub(crate) fn is_dir<P: AsRef<path::Path>>(&self, path: P) -> bool {
+    pub fn is_dir<P: AsRef<path::Path>>(&self, path: P) -> bool {
         self.vfs
             .metadata(path.as_ref())
             .map(|m| m.is_dir())
@@ -257,7 +257,7 @@ impl Filesystem {
     /// in no particular order.
     ///
     /// Lists the base directory if an empty path is given.
-    pub(crate) fn read_dir<P: AsRef<path::Path>>(
+    pub fn read_dir<P: AsRef<path::Path>>(
         &self,
         path: P,
     ) -> GameResult<Box<dyn Iterator<Item = path::PathBuf>>> {
@@ -288,14 +288,14 @@ impl Filesystem {
 
     /// Prints the contents of all data directories
     /// to standard output.  Useful for debugging.
-    pub(crate) fn print_all(&self) {
+    pub fn print_all(&self) {
         println!("{}", self.write_to_string());
     }
 
     /// Outputs the contents of all data directories,
     /// using the "info" log level of the [`log`](https://docs.rs/log/) crate.
     /// Useful for debugging.
-    pub(crate) fn log_all(&self) {
+    pub fn log_all(&self) {
         info!("{}", self.write_to_string());
     }
 
@@ -306,7 +306,7 @@ impl Filesystem {
     /// harder than it looks to make it bulletproof across platforms.
     /// But it can be very nice for debugging and dev purposes, such as
     /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
-    pub(crate) fn mount(&mut self, path: &path::Path, readonly: bool) {
+    pub fn mount(&mut self, path: &path::Path, readonly: bool) {
         let physfs = vfs::PhysicalFS::new(path, readonly);
         trace!("Mounting new path: {:?}", physfs);
         self.vfs.push_back(Box::new(physfs));
@@ -318,10 +318,7 @@ impl Filesystem {
     /// for `.mount()`. Rather, it can be used to read zip files from sources
     /// such as `std::io::Cursor::new(includes_bytes!(...))` in order to embed
     /// resources into the game's executable.
-    pub(crate) fn add_zip_file<R: io::Read + io::Seek + 'static>(
-        &mut self,
-        reader: R,
-    ) -> GameResult<()> {
+    pub fn add_zip_file<R: io::Read + io::Seek + 'static>(&mut self, reader: R) -> GameResult<()> {
         let zipfs = vfs::ZipFS::from_read(reader)?;
         trace!("Adding zip file from reader");
         self.vfs.push_back(Box::new(zipfs));
@@ -331,7 +328,7 @@ impl Filesystem {
     /// Looks for a file named `/conf.toml` in any resource directory and
     /// loads it if it finds it.
     /// If it can't read it for some reason, returns an error.
-    pub(crate) fn read_config(&self) -> GameResult<conf::Conf> {
+    pub fn read_config(&self) -> GameResult<conf::Conf> {
         let conf_path = path::Path::new(CONFIG_NAME);
         if self.is_file(conf_path) {
             let mut file = self.open(conf_path)?;
@@ -346,7 +343,7 @@ impl Filesystem {
 
     /// Takes a `Conf` object and saves it to the user directory,
     /// overwriting any file already there.
-    pub(crate) fn write_config(&self, conf: &conf::Conf) -> GameResult<()> {
+    pub fn write_config(&self, conf: &conf::Conf) -> GameResult<()> {
         let conf_path = path::Path::new(CONFIG_NAME);
         let mut file = self.create(conf_path)?;
         conf.to_toml_file(&mut file)?;
@@ -359,100 +356,151 @@ impl Filesystem {
             )))
         }
     }
+
+    /// Returns the full path to the resource directory
+    /// (even if it doesn't exist)
+    pub fn resources_dir(&self) -> &path::PathBuf {
+        &self.resources_dir
+    }
+
+    /// Get a reference to the filesystem's zip dir.
+    pub fn zip_dir(&self) -> &path::PathBuf {
+        &self.zip_dir
+    }
+
+    /// Return the full path to the user config directory.
+    pub fn user_config_dir(&self) -> &path::PathBuf {
+        &self.user_config_dir
+    }
+
+    /// Return the full path to the user data directory.
+    pub fn user_data_dir(&self) -> &path::PathBuf {
+        &self.user_data_dir
+    }
 }
 
 /// Opens the given path and returns the resulting `File`
 /// in read-only mode.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.open` instead")]
 pub fn open<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<File> {
-    ctx.filesystem.open(path)
+    ctx.fs.open(path)
 }
 
 /// Opens a file in the user directory with the given `filesystem::OpenOptions`.
 /// Note that even if you open a file read-only, it can only access
 /// files in the user directory.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.open_options` instead")]
 pub fn open_options<P: AsRef<path::Path>>(
     ctx: &Context,
     path: P,
     options: OpenOptions,
 ) -> GameResult<File> {
-    ctx.filesystem.open_options(path, options)
+    ctx.fs.open_options(path, options)
 }
 
 /// Creates a new file in the user directory and opens it
 /// to be written to, truncating it if it already exists.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.create` instead")]
 pub fn create<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<File> {
-    ctx.filesystem.create(path)
+    ctx.fs.create(path)
 }
 
 /// Create an empty directory in the user dir
 /// with the given name.  Any parents to that directory
 /// that do not exist will be created.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.create_dir` instead")]
 pub fn create_dir<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult {
-    ctx.filesystem.create_dir(path.as_ref())
+    ctx.fs.create_dir(path.as_ref())
 }
 
 /// Deletes the specified file in the user dir.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.delete` instead")]
 pub fn delete<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult {
-    ctx.filesystem.delete(path.as_ref())
+    ctx.fs.delete(path.as_ref())
 }
 
 /// Deletes the specified directory in the user dir,
 /// and all its contents!
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.delete_dir` instead")]
 pub fn delete_dir<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult {
-    ctx.filesystem.delete_dir(path.as_ref())
+    ctx.fs.delete_dir(path.as_ref())
 }
 
 /// Check whether a file or directory exists.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.exists` instead")]
 pub fn exists<P: AsRef<path::Path>>(ctx: &Context, path: P) -> bool {
-    ctx.filesystem.exists(path.as_ref())
+    ctx.fs.exists(path.as_ref())
 }
 
 /// Check whether a path points at a file.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.is_file` instead")]
 pub fn is_file<P: AsRef<path::Path>>(ctx: &Context, path: P) -> bool {
-    ctx.filesystem.is_file(path)
+    ctx.fs.is_file(path)
 }
 
 /// Check whether a path points at a directory.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.is_dir` instead")]
 pub fn is_dir<P: AsRef<path::Path>>(ctx: &Context, path: P) -> bool {
-    ctx.filesystem.is_dir(path)
+    ctx.fs.is_dir(path)
 }
 
-/// Return the full path to the user data directory
+/// Return the full path to the user data directory.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.user_data_dir` instead")]
 pub fn user_data_dir(ctx: &Context) -> &path::Path {
-    &ctx.filesystem.user_data_path
+    &ctx.fs.user_data_dir
 }
 
-/// Return the full path to the user config directory
+/// Return the full path to the user config directory.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.user_config_dir` instead")]
 pub fn user_config_dir(ctx: &Context) -> &path::Path {
-    &ctx.filesystem.user_config_path
+    &ctx.fs.user_config_dir
 }
 
 /// Returns the full path to the resource directory
 /// (even if it doesn't exist)
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.resources_dir` instead")]
 pub fn resources_dir(ctx: &Context) -> &path::Path {
-    &ctx.filesystem.resources_path
+    &ctx.fs.resources_dir
 }
 
 /// Return the full path to the user data directory
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.zip_dir` instead")]
 pub fn zip_dir(ctx: &Context) -> &path::Path {
-    &ctx.filesystem.zip_path
+    &ctx.fs.zip_dir
 }
 
 /// Returns a list of all files and directories in the resource directory,
 /// in no particular order.
 ///
 /// Lists the base directory if an empty path is given.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.read_dir` instead")]
 pub fn read_dir<P: AsRef<path::Path>>(
     ctx: &Context,
     path: P,
 ) -> GameResult<Box<dyn Iterator<Item = path::PathBuf>>> {
-    ctx.filesystem.read_dir(path)
+    ctx.fs.read_dir(path)
 }
 
 /// Prints the contents of all data directories.
 /// Useful for debugging.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.print_all` instead")]
 pub fn print_all(ctx: &Context) {
-    ctx.filesystem.print_all()
+    ctx.fs.print_all()
 }
 
 /// Outputs the contents of all data directories,
@@ -461,8 +509,10 @@ pub fn print_all(ctx: &Context) {
 ///
 /// See the [`logging` example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs)
 /// for how to collect log information.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.log_all` instead")]
 pub fn log_all(ctx: &Context) {
-    ctx.filesystem.log_all()
+    ctx.fs.log_all()
 }
 
 /// Adds the given (absolute) path to the list of directories
@@ -472,21 +522,27 @@ pub fn log_all(ctx: &Context) {
 /// harder than it looks to make it bulletproof across platforms.
 /// But it can be very nice for debugging and dev purposes, such as
 /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.mount` instead")]
 pub fn mount(ctx: &mut Context, path: &path::Path, readonly: bool) {
-    ctx.filesystem.mount(path, readonly)
+    ctx.fs.mount(path, readonly)
 }
 
 /// Looks for a file named `/conf.toml` in any resource directory and
 /// loads it if it finds it.
 /// If it can't read it for some reason, returns an error.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.read_config` instead")]
 pub fn read_config(ctx: &Context) -> GameResult<conf::Conf> {
-    ctx.filesystem.read_config()
+    ctx.fs.read_config()
 }
 
 /// Takes a `Conf` object and saves it to the user directory,
 /// overwriting any file already there.
+// TODO: Add deprecation version
+#[deprecated(note = "Use `Context::fs.write_config` instead")]
 pub fn write_config(ctx: &Context, conf: &conf::Conf) -> GameResult {
-    ctx.filesystem.write_config(conf)
+    ctx.fs.write_config(conf)
 }
 
 #[cfg(test)]
@@ -506,10 +562,10 @@ mod tests {
         Filesystem {
             vfs: ofs,
 
-            resources_path: "".into(),
-            zip_path: "".into(),
-            user_config_path: "".into(),
-            user_data_path: "".into(),
+            resources_dir: "".into(),
+            zip_dir: "".into(),
+            user_config_dir: "".into(),
+            user_data_dir: "".into(),
         }
     }
 

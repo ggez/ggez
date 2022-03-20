@@ -144,12 +144,14 @@ impl Default for MouseContext {
 }
 
 /// Returns the current mouse cursor type of the window.
+// TODO: Add deprecation version
 #[deprecated(note = "Use `Context::input.mouse.cursor_type` instead")]
 pub fn cursor_type(ctx: &Context) -> CursorIcon {
     ctx.input.mouse.cursor_type()
 }
 
 /// Set whether or not the mouse is hidden (invisible)
+// TODO: Add deprecation version
 #[deprecated(note = "Use `Context::input.mouse.cursor_hidden` instead")]
 pub fn cursor_hidden(ctx: &Context) -> bool {
     ctx.input.mouse.cursor_hidden()
@@ -158,30 +160,35 @@ pub fn cursor_hidden(ctx: &Context) -> bool {
 /// Get the current position of the mouse cursor, in pixels.
 /// Complement to [`set_position()`](fn.set_position.html).
 /// Uses strictly window-only coordinates.
+// TODO: Add deprecation version
 #[deprecated(note = "Use `Context::input.mouse.position` instead")]
 pub fn position(ctx: &Context) -> mint::Point2<f32> {
     ctx.input.mouse.position()
 }
 
 /// Get the distance the cursor was moved during the current frame, in pixels.
+// TODO: Add deprecation version
 #[deprecated(note = "Use `Context::input.mouse.delta` instead")]
 pub fn delta(ctx: &Context) -> mint::Point2<f32> {
     ctx.input.mouse.delta()
 }
 
 /// Returns whether or not the given mouse button is pressed.
+// TODO: Add deprecation version
 #[deprecated(note = "Use `Context::input.mouse.button_pressed` instead")]
 pub fn button_pressed(ctx: &Context, button: MouseButton) -> bool {
     ctx.input.mouse.button_pressed(button)
 }
 
 /// Returns whether or not the given mouse button has been pressed this frame.
+// TODO: Add deprecation version
 #[deprecated(note = "Use `Context::input.mouse.button_just_pressed` instead")]
 pub fn button_just_pressed(ctx: &Context, button: MouseButton) -> bool {
     ctx.input.mouse.button_just_pressed(button)
 }
 
 /// Returns whether or not the given mouse button has been released this frame.
+// TODO: Add deprecation version
 #[deprecated(note = "Use `Context::input.mouse.button_just_released` instead")]
 pub fn button_just_released(ctx: &Context, button: MouseButton) -> bool {
     ctx.input.mouse.button_just_released(button)
@@ -199,6 +206,7 @@ pub fn button_just_released(ctx: &Context, button: MouseButton) -> bool {
 /// (Note that the default implementation of
 /// [`touch_event`](../../event/trait.EventHandler.html#method.touch_event) DOES trigger one, but
 /// it does so by invoking it on the `EventHandler` manually.)
+// TODO: Add deprecation version
 #[deprecated(note = "Use `Context::input.mouse.handle_move` instead")]
 pub fn handle_move(ctx: &mut Context, new_x: f32, new_y: f32) {
     ctx.input.mouse.handle_move(new_x, new_y)

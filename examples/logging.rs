@@ -10,7 +10,7 @@ use log::*;
 
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event::{EventHandler, KeyCode, KeyMods};
-use ggez::filesystem::{self, File};
+use ggez::filesystem::File;
 use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
@@ -35,11 +35,11 @@ impl FileLogger {
         receiver: mpsc::Receiver<String>,
     ) -> GameResult<FileLogger> {
         // This (re)creates a file and opens it for appending.
-        let file = filesystem::create(ctx, path::Path::new(path))?;
+        let file = ctx.fs.create(path::Path::new(path))?;
         debug!(
             "Created log file {:?} in {:?}",
             path,
-            filesystem::user_config_dir(ctx)
+            ctx.fs.user_config_dir()
         );
         Ok(FileLogger { file, receiver })
     }

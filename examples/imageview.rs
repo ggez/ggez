@@ -1,7 +1,6 @@
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::event;
-use ggez::filesystem;
 use ggez::graphics::{self, Color};
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -44,7 +43,7 @@ impl MainState {
     }
 
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        filesystem::print_all(ctx);
+        ctx.fs.print_all();
 
         let image = graphics::Image::new(ctx, "/dragon1.png")?;
 

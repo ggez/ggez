@@ -330,13 +330,13 @@ where
     ) -> GameResult<Shader<C>> {
         let vertex_source = {
             let mut buf = Vec::new();
-            let mut reader = ctx.filesystem.open(vertex_path)?;
+            let mut reader = ctx.fs.open(vertex_path)?;
             let _ = reader.read_to_end(&mut buf)?;
             buf
         };
         let pixel_source = {
             let mut buf = Vec::new();
-            let mut reader = ctx.filesystem.open(pixel_path)?;
+            let mut reader = ctx.fs.open(pixel_path)?;
             let _ = reader.read_to_end(&mut buf)?;
             buf
         };
