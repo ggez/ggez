@@ -73,7 +73,9 @@ pub struct GraphicsContext {
     pub(crate) window_mode: WindowMode,
     pub(crate) screen_coords: Rect,
     pub(crate) frame: Option<ScreenImage>,
+    pub(crate) frame_msaa: Option<ScreenImage>,
     pub(crate) frame_image: Option<Image>,
+    pub(crate) frame_msaa_image: Option<Image>,
 
     pub(crate) fcx: Option<FrameContext>,
     pub(crate) text: TextRenderer,
@@ -276,7 +278,9 @@ impl GraphicsContext {
             window_mode: conf.window_mode,
             screen_coords,
             frame: None,
+            frame_msaa: None,
             frame_image: None,
+            frame_msaa_image: None,
 
             fcx: None,
             text,
@@ -297,6 +301,13 @@ impl GraphicsContext {
         this.set_window_mode(&conf.window_mode)?;
 
         this.frame = Some(ScreenImage::new(&this, None, 1., 1., 1));
+        this.frame_msaa = Some(ScreenImage::new(
+            &this,
+            None,
+            1.,
+            1.,
+            u8::from(conf.window_setup.samples).into(),
+        ));
         this.update_frame_image();
 
         Ok(this)
@@ -595,6 +606,10 @@ impl GraphicsContext {
         let mut frame = self.frame.take().unwrap(/* invariant */);
         self.frame_image = Some(frame.image(self));
         self.frame = Some(frame);
+
+        let mut frame_msaa = self.frame_msaa.take().unwrap(/* invariant */);
+        self.frame_msaa_image = Some(frame_msaa.image(self));
+        self.frame_msaa = Some(frame_msaa);
     }
 
     pub(crate) fn set_window_mode(&mut self, mode: &WindowMode) -> GameResult {

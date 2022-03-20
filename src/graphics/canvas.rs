@@ -78,7 +78,7 @@ impl<'a> Canvas<'a> {
             return Err(GameError::RenderError(String::from("non-MSAA rendering requires an image with exactly 1 sample, for this image use Canvas::from_msaa instead")));
         }
 
-        Self::new(gfx, 1, image.format().into(), |cmd, _| {
+        Self::new(gfx, 1, image.format().into(), |cmd, _, _| {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
@@ -130,7 +130,7 @@ impl<'a> Canvas<'a> {
             gfx,
             msaa_image.samples(),
             msaa_image.format().into(),
-            |cmd, _| {
+            |cmd, _, _| {
                 cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: None,
                     color_attachments: &[wgpu::RenderPassColorAttachment {
@@ -157,32 +157,48 @@ impl<'a> Canvas<'a> {
         gfx: &'a mut GraphicsContext,
         load_op: impl Into<CanvasLoadOp>,
     ) -> GameResult<Self> {
-        Self::new(gfx, 1, gfx.surface_format, |cmd, frame| {
-            cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: frame.view.as_ref(),
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: match load_op.into() {
-                            CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                            CanvasLoadOp::Clear(color) => {
-                                wgpu::LoadOp::Clear(LinearColor::from(color).into())
-                            }
+        let samples = gfx.frame_msaa_image.as_ref().unwrap(/* invariant */).samples();
+        Self::new(
+            gfx,
+            samples,
+            gfx.surface_format,
+            |cmd, frame, frame_msaa| {
+                let (view, resolve) = if frame_msaa.samples() > 1 {
+                    (frame_msaa.view.as_ref(), Some(frame.view.as_ref()))
+                } else {
+                    (frame.view.as_ref(), None)
+                };
+
+                cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: None,
+                    color_attachments: &[wgpu::RenderPassColorAttachment {
+                        view,
+                        resolve_target: resolve,
+                        ops: wgpu::Operations {
+                            load: match load_op.into() {
+                                CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
+                                CanvasLoadOp::Clear(color) => {
+                                    wgpu::LoadOp::Clear(LinearColor::from(color).into())
+                                }
+                            },
+                            store: true,
                         },
-                        store: true,
-                    },
-                }],
-                depth_stencil_attachment: None,
-            })
-        })
+                    }],
+                    depth_stencil_attachment: None,
+                })
+            },
+        )
     }
 
     pub(crate) fn new(
         gfx: &'a mut GraphicsContext,
         samples: u32,
         format: wgpu::TextureFormat,
-        create_pass: impl FnOnce(&'a mut wgpu::CommandEncoder, &'a Image) -> wgpu::RenderPass<'a>,
+        create_pass: impl FnOnce(
+            &'a mut wgpu::CommandEncoder,
+            &'a Image,
+            &'a Image,
+        ) -> wgpu::RenderPass<'a>,
     ) -> GameResult<Self> {
         if gfx.fcx.is_none() {
             return Err(GameError::RenderError(String::from(
@@ -205,6 +221,7 @@ impl<'a> Canvas<'a> {
             let pass = create_pass(
                 &mut fcx.cmd,
                 &gfx.frame_image.as_ref().unwrap(/* invariant */),
+                &gfx.frame_msaa_image.as_ref().unwrap(/* invariant */),
             );
             let arenas = &fcx.arenas;
 
