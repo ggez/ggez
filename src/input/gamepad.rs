@@ -82,14 +82,14 @@ impl<'a> Iterator for GamepadsIterator<'a> {
 
 /// Returns the `Gamepad` associated with an `id`.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::gamepad.gamepad` instead")]
+#[deprecated(note = "Use `ctx.gamepad.gamepad` instead")]
 pub fn gamepad(ctx: &Context, id: GamepadId) -> Gamepad {
     ctx.input.gamepad.gamepad(id)
 }
 
 /// Return an iterator of all the `Gamepads` that are connected.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::gamepad.gamepads` instead")]
+#[deprecated(note = "Use `ctx.gamepad.gamepads` instead")]
 pub fn gamepads(ctx: &Context) -> GamepadsIterator {
     ctx.input.gamepad.gamepads()
 }

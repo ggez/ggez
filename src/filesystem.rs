@@ -382,7 +382,7 @@ impl Filesystem {
 /// Opens the given path and returns the resulting `File`
 /// in read-only mode.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.open` instead")]
+#[deprecated(note = "Use `ctx.fs.open` instead")]
 pub fn open<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<File> {
     ctx.fs.open(path)
 }
@@ -391,7 +391,7 @@ pub fn open<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<File> {
 /// Note that even if you open a file read-only, it can only access
 /// files in the user directory.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.open_options` instead")]
+#[deprecated(note = "Use `ctx.fs.open_options` instead")]
 pub fn open_options<P: AsRef<path::Path>>(
     ctx: &Context,
     path: P,
@@ -403,7 +403,7 @@ pub fn open_options<P: AsRef<path::Path>>(
 /// Creates a new file in the user directory and opens it
 /// to be written to, truncating it if it already exists.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.create` instead")]
+#[deprecated(note = "Use `ctx.fs.create` instead")]
 pub fn create<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<File> {
     ctx.fs.create(path)
 }
@@ -412,14 +412,14 @@ pub fn create<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<File> 
 /// with the given name.  Any parents to that directory
 /// that do not exist will be created.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.create_dir` instead")]
+#[deprecated(note = "Use `ctx.fs.create_dir` instead")]
 pub fn create_dir<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult {
     ctx.fs.create_dir(path.as_ref())
 }
 
 /// Deletes the specified file in the user dir.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.delete` instead")]
+#[deprecated(note = "Use `ctx.fs.delete` instead")]
 pub fn delete<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult {
     ctx.fs.delete(path.as_ref())
 }
@@ -427,42 +427,42 @@ pub fn delete<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult {
 /// Deletes the specified directory in the user dir,
 /// and all its contents!
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.delete_dir` instead")]
+#[deprecated(note = "Use `ctx.fs.delete_dir` instead")]
 pub fn delete_dir<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult {
     ctx.fs.delete_dir(path.as_ref())
 }
 
 /// Check whether a file or directory exists.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.exists` instead")]
+#[deprecated(note = "Use `ctx.fs.exists` instead")]
 pub fn exists<P: AsRef<path::Path>>(ctx: &Context, path: P) -> bool {
     ctx.fs.exists(path.as_ref())
 }
 
 /// Check whether a path points at a file.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.is_file` instead")]
+#[deprecated(note = "Use `ctx.fs.is_file` instead")]
 pub fn is_file<P: AsRef<path::Path>>(ctx: &Context, path: P) -> bool {
     ctx.fs.is_file(path)
 }
 
 /// Check whether a path points at a directory.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.is_dir` instead")]
+#[deprecated(note = "Use `ctx.fs.is_dir` instead")]
 pub fn is_dir<P: AsRef<path::Path>>(ctx: &Context, path: P) -> bool {
     ctx.fs.is_dir(path)
 }
 
 /// Return the full path to the user data directory.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.user_data_dir` instead")]
+#[deprecated(note = "Use `ctx.fs.user_data_dir` instead")]
 pub fn user_data_dir(ctx: &Context) -> &path::Path {
     &ctx.fs.user_data_dir
 }
 
 /// Return the full path to the user config directory.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.user_config_dir` instead")]
+#[deprecated(note = "Use `ctx.fs.user_config_dir` instead")]
 pub fn user_config_dir(ctx: &Context) -> &path::Path {
     &ctx.fs.user_config_dir
 }
@@ -470,14 +470,14 @@ pub fn user_config_dir(ctx: &Context) -> &path::Path {
 /// Returns the full path to the resource directory
 /// (even if it doesn't exist)
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.resources_dir` instead")]
+#[deprecated(note = "Use `ctx.fs.resources_dir` instead")]
 pub fn resources_dir(ctx: &Context) -> &path::Path {
     &ctx.fs.resources_dir
 }
 
 /// Return the full path to the user data directory
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.zip_dir` instead")]
+#[deprecated(note = "Use `ctx.fs.zip_dir` instead")]
 pub fn zip_dir(ctx: &Context) -> &path::Path {
     &ctx.fs.zip_dir
 }
@@ -487,7 +487,7 @@ pub fn zip_dir(ctx: &Context) -> &path::Path {
 ///
 /// Lists the base directory if an empty path is given.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.read_dir` instead")]
+#[deprecated(note = "Use `ctx.fs.read_dir` instead")]
 pub fn read_dir<P: AsRef<path::Path>>(
     ctx: &Context,
     path: P,
@@ -498,7 +498,7 @@ pub fn read_dir<P: AsRef<path::Path>>(
 /// Prints the contents of all data directories.
 /// Useful for debugging.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.print_all` instead")]
+#[deprecated(note = "Use `ctx.fs.print_all` instead")]
 pub fn print_all(ctx: &Context) {
     ctx.fs.print_all()
 }
@@ -510,7 +510,7 @@ pub fn print_all(ctx: &Context) {
 /// See the [`logging` example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs)
 /// for how to collect log information.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.log_all` instead")]
+#[deprecated(note = "Use `ctx.fs.log_all` instead")]
 pub fn log_all(ctx: &Context) {
     ctx.fs.log_all()
 }
@@ -523,7 +523,7 @@ pub fn log_all(ctx: &Context) {
 /// But it can be very nice for debugging and dev purposes, such as
 /// by pushing `$CARGO_MANIFEST_DIR/resources` to it
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.mount` instead")]
+#[deprecated(note = "Use `ctx.fs.mount` instead")]
 pub fn mount(ctx: &mut Context, path: &path::Path, readonly: bool) {
     ctx.fs.mount(path, readonly)
 }
@@ -532,7 +532,7 @@ pub fn mount(ctx: &mut Context, path: &path::Path, readonly: bool) {
 /// loads it if it finds it.
 /// If it can't read it for some reason, returns an error.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.read_config` instead")]
+#[deprecated(note = "Use `ctx.fs.read_config` instead")]
 pub fn read_config(ctx: &Context) -> GameResult<conf::Conf> {
     ctx.fs.read_config()
 }
@@ -540,7 +540,7 @@ pub fn read_config(ctx: &Context) -> GameResult<conf::Conf> {
 /// Takes a `Conf` object and saves it to the user directory,
 /// overwriting any file already there.
 // TODO: Add deprecation version
-#[deprecated(note = "Use `Context::fs.write_config` instead")]
+#[deprecated(note = "Use `ctx.fs.write_config` instead")]
 pub fn write_config(ctx: &Context, conf: &conf::Conf) -> GameResult {
     ctx.fs.write_config(conf)
 }

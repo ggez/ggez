@@ -223,14 +223,14 @@ impl Default for TimeContext {
 
 /// Get the time between the start of the last frame and the current one;
 /// in other words, the length of the last frame.
-#[deprecated(note = "Use `Context::time.delta` instead")]
+#[deprecated(note = "Use `ctx.time.delta` instead")]
 pub fn delta(ctx: &Context) -> time::Duration {
     ctx.time.delta()
 }
 
 /// Gets the average time of a frame, averaged
 /// over the last 200 frames.
-#[deprecated(note = "Use `Context::time.average_delta` instead")]
+#[deprecated(note = "Use `ctx.time.average_delta` instead")]
 pub fn average_delta(ctx: &Context) -> time::Duration {
     ctx.time.average_delta()
 }
@@ -246,14 +246,14 @@ fn fps_as_duration(fps: u32) -> time::Duration {
 
 /// Gets the FPS of the game, averaged over the last
 /// 200 frames.
-#[deprecated(note = "Use `Context::time.fps` instead")]
+#[deprecated(note = "Use `ctx.time.fps` instead")]
 pub fn fps(ctx: &Context) -> f64 {
     ctx.time.fps()
 }
 
 /// Returns the time since the game was initialized,
 /// as reported by the system clock.
-#[deprecated(note = "Use `Context::time.time_since_start` instead")]
+#[deprecated(note = "Use `ctx.time.time_since_start` instead")]
 pub fn time_since_start(ctx: &Context) -> time::Duration {
     let tc = &ctx.time;
     time::Instant::now() - tc.init_instant
@@ -275,7 +275,7 @@ pub fn time_since_start(ctx: &Context) -> time::Duration {
 /// of your code. If you want to limit the frame rate in both game logic and drawing consider writing
 /// your own event loop, or using a dirty bit for when to redraw graphics, which is set whenever the game
 /// logic runs.
-#[deprecated(note = "Use `Context::time.check_update_time` instead")]
+#[deprecated(note = "Use `ctx.time.check_update_time` instead")]
 pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
     let timedata = &mut ctx.time;
 
@@ -301,7 +301,7 @@ pub fn check_update_time(ctx: &mut Context, target_fps: u32) -> bool {
 /// [`draw()`](../event/trait.EventHandler.html#tymethod.draw) callback
 /// to interpolate physics states for smooth rendering.
 /// (see <http://gafferongames.com/game-physics/fix-your-timestep/>)
-#[deprecated(note = "Use `Context::time.remaining_update_time` instead")]
+#[deprecated(note = "Use `ctx.time.remaining_update_time` instead")]
 pub fn remaining_update_time(ctx: &Context) -> time::Duration {
     ctx.time.residual_update_dt
 }
@@ -325,7 +325,7 @@ pub fn yield_now() {
 ///
 /// Specifically, the number of times that [`TimeContext::tick()`](struct.TimeContext.html#method.tick)
 /// has been called by it.
-#[deprecated(note = "Use `Context::time.ticks` instead")]
+#[deprecated(note = "Use `ctx.time.ticks` instead")]
 pub fn ticks(ctx: &Context) -> usize {
     ctx.time.frame_count
 }
