@@ -10,7 +10,7 @@ use super::{
     context::{FrameArenas, GraphicsContext},
     draw::{DrawParam, DrawUniforms},
     gpu::{
-        arc::{ArcBindGroupLayout, ArcShaderModule, ArcTextureView},
+        arc::{ArcBindGroupLayout, ArcBuffer, ArcShaderModule, ArcTextureView},
         bind_group::{BindGroupBuilder, BindGroupCache, BindGroupLayoutBuilder},
         growing::GrowingBufferArena,
         pipeline::PipelineCache,
@@ -53,6 +53,7 @@ pub struct Canvas<'a> {
     pass: wgpu::RenderPass<'a>,
     samples: u32,
     format: wgpu::TextureFormat,
+    text_uniforms_buf: ArcBuffer,
     text_uniforms: &'a wgpu::BindGroup,
 
     draw_sm: ArcShaderModule,
@@ -230,15 +231,14 @@ impl<'a> Canvas<'a> {
 
         pass.set_blend_constant(wgpu::Color::WHITE);
 
-        let screen = gfx.screen_coords;
-        let transform = glam::Mat4::orthographic_rh(
-            screen.left(),
-            screen.right(),
-            screen.bottom(),
-            screen.top(),
-            0.,
-            1.,
-        );
+        let size = gfx.window.inner_size();
+        let screen_coords = Rect {
+            x: 0.,
+            y: 0.,
+            w: size.width as _,
+            h: size.height as _,
+        };
+        let transform = screen_to_mat(screen_coords);
 
         let shader = Shader {
             fragment: gfx.draw_shader.clone(),
@@ -262,10 +262,11 @@ impl<'a> Canvas<'a> {
                 .as_std140()
                 .as_bytes(),
         );
+        let text_uniforms_buf = text_uniforms.buffer;
 
         let (text_uniforms, _) = BindGroupBuilder::new()
             .buffer(
-                &text_uniforms.buffer,
+                &text_uniforms_buf,
                 text_uniforms.offset,
                 wgpu::ShaderStages::VERTEX,
                 wgpu::BufferBindingType::Uniform,
@@ -299,6 +300,7 @@ impl<'a> Canvas<'a> {
             pass,
             samples,
             format,
+            text_uniforms_buf,
             text_uniforms,
 
             draw_sm: gfx.draw_shader.clone(),
@@ -402,6 +404,35 @@ impl<'a> Canvas<'a> {
     pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
         self.dirty_pipeline = true;
         self.blend_mode = blend_mode;
+    }
+
+    /// Sets the bounds of the screen viewport. This is a shortcut for `set_projection`
+    /// and thus will override any previous projection matrix set.
+    ///
+    /// The default coordinate system has (0,0) at the top-left corner
+    /// with X increasing to the right and Y increasing down, with the
+    /// viewport scaled such that one coordinate unit is one pixel on the
+    /// screen.  This function lets you change this coordinate system to
+    /// be whatever you prefer.
+    ///
+    /// The `Rect`'s x and y will define the top-left corner of the screen,
+    /// and that plus its w and h will define the bottom-right corner.
+    pub fn set_screen_coordinates(&mut self, rect: Rect) {
+        self.set_projection(screen_to_mat(rect));
+    }
+
+    /// Sets the raw projection matrix to the given homogeneous
+    /// transformation matrix.  For an introduction to graphics matrices,
+    /// a good source is this: <http://ncase.me/matrix/>
+    pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
+        self.transform = proj.into().into();
+        self.queue.write_buffer(
+            &self.text_uniforms_buf,
+            0,
+            mint::ColumnMatrix4::<f32>::from(self.transform)
+                .as_std140()
+                .as_bytes(),
+        );
     }
 
     /// Draws a mesh.
@@ -804,4 +835,15 @@ impl From<Color> for CanvasLoadOp {
 struct InstanceUniforms {
     pub transform: mint::ColumnMatrix4<f32>,
     pub color: mint::Vector4<f32>,
+}
+
+fn screen_to_mat(screen: Rect) -> glam::Mat4 {
+    glam::Mat4::orthographic_rh(
+        screen.left(),
+        screen.right(),
+        screen.bottom(),
+        screen.top(),
+        0.,
+        1.,
+    )
 }

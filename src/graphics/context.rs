@@ -14,7 +14,7 @@ use super::{
     sampler::{Sampler, SamplerCache},
     shader::Shader,
     text::FontData,
-    MeshData, Rect, ScreenImage,
+    MeshData, ScreenImage,
 };
 use crate::{
     conf::{self, Backend, Conf, FullscreenType, WindowMode},
@@ -71,7 +71,6 @@ pub struct GraphicsContext {
 
     pub(crate) vsync: bool,
     pub(crate) window_mode: WindowMode,
-    pub(crate) screen_coords: Rect,
     pub(crate) frame: Option<ScreenImage>,
     pub(crate) frame_msaa: Option<ScreenImage>,
     pub(crate) frame_image: Option<Image>,
@@ -257,13 +256,6 @@ impl GraphicsContext {
         let white_image =
             Image::from_pixels_wgpu(&wgpu, &[255, 255, 255, 255], ImageFormat::Rgba8Unorm, 1, 1);
 
-        let screen_coords = Rect {
-            x: 0.,
-            y: 0.,
-            w: size.width as _,
-            h: size.height as _,
-        };
-
         let mut this = GraphicsContext {
             wgpu,
 
@@ -276,7 +268,6 @@ impl GraphicsContext {
 
             vsync: conf.window_setup.vsync,
             window_mode: conf.window_mode,
-            screen_coords,
             frame: None,
             frame_msaa: None,
             frame_image: None,
@@ -391,25 +382,6 @@ impl GraphicsContext {
     #[inline]
     pub fn window(&self) -> &winit::window::Window {
         &self.window
-    }
-
-    /// Returns a rectangle defining the coordinate system of the screen. It will be `Rect { x: left, y: top, w: width, h: height }`.
-    pub fn screen_coordinates(&self) -> Rect {
-        self.screen_coords
-    }
-
-    /// Sets the bounds of the screen viewport.
-    ///
-    /// The default coordinate system has (0,0) at the top-left corner
-    /// with X increasing to the right and Y increasing down, with the
-    /// viewport scaled such that one coordinate unit is one pixel on the
-    /// screen.  This function lets you change this coordinate system to
-    /// be whatever you prefer.
-    ///
-    /// The `Rect`'s x and y will define the top-left corner of the screen,
-    /// and that plus its w and h will define the bottom-right corner.
-    pub fn set_screen_coordinates(&mut self, rect: Rect) {
-        self.screen_coords = rect;
     }
 
     /// Sets the window icon.
