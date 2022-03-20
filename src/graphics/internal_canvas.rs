@@ -14,7 +14,7 @@ use super::{
     sampler::{Sampler, SamplerCache},
     shader::Shader,
     text::{Text, TextLayout},
-    BlendMode, CanvasLoadOp, LinearColor, Rect,
+    text_to_section, BlendMode, CanvasLoadOp, LinearColor, Rect,
 };
 use crate::{GameError, GameResult};
 use crevice::std140::{AsStd140, Std140};
@@ -391,7 +391,9 @@ impl<'a> InternalCanvas<'a> {
 
         let uniforms = InstanceUniforms {
             transform: (self.transform
-                * glam::Mat4::from(DrawUniforms::from_param(param, [1., 1.].into()).transform))
+                * glam::Mat4::from(
+                    DrawUniforms::from_param(param.src(Rect::one()), [1., 1.].into()).transform,
+                ))
             .into(),
             color: mint::Vector4::<f32> {
                 x: param.color.r,
@@ -444,39 +446,8 @@ impl<'a> InternalCanvas<'a> {
         rect: Rect,
         layout: TextLayout,
     ) -> GameResult {
-        self.update_pipeline(ShaderType::Text);
-
-        self.text_renderer.queue(glyph_brush::Section {
-            screen_position: (rect.x, rect.y),
-            bounds: (rect.w, rect.h),
-            layout: match layout {
-                TextLayout::SingleLine { h_align, v_align } => {
-                    glyph_brush::Layout::default_single_line()
-                        .h_align(h_align.into())
-                        .v_align(v_align.into())
-                }
-                TextLayout::Wrap { h_align, v_align } => glyph_brush::Layout::default_wrap()
-                    .h_align(h_align.into())
-                    .v_align(v_align.into()),
-            },
-            text: text
-                .iter()
-                .map(|text| {
-                    Ok(glyph_brush::Text {
-                        text: &text.text,
-                        scale: text.size.into(),
-                        font_id: *self
-                            .fonts
-                            .get(&text.font)
-                            .ok_or_else(|| GameError::FontSelectError(text.font.to_string()))?,
-                        extra: glyph_brush::Extra {
-                            color: text.color.into(),
-                            z: 0.,
-                        },
-                    })
-                })
-                .collect::<GameResult<Vec<_>>>()?,
-        });
+        self.text_renderer
+            .queue(text_to_section(self.fonts, text, rect, layout)?);
 
         self.set_image(&self.text_renderer.cache_view.clone());
         self.pass.set_bind_group(0, self.text_uniforms, &[]);
@@ -489,8 +460,17 @@ impl<'a> InternalCanvas<'a> {
     fn flush_text(&mut self) {
         if self.queuing_text {
             self.queuing_text = false;
+            let mut premul = false;
+            if self.blend_mode == BlendMode::ALPHA {
+                premul = true;
+                self.set_blend_mode(BlendMode::PREMULTIPLIED);
+            }
+            self.update_pipeline(ShaderType::Text);
             self.text_renderer
                 .draw_queued(self.device, self.queue, self.arenas, &mut self.pass);
+            if premul {
+                self.set_blend_mode(BlendMode::ALPHA);
+            }
         }
     }
 

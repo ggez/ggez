@@ -1,7 +1,6 @@
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::event;
-use ggez::filesystem;
 use ggez::graphics::{self, Color};
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -12,13 +11,11 @@ struct MainState {
     a: i32,
     direction: i32,
     image: graphics::Image,
-    text: graphics::Text,
-    pixel_sized_text: graphics::Text,
     rng: oorandom::Rand32,
 }
 
 impl MainState {
-    fn draw_crazy_lines(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw_crazy_lines(&mut self, ctx: &mut Context, canvas: &mut graphics::Canvas) -> GameResult {
         let num_lines = 100;
         let mut colors = Vec::new();
         for _ in 0..num_lines {
@@ -37,25 +34,25 @@ impl MainState {
             mb.line(&[last_point, point], 3.0, color)?;
             last_point = point;
         }
-        let mesh = mb.build(ctx)?;
-        graphics::draw(ctx, &mesh, (glam::Vec2::new(0.0, 0.0),))?;
+        let mesh = graphics::Mesh::from_raw(&ctx.gfx, mb.build());
+        canvas.draw_mesh(mesh.clone(), None, (glam::Vec2::new(0.0, 0.0),));
 
         Ok(())
     }
 
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        filesystem::print_all(ctx);
+        ctx.filesystem.print_all();
 
-        let image = graphics::Image::new(ctx, "/dragon1.png")?;
+        let image = graphics::Image::from_path(ctx, "/dragon1.png", true)?;
 
-        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
-        let text = graphics::Text::new(("Hello world!", font, 48.0));
+        ctx.gfx.add_font(
+            "LiberationMono",
+            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+        );
         let mut sound = audio::Source::new(ctx, "/sound.ogg")?;
 
-        let pixel_sized_text = graphics::Text::new(("This text is 32 pixels high", font, 32.0));
-
         // "detached" sounds keep playing even after they are dropped
-        let _ = sound.play_detached(ctx);
+        let _ = sound.play_detached(&ctx.audio);
 
         let rng = oorandom::Rand32::new(271828);
 
@@ -63,9 +60,7 @@ impl MainState {
             a: 0,
             direction: 1,
             image,
-            text,
             rng,
-            pixel_sized_text,
         };
 
         Ok(s)
@@ -75,13 +70,13 @@ impl MainState {
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
-        while timer::check_update_time(ctx, DESIRED_FPS) {
+        while ctx.timer.check_update_time(DESIRED_FPS) {
             self.a += self.direction;
             if self.a > 250 || self.a <= 0 {
                 self.direction *= -1;
 
-                println!("Delta frame time: {:?} ", timer::delta(ctx));
-                println!("Average FPS: {}", timer::fps(ctx));
+                println!("Delta frame time: {:?} ", ctx.timer.delta());
+                println!("Average FPS: {}", ctx.timer.fps());
             }
         }
         Ok(())
@@ -89,29 +84,43 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let c = self.a as u8;
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
 
         let color = Color::from((c, c, c, 255));
         let dest_point = glam::Vec2::new(0.0, 0.0);
-        graphics::draw(ctx, &self.image, (dest_point, 0.0, color))?;
-        graphics::draw(ctx, &self.text, (dest_point, 0.0, color))?;
+        canvas.draw(self.image.clone(), (dest_point, 0.0, color));
+        canvas.draw_text(
+            &[graphics::Text::new()
+                .font("LiberationMono")
+                .text("Hello world!")
+                .size(48.0)
+                .color(color)],
+            dest_point,
+            graphics::TextLayout::tl_single_line(),
+            0,
+        );
 
         let dest_point2 = glam::Vec2::new(0.0, 256.0);
         let rectangle = graphics::Mesh::new_rectangle(
-            ctx,
+            &ctx.gfx,
             graphics::DrawMode::fill(),
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
             Color::from((0, 0, 0, 255)),
         )?;
-        graphics::draw(ctx, &rectangle, (glam::Vec2::new(0.0, 0.0),))?;
-        graphics::draw(
-            ctx,
-            &self.pixel_sized_text,
-            (dest_point2, 0.0, Color::WHITE),
-        )?;
+        canvas.draw_mesh(rectangle.clone(), None, (glam::Vec2::new(0.0, 0.0),));
+        canvas.draw_text(
+            &[graphics::Text::new()
+                .font("LiberationMono")
+                .text("This text is 32 pixels high")
+                .size(32.0)
+                .color(Color::WHITE)],
+            dest_point2,
+            graphics::TextLayout::tl_single_line(),
+            0,
+        );
 
-        self.draw_crazy_lines(ctx)?;
-        graphics::present(ctx)?;
+        self.draw_crazy_lines(ctx, &mut canvas)?;
+        canvas.finish(&mut ctx.gfx)?;
 
         timer::yield_now();
         Ok(())

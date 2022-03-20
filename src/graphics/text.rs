@@ -1,9 +1,9 @@
 //!
 
-use super::Color;
-use crate::{filesystem::Filesystem, GameResult};
-use glyph_brush::ab_glyph;
-use std::{io::Read, path::Path};
+use super::{Color, Rect};
+use crate::{filesystem::Filesystem, GameError, GameResult};
+use glyph_brush::{ab_glyph, FontId};
+use std::{collections::HashMap, io::Read, path::Path};
 
 /// Font data that can be used to create a new font in [super::context::GraphicsContext].
 #[derive(Debug)]
@@ -54,7 +54,7 @@ impl Default for Text {
     fn default() -> Self {
         Text {
             text: "".into(),
-            font: "".into(),
+            font: "LiberationMono-Regular".into(),
             size: 16.,
             color: Color::WHITE,
         }
@@ -155,4 +155,76 @@ impl TextLayout {
             v_align: TextAlign::Begin,
         }
     }
+
+    /// Text wrapped and aligned to the top-left.
+    pub fn tl_wrap() -> Self {
+        TextLayout::Wrap {
+            h_align: TextAlign::Begin,
+            v_align: TextAlign::Begin,
+        }
+    }
+
+    /// Returns the horizontal alignment, regardless of wrapping behaviour.
+    pub fn h_align(&self) -> TextAlign {
+        match self {
+            TextLayout::SingleLine { h_align, .. } | TextLayout::Wrap { h_align, .. } => *h_align,
+        }
+    }
+
+    /// Returns the vertical alignment, regardless of wrapping behaviour.
+    pub fn v_align(&self) -> TextAlign {
+        match self {
+            TextLayout::SingleLine { v_align, .. } | TextLayout::Wrap { v_align, .. } => *v_align,
+        }
+    }
+}
+
+pub(crate) fn text_to_section<'a>(
+    fonts: &HashMap<String, FontId>,
+    text: &'a [Text],
+    mut rect: Rect,
+    layout: TextLayout,
+) -> GameResult<glyph_brush::Section<'a>> {
+    match layout.h_align() {
+        TextAlign::Begin => {}
+        TextAlign::Middle => rect.x += rect.w / 2.,
+        TextAlign::End => rect.x += rect.w,
+    }
+
+    match layout.v_align() {
+        TextAlign::Begin => {}
+        TextAlign::Middle => rect.y += rect.h / 2.,
+        TextAlign::End => rect.y += rect.h,
+    }
+
+    Ok(glyph_brush::Section {
+        screen_position: (rect.x, rect.y),
+        bounds: (rect.w, rect.h),
+        layout: match layout {
+            TextLayout::SingleLine { h_align, v_align } => {
+                glyph_brush::Layout::default_single_line()
+                    .h_align(h_align.into())
+                    .v_align(v_align.into())
+            }
+            TextLayout::Wrap { h_align, v_align } => glyph_brush::Layout::default_wrap()
+                .h_align(h_align.into())
+                .v_align(v_align.into()),
+        },
+        text: text
+            .iter()
+            .map(|text| {
+                Ok(glyph_brush::Text {
+                    text: &text.text,
+                    scale: text.size.into(),
+                    font_id: *fonts
+                        .get(&text.font)
+                        .ok_or_else(|| GameError::FontSelectError(text.font.to_string()))?,
+                    extra: glyph_brush::Extra {
+                        color: text.color.into(),
+                        z: 0.,
+                    },
+                })
+            })
+            .collect::<GameResult<Vec<_>>>()?,
+    })
 }

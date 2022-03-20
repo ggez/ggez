@@ -1,11 +1,10 @@
-//! An example of how to use a `SpriteBatch`.
+//! An example of how to use an `InstanceArray`.
 //!
 //! You really want to run this one in release mode.
 #![allow(clippy::unnecessary_wraps)]
 
 use ggez::event;
 use ggez::graphics::{self, Color};
-use ggez::timer;
 use ggez::{Context, GameResult};
 use glam::*;
 use std::env;
@@ -13,46 +12,52 @@ use std::f32::consts::TAU;
 use std::path;
 
 struct MainState {
-    spritebatch: graphics::spritebatch::SpriteBatch,
+    instances: graphics::InstanceArray,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image = graphics::Image::new(ctx, "/tile.png").unwrap();
-        let batch = graphics::spritebatch::SpriteBatch::new(image);
-        let s = MainState { spritebatch: batch };
-        Ok(s)
+        let image = graphics::Image::from_path(&ctx, "/tile.png", true)?;
+        let instances = graphics::InstanceArray::new(&ctx.gfx, image, 150 * 150);
+        Ok(MainState { instances })
     }
 }
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if timer::ticks(ctx) % 100 == 0 {
-            println!("Delta frame time: {:?} ", timer::delta(ctx));
-            println!("Average FPS: {}", timer::fps(ctx));
+        if ctx.timer.ticks() % 100 == 0 {
+            println!("Delta frame time: {:?} ", ctx.timer.delta());
+            println!("Average FPS: {}", ctx.timer.fps());
         }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, Color::BLACK);
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::BLACK);
 
-        let time = (timer::time_since_start(ctx).as_secs_f64() * 1000.0) as u32;
+        let time = (ctx.timer.time_since_start().as_secs_f64() * 1000.0) as u32;
         let cycle = 10_000;
-        for x in 0..150 {
-            for y in 0..150 {
-                let x = x as f32;
-                let y = y as f32;
-                let p = graphics::DrawParam::new()
-                    .dest(Vec2::new(x * 10.0, y * 10.0))
-                    .scale(Vec2::new(
-                        ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
-                        ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
-                    ))
-                    .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU));
-                self.spritebatch.add(p);
-            }
-        }
+        self.instances.set(
+            &ctx.gfx,
+            (0..150)
+                .map(|x| {
+                    (0..150).map(move |y| {
+                        let x = x as f32;
+                        let y = y as f32;
+                        graphics::DrawParam::new()
+                            .dest(Vec2::new(x * 10.0, y * 10.0))
+                            .scale(Vec2::new(
+                                ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs()
+                                    * 0.0625,
+                                ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs()
+                                    * 0.0625,
+                            ))
+                            .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU))
+                    })
+                })
+                .flatten(),
+        );
+
         let param = graphics::DrawParam::new()
             .dest(Vec2::new(
                 ((time % cycle) as f32 / cycle as f32 * TAU).cos() * 50.0 + 100.0,
@@ -66,11 +71,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
             .offset(Vec2::new(750.0, 750.0))
             // src has no influence when applied globally to a spritebatch
             .src(graphics::Rect::new(0.005, 0.005, 0.005, 0.005));
-        graphics::draw(ctx, &self.spritebatch, param)?;
-        self.spritebatch.clear();
+        canvas.draw_instances(self.instances.clone(), param);
 
-        graphics::present(ctx)?;
-        Ok(())
+        canvas.finish(&mut ctx.gfx)
     }
 }
 

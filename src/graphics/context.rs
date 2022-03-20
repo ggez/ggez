@@ -14,7 +14,7 @@ use super::{
     sampler::{Sampler, SamplerCache},
     shader::Shader,
     text::FontData,
-    MeshData, ScreenImage,
+    text_to_section, MeshData, Rect, ScreenImage, Text, TextLayout,
 };
 use crate::{
     conf::{self, Backend, Conf, FullscreenType, WindowMode},
@@ -24,7 +24,7 @@ use crate::{
 };
 use ::image as imgcrate;
 use crevice::std140::AsStd140;
-use glyph_brush::FontId;
+use glyph_brush::{FontId, GlyphCruncher};
 use std::{collections::HashMap, path::Path};
 use typed_arena::Arena as TypedArena;
 use winit::{
@@ -301,6 +301,11 @@ impl GraphicsContext {
         ));
         this.update_frame_image();
 
+        this.add_font(
+            "LiberationMono-Regular",
+            FontData::from_slice(include_bytes!("../../resources/LiberationMono-Regular.ttf"))?,
+        );
+
         Ok(this)
     }
 
@@ -327,6 +332,41 @@ impl GraphicsContext {
     pub fn add_font(&mut self, name: &str, font: FontData) {
         let id = self.text.glyph_brush.add_font(font.font);
         self.fonts.insert(name.to_string(), id);
+    }
+
+    /// Measures the glyph boundaries for the given bounded text.
+    pub fn measure_bounded_text(
+        &mut self,
+        text: &[Text],
+        rect: Rect,
+        layout: TextLayout,
+    ) -> GameResult<Rect> {
+        Ok(self
+            .text
+            .glyph_brush
+            .glyph_bounds(text_to_section(&self.fonts, text, rect, layout)?)
+            .map(|rect| Rect {
+                x: rect.min.x,
+                y: rect.min.y,
+                w: rect.width(),
+                h: rect.height(),
+            })
+            .unwrap_or(Rect::new(rect.x, rect.y, 0., 0.)))
+    }
+
+    /// Measures the glyph boundaries for the given text.
+    pub fn measure_text(
+        &mut self,
+        text: &[Text],
+        pos: impl Into<mint::Vector2<f32>>,
+        layout: TextLayout,
+    ) -> GameResult<Rect> {
+        let pos = pos.into();
+        self.measure_bounded_text(
+            text,
+            Rect::new(pos.x, pos.y, f32::INFINITY, f32::INFINITY),
+            layout,
+        )
     }
 
     /// Returns the size of the window’s underlying drawable in physical pixels as (width, height).
