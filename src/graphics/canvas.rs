@@ -406,6 +406,12 @@ impl<'a> Canvas<'a> {
         self.blend_mode = blend_mode;
     }
 
+    /// Gets a copy of the canvas's raw projection matrix.
+    #[inline]
+    pub fn projection(&self) -> mint::ColumnMatrix4<f32> {
+        self.transform.into()
+    }
+
     /// Sets the bounds of the screen viewport. This is a shortcut for `set_projection`
     /// and thus will override any previous projection matrix set.
     ///
@@ -433,6 +439,11 @@ impl<'a> Canvas<'a> {
                 .as_std140()
                 .as_bytes(),
         );
+    }
+
+    /// Premultiplies the given transformation matrix with the current projection matrix.
+    pub fn mul_projection(&mut self, transform: impl Into<mint::ColumnMatrix4<f32>>) {
+        self.set_projection(glam::Mat4::from(transform.into()) * self.transform);
     }
 
     /// Draws a mesh.
