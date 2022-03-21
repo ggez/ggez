@@ -56,6 +56,7 @@ impl Vertex {
 pub struct Mesh {
     pub(crate) verts: ArcBuffer,
     pub(crate) inds: ArcBuffer,
+    pub(crate) vertex_count: usize,
     pub(crate) index_count: usize,
 }
 
@@ -69,6 +70,7 @@ impl Mesh {
         Mesh {
             verts: Self::create_verts(wgpu, raw.vertices),
             inds: Self::create_inds(wgpu, raw.indices),
+            vertex_count: raw.vertices.len(),
             index_count: raw.indices.len(),
         }
     }
@@ -190,6 +192,24 @@ impl Mesh {
             gfx,
             MeshBuilder::new().triangles(triangles, color)?.build(),
         ))
+    }
+
+    /// Returns the WGPU vertex and index buffers of this mesh, in that order.
+    #[inline]
+    pub fn wgpu(&self) -> (&wgpu::Buffer, &wgpu::Buffer) {
+        (&self.verts, &self.inds)
+    }
+
+    /// Returns the number of vertices in this mesh.
+    #[inline]
+    pub fn vertex_count(&self) -> usize {
+        self.vertex_count
+    }
+
+    /// Returns the number of indices in this mesh.
+    #[inline]
+    pub fn index_count(&self) -> usize {
+        self.index_count
     }
 
     #[allow(unsafe_code)]
