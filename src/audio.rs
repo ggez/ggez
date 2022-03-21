@@ -52,7 +52,7 @@ impl AudioContext {
 
 impl fmt::Debug for AudioContext {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<RodioAudioContext: {:p}>", self)
+        write!(f, "<AudioContext: {:p}>", self)
     }
 }
 
@@ -380,7 +380,7 @@ impl SoundSource for Source {
         // This is most ugly because in order to create a new sink
         // we need a `device`. However, we can only get the default
         // device without having access to a context. Currently that's
-        // fine because the `RodioAudioContext` uses the default device too,
+        // fine because the `AudioContext` uses the default device too,
         // but it may cause problems in the future if devices become
         // customizable.
 
@@ -566,7 +566,7 @@ impl SoundSource for SpatialSource {
         // This is most ugly because in order to create a new sink
         // we need a `device`. However, we can only get the default
         // device without having access to a context. Currently that's
-        // fine because the `RodioAudioContext` uses the default device too,
+        // fine because the `AudioContext` uses the default device too,
         // but it may cause problems in the future if devices become
         // customizable.
 
