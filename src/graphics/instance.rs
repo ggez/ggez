@@ -7,6 +7,10 @@ use super::{
     Image,
 };
 use crevice::std140::{AsStd140, Std140};
+use std::sync::{
+    atomic::{AtomicU32, Ordering::SeqCst},
+    Arc,
+};
 
 /// Array of instances for fast rendering of many meshes.
 ///
@@ -16,7 +20,7 @@ pub struct InstanceArray {
     pub(crate) buffer: ArcBuffer,
     pub(crate) image: Image,
     capacity: u32,
-    len: u32,
+    len: Arc<AtomicU32>,
 }
 
 impl InstanceArray {
@@ -41,7 +45,7 @@ impl InstanceArray {
             buffer,
             image,
             capacity,
-            len: 0,
+            len: Arc::new(AtomicU32::new(0)),
         }
     }
 
@@ -69,7 +73,7 @@ impl InstanceArray {
             self.resize_impl(gfx, len, false);
         }
 
-        self.len = instances.len() as u32;
+        self.len.store(instances.len() as u32, SeqCst);
         gfx.wgpu.queue.write_buffer(&self.buffer, 0, unsafe {
             std::slice::from_raw_parts(
                 instances.as_ptr() as *const u8,
@@ -82,7 +86,7 @@ impl InstanceArray {
     ///
     /// Prefer `set` where bulk instances needs to be set.
     pub fn push(&mut self, gfx: &GraphicsContext, instance: DrawParam) {
-        if self.len == self.capacity {
+        if self.len.load(SeqCst) == self.capacity {
             self.resize(gfx, self.capacity + self.capacity / 2);
         }
 
@@ -92,15 +96,15 @@ impl InstanceArray {
         );
         gfx.wgpu.queue.write_buffer(
             &self.buffer,
-            self.len as u64 * DrawUniforms::std140_size_static() as u64,
+            self.len.load(SeqCst) as u64 * DrawUniforms::std140_size_static() as u64,
             instance.as_std140().as_bytes(),
         );
-        self.len += 1;
+        let _ = self.len.fetch_add(1, SeqCst);
     }
 
     /// Updates an existing instance at a given index.
     pub fn update(&mut self, gfx: &GraphicsContext, index: u32, instance: DrawParam) {
-        assert!(index < self.len, "index out of range");
+        assert!(index < self.len.load(SeqCst), "index out of range");
 
         let instance = DrawUniforms::from_param(
             instance,
@@ -115,7 +119,7 @@ impl InstanceArray {
 
     /// Clears all instance data.
     pub fn clear(&mut self) {
-        self.len = 0;
+        self.len.store(0, SeqCst);
     }
 
     /// Changes the capacity of this `InstanceArray` while preserving instances.
@@ -126,8 +130,9 @@ impl InstanceArray {
     }
 
     fn resize_impl(&mut self, gfx: &GraphicsContext, new_capacity: u32, copy: bool) {
-        let mut resized = InstanceArray::new(gfx, self.image.clone(), new_capacity);
-        resized.len = new_capacity.min(self.len);
+        let len = self.len.load(SeqCst);
+        let resized = InstanceArray::new(gfx, self.image.clone(), new_capacity);
+        resized.len.store(new_capacity.min(len), SeqCst);
 
         if copy {
             let cmd = {
@@ -137,7 +142,7 @@ impl InstanceArray {
                     0,
                     &resized.buffer,
                     0,
-                    new_capacity.min(self.len) as u64 * DrawUniforms::std140_size_static() as u64,
+                    new_capacity.min(len) as u64 * DrawUniforms::std140_size_static() as u64,
                 );
                 cmd.finish()
             };
@@ -163,6 +168,6 @@ impl InstanceArray {
     /// Returns the number of instances.
     #[inline]
     pub fn len(&self) -> usize {
-        self.len as usize
+        self.len.load(SeqCst) as usize
     }
 }
