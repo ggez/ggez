@@ -66,8 +66,12 @@ impl fmt::Display for GameError {
             ),
             GameError::WindowError(ref e) => write!(f, "Window creation error: {}", e),
             GameError::CustomError(ref s) => write!(f, "Custom error: {}", s),
-            GameError::RequestDeviceError(ref e) => write!(f, "Failed to request logical device: {}", e),
-            GameError::SpawnError(ref e) => write!(f, "Failed to spawn a task with `futures`: {}", e),
+            GameError::RequestDeviceError(ref e) => {
+                write!(f, "Failed to request logical device: {}", e)
+            }
+            GameError::SpawnError(ref e) => {
+                write!(f, "Failed to spawn a task with `futures`: {}", e)
+            }
             GameError::GlyphBrushError(ref e) => write!(f, "Text rendering error: {}", e),
             GameError::FontSelectError(ref e) => write!(f, "No such font '{}'", e),
             GameError::BufferAsyncError(ref e) => write!(f, "Async buffer map error: {}", e),

@@ -280,7 +280,11 @@ pub struct Source {
 
 impl Source {
     /// Create a new `Source` from the given file.
-    pub fn new<P: AsRef<path::Path>>(fs: &Filesystem, audio: &AudioContext, path: P) -> GameResult<Self> {
+    pub fn new<P: AsRef<path::Path>>(
+        fs: &Filesystem,
+        audio: &AudioContext,
+        path: P,
+    ) -> GameResult<Self> {
         let path = path.as_ref();
         let data = SoundData::new(fs, path)?;
         Source::from_data(audio, data)
@@ -443,7 +447,11 @@ pub struct SpatialSource {
 
 impl SpatialSource {
     /// Create a new `SpatialSource` from the given file.
-    pub fn new<P: AsRef<path::Path>>(fs: &Filesystem, audio: &AudioContext, path: P) -> GameResult<Self> {
+    pub fn new<P: AsRef<path::Path>>(
+        fs: &Filesystem,
+        audio: &AudioContext,
+        path: P,
+    ) -> GameResult<Self> {
         let path = path.as_ref();
         let data = SoundData::new(fs, path)?;
         SpatialSource::from_data(audio, data)

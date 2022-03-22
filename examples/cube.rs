@@ -341,7 +341,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &[graphics::Text::new()
                 .font("LiberationMono")
                 .text("You can mix ggez and gfx drawing;")],
-            dest_point1,0.0,
+            dest_point1,
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );
@@ -349,7 +350,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &[graphics::Text::new()
                 .font("LiberationMono")
                 .text("it basically draws gfx stuff first, then ggez")],
-            dest_point2,0.0,
+            dest_point2,
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );
