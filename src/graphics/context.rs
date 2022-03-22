@@ -132,7 +132,7 @@ impl GraphicsContext {
             window_builder
         };
 
-        let window = window_builder.build(&event_loop)?;
+        let window = window_builder.build(event_loop)?;
         let surface = unsafe { instance.create_surface(&window) };
 
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
@@ -351,7 +351,7 @@ impl GraphicsContext {
                 w: rect.width(),
                 h: rect.height(),
             })
-            .unwrap_or(Rect::new(rect.x, rect.y, 0., 0.)))
+            .unwrap_or_else(|| Rect::new(rect.x, rect.y, 0., 0.)))
     }
 
     /// Measures the glyph boundaries for the given text.

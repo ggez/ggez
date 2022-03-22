@@ -39,7 +39,7 @@ impl Image {
     ) -> Self {
         Self::new(
             &gfx.wgpu,
-            format.into(),
+            format,
             width,
             height,
             samples,
@@ -69,7 +69,7 @@ impl Image {
     ) -> Self {
         let image = Self::new(
             wgpu,
-            format.into(),
+            format,
             width,
             height,
             1,
@@ -101,11 +101,10 @@ impl Image {
     /// A little helper function that creates a new `Image` that is just a solid square of the given size and color. Mainly useful for debugging.
     pub fn from_solid(gfx: &GraphicsContext, size: u32, color: Color) -> Self {
         let pixels = (0..(size * size))
-            .map(|_| {
+            .flat_map(|_| {
                 let (r, g, b, a) = color.to_rgba();
                 [r, g, b, a]
             })
-            .flatten()
             .collect::<Vec<_>>();
         Self::from_pixels(
             gfx,
@@ -161,14 +160,14 @@ impl Image {
             mip_level_count: 1,
             sample_count: samples,
             dimension: wgpu::TextureDimension::D2,
-            format: format.into(),
+            format,
             usage,
         }));
 
         let view =
             ArcTextureView::new(texture.as_ref().create_view(&wgpu::TextureViewDescriptor {
                 label: None,
-                format: Some(format.into()),
+                format: Some(format),
                 dimension: Some(wgpu::TextureViewDimension::D2),
                 aspect: wgpu::TextureAspect::All,
                 base_mip_level: 0,
@@ -348,7 +347,6 @@ impl ScreenImage {
 
         let format = format
             .into()
-            .map(|x| x.into())
             .unwrap_or(gfx.surface_format);
 
         ScreenImage {

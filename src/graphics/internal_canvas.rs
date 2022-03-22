@@ -66,7 +66,7 @@ impl<'a> InternalCanvas<'a> {
             return Err(GameError::RenderError(String::from("non-MSAA rendering requires an image with exactly 1 sample, for this image use Canvas::from_msaa instead")));
         }
 
-        Self::new(gfx, 1, image.format().into(), |cmd| {
+        Self::new(gfx, 1, image.format(), |cmd| {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
@@ -114,7 +114,7 @@ impl<'a> InternalCanvas<'a> {
         Self::new(
             gfx,
             msaa_image.samples(),
-            msaa_image.format().into(),
+            msaa_image.format(),
             |cmd| {
                 cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: None,
@@ -256,8 +256,8 @@ impl<'a> InternalCanvas<'a> {
 
     pub fn set_shader_params(&mut self, bind_group: ArcBindGroup, layout: ArcBindGroupLayout) {
         self.shader_bind_group = Some((
-            self.arenas.bind_groups.alloc(bind_group.clone()),
-            layout.clone(),
+            self.arenas.bind_groups.alloc(bind_group),
+            layout,
         ));
     }
 
@@ -269,8 +269,8 @@ impl<'a> InternalCanvas<'a> {
 
     pub fn set_text_shader_params(&mut self, bind_group: ArcBindGroup, layout: ArcBindGroupLayout) {
         self.text_shader_bind_group = Some((
-            self.arenas.bind_groups.alloc(bind_group.clone()),
-            layout.clone(),
+            self.arenas.bind_groups.alloc(bind_group),
+            layout,
         ));
     }
 
@@ -332,7 +332,7 @@ impl<'a> InternalCanvas<'a> {
         self.set_image(&image.view);
         let (w, h) = (image.width(), image.height());
 
-        let mut uniforms = DrawUniforms::from_param(param.into(), [w as f32, h as f32].into());
+        let mut uniforms = DrawUniforms::from_param(param, [w as f32, h as f32].into());
         uniforms.transform = (self.transform * glam::Mat4::from(uniforms.transform)).into();
 
         self.queue
@@ -359,7 +359,7 @@ impl<'a> InternalCanvas<'a> {
         self.pass.draw_indexed(0..mesh.index_count as _, 0, 0..1);
     }
 
-    pub fn draw_mesh_instances<'b>(
+    pub fn draw_mesh_instances(
         &mut self,
         mesh: &Mesh,
         instances: &InstanceArray,
@@ -367,7 +367,7 @@ impl<'a> InternalCanvas<'a> {
     ) {
         self.flush_text();
 
-        if instances.len() == 0 {
+        if instances.is_empty() {
             return;
         }
 
@@ -583,7 +583,7 @@ impl<'a> InternalCanvas<'a> {
             self.image_id = Some(view.id());
 
             let (bind_group, _) = BindGroupBuilder::new()
-                .image(&view, wgpu::ShaderStages::FRAGMENT)
+                .image(view, wgpu::ShaderStages::FRAGMENT)
                 .create(self.device, self.bind_group_cache);
 
             let bind_group = self.arenas.bind_groups.alloc(bind_group);

@@ -170,4 +170,10 @@ impl InstanceArray {
     pub fn len(&self) -> usize {
         self.len.load(SeqCst) as usize
     }
+
+    /// Whether the instance array is empty or not.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len.load(SeqCst) == 0
+    }
 }

@@ -137,7 +137,7 @@ impl Canvas {
     ///
     /// **Bound to bind group 3 for non-instanced draws, and 4 for instanced draws.**
     pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
-        self.state.params = Some((params.bind_group.clone(), params.layout.clone()));
+        self.state.params = Some((params.bind_group.clone(), params.layout));
     }
 
     /// Sets the shader to use when drawing text.
@@ -149,7 +149,7 @@ impl Canvas {
     ///
     /// **Bound to bind group 3.**
     pub fn set_text_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
-        self.state.text_params = Some((params.bind_group.clone(), params.layout.clone()));
+        self.state.text_params = Some((params.bind_group.clone(), params.layout));
     }
 
     /// Resets the active mesh shader to the default.
@@ -182,7 +182,7 @@ impl Canvas {
     /// Gets a copy of the canvas's raw projection matrix.
     #[inline]
     pub fn projection(&self) -> mint::ColumnMatrix4<f32> {
-        self.state.projection.into()
+        self.state.projection
     }
 
     /// Sets the bounds of the screen viewport. This is a shortcut for `set_projection`
@@ -204,7 +204,7 @@ impl Canvas {
     /// transformation matrix.  For an introduction to graphics matrices,
     /// a good source is this: <http://ncase.me/matrix/>
     pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
-        self.state.projection = proj.into().into();
+        self.state.projection = proj.into();
     }
 
     /// Premultiplies the given transformation matrix with the current projection matrix.
@@ -361,7 +361,7 @@ impl Canvas {
         canvas.set_blend_mode(state.blend_mode);
         canvas.set_projection(state.projection);
 
-        for (_, draws) in &self.draws {
+        for draws in self.draws.values() {
             for draw in draws {
                 if draw.state.shader != state.shader {
                     canvas.set_shader(state.shader.clone());
@@ -409,7 +409,7 @@ impl Canvas {
                         rect,
                         rotation,
                         layout,
-                    } => canvas.draw_bounded_text(&text, *rect, *rotation, *layout)?,
+                    } => canvas.draw_bounded_text(text, *rect, *rotation, *layout)?,
                 }
             }
         }
