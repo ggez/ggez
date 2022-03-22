@@ -41,13 +41,13 @@ impl MainState {
     }
 
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.filesystem.print_all();
+        ctx.fs.print_all();
 
         let image = graphics::Image::from_path(ctx, "/dragon1.png", true)?;
 
         ctx.gfx.add_font(
             "LiberationMono",
-            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
         );
         let mut sound = audio::Source::new(ctx, "/sound.ogg")?;
 
@@ -70,13 +70,13 @@ impl MainState {
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
-        while ctx.timer.check_update_time(DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             self.a += self.direction;
             if self.a > 250 || self.a <= 0 {
                 self.direction *= -1;
 
-                println!("Delta frame time: {:?} ", ctx.timer.delta());
-                println!("Average FPS: {}", ctx.timer.fps());
+                println!("Delta frame time: {:?} ", ctx.time.delta());
+                println!("Average FPS: {}", ctx.time.fps());
             }
         }
         Ok(())

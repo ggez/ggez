@@ -87,7 +87,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.gfx.add_font(
             "LiberationMono",
-            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
         );
 
         let demo_mesh = graphics::Mesh::new_circle(

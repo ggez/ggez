@@ -25,9 +25,9 @@ impl MainState {
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if ctx.timer.ticks() % 100 == 0 {
-            println!("Delta frame time: {:?} ", ctx.timer.delta());
-            println!("Average FPS: {}", ctx.timer.fps());
+        if ctx.time.ticks() % 100 == 0 {
+            println!("Delta frame time: {:?} ", ctx.time.delta());
+            println!("Average FPS: {}", ctx.time.fps());
         }
         Ok(())
     }
@@ -35,7 +35,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::BLACK);
 
-        let time = (ctx.timer.time_since_start().as_secs_f64() * 1000.0) as u32;
+        let time = (ctx.time.time_since_start().as_secs_f64() * 1000.0) as u32;
         let cycle = 10_000;
         self.instances.set(
             &ctx.gfx,

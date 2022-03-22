@@ -88,9 +88,9 @@ impl MainState {
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if ctx.timer.ticks() % 100 == 0 {
-            println!("Delta frame time: {:?} ", ctx.timer.delta());
-            println!("Average FPS: {}", ctx.timer.fps());
+        if ctx.time.ticks() % 100 == 0 {
+            println!("Delta frame time: {:?} ", ctx.time.delta());
+            println!("Average FPS: {}", ctx.time.fps());
         }
 
         // Bounce the rect if necessary

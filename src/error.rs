@@ -1,6 +1,4 @@
 //! Error types and conversion functions.
-use rodio::decoder::DecoderError;
-use rodio::PlayError;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -106,15 +104,17 @@ impl From<zip::result::ZipError> for GameError {
     }
 }
 
-impl From<DecoderError> for GameError {
-    fn from(e: DecoderError) -> GameError {
+#[cfg(feature = "audio")]
+impl From<rodio::decoder::DecoderError> for GameError {
+    fn from(e: rodio::decoder::DecoderError) -> GameError {
         let errstr = format!("Audio decoder error: {:?}", e);
         GameError::AudioError(errstr)
     }
 }
 
-impl From<PlayError> for GameError {
-    fn from(e: PlayError) -> GameError {
+#[cfg(feature = "audio")]
+impl From<rodio::PlayError> for GameError {
+    fn from(e: rodio::PlayError) -> GameError {
         let errstr = format!("Audio playing error: {:?}", e);
         GameError::AudioError(errstr)
     }
@@ -133,6 +133,7 @@ impl From<winit::error::OsError> for GameError {
     }
 }
 
+#[cfg(feature = "gamepad")]
 impl From<gilrs::Error> for GameError {
     fn from(s: gilrs::Error) -> GameError {
         let errstr = format!("Gamepad error: {}", s);

@@ -229,7 +229,7 @@ impl MainState {
 
         ctx.gfx.add_font(
             "LiberationMono",
-            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
         );
 
         let screen_size = {
@@ -334,15 +334,14 @@ impl MainState {
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if ctx.timer.ticks() % 100 == 0 {
-            println!("Average FPS: {}", ctx.timer.fps());
+        if ctx.time.ticks() % 100 == 0 {
+            println!("Average FPS: {}", ctx.time.fps());
         }
 
-        self.torch.glow = LIGHT_GLOW_FACTOR
-            * (ctx.timer.time_since_start().as_secs_f32() * LIGHT_GLOW_RATE).cos();
+        self.torch.glow =
+            LIGHT_GLOW_FACTOR * (ctx.time.time_since_start().as_secs_f32() * LIGHT_GLOW_RATE).cos();
         self.static_light.glow = LIGHT_GLOW_FACTOR
-            * (ctx.timer.time_since_start().as_secs_f32() * LIGHT_GLOW_RATE * 0.75).sin();
-
+            * (ctx.time.time_since_start().as_secs_f32() * LIGHT_GLOW_RATE * 0.75).sin();
         Ok(())
     }
 

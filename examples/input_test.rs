@@ -26,7 +26,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         if ctx.keyboard.is_key_pressed(KeyCode::A) {
             println!("The A key is pressed");
-            if ctx.keyboard.is_mod_active(KeyMods::SHIFT) {
+            if ctx.keyboard.is_mod_active(ggez::input::keyboard::KeyMods::SHIFT) {
                 println!("The shift key is held too.");
             }
             println!(

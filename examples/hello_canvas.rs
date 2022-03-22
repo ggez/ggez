@@ -20,7 +20,7 @@ impl MainState {
         // will mount that directory so we can omit it in the path here.
         ctx.gfx.add_font(
             "LiberationMono",
-            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
         );
         let canvas_image = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
 
@@ -88,7 +88,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         self.frames += 1;
         if (self.frames % 100) == 0 {
-            println!("FPS: {}", ctx.timer.fps());
+            println!("FPS: {}", ctx.time.fps());
         }
 
         Ok(())

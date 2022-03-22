@@ -120,7 +120,7 @@ impl Image {
     #[allow(unused_results)]
     pub fn from_path(ctx: &Context, path: impl AsRef<Path>, srgb: bool) -> GameResult<Self> {
         let mut encoded = Vec::new();
-        ctx.filesystem.open(path)?.read_to_end(&mut encoded)?;
+        ctx.fs.open(path)?.read_to_end(&mut encoded)?;
         let decoded = image::load_from_memory(&encoded[..])
             .map_err(|_| GameError::ResourceLoadError(String::from("failed to load image")))?;
         let rgba8 = decoded.to_rgba8();
@@ -267,7 +267,7 @@ impl Image {
         };
 
         let pixels = self.to_pixels(&ctx.gfx)?;
-        let f = ctx.filesystem.create(path)?;
+        let f = ctx.fs.create(path)?;
         let writer = &mut std::io::BufWriter::new(f);
 
         match format {

@@ -119,7 +119,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
 
-        while ctx.timer.check_update_time(DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             self.rotation += 0.01;
         }
 

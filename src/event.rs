@@ -16,8 +16,10 @@ use winit::{self, dpi};
 pub use winit::event::MouseButton;
 
 /// An analog axis of some device (gamepad thumbstick, joystick...).
+#[cfg(feature = "gamepad")]
 pub use gilrs::Axis;
 /// A button of some device (gamepad, joystick...).
+#[cfg(feature = "gamepad")]
 pub use gilrs::Button;
 
 /// `winit` events; nested in a module for re-export neatness.
@@ -27,6 +29,7 @@ pub mod winit_event {
         TouchPhase, WindowEvent,
     };
 }
+#[cfg(feature = "gamepad")]
 pub use crate::input::gamepad::GamepadId;
 pub use crate::input::keyboard::{KeyCode, KeyMods};
 use crate::GameError;
@@ -219,10 +222,11 @@ where
     /// A gamepad button was pressed; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
     /// the gamepad.
+    #[cfg(feature = "gamepad")]
     fn gamepad_button_down_event(
         &mut self,
         _ctx: &mut Context,
-        _btn: Button,
+        _btn: gilrs::Button,
         _id: GamepadId,
     ) -> Result<(), E> {
         Ok(())
@@ -231,10 +235,11 @@ where
     /// A gamepad button was released; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
     /// the gamepad.
+    #[cfg(feature = "gamepad")]
     fn gamepad_button_up_event(
         &mut self,
         _ctx: &mut Context,
-        _btn: Button,
+        _btn: gilrs::Button,
         _id: GamepadId,
     ) -> Result<(), E> {
         Ok(())
@@ -243,10 +248,11 @@ where
     /// A gamepad axis moved; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
     /// the gamepad.
+    #[cfg(feature = "gamepad")]
     fn gamepad_axis_event(
         &mut self,
         _ctx: &mut Context,
-        _axis: Axis,
+        _axis: gilrs::Axis,
         _value: f32,
         _id: GamepadId,
     ) -> Result<(), E> {
@@ -453,51 +459,49 @@ where
                 // you include `timer_context.tick()` and
                 // `ctx.process_event()` calls.  These update ggez's
                 // internal state however necessary.
-                ctx.timer.tick();
+                ctx.time.tick();
 
                 // Handle gamepad events if necessary.
-                if ctx.conf.modules.gamepad {
-                    while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad.next_event() {
-                        match event {
-                            gilrs::EventType::ButtonPressed(button, _) => {
-                                let res =
-                                    state.gamepad_button_down_event(ctx, button, GamepadId(id));
-                                if catch_error(
-                                    ctx,
-                                    res,
-                                    state,
-                                    control_flow,
-                                    ErrorOrigin::GamepadButtonDownEvent,
-                                ) {
-                                    return;
-                                };
-                            }
-                            gilrs::EventType::ButtonReleased(button, _) => {
-                                let res = state.gamepad_button_up_event(ctx, button, GamepadId(id));
-                                if catch_error(
-                                    ctx,
-                                    res,
-                                    state,
-                                    control_flow,
-                                    ErrorOrigin::GamepadButtonUpEvent,
-                                ) {
-                                    return;
-                                };
-                            }
-                            gilrs::EventType::AxisChanged(axis, value, _) => {
-                                let res = state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
-                                if catch_error(
-                                    ctx,
-                                    res,
-                                    state,
-                                    control_flow,
-                                    ErrorOrigin::GamepadAxisEvent,
-                                ) {
-                                    return;
-                                };
-                            }
-                            _ => {}
+                #[cfg(feature = "gamepad")]
+                while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad.next_event() {
+                    match event {
+                        gilrs::EventType::ButtonPressed(button, _) => {
+                            let res = state.gamepad_button_down_event(ctx, button, GamepadId(id));
+                            if catch_error(
+                                ctx,
+                                res,
+                                state,
+                                control_flow,
+                                ErrorOrigin::GamepadButtonDownEvent,
+                            ) {
+                                return;
+                            };
                         }
+                        gilrs::EventType::ButtonReleased(button, _) => {
+                            let res = state.gamepad_button_up_event(ctx, button, GamepadId(id));
+                            if catch_error(
+                                ctx,
+                                res,
+                                state,
+                                control_flow,
+                                ErrorOrigin::GamepadButtonUpEvent,
+                            ) {
+                                return;
+                            };
+                        }
+                        gilrs::EventType::AxisChanged(axis, value, _) => {
+                            let res = state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
+                            if catch_error(
+                                ctx,
+                                res,
+                                state,
+                                control_flow,
+                                ErrorOrigin::GamepadAxisEvent,
+                            ) {
+                                return;
+                            };
+                        }
+                        _ => {}
                     }
                 }
 

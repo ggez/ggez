@@ -75,7 +75,7 @@ impl App {
         // This loads a new TrueType font into the context named "Fancy font".
         ctx.gfx.add_font(
             "Fancy font",
-            graphics::FontData::from_path(&ctx.filesystem, "/Tangerine_Regular.ttf")?,
+            graphics::FontData::from_path(&ctx.fs, "/Tangerine_Regular.ttf")?,
         );
 
         text.push(
@@ -164,7 +164,7 @@ impl App {
 impl event::EventHandler<ggez::GameError> for App {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
-        while ctx.timer.check_update_time(DESIRED_FPS) {}
+        while ctx.time.check_update_time(DESIRED_FPS) {}
         Ok(())
     }
 
@@ -174,7 +174,7 @@ impl event::EventHandler<ggez::GameError> for App {
         // `Text` can be used in "immediate mode", but it's slightly less efficient
         // in most cases, and horrifically less efficient in a few select ones
         // (using `.width()` or `.height()`, for example).
-        let fps = ctx.timer.fps();
+        let fps = ctx.time.fps();
         let fps_display = Text::new()
             .text(format!("FPS: {}", fps))
             .color(Color::WHITE);

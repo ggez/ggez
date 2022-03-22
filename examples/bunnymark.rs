@@ -136,7 +136,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
         ctx.gfx.set_window_title(&format!(
             "BunnyMark - {} bunnies - {:.0} FPS - batched drawing: {}",
             self.bunnies.len(),
-            ctx.timer.fps(),
+            ctx.time.fps(),
             self.batched_drawing
         ));
 

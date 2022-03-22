@@ -33,7 +33,7 @@ impl MainState {
 
         ctx.gfx.add_font(
             "LiberationMono",
-            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
         );
 
         let s = Self {

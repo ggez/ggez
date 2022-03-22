@@ -227,7 +227,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.gfx.add_font(
             "LiberationMono",
-            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
         );
 
         let ball = graphics::Mesh::new_circle(
@@ -270,7 +270,7 @@ fn draw_info(canvas: &mut graphics::Canvas, info: String, position: Point2<f32>)
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        let secs = ctx.timer.delta().as_secs_f64();
+        let secs = ctx.time.delta().as_secs_f64();
         // advance the ball animation and reverse it once it reaches its end
         self.ball_animation.advance_and_maybe_reverse(secs);
         // advance the player animation and wrap around back to the beginning once it reaches its end

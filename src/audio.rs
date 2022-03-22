@@ -3,40 +3,34 @@
 //! It consists of two main types: [`SoundData`](struct.SoundData.html)
 //! is just an array of raw sound data bytes, and a [`Source`](struct.Source.html) is a
 //! `SoundData` connected to a particular sound channel ready to be played.
+#![cfg(feature = "audio")]
 
+use std::fmt;
+use std::io;
+use std::io::Read;
+use std::mem;
+use std::path;
+use std::time;
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+
+use crate::context::Context;
+use crate::error::GameError;
+use crate::error::GameResult;
 use crate::filesystem::Filesystem;
-use crate::{context::Context, error::GameError, error::GameResult};
-use std::{
-    fmt, io,
-    io::Read,
-    mem, path,
-    sync::atomic::{AtomicUsize, Ordering},
-    sync::Arc,
-    time,
-};
-
-/// A trait object defining an audio context, allowing us to someday
-/// use something other than `rodio` if we really want.
-///
-/// End-users usually don't need to mess with this, but it's there
-/// if you want to bypass `ggez`'s sound functionality and write your
-/// own.
-pub trait AudioContext {
-    /// Returns the audio device.
-    fn device(&self) -> &rodio::OutputStreamHandle;
-}
 
 /// A struct that contains all information for tracking sound info.
 ///
 /// You generally don't have to create this yourself, it will be part
 /// of your `Context` object.
-pub(crate) struct RodioAudioContext {
+pub struct AudioContext {
     _stream: rodio::OutputStream,
     stream_handle: rodio::OutputStreamHandle,
 }
 
-impl RodioAudioContext {
-    /// Create new `RodioAudioContext`.
+impl AudioContext {
+    /// Create new `AudioContext`.
     pub fn new() -> GameResult<Self> {
         let (stream, stream_handle) = rodio::OutputStream::try_default().map_err(|_e| {
             GameError::AudioError(String::from(
@@ -50,27 +44,16 @@ impl RodioAudioContext {
     }
 }
 
-impl AudioContext for RodioAudioContext {
-    fn device(&self) -> &rodio::OutputStreamHandle {
+impl AudioContext {
+    /// Returns the audio device.
+    pub fn device(&self) -> &rodio::OutputStreamHandle {
         &self.stream_handle
     }
 }
 
-impl fmt::Debug for RodioAudioContext {
+impl fmt::Debug for AudioContext {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<RodioAudioContext: {:p}>", self)
-    }
-}
-
-/// A structure that implements `AudioContext` but does nothing; serves as a
-/// stub for when you don't need audio.  Will panic if you try to actually
-/// play sound from it.
-#[derive(Debug, Clone, Copy, Default)]
-pub(crate) struct NullAudioContext;
-
-impl AudioContext for NullAudioContext {
-    fn device(&self) -> &rodio::OutputStreamHandle {
-        panic!("Audio module disabled")
+        write!(f, "<AudioContext: {:p}>", self)
     }
 }
 
@@ -141,7 +124,7 @@ impl AsRef<[u8]> for SoundData {
 /// it is implemented by both `Source` and `SpatialSource`.
 pub trait SoundSource {
     /// Plays the audio source; restarts the sound if currently playing
-    fn play(&mut self, audio: &impl AsRef<dyn AudioContext>) -> GameResult {
+    fn play(&mut self, audio: &AudioContext) -> GameResult {
         self.stop(audio)?;
         self.play_later()
     }
@@ -150,7 +133,7 @@ pub trait SoundSource {
     fn play_later(&self) -> GameResult;
 
     /// Play source "in the background"; cannot be stopped
-    fn play_detached(&mut self, audio: &impl AsRef<dyn AudioContext>) -> GameResult;
+    fn play_detached(&mut self, audio: &AudioContext) -> GameResult;
 
     /// Sets the source to repeat playback infinitely on next [`play()`](#method.play)
     fn set_repeat(&mut self, repeat: bool);
@@ -182,7 +165,7 @@ pub trait SoundSource {
     fn resume(&self);
 
     /// Stops playback
-    fn stop(&mut self, audio: &impl AsRef<dyn AudioContext>) -> GameResult;
+    fn stop(&mut self, audio: &AudioContext) -> GameResult;
 
     /// Returns whether or not the source is stopped
     /// -- that is, has no more data to play.
@@ -300,18 +283,18 @@ impl Source {
     /// Create a new `Source` from the given file.
     pub fn new<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
-        let data = SoundData::new(&ctx.filesystem, path)?;
+        let data = SoundData::new(&ctx.fs, path)?;
         Source::from_data(&ctx.audio, data)
     }
 
     /// Creates a new `Source` using the given `SoundData` object.
-    pub fn from_data(audio: &impl AsRef<dyn AudioContext>, data: SoundData) -> GameResult<Self> {
+    pub fn from_data(audio: &AudioContext, data: SoundData) -> GameResult<Self> {
         if !data.can_play() {
             return Err(GameError::AudioError(
                 "Could not decode the given audio data".to_string(),
             ));
         }
-        let sink = rodio::Sink::try_new(audio.as_ref().device())?;
+        let sink = rodio::Sink::try_new(audio.device())?;
         let cursor = io::Cursor::new(data);
         Ok(Source {
             sink,
@@ -357,11 +340,11 @@ impl SoundSource for Source {
         Ok(())
     }
 
-    fn play_detached(&mut self, audio: &impl AsRef<dyn AudioContext>) -> GameResult {
+    fn play_detached(&mut self, audio: &AudioContext) -> GameResult {
         self.stop(audio)?;
         self.play_later()?;
 
-        let new_sink = rodio::Sink::try_new(audio.as_ref().device())?;
+        let new_sink = rodio::Sink::try_new(audio.device())?;
         let old_sink = mem::replace(&mut self.sink, new_sink);
         old_sink.detach();
 
@@ -396,7 +379,7 @@ impl SoundSource for Source {
         self.sink.play()
     }
 
-    fn stop(&mut self, audio: &impl AsRef<dyn AudioContext>) -> GameResult {
+    fn stop(&mut self, audio: &AudioContext) -> GameResult {
         // Sinks cannot be reused after calling `.stop()`. See
         // https://github.com/tomaka/rodio/issues/171 for information.
         // To stop the current sound we have to drop the old sink and
@@ -404,14 +387,14 @@ impl SoundSource for Source {
         // This is most ugly because in order to create a new sink
         // we need a `device`. However, we can only get the default
         // device without having access to a context. Currently that's
-        // fine because the `RodioAudioContext` uses the default device too,
+        // fine because the `AudioContext` uses the default device too,
         // but it may cause problems in the future if devices become
         // customizable.
 
         // We also need to carry over information from the previous sink.
         let volume = self.volume();
 
-        let device = audio.as_ref().device();
+        let device = audio.device();
         self.sink = rodio::Sink::try_new(device)?;
         self.state.play_time.store(0, Ordering::SeqCst);
 
@@ -469,13 +452,12 @@ impl SpatialSource {
     /// Create a new `SpatialSource` from the given file.
     pub fn new<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<Self> {
         let path = path.as_ref();
-        let data = SoundData::new(&ctx.filesystem, path)?;
+        let data = SoundData::new(&ctx.fs, path)?;
         SpatialSource::from_data(&ctx.audio, data)
     }
 
     /// Creates a new `SpatialSource` using the given `SoundData` object.
-    pub fn from_data(audio: &impl AsRef<dyn AudioContext>, data: SoundData) -> GameResult<Self> {
-        let audio = audio.as_ref();
+    pub fn from_data(audio: &AudioContext, data: SoundData) -> GameResult<Self> {
         if !data.can_play() {
             return Err(GameError::AudioError(
                 "Could not decode the given audio data".to_string(),
@@ -538,11 +520,11 @@ impl SoundSource for SpatialSource {
         Ok(())
     }
 
-    fn play_detached(&mut self, audio: &impl AsRef<dyn AudioContext>) -> GameResult {
+    fn play_detached(&mut self, audio: &AudioContext) -> GameResult {
         self.stop(audio)?;
         self.play_later()?;
 
-        let device = audio.as_ref().device();
+        let device = audio.device();
         let new_sink = rodio::SpatialSink::try_new(
             device,
             self.emitter_position.into(),
@@ -583,7 +565,7 @@ impl SoundSource for SpatialSource {
         self.sink.play()
     }
 
-    fn stop(&mut self, audio: &impl AsRef<dyn AudioContext>) -> GameResult {
+    fn stop(&mut self, audio: &AudioContext) -> GameResult {
         // Sinks cannot be reused after calling `.stop()`. See
         // https://github.com/tomaka/rodio/issues/171 for information.
         // To stop the current sound we have to drop the old sink and
@@ -591,14 +573,14 @@ impl SoundSource for SpatialSource {
         // This is most ugly because in order to create a new sink
         // we need a `device`. However, we can only get the default
         // device without having access to a context. Currently that's
-        // fine because the `RodioAudioContext` uses the default device too,
+        // fine because the `AudioContext` uses the default device too,
         // but it may cause problems in the future if devices become
         // customizable.
 
         // We also need to carry over information from the previous sink.
         let volume = self.volume();
 
-        let device = audio.as_ref().device();
+        let device = audio.device();
         self.sink = rodio::SpatialSink::try_new(
             device,
             self.emitter_position.into(),

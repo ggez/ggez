@@ -246,7 +246,7 @@ impl Assets {
     fn new(ctx: &mut Context) -> GameResult<Assets> {
         ctx.gfx.add_font(
             "LiberationMono",
-            graphics::FontData::from_path(&ctx.filesystem, "/LiberationMono-Regular.ttf")?,
+            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
         );
 
         let player_image = graphics::Image::from_path(ctx, "/player.png", true)?;
@@ -323,7 +323,7 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        println!("Game resource path: {:?}", ctx.filesystem);
+        println!("Game resource path: {:?}", ctx.fs);
 
         print_instructions();
 
@@ -443,7 +443,7 @@ impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
 
-        while ctx.timer.check_update_time(DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             let seconds = 1.0 / (DESIRED_FPS as f32);
 
             // Update the player state based on the user input.

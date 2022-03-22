@@ -55,7 +55,7 @@ impl MainState {
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
-        while ctx.timer.check_update_time(DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             self.angle += 0.01;
 
             if self.window_settings.toggle_fullscreen {
@@ -82,7 +82,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .color(Color::WHITE), //.offset([0.5, 0.5]),
         );
 
-        let rotation = ctx.timer.ticks() % 1000;
+        let rotation = ctx.time.ticks() % 1000;
         let circle = graphics::Mesh::new_circle(
             &ctx.gfx,
             DrawMode::stroke(3.0),
