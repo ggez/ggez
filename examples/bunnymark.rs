@@ -132,7 +132,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
             &format!(
                 "BunnyMark - {} bunnies - {:.0} FPS - batched drawing: {}",
                 self.bunnies.len(),
-                timer::fps(ctx),
+                ctx.time.fps(),
                 self.batched_drawing
             ),
         );

@@ -453,7 +453,7 @@ impl From<gfx::buffer::CreationError> for GameError {
 
 /// Clear the screen to the background color.
 pub fn clear(ctx: &mut Context, color: Color) {
-    let gfx = &mut ctx.gfx_context;
+    let gfx = &mut ctx.gfx;
     let linear_color: types::LinearColor = color.into();
     let c: [f32; 4] = linear_color.into();
     gfx.encoder.clear_raw(&gfx.data.out, c.into());
@@ -476,7 +476,7 @@ where
 ///
 /// Unsets any active canvas.
 pub fn present(ctx: &mut Context) -> GameResult<()> {
-    let gfx = &mut ctx.gfx_context;
+    let gfx = &mut ctx.gfx;
     gfx.data.out = gfx.screen_render_target.clone();
     // We might want to give the user more control over when the
     // encoder gets flushed eventually, if we want them to be able
@@ -494,7 +494,7 @@ pub fn screenshot(ctx: &mut Context) -> GameResult<Image> {
     use gfx::memory::Typed;
     use gfx::traits::FactoryExt;
 
-    let gfx = &mut ctx.gfx_context;
+    let gfx = &mut ctx.gfx;
     let (w, h, _depth, aa) = gfx.data.out.get_dimensions();
     if aa != gfx_core::texture::AaMode::Single {
         // Details see https://github.com/ggez/ggez/issues/751
@@ -586,7 +586,7 @@ fn flip_pixel_data(rgba: &mut Vec<u8>, width: usize, height: usize) {
 
 /// Get the default filter mode for new images.
 pub fn default_filter(ctx: &Context) -> FilterMode {
-    let gfx = &ctx.gfx_context;
+    let gfx = &ctx.gfx;
     gfx.default_sampler_info.filter.into()
 }
 
@@ -594,19 +594,19 @@ pub fn default_filter(ctx: &Context) -> FilterMode {
 /// It is supposed to be human-readable and will change; do not try to parse
 /// information out of it!
 pub fn renderer_info(ctx: &Context) -> GameResult<String> {
-    let backend_info = ctx.gfx_context.backend_spec.info(&*ctx.gfx_context.device);
+    let backend_info = ctx.gfx.backend_spec.info(&*ctx.gfx.device);
     Ok(format!(
         "Requested {:?} {}.{} Core profile, actually got {}.",
-        ctx.gfx_context.backend_spec.api,
-        ctx.gfx_context.backend_spec.major,
-        ctx.gfx_context.backend_spec.minor,
+        ctx.gfx.backend_spec.api,
+        ctx.gfx.backend_spec.major,
+        ctx.gfx.backend_spec.minor,
         backend_info
     ))
 }
 
 /// Returns the screen color format used by the context
 pub fn get_window_color_format(ctx: &Context) -> gfx::format::Format {
-    ctx.gfx_context.color_format()
+    ctx.gfx.color_format()
 }
 
 /// Returns a rectangle defining the coordinate system of the screen.
@@ -615,14 +615,14 @@ pub fn get_window_color_format(ctx: &Context) -> gfx::format::Format {
 /// If the Y axis increases downwards, the `height` of the `Rect`
 /// will be negative.
 pub fn screen_coordinates(ctx: &Context) -> Rect {
-    ctx.gfx_context.screen_rect
+    ctx.gfx.screen_rect
 }
 
 /// Sets the default filter mode used to scale images.
 ///
 /// This does not apply retroactively to already created images.
 pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
-    let gfx = &mut ctx.gfx_context;
+    let gfx = &mut ctx.gfx;
     let new_mode = mode.into();
     let sampler_info = texture::SamplerInfo::new(new_mode, texture::WrapMode::Clamp);
     // We create the sampler now so we don't end up creating it at some
@@ -642,7 +642,7 @@ pub fn set_default_filter(ctx: &mut Context, mode: FilterMode) {
 /// The `Rect`'s x and y will define the top-left corner of the screen,
 /// and that plus its w and h will define the bottom-right corner.
 pub fn set_screen_coordinates(context: &mut Context, rect: Rect) -> GameResult {
-    let gfx = &mut context.gfx_context;
+    let gfx = &mut context.gfx;
     gfx.set_projection_rect(rect);
     gfx.reset_global_mvp()
 }
@@ -656,7 +656,7 @@ where
     M: Into<mint::ColumnMatrix4<f32>>,
 {
     let transform = Matrix4::from(transform.into());
-    let gfx = &mut context.gfx_context;
+    let gfx = &mut context.gfx;
     let curr = gfx.projection();
     gfx.set_projection(transform * curr);
 }
@@ -672,7 +672,7 @@ where
     M: Into<mint::ColumnMatrix4<f32>>,
 {
     let proj = Matrix4::from(proj.into());
-    let gfx = &mut context.gfx_context;
+    let gfx = &mut context.gfx;
     gfx.set_projection(proj);
 }
 
@@ -683,19 +683,19 @@ where
 /// Alternatively it's also set (and sent to the graphics card) when
 /// [`set_screen_coordinates()`](fn.set_screen_coordinates.html) is called.
 pub fn apply_projection(context: &mut Context) -> GameResult {
-    let gfx = &mut context.gfx_context;
+    let gfx = &mut context.gfx;
     gfx.reset_global_mvp()
 }
 
 /// Gets a copy of the context's raw projection matrix.
 pub fn projection(context: &Context) -> mint::ColumnMatrix4<f32> {
-    let gfx = &context.gfx_context;
+    let gfx = &context.gfx;
     gfx.projection().into()
 }
 
 /// Sets the blend mode of the currently active shader program
 pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
-    ctx.gfx_context.set_blend_mode(mode)
+    ctx.gfx.set_blend_mode(mode)
 }
 
 /// Sets the window mode, such as the size and other properties.
@@ -708,7 +708,7 @@ pub fn set_blend_mode(ctx: &mut Context, mode: BlendMode) -> GameResult {
 /// changing the window size to make sure everything is what you want
 /// it to be.
 pub fn set_mode(context: &mut Context, mut mode: WindowMode) -> GameResult {
-    let gfx = &mut context.gfx_context;
+    let gfx = &mut context.gfx;
     let result = gfx.set_window_mode(mode);
     if let Err(GameError::WindowError(_)) = result {
         // true fullscreen could not be set because the video mode matching the resolution is missing
@@ -746,17 +746,17 @@ pub fn set_window_icon<P: AsRef<Path>>(context: &mut Context, path: Option<P>) -
     let icon = match path {
         Some(p) => {
             let p: &Path = p.as_ref();
-            Some(context::load_icon(p, &mut context.filesystem)?)
+            Some(context::load_icon(p, &mut context.fs)?)
         }
         None => None,
     };
-    context.gfx_context.window.window().set_window_icon(icon);
+    context.gfx.window.window().set_window_icon(icon);
     Ok(())
 }
 
 /// Sets the window title.
 pub fn set_window_title(context: &Context, title: &str) {
-    context.gfx_context.window.window().set_title(title);
+    context.gfx.window.window().set_title(title);
 }
 
 /// Sets the window position.
@@ -764,17 +764,13 @@ pub fn set_window_position<P: Into<winit::dpi::Position>>(
     context: &Context,
     position: P,
 ) -> GameResult<()> {
-    context
-        .gfx_context
-        .window
-        .window()
-        .set_outer_position(position);
+    context.gfx.window.window().set_outer_position(position);
     Ok(())
 }
 
 /// Gets the window position.
 pub fn get_window_position(context: &Context) -> GameResult<winit::dpi::PhysicalPosition<i32>> {
-    match context.gfx_context.window.window().outer_position() {
+    match context.gfx.window.window().outer_position() {
         Ok(position) => Ok(position),
         Err(e) => Err(GameError::WindowError(e.to_string())),
     }
@@ -785,7 +781,7 @@ pub fn get_window_position(context: &Context) -> GameResult<winit::dpi::Physical
 /// would provide all the functions you need without having
 /// to dip into Glutin itself.  But life isn't always ideal.
 pub fn window(context: &Context) -> &glutin::window::Window {
-    let gfx = &context.gfx_context;
+    let gfx = &context.gfx;
     gfx.window.window()
 }
 
@@ -793,7 +789,7 @@ pub fn window(context: &Context) -> &glutin::window::Window {
 pub fn supported_resolutions(
     ctx: &crate::Context,
 ) -> impl Iterator<Item = winit::dpi::PhysicalSize<u32>> {
-    let gfx = &ctx.gfx_context;
+    let gfx = &ctx.gfx;
     let window = gfx.window.window();
     let monitor = window.current_monitor().unwrap();
     monitor.video_modes().map(|v_mode| v_mode.size())
@@ -803,7 +799,7 @@ pub fn supported_resolutions(
 /// including borders, titlebar, etc.
 /// Returns zeros if the window doesn't exist.
 pub fn size(context: &Context) -> (f32, f32) {
-    let gfx = &context.gfx_context;
+    let gfx = &context.gfx;
     let window = gfx.window.window();
     let physical_size = window.outer_size();
     (physical_size.width as f32, physical_size.height as f32)
@@ -812,7 +808,7 @@ pub fn size(context: &Context) -> (f32, f32) {
 /// Returns the size of the window's underlying drawable in physical pixels as (width, height).
 /// Returns zeros if window doesn't exist.
 pub fn drawable_size(context: &Context) -> (f32, f32) {
-    let gfx = &context.gfx_context;
+    let gfx = &context.gfx;
     let window = gfx.window.window();
     let physical_size = window.inner_size();
     (physical_size.width as f32, physical_size.height as f32)
@@ -820,7 +816,7 @@ pub fn drawable_size(context: &Context) -> (f32, f32) {
 
 /// Return raw window context
 pub fn window_raw(context: &mut Context) -> &mut glutin::WindowedContext<glutin::PossiblyCurrent> {
-    &mut context.gfx_context.window
+    &mut context.gfx.window
 }
 
 /// Deletes all cached font data.
@@ -845,9 +841,9 @@ pub fn clear_font_cache(ctx: &mut Context) {
     let glyph_state = Rc::new(RefCell::new(spritebatch::SpriteBatch::new(
         glyph_cache.clone(),
     )));
-    ctx.gfx_context.glyph_brush = Rc::new(RefCell::new(glyph_brush));
-    ctx.gfx_context.glyph_cache = glyph_cache;
-    ctx.gfx_context.glyph_state = glyph_state;
+    ctx.gfx.glyph_brush = Rc::new(RefCell::new(glyph_brush));
+    ctx.gfx.glyph_cache = glyph_cache;
+    ctx.gfx.glyph_state = glyph_state;
 }
 
 #[allow(clippy::type_complexity)]
@@ -870,7 +866,7 @@ pub fn gfx_objects(
     gfx::handle::RawDepthStencilView<<GlBackendSpec as BackendSpec>::Resources>,
     gfx::handle::RawRenderTargetView<<GlBackendSpec as BackendSpec>::Resources>,
 ) {
-    let gfx = &mut context.gfx_context;
+    let gfx = &mut context.gfx;
     let f = &mut gfx.factory;
     let d = gfx.device.as_mut();
     let e = &mut gfx.encoder;

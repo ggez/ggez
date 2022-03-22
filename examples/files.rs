@@ -27,12 +27,12 @@ pub fn main() -> GameResult {
 
     let (ctx, _) = &mut cb.build()?;
 
-    println!("Full filesystem info: {:#?}", ctx.filesystem);
+    println!("Full filesystem info: {:#?}", ctx.fs);
 
     println!("Resource stats:");
-    filesystem::print_all(ctx);
+    ctx.fs.print_all();
 
-    let dir_contents: Vec<_> = filesystem::read_dir(ctx, "/")?.collect();
+    let dir_contents: Vec<_> = ctx.fs.read_dir("/")?.collect();
     println!("Directory has {} things in it:", dir_contents.len());
     for itm in dir_contents {
         println!("   {:?}", itm);
@@ -44,19 +44,19 @@ pub fn main() -> GameResult {
     let test_file = path::Path::new("/testfile.txt");
     let bytes = b"test";
     {
-        let mut file = filesystem::create(ctx, test_file)?;
+        let mut file = ctx.fs.create(test_file)?;
         file.write_all(bytes)?;
     }
     println!("Wrote to test file");
     {
         let options = filesystem::OpenOptions::new().append(true);
-        let mut file = filesystem::open_options(ctx, test_file, options)?;
+        let mut file = ctx.fs.open_options(test_file, options)?;
         file.write_all(bytes)?;
     }
     println!("Appended to test file");
     {
         let mut buffer = Vec::new();
-        let mut file = filesystem::open(ctx, test_file)?;
+        let mut file = ctx.fs.open(test_file)?;
         file.read_to_end(&mut buffer)?;
         println!(
             "Read from test file: {:?}",
@@ -66,26 +66,26 @@ pub fn main() -> GameResult {
 
     println!();
     println!("Let's read the default conf file");
-    if let Ok(_conf) = filesystem::read_config(ctx) {
+    if let Ok(_conf) = ctx.fs.read_config() {
         println!("Found existing conf file, its contents are:");
-        let mut file = filesystem::open(ctx, "/conf.toml")?;
+        let mut file = ctx.fs.open("/conf.toml")?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
         println!("{}", str::from_utf8(&buffer).unwrap());
 
         println!("Now deleting it, re-run the example to recreate it.");
-        filesystem::delete(ctx, "/conf.toml")?;
+        ctx.fs.delete("/conf.toml")?;
     } else {
         println!("No existing conf file found, saving one out");
         let c = conf::Conf::new();
-        filesystem::write_config(ctx, &c)?;
+        ctx.fs.write_config(&c)?;
         println!("Should now be a 'conf.toml' file under user config dir");
     }
 
     println!();
     println!("Now let's try to read a file that does not exist");
     {
-        if let Err(e) = filesystem::open(ctx, "/jfkdlasfjdsa") {
+        if let Err(e) = ctx.fs.open("/jfkdlasfjdsa") {
             // The error message contains a big hairy list of each
             // directory tried and what error it got from it.
             println!("Got the error: {:#?}", e);

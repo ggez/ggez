@@ -5,7 +5,6 @@
 
 use ggez::event;
 use ggez::graphics::{self, Color};
-use ggez::timer;
 use ggez::{Context, GameResult};
 use glam::*;
 use std::env;
@@ -27,9 +26,9 @@ impl MainState {
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if timer::ticks(ctx) % 100 == 0 {
-            println!("Delta frame time: {:?} ", timer::delta(ctx));
-            println!("Average FPS: {}", timer::fps(ctx));
+        if ctx.time.ticks() % 100 == 0 {
+            println!("Delta frame time: {:?} ", ctx.time.delta());
+            println!("Average FPS: {}", ctx.time.fps());
         }
         Ok(())
     }
@@ -37,7 +36,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, Color::BLACK);
 
-        let time = (timer::time_since_start(ctx).as_secs_f64() * 1000.0) as u32;
+        let time = (ctx.time.time_since_start().as_secs_f64() * 1000.0) as u32;
         let cycle = 10_000;
         for x in 0..150 {
             for y in 0..150 {

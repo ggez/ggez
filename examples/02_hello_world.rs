@@ -45,7 +45,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         self.frames += 1;
         if (self.frames % 100) == 0 {
-            println!("FPS: {}", ggez::timer::fps(ctx));
+            println!("FPS: {}", ctx.time.fps());
         }
 
         Ok(())

@@ -7,7 +7,6 @@ use std::convert::TryFrom;
 use ggez::conf;
 use ggez::event::{self, KeyCode, KeyMods};
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
-use ggez::timer;
 use ggez::{Context, GameResult};
 
 use argh::FromArgs;
@@ -49,7 +48,7 @@ impl MainState {
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
-        while timer::check_update_time(ctx, DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             self.angle += 0.01;
 
             if self.window_settings.toggle_fullscreen {
@@ -67,7 +66,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, Color::BLACK);
-        let rotation = timer::ticks(ctx) % 1000;
+        let rotation = ctx.time.ticks() % 1000;
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::stroke(3.0),

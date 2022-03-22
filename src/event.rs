@@ -16,8 +16,10 @@ use winit::{self, dpi};
 pub use winit::event::MouseButton;
 
 /// An analog axis of some device (gamepad thumbstick, joystick...).
+#[cfg(feature = "gamepad")]
 pub use gilrs::Axis;
 /// A button of some device (gamepad, joystick...).
+#[cfg(feature = "gamepad")]
 pub use gilrs::Button;
 
 /// `winit` events; nested in a module for re-export neatness.
@@ -27,6 +29,7 @@ pub mod winit_event {
         TouchPhase, WindowEvent,
     };
 }
+#[cfg(feature = "gamepad")]
 pub use crate::input::gamepad::GamepadId;
 pub use crate::input::keyboard::{KeyCode, KeyMods};
 use crate::GameError;
@@ -196,11 +199,11 @@ where
         x: f64,
         y: f64,
     ) -> Result<(), E> {
-        crate::input::mouse::handle_move(ctx, x as f32, y as f32);
+        ctx.mouse.handle_move(x as f32, y as f32);
 
         match phase {
             TouchPhase::Started => {
-                ctx.mouse_context.set_button(MouseButton::Left, true);
+                ctx.mouse.set_button(MouseButton::Left, true);
                 self.mouse_button_down_event(ctx, MouseButton::Left, x as f32, y as f32)?;
             }
             TouchPhase::Moved => {
@@ -208,7 +211,7 @@ where
                 self.mouse_motion_event(ctx, x as f32, y as f32, diff.x, diff.y)?;
             }
             TouchPhase::Ended | TouchPhase::Cancelled => {
-                ctx.mouse_context.set_button(MouseButton::Left, false);
+                ctx.mouse.set_button(MouseButton::Left, false);
                 self.mouse_button_up_event(ctx, MouseButton::Left, x as f32, y as f32)?;
             }
         }
@@ -219,10 +222,11 @@ where
     /// A gamepad button was pressed; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
     /// the gamepad.
+    #[cfg(feature = "gamepad")]
     fn gamepad_button_down_event(
         &mut self,
         _ctx: &mut Context,
-        _btn: Button,
+        _btn: gilrs::Button,
         _id: GamepadId,
     ) -> Result<(), E> {
         Ok(())
@@ -231,10 +235,11 @@ where
     /// A gamepad button was released; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
     /// the gamepad.
+    #[cfg(feature = "gamepad")]
     fn gamepad_button_up_event(
         &mut self,
         _ctx: &mut Context,
-        _btn: Button,
+        _btn: gilrs::Button,
         _id: GamepadId,
     ) -> Result<(), E> {
         Ok(())
@@ -243,10 +248,11 @@ where
     /// A gamepad axis moved; `id` identifies which gamepad.
     /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
     /// the gamepad.
+    #[cfg(feature = "gamepad")]
     fn gamepad_axis_event(
         &mut self,
         _ctx: &mut Context,
-        _axis: Axis,
+        _axis: gilrs::Axis,
         _value: f32,
         _id: GamepadId,
     ) -> Result<(), E> {
@@ -296,7 +302,7 @@ where
     S: EventHandler<E>,
     E: std::error::Error,
 {
-    use crate::input::{keyboard, mouse};
+    use crate::input::mouse;
 
     event_loop.run(move |mut event, _, control_flow| {
         if !ctx.continuing {
@@ -344,7 +350,7 @@ where
                     };
                 }
                 WindowEvent::ModifiersChanged(mods) => {
-                    ctx.keyboard_context.set_modifiers(KeyMods::from(mods))
+                    ctx.keyboard.set_modifiers(KeyMods::from(mods))
                 }
                 WindowEvent::KeyboardInput {
                     input:
@@ -355,13 +361,9 @@ where
                         },
                     ..
                 } => {
-                    let repeat = keyboard::is_key_repeated(ctx);
-                    let res = state.key_down_event(
-                        ctx,
-                        keycode,
-                        ctx.keyboard_context.active_mods(),
-                        repeat,
-                    );
+                    let repeat = ctx.keyboard.is_key_repeated();
+                    let res =
+                        state.key_down_event(ctx, keycode, ctx.keyboard.active_mods(), repeat);
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyDownEvent) {
                         return;
                     };
@@ -375,7 +377,7 @@ where
                         },
                     ..
                 } => {
-                    let res = state.key_up_event(ctx, keycode, ctx.keyboard_context.active_mods());
+                    let res = state.key_up_event(ctx, keycode, ctx.keyboard.active_mods());
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyUpEvent) {
                         return;
                     };
@@ -384,7 +386,7 @@ where
                     let (x, y) = match delta {
                         MouseScrollDelta::LineDelta(x, y) => (x, y),
                         MouseScrollDelta::PixelDelta(pos) => {
-                            let scale_factor = ctx.gfx_context.window.window().scale_factor();
+                            let scale_factor = ctx.gfx.window.window().scale_factor();
                             let dpi::LogicalPosition { x, y } = pos.to_logical::<f32>(scale_factor);
                             (x, y)
                         }
@@ -399,7 +401,7 @@ where
                     button,
                     ..
                 } => {
-                    let position = mouse::position(ctx);
+                    let position = ctx.mouse.position();
                     match element_state {
                         ElementState::Pressed => {
                             let res =
@@ -430,7 +432,7 @@ where
                     }
                 }
                 WindowEvent::CursorMoved { .. } => {
-                    let position = mouse::position(ctx);
+                    let position = ctx.mouse.position();
                     let delta = mouse::last_delta(ctx);
                     let res =
                         state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
@@ -459,53 +461,49 @@ where
                 // you include `timer_context.tick()` and
                 // `ctx.process_event()` calls.  These update ggez's
                 // internal state however necessary.
-                ctx.timer_context.tick();
+                ctx.time.tick();
 
                 // Handle gamepad events if necessary.
-                if ctx.conf.modules.gamepad {
-                    while let Some(gilrs::Event { id, event, .. }) =
-                        ctx.gamepad_context.next_event()
-                    {
-                        match event {
-                            gilrs::EventType::ButtonPressed(button, _) => {
-                                let res =
-                                    state.gamepad_button_down_event(ctx, button, GamepadId(id));
-                                if catch_error(
-                                    ctx,
-                                    res,
-                                    state,
-                                    control_flow,
-                                    ErrorOrigin::GamepadButtonDownEvent,
-                                ) {
-                                    return;
-                                };
-                            }
-                            gilrs::EventType::ButtonReleased(button, _) => {
-                                let res = state.gamepad_button_up_event(ctx, button, GamepadId(id));
-                                if catch_error(
-                                    ctx,
-                                    res,
-                                    state,
-                                    control_flow,
-                                    ErrorOrigin::GamepadButtonUpEvent,
-                                ) {
-                                    return;
-                                };
-                            }
-                            gilrs::EventType::AxisChanged(axis, value, _) => {
-                                let res = state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
-                                if catch_error(
-                                    ctx,
-                                    res,
-                                    state,
-                                    control_flow,
-                                    ErrorOrigin::GamepadAxisEvent,
-                                ) {
-                                    return;
-                                };
-                            }
-                            _ => {}
+                #[cfg(feature = "gamepad")]
+                while let Some(gilrs::Event { id, event, .. }) = ctx.gamepad.next_event() {
+                    match event {
+                        gilrs::EventType::ButtonPressed(button, _) => {
+                            let res = state.gamepad_button_down_event(ctx, button, GamepadId(id));
+                            if catch_error(
+                                ctx,
+                                res,
+                                state,
+                                control_flow,
+                                ErrorOrigin::GamepadButtonDownEvent,
+                            ) {
+                                return;
+                            };
                         }
+                        gilrs::EventType::ButtonReleased(button, _) => {
+                            let res = state.gamepad_button_up_event(ctx, button, GamepadId(id));
+                            if catch_error(
+                                ctx,
+                                res,
+                                state,
+                                control_flow,
+                                ErrorOrigin::GamepadButtonUpEvent,
+                            ) {
+                                return;
+                            };
+                        }
+                        gilrs::EventType::AxisChanged(axis, value, _) => {
+                            let res = state.gamepad_axis_event(ctx, axis, value, GamepadId(id));
+                            if catch_error(
+                                ctx,
+                                res,
+                                state,
+                                control_flow,
+                                ErrorOrigin::GamepadAxisEvent,
+                            ) {
+                                return;
+                            };
+                        }
+                        _ => {}
                     }
                 }
 
@@ -521,12 +519,12 @@ where
 
                 // reset the mouse delta for the next frame
                 // necessary because it's calculated cumulatively each cycle
-                ctx.mouse_context.reset_delta();
+                ctx.mouse.reset_delta();
 
                 // Copy the state of the keyboard into the KeyboardContext
                 // and the mouse into the MouseContext
-                ctx.keyboard_context.save_keyboard_state();
-                ctx.mouse_context.save_mouse_state();
+                ctx.keyboard.save_keyboard_state();
+                ctx.mouse.save_mouse_state();
             }
             Event::RedrawRequested(_) => (),
             Event::RedrawEventsCleared => (),
@@ -565,28 +563,25 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
     if let winit_event::Event::WindowEvent { event, .. } = event {
         match event {
             winit_event::WindowEvent::Resized(physical_size) => {
-                ctx.gfx_context.window.resize(*physical_size);
-                ctx.gfx_context.resize_viewport();
+                ctx.gfx.window.resize(*physical_size);
+                ctx.gfx.resize_viewport();
             }
             winit_event::WindowEvent::CursorMoved {
                 position: physical_position,
                 ..
             } => {
-                crate::input::mouse::handle_move(
-                    ctx,
-                    physical_position.x as f32,
-                    physical_position.y as f32,
-                );
+                ctx.mouse
+                    .handle_move(physical_position.x as f32, physical_position.y as f32);
             }
             winit_event::WindowEvent::MouseInput { button, state, .. } => {
                 let pressed = match state {
                     winit_event::ElementState::Pressed => true,
                     winit_event::ElementState::Released => false,
                 };
-                ctx.mouse_context.set_button(*button, pressed);
+                ctx.mouse.set_button(*button, pressed);
             }
             winit_event::WindowEvent::ModifiersChanged(mods) => ctx
-                .keyboard_context
+                .keyboard
                 .set_modifiers(crate::input::keyboard::KeyMods::from(*mods)),
             winit_event::WindowEvent::KeyboardInput {
                 input:
@@ -601,7 +596,7 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                     winit_event::ElementState::Pressed => true,
                     winit_event::ElementState::Released => false,
                 };
-                ctx.keyboard_context.set_key(*keycode, pressed);
+                ctx.keyboard.set_key(*keycode, pressed);
             }
             winit_event::WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                 if !ctx.conf.window_mode.resize_on_scale_factor_change {

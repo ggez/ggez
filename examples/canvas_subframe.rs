@@ -4,7 +4,6 @@
 
 use ggez::event;
 use ggez::graphics::{self, Color};
-use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
 use std::f32::consts::TAU;
@@ -81,9 +80,9 @@ impl MainState {
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if timer::ticks(ctx) % 100 == 0 {
-            println!("Delta frame time: {:?} ", timer::delta(ctx));
-            println!("Average FPS: {}", timer::fps(ctx));
+        if ctx.time.ticks() % 100 == 0 {
+            println!("Delta frame time: {:?} ", ctx.time.delta());
+            println!("Average FPS: {}", ctx.time.fps());
         }
 
         // Bounce the rect if necessary

@@ -115,7 +115,7 @@ impl App {
 impl event::EventHandler<ggez::GameError> for App {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
-        while timer::check_update_time(ctx, DESIRED_FPS) {}
+        while ctx.time.check_update_time(DESIRED_FPS) {}
         Ok(())
     }
 
@@ -125,7 +125,7 @@ impl event::EventHandler<ggez::GameError> for App {
         // `Text` can be used in "immediate mode", but it's slightly less efficient
         // in most cases, and horrifically less efficient in a few select ones
         // (using `.width()` or `.height()`, for example).
-        let fps = timer::fps(ctx);
+        let fps = ctx.time.fps();
         let fps_display = Text::new(format!("FPS: {}", fps));
         // When drawing through these calls, `DrawParam` will work as they are documented.
         graphics::draw(ctx, &fps_display, (Vec2::new(200.0, 0.0), Color::WHITE))?;

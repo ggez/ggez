@@ -340,7 +340,7 @@ impl Text {
 
     /// Returns a Vec containing the coordinates of the formatted and wrapped text.
     pub fn glyph_positions(&self, context: &Context) -> std::cell::Ref<Vec<mint::Point2<f32>>> {
-        self.calculate_glyph_positions(&mut context.gfx_context.glyph_brush.borrow_mut())
+        self.calculate_glyph_positions(&mut context.gfx.glyph_brush.borrow_mut())
     }
 
     /// Calculates, caches, and returns width and height of formatted and wrapped text.
@@ -379,7 +379,7 @@ impl Text {
 
     /// Returns a Rect containing the width and height of the formatted and wrapped text.
     pub fn dimensions(&self, context: &Context) -> Rect {
-        self.calculate_dimensions(&mut context.gfx_context.glyph_brush.borrow_mut())
+        self.calculate_dimensions(&mut context.gfx.glyph_brush.borrow_mut())
     }
 
     /// Returns the width of formatted and wrapped text, in screen coordinates.
@@ -422,8 +422,7 @@ impl Font {
     where
         P: AsRef<path::Path> + fmt::Debug,
     {
-        use crate::filesystem;
-        let mut stream = filesystem::open(context, path.as_ref())?;
+        let mut stream = context.fs.open(path.as_ref())?;
         let mut buf = Vec::new();
         let _ = stream.read_to_end(&mut buf)?;
 
@@ -436,7 +435,7 @@ impl Font {
         // Take a Cow here to avoid this clone where unnecessary?
         // Nah, let's not complicate things more than necessary.
         let font = glyph_brush::ab_glyph::FontArc::try_from_vec(bytes.to_vec()).unwrap();
-        let font_id = context.gfx_context.glyph_brush.borrow_mut().add_font(font);
+        let font_id = context.gfx.glyph_brush.borrow_mut().add_font(font);
 
         Ok(Font { font_id })
     }
@@ -459,7 +458,7 @@ impl Default for Font {
 /// Obtains the font cache.
 pub fn font_cache(context: &Context) -> FontCache {
     FontCache {
-        glyph_brush: context.gfx_context.glyph_brush.clone(),
+        glyph_brush: context.gfx.glyph_brush.clone(),
     }
 }
 
@@ -473,11 +472,7 @@ where
 {
     let p = Point2::from(relative_dest.into());
     let varied_section = batch.generate_varied_section(p, color);
-    context
-        .gfx_context
-        .glyph_brush
-        .borrow_mut()
-        .queue(varied_section);
+    context.gfx.glyph_brush.borrow_mut().queue(varied_section);
 }
 
 /// Exposes `glyph_brush`'s drawing API in case `ggez`'s text drawing is insufficient.
@@ -488,7 +483,7 @@ where
     S: Into<Cow<'a, Section<'a>>>,
     G: GlyphPositioner,
 {
-    let brush = &mut context.gfx_context.glyph_brush.borrow_mut();
+    let brush = &mut context.gfx.glyph_brush.borrow_mut();
     match custom_layout {
         Some(layout) => brush.queue_custom_layout(section, layout),
         None => brush.queue(section),
@@ -516,10 +511,10 @@ where
 {
     let param: DrawParam = param.into();
 
-    let gb = &mut ctx.gfx_context.glyph_brush;
-    let encoder = &mut ctx.gfx_context.encoder;
-    let gc = &ctx.gfx_context.glyph_cache.texture_handle;
-    let backend = &ctx.gfx_context.backend_spec;
+    let gb = &mut ctx.gfx.glyph_brush;
+    let encoder = &mut ctx.gfx.encoder;
+    let gc = &ctx.gfx.glyph_cache.texture_handle;
+    let backend = &ctx.gfx.backend_spec;
 
     let action = gb.borrow_mut().process_queued(
         |rect, tex_data| update_texture::<GlBackendSpec>(backend, encoder, gc, rect, tex_data),
@@ -527,7 +522,7 @@ where
     );
     match action {
         Ok(glyph_brush::BrushAction::ReDraw) => {
-            let spritebatch = ctx.gfx_context.glyph_state.clone();
+            let spritebatch = ctx.gfx.glyph_state.clone();
             let spritebatch = &mut *spritebatch.borrow_mut();
             spritebatch.set_blend_mode(blend);
             spritebatch.set_filter(filter);
@@ -535,7 +530,7 @@ where
         }
         Ok(glyph_brush::BrushAction::Draw(drawparams)) => {
             // Gotta clone the image to avoid double-borrow's.
-            let spritebatch = ctx.gfx_context.glyph_state.clone();
+            let spritebatch = ctx.gfx.glyph_state.clone();
             let spritebatch = &mut *spritebatch.borrow_mut();
             spritebatch.clear();
             spritebatch.set_blend_mode(blend);
@@ -555,11 +550,11 @@ where
                 u16::try_from(new_height).unwrap(),
                 &data,
             )?;
-            ctx.gfx_context.glyph_cache = new_glyph_cache.clone();
-            let spritebatch = ctx.gfx_context.glyph_state.clone();
+            ctx.gfx.glyph_cache = new_glyph_cache.clone();
+            let spritebatch = ctx.gfx.glyph_state.clone();
             let spritebatch = &mut *spritebatch.borrow_mut();
             let _ = spritebatch.set_image(new_glyph_cache);
-            ctx.gfx_context
+            ctx.gfx
                 .glyph_brush
                 .borrow_mut()
                 .resize_texture(new_width, new_height);

@@ -1,7 +1,6 @@
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::event;
-use ggez::filesystem;
 use ggez::graphics::{self, Color};
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -44,7 +43,7 @@ impl MainState {
     }
 
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        filesystem::print_all(ctx);
+        ctx.fs.print_all();
 
         let image = graphics::Image::new(ctx, "/dragon1.png")?;
 
@@ -75,13 +74,13 @@ impl MainState {
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
-        while timer::check_update_time(ctx, DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             self.a += self.direction;
             if self.a > 250 || self.a <= 0 {
                 self.direction *= -1;
 
-                println!("Delta frame time: {:?} ", timer::delta(ctx));
-                println!("Average FPS: {}", timer::fps(ctx));
+                println!("Delta frame time: {:?} ", ctx.time.delta());
+                println!("Average FPS: {}", ctx.time.fps());
             }
         }
         Ok(())

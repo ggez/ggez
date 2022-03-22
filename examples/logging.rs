@@ -10,7 +10,7 @@ use log::*;
 
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event::{EventHandler, KeyCode, KeyMods};
-use ggez::filesystem::{self, File};
+use ggez::filesystem::File;
 use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
@@ -35,11 +35,11 @@ impl FileLogger {
         receiver: mpsc::Receiver<String>,
     ) -> GameResult<FileLogger> {
         // This (re)creates a file and opens it for appending.
-        let file = filesystem::create(ctx, path::Path::new(path))?;
+        let file = ctx.fs.create(path::Path::new(path))?;
         debug!(
             "Created log file {:?} in {:?}",
             path,
-            filesystem::user_config_dir(ctx)
+            ctx.fs.user_config_dir()
         );
         Ok(FileLogger { file, receiver })
     }
@@ -81,7 +81,7 @@ impl EventHandler for App {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         // This tries to throttle updates to desired value.
-        while timer::check_update_time(ctx, DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             // Since we don't have any non-callback logic, all we do is append our logs.
             self.file_logger.update()?;
         }

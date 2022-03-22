@@ -8,7 +8,6 @@ use ::image;
 use crate::context::{Context, DebugId};
 use crate::error::GameError;
 use crate::error::GameResult;
-use crate::filesystem;
 use crate::graphics;
 use crate::graphics::shader::*;
 use crate::graphics::*;
@@ -187,7 +186,7 @@ impl Image {
             .extension()
             .map_or_else(|| None, image::ImageFormat::from_extension);
         let mut buf = Vec::new();
-        let mut reader = context.filesystem.open(path)?;
+        let mut reader = context.fs.open(path)?;
         let _ = reader.read_to_end(&mut buf)?;
         if let Some(format) = format {
             Self::from_bytes_with_format(context, &buf, format)
@@ -238,10 +237,10 @@ impl Image {
         rgba: &[u8],
     ) -> GameResult<Self> {
         let debug_id = DebugId::get(context);
-        let color_format = context.gfx_context.color_format();
+        let color_format = context.gfx.color_format();
         Self::make_raw(
-            &mut *context.gfx_context.factory,
-            &context.gfx_context.default_sampler_info,
+            &mut *context.gfx.factory,
+            &context.gfx.default_sampler_info,
             width,
             height,
             rgba,
@@ -255,7 +254,7 @@ impl Image {
         use gfx::memory::Typed;
         use gfx::traits::FactoryExt;
 
-        let gfx = &mut ctx.gfx_context;
+        let gfx = &mut ctx.gfx;
         let w = self.width;
         let h = self.height;
 
@@ -305,7 +304,7 @@ impl Image {
     ) -> GameResult {
         use std::io;
         let data = self.to_rgba8(ctx)?;
-        let f = filesystem::create(ctx, path)?;
+        let f = ctx.fs.create(path)?;
         let writer = &mut io::BufWriter::new(f);
         let color_format = image::ColorType::Rgba8;
         match format {
@@ -389,7 +388,7 @@ impl Drawable for Image {
 }
 
 pub(crate) fn draw_image_raw(image: &Image, ctx: &mut Context, param: DrawParam) -> GameResult {
-    let gfx = &mut ctx.gfx_context;
+    let gfx = &mut ctx.gfx;
 
     gfx.update_instance_properties(param)?;
     let sampler = gfx

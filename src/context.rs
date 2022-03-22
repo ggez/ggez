@@ -3,12 +3,13 @@ use std::fmt;
 /// without having to mess around figuring it out.
 pub use winit;
 
+#[cfg(feature = "audio")]
 use crate::audio;
 use crate::conf;
 use crate::error::GameResult;
 use crate::filesystem::Filesystem;
 use crate::graphics;
-use crate::input::{gamepad, keyboard, mouse};
+use crate::input;
 use crate::timer;
 
 /// A `Context` is an object that holds on to global resources.
@@ -35,20 +36,22 @@ use crate::timer;
 /// public and stable API is `ggez`'s module-level functions and
 /// types.
 pub struct Context {
-    /// Filesystem state
-    pub filesystem: Filesystem,
-    /// Graphics state
-    pub(crate) gfx_context: crate::graphics::context::GraphicsContext,
-    /// Timer state
-    pub timer_context: timer::TimeContext,
-    /// Audio context
-    pub audio_context: Box<dyn audio::AudioContext>,
-    /// Keyboard context
-    pub keyboard_context: keyboard::KeyboardContext,
-    /// Mouse context
-    pub mouse_context: mouse::MouseContext,
-    /// Gamepad context
-    pub gamepad_context: Box<dyn gamepad::GamepadContext>,
+    /// Filesystem state.
+    pub fs: Filesystem,
+    /// Graphics state.
+    pub(crate) gfx: crate::graphics::context::GraphicsContext,
+    /// Timer state.
+    pub time: timer::TimeContext,
+    /// Audio context.
+    #[cfg(feature = "audio")]
+    pub audio: audio::AudioContext,
+    /// Keyboard input context.
+    pub keyboard: input::keyboard::KeyboardContext,
+    /// Mouse input context.
+    pub mouse: input::mouse::MouseContext,
+    /// Gamepad input context.
+    #[cfg(feature = "gamepad")]
+    pub gamepad: input::gamepad::GamepadContext,
 
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
@@ -79,11 +82,8 @@ impl Context {
         mut fs: Filesystem,
     ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         let debug_id = DebugId::new();
-        let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
-            Box::new(audio::RodioAudioContext::new()?)
-        } else {
-            Box::new(audio::NullAudioContext::default())
-        };
+        #[cfg(feature = "audio")]
+        let audio_context = audio::AudioContext::new()?;
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
         let backend_spec = graphics::GlBackendSpec::from(conf.backend);
@@ -95,24 +95,19 @@ impl Context {
             backend_spec,
             debug_id,
         )?;
-        let mouse_context = mouse::MouseContext::new();
-        let keyboard_context = keyboard::KeyboardContext::new();
-        let gamepad_context: Box<dyn gamepad::GamepadContext> = if conf.modules.gamepad {
-            Box::new(gamepad::GilrsGamepadContext::new()?)
-        } else {
-            Box::new(gamepad::NullGamepadContext::default())
-        };
 
         let ctx = Context {
             conf,
-            filesystem: fs,
-            gfx_context: graphics_context,
+            fs,
+            gfx: graphics_context,
             continuing: true,
-            timer_context,
-            audio_context,
-            keyboard_context,
-            gamepad_context,
-            mouse_context,
+            time: timer_context,
+            #[cfg(feature = "audio")]
+            audio: audio_context,
+            keyboard: input::keyboard::KeyboardContext::new(),
+            mouse: input::mouse::MouseContext::new(),
+            #[cfg(feature = "gamepad")]
+            gamepad: input::gamepad::GamepadContext::new()?,
 
             debug_id,
         };
@@ -170,13 +165,6 @@ impl ContextBuilder {
     #[must_use]
     pub fn backend(mut self, backend: conf::Backend) -> Self {
         self.conf.backend = backend;
-        self
-    }
-
-    /// Sets the modules configuration.
-    #[must_use]
-    pub fn modules(mut self, modules: conf::ModuleConf) -> Self {
-        self.conf.modules = modules;
         self
     }
 

@@ -4,7 +4,6 @@ use gfx::{self, *};
 
 use ggez::event;
 use ggez::graphics::{self, Color, DrawMode};
-use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
@@ -38,7 +37,7 @@ impl MainState {
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        self.dim.rate = 0.5 + (((timer::ticks(ctx) as f32) / 100.0).cos() / 2.0);
+        self.dim.rate = 0.5 + (((ctx.time.ticks() as f32) / 100.0).cos() / 2.0);
         Ok(())
     }
 

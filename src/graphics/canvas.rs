@@ -9,13 +9,13 @@ use gfx::texture::{AaMode, Kind};
 use gfx::Factory;
 use glam::Quat;
 
+use crate::conf;
 use crate::conf::Backend::OpenGLES;
 use crate::context::DebugId;
 use crate::error::*;
 use crate::graphics::context::Fragments;
 use crate::graphics::*;
 use crate::Context;
-use crate::{conf, filesystem};
 
 /// A generic canvas independent of graphics backend. This type should
 /// never need to be used directly; use [`graphics::Canvas`](type.Canvas.html)
@@ -140,7 +140,7 @@ impl Canvas {
         let debug_id = DebugId::get(ctx);
         let kind = Kind::D2(width, height, AaMode::Single);
         let levels = 1;
-        let factory = &mut ctx.gfx_context.factory;
+        let factory = &mut ctx.gfx.factory;
         let texture_create_info = gfx::texture::Info {
             kind,
             levels,
@@ -192,7 +192,7 @@ impl Canvas {
                     image: Image {
                         texture: resource,
                         texture_handle: tex,
-                        sampler_info: ctx.gfx_context.default_sampler_info,
+                        sampler_info: ctx.gfx.default_sampler_info,
                         blend_mode: None,
                         width,
                         height,
@@ -208,7 +208,7 @@ impl Canvas {
             image: Image {
                 texture: resource,
                 texture_handle: tex,
-                sampler_info: ctx.gfx_context.default_sampler_info,
+                sampler_info: ctx.gfx.default_sampler_info,
                 blend_mode: None,
                 width,
                 height,
@@ -264,7 +264,7 @@ impl Canvas {
     ) -> GameResult {
         use std::io;
         let data = self.to_rgba8(ctx)?;
-        let f = filesystem::create(ctx, path)?;
+        let f = ctx.fs.create(path)?;
         let writer = &mut io::BufWriter::new(f);
         let color_format = ::image::ColorType::Rgba8;
         match format {
@@ -291,21 +291,17 @@ impl Canvas {
     pub fn resolve(&self, ctx: &mut Context) -> GameResult {
         if let Some(ms_canvas) = &self.ms_canvas {
             // save the old target to restore it after the resolve has finished
-            let old_target = std::mem::replace(&mut ctx.gfx_context.data.out, self.target.clone());
+            let old_target = std::mem::replace(&mut ctx.gfx.data.out, self.target.clone());
             // set resolve shader
-            let r_shader_id = ctx.gfx_context.resolve_shader.shader_id();
-            let old_shader = std::mem::replace(
-                &mut *ctx.gfx_context.current_shader.borrow_mut(),
-                Some(r_shader_id),
-            );
+            let r_shader_id = ctx.gfx.resolve_shader.shader_id();
+            let old_shader =
+                std::mem::replace(&mut *ctx.gfx.current_shader.borrow_mut(), Some(r_shader_id));
             let frags = Fragments {
                 fragments: ms_canvas.fragments as i32,
             };
-            ctx.gfx_context.encoder.update_buffer(
-                &ctx.gfx_context.resolve_shader.buffer,
-                &[frags],
-                0,
-            )?;
+            ctx.gfx
+                .encoder
+                .update_buffer(&ctx.gfx.resolve_shader.buffer, &[frags], 0)?;
             // draw the multi-sampled image onto the resolve target
             let param = DrawParam::new().transform(glam::Mat4::from_scale_rotation_translation(
                 glam::vec3(self.image.width as f32, -(self.image.height as f32), 1.0),
@@ -314,9 +310,9 @@ impl Canvas {
             ));
             crate::graphics::image::draw_image_raw(&ms_canvas.image, ctx, param)?;
             // restore the old target
-            ctx.gfx_context.data.out = old_target;
+            ctx.gfx.data.out = old_target;
             // and the old shader
-            *ctx.gfx_context.current_shader.borrow_mut() = old_shader;
+            *ctx.gfx.current_shader.borrow_mut() = old_shader;
         }
         Ok(())
     }
@@ -380,13 +376,13 @@ pub fn set_canvas(ctx: &mut Context, target: Option<&Canvas>) {
     match target {
         Some(surface) => {
             surface.debug_id.assert(ctx);
-            ctx.gfx_context.data.out = match &surface.ms_canvas {
+            ctx.gfx.data.out = match &surface.ms_canvas {
                 Some(ms_canvas) => ms_canvas.target.clone(),
                 _ => surface.target.clone(),
             };
         }
         None => {
-            ctx.gfx_context.data.out = ctx.gfx_context.screen_render_target.clone();
+            ctx.gfx.data.out = ctx.gfx.screen_render_target.clone();
         }
     };
 }

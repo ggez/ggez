@@ -15,7 +15,6 @@ pub fn context_build_tests() {
         ),
         conf::Conf::default()
             .window_mode(conf::WindowMode::default().fullscreen_type(conf::FullscreenType::True)),
-        conf::Conf::default().modules(conf::ModuleConf::default().audio(false)),
     ];
     for conf in confs.into_iter() {
         let mut cb = ContextBuilder::new("ggez_unit_tests", "ggez").default_conf(conf);

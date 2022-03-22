@@ -65,7 +65,7 @@ fn save_screenshot_test(c: &mut Context) {
 
     // Don't do graphics::present(c) since calling it once (!) would mean that the result of our draw operation
     // went to the front buffer and the active screen texture is actually empty.
-    c.gfx_context.encoder.flush(&mut *c.gfx_context.device);
+    c.gfx.encoder.flush(&mut *c.gfx.device);
 
     let screenshot = graphics::screenshot(c).unwrap();
 
