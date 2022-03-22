@@ -1,10 +1,11 @@
 //! Mouse utility functions.
 
-use crate::Context;
-use crate::{error::GameError, error::GameResult, graphics::Point2};
+use crate::context::Context;
+use crate::error::GameError;
+use crate::error::GameResult;
+use crate::graphics::Point2;
 use std::collections::HashSet;
 use winit::dpi;
-
 pub use winit::event::MouseButton;
 pub use winit::window::CursorIcon;
 

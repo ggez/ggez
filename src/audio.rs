@@ -15,7 +15,6 @@ use std::time;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use crate::context::Context;
 use crate::error::GameError;
 use crate::error::GameResult;
 use crate::filesystem::Filesystem;
@@ -281,10 +280,10 @@ pub struct Source {
 
 impl Source {
     /// Create a new `Source` from the given file.
-    pub fn new<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<Self> {
+    pub fn new<P: AsRef<path::Path>>(fs: &Filesystem, audio: &AudioContext, path: P) -> GameResult<Self> {
         let path = path.as_ref();
-        let data = SoundData::new(&ctx.fs, path)?;
-        Source::from_data(&ctx.audio, data)
+        let data = SoundData::new(fs, path)?;
+        Source::from_data(audio, data)
     }
 
     /// Creates a new `Source` using the given `SoundData` object.
@@ -354,27 +353,21 @@ impl SoundSource for Source {
     fn set_repeat(&mut self, repeat: bool) {
         self.state.set_repeat(repeat)
     }
-
     fn set_fade_in(&mut self, dur: time::Duration) {
         self.state.set_fade_in(dur)
     }
-
     fn set_start(&mut self, dur: time::Duration) {
         self.state.set_start(dur)
     }
-
     fn set_pitch(&mut self, ratio: f32) {
         self.state.set_pitch(ratio)
     }
-
     fn repeat(&self) -> bool {
         self.state.repeat()
     }
-
     fn pause(&self) {
         self.sink.pause()
     }
-
     fn resume(&self) {
         self.sink.play()
     }
@@ -450,10 +443,10 @@ pub struct SpatialSource {
 
 impl SpatialSource {
     /// Create a new `SpatialSource` from the given file.
-    pub fn new<P: AsRef<path::Path>>(ctx: &Context, path: P) -> GameResult<Self> {
+    pub fn new<P: AsRef<path::Path>>(fs: &Filesystem, audio: &AudioContext, path: P) -> GameResult<Self> {
         let path = path.as_ref();
-        let data = SoundData::new(&ctx.fs, path)?;
-        SpatialSource::from_data(&ctx.audio, data)
+        let data = SoundData::new(fs, path)?;
+        SpatialSource::from_data(audio, data)
     }
 
     /// Creates a new `SpatialSource` using the given `SoundData` object.

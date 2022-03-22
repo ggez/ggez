@@ -49,7 +49,7 @@ impl MainState {
             "LiberationMono",
             graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
         );
-        let mut sound = audio::Source::new(ctx, "/sound.ogg")?;
+        let mut sound = audio::Source::new(&ctx.fs, &ctx.audio, "/sound.ogg")?;
 
         // "detached" sounds keep playing even after they are dropped
         let _ = sound.play_detached(&ctx.audio);

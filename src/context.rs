@@ -38,7 +38,7 @@ use crate::timer;
 pub struct Context {
     /// Filesystem state.
     pub fs: Filesystem,
-    /// Graphics state
+    /// Graphics state.
     pub gfx: crate::graphics::context::GraphicsContext,
     /// Timer state.
     pub time: timer::TimeContext,

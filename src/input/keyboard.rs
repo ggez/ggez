@@ -65,13 +65,12 @@
 //! }
 //! ```
 
+use crate::context::Context;
+
 use std::collections::HashSet;
 use winit::event::ModifiersState;
-
 /// A key code.
 pub use winit::event::VirtualKeyCode as KeyCode;
-
-use crate::Context;
 
 bitflags! {
     /// Bitflags describing the state of keyboard modifiers, such as `Control` or `Shift`.

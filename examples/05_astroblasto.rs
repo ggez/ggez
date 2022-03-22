@@ -253,8 +253,8 @@ impl Assets {
         let shot_image = graphics::Image::from_path(ctx, "/shot.png", true)?;
         let rock_image = graphics::Image::from_path(ctx, "/rock.png", true)?;
 
-        let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
-        let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
+        let shot_sound = audio::Source::new(&ctx.fs, &ctx.audio, "/pew.ogg")?;
+        let hit_sound = audio::Source::new(&ctx.fs, &ctx.audio, "/boom.ogg")?;
 
         Ok(Assets {
             player_image,
