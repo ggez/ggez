@@ -382,6 +382,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .size(48.0)
                 .font("LiberationMono")],
             Vec2::new(50.0, 200.0),
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );

@@ -259,7 +259,13 @@ fn draw_info(canvas: &mut graphics::Canvas, info: String, position: Point2<f32>)
         .font("LiberationMono")
         .size(40.)
         .color(Color::WHITE);
-    canvas.draw_text(&[t], position, graphics::TextLayout::tl_single_line(), 0)
+    canvas.draw_text(
+        &[t],
+        position,
+        0.0,
+        graphics::TextLayout::tl_single_line(),
+        0,
+    )
 }
 
 impl event::EventHandler<ggez::GameError> for MainState {

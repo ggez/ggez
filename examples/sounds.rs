@@ -80,6 +80,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .text("Press number keys 1-6 to play a sound, or escape to quit.")
                 .font("LiberationMono")],
             Vec2::new(100.0, 100.0),
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );

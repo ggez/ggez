@@ -1,6 +1,6 @@
 //!
 
-use super::{Color, Rect};
+use super::{gpu::text::Extra, Color, Rect};
 use crate::{filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId};
 use std::{collections::HashMap, io::Read, path::Path};
@@ -183,8 +183,11 @@ pub(crate) fn text_to_section<'a>(
     fonts: &HashMap<String, FontId>,
     text: &'a [Text],
     mut rect: Rect,
+    rotation: f32,
     layout: TextLayout,
-) -> GameResult<glyph_brush::Section<'a>> {
+) -> GameResult<glyph_brush::Section<'a, Extra>> {
+    let orect = rect;
+
     match layout.h_align() {
         TextAlign::Begin => {}
         TextAlign::Middle => rect.x += rect.w / 2.,
@@ -219,9 +222,10 @@ pub(crate) fn text_to_section<'a>(
                     font_id: *fonts
                         .get(&text.font)
                         .ok_or_else(|| GameError::FontSelectError(text.font.to_string()))?,
-                    extra: glyph_brush::Extra {
+                    extra: Extra {
                         color: text.color.into(),
-                        z: 0.,
+                        origin: orect.point().into(),
+                        rotation,
                     },
                 })
             })

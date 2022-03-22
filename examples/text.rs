@@ -181,6 +181,7 @@ impl event::EventHandler<ggez::GameError> for App {
         canvas.draw_text(
             &[fps_display],
             Vec2::new(200.0, 0.0),
+            0.0,
             TextLayout::tl_single_line(),
             0,
         );
@@ -189,7 +190,7 @@ impl event::EventHandler<ggez::GameError> for App {
         for text in self.texts.values() {
             let mut bounds = text.bounds;
             bounds.move_to(Vec2::new(20.0, 20.0 + height));
-            canvas.draw_bounded_text(&text.fragments, bounds, text.layout, 0);
+            canvas.draw_bounded_text(&text.fragments, bounds, 0.0, text.layout, 0);
             //height += 20.0 + text.height(ctx) as f32;
             height += 20.0
                 + ctx
@@ -218,7 +219,7 @@ impl event::EventHandler<ggez::GameError> for App {
                 .measure_text(&wobble, Vec2::ZERO, TextLayout::tl_single_line())?;
         let (wobble_width, wobble_height) = (wobble_bounds.w, wobble_bounds.h);
         let origin = Vec2::new(500.0, 300.0);
-        canvas.draw_text(&wobble, origin, TextLayout::tl_single_line(), 0);
+        canvas.draw_text(&wobble, origin, -0.5, TextLayout::tl_single_line(), 0);
         let t = Text::new().text(format!(
             "width: {}\nheight: {}",
             wobble_width, wobble_height
@@ -226,6 +227,7 @@ impl event::EventHandler<ggez::GameError> for App {
         canvas.draw_text(
             &[t],
             origin + Vec2::new(0.0, 20.0),
+            -0.5,
             TextLayout::tl_wrap(),
             0,
         );

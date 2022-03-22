@@ -171,6 +171,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.draw_text(
             &[text],
             Vec2::new(150., 135.),
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );

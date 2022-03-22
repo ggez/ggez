@@ -344,7 +344,7 @@ impl GraphicsContext {
         Ok(self
             .text
             .glyph_brush
-            .glyph_bounds(text_to_section(&self.fonts, text, rect, layout)?)
+            .glyph_bounds(text_to_section(&self.fonts, text, rect, 0., layout)?)
             .map(|rect| Rect {
                 x: rect.min.x,
                 y: rect.min.y,

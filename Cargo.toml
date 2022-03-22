@@ -74,6 +74,7 @@ typed-arena = "2.0"
 lazy_static = "1.4"
 thiserror = "1.0"
 futures = "0.3"
+ordered-float = "2.10"
 
 [dev-dependencies]
 env_logger = "0.9"

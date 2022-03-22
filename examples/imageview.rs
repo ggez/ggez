@@ -96,6 +96,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .size(48.0)
                 .color(color)],
             dest_point,
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );
@@ -115,6 +116,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .size(32.0)
                 .color(Color::WHITE)],
             dest_point2,
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );

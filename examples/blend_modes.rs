@@ -80,6 +80,7 @@ impl MainState {
         canvas.draw_text(
             &[text],
             pos + text_offset,
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );
@@ -170,6 +171,7 @@ impl EventHandler for MainState {
         canvas.draw_text(
             &[text],
             Vec2::new(8., 4.),
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );
@@ -181,6 +183,7 @@ impl EventHandler for MainState {
         canvas.draw_text(
             &[text],
             Vec2::new(8., 4. + y),
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );

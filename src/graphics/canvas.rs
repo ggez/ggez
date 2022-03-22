@@ -294,12 +294,20 @@ impl Canvas {
     /// ## A tip for performance
     /// Text rendering will automatically batch *as long as the text draws are consecutive*.
     /// As such, to achieve the best performance, do all your text rendering in a single burst.
-    pub fn draw_bounded_text(&mut self, text: &[Text], rect: Rect, layout: TextLayout, z: ZIndex) {
+    pub fn draw_bounded_text(
+        &mut self,
+        text: &[Text],
+        rect: Rect,
+        rotation: f32,
+        layout: TextLayout,
+        z: ZIndex,
+    ) {
         self.draws.entry(z).or_default().push(DrawCommand {
             state: self.state.clone(),
             draw: Draw::BoundedText {
                 text: text.to_vec(),
                 rect,
+                rotation,
                 layout,
             },
         });
@@ -310,6 +318,7 @@ impl Canvas {
         &mut self,
         text: &[Text],
         pos: impl Into<mint::Vector2<f32>>,
+        rotation: f32,
         layout: TextLayout,
         z: ZIndex,
     ) {
@@ -317,6 +326,7 @@ impl Canvas {
         self.draw_bounded_text(
             text,
             Rect::new(pos.x, pos.y, f32::INFINITY, f32::INFINITY),
+            rotation,
             layout,
             z,
         )
@@ -394,9 +404,12 @@ impl Canvas {
                         instances,
                         param,
                     } => canvas.draw_mesh_instances(mesh, instances, *param),
-                    Draw::BoundedText { text, rect, layout } => {
-                        canvas.draw_bounded_text(&text, *rect, *layout)?
-                    }
+                    Draw::BoundedText {
+                        text,
+                        rect,
+                        rotation,
+                        layout,
+                    } => canvas.draw_bounded_text(&text, *rect, *rotation, *layout)?,
                 }
             }
         }
@@ -458,6 +471,7 @@ enum Draw {
     BoundedText {
         text: Vec<Text>,
         rect: Rect,
+        rotation: f32,
         layout: TextLayout,
     },
 }

@@ -2,12 +2,14 @@ use super::{
     arc::{ArcTexture, ArcTextureView},
     growing::GrowingBufferArena,
 };
-use crate::graphics::{context::FrameArenas, Color, LinearColor};
+use crate::graphics::{context::FrameArenas, LinearColor};
+use crevice::std140::AsStd140;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
+use ordered_float::OrderedFloat;
 use std::num::NonZeroU32;
 
-pub struct TextRenderer {
-    pub glyph_brush: GlyphBrush<TextVertex>,
+pub(crate) struct TextRenderer {
+    pub glyph_brush: GlyphBrush<TextVertex, Extra>,
     pub cache: ArcTexture,
     pub cache_view: ArcTextureView,
     pub cache_size: (u32, u32),
@@ -60,7 +62,7 @@ impl TextRenderer {
         }
     }
 
-    pub fn queue(&mut self, section: glyph_brush::Section<'_>) {
+    pub fn queue(&mut self, section: glyph_brush::Section<'_, Extra>) {
         self.glyph_brush.queue(section);
     }
 
@@ -111,7 +113,12 @@ impl TextRenderer {
                     glyph.tex_coords.max.x,
                     glyph.tex_coords.max.y,
                 ],
-                color: LinearColor::from(Color::from(glyph.extra.color)).into(),
+                color: glyph.extra.color.into(),
+                transform: [
+                    glyph.extra.origin.x,
+                    glyph.extra.origin.y,
+                    glyph.extra.rotation,
+                ],
             },
         );
 
@@ -163,16 +170,45 @@ impl TextRenderer {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Extra {
+    pub color: LinearColor,
+    pub origin: mint::Vector2<f32>,
+    pub rotation: f32,
+}
+
+impl std::hash::Hash for Extra {
+    #[inline]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        [
+            OrderedFloat::from(self.color.r),
+            OrderedFloat::from(self.color.g),
+            OrderedFloat::from(self.color.b),
+            OrderedFloat::from(self.color.a),
+            OrderedFloat::from(self.origin.x),
+            OrderedFloat::from(self.origin.y),
+            OrderedFloat::from(self.rotation),
+        ]
+        .hash(state)
+    }
+}
+
+#[derive(AsStd140)]
+struct TextUniforms {
+    transform: mint::ColumnMatrix4<f32>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct TextVertex {
     pub rect: [f32; 4],
     pub uv: [f32; 4],
     pub color: [f32; 4],
+    pub transform: [f32; 3],
 }
 
 impl TextVertex {
     pub(crate) const fn layout() -> wgpu::VertexBufferLayout<'static> {
-        const ATTRIBUTES: [wgpu::VertexAttribute; 3] = [
+        const ATTRIBUTES: [wgpu::VertexAttribute; 4] = [
             wgpu::VertexAttribute {
                 format: wgpu::VertexFormat::Float32x4,
                 offset: 0,
@@ -187,6 +223,11 @@ impl TextVertex {
                 format: wgpu::VertexFormat::Float32x4,
                 offset: 32,
                 shader_location: 2,
+            },
+            wgpu::VertexAttribute {
+                format: wgpu::VertexFormat::Float32x3,
+                offset: 48,
+                shader_location: 3,
             },
         ];
 

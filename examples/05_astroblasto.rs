@@ -532,6 +532,7 @@ impl EventHandler for MainState {
                 .font("LiberationMono")
                 .color(Color::WHITE)],
             level_dest,
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );
@@ -542,6 +543,7 @@ impl EventHandler for MainState {
                 .font("LiberationMono")
                 .color(Color::WHITE)],
             score_dest,
+            0.0,
             graphics::TextLayout::tl_single_line(),
             0,
         );

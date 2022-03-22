@@ -444,10 +444,11 @@ impl<'a> InternalCanvas<'a> {
         &mut self,
         text: &[Text],
         rect: Rect,
+        rotation: f32,
         layout: TextLayout,
     ) -> GameResult {
         self.text_renderer
-            .queue(text_to_section(self.fonts, text, rect, layout)?);
+            .queue(text_to_section(self.fonts, text, rect, rotation, layout)?);
 
         self.set_image(&self.text_renderer.cache_view.clone());
         self.pass.set_bind_group(0, self.text_uniforms, &[]);
