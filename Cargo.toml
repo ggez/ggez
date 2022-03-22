@@ -17,7 +17,11 @@ license = "MIT"
 readme = "README.md"
 categories = ["game-engines"]
 build = "build.rs"
-exclude = ["docs", "resources", "!LiberationMono-Regular.ttf"]
+exclude = [
+   "docs",
+   "resources",
+   "!LiberationMono-Regular.ttf"
+]
 
 [badges]
 maintenance = { status = "actively-maintained" }
@@ -38,7 +42,7 @@ gamepad = ["gilrs"]
 [dependencies]
 bitflags = "1"
 zip = { version = "0.5", default-features = false }
-directories = "3"
+directories = "4.0.1"
 wgpu = "0.12"
 glyph_brush = "0.7"
 winit = "0.26"
