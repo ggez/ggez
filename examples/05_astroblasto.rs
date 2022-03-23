@@ -308,6 +308,8 @@ impl Default for InputState {
 /// **********************************************************************
 
 struct MainState {
+    // because we want to screenshot, we need to ensure we're rendering to Rgba8
+    screen: graphics::ScreenImage,
     player: Actor,
     shots: Vec<Actor>,
     rocks: Vec<Actor>,
@@ -337,7 +339,11 @@ impl MainState {
         let rocks = create_rocks(&mut rng, 5, player.pos, 100.0, 250.0);
 
         let (width, height) = ctx.gfx.drawable_size();
+        let screen =
+            graphics::ScreenImage::new(&ctx.gfx, graphics::ImageFormat::Rgba8UnormSrgb, 1., 1., 1);
+
         let s = MainState {
+            screen,
             player,
             shots: Vec::new(),
             rocks,
@@ -500,7 +506,8 @@ impl EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Our drawing is quite simple.
         // Just clear the screen...
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::BLACK);
+        let mut canvas =
+            graphics::Canvas::from_screen_image(&ctx.gfx, &mut self.screen, Color::BLACK);
 
         // Loop over all objects drawing them...
         {
@@ -549,6 +556,7 @@ impl EventHandler for MainState {
         );
 
         canvas.finish(&mut ctx.gfx)?;
+        ctx.gfx.present(&self.screen.image(&ctx.gfx))?;
 
         // And yield the timeslice
         // This tells the OS that we're done using the CPU but it should
@@ -583,7 +591,7 @@ impl EventHandler for MainState {
                 self.input.fire = true;
             }
             KeyCode::P => {
-                ctx.gfx.frame().encode(
+                self.screen.image(&ctx.gfx).encode(
                     &ctx,
                     graphics::ImageEncodingFormat::Png,
                     "/screenshot.png",
