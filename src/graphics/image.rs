@@ -197,6 +197,12 @@ impl Image {
     ///
     /// **This is a very expensive operation - call sparingly.**
     pub fn to_pixels(&self, gfx: &GraphicsContext) -> GameResult<Vec<u8>> {
+        if self.samples > 1 {
+            return Err(GameError::RenderError(String::from(
+                "cannot read the pixels of a multisampled image; resolve this image with a canvas",
+            )));
+        }
+
         let block_size = self.format.describe().block_size as u64;
 
         let buffer = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
@@ -345,9 +351,7 @@ impl ScreenImage {
         assert!(height > 0.);
         assert!(samples > 0);
 
-        let format = format
-            .into()
-            .unwrap_or(gfx.surface_format);
+        let format = format.into().unwrap_or(gfx.surface_format);
 
         ScreenImage {
             image: Self::create(gfx, format, (width, height), samples),
