@@ -592,7 +592,7 @@ impl EventHandler for MainState {
             }
             KeyCode::P => {
                 self.screen.image(&ctx.gfx).encode(
-                    &ctx,
+                    ctx,
                     graphics::ImageEncodingFormat::Png,
                     "/screenshot.png",
                 )?;

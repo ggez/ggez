@@ -66,7 +66,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
             let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from((64, 0, 0, 0)));
             canvas.draw(
-                canvas_image.clone(),
+                canvas_image,
                 graphics::DrawParam::new().color(Color::from((255, 255, 255, 128))),
             );
             canvas.finish(&mut ctx.gfx)?;

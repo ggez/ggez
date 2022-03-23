@@ -92,7 +92,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             Color::WHITE,
         )?;
         canvas.draw_mesh(
-            circle.clone(),
+            circle,
             None,
             (Point2::new(400.0, 300.0), rotation as f32, Color::WHITE),
         );

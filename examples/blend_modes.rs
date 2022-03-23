@@ -156,7 +156,7 @@ impl EventHandler for MainState {
         // draw layer onto the screen
         canvas.set_blend_mode(self.layer_blend);
         canvas.draw(
-            layer.clone(),
+            layer,
             DrawParam::default().dest(mint::Point2 { x: 0., y: h / 2. }),
         );
 

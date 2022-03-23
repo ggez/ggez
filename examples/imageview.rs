@@ -35,7 +35,7 @@ impl MainState {
             last_point = point;
         }
         let mesh = graphics::Mesh::from_raw(&ctx.gfx, mb.build());
-        canvas.draw_mesh(mesh.clone(), None, (glam::Vec2::new(0.0, 0.0),));
+        canvas.draw_mesh(mesh, None, (glam::Vec2::new(0.0, 0.0),));
 
         Ok(())
     }
@@ -108,7 +108,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
             Color::from((0, 0, 0, 255)),
         )?;
-        canvas.draw_mesh(rectangle.clone(), None, (glam::Vec2::new(0.0, 0.0),));
+        canvas.draw_mesh(rectangle, None, (glam::Vec2::new(0.0, 0.0),));
         canvas.draw_text(
             &[graphics::Text::new()
                 .font("LiberationMono")

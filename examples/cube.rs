@@ -296,7 +296,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             ctx.gfx
                 .wgpu()
                 .queue
-                .write_buffer(&self.locals, 0, &locals.as_std140().as_bytes());
+                .write_buffer(&self.locals, 0, locals.as_std140().as_bytes());
 
             let depth = self.depth.image(&ctx.gfx);
 

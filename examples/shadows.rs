@@ -303,7 +303,7 @@ impl MainState {
         let mut canvas = Canvas::from_image(&ctx.gfx, self.occlusions.clone(), None);
         canvas.set_shader(self.occlusions_shader.clone());
         canvas.set_shader_params(light.clone());
-        canvas.draw(foreground.clone(), canvas_origin);
+        canvas.draw(foreground, canvas_origin);
         canvas.finish(&mut ctx.gfx)?;
 
         // Now we render our shadow map and light map into their respective
@@ -321,7 +321,7 @@ impl MainState {
         let mut canvas = Canvas::from_screen_image(&ctx.gfx, &mut self.lights, clear);
         canvas.set_blend_mode(BlendMode::ADD);
         canvas.set_shader(self.lights_shader.clone());
-        canvas.set_shader_params(light.clone());
+        canvas.set_shader_params(light);
         canvas.draw(
             self.occlusions.clone(),
             origin.image_scale(false).scale([size.0, size.1]),
@@ -361,8 +361,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         //  - run the occlusions shader to determine where the shadows are
         //  - render to screen once all the shadows are calculated and rendered
         let foreground = self.foreground.image(&ctx.gfx);
-        let mut canvas =
-            Canvas::from_image(&ctx.gfx, foreground.clone(), Color::new(0.0, 0.0, 0.0, 0.0));
+        let mut canvas = Canvas::from_image(&ctx.gfx, foreground, Color::new(0.0, 0.0, 0.0, 0.0));
         canvas.draw(
             self.tile.clone(),
             DrawParam::new().dest(Vec2::new(598.0, 124.0)),
@@ -411,11 +410,11 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let mut canvas = Canvas::from_frame(&ctx.gfx, Color::WHITE);
         canvas.draw(self.background.clone(), DrawParam::default());
         canvas.set_blend_mode(BlendMode::MULTIPLY);
-        canvas.draw(shadows.clone(), DrawParam::default());
+        canvas.draw(shadows, DrawParam::default());
         canvas.set_blend_mode(BlendMode::ALPHA);
-        canvas.draw(foreground.clone(), DrawParam::default());
+        canvas.draw(foreground, DrawParam::default());
         canvas.set_blend_mode(BlendMode::ADD);
-        canvas.draw(lights.clone(), DrawParam::default());
+        canvas.draw(lights, DrawParam::default());
         // Uncomment following line to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
         // the greyscale pixels are the half distances of the nearest shadows to

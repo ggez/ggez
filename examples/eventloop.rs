@@ -78,7 +78,7 @@ pub fn main() -> GameResult {
                     Color::WHITE,
                 )
                 .unwrap();
-                canvas.draw_mesh(circle.clone(), None, (glam::Vec2::new(position, 380.0),));
+                canvas.draw_mesh(circle, None, (glam::Vec2::new(position, 380.0),));
 
                 canvas.finish(&mut ctx.gfx).unwrap();
                 ctx.gfx.end_frame().unwrap();

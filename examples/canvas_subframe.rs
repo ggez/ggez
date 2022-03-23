@@ -44,24 +44,20 @@ impl MainState {
         let cycle = 10_000;
         self.instances.set(
             &ctx.gfx,
-            (0..150)
-                .map(|x| {
-                    (0..150).map(move |y| {
-                        let x = x as f32;
-                        let y = y as f32;
-                        graphics::DrawParam::new()
-                            .dest(Point2::new(x * 10.0, y * 10.0))
-                            // scale: graphics::Point::new(0.0625, 0.0625),
-                            .scale(Vector2::new(
-                                ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs()
-                                    * 0.0625,
-                                ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs()
-                                    * 0.0625,
-                            ))
-                            .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU))
-                    })
+            (0..150).flat_map(|x| {
+                (0..150).map(move |y| {
+                    let x = x as f32;
+                    let y = y as f32;
+                    graphics::DrawParam::new()
+                        .dest(Point2::new(x * 10.0, y * 10.0))
+                        // scale: graphics::Point::new(0.0625, 0.0625),
+                        .scale(Vector2::new(
+                            ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
+                            ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
+                        ))
+                        .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU))
                 })
-                .flatten(),
+            }),
         );
 
         let mut canvas =
@@ -115,7 +111,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let src_y = self.draw_pt.y / canvas_image.height() as f32;
 
         canvas.draw(
-            canvas_image.clone(),
+            canvas_image,
             graphics::DrawParam::new()
                 .dest(self.draw_pt)
                 .src(graphics::Rect::new(src_x, src_y, 0.5, 0.5)),

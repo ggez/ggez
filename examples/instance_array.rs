@@ -39,23 +39,19 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let cycle = 10_000;
         self.instances.set(
             &ctx.gfx,
-            (0..150)
-                .map(|x| {
-                    (0..150).map(move |y| {
-                        let x = x as f32;
-                        let y = y as f32;
-                        graphics::DrawParam::new()
-                            .dest(Vec2::new(x * 10.0, y * 10.0))
-                            .scale(Vec2::new(
-                                ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs()
-                                    * 0.0625,
-                                ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs()
-                                    * 0.0625,
-                            ))
-                            .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU))
-                    })
+            (0..150).flat_map(|x| {
+                (0..150).map(move |y| {
+                    let x = x as f32;
+                    let y = y as f32;
+                    graphics::DrawParam::new()
+                        .dest(Vec2::new(x * 10.0, y * 10.0))
+                        .scale(Vec2::new(
+                            ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
+                            ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
+                        ))
+                        .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU))
                 })
-                .flatten(),
+            }),
         );
 
         let param = graphics::DrawParam::new()
