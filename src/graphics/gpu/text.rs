@@ -177,6 +177,8 @@ pub(crate) struct Extra {
     pub rotation: f32,
 }
 
+// hash is impl'd via OrderedFloat, but we still want to preserve the types
+#[allow(clippy::derive_hash_xor_eq)]
 impl std::hash::Hash for Extra {
     #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {

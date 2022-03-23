@@ -12,7 +12,6 @@ use super::{
     image::{Image, ImageFormat},
     mesh::{Mesh, Vertex},
     sampler::{Sampler, SamplerCache},
-    shader::Shader,
     text::FontData,
     text_to_section, MeshData, Rect, ScreenImage, Text, TextLayout,
 };
@@ -20,6 +19,7 @@ use crate::{
     conf::{self, Backend, Conf, FullscreenType, WindowMode},
     error::GameResult,
     filesystem::Filesystem,
+    graphics::gpu::pipeline::RenderPipelineInfo,
     GameError,
 };
 use ::image as imgcrate;
@@ -553,20 +553,19 @@ impl GraphicsContext {
             let copy = self.pipeline_cache.render_pipeline(
                 &self.wgpu.device,
                 &layout,
-                Shader {
-                    fragment: self.copy_shader.clone(),
+                RenderPipelineInfo {
+                    vs: self.copy_shader.clone(),
+                    fs: self.copy_shader.clone(),
+                    vs_entry: "vs_main".into(),
                     fs_entry: "fs_main".into(),
-                }
-                .info(
-                    self.copy_shader.clone(),
-                    1,
-                    self.surface_format,
-                    None,
-                    false,
-                    false,
-                    wgpu::PrimitiveTopology::TriangleList,
-                    Vertex::layout(),
-                ),
+                    samples: 1,
+                    format: self.surface_format,
+                    blend: None,
+                    depth: false,
+                    vertices: false,
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    vertex_layout: Vertex::layout(),
+                },
             );
 
             let copy = fcx.arenas.render_pipelines.alloc(copy);

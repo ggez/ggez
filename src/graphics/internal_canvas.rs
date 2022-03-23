@@ -5,7 +5,7 @@ use super::{
         arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcShaderModule, ArcTextureView},
         bind_group::{BindGroupBuilder, BindGroupCache, BindGroupLayoutBuilder},
         growing::GrowingBufferArena,
-        pipeline::PipelineCache,
+        pipeline::{PipelineCache, RenderPipelineInfo},
         text::{TextRenderer, TextVertex},
     },
     image::Image,
@@ -111,30 +111,25 @@ impl<'a> InternalCanvas<'a> {
             )));
         }
 
-        Self::new(
-            gfx,
-            msaa_image.samples(),
-            msaa_image.format(),
-            |cmd| {
-                cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: None,
-                    color_attachments: &[wgpu::RenderPassColorAttachment {
-                        view: msaa_image.view.as_ref(),
-                        resolve_target: Some(resolve_image.view.as_ref()),
-                        ops: wgpu::Operations {
-                            load: match load_op {
-                                CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                                CanvasLoadOp::Clear(color) => {
-                                    wgpu::LoadOp::Clear(LinearColor::from(color).into())
-                                }
-                            },
-                            store: true,
+        Self::new(gfx, msaa_image.samples(), msaa_image.format(), |cmd| {
+            cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: msaa_image.view.as_ref(),
+                    resolve_target: Some(resolve_image.view.as_ref()),
+                    ops: wgpu::Operations {
+                        load: match load_op {
+                            CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
+                            CanvasLoadOp::Clear(color) => {
+                                wgpu::LoadOp::Clear(LinearColor::from(color).into())
+                            }
                         },
-                    }],
-                    depth_stencil_attachment: None,
-                })
-            },
-        )
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            })
+        })
     }
 
     pub(crate) fn new(
@@ -255,10 +250,7 @@ impl<'a> InternalCanvas<'a> {
     }
 
     pub fn set_shader_params(&mut self, bind_group: ArcBindGroup, layout: ArcBindGroupLayout) {
-        self.shader_bind_group = Some((
-            self.arenas.bind_groups.alloc(bind_group),
-            layout,
-        ));
+        self.shader_bind_group = Some((self.arenas.bind_groups.alloc(bind_group), layout));
     }
 
     pub fn set_shader(&mut self, shader: Shader) {
@@ -268,10 +260,7 @@ impl<'a> InternalCanvas<'a> {
     }
 
     pub fn set_text_shader_params(&mut self, bind_group: ArcBindGroup, layout: ArcBindGroupLayout) {
-        self.text_shader_bind_group = Some((
-            self.arenas.bind_groups.alloc(bind_group),
-            layout,
-        ));
+        self.text_shader_bind_group = Some((self.arenas.bind_groups.alloc(bind_group), layout));
     }
 
     pub fn set_text_shader(&mut self, shader: Shader) {
@@ -549,29 +538,32 @@ impl<'a> InternalCanvas<'a> {
                 .alloc(self.pipeline_cache.render_pipeline(
                     self.device,
                     layout.as_ref(),
-                    shader.info(
-                        match ty {
+                    RenderPipelineInfo {
+                        vs: match ty {
                             ShaderType::Draw => self.draw_sm.clone(),
                             ShaderType::Instance => self.instance_sm.clone(),
                             ShaderType::Text => self.text_sm.clone(),
                         },
-                        self.samples,
-                        self.format,
-                        Some(wgpu::BlendState {
+                        fs: shader.fragment.clone(),
+                        vs_entry: "vs_main".into(),
+                        fs_entry: shader.fs_entry.clone(),
+                        samples: self.samples,
+                        format: self.format,
+                        blend: Some(wgpu::BlendState {
                             color: self.blend_mode.color,
                             alpha: self.blend_mode.alpha,
                         }),
-                        false,
-                        true,
-                        match ty {
+                        depth: false,
+                        vertices: true,
+                        topology: match ty {
                             ShaderType::Text => wgpu::PrimitiveTopology::TriangleStrip,
                             _ => wgpu::PrimitiveTopology::TriangleList,
                         },
-                        match ty {
+                        vertex_layout: match ty {
                             ShaderType::Text => TextVertex::layout(),
                             _ => Vertex::layout(),
                         },
-                    ),
+                    },
                 ));
 
             self.pass.set_pipeline(pipeline);

@@ -7,7 +7,6 @@ use super::{
     gpu::{
         arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcShaderModule},
         bind_group::BindGroupBuilder,
-        pipeline::RenderPipelineInfo,
     },
     image::Image,
     sampler::Sampler,
@@ -35,32 +34,6 @@ impl Shader {
         Shader {
             fragment: module,
             fs_entry: fs_entry.into(),
-        }
-    }
-
-    pub(crate) fn info(
-        &self,
-        vs: ArcShaderModule,
-        samples: u32,
-        format: wgpu::TextureFormat,
-        blend: Option<wgpu::BlendState>,
-        depth: bool,
-        vertices: bool,
-        topology: wgpu::PrimitiveTopology,
-        vertex_layout: wgpu::VertexBufferLayout<'static>,
-    ) -> RenderPipelineInfo {
-        RenderPipelineInfo {
-            vs,
-            fs: self.fragment.clone(),
-            vs_entry: "vs_main".into(),
-            fs_entry: self.fs_entry.clone(),
-            samples,
-            format,
-            blend,
-            depth,
-            vertices,
-            topology,
-            vertex_layout,
         }
     }
 }
