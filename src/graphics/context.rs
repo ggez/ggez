@@ -224,7 +224,7 @@ impl GraphicsContext {
             },
         ));
 
-        let rect_mesh = Mesh::from_raw_wgpu(
+        let rect_mesh = Mesh::from_data_wgpu(
             &wgpu,
             MeshData {
                 vertices: &[

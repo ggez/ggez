@@ -39,7 +39,7 @@ impl MainState {
                 )?;
             }
         }
-        let gridmesh = graphics::Mesh::from_raw(&ctx.gfx, gridmesh_builder.build());
+        let gridmesh = graphics::Mesh::from_data(&ctx.gfx, gridmesh_builder.build());
         // An array of rects to cycle the screen coordinates through.
         let screen_bounds = vec![
             graphics::Rect::new(0.0, 0.0, 800.0, 600.0),

@@ -34,7 +34,7 @@ impl MainState {
             mb.line(&[last_point, point], 3.0, color)?;
             last_point = point;
         }
-        let mesh = graphics::Mesh::from_raw(&ctx.gfx, mb.build());
+        let mesh = graphics::Mesh::from_data(&ctx.gfx, mb.build());
         canvas.draw_mesh(mesh, None, (glam::Vec2::new(0.0, 0.0),));
 
         Ok(())

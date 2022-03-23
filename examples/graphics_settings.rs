@@ -123,7 +123,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 )?;
             }
         }
-        let mesh = graphics::Mesh::from_raw(&ctx.gfx, mb.build());
+        let mesh = graphics::Mesh::from_data(&ctx.gfx, mb.build());
         canvas.draw_mesh(mesh, None, (ggez::mint::Point2 { x: 0.0, y: 0.0 },));
 
         canvas.finish(&mut ctx.gfx)?;

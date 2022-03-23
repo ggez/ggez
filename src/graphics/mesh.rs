@@ -61,12 +61,12 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    /// Create a new mesh from raw [MeshData].
-    pub fn from_raw(gfx: &GraphicsContext, raw: MeshData) -> Self {
-        Self::from_raw_wgpu(&gfx.wgpu, raw)
+    /// Create a new mesh from [MeshData].
+    pub fn from_data(gfx: &GraphicsContext, raw: MeshData) -> Self {
+        Self::from_data_wgpu(&gfx.wgpu, raw)
     }
 
-    pub(crate) fn from_raw_wgpu(wgpu: &WgpuContext, raw: MeshData) -> Self {
+    pub(crate) fn from_data_wgpu(wgpu: &WgpuContext, raw: MeshData) -> Self {
         Mesh {
             verts: Self::create_verts(wgpu, raw.vertices),
             inds: Self::create_inds(wgpu, raw.indices),
@@ -82,7 +82,7 @@ impl Mesh {
         width: f32,
         color: Color,
     ) -> GameResult<Self> {
-        Ok(Mesh::from_raw(
+        Ok(Mesh::from_data(
             gfx,
             MeshBuilder::new()
                 .polyline(DrawMode::stroke(width), points, color)?
@@ -99,7 +99,7 @@ impl Mesh {
         tolerance: f32,
         color: Color,
     ) -> GameResult<Self> {
-        Ok(Mesh::from_raw(
+        Ok(Mesh::from_data(
             gfx,
             MeshBuilder::new()
                 .circle(mode, point, radius, tolerance, color)?
@@ -117,7 +117,7 @@ impl Mesh {
         tolerance: f32,
         color: Color,
     ) -> GameResult<Self> {
-        Ok(Mesh::from_raw(
+        Ok(Mesh::from_data(
             gfx,
             MeshBuilder::new()
                 .ellipse(mode, point, radius1, radius2, tolerance, color)?
@@ -132,7 +132,7 @@ impl Mesh {
         points: &[impl Into<mint::Point2<f32>> + Clone],
         color: Color,
     ) -> GameResult<Self> {
-        Ok(Mesh::from_raw(
+        Ok(Mesh::from_data(
             gfx,
             MeshBuilder::new().polyline(mode, points, color)?.build(),
         ))
@@ -147,7 +147,7 @@ impl Mesh {
         points: &[impl Into<mint::Point2<f32>> + Clone],
         color: Color,
     ) -> GameResult<Self> {
-        Ok(Mesh::from_raw(
+        Ok(Mesh::from_data(
             gfx,
             MeshBuilder::new().polygon(mode, points, color)?.build(),
         ))
@@ -160,7 +160,7 @@ impl Mesh {
         bounds: Rect,
         color: Color,
     ) -> GameResult<Self> {
-        Ok(Mesh::from_raw(
+        Ok(Mesh::from_data(
             gfx,
             MeshBuilder::new().rectangle(mode, bounds, color)?.build(),
         ))
@@ -174,7 +174,7 @@ impl Mesh {
         radius: f32,
         color: Color,
     ) -> GameResult<Self> {
-        Ok(Mesh::from_raw(
+        Ok(Mesh::from_data(
             gfx,
             MeshBuilder::new()
                 .rounded_rectangle(mode, bounds, radius, color)?
@@ -188,7 +188,7 @@ impl Mesh {
         triangles: &[impl Into<mint::Point2<f32>> + Clone],
         color: Color,
     ) -> GameResult<Self> {
-        Ok(Mesh::from_raw(
+        Ok(Mesh::from_data(
             gfx,
             MeshBuilder::new().triangles(triangles, color)?.build(),
         ))
