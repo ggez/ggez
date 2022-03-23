@@ -249,9 +249,9 @@ impl Assets {
             graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
         );
 
-        let player_image = graphics::Image::from_path(ctx, "/player.png", true)?;
-        let shot_image = graphics::Image::from_path(ctx, "/shot.png", true)?;
-        let rock_image = graphics::Image::from_path(ctx, "/rock.png", true)?;
+        let player_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/player.png", true)?;
+        let shot_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/shot.png", true)?;
+        let rock_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/rock.png", true)?;
 
         let shot_sound = audio::Source::new(&ctx.fs, &ctx.audio, "/pew.ogg")?;
         let hit_sound = audio::Source::new(&ctx.fs, &ctx.audio, "/boom.ogg")?;

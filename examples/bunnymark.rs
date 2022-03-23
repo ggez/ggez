@@ -52,7 +52,7 @@ impl GameState {
     fn new(ctx: &mut Context) -> ggez::GameResult<GameState> {
         // We just use the same RNG seed every time.
         let mut rng = Rand32::new(12345);
-        let texture = Image::from_path(&ctx, "/wabbit_alpha.png", true)?;
+        let texture = Image::from_path(&ctx.fs, &ctx.gfx, "/wabbit_alpha.png", true)?;
         let mut bunnies = Vec::with_capacity(INITIAL_BUNNIES);
         let max_x = (WIDTH - texture.width() as u16) as f32;
         let max_y = (HEIGHT - texture.height() as u16) as f32;

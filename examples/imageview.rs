@@ -43,7 +43,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.fs.print_all();
 
-        let image = graphics::Image::from_path(ctx, "/dragon1.png", true)?;
+        let image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/dragon1.png", true)?;
 
         ctx.gfx.add_font(
             "LiberationMono",

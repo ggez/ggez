@@ -19,8 +19,8 @@ struct MainState {
 impl MainState {
     /// Load images and create meshes.
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image1 = graphics::Image::from_path(ctx, "/dragon1.png", true)?;
-        let image2 = graphics::Image::from_path(ctx, "/shot.png", true)?;
+        let image1 = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/dragon1.png", true)?;
+        let image2 = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/shot.png", true)?;
 
         let mb = &mut graphics::MeshBuilder::new();
         mb.rectangle(
@@ -29,7 +29,7 @@ impl MainState {
             graphics::Color::new(1.0, 0.0, 0.0, 1.0),
         )?;
 
-        let rock = graphics::Image::from_path(ctx, "/rock.png", true)?;
+        let rock = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/rock.png", true)?;
 
         let meshes = vec![
             (None, build_mesh(ctx)?),

@@ -35,7 +35,7 @@ impl MainState {
         let s = MainState {
             angle: 0.0,
             zoom: 1.0,
-            image: graphics::Image::from_path(ctx, "/tile.png", true)?,
+            image: graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/tile.png", true)?,
             window_settings: WindowSettings {
                 toggle_fullscreen: false,
                 is_fullscreen: false,

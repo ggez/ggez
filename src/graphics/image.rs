@@ -5,7 +5,7 @@ use super::{
     gpu::arc::{ArcTexture, ArcTextureView},
     Color, Rect, WgpuContext,
 };
-use crate::{Context, GameError, GameResult};
+use crate::{filesystem::Filesystem, Context, GameError, GameResult};
 use std::path::Path;
 use std::{io::Read, num::NonZeroU32};
 
@@ -117,16 +117,21 @@ impl Image {
 
     /// Creates a new image initialized with pixel data loaded from an encoded image `Read` (e.g. PNG or JPEG).
     #[allow(unused_results)]
-    pub fn from_path(ctx: &Context, path: impl AsRef<Path>, srgb: bool) -> GameResult<Self> {
+    pub fn from_path(
+        fs: &Filesystem,
+        gfx: &GraphicsContext,
+        path: impl AsRef<Path>,
+        srgb: bool,
+    ) -> GameResult<Self> {
         let mut encoded = Vec::new();
-        ctx.fs.open(path)?.read_to_end(&mut encoded)?;
+        fs.open(path)?.read_to_end(&mut encoded)?;
         let decoded = image::load_from_memory(&encoded[..])
             .map_err(|_| GameError::ResourceLoadError(String::from("failed to load image")))?;
         let rgba8 = decoded.to_rgba8();
         let (width, height) = (rgba8.width(), rgba8.height());
 
         Ok(Self::from_pixels(
-            &ctx.gfx,
+            gfx,
             rgba8.as_ref(),
             if srgb {
                 ImageFormat::Rgba8UnormSrgb
