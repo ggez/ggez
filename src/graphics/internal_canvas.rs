@@ -54,6 +54,7 @@ pub struct InternalCanvas<'a> {
 
     transform: glam::Mat4,
     image_id: Option<u64>,
+    premul_text: bool,
 }
 
 impl<'a> InternalCanvas<'a> {
@@ -242,6 +243,7 @@ impl<'a> InternalCanvas<'a> {
 
             transform,
             image_id: None,
+            premul_text: true,
         };
 
         this.set_sampler(Sampler::linear_clamp());
@@ -284,8 +286,14 @@ impl<'a> InternalCanvas<'a> {
     }
 
     pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
+        self.flush_text();
         self.dirty_pipeline = true;
         self.blend_mode = blend_mode;
+    }
+
+    pub fn set_premultiplied_text(&mut self, premultiplied_text: bool) {
+        self.flush_text();
+        self.premul_text = premultiplied_text;
     }
 
     pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
@@ -451,7 +459,7 @@ impl<'a> InternalCanvas<'a> {
         if self.queuing_text {
             self.queuing_text = false;
             let mut premul = false;
-            if self.blend_mode == BlendMode::ALPHA {
+            if self.premul_text && self.blend_mode == BlendMode::ALPHA {
                 premul = true;
                 self.set_blend_mode(BlendMode::PREMULTIPLIED);
             }

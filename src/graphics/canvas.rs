@@ -104,6 +104,7 @@ impl Canvas {
             text_params: None,
             sampler: Sampler::linear_clamp(),
             blend_mode: BlendMode::ALPHA,
+            premul_text: true,
             projection: glam::Mat4::IDENTITY.into(),
         };
 
@@ -177,6 +178,12 @@ impl Canvas {
     /// Sets the active blend mode used when drawing images.
     pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
         self.state.blend_mode = blend_mode;
+    }
+
+    /// Selects whether text will be drawn with [`BlendMode::PREMULTIPLIED`] when the current blend
+    /// mode is [`BlendMode::ALPHA`]. This is `true` by default.
+    pub fn set_premultiplied_text(&mut self, premultiplied_text: bool) {
+        self.state.premul_text = premultiplied_text;
     }
 
     /// Gets a copy of the canvas's raw projection matrix.
@@ -391,6 +398,10 @@ impl Canvas {
                     canvas.set_blend_mode(draw.state.blend_mode);
                 }
 
+                if draw.state.premul_text != state.premul_text {
+                    canvas.set_premultiplied_text(draw.state.premul_text);
+                }
+
                 if draw.state.projection != state.projection {
                     canvas.set_projection(draw.state.projection);
                 }
@@ -453,6 +464,7 @@ struct DrawState {
     text_params: Option<(ArcBindGroup, ArcBindGroupLayout)>,
     sampler: Sampler,
     blend_mode: BlendMode,
+    premul_text: bool,
     projection: mint::ColumnMatrix4<f32>,
 }
 
