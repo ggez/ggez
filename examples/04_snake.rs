@@ -354,7 +354,7 @@ struct GameState {
 
 impl GameState {
     /// Our new function will set up the initial state of our game.
-    pub fn new(_ctx: &mut Context) -> Self {
+    pub fn new() -> Self {
         // First we put our snake a quarter of the way across our grid in the x axis
         // and half way down the y axis. This works well since we start out moving to the right.
         let snake_pos = (GRID_SIZE.0 / 4, GRID_SIZE.1 / 2).into();
@@ -470,7 +470,7 @@ fn main() -> GameResult {
         .build()?;
 
     // Next we create a new instance of our GameState struct, which implements EventHandler
-    let state = GameState::new(&mut ctx);
+    let state = GameState::new();
     // And finally we actually run our game, passing in our context and state.
     event::run(ctx, events_loop, state)
 }
