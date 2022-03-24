@@ -49,7 +49,6 @@ impl event::EventHandler<ggez::GameError> for MainState {
 }
 
 pub fn main() -> GameResult {
-    env_logger::init();
     let cb = ggez::ContextBuilder::new("super_simple", "ggez");
     let (mut ctx, event_loop) = cb.build()?;
     let state = MainState::new(&mut ctx)?;
