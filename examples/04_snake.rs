@@ -415,6 +415,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
 
     /// draw is where we should actually render the game's current state.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        // First we create a canvas that renders to the frame, and clear it to a (sort of) green color
         let mut canvas = graphics::Canvas::from_frame(
             &ctx.gfx,
             graphics::CanvasLoadOp::Clear([0.0, 1.0, 0.0, 1.0].into()),
@@ -424,6 +425,9 @@ impl event::EventHandler<ggez::GameError> for GameState {
         self.snake.draw(&mut canvas);
         self.food.draw(&mut canvas);
 
+        // Finally, we "flush" the draw commands.
+        // Since we rendered to the frame, we don't need to tell ggez to present anything else,
+        // as ggez will automatically present the frame image unless told otherwise.
         canvas.finish(&mut ctx.gfx)?;
 
         // We yield the current thread until the next update
@@ -460,7 +464,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
 
 fn main() -> GameResult {
     // Here we use a ContextBuilder to setup metadata about our game. First the title and author
-    let (mut ctx, events_loop) = ggez::ContextBuilder::new("snake", "Gray Olson")
+    let (ctx, events_loop) = ggez::ContextBuilder::new("snake", "Gray Olson")
         // Next we set up the window. This title will be displayed in the title bar of the window.
         .window_setup(ggez::conf::WindowSetup::default().title("Snake!"))
         // Now we get to set the size of the window, which we use our SCREEN_SIZE constant from earlier to help with
