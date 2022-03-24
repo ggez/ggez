@@ -163,7 +163,7 @@ impl<'a> InternalCanvas<'a> {
             (arenas, pass)
         };
 
-        pass.set_blend_constant(wgpu::Color::WHITE);
+        pass.set_blend_constant(wgpu::Color::BLACK);
 
         let size = gfx.window.inner_size();
         let screen_coords = Rect {
