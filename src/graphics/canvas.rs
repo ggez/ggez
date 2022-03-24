@@ -364,7 +364,7 @@ impl Canvas {
         for draws in self.draws.values() {
             for draw in draws {
                 if draw.state.shader != state.shader {
-                    canvas.set_shader(state.shader.clone());
+                    canvas.set_shader(draw.state.shader.clone());
                 }
 
                 if draw.state.params != state.params {
@@ -374,7 +374,7 @@ impl Canvas {
                 }
 
                 if draw.state.text_shader != state.text_shader {
-                    canvas.set_text_shader(state.text_shader.clone());
+                    canvas.set_text_shader(draw.state.text_shader.clone());
                 }
 
                 if draw.state.text_params != state.text_params {
