@@ -53,8 +53,8 @@ your own libraries atop ggez.
 
 ### Supported platforms
 
- * Fully supported: Windows, Linux, MacOS
- * Not officially supported but might work anyway: Android, iOS, Web
+ * Fully supported: Windows, Linux
+ * Not officially supported but might work anyway: MacOS, Android, iOS, Web
 
 For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
 
