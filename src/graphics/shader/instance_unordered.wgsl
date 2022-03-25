@@ -19,10 +19,6 @@ struct InstanceArray {
     instances: [[stride(96)]] array<DrawParam>;
 };
 
-struct InstanceArrayIndices {
-    indices: [[stride(4)]] array<u32>;
-};
-
 [[group(0), binding(0)]]
 var<uniform> uniforms: Uniforms;
 
