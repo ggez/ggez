@@ -281,14 +281,18 @@ pub enum Backend {
 pub enum NumSamples {
     /// One sample
     One = 1,
+    /* uncomment when WGPU supports more sample counts
     /// Two samples
     Two = 2,
+    */
     /// Four samples
     Four = 4,
+    /* uncomment when WGPU supports more sample counts
     /// Eight samples
     Eight = 8,
     /// Sixteen samples
     Sixteen = 16,
+    */
 }
 
 impl TryFrom<u8> for NumSamples {
@@ -296,10 +300,10 @@ impl TryFrom<u8> for NumSamples {
     fn try_from(i: u8) -> Result<Self, Self::Error> {
         match i {
             1 => Ok(NumSamples::One),
-            2 => Ok(NumSamples::Two),
+            //2 => Ok(NumSamples::Two),
             4 => Ok(NumSamples::Four),
-            8 => Ok(NumSamples::Eight),
-            16 => Ok(NumSamples::Sixteen),
+            //8 => Ok(NumSamples::Eight),
+            //16 => Ok(NumSamples::Sixteen),
             _ => Err(GameError::ConfigError(String::from(
                 "Invalid number of samples",
             ))),
