@@ -415,6 +415,14 @@ impl<'a> InternalCanvas<'a> {
                 false,
                 None,
             )
+            .buffer(
+                &instances.indices,
+                0,
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+                None,
+            )
             .create(self.device, self.bind_group_cache);
 
         let bind_group = self.arenas.bind_groups.alloc(bind_group);
@@ -494,6 +502,11 @@ impl<'a> InternalCanvas<'a> {
                 .create(self.device, self.bind_group_cache);
 
             let instance_layout = BindGroupLayoutBuilder::new()
+                .buffer(
+                    wgpu::ShaderStages::VERTEX,
+                    wgpu::BufferBindingType::Storage { read_only: true },
+                    false,
+                )
                 .buffer(
                     wgpu::ShaderStages::VERTEX,
                     wgpu::BufferBindingType::Storage { read_only: true },

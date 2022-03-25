@@ -117,7 +117,6 @@ impl event::EventHandler<ggez::GameError> for GameState {
 
         if self.batched_drawing {
             self.bunnybatch.set(
-                &ctx.gfx,
                 self.bunnies
                     .iter()
                     .map(|bunny| graphics::DrawParam::new().dest(bunny.position)),

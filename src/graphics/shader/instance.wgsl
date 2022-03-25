@@ -19,6 +19,10 @@ struct InstanceArray {
     instances: [[stride(96)]] array<DrawParam>;
 };
 
+struct InstanceArrayIndices {
+    indices: [[stride(4)]] array<u32>;
+};
+
 [[group(0), binding(0)]]
 var<uniform> uniforms: Uniforms;
 
@@ -31,6 +35,9 @@ var s: sampler;
 [[group(3), binding(0)]]
 var<storage, read> instances: InstanceArray;
 
+[[group(3), binding(1)]]
+var<storage, read> indices: InstanceArrayIndices;
+
 [[stage(vertex)]]
 fn vs_main(
     [[builtin(instance_index)]] in_instance_index: u32,
@@ -38,7 +45,8 @@ fn vs_main(
     [[location(1)]] uv: vec2<f32>,
     [[location(2)]] color: vec4<f32>,
 ) -> VertexOutput {
-    var instance = instances.instances[in_instance_index];
+    var index = indices.indices[in_instance_index];
+    var instance = instances.instances[index];
 
     var out: VertexOutput;
     out.position = uniforms.transform

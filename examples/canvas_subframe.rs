@@ -42,23 +42,20 @@ impl MainState {
         let time = 2000;
         // let time = (ctx.timer.time_since_start().as_secs_f64() * 1000.0) as u32;
         let cycle = 10_000;
-        self.instances.set(
-            &ctx.gfx,
-            (0..150).flat_map(|x| {
-                (0..150).map(move |y| {
-                    let x = x as f32;
-                    let y = y as f32;
-                    graphics::DrawParam::new()
-                        .dest(Point2::new(x * 10.0, y * 10.0))
-                        // scale: graphics::Point::new(0.0625, 0.0625),
-                        .scale(Vector2::new(
-                            ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
-                            ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
-                        ))
-                        .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU))
-                })
-            }),
-        );
+        self.instances.set((0..150).flat_map(|x| {
+            (0..150).map(move |y| {
+                let x = x as f32;
+                let y = y as f32;
+                graphics::DrawParam::new()
+                    .dest(Point2::new(x * 10.0, y * 10.0))
+                    // scale: graphics::Point::new(0.0625, 0.0625),
+                    .scale(Vector2::new(
+                        ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
+                        ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
+                    ))
+                    .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU))
+            })
+        }));
 
         let mut canvas =
             graphics::Canvas::from_screen_image(&ctx.gfx, &mut self.canvas_image, Color::WHITE);

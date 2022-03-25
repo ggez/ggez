@@ -4,12 +4,15 @@ use super::{
     context::GraphicsContext,
     draw::{DrawParam, DrawUniforms},
     gpu::arc::ArcBuffer,
-    Image,
+    Image, WgpuContext,
 };
-use crevice::std140::{AsStd140, Std140};
-use std::sync::{
-    atomic::{AtomicU32, Ordering::SeqCst},
-    Arc,
+use crevice::std140::AsStd140;
+use std::{
+    collections::BTreeMap,
+    sync::{
+        atomic::{AtomicBool, AtomicU32, Ordering::SeqCst},
+        Arc,
+    },
 };
 
 /// Array of instances for fast rendering of many meshes.
@@ -18,7 +21,10 @@ use std::sync::{
 #[derive(Debug, Clone)]
 pub struct InstanceArray {
     pub(crate) buffer: ArcBuffer,
+    pub(crate) indices: ArcBuffer,
     pub(crate) image: Image,
+    dirty: Arc<AtomicBool>,
+    instances: Vec<DrawParam>,
     capacity: u32,
     len: Arc<AtomicU32>,
 }
@@ -28,9 +34,17 @@ impl InstanceArray {
     ///
     /// If `image` is `None`, a 1x1 white image will be used which can be used to draw solid rectangles.
     pub fn new(gfx: &GraphicsContext, image: impl Into<Option<Image>>, capacity: u32) -> Self {
+        InstanceArray::new_wgpu(
+            &gfx.wgpu,
+            image.into().unwrap_or_else(|| gfx.white_image.clone()),
+            capacity,
+        )
+    }
+
+    fn new_wgpu(wgpu: &WgpuContext, image: Image, capacity: u32) -> Self {
         assert!(capacity > 0);
 
-        let buffer = ArcBuffer::new(gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+        let buffer = ArcBuffer::new(wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: DrawUniforms::std140_size_static() as u64 * capacity as u64,
             usage: wgpu::BufferUsages::STORAGE
@@ -39,29 +53,98 @@ impl InstanceArray {
             mapped_at_creation: false,
         }));
 
-        let image = image.into().unwrap_or_else(|| gfx.white_image.clone());
+        let indices = ArcBuffer::new(wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: std::mem::size_of::<u32>() as u64 * capacity as u64,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        }));
+
+        let instances = Vec::with_capacity(capacity as usize);
 
         InstanceArray {
             buffer,
+            indices,
             image,
+            dirty: Arc::new(AtomicBool::new(false)),
+            instances,
             capacity,
             len: Arc::new(AtomicU32::new(0)),
         }
     }
 
     /// Resets all the instance data to a set of `DrawParam`.
+    pub fn set(&mut self, instances: impl IntoIterator<Item = DrawParam>) {
+        self.dirty.store(true, SeqCst);
+        self.instances = instances.into_iter().collect();
+    }
+
+    /// Pushes a new instance onto the end.
+    pub fn push(&mut self, instance: DrawParam) {
+        self.dirty.store(true, SeqCst);
+        self.instances.push(instance);
+    }
+
+    /// Updates an existing instance at a given index, and returns the previous value at the index.
+    pub fn update(&mut self, index: u32, instance: DrawParam) -> Option<DrawParam> {
+        self.dirty.store(true, SeqCst);
+        Some(std::mem::replace(
+            self.instances.get_mut(index as usize)?,
+            instance,
+        ))
+    }
+
+    /// Returns an immutable reference to all the instance data.
+    #[inline]
+    pub fn instances(&self) -> &[DrawParam] {
+        &self.instances
+    }
+
+    /// Returns a mutable reference to all the instance data.
+    #[inline]
+    pub fn instances_mut(&mut self) -> &mut [DrawParam] {
+        self.dirty.store(true, SeqCst);
+        &mut self.instances
+    }
+
+    /// Clears all instance data.
+    pub fn clear(&mut self) {
+        self.len.store(0, SeqCst);
+        self.instances.clear();
+    }
+
+    /// Returns whether the instance data has been changed without [`InstanceArray::flush()`] being called.
+    #[inline]
+    pub fn is_dirty(&self) -> bool {
+        self.dirty.load(SeqCst)
+    }
+
+    /// Uploads the instance data to the GPU.
     ///
-    /// Prefer this over `push` where possible.
+    /// You do not usually need to call this yourself as it is done automatically during drawing.
+    pub fn flush(&mut self, gfx: &GraphicsContext) {
+        self.flush_wgpu(&gfx.wgpu)
+    }
+
     #[allow(unsafe_code)]
-    pub fn set<I>(&mut self, gfx: &GraphicsContext, instances: I)
-    where
-        I: IntoIterator<Item = DrawParam>,
-    {
-        let instances = instances
-            .into_iter()
-            .map(|param| {
+    pub(crate) fn flush_wgpu(&mut self, wgpu: &WgpuContext) {
+        if !self.is_dirty() {
+            return;
+        } else {
+            self.dirty.store(false, SeqCst);
+        }
+
+        let mut layers = BTreeMap::<_, Vec<_>>::new();
+        let instances = self
+            .instances
+            .iter()
+            .enumerate()
+            .map(|(i, param)| {
+                layers.entry(param.z).or_default().push(i as u32);
                 DrawUniforms::from_param(
-                    param,
+                    *param,
                     [self.image.width() as f32, self.image.height() as f32].into(),
                 )
                 .as_std140()
@@ -70,73 +153,45 @@ impl InstanceArray {
 
         let len = instances.len() as u32;
         if len > self.capacity {
-            self.resize_impl(gfx, len, false);
+            self.resize_impl(wgpu, len, false);
         }
 
         self.len.store(instances.len() as u32, SeqCst);
-        gfx.wgpu.queue.write_buffer(&self.buffer, 0, unsafe {
+        wgpu.queue.write_buffer(&self.buffer, 0, unsafe {
             std::slice::from_raw_parts(
                 instances.as_ptr() as *const u8,
                 instances.len() * DrawUniforms::std140_size_static(),
             )
         });
-    }
 
-    /// Pushes a new instance onto the end.
-    ///
-    /// Prefer `set` where bulk instances needs to be set.
-    pub fn push(&mut self, gfx: &GraphicsContext, instance: DrawParam) {
-        if self.len.load(SeqCst) == self.capacity {
-            self.resize(gfx, self.capacity + self.capacity / 2);
-        }
-
-        let instance = DrawUniforms::from_param(
-            instance,
-            [self.image.width() as f32, self.image.height() as f32].into(),
-        );
-        gfx.wgpu.queue.write_buffer(
-            &self.buffer,
-            self.len.load(SeqCst) as u64 * DrawUniforms::std140_size_static() as u64,
-            instance.as_std140().as_bytes(),
-        );
-        let _ = self.len.fetch_add(1, SeqCst);
-    }
-
-    /// Updates an existing instance at a given index.
-    pub fn update(&mut self, gfx: &GraphicsContext, index: u32, instance: DrawParam) {
-        assert!(index < self.len.load(SeqCst), "index out of range");
-
-        let instance = DrawUniforms::from_param(
-            instance,
-            [self.image.width() as f32, self.image.height() as f32].into(),
-        );
-        gfx.wgpu.queue.write_buffer(
-            &self.buffer,
-            index as u64 * DrawUniforms::std140_size_static() as u64,
-            instance.as_std140().as_bytes(),
-        );
-    }
-
-    /// Clears all instance data.
-    pub fn clear(&mut self) {
-        self.len.store(0, SeqCst);
+        let indices = layers
+            .into_iter()
+            .map(|(_, x)| x)
+            .flatten()
+            .collect::<Vec<_>>();
+        wgpu.queue.write_buffer(&self.indices, 0, unsafe {
+            std::slice::from_raw_parts(
+                indices.as_ptr() as *const u8,
+                indices.len() * std::mem::size_of::<u32>(),
+            )
+        });
     }
 
     /// Changes the capacity of this `InstanceArray` while preserving instances.
     ///
     /// If `new_capacity` is less than the `len`, the instances will be truncated.
     pub fn resize(&mut self, gfx: &GraphicsContext, new_capacity: u32) {
-        self.resize_impl(gfx, new_capacity, true)
+        self.resize_impl(&gfx.wgpu, new_capacity, true)
     }
 
-    fn resize_impl(&mut self, gfx: &GraphicsContext, new_capacity: u32, copy: bool) {
+    fn resize_impl(&mut self, wgpu: &WgpuContext, new_capacity: u32, copy: bool) {
         let len = self.len.load(SeqCst);
-        let resized = InstanceArray::new(gfx, self.image.clone(), new_capacity);
+        let resized = InstanceArray::new_wgpu(wgpu, self.image.clone(), new_capacity);
         resized.len.store(new_capacity.min(len), SeqCst);
 
         if copy {
             let cmd = {
-                let mut cmd = gfx.wgpu.device.create_command_encoder(&Default::default());
+                let mut cmd = wgpu.device.create_command_encoder(&Default::default());
                 cmd.copy_buffer_to_buffer(
                     &self.buffer,
                     0,
@@ -146,7 +201,7 @@ impl InstanceArray {
                 );
                 cmd.finish()
             };
-            gfx.wgpu.queue.submit([cmd]);
+            wgpu.queue.submit([cmd]);
         }
 
         *self = resized;
@@ -165,15 +220,13 @@ impl InstanceArray {
         self.capacity as usize
     }
 
-    /// Returns the number of instances.
     #[inline]
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.len.load(SeqCst) as usize
     }
 
-    /// Whether the instance array is empty or not.
     #[inline]
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.len.load(SeqCst) == 0
     }
 }

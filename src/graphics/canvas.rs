@@ -6,9 +6,9 @@ use super::{
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
     internal_canvas::InternalCanvas,
     BlendMode, Color, DrawParam, GraphicsContext, Image, InstanceArray, Mesh, Rect, Sampler,
-    ScreenImage, Shader, ShaderParams, Text, TextLayout, ZIndex,
+    ScreenImage, Shader, ShaderParams, Text, TextLayout, WgpuContext, ZIndex,
 };
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 /// Canvases are the main method of drawing meshes and text to images in ggez.
 ///
@@ -19,6 +19,7 @@ use std::collections::BTreeMap;
 /// Canvases *do not* automatically batch draws. To used batched (instanced) drawing, refer to [`InstanceArray`].
 #[derive(Debug)]
 pub struct Canvas {
+    wgpu: Arc<WgpuContext>,
     draws: BTreeMap<ZIndex, Vec<DrawCommand>>,
     state: DrawState,
     defaults: DefaultResources,
@@ -109,6 +110,7 @@ impl Canvas {
         };
 
         let mut this = Canvas {
+            wgpu: gfx.wgpu.clone(),
             draws: BTreeMap::new(),
             state,
             defaults,
@@ -262,9 +264,10 @@ impl Canvas {
     pub fn draw_mesh_instances(
         &mut self,
         mesh: Mesh,
-        instances: InstanceArray,
+        mut instances: InstanceArray,
         param: impl Into<DrawParam>,
     ) {
+        instances.flush_wgpu(&self.wgpu);
         let param = param.into();
         self.draws.entry(param.z).or_default().push(DrawCommand {
             state: self.state.clone(),
@@ -279,7 +282,8 @@ impl Canvas {
     /// Draws a rectangle instanced multiple times, as defined by the given [`InstanceArray`].
     ///
     /// Also see [`Canvas::draw_mesh_instances()`].
-    pub fn draw_instances(&mut self, instances: InstanceArray, param: impl Into<DrawParam>) {
+    pub fn draw_instances(&mut self, mut instances: InstanceArray, param: impl Into<DrawParam>) {
+        instances.flush_wgpu(&self.wgpu);
         let param = param.into();
         self.draws.entry(param.z).or_default().push(DrawCommand {
             state: self.state.clone(),
