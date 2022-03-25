@@ -46,6 +46,8 @@ pub enum GameError {
     FontSelectError(String),
     /// Something went wrong when asynchronously mapping a GPU buffer.
     BufferAsyncError(wgpu::BufferAsyncError),
+    /// Deadlock when trying to lock a mutex.
+    LockError,
     /// A custom error type for use by users of ggez.
     /// This lets you handle custom errors that may happen during your game (such as, trying to load a malformed file for a level)
     /// using the same mechanism you handle ggez's other errors.

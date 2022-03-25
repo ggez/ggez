@@ -61,7 +61,8 @@ impl GameState {
             bunnies.push(Bunny::new(&mut rng));
         }
 
-        let bunnybatch = InstanceArray::new(&ctx.gfx, texture.clone(), INITIAL_BUNNIES as u32);
+        let bunnybatch =
+            InstanceArray::new(&ctx.gfx, texture.clone(), INITIAL_BUNNIES as u32, false);
 
         Ok(GameState {
             rng,
@@ -120,7 +121,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
                 self.bunnies
                     .iter()
                     .map(|bunny| graphics::DrawParam::new().dest(bunny.position)),
-            );
+            )?;
 
             canvas.draw_instances(self.bunnybatch.clone(), graphics::DrawParam::default());
         } else {

@@ -18,7 +18,7 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/tile.png", true)?;
-        let instances = graphics::InstanceArray::new(&ctx.gfx, image, 150 * 150);
+        let instances = graphics::InstanceArray::new(&ctx.gfx, image, 150 * 150, false);
         Ok(MainState { instances })
     }
 }
@@ -49,7 +49,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     ))
                     .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU))
             })
-        }));
+        }))?;
 
         let param = graphics::DrawParam::new()
             .dest(Vec2::new(

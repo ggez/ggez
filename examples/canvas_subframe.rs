@@ -22,7 +22,7 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/tile.png", true).unwrap();
-        let instances = graphics::InstanceArray::new(&ctx.gfx, image, 150 * 150);
+        let instances = graphics::InstanceArray::new(&ctx.gfx, image, 150 * 150, false);
         let canvas_image = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
         let draw_pt = Point2::new(0.0, 0.0);
         let draw_vec = Vector2::new(1.0, 1.0);
@@ -55,7 +55,7 @@ impl MainState {
                     ))
                     .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU))
             })
-        }));
+        }))?;
 
         let mut canvas =
             graphics::Canvas::from_screen_image(&ctx.gfx, &mut self.canvas_image, Color::WHITE);

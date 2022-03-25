@@ -6,9 +6,9 @@ use super::{
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
     internal_canvas::InternalCanvas,
     BlendMode, Color, DrawParam, GraphicsContext, Image, InstanceArray, Mesh, Rect, Sampler,
-    ScreenImage, Shader, ShaderParams, Text, TextLayout, WgpuContext, ZIndex,
+    ScreenImage, Shader, ShaderParams, Text, TextLayout, ZIndex,
 };
-use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeMap;
 
 /// Canvases are the main method of drawing meshes and text to images in ggez.
 ///
@@ -19,7 +19,6 @@ use std::{collections::BTreeMap, sync::Arc};
 /// Canvases *do not* automatically batch draws. To used batched (instanced) drawing, refer to [`InstanceArray`].
 #[derive(Debug)]
 pub struct Canvas {
-    wgpu: Arc<WgpuContext>,
     draws: BTreeMap<ZIndex, Vec<DrawCommand>>,
     state: DrawState,
     defaults: DefaultResources,
@@ -110,7 +109,6 @@ impl Canvas {
         };
 
         let mut this = Canvas {
-            wgpu: gfx.wgpu.clone(),
             draws: BTreeMap::new(),
             state,
             defaults,
@@ -264,10 +262,9 @@ impl Canvas {
     pub fn draw_mesh_instances(
         &mut self,
         mesh: Mesh,
-        mut instances: InstanceArray,
+        instances: InstanceArray,
         param: impl Into<DrawParam>,
     ) {
-        instances.flush_wgpu(&self.wgpu);
         let param = param.into();
         self.draws.entry(param.z).or_default().push(DrawCommand {
             state: self.state.clone(),
@@ -282,8 +279,7 @@ impl Canvas {
     /// Draws a rectangle instanced multiple times, as defined by the given [`InstanceArray`].
     ///
     /// Also see [`Canvas::draw_mesh_instances()`].
-    pub fn draw_instances(&mut self, mut instances: InstanceArray, param: impl Into<DrawParam>) {
-        instances.flush_wgpu(&self.wgpu);
+    pub fn draw_instances(&mut self, instances: InstanceArray, param: impl Into<DrawParam>) {
         let param = param.into();
         self.draws.entry(param.z).or_default().push(DrawCommand {
             state: self.state.clone(),
@@ -372,7 +368,7 @@ impl Canvas {
         canvas.set_blend_mode(state.blend_mode);
         canvas.set_projection(state.projection);
 
-        for draws in self.draws.values() {
+        for draws in self.draws.values_mut() {
             for draw in draws {
                 if draw.state.shader != state.shader {
                     canvas.set_shader(draw.state.shader.clone());
@@ -412,13 +408,13 @@ impl Canvas {
 
                 state = draw.state.clone();
 
-                match &draw.draw {
+                match &mut draw.draw {
                     Draw::Mesh { mesh, image, param } => canvas.draw_mesh(mesh, image, *param),
                     Draw::MeshInstances {
                         mesh,
                         instances,
                         param,
-                    } => canvas.draw_mesh_instances(mesh, instances, *param),
+                    } => canvas.draw_mesh_instances(mesh, instances, *param)?,
                     Draw::BoundedText {
                         text,
                         rect,

@@ -106,17 +106,18 @@ impl MainState {
         )?;
         let demo_image = graphics::Image::from_solid(&ctx.gfx, 200, AQUA);
 
-        let mut demo_instances = graphics::InstanceArray::new(&ctx.gfx, demo_image.clone(), 2);
+        let mut demo_instances =
+            graphics::InstanceArray::new(&ctx.gfx, demo_image.clone(), 2, false);
         demo_instances.push(
             DrawParam::default()
                 .dest(Vec2::new(250.0, 350.0))
                 .scale(Vec2::new(0.25, 0.25)),
-        );
+        )?;
         demo_instances.push(
             DrawParam::default()
                 .dest(Vec2::new(250.0, 425.0))
                 .scale(Vec2::new(0.1, 0.1)),
-        );
+        )?;
 
         let s = MainState {
             demo_mesh,

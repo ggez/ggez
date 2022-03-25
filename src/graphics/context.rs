@@ -25,7 +25,7 @@ use crate::{
 use ::image as imgcrate;
 use crevice::std140::AsStd140;
 use glyph_brush::{FontId, GlyphCruncher};
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{collections::HashMap, path::Path};
 use typed_arena::Arena as TypedArena;
 use winit::{
     self,
@@ -60,7 +60,7 @@ pub struct WgpuContext {
 /// A concrete graphics context for WGPU rendering.
 #[allow(missing_debug_implementations)]
 pub struct GraphicsContext {
-    pub(crate) wgpu: Arc<WgpuContext>,
+    pub(crate) wgpu: WgpuContext,
 
     pub(crate) window: winit::window::Window,
     pub(crate) surface_format: wgpu::TextureFormat,
@@ -86,6 +86,7 @@ pub struct GraphicsContext {
 
     pub(crate) draw_shader: ArcShaderModule,
     pub(crate) instance_shader: ArcShaderModule,
+    pub(crate) instance_unordered_shader: ArcShaderModule,
     pub(crate) text_shader: ArcShaderModule,
     pub(crate) copy_shader: ArcShaderModule,
     pub(crate) rect_mesh: Mesh,
@@ -152,12 +153,12 @@ impl GraphicsContext {
             None,
         ))?;
 
-        let wgpu = Arc::new(WgpuContext {
+        let wgpu = WgpuContext {
             instance,
             surface,
             device,
             queue,
-        });
+        };
 
         let surface_format = wgpu.surface.get_preferred_format(&adapter).unwrap(/* invariant */);
         let size = window.inner_size();
@@ -207,6 +208,15 @@ impl GraphicsContext {
             &wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance.wgsl").into()),
+            },
+        ));
+
+        let instance_unordered_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            &wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(
+                    include_str!("shader/instance_unordered.wgsl").into(),
+                ),
             },
         ));
 
@@ -283,6 +293,7 @@ impl GraphicsContext {
 
             draw_shader,
             instance_shader,
+            instance_unordered_shader,
             text_shader,
             copy_shader,
             rect_mesh,
