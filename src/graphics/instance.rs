@@ -164,11 +164,7 @@ impl InstanceArray {
             )
         });
 
-        let indices = layers
-            .into_iter()
-            .map(|(_, x)| x)
-            .flatten()
-            .collect::<Vec<_>>();
+        let indices = layers.into_iter().flat_map(|(_, x)| x).collect::<Vec<_>>();
         wgpu.queue.write_buffer(&self.indices, 0, unsafe {
             std::slice::from_raw_parts(
                 indices.as_ptr() as *const u8,
