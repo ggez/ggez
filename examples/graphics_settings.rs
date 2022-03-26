@@ -211,7 +211,7 @@ fn print_help() {
 /// Print out graphics settings.
 #[derive(FromArgs, Debug)]
 struct Opt {
-    /// what level of MSAA to try to use (1, 2, 4, 8)
+    /// what level of MSAA to try to use (1 or 4)
     #[argh(option, short = 'm', long = "msaa", default = "1")]
     msaa: u8,
 }
@@ -235,12 +235,9 @@ pub fn main() -> GameResult {
                 .fullscreen_type(conf::FullscreenType::Windowed)
                 .resizable(true),
         )
-        .window_setup(
-            conf::WindowSetup::default().samples(
-                conf::NumSamples::try_from(opt.msaa)
-                    .expect("Option msaa needs to be 1, 2, 4, 8 or 16!"),
-            ),
-        )
+        .window_setup(conf::WindowSetup::default().samples(
+            conf::NumSamples::try_from(opt.msaa).expect("Option msaa needs to be 1 or 4!"),
+        ))
         .backend(backend)
         .add_resource_path(resource_dir);
 
