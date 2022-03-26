@@ -2,7 +2,7 @@
 
 use super::{
     context::GraphicsContext,
-    draw::{DrawParam, DrawUniforms},
+    draw::{DrawParam, DrawUniforms, Std140DrawUniforms},
     gpu::arc::ArcBuffer,
     Image, WgpuContext,
 };
@@ -20,7 +20,8 @@ pub struct InstanceArray {
     pub(crate) ordered: bool,
     dirty: bool,
     capacity: u32,
-    instances: Vec<DrawParam>,
+    uniforms: Vec<Std140DrawUniforms>,
+    params: Vec<DrawParam>,
 }
 
 impl InstanceArray {
@@ -66,7 +67,8 @@ impl InstanceArray {
             mapped_at_creation: false,
         }));
 
-        let instances = Vec::with_capacity(capacity as usize);
+        let uniforms = Vec::with_capacity(capacity as usize);
+        let params = Vec::with_capacity(capacity as usize);
 
         InstanceArray {
             buffer,
@@ -75,54 +77,76 @@ impl InstanceArray {
             ordered,
             dirty: false,
             capacity,
-            instances,
+            uniforms,
+            params,
         }
     }
 
     /// Resets all the instance data to a set of `DrawParam`.
     pub fn set(&mut self, instances: impl IntoIterator<Item = DrawParam>) {
         self.dirty = true;
-        self.instances = instances.into_iter().collect();
+        (self.uniforms, self.params) = instances
+            .into_iter()
+            .map(|x| {
+                (
+                    DrawUniforms::from_param(
+                        &x,
+                        [self.image.width() as f32, self.image.height() as f32].into(),
+                    )
+                    .as_std140(),
+                    x,
+                )
+            })
+            .unzip();
     }
 
     /// Pushes a new instance onto the end.
     pub fn push(&mut self, instance: DrawParam) {
         self.dirty = true;
-        self.instances.push(instance);
+        self.uniforms.push(
+            DrawUniforms::from_param(
+                &instance,
+                [self.image.width() as f32, self.image.height() as f32].into(),
+            )
+            .as_std140(),
+        );
+        self.params.push(instance);
     }
 
-    /// Updates an existing instance at a given index, and returns the previous value at the index.
-    pub fn update(&mut self, index: u32, instance: DrawParam) -> Option<DrawParam> {
-        self.dirty = true;
-        Some(std::mem::replace(
-            self.instances.get_mut(index as usize)?,
-            instance,
-        ))
-    }
-
-    /// Returns an immutable reference to all the instance data.
-    #[inline]
-    pub fn instances(&self) -> &[DrawParam] {
-        &self.instances
-    }
-
-    /// Returns a mutable reference to all the instance data.
-    #[inline]
-    pub fn instances_mut(&mut self) -> &mut [DrawParam] {
-        self.dirty = true;
-        &mut self.instances
+    /// Updates an existing instance at a given index, if it is valid.
+    pub fn update(&mut self, index: u32, instance: DrawParam) {
+        if let Some((uniform, param)) = self
+            .uniforms
+            .get_mut(index as usize)
+            .and_then(|x| Some((x, self.params.get_mut(index as usize)?)))
+        {
+            self.dirty = true;
+            *uniform = DrawUniforms::from_param(
+                &instance,
+                [self.image.width() as f32, self.image.height() as f32].into(),
+            )
+            .as_std140();
+            *param = instance;
+        }
     }
 
     /// Clears all instance data.
     pub fn clear(&mut self) {
         // don't need to set dirty here
-        self.instances.clear();
+        self.uniforms.clear();
+        self.params.clear();
     }
 
     /// Returns whether the instance data has been changed without [`InstanceArray::flush()`] being called.
     #[inline]
     pub fn is_dirty(&self) -> bool {
         self.dirty
+    }
+
+    /// Returns an immutable slice of all the instance data in this [`InstanceArray`].
+    #[inline]
+    pub fn instances(&self) -> &[DrawParam] {
+        &self.params
     }
 
     /// Uploads the instance data to the GPU.
@@ -140,24 +164,7 @@ impl InstanceArray {
             self.dirty = false;
         }
 
-        let mut layers = BTreeMap::<_, Vec<_>>::new();
-        let instances = self
-            .instances
-            .iter()
-            .enumerate()
-            .map(|(i, param)| {
-                if self.ordered {
-                    layers.entry(param.z).or_default().push(i as u32);
-                }
-                DrawUniforms::from_param(
-                    *param,
-                    [self.image.width() as f32, self.image.height() as f32].into(),
-                )
-                .as_std140()
-            })
-            .collect::<Vec<_>>();
-
-        let len = instances.len() as u32;
+        let len = self.uniforms.len() as u32;
         if len > self.capacity {
             let resized = InstanceArray::new_wgpu(wgpu, self.image.clone(), len, self.ordered);
             self.buffer = resized.buffer;
@@ -167,13 +174,17 @@ impl InstanceArray {
 
         wgpu.queue.write_buffer(&self.buffer, 0, unsafe {
             std::slice::from_raw_parts(
-                instances.as_ptr() as *const u8,
-                instances.len() * DrawUniforms::std140_size_static(),
+                self.uniforms.as_ptr() as *const u8,
+                self.uniforms.len() * DrawUniforms::std140_size_static(),
             )
         });
 
         if self.ordered {
-            let indices = layers.into_iter().flat_map(|(_, x)| x).collect::<Vec<_>>();
+            let mut layers = BTreeMap::<_, Vec<_>>::new();
+            for (i, param) in self.params.iter().enumerate() {
+                layers.entry(param.z).or_default().push(i);
+            }
+            let indices = layers.into_values().flatten().collect::<Vec<_>>();
             wgpu.queue.write_buffer(&self.indices, 0, unsafe {
                 std::slice::from_raw_parts(
                     indices.as_ptr() as *const u8,
@@ -192,7 +203,8 @@ impl InstanceArray {
         self.indices = resized.indices;
         self.capacity = new_capacity;
         self.dirty = true;
-        self.instances.truncate(new_capacity as usize);
+        self.uniforms.truncate(new_capacity as usize);
+        self.params.truncate(new_capacity as usize);
     }
 
     /// Returns this `InstanceArray`'s associated `image`.

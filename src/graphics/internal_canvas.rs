@@ -331,7 +331,7 @@ impl<'a> InternalCanvas<'a> {
         self.set_image(&image.view);
         let (w, h) = (image.width(), image.height());
 
-        let mut uniforms = DrawUniforms::from_param(param, [w as f32, h as f32].into());
+        let mut uniforms = DrawUniforms::from_param(&param, [w as f32, h as f32].into());
         uniforms.transform = (self.transform * glam::Mat4::from(uniforms.transform)).into();
 
         self.wgpu
@@ -395,7 +395,7 @@ impl<'a> InternalCanvas<'a> {
         let uniforms = InstanceUniforms {
             transform: (self.transform
                 * glam::Mat4::from(
-                    DrawUniforms::from_param(param.src(Rect::one()), [1., 1.].into()).transform,
+                    DrawUniforms::from_param(&param.src(Rect::one()), [1., 1.].into()).transform,
                 ))
             .into(),
             color: mint::Vector4::<f32> {

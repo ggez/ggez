@@ -310,7 +310,7 @@ where
     }
 }
 
-#[derive(crevice::std140::AsStd140)]
+#[derive(Debug, crevice::std140::AsStd140)]
 pub(crate) struct DrawUniforms {
     pub color: mint::Vector4<f32>,
     pub src_rect: mint::Vector4<f32>,
@@ -318,7 +318,7 @@ pub(crate) struct DrawUniforms {
 }
 
 impl DrawUniforms {
-    pub fn from_param(param: DrawParam, mut image_scale: mint::Vector2<f32>) -> Self {
+    pub fn from_param(param: &DrawParam, mut image_scale: mint::Vector2<f32>) -> Self {
         if !param.image_scale {
             image_scale.x = 1.;
             image_scale.y = 1.;
