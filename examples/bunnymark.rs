@@ -121,9 +121,9 @@ impl event::EventHandler<ggez::GameError> for GameState {
                 self.bunnies
                     .iter()
                     .map(|bunny| graphics::DrawParam::new().dest(bunny.position)),
-            )?;
+            );
 
-            canvas.draw_instances(self.bunnybatch.clone(), graphics::DrawParam::default());
+            canvas.draw_instances(&mut self.bunnybatch, graphics::DrawParam::default());
         } else {
             for bunny in &self.bunnies {
                 canvas.draw(

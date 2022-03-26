@@ -1,7 +1,5 @@
 //!
 
-use crate::{GameError, GameResult};
-
 use super::{
     context::GraphicsContext,
     draw::{DrawParam, DrawUniforms},
@@ -9,28 +7,19 @@ use super::{
     Image, WgpuContext,
 };
 use crevice::std140::AsStd140;
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, RwLock},
-};
-
-#[derive(Debug, Clone)]
-pub(crate) struct InstanceArrayInner {
-    pub(crate) buffer: ArcBuffer,
-    pub(crate) indices: ArcBuffer,
-    dirty: bool,
-    capacity: u32,
-    len: u32,
-}
+use std::collections::BTreeMap;
 
 /// Array of instances for fast rendering of many meshes.
 ///
 /// Traditionally known as a "batch".
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct InstanceArray {
-    pub(crate) inner: Arc<RwLock<InstanceArrayInner>>,
+    pub(crate) buffer: ArcBuffer,
+    pub(crate) indices: ArcBuffer,
     pub(crate) image: Image,
     pub(crate) ordered: bool,
+    dirty: bool,
+    capacity: u32,
     instances: Vec<DrawParam>,
 }
 
@@ -80,44 +69,35 @@ impl InstanceArray {
         let instances = Vec::with_capacity(capacity as usize);
 
         InstanceArray {
-            inner: Arc::new(RwLock::new(InstanceArrayInner {
-                buffer,
-                indices,
-                dirty: false,
-                capacity,
-                len: 0,
-            })),
+            buffer,
+            indices,
             image,
             ordered,
+            dirty: false,
+            capacity,
             instances,
         }
     }
 
     /// Resets all the instance data to a set of `DrawParam`.
-    pub fn set(&mut self, instances: impl IntoIterator<Item = DrawParam>) -> GameResult {
-        let mut inner = self.inner.write().map_err(|_| GameError::LockError)?;
-        inner.dirty = true;
+    pub fn set(&mut self, instances: impl IntoIterator<Item = DrawParam>) {
+        self.dirty = true;
         self.instances = instances.into_iter().collect();
-        Ok(())
     }
 
     /// Pushes a new instance onto the end.
-    pub fn push(&mut self, instance: DrawParam) -> GameResult {
-        let mut inner = self.inner.write().map_err(|_| GameError::LockError)?;
-        inner.dirty = true;
+    pub fn push(&mut self, instance: DrawParam) {
+        self.dirty = true;
         self.instances.push(instance);
-        Ok(())
     }
 
     /// Updates an existing instance at a given index, and returns the previous value at the index.
-    pub fn update(&mut self, index: u32, instance: DrawParam) -> GameResult<Option<DrawParam>> {
-        let mut inner = self.inner.write().map_err(|_| GameError::LockError)?;
-        inner.dirty = true;
-        if let Some(r) = self.instances.get_mut(index as usize) {
-            Ok(Some(std::mem::replace(r, instance)))
-        } else {
-            Ok(None)
-        }
+    pub fn update(&mut self, index: u32, instance: DrawParam) -> Option<DrawParam> {
+        self.dirty = true;
+        Some(std::mem::replace(
+            self.instances.get_mut(index as usize)?,
+            instance,
+        ))
     }
 
     /// Returns an immutable reference to all the instance data.
@@ -128,41 +108,36 @@ impl InstanceArray {
 
     /// Returns a mutable reference to all the instance data.
     #[inline]
-    pub fn instances_mut(&mut self) -> GameResult<&mut [DrawParam]> {
-        let mut inner = self.inner.write().map_err(|_| GameError::LockError)?;
-        inner.dirty = true;
-        Ok(&mut self.instances)
+    pub fn instances_mut(&mut self) -> &mut [DrawParam] {
+        self.dirty = true;
+        &mut self.instances
     }
 
     /// Clears all instance data.
-    pub fn clear(&mut self) -> GameResult {
-        let mut inner = self.inner.write().map_err(|_| GameError::LockError)?;
-        inner.len = 0;
+    pub fn clear(&mut self) {
+        // don't need to set dirty here
         self.instances.clear();
-        Ok(())
     }
 
     /// Returns whether the instance data has been changed without [`InstanceArray::flush()`] being called.
     #[inline]
-    pub fn is_dirty(&self) -> GameResult<bool> {
-        let inner = self.inner.read().map_err(|_| GameError::LockError)?;
-        Ok(inner.dirty)
+    pub fn is_dirty(&self) -> bool {
+        self.dirty
     }
 
     /// Uploads the instance data to the GPU.
     ///
     /// You do not usually need to call this yourself as it is done automatically during drawing.
-    pub fn flush(&mut self, gfx: &GraphicsContext) -> GameResult {
+    pub fn flush(&mut self, gfx: &GraphicsContext) {
         self.flush_wgpu(&gfx.wgpu)
     }
 
     #[allow(unsafe_code)]
-    pub(crate) fn flush_wgpu(&mut self, wgpu: &WgpuContext) -> GameResult {
-        let mut inner = self.inner.write().map_err(|_| GameError::LockError)?;
-        if !inner.dirty {
-            return Ok(());
+    pub(crate) fn flush_wgpu(&mut self, wgpu: &WgpuContext) {
+        if !self.dirty {
+            return;
         } else {
-            inner.dirty = false;
+            self.dirty = false;
         }
 
         let mut layers = BTreeMap::<_, Vec<_>>::new();
@@ -183,17 +158,14 @@ impl InstanceArray {
             .collect::<Vec<_>>();
 
         let len = instances.len() as u32;
-        if len > inner.capacity {
-            *inner = InstanceArray::new_wgpu(wgpu, self.image.clone(), len, self.ordered)
-                .inner
-                .read()
-                .unwrap()
-                .clone();
-            inner.dirty = false;
+        if len > self.capacity {
+            let resized = InstanceArray::new_wgpu(wgpu, self.image.clone(), len, self.ordered);
+            self.buffer = resized.buffer;
+            self.indices = resized.indices;
+            self.capacity = len;
         }
 
-        inner.len = instances.len() as u32;
-        wgpu.queue.write_buffer(&inner.buffer, 0, unsafe {
+        wgpu.queue.write_buffer(&self.buffer, 0, unsafe {
             std::slice::from_raw_parts(
                 instances.as_ptr() as *const u8,
                 instances.len() * DrawUniforms::std140_size_static(),
@@ -202,28 +174,25 @@ impl InstanceArray {
 
         if self.ordered {
             let indices = layers.into_iter().flat_map(|(_, x)| x).collect::<Vec<_>>();
-            wgpu.queue.write_buffer(&inner.indices, 0, unsafe {
+            wgpu.queue.write_buffer(&self.indices, 0, unsafe {
                 std::slice::from_raw_parts(
                     indices.as_ptr() as *const u8,
                     indices.len() * std::mem::size_of::<u32>(),
                 )
             });
         }
-
-        Ok(())
     }
 
     /// Changes the capacity of this `InstanceArray` while preserving instances.
     ///
     /// If `new_capacity` is less than the `len`, the instances will be truncated.
-    pub fn resize(&mut self, gfx: &GraphicsContext, new_capacity: u32) -> GameResult {
-        let mut inner = self.inner.write().map_err(|_| GameError::LockError)?;
-        *inner = InstanceArray::new(gfx, self.image.clone(), new_capacity, self.ordered)
-            .inner
-            .read()
-            .unwrap()
-            .clone();
-        Ok(())
+    pub fn resize(&mut self, gfx: &GraphicsContext, new_capacity: u32) {
+        let resized = InstanceArray::new(gfx, self.image.clone(), new_capacity, self.ordered);
+        self.buffer = resized.buffer;
+        self.indices = resized.indices;
+        self.capacity = new_capacity;
+        self.dirty = true;
+        self.instances.truncate(new_capacity as usize);
     }
 
     /// Returns this `InstanceArray`'s associated `image`.
@@ -236,20 +205,7 @@ impl InstanceArray {
     /// This number was specified when creating the [InstanceArray], or if the [InstanceArray]
     /// was automatically resized, the greatest length of instances.
     #[inline]
-    pub fn capacity(&self) -> GameResult<usize> {
-        let inner = self.inner.read().map_err(|_| GameError::LockError)?;
-        Ok(inner.capacity as usize)
-    }
-
-    #[inline]
-    pub(crate) fn len(&self) -> GameResult<usize> {
-        let inner = self.inner.read().map_err(|_| GameError::LockError)?;
-        Ok(inner.len as usize)
-    }
-
-    #[inline]
-    pub(crate) fn is_empty(&self) -> GameResult<bool> {
-        let inner = self.inner.read().map_err(|_| GameError::LockError)?;
-        Ok(inner.len == 0)
+    pub fn capacity(&self) -> usize {
+        self.capacity as usize
     }
 }

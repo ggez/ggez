@@ -9,12 +9,11 @@ use super::{
         text::{TextRenderer, TextVertex},
     },
     image::Image,
-    instance::InstanceArray,
     mesh::{Mesh, Vertex},
     sampler::{Sampler, SamplerCache},
     shader::Shader,
     text::{Text, TextLayout},
-    text_to_section, BlendMode, CanvasLoadOp, LinearColor, Rect, WgpuContext,
+    text_to_section, BlendMode, CanvasLoadOp, InstanceArray, LinearColor, Rect, WgpuContext,
 };
 use crate::{GameError, GameResult};
 use crevice::std140::{AsStd140, Std140};
@@ -307,7 +306,7 @@ impl<'a> InternalCanvas<'a> {
     }
 
     #[allow(unsafe_code)]
-    pub fn draw_mesh(&mut self, mesh: &Mesh, image: &Image, param: DrawParam) {
+    pub fn draw_mesh(&mut self, mesh: &'a Mesh, image: &Image, param: DrawParam) {
         self.flush_text();
         self.update_pipeline(ShaderType::Draw);
 
@@ -350,26 +349,22 @@ impl<'a> InternalCanvas<'a> {
             &[uniform_alloc.offset as u32],
         );
 
-        let verts = self.arenas.buffers.alloc(mesh.verts.clone());
-        let inds = self.arenas.buffers.alloc(mesh.inds.clone());
-
-        self.pass.set_vertex_buffer(0, verts.slice(..));
+        self.pass.set_vertex_buffer(0, mesh.verts.slice(..));
         self.pass
-            .set_index_buffer(inds.slice(..), wgpu::IndexFormat::Uint32);
+            .set_index_buffer(mesh.inds.slice(..), wgpu::IndexFormat::Uint32);
 
         self.pass.draw_indexed(0..mesh.index_count as _, 0, 0..1);
     }
 
     pub fn draw_mesh_instances(
         &mut self,
-        mesh: &Mesh,
-        instances: &mut InstanceArray,
+        mesh: &'a Mesh,
+        instances: &'a InstanceArrayView,
         param: DrawParam,
     ) -> GameResult {
         self.flush_text();
 
-        instances.flush_wgpu(self.wgpu)?;
-        if instances.is_empty()? {
+        if instances.len == 0 {
             return Ok(());
         }
 
@@ -417,10 +412,9 @@ impl<'a> InternalCanvas<'a> {
             uniforms.as_std140().as_bytes(),
         );
 
-        let inner = instances.inner.read().map_err(|_| GameError::LockError)?;
         let (bind_group, _) = BindGroupBuilder::new()
             .buffer(
-                &inner.buffer,
+                &instances.buffer,
                 0,
                 wgpu::ShaderStages::VERTEX,
                 wgpu::BufferBindingType::Storage { read_only: true },
@@ -428,7 +422,7 @@ impl<'a> InternalCanvas<'a> {
                 None,
             )
             .buffer(
-                &inner.indices,
+                &instances.indices,
                 0,
                 wgpu::ShaderStages::VERTEX,
                 wgpu::BufferBindingType::Storage { read_only: true },
@@ -446,15 +440,12 @@ impl<'a> InternalCanvas<'a> {
         );
         self.pass.set_bind_group(3, bind_group, &[]);
 
-        let verts = self.arenas.buffers.alloc(mesh.verts.clone());
-        let inds = self.arenas.buffers.alloc(mesh.inds.clone());
-
-        self.pass.set_vertex_buffer(0, verts.slice(..));
+        self.pass.set_vertex_buffer(0, mesh.verts.slice(..));
         self.pass
-            .set_index_buffer(inds.slice(..), wgpu::IndexFormat::Uint32);
+            .set_index_buffer(mesh.inds.slice(..), wgpu::IndexFormat::Uint32);
 
         self.pass
-            .draw_indexed(0..mesh.index_count as _, 0, 0..instances.len()? as _);
+            .draw_indexed(0..mesh.index_count as _, 0, 0..instances.len as _);
 
         Ok(())
     }
@@ -633,6 +624,27 @@ impl<'a> InternalCanvas<'a> {
 impl<'a> Drop for InternalCanvas<'a> {
     fn drop(&mut self) {
         self.finalize();
+    }
+}
+
+#[derive(Debug)]
+pub struct InstanceArrayView {
+    pub buffer: ArcBuffer,
+    pub indices: ArcBuffer,
+    pub image: Image,
+    pub len: u32,
+    pub ordered: bool,
+}
+
+impl From<&InstanceArray> for InstanceArrayView {
+    fn from(ia: &InstanceArray) -> Self {
+        InstanceArrayView {
+            buffer: ia.buffer.clone(),
+            indices: ia.indices.clone(),
+            image: ia.image.clone(),
+            len: ia.instances().len() as u32,
+            ordered: ia.ordered,
+        }
     }
 }
 

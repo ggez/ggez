@@ -112,12 +112,12 @@ impl MainState {
             DrawParam::default()
                 .dest(Vec2::new(250.0, 350.0))
                 .scale(Vec2::new(0.25, 0.25)),
-        )?;
+        );
         demo_instances.push(
             DrawParam::default()
                 .dest(Vec2::new(250.0, 425.0))
                 .scale(Vec2::new(0.1, 0.1)),
-        )?;
+        );
 
         let s = MainState {
             demo_mesh,
@@ -177,7 +177,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // spritebatch
         canvas.draw_instances(
-            self.demo_instances.clone(),
+            &mut self.demo_instances,
             DrawParam::default().dest(Vec2::new(0.0, 0.0)),
         );
 

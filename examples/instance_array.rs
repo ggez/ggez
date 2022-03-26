@@ -49,7 +49,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     ))
                     .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU))
             })
-        }))?;
+        }));
 
         let param = graphics::DrawParam::new()
             .dest(Vec2::new(
@@ -64,7 +64,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             .offset(Vec2::new(750.0, 750.0))
             // src has no influence when applied globally to a spritebatch
             .src(graphics::Rect::new(0.005, 0.005, 0.005, 0.005));
-        canvas.draw_instances(self.instances.clone(), param);
+        canvas.draw_instances(&mut self.instances, param);
 
         canvas.finish(&mut ctx.gfx)
     }

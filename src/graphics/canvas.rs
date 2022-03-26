@@ -4,11 +4,11 @@ use crate::GameResult;
 
 use super::{
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
-    internal_canvas::InternalCanvas,
+    internal_canvas::{InstanceArrayView, InternalCanvas},
     BlendMode, Color, DrawParam, GraphicsContext, Image, InstanceArray, Mesh, Rect, Sampler,
-    ScreenImage, Shader, ShaderParams, Text, TextLayout, ZIndex,
+    ScreenImage, Shader, ShaderParams, Text, TextLayout, WgpuContext, ZIndex,
 };
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 /// Canvases are the main method of drawing meshes and text to images in ggez.
 ///
@@ -19,6 +19,7 @@ use std::collections::BTreeMap;
 /// Canvases *do not* automatically batch draws. To used batched (instanced) drawing, refer to [`InstanceArray`].
 #[derive(Debug)]
 pub struct Canvas {
+    wgpu: Arc<WgpuContext>,
     draws: BTreeMap<ZIndex, Vec<DrawCommand>>,
     state: DrawState,
     defaults: DefaultResources,
@@ -109,6 +110,7 @@ impl Canvas {
         };
 
         let mut this = Canvas {
+            wgpu: gfx.wgpu.clone(),
             draws: BTreeMap::new(),
             state,
             defaults,
@@ -262,15 +264,16 @@ impl Canvas {
     pub fn draw_mesh_instances(
         &mut self,
         mesh: Mesh,
-        instances: InstanceArray,
+        instances: &mut InstanceArray,
         param: impl Into<DrawParam>,
     ) {
+        instances.flush_wgpu(&self.wgpu);
         let param = param.into();
         self.draws.entry(param.z).or_default().push(DrawCommand {
             state: self.state.clone(),
             draw: Draw::MeshInstances {
                 mesh,
-                instances,
+                instances: (&*instances).into(),
                 param,
             },
         });
@@ -279,13 +282,14 @@ impl Canvas {
     /// Draws a rectangle instanced multiple times, as defined by the given [`InstanceArray`].
     ///
     /// Also see [`Canvas::draw_mesh_instances()`].
-    pub fn draw_instances(&mut self, instances: InstanceArray, param: impl Into<DrawParam>) {
+    pub fn draw_instances(&mut self, instances: &mut InstanceArray, param: impl Into<DrawParam>) {
+        instances.flush_wgpu(&self.wgpu);
         let param = param.into();
         self.draws.entry(param.z).or_default().push(DrawCommand {
             state: self.state.clone(),
             draw: Draw::MeshInstances {
                 mesh: self.defaults.mesh.clone(),
-                instances,
+                instances: (&*instances).into(),
                 param,
             },
         });
@@ -368,7 +372,7 @@ impl Canvas {
         canvas.set_blend_mode(state.blend_mode);
         canvas.set_projection(state.projection);
 
-        for draws in self.draws.values_mut() {
+        for draws in self.draws.values() {
             for draw in draws {
                 if draw.state.shader != state.shader {
                     canvas.set_shader(draw.state.shader.clone());
@@ -408,7 +412,7 @@ impl Canvas {
 
                 state = draw.state.clone();
 
-                match &mut draw.draw {
+                match &draw.draw {
                     Draw::Mesh { mesh, image, param } => canvas.draw_mesh(mesh, image, *param),
                     Draw::MeshInstances {
                         mesh,
@@ -477,7 +481,7 @@ enum Draw {
     },
     MeshInstances {
         mesh: Mesh,
-        instances: InstanceArray,
+        instances: InstanceArrayView,
         param: DrawParam,
     },
     BoundedText {
