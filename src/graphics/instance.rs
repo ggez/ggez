@@ -90,7 +90,7 @@ impl InstanceArray {
         self.uniforms.clear();
         self.uniforms.extend(self.params.iter().map(|x| {
             DrawUniforms::from_param(
-                &x,
+                x,
                 [self.image.width() as f32, self.image.height() as f32].into(),
             )
             .as_std140()
