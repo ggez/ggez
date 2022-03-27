@@ -136,6 +136,11 @@ impl Canvas {
         self.state.shader = shader;
     }
 
+    /// Returns the current shader being used when drawing meshes.
+    pub fn shader(&self) -> Shader {
+        self.state.shader.clone()
+    }
+
     /// Sets the shader parameters to use when drawing meshes.
     ///
     /// **Bound to bind group 3 for non-instanced draws, and 4 for instanced draws.**
@@ -146,6 +151,11 @@ impl Canvas {
     /// Sets the shader to use when drawing text.
     pub fn set_text_shader(&mut self, shader: Shader) {
         self.state.text_shader = shader;
+    }
+
+    /// Returns the current text shader being used when drawing text.
+    pub fn text_shader(&self) -> Shader {
+        self.state.text_shader.clone()
     }
 
     /// Sets the shader parameters to use when drawing text.
@@ -170,6 +180,11 @@ impl Canvas {
         self.state.sampler = sampler;
     }
 
+    /// Returns the currently active sampler used to sample images.
+    pub fn sampler(&self) -> Sampler {
+        self.state.sampler
+    }
+
     /// Resets the active sampler to the default.
     ///
     /// This is equivalent to `set_sampler(Sampler::linear_clamp())`.
@@ -180,6 +195,11 @@ impl Canvas {
     /// Sets the active blend mode used when drawing images.
     pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
         self.state.blend_mode = blend_mode;
+    }
+
+    /// Returns the currently active blend mode used when drawing images.
+    pub fn blend_mode(&self) -> BlendMode {
+        self.state.blend_mode
     }
 
     /// Selects whether text will be drawn with [`BlendMode::PREMULTIPLIED`] when the current blend
