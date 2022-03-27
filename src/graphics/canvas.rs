@@ -33,6 +33,7 @@ impl Canvas {
     /// Create a new [Canvas] from an image. This will allow for drawing to a single color image.
     ///
     /// The image must be created for Canvas usage, i.e. [Image::new_canvas_image()], or [ScreenImage], and must only have a sample count of 1.
+    #[inline]
     pub fn from_image(
         gfx: &GraphicsContext,
         image: Image,
@@ -42,6 +43,7 @@ impl Canvas {
     }
 
     /// Helper for [`Canvas::from_image`] for construction of a [`Canvas`] from a [`ScreenImage`].
+    #[inline]
     pub fn from_screen_image(
         gfx: &GraphicsContext,
         image: &mut ScreenImage,
@@ -54,6 +56,7 @@ impl Canvas {
     /// Create a new [Canvas] from an MSAA image and a resolve target. This will allow for drawing with MSAA to a color image, then resolving the samples into a secondary target.
     ///
     /// Both images must be created for Canvas usage (see [Canvas::from_image]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
+    #[inline]
     pub fn from_msaa(
         gfx: &GraphicsContext,
         msaa_image: Image,
@@ -64,6 +67,7 @@ impl Canvas {
     }
 
     /// Helper for [`Canvas::from_msaa`] for construction of an MSAA [`Canvas`] from a [`ScreenImage`].
+    #[inline]
     pub fn from_screen_msaa(
         gfx: &GraphicsContext,
         msaa_image: &mut ScreenImage,
@@ -132,11 +136,13 @@ impl Canvas {
     }
 
     /// Sets the shader to use when drawing meshes.
+    #[inline]
     pub fn set_shader(&mut self, shader: Shader) {
         self.state.shader = shader;
     }
 
     /// Returns the current shader being used when drawing meshes.
+    #[inline]
     pub fn shader(&self) -> Shader {
         self.state.shader.clone()
     }
@@ -144,16 +150,19 @@ impl Canvas {
     /// Sets the shader parameters to use when drawing meshes.
     ///
     /// **Bound to bind group 3 for non-instanced draws, and 4 for instanced draws.**
+    #[inline]
     pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
         self.state.params = Some((params.bind_group.clone(), params.layout));
     }
 
     /// Sets the shader to use when drawing text.
+    #[inline]
     pub fn set_text_shader(&mut self, shader: Shader) {
         self.state.text_shader = shader;
     }
 
     /// Returns the current text shader being used when drawing text.
+    #[inline]
     pub fn text_shader(&self) -> Shader {
         self.state.text_shader.clone()
     }
@@ -161,26 +170,31 @@ impl Canvas {
     /// Sets the shader parameters to use when drawing text.
     ///
     /// **Bound to bind group 3.**
+    #[inline]
     pub fn set_text_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
         self.state.text_params = Some((params.bind_group.clone(), params.layout));
     }
 
     /// Resets the active mesh shader to the default.
+    #[inline]
     pub fn set_default_shader(&mut self) {
         self.state.shader = self.defaults.shader.clone();
     }
 
     /// Resets the active text shader to the default.
+    #[inline]
     pub fn set_default_text_shader(&mut self) {
         self.state.text_shader = self.defaults.text_shader.clone();
     }
 
     /// Sets the active sampler used to sample images.
+    #[inline]
     pub fn set_sampler(&mut self, sampler: Sampler) {
         self.state.sampler = sampler;
     }
 
     /// Returns the currently active sampler used to sample images.
+    #[inline]
     pub fn sampler(&self) -> Sampler {
         self.state.sampler
     }
@@ -188,22 +202,26 @@ impl Canvas {
     /// Resets the active sampler to the default.
     ///
     /// This is equivalent to `set_sampler(Sampler::linear_clamp())`.
+    #[inline]
     pub fn set_default_sampler(&mut self) {
         self.set_sampler(Sampler::linear_clamp());
     }
 
     /// Sets the active blend mode used when drawing images.
+    #[inline]
     pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
         self.state.blend_mode = blend_mode;
     }
 
     /// Returns the currently active blend mode used when drawing images.
+    #[inline]
     pub fn blend_mode(&self) -> BlendMode {
         self.state.blend_mode
     }
 
     /// Selects whether text will be drawn with [`BlendMode::PREMULTIPLIED`] when the current blend
     /// mode is [`BlendMode::ALPHA`]. This is `true` by default.
+    #[inline]
     pub fn set_premultiplied_text(&mut self, premultiplied_text: bool) {
         self.state.premul_text = premultiplied_text;
     }
@@ -225,6 +243,7 @@ impl Canvas {
     ///
     /// The `Rect`'s x and y will define the top-left corner of the screen,
     /// and that plus its w and h will define the bottom-right corner.
+    #[inline]
     pub fn set_screen_coordinates(&mut self, rect: Rect) {
         self.set_projection(screen_to_mat(rect));
     }
@@ -232,6 +251,7 @@ impl Canvas {
     /// Sets the raw projection matrix to the given homogeneous
     /// transformation matrix.  For an introduction to graphics matrices,
     /// a good source is this: <http://ncase.me/matrix/>
+    #[inline]
     pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
         self.state.projection = proj.into();
     }
@@ -364,6 +384,7 @@ impl Canvas {
     }
 
     /// Finish drawing with this canvas and submit all the draw calls.
+    #[inline]
     pub fn finish(mut self, gfx: &mut GraphicsContext) -> GameResult {
         self.finalize(gfx)
     }
