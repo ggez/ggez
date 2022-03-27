@@ -95,7 +95,7 @@ pub enum ErrorOrigin {
 /// or something more generic, if your situation requires it.
 pub trait EventHandler<E = GameError>
 where
-    E: std::error::Error,
+    E: std::fmt::Debug,
 {
     /// Called upon each logic update to the game.
     /// This should be where the game's logic takes place.
@@ -300,7 +300,7 @@ pub fn quit(ctx: &mut Context) {
 pub fn run<S: 'static, E>(mut ctx: Context, event_loop: EventLoop<()>, mut state: S) -> !
 where
     S: EventHandler<E>,
-    E: std::error::Error,
+    E: std::fmt::Debug,
 {
     use crate::input::mouse;
 
@@ -541,8 +541,8 @@ fn catch_error<T, E, S: 'static>(
     origin: ErrorOrigin,
 ) -> bool
 where
-    E: std::error::Error,
     S: EventHandler<E>,
+    E: std::fmt::Debug,
 {
     if let Err(e) = event_result {
         error!("Error on EventHandler {:?}: {:?}", origin, e);
