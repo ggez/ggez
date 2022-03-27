@@ -85,19 +85,16 @@ impl InstanceArray {
     /// Resets all the instance data to a set of `DrawParam`.
     pub fn set(&mut self, instances: impl IntoIterator<Item = DrawParam>) {
         self.dirty = true;
-        (self.uniforms, self.params) = instances
-            .into_iter()
-            .map(|x| {
-                (
-                    DrawUniforms::from_param(
-                        &x,
-                        [self.image.width() as f32, self.image.height() as f32].into(),
-                    )
-                    .as_std140(),
-                    x,
-                )
-            })
-            .unzip();
+        self.params.clear();
+        self.params.extend(instances);
+        self.uniforms.clear();
+        self.uniforms.extend(self.params.iter().map(|x| {
+            DrawUniforms::from_param(
+                &x,
+                [self.image.width() as f32, self.image.height() as f32].into(),
+            )
+            .as_std140()
+        }));
     }
 
     /// Pushes a new instance onto the end.
@@ -205,6 +202,10 @@ impl InstanceArray {
         self.dirty = true;
         self.uniforms.truncate(new_capacity as usize);
         self.params.truncate(new_capacity as usize);
+        self.uniforms
+            .reserve((new_capacity as usize).min(self.uniforms.len()) - self.uniforms.len());
+        self.params
+            .reserve((new_capacity as usize).min(self.params.len()) - self.params.len());
     }
 
     /// Returns this `InstanceArray`'s associated `image`.
