@@ -41,7 +41,7 @@ gamepad = ["gilrs"]
 
 [dependencies]
 bitflags = "1"
-zip = { version = "0.5", default-features = false }
+zip = { version = "0.6", default-features = false }
 directories = "4.0.1"
 gfx = "0.18"
 gfx_core = "0.9"
@@ -50,8 +50,8 @@ glyph_brush = "0.7"
 old_school_gfx_glutin_ext = "0.28"
 glutin = "0.28"
 winit = "0.26"
-image = {version = "0.23.12", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "dxt", ] }
-rodio = { version = "0.14", optional = true, default-features = false, features = ["flac", "vorbis", "wav"] }
+image = { version = "0.24", default-features = false, features = ["gif", "png", "pnm", "tga", "tiff", "webp", "bmp", "dxt"] }
+rodio = { version = "0.15", optional = true, default-features = false, features = ["flac", "vorbis", "wav"] }
 serde = "1"
 serde_derive = "1"
 toml = "0.5"

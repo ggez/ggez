@@ -262,14 +262,16 @@ impl Canvas {
         format: ImageFormat,
         path: P,
     ) -> GameResult {
+        use ::image::ImageEncoder;
+
         use std::io;
         let data = self.to_rgba8(ctx)?;
         let f = ctx.fs.create(path)?;
         let writer = &mut io::BufWriter::new(f);
         let color_format = ::image::ColorType::Rgba8;
         match format {
-            ImageFormat::Png => ::image::png::PngEncoder::new(writer)
-                .encode(
+            ImageFormat::Png => ::image::codecs::png::PngEncoder::new(writer)
+                .write_image(
                     &data,
                     u32::from(self.width()),
                     u32::from(self.height()),
