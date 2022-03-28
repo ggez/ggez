@@ -244,69 +244,13 @@ impl DrawParam {
     }
 }
 
-/// Create a `DrawParam` from a location.
-/// Note that this takes a single-element tuple.
-/// It's a little weird but keeps the trait implementations
-/// from clashing.
-impl<P> From<(P,)> for DrawParam
+/// Create a `DrawParam` from a location
+impl<P> From<P> for DrawParam
 where
     P: Into<mint::Point2<f32>>,
 {
-    fn from(location: (P,)) -> Self {
-        DrawParam::new().dest(location.0)
-    }
-}
-
-/// Create a `DrawParam` from a location and color
-impl<P> From<(P, Color)> for DrawParam
-where
-    P: Into<mint::Point2<f32>>,
-{
-    fn from((location, color): (P, Color)) -> Self {
-        DrawParam::new().dest(location).color(color)
-    }
-}
-
-/// Create a `DrawParam` from a location, rotation and color
-impl<P> From<(P, f32, Color)> for DrawParam
-where
-    P: Into<mint::Point2<f32>>,
-{
-    fn from((location, rotation, color): (P, f32, Color)) -> Self {
-        DrawParam::new()
-            .dest(location)
-            .rotation(rotation)
-            .color(color)
-    }
-}
-
-/// Create a `DrawParam` from a location, rotation, offset and color
-impl<P> From<(P, f32, P, Color)> for DrawParam
-where
-    P: Into<mint::Point2<f32>>,
-{
-    fn from((location, rotation, offset, color): (P, f32, P, Color)) -> Self {
-        DrawParam::new()
-            .dest(location)
-            .rotation(rotation)
-            .offset(offset)
-            .color(color)
-    }
-}
-
-/// Create a `DrawParam` from a location, rotation, offset, scale and color
-impl<P, V> From<(P, f32, P, V, Color)> for DrawParam
-where
-    P: Into<mint::Point2<f32>>,
-    V: Into<mint::Vector2<f32>>,
-{
-    fn from((location, rotation, offset, scale, color): (P, f32, P, V, Color)) -> Self {
-        DrawParam::new()
-            .dest(location)
-            .rotation(rotation)
-            .offset(offset)
-            .scale(scale)
-            .color(color)
+    fn from(location: P) -> Self {
+        DrawParam::new().dest(location)
     }
 }
 

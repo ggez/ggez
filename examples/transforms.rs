@@ -1,6 +1,6 @@
 //! Demonstrates various projection and matrix fiddling/testing.
 use ggez::event::{self, KeyCode, KeyMods};
-use ggez::graphics::{self, Color, DrawMode};
+use ggez::graphics::{self, Color, DrawMode, DrawParam};
 use ggez::{Context, GameResult};
 use glam::*;
 use std::env;
@@ -88,7 +88,11 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.set_screen_coordinates(self.screen_coords);
 
         let origin = Vec2::ZERO;
-        canvas.draw_mesh(self.gridmesh.clone(), None, (origin, Color::WHITE));
+        canvas.draw_mesh(
+            self.gridmesh.clone(),
+            None,
+            DrawParam::new().dest(origin).color(Color::WHITE),
+        );
 
         let param = graphics::DrawParam::new()
             .dest(Vec2::new(400.0, 400.0))

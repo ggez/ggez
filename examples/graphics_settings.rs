@@ -94,7 +94,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.draw_mesh(
             circle,
             None,
-            (Point2::new(400.0, 300.0), rotation as f32, Color::WHITE),
+            DrawParam::new()
+                .dest(Point2::new(400.0, 300.0))
+                .rotation(rotation as f32)
+                .color(Color::WHITE),
         );
 
         // Let's draw a grid so we can see where the window bounds are.
@@ -124,7 +127,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             }
         }
         let mesh = graphics::Mesh::from_data(&ctx.gfx, mb.build());
-        canvas.draw_mesh(mesh, None, (ggez::mint::Point2 { x: 0.0, y: 0.0 },));
+        canvas.draw_mesh(mesh, None, ggez::mint::Point2 { x: 0.0, y: 0.0 });
 
         canvas.finish(&mut ctx.gfx)?;
 

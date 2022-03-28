@@ -40,7 +40,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
         );
 
-        canvas.draw_mesh(self.circle.clone(), None, (Vec2::new(self.pos_x, 380.0),));
+        canvas.draw_mesh(self.circle.clone(), None, Vec2::new(self.pos_x, 380.0));
 
         canvas.finish(&mut ctx.gfx)?;
 
