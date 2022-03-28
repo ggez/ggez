@@ -48,7 +48,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             2.0,
             Color::WHITE,
         )?;
-        canvas.draw_mesh(circle, None, (glam::Vec2::new(0.0, 0.0),));
+        canvas.draw_mesh(circle, None, glam::Vec2::new(0.0, 0.0));
 
         self.params.set_uniforms(&ctx.gfx, &self.dim);
         canvas.set_shader(self.shader.clone());
@@ -61,7 +61,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             2.0,
             Color::WHITE,
         )?;
-        canvas.draw_mesh(circle, None, (glam::Vec2::new(0.0, 0.0),));
+        canvas.draw_mesh(circle, None, glam::Vec2::new(0.0, 0.0));
 
         canvas.set_default_shader();
         let circle = graphics::Mesh::new_circle(
@@ -72,7 +72,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             2.0,
             Color::WHITE,
         )?;
-        canvas.draw_mesh(circle, None, (glam::Vec2::new(0.0, 0.0),));
+        canvas.draw_mesh(circle, None, glam::Vec2::new(0.0, 0.0));
 
         canvas.finish(&mut ctx.gfx)
     }

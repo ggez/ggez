@@ -302,7 +302,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // draw the animated ball
         let ball_pos = self.ball_animation.now_strict().unwrap();
-        canvas.draw_mesh(self.ball.clone(), None, (ball_pos,));
+        canvas.draw_mesh(self.ball.clone(), None, ball_pos);
 
         // draw the player
         let current_frame_src: graphics::Rect = self.player_animation.now_strict().unwrap().into();

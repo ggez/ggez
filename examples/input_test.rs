@@ -53,7 +53,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             },
             Color::WHITE,
         )?;
-        canvas.draw_mesh(rectangle, None, (glam::Vec2::new(0.0, 0.0),));
+        canvas.draw_mesh(rectangle, None, glam::Vec2::new(0.0, 0.0));
         canvas.finish(&mut ctx.gfx)?;
         Ok(())
     }
