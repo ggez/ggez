@@ -28,7 +28,7 @@ var t: texture_2d<f32>;
 [[group(1), binding(1)]]
 var s: sampler;
 
-[[group(3), binding(0)]]
+[[group(2), binding(0)]]
 var<storage, read> instances: InstanceArray;
 
 [[stage(vertex)]]

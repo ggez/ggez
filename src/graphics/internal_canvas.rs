@@ -429,7 +429,7 @@ impl<'a> InternalCanvas<'a> {
             self.arenas.bind_groups.alloc(uniform_bind_group),
             &[uniform_alloc.offset as u32],
         );
-        self.pass.set_bind_group(3, bind_group, &[]);
+        self.pass.set_bind_group(2, bind_group, &[]);
 
         self.pass.set_vertex_buffer(0, mesh.verts.slice(..));
         self.pass
