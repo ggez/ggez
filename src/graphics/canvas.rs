@@ -149,7 +149,7 @@ impl Canvas {
 
     /// Sets the shader parameters to use when drawing meshes.
     ///
-    /// **Bound to bind group 4.**
+    /// **Bound to bind group 3.**
     #[inline]
     pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
         self.state.params = Some((params.bind_group.clone(), params.layout));
@@ -169,7 +169,7 @@ impl Canvas {
 
     /// Sets the shader parameters to use when drawing text.
     ///
-    /// **Bound to bind group 4.**
+    /// **Bound to bind group 3.**
     #[inline]
     pub fn set_text_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
         self.state.text_params = Some((params.bind_group.clone(), params.layout));
