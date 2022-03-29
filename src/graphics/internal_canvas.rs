@@ -531,21 +531,24 @@ impl<'a> InternalCanvas<'a> {
                 )
                 .create(&self.wgpu.device, self.bind_group_cache);
 
+            let (dummy_group, dummy_layout) =
+                BindGroupBuilder::new().create(&self.wgpu.device, self.bind_group_cache);
+
             let mut groups = vec![uniform_layout, texture_layout, sampler_layout];
 
             if let ShaderType::Instance { .. } = ty {
                 groups.push(instance_layout);
+            } else {
+                // the dummy group ensures the user's bind group is at index 4
+                groups.push(dummy_layout);
+                self.pass
+                    .set_bind_group(3, self.arenas.bind_groups.alloc(dummy_group), &[]);
             }
 
             let shader = match ty {
                 ShaderType::Draw | ShaderType::Instance { .. } => {
                     if let Some((bind_group, bind_group_layout)) = &self.shader_bind_group {
-                        self.pass.set_bind_group(
-                            if ty == ShaderType::Draw { 3 } else { 4 },
-                            bind_group,
-                            &[],
-                        );
-
+                        self.pass.set_bind_group(4, bind_group, &[]);
                         groups.push(bind_group_layout.clone());
                     }
 
@@ -553,7 +556,7 @@ impl<'a> InternalCanvas<'a> {
                 }
                 ShaderType::Text => {
                     if let Some((bind_group, bind_group_layout)) = &self.text_shader_bind_group {
-                        self.pass.set_bind_group(3, bind_group, &[]);
+                        self.pass.set_bind_group(4, bind_group, &[]);
                         groups.push(bind_group_layout.clone());
                     }
 
