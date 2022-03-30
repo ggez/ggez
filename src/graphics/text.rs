@@ -1,6 +1,6 @@
 //!
 
-use super::{gpu::text::Extra, Color, Rect};
+use super::{gpu::text::Extra, Color, Rect, ZIndex};
 use crate::{filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId};
 use std::{collections::HashMap, io::Read, path::Path};
@@ -97,6 +97,95 @@ impl Text {
     }
 }
 
+/// A struct containing parameters pertaining to drawing text.
+///
+/// This does not describe the text itself, but rather how the text
+/// should be positioned and layed out.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TextParam {
+    /// Text layout boundaries. The top-left of this [Rect] determines
+    /// the positioning of the text.
+    ///
+    /// The size of the [Rect] only becomes relevant if drawing with [TextLayout::Wrap].
+    pub bounds: Rect,
+    /// Rotation of the text in radians.
+    pub rotation: f32,
+    /// How the text should be layed out.
+    pub layout: TextLayout,
+    /// The Z coordinate of the text.
+    pub z: ZIndex,
+}
+
+impl Default for TextParam {
+    fn default() -> Self {
+        Self {
+            bounds: Rect {
+                x: 0.0,
+                y: 0.0,
+                w: f32::INFINITY,
+                h: f32::INFINITY,
+            },
+            rotation: 0.0,
+            layout: TextLayout::tl_wrap(),
+            z: 0,
+        }
+    }
+}
+
+impl TextParam {
+    /// Create a new [TextParam] with default values.
+    pub fn new() -> Self {
+        TextParam::default()
+    }
+
+    /// Set the layout boundaries.
+    pub fn bounds(mut self, bounds: Rect) -> Self {
+        self.bounds = bounds;
+        self
+    }
+
+    /// Set the position of the layout boundaries.
+    pub fn dest(mut self, dest: impl Into<mint::Vector2<f32>>) -> Self {
+        let dest = dest.into();
+        self.bounds.x = dest.x;
+        self.bounds.y = dest.y;
+        self
+    }
+
+    /// Set the size of the layout boundaries.
+    pub fn size(mut self, size: impl Into<mint::Vector2<f32>>) -> Self {
+        let size = size.into();
+        self.bounds.w = size.x;
+        self.bounds.h = size.y;
+        self
+    }
+
+    /// Set the size to infinity such that the text layout is unbounded.
+    pub fn unbounded(mut self) -> Self {
+        self.bounds.w = f32::INFINITY;
+        self.bounds.h = f32::INFINITY;
+        self
+    }
+
+    /// Set the rotation of the text in radians.
+    pub fn rotation(mut self, rotation: f32) -> Self {
+        self.rotation = rotation;
+        self
+    }
+
+    /// Set the layout mode of the text.
+    pub fn layout(mut self, layout: TextLayout) -> Self {
+        self.layout = layout;
+        self
+    }
+
+    /// Set the Z coordinate.
+    pub fn z(mut self, z: ZIndex) -> Self {
+        self.z = z;
+        self
+    }
+}
+
 /// Describes text alignment along a single axis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TextAlign {
@@ -182,28 +271,26 @@ impl TextLayout {
 pub(crate) fn text_to_section<'a>(
     fonts: &HashMap<String, FontId>,
     text: &'a [Text],
-    mut rect: Rect,
-    rotation: f32,
-    layout: TextLayout,
+    mut param: TextParam,
 ) -> GameResult<glyph_brush::Section<'a, Extra>> {
-    let orect = rect;
+    let obounds = param.bounds;
 
-    match layout.h_align() {
+    match param.layout.h_align() {
         TextAlign::Begin => {}
-        TextAlign::Middle => rect.x += rect.w / 2.,
-        TextAlign::End => rect.x += rect.w,
+        TextAlign::Middle => param.bounds.x += param.bounds.w / 2.,
+        TextAlign::End => param.bounds.x += param.bounds.w,
     }
 
-    match layout.v_align() {
+    match param.layout.v_align() {
         TextAlign::Begin => {}
-        TextAlign::Middle => rect.y += rect.h / 2.,
-        TextAlign::End => rect.y += rect.h,
+        TextAlign::Middle => param.bounds.y += param.bounds.h / 2.,
+        TextAlign::End => param.bounds.y += param.bounds.h,
     }
 
     Ok(glyph_brush::Section {
-        screen_position: (rect.x, rect.y),
-        bounds: (rect.w, rect.h),
-        layout: match layout {
+        screen_position: (param.bounds.x, param.bounds.y),
+        bounds: (param.bounds.w, param.bounds.h),
+        layout: match param.layout {
             TextLayout::SingleLine { h_align, v_align } => {
                 glyph_brush::Layout::default_single_line()
                     .h_align(h_align.into())
@@ -224,8 +311,8 @@ pub(crate) fn text_to_section<'a>(
                         .ok_or_else(|| GameError::FontSelectError(text.font.to_string()))?,
                     extra: Extra {
                         color: text.color.into(),
-                        origin: orect.point().into(),
-                        rotation,
+                        origin: obounds.point().into(),
+                        rotation: param.rotation,
                     },
                 })
             })

@@ -98,10 +98,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .text("Hello world!")
                 .size(48.0)
                 .color(color)],
-            dest_point,
-            0.0,
-            graphics::TextLayout::tl_single_line(),
-            0,
+            graphics::TextParam::new().dest(dest_point),
         );
 
         let dest_point2 = glam::Vec2::new(0.0, 256.0);
@@ -118,10 +115,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .text("This text is 32 pixels high")
                 .size(32.0)
                 .color(Color::WHITE)],
-            dest_point2,
-            0.0,
-            graphics::TextLayout::tl_single_line(),
-            0,
+            graphics::TextParam::new().dest(dest_point2),
         );
 
         self.draw_crazy_lines(ctx, &mut canvas)?;

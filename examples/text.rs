@@ -22,8 +22,7 @@ fn random_color(rng: &mut oorandom::Rand32) -> Color {
 #[derive(Clone)]
 struct TextDraw {
     fragments: Vec<Text>,
-    bounds: Rect,
-    layout: TextLayout,
+    param: graphics::TextParam,
 }
 
 struct App {
@@ -51,8 +50,7 @@ impl App {
             "0_hello",
             TextDraw {
                 fragments: vec![text],
-                bounds: Rect::new(0., 0., f32::INFINITY, f32::INFINITY),
-                layout: TextLayout::tl_single_line(),
+                param: graphics::TextParam::new(),
             },
         );
 
@@ -90,29 +88,27 @@ impl App {
             "1_demo_text_1",
             TextDraw {
                 fragments: text.clone(),
-                bounds: Rect::new(0., 0., f32::INFINITY, f32::INFINITY),
-                layout: TextLayout::tl_single_line(),
+                param: graphics::TextParam::new(),
             },
         );
 
         let mut text = TextDraw {
             fragments: text,
-            bounds: Rect::new(0., 0., f32::INFINITY, f32::INFINITY),
-            layout: TextLayout::tl_single_line(),
+            param: graphics::TextParam::new(),
         };
 
         // Text can be wrapped by setting it's bounds, in screen coordinates;
         // vertical bound will cut off the extra off the bottom.
         // Alignment and wrapping behaviour within the bounds can be set by `TextLayout`.
-        text.bounds = Rect::new(0.0, 0.0, 400.0, f32::INFINITY);
-        text.layout = TextLayout::Wrap {
+        text.param.bounds = Rect::new(0.0, 0.0, 400.0, f32::INFINITY);
+        text.param.layout = TextLayout::Wrap {
             h_align: TextAlign::Begin,
             v_align: TextAlign::Begin,
         };
         texts.insert("1_demo_text_2", text.clone());
 
-        text.bounds = Rect::new(0.0, 0.0, 500.0, f32::INFINITY);
-        text.layout = TextLayout::Wrap {
+        text.param.bounds = Rect::new(0.0, 0.0, 500.0, f32::INFINITY);
+        text.param.layout = TextLayout::Wrap {
             h_align: TextAlign::End,
             v_align: TextAlign::Begin,
         };
@@ -121,8 +117,8 @@ impl App {
         text.fragments
             .iter_mut()
             .for_each(|fragment| fragment.font = "Fancy font".into());
-        text.bounds = Rect::new(0.0, 0.0, 300.0, f32::INFINITY);
-        text.layout = TextLayout::Wrap {
+        text.param.bounds = Rect::new(0.0, 0.0, 300.0, f32::INFINITY);
+        text.param.layout = TextLayout::Wrap {
             h_align: TextAlign::Middle,
             v_align: TextAlign::Begin,
         };
@@ -138,8 +134,7 @@ impl App {
             "2_rainbow",
             TextDraw {
                 fragments: chroma_text,
-                bounds: Rect::new(0.0, 0.0, f32::INFINITY, f32::INFINITY),
-                layout: TextLayout::tl_single_line(),
+                param: graphics::TextParam::new(),
             },
         );
 
@@ -152,8 +147,7 @@ impl App {
             "3_wonky",
             TextDraw {
                 fragments: wonky_text,
-                bounds: Rect::new(0.0, 0.0, f32::INFINITY, f32::INFINITY),
-                layout: TextLayout::tl_single_line(),
+                param: graphics::TextParam::new(),
             },
         );
 
@@ -178,25 +172,15 @@ impl event::EventHandler<ggez::GameError> for App {
         let fps_display = Text::new()
             .text(format!("FPS: {}", fps))
             .color(Color::WHITE);
-        canvas.draw_text(
-            &[fps_display],
-            Vec2::new(200.0, 0.0),
-            0.0,
-            TextLayout::tl_single_line(),
-            0,
-        );
+        canvas.draw_text(&[fps_display], graphics::TextParam::new().dest([200., 0.]));
 
         let mut height = 0.0;
         for text in self.texts.values() {
-            let mut bounds = text.bounds;
+            let mut bounds = text.param.bounds;
             bounds.move_to(Vec2::new(20.0, 20.0 + height));
-            canvas.draw_bounded_text(&text.fragments, bounds, 0.0, text.layout, 0);
+            canvas.draw_text(&text.fragments, text.param.bounds(bounds));
             //height += 20.0 + text.height(ctx) as f32;
-            height += 20.0
-                + ctx
-                    .gfx
-                    .measure_bounded_text(&text.fragments, bounds, text.layout)?
-                    .h;
+            height += 20.0 + ctx.gfx.measure_text(&text.fragments, text.param)?.h;
         }
 
         if let Some(text) = self.texts.get_mut("1_demo_text_3") {
@@ -214,22 +198,22 @@ impl event::EventHandler<ggez::GameError> for App {
                     .color(Color::new(0.0, 1.0, 1.0, 1.0)),
             );
         }
-        let wobble_bounds =
-            ctx.gfx
-                .measure_text(&wobble, Vec2::ZERO, TextLayout::tl_single_line())?;
+        let wobble_bounds = ctx.gfx.measure_text(&wobble, Default::default())?;
         let (wobble_width, wobble_height) = (wobble_bounds.w, wobble_bounds.h);
         let origin = Vec2::new(500.0, 300.0);
-        canvas.draw_text(&wobble, origin, -0.5, TextLayout::tl_single_line(), 0);
+        canvas.draw_text(
+            &wobble,
+            graphics::TextParam::new().dest(origin).rotation(-0.5),
+        );
         let t = Text::new().text(format!(
             "width: {}\nheight: {}",
             wobble_width, wobble_height
         ));
         canvas.draw_text(
             &[t],
-            origin + Vec2::new(0.0, 20.0),
-            -0.5,
-            TextLayout::tl_wrap(),
-            0,
+            graphics::TextParam::new()
+                .dest(origin + Vec2::new(0.0, 20.0))
+                .rotation(-0.5),
         );
 
         canvas.finish(&mut ctx.gfx)?;

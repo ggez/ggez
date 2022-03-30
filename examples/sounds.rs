@@ -78,10 +78,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.draw_text(
             &[graphics::Text::new()
                 .text("Press number keys 1-6 to play a sound, or escape to quit.")],
-            Vec2::new(100.0, 100.0),
-            0.0,
-            graphics::TextLayout::tl_single_line(),
-            0,
+            graphics::TextParam::new().dest([100., 100.]),
         );
 
         canvas.finish(&mut ctx.gfx)

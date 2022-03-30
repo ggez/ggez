@@ -13,7 +13,7 @@ use super::{
     mesh::{Mesh, Vertex},
     sampler::{Sampler, SamplerCache},
     text::FontData,
-    text_to_section, MeshData, Rect, ScreenImage, Text, TextLayout,
+    text_to_section, MeshData, Rect, ScreenImage, Text, TextParam,
 };
 use crate::{
     conf::{self, Backend, Conf, FullscreenType, WindowMode},
@@ -346,38 +346,18 @@ impl GraphicsContext {
     }
 
     /// Measures the glyph boundaries for the given bounded text.
-    pub fn measure_bounded_text(
-        &mut self,
-        text: &[Text],
-        rect: Rect,
-        layout: TextLayout,
-    ) -> GameResult<Rect> {
+    pub fn measure_text(&mut self, text: &[Text], param: TextParam) -> GameResult<Rect> {
         Ok(self
             .text
             .glyph_brush
-            .glyph_bounds(text_to_section(&self.fonts, text, rect, 0., layout)?)
+            .glyph_bounds(text_to_section(&self.fonts, text, param)?)
             .map(|rect| Rect {
                 x: rect.min.x,
                 y: rect.min.y,
                 w: rect.width(),
                 h: rect.height(),
             })
-            .unwrap_or_else(|| Rect::new(rect.x, rect.y, 0., 0.)))
-    }
-
-    /// Measures the glyph boundaries for the given text.
-    pub fn measure_text(
-        &mut self,
-        text: &[Text],
-        pos: impl Into<mint::Vector2<f32>>,
-        layout: TextLayout,
-    ) -> GameResult<Rect> {
-        let pos = pos.into();
-        self.measure_bounded_text(
-            text,
-            Rect::new(pos.x, pos.y, f32::INFINITY, f32::INFINITY),
-            layout,
-        )
+            .unwrap_or_else(|| Rect::new(param.bounds.x, param.bounds.y, 0., 0.)))
     }
 
     /// Returns the size of the window’s underlying drawable in physical pixels as (width, height).

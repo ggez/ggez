@@ -538,10 +538,7 @@ impl EventHandler for MainState {
                 .text(level_str)
                 .font("LiberationMono")
                 .color(Color::WHITE)],
-            level_dest,
-            0.0,
-            graphics::TextLayout::tl_single_line(),
-            0,
+            graphics::TextParam::new().dest(level_dest),
         );
 
         canvas.draw_text(
@@ -549,10 +546,7 @@ impl EventHandler for MainState {
                 .text(score_str)
                 .font("LiberationMono")
                 .color(Color::WHITE)],
-            score_dest,
-            0.0,
-            graphics::TextLayout::tl_single_line(),
-            0,
+            graphics::TextParam::new().dest(score_dest),
         );
 
         canvas.finish(&mut ctx.gfx)?;

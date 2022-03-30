@@ -6,7 +6,7 @@ use super::{
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
     internal_canvas::{InstanceArrayView, InternalCanvas},
     BlendMode, Color, DrawParam, GraphicsContext, Image, InstanceArray, Mesh, Rect, Sampler,
-    ScreenImage, Shader, ShaderParams, Text, TextLayout, WgpuContext, ZIndex,
+    ScreenImage, Shader, ShaderParams, Text, TextParam, WgpuContext, ZIndex,
 };
 use std::{collections::BTreeMap, sync::Arc};
 
@@ -335,52 +335,22 @@ impl Canvas {
         });
     }
 
-    /// Draws a section text that is fit and aligned into a given `rect` bounds.
+    /// Draws a section text that is layed out and positioned according to the given [TextParam].
     ///
     /// The section can be made up of multiple [Text], letting the user have complex formatting
     /// in the same section of text (e.g. bolding, highlighting, headers, etc).
     ///
-    /// [TextLayout] determines how the text is aligned in `rect` and whether the text wraps or not.
-    ///
     /// ## A tip for performance
     /// Text rendering will automatically batch *as long as the text draws are consecutive*.
     /// As such, to achieve the best performance, do all your text rendering in a single burst.
-    pub fn draw_bounded_text(
-        &mut self,
-        text: &[Text],
-        rect: Rect,
-        rotation: f32,
-        layout: TextLayout,
-        z: ZIndex,
-    ) {
-        self.draws.entry(z).or_default().push(DrawCommand {
+    pub fn draw_text(&mut self, text: &[Text], param: TextParam) {
+        self.draws.entry(param.z).or_default().push(DrawCommand {
             state: self.state.clone(),
             draw: Draw::BoundedText {
                 text: text.to_vec(),
-                rect,
-                rotation,
-                layout,
+                param,
             },
         });
-    }
-
-    /// Unbounded version of [`Canvas::draw_bounded_text()`].
-    pub fn draw_text(
-        &mut self,
-        text: &[Text],
-        pos: impl Into<mint::Vector2<f32>>,
-        rotation: f32,
-        layout: TextLayout,
-        z: ZIndex,
-    ) {
-        let pos = pos.into();
-        self.draw_bounded_text(
-            text,
-            Rect::new(pos.x, pos.y, f32::INFINITY, f32::INFINITY),
-            rotation,
-            layout,
-            z,
-        )
     }
 
     /// Finish drawing with this canvas and submit all the draw calls.
@@ -460,12 +430,7 @@ impl Canvas {
                         instances,
                         param,
                     } => canvas.draw_mesh_instances(mesh, instances, *param)?,
-                    Draw::BoundedText {
-                        text,
-                        rect,
-                        rotation,
-                        layout,
-                    } => canvas.draw_bounded_text(text, *rect, *rotation, *layout)?,
+                    Draw::BoundedText { text, param } => canvas.draw_bounded_text(text, *param)?,
                 }
             }
         }
@@ -527,9 +492,7 @@ enum Draw {
     },
     BoundedText {
         text: Vec<Text>,
-        rect: Rect,
-        rotation: f32,
-        layout: TextLayout,
+        param: TextParam,
     },
 }
 
