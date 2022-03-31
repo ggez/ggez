@@ -77,7 +77,7 @@ impl MainState {
             .size(20.)
             .color(Color::WHITE);
         let text_offset = Vec2::new(0., -100.);
-        canvas.draw_text(&[text], graphics::TextParam::new().dest(pos + text_offset));
+        canvas.draw_text(&[text], pos + text_offset);
         Ok(())
     }
 
@@ -162,13 +162,13 @@ impl EventHandler for MainState {
             .font("LiberationMono")
             .size(20.)
             .color(Color::WHITE);
-        canvas.draw_text(&[text], graphics::TextParam::new().dest([8., 4.]));
+        canvas.draw_text(&[text], [8., 4.]);
         let text = graphics::Text::new()
             .text("drawn onto a (transparent black) canvas:")
             .font("LiberationMono")
             .size(20.)
             .color(Color::WHITE);
-        canvas.draw_text(&[text], graphics::TextParam::new().dest([8., 4. + y]));
+        canvas.draw_text(&[text], [8., 4. + y]);
 
         canvas.finish(&mut ctx.gfx)?;
 

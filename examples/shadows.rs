@@ -379,7 +379,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .text("SHADOWS...")
                 .size(48.0)
                 .font("LiberationMono")],
-            graphics::TextParam::new().dest([50., 200.]),
+            [50., 200.],
         );
         canvas.finish(&mut ctx.gfx)?;
 

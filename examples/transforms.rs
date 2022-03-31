@@ -71,7 +71,7 @@ impl MainState {
                 );
                 let s = format!("({}, {})", point.x, point.y);
                 let t = graphics::Text::new().text(s);
-                canvas.draw_text(&[t], graphics::TextParam::new().dest(point));
+                canvas.draw_text(&[t], point);
             }
         }
     }

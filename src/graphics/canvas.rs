@@ -343,7 +343,8 @@ impl Canvas {
     /// ## A tip for performance
     /// Text rendering will automatically batch *as long as the text draws are consecutive*.
     /// As such, to achieve the best performance, do all your text rendering in a single burst.
-    pub fn draw_text(&mut self, text: &[Text], param: TextParam) {
+    pub fn draw_text(&mut self, text: &[Text], param: impl Into<TextParam>) {
+        let param = param.into();
         self.draws.entry(param.z).or_default().push(DrawCommand {
             state: self.state.clone(),
             draw: Draw::BoundedText {

@@ -44,7 +44,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .text("Hello, world!")
                 .font("LiberationMono")
                 .size(48.)],
-            graphics::TextParam::new().dest(dest_point),
+            dest_point,
         );
 
         canvas.finish(&mut ctx.gfx)?;

@@ -341,13 +341,13 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &[graphics::Text::new()
                 .font("LiberationMono")
                 .text("You can mix ggez and wgpu drawing;")],
-            graphics::TextParam::new().dest(dest_point1),
+            dest_point1,
         );
         canvas.draw_text(
             &[graphics::Text::new()
                 .font("LiberationMono")
                 .text("it basically draws wgpu stuff first, then ggez")],
-            graphics::TextParam::new().dest(dest_point2),
+            dest_point2,
         );
 
         canvas.finish(&mut ctx.gfx)?;

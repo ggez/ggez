@@ -172,7 +172,7 @@ impl event::EventHandler<ggez::GameError> for App {
         let fps_display = Text::new()
             .text(format!("FPS: {}", fps))
             .color(Color::WHITE);
-        canvas.draw_text(&[fps_display], graphics::TextParam::new().dest([200., 0.]));
+        canvas.draw_text(&[fps_display], [200., 0.]);
 
         let mut height = 0.0;
         for text in self.texts.values() {

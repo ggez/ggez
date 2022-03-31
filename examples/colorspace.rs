@@ -167,7 +167,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             .color(AQUA)
             .font("LiberationMono")
             .size(300.);
-        canvas.draw_text(&[text], graphics::TextParam::new().dest([150., 135.]));
+        canvas.draw_text(&[text], [150., 135.]);
 
         // spritebatch
         canvas.draw_instances(

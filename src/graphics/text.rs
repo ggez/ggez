@@ -145,7 +145,7 @@ impl TextParam {
     }
 
     /// Set the position of the layout boundaries.
-    pub fn dest(mut self, dest: impl Into<mint::Vector2<f32>>) -> Self {
+    pub fn dest(mut self, dest: impl Into<mint::Point2<f32>>) -> Self {
         let dest = dest.into();
         self.bounds.x = dest.x;
         self.bounds.y = dest.y;
@@ -183,6 +183,15 @@ impl TextParam {
     pub fn z(mut self, z: ZIndex) -> Self {
         self.z = z;
         self
+    }
+}
+
+impl<P> From<P> for TextParam
+where
+    P: Into<mint::Point2<f32>>,
+{
+    fn from(dest: P) -> Self {
+        TextParam::new().dest(dest)
     }
 }
 
