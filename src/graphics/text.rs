@@ -100,7 +100,7 @@ impl Text {
 /// A struct containing parameters pertaining to drawing text.
 ///
 /// This does not describe the text itself, but rather how the text
-/// should be positioned and layed out.
+/// should be positioned and laid out.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TextParam {
     /// Text layout boundaries. The top-left of this [Rect] determines
@@ -110,7 +110,7 @@ pub struct TextParam {
     pub bounds: Rect,
     /// Rotation of the text in radians.
     pub rotation: f32,
-    /// How the text should be layed out.
+    /// How the text should be laid out.
     pub layout: TextLayout,
     /// The Z coordinate of the text.
     pub z: ZIndex,
