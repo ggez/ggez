@@ -17,9 +17,14 @@ var t: texture_2d<f32>;
 [[group(1), binding(1)]]
 var s: sampler;
 
+// text drawing works by submitting a draw with 4 vert count, and n (# glyphs) instances, thus 4 * n vertices.
+// however, we only store 1 vertex per glyph (memory efficiency), so we repeat the same vertex data 4 times.
 [[stage(vertex)]]
 fn vs_main(
+    // 0-3 - the vertex ID (because we draw with a vert count of 4)
     [[builtin(vertex_index)]] idx: u32,
+    // these vertex parameters update *per instance*, not per vertex.
+    // these will remain the same within a single glyph.
     [[location(0)]] rect: vec4<f32>,
     [[location(1)]] uv: vec4<f32>,
     [[location(2)]] color: vec4<f32>,
@@ -27,6 +32,8 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
 
+    // this is to select the x,y (and also u,v) coordinates for each corner of the glyph rect,
+    // based on the vertex ID
     var x = select(rect.x, rect.z, idx % 2u == 1u);
     var y = select(rect.y, rect.w, idx < 2u);
 
@@ -35,6 +42,7 @@ fn vs_main(
 
     var origin = vec4<f32>(transform.xy, 0.0, 0.0);
     var rotation = transform.z;
+    // reconstruct 4x4 rotation matrix from angle.
     // wgsl lacks sincos
     var rsin = sin(rotation);
     var rcos = cos(rotation);
@@ -45,6 +53,7 @@ fn vs_main(
         vec4<f32>(0.0, 0.0, 0.0, 1.0),
     );
 
+    // apply rotation matrix, taking into account the rotation origin.
     out.position = uniforms.transform * (rotmat * (vec4<f32>(x, y, 0., 1.) - origin) + origin);
     out.uv = vec2<f32>(u, v);
     out.color = color;
