@@ -200,6 +200,8 @@ impl TimeContext {
     ///
     /// It's usually not necessary to call this function yourself,
     /// [`event::run()`](../event/fn.run.html) will do it for you.
+    /// You only need to call this function if you're writing your
+    /// own custom event loop.
     pub fn tick(&mut self) {
         let now = time::Instant::now();
         let time_since_last = now - self.last_instant;

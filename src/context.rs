@@ -21,20 +21,17 @@ use crate::timer;
 /// game's window.
 ///
 /// Most functions that interact with the hardware, for instance
-/// drawing things, playing sounds, or loading resources (which then
-/// need to be transformed into a format the hardware likes) will need
-/// to access the `Context`.  It is an error to create some type that
+/// drawing things, playing sounds, or loading resources will need
+/// to access one, or rarely even two, of its sub-contexts.
+/// It is an error to create some type that
 /// relies upon a `Context`, such as `Image`, and then drop the `Context`
-/// and try to draw the old `Image` with the new `Context`.  Most types
-/// include checks to make this panic in debug mode, but it's not perfect.
+/// and try to draw the old `Image` with the new `Context`.
 ///
-/// All fields in this struct are basically undocumented features,
+/// The fields in this struct used to be basically undocumented features,
 /// only here to make it easier to debug, or to let advanced users
 /// hook into the guts of ggez and make it do things it normally
-/// can't.  Most users shouldn't need to touch these things directly,
-/// since implementation details may change without warning.  The
-/// public and stable API is `ggez`'s module-level functions and
-/// types.
+/// can't. Now that `ggez`'s module-level functions, taking the whole `Context`
+/// have been deprecated, calling their methods directly is recommended.
 pub struct Context {
     /// Filesystem state.
     pub fs: Filesystem,
