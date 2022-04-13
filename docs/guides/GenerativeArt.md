@@ -240,14 +240,16 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mesh = match shape {
             &Shape::Rectangle(rect) => {
                 graphics::Mesh::new_rectangle(
-                    &ctx.gfx, graphics::DrawMode::fill(),
+                    &ctx.gfx,
+                    graphics::DrawMode::fill(),
                     rect,
                     graphics::Color::WHITE
                 )?
             }
             &Shape::Circle(origin, radius) => {
                 graphics::Mesh::new_circle(
-                    &ctx.gfx, graphics::DrawMode::fill(),
+                    &ctx.gfx,
+                    graphics::DrawMode::fill(),
                     origin,
                     radius,
                     0.1,
