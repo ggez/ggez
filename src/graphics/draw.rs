@@ -107,13 +107,13 @@ pub type ZIndex = i32;
 /// ```rust
 /// # use ggez::*;
 /// # use ggez::graphics::*;
-/// # fn t<P>(ctx: &mut Context, drawable: &P) where P: Drawable {
+/// # fn t(canvas: &mut Canvas, image: Image) {
 /// let my_dest = glam::vec2(13.0, 37.0);
-/// graphics::draw(ctx, drawable, DrawParam::default().dest(my_dest) );
+/// canvas.draw(Some(image), DrawParam::default().dest(my_dest));
 /// # }
 /// ```
 ///
-/// As a shortcut, it also implements `From` for a variety of tuple types.
+/// As a shortcut, it also implements [`From` for `Into<Point2<f32>>`](#impl-From<P>).
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawParam {
     /// A portion of the drawable to clip, as a fraction of the whole image.
@@ -127,7 +127,7 @@ pub struct DrawParam {
     pub image_scale: bool,
     /// The Z coordinate of the draw.
     ///
-    /// This has no effect when passed into [`InstanceArray`].
+    /// This has no effect when passed into [`InstanceArray`](./struct.InstanceArray.html).
     pub z: ZIndex,
 }
 
@@ -244,7 +244,16 @@ impl DrawParam {
     }
 }
 
-/// Create a `DrawParam` from a location
+/// Create a `DrawParam` from a location, like this:
+///
+/// ```rust
+/// # use ggez::*;
+/// # use ggez::graphics::*;
+/// # fn t(canvas: &mut Canvas, image: Image) {
+/// let my_dest = glam::vec2(13.0, 37.0);
+/// canvas.draw(Some(image), my_dest);
+/// # }
+/// ```
 impl<P> From<P> for DrawParam
 where
     P: Into<mint::Point2<f32>>,

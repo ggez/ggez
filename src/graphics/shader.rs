@@ -15,6 +15,40 @@ use crevice::std140::Std140;
 use wgpu::util::DeviceExt;
 
 /// A custom fragment shader that can be used to render with shader effects.
+///
+/// Adapted from the `shader.rs` example:
+/// ```rust
+/// # use ggez::*;
+/// # use ggez::graphics::*;
+/// #[derive(AsStd140)]
+/// struct Dim {
+///     rate: f32,
+/// }
+///
+/// struct MainState {}
+///
+/// impl event::EventHandler for MainState {
+/// #   fn update(&mut self, _ctx: &mut Context) -> Result<(), GameError> { Ok(()) }
+///     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+///         let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::BLACK);
+///         let dim = Dim { rate: 0.5 };
+///         // NOTE: This is for simplicity; do not recreate your shader every frame like this!
+///         //       For more info look at the full example.
+///         let shader = Shader::from_wgsl(
+///             &ctx.gfx,
+///             include_str!("../resources/dimmer.wgsl"),
+///             "main"
+///         );
+///         let params = ShaderParams::new(&mut ctx.gfx, &dim, &[], &[]);
+///         params.set_uniforms(&ctx.gfx, &dim);
+///
+///         canvas.set_shader(shader);
+///         canvas.set_shader_params(params);
+///         // draw something...
+///         canvas.finish(&mut ctx.gfx)
+///     }
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Shader {
     pub(crate) fragment: ArcShaderModule,

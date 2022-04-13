@@ -499,7 +499,7 @@ pub struct LinearColor {
 
 impl From<Color> for LinearColor {
     /// Convert an (sRGB) Color into a linear color,
-    /// per https://en.wikipedia.org/wiki/Srgb#The_reverse_transformation
+    /// per <https://en.wikipedia.org/wiki/Srgb#The_reverse_transformation>
     fn from(c: Color) -> Self {
         fn f(component: f32) -> f32 {
             let a = 0.055;

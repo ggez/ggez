@@ -29,7 +29,7 @@ pub struct Image {
 }
 
 impl Image {
-    /// Creates a new image specifically for use with a [Canvas].
+    /// Creates a new image specifically for use with a [Canvas](./struct.Canvas.html).
     pub fn new_canvas_image(
         gfx: &GraphicsContext,
         format: ImageFormat,
