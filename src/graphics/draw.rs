@@ -2,7 +2,7 @@
 
 use super::{Color, LinearColor, Rect};
 
-/// A struct that represents where to put a `Drawable`.
+/// A struct that represents where to put a drawable object.
 ///
 /// This can either be a set of individual components, or
 /// a single `Matrix4` transform.
@@ -97,6 +97,9 @@ impl Transform {
 ///
 /// Greater values correspond to the foreground, and lower values
 /// correspond to the background.
+///
+/// [`InstanceArray`](crate::graphics::InstanceArray)s internally uphold this order for their instances, _if_ they're created with
+/// `ordered` set to `true`.
 pub type ZIndex = i32;
 
 /// A struct containing all the necessary info for drawing with parameters.
@@ -121,13 +124,11 @@ pub struct DrawParam {
     pub src: Rect,
     /// Default: white.
     pub color: Color,
-    /// Where to put the `Drawable`.
+    /// Where to put the object.
     pub transform: Transform,
     /// Whether the scale should be relative to image size.
     pub image_scale: bool,
     /// The Z coordinate of the draw.
-    ///
-    /// This has no effect when passed into [`InstanceArray`](./struct.InstanceArray.html).
     pub z: ZIndex,
 }
 

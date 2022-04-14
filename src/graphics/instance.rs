@@ -25,9 +25,16 @@ pub struct InstanceArray {
 }
 
 impl InstanceArray {
-    /// Creates a new [InstanceArray] capable of storing up to n-`capacity` instances (this can be changed and is resized automatically when needed).
+    /// Creates a new [InstanceArray] capable of storing up to n-`capacity` instances
+    /// (this can be changed and is resized automatically when needed).
     ///
     /// If `image` is `None`, a 1x1 white image will be used which can be used to draw solid rectangles.
+    ///
+    /// `ordered` controls whether the z-order of instances is simply defined by their indices
+    /// (unordered), or by the actual order of their [z-values] (ordered). Intuitively, creating such
+    /// order by comparing the [z-values] comes at a slight performance cost.
+    ///
+    /// [z-values]:crate::graphics::ZIndex
     pub fn new(
         gfx: &GraphicsContext,
         image: impl Into<Option<Image>>,
