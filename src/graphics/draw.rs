@@ -263,13 +263,14 @@ pub(crate) struct DrawUniforms {
 
 impl DrawUniforms {
     pub fn from_param(param: &DrawParam, mut image_scale: mint::Vector2<f32>) -> Self {
-        if !param.image_scale {
+        let (scale_x, scale_y) = if !param.image_scale {
             image_scale.x = 1.;
             image_scale.y = 1.;
-        }
+            (1., 1.)
+        } else {
+            (param.src.w * image_scale.x, param.src.h * image_scale.y)
+        };
 
-        let scale_x = param.src.w * image_scale.x;
-        let scale_y = param.src.h * image_scale.y;
         let param = match param.transform {
             Transform::Values { scale, .. } => param.scale(mint::Vector2 {
                 x: scale.x * scale_x,
