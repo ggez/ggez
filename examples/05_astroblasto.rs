@@ -244,11 +244,6 @@ struct Assets {
 
 impl Assets {
     fn new(ctx: &mut Context) -> GameResult<Assets> {
-        ctx.gfx.add_font(
-            "LiberationMono",
-            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
-        );
-
         let player_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/player.png", true)?;
         let shot_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/shot.png", true)?;
         let rock_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/rock.png", true)?;
@@ -437,7 +432,7 @@ fn draw_actor(
         .dest(pos)
         .rotation(actor.facing as f32)
         .offset(Point2::new(0.5, 0.5));
-    canvas.draw(image.clone(), drawparams);
+    canvas.draw(image, drawparams);
 }
 
 /// **********************************************************************
@@ -533,20 +528,14 @@ impl EventHandler for MainState {
         let level_str = format!("Level: {}", self.level);
         let score_str = format!("Score: {}", self.score);
 
-        canvas.draw_text(
-            &[graphics::Text::new()
-                .text(level_str)
-                .font("LiberationMono")
-                .color(Color::WHITE)],
-            level_dest,
+        canvas.draw(
+            graphics::Text::new(level_str),
+            graphics::DrawParam::from(level_dest).color(Color::WHITE),
         );
 
-        canvas.draw_text(
-            &[graphics::Text::new()
-                .text(score_str)
-                .font("LiberationMono")
-                .color(Color::WHITE)],
-            score_dest,
+        canvas.draw(
+            graphics::Text::new(score_str),
+            graphics::DrawParam::from(score_dest).color(Color::WHITE),
         );
 
         canvas.finish(&mut ctx.gfx)?;

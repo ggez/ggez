@@ -114,11 +114,10 @@ impl TextRenderer {
                     glyph.tex_coords.max.y,
                 ],
                 color: glyph.extra.color.into(),
-                transform: [
-                    glyph.extra.origin.x,
-                    glyph.extra.origin.y,
-                    glyph.extra.rotation,
-                ],
+                transform_c0: glyph.extra.transform.to_cols_array_2d()[0],
+                transform_c1: glyph.extra.transform.to_cols_array_2d()[1],
+                transform_c2: glyph.extra.transform.to_cols_array_2d()[2],
+                transform_c3: glyph.extra.transform.to_cols_array_2d()[3],
             },
         );
 
@@ -173,8 +172,7 @@ impl TextRenderer {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Extra {
     pub color: LinearColor,
-    pub origin: mint::Vector2<f32>,
-    pub rotation: f32,
+    pub transform: glam::Mat4,
 }
 
 // hash is impl'd via OrderedFloat, but we still want to preserve the types
@@ -187,11 +185,13 @@ impl std::hash::Hash for Extra {
             OrderedFloat::from(self.color.g),
             OrderedFloat::from(self.color.b),
             OrderedFloat::from(self.color.a),
-            OrderedFloat::from(self.origin.x),
-            OrderedFloat::from(self.origin.y),
-            OrderedFloat::from(self.rotation),
         ]
-        .hash(state)
+        .hash(state);
+
+        self.transform
+            .to_cols_array()
+            .into_iter()
+            .for_each(|x| OrderedFloat::from(x).hash(state));
     }
 }
 
@@ -205,12 +205,15 @@ pub struct TextVertex {
     pub rect: [f32; 4],
     pub uv: [f32; 4],
     pub color: [f32; 4],
-    pub transform: [f32; 3],
+    pub transform_c0: [f32; 4],
+    pub transform_c1: [f32; 4],
+    pub transform_c2: [f32; 4],
+    pub transform_c3: [f32; 4],
 }
 
 impl TextVertex {
     pub(crate) const fn layout() -> wgpu::VertexBufferLayout<'static> {
-        const ATTRIBUTES: [wgpu::VertexAttribute; 4] = [
+        const ATTRIBUTES: [wgpu::VertexAttribute; 7] = [
             wgpu::VertexAttribute {
                 format: wgpu::VertexFormat::Float32x4,
                 offset: 0,
@@ -227,9 +230,24 @@ impl TextVertex {
                 shader_location: 2,
             },
             wgpu::VertexAttribute {
-                format: wgpu::VertexFormat::Float32x3,
+                format: wgpu::VertexFormat::Float32x4,
                 offset: 48,
                 shader_location: 3,
+            },
+            wgpu::VertexAttribute {
+                format: wgpu::VertexFormat::Float32x4,
+                offset: 64,
+                shader_location: 4,
+            },
+            wgpu::VertexAttribute {
+                format: wgpu::VertexFormat::Float32x4,
+                offset: 80,
+                shader_location: 5,
+            },
+            wgpu::VertexAttribute {
+                format: wgpu::VertexFormat::Float32x4,
+                offset: 96,
+                shader_location: 6,
             },
         ];
 

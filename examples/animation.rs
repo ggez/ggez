@@ -225,11 +225,6 @@ fn player_sequence(
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.gfx.add_font(
-            "LiberationMono",
-            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
-        );
-
         let ball = graphics::Mesh::new_circle(
             &ctx.gfx,
             graphics::DrawMode::fill(),
@@ -254,12 +249,10 @@ impl MainState {
 }
 
 fn draw_info(canvas: &mut graphics::Canvas, info: String, position: Point2<f32>) {
-    let t = graphics::Text::new()
-        .text(info)
-        .font("LiberationMono")
-        .size(40.)
-        .color(Color::WHITE);
-    canvas.draw_text(&[t], position)
+    canvas.draw(
+        graphics::Text::new(info).set_scale(40.),
+        graphics::DrawParam::from(position).color(Color::WHITE),
+    );
 }
 
 impl event::EventHandler<ggez::GameError> for MainState {
@@ -296,13 +289,13 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // draw the animated ball
         let ball_pos = self.ball_animation.now_strict().unwrap();
-        canvas.draw_mesh(self.ball.clone(), None, ball_pos);
+        canvas.draw(&self.ball, ball_pos);
 
         // draw the player
         let current_frame_src: graphics::Rect = self.player_animation.now_strict().unwrap().into();
         let scale = 3.0;
         canvas.draw(
-            self.spritesheet.clone(),
+            &self.spritesheet,
             graphics::DrawParam::new()
                 .src(current_frame_src)
                 .scale([scale, scale])

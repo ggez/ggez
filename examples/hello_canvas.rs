@@ -41,10 +41,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let dest_point = Vec2::new(10.0, 10.0);
 
-        let text = graphics::Text::new()
-            .font("LiberationMono")
-            .text("Hello, world!")
-            .size(48.);
+        let text = graphics::Text::new("Hello, world!")
+            .set_font("LiberationMono")
+            .set_scale(48.)
+            .clone();
 
         if self.draw_with_canvas {
             println!("Drawing with canvas");
@@ -55,15 +55,16 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 graphics::Color::from((255, 255, 255, 128)),
             );
 
-            canvas.draw_text(
-                &[text.color(Color::from((0, 0, 0, 255)))],
-                dest_point + vec2(15., 15.),
+            canvas.draw(
+                text,
+                graphics::DrawParam::from(dest_point + vec2(15., 15.))
+                    .color(Color::from((0, 0, 0, 255))),
             );
             canvas.finish(&mut ctx.gfx)?;
 
             let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from((64, 0, 0, 0)));
             canvas.draw(
-                canvas_image,
+                &canvas_image,
                 graphics::DrawParam::new().color(Color::from((255, 255, 255, 128))),
             );
             canvas.finish(&mut ctx.gfx)?;
@@ -72,7 +73,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
             let mut canvas =
                 graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.25, 0.0, 0.0, 1.0]));
 
-            canvas.draw_text(&[text.color(Color::from((192, 128, 64, 255)))], dest_point);
+            canvas.draw(
+                text,
+                graphics::DrawParam::from(dest_point).color(Color::from((192, 128, 64, 255))),
+            );
 
             canvas.finish(&mut ctx.gfx)?;
         }

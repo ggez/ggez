@@ -75,9 +75,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let mut canvas =
             graphics::Canvas::from_frame(&ctx.gfx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
 
-        canvas.draw_text(
-            &[graphics::Text::new()
-                .text("Press number keys 1-6 to play a sound, or escape to quit.")],
+        canvas.draw(
+            graphics::Text::new("Press number keys 1-6 to play a sound, or escape to quit."),
             [100., 100.],
         );
 

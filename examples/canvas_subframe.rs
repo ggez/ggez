@@ -72,7 +72,7 @@ impl MainState {
             .rotation((time % cycle) as f32 / cycle as f32 * TAU)
             .offset(Point2::new(750., 750.));
 
-        canvas.draw_instances(&mut self.instances, param);
+        canvas.draw(&mut self.instances, param);
         canvas.finish(&mut ctx.gfx)?;
 
         Ok(())
@@ -108,7 +108,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let src_y = self.draw_pt.y / canvas_image.height() as f32;
 
         canvas.draw(
-            canvas_image,
+            &canvas_image,
             graphics::DrawParam::new()
                 .dest(self.draw_pt)
                 .src(graphics::Rect::new(src_x, src_y, 0.5, 0.5)),

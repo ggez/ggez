@@ -1,6 +1,6 @@
 //!
 
-use super::{Color, LinearColor, Rect};
+use super::{Canvas, Color, GraphicsContext, LinearColor, Rect};
 
 /// A struct that represents where to put a `Drawable`.
 ///
@@ -254,6 +254,18 @@ where
     }
 }
 
+/// All types that can be drawn onto a canvas implement the `Drawable` trait.
+pub trait Drawable {
+    /// Draws the drawable onto the canvas.
+    fn draw(self, canvas: &mut Canvas, param: DrawParam);
+
+    /// Returns a bounding box in the form of a `Rect`.
+    ///
+    /// It returns `Option` because some `Drawable`s may have no bounding box,
+    /// namely `InstanceArray` (as there is no true bounds for the instances given the instanced mesh can differ).
+    fn dimensions(self, gfx: &mut GraphicsContext) -> Option<Rect>;
+}
+
 #[derive(Debug, crevice::std140::AsStd140)]
 pub(crate) struct DrawUniforms {
     pub color: mint::Vector4<f32>,
@@ -266,7 +278,7 @@ impl DrawUniforms {
         let (scale_x, scale_y) = if !param.image_scale {
             (1., 1.)
         } else {
-            (image_scale.x, image_scale.y)
+            (param.src.w * image_scale.x, param.src.h * image_scale.y)
         };
 
         let param = match param.transform {

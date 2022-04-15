@@ -70,8 +70,7 @@ impl MainState {
                     y as f32 * Self::GRID_INTERVAL,
                 );
                 let s = format!("({}, {})", point.x, point.y);
-                let t = graphics::Text::new().text(s);
-                canvas.draw_text(&[t], point);
+                canvas.draw(graphics::Text::new(s), point);
             }
         }
     }
@@ -88,9 +87,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.set_screen_coordinates(self.screen_coords);
 
         let origin = Vec2::ZERO;
-        canvas.draw_mesh(
-            self.gridmesh.clone(),
-            None,
+        canvas.draw(
+            &self.gridmesh,
             DrawParam::new().dest(origin).color(Color::WHITE),
         );
 
@@ -102,7 +100,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         self.draw_coord_labels(&mut canvas);
 
-        canvas.draw(self.angle.clone(), param);
+        canvas.draw(&self.angle, param);
 
         canvas.finish(&mut ctx.gfx)
     }

@@ -4,7 +4,7 @@ use super::{
     context::GraphicsContext,
     draw::{DrawParam, DrawUniforms, Std140DrawUniforms},
     gpu::arc::ArcBuffer,
-    Image, WgpuContext,
+    Canvas, Draw, Drawable, Image, Rect, WgpuContext,
 };
 use crevice::std140::AsStd140;
 use std::collections::BTreeMap;
@@ -220,5 +220,22 @@ impl InstanceArray {
     #[inline]
     pub fn capacity(&self) -> usize {
         self.capacity as usize
+    }
+}
+
+impl<'a> Drawable for &'a mut InstanceArray {
+    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
+        self.flush_wgpu(&canvas.wgpu);
+        canvas.push_draw(
+            Draw::MeshInstances {
+                mesh: canvas.default_resources().mesh.clone(),
+                instances: (&*self).into(),
+            },
+            param,
+        );
+    }
+
+    fn dimensions(self, _gfx: &mut GraphicsContext) -> Option<Rect> {
+        None
     }
 }

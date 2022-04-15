@@ -227,11 +227,6 @@ impl MainState {
         let background = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/bg_top.png", true)?;
         let tile = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/tile.png", true)?;
 
-        ctx.gfx.add_font(
-            "LiberationMono",
-            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
-        );
-
         let screen_size = {
             let size = ctx.gfx.drawable_size();
             [size.0 as f32, size.1 as f32]
@@ -303,7 +298,7 @@ impl MainState {
         let mut canvas = Canvas::from_image(&ctx.gfx, self.occlusions.clone(), None);
         canvas.set_shader(self.occlusions_shader.clone());
         canvas.set_shader_params(light.clone());
-        canvas.draw(foreground, canvas_origin);
+        canvas.draw(&foreground, canvas_origin);
         canvas.finish(&mut ctx.gfx)?;
 
         // Now we render our shadow map and light map into their respective
@@ -313,7 +308,7 @@ impl MainState {
         canvas.set_shader(self.shadows_shader.clone());
         canvas.set_shader_params(light.clone());
         canvas.draw(
-            self.occlusions.clone(),
+            &self.occlusions,
             origin.image_scale(false).scale([size.0, size.1]),
         );
         canvas.finish(&mut ctx.gfx)?;
@@ -323,7 +318,7 @@ impl MainState {
         canvas.set_shader(self.lights_shader.clone());
         canvas.set_shader_params(light);
         canvas.draw(
-            self.occlusions.clone(),
+            &self.occlusions,
             origin.image_scale(false).scale([size.0, size.1]),
         );
         canvas.finish(&mut ctx.gfx)?;
@@ -362,24 +357,15 @@ impl event::EventHandler<ggez::GameError> for MainState {
         //  - render to screen once all the shadows are calculated and rendered
         let foreground = self.foreground.image(&ctx.gfx);
         let mut canvas = Canvas::from_image(&ctx.gfx, foreground, Color::new(0.0, 0.0, 0.0, 0.0));
+        canvas.draw(&self.tile, DrawParam::new().dest(Vec2::new(598.0, 124.0)));
+        canvas.draw(&self.tile, DrawParam::new().dest(Vec2::new(92.0, 350.0)));
         canvas.draw(
-            self.tile.clone(),
-            DrawParam::new().dest(Vec2::new(598.0, 124.0)),
-        );
-        canvas.draw(
-            self.tile.clone(),
-            DrawParam::new().dest(Vec2::new(92.0, 350.0)),
-        );
-        canvas.draw(
-            self.tile.clone(),
+            &self.tile,
             DrawParam::new().dest(Vec2::new(442.0, 468.0)).rotation(0.5),
         );
-        canvas.draw_text(
-            &[graphics::Text::new()
-                .text("SHADOWS...")
-                .size(48.0)
-                .font("LiberationMono")],
-            [50., 200.],
+        canvas.draw(
+            graphics::Text::new("SHADOWS...").set_scale(48.),
+            graphics::DrawParam::from([50., 200.]),
         );
         canvas.finish(&mut ctx.gfx)?;
 
@@ -405,13 +391,13 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let foreground = self.foreground.image(&ctx.gfx);
         let lights = self.lights.image(&ctx.gfx);
         let mut canvas = Canvas::from_frame(&ctx.gfx, Color::WHITE);
-        canvas.draw(self.background.clone(), DrawParam::default());
+        canvas.draw(&self.background, DrawParam::default());
         canvas.set_blend_mode(BlendMode::MULTIPLY);
-        canvas.draw(shadows, DrawParam::default());
+        canvas.draw(&shadows, DrawParam::default());
         canvas.set_blend_mode(BlendMode::ALPHA);
-        canvas.draw(foreground, DrawParam::default());
+        canvas.draw(&foreground, DrawParam::default());
         canvas.set_blend_mode(BlendMode::ADD);
-        canvas.draw(lights, DrawParam::default());
+        canvas.draw(&lights, DrawParam::default());
         // Uncomment following line to visualize the 1D occlusions canvas,
         // red pixels represent angles at which no shadows were found, and then
         // the greyscale pixels are the half distances of the nearest shadows to

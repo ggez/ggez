@@ -12,9 +12,7 @@ use super::{
     mesh::{Mesh, Vertex},
     sampler::{Sampler, SamplerCache},
     shader::Shader,
-    text::Text,
-    text_to_section, BlendMode, CanvasLoadOp, InstanceArray, LinearColor, Rect, TextParam,
-    WgpuContext,
+    BlendMode, CanvasLoadOp, InstanceArray, LinearColor, Rect, Text, WgpuContext,
 };
 use crate::{GameError, GameResult};
 use crevice::std140::{AsStd140, Std140};
@@ -443,9 +441,9 @@ impl<'a> InternalCanvas<'a> {
         Ok(())
     }
 
-    pub fn draw_bounded_text(&mut self, text: &[Text], param: TextParam) -> GameResult {
+    pub fn draw_bounded_text(&mut self, text: &Text, param: DrawParam) -> GameResult {
         self.text_renderer
-            .queue(text_to_section(self.fonts, text, param)?);
+            .queue(text.as_section(self.fonts, param)?);
 
         self.set_image(self.text_renderer.cache_view.clone());
         self.pass.set_bind_group(0, self.text_uniforms, &[]);

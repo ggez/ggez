@@ -1,12 +1,12 @@
 //! This example demonstrates how to use `Text` to draw TrueType font texts efficiently.
 
-use ggez::graphics::{self, Color, Text, TextAlign};
+use ggez::graphics::{self, Color, PxScale, Text, TextAlign, TextFragment};
 use ggez::timer;
 use ggez::{
     conf::{WindowMode, WindowSetup},
-    graphics::TextLayout,
+    graphics::Drawable,
 };
-use ggez::{event, graphics::Rect};
+use ggez::{event, graphics::TextLayout};
 use ggez::{Context, ContextBuilder, GameResult};
 use glam::Vec2;
 use std::collections::BTreeMap;
@@ -19,17 +19,10 @@ fn random_color(rng: &mut oorandom::Rand32) -> Color {
     Color::new(rng.rand_float(), rng.rand_float(), rng.rand_float(), 1.0)
 }
 
-#[derive(Clone)]
-struct TextDraw {
-    fragments: Vec<Text>,
-    param: graphics::TextParam,
-}
-
 struct App {
     // Doesn't have to be a `BTreeMap`; it's handy if you care about specific elements,
     // want to retrieve them by trivial handles, and have to preserve ordering.
-    // Note that there is absolutely *no benefit* to storing text.
-    texts: BTreeMap<&'static str, TextDraw>,
+    texts: BTreeMap<&'static str, Text>,
     rng: oorandom::Rand32,
 }
 
@@ -44,31 +37,31 @@ impl App {
         // This is the simplest way to create a drawable text;
         // the color, font, and scale will be default: white, LiberationMono-Regular, 16px unform.
         // Note that you don't even have to load a font: LiberationMono-Regular is baked into `ggez` itself.
-        let text = Text::new().text("Hello, World!");
+        let text = Text::new("Hello, World!");
         // Store the text in `App`s map, for drawing in main loop.
-        texts.insert(
-            "0_hello",
-            TextDraw {
-                fragments: vec![text],
-                param: graphics::TextParam::new(),
-            },
-        );
+        texts.insert("0_hello", text);
 
-        let mut text = vec![Text::new()
-            .text("Small red fragment")
-            .color(Color::new(1.0, 0.0, 0.0, 1.0))
-            .size(10.0)];
+        // This is what actually happens in `Text::new()`: the `&str` gets
+        // automatically converted into a `TextFragment`.
+        let mut text = Text::new(TextFragment {
+            // `TextFragment` stores a string, and optional parameters which will override those
+            // of `Text` itself. This allows inlining differently formatted lines, words,
+            // or even individual letters, into the same block of text.
+            text: "Small red fragment".to_string(),
+            color: Some(Color::new(1.0, 0.0, 0.0, 1.0)),
+            // The font name refers to a loaded TTF, stored inside the `GraphicsContext`.
+            // A default font always exists and maps to LiberationMono-Regular.
+            font: Some("LiberationMono-Regular".into()),
+            scale: Some(PxScale::from(10.0)),
+            // This doesn't do anything at this point; can be used to omit fields in declarations.
+            ..Default::default()
+        });
 
         // More fragments can be appended at any time.
-        text.push(
-            Text::new().text(" default fragment, should be long enough to showcase everything"),
-        );
-        text.push(
-            Text::new()
-                .text(" magenta fragment")
-                .color(Color::new(1.0, 0.0, 1.0, 1.0)),
-        );
-        text.push(Text::new().text(" another default fragment, to really drive the point home"));
+        text.add(" default fragment, should be long enough to showcase everything")
+            // `add()` can be chained, along with most `Text` methods.
+            .add(TextFragment::new(" magenta fragment").color(Color::new(1.0, 0.0, 1.0, 1.0)))
+            .add(" another default fragment, to really drive the point home");
 
         // This loads a new TrueType font into the context named "Fancy font".
         ctx.gfx.add_font(
@@ -76,80 +69,66 @@ impl App {
             graphics::FontData::from_path(&ctx.fs, "/Tangerine_Regular.ttf")?,
         );
 
-        text.push(
-            Text::new()
-                .text(" fancy fragment")
+        // `Font` is really only an integer handle, and can be copied around.
+        text.add(
+            TextFragment::new(" fancy fragment")
                 .font("Fancy font")
-                .size(25.),
-        );
-        text.push(Text::new().text(" and a default one, for symmetry"));
+                .scale(PxScale::from(25.0)),
+        )
+        .add(" and a default one, for symmetry");
         // Store a copy of the built text, retain original for further modifications.
-        texts.insert(
-            "1_demo_text_1",
-            TextDraw {
-                fragments: text.clone(),
-                param: graphics::TextParam::new(),
-            },
-        );
-
-        let mut text = TextDraw {
-            fragments: text,
-            param: graphics::TextParam::new(),
-        };
+        texts.insert("1_demo_text_1", text.clone());
 
         // Text can be wrapped by setting it's bounds, in screen coordinates;
         // vertical bound will cut off the extra off the bottom.
-        // Alignment and wrapping behaviour within the bounds can be set by `TextLayout`.
-        text.param.bounds = Rect::new(0.0, 0.0, 400.0, f32::INFINITY);
-        text.param.layout = TextLayout::Wrap {
-            h_align: TextAlign::Begin,
-            v_align: TextAlign::Begin,
-        };
+        // Alignment within the bounds can be set by `Align` enum.
+        text.set_bounds(
+            Vec2::new(400.0, f32::INFINITY),
+            TextLayout::Wrap {
+                h_align: TextAlign::Begin,
+                v_align: TextAlign::Begin,
+            },
+        );
         texts.insert("1_demo_text_2", text.clone());
 
-        text.param.bounds = Rect::new(0.0, 0.0, 500.0, f32::INFINITY);
-        text.param.layout = TextLayout::Wrap {
-            h_align: TextAlign::End,
-            v_align: TextAlign::Begin,
-        };
+        text.set_bounds(
+            Vec2::new(500.0, f32::INFINITY),
+            TextLayout::Wrap {
+                h_align: TextAlign::End,
+                v_align: TextAlign::Begin,
+            },
+        );
         texts.insert("1_demo_text_3", text.clone());
 
-        text.fragments
-            .iter_mut()
-            .for_each(|fragment| fragment.font = "Fancy font".into());
-        text.param.bounds = Rect::new(0.0, 0.0, 300.0, f32::INFINITY);
-        text.param.layout = TextLayout::Wrap {
-            h_align: TextAlign::Middle,
-            v_align: TextAlign::Begin,
-        };
+        // This can be used to set the font and scale unformatted fragments will use.
+        // Color is specified when drawing (or queueing), via `DrawParam`.
+        // Side note: TrueType fonts aren't very consistent between themselves in terms
+        // of apparent scale - this font with default scale will appear too small.
+        text.set_font("Fancy font").set_scale(16.0).set_bounds(
+            Vec2::new(300.0, f32::INFINITY),
+            TextLayout::Wrap {
+                h_align: TextAlign::Middle,
+                v_align: TextAlign::Begin,
+            },
+        );
         texts.insert("1_demo_text_4", text);
 
         // These methods can be combined to easily create a variety of simple effects.
         let chroma_string = "Not quite a rainbow.";
-        let mut chroma_text = vec![];
+        // `default()` exists pretty much specifically for this usecase.
+        let mut chroma_text = Text::default();
         for ch in chroma_string.chars() {
-            chroma_text.push(Text::new().text(ch).color(random_color(&mut rng)));
+            chroma_text.add(TextFragment::new(ch).color(random_color(&mut rng)));
         }
-        texts.insert(
-            "2_rainbow",
-            TextDraw {
-                fragments: chroma_text,
-                param: graphics::TextParam::new(),
-            },
-        );
+        texts.insert("2_rainbow", chroma_text);
 
         let wonky_string = "So, so wonky.";
-        let mut wonky_text = vec![];
+        let mut wonky_text = Text::default();
         for ch in wonky_string.chars() {
-            wonky_text.push(Text::new().text(ch).size(10.0 + 24.0 * rng.rand_float()));
+            wonky_text
+                .add(TextFragment::new(ch).scale(PxScale::from(10.0 + 24.0 * rng.rand_float())));
         }
-        texts.insert(
-            "3_wonky",
-            TextDraw {
-                fragments: wonky_text,
-                param: graphics::TextParam::new(),
-            },
-        );
+        texts.insert("3_wonky", wonky_text);
 
         Ok(App { texts, rng })
     }
@@ -165,56 +144,52 @@ impl event::EventHandler<ggez::GameError> for App {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
 
-        // `Text` can be used in "immediate mode", but it's slightly less efficient
-        // in most cases, and horrifically less efficient in a few select ones
-        // (using `.width()` or `.height()`, for example).
         let fps = ctx.time.fps();
-        let fps_display = Text::new()
-            .text(format!("FPS: {}", fps))
-            .color(Color::WHITE);
-        canvas.draw_text(&[fps_display], [200., 0.]);
+        let fps_display = Text::new(format!("FPS: {}", fps));
+        // When drawing through these calls, `DrawParam` will work as they are documented.
+        canvas.draw(
+            &fps_display,
+            graphics::DrawParam::from([200.0, 0.0]).color(Color::WHITE),
+        );
 
         let mut height = 0.0;
         for text in self.texts.values() {
-            let mut bounds = text.param.bounds;
-            bounds.move_to(Vec2::new(20.0, 20.0 + height));
-            canvas.draw_text(&text.fragments, text.param.bounds(bounds));
+            // Calling `.queue()` for all bits of text that can share a `DrawParam`,
+            // followed with `::draw_queued()` with said params, is the intended way.
+            canvas.draw(text, Vec2::new(20.0, 20.0 + height));
             //height += 20.0 + text.height(ctx) as f32;
-            height += 20.0 + ctx.gfx.measure_text(&text.fragments, text.param)?.h;
+            height += 20.0 + text.dimensions(&mut ctx.gfx).unwrap().h as f32;
         }
 
+        // Individual fragments within the `Text` can be replaced;
+        // this can be used for inlining animated sentences, words, etc.
         if let Some(text) = self.texts.get_mut("1_demo_text_3") {
-            text.fragments[3].color = random_color(&mut self.rng);
+            // `.fragments_mut()` returns a mutable slice of contained fragments.
+            // Fragments are indexed in order of their addition, starting at 0 (of course).
+            text.fragments_mut()[3].color = Some(random_color(&mut self.rng));
         }
 
         // Another animation example. Note, this is very inefficient as-is.
         let wobble_string = "WOBBLE";
-        let mut wobble = vec![];
+        let mut wobble = Text::default();
         for ch in wobble_string.chars() {
-            wobble.push(
-                Text::new()
-                    .text(ch)
-                    .size(10.0 + 6.0 * self.rng.rand_float())
-                    .color(Color::new(0.0, 1.0, 1.0, 1.0)),
+            wobble.add(
+                TextFragment::new(ch).scale(PxScale::from(10.0 + 6.0 * self.rng.rand_float())),
             );
         }
-        let wobble_bounds = ctx.gfx.measure_text(&wobble, Default::default())?;
-        let (wobble_width, wobble_height) = (wobble_bounds.w, wobble_bounds.h);
-        let origin = Vec2::new(500.0, 300.0);
-        canvas.draw_text(
+        let wobble_rect = (&wobble).dimensions(&mut ctx.gfx).unwrap();
+        canvas.draw(
             &wobble,
-            graphics::TextParam::new().dest(origin).rotation(-0.5),
-        );
-        let t = Text::new().text(format!(
-            "width: {}\nheight: {}",
-            wobble_width, wobble_height
-        ));
-        canvas.draw_text(
-            &[t],
-            graphics::TextParam::new()
-                .dest(origin + Vec2::new(0.0, 20.0))
+            graphics::DrawParam::new()
+                .color((0.0, 1.0, 1.0, 1.0))
+                .dest([500.0, 300.0])
                 .rotation(-0.5),
         );
+        let t = Text::new(format!(
+            "width: {}\nheight: {}",
+            wobble_rect.w, wobble_rect.h
+        ));
+        canvas.draw(&t, graphics::DrawParam::from([500.0, 320.0]).rotation(-0.5));
 
         canvas.finish(&mut ctx.gfx)?;
         timer::yield_now();

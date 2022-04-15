@@ -1,8 +1,8 @@
 //!
 
-use super::{gpu::text::Extra, Color, Rect, ZIndex};
+use super::{gpu::text::Extra, Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect};
 use crate::{filesystem::Filesystem, GameError, GameResult};
-use glyph_brush::{ab_glyph, FontId};
+use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
 use std::{collections::HashMap, io::Read, path::Path};
 
 /// Font data that can be used to create a new font in [super::context::GraphicsContext].
@@ -37,161 +37,276 @@ impl FontData {
     }
 }
 
-/// Parameters of a single piece of text, including font, color, size, and Z position.
+pub use glyph_brush::ab_glyph::PxScale;
+
+/// Parameters of a single piece ("fragment") of text, including font, color, and size.
 #[derive(Debug, Clone)]
-pub struct Text {
+pub struct TextFragment {
     /// The text itself.
     pub text: String,
-    /// Font name of the text.
-    pub font: String,
-    /// Pixel size of text.
-    pub size: f32,
-    /// Color of text.
-    pub color: Color,
+    /// Font name of the text framgnet, defaults to text's font.
+    pub font: Option<String>,
+    /// Pixel scale of the text framgent, defaults to text's scale.
+    pub scale: Option<PxScale>,
+    /// Color of the text fragment, defaults to the text's color.
+    pub color: Option<Color>,
+}
+
+impl Default for TextFragment {
+    fn default() -> Self {
+        TextFragment {
+            text: "".into(),
+            font: None,
+            scale: None,
+            color: None,
+        }
+    }
+}
+
+impl TextFragment {
+    /// Creates a new fragment with text set to a string.
+    pub fn new(text: impl Into<String>) -> Self {
+        TextFragment {
+            text: text.into(),
+            ..Default::default()
+        }
+    }
+
+    /// Sets the `font` field, overriding the text's font.
+    pub fn font(self, font: impl Into<String>) -> Self {
+        TextFragment {
+            font: Some(font.into()),
+            ..self
+        }
+    }
+
+    /// Sets the `scale` field, overriding the text's scale.
+    pub fn scale(self, scale: impl Into<PxScale>) -> Self {
+        TextFragment {
+            scale: Some(scale.into()),
+            ..self
+        }
+    }
+
+    /// Sets the `color` field, overriding the text's color.
+    pub fn color(self, color: impl Into<Color>) -> Self {
+        TextFragment {
+            color: Some(color.into()),
+            ..self
+        }
+    }
+}
+
+impl<S: Into<String>> From<S> for TextFragment {
+    fn from(text: S) -> Self {
+        TextFragment::new(text)
+    }
+}
+
+/// Drawable text object.  Essentially a list of [`TextFragment`].
+/// and some cached size information.
+///
+/// It implements [`Drawable`] so it can be drawn immediately with [`Canvas::draw()`].
+#[derive(Debug, Clone)]
+pub struct Text {
+    fragments: Vec<TextFragment>,
+    layout: TextLayout,
+    bounds: mint::Vector2<f32>,
+    scale: PxScale,
+    font: String,
 }
 
 impl Default for Text {
     fn default() -> Self {
-        Text {
-            text: "".into(),
+        Self {
+            fragments: Vec::new(),
+            layout: TextLayout::tl_wrap(),
+            bounds: mint::Vector2::<f32> {
+                x: f32::INFINITY,
+                y: f32::INFINITY,
+            },
+            scale: 16.0.into(),
             font: "LiberationMono-Regular".into(),
-            size: 16.,
-            color: Color::WHITE,
         }
     }
 }
 
 impl Text {
-    /// Equivalent to `Text::default()`.
-    pub fn new() -> Self {
-        Text::default()
-    }
-
-    /// Sets the `text` field.
-    pub fn text(self, text: impl Into<String>) -> Self {
-        Text {
-            text: text.into(),
-            ..self
-        }
-    }
-
-    /// Sets the `font` field.
-    pub fn font(self, font: impl Into<String>) -> Self {
-        Text {
-            font: font.into(),
-            ..self
-        }
-    }
-
-    /// Sets the `size` field.
-    pub fn size(self, size: f32) -> Self {
-        Text { size, ..self }
-    }
-
-    /// Sets the `color` field.
-    pub fn color(self, color: impl Into<Color>) -> Self {
-        Text {
-            color: color.into(),
-            ..self
-        }
-    }
-}
-
-/// A struct containing parameters pertaining to drawing text.
-///
-/// This does not describe the text itself, but rather how the text
-/// should be positioned and laid out.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct TextParam {
-    /// Text layout boundaries. The top-left of this [Rect] determines
-    /// the positioning of the text.
+    /// Creates a `Text` from a `TextFragment`.
     ///
-    /// The size of the [Rect] only becomes relevant if drawing with [TextLayout::Wrap].
-    pub bounds: Rect,
-    /// Rotation of the text in radians.
-    pub rotation: f32,
-    /// How the text should be laid out.
-    pub layout: TextLayout,
-    /// The Z coordinate of the text.
-    pub z: ZIndex,
-}
-
-impl Default for TextParam {
-    fn default() -> Self {
-        Self {
-            bounds: Rect {
-                x: 0.0,
-                y: 0.0,
-                w: f32::INFINITY,
-                h: f32::INFINITY,
-            },
-            rotation: 0.0,
-            layout: TextLayout::tl_wrap(),
-            z: 0,
-        }
-    }
-}
-
-impl TextParam {
-    /// Create a new [TextParam] with default values.
-    pub fn new() -> Self {
-        TextParam::default()
+    /// ```rust
+    /// # use ggez::graphics::Text;
+    /// # fn main() {
+    /// let text = Text::new("foo");
+    /// # }
+    /// ```
+    pub fn new(fragment: impl Into<TextFragment>) -> Self {
+        let mut text = Text::default();
+        let _ = text.add(fragment);
+        text
     }
 
-    /// Set the layout boundaries.
-    pub fn bounds(mut self, bounds: Rect) -> Self {
-        self.bounds = bounds;
+    /// Appends a `TextFragment` to the `Text`.
+    pub fn add(&mut self, fragment: impl Into<TextFragment>) -> &mut Self {
+        self.fragments.push(fragment.into());
         self
     }
 
-    /// Set the position of the layout boundaries.
-    pub fn dest(mut self, dest: impl Into<mint::Point2<f32>>) -> Self {
-        let dest = dest.into();
-        self.bounds.x = dest.x;
-        self.bounds.y = dest.y;
-        self
+    /// Returns an immutable slice of all `TextFragment`s.
+    #[inline]
+    pub fn fragments(&self) -> &[TextFragment] {
+        &self.fragments
     }
 
-    /// Set the size of the layout boundaries.
-    pub fn size(mut self, size: impl Into<mint::Vector2<f32>>) -> Self {
-        let size = size.into();
-        self.bounds.w = size.x;
-        self.bounds.h = size.y;
-        self
+    /// Returns a mutable slice of all `TextFragment`s.
+    #[inline]
+    pub fn fragments_mut(&mut self) -> &mut [TextFragment] {
+        &mut self.fragments
     }
 
-    /// Set the size to infinity such that the text layout is unbounded.
-    pub fn unbounded(mut self) -> Self {
-        self.bounds.w = f32::INFINITY;
-        self.bounds.h = f32::INFINITY;
-        self
-    }
-
-    /// Set the rotation of the text in radians.
-    pub fn rotation(mut self, rotation: f32) -> Self {
-        self.rotation = rotation;
-        self
-    }
-
-    /// Set the layout mode of the text.
-    pub fn layout(mut self, layout: TextLayout) -> Self {
+    /// Specifies rectangular dimensions to fit text inside of,
+    /// wrapping where necessary. Within these bounds is also where
+    /// text alignment occurs.
+    ///
+    /// Wrapping can be disabled by setting `layout` to `TextLayout::SingleLine`.
+    pub fn set_bounds(
+        &mut self,
+        bounds: impl Into<mint::Vector2<f32>>,
+        layout: TextLayout,
+    ) -> &mut Text {
+        self.bounds = bounds.into();
         self.layout = layout;
         self
     }
 
-    /// Set the Z coordinate.
-    pub fn z(mut self, z: ZIndex) -> Self {
-        self.z = z;
+    /// Specifies the text's font for fragments that don't specify their own font.
+    pub fn set_font(&mut self, font: impl Into<String>) -> &mut Self {
+        self.font = font.into();
         self
+    }
+
+    /// Specifies the text's font scael for fragments that don't specify their own scale.
+    pub fn set_scale(&mut self, scale: impl Into<PxScale>) -> &mut Self {
+        self.scale = scale.into();
+        self
+    }
+
+    /// Returns the string that the text represents.
+    pub fn contents(&self) -> String {
+        self.fragments.iter().map(|f| f.text.as_str()).collect()
+    }
+
+    /// Returns a `Vec` containing the coordinates of the formatted and wrapped text.
+    pub fn glyph_positions(&self, gfx: &mut GraphicsContext) -> GameResult<Vec<mint::Point2<f32>>> {
+        Ok(gfx
+            .text
+            .glyph_brush
+            .glyphs(self.as_section(&gfx.fonts, DrawParam::default())?)
+            .map(|glyph| mint::Point2::<f32> {
+                x: glyph.glyph.position.x,
+                y: glyph.glyph.position.y,
+            })
+            .collect())
+    }
+
+    /// Measures the glyph boundaries for the text.
+    pub fn measure(&self, gfx: &mut GraphicsContext) -> GameResult<mint::Vector2<f32>> {
+        Ok(gfx
+            .text
+            .glyph_brush
+            .glyph_bounds(self.as_section(&gfx.fonts, DrawParam::default())?)
+            .map(|rect| mint::Vector2::<f32> {
+                x: rect.width(),
+                y: rect.height(),
+            })
+            .unwrap_or_else(|| mint::Vector2::<f32> { x: 0., y: 0. }))
+    }
+
+    pub(crate) fn as_section<'a>(
+        &'a self,
+        fonts: &HashMap<String, FontId>,
+        param: DrawParam,
+    ) -> GameResult<glyph_brush::Section<'a, Extra>> {
+        let x = match self.layout.h_align() {
+            TextAlign::Begin => 0.,
+            TextAlign::Middle => self.bounds.x / 2.,
+            TextAlign::End => self.bounds.x,
+        };
+
+        let y = match self.layout.v_align() {
+            TextAlign::Begin => 0.,
+            TextAlign::Middle => self.bounds.y / 2.,
+            TextAlign::End => self.bounds.y,
+        };
+
+        Ok(glyph_brush::Section {
+            screen_position: (x, y),
+            bounds: (self.bounds.x, self.bounds.x),
+            layout: match self.layout {
+                TextLayout::SingleLine { h_align, v_align } => {
+                    glyph_brush::Layout::default_single_line()
+                        .h_align(h_align.into())
+                        .v_align(v_align.into())
+                }
+                TextLayout::Wrap { h_align, v_align } => glyph_brush::Layout::default_wrap()
+                    .h_align(h_align.into())
+                    .v_align(v_align.into()),
+            },
+            text: self
+                .fragments
+                .iter()
+                .map(|text| {
+                    let font = text.font.as_ref().unwrap_or(&self.font);
+                    Ok(glyph_brush::Text {
+                        text: &text.text,
+                        scale: text.scale.unwrap_or(self.scale),
+                        font_id: *fonts
+                            .get(font)
+                            .ok_or_else(|| GameError::FontSelectError(font.clone()))?,
+                        extra: Extra {
+                            color: text.color.unwrap_or(param.color).into(),
+                            transform: param.transform.to_bare_matrix().into(),
+                        },
+                    })
+                })
+                .collect::<GameResult<Vec<_>>>()?,
+        })
     }
 }
 
-impl<P> From<P> for TextParam
-where
-    P: Into<mint::Point2<f32>>,
-{
-    fn from(dest: P) -> Self {
-        TextParam::new().dest(dest)
+impl Drawable for Text {
+    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
+        canvas.push_draw(Draw::BoundedText { text: self }, param);
+    }
+
+    fn dimensions(self, gfx: &mut GraphicsContext) -> Option<Rect> {
+        let bounds = self.measure(gfx).ok()?;
+        Some(Rect {
+            x: 0.,
+            y: 0.,
+            w: bounds.x,
+            h: bounds.y,
+        })
+    }
+}
+
+impl<'a> Drawable for &'a Text {
+    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
+        Drawable::draw(self.clone(), canvas, param)
+    }
+
+    fn dimensions(self, gfx: &mut GraphicsContext) -> Option<Rect> {
+        Drawable::dimensions(self.clone(), gfx)
+    }
+}
+
+impl<'a> Drawable for &'a mut Text {
+    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
+        Drawable::draw(self.clone(), canvas, param)
+    }
+
+    fn dimensions(self, gfx: &mut GraphicsContext) -> Option<Rect> {
+        Drawable::dimensions(self.clone(), gfx)
     }
 }
 
@@ -275,56 +390,4 @@ impl TextLayout {
             TextLayout::SingleLine { v_align, .. } | TextLayout::Wrap { v_align, .. } => *v_align,
         }
     }
-}
-
-pub(crate) fn text_to_section<'a>(
-    fonts: &HashMap<String, FontId>,
-    text: &'a [Text],
-    mut param: TextParam,
-) -> GameResult<glyph_brush::Section<'a, Extra>> {
-    let obounds = param.bounds;
-
-    match param.layout.h_align() {
-        TextAlign::Begin => {}
-        TextAlign::Middle => param.bounds.x += param.bounds.w / 2.,
-        TextAlign::End => param.bounds.x += param.bounds.w,
-    }
-
-    match param.layout.v_align() {
-        TextAlign::Begin => {}
-        TextAlign::Middle => param.bounds.y += param.bounds.h / 2.,
-        TextAlign::End => param.bounds.y += param.bounds.h,
-    }
-
-    Ok(glyph_brush::Section {
-        screen_position: (param.bounds.x, param.bounds.y),
-        bounds: (param.bounds.w, param.bounds.h),
-        layout: match param.layout {
-            TextLayout::SingleLine { h_align, v_align } => {
-                glyph_brush::Layout::default_single_line()
-                    .h_align(h_align.into())
-                    .v_align(v_align.into())
-            }
-            TextLayout::Wrap { h_align, v_align } => glyph_brush::Layout::default_wrap()
-                .h_align(h_align.into())
-                .v_align(v_align.into()),
-        },
-        text: text
-            .iter()
-            .map(|text| {
-                Ok(glyph_brush::Text {
-                    text: &text.text,
-                    scale: text.size.into(),
-                    font_id: *fonts
-                        .get(&text.font)
-                        .ok_or_else(|| GameError::FontSelectError(text.font.to_string()))?,
-                    extra: Extra {
-                        color: text.color.into(),
-                        origin: obounds.point().into(),
-                        rotation: param.rotation,
-                    },
-                })
-            })
-            .collect::<GameResult<Vec<_>>>()?,
-    })
 }

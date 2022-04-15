@@ -76,7 +76,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.set_screen_coordinates(self.screen_coords);
 
         canvas.draw(
-            self.image.clone(),
+            &self.image,
             DrawParam::new()
                 .dest(Point2::new(400.0, 300.0))
                 .color(Color::WHITE), //.offset([0.5, 0.5]),
@@ -91,9 +91,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
             4.0,
             Color::WHITE,
         )?;
-        canvas.draw_mesh(
-            circle,
-            None,
+        canvas.draw(
+            &circle,
             DrawParam::new()
                 .dest(Point2::new(400.0, 300.0))
                 .rotation(rotation as f32)
@@ -127,7 +126,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             }
         }
         let mesh = graphics::Mesh::from_data(&ctx.gfx, mb.build());
-        canvas.draw_mesh(mesh, None, ggez::mint::Point2 { x: 0.0, y: 0.0 });
+        canvas.draw(&mesh, ggez::mint::Point2 { x: 0.0, y: 0.0 });
 
         canvas.finish(&mut ctx.gfx)?;
 

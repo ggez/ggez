@@ -134,7 +134,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // Draw an image.
         let dst = glam::Vec2::new(20.0, 20.0);
-        canvas.draw(self.image1.clone(), graphics::DrawParam::new().dest(dst));
+        canvas.draw(&self.image1, graphics::DrawParam::new().dest(dst));
 
         // Draw an image with some options, and different filter modes.
         let dst = glam::Vec2::new(200.0, 100.0);
@@ -142,7 +142,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let scale = glam::Vec2::new(10.0, 10.0);
 
         canvas.draw(
-            self.image2.clone(),
+            &self.image2,
             graphics::DrawParam::new()
                 .dest(dst)
                 .rotation(self.rotation)
@@ -150,7 +150,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         );
         canvas.set_sampler(graphics::Sampler::nearest_clamp());
         canvas.draw(
-            self.image2.clone(),
+            &self.image2,
             graphics::DrawParam::new()
                 .dest(dst2)
                 .rotation(self.rotation)
@@ -162,7 +162,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         // Draw a filled rectangle mesh.
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         canvas.draw(
-            None,
+            (), // <- equivalent to quad mesh
             graphics::DrawParam::new()
                 .dest(rect.point())
                 .scale(rect.size())
@@ -170,15 +170,19 @@ impl event::EventHandler<ggez::GameError> for MainState {
         );
 
         // Draw a stroked rectangle mesh.
-        canvas.draw_mesh(self.rect.clone(), None, graphics::DrawParam::default());
+        canvas.draw(&self.rect, graphics::DrawParam::default());
 
         // Draw some pre-made meshes
         for (image, mesh) in &self.meshes {
-            canvas.draw_mesh(
-                mesh.clone(),
-                image.clone(),
-                graphics::DrawParam::new().image_scale(false),
-            );
+            if let Some(image) = image {
+                canvas.draw_textured_mesh(
+                    mesh.clone(),
+                    image.clone(),
+                    graphics::DrawParam::new().image_scale(false),
+                );
+            } else {
+                canvas.draw(mesh, graphics::DrawParam::new().image_scale(false));
+            }
         }
 
         // Finished drawing, show it all on the screen!

@@ -3,7 +3,7 @@
 use super::{
     context::GraphicsContext,
     gpu::arc::{ArcTexture, ArcTextureView},
-    Color, Rect, WgpuContext,
+    Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
 use crate::{filesystem::Filesystem, Context, GameError, GameResult};
 use std::path::Path;
@@ -325,6 +325,27 @@ impl Image {
             w: w as f32 / self.width as f32,
             h: h as f32 / self.height as f32,
         }
+    }
+}
+
+impl<'a> Drawable for &'a Image {
+    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
+        canvas.push_draw(
+            Draw::Mesh {
+                mesh: canvas.default_resources().mesh.clone(),
+                image: self.clone(),
+            },
+            param,
+        );
+    }
+
+    fn dimensions(self, _gfx: &mut GraphicsContext) -> Option<Rect> {
+        Some(Rect {
+            x: 0.,
+            y: 0.,
+            w: self.width() as _,
+            h: self.height() as _,
+        })
     }
 }
 

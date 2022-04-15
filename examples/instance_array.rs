@@ -64,7 +64,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             .offset(Vec2::new(750.0, 750.0))
             // src has no influence when applied globally to a spritebatch
             .src(graphics::Rect::new(0.005, 0.005, 0.005, 0.005));
-        canvas.draw_instances(&mut self.instances, param);
+        canvas.draw(&mut self.instances, param);
 
         canvas.finish(&mut ctx.gfx)
     }

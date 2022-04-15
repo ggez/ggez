@@ -1,7 +1,8 @@
 //!
 
 use super::{
-    context::GraphicsContext, gpu::arc::ArcBuffer, Color, DrawMode, LinearColor, Rect, WgpuContext,
+    context::GraphicsContext, gpu::arc::ArcBuffer, Canvas, Color, Draw, DrawMode, DrawParam,
+    Drawable, LinearColor, Rect, WgpuContext,
 };
 use crate::{GameError, GameResult};
 use lyon::{
@@ -58,6 +59,7 @@ pub struct Mesh {
     pub(crate) inds: ArcBuffer,
     pub(crate) vertex_count: usize,
     pub(crate) index_count: usize,
+    pub(crate) bounds: Rect,
 }
 
 impl Mesh {
@@ -67,11 +69,25 @@ impl Mesh {
     }
 
     pub(crate) fn from_data_wgpu(wgpu: &WgpuContext, raw: MeshData) -> Self {
+        let [minx, miny, maxx, maxy] = raw.vertices.iter().fold(
+            [f32::MAX, f32::MAX, f32::MIN, f32::MIN],
+            |[minx, miny, maxx, maxy], vert| {
+                let [x, y] = vert.position;
+                [minx.min(x), miny.min(y), maxx.max(x), maxy.max(y)]
+            },
+        );
+
         Mesh {
             verts: Self::create_verts(wgpu, raw.vertices),
             inds: Self::create_inds(wgpu, raw.indices),
             vertex_count: raw.vertices.len(),
             index_count: raw.indices.len(),
+            bounds: Rect {
+                x: minx,
+                y: miny,
+                w: maxx - minx,
+                h: maxy - miny,
+            },
         }
     }
 
@@ -241,6 +257,33 @@ impl Mesh {
                     usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
                 }),
         )
+    }
+}
+
+impl<'a> Drawable for &'a Mesh {
+    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
+        canvas.push_draw(
+            Draw::Mesh {
+                mesh: self.clone(),
+                image: canvas.default_resources().image.clone(),
+            },
+            param,
+        );
+    }
+
+    fn dimensions(self, _gfx: &mut GraphicsContext) -> Option<Rect> {
+        Some(self.bounds)
+    }
+}
+
+// draw quad
+impl Drawable for () {
+    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
+        canvas.draw(&canvas.default_resources().mesh.clone(), param);
+    }
+
+    fn dimensions(self, _gfx: &mut GraphicsContext) -> Option<Rect> {
+        Some(Rect::one())
     }
 }
 

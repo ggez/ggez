@@ -5,8 +5,8 @@ use crate::GameResult;
 use super::{
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
     internal_canvas::{screen_to_mat, InstanceArrayView, InternalCanvas},
-    BlendMode, Color, DrawParam, GraphicsContext, Image, InstanceArray, Mesh, Rect, Sampler,
-    ScreenImage, Shader, ShaderParams, Text, TextParam, WgpuContext, ZIndex,
+    BlendMode, Color, DrawParam, Drawable, GraphicsContext, Image, InstanceArray, Mesh, Rect,
+    Sampler, ScreenImage, Shader, ShaderParams, Text, WgpuContext, ZIndex,
 };
 use std::{collections::BTreeMap, sync::Arc};
 
@@ -19,7 +19,7 @@ use std::{collections::BTreeMap, sync::Arc};
 /// Canvases *do not* automatically batch draws. To used batched (instanced) drawing, refer to [`InstanceArray`].
 #[derive(Debug)]
 pub struct Canvas {
-    wgpu: Arc<WgpuContext>,
+    pub(crate) wgpu: Arc<WgpuContext>,
     draws: BTreeMap<ZIndex, Vec<DrawCommand>>,
     state: DrawState,
     screen: Option<Rect>,
@@ -278,103 +278,57 @@ impl Canvas {
         self.screen
     }
 
-    /// Returns the screen coordinates
-
-    /// Draws a mesh.
-    ///
-    /// If no [`Image`] is given then the image color will be white.
-    pub fn draw_mesh(
-        &mut self,
-        mesh: Mesh,
-        image: impl Into<Option<Image>>,
-        param: impl Into<DrawParam>,
-    ) {
-        let param = param.into();
-        self.draws.entry(param.z).or_default().push(DrawCommand {
-            state: self.state.clone(),
-            draw: Draw::Mesh {
-                mesh,
-                image: image.into().unwrap_or_else(|| self.defaults.image.clone()),
-                param,
-            },
-        });
+    /// Draws the given `Drawable` to the canvas with a given `DrawParam`.
+    #[inline]
+    pub fn draw(&mut self, drawable: impl Drawable, param: impl Into<DrawParam>) {
+        drawable.draw(self, param.into())
     }
 
-    /// Draws a rectangle with a given [`Image`] and [`DrawParam`].
+    /// Draws a `Mesh` textured with an `Image`.
     ///
-    /// Also see [`Canvas::draw_mesh()`].
-    pub fn draw(&mut self, image: impl Into<Option<Image>>, param: impl Into<DrawParam>) {
-        let param = param.into();
-        self.draws.entry(param.z).or_default().push(DrawCommand {
-            state: self.state.clone(),
-            draw: Draw::Mesh {
-                mesh: self.defaults.mesh.clone(),
-                image: image.into().unwrap_or_else(|| self.defaults.image.clone()),
-                param,
-            },
-        });
+    /// This differs from `canvas.draw(mesh, param)` as in that case, the mesh is untextured.
+    pub fn draw_textured_mesh(&mut self, mesh: Mesh, image: Image, param: impl Into<DrawParam>) {
+        self.push_draw(Draw::Mesh { mesh, image }, param.into());
     }
 
-    /// Draws a mesh instanced many times, using the [DrawParam]s found in `instances`.
+    /// Draws an `InstanceArray` textured with a `Mesh`.
     ///
-    /// If no [`Image`] is given then the image color will be white.
-    pub fn draw_mesh_instances(
+    /// This differs from `cavnas.draw(instances, param)` as in that case, the instances are
+    /// drawn as quads.
+    pub fn draw_instanced_mesh(
         &mut self,
         mesh: Mesh,
         instances: &mut InstanceArray,
         param: impl Into<DrawParam>,
     ) {
         instances.flush_wgpu(&self.wgpu);
-        let param = param.into();
-        self.draws.entry(param.z).or_default().push(DrawCommand {
-            state: self.state.clone(),
-            draw: Draw::MeshInstances {
+        self.push_draw(
+            Draw::MeshInstances {
                 mesh,
                 instances: (&*instances).into(),
-                param,
             },
-        });
-    }
-
-    /// Draws a rectangle instanced multiple times, as defined by the given [`InstanceArray`].
-    ///
-    /// Also see [`Canvas::draw_mesh_instances()`].
-    pub fn draw_instances(&mut self, instances: &mut InstanceArray, param: impl Into<DrawParam>) {
-        instances.flush_wgpu(&self.wgpu);
-        let param = param.into();
-        self.draws.entry(param.z).or_default().push(DrawCommand {
-            state: self.state.clone(),
-            draw: Draw::MeshInstances {
-                mesh: self.defaults.mesh.clone(),
-                instances: (&*instances).into(),
-                param,
-            },
-        });
-    }
-
-    /// Draws a section text that is layed out and positioned according to the given [TextParam].
-    ///
-    /// The section can be made up of multiple [Text], letting the user have complex formatting
-    /// in the same section of text (e.g. bolding, highlighting, headers, etc).
-    ///
-    /// ## A tip for performance
-    /// Text rendering will automatically batch *as long as the text draws are consecutive*.
-    /// As such, to achieve the best performance, do all your text rendering in a single burst.
-    pub fn draw_text(&mut self, text: &[Text], param: impl Into<TextParam>) {
-        let param = param.into();
-        self.draws.entry(param.z).or_default().push(DrawCommand {
-            state: self.state.clone(),
-            draw: Draw::BoundedText {
-                text: text.to_vec(),
-                param,
-            },
-        });
+            param.into(),
+        );
     }
 
     /// Finish drawing with this canvas and submit all the draw calls.
     #[inline]
     pub fn finish(mut self, gfx: &mut GraphicsContext) -> GameResult {
         self.finalize(gfx)
+    }
+
+    #[inline]
+    pub(crate) fn default_resources(&self) -> &DefaultResources {
+        &self.defaults
+    }
+
+    #[inline]
+    pub(crate) fn push_draw(&mut self, draw: Draw, param: DrawParam) {
+        self.draws.entry(param.z).or_default().push(DrawCommand {
+            state: self.state.clone(),
+            draw,
+            param,
+        });
     }
 
     fn finalize(&mut self, gfx: &mut GraphicsContext) -> GameResult {
@@ -442,13 +396,11 @@ impl Canvas {
                 state = draw.state.clone();
 
                 match &draw.draw {
-                    Draw::Mesh { mesh, image, param } => canvas.draw_mesh(mesh, image, *param),
-                    Draw::MeshInstances {
-                        mesh,
-                        instances,
-                        param,
-                    } => canvas.draw_mesh_instances(mesh, instances, *param)?,
-                    Draw::BoundedText { text, param } => canvas.draw_bounded_text(text, *param)?,
+                    Draw::Mesh { mesh, image } => canvas.draw_mesh(mesh, image, draw.param),
+                    Draw::MeshInstances { mesh, instances } => {
+                        canvas.draw_mesh_instances(mesh, instances, draw.param)?
+                    }
+                    Draw::BoundedText { text } => canvas.draw_bounded_text(text, draw.param)?,
                 }
             }
         }
@@ -497,35 +449,33 @@ struct DrawState {
 }
 
 #[derive(Debug)]
-enum Draw {
+pub(crate) enum Draw {
     Mesh {
         mesh: Mesh,
         image: Image,
-        param: DrawParam,
     },
     MeshInstances {
         mesh: Mesh,
         instances: InstanceArrayView,
-        param: DrawParam,
     },
     BoundedText {
-        text: Vec<Text>,
-        param: TextParam,
+        text: Text,
     },
 }
 
 #[derive(Debug)]
 struct DrawCommand {
     state: DrawState,
+    param: DrawParam,
     draw: Draw,
 }
 
 #[derive(Debug)]
-struct DefaultResources {
-    shader: Shader,
-    text_shader: Shader,
-    mesh: Mesh,
-    image: Image,
+pub(crate) struct DefaultResources {
+    pub shader: Shader,
+    pub text_shader: Shader,
+    pub mesh: Mesh,
+    pub image: Image,
 }
 
 impl DefaultResources {

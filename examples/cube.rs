@@ -63,11 +63,6 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<Self> {
-        ctx.gfx.add_font(
-            "LiberationMono",
-            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
-        );
-
         // Shaders.
         let shader = ctx
             .gfx
@@ -337,16 +332,12 @@ impl event::EventHandler<ggez::GameError> for MainState {
         // Do ggez drawing
         let dest_point1 = Vec2::new(10.0, 210.0);
         let dest_point2 = Vec2::new(10.0, 250.0);
-        canvas.draw_text(
-            &[graphics::Text::new()
-                .font("LiberationMono")
-                .text("You can mix ggez and wgpu drawing;")],
+        canvas.draw(
+            graphics::Text::new("You can mix ggez and wgpu drawing;"),
             dest_point1,
         );
-        canvas.draw_text(
-            &[graphics::Text::new()
-                .font("LiberationMono")
-                .text("it basically draws wgpu stuff first, then ggez")],
+        canvas.draw(
+            graphics::Text::new("it basically draws wgpu stuff first, then ggez"),
             dest_point2,
         );
 

@@ -35,7 +35,7 @@ impl MainState {
             last_point = point;
         }
         let mesh = graphics::Mesh::from_data(&ctx.gfx, mb.build());
-        canvas.draw_mesh(mesh, None, glam::Vec2::new(0.0, 0.0));
+        canvas.draw(&mesh, glam::Vec2::new(0.0, 0.0));
 
         Ok(())
     }
@@ -45,10 +45,6 @@ impl MainState {
 
         let image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/dragon1.png", true)?;
 
-        ctx.gfx.add_font(
-            "LiberationMono",
-            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
-        );
         let mut sound = audio::Source::new(&ctx.fs, &ctx.audio, "/sound.ogg")?;
 
         // "detached" sounds keep playing even after they are dropped
@@ -88,17 +84,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         let color = Color::from((c, c, c, 255));
         let dest_point = glam::Vec2::new(0.0, 0.0);
+        canvas.draw(&self.image, DrawParam::new().dest(dest_point).color(color));
         canvas.draw(
-            self.image.clone(),
-            DrawParam::new().dest(dest_point).color(color),
-        );
-        canvas.draw_text(
-            &[graphics::Text::new()
-                .font("LiberationMono")
-                .text("Hello world!")
-                .size(48.0)
-                .color(color)],
-            dest_point,
+            graphics::Text::new("Hello, world!").set_scale(48.),
+            graphics::DrawParam::from(dest_point).color(color),
         );
 
         let dest_point2 = glam::Vec2::new(0.0, 256.0);
@@ -108,14 +97,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
             Color::from((0, 0, 0, 255)),
         )?;
-        canvas.draw_mesh(rectangle, None, glam::Vec2::new(0.0, 0.0));
-        canvas.draw_text(
-            &[graphics::Text::new()
-                .font("LiberationMono")
-                .text("This text is 32 pixels high")
-                .size(32.0)
-                .color(Color::WHITE)],
-            dest_point2,
+        canvas.draw(&rectangle, glam::Vec2::new(0.0, 0.0));
+        canvas.draw(
+            graphics::Text::new("This text is 32 pixels high").set_scale(32.),
+            graphics::DrawParam::from(dest_point2).color(Color::WHITE),
         );
 
         self.draw_crazy_lines(ctx, &mut canvas)?;

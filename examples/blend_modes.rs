@@ -31,11 +31,6 @@ impl MainState {
             Color::WHITE,
         )?;
 
-        ctx.gfx.add_font(
-            "LiberationMono",
-            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
-        );
-
         let s = Self {
             layer,
             layer_blend: BlendMode::PREMULTIPLIED,
@@ -60,9 +55,8 @@ impl MainState {
 
         // draw the diagram
         for i in 0..3 {
-            canvas.draw_mesh(
-                self.circle.clone(),
-                None,
+            canvas.draw(
+                &self.circle,
                 graphics::DrawParam::new()
                     .dest(pos + Vec2::from(REL_POSITIONS[i]))
                     .color(TRI_COLORS[i]),
@@ -71,13 +65,13 @@ impl MainState {
 
         // draw text naming the blend mode
         canvas.set_blend_mode(BlendMode::ALPHA);
-        let text = graphics::Text::new()
-            .text(name)
-            .font("LiberationMono")
-            .size(20.)
-            .color(Color::WHITE);
-        let text_offset = Vec2::new(0., -100.);
-        canvas.draw_text(&[text], pos + text_offset);
+        canvas.draw(
+            graphics::Text::new(name).set_scale(20.),
+            graphics::DrawParam::from(pos)
+                .offset([0., 100.])
+                .color(Color::WHITE),
+        );
+
         Ok(())
     }
 
@@ -150,25 +144,21 @@ impl EventHandler for MainState {
         // draw layer onto the screen
         canvas.set_blend_mode(self.layer_blend);
         canvas.draw(
-            layer,
+            &layer,
             DrawParam::default().dest(mint::Point2 { x: 0., y: h / 2. }),
         );
 
         // draw text pointing out which is which
         let y = h / 2.;
 
-        let text = graphics::Text::new()
-            .text("drawn directly:")
-            .font("LiberationMono")
-            .size(20.)
-            .color(Color::WHITE);
-        canvas.draw_text(&[text], [8., 4.]);
-        let text = graphics::Text::new()
-            .text("drawn onto a (transparent black) canvas:")
-            .font("LiberationMono")
-            .size(20.)
-            .color(Color::WHITE);
-        canvas.draw_text(&[text], [8., 4. + y]);
+        canvas.draw(
+            graphics::Text::new("drawn directly:").set_scale(20.),
+            graphics::DrawParam::from([8., 4.]).color(Color::WHITE),
+        );
+        canvas.draw(
+            graphics::Text::new("drawn onto a (transparent black) canvas:").set_scale(20.),
+            graphics::DrawParam::from([8., 4. + y]).color(Color::WHITE),
+        );
 
         canvas.finish(&mut ctx.gfx)?;
 

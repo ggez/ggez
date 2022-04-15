@@ -13,7 +13,7 @@ use super::{
     mesh::{Mesh, Vertex},
     sampler::{Sampler, SamplerCache},
     text::FontData,
-    text_to_section, MeshData, Rect, ScreenImage, Text, TextParam,
+    MeshData, ScreenImage,
 };
 use crate::{
     conf::{self, Backend, Conf, FullscreenType, WindowMode},
@@ -24,7 +24,7 @@ use crate::{
 };
 use ::image as imgcrate;
 use crevice::std140::AsStd140;
-use glyph_brush::{FontId, GlyphCruncher};
+use glyph_brush::FontId;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
 use winit::{
@@ -343,21 +343,6 @@ impl GraphicsContext {
     pub fn add_font(&mut self, name: &str, font: FontData) {
         let id = self.text.glyph_brush.add_font(font.font);
         self.fonts.insert(name.to_string(), id);
-    }
-
-    /// Measures the glyph boundaries for the given bounded text.
-    pub fn measure_text(&mut self, text: &[Text], param: TextParam) -> GameResult<Rect> {
-        Ok(self
-            .text
-            .glyph_brush
-            .glyph_bounds(text_to_section(&self.fonts, text, param)?)
-            .map(|rect| Rect {
-                x: rect.min.x,
-                y: rect.min.y,
-                w: rect.width(),
-                h: rect.height(),
-            })
-            .unwrap_or_else(|| Rect::new(param.bounds.x, param.bounds.y, 0., 0.)))
     }
 
     /// Returns the size of the window’s underlying drawable in physical pixels as (width, height).

@@ -85,11 +85,6 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        ctx.gfx.add_font(
-            "LiberationMono",
-            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
-        );
-
         let demo_mesh = graphics::Mesh::new_circle(
             &ctx.gfx,
             graphics::DrawMode::fill(),
@@ -138,9 +133,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, AQUA);
 
         // Draw a white square so we can see things
-        canvas.draw_mesh(
-            self.square_mesh.clone(),
-            None,
+        canvas.draw(
+            &self.square_mesh,
             DrawParam::default().dest(Vec2::new(200.0, 100.0)),
         );
 
@@ -149,28 +143,25 @@ impl event::EventHandler<ggez::GameError> for MainState {
         // background.
 
         // mesh
-        canvas.draw_mesh(
-            self.demo_mesh.clone(),
-            None,
+        canvas.draw(
+            &self.demo_mesh,
             DrawParam::default().dest(Vec2::new(150.0, 200.0)),
         );
 
         // image
         canvas.draw(
-            self.demo_image.clone(),
+            &self.demo_image,
             DrawParam::default().dest(Vec2::new(450.0, 200.0)),
         );
 
         // text
-        let text = graphics::Text::new()
-            .text("-")
-            .color(AQUA)
-            .font("LiberationMono")
-            .size(300.);
-        canvas.draw_text(&[text], [150., 135.]);
+        canvas.draw(
+            graphics::Text::new("-").set_scale(300.),
+            graphics::DrawParam::from([150., 135.]).color(AQUA),
+        );
 
-        // spritebatch
-        canvas.draw_instances(
+        // instancearray
+        canvas.draw(
             &mut self.demo_instances,
             DrawParam::default().dest(Vec2::new(0.0, 0.0)),
         );

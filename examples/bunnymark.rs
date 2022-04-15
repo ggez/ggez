@@ -123,11 +123,11 @@ impl event::EventHandler<ggez::GameError> for GameState {
                     .map(|bunny| graphics::DrawParam::new().dest(bunny.position)),
             );
 
-            canvas.draw_instances(&mut self.bunnybatch, graphics::DrawParam::default());
+            canvas.draw(&mut self.bunnybatch, graphics::DrawParam::default());
         } else {
             for bunny in &self.bunnies {
                 canvas.draw(
-                    self.texture.clone(),
+                    &self.texture,
                     graphics::DrawParam::new().dest(bunny.position),
                 );
             }
