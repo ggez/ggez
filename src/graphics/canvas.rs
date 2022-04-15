@@ -4,7 +4,7 @@ use crate::GameResult;
 
 use super::{
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
-    internal_canvas::{InstanceArrayView, InternalCanvas},
+    internal_canvas::{screen_to_mat, InstanceArrayView, InternalCanvas},
     BlendMode, Color, DrawParam, GraphicsContext, Image, InstanceArray, Mesh, Rect, Sampler,
     ScreenImage, Shader, ShaderParams, Text, TextParam, WgpuContext, ZIndex,
 };
@@ -22,6 +22,7 @@ pub struct Canvas {
     wgpu: Arc<WgpuContext>,
     draws: BTreeMap<ZIndex, Vec<DrawCommand>>,
     state: DrawState,
+    screen: Option<Rect>,
     defaults: DefaultResources,
 
     target: Image,
@@ -113,10 +114,19 @@ impl Canvas {
             projection: glam::Mat4::IDENTITY.into(),
         };
 
+        let drawable_size = gfx.drawable_size();
+        let screen = Rect {
+            x: 0.,
+            y: 0.,
+            w: drawable_size.0 as _,
+            h: drawable_size.1 as _,
+        };
+
         let mut this = Canvas {
             wgpu: gfx.wgpu.clone(),
             draws: BTreeMap::new(),
             state,
+            screen: Some(screen),
             defaults,
 
             target,
@@ -124,13 +134,7 @@ impl Canvas {
             load_op,
         };
 
-        let size = gfx.drawable_size();
-        this.set_screen_coordinates(Rect {
-            x: 0.,
-            y: 0.,
-            w: size.0,
-            h: size.1,
-        });
+        this.set_screen_coordinates(screen);
 
         this
     }
@@ -226,10 +230,27 @@ impl Canvas {
         self.state.premul_text = premultiplied_text;
     }
 
+    /// Sets the raw projection matrix to the given homogeneous
+    /// transformation matrix.  For an introduction to graphics matrices,
+    /// a good source is this: <http://ncase.me/matrix/>
+    #[inline]
+    pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
+        self.state.projection = proj.into();
+        self.screen = None;
+    }
+
     /// Gets a copy of the canvas's raw projection matrix.
     #[inline]
     pub fn projection(&self) -> mint::ColumnMatrix4<f32> {
         self.state.projection
+    }
+
+    /// Premultiplies the given transformation matrix with the current projection matrix.
+    pub fn mul_projection(&mut self, transform: impl Into<mint::ColumnMatrix4<f32>>) {
+        self.set_projection(
+            glam::Mat4::from(transform.into()) * glam::Mat4::from(self.state.projection),
+        );
+        self.screen = None;
     }
 
     /// Sets the bounds of the screen viewport. This is a shortcut for `set_projection`
@@ -246,22 +267,18 @@ impl Canvas {
     #[inline]
     pub fn set_screen_coordinates(&mut self, rect: Rect) {
         self.set_projection(screen_to_mat(rect));
+        self.screen = Some(rect);
     }
 
-    /// Sets the raw projection matrix to the given homogeneous
-    /// transformation matrix.  For an introduction to graphics matrices,
-    /// a good source is this: <http://ncase.me/matrix/>
+    /// Returns the boudns of the screen viewport, iff the projection was last set with
+    /// `set_screen_coordinates`. If the last projection was set with `set_projection` or
+    /// `mul_projection`, `None` will be returned.
     #[inline]
-    pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
-        self.state.projection = proj.into();
+    pub fn screen_coordinates(&self) -> Option<Rect> {
+        self.screen
     }
 
-    /// Premultiplies the given transformation matrix with the current projection matrix.
-    pub fn mul_projection(&mut self, transform: impl Into<mint::ColumnMatrix4<f32>>) {
-        self.set_projection(
-            glam::Mat4::from(transform.into()) * glam::Mat4::from(self.state.projection),
-        );
-    }
+    /// Returns the screen coordinates
 
     /// Draws a mesh.
     ///
@@ -533,15 +550,4 @@ impl DefaultResources {
             image,
         }
     }
-}
-
-fn screen_to_mat(screen: Rect) -> glam::Mat4 {
-    glam::Mat4::orthographic_rh(
-        screen.left(),
-        screen.right(),
-        screen.bottom(),
-        screen.top(),
-        0.,
-        1.,
-    )
 }

@@ -147,6 +147,8 @@ impl<'a> InternalCanvas<'a> {
             )));
         }
 
+        let drawable_size = gfx.drawable_size();
+
         let wgpu = &gfx.wgpu;
         let bind_group_cache = &mut gfx.bind_group_cache;
         let pipeline_cache = &mut gfx.pipeline_cache;
@@ -166,12 +168,11 @@ impl<'a> InternalCanvas<'a> {
 
         pass.set_blend_constant(wgpu::Color::BLACK);
 
-        let size = gfx.window.inner_size();
         let screen_coords = Rect {
             x: 0.,
             y: 0.,
-            w: size.width as _,
-            h: size.height as _,
+            w: drawable_size.0 as _,
+            h: drawable_size.1 as _,
         };
         let transform = screen_to_mat(screen_coords);
 
@@ -658,7 +659,7 @@ struct InstanceUniforms {
     pub color: mint::Vector4<f32>,
 }
 
-fn screen_to_mat(screen: Rect) -> glam::Mat4 {
+pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {
     glam::Mat4::orthographic_rh(
         screen.left(),
         screen.right(),
