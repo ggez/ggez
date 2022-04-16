@@ -276,8 +276,18 @@ impl<'a> Drawable for &'a Mesh {
     }
 }
 
+/// A `Drawable` unit type that maps to a simple 1x1 quad mesh.
+///
+/// Draw like any other mesh;
+/// ```rust
+/// // draw a 50x70 red rectangle at (200, 250)
+/// canvas.draw(graphics::Quad, graphics::DrawParam::default().color(Color::RED).scale([50., 70.]).dest([200., 250.]));
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Quad;
+
 // draw quad
-impl Drawable for () {
+impl Drawable for Quad {
     fn draw(self, canvas: &mut Canvas, param: DrawParam) {
         canvas.draw(&canvas.default_resources().mesh.clone(), param);
     }
