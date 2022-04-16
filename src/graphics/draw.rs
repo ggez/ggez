@@ -278,7 +278,7 @@ impl DrawUniforms {
         let (scale_x, scale_y) = if !param.image_scale {
             (1., 1.)
         } else {
-            (param.src.w * image_scale.x, param.src.h * image_scale.y)
+            (image_scale.x, image_scale.y)
         };
 
         let param = match param.transform {

@@ -298,7 +298,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &self.spritesheet,
             graphics::DrawParam::new()
                 .src(current_frame_src)
-                .scale([scale, scale])
+                .scale([scale * current_frame_src.w, scale * current_frame_src.h])
                 .dest([470.0, 460.0])
                 .offset([0.5, 1.0]),
         );

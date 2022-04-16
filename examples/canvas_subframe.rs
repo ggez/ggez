@@ -111,7 +111,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &canvas_image,
             graphics::DrawParam::new()
                 .dest(self.draw_pt)
-                .src(graphics::Rect::new(src_x, src_y, 0.5, 0.5)),
+                .src(graphics::Rect::new(src_x, src_y, 0.5, 0.5))
+                .scale([0.5, 0.5]),
         );
 
         canvas.finish(&mut ctx.gfx)?;
