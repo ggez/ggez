@@ -146,13 +146,6 @@ impl InstanceArray {
         &self.params
     }
 
-    /// Uploads the instance data to the GPU.
-    ///
-    /// You do not usually need to call this yourself as it is done automatically during drawing.
-    pub fn flush(&mut self, gfx: &GraphicsContext) {
-        self.flush_wgpu(&gfx.wgpu)
-    }
-
     #[allow(unsafe_code)]
     pub(crate) fn flush_wgpu(&mut self, wgpu: &WgpuContext) {
         if !self.dirty {
