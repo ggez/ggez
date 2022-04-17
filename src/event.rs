@@ -13,7 +13,7 @@
 use winit::{self, dpi};
 
 /// A mouse button.
-pub use winit::event::MouseButton;
+pub use winit::event::{MouseButton, ScanCode};
 
 /// An analog axis of some device (gamepad thumbstick, joystick...).
 #[cfg(feature = "gamepad")]
@@ -173,11 +173,60 @@ where
         Ok(())
     }
 
+    /// A keyboard button was pressed.
+    ///
+    /// This function is called in addition to key_down_event, and can be
+    /// overriden if the key's scancode is desired. Scancodes are hardware
+    /// dependant names for keys that refer to the key's location rather than
+    /// the character it prints when pressed.
+    ///
+    /// For example, on a US QWERTY keyboard layout, the WASD keys are located
+    /// in an inverted T shape on the left of the keyboard. This is not the
+    /// case for AZERTY keyboards, which have those keys in a different
+    /// location. Using scancodes over keycodes in this case would map those
+    /// characters to their physical location on the keyboard.
+    ///
+    /// In general, KeyCodes should be used when the meaning of the typed
+    /// character is important (e.g. "I" to open an inventory), and scancodes
+    /// for when the location is important (e.g. the WASD key block).
+    ///
+    /// The keycode is provided to this function as well. It is optional
+    /// because some scancodes do not have corresponding keycodes (likely
+    /// because they don't exist on a US QWERTY keyboard).
+    ///
+    /// Please note that these scancodes are not cross platform; the same codes
+    /// will point to different keys on different platforms (Linux, Windows,
+    /// etc.).
+    fn key_down_scancode_event(
+        &mut self,
+        _ctx: &mut Context,
+        _scancode: ScanCode,
+        _keycode: Option<KeyCode>,
+        _keymods: KeyMods,
+        _repeat: bool,
+    ) -> Result<(), E> {
+        Ok(())
+    }
+
     /// A keyboard button was released.
     fn key_up_event(
         &mut self,
         _ctx: &mut Context,
         _keycode: KeyCode,
+        _keymods: KeyMods,
+    ) -> Result<(), E> {
+        Ok(())
+    }
+
+    /// A keyboard button was released.
+    ///
+    /// This is a parallel to key_down_event_scancode in that it provides the
+    /// scancode in addition to any keycodes.
+    fn key_up_scancode_event(
+        &mut self,
+        _ctx: &mut Context,
+        _scancode: ScanCode,
+        _keycode: Option<KeyCode>,
         _keymods: KeyMods,
     ) -> Result<(), E> {
         Ok(())
@@ -356,14 +405,27 @@ where
                     input:
                         KeyboardInput {
                             state: ElementState::Pressed,
-                            virtual_keycode: Some(keycode),
+                            virtual_keycode: keycode,
+                            scancode,
                             ..
                         },
                     ..
                 } => {
                     let repeat = ctx.keyboard.is_key_repeated();
-                    let res =
-                        state.key_down_event(ctx, keycode, ctx.keyboard.active_mods(), repeat);
+                    if let Some(keycode) = keycode {
+                        let res =
+                            state.key_down_event(ctx, keycode, ctx.keyboard.active_mods(), repeat);
+                        if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyDownEvent) {
+                            return;
+                        };
+                    }
+                    let res = state.key_down_scancode_event(
+                        ctx,
+                        scancode,
+                        keycode,
+                        ctx.keyboard.active_mods(),
+                        repeat,
+                    );
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyDownEvent) {
                         return;
                     };
@@ -372,12 +434,24 @@ where
                     input:
                         KeyboardInput {
                             state: ElementState::Released,
-                            virtual_keycode: Some(keycode),
+                            virtual_keycode: keycode,
+                            scancode,
                             ..
                         },
                     ..
                 } => {
-                    let res = state.key_up_event(ctx, keycode, ctx.keyboard.active_mods());
+                    if let Some(keycode) = keycode {
+                        let res = state.key_up_event(ctx, keycode, ctx.keyboard.active_mods());
+                        if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyUpEvent) {
+                            return;
+                        };
+                    }
+                    let res = state.key_up_scancode_event(
+                        ctx,
+                        scancode,
+                        keycode,
+                        ctx.keyboard.active_mods(),
+                    );
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyUpEvent) {
                         return;
                     };
