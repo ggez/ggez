@@ -70,7 +70,7 @@ impl MainState {
                     y as f32 * Self::GRID_INTERVAL,
                 );
                 let s = format!("({}, {})", point.x, point.y);
-                canvas.draw(graphics::Text::new(s), point);
+                canvas.draw(&graphics::Text::new(s), point);
             }
         }
     }

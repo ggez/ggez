@@ -333,11 +333,11 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let dest_point1 = Vec2::new(10.0, 210.0);
         let dest_point2 = Vec2::new(10.0, 250.0);
         canvas.draw(
-            graphics::Text::new("You can mix ggez and wgpu drawing;"),
+            &graphics::Text::new("You can mix ggez and wgpu drawing;"),
             dest_point1,
         );
         canvas.draw(
-            graphics::Text::new("it basically draws wgpu stuff first, then ggez"),
+            &graphics::Text::new("it basically draws wgpu stuff first, then ggez"),
             dest_point2,
         );
 

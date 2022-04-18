@@ -231,8 +231,8 @@ impl InstanceArray {
     }
 }
 
-impl<'a> Drawable for &'a mut InstanceArray {
-    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
+impl Drawable for InstanceArray {
+    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
         self.flush_wgpu(&canvas.wgpu).unwrap();
         canvas.push_draw(
             Draw::MeshInstances {
@@ -243,7 +243,7 @@ impl<'a> Drawable for &'a mut InstanceArray {
         );
     }
 
-    fn dimensions(self, _gfx: &mut GraphicsContext) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &mut GraphicsContext) -> Option<Rect> {
         None
     }
 }

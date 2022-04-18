@@ -193,7 +193,7 @@ impl Food {
         // Food's position into a `ggez::Rect` using `.into()` which we can do
         // since we implemented `From<GridPosition>` for `Rect` earlier.
         canvas.draw(
-            graphics::Quad,
+            &graphics::Quad,
             graphics::DrawParam::new()
                 .dest_rect(self.pos.into())
                 .color(color),
@@ -322,7 +322,7 @@ impl Snake {
             // Again we set the color (in this case an orangey color)
             // and then draw the Rect that we convert that Segment's position into
             canvas.draw(
-                graphics::Quad,
+                &graphics::Quad,
                 graphics::DrawParam::new()
                     .dest_rect(seg.pos.into())
                     .color([0.3, 0.3, 0.0, 1.0]),
@@ -330,7 +330,7 @@ impl Snake {
         }
         // And then we do the same for the head, instead making it fully red to distinguish it.
         canvas.draw(
-            graphics::Quad,
+            &graphics::Quad,
             graphics::DrawParam::new()
                 .dest_rect(self.head.pos.into())
                 .color([1.0, 0.5, 0.0, 1.0]),

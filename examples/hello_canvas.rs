@@ -56,7 +56,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             );
 
             canvas.draw(
-                text,
+                &text,
                 graphics::DrawParam::from(dest_point + vec2(15., 15.))
                     .color(Color::from((0, 0, 0, 255))),
             );
@@ -74,7 +74,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.25, 0.0, 0.0, 1.0]));
 
             canvas.draw(
-                text,
+                &text,
                 graphics::DrawParam::from(dest_point).color(Color::from((192, 128, 64, 255))),
             );
 

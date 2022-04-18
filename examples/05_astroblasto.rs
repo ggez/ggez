@@ -529,12 +529,12 @@ impl EventHandler for MainState {
         let score_str = format!("Score: {}", self.score);
 
         canvas.draw(
-            graphics::Text::new(level_str),
+            &graphics::Text::new(level_str),
             graphics::DrawParam::from(level_dest).color(Color::WHITE),
         );
 
         canvas.draw(
-            graphics::Text::new(score_str),
+            &graphics::Text::new(score_str),
             graphics::DrawParam::from(score_dest).color(Color::WHITE),
         );
 

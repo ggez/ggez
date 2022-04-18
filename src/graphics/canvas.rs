@@ -280,7 +280,7 @@ impl Canvas {
 
     /// Draws the given `Drawable` to the canvas with a given `DrawParam`.
     #[inline]
-    pub fn draw(&mut self, drawable: impl Drawable, param: impl Into<DrawParam>) {
+    pub fn draw(&mut self, drawable: &impl Drawable, param: impl Into<DrawParam>) {
         drawable.draw(self, param.into())
     }
 

@@ -260,8 +260,8 @@ impl Mesh {
     }
 }
 
-impl<'a> Drawable for &'a Mesh {
-    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
+impl Drawable for Mesh {
+    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
         canvas.push_draw(
             Draw::Mesh {
                 mesh: self.clone(),
@@ -271,7 +271,7 @@ impl<'a> Drawable for &'a Mesh {
         );
     }
 
-    fn dimensions(self, _gfx: &mut GraphicsContext) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &mut GraphicsContext) -> Option<Rect> {
         Some(self.bounds)
     }
 }
@@ -288,11 +288,11 @@ pub struct Quad;
 
 // draw quad
 impl Drawable for Quad {
-    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
+    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
         canvas.draw(&canvas.default_resources().mesh.clone(), param);
     }
 
-    fn dimensions(self, _gfx: &mut GraphicsContext) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &mut GraphicsContext) -> Option<Rect> {
         Some(Rect::one())
     }
 }

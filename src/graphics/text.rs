@@ -275,11 +275,11 @@ impl Text {
 }
 
 impl Drawable for Text {
-    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
-        canvas.push_draw(Draw::BoundedText { text: self }, param);
+    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
+        canvas.push_draw(Draw::BoundedText { text: self.clone() }, param);
     }
 
-    fn dimensions(self, gfx: &mut GraphicsContext) -> Option<Rect> {
+    fn dimensions(&self, gfx: &mut GraphicsContext) -> Option<Rect> {
         let bounds = self.measure(gfx).ok()?;
         Some(Rect {
             x: 0.,
@@ -287,26 +287,6 @@ impl Drawable for Text {
             w: bounds.x,
             h: bounds.y,
         })
-    }
-}
-
-impl<'a> Drawable for &'a Text {
-    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
-        Drawable::draw(self.clone(), canvas, param)
-    }
-
-    fn dimensions(self, gfx: &mut GraphicsContext) -> Option<Rect> {
-        Drawable::dimensions(self.clone(), gfx)
-    }
-}
-
-impl<'a> Drawable for &'a mut Text {
-    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
-        Drawable::draw(self.clone(), canvas, param)
-    }
-
-    fn dimensions(self, gfx: &mut GraphicsContext) -> Option<Rect> {
-        Drawable::dimensions(self.clone(), gfx)
     }
 }
 

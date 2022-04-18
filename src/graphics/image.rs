@@ -328,8 +328,8 @@ impl Image {
     }
 }
 
-impl<'a> Drawable for &'a Image {
-    fn draw(self, canvas: &mut Canvas, param: DrawParam) {
+impl Drawable for Image {
+    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
         canvas.push_draw(
             Draw::Mesh {
                 mesh: canvas.default_resources().mesh.clone(),
@@ -339,7 +339,7 @@ impl<'a> Drawable for &'a Image {
         );
     }
 
-    fn dimensions(self, _gfx: &mut GraphicsContext) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &mut GraphicsContext) -> Option<Rect> {
         Some(Rect {
             x: 0.,
             y: 0.,

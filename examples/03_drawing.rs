@@ -162,7 +162,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         // Draw a filled rectangle mesh.
         let rect = graphics::Rect::new(450.0, 450.0, 50.0, 50.0);
         canvas.draw(
-            graphics::Quad,
+            &graphics::Quad,
             graphics::DrawParam::new()
                 .dest(rect.point())
                 .scale(rect.size())

@@ -72,7 +72,7 @@ impl MainState {
             .rotation((time % cycle) as f32 / cycle as f32 * TAU)
             .offset(Point2::new(750., 750.));
 
-        canvas.draw(&mut self.instances, param);
+        canvas.draw(&self.instances, param);
         canvas.finish(&mut ctx.gfx)?;
 
         Ok(())

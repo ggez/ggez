@@ -162,7 +162,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // instancearray
         canvas.draw(
-            &mut self.demo_instances,
+            &self.demo_instances,
             DrawParam::default().dest(Vec2::new(0.0, 0.0)),
         );
 
