@@ -47,6 +47,8 @@ use wgpu::util::DeviceExt;
 ///         // draw something...
 ///         canvas.finish(&mut ctx.gfx)
 ///     }
+///
+///     /* ... */
 /// }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
