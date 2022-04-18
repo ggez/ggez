@@ -1,25 +1,34 @@
 //!
 
+use crate::{GameError, GameResult};
+
 use super::{
     context::GraphicsContext,
     draw::{DrawParam, DrawUniforms, Std140DrawUniforms},
     gpu::arc::ArcBuffer,
+    internal_canvas::InstanceArrayView,
     Canvas, Draw, Drawable, Image, Rect, WgpuContext,
 };
 use crevice::std140::AsStd140;
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    sync::{
+        atomic::{AtomicBool, AtomicU32, Ordering::SeqCst},
+        Mutex,
+    },
+};
 
 /// Array of instances for fast rendering of many meshes.
 ///
 /// Traditionally known as a "batch".
 #[derive(Debug)]
 pub struct InstanceArray {
-    pub(crate) buffer: ArcBuffer,
-    pub(crate) indices: ArcBuffer,
+    pub(crate) buffer: Mutex<ArcBuffer>,
+    pub(crate) indices: Mutex<ArcBuffer>,
     pub(crate) image: Image,
     pub(crate) ordered: bool,
-    dirty: bool,
-    capacity: u32,
+    dirty: AtomicBool,
+    capacity: AtomicU32,
     uniforms: Vec<Std140DrawUniforms>,
     params: Vec<DrawParam>,
 }
@@ -71,12 +80,12 @@ impl InstanceArray {
         let params = Vec::with_capacity(capacity as usize);
 
         InstanceArray {
-            buffer,
-            indices,
+            buffer: Mutex::new(buffer),
+            indices: Mutex::new(indices),
             image,
             ordered,
-            dirty: false,
-            capacity,
+            dirty: AtomicBool::new(false),
+            capacity: AtomicU32::new(capacity),
             uniforms,
             params,
         }
@@ -84,7 +93,7 @@ impl InstanceArray {
 
     /// Resets all the instance data to a set of `DrawParam`.
     pub fn set(&mut self, instances: impl IntoIterator<Item = DrawParam>) {
-        self.dirty = true;
+        self.dirty.store(true, SeqCst);
         self.params.clear();
         self.params.extend(instances);
         self.uniforms.clear();
@@ -99,7 +108,7 @@ impl InstanceArray {
 
     /// Pushes a new instance onto the end.
     pub fn push(&mut self, instance: DrawParam) {
-        self.dirty = true;
+        self.dirty.store(true, SeqCst);
         self.uniforms.push(
             DrawUniforms::from_param(
                 &instance,
@@ -117,7 +126,7 @@ impl InstanceArray {
             .get_mut(index as usize)
             .and_then(|x| Some((x, self.params.get_mut(index as usize)?)))
         {
-            self.dirty = true;
+            self.dirty.store(true, SeqCst);
             *uniform = DrawUniforms::from_param(
                 &instance,
                 [self.image.width() as f32, self.image.height() as f32].into(),
@@ -134,10 +143,10 @@ impl InstanceArray {
         self.params.clear();
     }
 
-    /// Returns whether the instance data has been changed without [`InstanceArray::flush()`] being called.
+    /// Returns whether the instance data has been changed without being flushed (i.e., uploaded to the GPU).
     #[inline]
     pub fn is_dirty(&self) -> bool {
-        self.dirty
+        self.dirty.load(SeqCst)
     }
 
     /// Returns an immutable slice of all the instance data in this [`InstanceArray`].
@@ -147,27 +156,30 @@ impl InstanceArray {
     }
 
     #[allow(unsafe_code)]
-    pub(crate) fn flush_wgpu(&mut self, wgpu: &WgpuContext) {
-        if !self.dirty {
-            return;
+    pub(crate) fn flush_wgpu(&self, wgpu: &WgpuContext) -> GameResult<()> {
+        if !self.dirty.load(SeqCst) {
+            return Ok(());
         } else {
-            self.dirty = false;
+            self.dirty.store(false, SeqCst);
         }
 
         let len = self.uniforms.len() as u32;
-        if len > self.capacity {
-            let resized = InstanceArray::new_wgpu(wgpu, self.image.clone(), len, self.ordered);
-            self.buffer = resized.buffer;
-            self.indices = resized.indices;
-            self.capacity = len;
+        if len > self.capacity.load(SeqCst) {
+            let mut resized = InstanceArray::new_wgpu(wgpu, self.image.clone(), len, self.ordered);
+            *self.buffer.lock().map_err(|_| GameError::LockError)? =
+                resized.buffer.get_mut().unwrap().clone();
+            *self.indices.lock().map_err(|_| GameError::LockError)? =
+                resized.indices.get_mut().unwrap().clone();
+            self.capacity.store(len, SeqCst);
         }
 
-        wgpu.queue.write_buffer(&self.buffer, 0, unsafe {
-            std::slice::from_raw_parts(
-                self.uniforms.as_ptr() as *const u8,
-                self.uniforms.len() * DrawUniforms::std140_size_static(),
-            )
-        });
+        wgpu.queue
+            .write_buffer(&self.buffer.lock().unwrap(), 0, unsafe {
+                std::slice::from_raw_parts(
+                    self.uniforms.as_ptr() as *const u8,
+                    self.uniforms.len() * DrawUniforms::std140_size_static(),
+                )
+            });
 
         if self.ordered {
             let mut layers = BTreeMap::<_, Vec<_>>::new();
@@ -175,13 +187,16 @@ impl InstanceArray {
                 layers.entry(param.z).or_default().push(i);
             }
             let indices = layers.into_values().flatten().collect::<Vec<_>>();
-            wgpu.queue.write_buffer(&self.indices, 0, unsafe {
-                std::slice::from_raw_parts(
-                    indices.as_ptr() as *const u8,
-                    indices.len() * std::mem::size_of::<u32>(),
-                )
-            });
+            wgpu.queue
+                .write_buffer(&self.indices.lock().unwrap(), 0, unsafe {
+                    std::slice::from_raw_parts(
+                        indices.as_ptr() as *const u8,
+                        indices.len() * std::mem::size_of::<u32>(),
+                    )
+                });
         }
+
+        Ok(())
     }
 
     /// Changes the capacity of this `InstanceArray` while preserving instances.
@@ -191,8 +206,8 @@ impl InstanceArray {
         let resized = InstanceArray::new(gfx, self.image.clone(), new_capacity, self.ordered);
         self.buffer = resized.buffer;
         self.indices = resized.indices;
-        self.capacity = new_capacity;
-        self.dirty = true;
+        self.capacity.store(new_capacity, SeqCst);
+        self.dirty.store(true, SeqCst);
         self.uniforms.truncate(new_capacity as usize);
         self.params.truncate(new_capacity as usize);
         self.uniforms
@@ -212,17 +227,17 @@ impl InstanceArray {
     /// was automatically resized, the greatest length of instances.
     #[inline]
     pub fn capacity(&self) -> usize {
-        self.capacity as usize
+        self.capacity.load(SeqCst) as usize
     }
 }
 
 impl<'a> Drawable for &'a mut InstanceArray {
     fn draw(self, canvas: &mut Canvas, param: DrawParam) {
-        self.flush_wgpu(&canvas.wgpu);
+        self.flush_wgpu(&canvas.wgpu).unwrap();
         canvas.push_draw(
             Draw::MeshInstances {
                 mesh: canvas.default_resources().mesh.clone(),
-                instances: (&*self).into(),
+                instances: InstanceArrayView::from_instances(self).unwrap(),
             },
             param,
         );

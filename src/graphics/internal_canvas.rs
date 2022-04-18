@@ -632,15 +632,15 @@ pub struct InstanceArrayView {
     pub ordered: bool,
 }
 
-impl From<&InstanceArray> for InstanceArrayView {
-    fn from(ia: &InstanceArray) -> Self {
-        InstanceArrayView {
-            buffer: ia.buffer.clone(),
-            indices: ia.indices.clone(),
+impl InstanceArrayView {
+    pub fn from_instances(ia: &InstanceArray) -> GameResult<Self> {
+        Ok(InstanceArrayView {
+            buffer: ia.buffer.lock().map_err(|_| GameError::LockError)?.clone(),
+            indices: ia.indices.lock().map_err(|_| GameError::LockError)?.clone(),
             image: ia.image.clone(),
             len: ia.instances().len() as u32,
             ordered: ia.ordered,
-        }
+        })
     }
 }
 

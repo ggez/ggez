@@ -298,14 +298,14 @@ impl Canvas {
     pub fn draw_instanced_mesh(
         &mut self,
         mesh: Mesh,
-        instances: &mut InstanceArray,
+        instances: &InstanceArray,
         param: impl Into<DrawParam>,
     ) {
-        instances.flush_wgpu(&self.wgpu);
+        instances.flush_wgpu(&self.wgpu).unwrap();
         self.push_draw(
             Draw::MeshInstances {
                 mesh,
-                instances: (&*instances).into(),
+                instances: InstanceArrayView::from_instances(instances).unwrap(),
             },
             param.into(),
         );
