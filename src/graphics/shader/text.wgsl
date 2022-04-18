@@ -50,7 +50,6 @@ fn vs_main(
         transform_c3,
     );
 
-    // apply rotation matrix, taking into account the rotation origin.
     out.position = uniforms.transform * transform * vec4<f32>(x, y, 0., 1.);
     out.position = out.position / out.position.w;
     out.uv = vec2<f32>(u, v);
