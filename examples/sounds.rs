@@ -94,18 +94,19 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        keycode: input::keyboard::KeyCode,
+        _scancode: input::keyboard::ScanCode,
+        keycode: Option<input::keyboard::KeyCode>,
         _keymod: input::keyboard::KeyMods,
         _repeat: bool,
     ) -> GameResult {
         match keycode {
-            input::keyboard::KeyCode::Key1 => self.play_detached(ctx),
-            input::keyboard::KeyCode::Key2 => self.play_later(ctx),
-            input::keyboard::KeyCode::Key3 => self.play_fadein(ctx),
-            input::keyboard::KeyCode::Key4 => self.play_highpitch(ctx),
-            input::keyboard::KeyCode::Key5 => self.play_lowpitch(ctx),
-            input::keyboard::KeyCode::Key6 => self.play_stats(ctx),
-            input::keyboard::KeyCode::Escape => event::quit(ctx),
+            Some(input::keyboard::KeyCode::Key1) => self.play_detached(ctx),
+            Some(input::keyboard::KeyCode::Key2) => self.play_later(ctx),
+            Some(input::keyboard::KeyCode::Key3) => self.play_fadein(ctx),
+            Some(input::keyboard::KeyCode::Key4) => self.play_highpitch(ctx),
+            Some(input::keyboard::KeyCode::Key5) => self.play_lowpitch(ctx),
+            Some(input::keyboard::KeyCode::Key6) => self.play_stats(ctx),
+            Some(input::keyboard::KeyCode::Escape) => event::quit(ctx),
             _ => (),
         }
         Ok(())

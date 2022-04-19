@@ -1,6 +1,6 @@
 //! Example that just prints out all the input events.
 
-use ggez::event::{self, Axis, Button, GamepadId, KeyCode, KeyMods, MouseButton};
+use ggez::event::{self, Axis, Button, GamepadId, KeyCode, KeyMods, MouseButton, ScanCode};
 use ggez::graphics::{self, Color, DrawMode};
 use ggez::{conf, input};
 use ggez::{Context, GameResult};
@@ -119,13 +119,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
-        keycode: KeyCode,
+        scancode: ScanCode,
+        keycode: Option<KeyCode>,
         keymod: KeyMods,
         repeat: bool,
     ) -> GameResult {
         println!(
-            "Key pressed: {:?}, modifier {:?}, repeat: {}",
-            keycode, keymod, repeat
+            "Key pressed: scancode {}, keycode {:?}, modifier {:?}, repeat: {}",
+            scancode, keycode, keymod, repeat
         );
         Ok(())
     }
@@ -133,10 +134,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn key_up_event(
         &mut self,
         _ctx: &mut Context,
-        keycode: KeyCode,
+        scancode: ScanCode,
+        keycode: Option<KeyCode>,
         keymod: KeyMods,
     ) -> GameResult {
-        println!("Key released: {:?}, modifier {:?}", keycode, keymod);
+        println!(
+            "Key released: scancode {}, keycode {:?}, modifier {:?}",
+            scancode, keycode, keymod
+        );
         Ok(())
     }
 

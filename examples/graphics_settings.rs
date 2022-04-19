@@ -5,7 +5,7 @@
 use std::convert::TryFrom;
 
 use ggez::conf;
-use ggez::event::{self, KeyCode, KeyMods};
+use ggez::event::{self, KeyCode, KeyMods, ScanCode};
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
 use ggez::{Context, GameResult};
 
@@ -134,15 +134,16 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn key_up_event(
         &mut self,
         ctx: &mut Context,
-        keycode: KeyCode,
+        _scancode: ScanCode,
+        keycode: Option<KeyCode>,
         _keymod: KeyMods,
     ) -> GameResult {
         match keycode {
-            KeyCode::F => {
+            Some(KeyCode::F) => {
                 self.window_settings.toggle_fullscreen = true;
                 self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
             }
-            KeyCode::Up => {
+            Some(KeyCode::Up) => {
                 self.zoom += 0.1;
                 println!("Zoom is now {}", self.zoom);
                 let (w, h) = graphics::size(ctx);
@@ -150,7 +151,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                 graphics::set_screen_coordinates(ctx, new_rect).unwrap();
             }
-            KeyCode::Down => {
+            Some(KeyCode::Down) => {
                 self.zoom -= 0.1;
                 println!("Zoom is now {}", self.zoom);
                 let (w, h) = graphics::size(ctx);
@@ -158,7 +159,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                 graphics::set_screen_coordinates(ctx, new_rect).unwrap();
             }
-            KeyCode::Space => {
+            Some(KeyCode::Space) => {
                 self.window_settings.resize_projection = !self.window_settings.resize_projection;
                 println!(
                     "Resizing the projection on window resize is now: {}",

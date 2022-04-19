@@ -90,7 +90,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
-        _keycode: ggez::event::KeyCode,
+        _scancode: ggez::event::ScanCode,
+        _keycode: Option<ggez::event::KeyCode>,
         _keymod: ggez::event::KeyMods,
         repeat: bool,
     ) -> GameResult {

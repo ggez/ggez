@@ -69,6 +69,7 @@ use crate::context::Context;
 
 use std::collections::HashSet;
 use winit::event::ModifiersState;
+pub use winit::event::ScanCode;
 /// A key code.
 pub use winit::event::VirtualKeyCode as KeyCode;
 

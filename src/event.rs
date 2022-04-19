@@ -157,28 +157,16 @@ where
     /// A keyboard button was pressed.
     ///
     /// The default implementation of this will call `ggez::event::quit()`
-    /// when the escape key is pressed.  If you override this with
-    /// your own event handler you have to re-implment that
-    /// functionality yourself.
-    fn key_down_event(
-        &mut self,
-        ctx: &mut Context,
-        keycode: KeyCode,
-        _keymods: KeyMods,
-        _repeat: bool,
-    ) -> Result<(), E> {
-        if keycode == KeyCode::Escape {
-            quit(ctx);
-        }
-        Ok(())
-    }
-
-    /// A keyboard button was pressed.
+    /// when the escape key is pressed. If you override this with your own
+    /// event handler you have to re-implement that functionality yourself.
     ///
-    /// This function is called in addition to key_down_event, and can be
-    /// overriden if the key's scancode is desired. Scancodes are hardware
-    /// dependant names for keys that refer to the key's location rather than
-    /// the character it prints when pressed.
+    /// Keycodes are the "meaning" of a key once keyboard layout translation
+    /// has been applied. For example, when the user presses "Q" in their
+    /// layout, the enum value for Q is provided to this function.
+    ///
+    /// Scancodes are hardware dependent names for keys that refer to the key's
+    /// location rather than the character it prints when pressed. They are not
+    /// necessarily cross platform (e.g. between Windows and Linux).
     ///
     /// For example, on a US QWERTY keyboard layout, the WASD keys are located
     /// in an inverted T shape on the left of the keyboard. This is not the
@@ -187,42 +175,29 @@ where
     /// characters to their physical location on the keyboard.
     ///
     /// In general, KeyCodes should be used when the meaning of the typed
-    /// character is important (e.g. "I" to open an inventory), and scancodes
-    /// for when the location is important (e.g. the WASD key block).
+    /// character is important (e.g. "I" to open the inventory), and scancodes
+    /// for when the location is important (e.g. the WASD key block). The
+    /// text_input_event handler should be used to collect raw text.
     ///
-    /// The keycode is provided to this function as well. It is optional
-    /// because some scancodes do not have corresponding keycodes (likely
-    /// because they don't exist on a US QWERTY keyboard).
-    ///
-    /// Please note that these scancodes are not cross platform; the same codes
-    /// will point to different keys on different platforms (Linux, Windows,
-    /// etc.).
-    fn key_down_scancode_event(
+    /// The keycode is optional because not all inputs can be matched to a
+    /// specific keycode. This will happen on non-English keyboards, for
+    /// example.
+    fn key_down_event(
         &mut self,
-        _ctx: &mut Context,
+        ctx: &mut Context,
         _scancode: ScanCode,
-        _keycode: Option<KeyCode>,
+        keycode: Option<KeyCode>,
         _keymods: KeyMods,
         _repeat: bool,
     ) -> Result<(), E> {
+        if keycode == Some(KeyCode::Escape) {
+            quit(ctx);
+        }
         Ok(())
     }
 
     /// A keyboard button was released.
     fn key_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        _keycode: KeyCode,
-        _keymods: KeyMods,
-    ) -> Result<(), E> {
-        Ok(())
-    }
-
-    /// A keyboard button was released.
-    ///
-    /// This is a parallel to key_down_event_scancode in that it provides the
-    /// scancode in addition to any keycodes.
-    fn key_up_scancode_event(
         &mut self,
         _ctx: &mut Context,
         _scancode: ScanCode,
@@ -412,14 +387,7 @@ where
                     ..
                 } => {
                     let repeat = ctx.keyboard.is_key_repeated();
-                    if let Some(keycode) = keycode {
-                        let res =
-                            state.key_down_event(ctx, keycode, ctx.keyboard.active_mods(), repeat);
-                        if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyDownEvent) {
-                            return;
-                        };
-                    }
-                    let res = state.key_down_scancode_event(
+                    let res = state.key_down_event(
                         ctx,
                         scancode,
                         keycode,
@@ -440,18 +408,8 @@ where
                         },
                     ..
                 } => {
-                    if let Some(keycode) = keycode {
-                        let res = state.key_up_event(ctx, keycode, ctx.keyboard.active_mods());
-                        if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyUpEvent) {
-                            return;
-                        };
-                    }
-                    let res = state.key_up_scancode_event(
-                        ctx,
-                        scancode,
-                        keycode,
-                        ctx.keyboard.active_mods(),
-                    );
+                    let res =
+                        state.key_up_event(ctx, scancode, keycode, ctx.keyboard.active_mods());
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyUpEvent) {
                         return;
                     };

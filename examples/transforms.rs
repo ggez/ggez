@@ -1,5 +1,5 @@
 //! Demonstrates various projection and matrix fiddling/testing.
-use ggez::event::{self, KeyCode, KeyMods};
+use ggez::event::{self, KeyCode, KeyMods, ScanCode};
 use ggez::graphics::{self, Color, DrawMode};
 use ggez::{Context, GameResult};
 use glam::*;
@@ -105,11 +105,12 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        keycode: KeyCode,
+        _scancode: ScanCode,
+        keycode: Option<KeyCode>,
         _keymod: KeyMods,
         _repeat: bool,
     ) -> GameResult {
-        if let event::KeyCode::Space = keycode {
+        if let Some(event::KeyCode::Space) = keycode {
             self.screen_bounds_idx = (self.screen_bounds_idx + 1) % self.screen_bounds.len();
             return graphics::set_screen_coordinates(
                 ctx,

@@ -9,7 +9,7 @@
 use log::*;
 
 use ggez::conf::{WindowMode, WindowSetup};
-use ggez::event::{EventHandler, KeyCode, KeyMods};
+use ggez::event::{EventHandler, KeyCode, KeyMods, ScanCode};
 use ggez::filesystem::File;
 use ggez::graphics;
 use ggez::timer;
@@ -100,7 +100,8 @@ impl EventHandler for App {
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        keycode: KeyCode,
+        _scancode: ScanCode,
+        keycode: Option<KeyCode>,
         keymod: KeyMods,
         repeat: bool,
     ) -> GameResult {
@@ -109,7 +110,7 @@ impl EventHandler for App {
             "Key down event: {:?}, modifiers: {:?}, repeat: {}",
             keycode, keymod, repeat
         );
-        if keycode == KeyCode::Escape {
+        if keycode == Some(KeyCode::Escape) {
             // Escape key closes the app.
             ggez::event::quit(ctx);
         }

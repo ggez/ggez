@@ -144,11 +144,12 @@ impl event::EventHandler<ggez::GameError> for GameState {
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
-        keycode: event::KeyCode,
+        _scancode: event::ScanCode,
+        keycode: Option<event::KeyCode>,
         _keymods: event::KeyMods,
         _repeat: bool,
     ) -> GameResult {
-        if keycode == event::KeyCode::Space {
+        if keycode == Some(event::KeyCode::Space) {
             self.batched_drawing = !self.batched_drawing;
         }
         Ok(())
