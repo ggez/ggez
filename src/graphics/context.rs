@@ -695,7 +695,6 @@ pub(crate) fn load_icon(
     icon_file: &Path,
     filesystem: &Filesystem,
 ) -> GameResult<winit::window::Icon> {
-    use imgcrate::GenericImageView;
     use std::io::Read;
     use winit::window::Icon;
 
