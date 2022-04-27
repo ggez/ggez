@@ -6,6 +6,7 @@ use super::{
     Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
 use crate::{filesystem::Filesystem, Context, GameError, GameResult};
+use image::ImageEncoder;
 use std::path::Path;
 use std::{io::Read, num::NonZeroU32};
 
@@ -265,7 +266,6 @@ impl Image {
     ) -> GameResult {
         let color = match self.format {
             ImageFormat::Rgba8Unorm | ImageFormat::Rgba8UnormSrgb => ::image::ColorType::Rgba8,
-            ImageFormat::Bgra8Unorm | ImageFormat::Bgra8UnormSrgb => ::image::ColorType::Bgra8,
             ImageFormat::R8Unorm => ::image::ColorType::L8,
             ImageFormat::R16Unorm => ::image::ColorType::L16,
             format => {
@@ -281,10 +281,10 @@ impl Image {
         let writer = &mut std::io::BufWriter::new(f);
 
         match format {
-            ImageEncodingFormat::Png => ::image::png::PngEncoder::new(writer)
-                .encode(&pixels, self.width, self.height, color)
+            ImageEncodingFormat::Png => ::image::codecs::png::PngEncoder::new(writer)
+                .write_image(&pixels, self.width, self.height, color)
                 .map_err(Into::into),
-            ImageEncodingFormat::Bmp => ::image::bmp::BmpEncoder::new(writer)
+            ImageEncodingFormat::Bmp => ::image::codecs::bmp::BmpEncoder::new(writer)
                 .encode(&pixels, self.width, self.height, color)
                 .map_err(Into::into),
             _ => Err(GameError::RenderError(String::from(
