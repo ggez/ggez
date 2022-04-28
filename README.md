@@ -39,7 +39,7 @@ your own libraries atop ggez.
 * Config file for defining engine and game settings
 * Easy timing and FPS measurement functions.
 * Math library integration with `mint`.
-* Some more advanced graphics options: shaders, sprite batches and render targets
+* Some more advanced graphics options: shaders, instanced draws and render targets
 
 ### Non-Features (i.e. things to add from elsewhere if needed)
 

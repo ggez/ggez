@@ -228,7 +228,7 @@ We'll use [`timer::delta`](https://docs.rs/ggez/0.7.0/ggez/timer/fn.delta.html) 
 
 ```rust,skt-update,no_run
 fn update(&mut self, ctx: &mut Context) -> GameResult {
-    self.dt = timer::delta(ctx);
+    self.dt = ctx.time.delta();
     Ok(())
 }
 ```

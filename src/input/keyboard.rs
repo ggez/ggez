@@ -5,7 +5,6 @@
 //! ```rust, compile
 //! use ggez::event::{self, EventHandler, KeyCode, KeyMods};
 //! use ggez::{graphics, timer};
-//! use ggez::input::keyboard;
 //! use ggez::{Context, GameResult};
 //!
 //! struct MainState {
@@ -14,14 +13,15 @@
 //!
 //! impl EventHandler for MainState {
 //!     fn update(&mut self, ctx: &mut Context) -> GameResult {
+//!         let k_ctx = &ctx.keyboard;
 //!         // Increase or decrease `position_x` by 0.5, or by 5.0 if Shift is held.
-//!         if keyboard::is_key_pressed(ctx, KeyCode::Right) {
-//!             if keyboard::is_mod_active(ctx, KeyMods::SHIFT) {
+//!         if k_ctx.is_key_pressed(KeyCode::Right) {
+//!             if k_ctx.is_mod_active(KeyMods::SHIFT) {
 //!                 self.position_x += 4.5;
 //!             }
 //!             self.position_x += 0.5;
-//!         } else if keyboard::is_key_pressed(ctx, KeyCode::Left) {
-//!             if keyboard::is_mod_active(ctx, KeyMods::SHIFT) {
+//!         } else if k_ctx.is_key_pressed(KeyCode::Left) {
+//!             if k_ctx.is_mod_active(KeyMods::SHIFT) {
 //!                 self.position_x -= 4.5;
 //!             }
 //!             self.position_x -= 0.5;
@@ -30,23 +30,32 @@
 //!     }
 //!
 //!     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-//!         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+//!         let mut canvas = graphics::Canvas::from_frame(
+//!             &ctx.gfx,
+//!             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
+//!         );
 //!         // Create a circle at `position_x` and draw
 //!         let circle = graphics::Mesh::new_circle(
-//!             ctx,
+//!             &ctx.gfx,
 //!             graphics::DrawMode::fill(),
 //!             glam::vec2(self.position_x, 380.0),
 //!             100.0,
 //!             2.0,
 //!             graphics::Color::WHITE,
 //!         )?;
-//!         graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
-//!         graphics::present(ctx)?;
+//!         canvas.draw_mesh(circle, None, graphics::DrawParam::default());
+//!         canvas.finish(&mut ctx.gfx)?;
 //!         timer::yield_now();
 //!         Ok(())
 //!     }
 //!
-//!     fn key_down_event(&mut self, ctx: &mut Context, key: KeyCode, mods: KeyMods, _: bool) {
+//!     fn key_down_event(
+//!         &mut self,
+//!         ctx: &mut Context,
+//!         key: KeyCode,
+//!         mods: KeyMods,
+//!         _: bool,
+//!     ) -> GameResult {
 //!         match key {
 //!             // Quit if Shift+Ctrl+Q is pressed.
 //!             KeyCode::Q => {
@@ -61,7 +70,16 @@
 //!             }
 //!             _ => (),
 //!         }
+//!         Ok(())
 //!     }
+//! }
+//!
+//! pub fn main() -> GameResult {
+//!     let cb = ggez::ContextBuilder::new("keyboard", "ggez");
+//!     let (mut ctx, event_loop) = cb.build()?;
+//!
+//!     let state = MainState { position_x: 0.0 };
+//!     event::run(ctx, event_loop, state)
 //! }
 //! ```
 
