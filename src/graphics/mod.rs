@@ -39,3 +39,37 @@ pub use {
     self::image::*, canvas::*, context::*, draw::*, instance::*, mesh::*, sampler::*, shader::*,
     text::*, types::*,
 };
+
+/// Applies `DrawParam` to `Rect`.
+pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
+    match param.transform {
+        Transform::Values {
+            scale,
+            offset,
+            dest,
+            rotation,
+        } => {
+            // first apply the offset
+            let mut r = Rect {
+                w: rect.w,
+                h: rect.h,
+                x: rect.x - offset.x * rect.w,
+                y: rect.y - offset.y * rect.h,
+            };
+            // apply the scale
+            let real_scale = (param.src.w * scale.x, param.src.h * scale.y);
+            r.w = real_scale.0 * rect.w;
+            r.h = real_scale.1 * rect.h;
+            r.x *= real_scale.0;
+            r.y *= real_scale.1;
+            // apply the rotation
+            r.rotate(rotation);
+            // apply the destination translation
+            r.x += dest.x;
+            r.y += dest.y;
+
+            r
+        }
+        Transform::Matrix(_m) => todo!("Fix me"),
+    }
+}

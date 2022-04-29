@@ -7,7 +7,7 @@ use super::{
     draw::{DrawParam, DrawUniforms, Std140DrawUniforms},
     gpu::arc::ArcBuffer,
     internal_canvas::InstanceArrayView,
-    Canvas, Draw, Drawable, Image, Rect, WgpuContext,
+    transform_rect, Canvas, Draw, Drawable, Image, Mesh, Rect, WgpuContext,
 };
 use crevice::std140::AsStd140;
 use std::{
@@ -236,6 +236,27 @@ impl InstanceArray {
     pub fn capacity(&self) -> usize {
         self.capacity.load(SeqCst) as usize
     }
+
+    /// This is equivalent to `<InstanceArray as Drawable>::dimensions()` (see [`Drawable::dimensions()`]), but with a mesh taken into account.
+    ///
+    /// Essentially, consider `<InstanceArray as Drawable>::dimensions()` to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw()`,
+    /// and consider [`InstanceArray::dimensions_meshed()`] to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw_instanced_mesh()`.
+    pub fn dimensions_meshed(&self, gfx: &mut GraphicsContext, mesh: &Mesh) -> Option<Rect> {
+        if self.params.is_empty() {
+            return None;
+        }
+        let dimensions = mesh.dimensions(gfx)?;
+        self.params
+            .iter()
+            .map(|&param| transform_rect(dimensions, param))
+            .fold(None, |acc: Option<Rect>, rect| {
+                Some(if let Some(acc) = acc {
+                    acc.combine_with(rect)
+                } else {
+                    rect
+                })
+            })
+    }
 }
 
 impl Drawable for InstanceArray {
@@ -250,7 +271,20 @@ impl Drawable for InstanceArray {
         );
     }
 
-    fn dimensions(&self, _gfx: &mut GraphicsContext) -> Option<Rect> {
-        None
+    fn dimensions(&self, gfx: &mut GraphicsContext) -> Option<Rect> {
+        if self.params.is_empty() {
+            return None;
+        }
+        let dimensions = self.image.dimensions(gfx)?;
+        self.params
+            .iter()
+            .map(|&param| transform_rect(dimensions, param))
+            .fold(None, |acc: Option<Rect>, rect| {
+                Some(if let Some(acc) = acc {
+                    acc.combine_with(rect)
+                } else {
+                    rect
+                })
+            })
     }
 }
