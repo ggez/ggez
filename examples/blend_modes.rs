@@ -6,7 +6,7 @@
 //! (for more explanations on this see https://github.com/ggez/ggez/issues/694#issuecomment-853724926)
 
 use ggez::event::{self, EventHandler};
-use ggez::graphics::{self, BlendMode, Color, DrawParam};
+use ggez::graphics::{self, BlendMode, Color, DrawParam, GraphicsContext};
 use ggez::{Context, GameResult};
 use glam::Vec2;
 use std::env;
@@ -39,7 +39,13 @@ impl MainState {
         Ok(s)
     }
 
-    fn draw_venn(&self, canvas: &mut graphics::Canvas, pos: Vec2, name: &str) -> GameResult<()> {
+    fn draw_venn(
+        &self,
+        gfx: &mut GraphicsContext,
+        canvas: &mut graphics::Canvas,
+        pos: Vec2,
+        name: &str,
+    ) -> GameResult<()> {
         const TRI_COLORS: [Color; 3] = [
             Color::new(0.8, 0., 0., 0.5),
             Color::new(0., 0.8, 0., 0.5),
@@ -65,10 +71,14 @@ impl MainState {
 
         // draw text naming the blend mode
         canvas.set_blend_mode(BlendMode::ALPHA);
+        // to center it over the diagram get the text dimensions
+        let mut text = graphics::Text::new(name);
+        text.set_scale(20.);
+        let size = text.measure(gfx)?;
         canvas.draw(
-            graphics::Text::new(name).set_scale(20.),
+            &text,
             graphics::DrawParam::from(pos)
-                .offset([0., 100.])
+                .offset([size.x / 2.0, 100.])
                 .color(Color::WHITE),
         );
 
@@ -77,6 +87,7 @@ impl MainState {
 
     fn draw_venn_diagrams(
         &mut self,
+        gfx: &mut GraphicsContext,
         (w, h): (f32, f32),
         canvas: &mut graphics::Canvas,
     ) -> GameResult<()> {
@@ -86,35 +97,35 @@ impl MainState {
 
         // draw with Alpha
         canvas.set_blend_mode(BlendMode::ALPHA);
-        self.draw_venn(canvas, [x_step, y].into(), "Alpha")?;
+        self.draw_venn(gfx, canvas, [x_step, y].into(), "Alpha")?;
 
         // draw with Add
         canvas.set_blend_mode(BlendMode::ADD);
-        self.draw_venn(canvas, [x_step * 2., y].into(), "Add")?;
+        self.draw_venn(gfx, canvas, [x_step * 2., y].into(), "Add")?;
 
         // draw with Sub
         canvas.set_blend_mode(BlendMode::SUBTRACT);
-        self.draw_venn(canvas, [x_step * 3., y].into(), "Subtract")?;
+        self.draw_venn(gfx, canvas, [x_step * 3., y].into(), "Subtract")?;
 
         // draw with Multiply
         canvas.set_blend_mode(BlendMode::MULTIPLY);
-        self.draw_venn(canvas, [x_step * 4., y].into(), "Multiply")?;
+        self.draw_venn(gfx, canvas, [x_step * 4., y].into(), "Multiply")?;
 
         // draw with Invert
         canvas.set_blend_mode(BlendMode::INVERT);
-        self.draw_venn(canvas, [x_step * 5., y].into(), "Invert")?;
+        self.draw_venn(gfx, canvas, [x_step * 5., y].into(), "Invert")?;
 
         // draw with Replace
         canvas.set_blend_mode(BlendMode::REPLACE);
-        self.draw_venn(canvas, [x_step * 6., y].into(), "Replace")?;
+        self.draw_venn(gfx, canvas, [x_step * 6., y].into(), "Replace")?;
 
         // draw with Darken
         canvas.set_blend_mode(BlendMode::DARKEN);
-        self.draw_venn(canvas, [x_step * 7., y].into(), "Darken")?;
+        self.draw_venn(gfx, canvas, [x_step * 7., y].into(), "Darken")?;
 
         // draw with Lighten
         canvas.set_blend_mode(BlendMode::LIGHTEN);
-        self.draw_venn(canvas, [x_step * 8., y].into(), "Lighten")?;
+        self.draw_venn(gfx, canvas, [x_step * 8., y].into(), "Lighten")?;
 
         Ok(())
     }
@@ -132,14 +143,14 @@ impl EventHandler for MainState {
         let layer = self.layer.image(&ctx.gfx);
         let mut canvas =
             graphics::Canvas::from_image(&ctx.gfx, layer.clone(), Color::new(0., 0., 0., 0.));
-        self.draw_venn_diagrams((w, h), &mut canvas)?;
+        self.draw_venn_diagrams(&mut ctx.gfx, (w, h), &mut canvas)?;
         canvas.finish(&mut ctx.gfx)?;
 
         // now start drawing to the screen
         let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::new(0.3, 0.3, 0.3, 1.0));
 
         // draw everything directly onto the screen once
-        self.draw_venn_diagrams((w, h), &mut canvas)?;
+        self.draw_venn_diagrams(&mut ctx.gfx, (w, h), &mut canvas)?;
 
         // draw layer onto the screen
         canvas.set_blend_mode(self.layer_blend);
