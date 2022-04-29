@@ -325,6 +325,10 @@ impl<'a> InternalCanvas<'a> {
         let mut uniforms = DrawUniforms::from_param(&param, [w as f32, h as f32].into());
         uniforms.transform = (self.transform * glam::Mat4::from(uniforms.transform)).into();
 
+        // 1. allocate some uniform buffer memory from GrowingBufferArena.
+        // 2. write the uniform data to that memory
+        // 3. use a "dynamic offset" to offset into the memory
+
         self.wgpu
             .queue
             .write_buffer(&uniform_alloc.buffer, uniform_alloc.offset, unsafe {
@@ -337,7 +341,7 @@ impl<'a> InternalCanvas<'a> {
         self.pass.set_bind_group(
             0,
             self.arenas.bind_groups.alloc(uniform_bind_group),
-            &[uniform_alloc.offset as u32],
+            &[uniform_alloc.offset as u32], // <- the dynamic offset
         );
 
         self.pass.set_vertex_buffer(0, mesh.verts.slice(..));

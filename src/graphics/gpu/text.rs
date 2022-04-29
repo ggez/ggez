@@ -132,9 +132,15 @@ impl TextRenderer {
 
                 let verts_buf = arenas.buffers.alloc(verts_alloc.buffer);
                 pass.set_vertex_buffer(0, verts_buf.slice(verts_alloc.offset..));
+
+                // N.B.: 1 glyph = 4 verts, then n glyphs = n instances.
+                // Also note that vertex data is stepped PER INSTANCE.
+                // Therefore we only store ONE VERTEX for ONE GLYPH (and in the vertex shader we generate the quad vertices on the fly).
                 pass.draw(0..4, 0..verts.len() as u32);
             }
             Err(glyph_brush::BrushError::TextureTooSmall { suggested }) => {
+                // increase texture size as recommended by glyph_brush
+
                 self.cache_size = suggested;
                 self.glyph_brush
                     .resize_texture(self.cache_size.0, self.cache_size.1);

@@ -1,6 +1,7 @@
 use super::arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcSampler, ArcTextureView};
 use std::{collections::HashMap, num::NonZeroU64};
 
+// Builder pattern for bind group layouts; basically just produces a Vec<BindGroupLayoutEntry>.
 pub struct BindGroupLayoutBuilder {
     entries: Vec<wgpu::BindGroupLayoutEntry>,
 }
@@ -70,6 +71,7 @@ impl BindGroupLayoutBuilder {
     }
 }
 
+// This is used as a key into the HashMap cache to uniquely identify a bind group.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum BindGroupEntryKey {
     Buffer {

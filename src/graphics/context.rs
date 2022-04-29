@@ -590,6 +590,10 @@ impl GraphicsContext {
     }
 
     pub(crate) fn update_frame_image(&mut self) {
+        // Internally, GraphicsContext stores an intermediate image that is rendered to. Then, that frame image is rendered to the actual swapchain image.
+        // Moreover, one frame image is non-MSAA, whilst the other is MSAA.
+        // Since they're stored as ScreenImage, all this function does is store the corresponding Image returned by `ScreenImage::image()`.
+
         let mut frame = self.frame.take().unwrap(/* invariant */);
         self.frame_image = Some(frame.image(self));
         self.frame = Some(frame);

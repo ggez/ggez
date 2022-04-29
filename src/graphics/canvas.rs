@@ -17,6 +17,9 @@ use std::{collections::BTreeMap, sync::Arc};
 ///
 /// Canvases are also where you can bind your own custom shaders and samplers to use while drawing.
 /// Canvases *do not* automatically batch draws. To used batched (instanced) drawing, refer to [`InstanceArray`].
+// note:
+//   Canvas does not draw anything itself. It is merely a state-tracking and draw-reordering wrapper around InternalCanvas, which does the actual
+// drawing.
 #[derive(Debug)]
 pub struct Canvas {
     pub(crate) wgpu: Arc<WgpuContext>,
@@ -357,6 +360,8 @@ impl Canvas {
 
         for draws in self.draws.values() {
             for draw in draws {
+                // track state and apply to InternalCanvas if changed
+
                 if draw.state.shader != state.shader {
                     canvas.set_shader(draw.state.shader.clone());
                 }
@@ -463,6 +468,7 @@ pub(crate) enum Draw {
     },
 }
 
+// Stores *everything* you need to know to draw something.
 #[derive(Debug)]
 struct DrawCommand {
     state: DrawState,
