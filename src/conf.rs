@@ -73,11 +73,13 @@ pub struct WindowMode {
     /// Whether or not to show window decorations
     #[default = false]
     pub borderless: bool,
-    /// Minimum width for resizable windows; 0 means no limit
-    #[default = 0.0]
+    /// Minimum width for resizable windows; 1 is the technical minimum,
+    /// as wgpu will panic on a width of 0.
+    #[default = 1.0]
     pub min_width: f32,
-    /// Minimum height for resizable windows; 0 means no limit
-    #[default = 0.0]
+    /// Minimum height for resizable windows; 1 is the technical minimum,
+    /// as wgpu will panic on a height of 0.
+    #[default = 1.0]
     pub min_height: f32,
     /// Maximum width for resizable windows; 0 means no limit
     #[default = 0.0]
@@ -329,7 +331,6 @@ impl From<NumSamples> for u8 {
 ///     window_mode: WindowMode::default(),
 ///     window_setup: WindowSetup::default(),
 ///     backend: Backend::default(),
-///     modules: ModuleConf::default(),
 /// }
 /// # , Conf::default()); }
 /// ```
