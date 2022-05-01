@@ -110,8 +110,12 @@ impl WindowMode {
     /// Set default window size, or screen resolution in true fullscreen mode.
     #[must_use]
     pub fn dimensions(mut self, width: f32, height: f32) -> Self {
-        self.width = width;
-        self.height = height;
+        if width >= 1.0 {
+            self.width = width;
+        }
+        if height >= 1.0 {
+            self.height = height;
+        }
         self
     }
 
@@ -137,10 +141,15 @@ impl WindowMode {
     }
 
     /// Set minimum window dimensions for windowed mode.
+    /// Minimum dimensions will always be >= 1.
     #[must_use]
     pub fn min_dimensions(mut self, width: f32, height: f32) -> Self {
-        self.min_width = width;
-        self.min_height = height;
+        if width >= 1.0 {
+            self.min_width = width;
+        }
+        if height >= 1.0 {
+            self.min_height = height;
+        }
         self
     }
 
