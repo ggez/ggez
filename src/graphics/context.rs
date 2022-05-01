@@ -672,6 +672,8 @@ impl GraphicsContext {
         }
 
         let size = window.inner_size();
+        assert!(size.width > 0 && size.height > 0);
+
         self.wgpu.surface.configure(
             &self.wgpu.device,
             &wgpu::SurfaceConfiguration {
