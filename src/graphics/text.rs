@@ -1,5 +1,3 @@
-//!
-
 use super::{gpu::text::Extra, Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect};
 use crate::{filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};

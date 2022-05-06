@@ -1,5 +1,3 @@
-//!
-
 use super::{
     draw::DrawUniforms,
     gpu::{

@@ -1,5 +1,3 @@
-//!
-
 use super::gpu::arc::ArcSampler;
 use std::collections::HashMap;
 

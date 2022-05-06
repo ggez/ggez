@@ -1,5 +1,3 @@
-//!
-
 use super::{
     context::GraphicsContext,
     gpu::arc::{ArcTexture, ArcTextureView},

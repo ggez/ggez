@@ -1,5 +1,3 @@
-//!
-
 use super::{
     context::GraphicsContext, gpu::arc::ArcBuffer, Canvas, Color, Draw, DrawMode, DrawParam,
     Drawable, LinearColor, Rect, WgpuContext,

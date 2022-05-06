@@ -1,5 +1,3 @@
-//!
-
 use super::{Canvas, Color, GraphicsContext, LinearColor, Rect};
 
 /// A struct that represents where to put a drawable object.
