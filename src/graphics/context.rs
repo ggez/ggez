@@ -109,12 +109,12 @@ impl GraphicsContext {
             Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
         });
 
+        let physical_size =
+            dpi::PhysicalSize::<f64>::from((conf.window_mode.width, conf.window_mode.height));
+        assert!(physical_size.width >= 1.0 && physical_size.height >= 1.0); // wgpu needs surfaces > 0
         let mut window_builder = winit::window::WindowBuilder::new()
             .with_title(conf.window_setup.title.clone())
-            .with_inner_size(dpi::PhysicalSize::<f64>::from((
-                conf.window_mode.width,
-                conf.window_mode.height,
-            )))
+            .with_inner_size(physical_size)
             .with_resizable(conf.window_mode.resizable)
             .with_visible(conf.window_mode.visible);
 
@@ -625,13 +625,16 @@ impl GraphicsContext {
         let window = &mut self.window;
 
         // TODO LATER: find out if single-dimension constraints are possible?
-        let min_dimensions = if mode.min_width > 0.0 && mode.min_height > 0.0 {
+        let min_dimensions = if mode.min_width >= 1.0 && mode.min_height >= 1.0 {
             Some(dpi::PhysicalSize {
                 width: f64::from(mode.min_width),
                 height: f64::from(mode.min_height),
             })
         } else {
-            None
+            return Err(GameError::WindowError(format!(
+                "window min_width and min_height need to be at least 1; actual values: {}, {}",
+                mode.min_width, mode.min_height
+            )));
         };
         window.set_min_inner_size(min_dimensions);
 
@@ -650,10 +653,17 @@ impl GraphicsContext {
             FullscreenType::Windowed => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
-                window.set_inner_size(dpi::PhysicalSize {
-                    width: f64::from(mode.width),
-                    height: f64::from(mode.height),
-                });
+                if mode.width >= 1.0 && mode.height >= 1.0 {
+                    window.set_inner_size(dpi::PhysicalSize {
+                        width: f64::from(mode.width),
+                        height: f64::from(mode.height),
+                    });
+                } else {
+                    return Err(GameError::WindowError(format!(
+                        "window width and height need to be at least 1; actual values: {}, {}",
+                        mode.width, mode.height
+                    )));
+                }
                 window.set_resizable(mode.resizable);
                 window.set_maximized(mode.maximized);
             }
@@ -690,6 +700,8 @@ impl GraphicsContext {
         }
 
         let size = window.inner_size();
+        assert!(size.width > 0 && size.height > 0);
+
         self.wgpu.surface.configure(
             &self.wgpu.device,
             &wgpu::SurfaceConfiguration {
