@@ -474,9 +474,29 @@ impl GraphicsContext {
             )));
         }
 
-        let frame = self.wgpu.surface.get_current_texture().map_err(|_| {
-            GameError::RenderError(String::from("failed to get next swapchain image"))
-        })?;
+        let size = self.window.inner_size();
+        let frame = match self.wgpu.surface.get_current_texture() {
+            Ok(frame) => Ok(frame),
+            Err(_) => {
+                self.wgpu.surface.configure(
+                    &self.wgpu.device,
+                    &wgpu::SurfaceConfiguration {
+                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                        format: self.surface_format,
+                        width: size.width.max(1),
+                        height: size.height.max(1),
+                        present_mode: if self.vsync {
+                            wgpu::PresentMode::Fifo
+                        } else {
+                            wgpu::PresentMode::Mailbox
+                        },
+                    },
+                );
+                self.wgpu.surface.get_current_texture().map_err(|_| {
+                    GameError::RenderError(String::from("failed to get next swapchain image"))
+                })
+            }
+        }?;
         let frame_view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -577,8 +597,8 @@ impl GraphicsContext {
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: self.surface_format,
-                width: size.width,
-                height: size.height,
+                width: size.width.max(1),
+                height: size.height.max(1),
                 present_mode: if self.vsync {
                     wgpu::PresentMode::Fifo
                 } else {
@@ -677,8 +697,8 @@ impl GraphicsContext {
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: self.surface_format,
-                width: size.width,
-                height: size.height,
+                width: size.width.max(1),
+                height: size.height.max(1),
                 present_mode: if self.vsync {
                     wgpu::PresentMode::Fifo
                 } else {

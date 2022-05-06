@@ -399,7 +399,7 @@ impl ScreenImage {
         let size = gfx.window.inner_size();
         let width = (size.width as f32 * width) as u32;
         let height = (size.height as f32 * height) as u32;
-        (width, height)
+        (width.max(1), height.max(1))
     }
 
     fn create(
