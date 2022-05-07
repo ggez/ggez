@@ -41,7 +41,7 @@ impl MainState {
 
     fn draw_venn(
         &self,
-        gfx: &mut GraphicsContext,
+        _gfx: &mut GraphicsContext,
         canvas: &mut graphics::Canvas,
         pos: Vec2,
         name: &str,
@@ -71,14 +71,13 @@ impl MainState {
 
         // draw text naming the blend mode
         canvas.set_blend_mode(BlendMode::ALPHA);
-        // to center it over the diagram get the text dimensions
         let mut text = graphics::Text::new(name);
         text.set_scale(20.);
-        let size = text.measure(gfx)?;
+        let text_offset = Vec2::new(0., -100.);
         canvas.draw(
             &text,
-            graphics::DrawParam::from(pos)
-                .offset([size.x / 2.0, 100.])
+            graphics::DrawParam::from(pos + text_offset)
+                .offset([0.5, 0.0])
                 .color(Color::WHITE),
         );
 

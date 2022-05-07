@@ -12,7 +12,7 @@ use super::{
     mesh::{Mesh, Vertex},
     sampler::{Sampler, SamplerCache},
     shader::Shader,
-    BlendMode, CanvasLoadOp, InstanceArray, LinearColor, Rect, Text, WgpuContext,
+    BlendMode, CanvasLoadOp, InstanceArray, LinearColor, Rect, Text, Transform, WgpuContext,
 };
 use crate::{GameError, GameResult};
 use crevice::std140::{AsStd140, Std140};
@@ -445,7 +445,16 @@ impl<'a> InternalCanvas<'a> {
         Ok(())
     }
 
-    pub fn draw_bounded_text(&mut self, text: &Text, param: DrawParam) -> GameResult {
+    pub fn draw_bounded_text(&mut self, text: &Text, mut param: DrawParam) -> GameResult {
+        if let Transform::Values { dest, offset, .. } = &mut param.transform {
+            if offset.x > 0. || offset.y > 0. {
+                let bounds = text.measure_raw(self.text_renderer, self.fonts)?;
+                dest.x -= offset.x * bounds.x;
+                dest.y -= offset.y * bounds.y;
+                *offset = mint::Point2 { x: 0., y: 0. };
+            }
+        }
+
         self.text_renderer
             .queue(text.as_section(self.fonts, param)?);
 

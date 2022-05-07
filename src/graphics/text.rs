@@ -1,4 +1,7 @@
-use super::{gpu::text::Extra, Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect};
+use super::{
+    gpu::text::{Extra, TextRenderer},
+    Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect,
+};
 use crate::{filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
 use std::{collections::HashMap, io::Read, path::Path};
@@ -208,11 +211,19 @@ impl Text {
     }
 
     /// Measures the glyph boundaries for the text.
+    #[inline]
     pub fn measure(&self, gfx: &mut GraphicsContext) -> GameResult<mint::Vector2<f32>> {
-        Ok(gfx
-            .text
+        self.measure_raw(&mut gfx.text, &gfx.fonts)
+    }
+
+    pub(crate) fn measure_raw(
+        &self,
+        text: &mut TextRenderer,
+        fonts: &HashMap<String, FontId>,
+    ) -> GameResult<mint::Vector2<f32>> {
+        Ok(text
             .glyph_brush
-            .glyph_bounds(self.as_section(&gfx.fonts, DrawParam::default())?)
+            .glyph_bounds(self.as_section(fonts, DrawParam::default())?)
             .map(|rect| mint::Vector2::<f32> {
                 x: rect.width(),
                 y: rect.height(),
