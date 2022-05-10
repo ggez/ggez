@@ -207,7 +207,7 @@ where
                 self.mouse_button_down_event(ctx, MouseButton::Left, x as f32, y as f32)?;
             }
             TouchPhase::Moved => {
-                let diff = crate::input::mouse::last_delta(ctx);
+                let diff = ctx.mouse.last_delta();
                 self.mouse_motion_event(ctx, x as f32, y as f32, diff.x, diff.y)?;
             }
             TouchPhase::Ended | TouchPhase::Cancelled => {
@@ -302,8 +302,6 @@ where
     S: EventHandler<E>,
     E: std::fmt::Debug,
 {
-    use crate::input::mouse;
-
     event_loop.run(move |mut event, _, control_flow| {
         if !ctx.continuing {
             *control_flow = ControlFlow::Exit;
@@ -386,7 +384,7 @@ where
                     let (x, y) = match delta {
                         MouseScrollDelta::LineDelta(x, y) => (x, y),
                         MouseScrollDelta::PixelDelta(pos) => {
-                            let scale_factor = ctx.gfx.window.window().scale_factor();
+                            let scale_factor = ctx.gfx.window.scale_factor();
                             let dpi::LogicalPosition { x, y } = pos.to_logical::<f32>(scale_factor);
                             (x, y)
                         }
@@ -433,7 +431,7 @@ where
                 }
                 WindowEvent::CursorMoved { .. } => {
                     let position = ctx.mouse.position();
-                    let delta = mouse::last_delta(ctx);
+                    let delta = ctx.mouse.last_delta();
                     let res =
                         state.mouse_motion_event(ctx, position.x, position.y, delta.x, delta.y);
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::MouseMotionEvent) {
@@ -512,10 +510,26 @@ where
                     return;
                 };
 
-                let res = state.draw(ctx);
-                if catch_error(ctx, res, state, control_flow, ErrorOrigin::Draw) {
-                    return;
-                };
+                if let Err(e) = ctx.gfx.begin_frame() {
+                    error!("Error on GraphicsContext::begin_frame(): {:?}", e);
+                    eprintln!("Error on GraphicsContext::begin_frame(): {:?}", e);
+                    *control_flow = ControlFlow::Exit;
+                }
+
+                if let Err(e) = state.draw(ctx) {
+                    error!("Error on EventHandler::draw(): {:?}", e);
+                    eprintln!("Error on EventHandler::draw(): {:?}", e);
+                    if state.on_error(ctx, ErrorOrigin::Draw, e) {
+                        *control_flow = ControlFlow::Exit;
+                        return;
+                    }
+                }
+
+                if let Err(e) = ctx.gfx.end_frame() {
+                    error!("Error on GraphicsContext::end_frame(): {:?}", e);
+                    eprintln!("Error on GraphicsContext::end_frame(): {:?}", e);
+                    *control_flow = ControlFlow::Exit;
+                }
 
                 // reset the mouse delta for the next frame
                 // necessary because it's calculated cumulatively each cycle
@@ -563,8 +577,7 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
     if let winit_event::Event::WindowEvent { event, .. } = event {
         match event {
             winit_event::WindowEvent::Resized(physical_size) => {
-                ctx.gfx.window.resize(*physical_size);
-                ctx.gfx.resize_viewport();
+                ctx.gfx.resize(*physical_size);
             }
             winit_event::WindowEvent::CursorMoved {
                 position: physical_position,

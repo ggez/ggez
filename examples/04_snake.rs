@@ -19,8 +19,10 @@ use oorandom::Rand32;
 
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
-use ggez::event::{KeyCode, KeyMods};
-use ggez::{event, graphics, Context, GameResult};
+use ggez::{
+    event::{self, KeyCode, KeyMods},
+    graphics, Context, GameResult,
+};
 
 // We'll bring in some things from `std` to help us in the future.
 use std::collections::LinkedList;
@@ -177,24 +179,25 @@ impl Food {
     }
 
     /// Here is the first time we see what drawing looks like with ggez.
-    /// We have a function that takes in a `&mut ggez::Context` which we use
-    /// with the helpers in `ggez::graphics` to do drawing. We also return a
-    /// `ggez::GameResult` so that we can use the `?` operator to bubble up
-    /// failure of drawing.
+    /// We have a function that takes in a `&mut ggez::graphics::Canvas` which we use
+    /// to do drawing.
     ///
     /// Note: this method of drawing does not scale. If you need to render
-    /// a large number of shapes, use a SpriteBatch. This approach is fine for
+    /// a large number of shapes, use an InstanceArray. This approach is fine for
     /// this example since there are a fairly limited number of calls.
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&self, canvas: &mut graphics::Canvas) {
         // First we set the color to draw with, in this case all food will be
         // colored blue.
-        let color = [0.0, 0.0, 1.0, 1.0].into();
+        let color = [0.0, 0.0, 1.0, 1.0];
         // Then we draw a rectangle with the Fill draw mode, and we convert the
         // Food's position into a `ggez::Rect` using `.into()` which we can do
         // since we implemented `From<GridPosition>` for `Rect` earlier.
-        let rectangle =
-            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), self.pos.into(), color)?;
-        graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))
+        canvas.draw(
+            &graphics::Quad,
+            graphics::DrawParam::new()
+                .dest_rect(self.pos.into())
+                .color(color),
+        );
     }
 }
 
@@ -312,29 +315,26 @@ impl Snake {
     ///
     /// Again, note that this approach to drawing is fine for the limited scope of this
     /// example, but larger scale games will likely need a more optimized render path
-    /// using SpriteBatch or something similar that batches draw calls.
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    /// using InstanceArray or something similar that batches draw calls.
+    fn draw(&self, canvas: &mut graphics::Canvas) {
         // We first iterate through the body segments and draw them.
         for seg in self.body.iter() {
             // Again we set the color (in this case an orangey color)
             // and then draw the Rect that we convert that Segment's position into
-            let rectangle = graphics::Mesh::new_rectangle(
-                ctx,
-                graphics::DrawMode::fill(),
-                seg.pos.into(),
-                [0.3, 0.3, 0.0, 1.0].into(),
-            )?;
-            graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
+            canvas.draw(
+                &graphics::Quad,
+                graphics::DrawParam::new()
+                    .dest_rect(seg.pos.into())
+                    .color([0.3, 0.3, 0.0, 1.0]),
+            );
         }
         // And then we do the same for the head, instead making it fully red to distinguish it.
-        let rectangle = graphics::Mesh::new_rectangle(
-            ctx,
-            graphics::DrawMode::fill(),
-            self.head.pos.into(),
-            [1.0, 0.5, 0.0, 1.0].into(),
-        )?;
-        graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
-        Ok(())
+        canvas.draw(
+            &graphics::Quad,
+            graphics::DrawParam::new()
+                .dest_rect(self.head.pos.into())
+                .color([1.0, 0.5, 0.0, 1.0]),
+        );
     }
 }
 
@@ -415,14 +415,21 @@ impl event::EventHandler<ggez::GameError> for GameState {
 
     /// draw is where we should actually render the game's current state.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        // First we clear the screen to a nice (well, maybe pretty glaring ;)) green
-        graphics::clear(ctx, [0.0, 1.0, 0.0, 1.0].into());
+        // First we create a canvas that renders to the frame, and clear it to a (sort of) green color
+        let mut canvas = graphics::Canvas::from_frame(
+            &ctx.gfx,
+            graphics::CanvasLoadOp::Clear([0.0, 1.0, 0.0, 1.0].into()),
+        );
+
         // Then we tell the snake and the food to draw themselves
-        self.snake.draw(ctx)?;
-        self.food.draw(ctx)?;
-        // Finally we call graphics::present to cycle the gpu's framebuffer and display
-        // the new frame we just drew.
-        graphics::present(ctx)?;
+        self.snake.draw(&mut canvas);
+        self.food.draw(&mut canvas);
+
+        // Finally, we "flush" the draw commands.
+        // Since we rendered to the frame, we don't need to tell ggez to present anything else,
+        // as ggez will automatically present the frame image unless told otherwise.
+        canvas.finish(&mut ctx.gfx)?;
+
         // We yield the current thread until the next update
         ggez::timer::yield_now();
         // And return success.

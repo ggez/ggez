@@ -4,51 +4,24 @@
 //! the underlying `gfx-rs` data types, so you can bypass ggez's
 //! drawing code entirely and write your own.
 
-#![allow(clippy::single_component_path_imports)]
-use gfx; //single component path import required for macro's use.
-use gfx::*;
-
-use gfx::texture;
-use gfx::traits::FactoryExt;
-use gfx::Factory;
-
-use ggez::event;
+use crevice::std140::Std140;
 use ggez::graphics;
+use ggez::{event, graphics::AsStd140};
 use ggez::{Context, GameResult};
 use glam::*;
 use std::env;
 use std::f32;
 use std::path;
+use wgpu::util::DeviceExt;
 
 type Isometry3 = Mat4;
 type Point3 = Vec3;
 type Vector3 = Vec3;
-// ColorFormat and DepthFormat are hardwired into ggez's drawing code,
-// and there isn't a way to easily change them, so for the moment we just have
-// to know what they are and use the same settings.
-type ColorFormat = gfx::format::Srgba8;
-type DepthFormat = gfx::format::DepthStencil;
 
-gfx_defines! {
-    vertex Vertex {
-        pos: [f32; 4] = "a_Pos",
-        tex_coord: [f32; 2] = "a_TexCoord",
-    }
-
-    constant Locals {
-        transform: [[f32; 4]; 4] = "u_Transform",
-        rotation: [[f32; 4]; 4] = "u_Rotation",
-    }
-
-    pipeline pipe {
-        vbuf: gfx::VertexBuffer<Vertex> = (),
-        transform: gfx::Global<[[f32; 4]; 4]> = "u_Transform",
-        locals: gfx::ConstantBuffer<Locals> = "Locals",
-        color: gfx::TextureSampler<[f32; 4]> = "t_Color",
-        out_color: gfx::RenderTarget<ColorFormat> = "Target0",
-        out_depth: gfx::DepthTarget<DepthFormat> =
-            gfx::preset::depth::LESS_EQUAL_WRITE,
-    }
+#[allow(dead_code)]
+struct Vertex {
+    pos: [f32; 4],
+    tex_coord: [f32; 2],
 }
 
 impl Vertex {
@@ -58,6 +31,12 @@ impl Vertex {
             tex_coord: [f32::from(t[0]), f32::from(t[1])],
         }
     }
+}
+
+#[derive(AsStd140)]
+struct Locals {
+    transform: mint::ColumnMatrix4<f32>,
+    rotation: mint::ColumnMatrix4<f32>,
 }
 
 fn default_view() -> Isometry3 {
@@ -71,46 +50,25 @@ fn default_view() -> Isometry3 {
 
 struct MainState {
     frames: usize,
+    transform: mint::ColumnMatrix4<f32>,
     rotation: f32,
 
-    // All the gfx-rs state stuff we need to keep track of.
-    data: pipe::Data<gfx_device_gl::Resources>,
-    pso: gfx::PipelineState<gfx_device_gl::Resources, pipe::Meta>,
-    slice: gfx::Slice<gfx_device_gl::Resources>,
+    verts: wgpu::Buffer,
+    inds: wgpu::Buffer,
+    pipeline: wgpu::RenderPipeline,
+    locals: wgpu::Buffer,
+    bind_group: wgpu::BindGroup,
+    depth: graphics::ScreenImage,
 }
 
 impl MainState {
-    fn new(ctx: &mut Context) -> Self {
-        let (factory, _device, _encoder, depth_view, color_view) = graphics::gfx_objects(ctx);
-
+    fn new(ctx: &mut Context) -> GameResult<Self> {
         // Shaders.
-        let vs = br#"#version 150 core
-
-in vec4 a_Pos;
-in vec2 a_TexCoord;
-out vec2 v_TexCoord;
-
-uniform Locals {
-    mat4 u_Transform;
-    mat4 u_Rotation;
-};
-
-void main() {
-    v_TexCoord = a_TexCoord;
-    gl_Position = u_Transform * u_Rotation * a_Pos ;
-    gl_ClipDistance[0] = 1.0;
-}"#;
-        let fs = br#"#version 150 core
-
-in vec2 v_TexCoord;
-out vec4 Target0;
-uniform sampler2D t_Color;
-
-void main() {
-    vec4 tex = texture(t_Color, v_TexCoord);
-    float blend = dot(v_TexCoord-vec2(0.5,0.5), v_TexCoord-vec2(0.5,0.5));
-    Target0 = mix(tex, vec4(0.0,0.0,0.0,0.0), blend*1.0);
-}"#;
+        let shader = ctx
+            .gfx
+            .wgpu()
+            .device
+            .create_shader_module(&wgpu::include_wgsl!("../resources/cube.wgsl"));
 
         // Cube geometry
         let vertex_data = [
@@ -147,7 +105,7 @@ void main() {
         ];
 
         #[rustfmt::skip]
-        let index_data: &[u16] = &[
+        let index_data: &[u32] = &[
              0,  1,  2,  2,  3,  0, // top
              4,  5,  6,  6,  7,  4, // bottom
              8,  9, 10, 10, 11,  8, // right
@@ -156,49 +114,165 @@ void main() {
             20, 21, 22, 22, 23, 20, // back
         ];
 
-        // Create vertex buffer
-        let (vbuf, slice) = factory.create_vertex_buffer_with_slice(&vertex_data, index_data);
+        // Create vertex and index buffers.
+        let verts = ctx
+            .gfx
+            .wgpu()
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: unsafe {
+                    std::slice::from_raw_parts(
+                        vertex_data.as_ptr() as *const u8,
+                        vertex_data.len() * std::mem::size_of::<Vertex>(),
+                    )
+                },
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+        let inds = ctx
+            .gfx
+            .wgpu()
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: unsafe {
+                    std::slice::from_raw_parts(
+                        index_data.as_ptr() as *const u8,
+                        index_data.len() * 4,
+                    )
+                },
+                usage: wgpu::BufferUsages::INDEX,
+            });
+
+        let pipeline =
+            ctx.gfx
+                .wgpu()
+                .device
+                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: None,
+                    layout: None,
+                    vertex: wgpu::VertexState {
+                        module: &shader,
+                        entry_point: "vs_main",
+                        buffers: &[wgpu::VertexBufferLayout {
+                            array_stride: std::mem::size_of::<Vertex>() as _,
+                            step_mode: wgpu::VertexStepMode::Vertex,
+                            attributes: &[
+                                // pos
+                                wgpu::VertexAttribute {
+                                    format: wgpu::VertexFormat::Float32x4,
+                                    offset: 0,
+                                    shader_location: 0,
+                                },
+                                // tex_coord
+                                wgpu::VertexAttribute {
+                                    format: wgpu::VertexFormat::Float32x2,
+                                    offset: 16,
+                                    shader_location: 1,
+                                },
+                            ],
+                        }],
+                    },
+                    primitive: wgpu::PrimitiveState {
+                        topology: wgpu::PrimitiveTopology::TriangleList,
+                        strip_index_format: None,
+                        front_face: wgpu::FrontFace::Ccw,
+                        cull_mode: Some(wgpu::Face::Back),
+                        unclipped_depth: false,
+                        polygon_mode: wgpu::PolygonMode::Fill,
+                        conservative: false,
+                    },
+                    depth_stencil: Some(wgpu::DepthStencilState {
+                        format: wgpu::TextureFormat::Depth32Float,
+                        depth_write_enabled: true,
+                        depth_compare: wgpu::CompareFunction::Greater,
+                        stencil: wgpu::StencilState::default(),
+                        bias: wgpu::DepthBiasState::default(),
+                    }),
+                    multisample: wgpu::MultisampleState {
+                        count: 1,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &shader,
+                        entry_point: "fs_main",
+                        targets: &[wgpu::ColorTargetState {
+                            format: ctx.gfx.surface_format(),
+                            blend: None,
+                            write_mask: wgpu::ColorWrites::ALL,
+                        }],
+                    }),
+                    multiview: None,
+                });
 
         // Create 1-pixel blue texture.
-        let texels = [[0x20, 0xA0, 0xC0, 0x00]];
-        let (_, texture_view) = factory
-            .create_texture_immutable::<gfx::format::Rgba8>(
-                texture::Kind::D2(1, 1, texture::AaMode::Single),
-                texture::Mipmap::Provided,
-                &[&texels],
-            )
-            .unwrap();
+        let image =
+            graphics::Image::from_solid(&ctx.gfx, 1, graphics::Color::from_rgb(0x20, 0xA0, 0xC0));
 
-        let sinfo =
-            texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
+        let sampler = ctx
+            .gfx
+            .wgpu()
+            .device
+            .create_sampler(&graphics::Sampler::linear_clamp().into());
 
-        // Create pipeline state object
-        let pso = factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap();
+        let locals = ctx
+            .gfx
+            .wgpu()
+            .device
+            .create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: Locals::std140_size_static() as _,
+                usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::UNIFORM,
+                mapped_at_creation: false,
+            });
+
+        let bind_group = ctx
+            .gfx
+            .wgpu()
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: None,
+                layout: &pipeline.get_bind_group_layout(0),
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                            buffer: &locals,
+                            offset: 0,
+                            size: None,
+                        }),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::TextureView(image.wgpu().1),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::Sampler(&sampler),
+                    },
+                ],
+            });
+
+        let depth =
+            graphics::ScreenImage::new(&ctx.gfx, graphics::ImageFormat::Depth32Float, 1., 1., 1);
 
         // FOV, spect ratio, znear, zfar
         let proj = Mat4::perspective_rh(f32::consts::PI / 4.0, 4.0 / 3.0, 1.0, 10.0);
         let transform = proj * default_view();
 
-        // Bundle all the data together.
-        let data = pipe::Data {
-            vbuf,
-            transform: transform.to_cols_array_2d(),
-            locals: factory.create_constant_buffer(1),
-            color: (texture_view, factory.create_sampler(sinfo)),
-            // We use the (undocumented-but-useful) gfx::memory::Typed here
-            // to convert ggez's raw render and depth buffers into ones with
-            // compile-time type information.
-            out_color: gfx::memory::Typed::new(color_view),
-            out_depth: gfx::memory::Typed::new(depth_view),
-        };
-
-        MainState {
+        Ok(MainState {
             frames: 0,
-            data,
-            pso,
-            slice,
+            transform: transform.into(),
             rotation: 0.0,
-        }
+
+            verts,
+            inds,
+            pipeline,
+            locals,
+            bind_group,
+            depth,
+        })
     }
 }
 
@@ -209,53 +283,71 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        // Do gfx-rs drawing
         {
-            let (_factory, device, encoder, _depthview, _colorview) = graphics::gfx_objects(ctx);
-            encoder.clear(&self.data.out_color, [0.1, 0.1, 0.1, 1.0]);
-
-            let rotation = Mat4::from_rotation_z(self.rotation);
-
             let locals = Locals {
-                transform: self.data.transform,
-                rotation: rotation.to_cols_array_2d(),
+                transform: self.transform,
+                rotation: Mat4::from_rotation_z(self.rotation).into(),
             };
-            encoder.update_constant_buffer(&self.data.locals, &locals);
-            encoder.clear_depth(&self.data.out_depth, 1.0);
+            ctx.gfx
+                .wgpu()
+                .queue
+                .write_buffer(&self.locals, 0, locals.as_std140().as_bytes());
 
-            encoder.draw(&self.slice, &self.pso, &self.data);
-            encoder.flush(device);
+            let depth = self.depth.image(&ctx.gfx);
+
+            let frame = ctx.gfx.frame().clone();
+            let cmd = ctx.gfx.commands().unwrap();
+            let mut pass = cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: frame.wgpu().1,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(
+                            graphics::LinearColor::from(graphics::Color::new(0.1, 0.1, 0.1, 1.0))
+                                .into(),
+                        ),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: depth.wgpu().1,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(0.),
+                        store: false,
+                    }),
+                    stencil_ops: None,
+                }),
+            });
+
+            pass.set_pipeline(&self.pipeline);
+            pass.set_bind_group(0, &self.bind_group, &[]);
+            pass.set_vertex_buffer(0, self.verts.slice(..));
+            pass.set_index_buffer(self.inds.slice(..), wgpu::IndexFormat::Uint32);
+            pass.draw_indexed(0..36, 0, 0..1);
         }
+
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, None);
 
         // Do ggez drawing
         let dest_point1 = Vec2::new(10.0, 210.0);
         let dest_point2 = Vec2::new(10.0, 250.0);
-        // graphics::draw(ctx, &self.text1, (dest_point1,))?;
-        // graphics::draw(ctx, &self.text2, (dest_point2,))?;
-
-        graphics::queue_text(
-            ctx,
-            &graphics::Text::new("You can mix ggez and gfx drawing;"),
+        canvas.draw(
+            &graphics::Text::new("You can mix ggez and wgpu drawing;"),
             dest_point1,
-            None,
         );
-        graphics::queue_text(
-            ctx,
-            &graphics::Text::new("it basically draws gfx stuff first, then ggez"),
+        canvas.draw(
+            &graphics::Text::new("it basically draws wgpu stuff first, then ggez"),
             dest_point2,
-            None,
         );
-        graphics::draw_queued_text(
-            ctx,
-            graphics::DrawParam::default(),
-            None,
-            graphics::FilterMode::Linear,
-        )?;
-        graphics::present(ctx)?;
+
+        canvas.finish(&mut ctx.gfx)?;
+
         self.frames += 1;
         if (self.frames % 10) == 0 {
             println!("FPS: {}", ctx.time.fps());
         }
+
         Ok(())
     }
 }
@@ -272,6 +364,6 @@ pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("cube", "ggez").add_resource_path(resource_dir);
 
     let (mut ctx, events_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx);
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, events_loop, state)
 }

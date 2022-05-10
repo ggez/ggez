@@ -23,8 +23,7 @@ impl ggez::event::EventHandler<GameError> for State {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
-    fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::present(ctx)?;
+    fn draw(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
 }
@@ -54,15 +53,18 @@ So which shapes are in `Mesh`?
 * [circle](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_circle)
 * [ellipse](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_ellipse)
 * [polygon](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_polygon)
+* [polyline](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_polyline)
 * [rectangle](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_rectangle)
+* [rounded rectangle](https://docs.rs/ggez/latest/ggez/graphics/struct.Mesh.html#method.new_rounded_rectangle)
 
 We are just going to touch on 2 shapes in this guide: the circle and the rectangle.
 
-Additionally there are 2 other methods we will look at.
-These 2 are used to show and erase the screen:
+Additionally, we need to look at another structure that we'll draw our things onto: the `Canvas`.
+We'll focus on three of its functions that are used to create it, draw a `Mesh` onto it and finally submit these draw calls:
 
-* [clear](https://docs.rs/ggez/0.7.0/ggez/graphics/fn.clear.html)
-* [present](https://docs.rs/ggez/0.7.0/ggez/graphics/fn.present.html)
+* [from_frame](https://docs.rs/ggez/latest/ggez/graphics/struct.Canvas.html#method.from_frame)
+* [draw](https://docs.rs/ggez/latest/ggez/graphics/struct.Canvas.html#method.draw)
+* [finish](https://docs.rs/ggez/latest/ggez/graphics/struct.Canvas.html#method.finish)
 
 ### ⚫ The Circle
 
@@ -72,7 +74,7 @@ Geometry, it's all coming back now.
 Here is the code for a [circle](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_circle):
 ```rust,skt-expression,no_run
 graphics::Mesh::new_circle(
-    ctx,
+    &ctx.gfx,
     graphics::DrawMode::fill(),
     mint::Point2{x: 200.0, y: 300.0},
     100.0,
@@ -84,10 +86,11 @@ graphics::Mesh::new_circle(
 Now now now, hold on a second... I said 2 pieces of information!
 Why did I just write like a million?!
 
-Well, `ctx` is needed to tell `ggez` where you are drawing to.
-`ctx` is what is passed into `update` and `draw` already.
+Well, `ctx.gfx` is needed to tell `ggez` where you are drawing to.
+`ctx` is what is passed to `update` and `draw` and holds our engine's state. `ctx.gfx` is then the graphics sub-context.
 
-[`graphics::DrawMode::fill()`](https://docs.rs/ggez/0.7.0/ggez/graphics/enum.DrawMode.html) is choosing between outlining the circle or filling it in.
+[`graphics::DrawMode::fill()`](https://docs.rs/ggez/0.7.0/ggez/graphics/enum.DrawMode.html) is choosing between
+outlining the circle or filling it in.
 
 Point, now here is one we expected.
 This is the origin of the circle.
@@ -95,26 +98,30 @@ This is the origin of the circle.
 
 `100.0` is the radius of the circle. So this circle will be `200` pixels wide.
 
-And `0.1` is the [tolerance](https://docs.rs/lyon_geom/0.15.3/lyon_geom/#flattening). Do not worry about this one for now. You can experiment with the number.
+And `0.1` is the [tolerance](https://docs.rs/lyon_geom/0.15.3/lyon_geom/#flattening).
+Do not worry about this one for now. You can experiment with the number.
 
-And that's how a circle is drawn!
+And that's how a circle is created!
 
-#### ✔ Check Circle
+#### ✔ Drawing the Circle
 
-Let's try it out with some quick code:
+To draw it, we first need to create our `Canvas`, filling it with black. Then we add a draw call,
+drawing the circle onto it. Lastly, we submit this draw call.
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    graphics::clear(ctx, graphics::Color::BLACK);
+    let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, graphics::Color::BLACK);
+    
     let circle = graphics::Mesh::new_circle(
-        ctx,
+        &ctx.gfx,
         graphics::DrawMode::fill(),
         mint::Point2{x: 200.0, y: 300.0},
         100.0,
         0.1,
         graphics::Color::WHITE,
     )?;
-    graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
-    graphics::present(ctx)?;
+    
+    canvas.draw(circle, graphics::DrawParam::default());
+    canvas.finish(&mut ctx.gfx)?;
     Ok(())
 }
 ```
@@ -128,7 +135,7 @@ Rectangles are represented by 3 pieces of information: origin, width, and height
 Here is the code for a [rectangle](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_rectangle):
 ```rust,skt-expression,no_run
 graphics::Mesh::new_rectangle(
-    ctx,
+    &ctx.gfx,
     graphics::DrawMode::fill(),
     graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
     graphics::Color::WHITE,
@@ -142,22 +149,24 @@ but this is correct.
 [`graphics::Rect::new(500.0, 250.0, 200.0, 100.0)`](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Rect.html) positions the rectangle's top-left corner at `x: 500, y: 250` and
 specifies `width: 200, height: 100`.
 
-And that's how a rectangle is drawn!
+And that's how a rectangle is created!
 
-#### ✔ Check Rectangle
+#### ✔ Draw Rectangle
 
 Let's try it out with some quick code:
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    graphics::clear(ctx, graphics::Color::BLACK);
+    let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, graphics::Color::BLACK);
+    
     let rect = graphics::Mesh::new_rectangle(
         ctx,
         graphics::DrawMode::fill(),
         graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
         graphics::Color::WHITE,
     )?;
-    graphics::draw(ctx, &rect, graphics::DrawParam::default())?;
-    graphics::present(ctx)?;
+    
+    canvas.draw(rect, graphics::DrawParam::default());
+    canvas.finish(&mut ctx.gfx)?;
     Ok(())
 }
 ```
@@ -225,22 +234,34 @@ But we still don't see anything...
 You need to modify `draw` to illustrate your new `State`.
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    graphics::clear(ctx, graphics::Color::BLACK);
+    let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, graphics::Color::BLACK);
     for shape in &self.shapes {
         // Make the shape...
         let mesh = match shape {
             &Shape::Rectangle(rect) => {
-                graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, graphics::Color::WHITE)?
+                graphics::Mesh::new_rectangle(
+                    &ctx.gfx,
+                    graphics::DrawMode::fill(),
+                    rect,
+                    graphics::Color::WHITE
+                )?
             }
             &Shape::Circle(origin, radius) => {
-                graphics::Mesh::new_circle(ctx, graphics::DrawMode::fill(), origin, radius, 0.1, graphics::Color::WHITE)?
+                graphics::Mesh::new_circle(
+                    &ctx.gfx,
+                    graphics::DrawMode::fill(),
+                    origin,
+                    radius,
+                    0.1,
+                    graphics::Color::WHITE
+                )?
             }
         };
 
         // ...and then draw it.
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+        canvas.draw(mesh, graphics::DrawParam::default())?;
     }
-    graphics::present(ctx)?;
+    canvas.finish(&mut ctx.gfx)?;
     Ok(())
 }
 ```

@@ -3,7 +3,6 @@
 use crate::context::Context;
 use crate::error::GameError;
 use crate::error::GameResult;
-use crate::graphics;
 use crate::graphics::Point2;
 use std::collections::HashSet;
 use winit::dpi;
@@ -136,6 +135,11 @@ impl MouseContext {
             let _ = self.buttons_pressed.remove(&button);
         }
     }
+
+    /// Get the distance the cursor was moved between the latest two mouse_motion_events.
+    pub(crate) fn last_delta(&self) -> mint::Point2<f32> {
+        self.last_delta.into()
+    }
 }
 
 impl Default for MouseContext {
@@ -217,14 +221,14 @@ pub fn handle_move(ctx: &mut Context, new_x: f32, new_y: f32) {
 // TODO: Move to graphics context (This isn't input)
 pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
     ctx.mouse.cursor_hidden = hidden;
-    graphics::window(ctx).set_cursor_visible(!hidden)
+    ctx.gfx.window.set_cursor_visible(!hidden)
 }
 
 /// Modifies the mouse cursor type of the window.
 // TODO: Move to graphics context (This isn't input)
 pub fn set_cursor_type(ctx: &mut Context, cursor_type: CursorIcon) {
     ctx.mouse.cursor_type = cursor_type;
-    graphics::window(ctx).set_cursor_icon(cursor_type);
+    ctx.gfx.window.set_cursor_icon(cursor_type);
 }
 
 /// Get whether or not the mouse is grabbed (confined to the window)
@@ -237,7 +241,8 @@ pub fn cursor_grabbed(ctx: &Context) -> bool {
 // TODO: Move to graphics context (This isn't input)
 pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
     ctx.mouse.cursor_grabbed = grabbed;
-    graphics::window(ctx)
+    ctx.gfx
+        .window
         .set_cursor_grab(grabbed)
         .map_err(|e| GameError::WindowError(e.to_string()))
 }
@@ -251,15 +256,11 @@ where
 {
     let mintpoint = point.into();
     ctx.mouse.last_position = Point2::from(mintpoint);
-    graphics::window(ctx)
+    ctx.gfx
+        .window
         .set_cursor_position(dpi::LogicalPosition {
             x: f64::from(mintpoint.x),
             y: f64::from(mintpoint.y),
         })
         .map_err(|_| GameError::WindowError("Couldn't set mouse cursor position!".to_owned()))
-}
-
-/// Get the distance the cursor was moved between the latest two mouse_motion_events.
-pub(crate) fn last_delta(ctx: &Context) -> mint::Point2<f32> {
-    ctx.mouse.last_delta.into()
 }

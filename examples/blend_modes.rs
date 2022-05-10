@@ -6,22 +6,24 @@
 //! (for more explanations on this see https://github.com/ggez/ggez/issues/694#issuecomment-853724926)
 
 use ggez::event::{self, EventHandler};
-use ggez::graphics::{self, BlendMode, Color, DrawParam, Drawable};
+use ggez::graphics::{self, BlendMode, Color, DrawParam, GraphicsContext};
 use ggez::{Context, GameResult};
 use glam::Vec2;
 use std::env;
 use std::path;
 
 struct MainState {
+    layer: graphics::ScreenImage,
+    layer_blend: BlendMode,
     circle: graphics::Mesh,
-    canvas: graphics::Canvas,
-    font: graphics::Font,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
+        let layer = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
+
         let circle = graphics::Mesh::new_circle(
-            ctx,
+            &ctx.gfx,
             graphics::DrawMode::fill(),
             Vec2::new(0.0, 0.0),
             45.0,
@@ -29,20 +31,21 @@ impl MainState {
             Color::WHITE,
         )?;
 
-        let mut canvas = graphics::Canvas::with_window_size(ctx)?;
-        canvas.set_blend_mode(Some(BlendMode::Alpha));
-
-        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
-
         let s = Self {
+            layer,
+            layer_blend: BlendMode::PREMULTIPLIED,
             circle,
-            canvas,
-            font,
         };
         Ok(s)
     }
 
-    fn draw_venn(&self, ctx: &mut Context, pos: Vec2, name: &str) -> GameResult<()> {
+    fn draw_venn(
+        &self,
+        _gfx: &mut GraphicsContext,
+        canvas: &mut graphics::Canvas,
+        pos: Vec2,
+        name: &str,
+    ) -> GameResult<()> {
         const TRI_COLORS: [Color; 3] = [
             Color::new(0.8, 0., 0., 0.5),
             Color::new(0., 0.8, 0., 0.5),
@@ -58,65 +61,70 @@ impl MainState {
 
         // draw the diagram
         for i in 0..3 {
-            self.circle.draw(
-                ctx,
-                DrawParam::default()
+            canvas.draw(
+                &self.circle,
+                graphics::DrawParam::new()
                     .dest(pos + Vec2::from(REL_POSITIONS[i]))
                     .color(TRI_COLORS[i]),
-            )?;
+            );
         }
 
         // draw text naming the blend mode
-        let text = graphics::Text::new((name, self.font, 20.0));
+        canvas.set_blend_mode(BlendMode::ALPHA);
+        let mut text = graphics::Text::new(name);
+        text.set_scale(20.);
         let text_offset = Vec2::new(0., -100.);
-        graphics::draw(
-            ctx,
+        canvas.draw(
             &text,
-            graphics::DrawParam::new()
-                .dest(pos + text_offset)
-                .color(Color::WHITE)
-                .offset(Vec2::new(0.5, 0.5)),
-        )?;
+            graphics::DrawParam::from(pos + text_offset)
+                .offset([0.5, 0.0])
+                .color(Color::WHITE),
+        );
+
         Ok(())
     }
 
-    fn draw_venn_diagrams(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let (w, h) = graphics::drawable_size(ctx);
+    fn draw_venn_diagrams(
+        &mut self,
+        gfx: &mut GraphicsContext,
+        (w, h): (f32, f32),
+        canvas: &mut graphics::Canvas,
+    ) -> GameResult<()> {
         let y = h / 4.;
         const MODE_COUNT: usize = 8;
         let x_step = w / (MODE_COUNT + 1) as f32;
 
         // draw with Alpha
-        self.circle.set_blend_mode(Some(BlendMode::Alpha));
-        self.draw_venn(ctx, [x_step, y].into(), "Alpha")?;
+        canvas.set_blend_mode(BlendMode::ALPHA);
+        self.draw_venn(gfx, canvas, [x_step, y].into(), "Alpha")?;
 
         // draw with Add
-        self.circle.set_blend_mode(Some(BlendMode::Add));
-        self.draw_venn(ctx, [x_step * 2., y].into(), "Add")?;
+        canvas.set_blend_mode(BlendMode::ADD);
+        self.draw_venn(gfx, canvas, [x_step * 2., y].into(), "Add")?;
 
         // draw with Sub
-        self.circle.set_blend_mode(Some(BlendMode::Subtract));
-        self.draw_venn(ctx, [x_step * 3., y].into(), "Subtract")?;
+        canvas.set_blend_mode(BlendMode::SUBTRACT);
+        self.draw_venn(gfx, canvas, [x_step * 3., y].into(), "Subtract")?;
 
         // draw with Multiply
-        self.circle.set_blend_mode(Some(BlendMode::Multiply));
-        self.draw_venn(ctx, [x_step * 4., y].into(), "Multiply")?;
+        canvas.set_blend_mode(BlendMode::MULTIPLY);
+        self.draw_venn(gfx, canvas, [x_step * 4., y].into(), "Multiply")?;
 
         // draw with Invert
-        self.circle.set_blend_mode(Some(BlendMode::Invert));
-        self.draw_venn(ctx, [x_step * 5., y].into(), "Invert")?;
+        canvas.set_blend_mode(BlendMode::INVERT);
+        self.draw_venn(gfx, canvas, [x_step * 5., y].into(), "Invert")?;
 
         // draw with Replace
-        self.circle.set_blend_mode(Some(BlendMode::Replace));
-        self.draw_venn(ctx, [x_step * 6., y].into(), "Replace")?;
+        canvas.set_blend_mode(BlendMode::REPLACE);
+        self.draw_venn(gfx, canvas, [x_step * 6., y].into(), "Replace")?;
 
         // draw with Darken
-        self.circle.set_blend_mode(Some(BlendMode::Darken));
-        self.draw_venn(ctx, [x_step * 7., y].into(), "Darken")?;
+        canvas.set_blend_mode(BlendMode::DARKEN);
+        self.draw_venn(gfx, canvas, [x_step * 7., y].into(), "Darken")?;
 
         // draw with Lighten
-        self.circle.set_blend_mode(Some(BlendMode::Lighten));
-        self.draw_venn(ctx, [x_step * 8., y].into(), "Lighten")?;
+        canvas.set_blend_mode(BlendMode::LIGHTEN);
+        self.draw_venn(gfx, canvas, [x_step * 8., y].into(), "Lighten")?;
 
         Ok(())
     }
@@ -128,50 +136,42 @@ impl EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx, Color::new(0.3, 0.3, 0.3, 1.0));
+        let (w, h) = ctx.gfx.drawable_size();
+
+        // draw everything onto self.layer
+        let layer = self.layer.image(&ctx.gfx);
+        let mut canvas =
+            graphics::Canvas::from_image(&ctx.gfx, layer.clone(), Color::new(0., 0., 0., 0.));
+        self.draw_venn_diagrams(&mut ctx.gfx, (w, h), &mut canvas)?;
+        canvas.finish(&mut ctx.gfx)?;
+
+        // now start drawing to the screen
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::new(0.3, 0.3, 0.3, 1.0));
 
         // draw everything directly onto the screen once
-        self.draw_venn_diagrams(ctx)?;
+        self.draw_venn_diagrams(&mut ctx.gfx, (w, h), &mut canvas)?;
 
-        // also draw everything onto the canvas
-        graphics::set_canvas(ctx, Some(&self.canvas));
-        graphics::clear(ctx, Color::new(0., 0., 0., 0.));
-        self.draw_venn_diagrams(ctx)?;
-
-        // draw the canvas onto the screen
-        graphics::set_canvas(ctx, None);
-        let (_, height) = graphics::drawable_size(ctx);
-        self.canvas.draw(
-            ctx,
-            DrawParam::default().dest(mint::Point2 {
-                x: 0.,
-                y: height / 2.,
-            }),
-        )?;
+        // draw layer onto the screen
+        canvas.set_blend_mode(self.layer_blend);
+        canvas.draw(
+            &layer,
+            DrawParam::default().dest(mint::Point2 { x: 0., y: h / 2. }),
+        );
 
         // draw text pointing out which is which
-        let (_w, h) = graphics::drawable_size(ctx);
         let y = h / 2.;
 
-        let text = graphics::Text::new(("drawn directly:", self.font, 20.0));
-        graphics::draw(
-            ctx,
-            &text,
-            graphics::DrawParam::new()
-                .dest(Vec2::new(8., 4.))
-                .color(Color::WHITE),
-        )?;
-        let text =
-            graphics::Text::new(("drawn onto a (transparent black) canvas:", self.font, 20.0));
-        graphics::draw(
-            ctx,
-            &text,
-            graphics::DrawParam::new()
-                .dest(Vec2::new(8., 4. + y))
-                .color(Color::WHITE),
-        )?;
+        canvas.draw(
+            graphics::Text::new("drawn directly:").set_scale(20.),
+            graphics::DrawParam::from([8., 4.]).color(Color::WHITE),
+        );
+        canvas.draw(
+            graphics::Text::new("drawn onto a (transparent black) canvas:").set_scale(20.),
+            graphics::DrawParam::from([8., 4. + y]).color(Color::WHITE),
+        );
 
-        graphics::present(ctx)?;
+        canvas.finish(&mut ctx.gfx)?;
+
         Ok(())
     }
 
@@ -183,11 +183,11 @@ impl EventHandler for MainState {
         repeat: bool,
     ) -> GameResult {
         if !repeat {
-            if let Some(BlendMode::Alpha) = self.canvas.blend_mode() {
-                self.canvas.set_blend_mode(Some(BlendMode::Premultiplied));
+            if self.layer_blend == BlendMode::ALPHA {
+                self.layer_blend = BlendMode::PREMULTIPLIED;
                 println!("Drawing canvas with premultiplied alpha mode");
             } else {
-                self.canvas.set_blend_mode(Some(BlendMode::Alpha));
+                self.layer_blend = BlendMode::ALPHA;
                 println!("Drawing canvas with default alpha mode");
             }
         }

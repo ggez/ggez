@@ -32,16 +32,13 @@
 //! directory isolation is intended for convenience, not security, so
 //! don't assume it will be secure.
 
-use std::env;
-use std::io;
-use std::io::SeekFrom;
-use std::path;
-
+use crate::{
+    conf,
+    vfs::{self, VFS},
+    Context, GameError, GameResult,
+};
 use directories::ProjectDirs;
-
-use crate::conf;
-use crate::vfs::{self, VFS};
-use crate::{Context, GameError, GameResult};
+use std::{env, io, io::SeekFrom, path};
 
 pub use crate::vfs::OpenOptions;
 

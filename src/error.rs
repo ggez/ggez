@@ -4,7 +4,7 @@ use std::fmt;
 use std::sync::Arc;
 
 /// An enum containing all kinds of game framework errors.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum GameError {
     /// An error in the filesystem layout
     FilesystemError(String),
@@ -19,27 +19,35 @@ pub enum GameError {
     ResourceNotFound(String, Vec<(std::path::PathBuf, GameError)>),
     /// Something went wrong in the renderer
     RenderError(String),
+    /// Something went wrong when requesting a logical device from the graphics API.
+    RequestDeviceError(wgpu::RequestDeviceError),
     /// Something went wrong in the audio playback
     AudioError(String),
     /// Something went wrong trying to set or get window properties.
     WindowError(String),
     /// Something went wrong trying to create a window
-    WindowCreationError(Arc<glutin::CreationError>),
+    WindowCreationError(Arc<winit::error::OsError>),
     /// Something went wrong trying to read from a file
     #[allow(clippy::upper_case_acronyms)]
     IOError(Arc<std::io::Error>),
-    /// Something went wrong trying to load/render a font
-    FontError(String),
+    /// Something went wrong trying to load a font
+    FontError(glyph_brush::ab_glyph::InvalidFont),
     /// Something went wrong applying video settings.
     VideoError(String),
-    /// Something went wrong compiling shaders
-    ShaderProgramError(gfx::shade::ProgramError),
     /// Something went wrong with the `gilrs` gamepad-input library.
     GamepadError(String),
     /// Something went wrong with the `lyon` shape-tesselation library.
     LyonError(String),
-    /// You tried to use MSAA on canvases with GLES, which isn't supported.
-    CanvasMSAAError,
+    /// Something went wrong when spawning a task with `futures`.
+    SpawnError(futures::task::SpawnError),
+    /// Something went wrong when drawing text.
+    GlyphBrushError(glyph_brush::BrushError),
+    /// Attempted to draw text with a non-existent font name.
+    FontSelectError(String),
+    /// Something went wrong when asynchronously mapping a GPU buffer.
+    BufferAsyncError(wgpu::BufferAsyncError),
+    /// Deadlock when trying to lock a mutex.
+    LockError,
     /// A custom error type for use by users of ggez.
     /// This lets you handle custom errors that may happen during your game (such as, trying to load a malformed file for a level)
     /// using the same mechanism you handle ggez's other errors.
@@ -60,7 +68,15 @@ impl fmt::Display for GameError {
             ),
             GameError::WindowError(ref e) => write!(f, "Window creation error: {}", e),
             GameError::CustomError(ref s) => write!(f, "Custom error: {}", s),
-            GameError::CanvasMSAAError => write!(f, "You tried to use MSAA on canvases with GLES, which isn't supported, as our implementation depends on a fragment shader workaround, which doesn't work with GLES 300"),
+            GameError::RequestDeviceError(ref e) => {
+                write!(f, "Failed to request logical device: {}", e)
+            }
+            GameError::SpawnError(ref e) => {
+                write!(f, "Failed to spawn a task with `futures`: {}", e)
+            }
+            GameError::GlyphBrushError(ref e) => write!(f, "Text rendering error: {}", e),
+            GameError::FontSelectError(ref e) => write!(f, "No such font '{}'", e),
+            GameError::BufferAsyncError(ref e) => write!(f, "Async buffer map error: {}", e),
             _ => write!(f, "GameError {:?}", self),
         }
     }
@@ -69,9 +85,13 @@ impl fmt::Display for GameError {
 impl Error for GameError {
     fn cause(&self) -> Option<&dyn Error> {
         match *self {
+            GameError::RequestDeviceError(ref e) => Some(e),
             GameError::WindowCreationError(ref e) => Some(&**e),
             GameError::IOError(ref e) => Some(&**e),
-            GameError::ShaderProgramError(ref e) => Some(e),
+            GameError::FontError(ref e) => Some(e),
+            GameError::SpawnError(ref e) => Some(e),
+            GameError::GlyphBrushError(ref e) => Some(e),
+            GameError::BufferAsyncError(ref e) => Some(e),
             _ => None,
         }
     }
@@ -130,95 +150,9 @@ impl From<image::ImageError> for GameError {
         GameError::ResourceLoadError(errstr)
     }
 }
-
-impl From<gfx::PipelineStateError<std::string::String>> for GameError {
-    fn from(e: gfx::PipelineStateError<std::string::String>) -> GameError {
-        let errstr = format!(
-            "Error constructing pipeline!\nThis should probably not be \
-             happening; it probably means an error in a shader or \
-             something.\nError was: {:?}",
-            e
-        );
-        GameError::VideoError(errstr)
-    }
-}
-
-impl From<gfx::mapping::Error> for GameError {
-    fn from(e: gfx::mapping::Error) -> GameError {
-        let errstr = format!("Buffer mapping error: {:?}", e);
-        GameError::VideoError(errstr)
-    }
-}
-
-impl<S, D> From<gfx::CopyError<S, D>> for GameError
-where
-    S: fmt::Debug,
-    D: fmt::Debug,
-{
-    fn from(e: gfx::CopyError<S, D>) -> GameError {
-        let errstr = format!("Memory copy error: {:?}", e);
-        GameError::VideoError(errstr)
-    }
-}
-
-impl From<gfx::CombinedError> for GameError {
-    fn from(e: gfx::CombinedError) -> GameError {
-        let errstr = format!("Texture+view load error: {}", e);
-        GameError::VideoError(errstr)
-    }
-}
-
-impl From<gfx::texture::CreationError> for GameError {
-    fn from(e: gfx::texture::CreationError) -> GameError {
-        gfx::CombinedError::from(e).into()
-    }
-}
-
-impl From<gfx::ResourceViewError> for GameError {
-    fn from(e: gfx::ResourceViewError) -> GameError {
-        gfx::CombinedError::from(e).into()
-    }
-}
-
-impl From<gfx::TargetViewError> for GameError {
-    fn from(e: gfx::TargetViewError) -> GameError {
-        gfx::CombinedError::from(e).into()
-    }
-}
-
-impl<T> From<gfx::UpdateError<T>> for GameError
-where
-    T: fmt::Debug + fmt::Display + 'static,
-{
-    fn from(e: gfx::UpdateError<T>) -> GameError {
-        let errstr = format!("Buffer update error: {}", e);
-        GameError::VideoError(errstr)
-    }
-}
-
-impl From<gfx::shade::ProgramError> for GameError {
-    fn from(e: gfx::shade::ProgramError) -> GameError {
-        GameError::ShaderProgramError(e)
-    }
-}
-
-impl<T> From<winit::event_loop::EventLoopClosed<T>> for GameError {
-    fn from(_: glutin::event_loop::EventLoopClosed<T>) -> GameError {
-        let e = "An event loop proxy attempted to wake up an event loop that no longer exists."
-            .to_owned();
-        GameError::EventLoopError(e)
-    }
-}
-
-impl From<glutin::CreationError> for GameError {
-    fn from(s: glutin::CreationError) -> GameError {
+impl From<winit::error::OsError> for GameError {
+    fn from(s: winit::error::OsError) -> GameError {
         GameError::WindowCreationError(Arc::new(s))
-    }
-}
-
-impl From<glutin::ContextError> for GameError {
-    fn from(s: glutin::ContextError) -> GameError {
-        GameError::RenderError(format!("OpenGL context error: {}", s))
     }
 }
 
@@ -247,5 +181,47 @@ impl From<lyon::lyon_tessellation::geometry_builder::GeometryBuilderError> for G
             s
         );
         GameError::LyonError(errstr)
+    }
+}
+
+impl From<wgpu::RequestDeviceError> for GameError {
+    fn from(s: wgpu::RequestDeviceError) -> GameError {
+        GameError::RequestDeviceError(s)
+    }
+}
+
+impl From<Arc<winit::error::OsError>> for GameError {
+    fn from(s: Arc<winit::error::OsError>) -> GameError {
+        GameError::WindowCreationError(s)
+    }
+}
+
+impl From<Arc<std::io::Error>> for GameError {
+    fn from(s: Arc<std::io::Error>) -> GameError {
+        GameError::IOError(s)
+    }
+}
+
+impl From<glyph_brush::ab_glyph::InvalidFont> for GameError {
+    fn from(s: glyph_brush::ab_glyph::InvalidFont) -> GameError {
+        GameError::FontError(s)
+    }
+}
+
+impl From<futures::task::SpawnError> for GameError {
+    fn from(s: futures::task::SpawnError) -> GameError {
+        GameError::SpawnError(s)
+    }
+}
+
+impl From<glyph_brush::BrushError> for GameError {
+    fn from(s: glyph_brush::BrushError) -> GameError {
+        GameError::GlyphBrushError(s)
+    }
+}
+
+impl From<wgpu::BufferAsyncError> for GameError {
+    fn from(s: wgpu::BufferAsyncError) -> GameError {
+        GameError::BufferAsyncError(s)
     }
 }

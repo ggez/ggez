@@ -89,9 +89,9 @@ will work.
 
 ## Can I do 3D stuff?
 
-Yes; ggez uses `gfx-rs` for its drawing, and you can access the underlying `gfx-rs` drawing functions to draw whatever you want without disrupting ggez's drawing state.  See the `cube` example.
+Yes; ggez uses `wgpu` for its drawing, and you can access the underlying `wgpu` drawing functions to draw whatever you want without disrupting ggez's drawing state.  See the `cube` example.
 
-In general, ggez is designed to focus on 2D graphics.  We want it to be possible for you to create a 3D engine using ggez for everything EXCEPT drawing, but we don't really want to make a full 3D drawing engine.  If you want 3D drawing and don't feel like doing it yourself, check out [Amethyst](https://crates.io/crates/amethyst).
+In general, ggez is designed to focus on 2D graphics.  We want it to be possible for you to create a 3D engine using ggez for everything EXCEPT drawing, but we don't really want to make a full 3D drawing engine.
 
 <a name="gfx_gui">
 

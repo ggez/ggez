@@ -14,13 +14,9 @@
 //! For a more detailed tutorial in how to handle frame timings in games,
 //! see <http://gafferongames.com/game-physics/fix-your-timestep/>
 
-use crate::context::Context;
+use std::{cmp, convert::TryFrom, f64, thread, time};
 
-use std::cmp;
-use std::convert::TryFrom;
-use std::f64;
-use std::thread;
-use std::time;
+use crate::Context;
 
 /// A simple buffer that fills
 /// up to a limit and then holds the last
@@ -204,6 +200,8 @@ impl TimeContext {
     ///
     /// It's usually not necessary to call this function yourself,
     /// [`event::run()`](../event/fn.run.html) will do it for you.
+    /// You only need to call this function if you're writing your
+    /// own custom event loop.
     pub fn tick(&mut self) {
         let now = time::Instant::now();
         let time_since_last = now - self.last_instant;

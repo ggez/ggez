@@ -73,11 +73,13 @@ pub struct WindowMode {
     /// Whether or not to show window decorations
     #[default = false]
     pub borderless: bool,
-    /// Minimum width for resizable windows; 0 means no limit
-    #[default = 0.0]
+    /// Minimum width for resizable windows; 1 is the technical minimum,
+    /// as wgpu will panic on a width of 0.
+    #[default = 1.0]
     pub min_width: f32,
-    /// Minimum height for resizable windows; 0 means no limit
-    #[default = 0.0]
+    /// Minimum height for resizable windows; 1 is the technical minimum,
+    /// as wgpu will panic on a height of 0.
+    #[default = 1.0]
     pub min_height: f32,
     /// Maximum width for resizable windows; 0 means no limit
     #[default = 0.0]
@@ -108,8 +110,12 @@ impl WindowMode {
     /// Set default window size, or screen resolution in true fullscreen mode.
     #[must_use]
     pub fn dimensions(mut self, width: f32, height: f32) -> Self {
-        self.width = width;
-        self.height = height;
+        if width >= 1.0 {
+            self.width = width;
+        }
+        if height >= 1.0 {
+            self.height = height;
+        }
         self
     }
 
@@ -135,10 +141,15 @@ impl WindowMode {
     }
 
     /// Set minimum window dimensions for windowed mode.
+    /// Minimum dimensions will always be >= 1.
     #[must_use]
     pub fn min_dimensions(mut self, width: f32, height: f32) -> Self {
-        self.min_width = width;
-        self.min_height = height;
+        if width >= 1.0 {
+            self.min_width = width;
+        }
+        if height >= 1.0 {
+            self.min_height = height;
+        }
         self
     }
 
@@ -248,85 +259,32 @@ impl WindowSetup {
     }
 }
 
-/// Possible backends.
-/// Currently, only OpenGL and OpenGL ES Core specs are supported,
-/// but this lets you specify which to use as well as the version numbers.
-///
-/// Defaults:
-///
-/// ```rust
-/// # use ggez::conf::*;
-/// # fn main() { assert_eq!(
-/// Backend::OpenGL {
-///     major: 3,
-///     minor: 2,
-/// }
-/// # , Backend::default()); }
-/// ```
+/// Possible graphics backends.
+/// The default is `Primary`.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, SmartDefault)]
 #[serde(tag = "type")]
 pub enum Backend {
-    /// Defaults to OpenGL 3.2, which is supported by basically
-    /// every machine since 2009 or so (apart from the ones that don't).
+    /// Primary comprises of Vulkan + Metal + DX12 (each as a fallback for the other).
+    ///
+    /// These APIs have first-class support from WGPU and from the platforms that support them.
     #[default]
-    #[allow(clippy::upper_case_acronyms)]
-    OpenGL {
-        /// OpenGL major version
-        #[default = 3]
-        major: u8,
-        /// OpenGL minor version
-        #[default = 2]
-        minor: u8,
-    },
-    /// OpenGL ES, defaults to 3.0.  Used for phones and other mobile
-    /// devices.  Using something older
-    /// than 3.0 starts to running into sticky limitations, particularly
-    /// with instanced drawing (used for `SpriteBatch`), but might be
-    /// possible.
-    #[allow(clippy::upper_case_acronyms)]
-    OpenGLES {
-        /// OpenGL ES major version
-        #[default = 3]
-        major: u8,
-        /// OpenGL ES minor version
-        #[default = 0]
-        minor: u8,
-    },
-}
-
-impl Backend {
-    /// Set requested OpenGL/OpenGL ES version.
-    #[must_use]
-    pub fn version(self, new_major: u8, new_minor: u8) -> Self {
-        match self {
-            Backend::OpenGL { .. } => Backend::OpenGL {
-                major: new_major,
-                minor: new_minor,
-            },
-            Backend::OpenGLES { .. } => Backend::OpenGLES {
-                major: new_major,
-                minor: new_minor,
-            },
-        }
-    }
-
-    /// Use OpenGL
-    #[must_use]
-    pub fn gl(self) -> Self {
-        match self {
-            Backend::OpenGLES { major, minor } => Backend::OpenGL { major, minor },
-            gl => gl,
-        }
-    }
-
-    /// Use OpenGL ES
-    #[must_use]
-    pub fn gles(self) -> Self {
-        match self {
-            Backend::OpenGL { major, minor } => Backend::OpenGLES { major, minor },
-            es => es,
-        }
-    }
+    Primary,
+    /// Secondary comprises of OpenGL + DX11 (each as a fallback for the other).
+    ///
+    /// These APIs may have issues and may be deprecated by some platforms. This is not recommended.
+    Secondary,
+    /// Use the Khronos Vulkan API.
+    Vulkan,
+    /// Use the Apple Metal API.
+    Metal,
+    /// Use the Microsoft DirectX 12 API.
+    Dx12,
+    /// Use the Microsoft DirectX 11 API. This is not a recommended backend.
+    Dx11,
+    /// Use the Khronos OpenGL API. This is not a recommended backend.
+    Gl,
+    /// Use the WebGPU API. Targets the web.
+    BrowserWebGpu,
 }
 
 /// The possible number of samples for multisample anti-aliasing.
@@ -334,14 +292,18 @@ impl Backend {
 pub enum NumSamples {
     /// One sample
     One = 1,
+    /* uncomment when WGPU supports more sample counts
     /// Two samples
     Two = 2,
+    */
     /// Four samples
     Four = 4,
+    /* uncomment when WGPU supports more sample counts
     /// Eight samples
     Eight = 8,
     /// Sixteen samples
     Sixteen = 16,
+    */
 }
 
 impl TryFrom<u8> for NumSamples {
@@ -349,10 +311,10 @@ impl TryFrom<u8> for NumSamples {
     fn try_from(i: u8) -> Result<Self, Self::Error> {
         match i {
             1 => Ok(NumSamples::One),
-            2 => Ok(NumSamples::Two),
+            //2 => Ok(NumSamples::Two),
             4 => Ok(NumSamples::Four),
-            8 => Ok(NumSamples::Eight),
-            16 => Ok(NumSamples::Sixteen),
+            //8 => Ok(NumSamples::Eight),
+            //16 => Ok(NumSamples::Sixteen),
             _ => Err(GameError::ConfigError(String::from(
                 "Invalid number of samples",
             ))),
@@ -378,7 +340,6 @@ impl From<NumSamples> for u8 {
 ///     window_mode: WindowMode::default(),
 ///     window_setup: WindowSetup::default(),
 ///     backend: Backend::default(),
-///     modules: ModuleConf::default(),
 /// }
 /// # , Conf::default()); }
 /// ```

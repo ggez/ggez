@@ -1,390 +1,509 @@
-//! I guess these docs will never appear since we re-export the canvas
-//! module from graphics...
-use std::path;
+use crevice::std140::AsStd140;
 
-use gfx::format::{Format, Swizzle};
-use gfx::handle::RawRenderTargetView;
-use gfx::memory::{Bind, Usage};
-use gfx::texture::{AaMode, Kind};
-use gfx::Factory;
-use glam::Quat;
+use crate::GameResult;
 
-use crate::conf;
-use crate::conf::Backend::OpenGLES;
-use crate::context::DebugId;
-use crate::error::*;
-use crate::graphics::context::Fragments;
-use crate::graphics::*;
-use crate::Context;
+use super::{
+    gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
+    internal_canvas::{screen_to_mat, InstanceArrayView, InternalCanvas},
+    BlendMode, Color, DrawParam, Drawable, GraphicsContext, Image, InstanceArray, Mesh, Rect,
+    Sampler, ScreenImage, Shader, ShaderParams, Text, WgpuContext, ZIndex,
+};
+use std::{collections::BTreeMap, sync::Arc};
 
-/// A generic canvas independent of graphics backend. This type should
-/// never need to be used directly; use [`graphics::Canvas`](type.Canvas.html)
-/// instead.
+/// Canvases are the main method of drawing meshes and text to images in ggez.
+///
+/// They can draw to any image that is capable of being drawn to (i.e. has been created with [`Image::new_canvas_image()`] or [`ScreenImage`]),
+/// or they can draw directly to the screen.
+///
+/// Canvases are also where you can bind your own custom shaders and samplers to use while drawing.
+/// Canvases *do not* automatically batch draws. To used batched (instanced) drawing, refer to [`InstanceArray`].
+// note:
+//   Canvas does not draw anything itself. It is merely a state-tracking and draw-reordering wrapper around InternalCanvas, which does the actual
+// drawing.
 #[derive(Debug)]
-pub struct CanvasGeneric<Spec>
-where
-    Spec: BackendSpec,
-{
-    target: RawRenderTargetView<Spec::Resources>,
-    image: ImageGeneric<Spec>,
-    ms_canvas: Option<MultiSampledCanvasGeneric<Spec>>,
-    debug_id: DebugId,
-}
+pub struct Canvas {
+    pub(crate) wgpu: Arc<WgpuContext>,
+    draws: BTreeMap<ZIndex, Vec<DrawCommand>>,
+    state: DrawState,
+    screen: Option<Rect>,
+    defaults: DefaultResources,
 
-/// A canvas that can be rendered to instead of the screen (sometimes referred
-/// to as "render target" or "render to texture"). Set the canvas with the
-/// [`graphics::set_canvas()`](fn.set_canvas.html) function, and then anything you
-/// draw will be drawn to the canvas instead of the screen.
-///
-/// Resume drawing to the screen by calling `graphics::set_canvas(None)`.
-///
-/// A `Canvas` allows graphics to be rendered to images off-screen
-/// in order to do things like saving to an image file or creating cool effects
-/// by using shaders that render to an image.
-/// If you just want to draw multiple things efficiently, look at
-/// [`SpriteBatch`](spritebatch/struct.Spritebatch.html).
-///
-/// Note that if the canvas is not of the same size as the screen, and you want
-/// to render using coordinates relative to the canvas' coordinate system, you
-/// need to call [`graphics::set_screen_coordinates`](fn.set_screen_coordinates.html)
-/// and pass in a rectangle with position (0, 0) and a size equal to that of the
-/// canvas.
-///
-/// If you draw onto a canvas using BlendMode::Alpha you need to set its blend mode to
-/// `BlendMode::Premultiplied` before drawing it to a new surface. This is a side effect
-/// of the premultiplication of RGBA values when the canvas was rendered to.
-/// This requirement holds for both drawing
-/// the `Canvas` directly or converting it to an `Image` first.
-/// ```
-/// let mut canvas = Canvas::new(width, height, conf::NumSamples::One, get_window_color_format(ctx));
-/// graphics::set_canvas(ctx, Some(&canvas));
-///
-/// // Draw to canvas here...
-///
-/// graphics::present(ctx);
-/// graphics::set_canvas(ctx, None);
-/// canvas.set_blend_mode(Some(BlendMode::Premultiplied));
-/// ```
-pub type Canvas = CanvasGeneric<GlBackendSpec>;
-
-/// A multi-sampled canvas that cannot contain another canvas.
-///
-/// Used by `Canvas` to store the multi-sampled texture.
-#[derive(Debug)]
-struct MultiSampledCanvasGeneric<Spec>
-where
-    Spec: BackendSpec,
-{
-    target: RawRenderTargetView<Spec::Resources>,
-    image: ImageGeneric<Spec>,
-    fragments: u8,
-}
-
-type MultiSampledCanvas = MultiSampledCanvasGeneric<GlBackendSpec>;
-
-impl<S> CanvasGeneric<S>
-where
-    S: BackendSpec,
-{
-    /// Gets the backend `Image` that is being rendered to.
-    ///
-    /// Note that this will be flipped but otherwise the same, use the [`to_image`](#method.to_image) function for the unflipped version.
-    pub fn raw_image(&self) -> &ImageGeneric<S> {
-        &self.image
-    }
-
-    /// Gets the backend `Target` that is being rendered to.
-    pub fn target(&self) -> &RawRenderTargetView<S::Resources> {
-        match &self.ms_canvas {
-            Some(ms_canvas) => &ms_canvas.target,
-            _ => &self.target,
-        }
-    }
-
-    /// Return the width of the canvas.
-    pub fn width(&self) -> u16 {
-        self.image.width
-    }
-
-    /// Return the height of the canvas.
-    pub fn height(&self) -> u16 {
-        self.image.height
-    }
-
-    /// Returns the dimensions of the canvas.
-    pub fn dimensions(&self) -> Rect {
-        Rect::new(0.0, 0.0, f32::from(self.width()), f32::from(self.height()))
-    }
-
-    /// Get the filter mode for the canvas.
-    pub fn filter(&self) -> FilterMode {
-        self.image.filter()
-    }
-
-    /// Set the filter mode for the canvas.
-    pub fn set_filter(&mut self, mode: FilterMode) {
-        self.image.set_filter(mode)
-    }
+    target: Image,
+    resolve: Option<Image>,
+    load_op: CanvasLoadOp,
 }
 
 impl Canvas {
-    #[allow(clippy::new_ret_no_self)]
-    /// Create a new `Canvas` with the given size and number of samples.
-    pub fn new(
-        ctx: &mut Context,
-        width: u16,
-        height: u16,
-        samples: conf::NumSamples,
-        color_format: Format,
-    ) -> GameResult<Canvas> {
-        let debug_id = DebugId::get(ctx);
-        let kind = Kind::D2(width, height, AaMode::Single);
-        let levels = 1;
-        let factory = &mut ctx.gfx.factory;
-        let texture_create_info = gfx::texture::Info {
-            kind,
-            levels,
-            format: color_format.0,
-            bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
-            usage: Usage::Data,
-        };
-        let tex = factory.create_texture_raw(texture_create_info, Some(color_format.1), None)?;
-        let resource_desc = gfx::texture::ResourceDesc {
-            channel: color_format.1,
-            layer: None,
-            min: 0,
-            max: levels - 1,
-            swizzle: Swizzle::new(),
-        };
-        let resource = factory.view_texture_as_shader_resource_raw(&tex, resource_desc)?;
-        let render_desc = gfx::texture::RenderDesc {
-            channel: color_format.1,
-            level: 0,
-            layer: None,
-        };
-        let target = factory.view_texture_as_render_target_raw(&tex, render_desc)?;
+    /// Create a new [Canvas] from an image. This will allow for drawing to a single color image.
+    ///
+    /// The image must be created for Canvas usage, i.e. [Image::new_canvas_image()], or [ScreenImage], and must only have a sample count of 1.
+    #[inline]
+    pub fn from_image(
+        gfx: &GraphicsContext,
+        image: Image,
+        load_op: impl Into<CanvasLoadOp>,
+    ) -> Self {
+        Canvas::new(gfx, image, None, load_op.into())
+    }
 
-        let ms_canvas = match samples {
-            conf::NumSamples::One => None,
-            s => {
-                // first check for GLES and panic if true, as GLES can't actually handle this workaround
-                if let OpenGLES { .. } = ctx.conf.backend {
-                    return Err(crate::error::GameError::CanvasMSAAError);
+    /// Helper for [`Canvas::from_image`] for construction of a [`Canvas`] from a [`ScreenImage`].
+    #[inline]
+    pub fn from_screen_image(
+        gfx: &GraphicsContext,
+        image: &mut ScreenImage,
+        load_op: impl Into<CanvasLoadOp>,
+    ) -> Self {
+        let image = image.image(gfx);
+        Canvas::from_image(gfx, image, load_op)
+    }
+
+    /// Create a new [Canvas] from an MSAA image and a resolve target. This will allow for drawing with MSAA to a color image, then resolving the samples into a secondary target.
+    ///
+    /// Both images must be created for Canvas usage (see [Canvas::from_image]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
+    #[inline]
+    pub fn from_msaa(
+        gfx: &GraphicsContext,
+        msaa_image: Image,
+        resolve: Image,
+        load_op: impl Into<CanvasLoadOp>,
+    ) -> Self {
+        Canvas::new(gfx, msaa_image, Some(resolve), load_op.into())
+    }
+
+    /// Helper for [`Canvas::from_msaa`] for construction of an MSAA [`Canvas`] from a [`ScreenImage`].
+    #[inline]
+    pub fn from_screen_msaa(
+        gfx: &GraphicsContext,
+        msaa_image: &mut ScreenImage,
+        resolve: &mut ScreenImage,
+        load_op: impl Into<CanvasLoadOp>,
+    ) -> Self {
+        let msaa = msaa_image.image(gfx);
+        let resolve = resolve.image(gfx);
+        Canvas::from_msaa(gfx, msaa, resolve, load_op)
+    }
+
+    /// Create a new [Canvas] that renders directly to the window surface.
+    pub fn from_frame(gfx: &GraphicsContext, load_op: impl Into<CanvasLoadOp>) -> Self {
+        // these unwraps will never fail
+        let samples = gfx.frame_msaa_image.as_ref().unwrap().samples();
+        let (target, resolve) = if samples > 1 {
+            (
+                gfx.frame_msaa_image.clone().unwrap(),
+                Some(gfx.frame_image.clone().unwrap()),
+            )
+        } else {
+            (gfx.frame_image.clone().unwrap(), None)
+        };
+        Canvas::new(gfx, target, resolve, load_op.into())
+    }
+
+    fn new(
+        gfx: &GraphicsContext,
+        target: Image,
+        resolve: Option<Image>,
+        load_op: CanvasLoadOp,
+    ) -> Self {
+        let defaults = DefaultResources::new(gfx);
+
+        let state = DrawState {
+            shader: defaults.shader.clone(),
+            params: None,
+            text_shader: defaults.text_shader.clone(),
+            text_params: None,
+            sampler: Sampler::linear_clamp(),
+            blend_mode: BlendMode::ALPHA,
+            premul_text: true,
+            projection: glam::Mat4::IDENTITY.into(),
+        };
+
+        let drawable_size = gfx.drawable_size();
+        let screen = Rect {
+            x: 0.,
+            y: 0.,
+            w: drawable_size.0 as _,
+            h: drawable_size.1 as _,
+        };
+
+        let mut this = Canvas {
+            wgpu: gfx.wgpu.clone(),
+            draws: BTreeMap::new(),
+            state,
+            screen: Some(screen),
+            defaults,
+
+            target,
+            resolve,
+            load_op,
+        };
+
+        this.set_screen_coordinates(screen);
+
+        this
+    }
+
+    /// Sets the shader to use when drawing meshes.
+    #[inline]
+    pub fn set_shader(&mut self, shader: Shader) {
+        self.state.shader = shader;
+    }
+
+    /// Returns the current shader being used when drawing meshes.
+    #[inline]
+    pub fn shader(&self) -> Shader {
+        self.state.shader.clone()
+    }
+
+    /// Sets the shader parameters to use when drawing meshes.
+    ///
+    /// **Bound to bind group 3.**
+    #[inline]
+    pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
+        self.state.params = Some((params.bind_group.clone(), params.layout));
+    }
+
+    /// Sets the shader to use when drawing text.
+    #[inline]
+    pub fn set_text_shader(&mut self, shader: Shader) {
+        self.state.text_shader = shader;
+    }
+
+    /// Returns the current text shader being used when drawing text.
+    #[inline]
+    pub fn text_shader(&self) -> Shader {
+        self.state.text_shader.clone()
+    }
+
+    /// Sets the shader parameters to use when drawing text.
+    ///
+    /// **Bound to bind group 3.**
+    #[inline]
+    pub fn set_text_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
+        self.state.text_params = Some((params.bind_group.clone(), params.layout));
+    }
+
+    /// Resets the active mesh shader to the default.
+    #[inline]
+    pub fn set_default_shader(&mut self) {
+        self.state.shader = self.defaults.shader.clone();
+    }
+
+    /// Resets the active text shader to the default.
+    #[inline]
+    pub fn set_default_text_shader(&mut self) {
+        self.state.text_shader = self.defaults.text_shader.clone();
+    }
+
+    /// Sets the active sampler used to sample images.
+    #[inline]
+    pub fn set_sampler(&mut self, sampler: Sampler) {
+        self.state.sampler = sampler;
+    }
+
+    /// Returns the currently active sampler used to sample images.
+    #[inline]
+    pub fn sampler(&self) -> Sampler {
+        self.state.sampler
+    }
+
+    /// Resets the active sampler to the default.
+    ///
+    /// This is equivalent to `set_sampler(Sampler::linear_clamp())`.
+    #[inline]
+    pub fn set_default_sampler(&mut self) {
+        self.set_sampler(Sampler::linear_clamp());
+    }
+
+    /// Sets the active blend mode used when drawing images.
+    #[inline]
+    pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
+        self.state.blend_mode = blend_mode;
+    }
+
+    /// Returns the currently active blend mode used when drawing images.
+    #[inline]
+    pub fn blend_mode(&self) -> BlendMode {
+        self.state.blend_mode
+    }
+
+    /// Selects whether text will be drawn with [`BlendMode::PREMULTIPLIED`] when the current blend
+    /// mode is [`BlendMode::ALPHA`]. This is `true` by default.
+    #[inline]
+    pub fn set_premultiplied_text(&mut self, premultiplied_text: bool) {
+        self.state.premul_text = premultiplied_text;
+    }
+
+    /// Sets the raw projection matrix to the given homogeneous
+    /// transformation matrix.  For an introduction to graphics matrices,
+    /// a good source is this: <http://ncase.me/matrix/>
+    #[inline]
+    pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
+        self.state.projection = proj.into();
+        self.screen = None;
+    }
+
+    /// Gets a copy of the canvas's raw projection matrix.
+    #[inline]
+    pub fn projection(&self) -> mint::ColumnMatrix4<f32> {
+        self.state.projection
+    }
+
+    /// Premultiplies the given transformation matrix with the current projection matrix.
+    pub fn mul_projection(&mut self, transform: impl Into<mint::ColumnMatrix4<f32>>) {
+        self.set_projection(
+            glam::Mat4::from(transform.into()) * glam::Mat4::from(self.state.projection),
+        );
+        self.screen = None;
+    }
+
+    /// Sets the bounds of the screen viewport. This is a shortcut for `set_projection`
+    /// and thus will override any previous projection matrix set.
+    ///
+    /// The default coordinate system has (0,0) at the top-left corner
+    /// with X increasing to the right and Y increasing down, with the
+    /// viewport scaled such that one coordinate unit is one pixel on the
+    /// screen.  This function lets you change this coordinate system to
+    /// be whatever you prefer.
+    ///
+    /// The `Rect`'s x and y will define the top-left corner of the screen,
+    /// and that plus its w and h will define the bottom-right corner.
+    #[inline]
+    pub fn set_screen_coordinates(&mut self, rect: Rect) {
+        self.set_projection(screen_to_mat(rect));
+        self.screen = Some(rect);
+    }
+
+    /// Returns the boudns of the screen viewport, iff the projection was last set with
+    /// `set_screen_coordinates`. If the last projection was set with `set_projection` or
+    /// `mul_projection`, `None` will be returned.
+    #[inline]
+    pub fn screen_coordinates(&self) -> Option<Rect> {
+        self.screen
+    }
+
+    /// Draws the given `Drawable` to the canvas with a given `DrawParam`.
+    #[inline]
+    pub fn draw(&mut self, drawable: &impl Drawable, param: impl Into<DrawParam>) {
+        drawable.draw(self, param.into())
+    }
+
+    /// Draws a `Mesh` textured with an `Image`.
+    ///
+    /// This differs from `canvas.draw(mesh, param)` as in that case, the mesh is untextured.
+    pub fn draw_textured_mesh(&mut self, mesh: Mesh, image: Image, param: impl Into<DrawParam>) {
+        self.push_draw(Draw::Mesh { mesh, image }, param.into());
+    }
+
+    /// Draws an `InstanceArray` textured with a `Mesh`.
+    ///
+    /// This differs from `cavnas.draw(instances, param)` as in that case, the instances are
+    /// drawn as quads.
+    pub fn draw_instanced_mesh(
+        &mut self,
+        mesh: Mesh,
+        instances: &InstanceArray,
+        param: impl Into<DrawParam>,
+    ) {
+        instances.flush_wgpu(&self.wgpu).unwrap();
+        self.push_draw(
+            Draw::MeshInstances {
+                mesh,
+                instances: InstanceArrayView::from_instances(instances).unwrap(),
+            },
+            param.into(),
+        );
+    }
+
+    /// Finish drawing with this canvas and submit all the draw calls.
+    #[inline]
+    pub fn finish(mut self, gfx: &mut GraphicsContext) -> GameResult {
+        self.finalize(gfx)
+    }
+
+    #[inline]
+    pub(crate) fn default_resources(&self) -> &DefaultResources {
+        &self.defaults
+    }
+
+    #[inline]
+    pub(crate) fn push_draw(&mut self, draw: Draw, param: DrawParam) {
+        self.draws.entry(param.z).or_default().push(DrawCommand {
+            state: self.state.clone(),
+            draw,
+            param,
+        });
+    }
+
+    fn finalize(&mut self, gfx: &mut GraphicsContext) -> GameResult {
+        let mut canvas = if let Some(resolve) = &self.resolve {
+            InternalCanvas::from_msaa(gfx, self.load_op, &self.target, resolve)?
+        } else {
+            InternalCanvas::from_image(gfx, self.load_op, &self.target)?
+        };
+
+        let mut state = self.state.clone();
+
+        // apply initial state
+        canvas.set_shader(state.shader.clone());
+        if let Some((bind_group, layout)) = &state.params {
+            canvas.set_shader_params(bind_group.clone(), layout.clone());
+        }
+
+        canvas.set_text_shader(state.text_shader.clone());
+        if let Some((bind_group, layout)) = &state.text_params {
+            canvas.set_text_shader_params(bind_group.clone(), layout.clone());
+        }
+
+        canvas.set_sampler(state.sampler);
+        canvas.set_blend_mode(state.blend_mode);
+        canvas.set_projection(state.projection);
+
+        for draws in self.draws.values() {
+            for draw in draws {
+                // track state and apply to InternalCanvas if changed
+
+                if draw.state.shader != state.shader {
+                    canvas.set_shader(draw.state.shader.clone());
                 }
 
-                let aa = AaMode::Multi(s.into());
-                let fragments = aa.get_num_fragments();
-                let kind = Kind::D2(width, height, aa);
-                let texture_create_info = gfx::texture::Info {
-                    kind,
-                    levels,
-                    format: color_format.0,
-                    bind: Bind::SHADER_RESOURCE | Bind::RENDER_TARGET | Bind::TRANSFER_SRC,
-                    usage: Usage::Data,
-                };
-                let tex =
-                    factory.create_texture_raw(texture_create_info, Some(color_format.1), None)?;
-                let resource = factory.view_texture_as_shader_resource_raw(&tex, resource_desc)?;
-                let target = factory.view_texture_as_render_target_raw(&tex, render_desc)?;
+                if draw.state.params != state.params {
+                    if let Some((bind_group, layout)) = &draw.state.params {
+                        canvas.set_shader_params(bind_group.clone(), layout.clone());
+                    }
+                }
 
-                Some(MultiSampledCanvas {
-                    target,
-                    image: Image {
-                        texture: resource,
-                        texture_handle: tex,
-                        sampler_info: ctx.gfx.default_sampler_info,
-                        blend_mode: None,
-                        width,
-                        height,
-                        debug_id,
-                    },
-                    fragments,
-                })
+                if draw.state.text_shader != state.text_shader {
+                    canvas.set_text_shader(draw.state.text_shader.clone());
+                }
+
+                if draw.state.text_params != state.text_params {
+                    if let Some((bind_group, layout)) = &draw.state.text_params {
+                        canvas.set_text_shader_params(bind_group.clone(), layout.clone());
+                    }
+                }
+
+                if draw.state.sampler != state.sampler {
+                    canvas.set_sampler(draw.state.sampler);
+                }
+
+                if draw.state.blend_mode != state.blend_mode {
+                    canvas.set_blend_mode(draw.state.blend_mode);
+                }
+
+                if draw.state.premul_text != state.premul_text {
+                    canvas.set_premultiplied_text(draw.state.premul_text);
+                }
+
+                if draw.state.projection != state.projection {
+                    canvas.set_projection(draw.state.projection);
+                }
+
+                state = draw.state.clone();
+
+                match &draw.draw {
+                    Draw::Mesh { mesh, image } => canvas.draw_mesh(mesh, image, draw.param),
+                    Draw::MeshInstances { mesh, instances } => {
+                        canvas.draw_mesh_instances(mesh, instances, draw.param)?
+                    }
+                    Draw::BoundedText { text } => canvas.draw_bounded_text(text, draw.param)?,
+                }
             }
-        };
-
-        Ok(Canvas {
-            target,
-            image: Image {
-                texture: resource,
-                texture_handle: tex,
-                sampler_info: ctx.gfx.default_sampler_info,
-                blend_mode: None,
-                width,
-                height,
-                debug_id,
-            },
-            ms_canvas,
-            debug_id,
-        })
-    }
-
-    /// Create a new `Canvas` with the current window dimensions.
-    pub fn with_window_size(ctx: &mut Context) -> GameResult<Canvas> {
-        use crate::graphics;
-        let (w, h) = graphics::drawable_size(ctx);
-        // Default to no multisampling
-        Canvas::new(
-            ctx,
-            w as u16,
-            h as u16,
-            conf::NumSamples::One,
-            get_window_color_format(ctx),
-        )
-    }
-
-    /// Creates an `Image` with the content of its raw counterpart but transformed to behave like a normal `Image`.
-    pub fn to_image(&self, ctx: &mut Context) -> GameResult<Image> {
-        let pixel_data = self.to_rgba8(ctx)?;
-        Image::from_rgba8(ctx, self.image.width, self.image.height, &pixel_data)
-    }
-
-    /// Dumps the flipped `Canvas`'s data to a `Vec` of `u8` RBGA8 values.
-    pub fn to_rgba8(&self, ctx: &mut Context) -> GameResult<Vec<u8>> {
-        self.resolve(ctx)?;
-        let mut pixel_data = self.image.to_rgba8(ctx)?;
-        flip_pixel_data(
-            &mut pixel_data,
-            self.image.width as usize,
-            self.image.height as usize,
-        );
-        Ok(pixel_data)
-    }
-
-    /// Encode the `Canvas`'s content to the given file format and
-    /// write it out to the given path.
-    ///
-    /// See the [`filesystem`](../filesystem/index.html) module docs for where exactly
-    /// the file will end up.
-    pub fn encode<P: AsRef<path::Path>>(
-        &self,
-        ctx: &mut Context,
-        format: ImageFormat,
-        path: P,
-    ) -> GameResult {
-        use ::image::ImageEncoder;
-
-        use std::io;
-        let data = self.to_rgba8(ctx)?;
-        let f = ctx.fs.create(path)?;
-        let writer = &mut io::BufWriter::new(f);
-        let color_format = ::image::ColorType::Rgba8;
-        match format {
-            ImageFormat::Png => ::image::codecs::png::PngEncoder::new(writer)
-                .write_image(
-                    &data,
-                    u32::from(self.width()),
-                    u32::from(self.height()),
-                    color_format,
-                )
-                .map_err(Into::into),
         }
-    }
 
-    /// If the canvas is multi-sampled this function resolves the internal multi-sampled texture
-    /// into a non-multi-sampled texture that can actually be drawn.
-    ///
-    /// `ggez` calls this automatically when you try to draw the canvas onto another target, or when
-    /// you copy the underlying image using [`to_image()`](#method.to_image), [`to_rgba8()`](#method.to_rgba8) or [`encode()`](#method.encode).
-    ///
-    /// You shouldn't need to call this manually, unless you want to access the [raw image](#method.raw_image)
-    /// after something has been drawn on the canvas, but before the canvas has been drawn onto another target
-    /// itself.
-    pub fn resolve(&self, ctx: &mut Context) -> GameResult {
-        if let Some(ms_canvas) = &self.ms_canvas {
-            // save the old target to restore it after the resolve has finished
-            let old_target = std::mem::replace(&mut ctx.gfx.data.out, self.target.clone());
-            // set resolve shader
-            let r_shader_id = ctx.gfx.resolve_shader.shader_id();
-            let old_shader =
-                std::mem::replace(&mut *ctx.gfx.current_shader.borrow_mut(), Some(r_shader_id));
-            let frags = Fragments {
-                fragments: ms_canvas.fragments as i32,
-            };
-            ctx.gfx
-                .encoder
-                .update_buffer(&ctx.gfx.resolve_shader.buffer, &[frags], 0)?;
-            // draw the multi-sampled image onto the resolve target
-            let param = DrawParam::new().transform(glam::Mat4::from_scale_rotation_translation(
-                glam::vec3(self.image.width as f32, -(self.image.height as f32), 1.0),
-                Quat::IDENTITY,
-                glam::vec3(0.0, self.image.height as f32, 0.0),
-            ));
-            crate::graphics::image::draw_image_raw(&ms_canvas.image, ctx, param)?;
-            // restore the old target
-            ctx.gfx.data.out = old_target;
-            // and the old shader
-            *ctx.gfx.current_shader.borrow_mut() = old_shader;
-        }
+        canvas.finish();
+
         Ok(())
     }
 }
 
-impl Drawable for Canvas {
-    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
-        self.debug_id.assert(ctx);
-        self.resolve(ctx)?;
+/// Describes the image load operation when starting a new canvas.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CanvasLoadOp {
+    /// Keep the existing contents of the image.
+    DontClear,
+    /// Clear the image contents to a solid color.
+    Clear(Color),
+}
 
-        // We have to mess with the scale to make everything
-        // be its-unit-size-in-pixels.
-        let scale_x = param.src.w * f32::from(self.width());
-        let scale_y = param.src.h * f32::from(self.height());
-
-        let param = param.transform(
-            glam::Mat4::from(param.trans.to_bare_matrix())
-                * Matrix4::from_scale(glam::vec3(scale_x, scale_y, 1.0)),
-        );
-
-        let new_param = flip_draw_param_vertical(param);
-
-        crate::graphics::image::draw_image_raw(&self.image, ctx, new_param)
-    }
-    fn dimensions(&self, _: &mut Context) -> Option<Rect> {
-        Some(self.image.dimensions())
-    }
-    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
-        self.image.blend_mode = mode;
-    }
-    fn blend_mode(&self) -> Option<BlendMode> {
-        self.image.blend_mode
+impl From<Option<Color>> for CanvasLoadOp {
+    fn from(color: Option<Color>) -> Self {
+        match color {
+            Some(color) => CanvasLoadOp::Clear(color),
+            None => CanvasLoadOp::DontClear,
+        }
     }
 }
 
-fn flip_draw_param_vertical(param: DrawParam) -> DrawParam {
-    let param = if let Transform::Matrix(mat) = param.trans {
-        param.transform(
-            glam::Mat4::from(mat)
-                * glam::Mat4::from_scale_rotation_translation(
-                    glam::vec3(1.0, -1.0, 1.0),
-                    Quat::IDENTITY,
-                    glam::vec3(0.0, 1.0, 0.0),
-                ),
-        )
-    } else {
-        panic!("Can not be called with a non-matrix DrawParam");
-    };
-    let new_src = Rect {
-        x: param.src.x,
-        y: (1.0 - param.src.h) - param.src.y,
-        w: param.src.w,
-        h: param.src.h,
-    };
-    param.src(new_src)
+impl From<Color> for CanvasLoadOp {
+    #[inline]
+    fn from(color: Color) -> Self {
+        CanvasLoadOp::Clear(color)
+    }
 }
 
-/// Set the `Canvas` to render to. Specifying `Option::None` will cause all
-/// rendering to be done directly to the screen.
-pub fn set_canvas(ctx: &mut Context, target: Option<&Canvas>) {
-    match target {
-        Some(surface) => {
-            surface.debug_id.assert(ctx);
-            ctx.gfx.data.out = match &surface.ms_canvas {
-                Some(ms_canvas) => ms_canvas.target.clone(),
-                _ => surface.target.clone(),
-            };
+#[derive(Debug, Clone)]
+struct DrawState {
+    shader: Shader,
+    params: Option<(ArcBindGroup, ArcBindGroupLayout)>,
+    text_shader: Shader,
+    text_params: Option<(ArcBindGroup, ArcBindGroupLayout)>,
+    sampler: Sampler,
+    blend_mode: BlendMode,
+    premul_text: bool,
+    projection: mint::ColumnMatrix4<f32>,
+}
+
+#[derive(Debug)]
+pub(crate) enum Draw {
+    Mesh {
+        mesh: Mesh,
+        image: Image,
+    },
+    MeshInstances {
+        mesh: Mesh,
+        instances: InstanceArrayView,
+    },
+    BoundedText {
+        text: Text,
+    },
+}
+
+// Stores *everything* you need to know to draw something.
+#[derive(Debug)]
+struct DrawCommand {
+    state: DrawState,
+    param: DrawParam,
+    draw: Draw,
+}
+
+#[derive(Debug)]
+pub(crate) struct DefaultResources {
+    pub shader: Shader,
+    pub text_shader: Shader,
+    pub mesh: Mesh,
+    pub image: Image,
+}
+
+impl DefaultResources {
+    fn new(gfx: &GraphicsContext) -> Self {
+        let shader = Shader {
+            fragment: gfx.draw_shader.clone(),
+            fs_entry: "fs_main".into(),
+        };
+
+        let text_shader = Shader {
+            fragment: gfx.text_shader.clone(),
+            fs_entry: "fs_main".into(),
+        };
+
+        let mesh = gfx.rect_mesh.clone();
+        let image = gfx.white_image.clone();
+
+        DefaultResources {
+            shader,
+            text_shader,
+            mesh,
+            image,
         }
-        None => {
-            ctx.gfx.data.out = ctx.gfx.screen_render_target.clone();
-        }
-    };
+    }
 }

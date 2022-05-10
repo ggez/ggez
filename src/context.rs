@@ -21,25 +21,22 @@ use crate::timer;
 /// game's window.
 ///
 /// Most functions that interact with the hardware, for instance
-/// drawing things, playing sounds, or loading resources (which then
-/// need to be transformed into a format the hardware likes) will need
-/// to access the `Context`.  It is an error to create some type that
+/// drawing things, playing sounds, or loading resources will need
+/// to access one, or rarely even two, of its sub-contexts.
+/// It is an error to create some type that
 /// relies upon a `Context`, such as `Image`, and then drop the `Context`
-/// and try to draw the old `Image` with the new `Context`.  Most types
-/// include checks to make this panic in debug mode, but it's not perfect.
+/// and try to draw the old `Image` with the new `Context`.
 ///
-/// All fields in this struct are basically undocumented features,
+/// The fields in this struct used to be basically undocumented features,
 /// only here to make it easier to debug, or to let advanced users
 /// hook into the guts of ggez and make it do things it normally
-/// can't.  Most users shouldn't need to touch these things directly,
-/// since implementation details may change without warning.  The
-/// public and stable API is `ggez`'s module-level functions and
-/// types.
+/// can't. Now that `ggez`'s module-level functions, taking the whole `Context`
+/// have been deprecated, calling their methods directly is recommended.
 pub struct Context {
     /// Filesystem state.
     pub fs: Filesystem,
     /// Graphics state.
-    pub(crate) gfx: crate::graphics::context::GraphicsContext,
+    pub gfx: crate::graphics::context::GraphicsContext,
     /// Timer state.
     pub time: timer::TimeContext,
     /// Audio context.
@@ -60,12 +57,6 @@ pub struct Context {
     /// Controls whether or not the event loop should be running.
     /// Set this with `ggez::event::quit()`.
     pub continuing: bool,
-
-    /// Context-specific unique ID.
-    /// Compiles to nothing in release mode, and so
-    /// vanishes; meanwhile we get dead-code warnings.
-    #[allow(dead_code)]
-    debug_id: DebugId,
 }
 
 impl fmt::Debug for Context {
@@ -81,20 +72,12 @@ impl Context {
         conf: conf::Conf,
         mut fs: Filesystem,
     ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
-        let debug_id = DebugId::new();
         #[cfg(feature = "audio")]
         let audio_context = audio::AudioContext::new()?;
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
-        let backend_spec = graphics::GlBackendSpec::from(conf.backend);
-        let graphics_context = graphics::context::GraphicsContext::new(
-            &mut fs,
-            &events_loop,
-            &conf.window_setup,
-            conf.window_mode,
-            backend_spec,
-            debug_id,
-        )?;
+        let graphics_context =
+            graphics::context::GraphicsContext::new(&events_loop, &conf, &mut fs)?;
 
         let ctx = Context {
             conf,
@@ -108,8 +91,6 @@ impl Context {
             mouse: input::mouse::MouseContext::new(),
             #[cfg(feature = "gamepad")]
             gamepad: input::gamepad::GamepadContext::new()?,
-
-            debug_id,
         };
 
         Ok((ctx, events_loop))
@@ -261,60 +242,5 @@ impl ContextBuilder {
         };
 
         Context::from_conf(config, fs)
-    }
-}
-
-#[cfg(debug_assertions)]
-use std::sync::atomic::{AtomicU32, Ordering};
-#[cfg(debug_assertions)]
-static DEBUG_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
-
-/// This is a type that contains a unique ID for each `Context` and
-/// is contained in each thing created from the `Context` which
-/// becomes invalid when the `Context` goes away (for example, `Image` because
-/// it contains texture handles).  When compiling without assertions
-/// (in release mode) it is replaced with a zero-size type, compiles
-/// down to nothing, disappears entirely with a puff of optimization logic.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg(debug_assertions)]
-pub(crate) struct DebugId(u32);
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg(not(debug_assertions))]
-pub(crate) struct DebugId;
-
-#[cfg(debug_assertions)]
-impl DebugId {
-    pub fn new() -> Self {
-        let id = DEBUG_ID_COUNTER.fetch_add(1, Ordering::SeqCst);
-        // fetch_add() wraps on overflow so we check for overflow explicitly.
-        // JUST IN CASE YOU TRY TO CREATE 2^32 CONTEXTS IN ONE PROGRAM!  muahahahahaaa
-        assert!(DEBUG_ID_COUNTER.load(Ordering::SeqCst) > id);
-        DebugId(id)
-    }
-
-    pub fn get(ctx: &Context) -> Self {
-        DebugId(ctx.debug_id.0)
-    }
-
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn assert(&self, ctx: &Context) {
-        if *self != ctx.debug_id {
-            panic!("Tried to use a resource with a Context that did not create it; this should never happen!");
-        }
-    }
-}
-
-#[cfg(not(debug_assertions))]
-impl DebugId {
-    pub fn new() -> Self {
-        DebugId
-    }
-
-    pub fn get(_ctx: &Context) -> Self {
-        DebugId
-    }
-
-    pub fn assert(&self, _ctx: &Context) {
-        // Do nothing.
     }
 }

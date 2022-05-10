@@ -15,7 +15,6 @@ use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use std::io::Write;
-use std::path;
 use std::sync::mpsc;
 
 /// A basic file writer.
@@ -35,7 +34,7 @@ impl FileLogger {
         receiver: mpsc::Receiver<String>,
     ) -> GameResult<FileLogger> {
         // This (re)creates a file and opens it for appending.
-        let file = ctx.fs.create(path::Path::new(path))?;
+        let file = ctx.fs.create(std::path::Path::new(path))?;
         debug!(
             "Created log file {:?} in {:?}",
             path,
@@ -90,8 +89,8 @@ impl EventHandler for App {
 
     /// Draws the screen. We don't really have anything to draw.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
-        graphics::present(ctx)?;
+        graphics::Canvas::from_frame(&ctx.gfx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]))
+            .finish(&mut ctx.gfx)?;
         timer::yield_now();
         Ok(())
     }
@@ -115,15 +114,6 @@ impl EventHandler for App {
         }
         Ok(())
     }
-
-    /// Called when window is resized.
-    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) -> GameResult {
-        match graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height)) {
-            Ok(()) => info!("Resized window to {} x {}", width, height),
-            Err(e) => error!("Couldn't resize window: {}", e),
-        }
-        Ok(())
-    }
 }
 
 pub fn main() -> GameResult {
@@ -142,7 +132,7 @@ pub fn main() -> GameResult {
             out.finish(format_args!(
                 "[{}][{:<5}][{}] {}",
                 chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-                record.level().to_string(),
+                record.level(),
                 record.target(),
                 message
             ))

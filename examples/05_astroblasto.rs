@@ -238,36 +238,33 @@ struct Assets {
     player_image: graphics::Image,
     shot_image: graphics::Image,
     rock_image: graphics::Image,
-    font: graphics::Font,
     shot_sound: audio::Source,
     hit_sound: audio::Source,
 }
 
 impl Assets {
     fn new(ctx: &mut Context) -> GameResult<Assets> {
-        let player_image = graphics::Image::new(ctx, "/player.png")?;
-        let shot_image = graphics::Image::new(ctx, "/shot.png")?;
-        let rock_image = graphics::Image::new(ctx, "/rock.png")?;
-        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
+        let player_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/player.png", true)?;
+        let shot_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/shot.png", true)?;
+        let rock_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/rock.png", true)?;
 
-        let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
-        let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
+        let shot_sound = audio::Source::new(&ctx.fs, &ctx.audio, "/pew.ogg")?;
+        let hit_sound = audio::Source::new(&ctx.fs, &ctx.audio, "/boom.ogg")?;
 
         Ok(Assets {
             player_image,
             shot_image,
             rock_image,
-            font,
             shot_sound,
             hit_sound,
         })
     }
 
-    fn actor_image(&mut self, actor: &Actor) -> &mut graphics::Image {
+    fn actor_image(&self, actor: &Actor) -> &graphics::Image {
         match actor.tag {
-            ActorType::Player => &mut self.player_image,
-            ActorType::Rock => &mut self.rock_image,
-            ActorType::Shot => &mut self.shot_image,
+            ActorType::Player => &self.player_image,
+            ActorType::Rock => &self.rock_image,
+            ActorType::Shot => &self.shot_image,
         }
     }
 }
@@ -306,6 +303,8 @@ impl Default for InputState {
 /// **********************************************************************
 
 struct MainState {
+    // because we want to screenshot, we need to ensure we're rendering to Rgba8
+    screen: graphics::ScreenImage,
     player: Actor,
     shots: Vec<Actor>,
     rocks: Vec<Actor>,
@@ -334,8 +333,12 @@ impl MainState {
         let player = create_player();
         let rocks = create_rocks(&mut rng, 5, player.pos, 100.0, 250.0);
 
-        let (width, height) = graphics::drawable_size(ctx);
+        let (width, height) = ctx.gfx.drawable_size();
+        let screen =
+            graphics::ScreenImage::new(&ctx.gfx, graphics::ImageFormat::Rgba8UnormSrgb, 1., 1., 1);
+
         let s = MainState {
+            screen,
             player,
             shots: Vec::new(),
             rocks,
@@ -352,7 +355,7 @@ impl MainState {
         Ok(s)
     }
 
-    fn fire_player_shot(&mut self, ctx: &Context) {
+    fn fire_player_shot(&mut self, ctx: &Context) -> GameResult {
         self.player_shot_timeout = PLAYER_SHOT_TIME;
 
         let player = &self.player;
@@ -364,7 +367,9 @@ impl MainState {
 
         self.shots.push(shot);
 
-        let _ = self.assets.shot_sound.play(ctx);
+        self.assets.shot_sound.play(&ctx.audio)?;
+
+        Ok(())
     }
 
     fn clear_dead_stuff(&mut self) {
@@ -372,7 +377,7 @@ impl MainState {
         self.rocks.retain(|r| r.life > 0.0);
     }
 
-    fn handle_collisions(&mut self, ctx: &Context) {
+    fn handle_collisions(&mut self, ctx: &Context) -> GameResult {
         for rock in &mut self.rocks {
             let pdistance = rock.pos - self.player.pos;
             if pdistance.length() < (self.player.bbox_size + rock.bbox_size) {
@@ -385,10 +390,11 @@ impl MainState {
                     rock.life = 0.0;
                     self.score += 1;
 
-                    let _ = self.assets.hit_sound.play(ctx);
+                    self.assets.hit_sound.play(&ctx.audio)?;
                 }
             }
         }
+        Ok(())
     }
 
     fn check_for_level_respawn(&mut self) {
@@ -415,10 +421,10 @@ fn print_instructions() {
 
 fn draw_actor(
     assets: &mut Assets,
-    ctx: &mut Context,
+    canvas: &mut graphics::Canvas,
     actor: &Actor,
     world_coords: (f32, f32),
-) -> GameResult {
+) {
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(screen_w, screen_h, actor.pos);
     let image = assets.actor_image(actor);
@@ -426,7 +432,7 @@ fn draw_actor(
         .dest(pos)
         .rotation(actor.facing as f32)
         .offset(Point2::new(0.5, 0.5));
-    graphics::draw(ctx, image, drawparams)
+    canvas.draw(image, drawparams);
 }
 
 /// **********************************************************************
@@ -445,7 +451,7 @@ impl EventHandler for MainState {
             player_handle_input(&mut self.player, &self.input, seconds);
             self.player_shot_timeout -= seconds;
             if self.input.fire && self.player_shot_timeout < 0.0 {
-                self.fire_player_shot(ctx);
+                self.fire_player_shot(ctx)?;
             }
 
             // Update the physics for all actors.
@@ -474,7 +480,7 @@ impl EventHandler for MainState {
             // collision detection, object death, and if
             // we have killed all the rocks in the level,
             // spawn more of them.
-            self.handle_collisions(ctx);
+            self.handle_collisions(ctx)?;
 
             self.clear_dead_stuff();
 
@@ -495,7 +501,8 @@ impl EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Our drawing is quite simple.
         // Just clear the screen...
-        graphics::clear(ctx, Color::BLACK);
+        let mut canvas =
+            graphics::Canvas::from_screen_image(&ctx.gfx, &mut self.screen, Color::BLACK);
 
         // Loop over all objects drawing them...
         {
@@ -503,14 +510,14 @@ impl EventHandler for MainState {
             let coords = (self.screen_width, self.screen_height);
 
             let p = &self.player;
-            draw_actor(assets, ctx, p, coords)?;
+            draw_actor(assets, &mut canvas, p, coords);
 
             for s in &self.shots {
-                draw_actor(assets, ctx, s, coords)?;
+                draw_actor(assets, &mut canvas, s, coords);
             }
 
             for r in &self.rocks {
-                draw_actor(assets, ctx, r, coords)?;
+                draw_actor(assets, &mut canvas, r, coords);
             }
         }
 
@@ -520,13 +527,19 @@ impl EventHandler for MainState {
 
         let level_str = format!("Level: {}", self.level);
         let score_str = format!("Score: {}", self.score);
-        let level_display = graphics::Text::new((level_str, self.assets.font, 32.0));
-        let score_display = graphics::Text::new((score_str, self.assets.font, 32.0));
-        graphics::draw(ctx, &level_display, (level_dest, 0.0, Color::WHITE))?;
-        graphics::draw(ctx, &score_display, (score_dest, 0.0, Color::WHITE))?;
 
-        // Then we flip the screen...
-        graphics::present(ctx)?;
+        canvas.draw(
+            &graphics::Text::new(level_str),
+            graphics::DrawParam::from(level_dest).color(Color::WHITE),
+        );
+
+        canvas.draw(
+            &graphics::Text::new(score_str),
+            graphics::DrawParam::from(score_dest).color(Color::WHITE),
+        );
+
+        canvas.finish(&mut ctx.gfx)?;
+        ctx.gfx.present(&self.screen.image(&ctx.gfx))?;
 
         // And yield the timeslice
         // This tells the OS that we're done using the CPU but it should
@@ -561,9 +574,11 @@ impl EventHandler for MainState {
                 self.input.fire = true;
             }
             KeyCode::P => {
-                let img = graphics::screenshot(ctx).expect("Could not take screenshot");
-                img.encode(ctx, graphics::ImageFormat::Png, "/screenshot.png")
-                    .expect("Could not save screenshot");
+                self.screen.image(&ctx.gfx).encode(
+                    ctx,
+                    graphics::ImageEncodingFormat::Png,
+                    "/screenshot.png",
+                )?;
             }
             KeyCode::Escape => event::quit(ctx),
             _ => (), // Do nothing

@@ -17,7 +17,7 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let sound = audio::Source::new(ctx, "/sound.ogg")?;
+        let sound = audio::Source::new(&ctx.fs, &ctx.audio, "/sound.ogg")?;
         let s = MainState { sound };
         Ok(s)
     }
@@ -30,7 +30,7 @@ impl MainState {
     /// Plays the sound multiple times
     fn play_detached(&mut self, ctx: &mut Context) {
         // "detached" sounds keep playing even after they are dropped
-        let _ = self.sound.play_detached(ctx);
+        let _ = self.sound.play_detached(&ctx.audio);
     }
 
     /// Waits until the sound is done playing before playing again.
@@ -41,25 +41,25 @@ impl MainState {
     /// Fades the sound in over a second
     /// Which isn't really ideal 'cause the sound is barely a second long, but still.
     fn play_fadein(&mut self, ctx: &mut Context) {
-        let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
+        let mut sound = audio::Source::new(&ctx.fs, &ctx.audio, "/sound.ogg").unwrap();
         sound.set_fade_in(Duration::from_millis(1000));
-        sound.play_detached(ctx).unwrap();
+        sound.play_detached(&ctx.audio).unwrap();
     }
 
     fn play_highpitch(&mut self, ctx: &mut Context) {
-        let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
+        let mut sound = audio::Source::new(&ctx.fs, &ctx.audio, "/sound.ogg").unwrap();
         sound.set_pitch(2.0);
-        sound.play_detached(ctx).unwrap();
+        sound.play_detached(&ctx.audio).unwrap();
     }
     fn play_lowpitch(&mut self, ctx: &mut Context) {
-        let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
+        let mut sound = audio::Source::new(&ctx.fs, &ctx.audio, "/sound.ogg").unwrap();
         sound.set_pitch(0.5);
-        sound.play_detached(ctx).unwrap();
+        sound.play_detached(&ctx.audio).unwrap();
     }
 
     /// Plays the sound and prints out stats until it's done.
     fn play_stats(&mut self, ctx: &mut Context) {
-        let _ = self.sound.play(ctx);
+        let _ = self.sound.play(&ctx.audio);
         while self.sound.playing() {
             println!("Elapsed time: {:?}", self.sound.elapsed())
         }
@@ -72,23 +72,15 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let mut canvas =
+            graphics::Canvas::from_frame(&ctx.gfx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
 
-        graphics::queue_text(
-            ctx,
+        canvas.draw(
             &graphics::Text::new("Press number keys 1-6 to play a sound, or escape to quit."),
-            Vec2::ZERO,
-            None,
+            [100., 100.],
         );
-        graphics::draw_queued_text(
-            ctx,
-            (Vec2::new(100.0, 100.0),),
-            None,
-            graphics::FilterMode::Linear,
-        )?;
 
-        graphics::present(ctx)?;
-        Ok(())
+        canvas.finish(&mut ctx.gfx)
     }
 
     fn key_down_event(

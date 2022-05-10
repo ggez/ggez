@@ -1,19 +1,30 @@
 //! The simplest possible example that does something.
 #![allow(clippy::unnecessary_wraps)]
 
-use ggez::event;
-use ggez::graphics::{self, Color};
-use ggez::{Context, GameResult};
+use ggez::{
+    event,
+    graphics::{self, Color},
+    Context, GameResult,
+};
 use glam::*;
 
 struct MainState {
     pos_x: f32,
+    circle: graphics::Mesh,
 }
 
 impl MainState {
-    fn new() -> GameResult<MainState> {
-        let s = MainState { pos_x: 0.0 };
-        Ok(s)
+    fn new(ctx: &mut Context) -> GameResult<MainState> {
+        let circle = graphics::Mesh::new_circle(
+            &ctx.gfx,
+            graphics::DrawMode::fill(),
+            vec2(0., 0.),
+            100.0,
+            2.0,
+            Color::WHITE,
+        )?;
+
+        Ok(MainState { pos_x: 0.0, circle })
     }
 }
 
@@ -24,26 +35,22 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let mut canvas = graphics::Canvas::from_frame(
+            &ctx.gfx,
+            graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
+        );
 
-        let circle = graphics::Mesh::new_circle(
-            ctx,
-            graphics::DrawMode::fill(),
-            Vec2::new(0.0, 0.0),
-            100.0,
-            2.0,
-            Color::WHITE,
-        )?;
-        graphics::draw(ctx, &circle, (Vec2::new(self.pos_x, 380.0),))?;
+        canvas.draw(&self.circle, Vec2::new(self.pos_x, 380.0));
 
-        graphics::present(ctx)?;
+        canvas.finish(&mut ctx.gfx)?;
+
         Ok(())
     }
 }
 
 pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("super_simple", "ggez");
-    let (ctx, event_loop) = cb.build()?;
-    let state = MainState::new()?;
+    let (mut ctx, event_loop) = cb.build()?;
+    let state = MainState::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }

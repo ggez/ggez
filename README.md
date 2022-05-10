@@ -32,14 +32,14 @@ your own libraries atop ggez.
 ### Features
 
 * Filesystem abstraction that lets you load resources from folders or zip files
-* Hardware-accelerated 2D rendering built on the `gfx-rs` graphics engine
+* Hardware-accelerated 2D rendering built on the `wgpu` graphics API
 * Loading and playing .ogg, .wav and .flac files via the `rodio` crate
-* TTF font rendering with `rusttype` and `glyph_brush`.
+* TTF font rendering with `glyph_brush`.
 * Interface for handling keyboard and mouse events easily through callbacks
 * Config file for defining engine and game settings
 * Easy timing and FPS measurement functions.
 * Math library integration with `mint`.
-* Some more advanced graphics options: shaders, sprite batches and render targets
+* Some more advanced graphics options: shaders, instanced draws and render targets
 
 ### Non-Features (i.e. things to add from elsewhere if needed)
 
@@ -54,11 +54,11 @@ your own libraries atop ggez.
 ### Supported platforms
 
  * Fully supported: Windows, Linux
- * Not officially supported but might work anyway: Mac
+ * Not officially supported but might work anyway: MacOS, Android, iOS, Web
 
 For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
 
-If you want to run ggez on Android, iOS or the web using WebAssembly take a look at [good-web-game](https://github.com/ggez/good-web-game).
+If you want to run ggez on Android, iOS or the web using WebAssembly right now, take a look at [good-web-game](https://github.com/ggez/good-web-game).
 
 ### Who's using ggez?
 
@@ -154,9 +154,9 @@ impl EventHandler for MyGame {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx, Color::WHITE);
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::WHITE);
         // Draw code here...
-        graphics::present(ctx)
+        canvas.finish(&mut ctx.gfx)
     }
 }
 ```
@@ -164,8 +164,7 @@ impl EventHandler for MyGame {
 ### Implementation details
 
 ggez is built upon `winit` for windowing and events, `rodio` for
-sound, and a 2D drawing engine implemented in `gfx` using the OpenGL
-backend (which currently defaults to use OpenGL 3.2).  It is entirely
+sound, and a 2D drawing engine implemented with `wgpu`. It is entirely
 thread-safe (though platform constraints mean the event-handling loop
 and drawing must be done in the main thread), and portable to Windows
 and Linux.

@@ -1,8 +1,8 @@
 //! Example that just prints out all the input events.
 
+use ggez::conf;
 use ggez::event::{self, Axis, Button, GamepadId, KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, Color, DrawMode};
-use ggez::{conf, input};
 use ggez::{Context, GameResult};
 use glam::*;
 
@@ -26,7 +26,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         if ctx.keyboard.is_key_pressed(KeyCode::A) {
             println!("The A key is pressed");
-            if ctx.keyboard.is_mod_active(input::keyboard::KeyMods::SHIFT) {
+            if ctx
+                .keyboard
+                .is_mod_active(ggez::input::keyboard::KeyMods::SHIFT)
+            {
                 println!("The shift key is held too.");
             }
             println!(
@@ -38,9 +41,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
         let rectangle = graphics::Mesh::new_rectangle(
-            ctx,
+            &ctx.gfx,
             DrawMode::fill(),
             graphics::Rect {
                 x: self.pos_x,
@@ -50,8 +53,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
             },
             Color::WHITE,
         )?;
-        graphics::draw(ctx, &rectangle, (glam::Vec2::new(0.0, 0.0),))?;
-        graphics::present(ctx)?;
+        canvas.draw(&rectangle, glam::Vec2::new(0.0, 0.0));
+        canvas.finish(&mut ctx.gfx)?;
         Ok(())
     }
 

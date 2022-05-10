@@ -9,8 +9,7 @@ use std::env;
 use std::path;
 
 struct MainState {
-    text: graphics::Text,
-    canvas: graphics::Canvas,
+    canvas_image: graphics::ScreenImage,
     frames: usize,
     draw_with_canvas: bool,
 }
@@ -19,13 +18,14 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         // The ttf file will be in your resources directory. Later, we
         // will mount that directory so we can omit it in the path here.
-        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
-        let text = graphics::Text::new(("Hello world!", font, 48.0));
-        let canvas = graphics::Canvas::with_window_size(ctx)?;
+        ctx.gfx.add_font(
+            "LiberationMono",
+            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
+        );
+        let canvas_image = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
 
         let s = MainState {
-            text,
-            canvas,
+            canvas_image,
             draw_with_canvas: false,
             frames: 0,
         };
@@ -41,43 +41,45 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let dest_point = Vec2::new(10.0, 10.0);
 
+        let text = graphics::Text::new("Hello, world!")
+            .set_font("LiberationMono")
+            .set_scale(48.)
+            .clone();
+
         if self.draw_with_canvas {
             println!("Drawing with canvas");
-            graphics::clear(ctx, graphics::Color::from((64, 0, 0, 0)));
+            let canvas_image = self.canvas_image.image(&ctx.gfx);
+            let mut canvas = graphics::Canvas::from_image(
+                &ctx.gfx,
+                canvas_image.clone(),
+                graphics::Color::from((255, 255, 255, 128)),
+            );
 
-            graphics::set_canvas(ctx, Some(&self.canvas));
-            graphics::clear(ctx, graphics::Color::from((255, 255, 255, 128)));
+            canvas.draw(
+                &text,
+                graphics::DrawParam::from(dest_point + vec2(15., 15.))
+                    .color(Color::from((0, 0, 0, 255))),
+            );
+            canvas.finish(&mut ctx.gfx)?;
 
-            graphics::draw(
-                ctx,
-                &self.text,
-                graphics::DrawParam::new()
-                    .dest(dest_point)
-                    .color(Color::from((0, 0, 0, 255)))
-                    .offset([15., 15.]),
-            )?;
-            graphics::set_canvas(ctx, None);
-
-            graphics::draw(
-                ctx,
-                &self.canvas,
+            let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from((64, 0, 0, 0)));
+            canvas.draw(
+                &canvas_image,
                 graphics::DrawParam::new().color(Color::from((255, 255, 255, 128))),
-            )?;
+            );
+            canvas.finish(&mut ctx.gfx)?;
         } else {
             println!("Drawing without canvas");
-            graphics::set_canvas(ctx, None);
-            graphics::clear(ctx, [0.25, 0.0, 0.0, 1.0].into());
+            let mut canvas =
+                graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.25, 0.0, 0.0, 1.0]));
 
-            graphics::draw(
-                ctx,
-                &self.text,
-                graphics::DrawParam::new()
-                    .dest(dest_point)
-                    .color(Color::from((192, 128, 64, 255))),
-            )?;
+            canvas.draw(
+                &text,
+                graphics::DrawParam::from(dest_point).color(Color::from((192, 128, 64, 255))),
+            );
+
+            canvas.finish(&mut ctx.gfx)?;
         }
-
-        graphics::present(ctx)?;
 
         self.frames += 1;
         if (self.frames % 100) == 0 {
