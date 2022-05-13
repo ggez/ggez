@@ -34,7 +34,7 @@ use wgpu::util::DeviceExt;
 ///         //       For more info look at the full example.
 ///         let shader = Shader::from_wgsl(
 ///             &ctx.gfx,
-///             include_str!("../resources/dimmer.wgsl"),
+///             include_str!("../../resources/dimmer.wgsl"),
 ///             "main"
 ///         );
 ///         let params = ShaderParams::new(&mut ctx.gfx, &dim, &[], &[]);
