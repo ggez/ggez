@@ -55,8 +55,11 @@ pub struct Context {
     /// updating it will have no effect.
     pub(crate) conf: conf::Conf,
     /// Controls whether or not the event loop should be running.
-    /// Set this with `ggez::event::quit()`.
+    /// This is internally controlled by the outcome of [`quit_event`](crate::event::EventHandler::quit_event), requested through [`event::quit()`](crate::event::quit()).
     pub continuing: bool,
+    /// Whether or not a `quit_event` has been requested.
+    /// Set this with `ggez::event::quit()`.
+    pub(crate) quit_requested: bool,
 }
 
 impl fmt::Debug for Context {
@@ -84,6 +87,7 @@ impl Context {
             fs,
             gfx: graphics_context,
             continuing: true,
+            quit_requested: false,
             time: timer_context,
             #[cfg(feature = "audio")]
             audio: audio_context,

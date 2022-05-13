@@ -491,7 +491,7 @@ impl EventHandler for MainState {
             // but for now we just quit.
             if self.player.life <= 0.0 {
                 println!("Game over!");
-                let _ = event::quit(ctx);
+                let _ = event::request_quit(ctx);
             }
         }
 
@@ -580,7 +580,7 @@ impl EventHandler for MainState {
                     "/screenshot.png",
                 )?;
             }
-            KeyCode::Escape => event::quit(ctx),
+            KeyCode::Escape => event::request_quit(ctx),
             _ => (), // Do nothing
         }
         Ok(())

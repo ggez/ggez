@@ -168,7 +168,7 @@ where
         _repeat: bool,
     ) -> Result<(), E> {
         if keycode == KeyCode::Escape {
-            quit(ctx);
+            request_quit(ctx);
         }
         Ok(())
     }
@@ -284,11 +284,12 @@ where
     }
 }
 
-/// Terminates the [`ggez::event::run()`](fn.run.html) loop by setting
-/// [`Context.continuing`](struct.Context.html#structfield.continuing)
-/// to `false`.
-pub fn quit(ctx: &mut Context) {
-    ctx.continuing = false;
+/// Attempts to terminate the [`ggez::event::run()`](fn.run.html) loop by requesting a
+/// [`quit_event`](EventHandler::quit_event) at the very start of the next frame. If this event
+/// returns `Ok(false)`, then [`Context.continuing`](struct.Context.html#structfield.continuing)
+/// is set to `false` and the loop breaks.
+pub fn request_quit(ctx: &mut Context) {
+    ctx.quit_requested = true;
 }
 
 /// Runs the game's main loop, calling event callbacks on the given state
@@ -303,15 +304,24 @@ where
     E: std::fmt::Debug,
 {
     event_loop.run(move |mut event, _, control_flow| {
+        let ctx = &mut ctx;
+        let state = &mut state;
+
+        if ctx.quit_requested {
+            let res = state.quit_event(ctx);
+            ctx.quit_requested = false;
+            if let Ok(false) = res {
+                ctx.continuing = false;
+            } else if catch_error(ctx, res, state, control_flow, ErrorOrigin::QuitEvent) {
+                return;
+            }
+        }
         if !ctx.continuing {
             *control_flow = ControlFlow::Exit;
             return;
         }
 
         *control_flow = ControlFlow::Poll;
-
-        let ctx = &mut ctx;
-        let state = &mut state;
 
         process_event(ctx, &mut event);
         match event {
@@ -330,7 +340,7 @@ where
                 WindowEvent::CloseRequested => {
                     let res = state.quit_event(ctx);
                     if let Ok(false) = state.quit_event(ctx) {
-                        quit(ctx);
+                        ctx.continuing = false;
                     } else if catch_error(ctx, res, state, control_flow, ErrorOrigin::QuitEvent) {
                         return;
                     }

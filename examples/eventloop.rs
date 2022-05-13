@@ -37,7 +37,7 @@ pub fn main() -> GameResult {
         event::process_event(ctx, &mut event);
         match event {
             Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => event::quit(ctx),
+                WindowEvent::CloseRequested => event::request_quit(ctx),
                 WindowEvent::KeyboardInput {
                     input:
                         KeyboardInput {
