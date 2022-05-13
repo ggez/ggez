@@ -46,6 +46,7 @@ pub fn main() -> GameResult {{
 use ggez::*;
 use ggez::graphics::*;
 use rand::*;
+use oorandom::Rand32;
 
 enum Shape {{
     Circle(mint::Point2<f32>, f32),
@@ -57,6 +58,7 @@ pub fn main() -> GameResult {{
         .build()
         .unwrap();
     let mut shapes: Vec<Shape> = Vec::new();
+    let mut rng = Rand32::new(4); // Random number chosen by fair die roll
     {}
 
     Ok(())

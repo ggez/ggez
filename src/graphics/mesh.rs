@@ -278,8 +278,11 @@ impl Drawable for Mesh {
 ///
 /// Draw like any other mesh;
 /// ```rust
+/// # use ggez::graphics::*;
+/// # fn f(mut canvas: Canvas) {
 /// // draw a 50x70 red rectangle at (200, 250)
-/// canvas.draw(graphics::Quad, graphics::DrawParam::default().color(Color::RED).scale([50., 70.]).dest([200., 250.]));
+/// canvas.draw(&Quad, DrawParam::default().color(Color::RED).scale([50., 70.]).dest([200., 250.]));
+/// # }
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Quad;

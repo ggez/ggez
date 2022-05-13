@@ -181,13 +181,19 @@ pub fn button_pressed(ctx: &Context, button: MouseButton) -> bool {
 }
 
 /// Returns whether or not the given mouse button has been pressed this frame.
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.mouse.button_just_pressed` instead")]
+#[deprecated(
+    since = "0.8.0-rc0",
+    note = "Use `ctx.mouse.button_just_pressed` instead"
+)]
 pub fn button_just_pressed(ctx: &Context, button: MouseButton) -> bool {
     ctx.mouse.button_just_pressed(button)
 }
 
 /// Returns whether or not the given mouse button has been released this frame.
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.mouse.button_just_released` instead")]
+#[deprecated(
+    since = "0.8.0-rc0",
+    note = "Use `ctx.mouse.button_just_released` instead"
+)]
 pub fn button_just_released(ctx: &Context, button: MouseButton) -> bool {
     ctx.mouse.button_just_released(button)
 }

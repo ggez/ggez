@@ -120,7 +120,7 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::Color::WHITE,
     )?;
     
-    canvas.draw(circle, graphics::DrawParam::default());
+    canvas.draw(&circle, graphics::DrawParam::default());
     canvas.finish(&mut ctx.gfx)?;
     Ok(())
 }
@@ -159,13 +159,13 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
     let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, graphics::Color::BLACK);
     
     let rect = graphics::Mesh::new_rectangle(
-        ctx,
+        &ctx.gfx,
         graphics::DrawMode::fill(),
         graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
         graphics::Color::WHITE,
     )?;
     
-    canvas.draw(rect, graphics::DrawParam::default());
+    canvas.draw(&rect, graphics::DrawParam::default());
     canvas.finish(&mut ctx.gfx)?;
     Ok(())
 }
@@ -259,7 +259,7 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
         };
 
         // ...and then draw it.
-        canvas.draw(mesh, graphics::DrawParam::default())?;
+        canvas.draw(&mesh, graphics::DrawParam::default());
     }
     canvas.finish(&mut ctx.gfx)?;
     Ok(())

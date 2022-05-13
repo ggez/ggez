@@ -110,7 +110,7 @@ pub type ZIndex = i32;
 /// # use ggez::graphics::*;
 /// # fn t(canvas: &mut Canvas, image: Image) {
 /// let my_dest = glam::vec2(13.0, 37.0);
-/// canvas.draw(Some(image), DrawParam::default().dest(my_dest));
+/// canvas.draw(&image, DrawParam::default().dest(my_dest));
 /// # }
 /// ```
 ///
@@ -250,7 +250,7 @@ impl DrawParam {
 /// # use ggez::graphics::*;
 /// # fn t(canvas: &mut Canvas, image: Image) {
 /// let my_dest = glam::vec2(13.0, 37.0);
-/// canvas.draw(Some(image), my_dest);
+/// canvas.draw(&image, my_dest);
 /// # }
 /// ```
 impl<P> From<P> for DrawParam

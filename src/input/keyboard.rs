@@ -43,7 +43,7 @@
 //!             2.0,
 //!             graphics::Color::WHITE,
 //!         )?;
-//!         canvas.draw_mesh(circle, None, graphics::DrawParam::default());
+//!         canvas.draw(&circle, graphics::DrawParam::default());
 //!         canvas.finish(&mut ctx.gfx)?;
 //!         timer::yield_now();
 //!         Ok(())
@@ -258,26 +258,38 @@ impl Default for KeyboardContext {
 }
 
 /// Checks if a key is currently pressed down.
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.keyboard.is_key_pressed` instead")]
+#[deprecated(
+    since = "0.8.0-rc0",
+    note = "Use `ctx.keyboard.is_key_pressed` instead"
+)]
 pub fn is_key_pressed(ctx: &Context, key: KeyCode) -> bool {
     ctx.keyboard.is_key_pressed(key)
 }
 
 /// Checks if a key has been pressed down this frame.
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.keyboard.is_key_just_pressed` instead")]
+#[deprecated(
+    since = "0.8.0-rc0",
+    note = "Use `ctx.keyboard.is_key_just_pressed` instead"
+)]
 pub fn is_key_just_pressed(ctx: &Context, key: KeyCode) -> bool {
     ctx.keyboard.is_key_just_pressed(key)
 }
 
 /// Checks if a key has been released this frame.
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.keyboard.is_key_just_released` instead")]
+#[deprecated(
+    since = "0.8.0-rc0",
+    note = "Use `ctx.keyboard.is_key_just_released` instead"
+)]
 pub fn is_key_just_released(ctx: &Context, key: KeyCode) -> bool {
     ctx.keyboard.is_key_just_released(key)
 }
 
 /// Checks if the last keystroke sent by the system is repeated,
 /// like when a key is held down for a period of time.
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.keyboard.is_key_repeated` instead")]
+#[deprecated(
+    since = "0.8.0-rc0",
+    note = "Use `ctx.keyboard.is_key_repeated` instead"
+)]
 pub fn is_key_repeated(ctx: &Context) -> bool {
     ctx.keyboard.is_key_repeated()
 }
