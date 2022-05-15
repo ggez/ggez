@@ -25,6 +25,7 @@ pub struct Canvas {
     pub(crate) wgpu: Arc<WgpuContext>,
     draws: BTreeMap<ZIndex, Vec<DrawCommand>>,
     state: DrawState,
+    original_state: DrawState,
     screen: Option<Rect>,
     defaults: DefaultResources,
 
@@ -130,7 +131,8 @@ impl Canvas {
         let mut this = Canvas {
             wgpu: gfx.wgpu.clone(),
             draws: BTreeMap::new(),
-            state,
+            state: state.clone(),
+            original_state: state,
             screen: Some(screen),
             defaults,
 
@@ -301,6 +303,13 @@ impl Canvas {
             self.state.scissor_rect.2 as f32,
             self.state.scissor_rect.3 as f32,
         )
+    }
+
+    /// Resets the scissorr rectangle back to the original value. This will effectively disable any
+    /// scissoring.
+    #[inline]
+    pub fn reset_scissor_rect(&mut self) {
+        self.state.scissor_rect = self.original_state.scissor_rect;
     }
 
     /// Draws the given `Drawable` to the canvas with a given `DrawParam`.
