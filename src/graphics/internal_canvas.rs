@@ -250,6 +250,7 @@ impl<'a> InternalCanvas<'a> {
     }
 
     pub fn set_shader_params(&mut self, bind_group: ArcBindGroup, layout: ArcBindGroupLayout) {
+        self.flush_text();
         self.shader_bind_group = Some((self.arenas.bind_groups.alloc(bind_group), layout));
     }
 
@@ -260,6 +261,7 @@ impl<'a> InternalCanvas<'a> {
     }
 
     pub fn set_text_shader_params(&mut self, bind_group: ArcBindGroup, layout: ArcBindGroupLayout) {
+        self.flush_text();
         self.text_shader_bind_group = Some((self.arenas.bind_groups.alloc(bind_group), layout));
     }
 
@@ -286,6 +288,7 @@ impl<'a> InternalCanvas<'a> {
     }
 
     pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
+        self.flush_text();
         self.transform = proj.into().into();
         self.wgpu.queue.write_buffer(
             &self.text_uniforms_buf,
@@ -294,6 +297,11 @@ impl<'a> InternalCanvas<'a> {
                 .as_std140()
                 .as_bytes(),
         );
+    }
+
+    pub fn set_scissor_rect(&mut self, (x, y, w, h): (u32, u32, u32, u32)) {
+        self.flush_text();
+        self.pass.set_scissor_rect(x, y, w, h);
     }
 
     #[allow(unsafe_code)]
