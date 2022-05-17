@@ -25,6 +25,7 @@ pub struct Canvas {
     pub(crate) wgpu: Arc<WgpuContext>,
     draws: BTreeMap<ZIndex, Vec<DrawCommand>>,
     state: DrawState,
+    original_state: DrawState,
     screen: Option<Rect>,
     defaults: DefaultResources,
 
@@ -106,6 +107,8 @@ impl Canvas {
     ) -> Self {
         let defaults = DefaultResources::new(gfx);
 
+        let drawable_size = gfx.drawable_size();
+
         let state = DrawState {
             shader: defaults.shader.clone(),
             params: None,
@@ -115,9 +118,9 @@ impl Canvas {
             blend_mode: BlendMode::ALPHA,
             premul_text: true,
             projection: glam::Mat4::IDENTITY.into(),
+            scissor_rect: (0, 0, drawable_size.0 as _, drawable_size.1 as _),
         };
 
-        let drawable_size = gfx.drawable_size();
         let screen = Rect {
             x: 0.,
             y: 0.,
@@ -128,7 +131,8 @@ impl Canvas {
         let mut this = Canvas {
             wgpu: gfx.wgpu.clone(),
             draws: BTreeMap::new(),
-            state,
+            state: state.clone(),
+            original_state: state,
             screen: Some(screen),
             defaults,
 
@@ -281,6 +285,33 @@ impl Canvas {
         self.screen
     }
 
+    /// Sets the scissor rectangle used when drawing. Nothing will be drawn to the canvas
+    /// that falls outside of this region.
+    ///
+    /// Note: The rectangle is in pixel coordinates, and therefore the values will be rounded towards zero.
+    #[inline]
+    pub fn set_scissor_rect(&mut self, rect: Rect) {
+        self.state.scissor_rect = (rect.x as u32, rect.y as u32, rect.w as u32, rect.h as u32);
+    }
+
+    /// Returns the scissor rectangle as set by [`Canvas::set_scissor_rect`].
+    #[inline]
+    pub fn scissor_rect(&self) -> Rect {
+        Rect::new(
+            self.state.scissor_rect.0 as f32,
+            self.state.scissor_rect.1 as f32,
+            self.state.scissor_rect.2 as f32,
+            self.state.scissor_rect.3 as f32,
+        )
+    }
+
+    /// Resets the scissorr rectangle back to the original value. This will effectively disable any
+    /// scissoring.
+    #[inline]
+    pub fn reset_scissor_rect(&mut self) {
+        self.state.scissor_rect = self.original_state.scissor_rect;
+    }
+
     /// Draws the given `Drawable` to the canvas with a given `DrawParam`.
     #[inline]
     pub fn draw(&mut self, drawable: &impl Drawable, param: impl Into<DrawParam>) {
@@ -357,6 +388,7 @@ impl Canvas {
         canvas.set_sampler(state.sampler);
         canvas.set_blend_mode(state.blend_mode);
         canvas.set_projection(state.projection);
+        canvas.set_scissor_rect(state.scissor_rect);
 
         for draws in self.draws.values() {
             for draw in draws {
@@ -396,6 +428,10 @@ impl Canvas {
 
                 if draw.state.projection != state.projection {
                     canvas.set_projection(draw.state.projection);
+                }
+
+                if draw.state.scissor_rect != state.scissor_rect {
+                    canvas.set_scissor_rect(draw.state.scissor_rect);
                 }
 
                 state = draw.state.clone();
@@ -451,6 +487,7 @@ struct DrawState {
     blend_mode: BlendMode,
     premul_text: bool,
     projection: mint::ColumnMatrix4<f32>,
+    scissor_rect: (u32, u32, u32, u32),
 }
 
 #[derive(Debug)]
