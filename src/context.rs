@@ -59,7 +59,9 @@ pub struct Context {
     pub continuing: bool,
     /// Whether or not a `quit_event` has been requested.
     /// Set this with `ggez::event::quit()`.
-    pub(crate) quit_requested: bool,
+    ///
+    /// It's exposed here for people who want to roll their own event loop.
+    pub quit_requested: bool,
 }
 
 impl fmt::Debug for Context {

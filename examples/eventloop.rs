@@ -23,14 +23,17 @@ pub fn main() -> GameResult {
 
     // Handle events. Refer to `winit` docs for more information.
     events_loop.run(move |mut event, _window_target, control_flow| {
+        let ctx = &mut ctx;
+
+        if ctx.quit_requested {
+            ctx.continuing = false;
+        }
         if !ctx.continuing {
             *control_flow = ControlFlow::Exit;
             return;
         }
 
         *control_flow = ControlFlow::Poll;
-
-        let ctx = &mut ctx;
 
         // This tells `ggez` to update it's internal states, should the event require that.
         // These include cursor position, view updating on resize, etc.
@@ -47,7 +50,7 @@ pub fn main() -> GameResult {
                     ..
                 } => {
                     if let event::KeyCode::Escape = keycode {
-                        *control_flow = winit::event_loop::ControlFlow::Exit
+                        event::request_quit(ctx);
                     }
                 }
                 // `CloseRequested` and `KeyboardInput` events won't appear here.
