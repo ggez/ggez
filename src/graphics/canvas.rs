@@ -1,6 +1,6 @@
 use crevice::std140::AsStd140;
 
-use crate::GameResult;
+use crate::{GameError, GameResult};
 
 use super::{
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
@@ -290,8 +290,27 @@ impl Canvas {
     ///
     /// Note: The rectangle is in pixel coordinates, and therefore the values will be rounded towards zero.
     #[inline]
-    pub fn set_scissor_rect(&mut self, rect: Rect) {
-        self.state.scissor_rect = (rect.x as u32, rect.y as u32, rect.w as u32, rect.h as u32);
+    pub fn set_scissor_rect(&mut self, rect: Rect) -> GameResult {
+        if rect.w as u32 == 0 || rect.h as u32 == 0 {
+            return Err(GameError::RenderError(String::from(
+                "the scissor rectangle size must be larger than zero.",
+            )));
+        }
+
+        let image_size = (self.target.width(), self.target.height());
+        if rect.x as u32 >= image_size.0 || rect.y as u32 >= image_size.1 {
+            return Err(GameError::RenderError(String::from(
+                "the scissor rectangle cannot start outside the canvas image.",
+            )));
+        }
+
+        // clamp the scissor rectangle to the target image size
+        let rect_width = u32::min(image_size.0 - rect.x as u32, rect.w as u32);
+        let rect_height = u32::min(image_size.1 - rect.y as u32, rect.h as u32);
+
+        self.state.scissor_rect = (rect.x as u32, rect.y as u32, rect_width, rect_height);
+
+        Ok(())
     }
 
     /// Returns the scissor rectangle as set by [`Canvas::set_scissor_rect`].
