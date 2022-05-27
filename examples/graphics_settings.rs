@@ -35,7 +35,7 @@ impl MainState {
         let s = MainState {
             angle: 0.0,
             zoom: 1.0,
-            image: graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/tile.png", true)?,
+            image: graphics::Image::from_path(ctx, "/tile.png", true)?,
             window_settings: WindowSettings {
                 toggle_fullscreen: false,
                 is_fullscreen: false,
@@ -72,7 +72,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::BLACK);
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
         canvas.set_screen_coordinates(self.screen_coords);
 
         canvas.draw(
@@ -84,7 +84,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         let rotation = ctx.time.ticks() % 1000;
         let circle = graphics::Mesh::new_circle(
-            &ctx.gfx,
+            ctx,
             DrawMode::stroke(3.0),
             Point2::new(0.0, 0.0),
             100.0,
@@ -125,10 +125,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 )?;
             }
         }
-        let mesh = graphics::Mesh::from_data(&ctx.gfx, mb.build());
+        let mesh = graphics::Mesh::from_data(ctx, mb.build());
         canvas.draw(&mesh, ggez::mint::Point2 { x: 0.0, y: 0.0 });
 
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         Ok(())
     }

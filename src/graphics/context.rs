@@ -15,6 +15,7 @@ use super::{
 };
 use crate::{
     conf::{self, Backend, Conf, FullscreenType, WindowMode},
+    context::Has,
     error::GameResult,
     filesystem::Filesystem,
     graphics::gpu::pipeline::RenderPipelineInfo,
@@ -401,9 +402,10 @@ impl GraphicsContext {
     /// Sets the window icon.
     pub fn set_window_icon(
         &mut self,
-        filesystem: &Filesystem,
+        filesystem: &impl Has<Filesystem>,
         path: Option<impl AsRef<Path>>,
     ) -> GameResult {
+        let filesystem = filesystem.get();
         let icon = match path {
             Some(p) => Some(load_icon(p.as_ref(), filesystem)?),
             None => None,
@@ -534,9 +536,11 @@ impl GraphicsContext {
                 depth_stencil_attachment: None,
             });
 
-            let sampler = self
-                .sampler_cache
-                .get(&self.wgpu.device, Sampler::linear_clamp());
+            let sampler = SamplerCache::get(
+                &mut self.sampler_cache,
+                &self.wgpu.device,
+                Sampler::linear_clamp(),
+            );
 
             let (bind, layout) = BindGroupBuilder::new()
                 .image(&fcx.present.view, wgpu::ShaderStages::FRAGMENT)

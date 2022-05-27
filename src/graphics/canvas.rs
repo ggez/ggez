@@ -1,6 +1,9 @@
 use crevice::std140::AsStd140;
 
-use crate::{GameError, GameResult};
+use crate::{
+    context::{Has, HasMut},
+    GameError, GameResult,
+};
 
 use super::{
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
@@ -40,7 +43,7 @@ impl Canvas {
     /// The image must be created for Canvas usage, i.e. [Image::new_canvas_image()], or [ScreenImage], and must only have a sample count of 1.
     #[inline]
     pub fn from_image(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         image: Image,
         load_op: impl Into<CanvasLoadOp>,
     ) -> Self {
@@ -50,10 +53,11 @@ impl Canvas {
     /// Helper for [`Canvas::from_image`] for construction of a [`Canvas`] from a [`ScreenImage`].
     #[inline]
     pub fn from_screen_image(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         image: &mut ScreenImage,
         load_op: impl Into<CanvasLoadOp>,
     ) -> Self {
+        let gfx = gfx.get();
         let image = image.image(gfx);
         Canvas::from_image(gfx, image, load_op)
     }
@@ -63,7 +67,7 @@ impl Canvas {
     /// Both images must be created for Canvas usage (see [Canvas::from_image]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
     #[inline]
     pub fn from_msaa(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         msaa_image: Image,
         resolve: Image,
         load_op: impl Into<CanvasLoadOp>,
@@ -74,7 +78,7 @@ impl Canvas {
     /// Helper for [`Canvas::from_msaa`] for construction of an MSAA [`Canvas`] from a [`ScreenImage`].
     #[inline]
     pub fn from_screen_msaa(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         msaa_image: &mut ScreenImage,
         resolve: &mut ScreenImage,
         load_op: impl Into<CanvasLoadOp>,
@@ -85,7 +89,8 @@ impl Canvas {
     }
 
     /// Create a new [Canvas] that renders directly to the window surface.
-    pub fn from_frame(gfx: &GraphicsContext, load_op: impl Into<CanvasLoadOp>) -> Self {
+    pub fn from_frame(gfx: &impl Has<GraphicsContext>, load_op: impl Into<CanvasLoadOp>) -> Self {
+        let gfx = gfx.get();
         // these unwraps will never fail
         let samples = gfx.frame_msaa_image.as_ref().unwrap().samples();
         let (target, resolve) = if samples > 1 {
@@ -100,13 +105,14 @@ impl Canvas {
     }
 
     fn new(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         target: Image,
         resolve: Option<Image>,
         load_op: CanvasLoadOp,
     ) -> Self {
-        let defaults = DefaultResources::new(gfx);
+        let gfx = gfx.get();
 
+        let defaults = DefaultResources::new(gfx);
         let drawable_size = gfx.drawable_size();
 
         let state = DrawState {
@@ -366,7 +372,8 @@ impl Canvas {
 
     /// Finish drawing with this canvas and submit all the draw calls.
     #[inline]
-    pub fn finish(mut self, gfx: &mut GraphicsContext) -> GameResult {
+    pub fn finish(mut self, gfx: &mut impl HasMut<GraphicsContext>) -> GameResult {
+        let gfx = gfx.get_mut();
         self.finalize(gfx)
     }
 

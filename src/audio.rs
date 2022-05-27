@@ -15,6 +15,8 @@ use std::time;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
+use crate::context::Has;
+use crate::context::HasTwo;
 use crate::error::GameError;
 use crate::error::GameResult;
 use crate::filesystem::Filesystem;
@@ -63,7 +65,8 @@ pub struct SoundData(Arc<[u8]>);
 
 impl SoundData {
     /// Load the file at the given path and create a new `SoundData` from it.
-    pub fn new<P: AsRef<path::Path>>(fs: &Filesystem, path: P) -> GameResult<Self> {
+    pub fn new<P: AsRef<path::Path>>(fs: &impl Has<Filesystem>, path: P) -> GameResult<Self> {
+        let fs = fs.get();
         let path = path.as_ref();
         let file = &mut fs.open(path)?;
         SoundData::from_read(file)
@@ -123,7 +126,8 @@ impl AsRef<[u8]> for SoundData {
 /// it is implemented by both `Source` and `SpatialSource`.
 pub trait SoundSource {
     /// Plays the audio source; restarts the sound if currently playing
-    fn play(&mut self, audio: &AudioContext) -> GameResult {
+    fn play(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
+        let audio = audio.get();
         self.stop(audio)?;
         self.play_later()
     }
@@ -132,7 +136,7 @@ pub trait SoundSource {
     fn play_later(&self) -> GameResult;
 
     /// Play source "in the background"; cannot be stopped
-    fn play_detached(&mut self, audio: &AudioContext) -> GameResult;
+    fn play_detached(&mut self, audio: &impl Has<AudioContext>) -> GameResult;
 
     /// Sets the source to repeat playback infinitely on next [`play()`](#method.play)
     fn set_repeat(&mut self, repeat: bool);
@@ -164,7 +168,7 @@ pub trait SoundSource {
     fn resume(&self);
 
     /// Stops playback
-    fn stop(&mut self, audio: &AudioContext) -> GameResult;
+    fn stop(&mut self, audio: &impl Has<AudioContext>) -> GameResult;
 
     /// Returns whether or not the source is stopped
     /// -- that is, has no more data to play.
@@ -281,17 +285,19 @@ pub struct Source {
 impl Source {
     /// Create a new `Source` from the given file.
     pub fn new<P: AsRef<path::Path>>(
-        fs: &Filesystem,
-        audio: &AudioContext,
+        extra: &impl HasTwo<Filesystem, AudioContext>,
         path: P,
     ) -> GameResult<Self> {
+        let fs = extra.get_first();
+        let audio = extra.get_second();
         let path = path.as_ref();
         let data = SoundData::new(fs, path)?;
         Source::from_data(audio, data)
     }
 
     /// Creates a new `Source` using the given `SoundData` object.
-    pub fn from_data(audio: &AudioContext, data: SoundData) -> GameResult<Self> {
+    pub fn from_data(audio: &impl Has<AudioContext>, data: SoundData) -> GameResult<Self> {
+        let audio = audio.get();
         if !data.can_play() {
             return Err(GameError::AudioError(
                 "Could not decode the given audio data".to_string(),
@@ -343,7 +349,8 @@ impl SoundSource for Source {
         Ok(())
     }
 
-    fn play_detached(&mut self, audio: &AudioContext) -> GameResult {
+    fn play_detached(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
+        let audio = audio.get();
         self.stop(audio)?;
         self.play_later()?;
 
@@ -376,7 +383,8 @@ impl SoundSource for Source {
         self.sink.play()
     }
 
-    fn stop(&mut self, audio: &AudioContext) -> GameResult {
+    fn stop(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
+        let audio = audio.get();
         // Sinks cannot be reused after calling `.stop()`. See
         // https://github.com/tomaka/rodio/issues/171 for information.
         // To stop the current sound we have to drop the old sink and
@@ -448,8 +456,8 @@ pub struct SpatialSource {
 impl SpatialSource {
     /// Create a new `SpatialSource` from the given file.
     pub fn new<P: AsRef<path::Path>>(
-        fs: &Filesystem,
-        audio: &AudioContext,
+        fs: &impl Has<Filesystem>,
+        audio: &impl Has<AudioContext>,
         path: P,
     ) -> GameResult<Self> {
         let path = path.as_ref();
@@ -458,7 +466,8 @@ impl SpatialSource {
     }
 
     /// Creates a new `SpatialSource` using the given `SoundData` object.
-    pub fn from_data(audio: &AudioContext, data: SoundData) -> GameResult<Self> {
+    pub fn from_data(audio: &impl Has<AudioContext>, data: SoundData) -> GameResult<Self> {
+        let audio = audio.get();
         if !data.can_play() {
             return Err(GameError::AudioError(
                 "Could not decode the given audio data".to_string(),
@@ -521,7 +530,8 @@ impl SoundSource for SpatialSource {
         Ok(())
     }
 
-    fn play_detached(&mut self, audio: &AudioContext) -> GameResult {
+    fn play_detached(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
+        let audio = audio.get();
         self.stop(audio)?;
         self.play_later()?;
 
@@ -566,7 +576,8 @@ impl SoundSource for SpatialSource {
         self.sink.play()
     }
 
-    fn stop(&mut self, audio: &AudioContext) -> GameResult {
+    fn stop(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
+        let audio = audio.get();
         // Sinks cannot be reused after calling `.stop()`. See
         // https://github.com/tomaka/rodio/issues/171 for information.
         // To stop the current sound we have to drop the old sink and

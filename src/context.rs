@@ -9,6 +9,7 @@ use crate::conf;
 use crate::error::GameResult;
 use crate::filesystem::Filesystem;
 use crate::graphics;
+use crate::graphics::GraphicsContext;
 use crate::input;
 use crate::timer;
 
@@ -36,7 +37,7 @@ pub struct Context {
     /// Filesystem state.
     pub fs: Filesystem,
     /// Graphics state.
-    pub gfx: crate::graphics::context::GraphicsContext,
+    pub gfx: GraphicsContext,
     /// Timer state.
     pub time: timer::TimeContext,
     /// Audio context.
@@ -62,6 +63,99 @@ pub struct Context {
     ///
     /// It's exposed here for people who want to roll their own event loop.
     pub quit_requested: bool,
+}
+
+// This is ugly and hacky but greatly improves ergonomics.
+
+pub trait Has<T> {
+    fn get(&self) -> &T;
+}
+
+impl<T> Has<T> for T {
+    #[inline]
+    fn get(&self) -> &T {
+        self
+    }
+}
+
+impl Has<Filesystem> for Context {
+    #[inline]
+    fn get(&self) -> &Filesystem {
+        &self.fs
+    }
+}
+
+impl Has<GraphicsContext> for Context {
+    #[inline]
+    fn get(&self) -> &GraphicsContext {
+        &self.gfx
+    }
+}
+
+#[cfg(feature = "audio")]
+impl Has<audio::AudioContext> for Context {
+    #[inline]
+    fn get(&self) -> &audio::AudioContext {
+        &self.audio
+    }
+}
+
+pub trait HasMut<T> {
+    fn get_mut(&mut self) -> &mut T;
+}
+
+impl<T> HasMut<T> for T {
+    #[inline]
+    fn get_mut(&mut self) -> &mut T {
+        self
+    }
+}
+
+impl HasMut<GraphicsContext> for Context {
+    #[inline]
+    fn get_mut(&mut self) -> &mut GraphicsContext {
+        &mut self.gfx
+    }
+}
+
+pub trait HasTwo<T, U> {
+    fn get_first(&self) -> &T;
+    fn get_second(&self) -> &U;
+}
+
+impl<T, U> HasTwo<T, U> for (&T, &U) {
+    #[inline]
+    fn get_first(&self) -> &T {
+        self.0
+    }
+
+    #[inline]
+    fn get_second(&self) -> &U {
+        self.1
+    }
+}
+
+impl HasTwo<Filesystem, GraphicsContext> for Context {
+    #[inline]
+    fn get_first(&self) -> &Filesystem {
+        &self.fs
+    }
+
+    #[inline]
+    fn get_second(&self) -> &GraphicsContext {
+        &self.gfx
+    }
+}
+
+#[cfg(feature = "audio")]
+impl HasTwo<Filesystem, crate::audio::AudioContext> for Context {
+    fn get_first(&self) -> &Filesystem {
+        &self.fs
+    }
+
+    fn get_second(&self) -> &crate::audio::AudioContext {
+        &self.audio
+    }
 }
 
 impl fmt::Debug for Context {

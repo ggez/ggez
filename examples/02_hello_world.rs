@@ -12,7 +12,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.gfx.add_font(
             "LiberationMono",
-            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
+            graphics::FontData::from_path(ctx, "/LiberationMono-Regular.ttf")?,
         );
 
         let s = MainState { frames: 0 };
@@ -32,7 +32,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(
-            &ctx.gfx,
+            ctx,
             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
         );
 
@@ -46,7 +46,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             dest_point,
         );
 
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         self.frames += 1;
         if (self.frames % 100) == 0 {

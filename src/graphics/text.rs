@@ -2,7 +2,7 @@ use super::{
     gpu::text::{Extra, TextRenderer},
     Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect,
 };
-use crate::{filesystem::Filesystem, GameError, GameResult};
+use crate::{context::Has, filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
 use std::{collections::HashMap, io::Read, path::Path};
 
@@ -15,7 +15,9 @@ pub struct FontData {
 impl FontData {
     /// Loads font data from a given path in the filesystem.
     #[allow(unused_results)]
-    pub fn from_path(fs: &Filesystem, path: impl AsRef<Path>) -> GameResult<Self> {
+    pub fn from_path(fs: &impl Has<Filesystem>, path: impl AsRef<Path>) -> GameResult<Self> {
+        let fs = fs.get();
+
         let mut bytes = vec![];
         fs.open(path)?.read_to_end(&mut bytes)?;
         Ok(FontData {

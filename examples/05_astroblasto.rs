@@ -244,12 +244,12 @@ struct Assets {
 
 impl Assets {
     fn new(ctx: &mut Context) -> GameResult<Assets> {
-        let player_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/player.png", true)?;
-        let shot_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/shot.png", true)?;
-        let rock_image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/rock.png", true)?;
+        let player_image = graphics::Image::from_path(ctx, "/player.png", true)?;
+        let shot_image = graphics::Image::from_path(ctx, "/shot.png", true)?;
+        let rock_image = graphics::Image::from_path(ctx, "/rock.png", true)?;
 
-        let shot_sound = audio::Source::new(&ctx.fs, &ctx.audio, "/pew.ogg")?;
-        let hit_sound = audio::Source::new(&ctx.fs, &ctx.audio, "/boom.ogg")?;
+        let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
+        let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
 
         Ok(Assets {
             player_image,
@@ -335,7 +335,7 @@ impl MainState {
 
         let (width, height) = ctx.gfx.drawable_size();
         let screen =
-            graphics::ScreenImage::new(&ctx.gfx, graphics::ImageFormat::Rgba8UnormSrgb, 1., 1., 1);
+            graphics::ScreenImage::new(ctx, graphics::ImageFormat::Rgba8UnormSrgb, 1., 1., 1);
 
         let s = MainState {
             screen,
@@ -367,7 +367,7 @@ impl MainState {
 
         self.shots.push(shot);
 
-        self.assets.shot_sound.play(&ctx.audio)?;
+        self.assets.shot_sound.play(ctx)?;
 
         Ok(())
     }
@@ -390,7 +390,7 @@ impl MainState {
                     rock.life = 0.0;
                     self.score += 1;
 
-                    self.assets.hit_sound.play(&ctx.audio)?;
+                    self.assets.hit_sound.play(ctx)?;
                 }
             }
         }
@@ -501,8 +501,7 @@ impl EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Our drawing is quite simple.
         // Just clear the screen...
-        let mut canvas =
-            graphics::Canvas::from_screen_image(&ctx.gfx, &mut self.screen, Color::BLACK);
+        let mut canvas = graphics::Canvas::from_screen_image(ctx, &mut self.screen, Color::BLACK);
 
         // Loop over all objects drawing them...
         {
@@ -538,8 +537,8 @@ impl EventHandler for MainState {
             graphics::DrawParam::from(score_dest).color(Color::WHITE),
         );
 
-        canvas.finish(&mut ctx.gfx)?;
-        ctx.gfx.present(&self.screen.image(&ctx.gfx))?;
+        canvas.finish(ctx)?;
+        ctx.gfx.present(&self.screen.image(ctx))?;
 
         // And yield the timeslice
         // This tells the OS that we're done using the CPU but it should
@@ -574,7 +573,7 @@ impl EventHandler for MainState {
                 self.input.fire = true;
             }
             KeyCode::P => {
-                self.screen.image(&ctx.gfx).encode(
+                self.screen.image(ctx).encode(
                     ctx,
                     graphics::ImageEncodingFormat::Png,
                     "/screenshot.png",

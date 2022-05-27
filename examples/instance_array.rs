@@ -17,8 +17,8 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/tile.png", true)?;
-        let instances = graphics::InstanceArray::new(&ctx.gfx, image, 150 * 150, false);
+        let image = graphics::Image::from_path(ctx, "/tile.png", true)?;
+        let instances = graphics::InstanceArray::new(ctx, image, 150 * 150, false);
         Ok(MainState { instances })
     }
 }
@@ -33,7 +33,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::BLACK);
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
 
         let time = (ctx.time.time_since_start().as_secs_f64() * 1000.0) as u32;
         let cycle = 10_000;
@@ -66,7 +66,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             .src(graphics::Rect::new(0.005, 0.005, 0.005, 0.005));
         canvas.draw(&self.instances, param);
 
-        canvas.finish(&mut ctx.gfx)
+        canvas.finish(ctx)
     }
 }
 

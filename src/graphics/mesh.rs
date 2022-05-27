@@ -2,7 +2,7 @@ use super::{
     context::GraphicsContext, gpu::arc::ArcBuffer, Canvas, Color, Draw, DrawMode, DrawParam,
     Drawable, LinearColor, Rect, WgpuContext,
 };
-use crate::{GameError, GameResult};
+use crate::{context::Has, GameError, GameResult};
 use lyon::{
     math::Point as LPoint,
     path::{traits::PathBuilder, Polygon},
@@ -62,7 +62,8 @@ pub struct Mesh {
 
 impl Mesh {
     /// Create a new mesh from [MeshData].
-    pub fn from_data(gfx: &GraphicsContext, raw: MeshData) -> Self {
+    pub fn from_data(gfx: &impl Has<GraphicsContext>, raw: MeshData) -> Self {
+        let gfx = gfx.get();
         Self::from_data_wgpu(&gfx.wgpu, raw)
     }
 
@@ -91,7 +92,7 @@ impl Mesh {
 
     /// Create a new mesh for a line of one or more connected segments.
     pub fn new_line(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         points: &[impl Into<mint::Point2<f32>> + Clone],
         width: f32,
         color: Color,
@@ -106,7 +107,7 @@ impl Mesh {
 
     /// Create a new mesh for a circle.
     pub fn new_circle(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         mode: DrawMode,
         point: impl Into<mint::Point2<f32>>,
         radius: f32,
@@ -123,7 +124,7 @@ impl Mesh {
 
     /// Create a new mesh for an ellipse.
     pub fn new_ellipse(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         mode: DrawMode,
         point: impl Into<mint::Point2<f32>>,
         radius1: f32,
@@ -141,7 +142,7 @@ impl Mesh {
 
     /// Create a new mesh for a series of connected lines.
     pub fn new_polyline(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         mode: DrawMode,
         points: &[impl Into<mint::Point2<f32>> + Clone],
         color: Color,
@@ -156,7 +157,7 @@ impl Mesh {
     /// The points given must be in clockwise order,
     /// otherwise at best the polygon will not draw.
     pub fn new_polygon(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         mode: DrawMode,
         points: &[impl Into<mint::Point2<f32>> + Clone],
         color: Color,
@@ -169,7 +170,7 @@ impl Mesh {
 
     /// Create a new mesh for a rectangle.
     pub fn new_rectangle(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         mode: DrawMode,
         bounds: Rect,
         color: Color,
@@ -182,7 +183,7 @@ impl Mesh {
 
     /// Create a new mesh for a rounded rectangle.
     pub fn new_rounded_rectangle(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         mode: DrawMode,
         bounds: Rect,
         radius: f32,
@@ -198,7 +199,7 @@ impl Mesh {
 
     /// Create a new `Mesh` from a raw list of triangle points.
     pub fn from_triangles(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         triangles: &[impl Into<mint::Point2<f32>> + Clone],
         color: Color,
     ) -> GameResult<Self> {

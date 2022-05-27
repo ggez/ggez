@@ -20,9 +20,9 @@ impl MainState {
         // will mount that directory so we can omit it in the path here.
         ctx.gfx.add_font(
             "LiberationMono",
-            graphics::FontData::from_path(&ctx.fs, "/LiberationMono-Regular.ttf")?,
+            graphics::FontData::from_path(ctx, "/LiberationMono-Regular.ttf")?,
         );
-        let canvas_image = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
+        let canvas_image = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
 
         let s = MainState {
             canvas_image,
@@ -48,9 +48,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         if self.draw_with_canvas {
             println!("Drawing with canvas");
-            let canvas_image = self.canvas_image.image(&ctx.gfx);
+            let canvas_image = self.canvas_image.image(ctx);
             let mut canvas = graphics::Canvas::from_image(
-                &ctx.gfx,
+                ctx,
                 canvas_image.clone(),
                 graphics::Color::from((255, 255, 255, 128)),
             );
@@ -60,25 +60,24 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 graphics::DrawParam::from(dest_point + vec2(15., 15.))
                     .color(Color::from((0, 0, 0, 255))),
             );
-            canvas.finish(&mut ctx.gfx)?;
+            canvas.finish(ctx)?;
 
-            let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from((64, 0, 0, 0)));
+            let mut canvas = graphics::Canvas::from_frame(ctx, Color::from((64, 0, 0, 0)));
             canvas.draw(
                 &canvas_image,
                 graphics::DrawParam::new().color(Color::from((255, 255, 255, 128))),
             );
-            canvas.finish(&mut ctx.gfx)?;
+            canvas.finish(ctx)?;
         } else {
             println!("Drawing without canvas");
-            let mut canvas =
-                graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.25, 0.0, 0.0, 1.0]));
+            let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.25, 0.0, 0.0, 1.0]));
 
             canvas.draw(
                 &text,
                 graphics::DrawParam::from(dest_point).color(Color::from((192, 128, 64, 255))),
             );
 
-            canvas.finish(&mut ctx.gfx)?;
+            canvas.finish(ctx)?;
         }
 
         self.frames += 1;

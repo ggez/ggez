@@ -67,13 +67,11 @@ pub fn main() -> GameResult {
                 // Draw
                 ctx.gfx.begin_frame().unwrap();
 
-                let mut canvas = graphics::Canvas::from_frame(
-                    &ctx.gfx,
-                    graphics::Color::from([0.1, 0.2, 0.3, 1.0]),
-                );
+                let mut canvas =
+                    graphics::Canvas::from_frame(ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
 
                 let circle = graphics::Mesh::new_circle(
-                    &ctx.gfx,
+                    ctx,
                     DrawMode::fill(),
                     glam::Vec2::new(0.0, 0.0),
                     100.0,
@@ -83,7 +81,7 @@ pub fn main() -> GameResult {
                 .unwrap();
                 canvas.draw(&circle, glam::Vec2::new(position, 380.0));
 
-                canvas.finish(&mut ctx.gfx).unwrap();
+                canvas.finish(ctx).unwrap();
                 ctx.gfx.end_frame().unwrap();
 
                 // reset the mouse delta for the next frame

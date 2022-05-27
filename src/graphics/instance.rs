@@ -1,4 +1,4 @@
-use crate::{GameError, GameResult};
+use crate::{context::Has, GameError, GameResult};
 
 use super::{
     context::GraphicsContext,
@@ -43,11 +43,12 @@ impl InstanceArray {
     ///
     /// [z-values]:crate::graphics::ZIndex
     pub fn new(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         image: impl Into<Option<Image>>,
         capacity: u32,
         ordered: bool,
     ) -> Self {
+        let gfx = gfx.get();
         InstanceArray::new_wgpu(
             &gfx.wgpu,
             image.into().unwrap_or_else(|| gfx.white_image.clone()),

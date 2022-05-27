@@ -31,12 +31,12 @@
 //!
 //!     fn draw(&mut self, ctx: &mut Context) -> GameResult {
 //!         let mut canvas = graphics::Canvas::from_frame(
-//!             &ctx.gfx,
+//!             ctx,
 //!             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
 //!         );
 //!         // Create a circle at `position_x` and draw
 //!         let circle = graphics::Mesh::new_circle(
-//!             &ctx.gfx,
+//!             ctx,
 //!             graphics::DrawMode::fill(),
 //!             glam::vec2(self.position_x, 380.0),
 //!             100.0,
@@ -44,7 +44,7 @@
 //!             graphics::Color::WHITE,
 //!         )?;
 //!         canvas.draw(&circle, graphics::DrawParam::default());
-//!         canvas.finish(&mut ctx.gfx)?;
+//!         canvas.finish(ctx)?;
 //!         timer::yield_now();
 //!         Ok(())
 //!     }

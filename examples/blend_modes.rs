@@ -20,10 +20,10 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let layer = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
+        let layer = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
 
         let circle = graphics::Mesh::new_circle(
-            &ctx.gfx,
+            ctx,
             graphics::DrawMode::fill(),
             Vec2::new(0.0, 0.0),
             45.0,
@@ -139,17 +139,17 @@ impl EventHandler for MainState {
         let (w, h) = ctx.gfx.drawable_size();
 
         // draw everything onto self.layer
-        let layer = self.layer.image(&ctx.gfx);
+        let layer = self.layer.image(ctx);
         let mut canvas =
-            graphics::Canvas::from_image(&ctx.gfx, layer.clone(), Color::new(0., 0., 0., 0.));
-        self.draw_venn_diagrams(&mut ctx.gfx, (w, h), &mut canvas)?;
-        canvas.finish(&mut ctx.gfx)?;
+            graphics::Canvas::from_image(ctx, layer.clone(), Color::new(0., 0., 0., 0.));
+        self.draw_venn_diagrams(ctx, (w, h), &mut canvas)?;
+        canvas.finish(ctx)?;
 
         // now start drawing to the screen
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::new(0.3, 0.3, 0.3, 1.0));
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::new(0.3, 0.3, 0.3, 1.0));
 
         // draw everything directly onto the screen once
-        self.draw_venn_diagrams(&mut ctx.gfx, (w, h), &mut canvas)?;
+        self.draw_venn_diagrams(ctx, (w, h), &mut canvas)?;
 
         // draw layer onto the screen
         canvas.set_blend_mode(self.layer_blend);
@@ -170,7 +170,7 @@ impl EventHandler for MainState {
             graphics::DrawParam::from([8., 4. + y]).color(Color::WHITE),
         );
 
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         Ok(())
     }

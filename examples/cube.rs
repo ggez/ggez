@@ -208,7 +208,7 @@ impl MainState {
 
         // Create 1-pixel blue texture.
         let image =
-            graphics::Image::from_solid(&ctx.gfx, 1, graphics::Color::from_rgb(0x20, 0xA0, 0xC0));
+            graphics::Image::from_solid(ctx, 1, graphics::Color::from_rgb(0x20, 0xA0, 0xC0));
 
         let sampler = ctx
             .gfx
@@ -254,8 +254,7 @@ impl MainState {
                 ],
             });
 
-        let depth =
-            graphics::ScreenImage::new(&ctx.gfx, graphics::ImageFormat::Depth32Float, 1., 1., 1);
+        let depth = graphics::ScreenImage::new(ctx, graphics::ImageFormat::Depth32Float, 1., 1., 1);
 
         // FOV, spect ratio, znear, zfar
         let proj = Mat4::perspective_rh(f32::consts::PI / 4.0, 4.0 / 3.0, 1.0, 10.0);
@@ -293,7 +292,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .queue
                 .write_buffer(&self.locals, 0, locals.as_std140().as_bytes());
 
-            let depth = self.depth.image(&ctx.gfx);
+            let depth = self.depth.image(ctx);
 
             let frame = ctx.gfx.frame().clone();
             let cmd = ctx.gfx.commands().unwrap();
@@ -327,7 +326,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             pass.draw_indexed(0..36, 0, 0..1);
         }
 
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, None);
+        let mut canvas = graphics::Canvas::from_frame(ctx, None);
 
         // Do ggez drawing
         let dest_point1 = Vec2::new(10.0, 210.0);
@@ -341,7 +340,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             dest_point2,
         );
 
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         self.frames += 1;
         if (self.frames % 10) == 0 {

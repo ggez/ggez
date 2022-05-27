@@ -52,7 +52,7 @@ impl GameState {
     fn new(ctx: &mut Context) -> ggez::GameResult<GameState> {
         // We just use the same RNG seed every time.
         let mut rng = Rand32::new(12345);
-        let texture = Image::from_path(&ctx.fs, &ctx.gfx, "/wabbit_alpha.png", true)?;
+        let texture = Image::from_path(ctx, "/wabbit_alpha.png", true)?;
         let mut bunnies = Vec::with_capacity(INITIAL_BUNNIES);
         let max_x = (WIDTH - texture.width() as u16) as f32;
         let max_y = (HEIGHT - texture.height() as u16) as f32;
@@ -61,8 +61,7 @@ impl GameState {
             bunnies.push(Bunny::new(&mut rng));
         }
 
-        let bunnybatch =
-            InstanceArray::new(&ctx.gfx, texture.clone(), INITIAL_BUNNIES as u32, false);
+        let bunnybatch = InstanceArray::new(ctx, texture.clone(), INITIAL_BUNNIES as u32, false);
 
         Ok(GameState {
             rng,
@@ -114,7 +113,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from((0.392, 0.584, 0.929)));
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from((0.392, 0.584, 0.929)));
 
         if self.batched_drawing {
             self.bunnybatch.set(
@@ -140,7 +139,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
             self.batched_drawing
         ));
 
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         Ok(())
     }

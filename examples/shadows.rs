@@ -224,8 +224,8 @@ const LIGHT_GLOW_RATE: f32 = 0.9;
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let background = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/bg_top.png", true)?;
-        let tile = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/tile.png", true)?;
+        let background = graphics::Image::from_path(ctx, "/bg_top.png", true)?;
+        let tile = graphics::Image::from_path(ctx, "/tile.png", true)?;
 
         let screen_size = {
             let size = ctx.gfx.drawable_size();
@@ -240,7 +240,7 @@ impl MainState {
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
-        let torch_params = ShaderParams::new(&mut ctx.gfx, &torch, &[], &[]);
+        let torch_params = ShaderParams::new(ctx, &torch, &[], &[]);
 
         let (w, h) = ctx.gfx.size();
         let (x, y) = (100.0 / w as f32, 75.0 / h as f32);
@@ -253,18 +253,18 @@ impl MainState {
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
-        let static_light_params = ShaderParams::new(&mut ctx.gfx, &static_light, &[], &[]);
+        let static_light_params = ShaderParams::new(ctx, &static_light, &[], &[]);
 
         let color_format = ctx.gfx.surface_format();
-        let foreground = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
+        let foreground = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
         let occlusions =
-            graphics::Image::new_canvas_image(&ctx.gfx, color_format, LIGHT_RAY_COUNT.into(), 1, 1);
-        let shadows = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
-        let lights = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
+            graphics::Image::new_canvas_image(ctx, color_format, LIGHT_RAY_COUNT.into(), 1, 1);
+        let shadows = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
+        let lights = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
 
-        let occlusions_shader = Shader::from_wgsl(&ctx.gfx, OCCLUSIONS_SHADER_SOURCE, "main");
-        let shadows_shader = Shader::from_wgsl(&ctx.gfx, SHADOWS_SHADER_SOURCE, "main");
-        let lights_shader = Shader::from_wgsl(&ctx.gfx, LIGHTS_SHADER_SOURCE, "main");
+        let occlusions_shader = Shader::from_wgsl(ctx, OCCLUSIONS_SHADER_SOURCE, "main");
+        let shadows_shader = Shader::from_wgsl(ctx, SHADOWS_SHADER_SOURCE, "main");
+        let lights_shader = Shader::from_wgsl(ctx, LIGHTS_SHADER_SOURCE, "main");
 
         Ok(MainState {
             background,
@@ -290,30 +290,30 @@ impl MainState {
         canvas_origin: DrawParam,
         clear: Option<graphics::Color>,
     ) -> GameResult {
-        let foreground = self.foreground.image(&ctx.gfx);
+        let foreground = self.foreground.image(ctx);
 
         let size = ctx.gfx.drawable_size();
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
-        let mut canvas = Canvas::from_image(&ctx.gfx, self.occlusions.clone(), None);
+        let mut canvas = Canvas::from_image(ctx, self.occlusions.clone(), None);
         canvas.set_shader(self.occlusions_shader.clone());
         canvas.set_shader_params(light.clone());
         canvas.draw(&foreground, canvas_origin);
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         // Now we render our shadow map and light map into their respective
         // canvases based on the occlusion map. These will then be drawn onto
         // the final render target using appropriate blending modes.
-        let mut canvas = Canvas::from_screen_image(&ctx.gfx, &mut self.shadows, clear);
+        let mut canvas = Canvas::from_screen_image(ctx, &mut self.shadows, clear);
         canvas.set_shader(self.shadows_shader.clone());
         canvas.set_shader_params(light.clone());
         canvas.draw(
             &self.occlusions,
             origin.image_scale(false).scale([size.0, size.1]),
         );
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
-        let mut canvas = Canvas::from_screen_image(&ctx.gfx, &mut self.lights, clear);
+        let mut canvas = Canvas::from_screen_image(ctx, &mut self.lights, clear);
         canvas.set_blend_mode(BlendMode::ADD);
         canvas.set_shader(self.lights_shader.clone());
         canvas.set_shader_params(light);
@@ -321,7 +321,7 @@ impl MainState {
             &self.occlusions,
             origin.image_scale(false).scale([size.0, size.1]),
         );
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         Ok(())
     }
@@ -341,9 +341,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        self.torch_params.set_uniforms(&ctx.gfx, &self.torch);
+        self.torch_params.set_uniforms(ctx, &self.torch);
         self.static_light_params
-            .set_uniforms(&ctx.gfx, &self.static_light);
+            .set_uniforms(ctx, &self.static_light);
 
         let origin = DrawParam::new()
             .dest(Vec2::new(0.0, 0.0))
@@ -355,8 +355,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
         // use this canvas to:
         //  - run the occlusions shader to determine where the shadows are
         //  - render to screen once all the shadows are calculated and rendered
-        let foreground = self.foreground.image(&ctx.gfx);
-        let mut canvas = Canvas::from_image(&ctx.gfx, foreground, Color::new(0.0, 0.0, 0.0, 0.0));
+        let foreground = self.foreground.image(ctx);
+        let mut canvas = Canvas::from_image(ctx, foreground, Color::new(0.0, 0.0, 0.0, 0.0));
         canvas.draw(&self.tile, DrawParam::new().dest(Vec2::new(598.0, 124.0)));
         canvas.draw(&self.tile, DrawParam::new().dest(Vec2::new(92.0, 350.0)));
         canvas.draw(
@@ -367,7 +367,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             graphics::Text::new("SHADOWS...").set_scale(48.),
             graphics::DrawParam::from([50., 200.]),
         );
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         // Then we draw our light and shadow maps
         self.render_light(
@@ -387,10 +387,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // Now lets finally render to screen starting out with background, then
         // the shadows and lights overtop and finally our foreground.
-        let shadows = self.shadows.image(&ctx.gfx);
-        let foreground = self.foreground.image(&ctx.gfx);
-        let lights = self.lights.image(&ctx.gfx);
-        let mut canvas = Canvas::from_frame(&ctx.gfx, Color::WHITE);
+        let shadows = self.shadows.image(ctx);
+        let foreground = self.foreground.image(ctx);
+        let lights = self.lights.image(ctx);
+        let mut canvas = Canvas::from_frame(ctx, Color::WHITE);
         canvas.draw(&self.background, DrawParam::default());
         canvas.set_blend_mode(BlendMode::MULTIPLY);
         canvas.draw(&shadows, DrawParam::default());
@@ -403,7 +403,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         // the greyscale pixels are the half distances of the nearest shadows to
         // the mouse position (equally encoded in all color channels).
         // canvas.draw(&self.occlusions, DrawParam::default());
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         Ok(())
     }
