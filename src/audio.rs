@@ -285,11 +285,11 @@ pub struct Source {
 impl Source {
     /// Create a new `Source` from the given file.
     pub fn new<P: AsRef<path::Path>>(
-        extra: &impl HasTwo<Filesystem, AudioContext>,
+        ctxs: &impl HasTwo<Filesystem, AudioContext>,
         path: P,
     ) -> GameResult<Self> {
-        let fs = extra.get_first();
-        let audio = extra.get_second();
+        let fs = ctxs.get_first();
+        let audio = ctxs.get_second();
         let path = path.as_ref();
         let data = SoundData::new(fs, path)?;
         Source::from_data(audio, data)

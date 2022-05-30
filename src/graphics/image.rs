@@ -123,12 +123,12 @@ impl Image {
     /// Creates a new image initialized with pixel data loaded from an encoded image `Read` (e.g. PNG or JPEG).
     #[allow(unused_results)]
     pub fn from_path(
-        extra: &impl HasTwo<Filesystem, GraphicsContext>,
+        ctxs: &impl HasTwo<Filesystem, GraphicsContext>,
         path: impl AsRef<Path>,
         srgb: bool,
     ) -> GameResult<Self> {
-        let fs = extra.get_first();
-        let gfx = extra.get_second();
+        let fs = ctxs.get_first();
+        let gfx = ctxs.get_second();
 
         let mut encoded = Vec::new();
         fs.open(path)?.read_to_end(&mut encoded)?;
