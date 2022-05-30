@@ -25,6 +25,7 @@
 * **[Miscellaneous](#misc)**
   * [How do I load my `conf.toml` file?](#misc_conf)
   * [I get a console window when I launch my executable on Windows](#misc_win_console)
+  * [What is this `Has<GraphicsContext>` parameter?](#has_parameter)
 
 ---
 
@@ -120,7 +121,7 @@ graphics::set_screen_coordinates(&mut context, Rect::new(0.0, 0.0, 1.0, 1.0)).un
 ```
 
 and scaling your `Image`s with `graphics::DrawParam`.
- 
+
 Please note that updating your coordinate system like this may also
 be necessary [when drawing onto canvases of custom sizes](https://github.com/ggez/ggez/blob/aed56921fbca8ac8192b492f0a46d92e4a0a95bb/src/graphics/canvas.rs#L44-L48).
 
@@ -196,7 +197,7 @@ When created, a window starts out with a coordinate system perfectly
 corresponding to its physical size in pixels. That's why, initially,
 translating mouse coordinates to logical coordinates is not necessary
 at all. Both systems are just the same.
- 
+
 But once physical and logical coordinates get out of sync problems
 start to arise. If you want more info on how to navigate this issue
 take a look at the [`input_test`](../examples/input_test.rs) and [`graphics_settings`](../examples/graphics_settings.rs) examples.
@@ -228,11 +229,11 @@ provides types for other math libraries to convert to and from with.
 What you are supposed to do is to add a math library of your choice to
 your game such as glam or nalgebra, usually with a "mint" feature.  For
 example. You can add
- 
+
  ```rust
  glam = { version = "0.15.2", features = ["mint"] }
  ```
- 
+
  in your Cargo.toml, then when you try to pass
 something to, say `DrawParam::new().dest(my_point)`, you will
 be able to pass a glam type like
@@ -404,3 +405,15 @@ If you wish, you can also disable it only in release mode:
 ```
 
 [`egui`]: https://github.com/emilk/egui#integrations
+
+<a name="has_parameter">
+
+## What is this `Has` parameter?
+
+You may notice a lot of methods taking a `gfx: &impl Has<GraphicsContext>` parameter or `ctxs: &impl HasTwo<GraphicsContext, Filesystem>`, what is up with that?
+
+Since version 0.8, we support split borrowing the sub-contexts. **This is not useful for most users so you may just pass `ctx` to any parameter taking `Has`**. If you want to perform a split-borrow:
+
+You may pass `&ctx.gfx` for `gfx: &impl Has<GraphicsContext>`
+
+Or you may pass it like `&(&ctx.gfx, &ctx.fs)` for `ctxs: &impl HasTwo<GraphicsContext, Filesystem>`

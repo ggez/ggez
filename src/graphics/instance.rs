@@ -211,7 +211,7 @@ impl InstanceArray {
     /// Changes the capacity of this `InstanceArray` while preserving instances.
     ///
     /// If `new_capacity` is less than the `len`, the instances will be truncated.
-    pub fn resize(&mut self, gfx: &GraphicsContext, new_capacity: u32) {
+    pub fn resize(&mut self, gfx: &impl Has<GraphicsContext>, new_capacity: u32) {
         let resized = InstanceArray::new(gfx, self.image.clone(), new_capacity, self.ordered);
         self.buffer = resized.buffer;
         self.indices = resized.indices;
