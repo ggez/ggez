@@ -67,6 +67,9 @@ pub struct Context {
 
 // This is ugly and hacky but greatly improves ergonomics.
 
+/// Used to represent types that can provide a certain context type.
+///
+/// If you don't know what this is, you most likely want to pass `ctx`.
 pub trait Has<T> {
     fn get(&self) -> &T;
 }
@@ -100,6 +103,9 @@ impl Has<audio::AudioContext> for Context {
     }
 }
 
+/// Used to represent types that can provide a certain context type in a mutable form.
+///
+/// If you don't know what this is, you most likely want to pass `ctx`.
 pub trait HasMut<T> {
     fn get_mut(&mut self) -> &mut T;
 }
@@ -118,6 +124,9 @@ impl HasMut<GraphicsContext> for Context {
     }
 }
 
+/// Used to represent types that can provide two context types. See also `Has<T>`.
+///
+/// If you don't know what this is, you most likely want to pass `ctx`.
 pub trait HasTwo<T, U> {
     fn get_first(&self) -> &T;
     fn get_second(&self) -> &U;
