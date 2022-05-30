@@ -405,7 +405,7 @@ impl GraphicsContext {
         filesystem: &impl Has<Filesystem>,
         path: Option<impl AsRef<Path>>,
     ) -> GameResult {
-        let filesystem = filesystem.get();
+        let filesystem = filesystem.retrieve();
         let icon = match path {
             Some(p) => Some(load_icon(p.as_ref(), filesystem)?),
             None => None,
@@ -536,11 +536,9 @@ impl GraphicsContext {
                 depth_stencil_attachment: None,
             });
 
-            let sampler = SamplerCache::get(
-                &mut self.sampler_cache,
-                &self.wgpu.device,
-                Sampler::linear_clamp(),
-            );
+            let sampler = &mut self
+                .sampler_cache
+                .get(&self.wgpu.device, Sampler::linear_clamp());
 
             let (bind, layout) = BindGroupBuilder::new()
                 .image(&fcx.present.view, wgpu::ShaderStages::FRAGMENT)

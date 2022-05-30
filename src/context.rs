@@ -1,3 +1,5 @@
+//! The `context` module contains functions and traits related to using the `Context` type.
+
 use std::fmt;
 /// We re-export winit so it's easy for people to use the same version as we are
 /// without having to mess around figuring it out.
@@ -71,26 +73,27 @@ pub struct Context {
 ///
 /// If you don't know what this is, you most likely want to pass `ctx`.
 pub trait Has<T> {
-    fn get(&self) -> &T;
+    /// Method to retrieve the context type.
+    fn retrieve(&self) -> &T;
 }
 
 impl<T> Has<T> for T {
     #[inline]
-    fn get(&self) -> &T {
+    fn retrieve(&self) -> &T {
         self
     }
 }
 
 impl Has<Filesystem> for Context {
     #[inline]
-    fn get(&self) -> &Filesystem {
+    fn retrieve(&self) -> &Filesystem {
         &self.fs
     }
 }
 
 impl Has<GraphicsContext> for Context {
     #[inline]
-    fn get(&self) -> &GraphicsContext {
+    fn retrieve(&self) -> &GraphicsContext {
         &self.gfx
     }
 }
@@ -98,7 +101,7 @@ impl Has<GraphicsContext> for Context {
 #[cfg(feature = "audio")]
 impl Has<audio::AudioContext> for Context {
     #[inline]
-    fn get(&self) -> &audio::AudioContext {
+    fn retrieve(&self) -> &audio::AudioContext {
         &self.audio
     }
 }
@@ -107,19 +110,20 @@ impl Has<audio::AudioContext> for Context {
 ///
 /// If you don't know what this is, you most likely want to pass `ctx`.
 pub trait HasMut<T> {
-    fn get_mut(&mut self) -> &mut T;
+    /// Method to retrieve the context type as mutable.
+    fn retrieve_mut(&mut self) -> &mut T;
 }
 
 impl<T> HasMut<T> for T {
     #[inline]
-    fn get_mut(&mut self) -> &mut T {
+    fn retrieve_mut(&mut self) -> &mut T {
         self
     }
 }
 
 impl HasMut<GraphicsContext> for Context {
     #[inline]
-    fn get_mut(&mut self) -> &mut GraphicsContext {
+    fn retrieve_mut(&mut self) -> &mut GraphicsContext {
         &mut self.gfx
     }
 }
@@ -128,41 +132,43 @@ impl HasMut<GraphicsContext> for Context {
 ///
 /// If you don't know what this is, you most likely want to pass `ctx`.
 pub trait HasTwo<T, U> {
-    fn get_first(&self) -> &T;
-    fn get_second(&self) -> &U;
+    /// Method to retrieve the first context type.
+    fn retrieve_first(&self) -> &T;
+    /// Method to retrieve the second context type.
+    fn retrieve_second(&self) -> &U;
 }
 
 impl<T, U> HasTwo<T, U> for (&T, &U) {
     #[inline]
-    fn get_first(&self) -> &T {
+    fn retrieve_first(&self) -> &T {
         self.0
     }
 
     #[inline]
-    fn get_second(&self) -> &U {
+    fn retrieve_second(&self) -> &U {
         self.1
     }
 }
 
 impl HasTwo<Filesystem, GraphicsContext> for Context {
     #[inline]
-    fn get_first(&self) -> &Filesystem {
+    fn retrieve_first(&self) -> &Filesystem {
         &self.fs
     }
 
     #[inline]
-    fn get_second(&self) -> &GraphicsContext {
+    fn retrieve_second(&self) -> &GraphicsContext {
         &self.gfx
     }
 }
 
 #[cfg(feature = "audio")]
 impl HasTwo<Filesystem, crate::audio::AudioContext> for Context {
-    fn get_first(&self) -> &Filesystem {
+    fn retrieve_first(&self) -> &Filesystem {
         &self.fs
     }
 
-    fn get_second(&self) -> &crate::audio::AudioContext {
+    fn retrieve_second(&self) -> &crate::audio::AudioContext {
         &self.audio
     }
 }

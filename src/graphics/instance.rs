@@ -1,4 +1,7 @@
-use crate::{context::Has, GameError, GameResult};
+use crate::{
+    context::{Has, HasMut},
+    GameError, GameResult,
+};
 
 use super::{
     context::GraphicsContext,
@@ -48,7 +51,7 @@ impl InstanceArray {
         capacity: u32,
         ordered: bool,
     ) -> Self {
-        let gfx = gfx.get();
+        let gfx = gfx.retrieve();
         InstanceArray::new_wgpu(
             &gfx.wgpu,
             image.into().unwrap_or_else(|| gfx.white_image.clone()),
@@ -270,7 +273,8 @@ impl Drawable for InstanceArray {
         );
     }
 
-    fn dimensions(&self, gfx: &mut GraphicsContext) -> Option<Rect> {
+    fn dimensions(&self, gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+        let gfx = gfx.retrieve_mut();
         if self.params.is_empty() {
             return None;
         }

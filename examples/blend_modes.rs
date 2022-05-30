@@ -5,6 +5,7 @@
 //! using the `Premultiplied` blend mode
 //! (for more explanations on this see https://github.com/ggez/ggez/issues/694#issuecomment-853724926)
 
+use ggez::context::HasMut;
 use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, BlendMode, Color, DrawParam, GraphicsContext};
 use ggez::{Context, GameResult};
@@ -41,7 +42,7 @@ impl MainState {
 
     fn draw_venn(
         &self,
-        _gfx: &mut GraphicsContext,
+        _gfx: &mut impl HasMut<GraphicsContext>,
         canvas: &mut graphics::Canvas,
         pos: Vec2,
         name: &str,
@@ -86,7 +87,7 @@ impl MainState {
 
     fn draw_venn_diagrams(
         &mut self,
-        gfx: &mut GraphicsContext,
+        ctx: &mut Context,
         (w, h): (f32, f32),
         canvas: &mut graphics::Canvas,
     ) -> GameResult<()> {
@@ -96,35 +97,35 @@ impl MainState {
 
         // draw with Alpha
         canvas.set_blend_mode(BlendMode::ALPHA);
-        self.draw_venn(gfx, canvas, [x_step, y].into(), "Alpha")?;
+        self.draw_venn(ctx, canvas, [x_step, y].into(), "Alpha")?;
 
         // draw with Add
         canvas.set_blend_mode(BlendMode::ADD);
-        self.draw_venn(gfx, canvas, [x_step * 2., y].into(), "Add")?;
+        self.draw_venn(ctx, canvas, [x_step * 2., y].into(), "Add")?;
 
         // draw with Sub
         canvas.set_blend_mode(BlendMode::SUBTRACT);
-        self.draw_venn(gfx, canvas, [x_step * 3., y].into(), "Subtract")?;
+        self.draw_venn(ctx, canvas, [x_step * 3., y].into(), "Subtract")?;
 
         // draw with Multiply
         canvas.set_blend_mode(BlendMode::MULTIPLY);
-        self.draw_venn(gfx, canvas, [x_step * 4., y].into(), "Multiply")?;
+        self.draw_venn(ctx, canvas, [x_step * 4., y].into(), "Multiply")?;
 
         // draw with Invert
         canvas.set_blend_mode(BlendMode::INVERT);
-        self.draw_venn(gfx, canvas, [x_step * 5., y].into(), "Invert")?;
+        self.draw_venn(ctx, canvas, [x_step * 5., y].into(), "Invert")?;
 
         // draw with Replace
         canvas.set_blend_mode(BlendMode::REPLACE);
-        self.draw_venn(gfx, canvas, [x_step * 6., y].into(), "Replace")?;
+        self.draw_venn(ctx, canvas, [x_step * 6., y].into(), "Replace")?;
 
         // draw with Darken
         canvas.set_blend_mode(BlendMode::DARKEN);
-        self.draw_venn(gfx, canvas, [x_step * 7., y].into(), "Darken")?;
+        self.draw_venn(ctx, canvas, [x_step * 7., y].into(), "Darken")?;
 
         // draw with Lighten
         canvas.set_blend_mode(BlendMode::LIGHTEN);
-        self.draw_venn(gfx, canvas, [x_step * 8., y].into(), "Lighten")?;
+        self.draw_venn(ctx, canvas, [x_step * 8., y].into(), "Lighten")?;
 
         Ok(())
     }

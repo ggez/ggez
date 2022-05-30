@@ -66,7 +66,7 @@ pub struct SoundData(Arc<[u8]>);
 impl SoundData {
     /// Load the file at the given path and create a new `SoundData` from it.
     pub fn new<P: AsRef<path::Path>>(fs: &impl Has<Filesystem>, path: P) -> GameResult<Self> {
-        let fs = fs.get();
+        let fs = fs.retrieve();
         let path = path.as_ref();
         let file = &mut fs.open(path)?;
         SoundData::from_read(file)
@@ -127,7 +127,7 @@ impl AsRef<[u8]> for SoundData {
 pub trait SoundSource {
     /// Plays the audio source; restarts the sound if currently playing
     fn play(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
-        let audio = audio.get();
+        let audio = audio.retrieve();
         self.stop(audio)?;
         self.play_later()
     }
@@ -288,8 +288,8 @@ impl Source {
         ctxs: &impl HasTwo<Filesystem, AudioContext>,
         path: P,
     ) -> GameResult<Self> {
-        let fs = ctxs.get_first();
-        let audio = ctxs.get_second();
+        let fs = ctxs.retrieve_first();
+        let audio = ctxs.retrieve_second();
         let path = path.as_ref();
         let data = SoundData::new(fs, path)?;
         Source::from_data(audio, data)
@@ -297,7 +297,7 @@ impl Source {
 
     /// Creates a new `Source` using the given `SoundData` object.
     pub fn from_data(audio: &impl Has<AudioContext>, data: SoundData) -> GameResult<Self> {
-        let audio = audio.get();
+        let audio = audio.retrieve();
         if !data.can_play() {
             return Err(GameError::AudioError(
                 "Could not decode the given audio data".to_string(),
@@ -350,7 +350,7 @@ impl SoundSource for Source {
     }
 
     fn play_detached(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
-        let audio = audio.get();
+        let audio = audio.retrieve();
         self.stop(audio)?;
         self.play_later()?;
 
@@ -384,7 +384,7 @@ impl SoundSource for Source {
     }
 
     fn stop(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
-        let audio = audio.get();
+        let audio = audio.retrieve();
         // Sinks cannot be reused after calling `.stop()`. See
         // https://github.com/tomaka/rodio/issues/171 for information.
         // To stop the current sound we have to drop the old sink and
@@ -467,7 +467,7 @@ impl SpatialSource {
 
     /// Creates a new `SpatialSource` using the given `SoundData` object.
     pub fn from_data(audio: &impl Has<AudioContext>, data: SoundData) -> GameResult<Self> {
-        let audio = audio.get();
+        let audio = audio.retrieve();
         if !data.can_play() {
             return Err(GameError::AudioError(
                 "Could not decode the given audio data".to_string(),
@@ -531,7 +531,7 @@ impl SoundSource for SpatialSource {
     }
 
     fn play_detached(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
-        let audio = audio.get();
+        let audio = audio.retrieve();
         self.stop(audio)?;
         self.play_later()?;
 
@@ -577,7 +577,7 @@ impl SoundSource for SpatialSource {
     }
 
     fn stop(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
-        let audio = audio.get();
+        let audio = audio.retrieve();
         // Sinks cannot be reused after calling `.stop()`. See
         // https://github.com/tomaka/rodio/issues/171 for information.
         // To stop the current sound we have to drop the old sink and

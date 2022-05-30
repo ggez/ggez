@@ -4,7 +4,7 @@ use super::{
     Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
 use crate::{
-    context::{Has, HasTwo},
+    context::{Has, HasMut, HasTwo},
     filesystem::Filesystem,
     Context, GameError, GameResult,
 };
@@ -40,7 +40,7 @@ impl Image {
         height: u32,
         samples: u32,
     ) -> Self {
-        let gfx = gfx.get();
+        let gfx = gfx.retrieve();
         Self::new(
             &gfx.wgpu,
             format,
@@ -61,7 +61,7 @@ impl Image {
         width: u32,
         height: u32,
     ) -> Self {
-        let gfx = gfx.get();
+        let gfx = gfx.retrieve();
         Self::from_pixels_wgpu(&gfx.wgpu, pixels, format, width, height)
     }
 
@@ -127,8 +127,8 @@ impl Image {
         path: impl AsRef<Path>,
         srgb: bool,
     ) -> GameResult<Self> {
-        let fs = ctxs.get_first();
-        let gfx = ctxs.get_second();
+        let fs = ctxs.retrieve_first();
+        let gfx = ctxs.retrieve_second();
 
         let mut encoded = Vec::new();
         fs.open(path)?.read_to_end(&mut encoded)?;
@@ -209,7 +209,7 @@ impl Image {
     ///
     /// **This is a very expensive operation - call sparingly.**
     pub fn to_pixels(&self, gfx: &impl Has<GraphicsContext>) -> GameResult<Vec<u8>> {
-        let gfx = gfx.get();
+        let gfx = gfx.retrieve();
         if self.samples > 1 {
             return Err(GameError::RenderError(String::from(
                 "cannot read the pixels of a multisampled image; resolve this image with a canvas",
@@ -346,7 +346,7 @@ impl Drawable for Image {
         );
     }
 
-    fn dimensions(&self, _gfx: &mut GraphicsContext) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
         Some(Rect {
             x: 0.,
             y: 0.,
@@ -380,7 +380,7 @@ impl ScreenImage {
         height: f32,
         samples: u32,
     ) -> Self {
-        let gfx = gfx.get();
+        let gfx = gfx.retrieve();
         assert!(width > 0.);
         assert!(height > 0.);
         assert!(samples > 0);
@@ -404,7 +404,7 @@ impl ScreenImage {
     }
 
     fn size(gfx: &impl Has<GraphicsContext>, (width, height): (f32, f32)) -> (u32, u32) {
-        let gfx = gfx.get();
+        let gfx = gfx.retrieve();
         let size = gfx.window.inner_size();
         let width = (size.width as f32 * width) as u32;
         let height = (size.height as f32 * height) as u32;

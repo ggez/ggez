@@ -197,7 +197,7 @@ pub extern crate mint;
 
 pub mod audio;
 pub mod conf;
-mod context;
+pub mod context;
 pub mod error;
 pub mod event;
 pub mod filesystem;

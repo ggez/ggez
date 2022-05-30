@@ -57,7 +57,7 @@ impl Canvas {
         image: &mut ScreenImage,
         load_op: impl Into<CanvasLoadOp>,
     ) -> Self {
-        let gfx = gfx.get();
+        let gfx = gfx.retrieve();
         let image = image.image(gfx);
         Canvas::from_image(gfx, image, load_op)
     }
@@ -90,7 +90,7 @@ impl Canvas {
 
     /// Create a new [Canvas] that renders directly to the window surface.
     pub fn from_frame(gfx: &impl Has<GraphicsContext>, load_op: impl Into<CanvasLoadOp>) -> Self {
-        let gfx = gfx.get();
+        let gfx = gfx.retrieve();
         // these unwraps will never fail
         let samples = gfx.frame_msaa_image.as_ref().unwrap().samples();
         let (target, resolve) = if samples > 1 {
@@ -110,7 +110,7 @@ impl Canvas {
         resolve: Option<Image>,
         load_op: CanvasLoadOp,
     ) -> Self {
-        let gfx = gfx.get();
+        let gfx = gfx.retrieve();
 
         let defaults = DefaultResources::new(gfx);
         let drawable_size = gfx.drawable_size();
@@ -373,7 +373,7 @@ impl Canvas {
     /// Finish drawing with this canvas and submit all the draw calls.
     #[inline]
     pub fn finish(mut self, gfx: &mut impl HasMut<GraphicsContext>) -> GameResult {
-        let gfx = gfx.get_mut();
+        let gfx = gfx.retrieve_mut();
         self.finalize(gfx)
     }
 

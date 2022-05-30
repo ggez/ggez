@@ -2,7 +2,11 @@ use super::{
     gpu::text::{Extra, TextRenderer},
     Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect,
 };
-use crate::{context::Has, filesystem::Filesystem, GameError, GameResult};
+use crate::{
+    context::{Has, HasMut},
+    filesystem::Filesystem,
+    GameError, GameResult,
+};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
 use std::{collections::HashMap, io::Read, path::Path};
 
@@ -16,7 +20,7 @@ impl FontData {
     /// Loads font data from a given path in the filesystem.
     #[allow(unused_results)]
     pub fn from_path(fs: &impl Has<Filesystem>, path: impl AsRef<Path>) -> GameResult<Self> {
-        let fs = fs.get();
+        let fs = fs.retrieve();
 
         let mut bytes = vec![];
         fs.open(path)?.read_to_end(&mut bytes)?;
@@ -214,7 +218,11 @@ impl Text {
 
     /// Measures the glyph boundaries for the text.
     #[inline]
-    pub fn measure(&self, gfx: &mut GraphicsContext) -> GameResult<mint::Vector2<f32>> {
+    pub fn measure(
+        &self,
+        gfx: &mut impl HasMut<GraphicsContext>,
+    ) -> GameResult<mint::Vector2<f32>> {
+        let gfx = gfx.retrieve_mut();
         self.measure_raw(&mut gfx.text, &gfx.fonts)
     }
 
@@ -290,7 +298,7 @@ impl Drawable for Text {
         canvas.push_draw(Draw::BoundedText { text: self.clone() }, param);
     }
 
-    fn dimensions(&self, gfx: &mut GraphicsContext) -> Option<Rect> {
+    fn dimensions(&self, gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
         let bounds = self.measure(gfx).ok()?;
         Some(Rect {
             x: 0.,

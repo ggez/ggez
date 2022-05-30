@@ -10,7 +10,6 @@ use super::{
     },
     image::Image,
     sampler::Sampler,
-    SamplerCache,
 };
 use crevice::std140::Std140;
 use wgpu::util::DeviceExt;
@@ -61,7 +60,7 @@ pub struct Shader {
 impl Shader {
     /// Creates a shader from a WGSL string.
     pub fn from_wgsl(gfx: &impl Has<GraphicsContext>, wgsl: &str, fs_entry: &str) -> Self {
-        let gfx = gfx.get();
+        let gfx = gfx.retrieve();
         let module = ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
             &wgpu::ShaderModuleDescriptor {
                 label: None,
@@ -95,7 +94,7 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
         images: &[&Image],
         samplers: &[Sampler],
     ) -> Self {
-        let gfx = gfx.get_mut();
+        let gfx = gfx.retrieve_mut();
         let uniforms = ArcBuffer::new(gfx.wgpu.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: None,
@@ -106,7 +105,7 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
 
         let samplers = samplers
             .iter()
-            .map(|&sampler| SamplerCache::get(&mut gfx.sampler_cache, &gfx.wgpu.device, sampler))
+            .map(|&sampler| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
             .collect::<Vec<_>>();
 
         let mut builder = BindGroupBuilder::new();
@@ -139,7 +138,7 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
 
     /// Updates the uniform data.
     pub fn set_uniforms(&self, gfx: &impl Has<GraphicsContext>, uniforms: &Uniforms) {
-        let gfx = gfx.get();
+        let gfx = gfx.retrieve();
         gfx.wgpu
             .queue
             .write_buffer(&self.uniforms, 0, uniforms.as_std140().as_bytes());
