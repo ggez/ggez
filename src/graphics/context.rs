@@ -116,7 +116,8 @@ impl GraphicsContext {
             .with_title(conf.window_setup.title.clone())
             .with_inner_size(physical_size)
             .with_resizable(conf.window_mode.resizable)
-            .with_visible(conf.window_mode.visible);
+            .with_visible(conf.window_mode.visible)
+            .with_transparent(conf.window_mode.transparent);
 
         #[cfg(target_os = "windows")]
         {

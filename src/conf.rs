@@ -73,6 +73,9 @@ pub struct WindowMode {
     /// Whether or not to show window decorations
     #[default = false]
     pub borderless: bool,
+    /// Whether or not the window should be transparent
+    #[default = false]
+    pub transparent: bool,
     /// Minimum width for resizable windows; 1 is the technical minimum,
     /// as wgpu will panic on a width of 0.
     #[default = 1.0]
@@ -137,6 +140,13 @@ impl WindowMode {
     #[must_use]
     pub fn borderless(mut self, borderless: bool) -> Self {
         self.borderless = borderless;
+        self
+    }
+
+
+    /// Set whether a window should be transparent.
+    pub fn transparent(mut self, transparent: bool) -> Self {
+        self.transparent = transparent;
         self
     }
 
