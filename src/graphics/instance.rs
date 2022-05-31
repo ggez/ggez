@@ -243,7 +243,11 @@ impl InstanceArray {
     ///
     /// Essentially, consider `<InstanceArray as Drawable>::dimensions()` to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw()`,
     /// and consider [`InstanceArray::dimensions_meshed()`] to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw_instanced_mesh()`.
-    pub fn dimensions_meshed(&self, gfx: &mut GraphicsContext, mesh: &Mesh) -> Option<Rect> {
+    pub fn dimensions_meshed(
+        &self,
+        gfx: &mut impl HasMut<GraphicsContext>,
+        mesh: &Mesh,
+    ) -> Option<Rect> {
         if self.params.is_empty() {
             return None;
         }
