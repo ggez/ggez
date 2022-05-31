@@ -34,7 +34,7 @@ impl MainState {
             mb.line(&[last_point, point], 3.0, color)?;
             last_point = point;
         }
-        let mesh = graphics::Mesh::from_data(&ctx.gfx, mb.build());
+        let mesh = graphics::Mesh::from_data(ctx, mb.build());
         canvas.draw(&mesh, glam::Vec2::new(0.0, 0.0));
 
         Ok(())
@@ -43,12 +43,12 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         ctx.fs.print_all();
 
-        let image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/dragon1.png", true)?;
+        let image = graphics::Image::from_path(ctx, "/dragon1.png", true)?;
 
-        let mut sound = audio::Source::new(&ctx.fs, &ctx.audio, "/sound.ogg")?;
+        let mut sound = audio::Source::new(ctx, "/sound.ogg")?;
 
         // "detached" sounds keep playing even after they are dropped
-        let _ = sound.play_detached(&ctx.audio);
+        let _ = sound.play_detached(ctx);
 
         let rng = oorandom::Rand32::new(271828);
 
@@ -80,7 +80,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let c = self.a as u8;
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
 
         let color = Color::from((c, c, c, 255));
         let dest_point = glam::Vec2::new(0.0, 0.0);
@@ -92,7 +92,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         let dest_point2 = glam::Vec2::new(0.0, 256.0);
         let rectangle = graphics::Mesh::new_rectangle(
-            &ctx.gfx,
+            ctx,
             graphics::DrawMode::fill(),
             graphics::Rect::new(0.0, 256.0, 500.0, 32.0),
             Color::from((0, 0, 0, 255)),
@@ -104,7 +104,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         );
 
         self.draw_crazy_lines(ctx, &mut canvas)?;
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         timer::yield_now();
         Ok(())

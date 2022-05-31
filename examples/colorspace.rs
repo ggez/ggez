@@ -86,7 +86,7 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let demo_mesh = graphics::Mesh::new_circle(
-            &ctx.gfx,
+            ctx,
             graphics::DrawMode::fill(),
             Vec2::new(0.0, 0.0),
             100.0,
@@ -94,15 +94,14 @@ impl MainState {
             AQUA,
         )?;
         let square_mesh = graphics::Mesh::new_rectangle(
-            &ctx.gfx,
+            ctx,
             graphics::DrawMode::fill(),
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
             Color::WHITE,
         )?;
-        let demo_image = graphics::Image::from_solid(&ctx.gfx, 200, AQUA);
+        let demo_image = graphics::Image::from_solid(ctx, 200, AQUA);
 
-        let mut demo_instances =
-            graphics::InstanceArray::new(&ctx.gfx, demo_image.clone(), 2, false);
+        let mut demo_instances = graphics::InstanceArray::new(ctx, demo_image.clone(), 2, false);
         demo_instances.push(
             DrawParam::default()
                 .dest(Vec2::new(250.0, 350.0))
@@ -130,7 +129,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, AQUA);
+        let mut canvas = graphics::Canvas::from_frame(ctx, AQUA);
 
         // Draw a white square so we can see things
         canvas.draw(
@@ -166,7 +165,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             DrawParam::default().dest(Vec2::new(0.0, 0.0)),
         );
 
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         Ok(())
     }

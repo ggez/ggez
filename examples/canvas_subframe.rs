@@ -21,9 +21,9 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/tile.png", true).unwrap();
-        let instances = graphics::InstanceArray::new(&ctx.gfx, image, 150 * 150, false);
-        let canvas_image = graphics::ScreenImage::new(&ctx.gfx, None, 1., 1., 1);
+        let image = graphics::Image::from_path(ctx, "/tile.png", true).unwrap();
+        let instances = graphics::InstanceArray::new(ctx, image, 150 * 150, false);
+        let canvas_image = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
         let draw_pt = Point2::new(0.0, 0.0);
         let draw_vec = Vector2::new(1.0, 1.0);
         let s = MainState {
@@ -58,7 +58,7 @@ impl MainState {
         }));
 
         let mut canvas =
-            graphics::Canvas::from_screen_image(&ctx.gfx, &mut self.canvas_image, Color::WHITE);
+            graphics::Canvas::from_screen_image(ctx, &mut self.canvas_image, Color::WHITE);
 
         let param = graphics::DrawParam::new()
             .dest(Point2::new(
@@ -73,7 +73,7 @@ impl MainState {
             .offset(Point2::new(750., 750.));
 
         canvas.draw(&self.instances, param);
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         Ok(())
     }
@@ -101,8 +101,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         self.draw_spritebatch(ctx)?;
 
-        let canvas_image = self.canvas_image.image(&ctx.gfx);
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
+        let canvas_image = self.canvas_image.image(ctx);
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
 
         let src_x = self.draw_pt.x / canvas_image.width() as f32;
         let src_y = self.draw_pt.y / canvas_image.height() as f32;
@@ -115,7 +115,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .scale([0.5, 0.5]),
         );
 
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         Ok(())
     }

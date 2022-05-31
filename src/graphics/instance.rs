@@ -1,4 +1,7 @@
-use crate::{GameError, GameResult};
+use crate::{
+    context::{Has, HasMut},
+    GameError, GameResult,
+};
 
 use super::{
     context::GraphicsContext,
@@ -43,11 +46,12 @@ impl InstanceArray {
     ///
     /// [z-values]:crate::graphics::ZIndex
     pub fn new(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         image: impl Into<Option<Image>>,
         capacity: u32,
         ordered: bool,
     ) -> Self {
+        let gfx = gfx.retrieve();
         InstanceArray::new_wgpu(
             &gfx.wgpu,
             image.into().unwrap_or_else(|| gfx.white_image.clone()),
@@ -207,7 +211,7 @@ impl InstanceArray {
     /// Changes the capacity of this `InstanceArray` while preserving instances.
     ///
     /// If `new_capacity` is less than the `len`, the instances will be truncated.
-    pub fn resize(&mut self, gfx: &GraphicsContext, new_capacity: u32) {
+    pub fn resize(&mut self, gfx: &impl Has<GraphicsContext>, new_capacity: u32) {
         let resized = InstanceArray::new(gfx, self.image.clone(), new_capacity, self.ordered);
         self.buffer = resized.buffer;
         self.indices = resized.indices;
@@ -239,7 +243,11 @@ impl InstanceArray {
     ///
     /// Essentially, consider `<InstanceArray as Drawable>::dimensions()` to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw()`,
     /// and consider [`InstanceArray::dimensions_meshed()`] to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw_instanced_mesh()`.
-    pub fn dimensions_meshed(&self, gfx: &mut GraphicsContext, mesh: &Mesh) -> Option<Rect> {
+    pub fn dimensions_meshed(
+        &self,
+        gfx: &mut impl HasMut<GraphicsContext>,
+        mesh: &Mesh,
+    ) -> Option<Rect> {
         if self.params.is_empty() {
             return None;
         }
@@ -269,7 +277,8 @@ impl Drawable for InstanceArray {
         );
     }
 
-    fn dimensions(&self, gfx: &mut GraphicsContext) -> Option<Rect> {
+    fn dimensions(&self, gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+        let gfx = gfx.retrieve_mut();
         if self.params.is_empty() {
             return None;
         }

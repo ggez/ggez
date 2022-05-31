@@ -21,7 +21,7 @@ impl MainState {
     const GRID_POINT_RADIUS: f32 = 5.0;
 
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let angle = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/angle.png", true)?;
+        let angle = graphics::Image::from_path(ctx, "/angle.png", true)?;
         let gridmesh_builder = &mut graphics::MeshBuilder::new();
         for x in 0..Self::GRID_SIZE {
             for y in 0..Self::GRID_SIZE {
@@ -39,7 +39,7 @@ impl MainState {
                 )?;
             }
         }
-        let gridmesh = graphics::Mesh::from_data(&ctx.gfx, gridmesh_builder.build());
+        let gridmesh = graphics::Mesh::from_data(ctx, gridmesh_builder.build());
         // An array of rects to cycle the screen coordinates through.
         let screen_bounds = vec![
             graphics::Rect::new(0.0, 0.0, 800.0, 600.0),
@@ -83,7 +83,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
         canvas.set_screen_coordinates(self.screen_coords);
 
         let origin = Vec2::ZERO;
@@ -102,7 +102,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         canvas.draw(&self.angle, param);
 
-        canvas.finish(&mut ctx.gfx)
+        canvas.finish(ctx)
     }
 
     fn key_down_event(

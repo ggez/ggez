@@ -3,7 +3,11 @@ use super::{
     gpu::arc::{ArcTexture, ArcTextureView},
     Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
-use crate::{filesystem::Filesystem, Context, GameError, GameResult};
+use crate::{
+    context::{Has, HasMut, HasTwo},
+    filesystem::Filesystem,
+    Context, GameError, GameResult,
+};
 use image::ImageEncoder;
 use std::path::Path;
 use std::{io::Read, num::NonZeroU32};
@@ -30,12 +34,13 @@ pub struct Image {
 impl Image {
     /// Creates a new image specifically for use with a [Canvas](crate::graphics::Canvas).
     pub fn new_canvas_image(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         format: ImageFormat,
         width: u32,
         height: u32,
         samples: u32,
     ) -> Self {
+        let gfx = gfx.retrieve();
         Self::new(
             &gfx.wgpu,
             format,
@@ -50,12 +55,13 @@ impl Image {
 
     /// Creates a new image initialized with given pixel data.
     pub fn from_pixels(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         pixels: &[u8],
         format: ImageFormat,
         width: u32,
         height: u32,
     ) -> Self {
+        let gfx = gfx.retrieve();
         Self::from_pixels_wgpu(&gfx.wgpu, pixels, format, width, height)
     }
 
@@ -98,7 +104,7 @@ impl Image {
     }
 
     /// A little helper function that creates a new `Image` that is just a solid square of the given size and color. Mainly useful for debugging.
-    pub fn from_solid(gfx: &GraphicsContext, size: u32, color: Color) -> Self {
+    pub fn from_solid(gfx: &impl Has<GraphicsContext>, size: u32, color: Color) -> Self {
         let pixels = (0..(size * size))
             .flat_map(|_| {
                 let (r, g, b, a) = color.to_rgba();
@@ -117,11 +123,13 @@ impl Image {
     /// Creates a new image initialized with pixel data loaded from an encoded image `Read` (e.g. PNG or JPEG).
     #[allow(unused_results)]
     pub fn from_path(
-        fs: &Filesystem,
-        gfx: &GraphicsContext,
+        ctxs: &impl HasTwo<Filesystem, GraphicsContext>,
         path: impl AsRef<Path>,
         srgb: bool,
     ) -> GameResult<Self> {
+        let fs = ctxs.retrieve_first();
+        let gfx = ctxs.retrieve_second();
+
         let mut encoded = Vec::new();
         fs.open(path)?.read_to_end(&mut encoded)?;
         let decoded = image::load_from_memory(&encoded[..])
@@ -200,7 +208,8 @@ impl Image {
     /// The format matches the GPU image format.
     ///
     /// **This is a very expensive operation - call sparingly.**
-    pub fn to_pixels(&self, gfx: &GraphicsContext) -> GameResult<Vec<u8>> {
+    pub fn to_pixels(&self, gfx: &impl Has<GraphicsContext>) -> GameResult<Vec<u8>> {
+        let gfx = gfx.retrieve();
         if self.samples > 1 {
             return Err(GameError::RenderError(String::from(
                 "cannot read the pixels of a multisampled image; resolve this image with a canvas",
@@ -274,7 +283,7 @@ impl Image {
             }
         };
 
-        let pixels = self.to_pixels(&ctx.gfx)?;
+        let pixels = self.to_pixels(ctx)?;
         let f = ctx.fs.create(path)?;
         let writer = &mut std::io::BufWriter::new(f);
 
@@ -337,7 +346,7 @@ impl Drawable for Image {
         );
     }
 
-    fn dimensions(&self, _gfx: &mut GraphicsContext) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
         Some(Rect {
             x: 0.,
             y: 0.,
@@ -365,12 +374,13 @@ impl ScreenImage {
     ///
     /// If `format` is `None` then the format will be inferred from the surface format.
     pub fn new(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         format: impl Into<Option<ImageFormat>>,
         width: f32,
         height: f32,
         samples: u32,
     ) -> Self {
+        let gfx = gfx.retrieve();
         assert!(width > 0.);
         assert!(height > 0.);
         assert!(samples > 0);
@@ -386,14 +396,15 @@ impl ScreenImage {
     }
 
     /// Returns the inner [Image], also recreating it if the framebuffer has been resized.
-    pub fn image(&mut self, gfx: &GraphicsContext) -> Image {
+    pub fn image(&mut self, gfx: &impl Has<GraphicsContext>) -> Image {
         if Self::size(gfx, self.size) != (self.image.width(), self.image.height()) {
             self.image = Self::create(gfx, self.format, self.size, self.samples);
         }
         self.image.clone()
     }
 
-    fn size(gfx: &GraphicsContext, (width, height): (f32, f32)) -> (u32, u32) {
+    fn size(gfx: &impl Has<GraphicsContext>, (width, height): (f32, f32)) -> (u32, u32) {
+        let gfx = gfx.retrieve();
         let size = gfx.window.inner_size();
         let width = (size.width as f32 * width) as u32;
         let height = (size.height as f32 * height) as u32;
@@ -401,7 +412,7 @@ impl ScreenImage {
     }
 
     fn create(
-        gfx: &GraphicsContext,
+        gfx: &impl Has<GraphicsContext>,
         format: wgpu::TextureFormat,
         size: (f32, f32),
         samples: u32,

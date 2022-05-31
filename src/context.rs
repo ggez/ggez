@@ -1,3 +1,5 @@
+//! The `context` module contains functions and traits related to using the `Context` type.
+
 use std::fmt;
 /// We re-export winit so it's easy for people to use the same version as we are
 /// without having to mess around figuring it out.
@@ -9,6 +11,7 @@ use crate::conf;
 use crate::error::GameResult;
 use crate::filesystem::Filesystem;
 use crate::graphics;
+use crate::graphics::GraphicsContext;
 use crate::input;
 use crate::timer;
 
@@ -36,7 +39,7 @@ pub struct Context {
     /// Filesystem state.
     pub fs: Filesystem,
     /// Graphics state.
-    pub gfx: crate::graphics::context::GraphicsContext,
+    pub gfx: GraphicsContext,
     /// Timer state.
     pub time: timer::TimeContext,
     /// Audio context.
@@ -62,6 +65,131 @@ pub struct Context {
     ///
     /// It's exposed here for people who want to roll their own event loop.
     pub quit_requested: bool,
+}
+
+// This is ugly and hacky but greatly improves ergonomics.
+
+/// Used to represent types that can provide a certain context type.
+///
+/// If you don't know what this is, you most likely want to pass `ctx`.
+///
+/// This trait is basically syntactical sugar, saving you from having
+/// to split contexts when you don't need to and also shortening calls like
+/// ```rust
+/// # use ggez::GameResult;
+/// # fn t(ctx: &mut ggez::Context, canvas: ggez::graphics::Canvas) -> GameResult {
+/// canvas.finish(&mut ctx.gfx)?;
+/// # Ok(())
+/// # }
+/// ```
+/// into just
+/// ```rust
+/// # use ggez::GameResult;
+/// # fn t(ctx: &mut ggez::Context, canvas: ggez::graphics::Canvas) -> GameResult {
+/// canvas.finish(ctx)?;
+/// # Ok(())
+/// # }
+/// ```
+pub trait Has<T> {
+    /// Method to retrieve the context type.
+    fn retrieve(&self) -> &T;
+}
+
+impl<T> Has<T> for T {
+    #[inline]
+    fn retrieve(&self) -> &T {
+        self
+    }
+}
+
+impl Has<Filesystem> for Context {
+    #[inline]
+    fn retrieve(&self) -> &Filesystem {
+        &self.fs
+    }
+}
+
+impl Has<GraphicsContext> for Context {
+    #[inline]
+    fn retrieve(&self) -> &GraphicsContext {
+        &self.gfx
+    }
+}
+
+#[cfg(feature = "audio")]
+impl Has<audio::AudioContext> for Context {
+    #[inline]
+    fn retrieve(&self) -> &audio::AudioContext {
+        &self.audio
+    }
+}
+
+/// Used to represent types that can provide a certain context type in a mutable form.
+/// See also [`Has<T>`].
+///
+/// If you don't know what this is, you most likely want to pass `ctx`.
+pub trait HasMut<T> {
+    /// Method to retrieve the context type as mutable.
+    fn retrieve_mut(&mut self) -> &mut T;
+}
+
+impl<T> HasMut<T> for T {
+    #[inline]
+    fn retrieve_mut(&mut self) -> &mut T {
+        self
+    }
+}
+
+impl HasMut<GraphicsContext> for Context {
+    #[inline]
+    fn retrieve_mut(&mut self) -> &mut GraphicsContext {
+        &mut self.gfx
+    }
+}
+
+/// Used to represent types that can provide two context types. See also [`Has<T>`].
+///
+/// If you don't know what this is, you most likely want to pass `ctx`.
+pub trait HasTwo<T, U> {
+    /// Method to retrieve the first context type.
+    fn retrieve_first(&self) -> &T;
+    /// Method to retrieve the second context type.
+    fn retrieve_second(&self) -> &U;
+}
+
+impl<T, U> HasTwo<T, U> for (&T, &U) {
+    #[inline]
+    fn retrieve_first(&self) -> &T {
+        self.0
+    }
+
+    #[inline]
+    fn retrieve_second(&self) -> &U {
+        self.1
+    }
+}
+
+impl HasTwo<Filesystem, GraphicsContext> for Context {
+    #[inline]
+    fn retrieve_first(&self) -> &Filesystem {
+        &self.fs
+    }
+
+    #[inline]
+    fn retrieve_second(&self) -> &GraphicsContext {
+        &self.gfx
+    }
+}
+
+#[cfg(feature = "audio")]
+impl HasTwo<Filesystem, crate::audio::AudioContext> for Context {
+    fn retrieve_first(&self) -> &Filesystem {
+        &self.fs
+    }
+
+    fn retrieve_second(&self) -> &crate::audio::AudioContext {
+        &self.audio
+    }
 }
 
 impl fmt::Debug for Context {

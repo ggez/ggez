@@ -226,7 +226,7 @@ fn player_sequence(
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let ball = graphics::Mesh::new_circle(
-            &ctx.gfx,
+            ctx,
             graphics::DrawMode::fill(),
             Vec2::new(0.0, 0.0),
             60.0,
@@ -234,7 +234,7 @@ impl MainState {
             Color::WHITE,
         )?;
 
-        let img = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/player_sheet.png", true)?;
+        let img = graphics::Image::from_path(ctx, "/player_sheet.png", true)?;
         let s = MainState {
             ball,
             spritesheet: img,
@@ -266,7 +266,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
 
         canvas.set_sampler(graphics::Sampler::nearest_clamp()); // because pixel art
 
@@ -303,7 +303,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 .offset([0.5, 1.0]),
         );
 
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         Ok(())
     }

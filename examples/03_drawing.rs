@@ -19,8 +19,8 @@ struct MainState {
 impl MainState {
     /// Load images and create meshes.
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image1 = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/dragon1.png", true)?;
-        let image2 = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/shot.png", true)?;
+        let image1 = graphics::Image::from_path(ctx, "/dragon1.png", true)?;
+        let image2 = graphics::Image::from_path(ctx, "/shot.png", true)?;
 
         let mb = &mut graphics::MeshBuilder::new();
         mb.rectangle(
@@ -29,14 +29,14 @@ impl MainState {
             graphics::Color::new(1.0, 0.0, 0.0, 1.0),
         )?;
 
-        let rock = graphics::Image::from_path(&ctx.fs, &ctx.gfx, "/rock.png", true)?;
+        let rock = graphics::Image::from_path(ctx, "/rock.png", true)?;
 
         let meshes = vec![
             (None, build_mesh(ctx)?),
             (Some(rock), build_textured_triangle(ctx)?),
         ];
 
-        let rect = graphics::Mesh::from_data(&ctx.gfx, mb.build());
+        let rect = graphics::Mesh::from_data(ctx, mb.build());
 
         let s = MainState {
             image1,
@@ -82,7 +82,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
         Color::new(1.0, 0.0, 1.0, 1.0),
     )?;
 
-    Ok(graphics::Mesh::from_data(&ctx.gfx, mb.build()))
+    Ok(graphics::Mesh::from_data(ctx, mb.build()))
 }
 
 fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
@@ -107,7 +107,7 @@ fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
     let triangle_indices = vec![0, 1, 2];
 
     Ok(graphics::Mesh::from_data(
-        &ctx.gfx,
+        ctx,
         graphics::MeshData {
             vertices: &triangle_verts,
             indices: &triangle_indices,
@@ -128,7 +128,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(
-            &ctx.gfx,
+            ctx,
             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
         );
 
@@ -186,7 +186,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         }
 
         // Finished drawing, show it all on the screen!
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         Ok(())
     }

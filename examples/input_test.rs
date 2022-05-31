@@ -41,9 +41,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
         let rectangle = graphics::Mesh::new_rectangle(
-            &ctx.gfx,
+            ctx,
             DrawMode::fill(),
             graphics::Rect {
                 x: self.pos_x,
@@ -54,7 +54,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             Color::WHITE,
         )?;
         canvas.draw(&rectangle, glam::Vec2::new(0.0, 0.0));
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
         Ok(())
     }
 

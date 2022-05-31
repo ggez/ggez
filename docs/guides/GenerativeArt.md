@@ -74,7 +74,7 @@ Geometry, it's all coming back now.
 Here is the code for a [circle](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_circle):
 ```rust,skt-expression,no_run
 graphics::Mesh::new_circle(
-    &ctx.gfx,
+    ctx,
     graphics::DrawMode::fill(),
     mint::Point2{x: 200.0, y: 300.0},
     100.0,
@@ -86,8 +86,8 @@ graphics::Mesh::new_circle(
 Now now now, hold on a second... I said 2 pieces of information!
 Why did I just write like a million?!
 
-Well, `ctx.gfx` is needed to tell `ggez` where you are drawing to.
-`ctx` is what is passed to `update` and `draw` and holds our engine's state. `ctx.gfx` is then the graphics sub-context.
+Well, `ctx` is needed to tell `ggez` where you are drawing to.
+`ctx` is what is passed to `update` and `draw` and holds our engine's state.
 
 [`graphics::DrawMode::fill()`](https://docs.rs/ggez/0.7.0/ggez/graphics/enum.DrawMode.html) is choosing between
 outlining the circle or filling it in.
@@ -109,19 +109,19 @@ To draw it, we first need to create our `Canvas`, filling it with black. Then we
 drawing the circle onto it. Lastly, we submit this draw call.
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, graphics::Color::BLACK);
-    
+    let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
+
     let circle = graphics::Mesh::new_circle(
-        &ctx.gfx,
+        ctx,
         graphics::DrawMode::fill(),
         mint::Point2{x: 200.0, y: 300.0},
         100.0,
         0.1,
         graphics::Color::WHITE,
     )?;
-    
+
     canvas.draw(&circle, graphics::DrawParam::default());
-    canvas.finish(&mut ctx.gfx)?;
+    canvas.finish(ctx)?;
     Ok(())
 }
 ```
@@ -135,7 +135,7 @@ Rectangles are represented by 3 pieces of information: origin, width, and height
 Here is the code for a [rectangle](https://docs.rs/ggez/0.7.0/ggez/graphics/struct.Mesh.html#method.new_rectangle):
 ```rust,skt-expression,no_run
 graphics::Mesh::new_rectangle(
-    &ctx.gfx,
+    ctx,
     graphics::DrawMode::fill(),
     graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
     graphics::Color::WHITE,
@@ -156,17 +156,17 @@ And that's how a rectangle is created!
 Let's try it out with some quick code:
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, graphics::Color::BLACK);
-    
+    let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
+
     let rect = graphics::Mesh::new_rectangle(
-        &ctx.gfx,
+        ctx,
         graphics::DrawMode::fill(),
         graphics::Rect::new(500.0, 250.0, 200.0, 100.0),
         graphics::Color::WHITE,
     )?;
-    
+
     canvas.draw(&rect, graphics::DrawParam::default());
-    canvas.finish(&mut ctx.gfx)?;
+    canvas.finish(ctx)?;
     Ok(())
 }
 ```
@@ -234,13 +234,13 @@ But we still don't see anything...
 You need to modify `draw` to illustrate your new `State`.
 ```rust,skt-draw,no_run
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, graphics::Color::BLACK);
+    let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
     for shape in &self.shapes {
         // Make the shape...
         let mesh = match shape {
             &Shape::Rectangle(rect) => {
                 graphics::Mesh::new_rectangle(
-                    &ctx.gfx,
+                    ctx,
                     graphics::DrawMode::fill(),
                     rect,
                     graphics::Color::WHITE
@@ -248,7 +248,7 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
             }
             &Shape::Circle(origin, radius) => {
                 graphics::Mesh::new_circle(
-                    &ctx.gfx,
+                    ctx,
                     graphics::DrawMode::fill(),
                     origin,
                     radius,
@@ -261,7 +261,7 @@ fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // ...and then draw it.
         canvas.draw(&mesh, graphics::DrawParam::default());
     }
-    canvas.finish(&mut ctx.gfx)?;
+    canvas.finish(ctx)?;
     Ok(())
 }
 ```

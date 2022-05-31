@@ -1,5 +1,7 @@
 use std::marker::PhantomData;
 
+use crate::context::{Has, HasMut};
+
 use super::{
     context::GraphicsContext,
     gpu::{
@@ -28,22 +30,22 @@ use wgpu::util::DeviceExt;
 /// impl event::EventHandler for MainState {
 /// #   fn update(&mut self, _ctx: &mut Context) -> Result<(), GameError> { Ok(()) }
 ///     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-///         let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::BLACK);
+///         let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
 ///         let dim = Dim { rate: 0.5 };
 ///         // NOTE: This is for simplicity; do not recreate your shader every frame like this!
 ///         //       For more info look at the full example.
 ///         let shader = Shader::from_wgsl(
-///             &ctx.gfx,
+///             ctx,
 ///             include_str!("../../resources/dimmer.wgsl"),
 ///             "main"
 ///         );
-///         let params = ShaderParams::new(&mut ctx.gfx, &dim, &[], &[]);
-///         params.set_uniforms(&ctx.gfx, &dim);
+///         let params = ShaderParams::new(ctx, &dim, &[], &[]);
+///         params.set_uniforms(ctx, &dim);
 ///
 ///         canvas.set_shader(shader);
 ///         canvas.set_shader_params(params);
 ///         // draw something...
-///         canvas.finish(&mut ctx.gfx)
+///         canvas.finish(ctx)
 ///     }
 ///
 ///     /* ... */
@@ -57,7 +59,8 @@ pub struct Shader {
 
 impl Shader {
     /// Creates a shader from a WGSL string.
-    pub fn from_wgsl(gfx: &GraphicsContext, wgsl: &str, fs_entry: &str) -> Self {
+    pub fn from_wgsl(gfx: &impl Has<GraphicsContext>, wgsl: &str, fs_entry: &str) -> Self {
+        let gfx = gfx.retrieve();
         let module = ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
             &wgpu::ShaderModuleDescriptor {
                 label: None,
@@ -86,11 +89,12 @@ pub struct ShaderParams<Uniforms: AsStd140> {
 impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
     /// Creates a new [ShaderParams], initialized with the given uniforms, images, and samplers.
     pub fn new(
-        gfx: &mut GraphicsContext,
+        gfx: &mut impl HasMut<GraphicsContext>,
         uniforms: &Uniforms,
         images: &[&Image],
         samplers: &[Sampler],
     ) -> Self {
+        let gfx = gfx.retrieve_mut();
         let uniforms = ArcBuffer::new(gfx.wgpu.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: None,
@@ -133,7 +137,8 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
     }
 
     /// Updates the uniform data.
-    pub fn set_uniforms(&self, gfx: &GraphicsContext, uniforms: &Uniforms) {
+    pub fn set_uniforms(&self, gfx: &impl Has<GraphicsContext>, uniforms: &Uniforms) {
+        let gfx = gfx.retrieve();
         gfx.wgpu
             .queue
             .write_buffer(&self.uniforms, 0, uniforms.as_std140().as_bytes());

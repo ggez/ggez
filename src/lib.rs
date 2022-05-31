@@ -141,9 +141,9 @@
 //!     }
 //!
 //!     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-//!         let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::WHITE);
+//!         let mut canvas = graphics::Canvas::from_frame(ctx, Color::WHITE);
 //!         // Draw code here...
-//!         canvas.finish(&mut ctx.gfx)
+//!         canvas.finish(ctx)
 //!     }
 //! }
 //! ```
@@ -197,7 +197,7 @@ pub extern crate mint;
 
 pub mod audio;
 pub mod conf;
-mod context;
+pub mod context;
 pub mod error;
 pub mod event;
 pub mod filesystem;

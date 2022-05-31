@@ -417,7 +417,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // First we create a canvas that renders to the frame, and clear it to a (sort of) green color
         let mut canvas = graphics::Canvas::from_frame(
-            &ctx.gfx,
+            ctx,
             graphics::CanvasLoadOp::Clear([0.0, 1.0, 0.0, 1.0].into()),
         );
 
@@ -428,7 +428,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
         // Finally, we "flush" the draw commands.
         // Since we rendered to the frame, we don't need to tell ggez to present anything else,
         // as ggez will automatically present the frame image unless told otherwise.
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
 
         // We yield the current thread until the next update
         ggez::timer::yield_now();

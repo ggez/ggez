@@ -154,9 +154,9 @@ impl EventHandler for MyGame {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::WHITE);
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::WHITE);
         // Draw code here...
-        canvas.finish(&mut ctx.gfx)
+        canvas.finish(ctx)
     }
 }
 ```

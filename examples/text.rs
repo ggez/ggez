@@ -66,7 +66,7 @@ impl App {
         // This loads a new TrueType font into the context named "Fancy font".
         ctx.gfx.add_font(
             "Fancy font",
-            graphics::FontData::from_path(&ctx.fs, "/Tangerine_Regular.ttf")?,
+            graphics::FontData::from_path(ctx, "/Tangerine_Regular.ttf")?,
         );
 
         // `Font` is really only an integer handle, and can be copied around.
@@ -142,7 +142,7 @@ impl event::EventHandler<ggez::GameError> for App {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(&ctx.gfx, Color::from([0.1, 0.2, 0.3, 1.0]));
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
 
         let fps = ctx.time.fps();
         let fps_display = Text::new(format!("FPS: {}", fps));
@@ -158,7 +158,7 @@ impl event::EventHandler<ggez::GameError> for App {
             // followed with `::draw_queued()` with said params, is the intended way.
             canvas.draw(text, Vec2::new(20.0, 20.0 + height));
             //height += 20.0 + text.height(ctx) as f32;
-            height += 20.0 + text.dimensions(&mut ctx.gfx).unwrap().h as f32;
+            height += 20.0 + text.dimensions(ctx).unwrap().h as f32;
         }
 
         // Individual fragments within the `Text` can be replaced;
@@ -177,7 +177,7 @@ impl event::EventHandler<ggez::GameError> for App {
                 TextFragment::new(ch).scale(PxScale::from(10.0 + 6.0 * self.rng.rand_float())),
             );
         }
-        let wobble_rect = (&wobble).dimensions(&mut ctx.gfx).unwrap();
+        let wobble_rect = (&wobble).dimensions(ctx).unwrap();
         canvas.draw(
             &wobble,
             graphics::DrawParam::new()
@@ -191,7 +191,7 @@ impl event::EventHandler<ggez::GameError> for App {
         ));
         canvas.draw(&t, graphics::DrawParam::from([500.0, 320.0]).rotation(-0.5));
 
-        canvas.finish(&mut ctx.gfx)?;
+        canvas.finish(ctx)?;
         timer::yield_now();
         Ok(())
     }
