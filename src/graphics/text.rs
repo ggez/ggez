@@ -204,7 +204,11 @@ impl Text {
     }
 
     /// Returns a `Vec` containing the coordinates of the formatted and wrapped text.
-    pub fn glyph_positions(&self, gfx: &mut GraphicsContext) -> GameResult<Vec<mint::Point2<f32>>> {
+    pub fn glyph_positions(
+        &self,
+        gfx: &mut impl HasMut<GraphicsContext>,
+    ) -> GameResult<Vec<mint::Point2<f32>>> {
+        let gfx = gfx.retrieve_mut();
         Ok(gfx
             .text
             .glyph_brush

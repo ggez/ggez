@@ -86,8 +86,8 @@ graphics::Mesh::new_circle(
 Now now now, hold on a second... I said 2 pieces of information!
 Why did I just write like a million?!
 
-Well, `ctx.gfx` is needed to tell `ggez` where you are drawing to.
-`ctx` is what is passed to `update` and `draw` and holds our engine's state. `ctx.gfx` is then the graphics sub-context.
+Well, `ctx` is needed to tell `ggez` where you are drawing to.
+`ctx` is what is passed to `update` and `draw` and holds our engine's state.
 
 [`graphics::DrawMode::fill()`](https://docs.rs/ggez/0.7.0/ggez/graphics/enum.DrawMode.html) is choosing between
 outlining the circle or filling it in.

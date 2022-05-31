@@ -72,6 +72,24 @@ pub struct Context {
 /// Used to represent types that can provide a certain context type.
 ///
 /// If you don't know what this is, you most likely want to pass `ctx`.
+///
+/// This trait is basically syntactical sugar, saving you from having
+/// to split contexts when you don't need to and also shortening calls like
+/// ```rust
+/// # use ggez::GameResult;
+/// # fn t(ctx: &mut ggez::Context, canvas: ggez::graphics::Canvas) -> GameResult {
+/// canvas.finish(&mut ctx.gfx)?;
+/// # Ok(())
+/// # }
+/// ```
+/// into just
+/// ```rust
+/// # use ggez::GameResult;
+/// # fn t(ctx: &mut ggez::Context, canvas: ggez::graphics::Canvas) -> GameResult {
+/// canvas.finish(ctx)?;
+/// # Ok(())
+/// # }
+/// ```
 pub trait Has<T> {
     /// Method to retrieve the context type.
     fn retrieve(&self) -> &T;
@@ -107,6 +125,7 @@ impl Has<audio::AudioContext> for Context {
 }
 
 /// Used to represent types that can provide a certain context type in a mutable form.
+/// See also [`Has<T>`].
 ///
 /// If you don't know what this is, you most likely want to pass `ctx`.
 pub trait HasMut<T> {
@@ -128,7 +147,7 @@ impl HasMut<GraphicsContext> for Context {
     }
 }
 
-/// Used to represent types that can provide two context types. See also `Has<T>`.
+/// Used to represent types that can provide two context types. See also [`Has<T>`].
 ///
 /// If you don't know what this is, you most likely want to pass `ctx`.
 pub trait HasTwo<T, U> {

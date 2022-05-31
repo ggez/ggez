@@ -542,7 +542,7 @@ impl GraphicsContext {
 
             let (bind, layout) = BindGroupBuilder::new()
                 .image(&fcx.present.view, wgpu::ShaderStages::FRAGMENT)
-                .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
+                .sampler(sampler, wgpu::ShaderStages::FRAGMENT)
                 .create(&self.wgpu.device, &mut self.bind_group_cache);
 
             let layout = self.pipeline_cache.layout(&self.wgpu.device, &[layout]);
