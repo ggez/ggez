@@ -5,12 +5,13 @@
 use std::convert::TryFrom;
 
 use ggez::conf;
-use ggez::event::{self, KeyCode, KeyMods, ScanCode};
+use ggez::event::{self, KeyCode};
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
 use ggez::{Context, GameResult};
 
 use argh::FromArgs;
 
+use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
 
@@ -131,14 +132,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
         Ok(())
     }
 
-    fn key_up_event(
-        &mut self,
-        ctx: &mut Context,
-        _scancode: ScanCode,
-        keycode: Option<KeyCode>,
-        _keymod: KeyMods,
-    ) -> GameResult {
-        match keycode {
+    fn key_up_event(&mut self, ctx: &mut Context, input: KeyInput) -> GameResult {
+        match input.keycode {
             Some(KeyCode::F) => {
                 self.window_settings.toggle_fullscreen = true;
                 self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;

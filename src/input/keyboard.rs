@@ -110,6 +110,17 @@ impl From<ModifiersState> for KeyMods {
     }
 }
 
+/// A simple wrapper bundling the four properties of a keyboard stroke.
+#[derive(Copy, Clone, Debug)]
+pub struct KeyInput {
+    /// The scancode.
+    pub scancode: ScanCode,
+    /// The keycode corresponding to the scancode, if there is one.
+    pub keycode: Option<KeyCode>,
+    /// The keyboard modifiers active at the moment of input.
+    pub mods: KeyMods,
+}
+
 /// Tracks held down keyboard keys, active keyboard modifiers,
 /// and figures out if the system is sending repeat keystrokes.
 #[derive(Clone, Debug)]

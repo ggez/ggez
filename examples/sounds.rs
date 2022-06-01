@@ -7,6 +7,7 @@ use ggez::{Context, GameResult};
 
 use glam::*;
 
+use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
 use std::time::Duration;
@@ -91,15 +92,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
         Ok(())
     }
 
-    fn key_down_event(
-        &mut self,
-        ctx: &mut Context,
-        _scancode: input::keyboard::ScanCode,
-        keycode: Option<input::keyboard::KeyCode>,
-        _keymod: input::keyboard::KeyMods,
-        _repeat: bool,
-    ) -> GameResult {
-        match keycode {
+    fn key_down_event(&mut self, ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
+        match input.keycode {
             Some(input::keyboard::KeyCode::Key1) => self.play_detached(ctx),
             Some(input::keyboard::KeyCode::Key2) => self.play_later(ctx),
             Some(input::keyboard::KeyCode::Key3) => self.play_fadein(ctx),

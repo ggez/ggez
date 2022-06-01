@@ -39,6 +39,7 @@ use self::winit_event::*;
 pub use winit::event_loop::{ControlFlow, EventLoop};
 
 use crate::context::Context;
+use crate::input::keyboard::KeyInput;
 
 /// Used in [`EventHandler::on_error()`](trait.EventHandler.html#method.on_error)
 /// to specify where an error originated
@@ -185,25 +186,17 @@ where
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        _scancode: ScanCode,
-        keycode: Option<KeyCode>,
-        _keymods: KeyMods,
-        _repeat: bool,
+        input: KeyInput,
+        _repeated: bool,
     ) -> Result<(), E> {
-        if keycode == Some(KeyCode::Escape) {
+        if input.keycode == Some(KeyCode::Escape) {
             quit(ctx);
         }
         Ok(())
     }
 
     /// A keyboard button was released.
-    fn key_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        _scancode: ScanCode,
-        _keycode: Option<KeyCode>,
-        _keymods: KeyMods,
-    ) -> Result<(), E> {
+    fn key_up_event(&mut self, _ctx: &mut Context, _input: KeyInput) -> Result<(), E> {
         Ok(())
     }
 
@@ -389,9 +382,11 @@ where
                     let repeat = ctx.keyboard.is_key_repeated();
                     let res = state.key_down_event(
                         ctx,
-                        scancode,
-                        keycode,
-                        ctx.keyboard.active_mods(),
+                        KeyInput {
+                            scancode,
+                            keycode,
+                            mods: ctx.keyboard.active_mods(),
+                        },
                         repeat,
                     );
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyDownEvent) {
@@ -408,8 +403,14 @@ where
                         },
                     ..
                 } => {
-                    let res =
-                        state.key_up_event(ctx, scancode, keycode, ctx.keyboard.active_mods());
+                    let res = state.key_up_event(
+                        ctx,
+                        KeyInput {
+                            scancode,
+                            keycode,
+                            mods: ctx.keyboard.active_mods(),
+                        },
+                    );
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyUpEvent) {
                         return;
                     };

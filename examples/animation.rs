@@ -7,7 +7,7 @@ extern crate num_derive;
 
 use ggez::event;
 use ggez::graphics::{self, Color, DrawParam, FilterMode, Rect, Text, TextFragment};
-use ggez::input::keyboard::KeyCode;
+use ggez::input::keyboard::{KeyCode, KeyInput};
 use ggez::mint::Point2;
 use ggez::{Context, GameResult};
 use glam::*;
@@ -308,16 +308,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
         Ok(())
     }
 
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        _scancode: ggez::input::keyboard::ScanCode,
-        keycode: Option<ggez::input::keyboard::KeyCode>,
-        _keymods: ggez::input::keyboard::KeyMods,
-        _repeat: bool,
-    ) -> GameResult {
+    fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
         const DELTA: f32 = 0.2;
-        match keycode {
+        match input.keycode {
             Some(KeyCode::Up | KeyCode::Down) => {
                 // easing change
                 let new_easing_enum = new_enum_after_key(
@@ -325,7 +318,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     &EasingEnum::EaseInOut3Point,
                     &KeyCode::Down,
                     &KeyCode::Up,
-                    &keycode.unwrap(),
+                    &input.keycode.unwrap(),
                 );
 
                 if self.easing_enum != new_easing_enum {
@@ -339,7 +332,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     &AnimationType::Crawl,
                     &KeyCode::Left,
                     &KeyCode::Right,
-                    &keycode.unwrap(),
+                    &input.keycode.unwrap(),
                 );
 
                 if self.animation_type != new_animation_type {

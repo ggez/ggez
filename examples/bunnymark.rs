@@ -10,6 +10,7 @@ use ggez::graphics::{spritebatch::SpriteBatch, Color, Image};
 use ggez::Context;
 use ggez::*;
 
+use ggez::input::keyboard::KeyInput;
 use glam::*;
 
 // NOTE: Using a high number here yields worse performance than adding more bunnies over
@@ -141,15 +142,8 @@ impl event::EventHandler<ggez::GameError> for GameState {
         Ok(())
     }
 
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        _scancode: event::ScanCode,
-        keycode: Option<event::KeyCode>,
-        _keymods: event::KeyMods,
-        _repeat: bool,
-    ) -> GameResult {
-        if keycode == Some(event::KeyCode::Space) {
+    fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
+        if input.keycode == Some(event::KeyCode::Space) {
             self.batched_drawing = !self.batched_drawing;
         }
         Ok(())

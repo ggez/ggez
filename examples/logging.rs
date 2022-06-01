@@ -9,9 +9,10 @@
 use log::*;
 
 use ggez::conf::{WindowMode, WindowSetup};
-use ggez::event::{EventHandler, KeyCode, KeyMods, ScanCode};
+use ggez::event::{EventHandler, KeyCode};
 use ggez::filesystem::File;
 use ggez::graphics;
+use ggez::input::keyboard::KeyInput;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use std::io::Write;
@@ -97,20 +98,13 @@ impl EventHandler for App {
     }
 
     /// Called when `ggez` catches a keyboard key being pressed.
-    fn key_down_event(
-        &mut self,
-        ctx: &mut Context,
-        _scancode: ScanCode,
-        keycode: Option<KeyCode>,
-        keymod: KeyMods,
-        repeat: bool,
-    ) -> GameResult {
+    fn key_down_event(&mut self, ctx: &mut Context, input: KeyInput, repeated: bool) -> GameResult {
         // Log the keypress to info channel!
         info!(
             "Key down event: {:?}, modifiers: {:?}, repeat: {}",
-            keycode, keymod, repeat
+            input.keycode, input.mods, repeated
         );
-        if keycode == Some(KeyCode::Escape) {
+        if input.keycode == Some(KeyCode::Escape) {
             // Escape key closes the app.
             ggez::event::quit(ctx);
         }

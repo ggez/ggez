@@ -7,6 +7,7 @@
 
 use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, BlendMode, Color, DrawParam, Drawable};
+use ggez::input::keyboard::KeyInput;
 use ggez::{Context, GameResult};
 use glam::Vec2;
 use std::env;
@@ -175,14 +176,7 @@ impl EventHandler for MainState {
         Ok(())
     }
 
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        _scancode: ggez::event::ScanCode,
-        _keycode: Option<ggez::event::KeyCode>,
-        _keymod: ggez::event::KeyMods,
-        repeat: bool,
-    ) -> GameResult {
+    fn key_down_event(&mut self, _ctx: &mut Context, _input: KeyInput, repeat: bool) -> GameResult {
         if !repeat {
             if let Some(BlendMode::Alpha) = self.canvas.blend_mode() {
                 self.canvas.set_blend_mode(Some(BlendMode::Premultiplied));
