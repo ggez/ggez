@@ -598,7 +598,7 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                     winit::event::KeyboardInput {
                         state,
                         scancode,
-                        virtual_keycode: Some(keycode),
+                        virtual_keycode: keycode,
                         ..
                     },
                 ..
@@ -607,8 +607,10 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                     winit_event::ElementState::Pressed => true,
                     winit_event::ElementState::Released => false,
                 };
-                ctx.keyboard.set_key(*keycode, pressed);
                 ctx.keyboard.set_scancode(*scancode, pressed);
+                if let Some(key) = keycode {
+                    ctx.keyboard.set_key(*key, pressed);
+                }
             }
             winit_event::WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                 if !ctx.conf.window_mode.resize_on_scale_factor_change {

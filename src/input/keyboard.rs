@@ -444,6 +444,55 @@ mod tests {
     }
 
     #[test]
+    fn pressed_scancodes_tracking() {
+        let mut keyboard = KeyboardContext::new();
+        assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
+        assert!(!keyboard.is_scancode_pressed(3));
+        keyboard.set_scancode(3, true);
+        assert_eq!(
+            keyboard.pressed_scancodes(),
+            &[3].iter().cloned().collect()
+        );
+        assert!(keyboard.is_scancode_pressed(3));
+        keyboard.set_scancode(3, false);
+        assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
+        assert!(!keyboard.is_scancode_pressed(3));
+        keyboard.set_scancode(3, true);
+        assert_eq!(
+            keyboard.pressed_scancodes(),
+            &[3].iter().cloned().collect()
+        );
+        assert!(keyboard.is_scancode_pressed(3));
+        keyboard.set_scancode(3, true);
+        assert_eq!(
+            keyboard.pressed_scancodes(),
+            &[3].iter().cloned().collect()
+        );
+        keyboard.set_scancode(4, true);
+        assert_eq!(
+            keyboard.pressed_scancodes(),
+            &[3, 4].iter().cloned().collect()
+        );
+        keyboard.set_scancode(4, true);
+        assert_eq!(
+            keyboard.pressed_scancodes(),
+            &[3, 4].iter().cloned().collect()
+        );
+        keyboard.set_scancode(3, false);
+        assert_eq!(
+            keyboard.pressed_scancodes(),
+            &[4].iter().cloned().collect()
+        );
+        keyboard.set_scancode(3, false);
+        assert_eq!(
+            keyboard.pressed_scancodes(),
+            &[4].iter().cloned().collect()
+        );
+        keyboard.set_scancode(4, false);
+        assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
+    }
+
+    #[test]
     fn keyboard_modifiers() {
         let mut keyboard = KeyboardContext::new();
 
@@ -471,27 +520,27 @@ mod tests {
     fn repeated_keys_tracking() {
         let mut keyboard = KeyboardContext::new();
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(1, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, false);
+        keyboard.set_scancode(1, false);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(1, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(1, true);
         assert!(keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, false);
+        keyboard.set_scancode(1, false);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(1, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::B, true);
-        assert!(!keyboard.is_key_repeated(),);
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(2, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(1, true);
+        assert!(!keyboard.is_key_repeated());
+        keyboard.set_scancode(1, true);
         assert!(keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::B, true);
+        keyboard.set_scancode(2, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::B, true);
+        keyboard.set_scancode(2, true);
         assert!(keyboard.is_key_repeated());
     }
 }
