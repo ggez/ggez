@@ -449,25 +449,16 @@ mod tests {
         assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
         assert!(!keyboard.is_scancode_pressed(3));
         keyboard.set_scancode(3, true);
-        assert_eq!(
-            keyboard.pressed_scancodes(),
-            &[3].iter().cloned().collect()
-        );
+        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().cloned().collect());
         assert!(keyboard.is_scancode_pressed(3));
         keyboard.set_scancode(3, false);
         assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
         assert!(!keyboard.is_scancode_pressed(3));
         keyboard.set_scancode(3, true);
-        assert_eq!(
-            keyboard.pressed_scancodes(),
-            &[3].iter().cloned().collect()
-        );
+        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().cloned().collect());
         assert!(keyboard.is_scancode_pressed(3));
         keyboard.set_scancode(3, true);
-        assert_eq!(
-            keyboard.pressed_scancodes(),
-            &[3].iter().cloned().collect()
-        );
+        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().cloned().collect());
         keyboard.set_scancode(4, true);
         assert_eq!(
             keyboard.pressed_scancodes(),
@@ -479,15 +470,9 @@ mod tests {
             &[3, 4].iter().cloned().collect()
         );
         keyboard.set_scancode(3, false);
-        assert_eq!(
-            keyboard.pressed_scancodes(),
-            &[4].iter().cloned().collect()
-        );
+        assert_eq!(keyboard.pressed_scancodes(), &[4].iter().cloned().collect());
         keyboard.set_scancode(3, false);
-        assert_eq!(
-            keyboard.pressed_scancodes(),
-            &[4].iter().cloned().collect()
-        );
+        assert_eq!(keyboard.pressed_scancodes(), &[4].iter().cloned().collect());
         keyboard.set_scancode(4, false);
         assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
     }
