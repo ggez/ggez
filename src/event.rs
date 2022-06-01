@@ -160,29 +160,6 @@ where
     /// The default implementation of this will call `ggez::event::quit()`
     /// when the escape key is pressed. If you override this with your own
     /// event handler you have to re-implement that functionality yourself.
-    ///
-    /// Keycodes are the "meaning" of a key once keyboard layout translation
-    /// has been applied. For example, when the user presses "Q" in their
-    /// layout, the enum value for Q is provided to this function.
-    ///
-    /// Scancodes are hardware dependent names for keys that refer to the key's
-    /// location rather than the character it prints when pressed. They are not
-    /// necessarily cross platform (e.g. between Windows and Linux).
-    ///
-    /// For example, on a US QWERTY keyboard layout, the WASD keys are located
-    /// in an inverted T shape on the left of the keyboard. This is not the
-    /// case for AZERTY keyboards, which have those keys in a different
-    /// location. Using scancodes over keycodes in this case would map those
-    /// characters to their physical location on the keyboard.
-    ///
-    /// In general, KeyCodes should be used when the meaning of the typed
-    /// character is important (e.g. "I" to open the inventory), and scancodes
-    /// for when the location is important (e.g. the WASD key block). The
-    /// text_input_event handler should be used to collect raw text.
-    ///
-    /// The keycode is optional because not all inputs can be matched to a
-    /// specific keycode. This will happen on non-English keyboards, for
-    /// example.
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
@@ -620,6 +597,7 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                 input:
                     winit::event::KeyboardInput {
                         state,
+                        scancode,
                         virtual_keycode: Some(keycode),
                         ..
                     },
@@ -630,6 +608,7 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                     winit_event::ElementState::Released => false,
                 };
                 ctx.keyboard.set_key(*keycode, pressed);
+                ctx.keyboard.set_scancode(*scancode, pressed);
             }
             winit_event::WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                 if !ctx.conf.window_mode.resize_on_scale_factor_change {
