@@ -39,6 +39,7 @@ use self::winit_event::*;
 pub use winit::event_loop::{ControlFlow, EventLoop};
 
 use crate::context::Context;
+use crate::input::keyboard::KeyInput;
 
 /// Used in [`EventHandler::on_error()`](trait.EventHandler.html#method.on_error)
 /// to specify where an error originated
@@ -159,51 +160,20 @@ where
     /// The default implementation of this will call `ggez::event::quit()`
     /// when the escape key is pressed. If you override this with your own
     /// event handler you have to re-implement that functionality yourself.
-    ///
-    /// Keycodes are the "meaning" of a key once keyboard layout translation
-    /// has been applied. For example, when the user presses "Q" in their
-    /// layout, the enum value for Q is provided to this function.
-    ///
-    /// Scancodes are hardware dependent names for keys that refer to the key's
-    /// location rather than the character it prints when pressed. They are not
-    /// necessarily cross platform (e.g. between Windows and Linux).
-    ///
-    /// For example, on a US QWERTY keyboard layout, the WASD keys are located
-    /// in an inverted T shape on the left of the keyboard. This is not the
-    /// case for AZERTY keyboards, which have those keys in a different
-    /// location. Using scancodes over keycodes in this case would map those
-    /// characters to their physical location on the keyboard.
-    ///
-    /// In general, KeyCodes should be used when the meaning of the typed
-    /// character is important (e.g. "I" to open the inventory), and scancodes
-    /// for when the location is important (e.g. the WASD key block). The
-    /// text_input_event handler should be used to collect raw text.
-    ///
-    /// The keycode is optional because not all inputs can be matched to a
-    /// specific keycode. This will happen on non-English keyboards, for
-    /// example.
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        _scancode: ScanCode,
-        keycode: Option<KeyCode>,
-        _keymods: KeyMods,
-        _repeat: bool,
+        input: KeyInput,
+        _repeated: bool,
     ) -> Result<(), E> {
-        if keycode == Some(KeyCode::Escape) {
+        if input.keycode == Some(KeyCode::Escape) {
             quit(ctx);
         }
         Ok(())
     }
 
     /// A keyboard button was released.
-    fn key_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        _scancode: ScanCode,
-        _keycode: Option<KeyCode>,
-        _keymods: KeyMods,
-    ) -> Result<(), E> {
+    fn key_up_event(&mut self, _ctx: &mut Context, _input: KeyInput) -> Result<(), E> {
         Ok(())
     }
 
@@ -389,9 +359,11 @@ where
                     let repeat = ctx.keyboard.is_key_repeated();
                     let res = state.key_down_event(
                         ctx,
-                        scancode,
-                        keycode,
-                        ctx.keyboard.active_mods(),
+                        KeyInput {
+                            scancode,
+                            keycode,
+                            mods: ctx.keyboard.active_mods(),
+                        },
                         repeat,
                     );
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyDownEvent) {
@@ -408,8 +380,14 @@ where
                         },
                     ..
                 } => {
-                    let res =
-                        state.key_up_event(ctx, scancode, keycode, ctx.keyboard.active_mods());
+                    let res = state.key_up_event(
+                        ctx,
+                        KeyInput {
+                            scancode,
+                            keycode,
+                            mods: ctx.keyboard.active_mods(),
+                        },
+                    );
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyUpEvent) {
                         return;
                     };
@@ -619,7 +597,8 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                 input:
                     winit::event::KeyboardInput {
                         state,
-                        virtual_keycode: Some(keycode),
+                        scancode,
+                        virtual_keycode: keycode,
                         ..
                     },
                 ..
@@ -628,7 +607,10 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                     winit_event::ElementState::Pressed => true,
                     winit_event::ElementState::Released => false,
                 };
-                ctx.keyboard.set_key(*keycode, pressed);
+                ctx.keyboard.set_scancode(*scancode, pressed);
+                if let Some(key) = keycode {
+                    ctx.keyboard.set_key(*key, pressed);
+                }
             }
             winit_event::WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                 if !ctx.conf.window_mode.resize_on_scale_factor_change {

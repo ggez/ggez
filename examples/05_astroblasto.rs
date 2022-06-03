@@ -5,13 +5,14 @@
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::conf;
-use ggez::event::{self, EventHandler, KeyCode, KeyMods, ScanCode};
+use ggez::event::{self, EventHandler, KeyCode};
 use ggez::graphics::{self, Color};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use glam::*;
 use oorandom::Rand32;
 
+use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
 
@@ -543,12 +544,10 @@ impl EventHandler for MainState {
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        _scancode: ScanCode,
-        keycode: Option<KeyCode>,
-        _keymod: KeyMods,
-        _repeat: bool,
+        input: KeyInput,
+        _repeated: bool,
     ) -> GameResult {
-        match keycode {
+        match input.keycode {
             Some(KeyCode::Up) => {
                 self.input.yaxis = 1.0;
             }
@@ -572,14 +571,8 @@ impl EventHandler for MainState {
         Ok(())
     }
 
-    fn key_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        _scancode: ScanCode,
-        keycode: Option<KeyCode>,
-        _keymod: KeyMods,
-    ) -> GameResult {
-        match keycode {
+    fn key_up_event(&mut self, _ctx: &mut Context, input: KeyInput) -> GameResult {
+        match input.keycode {
             Some(KeyCode::Up) => {
                 self.input.yaxis = 0.0;
             }

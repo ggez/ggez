@@ -1,5 +1,34 @@
 //! Keyboard utility functions; allow querying state of keyboard keys and modifiers.
 //!
+//! # On Keycodes and Scancodes
+//!
+//! You can see functions for keys and functions for scancodes listed here.
+//!
+//! Keycodes are the "meaning" of a key once keyboard layout translation
+//! has been applied. For example, when the user presses "Q" in their
+//! layout, the enum value for Q is provided to this function.
+//!
+//! Scancodes are hardware dependent names for keys that refer to the key's
+//! location rather than the character it prints when pressed. They are not
+//! necessarily cross platform (e.g. between Windows and Linux).
+//!
+//! For example, on a US QWERTY keyboard layout, the WASD keys are located
+//! in an inverted T shape on the left of the keyboard. This is not the
+//! case for AZERTY keyboards, which have those keys in a different
+//! location. Using scan codes over key codes in this case would map those
+//! characters to their physical location on the keyboard.
+//!
+//! In general, keycodes should be used when the meaning of the typed
+//! character is important (e.g. "I" to open the inventory), and scancodes
+//! for when the location is important (e.g. the WASD key block). The
+//! text_input_event handler should be used to collect raw text.
+//!
+//! The keycode is optional because not all inputs can be matched to a
+//! specific key code. This will happen on non-English keyboards, for
+//! example.
+//!
+//! -----
+//!
 //! Example:
 //!
 //! ```rust, compile
@@ -46,10 +75,10 @@
 //!         Ok(())
 //!     }
 //!
-//!     fn key_down_event(&mut self, ctx: &mut Context, key: KeyCode, mods: KeyMods, _: bool) {
+//!     fn key_down_event(&mut self, ctx: &mut Context, key: Option<KeyCode>, mods: KeyMods, _: bool) {
 //!         match key {
 //!             // Quit if Shift+Ctrl+Q is pressed.
-//!             KeyCode::Q => {
+//!             Some(KeyCode::Q) => {
 //!                 if mods.contains(KeyMods::SHIFT) && mods.contains(KeyMods::CTRL) {
 //!                     println!("Terminating!");
 //!                     event::quit(ctx);
@@ -110,6 +139,18 @@ impl From<ModifiersState> for KeyMods {
     }
 }
 
+/// A simple wrapper bundling the four properties of a keyboard stroke.
+#[derive(Copy, Clone, Debug)]
+pub struct KeyInput {
+    /// The scancode. For more info on what they are and when to use them refer to the
+    /// [`keyboard`](crate::input::keyboard) module.
+    pub scancode: ScanCode,
+    /// The keycode corresponding to the scancode, if there is one.
+    pub keycode: Option<KeyCode>,
+    /// The keyboard modifiers active at the moment of input.
+    pub mods: KeyMods,
+}
+
 /// Tracks held down keyboard keys, active keyboard modifiers,
 /// and figures out if the system is sending repeat keystrokes.
 #[derive(Clone, Debug)]
@@ -119,13 +160,15 @@ pub struct KeyboardContext {
     /// We COULD use a `Vec<bool>` but turning Rust enums to and from
     /// integers is unsafe and a set really is what we want anyway.
     pressed_keys_set: HashSet<KeyCode>,
+    pressed_scancodes_set: HashSet<ScanCode>,
 
     // These two are necessary for tracking key-repeat.
-    last_pressed: Option<KeyCode>,
-    current_pressed: Option<KeyCode>,
+    last_pressed: Option<ScanCode>,
+    current_pressed: Option<ScanCode>,
 
     // Represents the state of pressed_keys_set last frame.
-    previously_pressed_set: HashSet<KeyCode>,
+    previously_pressed_keys_set: HashSet<KeyCode>,
+    previously_pressed_scancodes_set: HashSet<ScanCode>,
 }
 
 impl KeyboardContext {
@@ -134,9 +177,11 @@ impl KeyboardContext {
             active_modifiers: KeyMods::empty(),
             // We just use 256 as a number Big Enough For Keyboard Keys to try to avoid resizing.
             pressed_keys_set: HashSet::with_capacity(256),
+            pressed_scancodes_set: HashSet::with_capacity(256),
             last_pressed: None,
             current_pressed: None,
-            previously_pressed_set: HashSet::with_capacity(256),
+            previously_pressed_keys_set: HashSet::with_capacity(256),
+            previously_pressed_scancodes_set: HashSet::with_capacity(256),
         }
     }
 
@@ -147,12 +192,29 @@ impl KeyboardContext {
 
     /// Checks if a key has been pressed down this frame.
     pub fn is_key_just_pressed(&self, key: KeyCode) -> bool {
-        self.pressed_keys_set.contains(&key) && !self.previously_pressed_set.contains(&key)
+        self.pressed_keys_set.contains(&key) && !self.previously_pressed_keys_set.contains(&key)
     }
 
     /// Checks if a key has been released this frame.
     pub fn is_key_just_released(&self, key: KeyCode) -> bool {
-        !self.pressed_keys_set.contains(&key) && self.previously_pressed_set.contains(&key)
+        !self.pressed_keys_set.contains(&key) && self.previously_pressed_keys_set.contains(&key)
+    }
+
+    /// Checks if a key with the corresponding scan code is currently pressed down.
+    pub fn is_scancode_pressed(&self, code: ScanCode) -> bool {
+        self.pressed_scancodes_set.contains(&code)
+    }
+
+    /// Checks if a key with the corresponding scan code has been pressed down this frame.
+    pub fn is_scancode_just_pressed(&self, code: ScanCode) -> bool {
+        self.pressed_scancodes_set.contains(&code)
+            && !self.previously_pressed_scancodes_set.contains(&code)
+    }
+
+    /// Checks if a key with the corresponding scan code has been released this frame.
+    pub fn is_scancode_just_released(&self, code: ScanCode) -> bool {
+        !self.pressed_scancodes_set.contains(&code)
+            && self.previously_pressed_scancodes_set.contains(&code)
     }
 
     /// Checks if the last keystroke sent by the system is repeated,
@@ -170,6 +232,11 @@ impl KeyboardContext {
         &self.pressed_keys_set
     }
 
+    /// Returns a reference to the set of currently pressed scancodes.
+    pub fn pressed_scancodes(&self) -> &HashSet<ScanCode> {
+        &self.pressed_scancodes_set
+    }
+
     /// Checks if keyboard modifier (or several) is active.
     pub fn is_mod_active(&self, keymods: KeyMods) -> bool {
         self.active_mods().contains(keymods)
@@ -184,20 +251,29 @@ impl KeyboardContext {
     /// you need to call this at the end of every update in order to use the functions `is_key_just_pressed`
     /// and `is_key_just_released`. Otherwise this is handled for you.
     pub fn save_keyboard_state(&mut self) {
-        self.previously_pressed_set = self.pressed_keys_set.clone();
+        self.previously_pressed_keys_set = self.pressed_keys_set.clone();
+        self.previously_pressed_scancodes_set = self.pressed_scancodes_set.clone();
     }
 
     pub(crate) fn set_key(&mut self, key: KeyCode, pressed: bool) {
         if pressed {
             let _ = self.pressed_keys_set.insert(key);
-            self.last_pressed = self.current_pressed;
-            self.current_pressed = Some(key);
         } else {
             let _ = self.pressed_keys_set.remove(&key);
-            self.current_pressed = None;
         }
 
         self.set_key_modifier(key, pressed);
+    }
+
+    pub(crate) fn set_scancode(&mut self, code: ScanCode, pressed: bool) {
+        if pressed {
+            let _ = self.pressed_scancodes_set.insert(code);
+            self.last_pressed = self.current_pressed;
+            self.current_pressed = Some(code);
+        } else {
+            let _ = self.pressed_scancodes_set.remove(&code);
+            self.current_pressed = None;
+        }
     }
 
     pub(crate) fn set_modifiers(&mut self, keymods: KeyMods) {
@@ -368,6 +444,40 @@ mod tests {
     }
 
     #[test]
+    fn pressed_scancodes_tracking() {
+        let mut keyboard = KeyboardContext::new();
+        assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
+        assert!(!keyboard.is_scancode_pressed(3));
+        keyboard.set_scancode(3, true);
+        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().cloned().collect());
+        assert!(keyboard.is_scancode_pressed(3));
+        keyboard.set_scancode(3, false);
+        assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
+        assert!(!keyboard.is_scancode_pressed(3));
+        keyboard.set_scancode(3, true);
+        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().cloned().collect());
+        assert!(keyboard.is_scancode_pressed(3));
+        keyboard.set_scancode(3, true);
+        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().cloned().collect());
+        keyboard.set_scancode(4, true);
+        assert_eq!(
+            keyboard.pressed_scancodes(),
+            &[3, 4].iter().cloned().collect()
+        );
+        keyboard.set_scancode(4, true);
+        assert_eq!(
+            keyboard.pressed_scancodes(),
+            &[3, 4].iter().cloned().collect()
+        );
+        keyboard.set_scancode(3, false);
+        assert_eq!(keyboard.pressed_scancodes(), &[4].iter().cloned().collect());
+        keyboard.set_scancode(3, false);
+        assert_eq!(keyboard.pressed_scancodes(), &[4].iter().cloned().collect());
+        keyboard.set_scancode(4, false);
+        assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
+    }
+
+    #[test]
     fn keyboard_modifiers() {
         let mut keyboard = KeyboardContext::new();
 
@@ -395,27 +505,27 @@ mod tests {
     fn repeated_keys_tracking() {
         let mut keyboard = KeyboardContext::new();
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(1, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, false);
+        keyboard.set_scancode(1, false);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(1, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(1, true);
         assert!(keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, false);
+        keyboard.set_scancode(1, false);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(1, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::B, true);
-        assert!(!keyboard.is_key_repeated(),);
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(2, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::A, true);
+        keyboard.set_scancode(1, true);
+        assert!(!keyboard.is_key_repeated());
+        keyboard.set_scancode(1, true);
         assert!(keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::B, true);
+        keyboard.set_scancode(2, true);
         assert!(!keyboard.is_key_repeated());
-        keyboard.set_key(KeyCode::B, true);
+        keyboard.set_scancode(2, true);
         assert!(keyboard.is_key_repeated());
     }
 }
