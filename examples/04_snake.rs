@@ -20,8 +20,9 @@ use oorandom::Rand32;
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
 use ggez::{
-    event::{self, KeyCode, KeyMods},
-    graphics, Context, GameResult,
+    event, graphics,
+    input::keyboard::{KeyCode, KeyInput},
+    Context, GameResult,
 };
 
 // We'll bring in some things from `std` to help us in the future.
@@ -437,16 +438,10 @@ impl event::EventHandler<ggez::GameError> for GameState {
     }
 
     /// key_down_event gets fired when a key gets pressed.
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        keycode: KeyCode,
-        _keymod: KeyMods,
-        _repeat: bool,
-    ) -> GameResult {
+    fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
         // Here we attempt to convert the Keycode into a Direction using the helper
         // we defined earlier.
-        if let Some(dir) = Direction::from_keycode(keycode) {
+        if let Some(dir) = input.keycode.and_then(Direction::from_keycode) {
             // If it succeeds, we check if a new direction has already been set
             // and make sure the new direction is different then `snake.dir`
             if self.snake.dir != self.snake.last_update_dir && dir.inverse() != self.snake.dir {

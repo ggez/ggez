@@ -52,6 +52,7 @@ pub enum FullscreenType {
 ///     max_height: 0.0,
 ///     resizable: false,
 ///     visible: true,
+///     transparent: false,
 ///     resize_on_scale_factor_change: false,
 /// }
 /// # , WindowMode::default());}
@@ -142,7 +143,6 @@ impl WindowMode {
         self.borderless = borderless;
         self
     }
-
 
     /// Set whether a window should be transparent.
     pub fn transparent(mut self, transparent: bool) -> Self {

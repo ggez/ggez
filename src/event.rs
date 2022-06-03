@@ -13,7 +13,7 @@
 use winit::{self, dpi};
 
 /// A mouse button.
-pub use winit::event::MouseButton;
+pub use winit::event::{MouseButton, ScanCode};
 
 /// An analog axis of some device (gamepad thumbstick, joystick...).
 #[cfg(feature = "gamepad")]
@@ -31,7 +31,7 @@ pub mod winit_event {
 }
 #[cfg(feature = "gamepad")]
 pub use crate::input::gamepad::GamepadId;
-pub use crate::input::keyboard::{KeyCode, KeyMods};
+use crate::input::keyboard::{KeyCode, KeyInput, KeyMods};
 use crate::GameError;
 
 use self::winit_event::*;
@@ -157,29 +157,22 @@ where
     /// A keyboard button was pressed.
     ///
     /// The default implementation of this will call `ggez::event::quit()`
-    /// when the escape key is pressed.  If you override this with
-    /// your own event handler you have to re-implment that
-    /// functionality yourself.
+    /// when the escape key is pressed. If you override this with your own
+    /// event handler you have to re-implement that functionality yourself.
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        keycode: KeyCode,
-        _keymods: KeyMods,
-        _repeat: bool,
+        input: KeyInput,
+        _repeated: bool,
     ) -> Result<(), E> {
-        if keycode == KeyCode::Escape {
+        if input.keycode == Some(KeyCode::Escape) {
             request_quit(ctx);
         }
         Ok(())
     }
 
     /// A keyboard button was released.
-    fn key_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        _keycode: KeyCode,
-        _keymods: KeyMods,
-    ) -> Result<(), E> {
+    fn key_up_event(&mut self, _ctx: &mut Context, _input: KeyInput) -> Result<(), E> {
         Ok(())
     }
 
@@ -364,14 +357,22 @@ where
                     input:
                         KeyboardInput {
                             state: ElementState::Pressed,
-                            virtual_keycode: Some(keycode),
+                            virtual_keycode: keycode,
+                            scancode,
                             ..
                         },
                     ..
                 } => {
                     let repeat = ctx.keyboard.is_key_repeated();
-                    let res =
-                        state.key_down_event(ctx, keycode, ctx.keyboard.active_mods(), repeat);
+                    let res = state.key_down_event(
+                        ctx,
+                        KeyInput {
+                            scancode,
+                            keycode,
+                            mods: ctx.keyboard.active_mods(),
+                        },
+                        repeat,
+                    );
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyDownEvent) {
                         return;
                     };
@@ -380,12 +381,20 @@ where
                     input:
                         KeyboardInput {
                             state: ElementState::Released,
-                            virtual_keycode: Some(keycode),
+                            virtual_keycode: keycode,
+                            scancode,
                             ..
                         },
                     ..
                 } => {
-                    let res = state.key_up_event(ctx, keycode, ctx.keyboard.active_mods());
+                    let res = state.key_up_event(
+                        ctx,
+                        KeyInput {
+                            scancode,
+                            keycode,
+                            mods: ctx.keyboard.active_mods(),
+                        },
+                    );
                     if catch_error(ctx, res, state, control_flow, ErrorOrigin::KeyUpEvent) {
                         return;
                     };
@@ -603,14 +612,15 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                 };
                 ctx.mouse.set_button(*button, pressed);
             }
-            winit_event::WindowEvent::ModifiersChanged(mods) => ctx
-                .keyboard
-                .set_modifiers(crate::input::keyboard::KeyMods::from(*mods)),
+            winit_event::WindowEvent::ModifiersChanged(mods) => {
+                ctx.keyboard.set_modifiers(KeyMods::from(*mods))
+            }
             winit_event::WindowEvent::KeyboardInput {
                 input:
                     winit::event::KeyboardInput {
                         state,
-                        virtual_keycode: Some(keycode),
+                        scancode,
+                        virtual_keycode: keycode,
                         ..
                     },
                 ..
@@ -619,7 +629,10 @@ pub fn process_event(ctx: &mut Context, event: &mut winit::event::Event<()>) {
                     winit_event::ElementState::Pressed => true,
                     winit_event::ElementState::Released => false,
                 };
-                ctx.keyboard.set_key(*keycode, pressed);
+                ctx.keyboard.set_scancode(*scancode, pressed);
+                if let Some(key) = keycode {
+                    ctx.keyboard.set_key(*key, pressed);
+                }
             }
             winit_event::WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                 if !ctx.conf.window_mode.resize_on_scale_factor_change {
