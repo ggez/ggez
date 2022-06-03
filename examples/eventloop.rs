@@ -12,6 +12,7 @@
 use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
 use ggez::graphics::{self, Color, DrawMode};
+use ggez::input::keyboard;
 use ggez::GameResult;
 use winit::event_loop::ControlFlow;
 
@@ -49,7 +50,7 @@ pub fn main() -> GameResult {
                         },
                     ..
                 } => {
-                    if let event::KeyCode::Escape = keycode {
+                    if let keyboard::KeyCode::Escape = keycode {
                         event::request_quit(ctx);
                     }
                 }

@@ -4,13 +4,16 @@
 //! Prints instructions to the console.
 use std::convert::TryFrom;
 
-use ggez::event::{self, KeyCode, KeyMods};
+use ggez::conf;
+use ggez::event;
+use ggez::graphics::Rect;
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
-use ggez::{conf, graphics::Rect};
+use ggez::input::keyboard::KeyCode;
 use ggez::{Context, GameResult};
 
 use argh::FromArgs;
 
+use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
 
@@ -144,18 +147,13 @@ impl event::EventHandler<ggez::GameError> for MainState {
         Ok(())
     }
 
-    fn key_up_event(
-        &mut self,
-        ctx: &mut Context,
-        keycode: KeyCode,
-        _keymod: KeyMods,
-    ) -> GameResult {
-        match keycode {
-            KeyCode::F => {
+    fn key_up_event(&mut self, ctx: &mut Context, input: KeyInput) -> GameResult {
+        match input.keycode {
+            Some(KeyCode::F) => {
                 self.window_settings.toggle_fullscreen = true;
                 self.window_settings.is_fullscreen = !self.window_settings.is_fullscreen;
             }
-            KeyCode::Up => {
+            Some(KeyCode::Up) => {
                 self.zoom += 0.1;
                 println!("Zoom is now {}", self.zoom);
                 let (w, h) = ctx.gfx.drawable_size();
@@ -163,7 +161,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                 self.screen_coords = new_rect;
             }
-            KeyCode::Down => {
+            Some(KeyCode::Down) => {
                 self.zoom -= 0.1;
                 println!("Zoom is now {}", self.zoom);
                 let (w, h) = ctx.gfx.drawable_size();
@@ -171,7 +169,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
                 self.screen_coords = new_rect;
             }
-            KeyCode::Space => {
+            Some(KeyCode::Space) => {
                 self.window_settings.resize_projection = !self.window_settings.resize_projection;
                 println!(
                     "Resizing the projection on window resize is now: {}",

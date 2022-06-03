@@ -7,7 +7,7 @@ extern crate num_derive;
 
 use ggez::event;
 use ggez::graphics::{self, Color};
-use ggez::input::keyboard::KeyCode;
+use ggez::input::keyboard::{KeyCode, KeyInput};
 use ggez::mint::Point2;
 use ggez::{Context, GameResult};
 use glam::*;
@@ -308,37 +308,31 @@ impl event::EventHandler<ggez::GameError> for MainState {
         Ok(())
     }
 
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        keycode: ggez::input::keyboard::KeyCode,
-        _keymods: ggez::input::keyboard::KeyMods,
-        _repeat: bool,
-    ) -> GameResult {
+    fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
         const DELTA: f32 = 0.2;
-        match keycode {
-            KeyCode::Up | KeyCode::Down => {
+        match input.keycode {
+            Some(KeyCode::Up | KeyCode::Down) => {
                 // easing change
                 let new_easing_enum = new_enum_after_key(
                     &self.easing_enum,
                     &EasingEnum::EaseInOut3Point,
                     &KeyCode::Down,
                     &KeyCode::Up,
-                    &keycode,
+                    &input.keycode.unwrap(),
                 );
 
                 if self.easing_enum != new_easing_enum {
                     self.easing_enum = new_easing_enum;
                 }
             }
-            KeyCode::Left | KeyCode::Right => {
+            Some(KeyCode::Left | KeyCode::Right) => {
                 // animation change
                 let new_animation_type = new_enum_after_key(
                     &self.animation_type,
                     &AnimationType::Crawl,
                     &KeyCode::Left,
                     &KeyCode::Right,
-                    &keycode,
+                    &input.keycode.unwrap(),
                 );
 
                 if self.animation_type != new_animation_type {
@@ -346,10 +340,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 }
             }
             // duration change
-            KeyCode::W => {
+            Some(KeyCode::W) => {
                 self.duration += DELTA;
             }
-            KeyCode::S => {
+            Some(KeyCode::S) => {
                 if self.duration - DELTA > 0.1 {
                     self.duration -= DELTA;
                 }

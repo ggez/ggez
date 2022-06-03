@@ -8,6 +8,7 @@
 use ggez::context::HasMut;
 use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, BlendMode, Color, DrawParam, GraphicsContext};
+use ggez::input::keyboard::KeyInput;
 use ggez::{Context, GameResult};
 use glam::Vec2;
 use std::env;
@@ -176,13 +177,7 @@ impl EventHandler for MainState {
         Ok(())
     }
 
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        _keycode: ggez::event::KeyCode,
-        _keymod: ggez::event::KeyMods,
-        repeat: bool,
-    ) -> GameResult {
+    fn key_down_event(&mut self, _ctx: &mut Context, _input: KeyInput, repeat: bool) -> GameResult {
         if !repeat {
             if self.layer_blend == BlendMode::ALPHA {
                 self.layer_blend = BlendMode::PREMULTIPLIED;

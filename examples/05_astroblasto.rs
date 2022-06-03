@@ -5,13 +5,15 @@
 use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::conf;
-use ggez::event::{self, EventHandler, KeyCode, KeyMods};
+use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, Color};
+use ggez::input::keyboard::KeyCode;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use glam::*;
 use oorandom::Rand32;
 
+use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
 
@@ -555,50 +557,44 @@ impl EventHandler for MainState {
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        keycode: KeyCode,
-        _keymod: KeyMods,
-        _repeat: bool,
+        input: KeyInput,
+        _repeated: bool,
     ) -> GameResult {
-        match keycode {
-            KeyCode::Up => {
+        match input.keycode {
+            Some(KeyCode::Up) => {
                 self.input.yaxis = 1.0;
             }
-            KeyCode::Left => {
+            Some(KeyCode::Left) => {
                 self.input.xaxis = -1.0;
             }
-            KeyCode::Right => {
+            Some(KeyCode::Right) => {
                 self.input.xaxis = 1.0;
             }
-            KeyCode::Space => {
+            Some(KeyCode::Space) => {
                 self.input.fire = true;
             }
-            KeyCode::P => {
+            Some(KeyCode::P) => {
                 self.screen.image(ctx).encode(
                     ctx,
                     graphics::ImageEncodingFormat::Png,
                     "/screenshot.png",
                 )?;
             }
-            KeyCode::Escape => event::request_quit(ctx),
+            Some(KeyCode::Escape) => event::request_quit(ctx),
             _ => (), // Do nothing
         }
         Ok(())
     }
 
-    fn key_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        keycode: KeyCode,
-        _keymod: KeyMods,
-    ) -> GameResult {
-        match keycode {
-            KeyCode::Up => {
+    fn key_up_event(&mut self, _ctx: &mut Context, input: KeyInput) -> GameResult {
+        match input.keycode {
+            Some(KeyCode::Up) => {
                 self.input.yaxis = 0.0;
             }
-            KeyCode::Left | KeyCode::Right => {
+            Some(KeyCode::Left | KeyCode::Right) => {
                 self.input.xaxis = 0.0;
             }
-            KeyCode::Space => {
+            Some(KeyCode::Space) => {
                 self.input.fire = false;
             }
             _ => (), // Do nothing

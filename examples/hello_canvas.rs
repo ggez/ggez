@@ -3,6 +3,7 @@
 
 use ggez::event;
 use ggez::graphics::{self, Color};
+use ggez::input::keyboard::KeyInput;
 use ggez::{Context, GameResult};
 use glam::*;
 use std::env;
@@ -88,13 +89,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         Ok(())
     }
 
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        _keycode: ggez::event::KeyCode,
-        _keymod: ggez::event::KeyMods,
-        repeat: bool,
-    ) -> GameResult {
+    fn key_down_event(&mut self, _ctx: &mut Context, _input: KeyInput, repeat: bool) -> GameResult {
         if !repeat {
             self.draw_with_canvas = !self.draw_with_canvas;
             println!("Canvas on: {}", self.draw_with_canvas);
