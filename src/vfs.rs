@@ -35,7 +35,7 @@ impl<T> VFile for T where T: Read + Write + Seek + Debug {}
 /// `std` annoyingly doesn't let you read the read/write/create/etc
 /// state out of it.
 #[must_use]
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct OpenOptions {
     read: bool,
     write: bool,
@@ -697,7 +697,7 @@ impl Debug for ZipFileWrapper {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct ZipMetadata {
     len: u64,
     is_dir: bool,

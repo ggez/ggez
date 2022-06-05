@@ -210,7 +210,7 @@ impl WindowMode {
 /// }
 /// # , WindowSetup::default()); }
 /// ```
-#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowSetup {
     /// The window title.
     #[default(String::from("An easy, good game"))]
