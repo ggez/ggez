@@ -94,8 +94,8 @@ following list is very probably not complete.
 
 * Multisampling on canvases is now no longer based on dirty workarounds, but on the inner workings of `wgpu`,
  supporting it naturally
-* Fixed zip `read_dir` not working deeper than one level on Windows 
-* Fixed a memory lead on `set_screen_coordinates` on Windows 11
+* Fixed zip `read_dir` not working deeper than one level on Windows
+* Fixed a memory leak on `set_screen_coordinates` on Windows 11
 * Fixed not being able to take screenshots of anti-aliased targets
 
 # 0.7.0
@@ -103,7 +103,7 @@ following list is very probably not complete.
 ## Added
 
 * Added `filesystem::zip_dir`
-* Expanded/improved documentation 
+* Expanded/improved documentation
 
 ## Changed
 
@@ -127,7 +127,7 @@ Nothing
 
 ## Fixed
 
-* Finally fixed/implemented MSAA on canvases. As `gfx` doesn't provide us with the necessary tools to do so directly, 
+* Finally fixed/implemented MSAA on canvases. As `gfx` doesn't provide us with the necessary tools to do so directly,
   the implementation is internally based upon a fragment shader workaround, which doesn't work on GLES.
 * Made sure that the bounding box of `Mesh` is actually updated when `Mesh::set_vertices` is called
 
@@ -203,7 +203,7 @@ Nothing
 
  * `EventHandler` now takes an error type as a parameter, which allows you to use your own error types
  * `FullscreenType::True` now causes the game to be rendered exclusively on the current monitor, which also allows
-   to set different resolutions  
+   to set different resolutions
  * Changed blend modes massively in the hope that they're either more "correct" or helpful now
  * Changed the way `SpriteBatch` reacts to `DrawParam`s with an offset != (0,0): It now calculates its own dimensions
    (a rectangle containing all sprites) and interprets the offset as a fraction of that
@@ -220,7 +220,7 @@ Nothing
  * Updated just about every other dependency under the sun
  * Minimum rustc version is now 1.42
  * Audio API in general changed a little for `rodio` API differences.
- 
+
 ## Deprecated
 
 Nothing
@@ -238,7 +238,7 @@ Nothing
  * Setting `DrawParam`s now results in consistent behaviour <del>everywhere</del> (ok, no, we missed `MeshBatch`,
    which received this fix in 0.6.1), including `SpriteBatch` and `Canvas`
  * Fixed a memory leak in `screenshot` and `to_rgba8`
- * Fixed `transfrom_rect` (and added some more tests for it)   
+ * Fixed `transfrom_rect` (and added some more tests for it)
  * Too many things to count
 
 ## Broken
