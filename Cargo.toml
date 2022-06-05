@@ -19,9 +19,6 @@ categories = ["game-engines"]
 build = "build.rs"
 exclude = ["docs", "resources", "!LiberationMono-Regular.ttf"]
 
-[badges]
-maintenance = { status = "actively-maintained" }
-
 [lib]
 name = "ggez"
 path = "src/lib.rs"

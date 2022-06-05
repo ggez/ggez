@@ -333,7 +333,7 @@ impl Canvas {
     /// Resets the scissorr rectangle back to the original value. This will effectively disable any
     /// scissoring.
     #[inline]
-    pub fn reset_scissor_rect(&mut self) {
+    pub fn set_default_scissor_rect(&mut self) {
         self.state.scissor_rect = self.original_state.scissor_rect;
     }
 

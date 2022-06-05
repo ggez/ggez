@@ -58,10 +58,10 @@ pub struct Context {
     /// updating it will have no effect.
     pub(crate) conf: conf::Conf,
     /// Controls whether or not the event loop should be running.
-    /// This is internally controlled by the outcome of [`quit_event`](crate::event::EventHandler::quit_event), requested through [`event::quit()`](crate::event::quit()).
+    /// This is internally controlled by the outcome of [`quit_event`](crate::event::EventHandler::quit_event), requested through [`event::request_quit()`](crate::event::request_quit).
     pub continuing: bool,
     /// Whether or not a `quit_event` has been requested.
-    /// Set this with `ggez::event::quit()`.
+    /// Set this with [`ggez::event::request_quit()`](crate::event::request_quit).
     ///
     /// It's exposed here for people who want to roll their own event loop.
     pub quit_requested: bool,
