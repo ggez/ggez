@@ -78,7 +78,6 @@ impl Shader {
 pub use crevice::std140::AsStd140;
 
 /// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
-#[allow(clippy::derive_partial_eq_without_eq)] // False positive?
 #[derive(Debug, PartialEq, Eq)]
 pub struct ShaderParams<Uniforms: AsStd140> {
     pub(crate) uniforms: ArcBuffer,
