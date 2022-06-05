@@ -9,7 +9,6 @@
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ggez/ggez/blob/master/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/ggez.svg)](https://crates.io/crates/ggez)
 [![Crates.io](https://img.shields.io/crates/d/ggez.svg)](https://crates.io/crates/ggez)
-![Maintenance](https://img.shields.io/badge/maintenance-actively--maintained-green.svg)
 
 ggez is a Rust library to create a Good Game Easily.
 
@@ -71,7 +70,7 @@ crates.io. To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```
-ggez = "0.7"
+ggez = "0.8.0-rc0"
 ```
 
 ggez consists of three main parts: A `Context` object which

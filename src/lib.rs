@@ -58,7 +58,7 @@
 //! line to your `Cargo.toml` file:
 //!
 //! ```text
-//! ggez = "0.7"
+//! ggez = "0.8.0-rc0"
 //! ```
 //!
 //! ggez consists of three main parts: A `Context` object which
