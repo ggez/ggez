@@ -157,6 +157,21 @@ pub trait HasTwo<T, U> {
     fn retrieve_second(&self) -> &U;
 }
 
+impl<T, U> HasTwo<T, U> for Context
+where
+    Context: Has<T> + Has<U>,
+{
+    #[inline]
+    fn retrieve_first(&self) -> &T {
+        Has::<T>::retrieve(self)
+    }
+
+    #[inline]
+    fn retrieve_second(&self) -> &U {
+        Has::<U>::retrieve(self)
+    }
+}
+
 impl<T, U> HasTwo<T, U> for (&T, &U) {
     #[inline]
     fn retrieve_first(&self) -> &T {
@@ -166,29 +181,6 @@ impl<T, U> HasTwo<T, U> for (&T, &U) {
     #[inline]
     fn retrieve_second(&self) -> &U {
         self.1
-    }
-}
-
-impl HasTwo<Filesystem, GraphicsContext> for Context {
-    #[inline]
-    fn retrieve_first(&self) -> &Filesystem {
-        &self.fs
-    }
-
-    #[inline]
-    fn retrieve_second(&self) -> &GraphicsContext {
-        &self.gfx
-    }
-}
-
-#[cfg(feature = "audio")]
-impl HasTwo<Filesystem, crate::audio::AudioContext> for Context {
-    fn retrieve_first(&self) -> &Filesystem {
-        &self.fs
-    }
-
-    fn retrieve_second(&self) -> &crate::audio::AudioContext {
-        &self.audio
     }
 }
 
@@ -376,5 +368,32 @@ impl ContextBuilder {
         };
 
         Context::from_conf(config, fs)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        context::{Has, HasMut, HasTwo},
+        filesystem::Filesystem,
+        graphics::GraphicsContext,
+        ContextBuilder,
+    };
+
+    #[test]
+    fn has_traits() {
+        let (mut ctx, _event_loop) = ContextBuilder::new("test", "ggez").build().unwrap();
+
+        fn takes_gfx(_gfx: &impl Has<GraphicsContext>) {}
+        takes_gfx(&ctx);
+        takes_gfx(&ctx.gfx);
+
+        fn takes_mut_gfx(_gfx: &mut impl HasMut<GraphicsContext>) {}
+        takes_mut_gfx(&mut ctx);
+        takes_mut_gfx(&mut ctx.gfx);
+
+        fn takes_gfx_fs(_gfx_fs: &impl HasTwo<GraphicsContext, Filesystem>) {}
+        takes_gfx_fs(&ctx);
+        takes_gfx_fs(&(&ctx.gfx, &ctx.fs));
     }
 }
