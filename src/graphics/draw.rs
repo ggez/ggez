@@ -17,6 +17,11 @@ pub enum Transform {
         /// The x/y scale factors expressed as a `Vector2`.
         scale: mint::Vector2<f32>,
         /// An offset, which is applied before scaling and rotation happen.
+        ///
+        /// For most objects this works as a relative offset (meaning `[0.5,0.5]` is an offset which
+        /// centers the object on the destination). These objects are:
+        /// * `Image`, `Canvas`, `Text` and the sprites inside an `InstanceArray` (as long as you're
+        /// not making an instanced mesh-draw)
         offset: mint::Point2<f32>,
     },
     /// Transform made of an arbitrary matrix.

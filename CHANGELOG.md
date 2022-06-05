@@ -76,6 +76,7 @@ The following list doesn't repeat the changes already mentioned above.
 * Also `Text` is now a first class citizen and can be drawn normally with `DrawParam`, implementing things like rotation
  that weren't possible in batched text rendering before
 * Improved `Text` performance through better glyph re-use
+* Changed the `Drawable` trait; this will downstream require changes in projects like `ggez-egui`
 
 ## Deprecated
 

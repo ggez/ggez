@@ -98,7 +98,7 @@ In general, ggez is designed to focus on 2D graphics.  We want it to be possible
 
 ## How do I make a GUI?
 
-There's no single optimal way to do it currently, but as of 2021 there's a few
+There's no single optimal way to do it currently, but as of 2022 there's a few
 GUI libraries that are able to use `ggez` as a drawing backend.
 `raui` seems to offer a `ggez` backend natively, though we have no idea
 how well it works, and `iced` used to have one, but it seems to have
@@ -136,10 +136,8 @@ In ggez 0.6.1 `DrawParam::offset` used to be interpreted as a _relative_ offset 
 Then, we wanted to unify this and switch `Mesh` over to a relative interpretation as well, but we discovered, that [this
 relative interpretation can be really problematic for certain `Drawable`s](https://github.com/ggez/ggez/issues/736#issuecomment-945181003), so now the divide is as follows:
 
-+ `Image`, `Canvas` and the sprites inside a `SpriteBatch` use the relative interpretation
-+ `Mesh`, `MeshBatch`, `Spritebatch` (and thereby `Text` too) use the absolute interpretation
-
-This is how offsets worked before ggez 0.6 and it's how they work now, for good reasons.
++ The relative interpretation is used by `Image`, `Canvas`, `Text` and the sprites inside an `InstanceArray` when not making an instanced mesh-draw
++ The absolute interpretation is used by `Mesh` and `InstanceArray`
 
 What this means for you is: If you want `DrawParam::offset` to be a relative offset (i.e. [1,1] means "bottom right", [0.5,0.5] means "centered", etc.) for any of the types mentioned as
 "absolute interpretations" above, then you'll have to adapt your offset like this:
@@ -298,7 +296,11 @@ on how to do that.
 
 ## Drawing a few hundred images or shapes is slow!
 
-Again, debug mode is slow.  Plus, each single draw call has some overhead.  If building in release mode still isn't fast enough, then look into using `SpriteBatch` to draw a bunch of chunks from a spritesheet (also known as an atlas).  If you're drawing geometry, instead of using `graphics::rectangle()` or `graphics::circle()` and such, which create a new `Mesh` on each call and then throw it away, create and store a `Mesh` and draw it many times, or use a `MeshBuilder` to build a single `Mesh` out of many separate shapes.
+Again, debug mode is slow.  Plus, each single draw call has some overhead.  If building in release mode still isn't fast
+enough, then look into using `InstanceArray` to draw a bunch of chunks from a spritesheet (also known as an atlas).
+If you're drawing geometry, instead of using `graphics::rectangle()` or `graphics::circle()` and such, which create a
+new `Mesh` on each call and then throw it away, create and store a `Mesh` and draw it many times, or use a `MeshBuilder`
+to build a single `Mesh` out of many separate shapes.
 
 <a name="platforms">
 
