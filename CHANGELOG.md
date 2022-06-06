@@ -15,7 +15,7 @@ With the redo of the graphics stack some parts of the API changes with it, most 
 
 ### Canvas
 
-First of all, each draw call is now explicitly bound to a `Canvas`. This mean instead of "setting" the active canvas and
+First of all, each draw call is now explicitly bound to a `Canvas`. This means instead of "setting" the active canvas and
 then drawing implicitly on that canvas you now call `canvas.draw(...)` or `drawable.draw(canvas, ...)`. And then, once
 you're done drawing on it, you call `canvas.finish(ctx)`.
 This helps to keep track of the active canvas and gives you more explicit renderpasses to work with, as `Canvas` is now
@@ -57,14 +57,18 @@ If you didn't split it then you can comfortably hand around and pass the context
 
 ## Added
 
-* Added touch events to `EventHandler`
+* Added touch event to `EventHandler`
 * Added access to scancodes in both keyboard events and keyboard context methods, allowing you to make your game
  portable across the different keyboard letter layouts of different countries
 * Added `Canvas::set_scissor_rect` allowing you to restrict drawing to a part of your surface
 * Added `is_key_just_pressed` and `is_key_just_released` to keyboard context
 * Added an option for transparent windows
 * Exposed rodio API for skipping the first part of a sample
+* Added `audio` and `gamepad` as crate features, allowing you to disable them if not necessary
 * Added `Rect::overlaps_circle`
+* Added `event::request_quit` as a replacement for `event::quit`
+  * `event::request_quit` works like `event::quit` did before, except that instead of directly breaking the game loop it
+  now triggers a `quit_event`, which allows you to handle all attempts to quit the game in one place.
 
 ## Changed
 
@@ -72,11 +76,13 @@ The following list doesn't repeat the changes already mentioned above.
 
 * Relaxed the error type of `EventHandler` from `std::error::Error` into `std::fmt::Debug`, allowing you to use
  things like `anyhow::error` as error types as well
-* Made offset on `Text` relative (I know, I know, we've been changing this around a lot lately, but I hope we're finally done now)
+* Made offset on `Text` relative (I know, I know, we've been changing this around a lot lately, but I hope we're finally
+  done now), as it makes things like centering text on positions easier (see the blend modes example)
 * Also `Text` is now a first class citizen and can be drawn normally with `DrawParam`, implementing things like rotation
  that weren't possible in batched text rendering before
 * Improved `Text` performance through better glyph re-use
 * Changed the `Drawable` trait; this will downstream require changes in projects like `ggez-egui`
+* Version bumped `zip` to 0.6, `directories` to 4.0.1, `winit` to 0.26, image to `0.24` and `rodio` to 0.15
 
 ## Deprecated
 
@@ -87,9 +93,10 @@ The following list doesn't repeat the changes already mentioned above.
 * Removed `duration_to_f64` and `f64_to_duration` as the std library now already contains this
  functionality itself
 * Removed `From<tuple>` implementations for `DrawParam`, as they're non-transparent and weird
+* Removed `event::quit`, as it was replaced by `event::request_quit`
 
 ## Fixed
-Many graphics bugs that were caused by still using the discontinued `gfx-rs` were fixed by the switch to `wgpu`. The
+Many graphics bugs that were caused by the use of the discontinued `gfx-rs` were fixed by the switch to `wgpu`. The
 following list is very probably not complete.
 
 * Multisampling on canvases is now no longer based on dirty workarounds, but on the inner workings of `wgpu`,
