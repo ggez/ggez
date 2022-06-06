@@ -1,14 +1,7 @@
-use std::f32;
-use std::u32;
-
 use crate::graphics::{FillOptions, StrokeOptions};
 
 /// A 2 dimensional point representing a location
 pub(crate) type Point2 = glam::Vec2;
-// /// A 2 dimensional vector representing an offset of a location
-//pub(crate) type Vector2 = glam::Vec2;
-/// A 4 dimensional matrix representing an arbitrary 3d transformation
-pub(crate) type Matrix4 = glam::Mat4;
 
 /// A simple 2D rectangle.
 ///
@@ -65,6 +58,14 @@ impl Rect {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
+    /// Gets the `Rect`'s width and height as a `Vector2`.
+    pub const fn size(&self) -> mint::Vector2<f32> {
+        mint::Vector2 {
+            x: self.w,
+            y: self.h,
+        }
+    }
+
     /// Gets the `Rect`'s x and y coordinates as a `Point2`.
     pub const fn point(&self) -> mint::Point2<f32> {
         mint::Point2 {
@@ -119,6 +120,28 @@ impl Rect {
             && self.right() >= other.left()
             && self.top() <= other.bottom()
             && self.bottom() >= other.top()
+    }
+
+    /// Checks whether the `Rect` overlaps a circle.
+    pub fn overlaps_circle(&self, point: impl Into<Point2>, radius: f32) -> bool {
+        let point: glam::Vec2 = point.into();
+        let rect_center: glam::Vec2 = self.center().into();
+        let circle_distance = (point - rect_center).abs();
+
+        if circle_distance.x > (self.w / 2.0 + radius)
+            || circle_distance.y > (self.h / 2.0 + radius)
+        {
+            return false;
+        }
+
+        if circle_distance.x <= (self.w / 2.0) || circle_distance.y <= (self.h / 2.0) {
+            return true;
+        }
+
+        let corner_distance_sq =
+            (circle_distance.x - self.w / 2.0).powi(2) + (circle_distance.y - self.h / 2.0).powi(2);
+
+        corner_distance_sq <= radius.powi(2)
     }
 
     /// Translates the `Rect` by an offset of (x, y)
@@ -181,6 +204,7 @@ impl Rect {
     }
 
     /// Returns a new `Rect` that includes all points of these two `Rect`s.
+    #[must_use]
     pub fn combine_with(self, other: Rect) -> Rect {
         let x = f32::min(self.x, other.x);
         let y = f32::min(self.y, other.y);
@@ -462,7 +486,7 @@ impl From<Color> for [f32; 4] {
 /// A RGBA color in the *linear* color space,
 /// suitable for shoving into a shader.
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub(crate) struct LinearColor {
+pub struct LinearColor {
     /// Red component
     pub r: f32,
     /// Green component
@@ -475,7 +499,7 @@ pub(crate) struct LinearColor {
 
 impl From<Color> for LinearColor {
     /// Convert an (sRGB) Color into a linear color,
-    /// per https://en.wikipedia.org/wiki/Srgb#The_reverse_transformation
+    /// per <https://en.wikipedia.org/wiki/Srgb#The_reverse_transformation>
     fn from(c: Color) -> Self {
         fn f(component: f32) -> f32 {
             let a = 0.055;
@@ -519,6 +543,17 @@ impl From<LinearColor> for [f32; 4] {
     }
 }
 
+impl From<LinearColor> for wgpu::Color {
+    fn from(color: LinearColor) -> Self {
+        wgpu::Color {
+            r: color.r as f64,
+            g: color.g as f64,
+            b: color.b as f64,
+            a: color.a as f64,
+        }
+    }
+}
+
 /// Specifies whether a mesh should be drawn
 /// filled or as an outline.
 #[derive(Debug, Copy, Clone)]
@@ -540,38 +575,6 @@ impl DrawMode {
         DrawMode::Fill(FillOptions::default())
     }
 }
-
-/// Specifies what blending method to use when scaling up/down images.
-#[derive(Debug, Copy, Clone)]
-pub enum FilterMode {
-    /// Use linear interpolation (ie, smooth)
-    Linear,
-    /// Use nearest-neighbor interpolation (ie, pixelated)
-    Nearest,
-}
-
-use gfx::texture::FilterMethod;
-
-impl From<FilterMethod> for FilterMode {
-    fn from(f: FilterMethod) -> Self {
-        match f {
-            FilterMethod::Scale => FilterMode::Nearest,
-            _other => FilterMode::Linear,
-        }
-    }
-}
-
-impl From<FilterMode> for FilterMethod {
-    fn from(f: FilterMode) -> Self {
-        match f {
-            FilterMode::Nearest => FilterMethod::Scale,
-            FilterMode::Linear => FilterMethod::Bilinear,
-        }
-    }
-}
-
-/// Specifies how to wrap textures.
-pub use gfx::texture::WrapMode;
 
 #[cfg(test)]
 mod tests {
@@ -642,6 +645,10 @@ mod tests {
 
         let r2 = Rect::new(500.0, 0.0, 64.0, 64.0);
         assert!(!r1.overlaps(&r2));
+
+        assert!(r1.overlaps_circle(glam::vec2(133.5, 133.5), 8.0));
+        assert!(!r1.overlaps_circle(glam::vec2(134.0, 134.0), 8.0));
+        assert!(r1.overlaps_circle(glam::vec2(64.0, 64.0), 2.0));
     }
 
     #[test]

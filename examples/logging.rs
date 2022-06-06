@@ -9,13 +9,13 @@
 use log::*;
 
 use ggez::conf::{WindowMode, WindowSetup};
-use ggez::event::{EventHandler, KeyCode, KeyMods};
-use ggez::filesystem::{self, File};
+use ggez::event::EventHandler;
+use ggez::filesystem::File;
 use ggez::graphics;
+use ggez::input::keyboard::{KeyCode, KeyInput};
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
 use std::io::Write;
-use std::path;
 use std::sync::mpsc;
 
 /// A basic file writer.
@@ -35,11 +35,11 @@ impl FileLogger {
         receiver: mpsc::Receiver<String>,
     ) -> GameResult<FileLogger> {
         // This (re)creates a file and opens it for appending.
-        let file = filesystem::create(ctx, path::Path::new(path))?;
+        let file = ctx.fs.create(std::path::Path::new(path))?;
         debug!(
             "Created log file {:?} in {:?}",
             path,
-            filesystem::user_config_dir(ctx)
+            ctx.fs.user_config_dir()
         );
         Ok(FileLogger { file, receiver })
     }
@@ -81,7 +81,7 @@ impl EventHandler for App {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
         // This tries to throttle updates to desired value.
-        while timer::check_update_time(ctx, DESIRED_FPS) {
+        while ctx.time.check_update_time(DESIRED_FPS) {
             // Since we don't have any non-callback logic, all we do is append our logs.
             self.file_logger.update()?;
         }
@@ -90,37 +90,24 @@ impl EventHandler for App {
 
     /// Draws the screen. We don't really have anything to draw.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
-        graphics::present(ctx)?;
+        graphics::Canvas::from_frame(ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]))
+            .finish(ctx)?;
         timer::yield_now();
         Ok(())
     }
 
     /// Called when `ggez` catches a keyboard key being pressed.
-    fn key_down_event(
-        &mut self,
-        ctx: &mut Context,
-        keycode: KeyCode,
-        keymod: KeyMods,
-        repeat: bool,
-    ) {
+    fn key_down_event(&mut self, ctx: &mut Context, input: KeyInput, repeated: bool) -> GameResult {
         // Log the keypress to info channel!
         info!(
             "Key down event: {:?}, modifiers: {:?}, repeat: {}",
-            keycode, keymod, repeat
+            input.keycode, input.mods, repeated
         );
-        if keycode == KeyCode::Escape {
+        if input.keycode == Some(KeyCode::Escape) {
             // Escape key closes the app.
-            ggez::event::quit(ctx);
+            ggez::event::request_quit(ctx);
         }
-    }
-
-    /// Called when window is resized.
-    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
-        match graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height)) {
-            Ok(()) => info!("Resized window to {} x {}", width, height),
-            Err(e) => error!("Couldn't resize window: {}", e),
-        }
+        Ok(())
     }
 }
 
@@ -140,7 +127,7 @@ pub fn main() -> GameResult {
             out.finish(format_args!(
                 "[{}][{:<5}][{}] {}",
                 chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-                record.level().to_string(),
+                record.level(),
                 record.target(),
                 message
             ))

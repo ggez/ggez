@@ -4,12 +4,14 @@
 use std::env;
 use std::path;
 
+use ggez::input::keyboard;
 use oorandom::Rand32;
 
-use ggez::graphics::{spritebatch::SpriteBatch, Color, Image};
+use ggez::graphics::{Color, Image, InstanceArray};
 use ggez::Context;
 use ggez::*;
 
+use ggez::input::keyboard::KeyInput;
 use glam::*;
 
 // NOTE: Using a high number here yields worse performance than adding more bunnies over
@@ -44,7 +46,7 @@ struct GameState {
     max_y: f32,
 
     click_timer: i32,
-    bunnybatch: SpriteBatch,
+    bunnybatch: InstanceArray,
     batched_drawing: bool,
 }
 
@@ -52,16 +54,16 @@ impl GameState {
     fn new(ctx: &mut Context) -> ggez::GameResult<GameState> {
         // We just use the same RNG seed every time.
         let mut rng = Rand32::new(12345);
-        let texture = Image::new(ctx, "/wabbit_alpha.png")?;
+        let texture = Image::from_path(ctx, "/wabbit_alpha.png", true)?;
         let mut bunnies = Vec::with_capacity(INITIAL_BUNNIES);
-        let max_x = (WIDTH - texture.width()) as f32;
-        let max_y = (HEIGHT - texture.height()) as f32;
+        let max_x = (WIDTH - texture.width() as u16) as f32;
+        let max_y = (HEIGHT - texture.height() as u16) as f32;
 
         for _ in 0..INITIAL_BUNNIES {
             bunnies.push(Bunny::new(&mut rng));
         }
 
-        let bunnybatch = SpriteBatch::new(texture.clone());
+        let bunnybatch = InstanceArray::new(ctx, texture.clone(), INITIAL_BUNNIES as u32, false);
 
         Ok(GameState {
             rng,
@@ -113,44 +115,42 @@ impl event::EventHandler<ggez::GameError> for GameState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, Color::from((0.392, 0.584, 0.929)));
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from((0.392, 0.584, 0.929)));
 
         if self.batched_drawing {
-            self.bunnybatch.clear();
-            for bunny in &self.bunnies {
-                self.bunnybatch.add((bunny.position,));
-            }
-            graphics::draw(ctx, &self.bunnybatch, (Vec2::new(0.0, 0.0),))?;
+            self.bunnybatch.set(
+                self.bunnies
+                    .iter()
+                    .map(|bunny| graphics::DrawParam::new().dest(bunny.position)),
+            );
+
+            canvas.draw(&self.bunnybatch, graphics::DrawParam::default());
         } else {
             for bunny in &self.bunnies {
-                graphics::draw(ctx, &self.texture, (bunny.position,))?;
+                canvas.draw(
+                    &self.texture,
+                    graphics::DrawParam::new().dest(bunny.position),
+                );
             }
         }
 
-        graphics::set_window_title(
-            ctx,
-            &format!(
-                "BunnyMark - {} bunnies - {:.0} FPS - batched drawing: {}",
-                self.bunnies.len(),
-                timer::fps(ctx),
-                self.batched_drawing
-            ),
-        );
-        graphics::present(ctx)?;
+        ctx.gfx.set_window_title(&format!(
+            "BunnyMark - {} bunnies - {:.0} FPS - batched drawing: {}",
+            self.bunnies.len(),
+            ctx.time.fps(),
+            self.batched_drawing
+        ));
+
+        canvas.finish(ctx)?;
 
         Ok(())
     }
 
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        keycode: event::KeyCode,
-        _keymods: event::KeyMods,
-        _repeat: bool,
-    ) {
-        if keycode == event::KeyCode::Space {
+    fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
+        if input.keycode == Some(keyboard::KeyCode::Space) {
             self.batched_drawing = !self.batched_drawing;
         }
+        Ok(())
     }
 
     fn mouse_button_down_event(
@@ -159,13 +159,14 @@ impl event::EventHandler<ggez::GameError> for GameState {
         button: input::mouse::MouseButton,
         _x: f32,
         _y: f32,
-    ) {
+    ) -> GameResult {
         if button == input::mouse::MouseButton::Left && self.click_timer == 0 {
             for _ in 0..INITIAL_BUNNIES {
                 self.bunnies.push(Bunny::new(&mut self.rng));
             }
             self.click_timer = 10;
         }
+        Ok(())
     }
 }
 

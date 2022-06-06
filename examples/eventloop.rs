@@ -2,8 +2,9 @@
 //! if for some reason you want to do that instead of using the `EventHandler`
 //! trait to do that for you.
 //!
-//! This is exactly how `ggez::event::run()` works, it really is not
-//! doing anything magical.  But, if you want a bit more power over
+//! This is how `ggez::event::run()` works, mostly, (if you want to see which parts were left out
+//! of this example, check [event.rs](https://github.com/ggez/ggez/blob/master/src/event.rs),
+//! it really is not doing anything magical.  But, if you want a bit more power over
 //! the control flow of your game, this is how you get it.
 //!
 //! It is functionally identical to the `super_simple.rs` example apart from that.
@@ -11,6 +12,7 @@
 use ggez::event;
 use ggez::event::winit_event::{Event, KeyboardInput, WindowEvent};
 use ggez::graphics::{self, Color, DrawMode};
+use ggez::input::keyboard;
 use ggez::GameResult;
 use winit::event_loop::ControlFlow;
 
@@ -22,6 +24,11 @@ pub fn main() -> GameResult {
 
     // Handle events. Refer to `winit` docs for more information.
     events_loop.run(move |mut event, _window_target, control_flow| {
+        let ctx = &mut ctx;
+
+        if ctx.quit_requested {
+            ctx.continuing = false;
+        }
         if !ctx.continuing {
             *control_flow = ControlFlow::Exit;
             return;
@@ -29,14 +36,12 @@ pub fn main() -> GameResult {
 
         *control_flow = ControlFlow::Poll;
 
-        let ctx = &mut ctx;
-
         // This tells `ggez` to update it's internal states, should the event require that.
         // These include cursor position, view updating on resize, etc.
         event::process_event(ctx, &mut event);
         match event {
             Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => event::quit(ctx),
+                WindowEvent::CloseRequested => event::request_quit(ctx),
                 WindowEvent::KeyboardInput {
                     input:
                         KeyboardInput {
@@ -45,8 +50,8 @@ pub fn main() -> GameResult {
                         },
                     ..
                 } => {
-                    if let event::KeyCode::Escape = keycode {
-                        *control_flow = winit::event_loop::ControlFlow::Exit
+                    if let keyboard::KeyCode::Escape = keycode {
+                        event::request_quit(ctx);
                     }
                 }
                 // `CloseRequested` and `KeyboardInput` events won't appear here.
@@ -55,13 +60,17 @@ pub fn main() -> GameResult {
             Event::MainEventsCleared => {
                 // Tell the timer stuff a frame has happened.
                 // Without this the FPS timer functions and such won't work.
-                ctx.timer_context.tick();
+                ctx.time.tick();
 
                 // Update
                 position += 1.0;
 
                 // Draw
-                graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+                ctx.gfx.begin_frame().unwrap();
+
+                let mut canvas =
+                    graphics::Canvas::from_frame(ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
+
                 let circle = graphics::Mesh::new_circle(
                     ctx,
                     DrawMode::fill(),
@@ -71,12 +80,22 @@ pub fn main() -> GameResult {
                     Color::WHITE,
                 )
                 .unwrap();
-                graphics::draw(ctx, &circle, (glam::Vec2::new(position, 380.0),)).unwrap();
-                graphics::present(ctx).unwrap();
+                canvas.draw(&circle, glam::Vec2::new(position, 380.0));
+
+                canvas.finish(ctx).unwrap();
+                ctx.gfx.end_frame().unwrap();
 
                 // reset the mouse delta for the next frame
                 // necessary because it's calculated cumulatively each cycle
-                ctx.mouse_context.reset_delta();
+                ctx.mouse.reset_delta();
+
+                // Copy the state of the keyboard into the KeyboardContext and
+                // the mouse into the MouseContext.
+                // Not required for this example but important if you want to
+                // use the functions keyboard::is_key_just_pressed/released and
+                // mouse::is_button_just_pressed/released.
+                ctx.keyboard.save_keyboard_state();
+                ctx.mouse.save_mouse_state();
 
                 ggez::timer::yield_now();
             }

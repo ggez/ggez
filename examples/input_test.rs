@@ -1,8 +1,9 @@
 //! Example that just prints out all the input events.
 
-use ggez::event::{self, Axis, Button, GamepadId, KeyCode, KeyMods, MouseButton};
+use ggez::conf;
+use ggez::event::{self, Axis, Button, GamepadId, MouseButton};
 use ggez::graphics::{self, Color, DrawMode};
-use ggez::{conf, input};
+use ggez::input::keyboard::{KeyCode, KeyInput};
 use ggez::{Context, GameResult};
 use glam::*;
 
@@ -24,21 +25,24 @@ impl MainState {
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if input::keyboard::is_key_pressed(ctx, KeyCode::A) {
+        if ctx.keyboard.is_key_pressed(KeyCode::A) {
             println!("The A key is pressed");
-            if input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::SHIFT) {
+            if ctx
+                .keyboard
+                .is_mod_active(ggez::input::keyboard::KeyMods::SHIFT)
+            {
                 println!("The shift key is held too.");
             }
             println!(
                 "Full list of pressed keys: {:?}",
-                input::keyboard::pressed_keys(ctx)
+                ctx.keyboard.pressed_keys()
             );
         }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
         let rectangle = graphics::Mesh::new_rectangle(
             ctx,
             DrawMode::fill(),
@@ -50,22 +54,43 @@ impl event::EventHandler<ggez::GameError> for MainState {
             },
             Color::WHITE,
         )?;
-        graphics::draw(ctx, &rectangle, (glam::Vec2::new(0.0, 0.0),))?;
-        graphics::present(ctx)?;
+        canvas.draw(&rectangle, glam::Vec2::new(0.0, 0.0));
+        canvas.finish(ctx)?;
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
+    ) -> GameResult {
         self.mouse_down = true;
         println!("Mouse button pressed: {:?}, x: {}, y: {}", button, x, y);
+        Ok(())
     }
 
-    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+    fn mouse_button_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
+    ) -> GameResult {
         self.mouse_down = false;
         println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
+        Ok(())
     }
 
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, xrel: f32, yrel: f32) {
+    fn mouse_motion_event(
+        &mut self,
+        _ctx: &mut Context,
+        x: f32,
+        y: f32,
+        xrel: f32,
+        yrel: f32,
+    ) -> GameResult {
         if self.mouse_down {
             // Mouse coordinates are PHYSICAL coordinates, but here we want logical coordinates.
 
@@ -87,54 +112,76 @@ impl event::EventHandler<ggez::GameError> for MainState {
             "Mouse motion, x: {}, y: {}, relative x: {}, relative y: {}",
             x, y, xrel, yrel
         );
+        Ok(())
     }
 
-    fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) {
+    fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) -> GameResult {
         println!("Mousewheel event, x: {}, y: {}", x, y);
+        Ok(())
     }
 
-    fn key_down_event(
+    fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, repeat: bool) -> GameResult {
+        println!(
+            "Key pressed: scancode {}, keycode {:?}, modifier {:?}, repeat: {}",
+            input.scancode, input.keycode, input.mods, repeat
+        );
+        Ok(())
+    }
+
+    fn key_up_event(&mut self, _ctx: &mut Context, input: KeyInput) -> GameResult {
+        println!(
+            "Key released: scancode {}, keycode {:?}, modifier {:?}",
+            input.scancode, input.keycode, input.mods
+        );
+        Ok(())
+    }
+
+    fn text_input_event(&mut self, _ctx: &mut Context, ch: char) -> GameResult {
+        println!("Text input: {}", ch);
+        Ok(())
+    }
+
+    fn gamepad_button_down_event(
         &mut self,
         _ctx: &mut Context,
-        keycode: KeyCode,
-        keymod: KeyMods,
-        repeat: bool,
-    ) {
-        println!(
-            "Key pressed: {:?}, modifier {:?}, repeat: {}",
-            keycode, keymod, repeat
-        );
-    }
-
-    fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, keymod: KeyMods) {
-        println!("Key released: {:?}, modifier {:?}", keycode, keymod);
-    }
-
-    fn text_input_event(&mut self, _ctx: &mut Context, ch: char) {
-        println!("Text input: {}", ch);
-    }
-
-    fn gamepad_button_down_event(&mut self, _ctx: &mut Context, btn: Button, id: GamepadId) {
+        btn: Button,
+        id: GamepadId,
+    ) -> GameResult {
         println!("Gamepad button pressed: {:?} Gamepad_Id: {:?}", btn, id);
+        Ok(())
     }
 
-    fn gamepad_button_up_event(&mut self, _ctx: &mut Context, btn: Button, id: GamepadId) {
+    fn gamepad_button_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        btn: Button,
+        id: GamepadId,
+    ) -> GameResult {
         println!("Gamepad button released: {:?} Gamepad_Id: {:?}", btn, id);
+        Ok(())
     }
 
-    fn gamepad_axis_event(&mut self, _ctx: &mut Context, axis: Axis, value: f32, id: GamepadId) {
+    fn gamepad_axis_event(
+        &mut self,
+        _ctx: &mut Context,
+        axis: Axis,
+        value: f32,
+        id: GamepadId,
+    ) -> GameResult {
         println!(
             "Axis Event: {:?} Value: {} Gamepad_Id: {:?}",
             axis, value, id
         );
+        Ok(())
     }
 
-    fn focus_event(&mut self, _ctx: &mut Context, gained: bool) {
+    fn focus_event(&mut self, _ctx: &mut Context, gained: bool) -> GameResult {
         if gained {
             println!("Focus gained");
         } else {
             println!("Focus lost");
         }
+        Ok(())
     }
 }
 

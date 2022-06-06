@@ -1,521 +1,643 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use gfx::traits::FactoryExt;
-use gfx::Factory;
-use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
-#[rustfmt::skip]
+use super::{
+    draw::DrawUniforms,
+    gpu::{
+        arc::{ArcBindGroup, ArcBuffer, ArcRenderPipeline, ArcShaderModule},
+        bind_group::{BindGroupBuilder, BindGroupCache},
+        growing::GrowingBufferArena,
+        pipeline::PipelineCache,
+        text::TextRenderer,
+    },
+    image::{Image, ImageFormat},
+    mesh::{Mesh, Vertex},
+    sampler::{Sampler, SamplerCache},
+    text::FontData,
+    MeshData, ScreenImage,
+};
+use crate::{
+    conf::{self, Backend, Conf, FullscreenType, WindowMode},
+    context::Has,
+    error::GameResult,
+    filesystem::Filesystem,
+    graphics::gpu::pipeline::RenderPipelineInfo,
+    GameError,
+};
 use ::image as imgcrate;
-use winit::{self, dpi};
+use crevice::std140::AsStd140;
+use glyph_brush::FontId;
+use std::{collections::HashMap, path::Path, sync::Arc};
+use typed_arena::Arena as TypedArena;
+use winit::{
+    self,
+    dpi::{self, PhysicalPosition},
+};
 
-use crate::conf::{FullscreenType, WindowMode, WindowSetup};
-use crate::context::DebugId;
-use crate::filesystem::Filesystem;
-use crate::graphics::*;
-
-use crate::error::GameResult;
-
-// Define the input struct for our MSAA resolve shader.
-gfx_defines! {
-    constant Fragments {
-        fragments: i32 = "u_frags",
-    }
+pub(crate) struct FrameContext {
+    pub cmd: wgpu::CommandEncoder,
+    pub present: Image,
+    pub arenas: FrameArenas,
+    pub frame: wgpu::SurfaceTexture,
+    pub frame_view: wgpu::TextureView,
 }
 
-/// A structure that contains graphics state.
-/// For instance,
-/// window info, DPI, rendering pipeline state, etc.
-///
-/// As an end-user you shouldn't ever have to touch this.
-pub(crate) struct GraphicsContextGeneric<B>
-where
-    B: BackendSpec,
-{
-    shader_globals: Globals,
-    pub(crate) projection: Matrix4,
-    pub(crate) white_image: ImageGeneric<B>,
-    pub(crate) screen_rect: Rect,
-    pub(crate) to_rgba8_buffer: gfx::handle::Buffer<B::Resources, u8>,
-    color_format: gfx::format::Format,
-    depth_format: gfx::format::Format,
-    srgb: bool,
-
-    pub(crate) backend_spec: B,
-    pub(crate) window: glutin::WindowedContext<glutin::PossiblyCurrent>,
-    pub(crate) multisample_samples: u8,
-    pub(crate) device: Box<B::Device>,
-    pub(crate) factory: Box<B::Factory>,
-    pub(crate) encoder: gfx::Encoder<B::Resources, B::CommandBuffer>,
-    pub(crate) screen_render_target: gfx::handle::RawRenderTargetView<B::Resources>,
-    #[allow(dead_code)]
-    pub(crate) depth_view: gfx::handle::RawDepthStencilView<B::Resources>,
-
-    pub(crate) data: pipe::Data<B::Resources>,
-    pub(crate) quad_slice: gfx::Slice<B::Resources>,
-    pub(crate) quad_vertex_buffer: gfx::handle::Buffer<B::Resources, Vertex>,
-
-    pub(crate) default_sampler_info: texture::SamplerInfo,
-    pub(crate) samplers: SamplerCache<B>,
-
-    default_shader: ShaderId,
-    pub(crate) resolve_shader: ShaderGeneric<B, Fragments>,
-    pub(crate) current_shader: Rc<RefCell<Option<ShaderId>>>,
-    pub(crate) shaders: Vec<Box<dyn ShaderHandle<B>>>,
-
-    pub(crate) glyph_brush: Rc<RefCell<GlyphBrush<DrawParam>>>,
-    pub(crate) glyph_cache: ImageGeneric<B>,
-    pub(crate) glyph_state: Rc<RefCell<spritebatch::SpriteBatch>>,
+#[derive(Default)]
+pub(crate) struct FrameArenas {
+    pub buffers: TypedArena<ArcBuffer>,
+    pub render_pipelines: TypedArena<ArcRenderPipeline>,
+    pub bind_groups: TypedArena<ArcBindGroup>,
 }
 
-impl<B> fmt::Debug for GraphicsContextGeneric<B>
-where
-    B: BackendSpec,
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "<GraphicsContext: {:p}>", self)
-    }
+/// WGPU graphics context objects.
+#[derive(Debug)]
+#[allow(missing_docs)]
+pub struct WgpuContext {
+    pub instance: wgpu::Instance,
+    pub surface: wgpu::Surface,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
 }
 
-/// A concrete graphics context for GL rendering.
-pub(crate) type GraphicsContext = GraphicsContextGeneric<GlBackendSpec>;
+/// A concrete graphics context for WGPU rendering.
+#[allow(missing_debug_implementations)]
+pub struct GraphicsContext {
+    pub(crate) wgpu: Arc<WgpuContext>,
 
-impl GraphicsContextGeneric<GlBackendSpec> {
-    /// Create a new GraphicsContext
+    pub(crate) window: winit::window::Window,
+    pub(crate) surface_format: wgpu::TextureFormat,
+
+    pub(crate) bind_group_cache: BindGroupCache,
+    pub(crate) pipeline_cache: PipelineCache,
+    pub(crate) sampler_cache: SamplerCache,
+
+    pub(crate) vsync: bool,
+    pub(crate) window_mode: WindowMode,
+    pub(crate) frame: Option<ScreenImage>,
+    pub(crate) frame_msaa: Option<ScreenImage>,
+    pub(crate) frame_image: Option<Image>,
+    pub(crate) frame_msaa_image: Option<Image>,
+
+    pub(crate) fcx: Option<FrameContext>,
+    pub(crate) text: TextRenderer,
+    pub(crate) fonts: HashMap<String, FontId>,
+    pub(crate) staging_belt: wgpu::util::StagingBelt,
+    pub(crate) uniform_arena: GrowingBufferArena,
+    pub(crate) local_pool: futures::executor::LocalPool,
+    pub(crate) local_spawner: futures::executor::LocalSpawner,
+
+    pub(crate) draw_shader: ArcShaderModule,
+    pub(crate) instance_shader: ArcShaderModule,
+    pub(crate) instance_unordered_shader: ArcShaderModule,
+    pub(crate) text_shader: ArcShaderModule,
+    pub(crate) copy_shader: ArcShaderModule,
+    pub(crate) rect_mesh: Mesh,
+    pub(crate) white_image: Image,
+}
+
+impl GraphicsContext {
+    #[allow(unsafe_code)]
     pub(crate) fn new(
+        event_loop: &winit::event_loop::EventLoop<()>,
+        conf: &Conf,
         filesystem: &mut Filesystem,
-        events_loop: &winit::event_loop::EventLoop<()>,
-        window_setup: &WindowSetup,
-        window_mode: WindowMode,
-        backend: GlBackendSpec,
-        debug_id: DebugId,
     ) -> GameResult<Self> {
-        let srgb = window_setup.srgb;
-        let color_format = if srgb {
-            gfx::format::Format(
-                gfx::format::SurfaceType::R8_G8_B8_A8,
-                gfx::format::ChannelType::Srgb,
-            )
-        } else {
-            gfx::format::Format(
-                gfx::format::SurfaceType::R8_G8_B8_A8,
-                gfx::format::ChannelType::Unorm,
-            )
-        };
-        let depth_format = gfx::format::Format(
-            gfx::format::SurfaceType::D24_S8,
-            gfx::format::ChannelType::Unorm,
-        );
+        let instance = wgpu::Instance::new(match conf.backend {
+            Backend::Primary => wgpu::Backends::PRIMARY,
+            Backend::Secondary => wgpu::Backends::SECONDARY,
+            Backend::Vulkan => wgpu::Backends::VULKAN,
+            Backend::Metal => wgpu::Backends::METAL,
+            Backend::Dx12 => wgpu::Backends::DX12,
+            Backend::Dx11 => wgpu::Backends::DX11,
+            Backend::Gl => wgpu::Backends::GL,
+            Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
+        });
 
-        // WINDOW SETUP
-        let gl_builder = glutin::ContextBuilder::new()
-            .with_gl(glutin::GlRequest::Specific(
-                backend.api(),
-                backend.version_tuple(),
-            ))
-            .with_gl_profile(glutin::GlProfile::Core)
-            .with_multisampling(match window_setup.samples.into() {
-                // Fix for https://github.com/ggez/ggez/issues/552
-                // 1 isn't multisampling but glutin wants a 0 to disable it
-                1 => 0,
-                n => u16::from(n),
-            })
-            // 24 color bits, 8 alpha bits
-            .with_pixel_format(24, 8)
-            .with_vsync(window_setup.vsync);
-
-        let window_size = dpi::PhysicalSize::<f64>::from((window_mode.width, window_mode.height));
+        let physical_size =
+            dpi::PhysicalSize::<f64>::from((conf.window_mode.width, conf.window_mode.height));
+        assert!(physical_size.width >= 1.0 && physical_size.height >= 1.0); // wgpu needs surfaces > 0
         let mut window_builder = winit::window::WindowBuilder::new()
-            .with_title(window_setup.title.clone())
-            .with_inner_size(window_size)
-            .with_resizable(window_mode.resizable)
-            .with_visible(window_mode.visible);
+            .with_title(conf.window_setup.title.clone())
+            .with_inner_size(physical_size)
+            .with_resizable(conf.window_mode.resizable)
+            .with_visible(conf.window_mode.visible)
+            .with_transparent(conf.window_mode.transparent);
 
-        // We need to disable drag-and-drop on windows for multithreaded stuff like cpal to work.
-        // See winit bug here: https://github.com/rust-windowing/winit/pull/1524
         #[cfg(target_os = "windows")]
         {
             use winit::platform::windows::WindowBuilderExtWindows;
             window_builder = window_builder.with_drag_and_drop(false);
         }
 
-        window_builder = if !window_setup.icon.is_empty() {
-            let icon = load_icon(window_setup.icon.as_ref(), filesystem)?;
+        window_builder = if !conf.window_setup.icon.is_empty() {
+            let icon = load_icon(conf.window_setup.icon.as_ref(), filesystem)?;
             window_builder.with_window_icon(Some(icon))
         } else {
             window_builder
         };
 
-        let (window, device, mut factory, screen_render_target, depth_view) = backend.init(
-            window_builder,
-            gl_builder,
-            events_loop,
-            color_format,
-            depth_format,
-        )?;
+        let window = window_builder.build(event_loop)?;
+        let surface = unsafe { instance.create_surface(&window) };
 
-        // see winit #548 about DPI.
-        // We basically ignore it and if it's wrong, that's a winit bug
-        // since we have no good control over it.
-        {
-            // Log a bunch of OpenGL state info pulled out of winit and gfx
-            let scale_factor = window.window().scale_factor();
-            let dpi::LogicalSize::<f32> {
-                width: w,
-                height: h,
-            } = window.window().outer_size().to_logical(scale_factor);
-            let dpi::LogicalSize::<f32> {
-                width: dw,
-                height: dh,
-            } = window.window().inner_size().to_logical(scale_factor);
-            debug!(
-                "Window created, desired size {}x{}, scale factor {}.",
-                window_mode.width, window_mode.height, scale_factor
-            );
-            let (major, minor) = backend.version_tuple();
-            debug!(
-                "  Window logical outer size: {}x{}, logical drawable size: {}x{}",
-                w, h, dw, dh
-            );
-            let device_info = backend.info(&device);
-            debug!(
-                "  Asked for   : {:?} {}.{} Core, vsync: {}",
-                backend.api(),
-                major,
-                minor,
-                window_setup.vsync
-            );
-            debug!("  Actually got: {}", device_info);
-        }
+        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            force_fallback_adapter: false,
+            compatible_surface: Some(&surface),
+        }))
+        .ok_or_else(|| {
+            GameError::RenderError(String::from("failed to find suitable graphics adapter"))
+        })?;
+        let (device, queue) = pollster::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: wgpu::Features::default(),
+                limits: wgpu::Limits::default(),
+            },
+            None,
+        ))?;
 
-        // GFX SETUP
-        let mut encoder = GlBackendSpec::encoder(&mut factory);
+        let wgpu = Arc::new(WgpuContext {
+            instance,
+            surface,
+            device,
+            queue,
+        });
 
-        let blend_modes = [
-            BlendMode::Alpha,
-            BlendMode::Add,
-            BlendMode::Subtract,
-            BlendMode::Invert,
-            BlendMode::Multiply,
-            BlendMode::Replace,
-            BlendMode::Lighten,
-            BlendMode::Darken,
-            BlendMode::Premultiplied,
-        ];
-        let multisample_samples = window_setup.samples.into();
-        let (vs_text, fs_text, fs_resolve_text) = backend.shaders();
-        let (shader, draw) = create_shader(
-            vs_text,
-            fs_text,
-            EmptyConst,
-            "Empty",
-            &mut encoder,
-            &mut factory,
-            multisample_samples,
-            Some(&blend_modes[..]),
-            color_format,
-            debug_id,
-        )?;
-        let (mut resolve_shader, mut resolve_draw) = create_shader(
-            vs_text,
-            fs_resolve_text,
-            Fragments { fragments: 1 },
-            "Fragments",
-            &mut encoder,
-            &mut factory,
-            1,
-            Some(&[BlendMode::Replace]),
-            color_format,
-            debug_id,
-        )?;
+        let surface_format = wgpu.surface.get_preferred_format(&adapter).unwrap(/* invariant */);
+        let size = window.inner_size();
+        wgpu.surface.configure(
+            &wgpu.device,
+            &wgpu::SurfaceConfiguration {
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                format: surface_format,
+                width: size.width,
+                height: size.height,
+                present_mode: if conf.window_setup.vsync {
+                    wgpu::PresentMode::Fifo
+                } else {
+                    wgpu::PresentMode::Mailbox
+                },
+            },
+        );
 
-        resolve_shader.id = 1;
-        resolve_draw.set_blend_mode(BlendMode::Replace)?;
+        let bind_group_cache = BindGroupCache::new();
+        let pipeline_cache = PipelineCache::new();
+        let sampler_cache = SamplerCache::new();
 
-        let rect_inst_props = factory.create_buffer(
-            1,
-            gfx::buffer::Role::Vertex,
-            gfx::memory::Usage::Dynamic,
-            gfx::memory::Bind::SHADER_RESOURCE,
-        )?;
+        let text = TextRenderer::new(&wgpu.device);
 
-        let (quad_vertex_buffer, mut quad_slice) =
-            factory.create_vertex_buffer_with_slice(&QUAD_VERTS, &QUAD_INDICES[..]);
+        let staging_belt = wgpu::util::StagingBelt::new(1024);
+        let uniform_arena = GrowingBufferArena::new(
+            &wgpu.device,
+            wgpu.device.limits().min_uniform_buffer_offset_alignment as u64,
+            wgpu::BufferDescriptor {
+                label: None,
+                size: 4096 * DrawUniforms::std140_size_static() as u64,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            },
+        );
+        let local_pool = futures::executor::LocalPool::new();
+        let local_spawner = local_pool.spawner();
 
-        quad_slice.instances = Some((1, 0));
-
-        let to_rgba8_buffer = factory.create_download_buffer::<u8>(1)?;
-
-        let globals_buffer = factory.create_constant_buffer(1);
-        let mut samplers: SamplerCache<GlBackendSpec> = SamplerCache::new();
-        let sampler_info =
-            texture::SamplerInfo::new(texture::FilterMethod::Bilinear, texture::WrapMode::Clamp);
-        let sampler = samplers.get_or_insert(sampler_info, &mut factory);
-        let white_image = ImageGeneric::make_raw(
-            &mut factory,
-            &sampler_info,
-            1,
-            1,
-            &[255, 255, 255, 255],
-            color_format,
-            debug_id,
-        )?;
-        let texture = white_image.texture.clone();
-        let typed_thingy = backend.raw_to_typed_shader_resource(texture);
-
-        let data = pipe::Data {
-            vbuf: quad_vertex_buffer.clone(),
-            tex: (typed_thingy, sampler),
-            rect_instance_properties: rect_inst_props,
-            globals: globals_buffer,
-            out: screen_render_target.clone(),
-        };
-
-        // Glyph cache stuff.
-        let font_vec = glyph_brush::ab_glyph::FontArc::try_from_slice(Font::default_font_bytes())
-            .expect("Invalid default font bytes, should never happen");
-        let glyph_brush = GlyphBrushBuilder::using_font(font_vec).build();
-        let (glyph_cache_width, glyph_cache_height) = glyph_brush.texture_dimensions();
-        let initial_contents = vec![
-            255;
-            4 * usize::try_from(glyph_cache_width).unwrap()
-                * usize::try_from(glyph_cache_height).unwrap()
-        ];
-        let glyph_cache = ImageGeneric::make_raw(
-            &mut factory,
-            &sampler_info,
-            glyph_cache_width.try_into().unwrap(),
-            glyph_cache_height.try_into().unwrap(),
-            &initial_contents,
-            color_format,
-            debug_id,
-        )?;
-        let glyph_state = Rc::new(RefCell::new(spritebatch::SpriteBatch::new(
-            glyph_cache.clone(),
-        )));
-
-        // Set initial uniform values
-        let left = 0.0;
-        let right = window_mode.width;
-        let top = 0.0;
-        let bottom = window_mode.height;
-        let initial_projection = Matrix4::IDENTITY; // not the actual initial projection matrix, just placeholder
-        let globals = Globals {
-            mvp_matrix: initial_projection.to_cols_array_2d(),
-        };
-
-        let mut gfx = Self {
-            shader_globals: globals,
-            projection: initial_projection,
-            white_image,
-            screen_rect: Rect::new(left, top, right - left, bottom - top),
-            to_rgba8_buffer,
-            color_format,
-            depth_format,
-            srgb,
-
-            backend_spec: backend,
-            window,
-            multisample_samples,
-            device: Box::new(device as <GlBackendSpec as BackendSpec>::Device),
-            factory: Box::new(factory as <GlBackendSpec as BackendSpec>::Factory),
-            encoder,
-            screen_render_target,
-            depth_view,
-
-            data,
-            quad_slice,
-            quad_vertex_buffer,
-
-            default_sampler_info: sampler_info,
-            samplers,
-
-            default_shader: shader.shader_id(),
-            resolve_shader,
-            current_shader: Rc::new(RefCell::new(None)),
-            shaders: vec![draw, resolve_draw],
-
-            glyph_brush: Rc::new(RefCell::new(glyph_brush)),
-            glyph_cache,
-            glyph_state,
-        };
-        gfx.set_window_mode(window_mode)?;
-
-        // Calculate and apply the actual initial projection matrix
-        let w = window_mode.width;
-        let h = window_mode.height;
-        let rect = Rect {
-            x: 0.0,
-            y: 0.0,
-            w,
-            h,
-        };
-        gfx.set_projection_rect(rect);
-        gfx.set_global_mvp(Matrix4::IDENTITY)?;
-        Ok(gfx)
-    }
-}
-
-// This is kinda awful 'cause it copies a couple times,
-// but still better than
-// having `winit` try to do the image loading for us.
-// see https://github.com/tomaka/winit/issues/661
-pub(crate) fn load_icon(
-    icon_file: &Path,
-    filesystem: &mut Filesystem,
-) -> GameResult<winit::window::Icon> {
-    use imgcrate::GenericImageView;
-    use std::io::Read;
-    use winit::window::Icon;
-
-    let mut buf = Vec::new();
-    let mut reader = filesystem.open(icon_file)?;
-    let _ = reader.read_to_end(&mut buf)?;
-    let i = imgcrate::load_from_memory(&buf)?;
-    let image_data = i.to_rgba8();
-    Icon::from_rgba(image_data.to_vec(), i.width(), i.height()).map_err(|e| {
-        let msg = format!("Could not load icon: {:?}", e);
-        GameError::ResourceLoadError(msg)
-    })
-}
-
-impl<B> GraphicsContextGeneric<B>
-where
-    B: BackendSpec + 'static,
-{
-    /// Sends the current value of the graphics context's shader globals
-    /// to the graphics card.
-    pub(crate) fn update_globals(&mut self) -> GameResult {
-        self.encoder
-            .update_buffer(&self.data.globals, &[self.shader_globals], 0)?;
-        Ok(())
-    }
-
-    /// Sets the shader MVP matrix to the current projection multiplied by
-    /// the given matrix, and updates the uniform buffer.
-    pub(crate) fn set_global_mvp(&mut self, matrix: Matrix4) -> GameResult {
-        let mvp = self.projection * matrix;
-        self.shader_globals.mvp_matrix = mvp.to_cols_array_2d();
-        self.update_globals()
-    }
-
-    /// Converts the given `DrawParam` into an `InstanceProperties` object and
-    /// sends it to the graphics card at the front of the instance buffer.
-    pub(crate) fn update_instance_properties(&mut self, draw_params: DrawParam) -> GameResult {
-        let mut new_draw_params = draw_params;
-        new_draw_params.color = draw_params.color;
-        let properties = new_draw_params.to_instance_properties(self.srgb);
-        self.encoder
-            .update_buffer(&self.data.rect_instance_properties, &[properties], 0)?;
-        Ok(())
-    }
-
-    /// Draws with the current encoder, slice, and pixel shader. Prefer calling
-    /// this method from `Drawables` so that the pixel shader gets used
-    pub(crate) fn draw(&mut self, slice: Option<&gfx::Slice<B::Resources>>) -> GameResult {
-        let slice = slice.unwrap_or(&self.quad_slice);
-        let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
-        let shader_handle = &self.shaders[id];
-
-        shader_handle.draw(&mut self.encoder, slice, &self.data)?;
-        Ok(())
-    }
-
-    /// Sets the blend mode of the active shader
-    pub(crate) fn set_blend_mode(&mut self, mode: BlendMode) -> GameResult {
-        let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
-        let shader_handle = &mut self.shaders[id];
-        shader_handle.set_blend_mode(mode)
-    }
-
-    /// Gets the current blend mode of the active shader
-    pub(crate) fn blend_mode(&self) -> BlendMode {
-        let id = (*self.current_shader.borrow()).unwrap_or(self.default_shader);
-        let shader_handle = &self.shaders[id];
-        shader_handle.blend_mode()
-    }
-
-    /// Shortcut function to set the projection matrix to an
-    /// orthographic projection based on the given `Rect`.
-    ///
-    /// Call `update_globals()` to apply it after calling this.
-    pub(crate) fn set_projection_rect(&mut self, rect: Rect) {
-        /// Creates an orthographic projection matrix.
-        /// Because nalgebra gets frumple when you try to make
-        /// one that is upside-down.
-        /// This is fixed now (issue here: https://github.com/rustsim/nalgebra/issues/365)
-        /// but removing this kinda isn't worth it.
-        fn ortho(
-            left: f32,
-            right: f32,
-            top: f32,
-            bottom: f32,
-            far: f32,
-            near: f32,
-        ) -> [[f32; 4]; 4] {
-            let c0r0 = 2.0 / (right - left);
-            let c0r1 = 0.0;
-            let c0r2 = 0.0;
-            let c0r3 = 0.0;
-
-            let c1r0 = 0.0;
-            let c1r1 = 2.0 / (top - bottom);
-            let c1r2 = 0.0;
-            let c1r3 = 0.0;
-
-            let c2r0 = 0.0;
-            let c2r1 = 0.0;
-            let c2r2 = -2.0 / (far - near);
-            let c2r3 = 0.0;
-
-            let c3r0 = -(right + left) / (right - left);
-            let c3r1 = -(top + bottom) / (top - bottom);
-            let c3r2 = -(far + near) / (far - near);
-            let c3r3 = 1.0;
-
-            // our matrices are column-major, so here we are.
-            [
-                [c0r0, c0r1, c0r2, c0r3],
-                [c1r0, c1r1, c1r2, c1r3],
-                [c2r0, c2r1, c2r2, c2r3],
-                [c3r0, c3r1, c3r2, c3r3],
-            ]
-        }
-
-        self.screen_rect = rect;
-        self.projection = Matrix4::from_cols_array_2d(&ortho(
-            rect.x,
-            rect.x + rect.w,
-            rect.y,
-            rect.y + rect.h,
-            -1.0,
-            1.0,
+        let draw_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            &wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/draw.wgsl").into()),
+            },
         ));
+
+        let instance_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            &wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance.wgsl").into()),
+            },
+        ));
+
+        let instance_unordered_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            &wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(
+                    include_str!("shader/instance_unordered.wgsl").into(),
+                ),
+            },
+        ));
+
+        let text_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            &wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/text.wgsl").into()),
+            },
+        ));
+
+        let copy_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
+            &wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/copy.wgsl").into()),
+            },
+        ));
+
+        let rect_mesh = Mesh::from_data_wgpu(
+            &wgpu,
+            MeshData {
+                vertices: &[
+                    Vertex {
+                        position: [0., 0.],
+                        uv: [0., 0.],
+                        color: [1.; 4],
+                    },
+                    Vertex {
+                        position: [1., 0.],
+                        uv: [1., 0.],
+                        color: [1.; 4],
+                    },
+                    Vertex {
+                        position: [0., 1.],
+                        uv: [0., 1.],
+                        color: [1.; 4],
+                    },
+                    Vertex {
+                        position: [1., 1.],
+                        uv: [1., 1.],
+                        color: [1.; 4],
+                    },
+                ],
+                indices: &[0, 2, 1, 2, 3, 1],
+            },
+        );
+
+        let white_image =
+            Image::from_pixels_wgpu(&wgpu, &[255, 255, 255, 255], ImageFormat::Rgba8Unorm, 1, 1);
+
+        let mut this = GraphicsContext {
+            wgpu,
+
+            window,
+            surface_format,
+
+            bind_group_cache,
+            pipeline_cache,
+            sampler_cache,
+
+            vsync: conf.window_setup.vsync,
+            window_mode: conf.window_mode,
+            frame: None,
+            frame_msaa: None,
+            frame_image: None,
+            frame_msaa_image: None,
+
+            fcx: None,
+            text,
+            fonts: HashMap::new(),
+            staging_belt,
+            uniform_arena,
+            local_pool,
+            local_spawner,
+
+            draw_shader,
+            instance_shader,
+            instance_unordered_shader,
+            text_shader,
+            copy_shader,
+            rect_mesh,
+            white_image,
+        };
+
+        this.set_window_mode(&conf.window_mode)?;
+
+        this.frame = Some(ScreenImage::new(&this, None, 1., 1., 1));
+        this.frame_msaa = Some(ScreenImage::new(
+            &this,
+            None,
+            1.,
+            1.,
+            u8::from(conf.window_setup.samples).into(),
+        ));
+        this.update_frame_image();
+
+        this.add_font(
+            "LiberationMono-Regular",
+            FontData::from_slice(include_bytes!("../../resources/LiberationMono-Regular.ttf"))?,
+        );
+
+        Ok(this)
     }
 
-    /// Sets the raw projection matrix to the given Matrix.
+    /// Returns a reference to the underlying WGPU context.
+    #[inline]
+    pub fn wgpu(&self) -> &WgpuContext {
+        &self.wgpu
+    }
+
+    /// Sets the image that will be presented to the screen at the end of the frame.
+    pub fn present(&mut self, image: &Image) -> GameResult {
+        if let Some(fcx) = &mut self.fcx {
+            fcx.present = image.clone();
+            Ok(())
+        } else {
+            Err(GameError::RenderError(String::from(
+                "cannot present outside of a frame",
+            )))
+        }
+    }
+
+    /// Adds a new `font` with a given `name`.
+    #[allow(unused_results)]
+    pub fn add_font(&mut self, name: &str, font: FontData) {
+        let id = self.text.glyph_brush.add_font(font.font);
+        self.fonts.insert(name.to_string(), id);
+    }
+
+    /// Returns the size of the window’s underlying drawable in physical pixels as (width, height).
+    pub fn drawable_size(&self) -> (f32, f32) {
+        let size = self.window.inner_size();
+        (size.width as f32, size.height as f32)
+    }
+
+    /// Sets the window size (in physical pixels) / resolution to the specified width and height.
     ///
-    /// Call `update_globals()` to apply after calling this.
-    pub(crate) fn set_projection(&mut self, mat: Matrix4) {
-        self.projection = mat;
+    /// Note:   These dimensions are only interpreted as resolutions in true fullscreen mode.
+    ///         If the selected resolution is not supported this function will return an Error.
+    pub fn set_drawable_size(&mut self, width: f32, height: f32) -> GameResult {
+        self.set_mode(self.window_mode.dimensions(width, height))
     }
 
-    /// Gets a copy of the raw projection matrix.
-    pub(crate) fn projection(&self) -> Matrix4 {
-        self.projection
+    /// Sets the window title.
+    pub fn set_window_title(&self, title: &str) {
+        self.window.set_title(title);
     }
 
-    /// Sets window mode from a WindowMode object.
-    pub(crate) fn set_window_mode(&mut self, mode: WindowMode) -> GameResult {
-        let window = self.window.window();
+    /// Returns the position of the system window, including the outer frame.
+    pub fn window_position(&self) -> GameResult<PhysicalPosition<i32>> {
+        self.window
+            .outer_position()
+            .map_err(|e| GameError::WindowError(e.to_string()))
+    }
+
+    /// Sets the window position.
+    pub fn set_window_position(&self, position: impl Into<winit::dpi::Position>) -> GameResult {
+        self.window.set_outer_position(position);
+        Ok(())
+    }
+
+    /// Returns the size of the window in pixels as (width, height),
+    /// including borders, titlebar, etc.
+    /// Returns zeros if the window doesn't exist.
+    pub fn size(&self) -> (f32, f32) {
+        let size = self.window.outer_size();
+        (size.width as f32, size.height as f32)
+    }
+
+    /// Returns an iterator providing all resolutions supported by the current monitor.
+    pub fn supported_resolutions(&self) -> impl Iterator<Item = winit::dpi::PhysicalSize<u32>> {
+        self.window
+            .current_monitor()
+            .unwrap()
+            .video_modes()
+            .map(|vm| vm.size())
+    }
+
+    /// Returns a reference to the Winit window.
+    #[inline]
+    pub fn window(&self) -> &winit::window::Window {
+        &self.window
+    }
+
+    /// Sets the window icon.
+    pub fn set_window_icon(
+        &mut self,
+        filesystem: &impl Has<Filesystem>,
+        path: Option<impl AsRef<Path>>,
+    ) -> GameResult {
+        let filesystem = filesystem.retrieve();
+        let icon = match path {
+            Some(p) => Some(load_icon(p.as_ref(), filesystem)?),
+            None => None,
+        };
+        self.window.set_window_icon(icon);
+        Ok(())
+    }
+
+    /// Sets the window to fullscreen or back.
+    pub fn set_fullscreen(&mut self, fullscreen: conf::FullscreenType) -> GameResult {
+        let window_mode = self.window_mode.fullscreen_type(fullscreen);
+        self.set_mode(window_mode)
+    }
+
+    /// Sets whether or not the window is resizable.
+    pub fn set_resizable(&mut self, resizable: bool) -> GameResult {
+        let window_mode = self.window_mode.resizable(resizable);
+        self.set_mode(window_mode)
+    }
+
+    /// Sets the window mode, such as the size and other properties.
+    ///
+    /// Setting the window mode may have side effects, such as clearing
+    /// the screen or setting the screen coordinates viewport to some
+    /// undefined value (for example, the window was resized).  It is
+    /// recommended to call
+    /// [`set_screen_coordinates()`](fn.set_screen_coordinates.html) after
+    /// changing the window size to make sure everything is what you want
+    /// it to be.
+    pub fn set_mode(&mut self, mut mode: WindowMode) -> GameResult {
+        let old_fullscreen = self.window_mode.fullscreen_type;
+        let result = self.set_window_mode(&mode);
+        if let Err(GameError::WindowError(_)) = result {
+            mode.fullscreen_type = old_fullscreen;
+        }
+        self.window_mode = mode;
+        result
+    }
+
+    /// Returns the default frame image.
+    ///
+    /// This is the image that is rendered to when `Canvas::from_frame` is used.
+    #[inline]
+    pub fn frame(&self) -> &Image {
+        self.frame_image.as_ref().unwrap(/* invariant */)
+    }
+
+    /// Returns the image format of the window surface.
+    #[inline]
+    pub fn surface_format(&self) -> ImageFormat {
+        self.surface_format
+    }
+
+    /// Returns the current [`wgpu::CommandEncoder`] if there is a frame in progress.
+    pub fn commands(&mut self) -> Option<&mut wgpu::CommandEncoder> {
+        self.fcx.as_mut().map(|fcx| &mut fcx.cmd)
+    }
+
+    /// Begins a new frame.
+    ///
+    /// The only situation you need to call this in is when you are rolling your own event loop.
+    pub fn begin_frame(&mut self) -> GameResult {
+        if self.fcx.is_some() {
+            return Err(GameError::RenderError(String::from(
+                "cannot begin a new frame while another frame is still in progress; call end_frame first",
+            )));
+        }
+
+        let size = self.window.inner_size();
+        let frame = match self.wgpu.surface.get_current_texture() {
+            Ok(frame) => Ok(frame),
+            Err(_) => {
+                self.wgpu.surface.configure(
+                    &self.wgpu.device,
+                    &wgpu::SurfaceConfiguration {
+                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                        format: self.surface_format,
+                        width: size.width.max(1),
+                        height: size.height.max(1),
+                        present_mode: if self.vsync {
+                            wgpu::PresentMode::Fifo
+                        } else {
+                            wgpu::PresentMode::Mailbox
+                        },
+                    },
+                );
+                self.wgpu.surface.get_current_texture().map_err(|_| {
+                    GameError::RenderError(String::from("failed to get next swapchain image"))
+                })
+            }
+        }?;
+        let frame_view = frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        self.fcx = Some(FrameContext {
+            cmd: self
+                .wgpu
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor::default()),
+            present: self.frame().clone(),
+            arenas: FrameArenas::default(),
+            frame,
+            frame_view,
+        });
+
+        self.uniform_arena.free();
+        self.text.free();
+
+        Ok(())
+    }
+
+    /// Ends the current frame.
+    ///
+    /// The only situation you need to call this in is when you are rolling your own event loop.
+    pub fn end_frame(&mut self) -> GameResult {
+        if let Some(mut fcx) = self.fcx.take() {
+            let mut present_pass = fcx.cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &fcx.frame_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            });
+
+            let sampler = &mut self
+                .sampler_cache
+                .get(&self.wgpu.device, Sampler::linear_clamp());
+
+            let (bind, layout) = BindGroupBuilder::new()
+                .image(&fcx.present.view, wgpu::ShaderStages::FRAGMENT)
+                .sampler(sampler, wgpu::ShaderStages::FRAGMENT)
+                .create(&self.wgpu.device, &mut self.bind_group_cache);
+
+            let layout = self.pipeline_cache.layout(&self.wgpu.device, &[layout]);
+            let copy = self.pipeline_cache.render_pipeline(
+                &self.wgpu.device,
+                &layout,
+                RenderPipelineInfo {
+                    vs: self.copy_shader.clone(),
+                    fs: self.copy_shader.clone(),
+                    vs_entry: "vs_main".into(),
+                    fs_entry: "fs_main".into(),
+                    samples: 1,
+                    format: self.surface_format,
+                    blend: None,
+                    depth: false,
+                    vertices: false,
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    vertex_layout: Vertex::layout(),
+                },
+            );
+
+            let copy = fcx.arenas.render_pipelines.alloc(copy);
+            let bind = fcx.arenas.bind_groups.alloc(bind);
+
+            present_pass.set_pipeline(copy);
+            present_pass.set_bind_group(0, bind, &[]);
+            present_pass.draw(0..3, 0..1);
+
+            std::mem::drop(present_pass);
+
+            self.staging_belt.finish();
+            self.wgpu.queue.submit([fcx.cmd.finish()]);
+            fcx.frame.present();
+
+            use futures::task::SpawnExt;
+            self.local_spawner.spawn(self.staging_belt.recall())?;
+            self.local_pool.run_until_stalled();
+
+            Ok(())
+        } else {
+            Err(GameError::RenderError(String::from(
+                "cannot end a frame as there was never one in progress; call begin_frame first",
+            )))
+        }
+    }
+
+    pub(crate) fn resize(&mut self, _new_size: dpi::PhysicalSize<u32>) {
+        let size = self.window.inner_size();
+        self.wgpu.device.poll(wgpu::Maintain::Wait);
+        self.wgpu.surface.configure(
+            &self.wgpu.device,
+            &wgpu::SurfaceConfiguration {
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                format: self.surface_format,
+                width: size.width.max(1),
+                height: size.height.max(1),
+                present_mode: if self.vsync {
+                    wgpu::PresentMode::Fifo
+                } else {
+                    wgpu::PresentMode::Mailbox
+                },
+            },
+        );
+        self.update_frame_image();
+    }
+
+    pub(crate) fn update_frame_image(&mut self) {
+        // Internally, GraphicsContext stores an intermediate image that is rendered to. Then, that frame image is rendered to the actual swapchain image.
+        // Moreover, one frame image is non-MSAA, whilst the other is MSAA.
+        // Since they're stored as ScreenImage, all this function does is store the corresponding Image returned by `ScreenImage::image()`.
+
+        let mut frame = self.frame.take().unwrap(/* invariant */);
+        self.frame_image = Some(frame.image(self));
+        self.frame = Some(frame);
+
+        let mut frame_msaa = self.frame_msaa.take().unwrap(/* invariant */);
+        self.frame_msaa_image = Some(frame_msaa.image(self));
+        self.frame_msaa = Some(frame_msaa);
+    }
+
+    pub(crate) fn set_window_mode(&mut self, mode: &WindowMode) -> GameResult {
+        let window = &mut self.window;
 
         // TODO LATER: find out if single-dimension constraints are possible?
-        let min_dimensions = if mode.min_width > 0.0 && mode.min_height > 0.0 {
+        let min_dimensions = if mode.min_width >= 1.0 && mode.min_height >= 1.0 {
             Some(dpi::PhysicalSize {
                 width: f64::from(mode.min_width),
                 height: f64::from(mode.min_height),
             })
         } else {
-            None
+            return Err(GameError::WindowError(format!(
+                "window min_width and min_height need to be at least 1; actual values: {}, {}",
+                mode.min_width, mode.min_height
+            )));
         };
         window.set_min_inner_size(min_dimensions);
 
@@ -534,10 +656,17 @@ where
             FullscreenType::Windowed => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
-                window.set_inner_size(dpi::PhysicalSize {
-                    width: f64::from(mode.width),
-                    height: f64::from(mode.height),
-                });
+                if mode.width >= 1.0 && mode.height >= 1.0 {
+                    window.set_inner_size(dpi::PhysicalSize {
+                        width: f64::from(mode.width),
+                        height: f64::from(mode.height),
+                    });
+                } else {
+                    return Err(GameError::WindowError(format!(
+                        "window width and height need to be at least 1; actual values: {}, {}",
+                        mode.width, mode.height
+                    )));
+                }
                 window.set_resizable(mode.resizable);
                 window.set_maximized(mode.maximized);
             }
@@ -573,41 +702,46 @@ where
             }
         }
 
+        let size = window.inner_size();
+        assert!(size.width > 0 && size.height > 0);
+
+        self.wgpu.surface.configure(
+            &self.wgpu.device,
+            &wgpu::SurfaceConfiguration {
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                format: self.surface_format,
+                width: size.width.max(1),
+                height: size.height.max(1),
+                present_mode: if self.vsync {
+                    wgpu::PresentMode::Fifo
+                } else {
+                    wgpu::PresentMode::Mailbox
+                },
+            },
+        );
+
         Ok(())
     }
+}
 
-    /// Communicates changes in the viewport size between glutin and gfx.
-    ///
-    /// Also replaces gfx.screen_render_target and gfx.depth_view,
-    /// so it may cause squirrelliness to
-    /// happen with canvases or other things that touch it.
-    pub(crate) fn resize_viewport(&mut self) {
-        if let Some((cv, dv)) = self.backend_spec.resize_viewport(
-            &self.screen_render_target,
-            &self.depth_view,
-            self.color_format(),
-            self.depth_format(),
-            &self.window,
-        ) {
-            self.screen_render_target = cv;
-            self.depth_view = dv;
-        }
-    }
+// This is kinda awful 'cause it copies a couple times,
+// but still better than
+// having `winit` try to do the image loading for us.
+// see https://github.com/tomaka/winit/issues/661
+pub(crate) fn load_icon(
+    icon_file: &Path,
+    filesystem: &Filesystem,
+) -> GameResult<winit::window::Icon> {
+    use std::io::Read;
+    use winit::window::Icon;
 
-    /// Returns the screen color format used by the context.
-    pub(crate) fn color_format(&self) -> gfx::format::Format {
-        self.color_format
-    }
-
-    /// Returns the screen depth format used by the context.
-    ///
-    pub(crate) fn depth_format(&self) -> gfx::format::Format {
-        self.depth_format
-    }
-
-    /// Simple shortcut to check whether the context's color
-    /// format is SRGB or not.
-    pub(crate) fn is_srgb(&self) -> bool {
-        self.color_format().1 == gfx::format::ChannelType::Srgb
-    }
+    let mut buf = Vec::new();
+    let mut reader = filesystem.open(icon_file)?;
+    let _ = reader.read_to_end(&mut buf)?;
+    let i = imgcrate::load_from_memory(&buf)?;
+    let image_data = i.to_rgba8();
+    Icon::from_rgba(image_data.to_vec(), i.width(), i.height()).map_err(|e| {
+        let msg = format!("Could not load icon: {:?}", e);
+        GameError::ResourceLoadError(msg)
+    })
 }

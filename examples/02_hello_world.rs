@@ -1,25 +1,21 @@
 //! Basic hello world example.
 
-use ggez::event;
-use ggez::graphics;
-use ggez::{Context, GameResult};
-use std::env;
-use std::path;
+use ggez::{event, graphics, Context, GameResult};
+use std::{env, path};
 
 // First we make a structure to contain the game's state
 struct MainState {
     frames: usize,
-    text: graphics::Text,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        // The ttf file will be in your resources directory. Later, we
-        // will mount that directory so we can omit it in the path here.
-        let font = graphics::Font::new(ctx, "/LiberationMono-Regular.ttf")?;
-        let text = graphics::Text::new(("Hello world!", font, 48.0));
+        ctx.gfx.add_font(
+            "LiberationMono",
+            graphics::FontData::from_path(ctx, "/LiberationMono-Regular.ttf")?,
+        );
 
-        let s = MainState { frames: 0, text };
+        let s = MainState { frames: 0 };
         Ok(s)
     }
 }
@@ -35,17 +31,26 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let mut canvas = graphics::Canvas::from_frame(
+            ctx,
+            graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
+        );
 
-        // Drawables are drawn from their top-left corner.
+        // Text is drawn from the top-left corner.
         let offset = self.frames as f32 / 10.0;
         let dest_point = glam::Vec2::new(offset, offset);
-        graphics::draw(ctx, &self.text, (dest_point,))?;
-        graphics::present(ctx)?;
+        canvas.draw(
+            graphics::Text::new("Hello, world!")
+                .set_font("LiberationMono")
+                .set_scale(48.),
+            dest_point,
+        );
+
+        canvas.finish(ctx)?;
 
         self.frames += 1;
         if (self.frames % 100) == 0 {
-            println!("FPS: {}", ggez::timer::fps(ctx));
+            println!("FPS: {}", ctx.time.fps());
         }
 
         Ok(())

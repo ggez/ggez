@@ -1,14 +1,18 @@
+//! The `context` module contains functions and traits related to using the `Context` type.
+
 use std::fmt;
 /// We re-export winit so it's easy for people to use the same version as we are
 /// without having to mess around figuring it out.
 pub use winit;
 
+#[cfg(feature = "audio")]
 use crate::audio;
 use crate::conf;
 use crate::error::GameResult;
 use crate::filesystem::Filesystem;
 use crate::graphics;
-use crate::input::{gamepad, keyboard, mouse};
+use crate::graphics::GraphicsContext;
+use crate::input;
 use crate::timer;
 
 /// A `Context` is an object that holds on to global resources.
@@ -20,49 +24,164 @@ use crate::timer;
 /// game's window.
 ///
 /// Most functions that interact with the hardware, for instance
-/// drawing things, playing sounds, or loading resources (which then
-/// need to be transformed into a format the hardware likes) will need
-/// to access the `Context`.  It is an error to create some type that
+/// drawing things, playing sounds, or loading resources will need
+/// to access one, or rarely even two, of its sub-contexts.
+/// It is an error to create some type that
 /// relies upon a `Context`, such as `Image`, and then drop the `Context`
-/// and try to draw the old `Image` with the new `Context`.  Most types
-/// include checks to make this panic in debug mode, but it's not perfect.
+/// and try to draw the old `Image` with the new `Context`.
 ///
-/// All fields in this struct are basically undocumented features,
+/// The fields in this struct used to be basically undocumented features,
 /// only here to make it easier to debug, or to let advanced users
 /// hook into the guts of ggez and make it do things it normally
-/// can't.  Most users shouldn't need to touch these things directly,
-/// since implementation details may change without warning.  The
-/// public and stable API is `ggez`'s module-level functions and
-/// types.
+/// can't. Now that `ggez`'s module-level functions, taking the whole `Context`
+/// have been deprecated, calling their methods directly is recommended.
 pub struct Context {
-    /// Filesystem state
-    pub filesystem: Filesystem,
-    /// Graphics state
-    pub(crate) gfx_context: crate::graphics::context::GraphicsContext,
-    /// Timer state
-    pub timer_context: timer::TimeContext,
-    /// Audio context
-    pub audio_context: Box<dyn audio::AudioContext>,
-    /// Keyboard context
-    pub keyboard_context: keyboard::KeyboardContext,
-    /// Mouse context
-    pub mouse_context: mouse::MouseContext,
-    /// Gamepad context
-    pub gamepad_context: Box<dyn gamepad::GamepadContext>,
+    /// Filesystem state.
+    pub fs: Filesystem,
+    /// Graphics state.
+    pub gfx: GraphicsContext,
+    /// Timer state.
+    pub time: timer::TimeContext,
+    /// Audio context.
+    #[cfg(feature = "audio")]
+    pub audio: audio::AudioContext,
+    /// Keyboard input context.
+    pub keyboard: input::keyboard::KeyboardContext,
+    /// Mouse input context.
+    pub mouse: input::mouse::MouseContext,
+    /// Gamepad input context.
+    #[cfg(feature = "gamepad")]
+    pub gamepad: input::gamepad::GamepadContext,
 
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
     /// updating it will have no effect.
     pub(crate) conf: conf::Conf,
     /// Controls whether or not the event loop should be running.
-    /// Set this with `ggez::event::quit()`.
+    /// This is internally controlled by the outcome of [`quit_event`](crate::event::EventHandler::quit_event), requested through [`event::request_quit()`](crate::event::request_quit).
     pub continuing: bool,
+    /// Whether or not a `quit_event` has been requested.
+    /// Set this with [`ggez::event::request_quit()`](crate::event::request_quit).
+    ///
+    /// It's exposed here for people who want to roll their own event loop.
+    pub quit_requested: bool,
+}
 
-    /// Context-specific unique ID.
-    /// Compiles to nothing in release mode, and so
-    /// vanishes; meanwhile we get dead-code warnings.
-    #[allow(dead_code)]
-    debug_id: DebugId,
+// This is ugly and hacky but greatly improves ergonomics.
+
+/// Used to represent types that can provide a certain context type.
+///
+/// If you don't know what this is, you most likely want to pass `ctx`.
+///
+/// This trait is basically syntactical sugar, saving you from having
+/// to split contexts when you don't need to and also shortening calls like
+/// ```rust
+/// # use ggez::GameResult;
+/// # fn t(ctx: &mut ggez::Context, canvas: ggez::graphics::Canvas) -> GameResult {
+/// canvas.finish(&mut ctx.gfx)?;
+/// # Ok(())
+/// # }
+/// ```
+/// into just
+/// ```rust
+/// # use ggez::GameResult;
+/// # fn t(ctx: &mut ggez::Context, canvas: ggez::graphics::Canvas) -> GameResult {
+/// canvas.finish(ctx)?;
+/// # Ok(())
+/// # }
+/// ```
+pub trait Has<T> {
+    /// Method to retrieve the context type.
+    fn retrieve(&self) -> &T;
+}
+
+impl<T> Has<T> for T {
+    #[inline]
+    fn retrieve(&self) -> &T {
+        self
+    }
+}
+
+impl Has<Filesystem> for Context {
+    #[inline]
+    fn retrieve(&self) -> &Filesystem {
+        &self.fs
+    }
+}
+
+impl Has<GraphicsContext> for Context {
+    #[inline]
+    fn retrieve(&self) -> &GraphicsContext {
+        &self.gfx
+    }
+}
+
+#[cfg(feature = "audio")]
+impl Has<audio::AudioContext> for Context {
+    #[inline]
+    fn retrieve(&self) -> &audio::AudioContext {
+        &self.audio
+    }
+}
+
+/// Used to represent types that can provide a certain context type in a mutable form.
+/// See also [`Has<T>`].
+///
+/// If you don't know what this is, you most likely want to pass `ctx`.
+pub trait HasMut<T> {
+    /// Method to retrieve the context type as mutable.
+    fn retrieve_mut(&mut self) -> &mut T;
+}
+
+impl<T> HasMut<T> for T {
+    #[inline]
+    fn retrieve_mut(&mut self) -> &mut T {
+        self
+    }
+}
+
+impl HasMut<GraphicsContext> for Context {
+    #[inline]
+    fn retrieve_mut(&mut self) -> &mut GraphicsContext {
+        &mut self.gfx
+    }
+}
+
+/// Used to represent types that can provide two context types. See also [`Has<T>`].
+///
+/// If you don't know what this is, you most likely want to pass `ctx`.
+pub trait HasTwo<T, U> {
+    /// Method to retrieve the first context type.
+    fn retrieve_first(&self) -> &T;
+    /// Method to retrieve the second context type.
+    fn retrieve_second(&self) -> &U;
+}
+
+impl<T, U> HasTwo<T, U> for Context
+where
+    Context: Has<T> + Has<U>,
+{
+    #[inline]
+    fn retrieve_first(&self) -> &T {
+        Has::<T>::retrieve(self)
+    }
+
+    #[inline]
+    fn retrieve_second(&self) -> &U {
+        Has::<U>::retrieve(self)
+    }
+}
+
+impl<T, U> HasTwo<T, U> for (&T, &U) {
+    #[inline]
+    fn retrieve_first(&self) -> &T {
+        self.0
+    }
+
+    #[inline]
+    fn retrieve_second(&self) -> &U {
+        self.1
+    }
 }
 
 impl fmt::Debug for Context {
@@ -78,43 +197,26 @@ impl Context {
         conf: conf::Conf,
         mut fs: Filesystem,
     ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
-        let debug_id = DebugId::new();
-        let audio_context: Box<dyn audio::AudioContext> = if conf.modules.audio {
-            Box::new(audio::RodioAudioContext::new()?)
-        } else {
-            Box::new(audio::NullAudioContext::default())
-        };
+        #[cfg(feature = "audio")]
+        let audio_context = audio::AudioContext::new()?;
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
-        let backend_spec = graphics::GlBackendSpec::from(conf.backend);
-        let graphics_context = graphics::context::GraphicsContext::new(
-            &mut fs,
-            &events_loop,
-            &conf.window_setup,
-            conf.window_mode,
-            backend_spec,
-            debug_id,
-        )?;
-        let mouse_context = mouse::MouseContext::new();
-        let keyboard_context = keyboard::KeyboardContext::new();
-        let gamepad_context: Box<dyn gamepad::GamepadContext> = if conf.modules.gamepad {
-            Box::new(gamepad::GilrsGamepadContext::new()?)
-        } else {
-            Box::new(gamepad::NullGamepadContext::default())
-        };
+        let graphics_context =
+            graphics::context::GraphicsContext::new(&events_loop, &conf, &mut fs)?;
 
         let ctx = Context {
             conf,
-            filesystem: fs,
-            gfx_context: graphics_context,
+            fs,
+            gfx: graphics_context,
             continuing: true,
-            timer_context,
-            audio_context,
-            keyboard_context,
-            gamepad_context,
-            mouse_context,
-
-            debug_id,
+            quit_requested: false,
+            time: timer_context,
+            #[cfg(feature = "audio")]
+            audio: audio_context,
+            keyboard: input::keyboard::KeyboardContext::new(),
+            mouse: input::mouse::MouseContext::new(),
+            #[cfg(feature = "gamepad")]
+            gamepad: input::gamepad::GamepadContext::new()?,
         };
 
         Ok((ctx, events_loop))
@@ -153,26 +255,23 @@ impl ContextBuilder {
     }
 
     /// Sets the window setup settings.
+    #[must_use]
     pub fn window_setup(mut self, setup: conf::WindowSetup) -> Self {
         self.conf.window_setup = setup;
         self
     }
 
     /// Sets the window mode settings.
+    #[must_use]
     pub fn window_mode(mut self, mode: conf::WindowMode) -> Self {
         self.conf.window_mode = mode;
         self
     }
 
     /// Sets the graphics backend.
+    #[must_use]
     pub fn backend(mut self, backend: conf::Backend) -> Self {
         self.conf.backend = backend;
-        self
-    }
-
-    /// Sets the modules configuration.
-    pub fn modules(mut self, modules: conf::ModuleConf) -> Self {
-        self.conf.modules = modules;
         self
     }
 
@@ -182,6 +281,7 @@ impl ContextBuilder {
     /// [`backend()`](#method.backend).  These are used as
     /// defaults and are overridden by any external config
     /// file found.
+    #[must_use]
     pub fn default_conf(mut self, conf: conf::Conf) -> Self {
         self.conf = conf;
         self
@@ -189,6 +289,7 @@ impl ContextBuilder {
 
     /// Sets resources dir name.
     /// Default resources dir name is `resources`.
+    #[must_use]
     pub fn resources_dir_name(mut self, new_name: impl ToString) -> Self {
         self.resources_dir_name = new_name.to_string();
         self
@@ -196,6 +297,7 @@ impl ContextBuilder {
 
     /// Sets resources zip name.
     /// Default resources dir name is `resources.zip`.
+    #[must_use]
     pub fn resources_zip_name(mut self, new_name: impl ToString) -> Self {
         self.resources_zip_name = new_name.to_string();
         self
@@ -203,6 +305,7 @@ impl ContextBuilder {
 
     /// Add a new read-only filesystem path to the places to search
     /// for resources.
+    #[must_use]
     pub fn add_resource_path<T>(mut self, path: T) -> Self
     where
         T: Into<path::PathBuf>,
@@ -221,6 +324,7 @@ impl ContextBuilder {
     ///     .add_zipfile_bytes(include_bytes!("../resources.zip").to_vec())
     ///     .build();
     /// ```
+    #[must_use]
     pub fn add_zipfile_bytes<B>(mut self, bytes: B) -> Self
     where
         B: Into<Cow<'static, [u8]>>,
@@ -234,6 +338,7 @@ impl ContextBuilder {
     /// exists and use its settings to override the provided values.
     /// Defaults to `true` which is usually what you want, but being
     /// able to fiddle with it is sometimes useful for debugging.
+    #[must_use]
     pub fn with_conf_file(mut self, load_conf_file: bool) -> Self {
         self.load_conf_file = load_conf_file;
         self
@@ -266,57 +371,29 @@ impl ContextBuilder {
     }
 }
 
-#[cfg(debug_assertions)]
-use std::sync::atomic::{AtomicU32, Ordering};
-#[cfg(debug_assertions)]
-static DEBUG_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
+#[cfg(test)]
+mod tests {
+    use crate::{
+        context::{Has, HasMut, HasTwo},
+        filesystem::Filesystem,
+        graphics::GraphicsContext,
+        ContextBuilder,
+    };
 
-/// This is a type that contains a unique ID for each `Context` and
-/// is contained in each thing created from the `Context` which
-/// becomes invalid when the `Context` goes away (for example, `Image` because
-/// it contains texture handles).  When compiling without assertions
-/// (in release mode) it is replaced with a zero-size type, compiles
-/// down to nothing, disappears entirely with a puff of optimization logic.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg(debug_assertions)]
-pub(crate) struct DebugId(u32);
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg(not(debug_assertions))]
-pub(crate) struct DebugId;
+    #[test]
+    fn has_traits() {
+        let (mut ctx, _event_loop) = ContextBuilder::new("test", "ggez").build().unwrap();
 
-#[cfg(debug_assertions)]
-impl DebugId {
-    pub fn new() -> Self {
-        let id = DEBUG_ID_COUNTER.fetch_add(1, Ordering::SeqCst);
-        // fetch_add() wraps on overflow so we check for overflow explicitly.
-        // JUST IN CASE YOU TRY TO CREATE 2^32 CONTEXTS IN ONE PROGRAM!  muahahahahaaa
-        assert!(DEBUG_ID_COUNTER.load(Ordering::SeqCst) > id);
-        DebugId(id)
-    }
+        fn takes_gfx(_gfx: &impl Has<GraphicsContext>) {}
+        takes_gfx(&ctx);
+        takes_gfx(&ctx.gfx);
 
-    pub fn get(ctx: &Context) -> Self {
-        DebugId(ctx.debug_id.0)
-    }
+        fn takes_mut_gfx(_gfx: &mut impl HasMut<GraphicsContext>) {}
+        takes_mut_gfx(&mut ctx);
+        takes_mut_gfx(&mut ctx.gfx);
 
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn assert(&self, ctx: &Context) {
-        if *self != ctx.debug_id {
-            panic!("Tried to use a resource with a Context that did not create it; this should never happen!");
-        }
-    }
-}
-
-#[cfg(not(debug_assertions))]
-impl DebugId {
-    pub fn new() -> Self {
-        DebugId
-    }
-
-    pub fn get(_ctx: &Context) -> Self {
-        DebugId
-    }
-
-    pub fn assert(&self, _ctx: &Context) {
-        // Do nothing.
+        fn takes_gfx_fs(_gfx_fs: &impl HasTwo<GraphicsContext, Filesystem>) {}
+        takes_gfx_fs(&ctx);
+        takes_gfx_fs(&(&ctx.gfx, &ctx.fs));
     }
 }

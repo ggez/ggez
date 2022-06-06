@@ -6,8 +6,8 @@
 extern crate num_derive;
 
 use ggez::event;
-use ggez::graphics::{self, Color, DrawParam, FilterMode, Rect, Text, TextFragment};
-use ggez::input::keyboard::KeyCode;
+use ggez::graphics::{self, Color};
+use ggez::input::keyboard::{KeyCode, KeyInput};
 use ggez::mint::Point2;
 use ggez::{Context, GameResult};
 use glam::*;
@@ -18,6 +18,7 @@ use std::env;
 use std::path;
 
 struct MainState {
+    ball: graphics::Mesh,
     spritesheet: graphics::Image,
     easing_enum: EasingEnum,
     animation_type: AnimationType,
@@ -128,9 +129,9 @@ impl TweenableRect {
     }
 }
 
-impl From<TweenableRect> for Rect {
+impl From<TweenableRect> for graphics::Rect {
     fn from(t_rect: TweenableRect) -> Self {
-        Rect {
+        graphics::Rect {
             x: t_rect.x,
             y: t_rect.y,
             w: t_rect.w,
@@ -224,9 +225,18 @@ fn player_sequence(
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let mut img = graphics::Image::new(ctx, "/player_sheet.png")?;
-        img.set_filter(FilterMode::Nearest); // because pixel art
+        let ball = graphics::Mesh::new_circle(
+            ctx,
+            graphics::DrawMode::fill(),
+            Vec2::new(0.0, 0.0),
+            60.0,
+            1.0,
+            Color::WHITE,
+        )?;
+
+        let img = graphics::Image::from_path(ctx, "/player_sheet.png", true)?;
         let s = MainState {
+            ball,
             spritesheet: img,
             easing_enum: EasingEnum::Linear,
             animation_type: AnimationType::Idle,
@@ -238,23 +248,16 @@ impl MainState {
     }
 }
 
-fn draw_info(ctx: &mut Context, info: String, position: Point2<f32>) -> GameResult {
-    let t = Text::new(TextFragment {
-        text: info,
-        font: None,
-        scale: Some(ggez::graphics::PxScale::from(40.0)),
-        ..Default::default()
-    });
-    graphics::draw(
-        ctx,
-        &t,
-        DrawParam::default().dest(position).color(Color::WHITE),
-    )
+fn draw_info(canvas: &mut graphics::Canvas, info: String, position: Point2<f32>) {
+    canvas.draw(
+        graphics::Text::new(info).set_scale(40.),
+        graphics::DrawParam::from(position).color(Color::WHITE),
+    );
 }
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        let secs = ggez::timer::delta(ctx).as_secs_f64();
+        let secs = ctx.time.delta().as_secs_f64();
         // advance the ball animation and reverse it once it reaches its end
         self.ball_animation.advance_and_maybe_reverse(secs);
         // advance the player animation and wrap around back to the beginning once it reaches its end
@@ -263,82 +266,73 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
+
+        canvas.set_sampler(graphics::Sampler::nearest_clamp()); // because pixel art
 
         // draw some text showing the current parameters
         draw_info(
-            ctx,
+            &mut canvas,
             format!("Easing: {:?}", self.easing_enum),
             [300.0, 60.0].into(),
-        )?;
+        );
         draw_info(
-            ctx,
+            &mut canvas,
             format!("Animation: {:?}", self.animation_type),
             [300.0, 110.0].into(),
-        )?;
+        );
         draw_info(
-            ctx,
+            &mut canvas,
             format!("Duration: {:.2} s", self.duration),
             [300.0, 160.0].into(),
-        )?;
+        );
 
         // draw the animated ball
-        let ball = graphics::Mesh::new_circle(
-            ctx,
-            graphics::DrawMode::fill(),
-            Vec2::new(0.0, 0.0),
-            60.0,
-            1.0,
-            Color::WHITE,
-        )?;
         let ball_pos = self.ball_animation.now_strict().unwrap();
-        graphics::draw(ctx, &ball, (ball_pos,))?;
+        canvas.draw(&self.ball, ball_pos);
 
         // draw the player
-        let current_frame_src: Rect = self.player_animation.now_strict().unwrap().into();
+        let current_frame_src: graphics::Rect = self.player_animation.now_strict().unwrap().into();
         let scale = 3.0;
-        let draw_p = DrawParam::default()
-            .src(current_frame_src)
-            .scale(Vec2::new(scale, scale))
-            .dest([470.0, 460.0])
-            .offset([0.5, 1.0]);
-        graphics::draw(ctx, &self.spritesheet, draw_p)?;
+        canvas.draw(
+            &self.spritesheet,
+            graphics::DrawParam::new()
+                .src(current_frame_src)
+                .scale([scale * current_frame_src.w, scale * current_frame_src.h])
+                .dest([470.0, 460.0])
+                .offset([0.5, 1.0]),
+        );
 
-        graphics::present(ctx)?;
+        canvas.finish(ctx)?;
+
         Ok(())
     }
 
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        keycode: ggez::input::keyboard::KeyCode,
-        _keymods: ggez::input::keyboard::KeyMods,
-        _repeat: bool,
-    ) {
+    fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
         const DELTA: f32 = 0.2;
-        match keycode {
-            KeyCode::Up | KeyCode::Down => {
+        match input.keycode {
+            Some(KeyCode::Up | KeyCode::Down) => {
                 // easing change
                 let new_easing_enum = new_enum_after_key(
                     &self.easing_enum,
                     &EasingEnum::EaseInOut3Point,
                     &KeyCode::Down,
                     &KeyCode::Up,
-                    &keycode,
+                    &input.keycode.unwrap(),
                 );
 
                 if self.easing_enum != new_easing_enum {
                     self.easing_enum = new_easing_enum;
                 }
             }
-            KeyCode::Left | KeyCode::Right => {
+            Some(KeyCode::Left | KeyCode::Right) => {
                 // animation change
                 let new_animation_type = new_enum_after_key(
                     &self.animation_type,
                     &AnimationType::Crawl,
                     &KeyCode::Left,
                     &KeyCode::Right,
-                    &keycode,
+                    &input.keycode.unwrap(),
                 );
 
                 if self.animation_type != new_animation_type {
@@ -346,10 +340,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 }
             }
             // duration change
-            KeyCode::W => {
+            Some(KeyCode::W) => {
                 self.duration += DELTA;
             }
-            KeyCode::S => {
+            Some(KeyCode::S) => {
                 if self.duration - DELTA > 0.1 {
                     self.duration -= DELTA;
                 }
@@ -360,6 +354,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         self.ball_animation = ball_sequence(&self.easing_enum, self.duration);
         self.player_animation =
             player_sequence(&self.easing_enum, &self.animation_type, self.duration);
+        Ok(())
     }
 }
 

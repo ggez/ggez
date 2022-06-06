@@ -1,433 +1,423 @@
-use std::convert::TryFrom;
-use std::io::Read;
-use std::path;
+use super::{
+    context::GraphicsContext,
+    gpu::arc::{ArcTexture, ArcTextureView},
+    Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
+};
+use crate::{
+    context::{Has, HasMut, HasTwo},
+    filesystem::Filesystem,
+    Context, GameError, GameResult,
+};
+use image::ImageEncoder;
+use std::path::Path;
+use std::{io::Read, num::NonZeroU32};
 
-#[rustfmt::skip]
-use ::image;
+// maintaing a massive enum of all possible texture formats?
+// screw that.
+/// Describes the pixel format of an image.
+pub type ImageFormat = wgpu::TextureFormat;
 
-use crate::context::{Context, DebugId};
-use crate::error::GameError;
-use crate::error::GameResult;
-use crate::filesystem;
-use crate::graphics;
-use crate::graphics::shader::*;
-use crate::graphics::*;
+/// Describes the format of an encoded image.
+pub type ImageEncodingFormat = ::image::ImageFormat;
 
-/// Generic in-GPU-memory image data available to be drawn on the screen.
-/// You probably just want to look at the `Image` type.
-#[derive(Clone, PartialEq)]
-pub struct ImageGeneric<B>
-where
-    B: BackendSpec,
-{
-    pub(crate) texture: gfx::handle::RawShaderResourceView<B::Resources>,
-    pub(crate) texture_handle: gfx::handle::RawTexture<B::Resources>,
-    pub(crate) sampler_info: gfx::texture::SamplerInfo,
-    pub(crate) blend_mode: Option<BlendMode>,
-    pub(crate) width: u16,
-    pub(crate) height: u16,
-
-    pub(crate) debug_id: DebugId,
-}
-
-impl<B> ImageGeneric<B>
-where
-    B: BackendSpec,
-{
-    /// A helper function that just takes a factory directly so we can make an image
-    /// without needing the full context object, so we can create an Image while still
-    /// creating the GraphicsContext.
-    pub(crate) fn make_raw(
-        factory: &mut <B as BackendSpec>::Factory,
-        sampler_info: &texture::SamplerInfo,
-        width: u16,
-        height: u16,
-        rgba: &[u8],
-        color_format: gfx::format::Format,
-        debug_id: DebugId,
-    ) -> GameResult<Self> {
-        if width == 0 || height == 0 {
-            let msg = format!(
-                "Tried to create a texture of size {}x{}, each dimension must
-                be >0",
-                width, height
-            );
-            return Err(GameError::ResourceLoadError(msg));
-        }
-        // Check for overflow, which might happen on 32-bit systems.
-        // Textures can be max u16*u16, pixels, but then have 4 bytes per pixel.
-        let uwidth = usize::from(width);
-        let uheight = usize::from(height);
-        let expected_bytes = uwidth
-            .checked_mul(uheight)
-            .and_then(|size| size.checked_mul(4))
-            .ok_or_else(|| {
-                let msg = format!(
-                    "Integer overflow in Image::make_raw, image size: {} {}",
-                    uwidth, uheight
-                );
-                GameError::ResourceLoadError(msg)
-            })?;
-        if expected_bytes != rgba.len() {
-            let msg = format!(
-                "Tried to create a texture of size {}x{}, but gave {} bytes of data (expected {})",
-                width,
-                height,
-                rgba.len(),
-                expected_bytes
-            );
-            return Err(GameError::ResourceLoadError(msg));
-        }
-
-        let kind = gfx::texture::Kind::D2(width, height, gfx::texture::AaMode::Single);
-        use gfx::memory::Bind;
-        let gfx::format::Format(surface_format, channel_type) = color_format;
-        let texinfo = gfx::texture::Info {
-            kind,
-            levels: 1,
-            format: surface_format,
-            bind: Bind::SHADER_RESOURCE
-                | Bind::RENDER_TARGET
-                | Bind::TRANSFER_SRC
-                | Bind::TRANSFER_DST,
-            usage: gfx::memory::Usage::Dynamic,
-        };
-        let raw_tex = factory.create_texture_raw(
-            texinfo,
-            Some(channel_type),
-            Some((&[rgba], gfx::texture::Mipmap::Provided)),
-        )?;
-        let resource_desc = gfx::texture::ResourceDesc {
-            channel: channel_type,
-            layer: None,
-            min: 0,
-            max: raw_tex.get_info().levels - 1,
-            swizzle: gfx::format::Swizzle::new(),
-        };
-        let raw_view = factory.view_texture_as_shader_resource_raw(&raw_tex, resource_desc)?;
-        Ok(Self {
-            texture: raw_view,
-            texture_handle: raw_tex,
-            sampler_info: *sampler_info,
-            blend_mode: None,
-            width,
-            height,
-            debug_id,
-        })
-    }
-
-    /// A helper function to get the raw gfx texture handle
-    pub fn get_raw_texture_handle(&self) -> gfx::handle::RawTexture<B::Resources> {
-        self.texture_handle.clone()
-    }
-
-    /// A helper function to get the raw gfx texture view
-    pub fn get_raw_texture_view(&self) -> gfx::handle::RawShaderResourceView<B::Resources> {
-        self.texture.clone()
-    }
-
-    /// Return the width of the image.
-    pub fn width(&self) -> u16 {
-        self.width
-    }
-
-    /// Return the height of the image.
-    pub fn height(&self) -> u16 {
-        self.height
-    }
-
-    /// Get the filter mode for the image.
-    pub fn filter(&self) -> FilterMode {
-        self.sampler_info.filter.into()
-    }
-
-    /// Set the filter mode for the image.
-    pub fn set_filter(&mut self, mode: FilterMode) {
-        self.sampler_info.filter = mode.into();
-    }
-
-    /// Returns the dimensions of the image.
-    pub fn dimensions(&self) -> Rect {
-        Rect::new(0.0, 0.0, f32::from(self.width()), f32::from(self.height()))
-    }
-
-    /// Gets the `Image`'s `WrapMode` along the X and Y axes.
-    pub fn wrap(&self) -> (WrapMode, WrapMode) {
-        (self.sampler_info.wrap_mode.0, self.sampler_info.wrap_mode.1)
-    }
-
-    /// Sets the `Image`'s `WrapMode` along the X and Y axes.
-    pub fn set_wrap(&mut self, wrap_x: WrapMode, wrap_y: WrapMode) {
-        self.sampler_info.wrap_mode.0 = wrap_x;
-        self.sampler_info.wrap_mode.1 = wrap_y;
-    }
-}
-
-/// In-GPU-memory image data available to be drawn on the screen,
-/// using the OpenGL backend.
-///
-/// Under the hood this is just an `Arc`'ed texture handle and
-/// some metadata, so cloning it is fairly cheap; it doesn't
-/// make another copy of the underlying image data.
-pub type Image = ImageGeneric<GlBackendSpec>;
-
-/// The supported formats for saving an image.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum ImageFormat {
-    /// .png image format (defaults to RGBA with 8-bit channels.)
-    Png,
+/// Handle to an image stored in GPU memory.
+#[derive(Debug, Clone)]
+pub struct Image {
+    pub(crate) texture: ArcTexture,
+    pub(crate) view: ArcTextureView,
+    pub(crate) format: ImageFormat,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+    pub(crate) samples: u32,
 }
 
 impl Image {
-    /// Load a new image from the file at the given path. The documentation for the
-    /// [`filesystem`](../filesystem/index.html) module explains how the path must be specified.
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
-        let format = path
-            .as_ref()
-            .extension()
-            .map_or_else(|| None, image::ImageFormat::from_extension);
-        let mut buf = Vec::new();
-        let mut reader = context.filesystem.open(path)?;
-        let _ = reader.read_to_end(&mut buf)?;
-        if let Some(format) = format {
-            Self::from_bytes_with_format(context, &buf, format)
-        } else {
-            // if no extension could be found try loading the image anyway using `image::load_from_memory`
-            Self::from_bytes(context, &buf)
-        }
-    }
-
-    /// Creates a new `Image` from the given buffer, which should contain an image encoded
-    /// in a supported image file format.
-    pub fn from_bytes(context: &mut Context, bytes: &[u8]) -> GameResult<Self> {
-        let img = image::load_from_memory(bytes)?.to_rgba8();
-        Self::from_rgba_image(context, img)
-    }
-
-    /// Creates a new `Image` from the given buffer, which should contain an image encoded
-    /// in the given image file format.
-    pub fn from_bytes_with_format(
-        context: &mut Context,
-        bytes: &[u8],
-        format: image::ImageFormat,
-    ) -> GameResult<Self> {
-        let img = image::load_from_memory_with_format(bytes, format)?.to_rgba8();
-        Self::from_rgba_image(context, img)
-    }
-
-    fn from_rgba_image(context: &mut Context, img: image::RgbaImage) -> GameResult<Self> {
-        let (width, height) = img.dimensions();
-        let better_width = u16::try_from(width)
-            .map_err(|_| GameError::ResourceLoadError(String::from("Image width > u16::MAX")))?;
-        let better_height = u16::try_from(height)
-            .map_err(|_| GameError::ResourceLoadError(String::from("Image height > u16::MAX")))?;
-        Self::from_rgba8(context, better_width, better_height, &img)
-    }
-
-    /// Creates a new `Image` from the given buffer of `u8` RGBA values.
-    ///
-    /// The pixel layout is row-major.  That is,
-    /// the first 4 `u8` values make the top-left pixel in the `Image`, the
-    /// next 4 make the next pixel in the same row, and so on to the end of
-    /// the row.  The next `width * 4` values make up the second row, and so
-    /// on.
-    pub fn from_rgba8(
-        context: &mut Context,
-        width: u16,
-        height: u16,
-        rgba: &[u8],
-    ) -> GameResult<Self> {
-        let debug_id = DebugId::get(context);
-        let color_format = context.gfx_context.color_format();
-        Self::make_raw(
-            &mut *context.gfx_context.factory,
-            &context.gfx_context.default_sampler_info,
+    /// Creates a new image specifically for use with a [Canvas](crate::graphics::Canvas).
+    pub fn new_canvas_image(
+        gfx: &impl Has<GraphicsContext>,
+        format: ImageFormat,
+        width: u32,
+        height: u32,
+        samples: u32,
+    ) -> Self {
+        let gfx = gfx.retrieve();
+        Self::new(
+            &gfx.wgpu,
+            format,
             width,
             height,
-            rgba,
-            color_format,
-            debug_id,
+            samples,
+            wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_SRC,
         )
     }
 
-    /// Dumps the `Image`'s data to a `Vec` of `u8` RGBA values.
-    pub fn to_rgba8(&self, ctx: &mut Context) -> GameResult<Vec<u8>> {
-        use gfx::memory::Typed;
-        use gfx::traits::FactoryExt;
-
-        let gfx = &mut ctx.gfx_context;
-        let w = self.width;
-        let h = self.height;
-
-        let format = gfx.color_format();
-
-        let dl_buffer = &mut gfx.to_rgba8_buffer;
-        // check if it's big enough and recreate it if not
-        let size_needed = usize::from(w) * usize::from(h) * 4;
-        if dl_buffer.len() != size_needed {
-            *dl_buffer = gfx.factory.create_download_buffer::<u8>(size_needed)?;
-        }
-
-        let encoder = &mut gfx.encoder;
-
-        encoder.copy_texture_to_buffer_raw(
-            &self.texture_handle,
-            None,
-            gfx::texture::RawImageInfo {
-                xoffset: 0,
-                yoffset: 0,
-                zoffset: 0,
-                width: w,
-                height: h,
-                depth: 0,
-                format,
-                mipmap: 0,
-            },
-            dl_buffer.raw(),
-            0,
-        )?;
-        encoder.flush(&mut *gfx.device);
-
-        let reader = gfx.factory.read_mapping(dl_buffer)?.to_vec();
-        Ok(reader)
-    }
-
-    /// Encode the `Image` to the given file format and
-    /// write it out to the given path.
-    ///
-    /// See the [`filesystem`](../filesystem/index.html) module docs for where exactly
-    /// the file will end up.
-    pub fn encode<P: AsRef<path::Path>>(
-        &self,
-        ctx: &mut Context,
+    /// Creates a new image initialized with given pixel data.
+    pub fn from_pixels(
+        gfx: &impl Has<GraphicsContext>,
+        pixels: &[u8],
         format: ImageFormat,
-        path: P,
-    ) -> GameResult {
-        use std::io;
-        let data = self.to_rgba8(ctx)?;
-        let f = filesystem::create(ctx, path)?;
-        let writer = &mut io::BufWriter::new(f);
-        let color_format = image::ColorType::Rgba8;
-        match format {
-            ImageFormat::Png => image::png::PngEncoder::new(writer)
-                .encode(
-                    &data,
-                    u32::from(self.width),
-                    u32::from(self.height),
-                    color_format,
-                )
-                .map_err(Into::into),
-        }
+        width: u32,
+        height: u32,
+    ) -> Self {
+        let gfx = gfx.retrieve();
+        Self::from_pixels_wgpu(&gfx.wgpu, pixels, format, width, height)
     }
 
-    /// A little helper function that creates a new `Image` that is just
-    /// a solid square of the given size and color.  Mainly useful for
-    /// debugging.
-    pub fn solid(context: &mut Context, size: u16, color: Color) -> GameResult<Self> {
-        let (r, g, b, a) = color.into();
-        let pixel_array: [u8; 4] = [r, g, b, a];
-        let size_squared = usize::from(size) * usize::from(size);
-        let mut buffer = Vec::with_capacity(size_squared);
-        for _i in 0..size_squared {
-            buffer.extend(&pixel_array[..]);
-        }
-        Image::from_rgba8(context, size, size, &buffer)
-    }
-}
+    pub(crate) fn from_pixels_wgpu(
+        wgpu: &WgpuContext,
+        pixels: &[u8],
+        format: ImageFormat,
+        width: u32,
+        height: u32,
+    ) -> Self {
+        let image = Self::new(
+            wgpu,
+            format,
+            width,
+            height,
+            1,
+            wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_SRC,
+        );
 
-impl<B> fmt::Debug for ImageGeneric<B>
-where
-    B: BackendSpec,
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "<Image: {}x{}, {:p}, texture address {:p}, sampler: {:?}>",
-            self.width(),
-            self.height(),
-            self,
-            &self.texture,
-            &self.sampler_info
+        wgpu.queue.write_texture(
+            image.texture.as_image_copy(),
+            pixels,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(
+                    NonZeroU32::new(format.describe().block_size as u32 * width).unwrap(),
+                ),
+                rows_per_image: None,
+            },
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        image
+    }
+
+    /// A little helper function that creates a new `Image` that is just a solid square of the given size and color. Mainly useful for debugging.
+    pub fn from_solid(gfx: &impl Has<GraphicsContext>, size: u32, color: Color) -> Self {
+        let pixels = (0..(size * size))
+            .flat_map(|_| {
+                let (r, g, b, a) = color.to_rgba();
+                [r, g, b, a]
+            })
+            .collect::<Vec<_>>();
+        Self::from_pixels(
+            gfx,
+            &pixels,
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+            size,
+            size,
         )
+    }
+
+    /// Creates a new image initialized with pixel data loaded from an encoded image `Read` (e.g. PNG or JPEG).
+    #[allow(unused_results)]
+    pub fn from_path(
+        ctxs: &impl HasTwo<Filesystem, GraphicsContext>,
+        path: impl AsRef<Path>,
+        srgb: bool,
+    ) -> GameResult<Self> {
+        let fs = ctxs.retrieve_first();
+        let gfx = ctxs.retrieve_second();
+
+        let mut encoded = Vec::new();
+        fs.open(path)?.read_to_end(&mut encoded)?;
+        let decoded = image::load_from_memory(&encoded[..])
+            .map_err(|_| GameError::ResourceLoadError(String::from("failed to load image")))?;
+        let rgba8 = decoded.to_rgba8();
+        let (width, height) = (rgba8.width(), rgba8.height());
+
+        Ok(Self::from_pixels(
+            gfx,
+            rgba8.as_ref(),
+            if srgb {
+                ImageFormat::Rgba8UnormSrgb
+            } else {
+                ImageFormat::Rgba8Unorm
+            },
+            width,
+            height,
+        ))
+    }
+
+    fn new(
+        wgpu: &WgpuContext,
+        format: ImageFormat,
+        width: u32,
+        height: u32,
+        samples: u32,
+        usage: wgpu::TextureUsages,
+    ) -> Self {
+        assert!(width > 0);
+        assert!(height > 0);
+        assert!(samples > 0);
+
+        let texture = ArcTexture::new(wgpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: None,
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: samples,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage,
+        }));
+
+        let view =
+            ArcTextureView::new(texture.as_ref().create_view(&wgpu::TextureViewDescriptor {
+                label: None,
+                format: Some(format),
+                dimension: Some(wgpu::TextureViewDimension::D2),
+                aspect: wgpu::TextureAspect::All,
+                base_mip_level: 0,
+                mip_level_count: Some(NonZeroU32::new(1).unwrap()),
+                base_array_layer: 0,
+                array_layer_count: Some(NonZeroU32::new(1).unwrap()),
+            }));
+
+        Image {
+            texture,
+            view,
+            format,
+            width,
+            height,
+            samples,
+        }
+    }
+
+    /// Returns the underlying [`wgpu::Texture`] and [`wgpu::TextureView`] for this [`Image`].
+    #[inline]
+    pub fn wgpu(&self) -> (&wgpu::Texture, &wgpu::TextureView) {
+        (&self.texture, &self.view)
+    }
+
+    /// Reads the pixels of this `ImageView` and returns as `Vec<u8>`.
+    /// The format matches the GPU image format.
+    ///
+    /// **This is a very expensive operation - call sparingly.**
+    pub fn to_pixels(&self, gfx: &impl Has<GraphicsContext>) -> GameResult<Vec<u8>> {
+        let gfx = gfx.retrieve();
+        if self.samples > 1 {
+            return Err(GameError::RenderError(String::from(
+                "cannot read the pixels of a multisampled image; resolve this image with a canvas",
+            )));
+        }
+
+        let block_size = self.format.describe().block_size as u64;
+
+        let buffer = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: block_size * self.width as u64 * self.height as u64,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        });
+
+        let cmd = {
+            let mut encoder = gfx
+                .wgpu
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            encoder.copy_texture_to_buffer(
+                self.texture.as_image_copy(),
+                wgpu::ImageCopyBuffer {
+                    buffer: &buffer,
+                    layout: wgpu::ImageDataLayout {
+                        offset: 0,
+                        bytes_per_row: Some(
+                            NonZeroU32::new(block_size as u32 * self.width).unwrap(),
+                        ),
+                        rows_per_image: None,
+                    },
+                },
+                wgpu::Extent3d {
+                    width: self.width,
+                    height: self.height,
+                    depth_or_array_layers: 1,
+                },
+            );
+            encoder.finish()
+        };
+
+        gfx.wgpu.queue.submit([cmd]);
+
+        // wait...
+        let fut = buffer.slice(..).map_async(wgpu::MapMode::Read);
+        gfx.wgpu.device.poll(wgpu::Maintain::Wait);
+        pollster::block_on(fut)?;
+
+        let out = buffer.slice(..).get_mapped_range().to_vec();
+        Ok(out)
+    }
+
+    /// Encodes the `ImageView` to the given file format and return the encoded bytes.
+    ///
+    /// **This is a very expensive operation - call sparingly.**
+    pub fn encode(
+        &self,
+        ctx: &Context,
+        format: ImageEncodingFormat,
+        path: impl AsRef<std::path::Path>,
+    ) -> GameResult {
+        let color = match self.format {
+            ImageFormat::Rgba8Unorm | ImageFormat::Rgba8UnormSrgb => ::image::ColorType::Rgba8,
+            ImageFormat::R8Unorm => ::image::ColorType::L8,
+            ImageFormat::R16Unorm => ::image::ColorType::L16,
+            format => {
+                return Err(GameError::RenderError(format!(
+                    "cannot ImageView::encode for the {:#?} GPU image format",
+                    format
+                )))
+            }
+        };
+
+        let pixels = self.to_pixels(ctx)?;
+        let f = ctx.fs.create(path)?;
+        let writer = &mut std::io::BufWriter::new(f);
+
+        match format {
+            ImageEncodingFormat::Png => ::image::codecs::png::PngEncoder::new(writer)
+                .write_image(&pixels, self.width, self.height, color)
+                .map_err(Into::into),
+            ImageEncodingFormat::Bmp => ::image::codecs::bmp::BmpEncoder::new(writer)
+                .encode(&pixels, self.width, self.height, color)
+                .map_err(Into::into),
+            _ => Err(GameError::RenderError(String::from(
+                "cannot ImageView::encode for formats other than Png and Bmp",
+            ))),
+        }
+    }
+
+    /// Returns the image format of this image.
+    #[inline]
+    pub fn format(&self) -> ImageFormat {
+        self.format
+    }
+
+    /// Returns the number of MSAA samples this image has.
+    #[inline]
+    pub fn samples(&self) -> u32 {
+        self.samples
+    }
+
+    /// Returns the width (in pixels) of the image.
+    #[inline]
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    /// Returns the height (in pixels) of the image.
+    #[inline]
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
+    /// Helper function that calculates a sub-rectangle of this image in UV coordinates, given pixel coordinates.
+    pub fn uv_rect(&self, x: u32, y: u32, w: u32, h: u32) -> Rect {
+        Rect {
+            x: x as f32 / self.width as f32,
+            y: y as f32 / self.height as f32,
+            w: w as f32 / self.width as f32,
+            h: h as f32 / self.height as f32,
+        }
     }
 }
 
 impl Drawable for Image {
-    fn draw(&self, ctx: &mut Context, param: DrawParam) -> GameResult {
-        self.debug_id.assert(ctx);
-
-        let src_width = param.src.w;
-        let src_height = param.src.h;
-        // We have to mess with the scale to make everything
-        // be its-unit-size-in-pixels.
-        let scale_x = src_width * f32::from(self.width);
-        let scale_y = src_height * f32::from(self.height);
-        let new_param = match param.trans {
-            Transform::Values { scale, .. } => param.scale(mint::Vector2 {
-                x: scale.x * scale_x,
-                y: scale.y * scale_y,
-            }),
-            Transform::Matrix(m) => param.transform(
-                Matrix4::from(m) * Matrix4::from_scale(glam::vec3(scale_x, scale_y, 1.0)),
-            ),
-        };
-
-        draw_image_raw(self, ctx, new_param)
+    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
+        canvas.push_draw(
+            Draw::Mesh {
+                mesh: canvas.default_resources().mesh.clone(),
+                image: self.clone(),
+            },
+            param,
+        );
     }
 
-    fn dimensions(&self, _: &mut Context) -> Option<graphics::Rect> {
-        Some(self.dimensions())
-    }
-
-    fn set_blend_mode(&mut self, mode: Option<BlendMode>) {
-        self.blend_mode = mode;
-    }
-
-    fn blend_mode(&self) -> Option<BlendMode> {
-        self.blend_mode
+    fn dimensions(&self, _gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+        Some(Rect {
+            x: 0.,
+            y: 0.,
+            w: self.width() as _,
+            h: self.height() as _,
+        })
     }
 }
 
-pub(crate) fn draw_image_raw(image: &Image, ctx: &mut Context, param: DrawParam) -> GameResult {
-    let gfx = &mut ctx.gfx_context;
+/// An image which is sized relative to the screen.
+/// This is primarily for canvas images.
+#[derive(Debug, Clone)]
+pub struct ScreenImage {
+    image: Image,
+    format: wgpu::TextureFormat,
+    size: (f32, f32),
+    samples: u32,
+}
 
-    gfx.update_instance_properties(param)?;
-    let sampler = gfx
-        .samplers
-        .get_or_insert(image.sampler_info, gfx.factory.as_mut());
-    gfx.data.vbuf = gfx.quad_vertex_buffer.clone();
-    let typed_thingy = gfx
-        .backend_spec
-        .raw_to_typed_shader_resource(image.texture.clone());
-    gfx.data.tex = (typed_thingy, sampler);
-    let previous_mode: Option<BlendMode> = if let Some(mode) = image.blend_mode {
-        let current_mode = gfx.blend_mode();
-        if current_mode != mode {
-            gfx.set_blend_mode(mode)?;
-            Some(current_mode)
-        } else {
-            None
+impl ScreenImage {
+    /// Creates a new [ScreenImage] with the given parameters.
+    ///
+    /// `width` and `height` specify the fraction of the framebuffer width and height that the [Image] will have.
+    /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
+    ///
+    /// If `format` is `None` then the format will be inferred from the surface format.
+    pub fn new(
+        gfx: &impl Has<GraphicsContext>,
+        format: impl Into<Option<ImageFormat>>,
+        width: f32,
+        height: f32,
+        samples: u32,
+    ) -> Self {
+        let gfx = gfx.retrieve();
+        assert!(width > 0.);
+        assert!(height > 0.);
+        assert!(samples > 0);
+
+        let format = format.into().unwrap_or(gfx.surface_format);
+
+        ScreenImage {
+            image: Self::create(gfx, format, (width, height), samples),
+            format,
+            size: (width, height),
+            samples,
         }
-    } else {
-        None
-    };
-
-    gfx.draw(None)?;
-    if let Some(mode) = previous_mode {
-        gfx.set_blend_mode(mode)?;
     }
-    Ok(())
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::ContextBuilder;
-    #[test]
-    fn test_invalid_image_size() {
-        let (ctx, _) = &mut ContextBuilder::new("unittest", "unittest").build().unwrap();
-        let _i = assert!(Image::from_rgba8(ctx, 0, 0, &[]).is_err());
-        let _i = assert!(Image::from_rgba8(ctx, 3432, 432, &[]).is_err());
-        let _i = Image::from_rgba8(ctx, 2, 2, &[99; 16]).unwrap();
+    /// Returns the inner [Image], also recreating it if the framebuffer has been resized.
+    pub fn image(&mut self, gfx: &impl Has<GraphicsContext>) -> Image {
+        if Self::size(gfx, self.size) != (self.image.width(), self.image.height()) {
+            self.image = Self::create(gfx, self.format, self.size, self.samples);
+        }
+        self.image.clone()
+    }
+
+    fn size(gfx: &impl Has<GraphicsContext>, (width, height): (f32, f32)) -> (u32, u32) {
+        let gfx = gfx.retrieve();
+        let size = gfx.window.inner_size();
+        let width = (size.width as f32 * width) as u32;
+        let height = (size.height as f32 * height) as u32;
+        (width.max(1), height.max(1))
+    }
+
+    fn create(
+        gfx: &impl Has<GraphicsContext>,
+        format: wgpu::TextureFormat,
+        size: (f32, f32),
+        samples: u32,
+    ) -> Image {
+        let (width, height) = Self::size(gfx, size);
+        Image::new_canvas_image(gfx, format, width, height, samples)
     }
 }

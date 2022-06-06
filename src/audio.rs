@@ -3,6 +3,7 @@
 //! It consists of two main types: [`SoundData`](struct.SoundData.html)
 //! is just an array of raw sound data bytes, and a [`Source`](struct.Source.html) is a
 //! `SoundData` connected to a particular sound channel ready to be played.
+#![cfg(feature = "audio")]
 
 use std::fmt;
 use std::io;
@@ -14,33 +15,23 @@ use std::time;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use crate::context::Context;
+use crate::context::Has;
+use crate::context::HasTwo;
 use crate::error::GameError;
 use crate::error::GameResult;
-use crate::filesystem;
-
-/// A trait object defining an audio context, allowing us to someday
-/// use something other than `rodio` if we really want.
-///
-/// End-users usually don't need to mess with this, but it's there
-/// if you want to bypass `ggez`'s sound functionality and write your
-/// own.
-pub trait AudioContext {
-    /// Returns the audio device.
-    fn device(&self) -> &rodio::OutputStreamHandle;
-}
+use crate::filesystem::Filesystem;
 
 /// A struct that contains all information for tracking sound info.
 ///
 /// You generally don't have to create this yourself, it will be part
 /// of your `Context` object.
-pub(crate) struct RodioAudioContext {
+pub struct AudioContext {
     _stream: rodio::OutputStream,
     stream_handle: rodio::OutputStreamHandle,
 }
 
-impl RodioAudioContext {
-    /// Create new `RodioAudioContext`.
+impl AudioContext {
+    /// Create new `AudioContext`.
     pub fn new() -> GameResult<Self> {
         let (stream, stream_handle) = rodio::OutputStream::try_default().map_err(|_e| {
             GameError::AudioError(String::from(
@@ -54,27 +45,16 @@ impl RodioAudioContext {
     }
 }
 
-impl AudioContext for RodioAudioContext {
-    fn device(&self) -> &rodio::OutputStreamHandle {
+impl AudioContext {
+    /// Returns the audio device.
+    pub fn device(&self) -> &rodio::OutputStreamHandle {
         &self.stream_handle
     }
 }
 
-impl fmt::Debug for RodioAudioContext {
+impl fmt::Debug for AudioContext {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<RodioAudioContext: {:p}>", self)
-    }
-}
-
-/// A structure that implements `AudioContext` but does nothing; serves as a
-/// stub for when you don't need audio.  Will panic if you try to actually
-/// play sound from it.
-#[derive(Debug, Clone, Copy, Default)]
-pub(crate) struct NullAudioContext;
-
-impl AudioContext for NullAudioContext {
-    fn device(&self) -> &rodio::OutputStreamHandle {
-        panic!("Audio module disabled")
+        write!(f, "<AudioContext: {:p}>", self)
     }
 }
 
@@ -85,9 +65,10 @@ pub struct SoundData(Arc<[u8]>);
 
 impl SoundData {
     /// Load the file at the given path and create a new `SoundData` from it.
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+    pub fn new<P: AsRef<path::Path>>(fs: &impl Has<Filesystem>, path: P) -> GameResult<Self> {
+        let fs = fs.retrieve();
         let path = path.as_ref();
-        let file = &mut filesystem::open(context, path)?;
+        let file = &mut fs.open(path)?;
         SoundData::from_read(file)
     }
 
@@ -145,8 +126,9 @@ impl AsRef<[u8]> for SoundData {
 /// it is implemented by both `Source` and `SpatialSource`.
 pub trait SoundSource {
     /// Plays the audio source; restarts the sound if currently playing
-    fn play(&mut self, ctx: &Context) -> GameResult {
-        self.stop(ctx)?;
+    fn play(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
+        let audio = audio.retrieve();
+        self.stop(audio)?;
         self.play_later()
     }
 
@@ -154,13 +136,24 @@ pub trait SoundSource {
     fn play_later(&self) -> GameResult;
 
     /// Play source "in the background"; cannot be stopped
-    fn play_detached(&mut self, ctx: &Context) -> GameResult;
+    fn play_detached(&mut self, audio: &impl Has<AudioContext>) -> GameResult;
 
     /// Sets the source to repeat playback infinitely on next [`play()`](#method.play)
     fn set_repeat(&mut self, repeat: bool);
 
     /// Sets the fade-in time of the source
     fn set_fade_in(&mut self, dur: time::Duration);
+
+    /// Sets the time from which playback begins, skipping audio up to that point.
+    ///
+    /// Calls to [`elapsed()`](#tymethod.elapsed) will measure from this point, ignoring skipped time.
+    ///
+    /// Effects such as [`set_fade_in()`](#tymethod.set_fade_in) or [`set_pitch()`](#tymethod.set_pitch)
+    /// will apply from this new start.
+    ///
+    /// If [`set_repeat()`](#tymethod.set_repeat) is set to true, then after looping, the audio will return
+    /// to the original beginning of the source, rather than the time specified here.
+    fn set_start(&mut self, dur: time::Duration);
 
     /// Sets the speed ratio (by adjusting the playback speed)
     fn set_pitch(&mut self, ratio: f32);
@@ -175,7 +168,7 @@ pub trait SoundSource {
     fn resume(&self);
 
     /// Stops playback
-    fn stop(&mut self, ctx: &Context) -> GameResult;
+    fn stop(&mut self, audio: &impl Has<AudioContext>) -> GameResult;
 
     /// Returns whether or not the source is stopped
     /// -- that is, has no more data to play.
@@ -211,6 +204,7 @@ pub(crate) struct SourceState {
     data: io::Cursor<SoundData>,
     repeat: bool,
     fade_in: time::Duration,
+    skip_duration: time::Duration,
     speed: f32,
     query_interval: time::Duration,
     play_time: Arc<AtomicUsize>,
@@ -223,6 +217,7 @@ impl SourceState {
             data: cursor,
             repeat: false,
             fade_in: time::Duration::from_millis(0),
+            skip_duration: time::Duration::from_millis(0),
             speed: 1.0,
             query_interval: time::Duration::from_millis(100),
             play_time: Arc::new(AtomicUsize::new(0)),
@@ -236,6 +231,10 @@ impl SourceState {
     /// Sets the fade-in time of the source.
     pub fn set_fade_in(&mut self, dur: time::Duration) {
         self.fade_in = dur;
+    }
+
+    pub fn set_start(&mut self, dur: time::Duration) {
+        self.skip_duration = dur;
     }
 
     /// Sets the pitch ratio (by adjusting the playback speed).
@@ -285,20 +284,26 @@ pub struct Source {
 
 impl Source {
     /// Create a new `Source` from the given file.
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+    pub fn new<P: AsRef<path::Path>>(
+        ctxs: &impl HasTwo<Filesystem, AudioContext>,
+        path: P,
+    ) -> GameResult<Self> {
+        let fs = ctxs.retrieve_first();
+        let audio = ctxs.retrieve_second();
         let path = path.as_ref();
-        let data = SoundData::new(context, path)?;
-        Source::from_data(context, data)
+        let data = SoundData::new(fs, path)?;
+        Source::from_data(audio, data)
     }
 
     /// Creates a new `Source` using the given `SoundData` object.
-    pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
+    pub fn from_data(audio: &impl Has<AudioContext>, data: SoundData) -> GameResult<Self> {
+        let audio = audio.retrieve();
         if !data.can_play() {
             return Err(GameError::AudioError(
                 "Could not decode the given audio data".to_string(),
             ));
         }
-        let sink = rodio::Sink::try_new(context.audio_context.device())?;
+        let sink = rodio::Sink::try_new(audio.device())?;
         let cursor = io::Cursor::new(data);
         Ok(Source {
             sink,
@@ -323,6 +328,7 @@ impl SoundSource for Source {
         if self.state.repeat {
             let sound = rodio::Decoder::new(cursor)?
                 .repeat_infinite()
+                .skip_duration(self.state.skip_duration)
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
                 .periodic_access(self.state.query_interval, move |_| {
@@ -331,6 +337,7 @@ impl SoundSource for Source {
             self.sink.append(sound);
         } else {
             let sound = rodio::Decoder::new(cursor)?
+                .skip_duration(self.state.skip_duration)
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
                 .periodic_access(self.state.query_interval, move |_| {
@@ -342,11 +349,12 @@ impl SoundSource for Source {
         Ok(())
     }
 
-    fn play_detached(&mut self, ctx: &Context) -> GameResult {
-        self.stop(ctx)?;
+    fn play_detached(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
+        let audio = audio.retrieve();
+        self.stop(audio)?;
         self.play_later()?;
 
-        let new_sink = rodio::Sink::try_new(ctx.audio_context.device())?;
+        let new_sink = rodio::Sink::try_new(audio.device())?;
         let old_sink = mem::replace(&mut self.sink, new_sink);
         old_sink.detach();
 
@@ -358,6 +366,9 @@ impl SoundSource for Source {
     }
     fn set_fade_in(&mut self, dur: time::Duration) {
         self.state.set_fade_in(dur)
+    }
+    fn set_start(&mut self, dur: time::Duration) {
+        self.state.set_start(dur)
     }
     fn set_pitch(&mut self, ratio: f32) {
         self.state.set_pitch(ratio)
@@ -372,7 +383,8 @@ impl SoundSource for Source {
         self.sink.play()
     }
 
-    fn stop(&mut self, ctx: &Context) -> GameResult {
+    fn stop(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
+        let audio = audio.retrieve();
         // Sinks cannot be reused after calling `.stop()`. See
         // https://github.com/tomaka/rodio/issues/171 for information.
         // To stop the current sound we have to drop the old sink and
@@ -380,14 +392,14 @@ impl SoundSource for Source {
         // This is most ugly because in order to create a new sink
         // we need a `device`. However, we can only get the default
         // device without having access to a context. Currently that's
-        // fine because the `RodioAudioContext` uses the default device too,
+        // fine because the `AudioContext` uses the default device too,
         // but it may cause problems in the future if devices become
         // customizable.
 
         // We also need to carry over information from the previous sink.
         let volume = self.volume();
 
-        let device = ctx.audio_context.device();
+        let device = audio.device();
         self.sink = rodio::Sink::try_new(device)?;
         self.state.play_time.store(0, Ordering::SeqCst);
 
@@ -443,21 +455,26 @@ pub struct SpatialSource {
 
 impl SpatialSource {
     /// Create a new `SpatialSource` from the given file.
-    pub fn new<P: AsRef<path::Path>>(context: &mut Context, path: P) -> GameResult<Self> {
+    pub fn new<P: AsRef<path::Path>>(
+        fs: &impl Has<Filesystem>,
+        audio: &impl Has<AudioContext>,
+        path: P,
+    ) -> GameResult<Self> {
         let path = path.as_ref();
-        let data = SoundData::new(context, path)?;
-        SpatialSource::from_data(context, data)
+        let data = SoundData::new(fs, path)?;
+        SpatialSource::from_data(audio, data)
     }
 
     /// Creates a new `SpatialSource` using the given `SoundData` object.
-    pub fn from_data(context: &mut Context, data: SoundData) -> GameResult<Self> {
+    pub fn from_data(audio: &impl Has<AudioContext>, data: SoundData) -> GameResult<Self> {
+        let audio = audio.retrieve();
         if !data.can_play() {
             return Err(GameError::AudioError(
                 "Could not decode the given audio data".to_string(),
             ));
         }
         let sink = rodio::SpatialSink::try_new(
-            context.audio_context.device(),
+            audio.device(),
             [0.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
@@ -492,6 +509,7 @@ impl SoundSource for SpatialSource {
         if self.state.repeat {
             let sound = rodio::Decoder::new(cursor)?
                 .repeat_infinite()
+                .skip_duration(self.state.skip_duration)
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
                 .periodic_access(self.state.query_interval, move |_| {
@@ -500,6 +518,7 @@ impl SoundSource for SpatialSource {
             self.sink.append(sound);
         } else {
             let sound = rodio::Decoder::new(cursor)?
+                .skip_duration(self.state.skip_duration)
                 .speed(self.state.speed)
                 .fade_in(self.state.fade_in)
                 .periodic_access(self.state.query_interval, move |_| {
@@ -511,11 +530,12 @@ impl SoundSource for SpatialSource {
         Ok(())
     }
 
-    fn play_detached(&mut self, ctx: &Context) -> GameResult {
-        self.stop(ctx)?;
+    fn play_detached(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
+        let audio = audio.retrieve();
+        self.stop(audio)?;
         self.play_later()?;
 
-        let device = ctx.audio_context.device();
+        let device = audio.device();
         let new_sink = rodio::SpatialSink::try_new(
             device,
             self.emitter_position.into(),
@@ -536,6 +556,10 @@ impl SoundSource for SpatialSource {
         self.state.set_fade_in(dur)
     }
 
+    fn set_start(&mut self, dur: time::Duration) {
+        self.state.set_start(dur)
+    }
+
     fn set_pitch(&mut self, ratio: f32) {
         self.state.set_pitch(ratio)
     }
@@ -552,7 +576,8 @@ impl SoundSource for SpatialSource {
         self.sink.play()
     }
 
-    fn stop(&mut self, ctx: &Context) -> GameResult {
+    fn stop(&mut self, audio: &impl Has<AudioContext>) -> GameResult {
+        let audio = audio.retrieve();
         // Sinks cannot be reused after calling `.stop()`. See
         // https://github.com/tomaka/rodio/issues/171 for information.
         // To stop the current sound we have to drop the old sink and
@@ -560,14 +585,14 @@ impl SoundSource for SpatialSource {
         // This is most ugly because in order to create a new sink
         // we need a `device`. However, we can only get the default
         // device without having access to a context. Currently that's
-        // fine because the `RodioAudioContext` uses the default device too,
+        // fine because the `AudioContext` uses the default device too,
         // but it may cause problems in the future if devices become
         // customizable.
 
         // We also need to carry over information from the previous sink.
         let volume = self.volume();
 
-        let device = ctx.audio_context.device();
+        let device = audio.device();
         self.sink = rodio::SpatialSink::try_new(
             device,
             self.emitter_position.into(),

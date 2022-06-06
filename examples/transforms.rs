@@ -1,6 +1,7 @@
 //! Demonstrates various projection and matrix fiddling/testing.
-use ggez::event::{self, KeyCode, KeyMods};
-use ggez::graphics::{self, Color, DrawMode};
+use ggez::event;
+use ggez::graphics::{self, Color, DrawMode, DrawParam};
+use ggez::input::keyboard;
 use ggez::{Context, GameResult};
 use glam::*;
 use std::env;
@@ -12,6 +13,7 @@ struct MainState {
     angle: graphics::Image,
     screen_bounds: Vec<graphics::Rect>,
     screen_bounds_idx: usize,
+    screen_coords: graphics::Rect,
 }
 
 impl MainState {
@@ -20,7 +22,7 @@ impl MainState {
     const GRID_POINT_RADIUS: f32 = 5.0;
 
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let angle = graphics::Image::new(ctx, "/angle.png")?;
+        let angle = graphics::Image::from_path(ctx, "/angle.png", true)?;
         let gridmesh_builder = &mut graphics::MeshBuilder::new();
         for x in 0..Self::GRID_SIZE {
             for y in 0..Self::GRID_SIZE {
@@ -38,7 +40,7 @@ impl MainState {
                 )?;
             }
         }
-        let gridmesh = gridmesh_builder.build(ctx)?;
+        let gridmesh = graphics::Mesh::from_data(ctx, gridmesh_builder.build());
         // An array of rects to cycle the screen coordinates through.
         let screen_bounds = vec![
             graphics::Rect::new(0.0, 0.0, 800.0, 600.0),
@@ -51,11 +53,17 @@ impl MainState {
             angle,
             screen_bounds,
             screen_bounds_idx,
+            screen_coords: graphics::Rect::new(
+                0.,
+                0.,
+                ctx.gfx.drawable_size().0,
+                ctx.gfx.drawable_size().1,
+            ),
         };
         Ok(s)
     }
 
-    fn draw_coord_labels(&self, ctx: &mut Context) -> GameResult {
+    fn draw_coord_labels(&self, canvas: &mut graphics::Canvas) {
         for x in 0..Self::GRID_SIZE {
             for y in 0..Self::GRID_SIZE {
                 let point = Vec2::new(
@@ -63,16 +71,9 @@ impl MainState {
                     y as f32 * Self::GRID_INTERVAL,
                 );
                 let s = format!("({}, {})", point.x, point.y);
-                let t = graphics::Text::new(s);
-                graphics::queue_text(ctx, &t, point, None);
+                canvas.draw(&graphics::Text::new(s), point);
             }
         }
-        graphics::draw_queued_text(
-            ctx,
-            graphics::DrawParam::default(),
-            None,
-            graphics::FilterMode::Linear,
-        )
     }
 }
 
@@ -83,10 +84,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
+        canvas.set_screen_coordinates(self.screen_coords);
 
         let origin = Vec2::ZERO;
-        graphics::draw(ctx, &self.gridmesh, (origin, Color::WHITE))?;
+        canvas.draw(
+            &self.gridmesh,
+            DrawParam::new().dest(origin).color(Color::WHITE),
+        );
 
         let param = graphics::DrawParam::new()
             .dest(Vec2::new(400.0, 400.0))
@@ -94,26 +99,24 @@ impl event::EventHandler<ggez::GameError> for MainState {
             .offset(Vec2::new(0.5, 0.5))
             .scale(Vec2::new(1.0, 1.0));
 
-        self.draw_coord_labels(ctx)?;
+        self.draw_coord_labels(&mut canvas);
 
-        graphics::draw(ctx, &self.angle, param)?;
+        canvas.draw(&self.angle, param);
 
-        graphics::present(ctx)?;
-        Ok(())
+        canvas.finish(ctx)
     }
 
     fn key_down_event(
         &mut self,
-        ctx: &mut Context,
-        keycode: KeyCode,
-        _keymod: KeyMods,
+        _ctx: &mut Context,
+        input: keyboard::KeyInput,
         _repeat: bool,
-    ) {
-        if let event::KeyCode::Space = keycode {
+    ) -> GameResult {
+        if let Some(keyboard::KeyCode::Space) = input.keycode {
             self.screen_bounds_idx = (self.screen_bounds_idx + 1) % self.screen_bounds.len();
-            graphics::set_screen_coordinates(ctx, self.screen_bounds[self.screen_bounds_idx])
-                .unwrap();
+            self.screen_coords = self.screen_bounds[self.screen_bounds_idx];
         }
+        Ok(())
     }
 }
 

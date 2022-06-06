@@ -80,8 +80,7 @@ struct MainState {
     demo_mesh: graphics::Mesh,
     square_mesh: graphics::Mesh,
     demo_image: graphics::Image,
-    demo_text: graphics::Text,
-    demo_spritebatch: graphics::spritebatch::SpriteBatch,
+    demo_instances: graphics::InstanceArray,
 }
 
 impl MainState {
@@ -100,21 +99,25 @@ impl MainState {
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
             Color::WHITE,
         )?;
-        let demo_image = graphics::Image::solid(ctx, 200, AQUA)?;
-        let demo_text = graphics::Text::new(graphics::TextFragment {
-            text: "-".to_string(),
-            color: Some(AQUA),
-            font: Some(graphics::Font::default()),
-            scale: Some(graphics::PxScale::from(300.0)),
-        });
-        let demo_spritebatch = graphics::spritebatch::SpriteBatch::new(demo_image.clone());
+        let demo_image = graphics::Image::from_solid(ctx, 200, AQUA);
+
+        let mut demo_instances = graphics::InstanceArray::new(ctx, demo_image.clone(), 2, false);
+        demo_instances.push(
+            DrawParam::default()
+                .dest(Vec2::new(250.0, 350.0))
+                .scale(Vec2::new(0.25, 0.25)),
+        );
+        demo_instances.push(
+            DrawParam::default()
+                .dest(Vec2::new(250.0, 425.0))
+                .scale(Vec2::new(0.1, 0.1)),
+        );
 
         let s = MainState {
             demo_mesh,
             square_mesh,
             demo_image,
-            demo_text,
-            demo_spritebatch,
+            demo_instances,
         };
         Ok(s)
     }
@@ -126,59 +129,44 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, AQUA);
+        let mut canvas = graphics::Canvas::from_frame(ctx, AQUA);
 
         // Draw a white square so we can see things
-        graphics::draw(
-            ctx,
+        canvas.draw(
             &self.square_mesh,
             DrawParam::default().dest(Vec2::new(200.0, 100.0)),
-        )?;
+        );
 
         // Draw things partially over the white square so we can see
         // where they are; they SHOULD be the same color as the
         // background.
 
         // mesh
-        graphics::draw(
-            ctx,
+        canvas.draw(
             &self.demo_mesh,
             DrawParam::default().dest(Vec2::new(150.0, 200.0)),
-        )?;
+        );
 
         // image
-        graphics::draw(
-            ctx,
+        canvas.draw(
             &self.demo_image,
             DrawParam::default().dest(Vec2::new(450.0, 200.0)),
-        )?;
+        );
 
         // text
-        graphics::draw(
-            ctx,
-            &self.demo_text,
-            DrawParam::default().dest(Vec2::new(150.0, 135.0)),
-        )?;
+        canvas.draw(
+            graphics::Text::new("-").set_scale(300.),
+            graphics::DrawParam::from([150., 135.]).color(AQUA),
+        );
 
-        // spritebatch
-        self.demo_spritebatch.add(
-            DrawParam::default()
-                .dest(Vec2::new(250.0, 350.0))
-                .scale(Vec2::new(0.25, 0.25)),
-        );
-        self.demo_spritebatch.add(
-            DrawParam::default()
-                .dest(Vec2::new(250.0, 425.0))
-                .scale(Vec2::new(0.1, 0.1)),
-        );
-        graphics::draw(
-            ctx,
-            &self.demo_spritebatch,
+        // instancearray
+        canvas.draw(
+            &self.demo_instances,
             DrawParam::default().dest(Vec2::new(0.0, 0.0)),
-        )?;
-        self.demo_spritebatch.clear();
+        );
 
-        graphics::present(ctx)?;
+        canvas.finish(ctx)?;
+
         Ok(())
     }
 }

@@ -7,6 +7,7 @@ use ggez::{Context, GameResult};
 
 use glam::*;
 
+use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
 use std::time::Duration;
@@ -72,42 +73,29 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let mut canvas =
+            graphics::Canvas::from_frame(ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
 
-        graphics::queue_text(
-            ctx,
+        canvas.draw(
             &graphics::Text::new("Press number keys 1-6 to play a sound, or escape to quit."),
-            Vec2::ZERO,
-            None,
+            [100., 100.],
         );
-        graphics::draw_queued_text(
-            ctx,
-            (Vec2::new(100.0, 100.0),),
-            None,
-            graphics::FilterMode::Linear,
-        )?;
 
-        graphics::present(ctx)?;
-        Ok(())
+        canvas.finish(ctx)
     }
 
-    fn key_down_event(
-        &mut self,
-        ctx: &mut Context,
-        keycode: input::keyboard::KeyCode,
-        _keymod: input::keyboard::KeyMods,
-        _repeat: bool,
-    ) {
-        match keycode {
-            input::keyboard::KeyCode::Key1 => self.play_detached(ctx),
-            input::keyboard::KeyCode::Key2 => self.play_later(ctx),
-            input::keyboard::KeyCode::Key3 => self.play_fadein(ctx),
-            input::keyboard::KeyCode::Key4 => self.play_highpitch(ctx),
-            input::keyboard::KeyCode::Key5 => self.play_lowpitch(ctx),
-            input::keyboard::KeyCode::Key6 => self.play_stats(ctx),
-            input::keyboard::KeyCode::Escape => event::quit(ctx),
+    fn key_down_event(&mut self, ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
+        match input.keycode {
+            Some(input::keyboard::KeyCode::Key1) => self.play_detached(ctx),
+            Some(input::keyboard::KeyCode::Key2) => self.play_later(ctx),
+            Some(input::keyboard::KeyCode::Key3) => self.play_fadein(ctx),
+            Some(input::keyboard::KeyCode::Key4) => self.play_highpitch(ctx),
+            Some(input::keyboard::KeyCode::Key5) => self.play_lowpitch(ctx),
+            Some(input::keyboard::KeyCode::Key6) => self.play_stats(ctx),
+            Some(input::keyboard::KeyCode::Escape) => event::request_quit(ctx),
             _ => (),
         }
+        Ok(())
     }
 }
 

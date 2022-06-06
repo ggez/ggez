@@ -1,34 +1,34 @@
-//! An example of how to use a `SpriteBatch` with a `Canvas`.
+//! An example of how to use an `InstanceArray` with a `Canvas`.
 //!
 //! You really want to run this one in release mode.
 
 use ggez::event;
 use ggez::graphics::{self, Color};
-use ggez::timer;
 use ggez::{Context, GameResult};
 use std::env;
+use std::f32::consts::TAU;
 use std::path;
 
 type Point2 = glam::Vec2;
 type Vector2 = glam::Vec2;
 
 struct MainState {
-    spritebatch: graphics::spritebatch::SpriteBatch,
-    canvas: graphics::Canvas,
+    instances: graphics::InstanceArray,
+    canvas_image: graphics::ScreenImage,
     draw_pt: Point2,
     draw_vec: Vector2,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image = graphics::Image::new(ctx, "/tile.png").unwrap();
-        let spritebatch = graphics::spritebatch::SpriteBatch::new(image);
-        let canvas = graphics::Canvas::with_window_size(ctx)?;
+        let image = graphics::Image::from_path(ctx, "/tile.png", true).unwrap();
+        let instances = graphics::InstanceArray::new(ctx, image, 150 * 150, false);
+        let canvas_image = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
         let draw_pt = Point2::new(0.0, 0.0);
         let draw_vec = Vector2::new(1.0, 1.0);
         let s = MainState {
-            spritebatch,
-            canvas,
+            instances,
+            canvas_image,
             draw_pt,
             draw_vec,
         };
@@ -38,61 +38,56 @@ impl MainState {
 
 impl MainState {
     fn draw_spritebatch(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::set_canvas(ctx, Some(&self.canvas));
-        graphics::clear(ctx, Color::WHITE);
-
         // Freeze the animation so things are easier to see.
         let time = 2000;
-        //let time = (timer::duration_to_f64(timer::time_since_start(ctx)) * 1000.0) as u32;
+        // let time = (ctx.timer.time_since_start().as_secs_f64() * 1000.0) as u32;
         let cycle = 10_000;
-        for x in 0..150 {
-            for y in 0..150 {
+        self.instances.set((0..150).flat_map(|x| {
+            (0..150).map(move |y| {
                 let x = x as f32;
                 let y = y as f32;
-                let p = graphics::DrawParam::new()
+                graphics::DrawParam::new()
                     .dest(Point2::new(x * 10.0, y * 10.0))
                     // scale: graphics::Point::new(0.0625, 0.0625),
                     .scale(Vector2::new(
-                        ((time % cycle * 2) as f32 / cycle as f32 * 6.28)
-                            .cos()
-                            .abs()
-                            * 0.0625,
-                        ((time % cycle * 2) as f32 / cycle as f32 * 6.28)
-                            .cos()
-                            .abs()
-                            * 0.0625,
+                        ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
+                        ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
                     ))
-                    .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * 6.28));
-                self.spritebatch.add(p);
-            }
-        }
+                    .rotation(-2.0 * ((time % cycle) as f32 / cycle as f32 * TAU))
+            })
+        }));
+
+        let mut canvas =
+            graphics::Canvas::from_screen_image(ctx, &mut self.canvas_image, Color::WHITE);
+
         let param = graphics::DrawParam::new()
             .dest(Point2::new(
-                ((time % cycle) as f32 / cycle as f32 * 6.28).cos() * 50.0 + 150.0,
-                ((time % cycle) as f32 / cycle as f32 * 6.28).sin() * 50.0 + 250.0,
+                ((time % cycle) as f32 / cycle as f32 * TAU).cos() * 50.0 + 150.0,
+                ((time % cycle) as f32 / cycle as f32 * TAU).sin() * 50.0 + 250.0,
             ))
             .scale(Vector2::new(
-                ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
-                ((time % cycle) as f32 / cycle as f32 * 6.28).sin().abs() * 2.0 + 1.0,
+                ((time % cycle) as f32 / cycle as f32 * TAU).sin().abs() * 2.0 + 1.0,
+                ((time % cycle) as f32 / cycle as f32 * TAU).sin().abs() * 2.0 + 1.0,
             ))
-            .rotation((time % cycle) as f32 / cycle as f32 * 6.28)
+            .rotation((time % cycle) as f32 / cycle as f32 * TAU)
             .offset(Point2::new(750., 750.));
-        graphics::draw(ctx, &self.spritebatch, param)?;
-        self.spritebatch.clear();
-        graphics::set_canvas(ctx, None);
+
+        canvas.draw(&self.instances, param);
+        canvas.finish(ctx)?;
+
         Ok(())
     }
 }
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        if timer::ticks(ctx) % 100 == 0 {
-            println!("Delta frame time: {:?} ", timer::delta(ctx));
-            println!("Average FPS: {}", timer::fps(ctx));
+        if ctx.time.ticks() % 100 == 0 {
+            println!("Delta frame time: {:?} ", ctx.time.delta());
+            println!("Average FPS: {}", ctx.time.fps());
         }
 
         // Bounce the rect if necessary
-        let (w, h) = graphics::drawable_size(ctx);
+        let (w, h) = ctx.gfx.drawable_size();
         if self.draw_pt.x + (w as f32 / 2.0) > (w as f32) || self.draw_pt.x < 0.0 {
             self.draw_vec.x *= -1.0;
         }
@@ -104,19 +99,24 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
         self.draw_spritebatch(ctx)?;
-        let dims = self.canvas.dimensions();
-        let src_x = self.draw_pt.x / dims.w;
-        let src_y = self.draw_pt.y / dims.h;
-        graphics::draw(
-            ctx,
-            &self.canvas,
+
+        let canvas_image = self.canvas_image.image(ctx);
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
+
+        let src_x = self.draw_pt.x / canvas_image.width() as f32;
+        let src_y = self.draw_pt.y / canvas_image.height() as f32;
+
+        canvas.draw(
+            &canvas_image,
             graphics::DrawParam::new()
                 .dest(self.draw_pt)
-                .src(graphics::Rect::new(src_x, src_y, 0.5, 0.5)),
-        )?;
-        graphics::present(ctx)?;
+                .src(graphics::Rect::new(src_x, src_y, 0.5, 0.5))
+                .scale([0.5, 0.5]),
+        );
+
+        canvas.finish(ctx)?;
+
         Ok(())
     }
 }

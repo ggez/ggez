@@ -5,7 +5,11 @@ submit a PR, please!
 
 ## Games!
 
-* <https://github.com/ljedrz/hive>: an implementation of Hive - a bug-themed tabletop abstract strategy game.
+* <https://github.com/rdrmic/color-columns>: A falling-blocks-type 2D game with a simple but addictive gameplay
+
+## Example/tutorial code
+
+None yet!
 
 # 0.6.x
 

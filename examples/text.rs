@@ -1,9 +1,12 @@
 //! This example demonstrates how to use `Text` to draw TrueType font texts efficiently.
 
-use ggez::conf::{WindowMode, WindowSetup};
-use ggez::event;
-use ggez::graphics::{self, Align, Color, DrawParam, Font, PxScale, Text, TextFragment};
+use ggez::graphics::{self, Color, PxScale, Text, TextAlign, TextFragment};
 use ggez::timer;
+use ggez::{
+    conf::{WindowMode, WindowSetup},
+    graphics::Drawable,
+};
+use ggez::{event, graphics::TextLayout};
 use ggez::{Context, ContextBuilder, GameResult};
 use glam::Vec2;
 use std::collections::BTreeMap;
@@ -46,9 +49,9 @@ impl App {
             // or even individual letters, into the same block of text.
             text: "Small red fragment".to_string(),
             color: Some(Color::new(1.0, 0.0, 0.0, 1.0)),
-            // `Font` is a handle to a loaded TTF, stored inside the `Context`.
-            // `Font::default()` always exists and maps to LiberationMono-Regular.
-            font: Some(graphics::Font::default()),
+            // The font name refers to a loaded TTF, stored inside the `GraphicsContext`.
+            // A default font always exists and maps to LiberationMono-Regular.
+            font: Some("LiberationMono-Regular".into()),
             scale: Some(PxScale::from(10.0)),
             // This doesn't do anything at this point; can be used to omit fields in declarations.
             ..Default::default()
@@ -60,14 +63,16 @@ impl App {
             .add(TextFragment::new(" magenta fragment").color(Color::new(1.0, 0.0, 1.0, 1.0)))
             .add(" another default fragment, to really drive the point home");
 
-        // This loads a new TrueType font into the context and
-        // returns a `Font` referring to it.
-        let fancy_font = Font::new(ctx, "/Tangerine_Regular.ttf")?;
+        // This loads a new TrueType font into the context named "Fancy font".
+        ctx.gfx.add_font(
+            "Fancy font",
+            graphics::FontData::from_path(ctx, "/Tangerine_Regular.ttf")?,
+        );
 
         // `Font` is really only an integer handle, and can be copied around.
         text.add(
             TextFragment::new(" fancy fragment")
-                .font(fancy_font)
+                .font("Fancy font")
                 .scale(PxScale::from(25.0)),
         )
         .add(" and a default one, for symmetry");
@@ -77,18 +82,35 @@ impl App {
         // Text can be wrapped by setting it's bounds, in screen coordinates;
         // vertical bound will cut off the extra off the bottom.
         // Alignment within the bounds can be set by `Align` enum.
-        text.set_bounds(Vec2::new(400.0, f32::INFINITY), Align::Left);
+        text.set_bounds(
+            Vec2::new(400.0, f32::INFINITY),
+            TextLayout::Wrap {
+                h_align: TextAlign::Begin,
+                v_align: TextAlign::Begin,
+            },
+        );
         texts.insert("1_demo_text_2", text.clone());
 
-        text.set_bounds(Vec2::new(500.0, f32::INFINITY), Align::Right);
+        text.set_bounds(
+            Vec2::new(500.0, f32::INFINITY),
+            TextLayout::Wrap {
+                h_align: TextAlign::End,
+                v_align: TextAlign::Begin,
+            },
+        );
         texts.insert("1_demo_text_3", text.clone());
 
         // This can be used to set the font and scale unformatted fragments will use.
         // Color is specified when drawing (or queueing), via `DrawParam`.
         // Side note: TrueType fonts aren't very consistent between themselves in terms
         // of apparent scale - this font with default scale will appear too small.
-        text.set_font(fancy_font, PxScale::from(16.0))
-            .set_bounds(Vec2::new(300.0, f32::INFINITY), Align::Center);
+        text.set_font("Fancy font").set_scale(16.0).set_bounds(
+            Vec2::new(300.0, f32::INFINITY),
+            TextLayout::Wrap {
+                h_align: TextAlign::Middle,
+                v_align: TextAlign::Begin,
+            },
+        );
         texts.insert("1_demo_text_4", text);
 
         // These methods can be combined to easily create a variety of simple effects.
@@ -115,37 +137,29 @@ impl App {
 impl event::EventHandler<ggez::GameError> for App {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
-        while timer::check_update_time(ctx, DESIRED_FPS) {}
+        while ctx.time.check_update_time(DESIRED_FPS) {}
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
 
-        // `Text` can be used in "immediate mode", but it's slightly less efficient
-        // in most cases, and horrifically less efficient in a few select ones
-        // (using `.width()` or `.height()`, for example).
-        let fps = timer::fps(ctx);
+        let fps = ctx.time.fps();
         let fps_display = Text::new(format!("FPS: {}", fps));
         // When drawing through these calls, `DrawParam` will work as they are documented.
-        graphics::draw(ctx, &fps_display, (Vec2::new(200.0, 0.0), Color::WHITE))?;
+        canvas.draw(
+            &fps_display,
+            graphics::DrawParam::from([200.0, 0.0]).color(Color::WHITE),
+        );
 
         let mut height = 0.0;
         for text in self.texts.values() {
             // Calling `.queue()` for all bits of text that can share a `DrawParam`,
             // followed with `::draw_queued()` with said params, is the intended way.
-            graphics::queue_text(ctx, text, Vec2::new(20.0, 20.0 + height), None);
+            canvas.draw(text, Vec2::new(20.0, 20.0 + height));
             //height += 20.0 + text.height(ctx) as f32;
-            height += 20.0 + text.height(ctx) as f32;
+            height += 20.0 + text.dimensions(ctx).unwrap().h as f32;
         }
-        // When drawing via `draw_queued()`, `.offset` in `DrawParam` will be
-        // in screen coordinates, and `.color` will be ignored.
-        graphics::draw_queued_text(
-            ctx,
-            DrawParam::default(),
-            None,
-            graphics::FilterMode::Linear,
-        )?;
 
         // Individual fragments within the `Text` can be replaced;
         // this can be used for inlining animated sentences, words, etc.
@@ -163,36 +177,23 @@ impl event::EventHandler<ggez::GameError> for App {
                 TextFragment::new(ch).scale(PxScale::from(10.0 + 6.0 * self.rng.rand_float())),
             );
         }
-        let wobble_width = wobble.width(ctx);
-        let wobble_height = wobble.height(ctx);
-        graphics::queue_text(
-            ctx,
+        let wobble_rect = (&wobble).dimensions(ctx).unwrap();
+        canvas.draw(
             &wobble,
-            Vec2::new(0.0, 0.0),
-            Some(Color::new(0.0, 1.0, 1.0, 1.0)),
+            graphics::DrawParam::new()
+                .color((0.0, 1.0, 1.0, 1.0))
+                .dest([500.0, 300.0])
+                .rotation(-0.5),
         );
         let t = Text::new(format!(
             "width: {}\nheight: {}",
-            wobble_width, wobble_height
+            wobble_rect.w, wobble_rect.h
         ));
-        graphics::queue_text(ctx, &t, Vec2::new(0.0, 20.0), None);
-        graphics::draw_queued_text(
-            ctx,
-            DrawParam::new()
-                .dest(Vec2::new(500.0, 300.0))
-                .rotation(-0.5),
-            None,
-            graphics::FilterMode::Linear,
-        )?;
+        canvas.draw(&t, graphics::DrawParam::from([500.0, 320.0]).rotation(-0.5));
 
-        graphics::present(ctx)?;
+        canvas.finish(ctx)?;
         timer::yield_now();
         Ok(())
-    }
-
-    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
-        graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height))
-            .unwrap();
     }
 }
 

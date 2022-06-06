@@ -35,7 +35,7 @@ impl<T> VFile for T where T: Read + Write + Seek + Debug {}
 /// `std` annoyingly doesn't let you read the read/write/create/etc
 /// state out of it.
 #[must_use]
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct OpenOptions {
     read: bool,
     write: bool,
@@ -697,7 +697,7 @@ impl Debug for ZipFileWrapper {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct ZipMetadata {
     len: u64,
     is_dir: bool,
@@ -811,12 +811,15 @@ impl VFS for ZipFS {
     /// Zip files don't have real directories, so we (incorrectly) hack it by
     /// just looking for a path prefix for now.
     fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
-        let path = convenient_path_to_str(path)?;
+        let path = sanitize_path_for_zip(path).ok_or_else(|| {
+            let errmessage = format!("Invalid path format for resource: {:?}", path);
+            GameError::FilesystemError(errmessage)
+        })? + "/";
         let itr = self
             .index
             .iter()
-            .filter(|s| s.starts_with(path))
-            .map(|s| Ok(PathBuf::from(s)))
+            .filter(|&s| s.starts_with(&path) && s != &path)
+            .map(|s| Ok(PathBuf::from("/").join(s)))
             .collect::<Vec<_>>();
         Ok(Box::new(itr.into_iter()))
     }

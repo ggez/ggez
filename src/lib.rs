@@ -10,6 +10,10 @@
 //!
 //! ggez is a Rust library to create a Good Game Easily.
 //!
+//! The current version is 0.8.0-rc0. This is a RELEASE CANDIDATE version,
+//! which in this case means that the API might still change slightly until
+//! 0.8.0 is released in full (also depending on your feedback).
+//!
 //! More specifically, ggez is a lightweight cross-platform game framework
 //! for making 2D games with minimum friction.  It aims to implement an
 //! API based on (a Rustified version of) the [LÖVE](https://love2d.org/)
@@ -29,14 +33,14 @@
 //! ## Features
 //!
 //! * Filesystem abstraction that lets you load resources from folders or zip files
-//! * Hardware-accelerated 2D rendering built on the `gfx-rs` graphics engine
+//! * Hardware-accelerated 2D rendering built on the `wgpu` graphics API
 //! * Loading and playing .ogg, .wav and .flac files via the `rodio` crate
-//! * TTF font rendering with `rusttype` and `glyph_brush`.
+//! * TTF font rendering with `glyph_brush`.
 //! * Interface for handling keyboard and mouse events easily through callbacks
 //! * Config file for defining engine and game settings
 //! * Easy timing and FPS measurement functions.
 //! * Math library integration with `mint`.
-//! * Some more advanced graphics options: shaders, sprite batches and render targets
+//! * Some more advanced graphics options: shaders, instanced draws and render targets
 //!
 //! ### Supported platforms
 //!
@@ -58,7 +62,7 @@
 //! line to your `Cargo.toml` file:
 //!
 //! ```text
-//! ggez = "0.7"
+//! ggez = "0.8.0-rc0"
 //! ```
 //!
 //! ggez consists of three main parts: A `Context` object which
@@ -135,15 +139,15 @@
 //! }
 //!
 //! impl EventHandler for MyGame {
-//!     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+//!    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
 //!         // Update code here...
 //!         Ok(())
 //!     }
 //!
 //!     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-//!         graphics::clear(ctx, Color::WHITE);
+//!         let mut canvas = graphics::Canvas::from_frame(ctx, Color::WHITE);
 //!         // Draw code here...
-//!         graphics::present(ctx)
+//!         canvas.finish(ctx)
 //!     }
 //! }
 //! ```
@@ -151,8 +155,7 @@
 //! ## Implementation details
 //!
 //! ggez is built upon `winit` for windowing and events, `rodio` for
-//! sound, and a 2D drawing engine implemented in `gfx` using the OpenGL
-//! backend (which currently defaults to use OpenGL 3.2).  It is entirely
+//! sound, and a 2D drawing engine implemented with `wgpu`. It is entirely
 //! thread-safe (though platform constraints mean the event-handling loop
 //! and drawing must be done in the main thread), and portable to Windows
 //! and Linux.
@@ -188,8 +191,6 @@
 #[macro_use]
 extern crate bitflags;
 #[macro_use]
-extern crate gfx;
-#[macro_use]
 extern crate log;
 #[macro_use]
 extern crate serde_derive;
@@ -200,7 +201,7 @@ pub extern crate mint;
 
 pub mod audio;
 pub mod conf;
-mod context;
+pub mod context;
 pub mod error;
 pub mod event;
 pub mod filesystem;
@@ -208,9 +209,6 @@ pub mod graphics;
 pub mod input;
 pub mod timer;
 mod vfs;
-
-#[cfg(test)]
-pub mod tests;
 
 pub use crate::context::{winit, Context, ContextBuilder};
 pub use crate::error::*;
