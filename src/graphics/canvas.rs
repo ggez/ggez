@@ -274,7 +274,7 @@ impl Canvas {
     /// Sets the bounds of the screen viewport. This is a shortcut for `set_projection`
     /// and thus will override any previous projection matrix set.
     ///
-    /// The default coordinate system has (0,0) at the top-left corner
+    /// The default coordinate system has \[0.0, 0.0\] at the top-left corner
     /// with X increasing to the right and Y increasing down, with the
     /// viewport scaled such that one coordinate unit is one pixel on the
     /// screen.  This function lets you change this coordinate system to

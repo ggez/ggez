@@ -52,7 +52,7 @@ impl Rect {
         Self::new(0.0, 0.0, 0.0, 0.0)
     }
 
-    /// Creates a new `Rect` at `0,0` with width and height 1.
+    /// Creates a new `Rect` at \[0.0, 0.0\] with width and height 1.
     pub const fn one() -> Self {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }

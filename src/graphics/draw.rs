@@ -125,7 +125,7 @@ pub type ZIndex = i32;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawParam {
     /// A portion of the drawable to clip, as a fraction of the whole image.
-    /// Defaults to the whole image `(0,0 to 1,1)` if omitted.
+    /// Defaults to the whole image (\[0.0, 0.0\] to \[1.0, 1.0\]) if omitted.
     pub src: Rect,
     /// Default: white.
     pub color: Color,
