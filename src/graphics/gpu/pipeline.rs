@@ -109,16 +109,16 @@ impl PipelineCache {
         self.layouts
             .entry(key)
             .or_insert_with(|| {
-                ArcPipelineLayout::new(
-                    device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                ArcPipelineLayout::new(device.create_pipeline_layout(
+                    &wgpu::PipelineLayoutDescriptor {
                         label: None,
                         bind_group_layouts: &bind_groups
                             .iter()
                             .map(|bg| bg.handle.as_ref())
                             .collect::<Vec<_>>(),
                         push_constant_ranges: &[],
-                    }),
-                )
+                    },
+                ))
             })
             .clone()
     }
