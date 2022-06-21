@@ -67,6 +67,16 @@ pub struct Context {
     pub quit_requested: bool,
 }
 
+impl Context {
+    /// Attempts to terminate the [`ggez::event::run()`](fn.run.html) loop by requesting a
+    /// [`quit_event`](EventHandler::quit_event) at the very start of the next frame. If this event
+    /// returns `Ok(false)`, then [`Context.continuing`](struct.Context.html#structfield.continuing)
+    /// is set to `false` and the loop breaks.
+    pub fn request_quit(&mut self) {
+        self.quit_requested = true;
+    }
+}
+
 // This is ugly and hacky but greatly improves ergonomics.
 
 /// Used to represent types that can provide a certain context type.
@@ -369,6 +379,15 @@ impl ContextBuilder {
 
         Context::from_conf(config, fs)
     }
+}
+
+/// Attempts to terminate the [`ggez::event::run()`](fn.run.html) loop by requesting a
+/// [`quit_event`](EventHandler::quit_event) at the very start of the next frame. If this event
+/// returns `Ok(false)`, then [`Context.continuing`](struct.Context.html#structfield.continuing)
+/// is set to `false` and the loop breaks.
+#[deprecated(since = "0.8.0", note = "Use `ctx.request_quit` instead.")]
+pub fn quit(ctx: &mut Context) {
+    ctx.request_quit();
 }
 
 #[cfg(test)]

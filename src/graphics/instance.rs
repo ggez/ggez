@@ -266,14 +266,14 @@ impl InstanceArray {
 }
 
 impl Drawable for InstanceArray {
-    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
         self.flush_wgpu(&canvas.wgpu).unwrap();
         canvas.push_draw(
             Draw::MeshInstances {
                 mesh: canvas.default_resources().mesh.clone(),
                 instances: InstanceArrayView::from_instances(self).unwrap(),
             },
-            param,
+            param.into(),
         );
     }
 

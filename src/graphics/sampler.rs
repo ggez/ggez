@@ -59,6 +59,15 @@ impl<'a> From<Sampler> for wgpu::SamplerDescriptor<'a> {
     }
 }
 
+impl From<FilterMode> for Sampler {
+    fn from(filter: FilterMode) -> Self {
+        match filter {
+            FilterMode::Nearest => Self::nearest_clamp(),
+            FilterMode::Linear => Self::linear_clamp(),
+        }
+    }
+}
+
 /// Describes the clamping mode of a sampler, used when the shader writes to sample outside of texture boundaries.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ClampMode {

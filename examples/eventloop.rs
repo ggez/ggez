@@ -41,7 +41,7 @@ pub fn main() -> GameResult {
         event::process_event(ctx, &mut event);
         match event {
             Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => event::request_quit(ctx),
+                WindowEvent::CloseRequested => ctx.request_quit(),
                 WindowEvent::KeyboardInput {
                     input:
                         KeyboardInput {
@@ -51,7 +51,7 @@ pub fn main() -> GameResult {
                     ..
                 } => {
                     if let keyboard::KeyCode::Escape = keycode {
-                        event::request_quit(ctx);
+                        ctx.request_quit();
                     }
                 }
                 // `CloseRequested` and `KeyboardInput` events won't appear here.

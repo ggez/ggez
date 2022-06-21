@@ -336,13 +336,13 @@ impl Image {
 }
 
 impl Drawable for Image {
-    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
         canvas.push_draw(
             Draw::Mesh {
                 mesh: canvas.default_resources().mesh.clone(),
                 image: self.clone(),
             },
-            param,
+            param.into(),
         );
     }
 
