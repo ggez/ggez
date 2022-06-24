@@ -25,11 +25,10 @@ path = "src/lib.rs"
 
 [features]
 default = ["c_dependencies", "audio", "gamepad"]
-bzip2 = ["zip/bzip2"]
-zstd = ["zip/zstd"]
+zip-compression = ["zip/bzip2", "zip/zstd"]
 mp3 = ["rodio/mp3"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
-c_dependencies = ["bzip2", "zstd", "mp3"]
+c_dependencies = ["zip-compression", "mp3"]
 audio = ["rodio"]
 gamepad = ["gilrs"]
 
