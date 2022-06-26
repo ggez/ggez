@@ -2,11 +2,7 @@ use super::{
     gpu::text::{Extra, TextRenderer},
     Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect,
 };
-use crate::{
-    context::{Has, HasMut},
-    filesystem::Filesystem,
-    GameError, GameResult,
-};
+use crate::{context::Has, filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
 use std::{collections::HashMap, io::Read, path::Path};
 
@@ -206,12 +202,13 @@ impl Text {
     /// Returns a `Vec` containing the coordinates of the formatted and wrapped text.
     pub fn glyph_positions(
         &self,
-        gfx: &mut impl HasMut<GraphicsContext>,
+        gfx: &impl Has<GraphicsContext>,
     ) -> GameResult<Vec<mint::Point2<f32>>> {
-        let gfx = gfx.retrieve_mut();
+        let gfx = gfx.retrieve();
         Ok(gfx
             .text
             .glyph_brush
+            .borrow_mut()
             .glyphs(self.as_section(&gfx.fonts, DrawParam::default())?)
             .map(|glyph| mint::Point2::<f32> {
                 x: glyph.glyph.position.x,
@@ -222,21 +219,19 @@ impl Text {
 
     /// Measures the glyph boundaries for the text.
     #[inline]
-    pub fn measure(
-        &self,
-        gfx: &mut impl HasMut<GraphicsContext>,
-    ) -> GameResult<mint::Vector2<f32>> {
-        let gfx = gfx.retrieve_mut();
-        self.measure_raw(&mut gfx.text, &gfx.fonts)
+    pub fn measure(&self, gfx: &impl Has<GraphicsContext>) -> GameResult<mint::Vector2<f32>> {
+        let gfx = gfx.retrieve();
+        self.measure_raw(&gfx.text, &gfx.fonts)
     }
 
     pub(crate) fn measure_raw(
         &self,
-        text: &mut TextRenderer,
+        text: &TextRenderer,
         fonts: &HashMap<String, FontId>,
     ) -> GameResult<mint::Vector2<f32>> {
         Ok(text
             .glyph_brush
+            .borrow_mut()
             .glyph_bounds(self.as_section(fonts, DrawParam::default())?)
             .map(|rect| mint::Vector2::<f32> {
                 x: rect.width(),
@@ -302,7 +297,7 @@ impl Drawable for Text {
         canvas.push_draw(Draw::BoundedText { text: self.clone() }, param.into());
     }
 
-    fn dimensions(&self, gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
         let bounds = self.measure(gfx).ok()?;
         Some(Rect {
             x: 0.,

@@ -6,10 +6,11 @@ use crate::graphics::{context::FrameArenas, LinearColor};
 use crevice::std140::AsStd140;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
 use ordered_float::OrderedFloat;
-use std::num::NonZeroU32;
+use std::{cell::RefCell, num::NonZeroU32};
 
 pub(crate) struct TextRenderer {
-    pub glyph_brush: GlyphBrush<TextVertex, Extra>,
+    // RefCell to make various getter not take &mut.
+    pub glyph_brush: RefCell<GlyphBrush<TextVertex, Extra>>,
     pub cache: ArcTexture,
     pub cache_view: ArcTextureView,
     pub cache_size: (u32, u32),
@@ -54,7 +55,7 @@ impl TextRenderer {
         );
 
         TextRenderer {
-            glyph_brush,
+            glyph_brush: RefCell::new(glyph_brush),
             cache,
             cache_view,
             cache_size,
@@ -62,8 +63,8 @@ impl TextRenderer {
         }
     }
 
-    pub fn queue(&mut self, section: glyph_brush::Section<'_, Extra>) {
-        self.glyph_brush.queue(section);
+    pub fn queue(&self, section: glyph_brush::Section<'_, Extra>) {
+        self.glyph_brush.borrow_mut().queue(section);
     }
 
     #[allow(unsafe_code)]
@@ -74,7 +75,7 @@ impl TextRenderer {
         arenas: &'a FrameArenas,
         pass: &mut wgpu::RenderPass<'a>,
     ) {
-        let res = self.glyph_brush.process_queued(
+        let res = self.glyph_brush.borrow_mut().process_queued(
             |rect, pixels| {
                 queue.write_texture(
                     wgpu::ImageCopyTexture {
@@ -143,6 +144,7 @@ impl TextRenderer {
 
                 self.cache_size = suggested;
                 self.glyph_brush
+                    .borrow_mut()
                     .resize_texture(self.cache_size.0, self.cache_size.1);
 
                 self.cache = ArcTexture::new(device.create_texture(&wgpu::TextureDescriptor {

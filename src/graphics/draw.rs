@@ -1,6 +1,5 @@
-use crate::context::HasMut;
-
 use super::{Canvas, Color, GraphicsContext, LinearColor, Rect};
+use crate::context::Has;
 
 /// A struct that represents where to put a drawable object.
 ///
@@ -281,7 +280,7 @@ pub trait Drawable {
     ///
     /// It returns `Option` because some `Drawable`s may have no bounding box,
     /// namely `InstanceArray` (as there is no true bounds for the instances given the instanced mesh can differ).
-    fn dimensions(&self, gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect>;
+    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Option<Rect>;
 }
 
 #[derive(Debug, crevice::std140::AsStd140)]

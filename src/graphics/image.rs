@@ -4,7 +4,7 @@ use super::{
     Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
 use crate::{
-    context::{Has, HasMut, HasTwo},
+    context::{Has, HasTwo},
     filesystem::Filesystem,
     Context, GameError, GameResult,
 };
@@ -346,7 +346,7 @@ impl Drawable for Image {
         );
     }
 
-    fn dimensions(&self, _gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
         Some(Rect {
             x: 0.,
             y: 0.,

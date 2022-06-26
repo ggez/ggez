@@ -1,7 +1,4 @@
-use crate::{
-    context::{Has, HasMut},
-    GameError, GameResult,
-};
+use crate::{context::Has, GameError, GameResult};
 
 use super::{
     context::GraphicsContext,
@@ -243,11 +240,7 @@ impl InstanceArray {
     ///
     /// Essentially, consider `<InstanceArray as Drawable>::dimensions()` to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw()`,
     /// and consider [`InstanceArray::dimensions_meshed()`] to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw_instanced_mesh()`.
-    pub fn dimensions_meshed(
-        &self,
-        gfx: &mut impl HasMut<GraphicsContext>,
-        mesh: &Mesh,
-    ) -> Option<Rect> {
+    pub fn dimensions_meshed(&self, gfx: &impl Has<GraphicsContext>, mesh: &Mesh) -> Option<Rect> {
         if self.params.is_empty() {
             return None;
         }
@@ -277,8 +270,8 @@ impl Drawable for InstanceArray {
         );
     }
 
-    fn dimensions(&self, gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
-        let gfx = gfx.retrieve_mut();
+    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
+        let gfx = gfx.retrieve();
         if self.params.is_empty() {
             return None;
         }

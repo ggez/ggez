@@ -2,10 +2,7 @@ use super::{
     context::GraphicsContext, gpu::arc::ArcBuffer, Canvas, Color, Draw, DrawMode, DrawParam,
     Drawable, LinearColor, Rect, WgpuContext,
 };
-use crate::{
-    context::{Has, HasMut},
-    GameError, GameResult,
-};
+use crate::{context::Has, GameError, GameResult};
 use lyon::{
     math::Point as LPoint,
     path::{traits::PathBuilder, Polygon},
@@ -273,7 +270,7 @@ impl Drawable for Mesh {
         );
     }
 
-    fn dimensions(&self, _gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
         Some(self.bounds)
     }
 }
@@ -297,7 +294,7 @@ impl Drawable for Quad {
         canvas.default_resources().mesh.clone().draw(canvas, param);
     }
 
-    fn dimensions(&self, _gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
         Some(Rect::one())
     }
 }

@@ -341,7 +341,7 @@ impl GraphicsContext {
     /// Adds a new `font` with a given `name`.
     #[allow(unused_results)]
     pub fn add_font(&mut self, name: &str, font: FontData) {
-        let id = self.text.glyph_brush.add_font(font.font);
+        let id = self.text.glyph_brush.borrow_mut().add_font(font.font);
         self.fonts.insert(name.to_string(), id);
     }
 
