@@ -53,7 +53,7 @@ impl Vertex {
     }
 }
 
-/// Mesh data stored on the GPU as a vertex and index buffer.
+/// Mesh data stored on the GPU as a vertex and index buffer. Cheap to clone.
 #[derive(Debug, Clone)]
 pub struct Mesh {
     pub(crate) verts: ArcBuffer,
@@ -263,13 +263,13 @@ impl Mesh {
 }
 
 impl Drawable for Mesh {
-    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
         canvas.push_draw(
             Draw::Mesh {
                 mesh: self.clone(),
                 image: canvas.default_resources().image.clone(),
             },
-            param,
+            param.into(),
         );
     }
 
@@ -293,8 +293,8 @@ pub struct Quad;
 
 // draw quad
 impl Drawable for Quad {
-    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
-        canvas.draw(&canvas.default_resources().mesh.clone(), param);
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
+        canvas.default_resources().mesh.clone().draw(canvas, param);
     }
 
     fn dimensions(&self, _gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {

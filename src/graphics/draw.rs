@@ -125,7 +125,7 @@ pub type ZIndex = i32;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DrawParam {
     /// A portion of the drawable to clip, as a fraction of the whole image.
-    /// Defaults to the whole image `(0,0 to 1,1)` if omitted.
+    /// Defaults to the whole image (\[0.0, 0.0\] to \[1.0, 1.0\]) if omitted.
     pub src: Rect,
     /// Default: white.
     pub color: Color,
@@ -161,18 +161,21 @@ impl DrawParam {
         self
     }
 
+    pub(crate) fn get_dest_mut(&mut self) -> &mut mint::Point2<f32> {
+        if let Transform::Values { dest, .. } = &mut self.transform {
+            dest
+        } else {
+            panic!("Cannot calculate destination value for a DrawParam matrix")
+        }
+    }
+
     /// Set the dest point.
-    pub fn dest<P>(mut self, dest_: P) -> Self
+    pub fn dest<P>(mut self, dest: P) -> Self
     where
         P: Into<mint::Point2<f32>>,
     {
-        if let Transform::Values { ref mut dest, .. } = self.transform {
-            let p: mint::Point2<f32> = dest_.into();
-            *dest = p;
-            self
-        } else {
-            panic!("Cannot set values for a DrawParam matrix")
-        }
+        *self.get_dest_mut() = dest.into();
+        self
     }
 
     /// Set the `dest` and `scale` together.
@@ -272,7 +275,7 @@ where
 /// All types that can be drawn onto a canvas implement the `Drawable` trait.
 pub trait Drawable {
     /// Draws the drawable onto the canvas.
-    fn draw(&self, canvas: &mut Canvas, param: DrawParam);
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>);
 
     /// Returns a bounding box in the form of a `Rect`.
     ///

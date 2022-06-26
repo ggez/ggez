@@ -400,14 +400,14 @@ impl GraphicsContext {
         &self.window
     }
 
-    /// Sets the window icon.
-    pub fn set_window_icon(
-        &mut self,
+    /// Sets the window icon. `None` for path removes the icon.
+    pub fn set_window_icon<P: AsRef<Path>>(
+        &self,
         filesystem: &impl Has<Filesystem>,
-        path: Option<impl AsRef<Path>>,
+        path: impl Into<Option<P>>,
     ) -> GameResult {
         let filesystem = filesystem.retrieve();
-        let icon = match path {
+        let icon = match path.into() {
             Some(p) => Some(load_icon(p.as_ref(), filesystem)?),
             None => None,
         };

@@ -298,8 +298,8 @@ impl Text {
 }
 
 impl Drawable for Text {
-    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
-        canvas.push_draw(Draw::BoundedText { text: self.clone() }, param);
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
+        canvas.push_draw(Draw::BoundedText { text: self.clone() }, param.into());
     }
 
     fn dimensions(&self, gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {

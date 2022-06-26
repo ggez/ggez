@@ -35,6 +35,9 @@ pub struct Canvas {
     target: Image,
     resolve: Option<Image>,
     load_op: CanvasLoadOp,
+
+    // This will be removed after queue_text and draw_queued_text have been removed.
+    pub(crate) queued_texts: Vec<(Text, mint::Point2<f32>, Option<Color>)>,
 }
 
 impl Canvas {
@@ -145,6 +148,8 @@ impl Canvas {
             target,
             resolve,
             load_op,
+
+            queued_texts: Vec::new(),
         };
 
         this.set_screen_coordinates(screen);
@@ -206,8 +211,8 @@ impl Canvas {
 
     /// Sets the active sampler used to sample images.
     #[inline]
-    pub fn set_sampler(&mut self, sampler: Sampler) {
-        self.state.sampler = sampler;
+    pub fn set_sampler(&mut self, sampler: impl Into<Sampler>) {
+        self.state.sampler = sampler.into();
     }
 
     /// Returns the currently active sampler used to sample images.
@@ -269,7 +274,7 @@ impl Canvas {
     /// Sets the bounds of the screen viewport. This is a shortcut for `set_projection`
     /// and thus will override any previous projection matrix set.
     ///
-    /// The default coordinate system has (0,0) at the top-left corner
+    /// The default coordinate system has \[0.0, 0.0\] at the top-left corner
     /// with X increasing to the right and Y increasing down, with the
     /// viewport scaled such that one coordinate unit is one pixel on the
     /// screen.  This function lets you change this coordinate system to
@@ -340,7 +345,7 @@ impl Canvas {
     /// Draws the given `Drawable` to the canvas with a given `DrawParam`.
     #[inline]
     pub fn draw(&mut self, drawable: &impl Drawable, param: impl Into<DrawParam>) {
-        drawable.draw(self, param.into())
+        drawable.draw(self, param)
     }
 
     /// Draws a `Mesh` textured with an `Image`.
@@ -352,7 +357,7 @@ impl Canvas {
 
     /// Draws an `InstanceArray` textured with a `Mesh`.
     ///
-    /// This differs from `cavnas.draw(instances, param)` as in that case, the instances are
+    /// This differs from `canvas.draw(instances, param)` as in that case, the instances are
     /// drawn as quads.
     pub fn draw_instanced_mesh(
         &mut self,
