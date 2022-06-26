@@ -6,6 +6,8 @@ use std::sync::Arc;
 /// An enum containing all kinds of game framework errors.
 #[derive(Debug)]
 pub enum GameError {
+    /// An error when intializing the graphics system.
+    GraphicsInitializationError,
     /// An error in the filesystem layout
     FilesystemError(String),
     /// An error in the config file

@@ -99,17 +99,54 @@ impl GraphicsContext {
         conf: &Conf,
         filesystem: &mut Filesystem,
     ) -> GameResult<Self> {
-        let instance = wgpu::Instance::new(match conf.backend {
-            Backend::Primary => wgpu::Backends::PRIMARY,
-            Backend::Secondary => wgpu::Backends::SECONDARY,
-            Backend::Vulkan => wgpu::Backends::VULKAN,
-            Backend::Metal => wgpu::Backends::METAL,
-            Backend::Dx12 => wgpu::Backends::DX12,
-            Backend::Dx11 => wgpu::Backends::DX11,
-            Backend::Gl => wgpu::Backends::GL,
-            Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
-        });
+        if conf.backend == Backend::All {
+            match Self::new_from_instance(
+                wgpu::Instance::new(wgpu::Backends::PRIMARY),
+                event_loop,
+                conf,
+                filesystem,
+            ) {
+                Ok(o) => Ok(o),
+                Err(GameError::GraphicsInitializationError) => {
+                    println!(
+                        "Failed to initialize graphics, trying secondary backends.. Please mention this if you encounter any bugs!"
+                    );
+                    warn!(
+                        "Failed to initialize graphics, trying secondary backends.. Please mention this if you encounter any bugs!"
+                    );
 
+                    Self::new_from_instance(
+                        wgpu::Instance::new(wgpu::Backends::SECONDARY),
+                        event_loop,
+                        conf,
+                        filesystem,
+                    )
+                }
+                Err(e) => Err(e),
+            }
+        } else {
+            let instance = wgpu::Instance::new(match conf.backend {
+                Backend::All => unreachable!(),
+                Backend::OnlyPrimary => wgpu::Backends::PRIMARY,
+                Backend::Vulkan => wgpu::Backends::VULKAN,
+                Backend::Metal => wgpu::Backends::METAL,
+                Backend::Dx12 => wgpu::Backends::DX12,
+                Backend::Dx11 => wgpu::Backends::DX11,
+                Backend::Gl => wgpu::Backends::GL,
+                Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
+            });
+
+            Self::new_from_instance(instance, event_loop, conf, filesystem)
+        }
+    }
+
+    #[allow(unsafe_code)]
+    pub(crate) fn new_from_instance(
+        instance: wgpu::Instance,
+        event_loop: &winit::event_loop::EventLoop<()>,
+        conf: &Conf,
+        filesystem: &mut Filesystem,
+    ) -> GameResult<Self> {
         let physical_size =
             dpi::PhysicalSize::<f64>::from((conf.window_mode.width, conf.window_mode.height));
         assert!(physical_size.width >= 1.0 && physical_size.height >= 1.0); // wgpu needs surfaces > 0
@@ -141,9 +178,7 @@ impl GraphicsContext {
             force_fallback_adapter: false,
             compatible_surface: Some(&surface),
         }))
-        .ok_or_else(|| {
-            GameError::RenderError(String::from("failed to find suitable graphics adapter"))
-        })?;
+        .ok_or(GameError::GraphicsInitializationError)?;
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
