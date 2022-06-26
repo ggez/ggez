@@ -58,18 +58,19 @@ pub struct Context {
     /// updating it will have no effect.
     pub(crate) conf: conf::Conf,
     /// Controls whether or not the event loop should be running.
-    /// This is internally controlled by the outcome of [`quit_event`](crate::event::EventHandler::quit_event), requested through [`event::request_quit()`](crate::event::request_quit).
+    /// This is internally controlled by the outcome of [`quit_event`](crate::event::EventHandler::quit_event),
+    /// requested through [`event::request_quit()`](crate::Context::request_quit).
     pub continuing: bool,
     /// Whether or not a `quit_event` has been requested.
-    /// Set this with [`ggez::event::request_quit()`](crate::event::request_quit).
+    /// Set this with [`ggez::event::request_quit()`](crate::Context::request_quit).
     ///
     /// It's exposed here for people who want to roll their own event loop.
     pub quit_requested: bool,
 }
 
 impl Context {
-    /// Attempts to terminate the [`ggez::event::run()`](fn.run.html) loop by requesting a
-    /// [`quit_event`](EventHandler::quit_event) at the very start of the next frame. If this event
+    /// Attempts to terminate the [`ggez::event::run()`](crate::event::run) loop by requesting a
+    /// [`quit_event`](crate::event::EventHandler::quit_event) at the very start of the next frame. If this event
     /// returns `Ok(false)`, then [`Context.continuing`](struct.Context.html#structfield.continuing)
     /// is set to `false` and the loop breaks.
     pub fn request_quit(&mut self) {
@@ -381,13 +382,15 @@ impl ContextBuilder {
     }
 }
 
-/// Attempts to terminate the [`ggez::event::run()`](fn.run.html) loop by requesting a
-/// [`quit_event`](EventHandler::quit_event) at the very start of the next frame. If this event
-/// returns `Ok(false)`, then [`Context.continuing`](struct.Context.html#structfield.continuing)
+/// Terminates the [`ggez::event::run()`](crate::event::run) loop _without_ requesting a
+/// [`quit_event`](crate::event::EventHandler::quit_event). [`Context.continuing`](struct.Context.html#structfield.continuing)
 /// is set to `false` and the loop breaks.
-#[deprecated(since = "0.8.0", note = "Use `ctx.request_quit` instead.")]
+#[deprecated(
+    since = "0.8.0",
+    note = "Use [`ctx.request_quit`](struct.Context.html#method.request_quit) instead."
+)]
 pub fn quit(ctx: &mut Context) {
-    ctx.request_quit();
+    ctx.continuing = false;
 }
 
 #[cfg(test)]
