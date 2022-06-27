@@ -233,7 +233,7 @@ impl Mesh {
             wgpu.device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: None,
-                    contents: bytemuck::cast_slice(&vertices),
+                    contents: bytemuck::cast_slice(vertices),
                     usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 }),
         )
