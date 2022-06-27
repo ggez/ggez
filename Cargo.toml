@@ -65,7 +65,7 @@ glam = { version = "0.20", features = ["mint"] }
 mint = "0.5"
 gilrs = { version = "0.8", optional = true }
 approx = "0.5"
-bytemuck = "1.7"
+bytemuck = { version = "1.7", features = ["derive"] }
 pollster = "0.2"
 memoffset = "0.6"
 crevice = "0.8"
