@@ -12,7 +12,7 @@ use wgpu::util::DeviceExt;
 
 /// Vertex format uploaded to vertex buffers.
 #[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct Vertex {
     /// `vec2` position.
     pub position: [f32; 2],
@@ -233,12 +233,7 @@ impl Mesh {
             wgpu.device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: None,
-                    contents: unsafe {
-                        std::slice::from_raw_parts(
-                            vertices.as_ptr() as *const u8,
-                            std::mem::size_of::<Vertex>() * vertices.len(),
-                        )
-                    },
+                    contents: bytemuck::cast_slice(&vertices),
                     usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 }),
         )
@@ -250,9 +245,7 @@ impl Mesh {
             wgpu.device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: None,
-                    contents: unsafe {
-                        std::slice::from_raw_parts(indices.as_ptr() as *const u8, 4 * indices.len())
-                    },
+                    contents: bytemuck::cast_slice(indices),
                     usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
                 }),
         )

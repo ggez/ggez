@@ -18,7 +18,8 @@ type Isometry3 = Mat4;
 type Point3 = Vec3;
 type Vector3 = Vec3;
 
-#[allow(dead_code)]
+#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
+#[repr(C)]
 struct Vertex {
     pos: [f32; 4],
     tex_coord: [f32; 2],
@@ -121,12 +122,7 @@ impl MainState {
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
-                contents: unsafe {
-                    std::slice::from_raw_parts(
-                        vertex_data.as_ptr() as *const u8,
-                        vertex_data.len() * std::mem::size_of::<Vertex>(),
-                    )
-                },
+                contents: bytemuck::cast_slice(vertex_data.as_slice()),
                 usage: wgpu::BufferUsages::VERTEX,
             });
         let inds = ctx
@@ -135,12 +131,7 @@ impl MainState {
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
-                contents: unsafe {
-                    std::slice::from_raw_parts(
-                        index_data.as_ptr() as *const u8,
-                        index_data.len() * 4,
-                    )
-                },
+                contents: bytemuck::cast_slice(index_data),
                 usage: wgpu::BufferUsages::INDEX,
             });
 

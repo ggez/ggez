@@ -337,14 +337,11 @@ impl<'a> InternalCanvas<'a> {
         // 2. write the uniform data to that memory
         // 3. use a "dynamic offset" to offset into the memory
 
-        self.wgpu
-            .queue
-            .write_buffer(&uniform_alloc.buffer, uniform_alloc.offset, unsafe {
-                std::slice::from_raw_parts(
-                    (&uniforms) as *const _ as *const u8,
-                    std::mem::size_of::<DrawUniforms>(),
-                )
-            });
+        self.wgpu.queue.write_buffer(
+            &uniform_alloc.buffer,
+            uniform_alloc.offset,
+            bytemuck::bytes_of(&uniforms),
+        );
 
         self.pass.set_bind_group(
             0,

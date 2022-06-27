@@ -179,13 +179,11 @@ impl InstanceArray {
             self.capacity.store(len, SeqCst);
         }
 
-        wgpu.queue
-            .write_buffer(&self.buffer.lock().unwrap(), 0, unsafe {
-                std::slice::from_raw_parts(
-                    self.uniforms.as_ptr() as *const u8,
-                    self.uniforms.len() * DrawUniforms::std140_size_static(),
-                )
-            });
+        wgpu.queue.write_buffer(
+            &self.buffer.lock().unwrap(),
+            0,
+            bytemuck::cast_slice(self.uniforms.as_slice()),
+        );
 
         if self.ordered {
             let mut layers = BTreeMap::<_, Vec<_>>::new();
@@ -193,13 +191,11 @@ impl InstanceArray {
                 layers.entry(param.z).or_default().push(i);
             }
             let indices = layers.into_values().flatten().collect::<Vec<_>>();
-            wgpu.queue
-                .write_buffer(&self.indices.lock().unwrap(), 0, unsafe {
-                    std::slice::from_raw_parts(
-                        indices.as_ptr() as *const u8,
-                        indices.len() * std::mem::size_of::<u32>(),
-                    )
-                });
+            wgpu.queue.write_buffer(
+                &self.indices.lock().unwrap(),
+                0,
+                bytemuck::cast_slice(indices.as_slice()),
+            );
         }
 
         Ok(())

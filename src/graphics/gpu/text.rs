@@ -127,9 +127,11 @@ impl TextRenderer {
                 let verts_size = verts.len() * std::mem::size_of::<TextVertex>();
                 let verts_alloc = self.verts.allocate(device, verts_size as u64);
 
-                queue.write_buffer(&verts_alloc.buffer, verts_alloc.offset, unsafe {
-                    std::slice::from_raw_parts(verts.as_ptr() as *const u8, verts_size)
-                });
+                queue.write_buffer(
+                    &verts_alloc.buffer,
+                    verts_alloc.offset,
+                    bytemuck::cast_slice(verts.as_slice()),
+                );
 
                 let verts_buf = arenas.buffers.alloc(verts_alloc.buffer);
                 pass.set_vertex_buffer(0, verts_buf.slice(verts_alloc.offset..));
@@ -208,7 +210,8 @@ struct TextUniforms {
     transform: mint::ColumnMatrix4<f32>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, bytemuck::Zeroable, bytemuck::Pod)]
+#[repr(C)]
 pub struct TextVertex {
     pub rect: [f32; 4],
     pub uv: [f32; 4],
