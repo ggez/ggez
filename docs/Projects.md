@@ -6,6 +6,7 @@ submit a PR, please!
 ## Games!
 
 * <https://github.com/rdrmic/color-columns>: A falling-blocks-type 2D game with a simple but addictive gameplay
+* <https://github.com/64kramsystem/rust-game-ports#boingggez>: Boing: Pong clone built with ggez; the repository includes also other games built with different engines
 
 ## Example/tutorial code
 
