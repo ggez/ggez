@@ -412,33 +412,12 @@ impl<'a> InternalCanvas<'a> {
             uniforms.as_std140().as_bytes(),
         );
 
-        let (bind_group, _) = BindGroupBuilder::new()
-            .buffer(
-                &instances.buffer,
-                0,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-                None,
-            )
-            .buffer(
-                &instances.indices,
-                0,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-                None,
-            )
-            .create(&self.wgpu.device, self.bind_group_cache);
-
-        let bind_group = self.arenas.bind_groups.alloc(bind_group);
-
         self.pass.set_bind_group(
             0,
             self.arenas.bind_groups.alloc(uniform_bind_group),
             &[uniform_alloc.offset as u32],
         );
-        self.pass.set_bind_group(2, bind_group, &[]);
+        self.pass.set_bind_group(2, &instances.bind_group, &[]);
 
         self.pass.set_vertex_buffer(0, mesh.verts.slice(..));
         self.pass
@@ -645,6 +624,7 @@ impl<'a> Drop for InternalCanvas<'a> {
 pub struct InstanceArrayView {
     pub buffer: ArcBuffer,
     pub indices: ArcBuffer,
+    pub bind_group: ArcBindGroup,
     pub image: Image,
     pub len: u32,
     pub ordered: bool,
@@ -655,6 +635,11 @@ impl InstanceArrayView {
         Ok(InstanceArrayView {
             buffer: ia.buffer.lock().map_err(|_| GameError::LockError)?.clone(),
             indices: ia.indices.lock().map_err(|_| GameError::LockError)?.clone(),
+            bind_group: ia
+                .bind_group
+                .lock()
+                .map_err(|_| GameError::LockError)?
+                .clone(),
             image: ia.image.clone(),
             len: ia.instances().len() as u32,
             ordered: ia.ordered,

@@ -385,7 +385,7 @@ impl ScreenImage {
         assert!(height > 0.);
         assert!(samples > 0);
 
-        let format = format.into().unwrap_or(gfx.surface_format);
+        let format = format.into().unwrap_or(gfx.surface_format());
 
         ScreenImage {
             image: Self::create(gfx, format, (width, height), samples),

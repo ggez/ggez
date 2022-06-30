@@ -185,6 +185,11 @@ impl<'a> BindGroupBuilder<'a> {
 
         (group, layout)
     }
+
+    #[inline]
+    pub fn entries(&self) -> &[wgpu::BindGroupEntry] {
+        &self.entries
+    }
 }
 
 #[derive(Debug)]
