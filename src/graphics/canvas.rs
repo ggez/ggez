@@ -127,14 +127,14 @@ impl Canvas {
             blend_mode: BlendMode::ALPHA,
             premul_text: true,
             projection: glam::Mat4::IDENTITY.into(),
-            scissor_rect: (0, 0, drawable_size.0 as _, drawable_size.1 as _),
+            scissor_rect: (0, 0, target.width(), target.height()),
         };
 
         let screen = Rect {
             x: 0.,
             y: 0.,
-            w: drawable_size.0 as _,
-            h: drawable_size.1 as _,
+            w: drawable_size.0,
+            h: drawable_size.1,
         };
 
         let mut this = Canvas {
@@ -419,7 +419,10 @@ impl Canvas {
         canvas.set_sampler(state.sampler);
         canvas.set_blend_mode(state.blend_mode);
         canvas.set_projection(state.projection);
-        canvas.set_scissor_rect(state.scissor_rect);
+
+        if state.scissor_rect.2 > 0 && state.scissor_rect.3 > 0 {
+            canvas.set_scissor_rect(state.scissor_rect);
+        }
 
         for draws in self.draws.values() {
             for draw in draws {
