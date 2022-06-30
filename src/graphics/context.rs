@@ -1,7 +1,7 @@
 use super::{
     draw::DrawUniforms,
     gpu::{
-        arc::{ArcBindGroup, ArcBuffer, ArcRenderPipeline, ArcShaderModule},
+        arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcRenderPipeline, ArcShaderModule},
         bind_group::{BindGroupBuilder, BindGroupCache},
         growing::GrowingBufferArena,
         pipeline::PipelineCache,
@@ -18,7 +18,7 @@ use crate::{
     context::Has,
     error::GameResult,
     filesystem::Filesystem,
-    graphics::gpu::pipeline::RenderPipelineInfo,
+    graphics::gpu::{bind_group::BindGroupLayoutBuilder, pipeline::RenderPipelineInfo},
     GameError,
 };
 use ::image as imgcrate;
@@ -62,13 +62,12 @@ pub struct GraphicsContext {
     pub(crate) wgpu: Arc<WgpuContext>,
 
     pub(crate) window: winit::window::Window,
-    pub(crate) surface_format: wgpu::TextureFormat,
+    pub(crate) surface_config: wgpu::SurfaceConfiguration,
 
     pub(crate) bind_group_cache: BindGroupCache,
     pub(crate) pipeline_cache: PipelineCache,
     pub(crate) sampler_cache: SamplerCache,
 
-    pub(crate) vsync: bool,
     pub(crate) window_mode: WindowMode,
     pub(crate) frame: Option<ScreenImage>,
     pub(crate) frame_msaa: Option<ScreenImage>,
@@ -90,6 +89,7 @@ pub struct GraphicsContext {
     pub(crate) copy_shader: ArcShaderModule,
     pub(crate) rect_mesh: Mesh,
     pub(crate) white_image: Image,
+    pub(crate) instance_bind_layout: ArcBindGroupLayout,
 }
 
 impl GraphicsContext {
@@ -195,24 +195,22 @@ impl GraphicsContext {
             queue,
         });
 
-        let surface_format = wgpu.surface.get_preferred_format(&adapter).unwrap(/* invariant */);
         let size = window.inner_size();
-        wgpu.surface.configure(
-            &wgpu.device,
-            &wgpu::SurfaceConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: surface_format,
-                width: size.width,
-                height: size.height,
-                present_mode: if conf.window_setup.vsync {
-                    wgpu::PresentMode::Fifo
-                } else {
-                    wgpu::PresentMode::Mailbox
-                },
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: wgpu.surface.get_preferred_format(&adapter).unwrap(/* invariant */),
+            width: size.width,
+            height: size.height,
+            present_mode: if conf.window_setup.vsync {
+                wgpu::PresentMode::Fifo
+            } else {
+                wgpu::PresentMode::Mailbox
             },
-        );
+        };
 
-        let bind_group_cache = BindGroupCache::new();
+        wgpu.surface.configure(&wgpu.device, &surface_config);
+
+        let mut bind_group_cache = BindGroupCache::new();
         let pipeline_cache = PipelineCache::new();
         let sampler_cache = SamplerCache::new();
 
@@ -301,17 +299,29 @@ impl GraphicsContext {
         let white_image =
             Image::from_pixels_wgpu(&wgpu, &[255, 255, 255, 255], ImageFormat::Rgba8Unorm, 1, 1);
 
+        let instance_bind_layout = BindGroupLayoutBuilder::new()
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+            )
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+            )
+            .create(&wgpu.device, &mut bind_group_cache);
+
         let mut this = GraphicsContext {
             wgpu,
 
             window,
-            surface_format,
+            surface_config,
 
             bind_group_cache,
             pipeline_cache,
             sampler_cache,
 
-            vsync: conf.window_setup.vsync,
             window_mode: conf.window_mode,
             frame: None,
             frame_msaa: None,
@@ -333,6 +343,7 @@ impl GraphicsContext {
             copy_shader,
             rect_mesh,
             white_image,
+            instance_bind_layout,
         };
 
         this.set_window_mode(&conf.window_mode)?;
@@ -492,7 +503,7 @@ impl GraphicsContext {
     /// Returns the image format of the window surface.
     #[inline]
     pub fn surface_format(&self) -> ImageFormat {
-        self.surface_format
+        self.surface_config.format
     }
 
     /// Returns the current [`wgpu::CommandEncoder`] if there is a frame in progress.
@@ -514,20 +525,11 @@ impl GraphicsContext {
         let frame = match self.wgpu.surface.get_current_texture() {
             Ok(frame) => Ok(frame),
             Err(_) => {
-                self.wgpu.surface.configure(
-                    &self.wgpu.device,
-                    &wgpu::SurfaceConfiguration {
-                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                        format: self.surface_format,
-                        width: size.width.max(1),
-                        height: size.height.max(1),
-                        present_mode: if self.vsync {
-                            wgpu::PresentMode::Fifo
-                        } else {
-                            wgpu::PresentMode::Mailbox
-                        },
-                    },
-                );
+                self.surface_config.width = size.width.max(1);
+                self.surface_config.height = size.height.max(1);
+                self.wgpu
+                    .surface
+                    .configure(&self.wgpu.device, &self.surface_config);
                 self.wgpu.surface.get_current_texture().map_err(|_| {
                     GameError::RenderError(String::from("failed to get next swapchain image"))
                 })
@@ -591,7 +593,7 @@ impl GraphicsContext {
                     vs_entry: "vs_main".into(),
                     fs_entry: "fs_main".into(),
                     samples: 1,
-                    format: self.surface_format,
+                    format: self.surface_config.format,
                     blend: None,
                     depth: false,
                     vertices: false,
@@ -628,20 +630,11 @@ impl GraphicsContext {
     pub(crate) fn resize(&mut self, _new_size: dpi::PhysicalSize<u32>) {
         let size = self.window.inner_size();
         self.wgpu.device.poll(wgpu::Maintain::Wait);
-        self.wgpu.surface.configure(
-            &self.wgpu.device,
-            &wgpu::SurfaceConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: self.surface_format,
-                width: size.width.max(1),
-                height: size.height.max(1),
-                present_mode: if self.vsync {
-                    wgpu::PresentMode::Fifo
-                } else {
-                    wgpu::PresentMode::Mailbox
-                },
-            },
-        );
+        self.surface_config.width = size.width.max(1);
+        self.surface_config.height = size.height.max(1);
+        self.wgpu
+            .surface
+            .configure(&self.wgpu.device, &self.surface_config);
         self.update_frame_image();
     }
 
@@ -739,21 +732,12 @@ impl GraphicsContext {
 
         let size = window.inner_size();
         assert!(size.width > 0 && size.height > 0);
+        self.surface_config.width = size.width.max(1);
+        self.surface_config.height = size.height.max(1);
 
-        self.wgpu.surface.configure(
-            &self.wgpu.device,
-            &wgpu::SurfaceConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: self.surface_format,
-                width: size.width.max(1),
-                height: size.height.max(1),
-                present_mode: if self.vsync {
-                    wgpu::PresentMode::Fifo
-                } else {
-                    wgpu::PresentMode::Mailbox
-                },
-            },
-        );
+        self.wgpu
+            .surface
+            .configure(&self.wgpu.device, &self.surface_config);
 
         Ok(())
     }
