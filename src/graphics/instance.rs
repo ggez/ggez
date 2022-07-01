@@ -231,7 +231,7 @@ impl InstanceArray {
         if self.ordered {
             let mut layers = BTreeMap::<_, Vec<_>>::new();
             for (i, param) in self.params.iter().enumerate() {
-                layers.entry(param.z).or_default().push(i);
+                layers.entry(param.z).or_default().push(i as u32);
             }
             let indices = layers.into_values().flatten().collect::<Vec<_>>();
             wgpu.queue.write_buffer(
