@@ -6,6 +6,9 @@ use std::sync::Arc;
 /// An enum containing all kinds of game framework errors.
 #[derive(Debug)]
 pub enum GameError {
+    /// An error when trying to get or set values from a `DrawParam` that are no longer available
+    /// because it has already been crunched down into a Matrix
+    DrawParamMatrixError,
     /// An error when intializing the graphics system.
     GraphicsInitializationError,
     /// An error in the filesystem layout
@@ -61,6 +64,7 @@ pub enum GameError {
 impl fmt::Display for GameError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            GameError::DrawParamMatrixError => write!(f, "Tried to access a value in a `DrawParam` which had its `Transform` already reduced down to a matrix"),
             GameError::ConfigError(ref s) => write!(f, "Config error: {}", s),
             GameError::ResourceLoadError(ref s) => write!(f, "Error loading resource: {}", s),
             GameError::ResourceNotFound(ref s, ref paths) => write!(

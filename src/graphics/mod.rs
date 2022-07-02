@@ -154,7 +154,7 @@ pub fn draw_queued_text(
     filter: FilterMode,
 ) -> GameResult {
     let mut param = param.into();
-    let param_dest = *param.get_dest_mut();
+    let param_dest = *param.get_dest_mut()?;
 
     canvas.set_sampler(filter);
     if let Some(blend) = blend {

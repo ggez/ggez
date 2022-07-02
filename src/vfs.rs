@@ -13,7 +13,7 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::fmt::{self, Debug};
 use std::fs;
-use std::io::{self, Read, Seek, Write};
+use std::io::{self, ErrorKind, Read, Seek, Write};
 use std::path::{self, Path, PathBuf};
 
 use crate::error::{GameError, GameResult};
@@ -677,7 +677,10 @@ impl io::Read for ZipFileWrapper {
 
 impl io::Write for ZipFileWrapper {
     fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
-        panic!("Cannot write to a zip file!")
+        Err(io::Error::new(
+            ErrorKind::Unsupported,
+            "Can't write to a zip file!",
+        ))
     }
 
     fn flush(&mut self) -> io::Result<()> {

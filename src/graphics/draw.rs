@@ -1,5 +1,6 @@
 use super::{Canvas, Color, GraphicsContext, LinearColor, Rect};
 use crate::context::Has;
+use crate::{GameError, GameResult};
 
 /// A struct that represents where to put a drawable object.
 ///
@@ -160,11 +161,11 @@ impl DrawParam {
         self
     }
 
-    pub(crate) fn get_dest_mut(&mut self) -> &mut mint::Point2<f32> {
+    pub(crate) fn get_dest_mut(&mut self) -> GameResult<&mut mint::Point2<f32>> {
         if let Transform::Values { dest, .. } = &mut self.transform {
-            dest
+            Ok(dest)
         } else {
-            panic!("Cannot calculate destination value for a DrawParam matrix")
+            Err(GameError::DrawParamMatrixError)
         }
     }
 
@@ -173,7 +174,13 @@ impl DrawParam {
     where
         P: Into<mint::Point2<f32>>,
     {
-        *self.get_dest_mut() = dest.into();
+        // TODO: maybe let the error cascade up instead of just printing and stopping it here?
+        match self.get_dest_mut() {
+            Ok(dest_mut) => *dest_mut = dest.into(),
+            Err(_) => println!(
+                "Cannot set destination value for a DrawParam which has a matrix as `Transform`!"
+            ),
+        }
         self
     }
 
@@ -196,10 +203,10 @@ impl DrawParam {
         } = self.transform
         {
             *rotation = rot;
-            self
         } else {
-            panic!("Cannot set values for a DrawParam matrix")
+            print!("Cannot set values for a DrawParam matrix")
         }
+        self
     }
 
     /// Set the scaling factors.
@@ -210,10 +217,10 @@ impl DrawParam {
         if let Transform::Values { ref mut scale, .. } = self.transform {
             let p: mint::Vector2<f32> = scale_.into();
             *scale = p;
-            self
         } else {
-            panic!("Cannot set values for a DrawParam matrix")
+            print!("Cannot set values for a DrawParam matrix")
         }
+        self
     }
 
     /// Set the transformation offset.
@@ -224,10 +231,10 @@ impl DrawParam {
         if let Transform::Values { ref mut offset, .. } = self.transform {
             let p: mint::Point2<f32> = offset_.into();
             *offset = p;
-            self
         } else {
-            panic!("Cannot set values for a DrawParam matrix")
+            print!("Cannot set values for a DrawParam matrix")
         }
+        self
     }
 
     /// Set the transformation matrix.
