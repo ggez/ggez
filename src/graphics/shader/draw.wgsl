@@ -16,7 +16,7 @@ var<uniform> uniforms: DrawUniforms;
 [[group(1), binding(0)]]
 var t: texture_2d<f32>;
 
-[[group(1), binding(1)]]
+[[group(2), binding(0)]]
 var s: sampler;
 
 [[stage(vertex)]]

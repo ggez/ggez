@@ -171,7 +171,7 @@ impl Canvas {
 
     /// Sets the shader parameters to use when drawing meshes.
     ///
-    /// **Bound to bind group 3.**
+    /// **Bound to bind group 4.**
     #[inline]
     pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
         self.state.params = Some((params.bind_group.clone(), params.layout));

@@ -29,13 +29,13 @@ var<uniform> uniforms: Uniforms;
 [[group(1), binding(0)]]
 var t: texture_2d<f32>;
 
-[[group(1), binding(1)]]
+[[group(2), binding(0)]]
 var s: sampler;
 
-[[group(2), binding(0)]]
+[[group(3), binding(0)]]
 var<storage, read> instances: InstanceArray;
 
-[[group(2), binding(1)]]
+[[group(3), binding(1)]]
 var<storage, read> indices: InstanceArrayIndices;
 
 [[stage(vertex)]]

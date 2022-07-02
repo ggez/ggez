@@ -1,11 +1,12 @@
 use super::{
     context::GraphicsContext,
-    gpu::arc::{ArcTexture, ArcTextureView},
+    gpu::arc::{ArcBindGroup, ArcTexture, ArcTextureView},
     Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
 use crate::{
     context::{Has, HasTwo},
     filesystem::Filesystem,
+    graphics::gpu::bind_group::BindGroupBuilder,
     Context, GameError, GameResult,
 };
 use image::ImageEncoder;
@@ -25,6 +26,7 @@ pub type ImageEncodingFormat = ::image::ImageFormat;
 pub struct Image {
     pub(crate) texture: ArcTexture,
     pub(crate) view: ArcTextureView,
+    pub(crate) bind_group: ArcBindGroup,
     pub(crate) format: ImageFormat,
     pub(crate) width: u32,
     pub(crate) height: u32,
@@ -43,6 +45,7 @@ impl Image {
         let gfx = gfx.retrieve();
         Self::new(
             &gfx.wgpu,
+            &gfx.image_bind_layout,
             format,
             width,
             height,
@@ -62,11 +65,19 @@ impl Image {
         height: u32,
     ) -> Self {
         let gfx = gfx.retrieve();
-        Self::from_pixels_wgpu(&gfx.wgpu, pixels, format, width, height)
+        Self::from_pixels_wgpu(
+            &gfx.wgpu,
+            &gfx.image_bind_layout,
+            pixels,
+            format,
+            width,
+            height,
+        )
     }
 
     pub(crate) fn from_pixels_wgpu(
         wgpu: &WgpuContext,
+        layout: &wgpu::BindGroupLayout,
         pixels: &[u8],
         format: ImageFormat,
         width: u32,
@@ -74,6 +85,7 @@ impl Image {
     ) -> Self {
         let image = Self::new(
             wgpu,
+            layout,
             format,
             width,
             height,
@@ -152,6 +164,7 @@ impl Image {
 
     fn new(
         wgpu: &WgpuContext,
+        layout: &wgpu::BindGroupLayout,
         format: ImageFormat,
         width: u32,
         height: u32,
@@ -188,9 +201,18 @@ impl Image {
                 array_layer_count: Some(NonZeroU32::new(1).unwrap()),
             }));
 
+        let bind_group = BindGroupBuilder::new().image(&view, wgpu::ShaderStages::FRAGMENT);
+        let bind_group =
+            ArcBindGroup::new(wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: None,
+                layout,
+                entries: bind_group.entries(),
+            }));
+
         Image {
             texture,
             view,
+            bind_group,
             format,
             width,
             height,

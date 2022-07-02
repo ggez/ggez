@@ -90,6 +90,7 @@ pub struct GraphicsContext {
     pub(crate) rect_mesh: Mesh,
     pub(crate) white_image: Image,
     pub(crate) instance_bind_layout: ArcBindGroupLayout,
+    pub(crate) image_bind_layout: ArcBindGroupLayout,
 }
 
 impl GraphicsContext {
@@ -183,7 +184,10 @@ impl GraphicsContext {
             &wgpu::DeviceDescriptor {
                 label: None,
                 features: wgpu::Features::default(),
-                limits: wgpu::Limits::default(),
+                limits: wgpu::Limits {
+                    max_bind_groups: 5,
+                    ..Default::default()
+                },
             },
             None,
         ))?;
@@ -214,7 +218,11 @@ impl GraphicsContext {
         let pipeline_cache = PipelineCache::new();
         let sampler_cache = SamplerCache::new();
 
-        let text = TextRenderer::new(&wgpu.device);
+        let image_bind_layout = BindGroupLayoutBuilder::new()
+            .image(wgpu::ShaderStages::FRAGMENT)
+            .create(&wgpu.device, &mut bind_group_cache);
+
+        let text = TextRenderer::new(&wgpu.device, image_bind_layout.clone());
 
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let uniform_arena = GrowingBufferArena::new(
@@ -296,9 +304,6 @@ impl GraphicsContext {
             },
         );
 
-        let white_image =
-            Image::from_pixels_wgpu(&wgpu, &[255, 255, 255, 255], ImageFormat::Rgba8Unorm, 1, 1);
-
         let instance_bind_layout = BindGroupLayoutBuilder::new()
             .buffer(
                 wgpu::ShaderStages::VERTEX,
@@ -311,6 +316,15 @@ impl GraphicsContext {
                 false,
             )
             .create(&wgpu.device, &mut bind_group_cache);
+
+        let white_image = Image::from_pixels_wgpu(
+            &wgpu,
+            &image_bind_layout,
+            &[255, 255, 255, 255],
+            ImageFormat::Rgba8Unorm,
+            1,
+            1,
+        );
 
         let mut this = GraphicsContext {
             wgpu,
@@ -344,6 +358,7 @@ impl GraphicsContext {
             rect_mesh,
             white_image,
             instance_bind_layout,
+            image_bind_layout,
         };
 
         this.set_window_mode(&conf.window_mode)?;

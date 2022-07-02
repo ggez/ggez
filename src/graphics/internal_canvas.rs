@@ -327,7 +327,7 @@ impl<'a> InternalCanvas<'a> {
             )
             .create(&self.wgpu.device, self.bind_group_cache);
 
-        self.set_image(image.view.clone());
+        self.set_image(image.view.clone(), image.bind_group.clone());
         let (w, h) = (image.width(), image.height());
 
         let mut uniforms = DrawUniforms::from_param(&param, [w as f32, h as f32].into());
@@ -390,7 +390,10 @@ impl<'a> InternalCanvas<'a> {
             )
             .create(&self.wgpu.device, self.bind_group_cache);
 
-        self.set_image(instances.image.view.clone());
+        self.set_image(
+            instances.image.view.clone(),
+            instances.image.bind_group.clone(),
+        );
 
         let uniforms = InstanceUniforms {
             transform: (self.transform
@@ -417,7 +420,7 @@ impl<'a> InternalCanvas<'a> {
             self.arenas.bind_groups.alloc(uniform_bind_group),
             &[uniform_alloc.offset as u32],
         );
-        self.pass.set_bind_group(2, &instances.bind_group, &[]);
+        self.pass.set_bind_group(3, &instances.bind_group, &[]);
 
         self.pass.set_vertex_buffer(0, mesh.verts.slice(..));
         self.pass
@@ -442,7 +445,10 @@ impl<'a> InternalCanvas<'a> {
         self.text_renderer
             .queue(text.as_section(self.fonts, param)?);
 
-        self.set_image(self.text_renderer.cache_view.clone());
+        self.set_image(
+            self.text_renderer.cache_view.clone(),
+            self.text_renderer.cache_bind.clone(),
+        );
         self.pass.set_bind_group(0, self.text_uniforms, &[]);
 
         self.queuing_text = true;
@@ -486,6 +492,9 @@ impl<'a> InternalCanvas<'a> {
 
             let texture_layout = BindGroupLayoutBuilder::new()
                 .image(wgpu::ShaderStages::FRAGMENT)
+                .create(&self.wgpu.device, self.bind_group_cache);
+
+            let sampler_layout = BindGroupLayoutBuilder::new()
                 .sampler(wgpu::ShaderStages::FRAGMENT)
                 .create(&self.wgpu.device, self.bind_group_cache);
 
@@ -513,21 +522,21 @@ impl<'a> InternalCanvas<'a> {
             let (dummy_group, dummy_layout) =
                 BindGroupBuilder::new().create(&self.wgpu.device, self.bind_group_cache);
 
-            let mut groups = vec![uniform_layout, texture_layout];
+            let mut groups = vec![uniform_layout, texture_layout, sampler_layout];
 
             if let ShaderType::Instance { .. } = ty {
                 groups.push(instance_layout);
             } else {
-                // the dummy group ensures the user's bind group is at index 3
+                // the dummy group ensures the user's bind group is at index 4
                 groups.push(dummy_layout);
                 self.pass
-                    .set_bind_group(2, self.arenas.bind_groups.alloc(dummy_group), &[]);
+                    .set_bind_group(3, self.arenas.bind_groups.alloc(dummy_group), &[]);
             }
 
             let shader = match ty {
                 ShaderType::Draw | ShaderType::Instance { .. } => {
                     if let Some((bind_group, bind_group_layout)) = &self.shader_bind_group {
-                        self.pass.set_bind_group(3, bind_group, &[]);
+                        self.pass.set_bind_group(4, bind_group, &[]);
                         groups.push(bind_group_layout.clone());
                     }
 
@@ -535,7 +544,7 @@ impl<'a> InternalCanvas<'a> {
                 }
                 ShaderType::Text => {
                     if let Some((bind_group, bind_group_layout)) = &self.text_shader_bind_group {
-                        self.pass.set_bind_group(3, bind_group, &[]);
+                        self.pass.set_bind_group(4, bind_group, &[]);
                         groups.push(bind_group_layout.clone());
                     }
 
@@ -588,7 +597,7 @@ impl<'a> InternalCanvas<'a> {
         }
     }
 
-    fn set_image(&mut self, view: ArcTextureView) {
+    fn set_image(&mut self, view: ArcTextureView, image_bind: ArcBindGroup) {
         if self.curr_sampler != self.next_sampler
             || self
                 .curr_image
@@ -596,20 +605,21 @@ impl<'a> InternalCanvas<'a> {
                 .map(|curr| curr.id() != view.id())
                 .unwrap_or(true)
         {
-            self.curr_image = Some(view.clone());
+            self.curr_image = Some(view);
             self.curr_sampler = self.next_sampler;
 
-            let (bind_group, _) = BindGroupBuilder::new()
-                .image(&view, wgpu::ShaderStages::FRAGMENT)
+            let (sampler_bind, _) = BindGroupBuilder::new()
                 .sampler(
                     &self.sampler_cache.get(&self.wgpu.device, self.curr_sampler),
                     wgpu::ShaderStages::FRAGMENT,
                 )
                 .create(&self.wgpu.device, self.bind_group_cache);
 
-            let bind_group = self.arenas.bind_groups.alloc(bind_group);
+            let image_bind = self.arenas.bind_groups.alloc(image_bind);
+            let sampler_bind = self.arenas.bind_groups.alloc(sampler_bind);
 
-            self.pass.set_bind_group(1, bind_group, &[]);
+            self.pass.set_bind_group(1, image_bind, &[]);
+            self.pass.set_bind_group(2, sampler_bind, &[]);
         }
     }
 }

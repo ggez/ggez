@@ -1,5 +1,6 @@
 use super::{
-    arc::{ArcTexture, ArcTextureView},
+    arc::{ArcBindGroup, ArcBindGroupLayout, ArcTexture, ArcTextureView},
+    bind_group::BindGroupBuilder,
     growing::GrowingBufferArena,
 };
 use crate::graphics::{context::FrameArenas, LinearColor};
@@ -13,12 +14,14 @@ pub(crate) struct TextRenderer {
     pub glyph_brush: RefCell<GlyphBrush<TextVertex, Extra>>,
     pub cache: ArcTexture,
     pub cache_view: ArcTextureView,
+    pub cache_bind: ArcBindGroup,
+    pub cache_bind_layout: ArcBindGroupLayout,
     pub cache_size: (u32, u32),
     pub verts: GrowingBufferArena,
 }
 
 impl TextRenderer {
-    pub fn new(device: &wgpu::Device) -> Self {
+    pub fn new(device: &wgpu::Device, cache_bind_layout: ArcBindGroupLayout) -> Self {
         let cache_size = (1024, 1024);
 
         let glyph_brush = GlyphBrushBuilder::using_fonts(vec![])
@@ -43,6 +46,13 @@ impl TextRenderer {
         let cache_view =
             ArcTextureView::new(cache.create_view(&wgpu::TextureViewDescriptor::default()));
 
+        let cache_bind = BindGroupBuilder::new().image(&cache_view, wgpu::ShaderStages::FRAGMENT);
+        let cache_bind = ArcBindGroup::new(device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &cache_bind_layout,
+            entries: cache_bind.entries(),
+        }));
+
         let verts = GrowingBufferArena::new(
             device,
             1,
@@ -58,6 +68,8 @@ impl TextRenderer {
             glyph_brush: RefCell::new(glyph_brush),
             cache,
             cache_view,
+            cache_bind,
+            cache_bind_layout,
             cache_size,
             verts,
         }
@@ -167,6 +179,15 @@ impl TextRenderer {
                     self.cache
                         .create_view(&wgpu::TextureViewDescriptor::default()),
                 );
+
+                let cache_bind =
+                    BindGroupBuilder::new().image(&self.cache_view, wgpu::ShaderStages::FRAGMENT);
+                self.cache_bind =
+                    ArcBindGroup::new(device.create_bind_group(&wgpu::BindGroupDescriptor {
+                        label: None,
+                        layout: &self.cache_bind_layout,
+                        entries: cache_bind.entries(),
+                    }));
 
                 self.draw_queued(device, queue, arenas, pass)
             }
