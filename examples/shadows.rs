@@ -296,6 +296,7 @@ impl MainState {
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
         let mut canvas = Canvas::from_image(ctx, self.occlusions.clone(), None);
+        canvas.set_screen_coordinates(graphics::Rect::new(0., 0., size.0, size.1));
         canvas.set_shader(self.occlusions_shader.clone());
         canvas.set_shader_params(light.clone());
         canvas.draw(&foreground, canvas_origin);
@@ -305,6 +306,7 @@ impl MainState {
         // canvases based on the occlusion map. These will then be drawn onto
         // the final render target using appropriate blending modes.
         let mut canvas = Canvas::from_screen_image(ctx, &mut self.shadows, clear);
+        canvas.set_screen_coordinates(graphics::Rect::new(0., 0., size.0, size.1));
         canvas.set_shader(self.shadows_shader.clone());
         canvas.set_shader_params(light.clone());
         canvas.draw(
@@ -314,6 +316,7 @@ impl MainState {
         canvas.finish(ctx)?;
 
         let mut canvas = Canvas::from_screen_image(ctx, &mut self.lights, clear);
+        canvas.set_screen_coordinates(graphics::Rect::new(0., 0., size.0, size.1));
         canvas.set_blend_mode(BlendMode::ADD);
         canvas.set_shader(self.lights_shader.clone());
         canvas.set_shader_params(light);

@@ -116,7 +116,6 @@ impl Canvas {
         let gfx = gfx.retrieve();
 
         let defaults = DefaultResources::new(gfx);
-        let drawable_size = gfx.drawable_size();
 
         let state = DrawState {
             shader: defaults.shader.clone(),
@@ -133,8 +132,8 @@ impl Canvas {
         let screen = Rect {
             x: 0.,
             y: 0.,
-            w: drawable_size.0,
-            h: drawable_size.1,
+            w: target.width() as _,
+            h: target.height() as _,
         };
 
         let mut this = Canvas {
