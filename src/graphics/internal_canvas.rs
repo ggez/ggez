@@ -305,7 +305,7 @@ impl<'a> InternalCanvas<'a> {
     }
 
     #[allow(unsafe_code)]
-    pub fn draw_mesh(&mut self, mesh: &'a Mesh, image: &Image, param: DrawParam) {
+    pub fn draw_mesh(&mut self, mesh: &'a Mesh, image: &Image, param: DrawParam, scale: bool) {
         self.flush_text();
         self.update_pipeline(ShaderType::Draw);
 
@@ -328,9 +328,15 @@ impl<'a> InternalCanvas<'a> {
             .create(&self.wgpu.device, self.bind_group_cache);
 
         self.set_image(image.view.clone(), image.bind_group.clone());
-        let (w, h) = (image.width(), image.height());
 
-        let mut uniforms = DrawUniforms::from_param(&param, [w as f32, h as f32].into());
+        let mut uniforms = DrawUniforms::from_param(
+            &param,
+            if scale {
+                Some(glam::Vec2::new(image.width() as f32, image.height() as f32).into())
+            } else {
+                None
+            },
+        );
         uniforms.transform = (self.transform * glam::Mat4::from(uniforms.transform)).into();
 
         // 1. allocate some uniform buffer memory from GrowingBufferArena.
@@ -361,6 +367,7 @@ impl<'a> InternalCanvas<'a> {
         mesh: &'a Mesh,
         instances: &'a InstanceArrayView,
         param: DrawParam,
+        scale: bool,
     ) -> GameResult {
         self.flush_text();
 
@@ -398,7 +405,7 @@ impl<'a> InternalCanvas<'a> {
         let uniforms = InstanceUniforms {
             transform: (self.transform
                 * glam::Mat4::from(
-                    DrawUniforms::from_param(&param.src(Rect::one()), [1., 1.].into()).transform,
+                    DrawUniforms::from_param(&param.src(Rect::one()), None).transform,
                 ))
             .into(),
             color: mint::Vector4::<f32> {
@@ -407,6 +414,15 @@ impl<'a> InternalCanvas<'a> {
                 z: param.color.b,
                 w: param.color.a,
             },
+            scale: if scale {
+                glam::Vec2::new(
+                    instances.image.width() as f32,
+                    instances.image.height() as f32,
+                )
+            } else {
+                glam::Vec2::ZERO
+            }
+            .into(),
         };
 
         self.wgpu.queue.write_buffer(
@@ -668,6 +684,7 @@ enum ShaderType {
 struct InstanceUniforms {
     pub transform: mint::ColumnMatrix4<f32>,
     pub color: mint::Vector4<f32>,
+    pub scale: mint::Vector2<f32>,
 }
 
 pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {

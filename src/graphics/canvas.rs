@@ -351,7 +351,14 @@ impl Canvas {
     ///
     /// This differs from `canvas.draw(mesh, param)` as in that case, the mesh is untextured.
     pub fn draw_textured_mesh(&mut self, mesh: Mesh, image: Image, param: impl Into<DrawParam>) {
-        self.push_draw(Draw::Mesh { mesh, image }, param.into());
+        self.push_draw(
+            Draw::Mesh {
+                mesh,
+                image,
+                scale: false,
+            },
+            param.into(),
+        );
     }
 
     /// Draws an `InstanceArray` textured with a `Mesh`.
@@ -369,6 +376,7 @@ impl Canvas {
             Draw::MeshInstances {
                 mesh,
                 instances: InstanceArrayView::from_instances(instances).unwrap(),
+                scale: false,
             },
             param.into(),
         );
@@ -470,10 +478,14 @@ impl Canvas {
                 state = draw.state.clone();
 
                 match &draw.draw {
-                    Draw::Mesh { mesh, image } => canvas.draw_mesh(mesh, image, draw.param),
-                    Draw::MeshInstances { mesh, instances } => {
-                        canvas.draw_mesh_instances(mesh, instances, draw.param)?
+                    Draw::Mesh { mesh, image, scale } => {
+                        canvas.draw_mesh(mesh, image, draw.param, *scale)
                     }
+                    Draw::MeshInstances {
+                        mesh,
+                        instances,
+                        scale,
+                    } => canvas.draw_mesh_instances(mesh, instances, draw.param, *scale)?,
                     Draw::BoundedText { text } => canvas.draw_bounded_text(text, draw.param)?,
                 }
             }
@@ -528,10 +540,12 @@ pub(crate) enum Draw {
     Mesh {
         mesh: Mesh,
         image: Image,
+        scale: bool,
     },
     MeshInstances {
         mesh: Mesh,
         instances: InstanceArrayView,
+        scale: bool,
     },
     BoundedText {
         text: Text,

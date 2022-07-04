@@ -363,6 +363,7 @@ impl Drawable for Image {
             Draw::Mesh {
                 mesh: canvas.default_resources().mesh.clone(),
                 image: self.clone(),
+                scale: true,
             },
             param.into(),
         );

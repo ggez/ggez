@@ -311,7 +311,10 @@ impl MainState {
         canvas.set_shader_params(light.clone());
         canvas.draw(
             &self.occlusions,
-            origin.image_scale(false).scale([size.0, size.1]),
+            origin.scale([
+                size.0 / self.occlusions.width() as f32,
+                size.1 / self.occlusions.height() as f32,
+            ]),
         );
         canvas.finish(ctx)?;
 
@@ -322,7 +325,10 @@ impl MainState {
         canvas.set_shader_params(light);
         canvas.draw(
             &self.occlusions,
-            origin.image_scale(false).scale([size.0, size.1]),
+            origin.scale([
+                size.0 / self.occlusions.width() as f32,
+                size.1 / self.occlusions.height() as f32,
+            ]),
         );
         canvas.finish(ctx)?;
 

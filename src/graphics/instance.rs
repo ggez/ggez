@@ -138,25 +138,18 @@ impl InstanceArray {
         self.params.clear();
         self.params.extend(instances);
         self.uniforms.clear();
-        self.uniforms.extend(self.params.iter().map(|x| {
-            DrawUniforms::from_param(
-                x,
-                [self.image.width() as f32, self.image.height() as f32].into(),
-            )
-            .as_std140()
-        }));
+        self.uniforms.extend(
+            self.params
+                .iter()
+                .map(|x| DrawUniforms::from_param(x, None).as_std140()),
+        );
     }
 
     /// Pushes a new instance onto the end.
     pub fn push(&mut self, instance: DrawParam) {
         self.dirty.store(true, SeqCst);
-        self.uniforms.push(
-            DrawUniforms::from_param(
-                &instance,
-                [self.image.width() as f32, self.image.height() as f32].into(),
-            )
-            .as_std140(),
-        );
+        self.uniforms
+            .push(DrawUniforms::from_param(&instance, None).as_std140());
         self.params.push(instance);
     }
 
@@ -168,11 +161,7 @@ impl InstanceArray {
             .and_then(|x| Some((x, self.params.get_mut(index as usize)?)))
         {
             self.dirty.store(true, SeqCst);
-            *uniform = DrawUniforms::from_param(
-                &instance,
-                [self.image.width() as f32, self.image.height() as f32].into(),
-            )
-            .as_std140();
+            *uniform = DrawUniforms::from_param(&instance, None).as_std140();
             *param = instance;
         }
     }
@@ -304,6 +293,7 @@ impl Drawable for InstanceArray {
             Draw::MeshInstances {
                 mesh: canvas.default_resources().mesh.clone(),
                 instances: InstanceArrayView::from_instances(self).unwrap(),
+                scale: true,
             },
             param.into(),
         );

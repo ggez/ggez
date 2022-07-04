@@ -7,6 +7,7 @@ struct VertexOutput {
 struct Uniforms {
     transform: mat4x4<f32>;
     color: vec4<f32>;
+    scale: vec2<f32>;
 };
 
 struct DrawParam {
@@ -41,9 +42,19 @@ fn vs_main(
     var index = in_instance_index;
     var instance = instances.instances[index];
 
+    var scale_x = select(1.0, uniforms.scale.x * (instance.src_rect.z - instance.src_rect.x), uniforms.scale.x > 0.0);
+    var scale_y = select(1.0, uniforms.scale.y * (instance.src_rect.w - instance.src_rect.y), uniforms.scale.x > 0.0);
+    var scale_mat = mat4x4<f32>(
+        scale_x, 0.0, 0.0, 0.0,
+        0.0, scale_y, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    );
+
     var out: VertexOutput;
     out.position = uniforms.transform
         * instance.transform
+        * scale_mat
         * vec4<f32>(position, 0.0, 1.0);
     out.uv = mix(instance.src_rect.xy, instance.src_rect.zw, uv);
     out.color = uniforms.color * instance.color * color;

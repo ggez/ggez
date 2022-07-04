@@ -175,13 +175,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
         // Draw some pre-made meshes
         for (image, mesh) in &self.meshes {
             if let Some(image) = image {
-                canvas.draw_textured_mesh(
-                    mesh.clone(),
-                    image.clone(),
-                    graphics::DrawParam::new().image_scale(false),
-                );
+                canvas.draw_textured_mesh(mesh.clone(), image.clone(), graphics::DrawParam::new());
             } else {
-                canvas.draw(mesh, graphics::DrawParam::new().image_scale(false));
+                canvas.draw(mesh, graphics::DrawParam::new());
             }
         }
 
