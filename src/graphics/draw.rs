@@ -161,6 +161,7 @@ impl DrawParam {
         self
     }
 
+    /// Returns the `dest` of a DrawParam, or an error if the `Transform` isn't of the `Values` variant.
     pub(crate) fn get_dest_mut(&mut self) -> GameResult<&mut mint::Point2<f32>> {
         if let Transform::Values { dest, .. } = &mut self.transform {
             Ok(dest)
@@ -170,18 +171,27 @@ impl DrawParam {
     }
 
     /// Set the dest point.
+    ///
+    /// NOTE: If `transform` has been set to the `Transform::Matrix` variant, then this function will
+    /// overwrite that with a `Transform::Values` on which all values, except `dest` are default values.
     pub fn dest<P>(mut self, dest: P) -> Self
     where
         P: Into<mint::Point2<f32>>,
     {
-        // TODO: maybe let the error cascade up instead of just printing and stopping it here?
         match self.get_dest_mut() {
-            Ok(dest_mut) => *dest_mut = dest.into(),
-            Err(_) => println!(
-                "Cannot set destination value for a DrawParam which has a matrix as `Transform`!"
-            ),
+            Ok(dest_mut) => {
+                *dest_mut = dest.into();
+                self
+            }
+            Err(e) => {
+                if let GameError::DrawParamMatrixError = e {
+                    self.transform = Transform::default(); // throw away the transform matrix and start over
+                    self.dest(dest)
+                } else {
+                    unreachable!("only DrawParamMatrixError is thrown by get_dest_mut!")
+                }
+            }
         }
-        self
     }
 
     /// Set the `dest` and `scale` together.
@@ -197,19 +207,26 @@ impl DrawParam {
     }
 
     /// Set the rotation.
+    ///
+    /// NOTE: If `transform` has been set to the `Transform::Matrix` variant, then this function will
+    /// overwrite that with a `Transform::Values` on which all values, except `rotation` are default values.
     pub fn rotation(mut self, rot: f32) -> Self {
         if let Transform::Values {
             ref mut rotation, ..
         } = self.transform
         {
             *rotation = rot;
+            self
         } else {
-            print!("Cannot set values for a DrawParam matrix")
+            self.transform = Transform::default(); // throw away the transform matrix and start over
+            self.rotation(rot)
         }
-        self
     }
 
     /// Set the scaling factors.
+    ///
+    /// NOTE: If `transform` has been set to the `Transform::Matrix` variant, then this function will
+    /// overwrite that with a `Transform::Values` on which all values, except `scale` are default values.
     pub fn scale<V>(mut self, scale_: V) -> Self
     where
         V: Into<mint::Vector2<f32>>,
@@ -217,13 +234,17 @@ impl DrawParam {
         if let Transform::Values { ref mut scale, .. } = self.transform {
             let p: mint::Vector2<f32> = scale_.into();
             *scale = p;
+            self
         } else {
-            print!("Cannot set values for a DrawParam matrix")
+            self.transform = Transform::default(); // throw away the transform matrix and start over
+            self.scale(scale_)
         }
-        self
     }
 
     /// Set the transformation offset.
+    ///
+    /// NOTE: If `transform` has been set to the `Transform::Matrix` variant, then this function will
+    /// overwrite that with a `Transform::Values` on which all values, except `offset` are default values.
     pub fn offset<P>(mut self, offset_: P) -> Self
     where
         P: Into<mint::Point2<f32>>,
@@ -231,10 +252,11 @@ impl DrawParam {
         if let Transform::Values { ref mut offset, .. } = self.transform {
             let p: mint::Point2<f32> = offset_.into();
             *offset = p;
+            self
         } else {
-            print!("Cannot set values for a DrawParam matrix")
+            self.transform = Transform::default(); // throw away the transform matrix and start over
+            self.offset(offset_)
         }
-        self
     }
 
     /// Set the transformation matrix.
