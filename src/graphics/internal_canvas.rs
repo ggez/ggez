@@ -405,6 +405,7 @@ impl<'a> InternalCanvas<'a> {
         let uniforms = InstanceUniforms {
             transform: (self.transform
                 * glam::Mat4::from(
+                    // image scaling is non-sensical for instance array itself as the image scaling is applied locally (see below)
                     DrawUniforms::from_param(&param.src(Rect::one()), None).transform,
                 ))
             .into(),
@@ -414,6 +415,8 @@ impl<'a> InternalCanvas<'a> {
                 z: param.color.b,
                 w: param.color.a,
             },
+            // this is the actual image scale that we apply in the vertex shader.
+            // we can't apply this when we first convert the instance array drawparams because we don't know the image size yet.
             scale: if scale {
                 glam::Vec2::new(
                     instances.image.width() as f32,
