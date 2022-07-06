@@ -55,19 +55,20 @@ impl BindGroupLayoutBuilder {
     }
 
     pub fn create(self, device: &wgpu::Device, cache: &mut BindGroupCache) -> ArcBindGroupLayout {
-        let entries = self.entries.clone();
         cache
             .layouts
-            .entry(self.entries)
-            .or_insert_with(|| {
-                ArcBindGroupLayout::new(device.create_bind_group_layout(
-                    &wgpu::BindGroupLayoutDescriptor {
-                        label: None,
-                        entries: &entries,
-                    },
-                ))
-            })
+            .entry(self.entries.clone())
+            .or_insert_with(|| self.create_uncached(device))
             .clone()
+    }
+
+    pub fn create_uncached(self, device: &wgpu::Device) -> ArcBindGroupLayout {
+        ArcBindGroupLayout::new(
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: None,
+                entries: &self.entries,
+            }),
+        )
     }
 }
 
@@ -184,6 +185,21 @@ impl<'a> BindGroupBuilder<'a> {
             .clone();
 
         (group, layout)
+    }
+
+    pub fn create_uncached(self, device: &wgpu::Device) -> (ArcBindGroup, ArcBindGroupLayout) {
+        let layout = self.layout.create_uncached(device);
+        let group = ArcBindGroup::new(device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: layout.as_ref(),
+            entries: &self.entries,
+        }));
+        (group, layout)
+    }
+
+    #[inline]
+    pub fn entries(&self) -> &[wgpu::BindGroupEntry] {
+        &self.entries
     }
 }
 

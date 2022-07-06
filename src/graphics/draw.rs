@@ -130,8 +130,6 @@ pub struct DrawParam {
     pub color: Color,
     /// Where to put the object.
     pub transform: Transform,
-    /// Whether the scale should be relative to image size.
-    pub image_scale: bool,
     /// The Z coordinate of the draw.
     pub z: ZIndex,
 }
@@ -142,7 +140,6 @@ impl Default for DrawParam {
             src: Rect::one(),
             color: Color::WHITE,
             transform: Transform::default(),
-            image_scale: true,
             z: 0,
         }
     }
@@ -239,12 +236,6 @@ impl DrawParam {
         self
     }
 
-    /// Set the image scale option.
-    pub fn image_scale(mut self, image_scale: bool) -> Self {
-        self.image_scale = image_scale;
-        self
-    }
-
     /// Set the Z coordinate.
     pub fn z(mut self, z: ZIndex) -> Self {
         self.z = z;
@@ -296,11 +287,11 @@ unsafe impl bytemuck::Zeroable for DrawUniforms {}
 unsafe impl bytemuck::Pod for DrawUniforms {}
 
 impl DrawUniforms {
-    pub fn from_param(param: &DrawParam, image_scale: mint::Vector2<f32>) -> Self {
-        let (scale_x, scale_y) = if !param.image_scale {
-            (1., 1.)
+    pub fn from_param(param: &DrawParam, image_scale: Option<mint::Vector2<f32>>) -> Self {
+        let (scale_x, scale_y) = if let Some(image_scale) = image_scale {
+            (image_scale.x * param.src.w, image_scale.y * param.src.h)
         } else {
-            (image_scale.x, image_scale.y)
+            (1., 1.)
         };
 
         let param = match param.transform {

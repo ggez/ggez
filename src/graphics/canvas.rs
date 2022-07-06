@@ -116,7 +116,6 @@ impl Canvas {
         let gfx = gfx.retrieve();
 
         let defaults = DefaultResources::new(gfx);
-        let drawable_size = gfx.drawable_size();
 
         let state = DrawState {
             shader: defaults.shader.clone(),
@@ -127,14 +126,14 @@ impl Canvas {
             blend_mode: BlendMode::ALPHA,
             premul_text: true,
             projection: glam::Mat4::IDENTITY.into(),
-            scissor_rect: (0, 0, drawable_size.0 as _, drawable_size.1 as _),
+            scissor_rect: (0, 0, target.width(), target.height()),
         };
 
         let screen = Rect {
             x: 0.,
             y: 0.,
-            w: drawable_size.0 as _,
-            h: drawable_size.1 as _,
+            w: target.width() as _,
+            h: target.height() as _,
         };
 
         let mut this = Canvas {
@@ -171,7 +170,7 @@ impl Canvas {
 
     /// Sets the shader parameters to use when drawing meshes.
     ///
-    /// **Bound to bind group 3.**
+    /// **Bound to bind group 4.**
     #[inline]
     pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
         self.state.params = Some((params.bind_group.clone(), params.layout));
@@ -352,7 +351,14 @@ impl Canvas {
     ///
     /// This differs from `canvas.draw(mesh, param)` as in that case, the mesh is untextured.
     pub fn draw_textured_mesh(&mut self, mesh: Mesh, image: Image, param: impl Into<DrawParam>) {
-        self.push_draw(Draw::Mesh { mesh, image }, param.into());
+        self.push_draw(
+            Draw::Mesh {
+                mesh,
+                image,
+                scale: false,
+            },
+            param.into(),
+        );
     }
 
     /// Draws an `InstanceArray` textured with a `Mesh`.
@@ -370,6 +376,7 @@ impl Canvas {
             Draw::MeshInstances {
                 mesh,
                 instances: InstanceArrayView::from_instances(instances).unwrap(),
+                scale: false,
             },
             param.into(),
         );
@@ -419,7 +426,10 @@ impl Canvas {
         canvas.set_sampler(state.sampler);
         canvas.set_blend_mode(state.blend_mode);
         canvas.set_projection(state.projection);
-        canvas.set_scissor_rect(state.scissor_rect);
+
+        if state.scissor_rect.2 > 0 && state.scissor_rect.3 > 0 {
+            canvas.set_scissor_rect(state.scissor_rect);
+        }
 
         for draws in self.draws.values() {
             for draw in draws {
@@ -468,10 +478,14 @@ impl Canvas {
                 state = draw.state.clone();
 
                 match &draw.draw {
-                    Draw::Mesh { mesh, image } => canvas.draw_mesh(mesh, image, draw.param),
-                    Draw::MeshInstances { mesh, instances } => {
-                        canvas.draw_mesh_instances(mesh, instances, draw.param)?
+                    Draw::Mesh { mesh, image, scale } => {
+                        canvas.draw_mesh(mesh, image, draw.param, *scale)
                     }
+                    Draw::MeshInstances {
+                        mesh,
+                        instances,
+                        scale,
+                    } => canvas.draw_mesh_instances(mesh, instances, draw.param, *scale)?,
                     Draw::BoundedText { text } => canvas.draw_bounded_text(text, draw.param)?,
                 }
             }
@@ -526,10 +540,12 @@ pub(crate) enum Draw {
     Mesh {
         mesh: Mesh,
         image: Image,
+        scale: bool,
     },
     MeshInstances {
         mesh: Mesh,
         instances: InstanceArrayView,
+        scale: bool,
     },
     BoundedText {
         text: Text,
