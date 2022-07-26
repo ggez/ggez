@@ -74,11 +74,7 @@ pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
     }
 }
 
-use crate::{
-    context::{Has, HasTwo},
-    filesystem::Filesystem,
-    GameResult,
-};
+use crate::{context::Has, GameResult};
 use mint::Point2;
 use std::path::Path;
 
@@ -94,12 +90,11 @@ pub fn draw(canvas: &mut Canvas, drawable: &impl Drawable, param: impl Into<Draw
 /// Sets the window icon. `None` for path removes the icon.
 #[deprecated(since = "0.8.0", note = "Use `ctx.gfx.set_window_icon` instead.")]
 pub fn set_window_icon<P: AsRef<Path>>(
-    ctx: &impl HasTwo<GraphicsContext, Filesystem>,
+    ctx: &impl Has<GraphicsContext>,
     path: impl Into<Option<P>>,
 ) -> GameResult {
-    let gfx: &GraphicsContext = ctx.retrieve_first();
-    let fs: &Filesystem = ctx.retrieve_second();
-    gfx.set_window_icon(fs, path)
+    let gfx: &GraphicsContext = ctx.retrieve();
+    gfx.set_window_icon(&gfx.fs, path)
 }
 
 /// Sets the window position.

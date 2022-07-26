@@ -158,43 +158,6 @@ impl HasMut<GraphicsContext> for Context {
     }
 }
 
-/// Used to represent types that can provide two context types. See also [`Has<T>`].
-///
-/// If you don't know what this is, you most likely want to pass `ctx`.
-pub trait HasTwo<T, U> {
-    /// Method to retrieve the first context type.
-    fn retrieve_first(&self) -> &T;
-    /// Method to retrieve the second context type.
-    fn retrieve_second(&self) -> &U;
-}
-
-impl<T, U> HasTwo<T, U> for Context
-where
-    Context: Has<T> + Has<U>,
-{
-    #[inline]
-    fn retrieve_first(&self) -> &T {
-        Has::<T>::retrieve(self)
-    }
-
-    #[inline]
-    fn retrieve_second(&self) -> &U {
-        Has::<U>::retrieve(self)
-    }
-}
-
-impl<T, U> HasTwo<T, U> for (&T, &U) {
-    #[inline]
-    fn retrieve_first(&self) -> &T {
-        self.0
-    }
-
-    #[inline]
-    fn retrieve_second(&self) -> &U {
-        self.1
-    }
-}
-
 impl fmt::Debug for Context {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Context: {:p}>", self)
@@ -206,14 +169,13 @@ impl Context {
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
     fn from_conf(
         conf: conf::Conf,
-        mut fs: Filesystem,
+        fs: Filesystem,
     ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         #[cfg(feature = "audio")]
-        let audio_context = audio::AudioContext::new()?;
+        let audio_context = audio::AudioContext::new(&fs)?;
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
-        let graphics_context =
-            graphics::context::GraphicsContext::new(&events_loop, &conf, &mut fs)?;
+        let graphics_context = graphics::context::GraphicsContext::new(&events_loop, &conf, &fs)?;
 
         let ctx = Context {
             conf,
@@ -357,7 +319,7 @@ impl ContextBuilder {
 
     /// Build the `Context`.
     pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
-        let mut fs = Filesystem::new(
+        let fs = Filesystem::new(
             self.game_id.as_ref(),
             self.author.as_ref(),
             &self.resources_dir_name,
@@ -396,8 +358,7 @@ pub fn quit(ctx: &mut Context) {
 #[cfg(test)]
 mod tests {
     use crate::{
-        context::{Has, HasMut, HasTwo},
-        filesystem::Filesystem,
+        context::{Has, HasMut},
         graphics::GraphicsContext,
         ContextBuilder,
     };
@@ -413,9 +374,5 @@ mod tests {
         fn takes_mut_gfx(_gfx: &mut impl HasMut<GraphicsContext>) {}
         takes_mut_gfx(&mut ctx);
         takes_mut_gfx(&mut ctx.gfx);
-
-        fn takes_gfx_fs(_gfx_fs: &impl HasTwo<GraphicsContext, Filesystem>) {}
-        takes_gfx_fs(&ctx);
-        takes_gfx_fs(&(&ctx.gfx, &ctx.fs));
     }
 }
