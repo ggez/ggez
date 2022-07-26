@@ -83,6 +83,9 @@ The following list doesn't repeat the changes already mentioned above.
 * Improved `Text` performance through better glyph re-use
 * Changed the `Drawable` trait; this will downstream require changes in projects like `ggez-egui`
 * Version bumped `zip` to 0.6, `directories` to 4.0.1, `winit` to 0.26, image to `0.24` and `rodio` to 0.15
+* `DrawParam` methods such as `dest`, `scale`, etc. no longer panic when used on a `DrawParam` which holds the matrix
+  `Transform` variant; instead the matrix is lost and a new default `Transform` is created
+
 
 ## Deprecated
 
