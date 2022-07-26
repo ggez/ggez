@@ -17,7 +17,7 @@ use crate::{
     conf::{self, Backend, Conf, FullscreenType, WindowMode},
     context::Has,
     error::GameResult,
-    filesystem::Filesystem,
+    filesystem::{Filesystem, InternalClone},
     graphics::gpu::{bind_group::BindGroupLayoutBuilder, pipeline::RenderPipelineInfo},
     GameError,
 };
@@ -91,6 +91,8 @@ pub struct GraphicsContext {
     pub(crate) white_image: Image,
     pub(crate) instance_bind_layout: ArcBindGroupLayout,
     pub(crate) image_bind_layout: ArcBindGroupLayout,
+
+    pub(crate) fs: Filesystem,
 }
 
 impl GraphicsContext {
@@ -98,7 +100,7 @@ impl GraphicsContext {
     pub(crate) fn new(
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
-        filesystem: &mut Filesystem,
+        filesystem: &Filesystem,
     ) -> GameResult<Self> {
         if conf.backend == Backend::All {
             match Self::new_from_instance(
@@ -146,7 +148,7 @@ impl GraphicsContext {
         instance: wgpu::Instance,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
-        filesystem: &mut Filesystem,
+        filesystem: &Filesystem,
     ) -> GameResult<Self> {
         let physical_size =
             dpi::PhysicalSize::<f64>::from((conf.window_mode.width, conf.window_mode.height));
@@ -359,6 +361,8 @@ impl GraphicsContext {
             white_image,
             instance_bind_layout,
             image_bind_layout,
+
+            fs: InternalClone::clone(filesystem),
         };
 
         this.set_window_mode(&conf.window_mode)?;

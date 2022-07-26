@@ -412,10 +412,8 @@ If you wish, you can also disable it only in release mode:
 
 ## What is this `Has` parameter?
 
-You may notice a lot of methods taking a `gfx: &impl Has<GraphicsContext>` parameter or `ctxs: &impl HasTwo<GraphicsContext, Filesystem>`, what is up with that?
+You may notice a lot of methods taking a `gfx: &impl Has<GraphicsContext>` parameter, what is up with that?
 
 Since version 0.8, we support split borrowing the sub-contexts. **This is not useful for most users so you may just pass `ctx` to any parameter taking `Has`**. If you want to perform a split-borrow:
 
 You may pass `&ctx.gfx` for `gfx: &impl Has<GraphicsContext>`
-
-Or you may pass it like `&(&ctx.gfx, &ctx.fs)` for `ctxs: &impl HasTwo<GraphicsContext, Filesystem>`

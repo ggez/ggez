@@ -4,10 +4,7 @@ use super::{
     Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
 use crate::{
-    context::{Has, HasTwo},
-    filesystem::Filesystem,
-    graphics::gpu::bind_group::BindGroupBuilder,
-    Context, GameError, GameResult,
+    context::Has, graphics::gpu::bind_group::BindGroupBuilder, Context, GameError, GameResult,
 };
 use image::ImageEncoder;
 use std::path::Path;
@@ -135,15 +132,14 @@ impl Image {
     /// Creates a new image initialized with pixel data loaded from an encoded image `Read` (e.g. PNG or JPEG).
     #[allow(unused_results)]
     pub fn from_path(
-        ctxs: &impl HasTwo<Filesystem, GraphicsContext>,
+        ctxs: &impl Has<GraphicsContext>,
         path: impl AsRef<Path>,
         srgb: bool,
     ) -> GameResult<Self> {
-        let fs = ctxs.retrieve_first();
-        let gfx = ctxs.retrieve_second();
+        let gfx = ctxs.retrieve();
 
         let mut encoded = Vec::new();
-        fs.open(path)?.read_to_end(&mut encoded)?;
+        gfx.fs.open(path)?.read_to_end(&mut encoded)?;
         let decoded = image::load_from_memory(&encoded[..])
             .map_err(|_| GameError::ResourceLoadError(String::from("failed to load image")))?;
         let rgba8 = decoded.to_rgba8();
