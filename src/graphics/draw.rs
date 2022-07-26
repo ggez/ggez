@@ -185,7 +185,7 @@ impl DrawParam {
             }
             Err(e) => {
                 if let GameError::DrawParamMatrixError = e {
-                    self.transform = Transform::default(); // throw away the transform matrix and start over
+                    self.lose_matrix_transform();
                     self.dest(dest)
                 } else {
                     unreachable!("only DrawParamMatrixError is thrown by get_dest_mut!")
@@ -218,7 +218,7 @@ impl DrawParam {
             *rotation = rot;
             self
         } else {
-            self.transform = Transform::default(); // throw away the transform matrix and start over
+            self.lose_matrix_transform();
             self.rotation(rot)
         }
     }
@@ -236,7 +236,7 @@ impl DrawParam {
             *scale = p;
             self
         } else {
-            self.transform = Transform::default(); // throw away the transform matrix and start over
+            self.lose_matrix_transform();
             self.scale(scale_)
         }
     }
@@ -254,9 +254,16 @@ impl DrawParam {
             *offset = p;
             self
         } else {
-            self.transform = Transform::default(); // throw away the transform matrix and start over
+            self.lose_matrix_transform();
             self.offset(offset_)
         }
+    }
+
+    #[inline]
+    fn lose_matrix_transform(&mut self) {
+        self.transform = Transform::default(); // throw away the transform matrix and start over
+        eprintln!("WARNING: Transform matrix lost, reset DrawParam transform to default.");
+        // warn the user
     }
 
     /// Set the transformation matrix.

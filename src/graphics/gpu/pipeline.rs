@@ -48,7 +48,7 @@ impl PipelineCache {
                         label: None,
                         layout: Some(layout),
                         vertex: wgpu::VertexState {
-                            module: &*info.vs,
+                            module: &info.vs,
                             entry_point: &info.vs_entry,
                             buffers: if info.vertices { &vertex_buffers } else { &[] },
                         },
@@ -78,7 +78,7 @@ impl PipelineCache {
                             alpha_to_coverage_enabled: false,
                         },
                         fragment: Some(wgpu::FragmentState {
-                            module: &*info.fs,
+                            module: &info.fs,
                             entry_point: &info.fs_entry,
                             targets: &[wgpu::ColorTargetState {
                                 format: info.format,
@@ -109,16 +109,16 @@ impl PipelineCache {
         self.layouts
             .entry(key)
             .or_insert_with(|| {
-                ArcPipelineLayout::new(device.create_pipeline_layout(
-                    &wgpu::PipelineLayoutDescriptor {
+                ArcPipelineLayout::new(
+                    device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                         label: None,
                         bind_group_layouts: &bind_groups
                             .iter()
                             .map(|bg| bg.handle.as_ref())
                             .collect::<Vec<_>>(),
                         push_constant_ranges: &[],
-                    },
-                ))
+                    }),
+                )
             })
             .clone()
     }
