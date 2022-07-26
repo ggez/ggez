@@ -198,6 +198,7 @@ extern crate serde_derive;
 extern crate smart_default;
 
 pub extern crate mint;
+pub extern crate glam;
 
 pub mod audio;
 pub mod conf;
