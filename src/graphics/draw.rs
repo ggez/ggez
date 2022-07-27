@@ -166,6 +166,10 @@ impl DrawParam {
     }
 
     /// Set the dest point.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform` is of the `Matrix` variant.
     pub fn dest<P>(mut self, dest: P) -> Self
     where
         P: Into<mint::Point2<f32>>,
@@ -175,6 +179,10 @@ impl DrawParam {
     }
 
     /// Set the `dest` and `scale` together.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform` is of the `Matrix` variant.
     pub fn dest_rect(self, rect: Rect) -> Self {
         self.dest(rect.point()).scale(rect.size())
     }
@@ -187,6 +195,10 @@ impl DrawParam {
     }
 
     /// Set the rotation.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform` is of the `Matrix` variant.
     pub fn rotation(mut self, rot: f32) -> Self {
         if let Transform::Values {
             ref mut rotation, ..
@@ -200,6 +212,10 @@ impl DrawParam {
     }
 
     /// Set the scaling factors.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform` is of the `Matrix` variant.
     pub fn scale<V>(mut self, scale_: V) -> Self
     where
         V: Into<mint::Vector2<f32>>,
@@ -214,6 +230,10 @@ impl DrawParam {
     }
 
     /// Set the transformation offset.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform` is of the `Matrix` variant.
     pub fn offset<P>(mut self, offset_: P) -> Self
     where
         P: Into<mint::Point2<f32>>,
