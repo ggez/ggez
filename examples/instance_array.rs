@@ -4,9 +4,9 @@
 #![allow(clippy::unnecessary_wraps)]
 
 use ggez::event;
+use ggez::glam::*;
 use ggez::graphics::{self, Color};
 use ggez::{Context, GameResult};
-use glam::*;
 use std::env;
 use std::f32::consts::TAU;
 use std::path;

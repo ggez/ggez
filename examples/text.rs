@@ -1,5 +1,6 @@
 //! This example demonstrates how to use `Text` to draw TrueType font texts efficiently.
 
+use ggez::glam::Vec2;
 use ggez::graphics::{self, Color, PxScale, Text, TextAlign, TextFragment};
 use ggez::timer;
 use ggez::{
@@ -8,10 +9,8 @@ use ggez::{
 };
 use ggez::{event, graphics::TextLayout};
 use ggez::{Context, ContextBuilder, GameResult};
-use glam::Vec2;
 use std::collections::BTreeMap;
 use std::env;
-use std::f32;
 use std::path;
 
 /// Creates a random RGB color.

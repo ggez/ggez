@@ -74,13 +74,13 @@ pub fn main() -> GameResult {
                 let circle = graphics::Mesh::new_circle(
                     ctx,
                     DrawMode::fill(),
-                    glam::Vec2::new(0.0, 0.0),
+                    ggez::glam::Vec2::new(0.0, 0.0),
                     100.0,
                     2.0,
                     Color::WHITE,
                 )
                 .unwrap();
-                canvas.draw(&circle, glam::Vec2::new(position, 380.0));
+                canvas.draw(&circle, ggez::glam::Vec2::new(position, 380.0));
 
                 canvas.finish(ctx).unwrap();
                 ctx.gfx.end_frame().unwrap();

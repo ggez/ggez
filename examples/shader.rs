@@ -1,5 +1,6 @@
 //! A very simple shader example.
 
+use ggez::glam::Vec2;
 use ggez::graphics::{self, Color, DrawMode};
 use ggez::{event, graphics::AsStd140};
 use ggez::{Context, GameResult};
@@ -43,12 +44,12 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),
-            glam::Vec2::new(100.0, 300.0),
+            Vec2::new(100.0, 300.0),
             100.0,
             2.0,
             Color::WHITE,
         )?;
-        canvas.draw(&circle, glam::Vec2::new(0.0, 0.0));
+        canvas.draw(&circle, Vec2::new(0.0, 0.0));
 
         self.params.set_uniforms(ctx, &self.dim);
         canvas.set_shader(self.shader.clone());
@@ -56,23 +57,23 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),
-            glam::Vec2::new(400.0, 300.0),
+            Vec2::new(400.0, 300.0),
             100.0,
             2.0,
             Color::WHITE,
         )?;
-        canvas.draw(&circle, glam::Vec2::new(0.0, 0.0));
+        canvas.draw(&circle, Vec2::new(0.0, 0.0));
 
         canvas.set_default_shader();
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),
-            glam::Vec2::new(700.0, 300.0),
+            Vec2::new(700.0, 300.0),
             100.0,
             2.0,
             Color::WHITE,
         )?;
-        canvas.draw(&circle, glam::Vec2::new(0.0, 0.0));
+        canvas.draw(&circle, Vec2::new(0.0, 0.0));
 
         canvas.finish(ctx)
     }

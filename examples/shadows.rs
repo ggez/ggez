@@ -1,10 +1,10 @@
 //! A more sophisticated example of how to use shaders
 //! and canvas's to do 2D GPU shadows.
 
+use ggez::glam::Vec2;
 use ggez::graphics::{self, AsStd140, BlendMode, Canvas, Color, DrawParam, Shader};
 use ggez::{event, graphics::ShaderParams};
 use ggez::{Context, GameResult};
-use glam::Vec2;
 use std::env;
 use std::path;
 

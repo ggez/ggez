@@ -2,10 +2,10 @@
 
 use ggez::{
     event,
+    glam::*,
     graphics::{self, Color},
     Context, GameResult,
 };
-use glam::*;
 use std::{env, path};
 
 struct MainState {

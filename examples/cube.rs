@@ -5,10 +5,10 @@
 //! drawing code entirely and write your own.
 
 use crevice::std140::Std140;
+use ggez::glam::*;
 use ggez::graphics;
 use ggez::{event, graphics::AsStd140};
 use ggez::{Context, GameResult};
-use glam::*;
 use std::env;
 use std::f32;
 use std::path;

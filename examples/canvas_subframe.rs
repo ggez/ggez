@@ -9,8 +9,8 @@ use std::env;
 use std::f32::consts::TAU;
 use std::path;
 
-type Point2 = glam::Vec2;
-type Vector2 = glam::Vec2;
+type Point2 = ggez::glam::Vec2;
+type Vector2 = ggez::glam::Vec2;
 
 struct MainState {
     instances: graphics::InstanceArray,

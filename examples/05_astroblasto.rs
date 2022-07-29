@@ -6,11 +6,11 @@ use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::conf;
 use ggez::event::{self, EventHandler};
+use ggez::glam::*;
 use ggez::graphics::{self, Color};
 use ggez::input::keyboard::KeyCode;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
-use glam::*;
 use oorandom::Rand32;
 
 use ggez::input::keyboard::KeyInput;
