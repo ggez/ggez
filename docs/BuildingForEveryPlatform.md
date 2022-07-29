@@ -38,6 +38,7 @@ Then edit your `Cargo.toml` with your favorite super duper editor and under `[de
 
 ```
 ggez = "0.8.0-rc0"
+glam = { version = "0.20", features = ["mint"] }
 ```
 
 Now run `cargo run` and it should build
