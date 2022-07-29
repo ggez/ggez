@@ -170,14 +170,15 @@ impl Text {
     /// Specifies rectangular dimensions to fit text inside of,
     /// wrapping where necessary. Within these bounds is also where
     /// text alignment occurs.
+    pub fn set_bounds(&mut self, bounds: impl Into<mint::Vector2<f32>>) -> &mut Self {
+        self.bounds = bounds.into();
+        self
+    }
+
+    /// Specifies how the text will wrap within the bounds specified by [`Text::set_bounds`].
     ///
     /// Wrapping can be disabled by setting `layout` to `TextLayout::SingleLine`.
-    pub fn set_bounds(
-        &mut self,
-        bounds: impl Into<mint::Vector2<f32>>,
-        layout: TextLayout,
-    ) -> &mut Text {
-        self.bounds = bounds.into();
+    pub fn set_layout(&mut self, layout: TextLayout) -> &mut Self {
         self.layout = layout;
         self
     }
