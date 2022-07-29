@@ -37,8 +37,7 @@ wget https://raw.githubusercontent.com/ggez/ggez/master/resources/LiberationMono
 Then edit your `Cargo.toml` with your favorite super duper editor and under `[dependencies]` add:
 
 ```
-ggez = "0.7"
-glam = { version = "0.20", features = ["mint"] }
+ggez = "0.8.0-rc0"
 ```
 
 Now run `cargo run` and it should build
