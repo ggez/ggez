@@ -4,7 +4,6 @@
 //! the underlying `gfx-rs` data types, so you can bypass ggez's
 //! drawing code entirely and write your own.
 
-use crevice::std140::Std140;
 use ggez::graphics;
 use ggez::{event, graphics::AsStd140};
 use ggez::{Context, GameResult};
@@ -68,7 +67,7 @@ impl MainState {
             .gfx
             .wgpu()
             .device
-            .create_shader_module(&wgpu::include_wgsl!("../resources/cube.wgsl"));
+            .create_shader_module(wgpu::include_wgsl!("../resources/cube.wgsl"));
 
         // Cube geometry
         let vertex_data = [
@@ -197,11 +196,11 @@ impl MainState {
                     fragment: Some(wgpu::FragmentState {
                         module: &shader,
                         entry_point: "fs_main",
-                        targets: &[wgpu::ColorTargetState {
+                        targets: &[Some(wgpu::ColorTargetState {
                             format: ctx.gfx.surface_format(),
                             blend: None,
                             write_mask: wgpu::ColorWrites::ALL,
-                        }],
+                        })],
                     }),
                     multiview: None,
                 });
@@ -298,7 +297,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             let cmd = ctx.gfx.commands().unwrap();
             let mut pass = cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: frame.wgpu().1,
                     resolve_target: None,
                     ops: wgpu::Operations {
@@ -308,7 +307,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                         ),
                         store: true,
                     },
-                }],
+                })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: depth.wgpu().1,
                     depth_ops: Some(wgpu::Operations {
