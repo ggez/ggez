@@ -51,7 +51,7 @@ pub(crate) struct FrameArenas {
 #[allow(missing_docs)]
 pub struct WgpuContext {
     pub instance: wgpu::Instance,
-    pub surface: wgpu::Surface,
+    pub surface: std::sync::Mutex<wgpu::Surface>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
 }
@@ -96,19 +96,19 @@ pub struct GraphicsContext {
 impl GraphicsContext {
     #[allow(unsafe_code)]
     pub(crate) fn new(
-        event_loop: &winit::event_loop::EventLoop<()>,
+        window: winit::window::Window,
         conf: &Conf,
         filesystem: &Filesystem,
     ) -> GameResult<Self> {
         if conf.backend == Backend::All {
             match Self::new_from_instance(
                 wgpu::Instance::new(wgpu::Backends::PRIMARY),
-                event_loop,
+                window,
                 conf,
                 filesystem,
             ) {
                 Ok(o) => Ok(o),
-                Err(GameError::GraphicsInitializationError) => {
+                Err((GameError::GraphicsInitializationError, Some(window))) => {
                     println!(
                         "Failed to initialize graphics, trying secondary backends.. Please mention this if you encounter any bugs!"
                     );
@@ -118,12 +118,13 @@ impl GraphicsContext {
 
                     Self::new_from_instance(
                         wgpu::Instance::new(wgpu::Backends::SECONDARY),
-                        event_loop,
+                        window,
                         conf,
                         filesystem,
                     )
+                    .map_err(|(e, _w)| e)
                 }
-                Err(e) => Err(e),
+                Err((e, _window)) => Err(e),
             }
         } else {
             let instance = wgpu::Instance::new(match conf.backend {
@@ -137,64 +138,62 @@ impl GraphicsContext {
                 Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
             });
 
-            Self::new_from_instance(instance, event_loop, conf, filesystem)
+            Self::new_from_instance(instance, window, conf, filesystem).map_err(|(e, _w)| e)
         }
+    }
+
+    #[allow(unsafe_code)]
+    /// Recreates the surface from the current window.
+    pub(crate) fn recreate_surface(&mut self) {
+        *self.wgpu.surface.lock().unwrap() =
+            unsafe { self.wgpu.instance.create_surface(&self.window) };
+        self.wgpu
+            .surface
+            .lock()
+            .unwrap()
+            .configure(&self.wgpu.device, &self.surface_config);
     }
 
     #[allow(unsafe_code)]
     pub(crate) fn new_from_instance(
         instance: wgpu::Instance,
-        event_loop: &winit::event_loop::EventLoop<()>,
+        window: winit::window::Window,
         conf: &Conf,
         filesystem: &Filesystem,
-    ) -> GameResult<Self> {
-        let physical_size =
-            dpi::PhysicalSize::<f64>::from((conf.window_mode.width, conf.window_mode.height));
-        assert!(physical_size.width >= 1.0 && physical_size.height >= 1.0); // wgpu needs surfaces > 0
-        let mut window_builder = winit::window::WindowBuilder::new()
-            .with_title(conf.window_setup.title.clone())
-            .with_inner_size(physical_size)
-            .with_resizable(conf.window_mode.resizable)
-            .with_visible(conf.window_mode.visible)
-            .with_transparent(conf.window_mode.transparent);
-
-        #[cfg(target_os = "windows")]
-        {
-            use winit::platform::windows::WindowBuilderExtWindows;
-            window_builder = window_builder.with_drag_and_drop(false);
-        }
-
-        window_builder = if !conf.window_setup.icon.is_empty() {
-            let icon = load_icon(conf.window_setup.icon.as_ref(), filesystem)?;
-            window_builder.with_window_icon(Some(icon))
-        } else {
-            window_builder
-        };
-
-        let window = window_builder.build(event_loop)?;
+    ) -> Result<Self, (GameError, Option<winit::window::Window>)> {
         let surface = unsafe { instance.create_surface(&window) };
 
-        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            force_fallback_adapter: false,
-            compatible_surface: Some(&surface),
-        }))
-        .ok_or(GameError::GraphicsInitializationError)?;
-        let (device, queue) = pollster::block_on(adapter.request_device(
+        let adapter =
+            match pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                force_fallback_adapter: false,
+                compatible_surface: Some(&surface),
+            }))
+            .ok_or(GameError::GraphicsInitializationError)
+            {
+                Ok(o) => o,
+                Err(e) => return Err((e, Some(window))),
+            };
+        let (device, queue) = match pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
                 features: wgpu::Features::default(),
                 limits: wgpu::Limits {
-                    max_bind_groups: 5,
+                    max_bind_groups: if cfg!(target_os = "android") { 4 } else { 5 },
                     ..Default::default()
                 },
             },
             None,
-        ))?;
+        ))
+        .map_err(GameError::RequestDeviceError)
+        {
+            Ok(o) => o,
+            Err(e) => return Err((e, Some(window))),
+        };
 
         let wgpu = Arc::new(WgpuContext {
             instance,
-            surface,
+            surface: std::sync::Mutex::new(surface),
             device,
             queue,
         });
@@ -202,7 +201,7 @@ impl GraphicsContext {
         let size = window.inner_size();
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu.surface.get_supported_formats(&adapter)[0],
+            format: wgpu.surface.lock().unwrap().get_supported_formats(&adapter)[0],
             width: size.width,
             height: size.height,
             present_mode: if conf.window_setup.vsync {
@@ -212,7 +211,10 @@ impl GraphicsContext {
             },
         };
 
-        wgpu.surface.configure(&wgpu.device, &surface_config);
+        wgpu.surface
+            .lock()
+            .unwrap()
+            .configure(&wgpu.device, &surface_config);
 
         let mut bind_group_cache = BindGroupCache::new();
         let pipeline_cache = PipelineCache::new();
@@ -358,7 +360,8 @@ impl GraphicsContext {
             fs: InternalClone::clone(filesystem),
         };
 
-        this.set_window_mode(&conf.window_mode)?;
+        this.set_window_mode(&conf.window_mode)
+            .map_err(|e| (e, None))?;
 
         this.frame = Some(ScreenImage::new(&this, None, 1., 1., 1));
         this.frame_msaa = Some(ScreenImage::new(
@@ -372,7 +375,8 @@ impl GraphicsContext {
 
         this.add_font(
             "LiberationMono-Regular",
-            FontData::from_slice(include_bytes!("../../resources/LiberationMono-Regular.ttf"))?,
+            FontData::from_slice(include_bytes!("../../resources/LiberationMono-Regular.ttf"))
+                .map_err(|e| (e, None))?,
         );
 
         Ok(this)
@@ -534,17 +538,24 @@ impl GraphicsContext {
         }
 
         let size = self.window.inner_size();
-        let frame = match self.wgpu.surface.get_current_texture() {
+        let frame = match self.wgpu.surface.lock().unwrap().get_current_texture() {
             Ok(frame) => Ok(frame),
             Err(_) => {
                 self.surface_config.width = size.width.max(1);
                 self.surface_config.height = size.height.max(1);
                 self.wgpu
                     .surface
+                    .lock()
+                    .unwrap()
                     .configure(&self.wgpu.device, &self.surface_config);
-                self.wgpu.surface.get_current_texture().map_err(|_| {
-                    GameError::RenderError(String::from("failed to get next swapchain image"))
-                })
+                self.wgpu
+                    .surface
+                    .lock()
+                    .unwrap()
+                    .get_current_texture()
+                    .map_err(|_| {
+                        GameError::RenderError(String::from("failed to get next swapchain image"))
+                    })
             }
         }?;
         let frame_view = frame
@@ -644,6 +655,8 @@ impl GraphicsContext {
         self.surface_config.height = size.height.max(1);
         self.wgpu
             .surface
+            .lock()
+            .unwrap()
             .configure(&self.wgpu.device, &self.surface_config);
         self.update_frame_image();
     }
@@ -747,6 +760,8 @@ impl GraphicsContext {
 
         self.wgpu
             .surface
+            .lock()
+            .unwrap()
             .configure(&self.wgpu.device, &self.surface_config);
 
         Ok(())

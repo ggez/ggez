@@ -56,8 +56,8 @@ pub struct Filesystem {
     vfs: Arc<Mutex<vfs::OverlayFS>>,
     resources_dir: path::PathBuf,
     zip_dir: path::PathBuf,
-    user_config_dir: path::PathBuf,
-    user_data_dir: path::PathBuf,
+    user_config_dir: Option<path::PathBuf>,
+    user_data_dir: Option<path::PathBuf>,
 }
 
 /// This is the same as [`std::clone::Clone`] but only accessible to ggez
@@ -142,17 +142,10 @@ impl Filesystem {
 
         let mut resources_path;
         let mut resources_zip_path;
-        let user_data_path;
-        let user_config_path;
+        let mut maybe_user_data_path = None;
+        let mut maybe_user_config_path = None;
 
-        let project_dirs = match ProjectDirs::from("", author, id) {
-            Some(dirs) => dirs,
-            None => {
-                return Err(GameError::FilesystemError(String::from(
-                    "No valid home directory path could be retrieved.",
-                )));
-            }
-        };
+        let project_dirs = ProjectDirs::from("", author, id);
 
         // <game exe root>/resources/
         {
@@ -176,30 +169,40 @@ impl Filesystem {
             }
         }
 
-        // Per-user data dir,
-        // ~/.local/share/whatever/
-        {
-            user_data_path = project_dirs.data_local_dir();
-            trace!("User-local data path: {:?}", user_data_path);
-            let physfs = vfs::PhysicalFS::new(user_data_path, true);
-            overlay.push_back(Box::new(physfs));
+        if let Some(project_dirs) = project_dirs {
+            // Per-user data dir,
+            // ~/.local/share/whatever/
+            {
+                let user_data_path = project_dirs.data_local_dir();
+                trace!("User-local data path: {:?}", user_data_path);
+                let physfs = vfs::PhysicalFS::new(user_data_path, true);
+                overlay.push_back(Box::new(physfs));
+                maybe_user_data_path = Some(user_data_path.to_path_buf());
+            }
+
+            // Writeable local dir, ~/.config/whatever/
+            // Save game dir is read-write
+            {
+                let user_config_path = project_dirs.config_dir();
+                trace!("User-local configuration path: {:?}", user_config_path);
+                let physfs = vfs::PhysicalFS::new(user_config_path, false);
+                overlay.push_back(Box::new(physfs));
+                maybe_user_config_path = Some(user_config_path.to_path_buf());
+            }
         }
 
-        // Writeable local dir, ~/.config/whatever/
-        // Save game dir is read-write
+        #[cfg(target_os = "android")]
         {
-            user_config_path = project_dirs.config_dir();
-            trace!("User-local configuration path: {:?}", user_config_path);
-            let physfs = vfs::PhysicalFS::new(user_config_path, false);
-            overlay.push_back(Box::new(physfs));
+            let androidfs = crate::vfs::AndroidAssetsFS::new();
+            overlay.push_back(Box::new(androidfs));
         }
 
         let fs = Filesystem {
             vfs: Arc::new(Mutex::new(overlay)),
             resources_dir: resources_path,
             zip_dir: resources_zip_path,
-            user_config_dir: user_config_path.to_path_buf(),
-            user_data_dir: user_data_path.to_path_buf(),
+            user_config_dir: maybe_user_config_path,
+            user_data_dir: maybe_user_data_path,
         };
 
         Ok(fs)
@@ -398,12 +401,12 @@ impl Filesystem {
 
     /// Return the full path to the user config directory.
     pub fn user_config_dir(&self) -> &path::Path {
-        &self.user_config_dir
+        self.user_config_dir.as_ref().unwrap()
     }
 
     /// Return the full path to the user data directory.
     pub fn user_data_dir(&self) -> &path::Path {
-        &self.user_data_dir
+        self.user_data_dir.as_ref().unwrap()
     }
 }
 

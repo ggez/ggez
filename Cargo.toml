@@ -73,6 +73,10 @@ typed-arena = "2.0"
 lazy_static = "1.4"
 ordered-float = "3.0"
 
+[target.'cfg(target_os = "android")'.dependencies]
+ndk = "0.5.0"
+ndk-glue = "0.5.0"
+
 [dev-dependencies]
 chrono = "0.4"
 fern = "0.6"

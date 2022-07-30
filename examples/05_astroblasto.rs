@@ -619,13 +619,11 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ContextBuilder::new("astroblasto", "ggez")
-        .window_setup(conf::WindowSetup::default().title("Astroblasto!"))
-        .window_mode(conf::WindowMode::default().dimensions(640.0, 480.0))
-        .add_resource_path(resource_dir);
-
-    let (mut ctx, events_loop) = cb.build()?;
-
-    let game = MainState::new(&mut ctx)?;
-    event::run(ctx, events_loop, game)
+    event::run(
+        ContextBuilder::new("astroblasto", "ggez")
+            .window_setup(conf::WindowSetup::default().title("Astroblasto!"))
+            .window_mode(conf::WindowMode::default().dimensions(640.0, 480.0))
+            .add_resource_path(resource_dir),
+        |ctx| MainState::new(ctx).unwrap(),
+    )
 }
