@@ -1,7 +1,7 @@
 use super::arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcSampler, ArcTextureView};
 use std::{collections::HashMap, num::NonZeroU64};
 
-// Builder pattern for bind group layouts; basically just produces a Vec<BindGroupLayoutEntry>.
+/// Builder pattern for bind group layouts; basically just produces a Vec<BindGroupLayoutEntry>.
 pub struct BindGroupLayoutBuilder {
     entries: Vec<wgpu::BindGroupLayoutEntry>,
 }
@@ -55,23 +55,24 @@ impl BindGroupLayoutBuilder {
     }
 
     pub fn create(self, device: &wgpu::Device, cache: &mut BindGroupCache) -> ArcBindGroupLayout {
-        let entries = self.entries.clone();
         cache
             .layouts
-            .entry(self.entries)
-            .or_insert_with(|| {
-                ArcBindGroupLayout::new(device.create_bind_group_layout(
-                    &wgpu::BindGroupLayoutDescriptor {
-                        label: None,
-                        entries: &entries,
-                    },
-                ))
-            })
+            .entry(self.entries.clone())
+            .or_insert_with(|| self.create_uncached(device))
             .clone()
+    }
+
+    pub fn create_uncached(self, device: &wgpu::Device) -> ArcBindGroupLayout {
+        ArcBindGroupLayout::new(
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: None,
+                entries: &self.entries,
+            }),
+        )
     }
 }
 
-// This is used as a key into the HashMap cache to uniquely identify a bind group.
+/// This is used as a key into the HashMap cache to uniquely identify a bind group.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum BindGroupEntryKey {
     Buffer {
@@ -184,6 +185,21 @@ impl<'a> BindGroupBuilder<'a> {
             .clone();
 
         (group, layout)
+    }
+
+    pub fn create_uncached(self, device: &wgpu::Device) -> (ArcBindGroup, ArcBindGroupLayout) {
+        let layout = self.layout.create_uncached(device);
+        let group = ArcBindGroup::new(device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: layout.as_ref(),
+            entries: &self.entries,
+        }));
+        (group, layout)
+    }
+
+    #[inline]
+    pub fn entries(&self) -> &[wgpu::BindGroupEntry] {
+        &self.entries
     }
 }
 

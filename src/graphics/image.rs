@@ -1,12 +1,10 @@
 use super::{
     context::GraphicsContext,
-    gpu::arc::{ArcTexture, ArcTextureView},
+    gpu::arc::{ArcBindGroup, ArcTexture, ArcTextureView},
     Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
 use crate::{
-    context::{Has, HasMut, HasTwo},
-    filesystem::Filesystem,
-    Context, GameError, GameResult,
+    context::Has, graphics::gpu::bind_group::BindGroupBuilder, Context, GameError, GameResult,
 };
 use image::ImageEncoder;
 use std::path::Path;
@@ -25,6 +23,7 @@ pub type ImageEncodingFormat = ::image::ImageFormat;
 pub struct Image {
     pub(crate) texture: ArcTexture,
     pub(crate) view: ArcTextureView,
+    pub(crate) bind_group: ArcBindGroup,
     pub(crate) format: ImageFormat,
     pub(crate) width: u32,
     pub(crate) height: u32,
@@ -43,6 +42,7 @@ impl Image {
         let gfx = gfx.retrieve();
         Self::new(
             &gfx.wgpu,
+            &gfx.image_bind_layout,
             format,
             width,
             height,
@@ -62,11 +62,19 @@ impl Image {
         height: u32,
     ) -> Self {
         let gfx = gfx.retrieve();
-        Self::from_pixels_wgpu(&gfx.wgpu, pixels, format, width, height)
+        Self::from_pixels_wgpu(
+            &gfx.wgpu,
+            &gfx.image_bind_layout,
+            pixels,
+            format,
+            width,
+            height,
+        )
     }
 
     pub(crate) fn from_pixels_wgpu(
         wgpu: &WgpuContext,
+        layout: &wgpu::BindGroupLayout,
         pixels: &[u8],
         format: ImageFormat,
         width: u32,
@@ -74,6 +82,7 @@ impl Image {
     ) -> Self {
         let image = Self::new(
             wgpu,
+            layout,
             format,
             width,
             height,
@@ -123,15 +132,14 @@ impl Image {
     /// Creates a new image initialized with pixel data loaded from an encoded image `Read` (e.g. PNG or JPEG).
     #[allow(unused_results)]
     pub fn from_path(
-        ctxs: &impl HasTwo<Filesystem, GraphicsContext>,
+        ctxs: &impl Has<GraphicsContext>,
         path: impl AsRef<Path>,
         srgb: bool,
     ) -> GameResult<Self> {
-        let fs = ctxs.retrieve_first();
-        let gfx = ctxs.retrieve_second();
+        let gfx = ctxs.retrieve();
 
         let mut encoded = Vec::new();
-        fs.open(path)?.read_to_end(&mut encoded)?;
+        gfx.fs.open(path)?.read_to_end(&mut encoded)?;
         let decoded = image::load_from_memory(&encoded[..])
             .map_err(|_| GameError::ResourceLoadError(String::from("failed to load image")))?;
         let rgba8 = decoded.to_rgba8();
@@ -152,6 +160,7 @@ impl Image {
 
     fn new(
         wgpu: &WgpuContext,
+        layout: &wgpu::BindGroupLayout,
         format: ImageFormat,
         width: u32,
         height: u32,
@@ -188,9 +197,18 @@ impl Image {
                 array_layer_count: Some(NonZeroU32::new(1).unwrap()),
             }));
 
+        let bind_group = BindGroupBuilder::new().image(&view, wgpu::ShaderStages::FRAGMENT);
+        let bind_group =
+            ArcBindGroup::new(wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: None,
+                layout,
+                entries: bind_group.entries(),
+            }));
+
         Image {
             texture,
             view,
+            bind_group,
             format,
             width,
             height,
@@ -342,17 +360,18 @@ impl Image {
 }
 
 impl Drawable for Image {
-    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
         canvas.push_draw(
             Draw::Mesh {
                 mesh: canvas.default_resources().mesh.clone(),
                 image: self.clone(),
+                scale: true,
             },
-            param,
+            param.into(),
         );
     }
 
-    fn dimensions(&self, _gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
         Some(Rect {
             x: 0.,
             y: 0.,
@@ -391,7 +410,7 @@ impl ScreenImage {
         assert!(height > 0.);
         assert!(samples > 0);
 
-        let format = format.into().unwrap_or(gfx.surface_format);
+        let format = format.into().unwrap_or_else(|| gfx.surface_format());
 
         ScreenImage {
             image: Self::create(gfx, format, (width, height), samples),

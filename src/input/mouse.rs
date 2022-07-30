@@ -3,7 +3,6 @@
 use crate::context::Context;
 use crate::error::GameError;
 use crate::error::GameResult;
-use crate::graphics::Point2;
 use std::collections::HashSet;
 use winit::dpi;
 pub use winit::event::MouseButton;
@@ -13,9 +12,9 @@ pub use winit::window::CursorIcon;
 // TODO: Add "differences with window cursor" notice
 #[derive(Clone, Debug)]
 pub struct MouseContext {
-    last_position: Point2,
-    last_delta: Point2,
-    delta: Point2,
+    last_position: glam::Vec2,
+    last_delta: glam::Vec2,
+    delta: glam::Vec2,
     buttons_pressed: HashSet<MouseButton>,
     cursor_type: CursorIcon,
     cursor_grabbed: bool,
@@ -26,9 +25,9 @@ pub struct MouseContext {
 impl MouseContext {
     pub(crate) fn new() -> Self {
         Self {
-            last_position: Point2::ZERO,
-            last_delta: Point2::ZERO,
-            delta: Point2::ZERO,
+            last_position: glam::Vec2::ZERO,
+            last_delta: glam::Vec2::ZERO,
+            delta: glam::Vec2::ZERO,
             cursor_type: CursorIcon::Default,
             buttons_pressed: HashSet::new(),
             cursor_grabbed: false,
@@ -90,23 +89,23 @@ impl MouseContext {
     pub fn handle_move(&mut self, new_x: f32, new_y: f32) {
         let current_delta = self.delta();
         let current_pos = self.position();
-        let diff = crate::graphics::Point2::new(new_x - current_pos.x, new_y - current_pos.y);
+        let diff = glam::Vec2::new(new_x - current_pos.x, new_y - current_pos.y);
         // Sum up the cumulative mouse change for this frame in `delta`:
-        self.set_delta(crate::graphics::Point2::new(
+        self.set_delta(glam::Vec2::new(
             current_delta.x + diff.x,
             current_delta.y + diff.y,
         ));
         // `last_delta` is not cumulative.
         // It represents only the change between the last mouse event and the current one.
         self.set_last_delta(diff);
-        self.set_last_position(crate::graphics::Point2::new(new_x as f32, new_y as f32));
+        self.set_last_position(glam::Vec2::new(new_x as f32, new_y as f32));
     }
 
     /// Resets the value returned by [`mouse::delta`](fn.delta.html) to zero.
     /// You shouldn't need to call this, except when you're running your own event loop.
     /// In this case call it right at the end, after `draw` and `update` have finished.
     pub fn reset_delta(&mut self) {
-        self.delta = Point2::ZERO;
+        self.delta = glam::Vec2::ZERO;
     }
 
     /// Copies the current state of the mouse buttons into the context. If you are writing your own event loop
@@ -116,15 +115,15 @@ impl MouseContext {
         self.previous_buttons_pressed = self.buttons_pressed.clone();
     }
 
-    pub(crate) fn set_last_position(&mut self, p: Point2) {
+    pub(crate) fn set_last_position(&mut self, p: glam::Vec2) {
         self.last_position = p;
     }
 
-    pub(crate) fn set_last_delta(&mut self, p: Point2) {
+    pub(crate) fn set_last_delta(&mut self, p: glam::Vec2) {
         self.last_delta = p;
     }
 
-    pub(crate) fn set_delta(&mut self, p: Point2) {
+    pub(crate) fn set_delta(&mut self, p: glam::Vec2) {
         self.delta = p;
     }
 
@@ -149,13 +148,13 @@ impl Default for MouseContext {
 }
 
 /// Returns the current mouse cursor type of the window.
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.mouse.cursor_type` instead")]
+#[deprecated(since = "0.8.0", note = "Use `ctx.mouse.cursor_type` instead")]
 pub fn cursor_type(ctx: &Context) -> CursorIcon {
     ctx.mouse.cursor_type()
 }
 
 /// Set whether or not the mouse is hidden (invisible)
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.mouse.cursor_hidden` instead")]
+#[deprecated(since = "0.8.0", note = "Use `ctx.mouse.cursor_hidden` instead")]
 pub fn cursor_hidden(ctx: &Context) -> bool {
     ctx.mouse.cursor_hidden()
 }
@@ -163,37 +162,31 @@ pub fn cursor_hidden(ctx: &Context) -> bool {
 /// Get the current position of the mouse cursor, in pixels.
 /// Complement to [`set_position()`](fn.set_position.html).
 /// Uses strictly window-only coordinates.
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.mouse.position` instead")]
+#[deprecated(since = "0.8.0", note = "Use `ctx.mouse.position` instead")]
 pub fn position(ctx: &Context) -> mint::Point2<f32> {
     ctx.mouse.position()
 }
 
 /// Get the distance the cursor was moved during the current frame, in pixels.
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.mouse.delta` instead")]
+#[deprecated(since = "0.8.0", note = "Use `ctx.mouse.delta` instead")]
 pub fn delta(ctx: &Context) -> mint::Point2<f32> {
     ctx.mouse.delta()
 }
 
 /// Returns whether or not the given mouse button is pressed.
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.mouse.button_pressed` instead")]
+#[deprecated(since = "0.8.0", note = "Use `ctx.mouse.button_pressed` instead")]
 pub fn button_pressed(ctx: &Context, button: MouseButton) -> bool {
     ctx.mouse.button_pressed(button)
 }
 
 /// Returns whether or not the given mouse button has been pressed this frame.
-#[deprecated(
-    since = "0.8.0-rc0",
-    note = "Use `ctx.mouse.button_just_pressed` instead"
-)]
+#[deprecated(since = "0.8.0", note = "Use `ctx.mouse.button_just_pressed` instead")]
 pub fn button_just_pressed(ctx: &Context, button: MouseButton) -> bool {
     ctx.mouse.button_just_pressed(button)
 }
 
 /// Returns whether or not the given mouse button has been released this frame.
-#[deprecated(
-    since = "0.8.0-rc0",
-    note = "Use `ctx.mouse.button_just_released` instead"
-)]
+#[deprecated(since = "0.8.0", note = "Use `ctx.mouse.button_just_released` instead")]
 pub fn button_just_released(ctx: &Context, button: MouseButton) -> bool {
     ctx.mouse.button_just_released(button)
 }
@@ -210,7 +203,7 @@ pub fn button_just_released(ctx: &Context, button: MouseButton) -> bool {
 /// (Note that the default implementation of
 /// [`touch_event`](../../event/trait.EventHandler.html#method.touch_event) DOES trigger one, but
 /// it does so by invoking it on the `EventHandler` manually.)
-#[deprecated(since = "0.8.0-rc0", note = "Use `ctx.mouse.handle_move` instead")]
+#[deprecated(since = "0.8.0", note = "Use `ctx.mouse.handle_move` instead")]
 pub fn handle_move(ctx: &mut Context, new_x: f32, new_y: f32) {
     ctx.mouse.handle_move(new_x, new_y)
 }
@@ -254,13 +247,13 @@ pub fn set_position<P>(ctx: &mut Context, point: P) -> GameResult<()>
 where
     P: Into<mint::Point2<f32>>,
 {
-    let mintpoint = point.into();
-    ctx.mouse.last_position = Point2::from(mintpoint);
+    let point = glam::Vec2::from(point.into());
+    ctx.mouse.last_position = point;
     ctx.gfx
         .window
         .set_cursor_position(dpi::LogicalPosition {
-            x: f64::from(mintpoint.x),
-            y: f64::from(mintpoint.y),
+            x: f64::from(point.x),
+            y: f64::from(point.y),
         })
         .map_err(|_| GameError::WindowError("Couldn't set mouse cursor position!".to_owned()))
 }

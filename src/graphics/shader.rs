@@ -78,6 +78,22 @@ impl Shader {
 pub use crevice::std140::AsStd140;
 
 /// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
+///
+/// These parameters are bound to group 4. With WGSL, for example,
+/// ```rust
+/// ShaderParams::new(ctx, &my_uniforms, &[&image1, &image2], &[sampler1])
+/// ```
+/// Corresponds to...
+/// ```
+/// [[group(4), binding(0)]]
+/// var<uniform> my_uniforms: MyUniforms;
+/// [[group(4), binding(1)]]
+/// var image1: texture_2d<f32>;
+/// [[group(4), binding(2)]]
+/// var image2: texture_2d<f32>;
+/// [[group(4), binding(3)]]
+/// var sampler1: sampler;
+/// ```
 #[derive(Debug, PartialEq, Eq)]
 pub struct ShaderParams<Uniforms: AsStd140> {
     pub(crate) uniforms: ArcBuffer,
@@ -126,7 +142,7 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
             builder = builder.sampler(sampler, wgpu::ShaderStages::FRAGMENT);
         }
 
-        let (bind_group, layout) = builder.create(&gfx.wgpu.device, &mut gfx.bind_group_cache);
+        let (bind_group, layout) = builder.create_uncached(&gfx.wgpu.device);
 
         ShaderParams {
             uniforms,

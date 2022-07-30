@@ -1,9 +1,9 @@
 //! Demonstrates various projection and matrix fiddling/testing.
 use ggez::event;
+use ggez::glam::*;
 use ggez::graphics::{self, Color, DrawMode, DrawParam};
 use ggez::input::keyboard;
 use ggez::{Context, GameResult};
-use glam::*;
 use std::env;
 use std::path;
 

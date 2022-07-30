@@ -14,7 +14,7 @@ var<uniform> uniforms: Uniforms;
 @group(1) @binding(0)
 var t: texture_2d<f32>;
 
-@group(1) @binding(1)
+@group(2) @binding(0)
 var s: sampler;
 
 // text drawing works by submitting a draw with 4 vert count, and n (# glyphs) instances, thus 4 * n vertices.

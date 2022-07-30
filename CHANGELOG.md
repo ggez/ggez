@@ -69,6 +69,7 @@ If you didn't split it then you can comfortably hand around and pass the context
 * Added `event::request_quit` as a replacement for `event::quit`
   * `event::request_quit` works like `event::quit` did before, except that instead of directly breaking the game loop it
   now triggers a `quit_event`, which allows you to handle all attempts to quit the game in one place.
+* Added a re-export for `glam`, as ggez is aimed at beginners for whom it's convenient to just have it at hand directly; most people will want/need to use it anyway
 
 ## Changed
 

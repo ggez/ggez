@@ -9,8 +9,8 @@ use std::env;
 use std::f32::consts::TAU;
 use std::path;
 
-type Point2 = glam::Vec2;
-type Vector2 = glam::Vec2;
+type Point2 = ggez::glam::Vec2;
+type Vector2 = ggez::glam::Vec2;
 
 struct MainState {
     instances: graphics::InstanceArray,
@@ -111,8 +111,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &canvas_image,
             graphics::DrawParam::new()
                 .dest(self.draw_pt)
-                .src(graphics::Rect::new(src_x, src_y, 0.5, 0.5))
-                .scale([0.5, 0.5]),
+                .src(graphics::Rect::new(src_x, src_y, 0.5, 0.5)),
         );
 
         canvas.finish(ctx)?;

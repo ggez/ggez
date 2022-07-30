@@ -35,6 +35,9 @@ pub struct Canvas {
     target: Image,
     resolve: Option<Image>,
     load_op: CanvasLoadOp,
+
+    // This will be removed after queue_text and draw_queued_text have been removed.
+    pub(crate) queued_texts: Vec<(Text, mint::Point2<f32>, Option<Color>)>,
 }
 
 impl Canvas {
@@ -113,7 +116,6 @@ impl Canvas {
         let gfx = gfx.retrieve();
 
         let defaults = DefaultResources::new(gfx);
-        let drawable_size = gfx.drawable_size();
 
         let state = DrawState {
             shader: defaults.shader.clone(),
@@ -124,14 +126,14 @@ impl Canvas {
             blend_mode: BlendMode::ALPHA,
             premul_text: true,
             projection: glam::Mat4::IDENTITY.into(),
-            scissor_rect: (0, 0, drawable_size.0 as _, drawable_size.1 as _),
+            scissor_rect: (0, 0, target.width(), target.height()),
         };
 
         let screen = Rect {
             x: 0.,
             y: 0.,
-            w: drawable_size.0 as _,
-            h: drawable_size.1 as _,
+            w: target.width() as _,
+            h: target.height() as _,
         };
 
         let mut this = Canvas {
@@ -145,6 +147,8 @@ impl Canvas {
             target,
             resolve,
             load_op,
+
+            queued_texts: Vec::new(),
         };
 
         this.set_screen_coordinates(screen);
@@ -166,7 +170,7 @@ impl Canvas {
 
     /// Sets the shader parameters to use when drawing meshes.
     ///
-    /// **Bound to bind group 3.**
+    /// **Bound to bind group 4.**
     #[inline]
     pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
         self.state.params = Some((params.bind_group.clone(), params.layout));
@@ -206,8 +210,8 @@ impl Canvas {
 
     /// Sets the active sampler used to sample images.
     #[inline]
-    pub fn set_sampler(&mut self, sampler: Sampler) {
-        self.state.sampler = sampler;
+    pub fn set_sampler(&mut self, sampler: impl Into<Sampler>) {
+        self.state.sampler = sampler.into();
     }
 
     /// Returns the currently active sampler used to sample images.
@@ -269,7 +273,7 @@ impl Canvas {
     /// Sets the bounds of the screen viewport. This is a shortcut for `set_projection`
     /// and thus will override any previous projection matrix set.
     ///
-    /// The default coordinate system has (0,0) at the top-left corner
+    /// The default coordinate system has \[0.0, 0.0\] at the top-left corner
     /// with X increasing to the right and Y increasing down, with the
     /// viewport scaled such that one coordinate unit is one pixel on the
     /// screen.  This function lets you change this coordinate system to
@@ -340,19 +344,26 @@ impl Canvas {
     /// Draws the given `Drawable` to the canvas with a given `DrawParam`.
     #[inline]
     pub fn draw(&mut self, drawable: &impl Drawable, param: impl Into<DrawParam>) {
-        drawable.draw(self, param.into())
+        drawable.draw(self, param)
     }
 
     /// Draws a `Mesh` textured with an `Image`.
     ///
     /// This differs from `canvas.draw(mesh, param)` as in that case, the mesh is untextured.
     pub fn draw_textured_mesh(&mut self, mesh: Mesh, image: Image, param: impl Into<DrawParam>) {
-        self.push_draw(Draw::Mesh { mesh, image }, param.into());
+        self.push_draw(
+            Draw::Mesh {
+                mesh,
+                image,
+                scale: false,
+            },
+            param.into(),
+        );
     }
 
     /// Draws an `InstanceArray` textured with a `Mesh`.
     ///
-    /// This differs from `cavnas.draw(instances, param)` as in that case, the instances are
+    /// This differs from `canvas.draw(instances, param)` as in that case, the instances are
     /// drawn as quads.
     pub fn draw_instanced_mesh(
         &mut self,
@@ -365,6 +376,7 @@ impl Canvas {
             Draw::MeshInstances {
                 mesh,
                 instances: InstanceArrayView::from_instances(instances).unwrap(),
+                scale: false,
             },
             param.into(),
         );
@@ -414,7 +426,10 @@ impl Canvas {
         canvas.set_sampler(state.sampler);
         canvas.set_blend_mode(state.blend_mode);
         canvas.set_projection(state.projection);
-        canvas.set_scissor_rect(state.scissor_rect);
+
+        if state.scissor_rect.2 > 0 && state.scissor_rect.3 > 0 {
+            canvas.set_scissor_rect(state.scissor_rect);
+        }
 
         for draws in self.draws.values() {
             for draw in draws {
@@ -463,10 +478,14 @@ impl Canvas {
                 state = draw.state.clone();
 
                 match &draw.draw {
-                    Draw::Mesh { mesh, image } => canvas.draw_mesh(mesh, image, draw.param),
-                    Draw::MeshInstances { mesh, instances } => {
-                        canvas.draw_mesh_instances(mesh, instances, draw.param)?
+                    Draw::Mesh { mesh, image, scale } => {
+                        canvas.draw_mesh(mesh, image, draw.param, *scale)
                     }
+                    Draw::MeshInstances {
+                        mesh,
+                        instances,
+                        scale,
+                    } => canvas.draw_mesh_instances(mesh, instances, draw.param, *scale)?,
                     Draw::BoundedText { text } => canvas.draw_bounded_text(text, draw.param)?,
                 }
             }
@@ -521,10 +540,12 @@ pub(crate) enum Draw {
     Mesh {
         mesh: Mesh,
         image: Image,
+        scale: bool,
     },
     MeshInstances {
         mesh: Mesh,
         instances: InstanceArrayView,
+        scale: bool,
     },
     BoundedText {
         text: Text,

@@ -274,15 +274,15 @@ impl WindowSetup {
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, SmartDefault)]
 #[serde(tag = "type")]
 pub enum Backend {
-    /// Primary comprises of Vulkan + Metal + DX12 (each as a fallback for the other).
+    /// Includes [`Backend::OnlyPrimary`] and also secondary APIs consisting of OpenGL and DX11.
+    ///
+    /// These APIs may have issues and may be deprecated by some platforms.
+    #[default]
+    All,
+    /// Primary APIs consisting of Vulkan, Metal and DX12.
     ///
     /// These APIs have first-class support from WGPU and from the platforms that support them.
-    #[default]
-    Primary,
-    /// Secondary comprises of OpenGL + DX11 (each as a fallback for the other).
-    ///
-    /// These APIs may have issues and may be deprecated by some platforms. This is not recommended.
-    Secondary,
+    OnlyPrimary,
     /// Use the Khronos Vulkan API.
     Vulkan,
     /// Use the Apple Metal API.
@@ -411,7 +411,7 @@ mod tests {
     fn headless_encode_round_trip() {
         let c1 = conf::Conf::new();
         let mut writer = Vec::new();
-        let _c = c1.to_toml_file(&mut writer).unwrap();
+        c1.to_toml_file(&mut writer).unwrap();
         let mut reader = writer.as_slice();
         let c2 = conf::Conf::from_toml_file(&mut reader).unwrap();
         assert_eq!(c1, c2);

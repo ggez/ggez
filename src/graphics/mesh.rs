@@ -2,16 +2,13 @@ use super::{
     context::GraphicsContext, gpu::arc::ArcBuffer, Canvas, Color, Draw, DrawMode, DrawParam,
     Drawable, LinearColor, Rect, WgpuContext,
 };
-use crate::{
-    context::{Has, HasMut},
-    GameError, GameResult,
-};
+use crate::{context::Has, GameError, GameResult};
 use lyon::{math::Point as LPoint, path::Polygon, tessellation as tess};
 use wgpu::util::DeviceExt;
 
 /// Vertex format uploaded to vertex buffers.
 #[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct Vertex {
     /// `vec2` position.
     pub position: [f32; 2],
@@ -49,7 +46,7 @@ impl Vertex {
     }
 }
 
-/// Mesh data stored on the GPU as a vertex and index buffer.
+/// Mesh data stored on the GPU as a vertex and index buffer. Cheap to clone.
 #[derive(Debug, Clone)]
 pub struct Mesh {
     pub(crate) verts: ArcBuffer,
@@ -232,12 +229,7 @@ impl Mesh {
             wgpu.device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: None,
-                    contents: unsafe {
-                        std::slice::from_raw_parts(
-                            vertices.as_ptr() as *const u8,
-                            std::mem::size_of::<Vertex>() * vertices.len(),
-                        )
-                    },
+                    contents: bytemuck::cast_slice(vertices),
                     usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 }),
         )
@@ -249,9 +241,7 @@ impl Mesh {
             wgpu.device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: None,
-                    contents: unsafe {
-                        std::slice::from_raw_parts(indices.as_ptr() as *const u8, 4 * indices.len())
-                    },
+                    contents: bytemuck::cast_slice(indices),
                     usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
                 }),
         )
@@ -259,17 +249,18 @@ impl Mesh {
 }
 
 impl Drawable for Mesh {
-    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
         canvas.push_draw(
             Draw::Mesh {
                 mesh: self.clone(),
                 image: canvas.default_resources().image.clone(),
+                scale: false,
             },
-            param,
+            param.into(),
         );
     }
 
-    fn dimensions(&self, _gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
         Some(self.bounds)
     }
 }
@@ -289,11 +280,11 @@ pub struct Quad;
 
 // draw quad
 impl Drawable for Quad {
-    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
-        canvas.draw(&canvas.default_resources().mesh.clone(), param);
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
+        canvas.default_resources().mesh.clone().draw(canvas, param);
     }
 
-    fn dimensions(&self, _gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
         Some(Rect::one())
     }
 }

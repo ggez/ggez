@@ -1,7 +1,7 @@
 use super::{
     draw::DrawUniforms,
     gpu::{
-        arc::{ArcBindGroup, ArcBuffer, ArcRenderPipeline, ArcShaderModule},
+        arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcRenderPipeline, ArcShaderModule},
         bind_group::{BindGroupBuilder, BindGroupCache},
         growing::GrowingBufferArena,
         pipeline::PipelineCache,
@@ -17,8 +17,8 @@ use crate::{
     conf::{self, Backend, Conf, FullscreenType, WindowMode},
     context::Has,
     error::GameResult,
-    filesystem::Filesystem,
-    graphics::gpu::pipeline::RenderPipelineInfo,
+    filesystem::{Filesystem, InternalClone},
+    graphics::gpu::{bind_group::BindGroupLayoutBuilder, pipeline::RenderPipelineInfo},
     GameError,
 };
 use ::image as imgcrate;
@@ -62,13 +62,12 @@ pub struct GraphicsContext {
     pub(crate) wgpu: Arc<WgpuContext>,
 
     pub(crate) window: winit::window::Window,
-    pub(crate) surface_format: wgpu::TextureFormat,
+    pub(crate) surface_config: wgpu::SurfaceConfiguration,
 
     pub(crate) bind_group_cache: BindGroupCache,
     pub(crate) pipeline_cache: PipelineCache,
     pub(crate) sampler_cache: SamplerCache,
 
-    pub(crate) vsync: bool,
     pub(crate) window_mode: WindowMode,
     pub(crate) frame: Option<ScreenImage>,
     pub(crate) frame_msaa: Option<ScreenImage>,
@@ -88,6 +87,10 @@ pub struct GraphicsContext {
     pub(crate) copy_shader: ArcShaderModule,
     pub(crate) rect_mesh: Mesh,
     pub(crate) white_image: Image,
+    pub(crate) instance_bind_layout: ArcBindGroupLayout,
+    pub(crate) image_bind_layout: ArcBindGroupLayout,
+
+    pub(crate) fs: Filesystem,
 }
 
 impl GraphicsContext {
@@ -95,19 +98,56 @@ impl GraphicsContext {
     pub(crate) fn new(
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
-        filesystem: &mut Filesystem,
+        filesystem: &Filesystem,
     ) -> GameResult<Self> {
-        let instance = wgpu::Instance::new(match conf.backend {
-            Backend::Primary => wgpu::Backends::PRIMARY,
-            Backend::Secondary => wgpu::Backends::SECONDARY,
-            Backend::Vulkan => wgpu::Backends::VULKAN,
-            Backend::Metal => wgpu::Backends::METAL,
-            Backend::Dx12 => wgpu::Backends::DX12,
-            Backend::Dx11 => wgpu::Backends::DX11,
-            Backend::Gl => wgpu::Backends::GL,
-            Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
-        });
+        if conf.backend == Backend::All {
+            match Self::new_from_instance(
+                wgpu::Instance::new(wgpu::Backends::PRIMARY),
+                event_loop,
+                conf,
+                filesystem,
+            ) {
+                Ok(o) => Ok(o),
+                Err(GameError::GraphicsInitializationError) => {
+                    println!(
+                        "Failed to initialize graphics, trying secondary backends.. Please mention this if you encounter any bugs!"
+                    );
+                    warn!(
+                        "Failed to initialize graphics, trying secondary backends.. Please mention this if you encounter any bugs!"
+                    );
 
+                    Self::new_from_instance(
+                        wgpu::Instance::new(wgpu::Backends::SECONDARY),
+                        event_loop,
+                        conf,
+                        filesystem,
+                    )
+                }
+                Err(e) => Err(e),
+            }
+        } else {
+            let instance = wgpu::Instance::new(match conf.backend {
+                Backend::All => unreachable!(),
+                Backend::OnlyPrimary => wgpu::Backends::PRIMARY,
+                Backend::Vulkan => wgpu::Backends::VULKAN,
+                Backend::Metal => wgpu::Backends::METAL,
+                Backend::Dx12 => wgpu::Backends::DX12,
+                Backend::Dx11 => wgpu::Backends::DX11,
+                Backend::Gl => wgpu::Backends::GL,
+                Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
+            });
+
+            Self::new_from_instance(instance, event_loop, conf, filesystem)
+        }
+    }
+
+    #[allow(unsafe_code)]
+    pub(crate) fn new_from_instance(
+        instance: wgpu::Instance,
+        event_loop: &winit::event_loop::EventLoop<()>,
+        conf: &Conf,
+        filesystem: &Filesystem,
+    ) -> GameResult<Self> {
         let physical_size =
             dpi::PhysicalSize::<f64>::from((conf.window_mode.width, conf.window_mode.height));
         assert!(physical_size.width >= 1.0 && physical_size.height >= 1.0); // wgpu needs surfaces > 0
@@ -139,14 +179,15 @@ impl GraphicsContext {
             force_fallback_adapter: false,
             compatible_surface: Some(&surface),
         }))
-        .ok_or_else(|| {
-            GameError::RenderError(String::from("failed to find suitable graphics adapter"))
-        })?;
+        .ok_or(GameError::GraphicsInitializationError)?;
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
                 features: wgpu::Features::default(),
-                limits: wgpu::Limits::default(),
+                limits: wgpu::Limits {
+                    max_bind_groups: 5,
+                    ..Default::default()
+                },
             },
             None,
         ))?;
@@ -158,28 +199,30 @@ impl GraphicsContext {
             queue,
         });
 
-        let surface_format = wgpu.surface.get_supported_formats(&adapter)[0];
         let size = window.inner_size();
-        wgpu.surface.configure(
-            &wgpu.device,
-            &wgpu::SurfaceConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: surface_format,
-                width: size.width,
-                height: size.height,
-                present_mode: if conf.window_setup.vsync {
-                    wgpu::PresentMode::Fifo
-                } else {
-                    wgpu::PresentMode::Mailbox
-                },
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: wgpu.surface.get_supported_formats(&adapter)[0],
+            width: size.width,
+            height: size.height,
+            present_mode: if conf.window_setup.vsync {
+                wgpu::PresentMode::Fifo
+            } else {
+                wgpu::PresentMode::Mailbox
             },
-        );
+        };
 
-        let bind_group_cache = BindGroupCache::new();
+        wgpu.surface.configure(&wgpu.device, &surface_config);
+
+        let mut bind_group_cache = BindGroupCache::new();
         let pipeline_cache = PipelineCache::new();
         let sampler_cache = SamplerCache::new();
 
-        let text = TextRenderer::new(&wgpu.device);
+        let image_bind_layout = BindGroupLayoutBuilder::new()
+            .image(wgpu::ShaderStages::FRAGMENT)
+            .create(&wgpu.device, &mut bind_group_cache);
+
+        let text = TextRenderer::new(&wgpu.device, image_bind_layout.clone());
 
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let uniform_arena = GrowingBufferArena::new(
@@ -259,20 +302,38 @@ impl GraphicsContext {
             },
         );
 
-        let white_image =
-            Image::from_pixels_wgpu(&wgpu, &[255, 255, 255, 255], ImageFormat::Rgba8Unorm, 1, 1);
+        let instance_bind_layout = BindGroupLayoutBuilder::new()
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+            )
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Storage { read_only: true },
+                false,
+            )
+            .create(&wgpu.device, &mut bind_group_cache);
+
+        let white_image = Image::from_pixels_wgpu(
+            &wgpu,
+            &image_bind_layout,
+            &[255, 255, 255, 255],
+            ImageFormat::Rgba8Unorm,
+            1,
+            1,
+        );
 
         let mut this = GraphicsContext {
             wgpu,
 
             window,
-            surface_format,
+            surface_config,
 
             bind_group_cache,
             pipeline_cache,
             sampler_cache,
 
-            vsync: conf.window_setup.vsync,
             window_mode: conf.window_mode,
             frame: None,
             frame_msaa: None,
@@ -291,6 +352,10 @@ impl GraphicsContext {
             copy_shader,
             rect_mesh,
             white_image,
+            instance_bind_layout,
+            image_bind_layout,
+
+            fs: InternalClone::clone(filesystem),
         };
 
         this.set_window_mode(&conf.window_mode)?;
@@ -334,7 +399,7 @@ impl GraphicsContext {
     /// Adds a new `font` with a given `name`.
     #[allow(unused_results)]
     pub fn add_font(&mut self, name: &str, font: FontData) {
-        let id = self.text.glyph_brush.add_font(font.font);
+        let id = self.text.glyph_brush.borrow_mut().add_font(font.font);
         self.fonts.insert(name.to_string(), id);
     }
 
@@ -393,14 +458,14 @@ impl GraphicsContext {
         &self.window
     }
 
-    /// Sets the window icon.
-    pub fn set_window_icon(
-        &mut self,
+    /// Sets the window icon. `None` for path removes the icon.
+    pub fn set_window_icon<P: AsRef<Path>>(
+        &self,
         filesystem: &impl Has<Filesystem>,
-        path: Option<impl AsRef<Path>>,
+        path: impl Into<Option<P>>,
     ) -> GameResult {
         let filesystem = filesystem.retrieve();
-        let icon = match path {
+        let icon = match path.into() {
             Some(p) => Some(load_icon(p.as_ref(), filesystem)?),
             None => None,
         };
@@ -450,7 +515,7 @@ impl GraphicsContext {
     /// Returns the image format of the window surface.
     #[inline]
     pub fn surface_format(&self) -> ImageFormat {
-        self.surface_format
+        self.surface_config.format
     }
 
     /// Returns the current [`wgpu::CommandEncoder`] if there is a frame in progress.
@@ -472,20 +537,11 @@ impl GraphicsContext {
         let frame = match self.wgpu.surface.get_current_texture() {
             Ok(frame) => Ok(frame),
             Err(_) => {
-                self.wgpu.surface.configure(
-                    &self.wgpu.device,
-                    &wgpu::SurfaceConfiguration {
-                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                        format: self.surface_format,
-                        width: size.width.max(1),
-                        height: size.height.max(1),
-                        present_mode: if self.vsync {
-                            wgpu::PresentMode::Fifo
-                        } else {
-                            wgpu::PresentMode::Mailbox
-                        },
-                    },
-                );
+                self.surface_config.width = size.width.max(1);
+                self.surface_config.height = size.height.max(1);
+                self.wgpu
+                    .surface
+                    .configure(&self.wgpu.device, &self.surface_config);
                 self.wgpu.surface.get_current_texture().map_err(|_| {
                     GameError::RenderError(String::from("failed to get next swapchain image"))
                 })
@@ -549,7 +605,7 @@ impl GraphicsContext {
                     vs_entry: "vs_main".into(),
                     fs_entry: "fs_main".into(),
                     samples: 1,
-                    format: self.surface_format,
+                    format: self.surface_config.format,
                     blend: None,
                     depth: false,
                     vertices: false,
@@ -584,20 +640,11 @@ impl GraphicsContext {
     pub(crate) fn resize(&mut self, _new_size: dpi::PhysicalSize<u32>) {
         let size = self.window.inner_size();
         let _ = self.wgpu.device.poll(wgpu::Maintain::Wait);
-        self.wgpu.surface.configure(
-            &self.wgpu.device,
-            &wgpu::SurfaceConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: self.surface_format,
-                width: size.width.max(1),
-                height: size.height.max(1),
-                present_mode: if self.vsync {
-                    wgpu::PresentMode::Fifo
-                } else {
-                    wgpu::PresentMode::Mailbox
-                },
-            },
-        );
+        self.surface_config.width = size.width.max(1);
+        self.surface_config.height = size.height.max(1);
+        self.wgpu
+            .surface
+            .configure(&self.wgpu.device, &self.surface_config);
         self.update_frame_image();
     }
 
@@ -695,21 +742,12 @@ impl GraphicsContext {
 
         let size = window.inner_size();
         assert!(size.width > 0 && size.height > 0);
+        self.surface_config.width = size.width.max(1);
+        self.surface_config.height = size.height.max(1);
 
-        self.wgpu.surface.configure(
-            &self.wgpu.device,
-            &wgpu::SurfaceConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: self.surface_format,
-                width: size.width.max(1),
-                height: size.height.max(1),
-                present_mode: if self.vsync {
-                    wgpu::PresentMode::Fifo
-                } else {
-                    wgpu::PresentMode::Mailbox
-                },
-            },
-        );
+        self.wgpu
+            .surface
+            .configure(&self.wgpu.device, &self.surface_config);
 
         Ok(())
     }

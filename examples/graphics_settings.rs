@@ -17,7 +17,7 @@ use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
 
-type Point2 = glam::Vec2;
+type Point2 = ggez::glam::Vec2;
 
 struct WindowSettings {
     toggle_fullscreen: bool,

@@ -5,9 +5,10 @@ use std::sync::{
 
 static NEXT_ID: AtomicU64 = AtomicU64::new(0);
 
-// Arc'd WGPU handles are used widely across the graphics module.
-// Beyond allowing for Clone, they also allow different GPU resources to be
-// unique identified via `id` - primarily used when caching (see the other `gpu` modules).
+/// Arc'd WGPU handles are used widely across the graphics module.
+///
+/// Beyond allowing for Clone, they also allow different GPU resources to be
+/// unique identified via `id` - primarily used when caching (see the other `gpu` modules).
 #[derive(Debug)]
 pub struct ArcHandle<T: 'static> {
     pub handle: Arc<T>,

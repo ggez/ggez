@@ -156,7 +156,7 @@ where
 
     /// A keyboard button was pressed.
     ///
-    /// The default implementation of this will call `ggez::event::quit()`
+    /// The default implementation of this will call [`ctx.request_quit()`](crate::Context::request_quit)
     /// when the escape key is pressed. If you override this with your own
     /// event handler you have to re-implement that functionality yourself.
     fn key_down_event(
@@ -166,7 +166,7 @@ where
         _repeated: bool,
     ) -> Result<(), E> {
         if input.keycode == Some(KeyCode::Escape) {
-            request_quit(ctx);
+            ctx.request_quit();
         }
         Ok(())
     }
@@ -275,14 +275,6 @@ where
     fn on_error(&mut self, _ctx: &mut Context, _origin: ErrorOrigin, _e: E) -> bool {
         true
     }
-}
-
-/// Attempts to terminate the [`ggez::event::run()`](fn.run.html) loop by requesting a
-/// [`quit_event`](EventHandler::quit_event) at the very start of the next frame. If this event
-/// returns `Ok(false)`, then [`Context.continuing`](struct.Context.html#structfield.continuing)
-/// is set to `false` and the loop breaks.
-pub fn request_quit(ctx: &mut Context) {
-    ctx.quit_requested = true;
 }
 
 /// Runs the game's main loop, calling event callbacks on the given state

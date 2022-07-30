@@ -16,29 +16,31 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use crate::context::Has;
-use crate::context::HasTwo;
 use crate::error::GameError;
 use crate::error::GameResult;
 use crate::filesystem::Filesystem;
+use crate::filesystem::InternalClone;
 
 /// A struct that contains all information for tracking sound info.
 ///
 /// You generally don't have to create this yourself, it will be part
 /// of your `Context` object.
 pub struct AudioContext {
+    fs: Filesystem,
     _stream: rodio::OutputStream,
     stream_handle: rodio::OutputStreamHandle,
 }
 
 impl AudioContext {
     /// Create new `AudioContext`.
-    pub fn new() -> GameResult<Self> {
+    pub fn new(fs: &Filesystem) -> GameResult<Self> {
         let (stream, stream_handle) = rodio::OutputStream::try_default().map_err(|_e| {
             GameError::AudioError(String::from(
                 "Could not initialize sound system using default output device (for some reason)",
             ))
         })?;
         Ok(Self {
+            fs: InternalClone::clone(fs),
             _stream: stream,
             stream_handle,
         })
@@ -284,14 +286,10 @@ pub struct Source {
 
 impl Source {
     /// Create a new `Source` from the given file.
-    pub fn new<P: AsRef<path::Path>>(
-        ctxs: &impl HasTwo<Filesystem, AudioContext>,
-        path: P,
-    ) -> GameResult<Self> {
-        let fs = ctxs.retrieve_first();
-        let audio = ctxs.retrieve_second();
+    pub fn new<P: AsRef<path::Path>>(ctxs: &impl Has<AudioContext>, path: P) -> GameResult<Self> {
+        let audio = ctxs.retrieve();
         let path = path.as_ref();
-        let data = SoundData::new(fs, path)?;
+        let data = SoundData::new(&audio.fs, path)?;
         Source::from_data(audio, data)
     }
 

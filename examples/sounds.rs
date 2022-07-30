@@ -5,7 +5,7 @@ use ggez::graphics;
 use ggez::input;
 use ggez::{Context, GameResult};
 
-use glam::*;
+use ggez::glam::*;
 
 use ggez::input::keyboard::KeyInput;
 use std::env;
@@ -92,7 +92,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             Some(input::keyboard::KeyCode::Key4) => self.play_highpitch(ctx),
             Some(input::keyboard::KeyCode::Key5) => self.play_lowpitch(ctx),
             Some(input::keyboard::KeyCode::Key6) => self.play_stats(ctx),
-            Some(input::keyboard::KeyCode::Escape) => event::request_quit(ctx),
+            Some(input::keyboard::KeyCode::Escape) => ctx.request_quit(),
             _ => (),
         }
         Ok(())

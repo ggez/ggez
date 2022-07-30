@@ -1,11 +1,11 @@
 use super::arc::ArcBuffer;
 
-// Simple buffer sub-allocation helper.
-//
-// In short, the allocator is:
-// - linear: i.e., just a moving cursor into each buffer -- individual deallocations are not possible
-// - growing: When the allocator is unable to find a buffer with enough free space for an allocation, it creates a new buffer
-// - aligned: This is particularly important for uniform buffers as GPUs have a restriction on min alignment for dynamic offsets into UBOs
+/// Simple buffer sub-allocation helper.
+///
+/// In short, the allocator is:
+/// - linear: i.e., just a moving cursor into each buffer -- individual deallocations are not possible
+/// - growing: When the allocator is unable to find a buffer with enough free space for an allocation, it creates a new buffer
+/// - aligned: This is particularly important for uniform buffers as GPUs have a restriction on min alignment for dynamic offsets into UBOs
 #[derive(Debug)]
 pub struct GrowingBufferArena {
     buffers: Vec<(ArcBuffer, u64)>,
