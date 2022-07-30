@@ -7,10 +7,10 @@
 
 use ggez::context::HasMut;
 use ggez::event::{self, EventHandler};
+use ggez::glam::Vec2;
 use ggez::graphics::{self, BlendMode, Color, DrawParam, GraphicsContext};
 use ggez::input::keyboard::KeyInput;
 use ggez::{Context, GameResult};
-use glam::Vec2;
 use std::env;
 use std::path;
 

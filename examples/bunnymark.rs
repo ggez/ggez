@@ -11,8 +11,8 @@ use ggez::graphics::{Color, Image, InstanceArray};
 use ggez::Context;
 use ggez::*;
 
+use ggez::glam::*;
 use ggez::input::keyboard::KeyInput;
-use glam::*;
 
 // NOTE: Using a high number here yields worse performance than adding more bunnies over
 // time - I think this is due to all of the RNG being run on the same tick...

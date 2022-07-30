@@ -5,7 +5,7 @@ use ggez::graphics;
 use ggez::input;
 use ggez::{Context, GameResult};
 
-use glam::*;
+use ggez::glam::*;
 
 use ggez::input::keyboard::KeyInput;
 use std::env;

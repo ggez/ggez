@@ -2,10 +2,10 @@
 //! to a canvas.
 
 use ggez::event;
+use ggez::glam::*;
 use ggez::graphics::{self, Color};
 use ggez::input::keyboard::KeyInput;
 use ggez::{Context, GameResult};
-use glam::*;
 use std::env;
 use std::path;
 

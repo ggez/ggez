@@ -67,9 +67,9 @@
 //! example is to show that this actually *works* correctly!
 
 use ggez::event;
+use ggez::glam::*;
 use ggez::graphics::{self, Color, DrawParam};
 use ggez::{Context, GameResult};
-use glam::*;
 
 /// This is a nice aqua test color that will look a lot brighter
 /// than it should if we mess something up.

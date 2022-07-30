@@ -38,7 +38,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         // Text is drawn from the top-left corner.
         let offset = self.frames as f32 / 10.0;
-        let dest_point = glam::Vec2::new(offset, offset);
+        let dest_point = ggez::glam::Vec2::new(offset, offset);
         canvas.draw(
             graphics::Text::new("Hello, world!")
                 .set_font("LiberationMono")

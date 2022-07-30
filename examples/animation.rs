@@ -6,11 +6,11 @@
 extern crate num_derive;
 
 use ggez::event;
+use ggez::glam::*;
 use ggez::graphics::{self, Color};
 use ggez::input::keyboard::{KeyCode, KeyInput};
 use ggez::mint::Point2;
 use ggez::{Context, GameResult};
-use glam::*;
 use keyframe::{ease, functions::*, keyframes, AnimationSequence, EasingFunction};
 use keyframe_derive::CanTween;
 use num_traits::{FromPrimitive, ToPrimitive};
