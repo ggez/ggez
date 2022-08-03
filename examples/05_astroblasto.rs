@@ -493,7 +493,7 @@ impl EventHandler for MainState {
             // but for now we just quit.
             if self.player.life <= 0.0 {
                 println!("Game over!");
-                let _ = event::request_quit(ctx);
+                event::request_quit(ctx);
             }
         }
 

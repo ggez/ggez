@@ -122,6 +122,6 @@ mod tests {
 
     #[test]
     fn gilrs_init() {
-        assert!(GamepadContext::new().is_ok());
+        let _ = GamepadContext::new().unwrap();
     }
 }
