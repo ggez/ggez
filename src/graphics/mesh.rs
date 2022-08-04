@@ -3,11 +3,7 @@ use super::{
     Drawable, LinearColor, Rect, WgpuContext,
 };
 use crate::{context::Has, GameError, GameResult};
-use lyon::{
-    math::Point as LPoint,
-    path::{traits::PathBuilder, Polygon},
-    tessellation as tess,
-};
+use lyon::{math::Point as LPoint, path::Polygon, tessellation as tess};
 use wgpu::util::DeviceExt;
 
 /// Vertex format uploaded to vertex buffers.
@@ -542,7 +538,10 @@ impl MeshBuilder {
     ) -> GameResult<&mut Self> {
         {
             let buffers = &mut self.buffer;
-            let rect = tess::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
+            let rect = tess::math::Box2D::from_origin_and_size(
+                tess::math::point(bounds.x, bounds.y),
+                tess::math::size(bounds.w, bounds.h),
+            );
             let vb = VertexBuilder {
                 color: LinearColor::from(color),
             };
@@ -572,7 +571,10 @@ impl MeshBuilder {
     ) -> GameResult<&mut Self> {
         {
             let buffers = &mut self.buffer;
-            let rect = tess::math::rect(bounds.x, bounds.y, bounds.w, bounds.h);
+            let rect = tess::math::Box2D::from_origin_and_size(
+                tess::math::point(bounds.x, bounds.y),
+                tess::math::size(bounds.w, bounds.h),
+            );
             let radii = tess::path::builder::BorderRadii::new(radius);
             let vb = VertexBuilder {
                 color: LinearColor::from(color),

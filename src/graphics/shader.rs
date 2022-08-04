@@ -62,7 +62,7 @@ impl Shader {
     pub fn from_wgsl(gfx: &impl Has<GraphicsContext>, wgsl: &str, fs_entry: &str) -> Self {
         let gfx = gfx.retrieve();
         let module = ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
-            &wgpu::ShaderModuleDescriptor {
+            wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(wgsl.into()),
             },

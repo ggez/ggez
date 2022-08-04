@@ -8,6 +8,7 @@ API.  (Doing this for packages that aren't publically exposed is PROBABLY okay..
  * Make sure all unit tests pass
  * Test all examples
  * Read all docs (ideally in rendered form)
+ * Also read (and ideally test) all docs and guides inside the `docs` folder! (check that links are up to date, etc.)
  * Make sure website is updated and in-sync
  * rustfmt
  * clippy

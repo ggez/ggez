@@ -80,11 +80,11 @@ impl PipelineCache {
                         fragment: Some(wgpu::FragmentState {
                             module: &*info.fs,
                             entry_point: &info.fs_entry,
-                            targets: &[wgpu::ColorTargetState {
+                            targets: &[Some(wgpu::ColorTargetState {
                                 format: info.format,
                                 blend: info.blend,
                                 write_mask: wgpu::ColorWrites::ALL,
-                            }],
+                            })],
                         }),
                         multiview: None,
                     },

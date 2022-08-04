@@ -269,12 +269,18 @@ impl Image {
             encoder.finish()
         };
 
-        gfx.wgpu.queue.submit([cmd]);
+        let _ = gfx.wgpu.queue.submit([cmd]);
 
         // wait...
-        let fut = buffer.slice(..).map_async(wgpu::MapMode::Read);
-        gfx.wgpu.device.poll(wgpu::Maintain::Wait);
-        pollster::block_on(fut)?;
+        let (tx, rx) = std::sync::mpsc::sync_channel(1);
+        buffer
+            .slice(..)
+            .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap());
+        let _ = gfx.wgpu.device.poll(wgpu::Maintain::Wait);
+        let map_result = rx
+            .recv()
+            .expect("All senders dropped, this should not be possible.");
+        map_result?;
 
         let out = buffer.slice(..).get_mapped_range().to_vec();
         Ok(out)

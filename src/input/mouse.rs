@@ -222,13 +222,15 @@ pub fn set_cursor_type(ctx: &mut Context, cursor_type: CursorIcon) {
     ctx.gfx.window.set_cursor_icon(cursor_type);
 }
 
-/// Get whether or not the mouse is grabbed (confined to the window)
+/// Get whether or not the mouse is grabbed.
 // TODO: Move to graphics context (This isn't input)
 pub fn cursor_grabbed(ctx: &Context) -> bool {
     ctx.mouse.cursor_grabbed
 }
 
 /// Set whether or not the mouse is grabbed (confined to the window)
+///
+/// **Note**: macOS locks the cursor rather than confining it.
 // TODO: Move to graphics context (This isn't input)
 pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
     ctx.mouse.cursor_grabbed = grabbed;

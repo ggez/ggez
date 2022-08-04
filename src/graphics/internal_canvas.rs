@@ -70,7 +70,7 @@ impl<'a> InternalCanvas<'a> {
         Self::new(gfx, 1, image.format(), |cmd| {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: image.view.as_ref(),
                     resolve_target: None,
                     ops: wgpu::Operations {
@@ -82,7 +82,7 @@ impl<'a> InternalCanvas<'a> {
                         },
                         store: true,
                     },
-                }],
+                })],
                 depth_stencil_attachment: None,
             })
         })
@@ -115,7 +115,7 @@ impl<'a> InternalCanvas<'a> {
         Self::new(gfx, msaa_image.samples(), msaa_image.format(), |cmd| {
             cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: msaa_image.view.as_ref(),
                     resolve_target: Some(resolve_image.view.as_ref()),
                     ops: wgpu::Operations {
@@ -127,7 +127,7 @@ impl<'a> InternalCanvas<'a> {
                         },
                         store: true,
                     },
-                }],
+                })],
                 depth_stencil_attachment: None,
             })
         })

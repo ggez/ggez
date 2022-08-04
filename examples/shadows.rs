@@ -27,31 +27,38 @@ struct Light {
 /// will not get properly encoded).
 const OCCLUSIONS_SHADER_SOURCE: &str = "
 struct VertexOutput {
-    [[builtin(position)]] position: vec4<f32>;
-    [[location(0)]] uv: vec2<f32>;
-    [[location(1)]] color: vec4<f32>;
+    @builtin(position) position: vec4<f32>;
+    @location(0) uv: vec2<f32>;
+    @location(1) color: vec4<f32>;
 };
 
 struct Light {
-    light_color: vec4<f32>;
-    shadow_color: vec4<f32>;
-    pos: vec2<f32>;
-    screen_size: vec2<f32>;
-    glow: f32;
-    strength: f32;
-};
+    light_color: vec4<f32>,
+    shadow_color: vec4<f32>,
+    pos: vec2<f32>,
+    screen_size: vec2<f32>,
+    glow: f32,
+    strength: f32,
+}
 
-[[group(1), binding(0)]]
+@group(1) @binding(0)
 var t: texture_2d<f32>;
 
+<<<<<<< HEAD
+@group(1) @binding(1)
+var s: sampler;
+
+@group(3) @binding(0)
+=======
 [[group(2), binding(0)]]
 var s: sampler;
 
 [[group(4), binding(0)]]
+>>>>>>> ec2076b1421aec71939a0eafcbabc43ec5deb4b5
 var<uniform> light: Light;
 
-[[stage(fragment)]]
-fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+@fragment
+fn main(in: VertexOutput) -> @location(0) vec4<f32> {
     var dist = 1.0;
     var theta = in.uv.x * 6.28318530718;
     var dir = vec2<f32>(cos(theta), sin(theta));
@@ -79,35 +86,42 @@ fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
 /// uniform parameters.
 const SHADOWS_SHADER_SOURCE: &str = "
 struct VertexOutput {
-    [[builtin(position)]] position: vec4<f32>;
-    [[location(0)]] uv: vec2<f32>;
-    [[location(1)]] color: vec4<f32>;
-};
+    @builtin(position) position: vec4<f32>,
+    @location(0) uv: vec2<f32>,
+    @location(1) color: vec4<f32>,
+}
 
 struct Light {
-    light_color: vec4<f32>;
-    shadow_color: vec4<f32>;
-    pos: vec2<f32>;
-    screen_size: vec2<f32>;
-    glow: f32;
-    strength: f32;
-};
+    light_color: vec4<f32>,
+    shadow_color: vec4<f32>,
+    pos: vec2<f32>,
+    screen_size: vec2<f32>,
+    glow: f32,
+    strength: f32,
+}
 
-[[group(1), binding(0)]]
+@group(1) @binding(0)
 var t: texture_2d<f32>;
 
+<<<<<<< HEAD
+@group(1) @binding(1)
+var s: sampler;
+
+@group(0) binding(0)
+=======
 [[group(2), binding(0)]]
 var s: sampler;
 
 [[group(4), binding(0)]]
+>>>>>>> ec2076b1421aec71939a0eafcbabc43ec5deb4b5
 var<uniform> light: Light;
 
 fn degrees(x: f32) -> f32 {
     return x * 57.2957795130823208767981548141051703;
 }
 
-[[stage(fragment)]]
-fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+@fragment
+fn main(in: VertexOutput) -> @location(0) vec4<f32> {
     var rel = light.pos - in.uv;
     var theta = atan2(rel.y, rel.x);
     var ox = (theta + 3.1415926) / 6.2831853;
@@ -133,35 +147,42 @@ fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
 /// lights.
 const LIGHTS_SHADER_SOURCE: &str = "
 struct VertexOutput {
-    [[builtin(position)]] position: vec4<f32>;
-    [[location(0)]] uv: vec2<f32>;
-    [[location(1)]] color: vec4<f32>;
-};
+    @builtin(position) position: vec4<f32>,
+    @location(0) uv: vec2<f32>,
+    @location(1) color: vec4<f32>,
+}
 
 struct Light {
-    light_color: vec4<f32>;
-    shadow_color: vec4<f32>;
-    pos: vec2<f32>;
-    screen_size: vec2<f32>;
-    glow: f32;
-    strength: f32;
-};
+    light_color: vec4<f32>,
+    shadow_color: vec4<f32>,
+    pos: vec2<f32>,
+    screen_size: vec2<f32>,
+    glow: f32,
+    strength: f32,
+}
 
-[[group(1), binding(0)]]
+@group(1) @binding(0)
 var t: texture_2d<f32>;
 
+<<<<<<< HEAD
+@group(1) @binding(1)
+var s: sampler;
+
+@group(0) binding(0)
+=======
 [[group(2), binding(0)]]
 var s: sampler;
 
 [[group(4), binding(0)]]
+>>>>>>> ec2076b1421aec71939a0eafcbabc43ec5deb4b5
 var<uniform> light: Light;
 
 fn degrees(x: f32) -> f32 {
     return x * 57.2957795130823208767981548141051703;
 }
 
-[[stage(fragment)]]
-fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+@fragment
+fn main(in: VertexOutput) -> @location(0) vec4<f32> {
     var rel = light.pos - in.uv;
     var theta = atan2(rel.y, rel.x);
     var ox = (theta + 3.1415926) / 6.2831853;

@@ -79,8 +79,6 @@ pub struct GraphicsContext {
     pub(crate) fonts: HashMap<String, FontId>,
     pub(crate) staging_belt: wgpu::util::StagingBelt,
     pub(crate) uniform_arena: GrowingBufferArena,
-    pub(crate) local_pool: futures::executor::LocalPool,
-    pub(crate) local_spawner: futures::executor::LocalSpawner,
 
     pub(crate) draw_shader: ArcShaderModule,
     pub(crate) instance_shader: ArcShaderModule,
@@ -204,7 +202,7 @@ impl GraphicsContext {
         let size = window.inner_size();
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu.surface.get_preferred_format(&adapter).unwrap(/* invariant */),
+            format: wgpu.surface.get_supported_formats(&adapter)[0],
             width: size.width,
             height: size.height,
             present_mode: if conf.window_setup.vsync {
@@ -237,25 +235,23 @@ impl GraphicsContext {
                 mapped_at_creation: false,
             },
         );
-        let local_pool = futures::executor::LocalPool::new();
-        let local_spawner = local_pool.spawner();
 
         let draw_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
-            &wgpu::ShaderModuleDescriptor {
+            wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(include_str!("shader/draw.wgsl").into()),
             },
         ));
 
         let instance_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
-            &wgpu::ShaderModuleDescriptor {
+            wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance.wgsl").into()),
             },
         ));
 
         let instance_unordered_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
-            &wgpu::ShaderModuleDescriptor {
+            wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(
                     include_str!("shader/instance_unordered.wgsl").into(),
@@ -264,14 +260,14 @@ impl GraphicsContext {
         ));
 
         let text_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
-            &wgpu::ShaderModuleDescriptor {
+            wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(include_str!("shader/text.wgsl").into()),
             },
         ));
 
         let copy_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
-            &wgpu::ShaderModuleDescriptor {
+            wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(include_str!("shader/copy.wgsl").into()),
             },
@@ -349,9 +345,6 @@ impl GraphicsContext {
             fonts: HashMap::new(),
             staging_belt,
             uniform_arena,
-            local_pool,
-            local_spawner,
-
             draw_shader,
             instance_shader,
             instance_unordered_shader,
@@ -582,14 +575,14 @@ impl GraphicsContext {
         if let Some(mut fcx) = self.fcx.take() {
             let mut present_pass = fcx.cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &fcx.frame_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                         store: true,
                     },
-                }],
+                })],
                 depth_stencil_attachment: None,
             });
 
@@ -631,12 +624,10 @@ impl GraphicsContext {
             std::mem::drop(present_pass);
 
             self.staging_belt.finish();
-            self.wgpu.queue.submit([fcx.cmd.finish()]);
+            let _ = self.wgpu.queue.submit([fcx.cmd.finish()]);
             fcx.frame.present();
 
-            use futures::task::SpawnExt;
-            self.local_spawner.spawn(self.staging_belt.recall())?;
-            self.local_pool.run_until_stalled();
+            self.staging_belt.recall();
 
             Ok(())
         } else {
@@ -648,7 +639,7 @@ impl GraphicsContext {
 
     pub(crate) fn resize(&mut self, _new_size: dpi::PhysicalSize<u32>) {
         let size = self.window.inner_size();
-        self.wgpu.device.poll(wgpu::Maintain::Wait);
+        let _ = self.wgpu.device.poll(wgpu::Maintain::Wait);
         self.surface_config.width = size.width.max(1);
         self.surface_config.height = size.height.max(1);
         self.wgpu
