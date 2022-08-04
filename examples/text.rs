@@ -81,35 +81,31 @@ impl App {
         // Text can be wrapped by setting it's bounds, in screen coordinates;
         // vertical bound will cut off the extra off the bottom.
         // Alignment within the bounds can be set by `Align` enum.
-        text.set_bounds(
-            Vec2::new(400.0, f32::INFINITY),
-            TextLayout::Wrap {
+        text.set_bounds(Vec2::new(400.0, f32::INFINITY))
+            .set_layout(TextLayout::Wrap {
                 h_align: TextAlign::Begin,
                 v_align: TextAlign::Begin,
-            },
-        );
+            });
         texts.insert("1_demo_text_2", text.clone());
 
-        text.set_bounds(
-            Vec2::new(500.0, f32::INFINITY),
-            TextLayout::Wrap {
+        text.set_bounds(Vec2::new(500.0, f32::INFINITY))
+            .set_layout(TextLayout::Wrap {
                 h_align: TextAlign::End,
                 v_align: TextAlign::Begin,
-            },
-        );
+            });
         texts.insert("1_demo_text_3", text.clone());
 
         // This can be used to set the font and scale unformatted fragments will use.
         // Color is specified when drawing (or queueing), via `DrawParam`.
         // Side note: TrueType fonts aren't very consistent between themselves in terms
         // of apparent scale - this font with default scale will appear too small.
-        text.set_font("Fancy font").set_scale(16.0).set_bounds(
-            Vec2::new(300.0, f32::INFINITY),
-            TextLayout::Wrap {
+        text.set_font("Fancy font")
+            .set_scale(16.0)
+            .set_bounds(Vec2::new(300.0, f32::INFINITY))
+            .set_layout(TextLayout::Wrap {
                 h_align: TextAlign::Middle,
                 v_align: TextAlign::Begin,
-            },
-        );
+            });
         texts.insert("1_demo_text_4", text);
 
         // These methods can be combined to easily create a variety of simple effects.
