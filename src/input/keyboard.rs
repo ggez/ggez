@@ -85,7 +85,7 @@
 //!             Some(KeyCode::Q) => {
 //!                 if input.mods.contains(KeyMods::SHIFT) && input.mods.contains(KeyMods::CTRL) {
 //!                     println!("Terminating!");
-//!                     event::request_quit(ctx);
+//!                     ctx.request_quit();
 //!                 } else if input.mods.contains(KeyMods::SHIFT) || input.mods.contains(KeyMods::CTRL) {
 //!                     println!("You need to hold both Shift and Control to quit.");
 //!                 } else {
