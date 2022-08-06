@@ -30,13 +30,13 @@ var<uniform> uniforms: Uniforms;
 @group(1) @binding(0)
 var t: texture_2d<f32>;
 
-@group(2) @binding(0)
+@group(1) @binding(1)
 var s: sampler;
 
-@group(3) @binding(0)
+@group(2) @binding(0)
 var<storage, read> instances: InstanceArray;
 
-@group(3) @binding(1)
+@group(2) @binding(1)
 var<storage, read> indices: InstanceArrayIndices;
 
 @vertex
