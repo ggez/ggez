@@ -185,8 +185,15 @@ impl GraphicsContext {
                 label: None,
                 features: wgpu::Features::default(),
                 limits: wgpu::Limits {
+                    // 1st: DrawParams
+                    // 2nd: Texture
+                    // 3rd: Sampler
+                    // 4th: InstanceArray
+                    // 5th: ShaderParams
                     max_bind_groups: 5,
-                    ..Default::default()
+                    // InstanceArray uses 2 storage buffers
+                    max_storage_buffers_per_shader_stage: 2,
+                    ..wgpu::Limits::downlevel_webgl2_defaults()
                 },
             },
             None,
