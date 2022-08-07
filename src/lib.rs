@@ -189,13 +189,7 @@
 #![allow(clippy::needless_doctest_main)]
 
 #[macro_use]
-extern crate bitflags;
-#[macro_use]
 extern crate log;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate smart_default;
 
 pub extern crate glam;
 pub extern crate mint;

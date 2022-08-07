@@ -6,7 +6,7 @@ use crate::graphics::{FillOptions, StrokeOptions};
 ///
 /// The origin of the rectangle is at the top-left,
 /// with x increasing to the right and y increasing down.
-#[derive(Copy, Clone, PartialEq, Debug, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Rect {
     /// X coordinate of the left edge of the rect.
     pub x: f32,
@@ -270,7 +270,7 @@ impl From<Rect> for [f32; 4] {
 /// [`MAGENTA`](`Color::MAGENTA`)
 /// [`YELLOW`](`Color::YELLOW`)
 
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Color {
     /// Red component
     pub r: f32,
@@ -484,7 +484,7 @@ impl From<Color> for [f32; 4] {
 
 /// A RGBA color in the *linear* color space,
 /// suitable for shoving into a shader.
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
 pub struct LinearColor {
     /// Red component
     pub r: f32,
