@@ -1,6 +1,11 @@
 This is a place for people to pimp their stuff that is built with ggez.  If you want your project listed here, add it and
 submit a PR, please!
 
+# 0.8.0-rc0
+## Games!
+
+* <https://github.com/yotam5/pong_ggez>: A 2D Pong Game for learning purposes
+
 # 0.7.x
 
 ## Games!
