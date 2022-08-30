@@ -376,6 +376,14 @@ impl TextLayout {
         }
     }
 
+    /// Text wrapped and aligned to the center.
+    pub fn center_wrap() -> Self {
+        TextLayout::Wrap {
+            h_align: TextAlign::Middle,
+            v_align: TextAlign::Middle,
+        }
+    }
+
     /// Returns the horizontal alignment, regardless of wrapping behaviour.
     pub fn h_align(&self) -> TextAlign {
         match self {
