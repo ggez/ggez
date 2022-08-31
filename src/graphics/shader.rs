@@ -76,8 +76,8 @@ impl Shader {
 }
 
 /// necessary because AsStd140 expects crevice to be available globally, see #1084
-pub use crevice;
-use crevice::std140::AsStd140;
+pub extern crate crevice;
+pub use crevice::std140::AsStd140;
 
 /// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
 ///
