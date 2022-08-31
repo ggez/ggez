@@ -2,7 +2,7 @@
 //! and canvas's to do 2D GPU shadows.
 
 use ggez::glam::Vec2;
-use ggez::graphics::{self, crevice::std140::AsStd140, BlendMode, Canvas, Color, DrawParam, Shader};
+use ggez::graphics::{self, AsStd140, BlendMode, Canvas, Color, DrawParam, Shader};
 use ggez::{event, graphics::ShaderParams};
 use ggez::{Context, GameResult};
 use std::env;
