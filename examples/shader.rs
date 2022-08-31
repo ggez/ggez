@@ -2,7 +2,7 @@
 
 use ggez::glam::Vec2;
 use ggez::graphics::{self, Color, DrawMode};
-use ggez::{event, graphics::AsStd140};
+use ggez::{event, graphics::crevice::std140::AsStd140};
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;

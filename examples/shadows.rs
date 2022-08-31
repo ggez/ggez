@@ -2,7 +2,7 @@
 //! and canvas's to do 2D GPU shadows.
 
 use ggez::glam::Vec2;
-use ggez::graphics::{self, AsStd140, BlendMode, Canvas, Color, DrawParam, Shader};
+use ggez::graphics::{self, crevice::std140::AsStd140, BlendMode, Canvas, Color, DrawParam, Shader};
 use ggez::{event, graphics::ShaderParams};
 use ggez::{Context, GameResult};
 use std::env;
@@ -27,9 +27,9 @@ struct Light {
 /// will not get properly encoded).
 const OCCLUSIONS_SHADER_SOURCE: &str = "
 struct VertexOutput {
-    @builtin(position) position: vec4<f32>;
-    @location(0) uv: vec2<f32>;
-    @location(1) color: vec4<f32>;
+    @builtin(position) position: vec4<f32>,
+    @location(0) uv: vec2<f32>,
+    @location(1) color: vec4<f32>,
 };
 
 struct Light {
@@ -44,17 +44,10 @@ struct Light {
 @group(1) @binding(0)
 var t: texture_2d<f32>;
 
-<<<<<<< HEAD
-@group(1) @binding(1)
+@group(2) @binding(0)
 var s: sampler;
 
-@group(3) @binding(0)
-=======
-[[group(2), binding(0)]]
-var s: sampler;
-
-[[group(4), binding(0)]]
->>>>>>> ec2076b1421aec71939a0eafcbabc43ec5deb4b5
+@group(4) @binding(0)
 var<uniform> light: Light;
 
 @fragment
@@ -103,17 +96,10 @@ struct Light {
 @group(1) @binding(0)
 var t: texture_2d<f32>;
 
-<<<<<<< HEAD
-@group(1) @binding(1)
+@group(2) @binding(0)
 var s: sampler;
 
-@group(0) binding(0)
-=======
-[[group(2), binding(0)]]
-var s: sampler;
-
-[[group(4), binding(0)]]
->>>>>>> ec2076b1421aec71939a0eafcbabc43ec5deb4b5
+@group(4) @binding(0)
 var<uniform> light: Light;
 
 fn degrees(x: f32) -> f32 {
@@ -164,17 +150,10 @@ struct Light {
 @group(1) @binding(0)
 var t: texture_2d<f32>;
 
-<<<<<<< HEAD
-@group(1) @binding(1)
+@group(2) @binding(0)
 var s: sampler;
 
-@group(0) binding(0)
-=======
-[[group(2), binding(0)]]
-var s: sampler;
-
-[[group(4), binding(0)]]
->>>>>>> ec2076b1421aec71939a0eafcbabc43ec5deb4b5
+@group(4) @binding(0)
 var<uniform> light: Light;
 
 fn degrees(x: f32) -> f32 {
@@ -194,7 +173,7 @@ fn main(in: VertexOutput) -> @location(0) vec4<f32> {
     var d = distance(g * in.uv, g * light.pos);
     var intensity = clamp(p/(d*d), 0.0, 0.6);
 
-    var blur = (2.5 / light.screen_size.x) * smoothStep(0.0, 1.0, r);
+    var blur = (2.5 / light.screen_size.x) * smoothstep(0.0, 1.0, r);
     var sum = 0.0;
     sum = sum + step(r, textureSample(t, s, vec2<f32>(ox - 4.0 * blur, 0.5)).r * 2.0) * 0.05;
     sum = sum + step(r, textureSample(t, s, vec2<f32>(ox - 3.0 * blur, 0.5)).r * 2.0) * 0.09;
