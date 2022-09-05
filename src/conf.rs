@@ -65,6 +65,8 @@ pub struct WindowMode {
     /// Window height in physical pixels
     #[default = 600.0]
     pub height: f32,
+    /// Window height/width but allows LogicalSize for high DPI systems. If Some will be used instead of width/height.
+    pub logical_size: Option<winit::dpi::LogicalSize<f32>>,
     /// Whether or not to maximize the window
     #[default = false]
     pub maximized: bool,
@@ -190,6 +192,17 @@ impl WindowMode {
     pub fn resize_on_scale_factor_change(mut self, resize_on_scale_factor_change: bool) -> Self {
         self.resize_on_scale_factor_change = resize_on_scale_factor_change;
         self
+    }
+
+    // Use logical_size if set, else convert width/height to PhysicalSize
+    pub(crate) fn actual_size(&self) -> winit::dpi::Size {
+        if let Some(logical_size) = self.logical_size {
+            logical_size.into()
+        } else {
+            let physical_size = winit::dpi::PhysicalSize::<f64>::from((self.width, self.height));
+            assert!(physical_size.width >= 1.0 && physical_size.height >= 1.0); // wgpu needs surfaces > 0
+            physical_size.into()
+        }
     }
 }
 

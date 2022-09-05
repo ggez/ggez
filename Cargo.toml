@@ -38,7 +38,7 @@ zip = { version = "0.6", default-features = false, features = ["deflate"]  }
 directories = "4.0.1"
 wgpu = "0.13"
 glyph_brush = "0.7"
-winit = "0.26"
+winit = { version = "0.26", features = ["serde"] }
 image = { version = "0.24", default-features = false, features = [
    "gif",
    "png",
