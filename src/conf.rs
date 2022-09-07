@@ -195,13 +195,26 @@ impl WindowMode {
     }
 
     // Use logical_size if set, else convert width/height to PhysicalSize
-    pub(crate) fn actual_size(&self) -> winit::dpi::Size {
+    pub(crate) fn actual_size(&self) -> GameResult<winit::dpi::Size> {
         if let Some(logical_size) = self.logical_size {
-            logical_size.into()
+            if logical_size.width >= 1.0 && logical_size.height >= 1.0 {
+                Ok(logical_size.into())
+            } else {
+                Err(GameError::WindowError(format!(
+                    "window width and height need to be at least 1; actual values: {}, {}",
+                    logical_size.width, logical_size.height
+                )))
+            }
         } else {
             let physical_size = winit::dpi::PhysicalSize::<f64>::from((self.width, self.height));
-            assert!(physical_size.width >= 1.0 && physical_size.height >= 1.0); // wgpu needs surfaces > 0
-            physical_size.into()
+            if physical_size.width >= 1.0 && physical_size.height >= 1.0 {
+                Ok(physical_size.into())
+            } else {
+                Err(GameError::WindowError(format!(
+                    "window width and height need to be at least 1; actual values: {}, {}",
+                    physical_size.width, physical_size.height
+                )))
+            }
         }
     }
 }

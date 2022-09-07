@@ -150,7 +150,7 @@ impl GraphicsContext {
     ) -> GameResult<Self> {
         let mut window_builder = winit::window::WindowBuilder::new()
             .with_title(conf.window_setup.title.clone())
-            .with_inner_size(conf.window_mode.actual_size())
+            .with_inner_size(conf.window_mode.actual_size().unwrap())
             .with_resizable(conf.window_mode.resizable)
             .with_visible(conf.window_mode.visible)
             .with_transparent(conf.window_mode.transparent);
@@ -691,7 +691,7 @@ impl GraphicsContext {
             FullscreenType::Windowed => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
-                window.set_inner_size(mode.actual_size());
+                window.set_inner_size(mode.actual_size()?);
                 window.set_resizable(mode.resizable);
                 window.set_maximized(mode.maximized);
             }
