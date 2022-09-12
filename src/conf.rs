@@ -67,8 +67,6 @@ pub struct WindowMode {
     /// Window height in physical pixels
     #[default = 600.0]
     pub height: f32,
-    /// Window height/width but allows LogicalSize for high DPI systems. If Some will be used instead of width/height.
-    pub logical_size: Option<winit::dpi::LogicalSize<f32>>,
     /// Whether or not to maximize the window
     #[default = false]
     pub maximized: bool,
@@ -112,6 +110,10 @@ pub struct WindowMode {
     /// For more context on this take a look at [this conversation](https://github.com/ggez/ggez/pull/949#issuecomment-854731226).
     #[default = false]
     pub resize_on_scale_factor_change: bool,
+    // logical_size is serialized as a table, so it must be at the end of the struct for toml
+    /// Window height/width but allows LogicalSize for high DPI systems. If Some will be used instead of width/height.
+    #[default(None)]
+    pub logical_size: Option<winit::dpi::LogicalSize<f32>>,
 }
 
 impl WindowMode {
@@ -203,6 +205,7 @@ impl WindowMode {
         } else {
             winit::dpi::PhysicalSize::<f64>::from((self.width, self.height)).into()
         };
+
         let physical_size: PhysicalSize<f64> = actual_size.to_physical(1.0);
         if physical_size.width >= 1.0 && physical_size.height >= 1.0 {
             Ok(actual_size)

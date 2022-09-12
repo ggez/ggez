@@ -14,6 +14,9 @@ min_width = 0
 min_height = 0
 max_width = 0
 max_height = 0
+
+[window_mode.logical_size]
+
 [window_setup]
 title = "An easy, good game"
 icon = ""
