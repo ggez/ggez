@@ -8,6 +8,7 @@
   * [How do I make a GUI?](#gfx_gui)
   * [Resolution independence (or "Why do things not end up where I want them to be?")](#gfx_resolution)
   * [Relative and absolute offsets with `DrawParam::offset`](#offsets)
+  * [Logical vs Pixel Sized](#logical-vs-pixel)
 * **[Input](#input)**
   * [Returned mouse coordinates are wrong!](#mouse_coords)
 * **[Libraries](#libraries)**
@@ -174,6 +175,34 @@ if let Transform::Values { offset, .. } = param.trans {
     }
 }
 ```
+
+<a name="logical-vs-pixel">
+
+## Logical vs Pixel Sized
+
+The standard window mode configuration requests a window size in absolute pixels:
+
+```
+        conf::WindowMode {
+            width: 800.0,
+            height: 600.0,
+            ..Default::default()
+        }
+```
+
+This can be problematic on high DPI screens where a 800x600 window is very small. 
+
+A new logical_size option will scale the requested window to be the same effective size on all screens by requesting a window with more pixels (1.5 or 2 times more for example).
+
+```
+        conf::WindowMode {
+            logical_size: Some(LogicalSize::new(800.0, 600.0)),
+            ..Default::default()
+        }
+```
+
+
+More details can be found [here](https://docs.rs/winit/latest/winit/dpi/index.html).
 
 <a name="input">
 
