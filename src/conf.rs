@@ -15,6 +15,8 @@
 use std::convert::TryFrom;
 use std::io;
 
+use winit::dpi::PhysicalSize;
+
 use crate::error::{GameError, GameResult};
 
 /// Possible fullscreen modes.
@@ -108,6 +110,10 @@ pub struct WindowMode {
     /// For more context on this take a look at [this conversation](https://github.com/ggez/ggez/pull/949#issuecomment-854731226).
     #[default = false]
     pub resize_on_scale_factor_change: bool,
+    // logical_size is serialized as a table, so it must be at the end of the struct for toml
+    /// Window height/width but allows LogicalSize for high DPI systems. If Some will be used instead of width/height.
+    #[default(None)]
+    pub logical_size: Option<winit::dpi::LogicalSize<f32>>,
 }
 
 impl WindowMode {
@@ -190,6 +196,25 @@ impl WindowMode {
     pub fn resize_on_scale_factor_change(mut self, resize_on_scale_factor_change: bool) -> Self {
         self.resize_on_scale_factor_change = resize_on_scale_factor_change;
         self
+    }
+
+    // Use logical_size if set, else convert width/height to PhysicalSize
+    pub(crate) fn actual_size(&self) -> GameResult<winit::dpi::Size> {
+        let actual_size: winit::dpi::Size = if let Some(logical_size) = self.logical_size {
+            logical_size.into()
+        } else {
+            winit::dpi::PhysicalSize::<f64>::from((self.width, self.height)).into()
+        };
+
+        let physical_size: PhysicalSize<f64> = actual_size.to_physical(1.0);
+        if physical_size.width >= 1.0 && physical_size.height >= 1.0 {
+            Ok(actual_size)
+        } else {
+            Err(GameError::WindowError(format!(
+                "window width and height need to be at least 1; actual values: {}, {}",
+                physical_size.width, physical_size.height
+            )))
+        }
     }
 }
 

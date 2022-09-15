@@ -148,12 +148,9 @@ impl GraphicsContext {
         conf: &Conf,
         filesystem: &Filesystem,
     ) -> GameResult<Self> {
-        let physical_size =
-            dpi::PhysicalSize::<f64>::from((conf.window_mode.width, conf.window_mode.height));
-        assert!(physical_size.width >= 1.0 && physical_size.height >= 1.0); // wgpu needs surfaces > 0
         let mut window_builder = winit::window::WindowBuilder::new()
             .with_title(conf.window_setup.title.clone())
-            .with_inner_size(physical_size)
+            .with_inner_size(conf.window_mode.actual_size().unwrap())
             .with_resizable(conf.window_mode.resizable)
             .with_visible(conf.window_mode.visible)
             .with_transparent(conf.window_mode.transparent);
@@ -694,17 +691,7 @@ impl GraphicsContext {
             FullscreenType::Windowed => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
-                if mode.width >= 1.0 && mode.height >= 1.0 {
-                    window.set_inner_size(dpi::PhysicalSize {
-                        width: f64::from(mode.width),
-                        height: f64::from(mode.height),
-                    });
-                } else {
-                    return Err(GameError::WindowError(format!(
-                        "window width and height need to be at least 1; actual values: {}, {}",
-                        mode.width, mode.height
-                    )));
-                }
+                window.set_inner_size(mode.actual_size()?);
                 window.set_resizable(mode.resizable);
                 window.set_maximized(mode.maximized);
             }

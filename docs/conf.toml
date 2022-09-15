@@ -9,18 +9,22 @@ width = 800
 height = 600
 borderless = false
 fullscreen_type = "Off"
-vsync = true
+maximized = false
+transparent = false
 min_width = 0
 min_height = 0
 max_width = 0
 max_height = 0
+resizable = false
+visible = true
+resize_on_scale_factor_change = false
+
 [window_setup]
 title = "An easy, good game"
 icon = ""
-resizable = false
-allow_highdpi = true
 samples = "One"
+vsync = true
+srgb = true
+
 [backend]
-type = "OpenGL"
-major = 3
-minor = 2
+type = 'All'
