@@ -56,6 +56,7 @@ pub enum FullscreenType {
 ///     visible: true,
 ///     transparent: false,
 ///     resize_on_scale_factor_change: false,
+///     logical_size: None,
 /// }
 /// # , WindowMode::default());}
 /// ```
