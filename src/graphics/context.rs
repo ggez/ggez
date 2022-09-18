@@ -180,12 +180,9 @@ impl GraphicsContext {
         }))
         .ok_or(GameError::GraphicsInitializationError)?;
 
+        // One instance is 96 bytes, and we allow 1 million of them, for a total of 96MB (default being 128MB).
         const MAX_INSTANCES: u32 = 1_000_000;
-        // One instance is 96 bytes
         const INSTANCE_BUFFER_SIZE: u32 = 96 * MAX_INSTANCES;
-
-        // wgpu's default limit.
-        assert!(INSTANCE_BUFFER_SIZE <= 128 * 1024 * 1024);
 
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
@@ -236,7 +233,7 @@ impl GraphicsContext {
             .image(wgpu::ShaderStages::FRAGMENT)
             .create(&wgpu.device, &mut bind_group_cache);
 
-        let text = TextRenderer::new(&wgpu.device, image_bind_layout.clone());
+        let text = TextRenderer::new(&wgpu.device, image_bind_layout);
 
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let uniform_arena = GrowingBufferArena::new(
