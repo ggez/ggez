@@ -180,7 +180,8 @@ impl GraphicsContext {
         }))
         .ok_or(GameError::GraphicsInitializationError)?;
 
-        const MAX_INSTANCES: u32 = 10_000;
+        const MAX_INSTANCES: u32 = 1_000_000;
+        // One instance is 96 bytes
         const INSTANCE_BUFFER_SIZE: u32 = 96 * MAX_INSTANCES;
 
         // wgpu's default limit.
