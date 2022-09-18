@@ -115,7 +115,7 @@ pub use winit::event::ScanCode;
 /// A key code.
 pub use winit::event::VirtualKeyCode as KeyCode;
 
-bitflags! {
+bitflags::bitflags! {
     /// Bitflags describing the state of keyboard modifiers, such as `Control` or `Shift`.
     #[derive(Default)]
     pub struct KeyMods: u8 {

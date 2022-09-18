@@ -44,17 +44,10 @@ struct Light {
 @group(1) @binding(0)
 var t: texture_2d<f32>;
 
-<<<<<<< HEAD
-@group(1) @binding(1)
+@group(2) @binding(0)
 var s: sampler;
 
-@group(3) @binding(0)
-=======
-[[group(2), binding(0)]]
-var s: sampler;
-
-[[group(4), binding(0)]]
->>>>>>> ec2076b1421aec71939a0eafcbabc43ec5deb4b5
+@group(4) @binding(0)
 var<uniform> light: Light;
 
 @fragment
