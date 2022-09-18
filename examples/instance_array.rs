@@ -17,7 +17,7 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image = graphics::Image::from_path(ctx, "/tile.png", true)?;
+        let image = graphics::Image::from_path(ctx, "/tile.png")?;
         let instances = graphics::InstanceArray::new(ctx, image, 150 * 150, false);
         Ok(MainState { instances })
     }

@@ -81,8 +81,8 @@ const LIGHT_GLOW_RATE: f32 = 0.9;
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let background = graphics::Image::from_path(ctx, "/bg_top.png", true)?;
-        let tile = graphics::Image::from_path(ctx, "/tile.png", true)?;
+        let background = graphics::Image::from_path(ctx, "/bg_top.png")?;
+        let tile = graphics::Image::from_path(ctx, "/tile.png")?;
 
         let screen_size = {
             let size = ctx.gfx.drawable_size();

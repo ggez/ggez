@@ -131,11 +131,7 @@ impl Image {
 
     /// Creates a new image initialized with pixel data loaded from an encoded image `Read` (e.g. PNG or JPEG).
     #[allow(unused_results)]
-    pub fn from_path(
-        ctxs: &impl Has<GraphicsContext>,
-        path: impl AsRef<Path>,
-        srgb: bool,
-    ) -> GameResult<Self> {
+    pub fn from_path(ctxs: &impl Has<GraphicsContext>, path: impl AsRef<Path>) -> GameResult<Self> {
         let gfx = ctxs.retrieve();
 
         let mut encoded = Vec::new();
@@ -148,11 +144,7 @@ impl Image {
         Ok(Self::from_pixels(
             gfx,
             rgba8.as_ref(),
-            if srgb {
-                ImageFormat::Rgba8UnormSrgb
-            } else {
-                ImageFormat::Rgba8Unorm
-            },
+            ImageFormat::Rgba8UnormSrgb,
             width,
             height,
         ))
