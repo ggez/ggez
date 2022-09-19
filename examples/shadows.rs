@@ -25,50 +25,7 @@ struct Light {
 /// and encoded in the red channel (it is halved because if the distance can be
 /// greater than 1.0 - think bottom left to top right corner, that sqrt(1) and
 /// will not get properly encoded).
-const OCCLUSIONS_SHADER_SOURCE: &str = "
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>;
-    @location(0) uv: vec2<f32>;
-    @location(1) color: vec4<f32>;
-};
-
-struct Light {
-    light_color: vec4<f32>,
-    shadow_color: vec4<f32>,
-    pos: vec2<f32>,
-    screen_size: vec2<f32>,
-    glow: f32,
-    strength: f32,
-}
-
-@group(1) @binding(0)
-var t: texture_2d<f32>;
-
-@group(2) @binding(0)
-var s: sampler;
-
-@group(4) @binding(0)
-var<uniform> light: Light;
-
-@fragment
-fn main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var dist = 1.0;
-    var theta = in.uv.x * 6.28318530718;
-    var dir = vec2<f32>(cos(theta), sin(theta));
-    for (var i: i32 = 0; i < 1024; i = i + 1) {
-        var fi = f32(i);
-        var r = fi / 1024.0;
-        var rel = r * dir;
-        var p = clamp(light.pos + rel, vec2<f32>(0.0), vec2<f32>(1.0));
-        if (textureSample(t, s, p).a > 0.8) {
-            dist = distance(light.pos, p) * 0.5;
-            break;
-        }
-    }
-    var others = select(dist, 0.0, dist == 1.0);
-    return vec4<f32>(dist, others, others, 1.0);
-}
-";
+const OCCLUSIONS_SHADER_SOURCE: &str = include_str!("../resources/occlusions.wgsl");
 
 /// Shader for drawing shadows based on a 1D shadow map. It takes current
 /// fragment coordinates and converts them to polar coordinates centered
@@ -77,58 +34,7 @@ fn main(in: VertexOutput) -> @location(0) vec4<f32> {
 /// closest reported shadow, then the output is the shadow color, else it calculates some
 /// shadow based on the distance from light source based on strength and glow
 /// uniform parameters.
-const SHADOWS_SHADER_SOURCE: &str = "
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-    @location(0) uv: vec2<f32>,
-    @location(1) color: vec4<f32>,
-}
-
-struct Light {
-    light_color: vec4<f32>,
-    shadow_color: vec4<f32>,
-    pos: vec2<f32>,
-    screen_size: vec2<f32>,
-    glow: f32,
-    strength: f32,
-}
-
-@group(1) @binding(0)
-var t: texture_2d<f32>;
-
-<<<<<<< HEAD
-@group(1) @binding(1)
-var s: sampler;
-
-@group(0) binding(0)
-=======
-[[group(2), binding(0)]]
-var s: sampler;
-
-[[group(4), binding(0)]]
->>>>>>> ec2076b1421aec71939a0eafcbabc43ec5deb4b5
-var<uniform> light: Light;
-
-fn degrees(x: f32) -> f32 {
-    return x * 57.2957795130823208767981548141051703;
-}
-
-@fragment
-fn main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var rel = light.pos - in.uv;
-    var theta = atan2(rel.y, rel.x);
-    var ox = (theta + 3.1415926) / 6.2831853;
-    var r = length(rel);
-    var occl = 1.0 - step(r, textureSample(t, s, vec2<f32>(ox, 0.5)).r * 2.0);
-
-    var g = light.screen_size / light.screen_size.y;
-    var p = light.strength + light.glow;
-    var d = distance(g * in.uv, g * light.pos);
-    var intensity = 1.0 - clamp(p/(d*d), 0.0, 1.0);
-
-    return light.shadow_color * vec4<f32>(vec3<f32>(mix(intensity, 1.0, occl)), 1.0);
-}
-";
+const SHADOWS_SHADER_SOURCE: &str = include_str!("../resources/shadows.wgsl");
 
 /// Shader for drawing lights based on a 1D shadow map. It takes current
 /// fragment coordinates and converts them to polar coordinates centered
@@ -138,70 +44,7 @@ fn main(in: VertexOutput) -> @location(0) vec4<f32> {
 /// light based on the distance from light source based on strength and glow
 /// uniform parameters. It is meant to be used additively for drawing multiple
 /// lights.
-const LIGHTS_SHADER_SOURCE: &str = "
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-    @location(0) uv: vec2<f32>,
-    @location(1) color: vec4<f32>,
-}
-
-struct Light {
-    light_color: vec4<f32>,
-    shadow_color: vec4<f32>,
-    pos: vec2<f32>,
-    screen_size: vec2<f32>,
-    glow: f32,
-    strength: f32,
-}
-
-@group(1) @binding(0)
-var t: texture_2d<f32>;
-
-<<<<<<< HEAD
-@group(1) @binding(1)
-var s: sampler;
-
-@group(0) binding(0)
-=======
-[[group(2), binding(0)]]
-var s: sampler;
-
-[[group(4), binding(0)]]
->>>>>>> ec2076b1421aec71939a0eafcbabc43ec5deb4b5
-var<uniform> light: Light;
-
-fn degrees(x: f32) -> f32 {
-    return x * 57.2957795130823208767981548141051703;
-}
-
-@fragment
-fn main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var rel = light.pos - in.uv;
-    var theta = atan2(rel.y, rel.x);
-    var ox = (theta + 3.1415926) / 6.2831853;
-    var r = length(rel);
-    var occl = step(r, textureSample(t, s, vec2<f32>(ox, 0.5)).r * 2.0);
-
-    var g = light.screen_size / light.screen_size.y;
-    var p = light.strength + light.glow;
-    var d = distance(g * in.uv, g * light.pos);
-    var intensity = clamp(p/(d*d), 0.0, 0.6);
-
-    var blur = (2.5 / light.screen_size.x) * smoothStep(0.0, 1.0, r);
-    var sum = 0.0;
-    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox - 4.0 * blur, 0.5)).r * 2.0) * 0.05;
-    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox - 3.0 * blur, 0.5)).r * 2.0) * 0.09;
-    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox - 2.0 * blur, 0.5)).r * 2.0) * 0.12;
-    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox - 1.0 * blur, 0.5)).r * 2.0) * 0.15;
-    sum = sum + occl * 0.16;
-    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox + 1.0 * blur, 0.5)).r * 2.0) * 0.15;
-    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox + 2.0 * blur, 0.5)).r * 2.0) * 0.12;
-    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox + 3.0 * blur, 0.5)).r * 2.0) * 0.09;
-    sum = sum + step(r, textureSample(t, s, vec2<f32>(ox + 4.0 * blur, 0.5)).r * 2.0) * 0.05;
-
-    return light.light_color * vec4<f32>(vec3<f32>(sum * intensity), 1.0);
-}
-";
+const LIGHTS_SHADER_SOURCE: &str = include_str!("../resources/lights.wgsl");
 
 struct MainState {
     background: graphics::Image,
@@ -238,8 +81,8 @@ const LIGHT_GLOW_RATE: f32 = 0.9;
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let background = graphics::Image::from_path(ctx, "/bg_top.png", true)?;
-        let tile = graphics::Image::from_path(ctx, "/tile.png", true)?;
+        let background = graphics::Image::from_path(ctx, "/bg_top.png")?;
+        let tile = graphics::Image::from_path(ctx, "/tile.png")?;
 
         let screen_size = {
             let size = ctx.gfx.drawable_size();

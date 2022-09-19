@@ -22,7 +22,7 @@ impl MainState {
     const GRID_POINT_RADIUS: f32 = 5.0;
 
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let angle = graphics::Image::from_path(ctx, "/angle.png", true)?;
+        let angle = graphics::Image::from_path(ctx, "/angle.png")?;
         let gridmesh_builder = &mut graphics::MeshBuilder::new();
         for x in 0..Self::GRID_SIZE {
             for y in 0..Self::GRID_SIZE {
