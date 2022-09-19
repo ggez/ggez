@@ -82,14 +82,14 @@ impl App {
         // vertical bound will cut off the extra off the bottom.
         // Alignment within the bounds can be set by `Align` enum.
         text.set_bounds(Vec2::new(400.0, f32::INFINITY))
-            .set_layout(TextLayout::Wrap {
+            .set_layout(TextLayout {
                 h_align: TextAlign::Begin,
                 v_align: TextAlign::Begin,
             });
         texts.insert("1_demo_text_2", text.clone());
 
         text.set_bounds(Vec2::new(500.0, f32::INFINITY))
-            .set_layout(TextLayout::Wrap {
+            .set_layout(TextLayout {
                 h_align: TextAlign::End,
                 v_align: TextAlign::Begin,
             });
@@ -102,7 +102,7 @@ impl App {
         text.set_font("Fancy font")
             .set_scale(16.0)
             .set_bounds(Vec2::new(300.0, f32::INFINITY))
-            .set_layout(TextLayout::Wrap {
+            .set_layout(TextLayout {
                 h_align: TextAlign::Middle,
                 v_align: TextAlign::Begin,
             });
