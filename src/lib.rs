@@ -10,7 +10,7 @@
 //!
 //! ggez is a Rust library to create a Good Game Easily.
 //!
-//! The current version is 0.8.0-rc0. This is a RELEASE CANDIDATE version,
+//! The current version is 0.8.0-rc1. This is a RELEASE CANDIDATE version,
 //! which in this case means that the API might still change slightly until
 //! 0.8.0 is released in full (also depending on your feedback).
 //!
@@ -62,7 +62,7 @@
 //! line to your `Cargo.toml` file:
 //!
 //! ```text
-//! ggez = "0.8.0-rc0"
+//! ggez = "0.8.0-rc1"
 //! ```
 //!
 //! ggez consists of three main parts: A `Context` object which
