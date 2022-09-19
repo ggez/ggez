@@ -20,7 +20,7 @@ use winit::dpi::PhysicalSize;
 use crate::error::{GameError, GameResult};
 
 /// Possible fullscreen modes.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub enum FullscreenType {
     /// Windowed mode.
     Windowed,
@@ -60,7 +60,9 @@ pub enum FullscreenType {
 /// }
 /// # , WindowMode::default());}
 /// ```
-#[derive(Debug, Copy, Clone, SmartDefault, Serialize, Deserialize, PartialEq)]
+#[derive(
+    Debug, Copy, Clone, smart_default::SmartDefault, serde::Serialize, serde::Deserialize, PartialEq,
+)]
 pub struct WindowMode {
     /// Window width in physical pixels
     #[default = 800.0]
@@ -236,7 +238,9 @@ impl WindowMode {
 /// }
 /// # , WindowSetup::default()); }
 /// ```
-#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(
+    Debug, Clone, smart_default::SmartDefault, serde::Serialize, serde::Deserialize, PartialEq, Eq,
+)]
 pub struct WindowSetup {
     /// The window title.
     #[default(String::from("An easy, good game"))]
@@ -297,7 +301,16 @@ impl WindowSetup {
 
 /// Possible graphics backends.
 /// The default is `Primary`.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, SmartDefault)]
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    serde::Serialize,
+    serde::Deserialize,
+    PartialEq,
+    Eq,
+    smart_default::SmartDefault,
+)]
 #[serde(tag = "type")]
 pub enum Backend {
     /// Includes [`Backend::OnlyPrimary`] and also secondary APIs consisting of OpenGL and DX11.
@@ -324,7 +337,7 @@ pub enum Backend {
 }
 
 /// The possible number of samples for multisample anti-aliasing.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub enum NumSamples {
     /// One sample
     One = 1,
@@ -379,7 +392,9 @@ impl From<NumSamples> for u8 {
 /// }
 /// # , Conf::default()); }
 /// ```
-#[derive(Serialize, Deserialize, Debug, PartialEq, SmartDefault, Clone)]
+#[derive(
+    serde::Serialize, serde::Deserialize, Debug, PartialEq, smart_default::SmartDefault, Clone,
+)]
 pub struct Conf {
     /// Window setting information that can be set at runtime
     pub window_mode: WindowMode,

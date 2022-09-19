@@ -54,8 +54,7 @@ rodio = { version = "0.15", optional = true, default-features = false, features 
    "vorbis",
    "wav",
 ] }
-serde = "1"
-serde_derive = "1"
+serde = { version = "1.0", features = ["derive"] }
 toml = "0.5"
 log = "0.4"
 lyon = "1.0"
@@ -70,7 +69,6 @@ pollster = "0.2"
 memoffset = "0.6"
 crevice = "0.11"
 typed-arena = "2.0"
-lazy_static = "1.4"
 ordered-float = "3.0"
 
 [dev-dependencies]
