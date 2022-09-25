@@ -136,7 +136,8 @@ impl MouseContext {
     }
 
     /// Get the distance the cursor was moved between the latest two mouse_motion_events.
-    pub(crate) fn last_delta(&self) -> mint::Point2<f32> {
+    /// Really useful only if you are writing your own event loop
+    pub fn last_delta(&self) -> mint::Point2<f32> {
         self.last_delta.into()
     }
 }

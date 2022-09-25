@@ -289,7 +289,9 @@ impl KeyboardContext {
         }
     }
 
-    pub(crate) fn set_modifiers(&mut self, keymods: KeyMods) {
+    /// Set the keyboard active modifiers
+    /// Really useful only if you are writing your own event loop
+    pub fn set_modifiers(&mut self, keymods: KeyMods) {
         self.active_modifiers = keymods;
     }
 
