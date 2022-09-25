@@ -63,7 +63,7 @@ impl GameState {
             bunnies.push(Bunny::new(&mut rng));
         }
 
-        let bunnybatch = InstanceArray::new(ctx, texture.clone(), INITIAL_BUNNIES as u32, false);
+        let bunnybatch = InstanceArray::new(ctx, texture.clone(), INITIAL_BUNNIES as u32);
 
         Ok(GameState {
             rng,
