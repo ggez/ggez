@@ -39,16 +39,11 @@ impl InstanceArray {
     ///
     /// If `image` is `None`, a 1x1 white image will be used which can be used to draw solid rectangles.
     ///
-    /// `ordered` controls whether the z-order of instances is simply defined by their indices
-    /// (unordered), or by the actual order of their [z-values] (ordered). Intuitively, creating such
-    /// order by comparing the [z-values] comes at a slight performance cost.
-    ///
-    /// [z-values]:crate::graphics::ZIndex
+    /// This constructor is `unordered` meaning instances will be drawn by their push/index order. Use [`InstanceArray::new_ordered`] to order by z-value.
     pub fn new(
         gfx: &impl Has<GraphicsContext>,
         image: impl Into<Option<Image>>,
         capacity: u32,
-        ordered: bool,
     ) -> Self {
         let gfx = gfx.retrieve();
         InstanceArray::new_wgpu(
@@ -56,7 +51,25 @@ impl InstanceArray {
             gfx.instance_bind_layout.clone(),
             image.into().unwrap_or_else(|| gfx.white_image.clone()),
             capacity,
-            ordered,
+            false,
+        )
+    }
+
+    /// See [`InstanceArray::new`] for details.
+    ///
+    /// This constructor is `ordered` meaning instances will be drawn by their z-value at a slight performance cost. Use [`InstanceArray::new`] to order by index.
+    pub fn new_ordered(
+        gfx: &impl Has<GraphicsContext>,
+        image: impl Into<Option<Image>>,
+        capacity: u32,
+    ) -> Self {
+        let gfx = gfx.retrieve();
+        InstanceArray::new_wgpu(
+            &gfx.wgpu,
+            gfx.instance_bind_layout.clone(),
+            image.into().unwrap_or_else(|| gfx.white_image.clone()),
+            capacity,
+            false,
         )
     }
 
@@ -237,7 +250,11 @@ impl InstanceArray {
     ///
     /// If `new_capacity` is less than the `len`, the instances will be truncated.
     pub fn resize(&mut self, gfx: &impl Has<GraphicsContext>, new_capacity: u32) {
-        let resized = InstanceArray::new(gfx, self.image.clone(), new_capacity, self.ordered);
+        let resized = if self.ordered {
+            InstanceArray::new_ordered(gfx, self.image.clone(), new_capacity)
+        } else {
+            InstanceArray::new(gfx, self.image.clone(), new_capacity)
+        };
         self.buffer = resized.buffer;
         self.indices = resized.indices;
         self.capacity.store(new_capacity, SeqCst);
