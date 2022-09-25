@@ -172,7 +172,7 @@ impl event::EventHandler<ggez::GameError> for App {
                 TextFragment::new(ch).scale(PxScale::from(10.0 + 6.0 * self.rng.rand_float())),
             );
         }
-        let wobble_rect = (&wobble).dimensions(ctx).unwrap();
+        let wobble_rect = wobble.dimensions(ctx).unwrap();
         canvas.draw(
             &wobble,
             graphics::DrawParam::new()
