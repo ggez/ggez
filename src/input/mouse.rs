@@ -6,6 +6,7 @@ use crate::error::GameResult;
 use std::collections::HashSet;
 use winit::dpi;
 pub use winit::event::MouseButton;
+use winit::window::CursorGrabMode;
 pub use winit::window::CursorIcon;
 
 /// Stores state information for the mouse input.
@@ -237,7 +238,15 @@ pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
     ctx.mouse.cursor_grabbed = grabbed;
     ctx.gfx
         .window
-        .set_cursor_grab(grabbed)
+        .set_cursor_grab(if grabbed {
+            if cfg!(target_os = "macos") {
+                CursorGrabMode::Locked
+            } else {
+                CursorGrabMode::Confined
+            }
+        } else {
+            CursorGrabMode::None
+        })
         .map_err(|e| GameError::WindowError(e.to_string()))
 }
 
