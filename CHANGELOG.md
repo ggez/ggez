@@ -85,6 +85,9 @@ The following list doesn't repeat the changes already mentioned above.
   done now), as it makes things like centering text on positions easier (see the blend modes example)
 * Also `Text` is now a first class citizen and can be drawn normally with `DrawParam`, implementing things like rotation
  that weren't possible in batched text rendering before
+* Changed how bounds on Text work as well as layouting
+  * `Text::set_bounds` now expects width and height of the bounds, but not the destination point, as that's handled through the `DrawParam`
+  * additionally to horizontal alignment vertical alignment is now possible as well
 * Improved `Text` performance through better glyph re-use
 * Changed the `Drawable` trait; this will downstream require changes in projects like `ggez-egui`
 * Version bumped `zip` to 0.6, `directories` to 4.0.1, `winit` to 0.27.3, image to `0.24` and `rodio` to 0.16
