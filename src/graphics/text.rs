@@ -252,8 +252,22 @@ impl Text {
         fonts: &HashMap<String, FontId>,
         param: DrawParam,
     ) -> GameResult<glyph_brush::Section<'a, Extra>> {
+        let x = match self.layout.h_align {
+            TextAlign::Begin => 0.,
+            TextAlign::Middle => self.bounds.x / 2.,
+            TextAlign::End => self.bounds.x,
+        };
+        let x = if x == f32::INFINITY { 0.0 } else { x };
+
+        let y = match self.layout.h_align {
+            TextAlign::Begin => 0.,
+            TextAlign::Middle => self.bounds.y / 2.,
+            TextAlign::End => self.bounds.y,
+        };
+        let y = if y == f32::INFINITY { 0.0 } else { y };
+
         Ok(glyph_brush::Section {
-            screen_position: (0., 0.),
+            screen_position: (x, y),
 
             bounds: (self.bounds.x, self.bounds.x),
             layout: if self.wrap {
