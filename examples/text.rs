@@ -96,7 +96,7 @@ impl App {
         texts.insert("1_demo_text_3", text.clone());
 
         // This can be used to set the font and scale unformatted fragments will use.
-        // Color is specified when drawing (or queueing), via `DrawParam`.
+        // Color is specified when drawing, via `DrawParam`.
         // Side note: TrueType fonts aren't very consistent between themselves in terms
         // of apparent scale - this font with default scale will appear too small.
         text.set_font("Fancy font")
@@ -149,8 +149,6 @@ impl event::EventHandler<ggez::GameError> for App {
 
         let mut height = 0.0;
         for (key, text) in self.texts.iter() {
-            // Calling `.queue()` for all bits of text that can share a `DrawParam`,
-            // followed with `::draw_queued()` with said params, is the intended way.
             let x = if *key == "1_demo_text_4" { 250.0 } else { 20.0 };
             canvas.draw(text, Vec2::new(x, 20.0 + height));
             //height += 20.0 + text.height(ctx) as f32;
@@ -165,7 +163,7 @@ impl event::EventHandler<ggez::GameError> for App {
             text.fragments_mut()[3].color = Some(random_color(&mut self.rng));
         }
 
-        // Another animation example. Note, this is very inefficient as-is.
+        // Another animation example. Note, this is relatively inefficient as-is.
         let wobble_string = "WOBBLE";
         let mut wobble = Text::default();
         for ch in wobble_string.chars() {
