@@ -252,8 +252,22 @@ impl Text {
         fonts: &HashMap<String, FontId>,
         param: DrawParam,
     ) -> GameResult<glyph_brush::Section<'a, Extra>> {
+        let x = match self.layout.h_align {
+            TextPosition::Begin => 0.,
+            TextPosition::Middle => self.bounds.x / 2.,
+            TextPosition::End => self.bounds.x,
+        };
+        let x = if x == f32::INFINITY { 0.0 } else { x };
+
+        let y = match self.layout.h_align {
+            TextPosition::Begin => 0.,
+            TextPosition::Middle => self.bounds.y / 2.,
+            TextPosition::End => self.bounds.y,
+        };
+        let y = if y == f32::INFINITY { 0.0 } else { y };
+
         Ok(glyph_brush::Section {
-            screen_position: (0., 0.),
+            screen_position: (x, y),
 
             bounds: (self.bounds.x, self.bounds.x),
             layout: if self.wrap {
@@ -261,8 +275,8 @@ impl Text {
             } else {
                 glyph_brush::Layout::default_single_line()
             }
-            .h_align(self.layout.h_align.into())
-            .v_align(self.layout.v_align.into()),
+            .h_align(self.layout.h_anchor.into())
+            .v_align(self.layout.v_anchor.into()),
 
             text: self
                 .fragments
@@ -302,33 +316,33 @@ impl Drawable for Text {
     }
 }
 
-/// Describes text alignment along a single axis.
+/// Describes position along a single axis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum TextAlign {
-    /// Text is aligned to the beginning of the axis (left, top).
+pub enum TextPosition {
+    /// Text is anchored to the beginning of the axis (left, top).
     Begin,
-    /// Text is aligned to the center of the axis.
+    /// Text is anchored to the center of the axis.
     Middle,
-    /// Text is aligned to the end of the axis (right, bottom).
+    /// Text is anchored to the end of the axis (right, bottom).
     End,
 }
 
-impl From<TextAlign> for glyph_brush::HorizontalAlign {
-    fn from(align: TextAlign) -> Self {
-        match align {
-            TextAlign::Begin => glyph_brush::HorizontalAlign::Left,
-            TextAlign::Middle => glyph_brush::HorizontalAlign::Center,
-            TextAlign::End => glyph_brush::HorizontalAlign::Right,
+impl From<TextPosition> for glyph_brush::HorizontalAlign {
+    fn from(anchor: TextPosition) -> Self {
+        match anchor {
+            TextPosition::Begin => glyph_brush::HorizontalAlign::Left,
+            TextPosition::Middle => glyph_brush::HorizontalAlign::Center,
+            TextPosition::End => glyph_brush::HorizontalAlign::Right,
         }
     }
 }
 
-impl From<TextAlign> for glyph_brush::VerticalAlign {
-    fn from(align: TextAlign) -> Self {
-        match align {
-            TextAlign::Begin => glyph_brush::VerticalAlign::Top,
-            TextAlign::Middle => glyph_brush::VerticalAlign::Center,
-            TextAlign::End => glyph_brush::VerticalAlign::Bottom,
+impl From<TextPosition> for glyph_brush::VerticalAlign {
+    fn from(anchor: TextPosition) -> Self {
+        match anchor {
+            TextPosition::Begin => glyph_brush::VerticalAlign::Top,
+            TextPosition::Middle => glyph_brush::VerticalAlign::Center,
+            TextPosition::End => glyph_brush::VerticalAlign::Bottom,
         }
     }
 }
@@ -336,26 +350,35 @@ impl From<TextAlign> for glyph_brush::VerticalAlign {
 /// Describes text alignment along both axes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TextLayout {
-    /// Horizontal alignment.
-    pub h_align: TextAlign,
-    /// Vertical alignment.
-    pub v_align: TextAlign,
+    /// Horizontal alignment. Describes where within the horizontal bounds the text should be placed.
+    pub h_align: TextPosition,
+    /// Vertical alignment. Describes where within the vertical bounds the text should be placed.
+    pub v_align: TextPosition,
+
+    /// Horizontal achor. Describes whether text should be below, on or above the baseline.
+    pub h_anchor: TextPosition,
+    /// Vertical achor. Describes whether text should be left-aligned, center-aligned or right-aligned.
+    pub v_anchor: TextPosition,
 }
 
 impl TextLayout {
+    /// Text aligned and anchored to `h` and `v` positions.
+    pub fn new(h: TextPosition, v: TextPosition) -> Self {
+        TextLayout {
+            h_align: h,
+            v_align: v,
+            h_anchor: h,
+            v_anchor: v,
+        }
+    }
+
     /// Text aligned to the top-left.
     pub fn top_left() -> Self {
-        TextLayout {
-            h_align: TextAlign::Begin,
-            v_align: TextAlign::Begin,
-        }
+        TextLayout::new(TextPosition::Begin, TextPosition::Begin)
     }
 
     /// Text aligned to the center.
     pub fn center() -> Self {
-        TextLayout {
-            h_align: TextAlign::Middle,
-            v_align: TextAlign::Middle,
-        }
+        TextLayout::new(TextPosition::Middle, TextPosition::Middle)
     }
 }

@@ -1,7 +1,7 @@
 //! This example demonstrates how to use `Text` to draw TrueType font texts efficiently.
 
 use ggez::glam::Vec2;
-use ggez::graphics::{self, Color, PxScale, Text, TextAlign, TextFragment};
+use ggez::graphics::{self, Color, PxScale, Text, TextFragment, TextPosition};
 use ggez::timer;
 use ggez::{
     conf::{WindowMode, WindowSetup},
@@ -82,17 +82,11 @@ impl App {
         // vertical bound will cut off the extra off the bottom.
         // Alignment within the bounds can be set by `Align` enum.
         text.set_bounds(Vec2::new(400.0, f32::INFINITY))
-            .set_layout(TextLayout {
-                h_align: TextAlign::Begin,
-                v_align: TextAlign::Begin,
-            });
+            .set_layout(TextLayout::top_left());
         texts.insert("1_demo_text_2", text.clone());
 
         text.set_bounds(Vec2::new(500.0, f32::INFINITY))
-            .set_layout(TextLayout {
-                h_align: TextAlign::End,
-                v_align: TextAlign::Begin,
-            });
+            .set_layout(TextLayout::new(TextPosition::End, TextPosition::Begin));
         texts.insert("1_demo_text_3", text.clone());
 
         // This can be used to set the font and scale unformatted fragments will use.
@@ -102,9 +96,12 @@ impl App {
         text.set_font("Fancy font")
             .set_scale(16.0)
             .set_bounds(Vec2::new(300.0, f32::INFINITY))
+            //.set_layout(TextLayout::new(TextPosition::Middle, TextPosition::Begin));
             .set_layout(TextLayout {
-                h_align: TextAlign::Middle,
-                v_align: TextAlign::Begin,
+                h_align: TextPosition::Middle,
+                v_align: TextPosition::Begin,
+                h_anchor: TextPosition::Middle,
+                v_anchor: TextPosition::Middle,
             });
         texts.insert("1_demo_text_4", text);
 
@@ -152,7 +149,6 @@ impl event::EventHandler<ggez::GameError> for App {
             // Calling `.queue()` for all bits of text that can share a `DrawParam`,
             // followed with `::draw_queued()` with said params, is the intended way.
             canvas.draw(text, Vec2::new(20.0, 20.0 + height));
-            //height += 20.0 + text.height(ctx) as f32;
             height += 20.0 + text.dimensions(ctx).unwrap().h as f32;
         }
 
