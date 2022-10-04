@@ -90,7 +90,7 @@ impl App {
 
         text.set_bounds(Vec2::new(500.0, f32::INFINITY))
             .set_layout(TextLayout {
-                h_align: TextAlign::Begin,
+                h_align: TextAlign::End,
                 v_align: TextAlign::Begin,
             });
         texts.insert("1_demo_text_3", text.clone());
@@ -149,7 +149,12 @@ impl event::EventHandler<ggez::GameError> for App {
 
         let mut height = 0.0;
         for (key, text) in self.texts.iter() {
-            let x = if *key == "1_demo_text_4" { 250.0 } else { 20.0 };
+            let x = match *key {
+                // (bounds position) + 20
+                "1_demo_text_3" => 500.0 + 20.0,
+                "1_demo_text_4" => (300.0 / 2.0) + 20.0,
+                _ => 20.0,
+            };
             canvas.draw(text, Vec2::new(x, 20.0 + height));
             //height += 20.0 + text.height(ctx) as f32;
             height += 20.0 + text.dimensions(ctx).unwrap().h as f32;
