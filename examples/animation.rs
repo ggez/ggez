@@ -6,11 +6,11 @@
 extern crate num_derive;
 
 use ggez::event;
+use ggez::glam::*;
 use ggez::graphics::{self, Color};
 use ggez::input::keyboard::{KeyCode, KeyInput};
 use ggez::mint::Point2;
 use ggez::{Context, GameResult};
-use glam::*;
 use keyframe::{ease, functions::*, keyframes, AnimationSequence, EasingFunction};
 use keyframe_derive::CanTween;
 use num_traits::{FromPrimitive, ToPrimitive};
@@ -234,7 +234,7 @@ impl MainState {
             Color::WHITE,
         )?;
 
-        let img = graphics::Image::from_path(ctx, "/player_sheet.png", true)?;
+        let img = graphics::Image::from_path(ctx, "/player_sheet.png")?;
         let s = MainState {
             ball,
             spritesheet: img,
@@ -298,7 +298,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &self.spritesheet,
             graphics::DrawParam::new()
                 .src(current_frame_src)
-                .scale([scale * current_frame_src.w, scale * current_frame_src.h])
+                .scale([scale, scale])
                 .dest([470.0, 460.0])
                 .offset([0.5, 1.0]),
         );

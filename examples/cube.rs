@@ -4,11 +4,10 @@
 //! the underlying `gfx-rs` data types, so you can bypass ggez's
 //! drawing code entirely and write your own.
 
-use crevice::std140::Std140;
+use ggez::glam::*;
 use ggez::graphics;
 use ggez::{event, graphics::AsStd140};
 use ggez::{Context, GameResult};
-use glam::*;
 use std::env;
 use std::f32;
 use std::path;
@@ -18,7 +17,8 @@ type Isometry3 = Mat4;
 type Point3 = Vec3;
 type Vector3 = Vec3;
 
-#[allow(dead_code)]
+#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
+#[repr(C)]
 struct Vertex {
     pos: [f32; 4],
     tex_coord: [f32; 2],
@@ -68,7 +68,7 @@ impl MainState {
             .gfx
             .wgpu()
             .device
-            .create_shader_module(&wgpu::include_wgsl!("../resources/cube.wgsl"));
+            .create_shader_module(wgpu::include_wgsl!("../resources/cube.wgsl"));
 
         // Cube geometry
         let vertex_data = [
@@ -121,12 +121,7 @@ impl MainState {
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
-                contents: unsafe {
-                    std::slice::from_raw_parts(
-                        vertex_data.as_ptr() as *const u8,
-                        vertex_data.len() * std::mem::size_of::<Vertex>(),
-                    )
-                },
+                contents: bytemuck::cast_slice(vertex_data.as_slice()),
                 usage: wgpu::BufferUsages::VERTEX,
             });
         let inds = ctx
@@ -135,12 +130,7 @@ impl MainState {
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
-                contents: unsafe {
-                    std::slice::from_raw_parts(
-                        index_data.as_ptr() as *const u8,
-                        index_data.len() * 4,
-                    )
-                },
+                contents: bytemuck::cast_slice(index_data),
                 usage: wgpu::BufferUsages::INDEX,
             });
 
@@ -197,11 +187,11 @@ impl MainState {
                     fragment: Some(wgpu::FragmentState {
                         module: &shader,
                         entry_point: "fs_main",
-                        targets: &[wgpu::ColorTargetState {
+                        targets: &[Some(wgpu::ColorTargetState {
                             format: ctx.gfx.surface_format(),
                             blend: None,
                             write_mask: wgpu::ColorWrites::ALL,
-                        }],
+                        })],
                     }),
                     multiview: None,
                 });
@@ -298,7 +288,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             let cmd = ctx.gfx.commands().unwrap();
             let mut pass = cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: frame.wgpu().1,
                     resolve_target: None,
                     ops: wgpu::Operations {
@@ -308,7 +298,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                         ),
                         store: true,
                     },
-                }],
+                })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: depth.wgpu().1,
                     depth_ops: Some(wgpu::Operations {

@@ -3,10 +3,10 @@
 
 use ggez::{
     event,
+    glam::*,
     graphics::{self, Color},
     Context, GameResult,
 };
-use glam::*;
 
 struct MainState {
     pos_x: f32,

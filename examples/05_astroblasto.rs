@@ -6,11 +6,11 @@ use ggez::audio;
 use ggez::audio::SoundSource;
 use ggez::conf;
 use ggez::event::{self, EventHandler};
+use ggez::glam::*;
 use ggez::graphics::{self, Color};
 use ggez::input::keyboard::KeyCode;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
-use glam::*;
 use oorandom::Rand32;
 
 use ggez::input::keyboard::KeyInput;
@@ -246,9 +246,9 @@ struct Assets {
 
 impl Assets {
     fn new(ctx: &mut Context) -> GameResult<Assets> {
-        let player_image = graphics::Image::from_path(ctx, "/player.png", true)?;
-        let shot_image = graphics::Image::from_path(ctx, "/shot.png", true)?;
-        let rock_image = graphics::Image::from_path(ctx, "/rock.png", true)?;
+        let player_image = graphics::Image::from_path(ctx, "/player.png")?;
+        let shot_image = graphics::Image::from_path(ctx, "/shot.png")?;
+        let rock_image = graphics::Image::from_path(ctx, "/rock.png")?;
 
         let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
         let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
@@ -493,7 +493,7 @@ impl EventHandler for MainState {
             // but for now we just quit.
             if self.player.life <= 0.0 {
                 println!("Game over!");
-                let _ = event::request_quit(ctx);
+                ctx.request_quit();
             }
         }
 
@@ -580,7 +580,7 @@ impl EventHandler for MainState {
                     "/screenshot.png",
                 )?;
             }
-            Some(KeyCode::Escape) => event::request_quit(ctx),
+            Some(KeyCode::Escape) => ctx.request_quit(),
             _ => (), // Do nothing
         }
         Ok(())

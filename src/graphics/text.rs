@@ -2,11 +2,7 @@ use super::{
     gpu::text::{Extra, TextRenderer},
     Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect,
 };
-use crate::{
-    context::{Has, HasMut},
-    filesystem::Filesystem,
-    GameError, GameResult,
-};
+use crate::{context::Has, filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
 use std::{collections::HashMap, io::Read, path::Path};
 
@@ -118,6 +114,7 @@ impl<S: Into<String>> From<S> for TextFragment {
 pub struct Text {
     fragments: Vec<TextFragment>,
     layout: TextLayout,
+    wrap: bool,
     bounds: mint::Vector2<f32>,
     scale: PxScale,
     font: String,
@@ -127,7 +124,8 @@ impl Default for Text {
     fn default() -> Self {
         Self {
             fragments: Vec::new(),
-            layout: TextLayout::tl_wrap(),
+            layout: TextLayout::top_left(),
+            wrap: true,
             bounds: mint::Vector2::<f32> {
                 x: f32::INFINITY,
                 y: f32::INFINITY,
@@ -174,15 +172,20 @@ impl Text {
     /// Specifies rectangular dimensions to fit text inside of,
     /// wrapping where necessary. Within these bounds is also where
     /// text alignment occurs.
-    ///
-    /// Wrapping can be disabled by setting `layout` to `TextLayout::SingleLine`.
-    pub fn set_bounds(
-        &mut self,
-        bounds: impl Into<mint::Vector2<f32>>,
-        layout: TextLayout,
-    ) -> &mut Text {
+    pub fn set_bounds(&mut self, bounds: impl Into<mint::Vector2<f32>>) -> &mut Self {
         self.bounds = bounds.into();
+        self
+    }
+
+    /// Specifies how the text will be layed out.
+    pub fn set_layout(&mut self, layout: TextLayout) -> &mut Self {
         self.layout = layout;
+        self
+    }
+
+    /// Specifies whether or not the text will be wrapped within the bounds bounds specified by [`Text::set_bounds`].
+    pub fn set_wrap(&mut self, wrap: bool) -> &mut Self {
+        self.wrap = wrap;
         self
     }
 
@@ -206,12 +209,13 @@ impl Text {
     /// Returns a `Vec` containing the coordinates of the formatted and wrapped text.
     pub fn glyph_positions(
         &self,
-        gfx: &mut impl HasMut<GraphicsContext>,
+        gfx: &impl Has<GraphicsContext>,
     ) -> GameResult<Vec<mint::Point2<f32>>> {
-        let gfx = gfx.retrieve_mut();
+        let gfx = gfx.retrieve();
         Ok(gfx
             .text
             .glyph_brush
+            .borrow_mut()
             .glyphs(self.as_section(&gfx.fonts, DrawParam::default())?)
             .map(|glyph| mint::Point2::<f32> {
                 x: glyph.glyph.position.x,
@@ -222,21 +226,19 @@ impl Text {
 
     /// Measures the glyph boundaries for the text.
     #[inline]
-    pub fn measure(
-        &self,
-        gfx: &mut impl HasMut<GraphicsContext>,
-    ) -> GameResult<mint::Vector2<f32>> {
-        let gfx = gfx.retrieve_mut();
-        self.measure_raw(&mut gfx.text, &gfx.fonts)
+    pub fn measure(&self, gfx: &impl Has<GraphicsContext>) -> GameResult<mint::Vector2<f32>> {
+        let gfx = gfx.retrieve();
+        self.measure_raw(&gfx.text, &gfx.fonts)
     }
 
     pub(crate) fn measure_raw(
         &self,
-        text: &mut TextRenderer,
+        text: &TextRenderer,
         fonts: &HashMap<String, FontId>,
     ) -> GameResult<mint::Vector2<f32>> {
         Ok(text
             .glyph_brush
+            .borrow_mut()
             .glyph_bounds(self.as_section(fonts, DrawParam::default())?)
             .map(|rect| mint::Vector2::<f32> {
                 x: rect.width(),
@@ -250,31 +252,18 @@ impl Text {
         fonts: &HashMap<String, FontId>,
         param: DrawParam,
     ) -> GameResult<glyph_brush::Section<'a, Extra>> {
-        let x = match self.layout.h_align() {
-            TextAlign::Begin => 0.,
-            TextAlign::Middle => self.bounds.x / 2.,
-            TextAlign::End => self.bounds.x,
-        };
-
-        let y = match self.layout.v_align() {
-            TextAlign::Begin => 0.,
-            TextAlign::Middle => self.bounds.y / 2.,
-            TextAlign::End => self.bounds.y,
-        };
-
         Ok(glyph_brush::Section {
-            screen_position: (x, y),
+            screen_position: (0., 0.),
+
             bounds: (self.bounds.x, self.bounds.x),
-            layout: match self.layout {
-                TextLayout::SingleLine { h_align, v_align } => {
-                    glyph_brush::Layout::default_single_line()
-                        .h_align(h_align.into())
-                        .v_align(v_align.into())
-                }
-                TextLayout::Wrap { h_align, v_align } => glyph_brush::Layout::default_wrap()
-                    .h_align(h_align.into())
-                    .v_align(v_align.into()),
-            },
+            layout: if self.wrap {
+                glyph_brush::Layout::default_wrap()
+            } else {
+                glyph_brush::Layout::default_single_line()
+            }
+            .h_align(self.layout.h_align.into())
+            .v_align(self.layout.v_align.into()),
+
             text: self
                 .fragments
                 .iter()
@@ -298,11 +287,11 @@ impl Text {
 }
 
 impl Drawable for Text {
-    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
-        canvas.push_draw(Draw::BoundedText { text: self.clone() }, param);
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
+        canvas.push_draw(Draw::BoundedText { text: self.clone() }, param.into());
     }
 
-    fn dimensions(&self, gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
         let bounds = self.measure(gfx).ok()?;
         Some(Rect {
             x: 0.,
@@ -346,51 +335,27 @@ impl From<TextAlign> for glyph_brush::VerticalAlign {
 
 /// Describes text alignment along both axes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum TextLayout {
-    /// Text is layed out in a single line.
-    SingleLine {
-        /// Horizontal alignment.
-        h_align: TextAlign,
-        /// Vertical alignment.
-        v_align: TextAlign,
-    },
-    /// Text wraps around the bounds.
-    Wrap {
-        /// Horizontal alignment.
-        h_align: TextAlign,
-        /// Vertical alignment.
-        v_align: TextAlign,
-    },
+pub struct TextLayout {
+    /// Horizontal alignment.
+    pub h_align: TextAlign,
+    /// Vertical alignment.
+    pub v_align: TextAlign,
 }
 
 impl TextLayout {
-    /// Text on a single line aligned to the top-left.
-    pub fn tl_single_line() -> Self {
-        TextLayout::SingleLine {
+    /// Text aligned to the top-left.
+    pub fn top_left() -> Self {
+        TextLayout {
             h_align: TextAlign::Begin,
             v_align: TextAlign::Begin,
         }
     }
 
-    /// Text wrapped and aligned to the top-left.
-    pub fn tl_wrap() -> Self {
-        TextLayout::Wrap {
-            h_align: TextAlign::Begin,
-            v_align: TextAlign::Begin,
-        }
-    }
-
-    /// Returns the horizontal alignment, regardless of wrapping behaviour.
-    pub fn h_align(&self) -> TextAlign {
-        match self {
-            TextLayout::SingleLine { h_align, .. } | TextLayout::Wrap { h_align, .. } => *h_align,
-        }
-    }
-
-    /// Returns the vertical alignment, regardless of wrapping behaviour.
-    pub fn v_align(&self) -> TextAlign {
-        match self {
-            TextLayout::SingleLine { v_align, .. } | TextLayout::Wrap { v_align, .. } => *v_align,
+    /// Text aligned to the center.
+    pub fn center() -> Self {
+        TextLayout {
+            h_align: TextAlign::Middle,
+            v_align: TextAlign::Middle,
         }
     }
 }

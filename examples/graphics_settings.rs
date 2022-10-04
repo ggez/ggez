@@ -17,7 +17,7 @@ use ggez::input::keyboard::KeyInput;
 use std::env;
 use std::path;
 
-type Point2 = glam::Vec2;
+type Point2 = ggez::glam::Vec2;
 
 struct WindowSettings {
     toggle_fullscreen: bool,
@@ -38,7 +38,7 @@ impl MainState {
         let s = MainState {
             angle: 0.0,
             zoom: 1.0,
-            image: graphics::Image::from_path(ctx, "/tile.png", true)?,
+            image: graphics::Image::from_path(ctx, "/tile.png")?,
             window_settings: WindowSettings {
                 toggle_fullscreen: false,
                 is_fullscreen: false,

@@ -2,10 +2,10 @@
 
 use ggez::conf;
 use ggez::event::{self, Axis, Button, GamepadId, MouseButton};
+use ggez::glam::*;
 use ggez::graphics::{self, Color, DrawMode};
 use ggez::input::keyboard::{KeyCode, KeyInput};
 use ggez::{Context, GameResult};
-use glam::*;
 
 struct MainState {
     pos_x: f32,
@@ -54,7 +54,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             },
             Color::WHITE,
         )?;
-        canvas.draw(&rectangle, glam::Vec2::new(0.0, 0.0));
+        canvas.draw(&rectangle, Vec2::new(0.0, 0.0));
         canvas.finish(ctx)?;
         Ok(())
     }

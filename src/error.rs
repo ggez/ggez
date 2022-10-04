@@ -6,6 +6,8 @@ use std::sync::Arc;
 /// An enum containing all kinds of game framework errors.
 #[derive(Debug)]
 pub enum GameError {
+    /// An error when intializing the graphics system.
+    GraphicsInitializationError,
     /// An error in the filesystem layout
     FilesystemError(String),
     /// An error in the config file
@@ -38,8 +40,6 @@ pub enum GameError {
     GamepadError(String),
     /// Something went wrong with the `lyon` shape-tesselation library.
     LyonError(String),
-    /// Something went wrong when spawning a task with `futures`.
-    SpawnError(futures::task::SpawnError),
     /// Something went wrong when drawing text.
     GlyphBrushError(glyph_brush::BrushError),
     /// Attempted to draw text with a non-existent font name.
@@ -71,9 +71,6 @@ impl fmt::Display for GameError {
             GameError::RequestDeviceError(ref e) => {
                 write!(f, "Failed to request logical device: {}", e)
             }
-            GameError::SpawnError(ref e) => {
-                write!(f, "Failed to spawn a task with `futures`: {}", e)
-            }
             GameError::GlyphBrushError(ref e) => write!(f, "Text rendering error: {}", e),
             GameError::FontSelectError(ref e) => write!(f, "No such font '{}'", e),
             GameError::BufferAsyncError(ref e) => write!(f, "Async buffer map error: {}", e),
@@ -89,7 +86,6 @@ impl Error for GameError {
             GameError::WindowCreationError(ref e) => Some(&**e),
             GameError::IOError(ref e) => Some(&**e),
             GameError::FontError(ref e) => Some(e),
-            GameError::SpawnError(ref e) => Some(e),
             GameError::GlyphBrushError(ref e) => Some(e),
             GameError::BufferAsyncError(ref e) => Some(e),
             _ => None,
@@ -205,12 +201,6 @@ impl From<Arc<std::io::Error>> for GameError {
 impl From<glyph_brush::ab_glyph::InvalidFont> for GameError {
     fn from(s: glyph_brush::ab_glyph::InvalidFont) -> GameError {
         GameError::FontError(s)
-    }
-}
-
-impl From<futures::task::SpawnError> for GameError {
-    fn from(s: futures::task::SpawnError) -> GameError {
-        GameError::SpawnError(s)
     }
 }
 

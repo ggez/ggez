@@ -1,7 +1,7 @@
 use super::arc::{ArcBindGroupLayout, ArcPipelineLayout, ArcRenderPipeline, ArcShaderModule};
 use std::collections::{hash_map::DefaultHasher, HashMap};
 
-// Hashable representation of a render pipeline, used as a key in the HashMap cache.
+/// Hashable representation of a render pipeline, used as a key in the HashMap cache.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RenderPipelineInfo {
     pub vs: ArcShaderModule,
@@ -17,7 +17,7 @@ pub struct RenderPipelineInfo {
     pub vertex_layout: wgpu::VertexBufferLayout<'static>,
 }
 
-// Caches both the pipeline *and* the pipeline layout.
+/// Caches both the pipeline *and* the pipeline layout.
 #[derive(Debug)]
 pub struct PipelineCache {
     pipelines: HashMap<RenderPipelineInfo, ArcRenderPipeline>,
@@ -80,11 +80,11 @@ impl PipelineCache {
                         fragment: Some(wgpu::FragmentState {
                             module: &*info.fs,
                             entry_point: &info.fs_entry,
-                            targets: &[wgpu::ColorTargetState {
+                            targets: &[Some(wgpu::ColorTargetState {
                                 format: info.format,
                                 blend: info.blend,
                                 write_mask: wgpu::ColorWrites::ALL,
-                            }],
+                            })],
                         }),
                         multiview: None,
                     },

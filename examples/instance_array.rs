@@ -4,9 +4,9 @@
 #![allow(clippy::unnecessary_wraps)]
 
 use ggez::event;
+use ggez::glam::*;
 use ggez::graphics::{self, Color};
 use ggez::{Context, GameResult};
-use glam::*;
 use std::env;
 use std::f32::consts::TAU;
 use std::path;
@@ -17,8 +17,8 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image = graphics::Image::from_path(ctx, "/tile.png", true)?;
-        let instances = graphics::InstanceArray::new(ctx, image, 150 * 150, false);
+        let image = graphics::Image::from_path(ctx, "/tile.png")?;
+        let instances = graphics::InstanceArray::new(ctx, image, 150 * 150);
         Ok(MainState { instances })
     }
 }

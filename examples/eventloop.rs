@@ -41,7 +41,7 @@ pub fn main() -> GameResult {
         event::process_event(ctx, &mut event);
         match event {
             Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => event::request_quit(ctx),
+                WindowEvent::CloseRequested => ctx.request_quit(),
                 WindowEvent::KeyboardInput {
                     input:
                         KeyboardInput {
@@ -51,7 +51,7 @@ pub fn main() -> GameResult {
                     ..
                 } => {
                     if let keyboard::KeyCode::Escape = keycode {
-                        event::request_quit(ctx);
+                        ctx.request_quit();
                     }
                 }
                 // `CloseRequested` and `KeyboardInput` events won't appear here.
@@ -74,13 +74,13 @@ pub fn main() -> GameResult {
                 let circle = graphics::Mesh::new_circle(
                     ctx,
                     DrawMode::fill(),
-                    glam::Vec2::new(0.0, 0.0),
+                    ggez::glam::Vec2::new(0.0, 0.0),
                     100.0,
                     2.0,
                     Color::WHITE,
                 )
                 .unwrap();
-                canvas.draw(&circle, glam::Vec2::new(position, 380.0));
+                canvas.draw(&circle, ggez::glam::Vec2::new(position, 380.0));
 
                 canvas.finish(ctx).unwrap();
                 ctx.gfx.end_frame().unwrap();

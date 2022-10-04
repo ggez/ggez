@@ -3,11 +3,7 @@ use super::{
     gpu::arc::{ArcTexture, ArcTextureView},
     Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
-use crate::{
-    context::{Has, HasMut, HasTwo},
-    filesystem::Filesystem,
-    Context, GameError, GameResult,
-};
+use crate::{context::Has, Context, GameError, GameResult};
 use image::ImageEncoder;
 use std::path::Path;
 use std::{io::Read, num::NonZeroU32};
@@ -122,16 +118,11 @@ impl Image {
 
     /// Creates a new image initialized with pixel data loaded from an encoded image `Read` (e.g. PNG or JPEG).
     #[allow(unused_results)]
-    pub fn from_path(
-        ctxs: &impl HasTwo<Filesystem, GraphicsContext>,
-        path: impl AsRef<Path>,
-        srgb: bool,
-    ) -> GameResult<Self> {
-        let fs = ctxs.retrieve_first();
-        let gfx = ctxs.retrieve_second();
+    pub fn from_path(gfx: &impl Has<GraphicsContext>, path: impl AsRef<Path>) -> GameResult<Self> {
+        let gfx = gfx.retrieve();
 
         let mut encoded = Vec::new();
-        fs.open(path)?.read_to_end(&mut encoded)?;
+        gfx.fs.open(path)?.read_to_end(&mut encoded)?;
         let decoded = image::load_from_memory(&encoded[..])
             .map_err(|_| GameError::ResourceLoadError(String::from("failed to load image")))?;
         let rgba8 = decoded.to_rgba8();
@@ -140,11 +131,7 @@ impl Image {
         Ok(Self::from_pixels(
             gfx,
             rgba8.as_ref(),
-            if srgb {
-                ImageFormat::Rgba8UnormSrgb
-            } else {
-                ImageFormat::Rgba8Unorm
-            },
+            ImageFormat::Rgba8UnormSrgb,
             width,
             height,
         ))
@@ -251,12 +238,18 @@ impl Image {
             encoder.finish()
         };
 
-        gfx.wgpu.queue.submit([cmd]);
+        let _ = gfx.wgpu.queue.submit([cmd]);
 
         // wait...
-        let fut = buffer.slice(..).map_async(wgpu::MapMode::Read);
-        gfx.wgpu.device.poll(wgpu::Maintain::Wait);
-        pollster::block_on(fut)?;
+        let (tx, rx) = std::sync::mpsc::sync_channel(1);
+        buffer
+            .slice(..)
+            .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap());
+        let _ = gfx.wgpu.device.poll(wgpu::Maintain::Wait);
+        let map_result = rx
+            .recv()
+            .expect("All senders dropped, this should not be possible.");
+        map_result?;
 
         let out = buffer.slice(..).get_mapped_range().to_vec();
         Ok(out)
@@ -336,17 +329,18 @@ impl Image {
 }
 
 impl Drawable for Image {
-    fn draw(&self, canvas: &mut Canvas, param: DrawParam) {
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
         canvas.push_draw(
             Draw::Mesh {
                 mesh: canvas.default_resources().mesh.clone(),
                 image: self.clone(),
+                scale: true,
             },
-            param,
+            param.into(),
         );
     }
 
-    fn dimensions(&self, _gfx: &mut impl HasMut<GraphicsContext>) -> Option<Rect> {
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
         Some(Rect {
             x: 0.,
             y: 0.,
@@ -385,7 +379,7 @@ impl ScreenImage {
         assert!(height > 0.);
         assert!(samples > 0);
 
-        let format = format.into().unwrap_or(gfx.surface_format);
+        let format = format.into().unwrap_or_else(|| gfx.surface_format());
 
         ScreenImage {
             image: Self::create(gfx, format, (width, height), samples),
