@@ -78,6 +78,22 @@ impl Shader {
 pub use crevice::std140::AsStd140;
 
 /// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
+///
+/// These parameters are bound to group 4. With WGSL, for example,
+/// ```rust,ignore
+/// ggez::graphics::ShaderParams::new(ctx, &my_uniforms, &[&image1, &image2], &[sampler1])
+/// ```
+/// Corresponds to...
+/// ```ignore
+/// @group(3) @binding(0)
+/// var<uniform> my_uniforms: MyUniforms;
+/// @group(3) @binding(1)
+/// var image1: texture_2d<f32>;
+/// @group(3) @binding(2)
+/// var image2: texture_2d<f32>;
+/// @group(3) @binding(3)
+/// var sampler1: sampler;
+/// ```
 #[derive(Debug, PartialEq, Eq)]
 pub struct ShaderParams<Uniforms: AsStd140> {
     pub(crate) uniforms: ArcBuffer,

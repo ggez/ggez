@@ -81,35 +81,31 @@ impl App {
         // Text can be wrapped by setting it's bounds, in screen coordinates;
         // vertical bound will cut off the extra off the bottom.
         // Alignment within the bounds can be set by `Align` enum.
-        text.set_bounds(
-            Vec2::new(400.0, f32::INFINITY),
-            TextLayout::Wrap {
+        text.set_bounds(Vec2::new(400.0, f32::INFINITY))
+            .set_layout(TextLayout {
                 h_align: TextAlign::Begin,
                 v_align: TextAlign::Begin,
-            },
-        );
+            });
         texts.insert("1_demo_text_2", text.clone());
 
-        text.set_bounds(
-            Vec2::new(500.0, f32::INFINITY),
-            TextLayout::Wrap {
+        text.set_bounds(Vec2::new(500.0, f32::INFINITY))
+            .set_layout(TextLayout {
                 h_align: TextAlign::End,
                 v_align: TextAlign::Begin,
-            },
-        );
+            });
         texts.insert("1_demo_text_3", text.clone());
 
         // This can be used to set the font and scale unformatted fragments will use.
-        // Color is specified when drawing (or queueing), via `DrawParam`.
+        // Color is specified when drawing, via `DrawParam`.
         // Side note: TrueType fonts aren't very consistent between themselves in terms
         // of apparent scale - this font with default scale will appear too small.
-        text.set_font("Fancy font").set_scale(16.0).set_bounds(
-            Vec2::new(300.0, f32::INFINITY),
-            TextLayout::Wrap {
+        text.set_font("Fancy font")
+            .set_scale(16.0)
+            .set_bounds(Vec2::new(300.0, f32::INFINITY))
+            .set_layout(TextLayout {
                 h_align: TextAlign::Middle,
                 v_align: TextAlign::Begin,
-            },
-        );
+            });
         texts.insert("1_demo_text_4", text);
 
         // These methods can be combined to easily create a variety of simple effects.
@@ -152,10 +148,14 @@ impl event::EventHandler<ggez::GameError> for App {
         );
 
         let mut height = 0.0;
-        for text in self.texts.values() {
-            // Calling `.queue()` for all bits of text that can share a `DrawParam`,
-            // followed with `::draw_queued()` with said params, is the intended way.
-            canvas.draw(text, Vec2::new(20.0, 20.0 + height));
+        for (key, text) in self.texts.iter() {
+            let x = match *key {
+                // (bounds position) + 20
+                "1_demo_text_3" => 500.0 + 20.0,
+                "1_demo_text_4" => (300.0 / 2.0) + 20.0,
+                _ => 20.0,
+            };
+            canvas.draw(text, Vec2::new(x, 20.0 + height));
             //height += 20.0 + text.height(ctx) as f32;
             height += 20.0 + text.dimensions(ctx).unwrap().h as f32;
         }
@@ -168,7 +168,7 @@ impl event::EventHandler<ggez::GameError> for App {
             text.fragments_mut()[3].color = Some(random_color(&mut self.rng));
         }
 
-        // Another animation example. Note, this is very inefficient as-is.
+        // Another animation example. Note, this is relatively inefficient as-is.
         let wobble_string = "WOBBLE";
         let mut wobble = Text::default();
         for ch in wobble_string.chars() {
@@ -176,7 +176,7 @@ impl event::EventHandler<ggez::GameError> for App {
                 TextFragment::new(ch).scale(PxScale::from(10.0 + 6.0 * self.rng.rand_float())),
             );
         }
-        let wobble_rect = (&wobble).dimensions(ctx).unwrap();
+        let wobble_rect = wobble.dimensions(ctx).unwrap();
         canvas.draw(
             &wobble,
             graphics::DrawParam::new()

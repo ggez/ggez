@@ -2,7 +2,7 @@
 
 The biggest change in this version is the long awaited redo of our graphics stack, which used to be based on `gfx-rs`
 and is now using `wgpu`. This gives us more reliability going into the future and fixes many bugs, albeit costing us
-some portability to low-level hardware (looking at you Pi 3).
+some portability to low-level hardware (looking at you Pi 3; EDIT: and... [Pi 4 as well?](https://github.com/ggez/ggez/issues/1093) o_o ).
 
 Credit goes out to our wonderful contributors, with special thanks to [@jazzfool](https://github.com/jazzfool)
 and [@aleokdev](https://github.com/aleokdev), for putting so much work and patience into the graphics stack.
@@ -27,10 +27,12 @@ The downside of this is that it's a bit more verbose and that you have to pass a
 ### Shader
 
 There's a new struct `ShaderParams`allowing you to pass images, samplers and uniforms to shaders.
-Both `ShaderParam`s and `Shader`s are now set per `Canvas` (as well as blend modes by the way).
+Both `ShaderParam`s and `Shader`s are now set per `Canvas` (as well as blend modes and projection matrices).
 
 Uniforms are now no longer created using the `gfx!` macro. No need to include `gfx-rs` in your own project, just to be
 able to create shaders. Now, simply deriving `AsStd140` is all you usually need (see the shader examples).
+At the time of writing you're sadly also required to depend on `crevice` directly, as `AsStd140` needs to have it
+visible globally (and re-exporting it on our side doesn't seem to be enough). If you know a way around this, let us know!
 
 ### InstanceArray
 
@@ -65,11 +67,13 @@ If you didn't split it then you can comfortably hand around and pass the context
 * Added an option for transparent windows
 * Exposed rodio API for skipping the first part of a sample
 * Added `audio` and `gamepad` as crate features, allowing you to disable them if not necessary
+* Added the `zip-compression` feature (as part of the default features), now allowing the use of zip-files with compression 
 * Added `Rect::overlaps_circle`
-* Added `event::request_quit` as a replacement for `event::quit`
-  * `event::request_quit` works like `event::quit` did before, except that instead of directly breaking the game loop it
+* Added `Context::request_quit` as a replacement for `event::quit`
+  * `Context::request_quit` works like `event::quit` did before, except that instead of directly breaking the game loop it
   now triggers a `quit_event`, which allows you to handle all attempts to quit the game in one place.
 * Added a re-export for `glam`, as ggez is aimed at beginners for whom it's convenient to just have it at hand directly; most people will want/need to use it anyway
+* Added `logical_size` as optional argument in `WindowMode` which overrides width/height with a `LogicalSize` which supports high DPI systems.
 
 ## Changed
 
@@ -81,9 +85,14 @@ The following list doesn't repeat the changes already mentioned above.
   done now), as it makes things like centering text on positions easier (see the blend modes example)
 * Also `Text` is now a first class citizen and can be drawn normally with `DrawParam`, implementing things like rotation
  that weren't possible in batched text rendering before
+* Changed how bounds on Text work as well as layouting
+  * `Text::set_bounds` now expects width and height of the bounds, but not the destination point, as that's handled through the `DrawParam`
+  * additionally to horizontal alignment vertical alignment is now possible as well
 * Improved `Text` performance through better glyph re-use
 * Changed the `Drawable` trait; this will downstream require changes in projects like `ggez-egui`
-* Version bumped `zip` to 0.6, `directories` to 4.0.1, `winit` to 0.26, image to `0.24` and `rodio` to 0.15
+* Version bumped `zip` to 0.6, `directories` to 4.0.1, `winit` to 0.27.3, image to `0.24` and `rodio` to 0.16
+* As each `Canvas` now keeps track of its own projection matrix the `screen_coordinates` of each `Canvas` now start out
+ with the same dimensions as the `Canvas` surface
 
 ## Deprecated
 
@@ -94,7 +103,8 @@ The following list doesn't repeat the changes already mentioned above.
 * Removed `duration_to_f64` and `f64_to_duration` as the std library now already contains this
  functionality itself
 * Removed `From<tuple>` implementations for `DrawParam`, as they're non-transparent and weird
-* Removed `event::quit`, as it was replaced by `event::request_quit`
+* Removed `event::quit`, as it was replaced by `Context::request_quit`
+* Removed `Image::from_bytes` (atm, but is intended to be re-added before the release of 0.8.0)
 
 ## Fixed
 Many graphics bugs that were caused by the use of the discontinued `gfx-rs` were fixed by the switch to `wgpu`. The

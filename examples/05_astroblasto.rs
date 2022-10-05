@@ -246,9 +246,9 @@ struct Assets {
 
 impl Assets {
     fn new(ctx: &mut Context) -> GameResult<Assets> {
-        let player_image = graphics::Image::from_path(ctx, "/player.png", true)?;
-        let shot_image = graphics::Image::from_path(ctx, "/shot.png", true)?;
-        let rock_image = graphics::Image::from_path(ctx, "/rock.png", true)?;
+        let player_image = graphics::Image::from_path(ctx, "/player.png")?;
+        let shot_image = graphics::Image::from_path(ctx, "/shot.png")?;
+        let rock_image = graphics::Image::from_path(ctx, "/rock.png")?;
 
         let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
         let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;

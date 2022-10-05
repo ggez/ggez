@@ -85,7 +85,7 @@
 //!             Some(KeyCode::Q) => {
 //!                 if input.mods.contains(KeyMods::SHIFT) && input.mods.contains(KeyMods::CTRL) {
 //!                     println!("Terminating!");
-//!                     event::request_quit(ctx);
+//!                     ctx.request_quit();
 //!                 } else if input.mods.contains(KeyMods::SHIFT) || input.mods.contains(KeyMods::CTRL) {
 //!                     println!("You need to hold both Shift and Control to quit.");
 //!                 } else {
@@ -115,7 +115,7 @@ pub use winit::event::ScanCode;
 /// A key code.
 pub use winit::event::VirtualKeyCode as KeyCode;
 
-bitflags! {
+bitflags::bitflags! {
     /// Bitflags describing the state of keyboard modifiers, such as `Control` or `Shift`.
     #[derive(Default)]
     pub struct KeyMods: u8 {
@@ -289,7 +289,9 @@ impl KeyboardContext {
         }
     }
 
-    pub(crate) fn set_modifiers(&mut self, keymods: KeyMods) {
+    /// Set the keyboard active modifiers
+    /// Really useful only if you are writing your own event loop
+    pub fn set_modifiers(&mut self, keymods: KeyMods) {
         self.active_modifiers = keymods;
     }
 

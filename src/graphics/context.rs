@@ -88,7 +88,6 @@ pub struct GraphicsContext {
     pub(crate) rect_mesh: Mesh,
     pub(crate) white_image: Image,
     pub(crate) instance_bind_layout: ArcBindGroupLayout,
-    pub(crate) image_bind_layout: ArcBindGroupLayout,
 
     pub(crate) fs: Filesystem,
 }
@@ -174,13 +173,27 @@ impl GraphicsContext {
                 Ok(o) => o,
                 Err(e) => return Err((e, Some(window))),
             };
+
+        // One instance is 96 bytes, and we allow 1 million of them, for a total of 96MB (default being 128MB).
+        const MAX_INSTANCES: u32 = 1_000_000;
+        const INSTANCE_BUFFER_SIZE: u32 = 96 * MAX_INSTANCES;
+
         let (device, queue) = match pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
                 features: wgpu::Features::default(),
                 limits: wgpu::Limits {
-                    max_bind_groups: if cfg!(target_os = "android") { 4 } else { 5 },
-                    ..Default::default()
+                    // 1st: DrawParams
+                    // 2nd: Texture + Sampler
+                    // 3rd: InstanceArray
+                    // 4th: ShaderParams
+                    max_bind_groups: 4,
+                    // InstanceArray uses 2 storage buffers.
+                    max_storage_buffers_per_shader_stage: 2,
+                    max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
+                    max_texture_dimension_1d: 8192,
+                    max_texture_dimension_2d: 8192,
+                    ..wgpu::Limits::downlevel_webgl2_defaults()
                 },
             },
             None,
@@ -224,7 +237,7 @@ impl GraphicsContext {
             .image(wgpu::ShaderStages::FRAGMENT)
             .create(&wgpu.device, &mut bind_group_cache);
 
-        let text = TextRenderer::new(&wgpu.device, image_bind_layout.clone());
+        let text = TextRenderer::new(&wgpu.device, image_bind_layout);
 
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let uniform_arena = GrowingBufferArena::new(
@@ -317,14 +330,8 @@ impl GraphicsContext {
             )
             .create(&wgpu.device, &mut bind_group_cache);
 
-        let white_image = Image::from_pixels_wgpu(
-            &wgpu,
-            &image_bind_layout,
-            &[255, 255, 255, 255],
-            ImageFormat::Rgba8Unorm,
-            1,
-            1,
-        );
+        let white_image =
+            Image::from_pixels_wgpu(&wgpu, &[255, 255, 255, 255], ImageFormat::Rgba8Unorm, 1, 1);
 
         let mut this = GraphicsContext {
             wgpu,
@@ -355,7 +362,6 @@ impl GraphicsContext {
             rect_mesh,
             white_image,
             instance_bind_layout,
-            image_bind_layout,
 
             fs: InternalClone::clone(filesystem),
         };
@@ -707,17 +713,7 @@ impl GraphicsContext {
             FullscreenType::Windowed => {
                 window.set_fullscreen(None);
                 window.set_decorations(!mode.borderless);
-                if mode.width >= 1.0 && mode.height >= 1.0 {
-                    window.set_inner_size(dpi::PhysicalSize {
-                        width: f64::from(mode.width),
-                        height: f64::from(mode.height),
-                    });
-                } else {
-                    return Err(GameError::WindowError(format!(
-                        "window width and height need to be at least 1; actual values: {}, {}",
-                        mode.width, mode.height
-                    )));
-                }
+                window.set_inner_size(mode.actual_size()?);
                 window.set_resizable(mode.resizable);
                 window.set_maximized(mode.maximized);
             }

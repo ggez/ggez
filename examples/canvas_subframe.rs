@@ -21,8 +21,8 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let image = graphics::Image::from_path(ctx, "/tile.png", true).unwrap();
-        let instances = graphics::InstanceArray::new(ctx, image, 150 * 150, false);
+        let image = graphics::Image::from_path(ctx, "/tile.png").unwrap();
+        let instances = graphics::InstanceArray::new(ctx, image, 150 * 150);
         let canvas_image = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
         let draw_pt = Point2::new(0.0, 0.0);
         let draw_vec = Vector2::new(1.0, 1.0);

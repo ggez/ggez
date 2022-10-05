@@ -353,21 +353,21 @@ impl MeshBuilder {
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let mut tessellator = tess::FillTessellator::new();
-                    let _ = tessellator.tessellate_circle(
+                    tessellator.tessellate_circle(
                         tess::math::point(point.x, point.y),
                         radius,
                         &fill_options.with_tolerance(tolerance),
                         &mut tess::BuffersBuilder::new(buffers, vb),
-                    );
+                    )?;
                 }
                 DrawMode::Stroke(options) => {
                     let mut tessellator = tess::StrokeTessellator::new();
-                    let _ = tessellator.tessellate_circle(
+                    tessellator.tessellate_circle(
                         tess::math::point(point.x, point.y),
                         radius,
                         &options.with_tolerance(tolerance),
                         &mut tess::BuffersBuilder::new(buffers, vb),
-                    );
+                    )?;
                 }
             };
         }
@@ -403,26 +403,26 @@ impl MeshBuilder {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut tess::BuffersBuilder::new(buffers, vb);
                     let mut tessellator = tess::FillTessellator::new();
-                    let _ = tessellator.tessellate_ellipse(
+                    tessellator.tessellate_ellipse(
                         tess::math::point(point.x, point.y),
                         tess::math::vector(radius1, radius2),
                         tess::math::Angle { radians: 0.0 },
                         tess::path::Winding::Positive,
                         &fill_options.with_tolerance(tolerance),
                         builder,
-                    );
+                    )?;
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut tess::BuffersBuilder::new(buffers, vb);
                     let mut tessellator = tess::StrokeTessellator::new();
-                    let _ = tessellator.tessellate_ellipse(
+                    tessellator.tessellate_ellipse(
                         tess::math::point(point.x, point.y),
                         tess::math::vector(radius1, radius2),
                         tess::math::Angle { radians: 0.0 },
                         tess::path::Winding::Positive,
                         &options.with_tolerance(tolerance),
                         builder,
-                    );
+                    )?;
                 }
             };
         }
@@ -517,12 +517,12 @@ impl MeshBuilder {
                 DrawMode::Fill(options) => {
                     let builder = &mut tess::BuffersBuilder::new(buffers, vb);
                     let tessellator = &mut tess::FillTessellator::new();
-                    let _ = tessellator.tessellate_polygon(polygon, &options, builder)?;
+                    tessellator.tessellate_polygon(polygon, &options, builder)?;
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut tess::BuffersBuilder::new(buffers, vb);
                     let tessellator = &mut tess::StrokeTessellator::new();
-                    let _ = tessellator.tessellate_polygon(polygon, &options, builder)?;
+                    tessellator.tessellate_polygon(polygon, &options, builder)?;
                 }
             };
         }
@@ -549,12 +549,12 @@ impl MeshBuilder {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut tess::BuffersBuilder::new(buffers, vb);
                     let mut tessellator = tess::FillTessellator::new();
-                    let _ = tessellator.tessellate_rectangle(&rect, &fill_options, builder);
+                    tessellator.tessellate_rectangle(&rect, &fill_options, builder)?;
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut tess::BuffersBuilder::new(buffers, vb);
                     let mut tessellator = tess::StrokeTessellator::new();
-                    let _ = tessellator.tessellate_rectangle(&rect, &options, builder);
+                    tessellator.tessellate_rectangle(&rect, &options, builder)?;
                 }
             };
         }
@@ -587,12 +587,12 @@ impl MeshBuilder {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut tess::BuffersBuilder::new(buffers, vb);
                     let mut tessellator = tess::FillTessellator::new();
-                    let _ = tessellator.tessellate_path(&path, &fill_options, builder);
+                    tessellator.tessellate_path(&path, &fill_options, builder)?;
                 }
                 DrawMode::Stroke(options) => {
                     let builder = &mut tess::BuffersBuilder::new(buffers, vb);
                     let mut tessellator = tess::StrokeTessellator::new();
-                    let _ = tessellator.tessellate_path(&path, &options, builder);
+                    tessellator.tessellate_path(&path, &options, builder)?;
                 }
             };
         }

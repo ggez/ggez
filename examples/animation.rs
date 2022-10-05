@@ -234,7 +234,7 @@ impl MainState {
             Color::WHITE,
         )?;
 
-        let img = graphics::Image::from_path(ctx, "/player_sheet.png", true)?;
+        let img = graphics::Image::from_path(ctx, "/player_sheet.png")?;
         let s = MainState {
             ball,
             spritesheet: img,
