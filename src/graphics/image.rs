@@ -116,19 +116,26 @@ impl Image {
         )
     }
 
-    /// Creates a new image initialized with pixel data loaded from an encoded image `Read` (e.g. PNG or JPEG).
+    /// Creates a new image initialized with pixel data loaded from a given path as an
+    /// encoded image `Read` (e.g. PNG or JPEG).
     #[allow(unused_results)]
     pub fn from_path(gfx: &impl Has<GraphicsContext>, path: impl AsRef<Path>) -> GameResult<Self> {
         let gfx = gfx.retrieve();
 
         let mut encoded = Vec::new();
         gfx.fs.open(path)?.read_to_end(&mut encoded)?;
-        let decoded = image::load_from_memory(&encoded[..])
+
+        Self::from_bytes(gfx, encoded.as_slice())
+    }
+
+    /// Creates a new image initialized with pixel data from a given encoded image (e.g. PNG or JPEG)
+    pub fn from_bytes(gfx: &impl Has<GraphicsContext>, encoded: &[u8]) -> Result<Image, GameError> {
+        let decoded = image::load_from_memory(encoded)
             .map_err(|_| GameError::ResourceLoadError(String::from("failed to load image")))?;
         let rgba8 = decoded.to_rgba8();
         let (width, height) = (rgba8.width(), rgba8.height());
 
-        Ok(Self::from_pixels(
+        Ok(Image::from_pixels(
             gfx,
             rgba8.as_ref(),
             ImageFormat::Rgba8UnormSrgb,
