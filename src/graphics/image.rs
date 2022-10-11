@@ -135,7 +135,7 @@ impl Image {
         let rgba8 = decoded.to_rgba8();
         let (width, height) = (rgba8.width(), rgba8.height());
 
-        Ok(Image::from_pixels(
+        Ok(Self::from_pixels(
             gfx,
             rgba8.as_ref(),
             ImageFormat::Rgba8UnormSrgb,
