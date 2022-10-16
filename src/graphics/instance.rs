@@ -69,7 +69,7 @@ impl InstanceArray {
             gfx.instance_bind_layout.clone(),
             image.into().unwrap_or_else(|| gfx.white_image.clone()),
             capacity,
-            false,
+            true,
         )
     }
 
