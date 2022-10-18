@@ -9,6 +9,7 @@
   * [Resolution independence (or "Why do things not end up where I want them to be?")](#gfx_resolution)
   * [Relative and absolute offsets with `DrawParam::offset`](#offsets)
   * [Logical vs Pixel Sized](#logical-vs-pixel)
+  * [Using AsStd140 requires crevice to be included](#crevice-dependency)
 * **[Input](#input)**
   * [Returned mouse coordinates are wrong!](#mouse_coords)
 * **[Libraries](#libraries)**
@@ -203,6 +204,20 @@ A new logical_size option will scale the requested window to be the same effecti
 
 
 More details can be found [here](https://docs.rs/winit/latest/winit/dpi/index.html).
+
+
+<a name="crevice-dependency">
+
+## Using AsStd140 requires crevice to be included
+
+If you want to create your own structs to send as uniforms to your shaders, similar as we to in the [shader example](https://github.com/ggez/ggez/blob/master/examples/shader.rs),
+then those structs need to implement `AsStd140`, which can luckily be easily derived using crevice.
+
+So far, so good. But now I have to tell you that you also need to **depend on the version of crevice that we are using
+yourself, directly**, which at the time of writing (ggez 0.8.0) is `0.11` currently. So add `crevice = "0.11"` to your Cargo.toml .
+
+There may or may not be ways around this via writing our own wrapper macro using `Span::mixed_site` and re-exporting `crevice`,
+but we lowly mortals haven't yet found a way to actually do this. If you manage to solve this problem, please let us know! :)
 
 <a name="input">
 

@@ -10,9 +10,7 @@
 //!
 //! ggez is a Rust library to create a Good Game Easily.
 //!
-//! The current version is 0.8.0-rc1. This is a RELEASE CANDIDATE version,
-//! which in this case means that the API might still change slightly until
-//! 0.8.0 is released in full (also depending on your feedback).
+//! The current version is 0.8.0.
 //!
 //! More specifically, ggez is a lightweight cross-platform game framework
 //! for making 2D games with minimum friction.  It aims to implement an
@@ -62,7 +60,7 @@
 //! line to your `Cargo.toml` file:
 //!
 //! ```text
-//! ggez = "0.8.0-rc1"
+//! ggez = "0.8.0"
 //! ```
 //!
 //! ggez consists of three main parts: A `Context` object which
@@ -173,7 +171,10 @@
 //!  If you still have problems or questions, feel free to ask!  Easiest ways are:
 //!
 //!  * Open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
-//!  * Say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community) or the [Rust Gamedev server](https://discord.gg/yNtPTb2)
+//!  * Say hi on [our new Discord server](https://discord.gg/48VycPe2ZX)
+//!  * Or ask the wise people on the [unofficial Rust Discord server](http://bit.ly/rust-community), the [Rust Gamedev server](https://discord.gg/yNtPTb2) or the [good-web-game Discord server](https://discord.gg/jum3Fjek2A)
+//!
+//! License: MIT
 
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/ggez/ggez/master/docs/ggez-logo-maroon-logo-only.svg"
