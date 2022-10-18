@@ -183,6 +183,7 @@ Sources of information:
  If you still have problems or questions, feel free to ask!  Easiest ways are:
 
  * Open an issue on [the Github issue tracker](https://github.com/ggez/ggez/issues)
- * Say hi on the [unofficial Rust Discord server](http://bit.ly/rust-community), the [Rust Gamedev server](https://discord.gg/yNtPTb2) or the [good-web-game Discord server](https://discord.gg/jum3Fjek2A)
+ * Say hi on [our new Discord server](https://discord.gg/48VycPe2ZX)
+ * Or ask the wise people on the [unofficial Rust Discord server](http://bit.ly/rust-community), the [Rust Gamedev server](https://discord.gg/yNtPTb2) or the [good-web-game Discord server](https://discord.gg/jum3Fjek2A)
 
 License: MIT
