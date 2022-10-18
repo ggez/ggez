@@ -12,9 +12,7 @@
 
 ggez is a Rust library to create a Good Game Easily.
 
-The current version is 0.8.0-rc1. This is a RELEASE CANDIDATE version,
-which in this case means that the API might still change slightly until
-0.8.0 is released in full (also depending on your feedback).
+The current version is 0.8.0.
 
 More specifically, ggez is a lightweight cross-platform game framework
 for making 2D games with minimum friction.  It aims to implement an
@@ -61,7 +59,7 @@ your own libraries atop ggez.
 
 For details, see [docs/BuildingForEveryPlatform.md](docs/BuildingForEveryPlatform.md)
 
-If you want to run ggez on Android, iOS or the web using WebAssembly right now, take a look at [good-web-game](https://github.com/ggez/good-web-game).
+If you want to run ggez (up to 0.7 as of now) on Android, iOS or the web using WebAssembly right now, take a look at [good-web-game](https://github.com/ggez/good-web-game).
 
 ### Who's using ggez?
 
@@ -74,7 +72,7 @@ crates.io. To include it in your project, just add the dependency
 line to your `Cargo.toml` file:
 
 ```
-ggez = "0.8.0-rc1"
+ggez = "0.8.0"
 ```
 
 ggez consists of three main parts: A `Context` object which

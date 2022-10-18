@@ -31,7 +31,7 @@ Both `ShaderParam`s and `Shader`s are now set per `Canvas` (as well as blend mod
 
 Uniforms are now no longer created using the `gfx!` macro. No need to include `gfx-rs` in your own project, just to be
 able to create shaders. Now, simply deriving `AsStd140` is all you usually need (see the shader examples).
-At the time of writing you're sadly also required to depend on `crevice` directly, as `AsStd140` needs to have it
+At the time of writing you're sadly also required to depend on `crevice 0.11` directly, as `AsStd140` needs to have it
 visible globally (and re-exporting it on our side doesn't seem to be enough). If you know a way around this, let us know!
 
 ### InstanceArray
