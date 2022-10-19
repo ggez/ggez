@@ -121,13 +121,13 @@ impl MainState {
 
         let occlusions_shader = ShaderBuilder::new_wgsl()
             .fragment_code(OCCLUSIONS_SHADER_SOURCE)
-            .build(&mut ctx.gfx)?;
+            .build(&ctx.gfx)?;
         let shadows_shader = ShaderBuilder::new_wgsl()
             .fragment_code(SHADOWS_SHADER_SOURCE)
-            .build(&mut ctx.gfx)?;
+            .build(&ctx.gfx)?;
         let lights_shader = ShaderBuilder::new_wgsl()
             .fragment_code(LIGHTS_SHADER_SOURCE)
-            .build(&mut ctx.gfx)?;
+            .build(&ctx.gfx)?;
 
         Ok(MainState {
             background,

@@ -103,7 +103,7 @@ impl<'a> ShaderBuilder<'a> {
             let mut encoded = Vec::new();
             _ = gfx.fs.open(path)?.read_to_end(&mut encoded)?;
             Ok(load(
-                &String::from_utf8(encoded).map_err(|e| GameError::ShaderEncodingError(e))?,
+                &String::from_utf8(encoded).map_err(GameError::ShaderEncodingError)?,
             ))
         };
         let load_any = |source| -> GameResult<Option<ArcShaderModule>> {

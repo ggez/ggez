@@ -28,7 +28,7 @@ impl MainState {
         )?;
         let shader = graphics::ShaderBuilder::new_wgsl()
             .vertex_code(include_str!("../resources/vertex.wgsl"))
-            .build(&mut ctx.gfx)?;
+            .build(&ctx.gfx)?;
         let shader_params = graphics::ShaderParams::new(
             &mut ctx.gfx,
             &ShaderUniforms {
@@ -56,7 +56,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
 
         self.shader_params.set_uniforms(
-            &mut ctx.gfx,
+            &ctx.gfx,
             &ShaderUniforms {
                 rotation: Mat4::from_rotation_z(ctx.time.time_since_start().as_secs_f32()).into(),
             },

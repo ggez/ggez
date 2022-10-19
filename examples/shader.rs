@@ -23,7 +23,7 @@ impl MainState {
         let dim = Dim { rate: 0.5 };
         let shader = graphics::ShaderBuilder::new_wgsl()
             .fragment_code(include_str!("../resources/dimmer.wgsl"))
-            .build(&mut ctx.gfx)?;
+            .build(&ctx.gfx)?;
         let params = graphics::ShaderParams::new(ctx, &dim, &[], &[]);
         Ok(MainState {
             dim,
