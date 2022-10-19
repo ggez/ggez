@@ -119,9 +119,9 @@ impl MainState {
         let shadows = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
         let lights = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
 
-        let occlusions_shader = Shader::from_wgsl(ctx, OCCLUSIONS_SHADER_SOURCE, "main");
-        let shadows_shader = Shader::from_wgsl(ctx, SHADOWS_SHADER_SOURCE, "main");
-        let lights_shader = Shader::from_wgsl(ctx, LIGHTS_SHADER_SOURCE, "main");
+        let occlusions_shader = Shader::new_wgsl(ctx, OCCLUSIONS_SHADER_SOURCE, "main");
+        let shadows_shader = Shader::new_wgsl(ctx, SHADOWS_SHADER_SOURCE, "main");
+        let lights_shader = Shader::new_wgsl(ctx, LIGHTS_SHADER_SOURCE, "main");
 
         Ok(MainState {
             background,

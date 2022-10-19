@@ -22,7 +22,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let dim = Dim { rate: 0.5 };
         let shader =
-            graphics::Shader::from_wgsl(ctx, include_str!("../resources/dimmer.wgsl"), "main");
+            graphics::Shader::new_wgsl(ctx, include_str!("../resources/dimmer.wgsl"), "main");
         let params = graphics::ShaderParams::new(ctx, &dim, &[], &[]);
         Ok(MainState {
             dim,

@@ -53,13 +53,14 @@ use wgpu::util::DeviceExt;
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Shader {
-    pub(crate) fragment: ArcShaderModule,
+    pub(crate) module: ArcShaderModule,
     pub(crate) fs_entry: String,
+    pub(crate) vs_entry: Option<String>,
 }
 
 impl Shader {
     /// Creates a shader from a WGSL string.
-    pub fn from_wgsl(gfx: &impl Has<GraphicsContext>, wgsl: &str, fs_entry: &str) -> Self {
+    pub fn new_wgsl(gfx: &impl Has<GraphicsContext>, wgsl: &str, fs_entry: &str) -> Self {
         let gfx = gfx.retrieve();
         let module = ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
             wgpu::ShaderModuleDescriptor {
@@ -69,8 +70,18 @@ impl Shader {
         ));
 
         Shader {
-            fragment: module,
+            module,
             fs_entry: fs_entry.into(),
+            vs_entry: None,
+        }
+    }
+
+    /// Use the function with the specified name as the vertex shader (instead of the default)
+    pub fn with_vertex(self, vs_entry: &str) -> Self {
+        Shader {
+            module: self.module,
+            fs_entry: self.fs_entry,
+            vs_entry: Some(vs_entry.into()),
         }
     }
 }
