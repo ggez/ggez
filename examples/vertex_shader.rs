@@ -63,7 +63,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
         );
         canvas.set_shader(self.shader.clone());
         canvas.set_shader_params(self.shader_params.clone());
-        canvas.draw(&self.square_mesh, DrawParam::default());
+        canvas.draw(
+            &self.square_mesh,
+            DrawParam::default().dest(Vec2::new(200.0, 100.0)),
+        );
 
         canvas.finish(ctx)?;
 
