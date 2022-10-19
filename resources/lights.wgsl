@@ -27,7 +27,7 @@ fn degrees(x: f32) -> f32 {
 }
 
 @fragment
-fn main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var rel = light.pos - in.uv;
     var theta = atan2(rel.y, rel.x);
     var ox = (theta + 3.1415926) / 6.2831853;

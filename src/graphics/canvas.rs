@@ -571,15 +571,13 @@ pub(crate) struct DefaultResources {
 impl DefaultResources {
     fn new(gfx: &GraphicsContext) -> Self {
         let shader = Shader {
-            module: gfx.draw_shader.clone(),
-            fs_entry: "fs_main".into(),
-            vs_entry: None,
+            fs_module: Some(gfx.draw_shader.clone()),
+            vs_module: None,
         };
 
         let text_shader = Shader {
-            module: gfx.text_shader.clone(),
-            fs_entry: "fs_main".into(),
-            vs_entry: None,
+            fs_module: Some(gfx.text_shader.clone()),
+            vs_module: None,
         };
 
         let mesh = gfx.rect_mesh.clone();

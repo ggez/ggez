@@ -9,7 +9,6 @@ use mint::ColumnMatrix4;
 
 #[derive(AsStd140)]
 struct ShaderUniforms {
-    transform: ColumnMatrix4<f32>,
     rotation: ColumnMatrix4<f32>,
 }
 
@@ -27,16 +26,12 @@ impl MainState {
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
             Color::WHITE,
         )?;
-        let shader = graphics::Shader::new_wgsl(
-            &ctx.gfx,
-            include_str!("../resources/vertex.wgsl"),
-            "fs_main",
-        )
-        .with_vertex("vs_main");
+        let shader = graphics::ShaderBuilder::new_wgsl()
+            .vertex_code(include_str!("../resources/vertex.wgsl"))
+            .build(&mut ctx.gfx)?;
         let shader_params = graphics::ShaderParams::new(
             &mut ctx.gfx,
             &ShaderUniforms {
-                transform: Mat4::IDENTITY.into(),
                 rotation: Mat4::IDENTITY.into(),
             },
             &[],
@@ -60,14 +55,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
 
-        canvas.set_shader(self.shader.clone());
         self.shader_params.set_uniforms(
             &mut ctx.gfx,
             &ShaderUniforms {
-                transform: Mat4::from_translation(Vec3::new(200.0, 100.0, 0.0)).into(),
                 rotation: Mat4::from_rotation_z(ctx.time.time_since_start().as_secs_f32()).into(),
             },
         );
+        canvas.set_shader(self.shader.clone());
+        canvas.set_shader_params(self.shader_params.clone());
         canvas.draw(&self.square_mesh, DrawParam::default());
 
         canvas.finish(ctx)?;

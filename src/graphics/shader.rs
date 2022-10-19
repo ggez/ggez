@@ -1,6 +1,10 @@
+use std::io::Read;
 use std::marker::PhantomData;
 
-use crate::context::{Has, HasMut};
+use crate::{
+    context::{Has, HasMut},
+    GameError, GameResult,
+};
 
 use super::{
     context::GraphicsContext,
@@ -13,6 +17,150 @@ use super::{
 };
 use crevice::std140::Std140;
 use wgpu::util::DeviceExt;
+
+#[derive(Debug)]
+enum ShaderSource<'a> {
+    None,
+    Path(&'a str),
+    Code(&'a str),
+}
+
+/// Builder pattern for assembling shaders.
+#[derive(Debug)]
+pub struct ShaderBuilder<'a> {
+    fragment_path: ShaderSource<'a>,
+    vertex_path: ShaderSource<'a>,
+}
+
+impl<'a> ShaderBuilder<'a> {
+    /// Create a new builder with no associated shader code.
+    pub fn new_wgsl() -> Self {
+        ShaderBuilder {
+            fragment_path: ShaderSource::None,
+            vertex_path: ShaderSource::None,
+        }
+    }
+
+    /// Use this wgsl shader code for the fragment shader. The vertex shader entry point must be `fs_main`.
+    pub fn fragment_code(self, source: &'a str) -> Self {
+        ShaderBuilder {
+            fragment_path: ShaderSource::Code(source),
+            vertex_path: self.vertex_path,
+        }
+    }
+    /// Use this wgsl code resource path for the fragment shader. The vertex shader entry point must be `fs_main`.
+    pub fn fragment_path(self, path: &'a str) -> Self {
+        ShaderBuilder {
+            fragment_path: ShaderSource::Path(path),
+            vertex_path: self.vertex_path,
+        }
+    }
+
+    /// Use this wgsl shader code for the vertex shader. The vertex shader entry point must be `vs_main`.
+    pub fn vertex_code(self, source: &'a str) -> Self {
+        ShaderBuilder {
+            fragment_path: self.vertex_path,
+            vertex_path: ShaderSource::Code(source),
+        }
+    }
+
+    /// Use this wgsl code resource path for the vertex shader. The vertex shader entry point must be `vs_main`.
+    pub fn vertex_path(self, path: &'a str) -> Self {
+        ShaderBuilder {
+            fragment_path: self.vertex_path,
+            vertex_path: ShaderSource::Path(path),
+        }
+    }
+
+    /// Use this wgsl code as both a vertex and fragment shader.
+    pub fn combined_code(self, source: &'a str) -> Self {
+        ShaderBuilder {
+            fragment_path: ShaderSource::Code(source),
+            vertex_path: ShaderSource::Code(source),
+        }
+    }
+
+    /// Use a single wgsl resource as both a vertex and fragment shader.
+    pub fn combined_path(self, path: &'a str) -> Self {
+        ShaderBuilder {
+            fragment_path: ShaderSource::Path(path),
+            vertex_path: ShaderSource::Path(path),
+        }
+    }
+
+    /// Create a Shader from the builder.
+    pub fn build(self, gfx: &impl Has<GraphicsContext>) -> GameResult<Shader> {
+        let gfx = gfx.retrieve();
+        let load = |s: &str| {
+            ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
+                wgpu::ShaderModuleDescriptor {
+                    label: None,
+                    source: wgpu::ShaderSource::Wgsl(s.into()),
+                },
+            ))
+        };
+        let load_resource = |path: &str| -> GameResult<ArcShaderModule> {
+            let mut encoded = Vec::new();
+            _ = gfx.fs.open(path)?.read_to_end(&mut encoded)?;
+            Ok(load(
+                &String::from_utf8(encoded).map_err(|e| GameError::ShaderEncodingError(e))?,
+            ))
+        };
+        let load_any = |source| -> GameResult<ArcShaderModule> {
+            Ok(match source {
+                ShaderSource::Code(source) => load(source),
+                ShaderSource::Path(source) => load_resource(source)?,
+                ShaderSource::None => panic!("dead code"),
+            })
+        };
+        Ok(match (self.vertex_path, self.fragment_path) {
+            (ShaderSource::None, ShaderSource::None) => Shader {
+                vs_module: None,
+                fs_module: None,
+            },
+            (ShaderSource::None, fs) => Shader {
+                vs_module: None,
+                fs_module: Some(load_any(fs)?),
+            },
+            (vs, ShaderSource::None) => Shader {
+                vs_module: Some(load_any(vs)?),
+                fs_module: None,
+            },
+            (ShaderSource::Code(vs), ShaderSource::Code(fs)) => {
+                if vs == fs {
+                    let module = load(vs);
+                    Shader {
+                        vs_module: Some(module.clone()),
+                        fs_module: Some(module),
+                    }
+                } else {
+                    Shader {
+                        vs_module: Some(load(vs)),
+                        fs_module: Some(load(fs)),
+                    }
+                }
+            }
+            (ShaderSource::Path(vs), ShaderSource::Path(fs)) => {
+                if vs == fs {
+                    let module = load_resource(vs)?;
+                    Shader {
+                        vs_module: Some(module.clone()),
+                        fs_module: Some(module),
+                    }
+                } else {
+                    Shader {
+                        vs_module: Some(load_resource(vs)?),
+                        fs_module: Some(load_resource(fs)?),
+                    }
+                }
+            }
+            (vs, fs) => Shader {
+                vs_module: Some(load_any(vs)?),
+                fs_module: Some(load_any(fs)?),
+            },
+        })
+    }
+}
 
 /// A custom fragment shader that can be used to render with shader effects.
 ///
@@ -34,11 +182,9 @@ use wgpu::util::DeviceExt;
 ///         let dim = Dim { rate: 0.5 };
 ///         // NOTE: This is for simplicity; do not recreate your shader every frame like this!
 ///         //       For more info look at the full example.
-///         let shader = Shader::from_wgsl(
-///             ctx,
-///             include_str!("../../resources/dimmer.wgsl"),
-///             "main"
-///         );
+///         let shader = ShaderBuilder::new_wgsl()
+///             .fragment_code(include_str!("../../resources/dimmer.wgsl"))
+///             .build(&mut ctx.gfx);
 ///         let params = ShaderParams::new(ctx, &dim, &[], &[]);
 ///         params.set_uniforms(ctx, &dim);
 ///
@@ -53,37 +199,8 @@ use wgpu::util::DeviceExt;
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Shader {
-    pub(crate) module: ArcShaderModule,
-    pub(crate) fs_entry: String,
-    pub(crate) vs_entry: Option<String>,
-}
-
-impl Shader {
-    /// Creates a shader from a WGSL string.
-    pub fn new_wgsl(gfx: &impl Has<GraphicsContext>, wgsl: &str, fs_entry: &str) -> Self {
-        let gfx = gfx.retrieve();
-        let module = ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
-            wgpu::ShaderModuleDescriptor {
-                label: None,
-                source: wgpu::ShaderSource::Wgsl(wgsl.into()),
-            },
-        ));
-
-        Shader {
-            module,
-            fs_entry: fs_entry.into(),
-            vs_entry: None,
-        }
-    }
-
-    /// Use the function with the specified name as the vertex shader (instead of the default)
-    pub fn with_vertex(self, vs_entry: &str) -> Self {
-        Shader {
-            module: self.module,
-            fs_entry: self.fs_entry,
-            vs_entry: Some(vs_entry.into()),
-        }
-    }
+    pub(crate) vs_module: Option<ArcShaderModule>,
+    pub(crate) fs_module: Option<ArcShaderModule>,
 }
 
 pub use crevice::std140::AsStd140;

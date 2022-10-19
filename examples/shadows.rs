@@ -2,7 +2,7 @@
 //! and canvas's to do 2D GPU shadows.
 
 use ggez::glam::Vec2;
-use ggez::graphics::{self, AsStd140, BlendMode, Canvas, Color, DrawParam, Shader};
+use ggez::graphics::{self, AsStd140, BlendMode, Canvas, Color, DrawParam, Shader, ShaderBuilder};
 use ggez::{event, graphics::ShaderParams};
 use ggez::{Context, GameResult};
 use std::env;
@@ -119,9 +119,15 @@ impl MainState {
         let shadows = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
         let lights = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
 
-        let occlusions_shader = Shader::new_wgsl(ctx, OCCLUSIONS_SHADER_SOURCE, "main");
-        let shadows_shader = Shader::new_wgsl(ctx, SHADOWS_SHADER_SOURCE, "main");
-        let lights_shader = Shader::new_wgsl(ctx, LIGHTS_SHADER_SOURCE, "main");
+        let occlusions_shader = ShaderBuilder::new_wgsl()
+            .fragment_code(OCCLUSIONS_SHADER_SOURCE)
+            .build(&mut ctx.gfx)?;
+        let shadows_shader = ShaderBuilder::new_wgsl()
+            .fragment_code(SHADOWS_SHADER_SOURCE)
+            .build(&mut ctx.gfx)?;
+        let lights_shader = ShaderBuilder::new_wgsl()
+            .fragment_code(LIGHTS_SHADER_SOURCE)
+            .build(&mut ctx.gfx)?;
 
         Ok(MainState {
             background,

@@ -175,15 +175,13 @@ impl<'a> InternalCanvas<'a> {
         let transform = screen_to_mat(screen_coords);
 
         let shader = Shader {
-            module: gfx.draw_shader.clone(),
-            fs_entry: "fs_main".into(),
-            vs_entry: None,
+            vs_module: None,
+            fs_module: Some(gfx.draw_shader.clone()),
         };
 
         let text_shader = Shader {
-            module: gfx.text_shader.clone(),
-            fs_entry: "fs_main".into(),
-            vs_entry: None,
+            vs_module: None,
+            fs_module: Some(gfx.text_shader.clone()),
         };
 
         let text_uniforms = uniform_arena.allocate(
@@ -573,8 +571,8 @@ impl<'a> InternalCanvas<'a> {
                     &self.wgpu.device,
                     layout.as_ref(),
                     RenderPipelineInfo {
-                        vs: if shader.vs_entry.is_some() {
-                            shader.module.clone()
+                        vs: if let Some(vs_module) = &shader.vs_module {
+                            vs_module.clone()
                         } else {
                             match ty {
                                 ShaderType::Draw => self.draw_sm.clone(),
@@ -588,13 +586,18 @@ impl<'a> InternalCanvas<'a> {
                                 ShaderType::Text => self.text_sm.clone(),
                             }
                         },
-                        fs: shader.module.clone(),
-                        vs_entry: if let Some(vs_entry) = &shader.vs_entry {
-                            vs_entry.into()
+                        fs: if let Some(fs_module) = &shader.fs_module {
+                            fs_module.clone()
                         } else {
-                            "vs_main".into()
+                            match ty {
+                                ShaderType::Draw | ShaderType::Instance { .. } => {
+                                    self.draw_sm.clone()
+                                }
+                                ShaderType::Text => self.text_sm.clone(),
+                            }
                         },
-                        fs_entry: shader.fs_entry.clone(),
+                        vs_entry: "vs_main".into(),
+                        fs_entry: "fs_main".into(),
                         samples: self.samples,
                         format: self.format,
                         blend: Some(wgpu::BlendState {
