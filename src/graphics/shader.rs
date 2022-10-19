@@ -41,14 +41,14 @@ impl<'a> ShaderBuilder<'a> {
         }
     }
 
-    /// Use this wgsl shader code for the fragment shader. The vertex shader entry point must be `fs_main`.
+    /// Use this wgsl shader code for the fragment shader.
     pub fn fragment_code(self, source: &'a str) -> Self {
         ShaderBuilder {
             fragment_path: ShaderSource::Code(source),
             vertex_path: self.vertex_path,
         }
     }
-    /// Use this wgsl code resource path for the fragment shader. The vertex shader entry point must be `fs_main`.
+    /// Use this wgsl code resource path for the fragment shader.
     pub fn fragment_path(self, path: &'a str) -> Self {
         ShaderBuilder {
             fragment_path: ShaderSource::Path(path),
@@ -56,7 +56,7 @@ impl<'a> ShaderBuilder<'a> {
         }
     }
 
-    /// Use this wgsl shader code for the vertex shader. The vertex shader entry point must be `vs_main`.
+    /// Use this wgsl shader code for the vertex shader.
     pub fn vertex_code(self, source: &'a str) -> Self {
         ShaderBuilder {
             fragment_path: self.vertex_path,
@@ -64,7 +64,7 @@ impl<'a> ShaderBuilder<'a> {
         }
     }
 
-    /// Use this wgsl code resource path for the vertex shader. The vertex shader entry point must be `vs_main`.
+    /// Use this wgsl code resource path for the vertex shader.
     pub fn vertex_path(self, path: &'a str) -> Self {
         ShaderBuilder {
             fragment_path: self.vertex_path,
@@ -92,51 +92,39 @@ impl<'a> ShaderBuilder<'a> {
     pub fn build(self, gfx: &impl Has<GraphicsContext>) -> GameResult<Shader> {
         let gfx = gfx.retrieve();
         let load = |s: &str| {
-            ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
+            Some(ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
                 wgpu::ShaderModuleDescriptor {
                     label: None,
                     source: wgpu::ShaderSource::Wgsl(s.into()),
                 },
-            ))
+            )))
         };
-        let load_resource = |path: &str| -> GameResult<ArcShaderModule> {
+        let load_resource = |path: &str| -> GameResult<Option<ArcShaderModule>> {
             let mut encoded = Vec::new();
             _ = gfx.fs.open(path)?.read_to_end(&mut encoded)?;
             Ok(load(
                 &String::from_utf8(encoded).map_err(|e| GameError::ShaderEncodingError(e))?,
             ))
         };
-        let load_any = |source| -> GameResult<ArcShaderModule> {
+        let load_any = |source| -> GameResult<Option<ArcShaderModule>> {
             Ok(match source {
                 ShaderSource::Code(source) => load(source),
                 ShaderSource::Path(source) => load_resource(source)?,
-                ShaderSource::None => panic!("dead code"),
+                ShaderSource::None => None,
             })
         };
         Ok(match (self.vertex_path, self.fragment_path) {
-            (ShaderSource::None, ShaderSource::None) => Shader {
-                vs_module: None,
-                fs_module: None,
-            },
-            (ShaderSource::None, fs) => Shader {
-                vs_module: None,
-                fs_module: Some(load_any(fs)?),
-            },
-            (vs, ShaderSource::None) => Shader {
-                vs_module: Some(load_any(vs)?),
-                fs_module: None,
-            },
             (ShaderSource::Code(vs), ShaderSource::Code(fs)) => {
                 if vs == fs {
                     let module = load(vs);
                     Shader {
-                        vs_module: Some(module.clone()),
-                        fs_module: Some(module),
+                        vs_module: module.clone(),
+                        fs_module: module,
                     }
                 } else {
                     Shader {
-                        vs_module: Some(load(vs)),
-                        fs_module: Some(load(fs)),
+                        vs_module: load(vs),
+                        fs_module: load(fs),
                     }
                 }
             }
@@ -144,25 +132,40 @@ impl<'a> ShaderBuilder<'a> {
                 if vs == fs {
                     let module = load_resource(vs)?;
                     Shader {
-                        vs_module: Some(module.clone()),
-                        fs_module: Some(module),
+                        vs_module: module.clone(),
+                        fs_module: module,
                     }
                 } else {
                     Shader {
-                        vs_module: Some(load_resource(vs)?),
-                        fs_module: Some(load_resource(fs)?),
+                        vs_module: load_resource(vs)?,
+                        fs_module: load_resource(fs)?,
                     }
                 }
             }
             (vs, fs) => Shader {
-                vs_module: Some(load_any(vs)?),
-                fs_module: Some(load_any(fs)?),
+                vs_module: load_any(vs)?,
+                fs_module: load_any(fs)?,
             },
         })
     }
 }
 
 /// A custom fragment shader that can be used to render with shader effects.
+///
+/// The program may have a user specified vertex shader, fragment shader, both,
+/// or neither. The fragment shader entry point must be named fs_main. The
+/// vertex shader entry point must be named vs_main. The vertex shader must
+/// have an output of type
+/// ```wgsl
+/// struct VertexOutput {
+///     @builtin(position) position: vec4<f32>,
+///     @location(0) uv: vec2<f32>,
+///     @location(1) color: vec4<f32>,
+/// }
+/// ```
+/// if the fragment shader is left unspecified.
+///
+/// Produce a Shader using ShaderBuilder.
 ///
 /// Adapted from the `shader.rs` example:
 /// ```rust
@@ -207,7 +210,7 @@ pub use crevice::std140::AsStd140;
 
 /// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
 ///
-/// These parameters are bound to group 4. With WGSL, for example,
+/// These parameters are bound to group 3. With WGSL, for example,
 /// ```rust,ignore
 /// ggez::graphics::ShaderParams::new(ctx, &my_uniforms, &[&image1, &image2], &[sampler1])
 /// ```
