@@ -18,7 +18,7 @@ use super::{
 use crevice::std140::Std140;
 use wgpu::util::DeviceExt;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 enum ShaderSource<'a> {
     None,
     Path(&'a str),
@@ -28,63 +28,63 @@ enum ShaderSource<'a> {
 /// Builder pattern for assembling shaders.
 #[derive(Debug)]
 pub struct ShaderBuilder<'a> {
-    fragment_path: ShaderSource<'a>,
-    vertex_path: ShaderSource<'a>,
+    fs: ShaderSource<'a>,
+    vs: ShaderSource<'a>,
 }
 
 impl<'a> ShaderBuilder<'a> {
     /// Create a new builder with no associated shader code.
     pub fn new_wgsl() -> Self {
         ShaderBuilder {
-            fragment_path: ShaderSource::None,
-            vertex_path: ShaderSource::None,
+            fs: ShaderSource::None,
+            vs: ShaderSource::None,
         }
     }
 
     /// Use this wgsl shader code for the fragment shader.
     pub fn fragment_code(self, source: &'a str) -> Self {
         ShaderBuilder {
-            fragment_path: ShaderSource::Code(source),
-            vertex_path: self.vertex_path,
+            fs: ShaderSource::Code(source),
+            vs: self.vs,
         }
     }
     /// Use this wgsl code resource path for the fragment shader.
     pub fn fragment_path(self, path: &'a str) -> Self {
         ShaderBuilder {
-            fragment_path: ShaderSource::Path(path),
-            vertex_path: self.vertex_path,
+            fs: ShaderSource::Path(path),
+            vs: self.vs,
         }
     }
 
     /// Use this wgsl shader code for the vertex shader.
     pub fn vertex_code(self, source: &'a str) -> Self {
         ShaderBuilder {
-            fragment_path: self.vertex_path,
-            vertex_path: ShaderSource::Code(source),
+            fs: self.vs,
+            vs: ShaderSource::Code(source),
         }
     }
 
     /// Use this wgsl code resource path for the vertex shader.
     pub fn vertex_path(self, path: &'a str) -> Self {
         ShaderBuilder {
-            fragment_path: self.vertex_path,
-            vertex_path: ShaderSource::Path(path),
+            fs: self.vs,
+            vs: ShaderSource::Path(path),
         }
     }
 
     /// Use this wgsl code as both a vertex and fragment shader.
     pub fn combined_code(self, source: &'a str) -> Self {
         ShaderBuilder {
-            fragment_path: ShaderSource::Code(source),
-            vertex_path: ShaderSource::Code(source),
+            fs: ShaderSource::Code(source),
+            vs: ShaderSource::Code(source),
         }
     }
 
     /// Use a single wgsl resource as both a vertex and fragment shader.
     pub fn combined_path(self, path: &'a str) -> Self {
         ShaderBuilder {
-            fragment_path: ShaderSource::Path(path),
-            vertex_path: ShaderSource::Path(path),
+            fs: ShaderSource::Path(path),
+            vs: ShaderSource::Path(path),
         }
     }
 
@@ -113,39 +113,17 @@ impl<'a> ShaderBuilder<'a> {
                 ShaderSource::None => None,
             })
         };
-        Ok(match (self.vertex_path, self.fragment_path) {
-            (ShaderSource::Code(vs), ShaderSource::Code(fs)) => {
-                if vs == fs {
-                    let module = load(vs);
-                    Shader {
-                        vs_module: module.clone(),
-                        fs_module: module,
-                    }
-                } else {
-                    Shader {
-                        vs_module: load(vs),
-                        fs_module: load(fs),
-                    }
-                }
+        Ok(if self.vs == self.fs {
+            let module = load_any(self.vs)?;
+            Shader {
+                vs_module: module.clone(),
+                fs_module: module,
             }
-            (ShaderSource::Path(vs), ShaderSource::Path(fs)) => {
-                if vs == fs {
-                    let module = load_resource(vs)?;
-                    Shader {
-                        vs_module: module.clone(),
-                        fs_module: module,
-                    }
-                } else {
-                    Shader {
-                        vs_module: load_resource(vs)?,
-                        fs_module: load_resource(fs)?,
-                    }
-                }
+        } else {
+            Shader {
+                vs_module: load_any(self.vs)?,
+                fs_module: load_any(self.fs)?,
             }
-            (vs, fs) => Shader {
-                vs_module: load_any(vs)?,
-                fs_module: load_any(fs)?,
-            },
         })
     }
 }
