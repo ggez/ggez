@@ -217,7 +217,7 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
     pub fn images(self, images: &'a [(&'a Image, Sampler)], vs_visible: bool) -> Self {
         ShaderParamsBuilder {
             uniforms: self.uniforms,
-            images: images,
+            images,
             images_vs_visible: vs_visible,
         }
     }
