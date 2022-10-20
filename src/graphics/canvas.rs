@@ -120,7 +120,7 @@ impl Canvas {
         let state = DrawState {
             shader: defaults.shader.clone(),
             params: None,
-            text_shader: defaults.text_shader.clone(),
+            text_shader: defaults.shader.clone(),
             text_params: None,
             sampler: Sampler::linear_clamp(),
             blend_mode: BlendMode::ALPHA,
@@ -205,7 +205,7 @@ impl Canvas {
     /// Resets the active text shader to the default.
     #[inline]
     pub fn set_default_text_shader(&mut self) {
-        self.state.text_shader = self.defaults.text_shader.clone();
+        self.state.text_shader = self.defaults.shader.clone();
     }
 
     /// Sets the active sampler used to sample images.
@@ -563,7 +563,6 @@ struct DrawCommand {
 #[derive(Debug)]
 pub(crate) struct DefaultResources {
     pub shader: Shader,
-    pub text_shader: Shader,
     pub mesh: Mesh,
     pub image: Image,
 }
@@ -571,12 +570,7 @@ pub(crate) struct DefaultResources {
 impl DefaultResources {
     fn new(gfx: &GraphicsContext) -> Self {
         let shader = Shader {
-            fs_module: Some(gfx.draw_shader.clone()),
-            vs_module: None,
-        };
-
-        let text_shader = Shader {
-            fs_module: Some(gfx.text_shader.clone()),
+            fs_module: None,
             vs_module: None,
         };
 
@@ -585,7 +579,6 @@ impl DefaultResources {
 
         DefaultResources {
             shader,
-            text_shader,
             mesh,
             image,
         }

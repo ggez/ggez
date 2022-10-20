@@ -27,7 +27,7 @@ impl MainState {
             Color::WHITE,
         )?;
         let shader = graphics::ShaderBuilder::new_wgsl()
-            .vertex_code(include_str!("../resources/vertex.wgsl"))
+            .vertex_path("/vertex.wgsl")
             .build(&ctx.gfx)?;
         let shader_params = graphics::ShaderParams::new(
             &mut ctx.gfx,
@@ -85,7 +85,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("colorspace", "ggez").add_resource_path(resource_dir);
+    let cb = ggez::ContextBuilder::new("vertex_shader", "ggez").add_resource_path(resource_dir);
     let (mut ctx, event_loop) = cb.build()?;
 
     let state = MainState::new(&mut ctx)?;

@@ -176,12 +176,12 @@ impl<'a> InternalCanvas<'a> {
 
         let shader = Shader {
             vs_module: None,
-            fs_module: Some(gfx.draw_shader.clone()),
+            fs_module: None,
         };
 
         let text_shader = Shader {
             vs_module: None,
-            fs_module: Some(gfx.text_shader.clone()),
+            fs_module: None,
         };
 
         let text_uniforms = uniform_arena.allocate(

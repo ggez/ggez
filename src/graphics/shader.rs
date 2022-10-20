@@ -143,7 +143,7 @@ impl<'a> ShaderBuilder<'a> {
 /// ```
 /// if the fragment shader is left unspecified.
 ///
-/// Produce a Shader using ShaderBuilder.
+/// Produce a Shader using [ShaderBuilder].
 ///
 /// Adapted from the `shader.rs` example:
 /// ```rust
@@ -194,13 +194,13 @@ pub use crevice::std140::AsStd140;
 /// ```
 /// Corresponds to...
 /// ```ignore
-/// @group(4) @binding(0)
+/// @group(3) @binding(0)
 /// var<uniform> my_uniforms: MyUniforms;
-/// @group(4) @binding(1)
+/// @group(3) @binding(1)
 /// var image1: texture_2d<f32>;
-/// @group(4) @binding(2)
+/// @group(3) @binding(2)
 /// var image2: texture_2d<f32>;
-/// @group(4) @binding(3)
+/// @group(3) @binding(3)
 /// var sampler1: sampler;
 /// ```
 #[derive(Debug, PartialEq, Eq)]
