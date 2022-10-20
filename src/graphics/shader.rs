@@ -278,7 +278,9 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
 ///
 /// These parameters are bound to group 3. With WGSL, for example,
 /// ```rust,ignore
-/// ggez::graphics::ShaderParams::new(ctx, &my_uniforms, &[&image1, &image2], &[sampler1])
+/// ggez::graphics::ShaderParamsBuilder::new(&my_uniforms)
+///     .images(&[(&image1, &sampler1), (&image2, &sampler2)], false)
+///     .build(&mut ctx.gfx)
 /// ```
 /// Corresponds to...
 /// ```ignore
@@ -290,6 +292,8 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
 /// var image2: texture_2d<f32>;
 /// @group(3) @binding(3)
 /// var sampler1: sampler;
+/// @group(3) @binding(4)
+/// var sampler2: sampler;
 /// ```
 #[derive(Debug, PartialEq, Eq)]
 pub struct ShaderParams<Uniforms: AsStd140> {
