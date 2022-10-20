@@ -29,14 +29,10 @@ impl MainState {
         let shader = graphics::ShaderBuilder::new_wgsl()
             .vertex_path("/vertex.wgsl")
             .build(&ctx.gfx)?;
-        let shader_params = graphics::ShaderParams::new(
-            &mut ctx.gfx,
-            &ShaderUniforms {
-                rotation: Mat4::IDENTITY.into(),
-            },
-            &[],
-            &[],
-        );
+        let shader_params = graphics::ShaderParamsBuilder::new(&ShaderUniforms {
+            rotation: Mat4::IDENTITY.into(),
+        })
+        .build(&mut ctx.gfx);
 
         let s = MainState {
             square_mesh,

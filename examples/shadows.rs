@@ -2,7 +2,9 @@
 //! and canvas's to do 2D GPU shadows.
 
 use ggez::glam::Vec2;
-use ggez::graphics::{self, AsStd140, BlendMode, Canvas, Color, DrawParam, Shader, ShaderBuilder};
+use ggez::graphics::{
+    self, AsStd140, BlendMode, Canvas, Color, DrawParam, Shader, ShaderBuilder, ShaderParamsBuilder,
+};
 use ggez::{event, graphics::ShaderParams};
 use ggez::{Context, GameResult};
 use std::env;
@@ -97,7 +99,7 @@ impl MainState {
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
-        let torch_params = ShaderParams::new(ctx, &torch, &[], &[]);
+        let torch_params = ShaderParamsBuilder::new(&torch).build(&mut ctx.gfx);
 
         let (w, h) = ctx.gfx.size();
         let (x, y) = (100.0 / w as f32, 75.0 / h as f32);
@@ -110,7 +112,7 @@ impl MainState {
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
-        let static_light_params = ShaderParams::new(ctx, &static_light, &[], &[]);
+        let static_light_params = ShaderParamsBuilder::new(&static_light).build(&mut ctx.gfx);
 
         let color_format = ctx.gfx.surface_format();
         let foreground = graphics::ScreenImage::new(ctx, None, 1., 1., 1);

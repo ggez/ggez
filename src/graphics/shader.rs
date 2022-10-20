@@ -186,7 +186,115 @@ pub struct Shader {
 
 pub use crevice::std140::AsStd140;
 
+/// A builder for [ShaderParams]
+#[derive(Debug)]
+pub struct ShaderParamsBuilder<'a, Uniforms: AsStd140> {
+    uniforms: &'a Uniforms,
+    images: (&'a [&'a Image], bool),
+    samplers: (&'a [Sampler], bool),
+}
+
+impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
+    /// Creates a new builder for [ShaderParams].
+    ///
+    /// # Arguments
+    ///
+    /// * `uniforms` - Initial uniforms.
+    pub fn new(uniforms: &'a Uniforms) -> Self {
+        ShaderParamsBuilder {
+            uniforms,
+            images: (&[], false),
+            samplers: (&[], false),
+        }
+    }
+
+    /// Provides images to the shaders.
+    ///
+    /// # Arguments
+    ///
+    /// * `vs_visible` - If the images should also be visible to the vertex shader, rather
+    ///    than just the fragment shader.
+    pub fn images(self, images: &'a [&'a Image], vs_visible: bool) -> Self {
+        ShaderParamsBuilder {
+            uniforms: self.uniforms,
+            images: (images, vs_visible),
+            samplers: self.samplers,
+        }
+    }
+
+    /// Provides samplers to the shaders.
+    ///
+    /// # Arguments
+    ///
+    /// * `vs_visible` - If the samplers should also be visible to the vertex shader, rather
+    ///    than just the fragment shader.
+    pub fn samplers(self, samplers: &'a [Sampler], vs_visible: bool) -> Self {
+        ShaderParamsBuilder {
+            uniforms: self.uniforms,
+            images: self.images,
+            samplers: (samplers, vs_visible),
+        }
+    }
+
+    /// Produce a [ShaderParams] from the builder.
+    pub fn build(self, gfx: &mut impl HasMut<GraphicsContext>) -> ShaderParams<Uniforms> {
+        let gfx = gfx.retrieve_mut();
+        let uniforms = ArcBuffer::new(gfx.wgpu.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: None,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                contents: self.uniforms.as_std140().as_bytes(),
+            },
+        ));
+
+        let mut builder = BindGroupBuilder::new();
+        builder = builder.buffer(
+            &uniforms,
+            0,
+            wgpu::ShaderStages::VERTEX_FRAGMENT,
+            wgpu::BufferBindingType::Uniform,
+            false,
+            None,
+        );
+
+        let vis = if self.images.1 {
+            wgpu::ShaderStages::VERTEX_FRAGMENT
+        } else {
+            wgpu::ShaderStages::FRAGMENT
+        };
+        for image in self.images.0 {
+            builder = builder.image(&image.view, vis);
+        }
+
+        let vis = if self.samplers.1 {
+            wgpu::ShaderStages::VERTEX_FRAGMENT
+        } else {
+            wgpu::ShaderStages::FRAGMENT
+        };
+        let samplers = self
+            .samplers
+            .0
+            .iter()
+            .map(|&sampler| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
+            .collect::<Vec<_>>();
+        for sampler in &samplers {
+            builder = builder.sampler(sampler, vis);
+        }
+
+        let (bind_group, layout) = builder.create_uncached(&gfx.wgpu.device);
+
+        ShaderParams {
+            uniforms,
+            layout,
+            bind_group,
+            _marker: PhantomData,
+        }
+    }
+}
+
 /// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
+///
+/// Create with [ShaderParamsBuilder].
 ///
 /// These parameters are bound to group 3. With WGSL, for example,
 /// ```rust,ignore
@@ -212,55 +320,6 @@ pub struct ShaderParams<Uniforms: AsStd140> {
 }
 
 impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
-    /// Creates a new [ShaderParams], initialized with the given uniforms, images, and samplers.
-    pub fn new(
-        gfx: &mut impl HasMut<GraphicsContext>,
-        uniforms: &Uniforms,
-        images: &[&Image],
-        samplers: &[Sampler],
-    ) -> Self {
-        let gfx = gfx.retrieve_mut();
-        let uniforms = ArcBuffer::new(gfx.wgpu.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: None,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                contents: uniforms.as_std140().as_bytes(),
-            },
-        ));
-
-        let samplers = samplers
-            .iter()
-            .map(|&sampler| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
-            .collect::<Vec<_>>();
-
-        let mut builder = BindGroupBuilder::new();
-        builder = builder.buffer(
-            &uniforms,
-            0,
-            wgpu::ShaderStages::VERTEX_FRAGMENT,
-            wgpu::BufferBindingType::Uniform,
-            false,
-            None,
-        );
-
-        for image in images {
-            builder = builder.image(&image.view, wgpu::ShaderStages::FRAGMENT);
-        }
-
-        for sampler in &samplers {
-            builder = builder.sampler(sampler, wgpu::ShaderStages::FRAGMENT);
-        }
-
-        let (bind_group, layout) = builder.create_uncached(&gfx.wgpu.device);
-
-        ShaderParams {
-            uniforms,
-            layout,
-            bind_group,
-            _marker: PhantomData,
-        }
-    }
-
     /// Updates the uniform data.
     pub fn set_uniforms(&self, gfx: &impl Has<GraphicsContext>, uniforms: &Uniforms) {
         let gfx = gfx.retrieve();

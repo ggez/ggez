@@ -24,7 +24,7 @@ impl MainState {
         let shader = graphics::ShaderBuilder::new_wgsl()
             .fragment_path("/dimmer.wgsl")
             .build(&ctx.gfx)?;
-        let params = graphics::ShaderParams::new(ctx, &dim, &[], &[]);
+        let params = graphics::ShaderParamsBuilder::new(&dim).build(&mut ctx.gfx);
         Ok(MainState {
             dim,
             shader,
