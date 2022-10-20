@@ -166,7 +166,7 @@ impl<'a> ShaderBuilder<'a> {
 ///         let shader = ShaderBuilder::new_wgsl()
 ///             .fragment_code(include_str!("../../resources/dimmer.wgsl"))
 ///             .build(&mut ctx.gfx);
-///         let params = ShaderParams::new(ctx, &dim, &[], &[]);
+///         let params = ShaderParamsBuilder::new(&dim).build(&mut ctx.gfx);
 ///         params.set_uniforms(ctx, &dim);
 ///
 ///         canvas.set_shader(shader);
@@ -190,8 +190,8 @@ pub use crevice::std140::AsStd140;
 #[derive(Debug)]
 pub struct ShaderParamsBuilder<'a, Uniforms: AsStd140> {
     uniforms: &'a Uniforms,
-    images: (&'a [&'a Image], bool),
-    samplers: (&'a [Sampler], bool),
+    images: &'a [(&'a Image, Sampler)],
+    images_vs_visible: bool,
 }
 
 impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
@@ -203,8 +203,8 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
     pub fn new(uniforms: &'a Uniforms) -> Self {
         ShaderParamsBuilder {
             uniforms,
-            images: (&[], false),
-            samplers: (&[], false),
+            images: &[],
+            images_vs_visible: false,
         }
     }
 
@@ -214,25 +214,11 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
     ///
     /// * `vs_visible` - If the images should also be visible to the vertex shader, rather
     ///    than just the fragment shader.
-    pub fn images(self, images: &'a [&'a Image], vs_visible: bool) -> Self {
+    pub fn images(self, images: &'a [(&'a Image, Sampler)], vs_visible: bool) -> Self {
         ShaderParamsBuilder {
             uniforms: self.uniforms,
-            images: (images, vs_visible),
-            samplers: self.samplers,
-        }
-    }
-
-    /// Provides samplers to the shaders.
-    ///
-    /// # Arguments
-    ///
-    /// * `vs_visible` - If the samplers should also be visible to the vertex shader, rather
-    ///    than just the fragment shader.
-    pub fn samplers(self, samplers: &'a [Sampler], vs_visible: bool) -> Self {
-        ShaderParamsBuilder {
-            uniforms: self.uniforms,
-            images: self.images,
-            samplers: (samplers, vs_visible),
+            images: images,
+            images_vs_visible: vs_visible,
         }
     }
 
@@ -257,25 +243,19 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
             None,
         );
 
-        let vis = if self.images.1 {
+        let vis = if self.images_vs_visible {
             wgpu::ShaderStages::VERTEX_FRAGMENT
         } else {
             wgpu::ShaderStages::FRAGMENT
         };
-        for image in self.images.0 {
+        for (image, _) in self.images {
             builder = builder.image(&image.view, vis);
         }
 
-        let vis = if self.samplers.1 {
-            wgpu::ShaderStages::VERTEX_FRAGMENT
-        } else {
-            wgpu::ShaderStages::FRAGMENT
-        };
         let samplers = self
-            .samplers
-            .0
+            .images
             .iter()
-            .map(|&sampler| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
+            .map(|&(_, sampler)| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
             .collect::<Vec<_>>();
         for sampler in &samplers {
             builder = builder.sampler(sampler, vis);
