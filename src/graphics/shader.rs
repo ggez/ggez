@@ -128,11 +128,11 @@ impl<'a> ShaderBuilder<'a> {
     }
 }
 
-/// A custom fragment shader that can be used to render with shader effects.
+/// A custom shader that can be used to render with shader effects.
 ///
-/// The program may have a user specified vertex shader, fragment shader, both,
-/// or neither. The fragment shader entry point must be named fs_main. The
-/// vertex shader entry point must be named vs_main. The vertex shader must
+/// The shader may have a user specified vertex module, fragment module, both,
+/// or neither. The fragment module entry point must be named fs_main. The
+/// vertex module entry point must be named vs_main. The vertex module must
 /// have an output of type
 /// ```wgsl
 /// struct VertexOutput {
@@ -141,7 +141,7 @@ impl<'a> ShaderBuilder<'a> {
 ///     @location(1) color: vec4<f32>,
 /// }
 /// ```
-/// if the fragment shader is left unspecified.
+/// if the fragment module is left unspecified (default).
 ///
 /// Produce a Shader using [ShaderBuilder].
 ///
