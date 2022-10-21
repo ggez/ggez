@@ -175,13 +175,13 @@ impl<'a> InternalCanvas<'a> {
         let transform = screen_to_mat(screen_coords);
 
         let shader = Shader {
-            fragment: gfx.draw_shader.clone(),
-            fs_entry: "fs_main".into(),
+            vs_module: None,
+            fs_module: None,
         };
 
         let text_shader = Shader {
-            fragment: gfx.text_shader.clone(),
-            fs_entry: "fs_main".into(),
+            vs_module: None,
+            fs_module: None,
         };
 
         let text_uniforms = uniform_arena.allocate(
@@ -538,7 +538,7 @@ impl<'a> InternalCanvas<'a> {
             if let ShaderType::Instance { .. } = ty {
                 groups.push(instance_layout);
             } else {
-                // the dummy group ensures the user's bind group is at index 4
+                // the dummy group ensures the user's bind group is at index 3
                 groups.push(dummy_layout);
                 self.pass
                     .set_bind_group(2, self.arenas.bind_groups.alloc(dummy_group), &[]);
@@ -571,20 +571,33 @@ impl<'a> InternalCanvas<'a> {
                     &self.wgpu.device,
                     layout.as_ref(),
                     RenderPipelineInfo {
-                        vs: match ty {
-                            ShaderType::Draw => self.draw_sm.clone(),
-                            ShaderType::Instance { ordered } => {
-                                if ordered {
-                                    self.instance_sm.clone()
-                                } else {
-                                    self.instance_unordered_sm.clone()
+                        vs: if let Some(vs_module) = &shader.vs_module {
+                            vs_module.clone()
+                        } else {
+                            match ty {
+                                ShaderType::Draw => self.draw_sm.clone(),
+                                ShaderType::Instance { ordered } => {
+                                    if ordered {
+                                        self.instance_sm.clone()
+                                    } else {
+                                        self.instance_unordered_sm.clone()
+                                    }
                                 }
+                                ShaderType::Text => self.text_sm.clone(),
                             }
-                            ShaderType::Text => self.text_sm.clone(),
                         },
-                        fs: shader.fragment.clone(),
+                        fs: if let Some(fs_module) = &shader.fs_module {
+                            fs_module.clone()
+                        } else {
+                            match ty {
+                                ShaderType::Draw | ShaderType::Instance { .. } => {
+                                    self.draw_sm.clone()
+                                }
+                                ShaderType::Text => self.text_sm.clone(),
+                            }
+                        },
                         vs_entry: "vs_main".into(),
-                        fs_entry: shader.fs_entry.clone(),
+                        fs_entry: "fs_main".into(),
                         samples: self.samples,
                         format: self.format,
                         blend: Some(wgpu::BlendState {

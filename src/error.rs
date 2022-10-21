@@ -1,6 +1,7 @@
 //! Error types and conversion functions.
 use std::error::Error;
 use std::fmt;
+use std::string::FromUtf8Error;
 use std::sync::Arc;
 
 /// An enum containing all kinds of game framework errors.
@@ -34,6 +35,8 @@ pub enum GameError {
     IOError(Arc<std::io::Error>),
     /// Something went wrong trying to load a font
     FontError(glyph_brush::ab_glyph::InvalidFont),
+    /// Shader encoding error (not valid utf-8)
+    ShaderEncodingError(FromUtf8Error),
     /// Something went wrong applying video settings.
     VideoError(String),
     /// Something went wrong with the `gilrs` gamepad-input library.

@@ -118,9 +118,9 @@ impl Canvas {
         let defaults = DefaultResources::new(gfx);
 
         let state = DrawState {
-            shader: defaults.shader.clone(),
+            shader: default_shader(),
             params: None,
-            text_shader: defaults.text_shader.clone(),
+            text_shader: default_text_shader(),
             text_params: None,
             sampler: Sampler::linear_clamp(),
             blend_mode: BlendMode::ALPHA,
@@ -170,7 +170,7 @@ impl Canvas {
 
     /// Sets the shader parameters to use when drawing meshes.
     ///
-    /// **Bound to bind group 4.**
+    /// **Bound to bind group 3.**
     #[inline]
     pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
         self.state.params = Some((params.bind_group.clone(), params.layout));
@@ -199,13 +199,13 @@ impl Canvas {
     /// Resets the active mesh shader to the default.
     #[inline]
     pub fn set_default_shader(&mut self) {
-        self.state.shader = self.defaults.shader.clone();
+        self.state.shader = default_shader();
     }
 
     /// Resets the active text shader to the default.
     #[inline]
     pub fn set_default_text_shader(&mut self) {
-        self.state.text_shader = self.defaults.text_shader.clone();
+        self.state.text_shader = default_text_shader();
     }
 
     /// Sets the active sampler used to sample images.
@@ -562,32 +562,31 @@ struct DrawCommand {
 
 #[derive(Debug)]
 pub(crate) struct DefaultResources {
-    pub shader: Shader,
-    pub text_shader: Shader,
     pub mesh: Mesh,
     pub image: Image,
 }
 
 impl DefaultResources {
     fn new(gfx: &GraphicsContext) -> Self {
-        let shader = Shader {
-            fragment: gfx.draw_shader.clone(),
-            fs_entry: "fs_main".into(),
-        };
-
-        let text_shader = Shader {
-            fragment: gfx.text_shader.clone(),
-            fs_entry: "fs_main".into(),
-        };
-
         let mesh = gfx.rect_mesh.clone();
         let image = gfx.white_image.clone();
 
-        DefaultResources {
-            shader,
-            text_shader,
-            mesh,
-            image,
-        }
+        DefaultResources { mesh, image }
+    }
+}
+
+/// The default shader.
+pub fn default_shader() -> Shader {
+    Shader {
+        fs_module: None,
+        vs_module: None,
+    }
+}
+
+/// The default text shader.
+pub fn default_text_shader() -> Shader {
+    Shader {
+        fs_module: None,
+        vs_module: None,
     }
 }
