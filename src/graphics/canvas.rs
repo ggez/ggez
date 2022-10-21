@@ -122,7 +122,7 @@ impl Canvas {
             params: None,
             text_shader: default_text_shader(),
             text_params: None,
-            sampler: Sampler::linear_clamp(),
+            sampler: default_sampler(),
             blend_mode: BlendMode::ALPHA,
             premul_text: true,
             projection: glam::Mat4::IDENTITY.into(),
@@ -589,4 +589,9 @@ pub fn default_text_shader() -> Shader {
         fs_module: None,
         vs_module: None,
     }
+}
+
+/// The default sampler
+pub fn default_sampler() -> Sampler {
+    Sampler::linear_clamp()
 }

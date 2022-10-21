@@ -1,5 +1,5 @@
-use std::io::Read;
 use std::marker::PhantomData;
+use std::{borrow::Cow, io::Read};
 
 use crate::{
     context::{Has, HasMut},
@@ -8,6 +8,7 @@ use crate::{
 
 use super::{
     context::GraphicsContext,
+    default_sampler,
     gpu::{
         arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcShaderModule},
         bind_group::BindGroupBuilder,
@@ -191,7 +192,7 @@ pub use crevice::std140::AsStd140;
 pub struct ShaderParamsBuilder<'a, Uniforms: AsStd140> {
     uniforms: &'a Uniforms,
     images: &'a [&'a Image],
-    samplers: &'a [Sampler],
+    samplers: Cow<'a, [Sampler]>,
     images_vs_visible: bool,
 }
 
@@ -205,28 +206,33 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
         ShaderParamsBuilder {
             uniforms,
             images: &[],
-            samplers: &[],
+            samplers: vec![default_sampler()].into(),
             images_vs_visible: false,
         }
     }
 
-    /// Provides images to the shaders.
+    /// Provides images to the shaders. Images are bound after uniforms.
     ///
     /// # Arguments
     ///
     /// * `vs_visible` - If the images should also be visible to the vertex shader, rather
     ///    than just the fragment shader.
-    pub fn images(
-        self,
-        images: &'a [&'a Image],
-        samplers: &'a [Sampler],
-        vs_visible: bool,
-    ) -> Self {
+    pub fn images(self, images: &'a [&'a Image], vs_visible: bool) -> Self {
         ShaderParamsBuilder {
             uniforms: self.uniforms,
             images,
-            samplers,
+            samplers: self.samplers,
             images_vs_visible: vs_visible,
+        }
+    }
+
+    /// Provides samplers to the shaders. Samplers are bound after images.
+    pub fn samplers(self, samplers: &'a [Sampler]) -> Self {
+        ShaderParamsBuilder {
+            uniforms: self.uniforms,
+            images: self.images,
+            samplers: samplers.into(),
+            images_vs_visible: self.images_vs_visible,
         }
     }
 
@@ -287,7 +293,8 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
 /// These parameters are bound to group 3. With WGSL, for example,
 /// ```rust,ignore
 /// ggez::graphics::ShaderParamsBuilder::new(&my_uniforms)
-///     .images(&[&image1, &image2], &[sampler1], false)
+///     .images(&[&image1, &image2], false)
+///     .samplers(&[sampler1])
 ///     .build(&mut ctx.gfx)
 /// ```
 /// Corresponds to...
