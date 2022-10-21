@@ -538,7 +538,7 @@ impl<'a> InternalCanvas<'a> {
             if let ShaderType::Instance { .. } = ty {
                 groups.push(instance_layout);
             } else {
-                // the dummy group ensures the user's bind group is at index 4
+                // the dummy group ensures the user's bind group is at index 3
                 groups.push(dummy_layout);
                 self.pass
                     .set_bind_group(2, self.arenas.bind_groups.alloc(dummy_group), &[]);
