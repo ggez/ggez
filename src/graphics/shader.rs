@@ -190,7 +190,8 @@ pub use crevice::std140::AsStd140;
 #[derive(Debug)]
 pub struct ShaderParamsBuilder<'a, Uniforms: AsStd140> {
     uniforms: &'a Uniforms,
-    images: &'a [(&'a Image, Sampler)],
+    images: &'a [&'a Image],
+    samplers: &'a [Sampler],
     images_vs_visible: bool,
 }
 
@@ -204,6 +205,7 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
         ShaderParamsBuilder {
             uniforms,
             images: &[],
+            samplers: &[],
             images_vs_visible: false,
         }
     }
@@ -214,10 +216,16 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
     ///
     /// * `vs_visible` - If the images should also be visible to the vertex shader, rather
     ///    than just the fragment shader.
-    pub fn images(self, images: &'a [(&'a Image, Sampler)], vs_visible: bool) -> Self {
+    pub fn images(
+        self,
+        images: &'a [&'a Image],
+        samplers: &'a [Sampler],
+        vs_visible: bool,
+    ) -> Self {
         ShaderParamsBuilder {
             uniforms: self.uniforms,
             images,
+            samplers,
             images_vs_visible: vs_visible,
         }
     }
@@ -248,14 +256,14 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
         } else {
             wgpu::ShaderStages::FRAGMENT
         };
-        for (image, _) in self.images {
+        for image in self.images {
             builder = builder.image(&image.view, vis);
         }
 
         let samplers = self
-            .images
+            .samplers
             .iter()
-            .map(|&(_, sampler)| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
+            .map(|&sampler| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
             .collect::<Vec<_>>();
         for sampler in &samplers {
             builder = builder.sampler(sampler, vis);
@@ -279,7 +287,7 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
 /// These parameters are bound to group 3. With WGSL, for example,
 /// ```rust,ignore
 /// ggez::graphics::ShaderParamsBuilder::new(&my_uniforms)
-///     .images(&[(&image1, &sampler1), (&image2, &sampler2)], false)
+///     .images(&[&image1, &image2], &[sampler1], false)
 ///     .build(&mut ctx.gfx)
 /// ```
 /// Corresponds to...
@@ -292,8 +300,6 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
 /// var image2: texture_2d<f32>;
 /// @group(3) @binding(3)
 /// var sampler1: sampler;
-/// @group(3) @binding(4)
-/// var sampler2: sampler;
 /// ```
 #[derive(Debug, PartialEq, Eq)]
 pub struct ShaderParams<Uniforms: AsStd140> {
