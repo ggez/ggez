@@ -85,13 +85,13 @@ pub use crevice::std140::AsStd140;
 /// ```
 /// Corresponds to...
 /// ```ignore
-/// @group(4) @binding(0)
+/// @group(3) @binding(0)
 /// var<uniform> my_uniforms: MyUniforms;
-/// @group(4) @binding(1)
+/// @group(3) @binding(1)
 /// var image1: texture_2d<f32>;
-/// @group(4) @binding(2)
+/// @group(3) @binding(2)
 /// var image2: texture_2d<f32>;
-/// @group(4) @binding(3)
+/// @group(3) @binding(3)
 /// var sampler1: sampler;
 /// ```
 #[derive(Debug, PartialEq, Eq)]
@@ -142,7 +142,7 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
             builder = builder.sampler(sampler, wgpu::ShaderStages::FRAGMENT);
         }
 
-        let (bind_group, layout) = builder.create_uncached(&gfx.wgpu.device);
+        let (bind_group, layout) = builder.create(&gfx.wgpu.device, &mut gfx.bind_group_cache);
 
         ShaderParams {
             uniforms,

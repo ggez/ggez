@@ -170,12 +170,12 @@ impl Context {
     fn from_conf(
         conf: conf::Conf,
         fs: Filesystem,
-    ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
+        window: winit::window::Window,
+    ) -> GameResult<Context> {
         #[cfg(feature = "audio")]
         let audio_context = audio::AudioContext::new(&fs)?;
-        let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
-        let graphics_context = graphics::context::GraphicsContext::new(&events_loop, &conf, &fs)?;
+        let graphics_context = graphics::context::GraphicsContext::new(window, &conf, &fs)?;
 
         let ctx = Context {
             conf,
@@ -192,7 +192,7 @@ impl Context {
             gamepad: input::gamepad::GamepadContext::new()?,
         };
 
-        Ok((ctx, events_loop))
+        Ok(ctx)
     }
 }
 
@@ -318,7 +318,7 @@ impl ContextBuilder {
     }
 
     /// Build the `Context`.
-    pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
+    pub(crate) fn build(self, window: winit::window::Window) -> GameResult<Context> {
         let fs = Filesystem::new(
             self.game_id.as_ref(),
             self.author.as_ref(),
@@ -340,7 +340,7 @@ impl ContextBuilder {
             self.conf
         };
 
-        Context::from_conf(config, fs)
+        Context::from_conf(config, fs, window)
     }
 }
 
@@ -362,10 +362,13 @@ mod tests {
         graphics::GraphicsContext,
         ContextBuilder,
     };
+    use winit::window::WindowBuilder;
 
     #[test]
     fn has_traits() {
-        let (mut ctx, _event_loop) = ContextBuilder::new("test", "ggez").build().unwrap();
+        let event_loop = winit::event_loop::EventLoop::new();
+        let window = WindowBuilder::new().build(&event_loop).unwrap(/* TODO */);
+        let mut ctx = ContextBuilder::new("test", "ggez").build(window).unwrap();
 
         fn takes_gfx(_gfx: &impl Has<GraphicsContext>) {}
         takes_gfx(&ctx);

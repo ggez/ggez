@@ -561,6 +561,126 @@ impl VFS for OverlayFS {
     }
 }
 
+#[cfg(target_os = "android")]
+mod android {
+    use super::{OpenOptions, VFile, VMetadata, VFS};
+    use crate::{GameError, GameResult};
+    use std::{
+        io::{self, Read, Seek, Write},
+        path::{Path, PathBuf},
+    };
+
+    pub struct AndroidAssetMetadata {
+        asset: ndk::asset::Asset,
+    }
+
+    impl VMetadata for AndroidAssetMetadata {
+        fn is_dir(&self) -> bool {
+            false
+        }
+
+        fn is_file(&self) -> bool {
+            true
+        }
+
+        fn len(&self) -> u64 {
+            self.asset.get_length().try_into().unwrap()
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct AndroidAsset {
+        asset: ndk::asset::Asset,
+    }
+
+    impl Read for AndroidAsset {
+        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+            self.asset.read(buf)
+        }
+    }
+
+    impl Write for AndroidAsset {
+        fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
+            unimplemented!()
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            unimplemented!()
+        }
+    }
+
+    impl Seek for AndroidAsset {
+        fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
+            self.asset.seek(pos)
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct AndroidAssetsFS {}
+
+    impl AndroidAssetsFS {
+        pub fn new() -> Self {
+            AndroidAssetsFS {}
+        }
+    }
+
+    impl VFS for AndroidAssetsFS {
+        fn open_options(
+            &self,
+            path: &Path,
+            _open_options: OpenOptions,
+        ) -> GameResult<Box<dyn VFile>> {
+            let activity = ndk_glue::native_activity();
+            let c_path = std::ffi::CString::new(&path.as_os_str().to_str().unwrap()[1..]).unwrap();
+            let asset = activity
+                .asset_manager()
+                .open(&c_path)
+                .ok_or_else(|| GameError::FilesystemError("Unable to find file.".into()))?;
+            Ok(Box::new(AndroidAsset { asset }))
+        }
+
+        fn mkdir(&self, _path: &Path) -> GameResult {
+            todo!()
+        }
+
+        fn rm(&self, _path: &Path) -> GameResult {
+            todo!()
+        }
+
+        fn rmrf(&self, _path: &Path) -> GameResult {
+            todo!()
+        }
+
+        fn exists(&self, _path: &Path) -> bool {
+            todo!()
+        }
+
+        fn metadata(&self, path: &Path) -> GameResult<Box<dyn VMetadata>> {
+            let activity = ndk_glue::native_activity();
+            let c_path = std::ffi::CString::new(&path.as_os_str().to_str().unwrap()[1..]).unwrap();
+            let asset = activity
+                .asset_manager()
+                .open(&c_path)
+                .ok_or_else(|| GameError::FilesystemError("Unable to find file.".into()))?;
+            Ok(Box::new(AndroidAssetMetadata { asset }))
+        }
+
+        fn read_dir(
+            &self,
+            _path: &Path,
+        ) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
+            todo!()
+        }
+
+        fn to_path_buf(&self) -> Option<PathBuf> {
+            None
+        }
+    }
+}
+
+#[cfg(target_os = "android")]
+pub use android::*;
+
 trait ZipArchiveAccess {
     fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile<'_>>;
     fn by_index(&mut self, file_number: usize) -> zip::result::ZipResult<zip::read::ZipFile<'_>>;

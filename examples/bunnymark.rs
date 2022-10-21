@@ -179,9 +179,8 @@ fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("bunnymark", "ggez").add_resource_path(resource_dir);
-    let (mut ctx, event_loop) = cb.build()?;
-
-    let state = GameState::new(&mut ctx)?;
-    event::run(ctx, event_loop, state)
+    event::run(
+        ggez::ContextBuilder::new("bunnymark", "ggez").add_resource_path(resource_dir),
+        |ctx| GameState::new(ctx).unwrap(),
+    )
 }

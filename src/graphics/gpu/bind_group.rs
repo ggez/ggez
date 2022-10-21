@@ -187,7 +187,7 @@ impl<'a> BindGroupBuilder<'a> {
         (group, layout)
     }
 
-    pub fn create_uncached(self, device: &wgpu::Device) -> (ArcBindGroup, ArcBindGroupLayout) {
+    pub fn _create_uncached(self, device: &wgpu::Device) -> (ArcBindGroup, ArcBindGroupLayout) {
         let layout = self.layout.create_uncached(device);
         let group = ArcBindGroup::new(device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
