@@ -121,7 +121,7 @@ You should see this:
 warning: unused variable: `state`
   --> src\main.rs:15:9
    |
-15 |     let state = &mut State {};
+15 |     let state = State {};
    |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_state`
    |
    = note: `#[warn(unused_variables)]` on by default
@@ -137,7 +137,6 @@ warning: unused variable: `ctx`
   |
 9 |     fn draw(&mut self, ctx: &mut Context) -> GameResult {
   |                        ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
-
 ```
 
 And then nothing should happen after it runs.
