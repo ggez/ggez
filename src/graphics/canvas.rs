@@ -122,7 +122,7 @@ impl Canvas {
             params: None,
             text_shader: default_text_shader(),
             text_params: None,
-            sampler: Sampler::linear_clamp(),
+            sampler: Sampler::default(),
             blend_mode: BlendMode::ALPHA,
             premul_text: true,
             projection: glam::Mat4::IDENTITY.into(),
@@ -225,7 +225,7 @@ impl Canvas {
     /// This is equivalent to `set_sampler(Sampler::linear_clamp())`.
     #[inline]
     pub fn set_default_sampler(&mut self) {
-        self.set_sampler(Sampler::linear_clamp());
+        self.set_sampler(Sampler::default());
     }
 
     /// Sets the active blend mode used when drawing images.

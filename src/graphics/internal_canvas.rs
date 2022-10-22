@@ -243,8 +243,8 @@ impl<'a> InternalCanvas<'a> {
 
             transform,
             curr_image: None,
-            curr_sampler: Sampler::linear_clamp(),
-            next_sampler: Sampler::linear_clamp(),
+            curr_sampler: Sampler::default(),
+            next_sampler: Sampler::default(),
             premul_text: true,
         })
     }

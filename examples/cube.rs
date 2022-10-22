@@ -205,7 +205,7 @@ impl MainState {
             .gfx
             .wgpu()
             .device
-            .create_sampler(&graphics::Sampler::linear_clamp().into());
+            .create_sampler(&graphics::Sampler::default().into());
 
         let locals = ctx
             .gfx
