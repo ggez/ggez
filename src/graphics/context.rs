@@ -220,6 +220,7 @@ impl GraphicsContext {
             } else {
                 wgpu::PresentMode::Mailbox
             },
+            alpha_mode: wgpu::CompositeAlphaMode::Auto,
         };
 
         wgpu.surface.configure(&wgpu.device, &surface_config);
