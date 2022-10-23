@@ -199,7 +199,7 @@ impl InstanceArray {
     }
 
     #[allow(unsafe_code)]
-    pub(crate) fn flush_wgpu(&self, wgpu: &WgpuContext) -> GameResult<()> {
+    pub(crate) fn flush_wgpu(&self, wgpu: &WgpuContext) -> GameResult {
         if !self.dirty.load(SeqCst) {
             return Ok(());
         } else {

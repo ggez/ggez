@@ -157,7 +157,7 @@ impl<'a> ShaderBuilder<'a> {
 /// struct MainState {}
 ///
 /// impl event::EventHandler for MainState {
-/// #   fn update(&mut self, _ctx: &mut Context) -> Result<(), GameError> { Ok(()) }
+/// #   fn update(&mut self, _ctx: &mut Context) -> GameResult { Ok(()) }
 ///     fn draw(&mut self, ctx: &mut Context) -> GameResult {
 ///         let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
 ///         let dim = Dim { rate: 0.5 };

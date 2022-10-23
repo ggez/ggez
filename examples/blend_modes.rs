@@ -47,7 +47,7 @@ impl MainState {
         canvas: &mut graphics::Canvas,
         pos: Vec2,
         name: &str,
-    ) -> GameResult<()> {
+    ) -> GameResult {
         const TRI_COLORS: [Color; 3] = [
             Color::new(0.8, 0., 0., 0.5),
             Color::new(0., 0.8, 0., 0.5),
@@ -91,7 +91,7 @@ impl MainState {
         ctx: &mut Context,
         (w, h): (f32, f32),
         canvas: &mut graphics::Canvas,
-    ) -> GameResult<()> {
+    ) -> GameResult {
         let y = h / 4.;
         const MODE_COUNT: usize = 8;
         let x_step = w / (MODE_COUNT + 1) as f32;
@@ -133,11 +133,11 @@ impl MainState {
 }
 
 impl EventHandler for MainState {
-    fn update(&mut self, _: &mut Context) -> GameResult<()> {
+    fn update(&mut self, _: &mut Context) -> GameResult {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let (w, h) = ctx.gfx.drawable_size();
 
         // draw everything onto self.layer

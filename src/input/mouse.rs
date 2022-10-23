@@ -234,7 +234,7 @@ pub fn cursor_grabbed(ctx: &Context) -> bool {
 ///
 /// **Note**: macOS locks the cursor rather than confining it.
 // TODO: Move to graphics context (This isn't input)
-pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
+pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult {
     ctx.mouse.cursor_grabbed = grabbed;
     ctx.gfx
         .window
@@ -253,7 +253,7 @@ pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult<()> {
 /// Set the current position of the mouse cursor, in pixels.
 /// Uses strictly window-only coordinates.
 // TODO: Move to graphics context (This isn't input)
-pub fn set_position<P>(ctx: &mut Context, point: P) -> GameResult<()>
+pub fn set_position<P>(ctx: &mut Context, point: P) -> GameResult
 where
     P: Into<mint::Point2<f32>>,
 {
