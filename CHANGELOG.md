@@ -29,8 +29,11 @@ The downside of this is that it's a bit more verbose and that you have to pass a
 There's a new struct `ShaderParams`allowing you to pass images, samplers and uniforms to shaders.
 Both `ShaderParam`s and `Shader`s are now set per `Canvas` (as well as blend modes and projection matrices).
 
+`Shader`s and `ShaderParam`s are created through `ShaderBuilder` and `ShaderParamBuilder` respectively, allowing you to
+only set the parameters you're interested in, without worrying about the rest.
+
 Uniforms are now no longer created using the `gfx!` macro. No need to include `gfx-rs` in your own project, just to be
-able to create shaders. Now, simply deriving `AsStd140` is all you usually need (see the shader examples).
+able to create shader uniforms. Now, simply deriving `AsStd140` is all you usually need (see the shader examples).
 At the time of writing you're sadly also required to depend on `crevice 0.11` directly, as `AsStd140` needs to have it
 visible globally (and re-exporting it on our side doesn't seem to be enough). If you know a way around this, let us know!
 
@@ -104,7 +107,8 @@ The following list doesn't repeat the changes already mentioned above.
  functionality itself
 * Removed `From<tuple>` implementations for `DrawParam`, as they're non-transparent and weird
 * Removed `event::quit`, as it was replaced by `Context::request_quit`
-* Removed `Image::from_bytes` (atm, but is intended to be re-added before the release of 0.8.0)
+* Removed the ability to update only parts of the `DrawParams` inside a `MeshBatch` (now `InstanceArray`)
+  * If you want that ability back let us know! Atm it's staged as "maybe in `0.8.1`" 
 
 ## Fixed
 Many graphics bugs that were caused by the use of the discontinued `gfx-rs` were fixed by the switch to `wgpu`. The

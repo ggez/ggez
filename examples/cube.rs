@@ -4,9 +4,10 @@
 //! the underlying `gfx-rs` data types, so you can bypass ggez's
 //! drawing code entirely and write your own.
 
+use crevice::std140::AsStd140;
+use ggez::event;
 use ggez::glam::*;
 use ggez::graphics;
-use ggez::{event, graphics::AsStd140};
 use ggez::{Context, GameResult};
 use std::env;
 use std::f32;
@@ -204,7 +205,7 @@ impl MainState {
             .gfx
             .wgpu()
             .device
-            .create_sampler(&graphics::Sampler::linear_clamp().into());
+            .create_sampler(&graphics::Sampler::default().into());
 
         let locals = ctx
             .gfx

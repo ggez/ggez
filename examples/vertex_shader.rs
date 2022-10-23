@@ -1,8 +1,8 @@
 //! An example demonstrating vertex shaders.
 
+use crevice::std140::AsStd140;
 use ggez::event;
 use ggez::glam::*;
-use ggez::graphics::AsStd140;
 use ggez::graphics::{self, Color, DrawParam};
 use ggez::{Context, GameResult};
 use mint::ColumnMatrix4;

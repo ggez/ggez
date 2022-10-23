@@ -165,7 +165,7 @@ impl<'a> ShaderBuilder<'a> {
 ///         //       For more info look at the full example.
 ///         let shader = ShaderBuilder::new_wgsl()
 ///             .fragment_code(include_str!("../../resources/dimmer.wgsl"))
-///             .build(&mut ctx.gfx);
+///             .build(&mut ctx.gfx)?;
 ///         let params = ShaderParamsBuilder::new(&dim).build(&mut ctx.gfx);
 ///         params.set_uniforms(ctx, &dim);
 ///
@@ -184,7 +184,7 @@ pub struct Shader {
     pub(crate) fs_module: Option<ArcShaderModule>,
 }
 
-pub use crevice::std140::AsStd140;
+use crevice::std140::AsStd140;
 
 /// A builder for [ShaderParams]
 #[derive(Debug)]

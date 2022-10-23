@@ -1,9 +1,10 @@
 //! A more sophisticated example of how to use shaders
 //! and canvas's to do 2D GPU shadows.
 
+use crevice::std140::AsStd140;
 use ggez::glam::Vec2;
 use ggez::graphics::{
-    self, AsStd140, BlendMode, Canvas, Color, DrawParam, Shader, ShaderBuilder, ShaderParamsBuilder,
+    self, BlendMode, Canvas, Color, DrawParam, Shader, ShaderBuilder, ShaderParamsBuilder,
 };
 use ggez::{event, graphics::ShaderParams};
 use ggez::{Context, GameResult};
