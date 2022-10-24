@@ -220,6 +220,7 @@ impl GraphicsContext {
             } else {
                 wgpu::PresentMode::Mailbox
             },
+            alpha_mode: wgpu::CompositeAlphaMode::Auto,
         };
 
         wgpu.surface.configure(&wgpu.device, &surface_config);
@@ -591,7 +592,7 @@ impl GraphicsContext {
 
             let sampler = &mut self
                 .sampler_cache
-                .get(&self.wgpu.device, Sampler::linear_clamp());
+                .get(&self.wgpu.device, Sampler::default());
 
             let (bind, layout) = BindGroupBuilder::new()
                 .image(&fcx.present.view, wgpu::ShaderStages::FRAGMENT)

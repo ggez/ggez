@@ -101,7 +101,7 @@ impl MainState {
         )?;
         let demo_image = graphics::Image::from_solid(ctx, 200, AQUA);
 
-        let mut demo_instances = graphics::InstanceArray::new(ctx, demo_image.clone(), 2);
+        let mut demo_instances = graphics::InstanceArray::new(ctx, demo_image.clone());
         demo_instances.push(
             DrawParam::default()
                 .dest(Vec2::new(250.0, 350.0))

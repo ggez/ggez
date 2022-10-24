@@ -34,7 +34,7 @@ pub struct Canvas {
 
     target: Image,
     resolve: Option<Image>,
-    load_op: CanvasLoadOp,
+    clear: Option<Color>,
 
     // This will be removed after queue_text and draw_queued_text have been removed.
     pub(crate) queued_texts: Vec<(Text, mint::Point2<f32>, Option<Color>)>,
@@ -43,14 +43,16 @@ pub struct Canvas {
 impl Canvas {
     /// Create a new [Canvas] from an image. This will allow for drawing to a single color image.
     ///
+    /// `clear` will set the image initially to the given color, if a color is provided, or keep it as is, if it's `None`.
+    ///
     /// The image must be created for Canvas usage, i.e. [Image::new_canvas_image()], or [ScreenImage], and must only have a sample count of 1.
     #[inline]
     pub fn from_image(
         gfx: &impl Has<GraphicsContext>,
         image: Image,
-        load_op: impl Into<CanvasLoadOp>,
+        clear: impl Into<Option<Color>>,
     ) -> Self {
-        Canvas::new(gfx, image, None, load_op.into())
+        Canvas::new(gfx, image, None, clear.into())
     }
 
     /// Helper for [`Canvas::from_image`] for construction of a [`Canvas`] from a [`ScreenImage`].
@@ -58,11 +60,11 @@ impl Canvas {
     pub fn from_screen_image(
         gfx: &impl Has<GraphicsContext>,
         image: &mut ScreenImage,
-        load_op: impl Into<CanvasLoadOp>,
+        clear: impl Into<Option<Color>>,
     ) -> Self {
         let gfx = gfx.retrieve();
         let image = image.image(gfx);
-        Canvas::from_image(gfx, image, load_op)
+        Canvas::from_image(gfx, image, clear)
     }
 
     /// Create a new [Canvas] from an MSAA image and a resolve target. This will allow for drawing with MSAA to a color image, then resolving the samples into a secondary target.
@@ -73,9 +75,9 @@ impl Canvas {
         gfx: &impl Has<GraphicsContext>,
         msaa_image: Image,
         resolve: Image,
-        load_op: impl Into<CanvasLoadOp>,
+        clear: impl Into<Option<Color>>,
     ) -> Self {
-        Canvas::new(gfx, msaa_image, Some(resolve), load_op.into())
+        Canvas::new(gfx, msaa_image, Some(resolve), clear.into())
     }
 
     /// Helper for [`Canvas::from_msaa`] for construction of an MSAA [`Canvas`] from a [`ScreenImage`].
@@ -84,15 +86,17 @@ impl Canvas {
         gfx: &impl Has<GraphicsContext>,
         msaa_image: &mut ScreenImage,
         resolve: &mut ScreenImage,
-        load_op: impl Into<CanvasLoadOp>,
+        clear: impl Into<Option<Color>>,
     ) -> Self {
         let msaa = msaa_image.image(gfx);
         let resolve = resolve.image(gfx);
-        Canvas::from_msaa(gfx, msaa, resolve, load_op)
+        Canvas::from_msaa(gfx, msaa, resolve, clear)
     }
 
     /// Create a new [Canvas] that renders directly to the window surface.
-    pub fn from_frame(gfx: &impl Has<GraphicsContext>, load_op: impl Into<CanvasLoadOp>) -> Self {
+    ///
+    /// `clear` will set the image initially to the given color, if a color is provided, or keep it as is, if it's `None`.
+    pub fn from_frame(gfx: &impl Has<GraphicsContext>, clear: impl Into<Option<Color>>) -> Self {
         let gfx = gfx.retrieve();
         // these unwraps will never fail
         let samples = gfx.frame_msaa_image.as_ref().unwrap().samples();
@@ -104,25 +108,25 @@ impl Canvas {
         } else {
             (gfx.frame_image.clone().unwrap(), None)
         };
-        Canvas::new(gfx, target, resolve, load_op.into())
+        Canvas::new(gfx, target, resolve, clear.into())
     }
 
     fn new(
         gfx: &impl Has<GraphicsContext>,
         target: Image,
         resolve: Option<Image>,
-        load_op: CanvasLoadOp,
+        clear: Option<Color>,
     ) -> Self {
         let gfx = gfx.retrieve();
 
         let defaults = DefaultResources::new(gfx);
 
         let state = DrawState {
-            shader: defaults.shader.clone(),
+            shader: default_shader(),
             params: None,
-            text_shader: defaults.text_shader.clone(),
+            text_shader: default_text_shader(),
             text_params: None,
-            sampler: Sampler::linear_clamp(),
+            sampler: Sampler::default(),
             blend_mode: BlendMode::ALPHA,
             premul_text: true,
             projection: glam::Mat4::IDENTITY.into(),
@@ -146,7 +150,7 @@ impl Canvas {
 
             target,
             resolve,
-            load_op,
+            clear,
 
             queued_texts: Vec::new(),
         };
@@ -170,7 +174,7 @@ impl Canvas {
 
     /// Sets the shader parameters to use when drawing meshes.
     ///
-    /// **Bound to bind group 4.**
+    /// **Bound to bind group 3.**
     #[inline]
     pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
         self.state.params = Some((params.bind_group.clone(), params.layout));
@@ -199,13 +203,13 @@ impl Canvas {
     /// Resets the active mesh shader to the default.
     #[inline]
     pub fn set_default_shader(&mut self) {
-        self.state.shader = self.defaults.shader.clone();
+        self.state.shader = default_shader();
     }
 
     /// Resets the active text shader to the default.
     #[inline]
     pub fn set_default_text_shader(&mut self) {
-        self.state.text_shader = self.defaults.text_shader.clone();
+        self.state.text_shader = default_text_shader();
     }
 
     /// Sets the active sampler used to sample images.
@@ -225,7 +229,7 @@ impl Canvas {
     /// This is equivalent to `set_sampler(Sampler::linear_clamp())`.
     #[inline]
     pub fn set_default_sampler(&mut self) {
-        self.set_sampler(Sampler::linear_clamp());
+        self.set_sampler(Sampler::default());
     }
 
     /// Sets the active blend mode used when drawing images.
@@ -405,9 +409,9 @@ impl Canvas {
 
     fn finalize(&mut self, gfx: &mut GraphicsContext) -> GameResult {
         let mut canvas = if let Some(resolve) = &self.resolve {
-            InternalCanvas::from_msaa(gfx, self.load_op, &self.target, resolve)?
+            InternalCanvas::from_msaa(gfx, self.clear, &self.target, resolve)?
         } else {
-            InternalCanvas::from_image(gfx, self.load_op, &self.target)?
+            InternalCanvas::from_image(gfx, self.clear, &self.target)?
         };
 
         let mut state = self.state.clone();
@@ -497,31 +501,6 @@ impl Canvas {
     }
 }
 
-/// Describes the image load operation when starting a new canvas.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum CanvasLoadOp {
-    /// Keep the existing contents of the image.
-    DontClear,
-    /// Clear the image contents to a solid color.
-    Clear(Color),
-}
-
-impl From<Option<Color>> for CanvasLoadOp {
-    fn from(color: Option<Color>) -> Self {
-        match color {
-            Some(color) => CanvasLoadOp::Clear(color),
-            None => CanvasLoadOp::DontClear,
-        }
-    }
-}
-
-impl From<Color> for CanvasLoadOp {
-    #[inline]
-    fn from(color: Color) -> Self {
-        CanvasLoadOp::Clear(color)
-    }
-}
-
 #[derive(Debug, Clone)]
 struct DrawState {
     shader: Shader,
@@ -562,32 +541,31 @@ struct DrawCommand {
 
 #[derive(Debug)]
 pub(crate) struct DefaultResources {
-    pub shader: Shader,
-    pub text_shader: Shader,
     pub mesh: Mesh,
     pub image: Image,
 }
 
 impl DefaultResources {
     fn new(gfx: &GraphicsContext) -> Self {
-        let shader = Shader {
-            fragment: gfx.draw_shader.clone(),
-            fs_entry: "fs_main".into(),
-        };
-
-        let text_shader = Shader {
-            fragment: gfx.text_shader.clone(),
-            fs_entry: "fs_main".into(),
-        };
-
         let mesh = gfx.rect_mesh.clone();
         let image = gfx.white_image.clone();
 
-        DefaultResources {
-            shader,
-            text_shader,
-            mesh,
-            image,
-        }
+        DefaultResources { mesh, image }
+    }
+}
+
+/// The default shader.
+pub fn default_shader() -> Shader {
+    Shader {
+        fs_module: None,
+        vs_module: None,
+    }
+}
+
+/// The default text shader.
+pub fn default_text_shader() -> Shader {
+    Shader {
+        fs_module: None,
+        vs_module: None,
     }
 }

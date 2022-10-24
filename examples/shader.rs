@@ -1,8 +1,9 @@
 //! A very simple shader example.
 
+use crevice::std140::AsStd140;
+use ggez::event;
 use ggez::glam::Vec2;
 use ggez::graphics::{self, Color, DrawMode};
-use ggez::{event, graphics::AsStd140};
 use ggez::{Context, GameResult};
 use std::env;
 use std::path;
@@ -21,9 +22,10 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let dim = Dim { rate: 0.5 };
-        let shader =
-            graphics::Shader::from_wgsl(ctx, include_str!("../resources/dimmer.wgsl"), "main");
-        let params = graphics::ShaderParams::new(ctx, &dim, &[], &[]);
+        let shader = graphics::ShaderBuilder::new_wgsl()
+            .fragment_path("/dimmer.wgsl")
+            .build(&ctx.gfx)?;
+        let params = graphics::ShaderParamsBuilder::new(&dim).build(&mut ctx.gfx);
         Ok(MainState {
             dim,
             shader,

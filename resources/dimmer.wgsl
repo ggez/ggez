@@ -18,6 +18,6 @@ var s: sampler;
 var<uniform> dim: Dim;
 
 @fragment
-fn main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     return textureSample(t, s, in.uv) * in.color * dim.rate;
 }

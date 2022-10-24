@@ -245,18 +245,18 @@ impl Filesystem {
     /// Create an empty directory in the user dir
     /// with the given name.  Any parents to that directory
     /// that do not exist will be created.
-    pub fn create_dir<P: AsRef<path::Path>>(&self, path: P) -> GameResult<()> {
+    pub fn create_dir<P: AsRef<path::Path>>(&self, path: P) -> GameResult {
         self.vfs().mkdir(path.as_ref())
     }
 
     /// Deletes the specified file in the user dir.
-    pub fn delete<P: AsRef<path::Path>>(&self, path: P) -> GameResult<()> {
+    pub fn delete<P: AsRef<path::Path>>(&self, path: P) -> GameResult {
         self.vfs().rm(path.as_ref())
     }
 
     /// Deletes the specified directory in the user dir,
     /// and all its contents!
-    pub fn delete_dir<P: AsRef<path::Path>>(&self, path: P) -> GameResult<()> {
+    pub fn delete_dir<P: AsRef<path::Path>>(&self, path: P) -> GameResult {
         self.vfs().rmrf(path.as_ref())
     }
 
@@ -346,7 +346,7 @@ impl Filesystem {
     /// for `.mount()`. Rather, it can be used to read zip files from sources
     /// such as `std::io::Cursor::new(includes_bytes!(...))` in order to embed
     /// resources into the game's executable.
-    pub fn add_zip_file<R: io::Read + io::Seek + 'static>(&self, reader: R) -> GameResult<()> {
+    pub fn add_zip_file<R: io::Read + io::Seek + 'static>(&self, reader: R) -> GameResult {
         let zipfs = vfs::ZipFS::from_read(reader)?;
         trace!("Adding zip file from reader");
         self.vfs().push_back(Box::new(zipfs));
@@ -371,7 +371,7 @@ impl Filesystem {
 
     /// Takes a `Conf` object and saves it to the user directory,
     /// overwriting any file already there.
-    pub fn write_config(&self, conf: &conf::Conf) -> GameResult<()> {
+    pub fn write_config(&self, conf: &conf::Conf) -> GameResult {
         let conf_path = path::Path::new(CONFIG_NAME);
         let mut file = self.create(conf_path)?;
         conf.to_toml_file(&mut file)?;

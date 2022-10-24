@@ -40,6 +40,12 @@ impl Sampler {
     }
 }
 
+impl Default for Sampler {
+    fn default() -> Self {
+        Self::linear_clamp()
+    }
+}
+
 impl<'a> From<Sampler> for wgpu::SamplerDescriptor<'a> {
     fn from(sampler: Sampler) -> Self {
         wgpu::SamplerDescriptor {

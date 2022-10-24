@@ -12,7 +12,7 @@ use super::{
     mesh::{Mesh, Vertex},
     sampler::{Sampler, SamplerCache},
     shader::Shader,
-    BlendMode, CanvasLoadOp, InstanceArray, LinearColor, Rect, Text, Transform, WgpuContext,
+    BlendMode, Color, InstanceArray, LinearColor, Rect, Text, Transform, WgpuContext,
 };
 use crate::{GameError, GameResult};
 use crevice::std140::{AsStd140, Std140};
@@ -60,7 +60,7 @@ pub struct InternalCanvas<'a> {
 impl<'a> InternalCanvas<'a> {
     pub fn from_image(
         gfx: &'a mut GraphicsContext,
-        load_op: CanvasLoadOp,
+        clear: impl Into<Option<Color>>,
         image: &'a Image,
     ) -> GameResult<Self> {
         if image.samples() > 1 {
@@ -74,11 +74,9 @@ impl<'a> InternalCanvas<'a> {
                     view: image.view.as_ref(),
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: match load_op {
-                            CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                            CanvasLoadOp::Clear(color) => {
-                                wgpu::LoadOp::Clear(LinearColor::from(color).into())
-                            }
+                        load: match clear.into() {
+                            None => wgpu::LoadOp::Load,
+                            Some(color) => wgpu::LoadOp::Clear(LinearColor::from(color).into()),
                         },
                         store: true,
                     },
@@ -90,7 +88,7 @@ impl<'a> InternalCanvas<'a> {
 
     pub fn from_msaa(
         gfx: &'a mut GraphicsContext,
-        load_op: CanvasLoadOp,
+        clear: impl Into<Option<Color>>,
         msaa_image: &'a Image,
         resolve_image: &'a Image,
     ) -> GameResult<Self> {
@@ -119,11 +117,9 @@ impl<'a> InternalCanvas<'a> {
                     view: msaa_image.view.as_ref(),
                     resolve_target: Some(resolve_image.view.as_ref()),
                     ops: wgpu::Operations {
-                        load: match load_op {
-                            CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                            CanvasLoadOp::Clear(color) => {
-                                wgpu::LoadOp::Clear(LinearColor::from(color).into())
-                            }
+                        load: match clear.into() {
+                            None => wgpu::LoadOp::Load,
+                            Some(color) => wgpu::LoadOp::Clear(LinearColor::from(color).into()),
                         },
                         store: true,
                     },
@@ -175,13 +171,13 @@ impl<'a> InternalCanvas<'a> {
         let transform = screen_to_mat(screen_coords);
 
         let shader = Shader {
-            fragment: gfx.draw_shader.clone(),
-            fs_entry: "fs_main".into(),
+            vs_module: None,
+            fs_module: None,
         };
 
         let text_shader = Shader {
-            fragment: gfx.text_shader.clone(),
-            fs_entry: "fs_main".into(),
+            vs_module: None,
+            fs_module: None,
         };
 
         let text_uniforms = uniform_arena.allocate(
@@ -243,8 +239,8 @@ impl<'a> InternalCanvas<'a> {
 
             transform,
             curr_image: None,
-            curr_sampler: Sampler::linear_clamp(),
-            next_sampler: Sampler::linear_clamp(),
+            curr_sampler: Sampler::default(),
+            next_sampler: Sampler::default(),
             premul_text: true,
         })
     }
@@ -538,7 +534,7 @@ impl<'a> InternalCanvas<'a> {
             if let ShaderType::Instance { .. } = ty {
                 groups.push(instance_layout);
             } else {
-                // the dummy group ensures the user's bind group is at index 4
+                // the dummy group ensures the user's bind group is at index 3
                 groups.push(dummy_layout);
                 self.pass
                     .set_bind_group(2, self.arenas.bind_groups.alloc(dummy_group), &[]);
@@ -571,20 +567,33 @@ impl<'a> InternalCanvas<'a> {
                     &self.wgpu.device,
                     layout.as_ref(),
                     RenderPipelineInfo {
-                        vs: match ty {
-                            ShaderType::Draw => self.draw_sm.clone(),
-                            ShaderType::Instance { ordered } => {
-                                if ordered {
-                                    self.instance_sm.clone()
-                                } else {
-                                    self.instance_unordered_sm.clone()
+                        vs: if let Some(vs_module) = &shader.vs_module {
+                            vs_module.clone()
+                        } else {
+                            match ty {
+                                ShaderType::Draw => self.draw_sm.clone(),
+                                ShaderType::Instance { ordered } => {
+                                    if ordered {
+                                        self.instance_sm.clone()
+                                    } else {
+                                        self.instance_unordered_sm.clone()
+                                    }
                                 }
+                                ShaderType::Text => self.text_sm.clone(),
                             }
-                            ShaderType::Text => self.text_sm.clone(),
                         },
-                        fs: shader.fragment.clone(),
+                        fs: if let Some(fs_module) = &shader.fs_module {
+                            fs_module.clone()
+                        } else {
+                            match ty {
+                                ShaderType::Draw | ShaderType::Instance { .. } => {
+                                    self.draw_sm.clone()
+                                }
+                                ShaderType::Text => self.text_sm.clone(),
+                            }
+                        },
                         vs_entry: "vs_main".into(),
-                        fs_entry: shader.fs_entry.clone(),
+                        fs_entry: "fs_main".into(),
                         samples: self.samples,
                         format: self.format,
                         blend: Some(wgpu::BlendState {

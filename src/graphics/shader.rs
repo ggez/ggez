@@ -1,6 +1,10 @@
+use std::io::Read;
 use std::marker::PhantomData;
 
-use crate::context::{Has, HasMut};
+use crate::{
+    context::{Has, HasMut},
+    GameError, GameResult,
+};
 
 use super::{
     context::GraphicsContext,
@@ -14,7 +18,132 @@ use super::{
 use crevice::std140::Std140;
 use wgpu::util::DeviceExt;
 
-/// A custom fragment shader that can be used to render with shader effects.
+#[derive(Debug, PartialEq, Eq)]
+enum ShaderSource<'a> {
+    None,
+    Path(&'a str),
+    Code(&'a str),
+}
+
+/// Builder pattern for assembling shaders.
+#[derive(Debug)]
+pub struct ShaderBuilder<'a> {
+    fs: ShaderSource<'a>,
+    vs: ShaderSource<'a>,
+}
+
+impl<'a> ShaderBuilder<'a> {
+    /// Create a new builder with no associated shader code.
+    pub fn new_wgsl() -> Self {
+        ShaderBuilder {
+            fs: ShaderSource::None,
+            vs: ShaderSource::None,
+        }
+    }
+
+    /// Use this wgsl shader code for the fragment shader.
+    pub fn fragment_code(self, source: &'a str) -> Self {
+        ShaderBuilder {
+            fs: ShaderSource::Code(source),
+            vs: self.vs,
+        }
+    }
+    /// Use this wgsl code resource path for the fragment shader.
+    pub fn fragment_path(self, path: &'a str) -> Self {
+        ShaderBuilder {
+            fs: ShaderSource::Path(path),
+            vs: self.vs,
+        }
+    }
+
+    /// Use this wgsl shader code for the vertex shader.
+    pub fn vertex_code(self, source: &'a str) -> Self {
+        ShaderBuilder {
+            fs: self.vs,
+            vs: ShaderSource::Code(source),
+        }
+    }
+
+    /// Use this wgsl code resource path for the vertex shader.
+    pub fn vertex_path(self, path: &'a str) -> Self {
+        ShaderBuilder {
+            fs: self.vs,
+            vs: ShaderSource::Path(path),
+        }
+    }
+
+    /// Use this wgsl code as both a vertex and fragment shader.
+    pub fn combined_code(self, source: &'a str) -> Self {
+        ShaderBuilder {
+            fs: ShaderSource::Code(source),
+            vs: ShaderSource::Code(source),
+        }
+    }
+
+    /// Use a single wgsl resource as both a vertex and fragment shader.
+    pub fn combined_path(self, path: &'a str) -> Self {
+        ShaderBuilder {
+            fs: ShaderSource::Path(path),
+            vs: ShaderSource::Path(path),
+        }
+    }
+
+    /// Create a Shader from the builder.
+    pub fn build(self, gfx: &impl Has<GraphicsContext>) -> GameResult<Shader> {
+        let gfx = gfx.retrieve();
+        let load = |s: &str| {
+            Some(ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
+                wgpu::ShaderModuleDescriptor {
+                    label: None,
+                    source: wgpu::ShaderSource::Wgsl(s.into()),
+                },
+            )))
+        };
+        let load_resource = |path: &str| -> GameResult<Option<ArcShaderModule>> {
+            let mut encoded = Vec::new();
+            _ = gfx.fs.open(path)?.read_to_end(&mut encoded)?;
+            Ok(load(
+                &String::from_utf8(encoded).map_err(GameError::ShaderEncodingError)?,
+            ))
+        };
+        let load_any = |source| -> GameResult<Option<ArcShaderModule>> {
+            Ok(match source {
+                ShaderSource::Code(source) => load(source),
+                ShaderSource::Path(source) => load_resource(source)?,
+                ShaderSource::None => None,
+            })
+        };
+        Ok(if self.vs == self.fs {
+            let module = load_any(self.vs)?;
+            Shader {
+                vs_module: module.clone(),
+                fs_module: module,
+            }
+        } else {
+            Shader {
+                vs_module: load_any(self.vs)?,
+                fs_module: load_any(self.fs)?,
+            }
+        })
+    }
+}
+
+/// A custom shader that can be used to render with shader effects.
+///
+/// The shader may have a user specified vertex module, fragment module, both,
+/// or neither. The fragment module entry point must be named fs_main. The
+/// vertex module entry point must be named vs_main. The vertex module must
+/// have an output of type
+/// ```wgsl
+/// struct VertexOutput {
+///     @builtin(position) position: vec4<f32>,
+///     @location(0) uv: vec2<f32>,
+///     @location(1) color: vec4<f32>,
+/// }
+/// ```
+/// if the fragment module is left unspecified (default).
+///
+/// Produce a Shader using [ShaderBuilder].
 ///
 /// Adapted from the `shader.rs` example:
 /// ```rust
@@ -28,18 +157,16 @@ use wgpu::util::DeviceExt;
 /// struct MainState {}
 ///
 /// impl event::EventHandler for MainState {
-/// #   fn update(&mut self, _ctx: &mut Context) -> Result<(), GameError> { Ok(()) }
+/// #   fn update(&mut self, _ctx: &mut Context) -> GameResult { Ok(()) }
 ///     fn draw(&mut self, ctx: &mut Context) -> GameResult {
 ///         let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
 ///         let dim = Dim { rate: 0.5 };
 ///         // NOTE: This is for simplicity; do not recreate your shader every frame like this!
 ///         //       For more info look at the full example.
-///         let shader = Shader::from_wgsl(
-///             ctx,
-///             include_str!("../../resources/dimmer.wgsl"),
-///             "main"
-///         );
-///         let params = ShaderParams::new(ctx, &dim, &[], &[]);
+///         let shader = ShaderBuilder::new_wgsl()
+///             .fragment_code(include_str!("../../resources/dimmer.wgsl"))
+///             .build(&mut ctx.gfx)?;
+///         let params = ShaderParamsBuilder::new(&dim).build(&mut ctx.gfx);
 ///         params.set_uniforms(ctx, &dim);
 ///
 ///         canvas.set_shader(shader);
@@ -53,76 +180,66 @@ use wgpu::util::DeviceExt;
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Shader {
-    pub(crate) fragment: ArcShaderModule,
-    pub(crate) fs_entry: String,
+    pub(crate) vs_module: Option<ArcShaderModule>,
+    pub(crate) fs_module: Option<ArcShaderModule>,
 }
 
-impl Shader {
-    /// Creates a shader from a WGSL string.
-    pub fn from_wgsl(gfx: &impl Has<GraphicsContext>, wgsl: &str, fs_entry: &str) -> Self {
-        let gfx = gfx.retrieve();
-        let module = ArcShaderModule::new(gfx.wgpu.device.create_shader_module(
-            wgpu::ShaderModuleDescriptor {
-                label: None,
-                source: wgpu::ShaderSource::Wgsl(wgsl.into()),
-            },
-        ));
+use crevice::std140::AsStd140;
 
-        Shader {
-            fragment: module,
-            fs_entry: fs_entry.into(),
+/// A builder for [ShaderParams]
+#[derive(Debug)]
+pub struct ShaderParamsBuilder<'a, Uniforms: AsStd140> {
+    uniforms: &'a Uniforms,
+    images: &'a [&'a Image],
+    samplers: &'a [Sampler],
+    images_vs_visible: bool,
+}
+
+impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
+    /// Creates a new builder for [ShaderParams].
+    ///
+    /// # Arguments
+    ///
+    /// * `uniforms` - Initial uniforms.
+    pub fn new(uniforms: &'a Uniforms) -> Self {
+        ShaderParamsBuilder {
+            uniforms,
+            images: &[],
+            samplers: &[],
+            images_vs_visible: false,
         }
     }
-}
 
-pub use crevice::std140::AsStd140;
-
-/// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
-///
-/// These parameters are bound to group 4. With WGSL, for example,
-/// ```rust,ignore
-/// ggez::graphics::ShaderParams::new(ctx, &my_uniforms, &[&image1, &image2], &[sampler1])
-/// ```
-/// Corresponds to...
-/// ```ignore
-/// @group(4) @binding(0)
-/// var<uniform> my_uniforms: MyUniforms;
-/// @group(4) @binding(1)
-/// var image1: texture_2d<f32>;
-/// @group(4) @binding(2)
-/// var image2: texture_2d<f32>;
-/// @group(4) @binding(3)
-/// var sampler1: sampler;
-/// ```
-#[derive(Debug, PartialEq, Eq)]
-pub struct ShaderParams<Uniforms: AsStd140> {
-    pub(crate) uniforms: ArcBuffer,
-    pub(crate) layout: ArcBindGroupLayout,
-    pub(crate) bind_group: ArcBindGroup,
-    _marker: PhantomData<Uniforms>,
-}
-
-impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
-    /// Creates a new [ShaderParams], initialized with the given uniforms, images, and samplers.
-    pub fn new(
-        gfx: &mut impl HasMut<GraphicsContext>,
-        uniforms: &Uniforms,
-        images: &[&Image],
-        samplers: &[Sampler],
+    /// Provides images to the shaders.
+    ///
+    /// # Arguments
+    ///
+    /// * `vs_visible` - If the images should also be visible to the vertex shader, rather
+    ///    than just the fragment shader.
+    pub fn images(
+        self,
+        images: &'a [&'a Image],
+        samplers: &'a [Sampler],
+        vs_visible: bool,
     ) -> Self {
+        ShaderParamsBuilder {
+            uniforms: self.uniforms,
+            images,
+            samplers,
+            images_vs_visible: vs_visible,
+        }
+    }
+
+    /// Produce a [ShaderParams] from the builder.
+    pub fn build(self, gfx: &mut impl HasMut<GraphicsContext>) -> ShaderParams<Uniforms> {
         let gfx = gfx.retrieve_mut();
         let uniforms = ArcBuffer::new(gfx.wgpu.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: None,
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                contents: uniforms.as_std140().as_bytes(),
+                contents: self.uniforms.as_std140().as_bytes(),
             },
         ));
-
-        let samplers = samplers
-            .iter()
-            .map(|&sampler| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
-            .collect::<Vec<_>>();
 
         let mut builder = BindGroupBuilder::new();
         builder = builder.buffer(
@@ -134,12 +251,22 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
             None,
         );
 
-        for image in images {
-            builder = builder.image(&image.view, wgpu::ShaderStages::FRAGMENT);
+        let vis = if self.images_vs_visible {
+            wgpu::ShaderStages::VERTEX_FRAGMENT
+        } else {
+            wgpu::ShaderStages::FRAGMENT
+        };
+        for image in self.images {
+            builder = builder.image(&image.view, vis);
         }
 
+        let samplers = self
+            .samplers
+            .iter()
+            .map(|&sampler| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
+            .collect::<Vec<_>>();
         for sampler in &samplers {
-            builder = builder.sampler(sampler, wgpu::ShaderStages::FRAGMENT);
+            builder = builder.sampler(sampler, vis);
         }
 
         let (bind_group, layout) = builder.create_uncached(&gfx.wgpu.device);
@@ -151,7 +278,38 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
             _marker: PhantomData,
         }
     }
+}
 
+/// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
+///
+/// Create with [ShaderParamsBuilder].
+///
+/// These parameters are bound to group 3. With WGSL, for example,
+/// ```rust,ignore
+/// ggez::graphics::ShaderParamsBuilder::new(&my_uniforms)
+///     .images(&[&image1, &image2], &[sampler1], false)
+///     .build(&mut ctx.gfx)
+/// ```
+/// Corresponds to...
+/// ```ignore
+/// @group(3) @binding(0)
+/// var<uniform> my_uniforms: MyUniforms;
+/// @group(3) @binding(1)
+/// var image1: texture_2d<f32>;
+/// @group(3) @binding(2)
+/// var image2: texture_2d<f32>;
+/// @group(3) @binding(3)
+/// var sampler1: sampler;
+/// ```
+#[derive(Debug, PartialEq, Eq)]
+pub struct ShaderParams<Uniforms: AsStd140> {
+    pub(crate) uniforms: ArcBuffer,
+    pub(crate) layout: ArcBindGroupLayout,
+    pub(crate) bind_group: ArcBindGroup,
+    _marker: PhantomData<Uniforms>,
+}
+
+impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
     /// Updates the uniform data.
     pub fn set_uniforms(&self, gfx: &impl Has<GraphicsContext>, uniforms: &Uniforms) {
         let gfx = gfx.retrieve();

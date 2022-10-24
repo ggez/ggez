@@ -23,7 +23,7 @@ var s: sampler;
 var<uniform> light: Light;
 
 @fragment
-fn main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var dist = 1.0;
     var theta = in.uv.x * 6.28318530718;
     var dir = vec2<f32>(cos(theta), sin(theta));
