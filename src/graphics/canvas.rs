@@ -43,6 +43,8 @@ pub struct Canvas {
 impl Canvas {
     /// Create a new [Canvas] from an image. This will allow for drawing to a single color image.
     ///
+    /// `clear` will set the image initially to the given color, if a color is provided, or keep it as is, if it's `None`.
+    ///
     /// The image must be created for Canvas usage, i.e. [Image::new_canvas_image()], or [ScreenImage], and must only have a sample count of 1.
     #[inline]
     pub fn from_image(
@@ -92,6 +94,8 @@ impl Canvas {
     }
 
     /// Create a new [Canvas] that renders directly to the window surface.
+    ///
+    /// `clear` will set the image initially to the given color, if a color is provided, or keep it as is, if it's `None`.
     pub fn from_frame(gfx: &impl Has<GraphicsContext>, clear: impl Into<Option<Color>>) -> Self {
         let gfx = gfx.retrieve();
         // these unwraps will never fail
