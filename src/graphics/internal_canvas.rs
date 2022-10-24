@@ -12,7 +12,7 @@ use super::{
     mesh::{Mesh, Vertex},
     sampler::{Sampler, SamplerCache},
     shader::Shader,
-    BlendMode, CanvasLoadOp, InstanceArray, LinearColor, Rect, Text, Transform, WgpuContext,
+    BlendMode, Color, InstanceArray, LinearColor, Rect, Text, Transform, WgpuContext,
 };
 use crate::{GameError, GameResult};
 use crevice::std140::{AsStd140, Std140};
@@ -60,7 +60,7 @@ pub struct InternalCanvas<'a> {
 impl<'a> InternalCanvas<'a> {
     pub fn from_image(
         gfx: &'a mut GraphicsContext,
-        load_op: CanvasLoadOp,
+        clear: impl Into<Option<Color>>,
         image: &'a Image,
     ) -> GameResult<Self> {
         if image.samples() > 1 {
@@ -74,11 +74,9 @@ impl<'a> InternalCanvas<'a> {
                     view: image.view.as_ref(),
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: match load_op {
-                            CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                            CanvasLoadOp::Clear(color) => {
-                                wgpu::LoadOp::Clear(LinearColor::from(color).into())
-                            }
+                        load: match clear.into() {
+                            None => wgpu::LoadOp::Load,
+                            Some(color) => wgpu::LoadOp::Clear(LinearColor::from(color).into()),
                         },
                         store: true,
                     },
@@ -90,7 +88,7 @@ impl<'a> InternalCanvas<'a> {
 
     pub fn from_msaa(
         gfx: &'a mut GraphicsContext,
-        load_op: CanvasLoadOp,
+        clear: impl Into<Option<Color>>,
         msaa_image: &'a Image,
         resolve_image: &'a Image,
     ) -> GameResult<Self> {
@@ -119,11 +117,9 @@ impl<'a> InternalCanvas<'a> {
                     view: msaa_image.view.as_ref(),
                     resolve_target: Some(resolve_image.view.as_ref()),
                     ops: wgpu::Operations {
-                        load: match load_op {
-                            CanvasLoadOp::DontClear => wgpu::LoadOp::Load,
-                            CanvasLoadOp::Clear(color) => {
-                                wgpu::LoadOp::Clear(LinearColor::from(color).into())
-                            }
+                        load: match clear.into() {
+                            None => wgpu::LoadOp::Load,
+                            Some(color) => wgpu::LoadOp::Clear(LinearColor::from(color).into()),
                         },
                         store: true,
                     },

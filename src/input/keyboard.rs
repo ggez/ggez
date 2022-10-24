@@ -62,7 +62,7 @@
 //!     fn draw(&mut self, ctx: &mut Context) -> GameResult {
 //!         let mut canvas = graphics::Canvas::from_frame(
 //!             ctx,
-//!             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
+//!             Color::from([0.1, 0.2, 0.3, 1.0]),
 //!         );
 //!         // Create a circle at `position_x` and draw
 //!         let circle = graphics::Mesh::new_circle(

@@ -41,7 +41,8 @@ impl MainState {
         let size = ctx.gfx.drawable_size();
         let items_x = (size.0 / 16.0) as u32;
         let items_y = (size.1 / 16.0) as u32;
-        let mut mesh_batch = graphics::InstanceArray::new(ctx, None, items_x * items_y);
+        let mut mesh_batch = graphics::InstanceArray::new(ctx, None);
+        mesh_batch.resize(ctx, items_x * items_y);
 
         mesh_batch.set((0..items_x).flat_map(|x| {
             (0..items_y).map(move |y| {

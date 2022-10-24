@@ -417,10 +417,8 @@ impl event::EventHandler<ggez::GameError> for GameState {
     /// draw is where we should actually render the game's current state.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // First we create a canvas that renders to the frame, and clear it to a (sort of) green color
-        let mut canvas = graphics::Canvas::from_frame(
-            ctx,
-            graphics::CanvasLoadOp::Clear([0.0, 1.0, 0.0, 1.0].into()),
-        );
+        let mut canvas =
+            graphics::Canvas::from_frame(ctx, graphics::Color::from([0.0, 1.0, 0.0, 1.0]));
 
         // Then we tell the snake and the food to draw themselves
         self.snake.draw(&mut canvas);

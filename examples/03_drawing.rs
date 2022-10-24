@@ -127,10 +127,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(
-            ctx,
-            graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
-        );
+        let mut canvas =
+            graphics::Canvas::from_frame(ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
 
         // Draw an image.
         let dst = glam::Vec2::new(20.0, 20.0);
