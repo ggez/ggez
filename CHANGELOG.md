@@ -68,6 +68,7 @@ If you didn't split it then you can comfortably hand around and pass the context
 * Added `Canvas::set_scissor_rect` allowing you to restrict drawing to a part of your surface
 * Added `is_key_just_pressed` and `is_key_just_released` to keyboard context
 * Added an option for transparent windows
+* Added the ability to build your own `BlendMode`s built from the components offered through wgpu's `BlendComponent` struct
 * Exposed rodio API for skipping the first part of a sample
 * Added `audio` and `gamepad` as crate features, allowing you to disable them if not necessary
 * Added the `zip-compression` feature (as part of the default features), now allowing the use of zip-files with compression 
