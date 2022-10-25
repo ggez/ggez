@@ -2,6 +2,7 @@
 //! module from graphics...
 use std::path;
 
+use ::image::ImageEncoder;
 use gfx::format::{Format, Swizzle};
 use gfx::handle::RawRenderTargetView;
 use gfx::memory::{Bind, Usage};
@@ -56,7 +57,7 @@ where
 /// This requirement holds for both drawing
 /// the `Canvas` directly or converting it to an `Image` first.
 /// ```
-/// let mut canvas = Canvas::new(width, height, conf::NumSamples::One, get_window_color_format(ctx));
+/// let mut canvas = Canvas::new(width, height, conf::NumSamples::One, graphics::get_window_color_format(ctx));
 /// graphics::set_canvas(ctx, Some(&canvas));
 ///
 /// // Draw to canvas here...
@@ -268,8 +269,8 @@ impl Canvas {
         let writer = &mut io::BufWriter::new(f);
         let color_format = ::image::ColorType::Rgba8;
         match format {
-            ImageFormat::Png => ::image::png::PngEncoder::new(writer)
-                .encode(
+            ImageFormat::Png => ::image::codecs::png::PngEncoder::new(writer)
+                .write_image(
                     &data,
                     u32::from(self.width()),
                     u32::from(self.height()),

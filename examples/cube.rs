@@ -5,6 +5,7 @@
 //! drawing code entirely and write your own.
 
 #![allow(clippy::single_component_path_imports)]
+#![allow(clippy::derive_partial_eq_without_eq)]
 use gfx; //single component path import required for macro's use.
 use gfx::*;
 

@@ -1,3 +1,5 @@
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -363,7 +365,6 @@ pub(crate) fn load_icon(
     icon_file: &Path,
     filesystem: &mut Filesystem,
 ) -> GameResult<winit::window::Icon> {
-    use imgcrate::GenericImageView;
     use std::io::Read;
     use winit::window::Icon;
 

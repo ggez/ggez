@@ -16,6 +16,7 @@
 //! draw calls.
 
 #![allow(unsafe_code)]
+#![allow(clippy::derive_partial_eq_without_eq)]
 use std::collections::HashMap;
 use std::convert::From;
 use std::fmt;

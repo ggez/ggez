@@ -4,6 +4,7 @@ use std::path;
 
 #[rustfmt::skip]
 use ::image;
+use ::image::ImageEncoder;
 
 use crate::context::{Context, DebugId};
 use crate::error::GameError;
@@ -15,7 +16,7 @@ use crate::graphics::*;
 
 /// Generic in-GPU-memory image data available to be drawn on the screen.
 /// You probably just want to look at the `Image` type.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ImageGeneric<B>
 where
     B: BackendSpec,
@@ -309,8 +310,8 @@ impl Image {
         let writer = &mut io::BufWriter::new(f);
         let color_format = image::ColorType::Rgba8;
         match format {
-            ImageFormat::Png => image::png::PngEncoder::new(writer)
-                .encode(
+            ImageFormat::Png => image::codecs::png::PngEncoder::new(writer)
+                .write_image(
                     &data,
                     u32::from(self.width),
                     u32::from(self.height),

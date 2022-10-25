@@ -140,7 +140,7 @@ pub fn main() -> GameResult {
             out.finish(format_args!(
                 "[{}][{:<5}][{}] {}",
                 chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-                record.level().to_string(),
+                record.level(),
                 record.target(),
                 message
             ))

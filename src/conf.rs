@@ -180,7 +180,7 @@ impl WindowMode {
 /// }
 /// # , WindowSetup::default()); }
 /// ```
-#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, SmartDefault, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WindowSetup {
     /// The window title.
     #[default(String::from("An easy, good game"))]
@@ -365,7 +365,7 @@ impl From<NumSamples> for u8 {
 /// }
 /// # , ModuleConf::default()); }
 /// ```
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, SmartDefault)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, SmartDefault)]
 pub struct ModuleConf {
     /// The gamepad input module.
     #[default = true]
