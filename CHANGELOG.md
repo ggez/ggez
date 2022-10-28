@@ -1,3 +1,8 @@
+# 0.8.1
+
+## Fixed
+- Fixed broken `InstanceArray::resize` and improved its documentation
+
 # 0.8.0 (wgpu)
 
 The biggest change in this version is the long awaited redo of our graphics stack, which used to be based on `gfx-rs`

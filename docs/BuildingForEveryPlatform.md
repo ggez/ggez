@@ -37,7 +37,7 @@ wget https://raw.githubusercontent.com/ggez/ggez/master/resources/LiberationMono
 Then edit your `Cargo.toml` with your favorite super duper editor and under `[dependencies]` add:
 
 ```
-ggez = "0.8.0"
+ggez = "0.8.1"
 glam = { version = "0.21", features = ["mint"] }
 ```
 
