@@ -246,6 +246,8 @@ impl InstanceArray {
     /// # Panics
     /// Panics if `new_capacity` is 0.
     pub fn resize(&mut self, gfx: &impl Has<GraphicsContext>, new_capacity: u32) {
+        assert!(new_capacity > 0);
+
         let gfx: &GraphicsContext = gfx.retrieve();
         let resized = InstanceArray::new_wgpu(
             &gfx.wgpu,
