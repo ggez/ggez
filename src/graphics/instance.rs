@@ -247,21 +247,23 @@ impl InstanceArray {
         let gfx: &GraphicsContext = gfx.retrieve();
         let resized = InstanceArray::new_wgpu(
             &gfx.wgpu,
-            gfx.instance_bind_layout.clone(),
+            self.bind_layout.clone(),
             self.image.clone(),
-            DEFAULT_CAPACITY,
+            new_capacity,
             self.ordered,
         );
         self.buffer = resized.buffer;
         self.indices = resized.indices;
+        self.bind_group = resized.bind_group;
+
         self.capacity.store(new_capacity, SeqCst);
         self.dirty.store(true, SeqCst);
         self.uniforms.truncate(new_capacity as usize);
         self.params.truncate(new_capacity as usize);
         self.uniforms
-            .reserve((new_capacity as usize).min(self.uniforms.len()) - self.uniforms.len());
+            .reserve(new_capacity as usize - self.uniforms.len());
         self.params
-            .reserve((new_capacity as usize).min(self.params.len()) - self.params.len());
+            .reserve(new_capacity as usize - self.params.len());
     }
 
     /// Returns this `InstanceArray`'s associated `image`.
