@@ -192,7 +192,6 @@ impl InstanceArray {
         &self.params
     }
 
-    #[allow(unsafe_code)]
     pub(crate) fn flush_wgpu(&self, wgpu: &WgpuContext) -> GameResult {
         if !self.dirty.load(SeqCst) {
             return Ok(());
@@ -243,6 +242,9 @@ impl InstanceArray {
     /// Changes the capacity of this `InstanceArray` while preserving instances.
     ///
     /// If `new_capacity` is less than the `len`, the instances will be truncated.
+    ///
+    /// # Panics
+    /// Panics if `new_capacity` is 0.
     pub fn resize(&mut self, gfx: &impl Has<GraphicsContext>, new_capacity: u32) {
         let gfx: &GraphicsContext = gfx.retrieve();
         let resized = InstanceArray::new_wgpu(
