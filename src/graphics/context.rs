@@ -216,9 +216,9 @@ impl GraphicsContext {
             width: size.width,
             height: size.height,
             present_mode: if conf.window_setup.vsync {
-                wgpu::PresentMode::Fifo
+                wgpu::PresentMode::AutoVsync
             } else {
-                wgpu::PresentMode::Mailbox
+                wgpu::PresentMode::AutoNoVsync
             },
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
         };
