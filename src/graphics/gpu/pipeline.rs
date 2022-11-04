@@ -48,7 +48,7 @@ impl PipelineCache {
                         label: None,
                         layout: Some(layout),
                         vertex: wgpu::VertexState {
-                            module: &*info.vs,
+                            module: &info.vs,
                             entry_point: &info.vs_entry,
                             buffers: if info.vertices { &vertex_buffers } else { &[] },
                         },
@@ -78,7 +78,7 @@ impl PipelineCache {
                             alpha_to_coverage_enabled: false,
                         },
                         fragment: Some(wgpu::FragmentState {
-                            module: &*info.fs,
+                            module: &info.fs,
                             entry_point: &info.fs_entry,
                             targets: &[Some(wgpu::ColorTargetState {
                                 format: info.format,

@@ -625,6 +625,8 @@ impl<'a> InternalCanvas<'a> {
                 .map(|curr| curr.id() != view.id())
                 .unwrap_or(true)
         {
+            self.curr_sampler = self.next_sampler;
+
             let (image_bind, _) = BindGroupBuilder::new()
                 .image(&view, wgpu::ShaderStages::FRAGMENT)
                 .sampler(
@@ -634,7 +636,6 @@ impl<'a> InternalCanvas<'a> {
                 .create(&self.wgpu.device, self.bind_group_cache);
 
             self.curr_image = Some(view);
-            self.curr_sampler = self.next_sampler;
 
             self.pass
                 .set_bind_group(1, self.arenas.bind_groups.alloc(image_bind), &[]);
