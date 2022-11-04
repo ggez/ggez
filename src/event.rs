@@ -324,7 +324,7 @@ where
                 }
                 WindowEvent::CloseRequested => {
                     let res = state.quit_event(ctx);
-                    if let Ok(false) = state.quit_event(ctx) {
+                    if let Ok(false) = res {
                         ctx.continuing = false;
                     } else if catch_error(ctx, res, state, control_flow, ErrorOrigin::QuitEvent) {
                         return;
