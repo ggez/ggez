@@ -24,6 +24,7 @@ use crate::{
 use ::image as imgcrate;
 use crevice::std140::AsStd140;
 use glyph_brush::FontId;
+use std::num::NonZeroU64;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
 use winit::{
@@ -525,6 +526,37 @@ impl GraphicsContext {
     /// Returns the current [`wgpu::CommandEncoder`] if there is a frame in progress.
     pub fn commands(&mut self) -> Option<&mut wgpu::CommandEncoder> {
         self.fcx.as_mut().map(|fcx| &mut fcx.cmd)
+    }
+
+    /// Write to a wgpu using the [`wgpu::StagingBelt`] of the context, inserting your write into
+    /// the current [`wgpu::CommandEncoder`], making sure the order of operations inside a render pass
+    /// is respected.
+    ///
+    /// If you're ok with your write happening before any render passes are run you can use [`wgpu::Queue::write_buffer`].
+    pub fn write_buffer_wgpu(
+        &mut self,
+        buffer: &wgpu::Buffer,
+        offset: wgpu::BufferAddress,
+        data: &[u8],
+    ) -> GameResult {
+        if let Some(fcx) = &mut self.fcx {
+            let cmd = &mut fcx.cmd;
+            let size = NonZeroU64::new(data.len() as u64);
+            if let Some(size) = size {
+                self.staging_belt
+                    .write_buffer(cmd, buffer, offset, size, &self.wgpu.device)
+                    .copy_from_slice(data);
+                Ok(())
+            } else {
+                Err(GameError::BufferWriteError(String::from(
+                    "cannot write data of length 0 to buffer",
+                )))
+            }
+        } else {
+            Err(GameError::BufferWriteError(String::from(
+                "cannot get command encoder as there is no frame in progress; use wgpu::Queue::write_buffer instead",
+            )))
+        }
     }
 
     /// Begins a new frame.

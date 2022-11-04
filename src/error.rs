@@ -7,6 +7,8 @@ use std::sync::Arc;
 /// An enum containing all kinds of game framework errors.
 #[derive(Debug)]
 pub enum GameError {
+    /// Something went wrong trying to write to a wgpu buffer.
+    BufferWriteError(String),
     /// An error when intializing the graphics system.
     GraphicsInitializationError,
     /// An error in the filesystem layout
