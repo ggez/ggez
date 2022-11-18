@@ -52,7 +52,10 @@ const LIGHTS_SHADER_SOURCE: &str = include_str!("../resources/lights.wgsl");
 struct MainState {
     background: graphics::Image,
     tile: graphics::Image,
-    light_list: Vec<(Light, ShaderParams<Light>)>,
+    torch: Light,
+    torch_params: ShaderParams<Light>,
+    static_light: Light,
+    static_light_params: ShaderParams<Light>,
     foreground: graphics::ScreenImage,
     occlusions: graphics::Image,
     shadows: graphics::ScreenImage,
@@ -112,8 +115,6 @@ impl MainState {
         };
         let static_light_params = ShaderParamsBuilder::new(&static_light).build(ctx);
 
-        let light_list = vec![(torch, torch_params), (static_light, static_light_params)];
-
         let color_format = ctx.gfx.surface_format();
         let foreground = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
         let occlusions =
@@ -134,7 +135,10 @@ impl MainState {
         Ok(MainState {
             background,
             tile,
-            light_list,
+            torch,
+            torch_params,
+            static_light,
+            static_light_params,
             foreground,
             occlusions,
             shadows,
@@ -147,7 +151,7 @@ impl MainState {
     fn render_light(
         &mut self,
         ctx: &mut Context,
-        light_idx: usize,
+        light: ShaderParams<Light>,
         origin: DrawParam,
         canvas_origin: DrawParam,
         clear: Option<graphics::Color>,
@@ -155,13 +159,12 @@ impl MainState {
         let foreground = self.foreground.image(ctx);
 
         let size = ctx.gfx.drawable_size();
-
         // Now we want to run the occlusions shader to calculate our 1D shadow
         // distances into the `occlusions` canvas.
         let mut canvas = Canvas::from_image(ctx, self.occlusions.clone(), None);
         canvas.set_screen_coordinates(graphics::Rect::new(0., 0., size.0, size.1));
         canvas.set_shader(self.occlusions_shader.clone());
-        canvas.set_shader_params(&self.light_list[light_idx].1);
+        canvas.set_shader_params(light.clone())?;
         canvas.draw(&foreground, canvas_origin);
         canvas.finish(ctx)?;
 
@@ -171,7 +174,7 @@ impl MainState {
         let mut canvas = Canvas::from_screen_image(ctx, &mut self.shadows, clear);
         canvas.set_screen_coordinates(graphics::Rect::new(0., 0., size.0, size.1));
         canvas.set_shader(self.shadows_shader.clone());
-        canvas.set_shader_params(&self.light_list[light_idx].1);
+        canvas.set_shader_params(light.clone())?;
         canvas.draw(
             &self.occlusions,
             origin.scale([
@@ -185,7 +188,7 @@ impl MainState {
         canvas.set_screen_coordinates(graphics::Rect::new(0., 0., size.0, size.1));
         canvas.set_blend_mode(BlendMode::ADD);
         canvas.set_shader(self.lights_shader.clone());
-        canvas.set_shader_params(&self.light_list[light_idx].1);
+        canvas.set_shader_params(light)?;
         canvas.draw(
             &self.occlusions,
             origin.scale([
@@ -205,17 +208,17 @@ impl event::EventHandler<ggez::GameError> for MainState {
             println!("Average FPS: {}", ctx.time.fps());
         }
 
-        self.light_list[0].0.glow =
+        self.torch.glow =
             LIGHT_GLOW_FACTOR * (ctx.time.time_since_start().as_secs_f32() * LIGHT_GLOW_RATE).cos();
-        self.light_list[1].0.glow = LIGHT_GLOW_FACTOR
+        self.static_light.glow = LIGHT_GLOW_FACTOR
             * (ctx.time.time_since_start().as_secs_f32() * LIGHT_GLOW_RATE * 0.75).sin();
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        for (light, light_params) in &mut self.light_list {
-            light_params.set_uniforms(ctx, light);
-        }
+        self.torch_params.set_uniforms(ctx, &self.torch)?;
+        self.static_light_params
+            .set_uniforms(ctx, &self.static_light)?;
 
         let origin = DrawParam::new()
             .dest(Vec2::new(0.0, 0.0))
@@ -242,15 +245,20 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.finish(ctx)?;
 
         // Then we draw our light and shadow maps
-        for i in 0..self.light_list.len() {
-            self.render_light(
-                ctx,
-                i,
-                origin,
-                canvas_origin,
-                if i > 0 { None } else { Some(Color::BLACK) },
-            )?;
-        }
+        self.render_light(
+            ctx,
+            self.torch_params.clone(),
+            origin,
+            canvas_origin,
+            Some(Color::BLACK),
+        )?;
+        self.render_light(
+            ctx,
+            self.static_light_params.clone(),
+            origin,
+            canvas_origin,
+            None,
+        )?;
 
         // Now lets finally render to screen starting out with background, then
         // the shadows and lights overtop and finally our foreground.
@@ -285,7 +293,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     ) -> GameResult {
         let (w, h) = ctx.gfx.drawable_size();
         let (x, y) = (x / w as f32, y / h as f32);
-        self.light_list[0].0.pos = [x, y].into();
+        self.torch.pos = [x, y].into();
         Ok(())
     }
 }

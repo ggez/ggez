@@ -53,9 +53,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
         )?;
         canvas.draw(&circle, Vec2::new(0.0, 0.0));
 
-        self.params.set_uniforms(ctx, &self.dim);
+        self.params.set_uniforms(ctx, &self.dim)?;
         canvas.set_shader(self.shader.clone());
-        canvas.set_shader_params(&self.params);
+        canvas.set_shader_params(self.params.clone())?;
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),

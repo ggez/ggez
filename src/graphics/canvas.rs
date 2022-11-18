@@ -176,12 +176,17 @@ impl Canvas {
     ///
     /// **Bound to bind group 3.**
     #[inline]
-    pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: &ShaderParams<Uniforms>) {
+    pub fn set_shader_params<Uniforms: AsStd140>(
+        &mut self,
+        params: ShaderParams<Uniforms>,
+    ) -> GameResult {
+        let params = params.lock()?;
         self.state.params = Some((
             params.bind_group.clone().unwrap(/* always Some */),
             params.layout.clone().unwrap(/* always Some */),
             params.buffer_offset,
         ));
+        Ok(())
     }
 
     /// Sets the shader to use when drawing text.
@@ -200,12 +205,17 @@ impl Canvas {
     ///
     /// **Bound to bind group 3.**
     #[inline]
-    pub fn set_text_shader_params<Uniforms: AsStd140>(&mut self, params: &ShaderParams<Uniforms>) {
+    pub fn set_text_shader_params<Uniforms: AsStd140>(
+        &mut self,
+        params: ShaderParams<Uniforms>,
+    ) -> GameResult {
+        let params = params.lock()?;
         self.state.text_params = Some((
             params.bind_group.clone().unwrap(/* always Some */),
             params.layout.clone().unwrap(/* always Some */),
             params.buffer_offset,
         ));
+        Ok(())
     }
 
     /// Resets the active mesh shader to the default.
