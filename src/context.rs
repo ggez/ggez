@@ -176,7 +176,8 @@ impl Context {
         let audio_context = audio::AudioContext::new(&fs)?;
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
-        let graphics_context = graphics::context::GraphicsContext::new(game_id, &events_loop, &conf, &fs)?;
+        let graphics_context =
+            graphics::context::GraphicsContext::new(game_id, &events_loop, &conf, &fs)?;
 
         let ctx = Context {
             conf,

@@ -145,8 +145,7 @@ impl GraphicsContext {
 
     #[allow(unsafe_code)]
     pub(crate) fn new_from_instance(
-        #[allow(unused_variables)]
-        game_id: &str,
+        #[allow(unused_variables)] game_id: &str,
         instance: wgpu::Instance,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
