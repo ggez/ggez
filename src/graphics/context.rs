@@ -95,12 +95,14 @@ pub struct GraphicsContext {
 impl GraphicsContext {
     #[allow(unsafe_code)]
     pub(crate) fn new(
+        game_id: &str,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
         filesystem: &Filesystem,
     ) -> GameResult<Self> {
         if conf.backend == Backend::All {
             match Self::new_from_instance(
+                game_id,
                 wgpu::Instance::new(wgpu::Backends::PRIMARY),
                 event_loop,
                 conf,
@@ -116,6 +118,7 @@ impl GraphicsContext {
                     );
 
                     Self::new_from_instance(
+                        game_id,
                         wgpu::Instance::new(wgpu::Backends::SECONDARY),
                         event_loop,
                         conf,
@@ -136,12 +139,13 @@ impl GraphicsContext {
                 Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
             });
 
-            Self::new_from_instance(instance, event_loop, conf, filesystem)
+            Self::new_from_instance(game_id, instance, event_loop, conf, filesystem)
         }
     }
 
     #[allow(unsafe_code)]
     pub(crate) fn new_from_instance(
+        #[allow(unused_variables)] game_id: &str,
         instance: wgpu::Instance,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
@@ -153,6 +157,18 @@ impl GraphicsContext {
             .with_resizable(conf.window_mode.resizable)
             .with_visible(conf.window_mode.visible)
             .with_transparent(conf.window_mode.transparent);
+
+        #[cfg(any(
+            target_os = "linux",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
+        ))]
+        {
+            use winit::platform::unix::WindowBuilderExtUnix;
+            window_builder = window_builder.with_name(game_id, game_id);
+        }
 
         #[cfg(target_os = "windows")]
         {
