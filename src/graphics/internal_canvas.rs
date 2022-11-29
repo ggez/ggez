@@ -15,7 +15,7 @@ use super::{
     BlendMode, Color, InstanceArray, LinearColor, Rect, Text, Transform, WgpuContext,
 };
 use crate::{GameError, GameResult};
-use crevice::std140::{AsStd140, Std140};
+use crevice::std140::AsStd140;
 use std::{collections::HashMap, hash::Hash};
 
 /// A canvas represents a render pass and is how you render primitives such as meshes and text onto images.
@@ -179,17 +179,17 @@ impl<'a> InternalCanvas<'a> {
             fs_module: None,
         };
 
-        let text_uniforms = uniform_arena.allocate(
-            &wgpu.device,
-            mint::ColumnMatrix4::<f32>::std140_size_static() as _,
-        );
+        let text_uniforms =
+            uniform_arena.allocate(&wgpu.device, TextUniforms::std140_size_static() as _);
 
         wgpu.queue.write_buffer(
             &text_uniforms.buffer,
             text_uniforms.offset,
-            (mint::ColumnMatrix4::<f32>::from(transform))
-                .as_std140()
-                .as_bytes(),
+            (TextUniforms {
+                transform: transform.into(),
+            })
+            .as_std140()
+            .as_bytes(),
         );
 
         Ok(InternalCanvas {
@@ -283,16 +283,17 @@ impl<'a> InternalCanvas<'a> {
     pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
         self.flush_text();
         self.transform = proj.into().into();
-        self.text_uniforms = self.uniform_arena.allocate(
-            &self.wgpu.device,
-            mint::ColumnMatrix4::<f32>::std140_size_static() as _,
-        );
+        self.text_uniforms = self
+            .uniform_arena
+            .allocate(&self.wgpu.device, TextUniforms::std140_size_static() as _);
         self.wgpu.queue.write_buffer(
             &self.text_uniforms.buffer,
             self.text_uniforms.offset,
-            (mint::ColumnMatrix4::<f32>::from(self.transform))
-                .as_std140()
-                .as_bytes(),
+            (TextUniforms {
+                transform: self.transform.into(),
+            })
+            .as_std140()
+            .as_bytes(),
         );
     }
 
@@ -306,11 +307,7 @@ impl<'a> InternalCanvas<'a> {
         self.flush_text();
         self.update_pipeline(ShaderType::Draw);
 
-        let alloc_size = self
-            .wgpu
-            .device
-            .limits()
-            .min_uniform_buffer_offset_alignment as u64;
+        let alloc_size = DrawUniforms::std140_size_static() as u64;
         let uniform_alloc = self.uniform_arena.allocate(&self.wgpu.device, alloc_size);
 
         let (uniform_bind_group, _) = BindGroupBuilder::new()
@@ -468,9 +465,10 @@ impl<'a> InternalCanvas<'a> {
                 wgpu::ShaderStages::VERTEX,
                 wgpu::BufferBindingType::Uniform,
                 true,
-                Some(mint::ColumnMatrix4::<f32>::std140_size_static() as _),
+                Some(TextUniforms::std140_size_static() as _),
             )
             .create(&self.wgpu.device, self.bind_group_cache);
+
         self.pass.set_bind_group(
             0,
             self.arenas.bind_groups.alloc(text_uniforms_bind),
@@ -535,6 +533,7 @@ impl<'a> InternalCanvas<'a> {
                 .create(&self.wgpu.device, self.bind_group_cache);
 
             let uniform_layout = BindGroupLayoutBuilder::new()
+                .seed(ty)
                 .buffer(
                     wgpu::ShaderStages::VERTEX,
                     wgpu::BufferBindingType::Uniform,
@@ -706,6 +705,11 @@ struct InstanceUniforms {
     pub transform: mint::ColumnMatrix4<f32>,
     pub color: mint::Vector4<f32>,
     pub scale: mint::Vector2<f32>,
+}
+
+#[derive(crevice::std140::AsStd140)]
+struct TextUniforms {
+    transform: mint::ColumnMatrix4<f32>,
 }
 
 pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {
