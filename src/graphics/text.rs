@@ -255,7 +255,7 @@ impl Text {
         Ok(glyph_brush::Section {
             screen_position: (0., 0.),
 
-            bounds: (self.bounds.x, self.bounds.x),
+            bounds: (self.bounds.x, self.bounds.y),
             layout: if self.wrap {
                 glyph_brush::Layout::default_wrap()
             } else {
