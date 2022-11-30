@@ -342,7 +342,7 @@ impl<'a> InternalCanvas<'a> {
         self.wgpu.queue.write_buffer(
             &uniform_alloc.buffer,
             uniform_alloc.offset,
-            bytemuck::bytes_of(&uniforms),
+            uniforms.as_std140().as_bytes(),
         );
 
         self.pass.set_bind_group(
