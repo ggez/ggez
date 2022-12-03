@@ -100,7 +100,7 @@ impl MainState {
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
-        let torch_params = ShaderParamsBuilder::new(&torch).build(&mut ctx.gfx);
+        let torch_params = ShaderParamsBuilder::new(&torch).build(ctx);
 
         let (w, h) = ctx.gfx.size();
         let (x, y) = (100.0 / w as f32, 75.0 / h as f32);
@@ -113,7 +113,7 @@ impl MainState {
             glow: 0.0,
             strength: LIGHT_STRENGTH,
         };
-        let static_light_params = ShaderParamsBuilder::new(&static_light).build(&mut ctx.gfx);
+        let static_light_params = ShaderParamsBuilder::new(&static_light).build(ctx);
 
         let color_format = ctx.gfx.surface_format();
         let foreground = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
@@ -164,7 +164,7 @@ impl MainState {
         let mut canvas = Canvas::from_image(ctx, self.occlusions.clone(), None);
         canvas.set_screen_coordinates(graphics::Rect::new(0., 0., size.0, size.1));
         canvas.set_shader(self.occlusions_shader.clone());
-        canvas.set_shader_params(light.clone());
+        canvas.set_shader_params(light.clone())?;
         canvas.draw(&foreground, canvas_origin);
         canvas.finish(ctx)?;
 
@@ -174,7 +174,7 @@ impl MainState {
         let mut canvas = Canvas::from_screen_image(ctx, &mut self.shadows, clear);
         canvas.set_screen_coordinates(graphics::Rect::new(0., 0., size.0, size.1));
         canvas.set_shader(self.shadows_shader.clone());
-        canvas.set_shader_params(light.clone());
+        canvas.set_shader_params(light.clone())?;
         canvas.draw(
             &self.occlusions,
             origin.scale([
@@ -188,7 +188,7 @@ impl MainState {
         canvas.set_screen_coordinates(graphics::Rect::new(0., 0., size.0, size.1));
         canvas.set_blend_mode(BlendMode::ADD);
         canvas.set_shader(self.lights_shader.clone());
-        canvas.set_shader_params(light);
+        canvas.set_shader_params(light)?;
         canvas.draw(
             &self.occlusions,
             origin.scale([
@@ -216,9 +216,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        self.torch_params.set_uniforms(ctx, &self.torch);
+        self.torch_params.set_uniforms(ctx, &self.torch)?;
         self.static_light_params
-            .set_uniforms(ctx, &self.static_light);
+            .set_uniforms(ctx, &self.static_light)?;
 
         let origin = DrawParam::new()
             .dest(Vec2::new(0.0, 0.0))

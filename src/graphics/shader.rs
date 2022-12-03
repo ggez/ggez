@@ -1,22 +1,22 @@
-use std::io::Read;
-use std::marker::PhantomData;
-
-use crate::{
-    context::{Has, HasMut},
-    GameError, GameResult,
+use std::{
+    io::Read,
+    sync::{Arc, Mutex},
 };
+use std::{marker::PhantomData, sync::MutexGuard};
+
+use crate::{context::Has, Context, GameError, GameResult};
 
 use super::{
     context::GraphicsContext,
     gpu::{
-        arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcShaderModule},
+        arc::{ArcBindGroup, ArcBindGroupLayout, ArcSampler, ArcShaderModule, ArcTextureView},
         bind_group::BindGroupBuilder,
+        growing::GrowingBufferArena,
     },
     image::Image,
     sampler::Sampler,
 };
 use crevice::std140::Std140;
-use wgpu::util::DeviceExt;
 
 #[derive(Debug, PartialEq, Eq)]
 enum ShaderSource<'a> {
@@ -231,23 +231,89 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
     }
 
     /// Produce a [ShaderParams] from the builder.
-    pub fn build(self, gfx: &mut impl HasMut<GraphicsContext>) -> ShaderParams<Uniforms> {
-        let gfx = gfx.retrieve_mut();
-        let uniforms = ArcBuffer::new(gfx.wgpu.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: None,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                contents: self.uniforms.as_std140().as_bytes(),
-            },
-        ));
+    pub fn build(self, ctx: &mut Context) -> ShaderParams<Uniforms> {
+        let images = self.images.iter().map(|image| image.view.clone()).collect();
+        let samplers = self
+            .samplers
+            .iter()
+            .map(|&sampler| ctx.gfx.sampler_cache.get(&ctx.gfx.wgpu.device, sampler))
+            .collect();
+
+        let mut params = ShaderParamsInner {
+            uniform_arena: GrowingBufferArena::new(
+                &ctx.gfx.wgpu.device,
+                ctx.gfx
+                    .wgpu
+                    .device
+                    .limits()
+                    .min_uniform_buffer_offset_alignment as u64,
+                wgpu::BufferDescriptor {
+                    label: None,
+                    size: ShaderParamsInner::<Uniforms>::UPDATES_PER_ARENA
+                        * Uniforms::std140_size_static() as u64,
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                    mapped_at_creation: false,
+                },
+            ),
+            layout: None,
+            bind_group: None,
+            buffer_offset: 0,
+            images,
+            samplers,
+            images_vs_visible: self.images_vs_visible,
+            last_tick: 0,
+            _marker: PhantomData,
+        };
+        params.set_uniforms(ctx, self.uniforms);
+        ShaderParams {
+            inner: Arc::new(Mutex::new(params)),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct ShaderParamsInner<Uniforms: AsStd140> {
+    uniform_arena: GrowingBufferArena,
+    // layout and bind_group always Some after construction
+    pub(crate) layout: Option<ArcBindGroupLayout>,
+    pub(crate) bind_group: Option<ArcBindGroup>,
+    pub(crate) buffer_offset: u32,
+    images: Vec<ArcTextureView>,
+    samplers: Vec<ArcSampler>,
+    images_vs_visible: bool,
+    last_tick: usize,
+    _marker: PhantomData<Uniforms>,
+}
+
+impl<Uniforms: AsStd140> ShaderParamsInner<Uniforms> {
+    // this is how many times the uniforms can be updated in one frame before a new buffer needs to be allocated.
+    // this is preemptive - if the user never updates then this is a waste, but if the user updates very often in any given frame then we'll have too many buffers + bind groups
+    // therefore, TODO: make this number user customizable?
+    const UPDATES_PER_ARENA: u64 = 16;
+
+    pub fn set_uniforms(&mut self, ctx: &mut Context, uniforms: &Uniforms) {
+        if ctx.time.ticks() != self.last_tick {
+            self.uniform_arena.free();
+            self.last_tick = ctx.time.ticks();
+        }
+        let alloc = self
+            .uniform_arena
+            .allocate(&ctx.gfx.wgpu.device, Uniforms::std140_size_static() as u64);
+        ctx.gfx.wgpu.queue.write_buffer(
+            &alloc.buffer,
+            alloc.offset,
+            uniforms.as_std140().as_bytes(),
+        );
+
+        self.buffer_offset = alloc.offset as u32;
 
         let mut builder = BindGroupBuilder::new();
         builder = builder.buffer(
-            &uniforms,
+            &alloc.buffer,
             0,
             wgpu::ShaderStages::VERTEX_FRAGMENT,
             wgpu::BufferBindingType::Uniform,
-            false,
+            true,
             None,
         );
 
@@ -256,27 +322,19 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
         } else {
             wgpu::ShaderStages::FRAGMENT
         };
-        for image in self.images {
-            builder = builder.image(&image.view, vis);
+
+        for view in &self.images {
+            builder = builder.image(view, vis);
         }
 
-        let samplers = self
-            .samplers
-            .iter()
-            .map(|&sampler| gfx.sampler_cache.get(&gfx.wgpu.device, sampler))
-            .collect::<Vec<_>>();
-        for sampler in &samplers {
+        for sampler in &self.samplers {
             builder = builder.sampler(sampler, vis);
         }
 
-        let (bind_group, layout) = builder.create_uncached(&gfx.wgpu.device);
-
-        ShaderParams {
-            uniforms,
-            layout,
-            bind_group,
-            _marker: PhantomData,
-        }
+        let (bind_group, layout) =
+            builder.create(&ctx.gfx.wgpu.device, &mut ctx.gfx.bind_group_cache);
+        self.layout = Some(layout);
+        self.bind_group = Some(bind_group);
     }
 }
 
@@ -301,31 +359,29 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
 /// @group(3) @binding(3)
 /// var sampler1: sampler;
 /// ```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct ShaderParams<Uniforms: AsStd140> {
-    pub(crate) uniforms: ArcBuffer,
-    pub(crate) layout: ArcBindGroupLayout,
-    pub(crate) bind_group: ArcBindGroup,
-    _marker: PhantomData<Uniforms>,
+    inner: Arc<Mutex<ShaderParamsInner<Uniforms>>>,
 }
 
 impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
     /// Updates the uniform data.
-    pub fn set_uniforms(&self, gfx: &impl Has<GraphicsContext>, uniforms: &Uniforms) {
-        let gfx = gfx.retrieve();
-        gfx.wgpu
-            .queue
-            .write_buffer(&self.uniforms, 0, uniforms.as_std140().as_bytes());
+    ///
+    /// When called, [super::Canvas::set_shader_params] (or [super::Canvas::set_text_shader_params]) **needs to be called again** for the new uniforms to take effect.
+    pub fn set_uniforms(&self, ctx: &mut Context, uniforms: &Uniforms) -> GameResult {
+        self.lock()
+            .map(|mut inner| inner.set_uniforms(ctx, uniforms))
+    }
+
+    pub(crate) fn lock(&self) -> GameResult<MutexGuard<'_, ShaderParamsInner<Uniforms>>> {
+        self.inner.lock().map_err(|_| GameError::LockError)
     }
 }
 
 impl<Uniforms: AsStd140> Clone for ShaderParams<Uniforms> {
     fn clone(&self) -> Self {
         Self {
-            uniforms: self.uniforms.clone(),
-            layout: self.layout.clone(),
-            bind_group: self.bind_group.clone(),
-            _marker: PhantomData,
+            inner: Arc::clone(&self.inner),
         }
     }
 }

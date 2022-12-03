@@ -176,8 +176,17 @@ impl Canvas {
     ///
     /// **Bound to bind group 3.**
     #[inline]
-    pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
-        self.state.params = Some((params.bind_group.clone(), params.layout));
+    pub fn set_shader_params<Uniforms: AsStd140>(
+        &mut self,
+        params: ShaderParams<Uniforms>,
+    ) -> GameResult {
+        let params = params.lock()?;
+        self.state.params = Some((
+            params.bind_group.clone().unwrap(/* always Some */),
+            params.layout.clone().unwrap(/* always Some */),
+            params.buffer_offset,
+        ));
+        Ok(())
     }
 
     /// Sets the shader to use when drawing text.
@@ -196,8 +205,17 @@ impl Canvas {
     ///
     /// **Bound to bind group 3.**
     #[inline]
-    pub fn set_text_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
-        self.state.text_params = Some((params.bind_group.clone(), params.layout));
+    pub fn set_text_shader_params<Uniforms: AsStd140>(
+        &mut self,
+        params: ShaderParams<Uniforms>,
+    ) -> GameResult {
+        let params = params.lock()?;
+        self.state.text_params = Some((
+            params.bind_group.clone().unwrap(/* always Some */),
+            params.layout.clone().unwrap(/* always Some */),
+            params.buffer_offset,
+        ));
+        Ok(())
     }
 
     /// Resets the active mesh shader to the default.
@@ -418,13 +436,13 @@ impl Canvas {
 
         // apply initial state
         canvas.set_shader(state.shader.clone());
-        if let Some((bind_group, layout)) = &state.params {
-            canvas.set_shader_params(bind_group.clone(), layout.clone());
+        if let Some((bind_group, layout, offset)) = &state.params {
+            canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
         }
 
         canvas.set_text_shader(state.text_shader.clone());
-        if let Some((bind_group, layout)) = &state.text_params {
-            canvas.set_text_shader_params(bind_group.clone(), layout.clone());
+        if let Some((bind_group, layout, offset)) = &state.text_params {
+            canvas.set_text_shader_params(bind_group.clone(), layout.clone(), *offset);
         }
 
         canvas.set_sampler(state.sampler);
@@ -444,8 +462,8 @@ impl Canvas {
                 }
 
                 if draw.state.params != state.params {
-                    if let Some((bind_group, layout)) = &draw.state.params {
-                        canvas.set_shader_params(bind_group.clone(), layout.clone());
+                    if let Some((bind_group, layout, offset)) = &draw.state.params {
+                        canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
                     }
                 }
 
@@ -454,8 +472,8 @@ impl Canvas {
                 }
 
                 if draw.state.text_params != state.text_params {
-                    if let Some((bind_group, layout)) = &draw.state.text_params {
-                        canvas.set_text_shader_params(bind_group.clone(), layout.clone());
+                    if let Some((bind_group, layout, offset)) = &draw.state.text_params {
+                        canvas.set_text_shader_params(bind_group.clone(), layout.clone(), *offset);
                     }
                 }
 
@@ -504,9 +522,9 @@ impl Canvas {
 #[derive(Debug, Clone)]
 struct DrawState {
     shader: Shader,
-    params: Option<(ArcBindGroup, ArcBindGroupLayout)>,
+    params: Option<(ArcBindGroup, ArcBindGroupLayout, u32)>,
     text_shader: Shader,
-    text_params: Option<(ArcBindGroup, ArcBindGroupLayout)>,
+    text_params: Option<(ArcBindGroup, ArcBindGroupLayout, u32)>,
     sampler: Sampler,
     blend_mode: BlendMode,
     premul_text: bool,

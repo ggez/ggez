@@ -1,14 +1,29 @@
 use super::arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcSampler, ArcTextureView};
-use std::{collections::HashMap, num::NonZeroU64};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    hash::{Hash, Hasher},
+    num::NonZeroU64,
+};
 
 /// Builder pattern for bind group layouts; basically just produces a Vec<BindGroupLayoutEntry>.
 pub struct BindGroupLayoutBuilder {
     entries: Vec<wgpu::BindGroupLayoutEntry>,
+    seed: u64,
 }
 
 impl BindGroupLayoutBuilder {
     pub fn new() -> Self {
-        BindGroupLayoutBuilder { entries: vec![] }
+        BindGroupLayoutBuilder {
+            entries: vec![],
+            seed: 0,
+        }
+    }
+
+    pub fn seed(mut self, seed: impl Hash) -> Self {
+        let mut hasher = DefaultHasher::new();
+        seed.hash(&mut hasher);
+        self.seed = hasher.finish();
+        self
     }
 
     pub fn buffer(
@@ -57,7 +72,7 @@ impl BindGroupLayoutBuilder {
     pub fn create(self, device: &wgpu::Device, cache: &mut BindGroupCache) -> ArcBindGroupLayout {
         cache
             .layouts
-            .entry(self.entries.clone())
+            .entry((self.entries.clone(), self.seed))
             .or_insert_with(|| self.create_uncached(device))
             .clone()
     }
@@ -187,6 +202,7 @@ impl<'a> BindGroupBuilder<'a> {
         (group, layout)
     }
 
+    #[allow(unused)]
     pub fn create_uncached(self, device: &wgpu::Device) -> (ArcBindGroup, ArcBindGroupLayout) {
         let layout = self.layout.create_uncached(device);
         let group = ArcBindGroup::new(device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -205,7 +221,7 @@ impl<'a> BindGroupBuilder<'a> {
 
 #[derive(Debug)]
 pub struct BindGroupCache {
-    layouts: HashMap<Vec<wgpu::BindGroupLayoutEntry>, ArcBindGroupLayout>,
+    layouts: HashMap<(Vec<wgpu::BindGroupLayoutEntry>, u64), ArcBindGroupLayout>,
     groups: HashMap<Vec<BindGroupEntryKey>, ArcBindGroup>,
 }
 

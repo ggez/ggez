@@ -200,22 +200,22 @@ impl InstanceArray {
         }
 
         let len = self.uniforms.len() as u32;
-        if len > self.capacity.load(SeqCst) {
-            let mut resized = InstanceArray::new_wgpu(
-                wgpu,
-                self.bind_layout.clone(),
-                self.image.clone(),
-                len,
-                self.ordered,
-            );
-            *self.buffer.lock().map_err(|_| GameError::LockError)? =
-                resized.buffer.get_mut().unwrap().clone();
-            *self.indices.lock().map_err(|_| GameError::LockError)? =
-                resized.indices.get_mut().unwrap().clone();
-            *self.bind_group.lock().map_err(|_| GameError::LockError)? =
-                resized.bind_group.get_mut().unwrap().clone();
-            self.capacity.store(len, SeqCst);
-        }
+        //if len > self.capacity.load(SeqCst) {
+        let mut resized = InstanceArray::new_wgpu(
+            wgpu,
+            self.bind_layout.clone(),
+            self.image.clone(),
+            len,
+            self.ordered,
+        );
+        *self.buffer.lock().map_err(|_| GameError::LockError)? =
+            resized.buffer.get_mut().unwrap().clone();
+        *self.indices.lock().map_err(|_| GameError::LockError)? =
+            resized.indices.get_mut().unwrap().clone();
+        *self.bind_group.lock().map_err(|_| GameError::LockError)? =
+            resized.bind_group.get_mut().unwrap().clone();
+        self.capacity.store(len, SeqCst);
+        //}
 
         wgpu.queue.write_buffer(
             &self.buffer.lock().unwrap(),
