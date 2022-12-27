@@ -195,7 +195,7 @@ pub fn main() -> GameResult {
 
     // remove the comment to see how physical mouse coordinates can differ
     // from logical game coordinates when the screen coordinate system changes
-    // graphics::set_screen_coordinates(&mut ctx, Rect::new(20., 50., 2000., 1000.));
+    // canvas.set_screen_coordinates(Rect::new(20.0, 50.0, 2000.0, 1000.0));
 
     // alternatively, resizing the window also leads to screen coordinates
     // and physical window size being out of sync

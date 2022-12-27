@@ -103,9 +103,8 @@ where
 
     /// Called to do the drawing of your game.
     /// You probably want to start this with
-    /// [`graphics::clear()`](../graphics/fn.clear.html) and end it
-    /// with [`graphics::present()`](../graphics/fn.present.html) and
-    /// maybe [`timer::yield_now()`](../timer/fn.yield_now.html).
+    /// [`Canvas::from_frame`](../graphics/struct.Canvas.html#method.from_frame) and end it
+    /// with [`Canvas::finish`](../graphics/struct.Canvas.html#method.finish).
     fn draw(&mut self, _ctx: &mut Context) -> Result<(), E>;
 
     /// A mouse button was pressed
@@ -213,8 +212,6 @@ where
     }
 
     /// A gamepad button was pressed; `id` identifies which gamepad.
-    /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
-    /// the gamepad.
     #[cfg(feature = "gamepad")]
     fn gamepad_button_down_event(
         &mut self,
@@ -226,8 +223,6 @@ where
     }
 
     /// A gamepad button was released; `id` identifies which gamepad.
-    /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
-    /// the gamepad.
     #[cfg(feature = "gamepad")]
     fn gamepad_button_up_event(
         &mut self,
@@ -239,8 +234,6 @@ where
     }
 
     /// A gamepad axis moved; `id` identifies which gamepad.
-    /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
-    /// the gamepad.
     #[cfg(feature = "gamepad")]
     fn gamepad_axis_event(
         &mut self,
@@ -265,7 +258,7 @@ where
     }
 
     /// Called when the user resizes the window, or when it is resized
-    /// via [`graphics::set_mode()`](../graphics/fn.set_mode.html).
+    /// via [`GraphicsContext::set_mode()`](../graphics/struct.GraphicsContext.html#method.set_mode).
     fn resize_event(&mut self, _ctx: &mut Context, _width: f32, _height: f32) -> Result<(), E> {
         Ok(())
     }
