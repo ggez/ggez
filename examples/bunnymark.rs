@@ -1,5 +1,5 @@
 /// Based on the bunnymark example from [`tetra`](https://crates.io/crates/tetra)
-/// which is based on https://github.com/openfl/openfl-samples/tree/master/demos/BunnyMark
+/// which is based on <https://github.com/openfl/openfl-samples/tree/master/demos/BunnyMark>
 /// Original BunnyMark (and sprite) by Iain Lobb
 use std::env;
 use std::path;
@@ -64,7 +64,7 @@ impl GameState {
         }
 
         let mut bunnybatch = InstanceArray::new(ctx, texture.clone());
-        bunnybatch.resize(ctx, INITIAL_BUNNIES as u32);
+        bunnybatch.resize(ctx, INITIAL_BUNNIES);
 
         Ok(GameState {
             rng,

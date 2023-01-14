@@ -254,7 +254,7 @@ impl GraphicsContext {
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let uniform_arena = GrowingBufferArena::new(
             &wgpu.device,
-            wgpu.device.limits().min_uniform_buffer_offset_alignment as u64,
+            u64::from(wgpu.device.limits().min_uniform_buffer_offset_alignment),
             wgpu::BufferDescriptor {
                 label: None,
                 size: 4096 * DrawUniforms::std140_size_static() as u64,

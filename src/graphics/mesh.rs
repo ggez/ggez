@@ -57,7 +57,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    /// Create a new mesh from [MeshData].
+    /// Create a new mesh from [`MeshData`].
     pub fn from_data(gfx: &impl Has<GraphicsContext>, raw: MeshData) -> Self {
         let gfx = gfx.retrieve();
         Self::from_data_wgpu(&gfx.wgpu, raw)
@@ -313,7 +313,7 @@ impl Default for MeshBuilder {
 }
 
 impl MeshBuilder {
-    /// Create a new [MeshBuilder].
+    /// Create a new [`MeshBuilder`].
     pub fn new() -> Self {
         Self::default()
     }
@@ -646,7 +646,7 @@ impl MeshBuilder {
         Ok(self)
     }
 
-    /// Takes the accumulated geometry and return it as [MeshData].
+    /// Takes the accumulated geometry and return it as [`MeshData`].
     pub fn build(&self) -> MeshData {
         MeshData {
             vertices: &self.buffer.vertices,

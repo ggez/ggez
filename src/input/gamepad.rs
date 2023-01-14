@@ -10,7 +10,7 @@ use std::fmt;
 
 pub use gilrs::{self, Event, Gamepad, Gilrs};
 
-/// A unique identifier for a particular GamePad
+/// A unique identifier for a particular gamepad
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct GamepadId(pub(crate) gilrs::GamepadId);
 

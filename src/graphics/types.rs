@@ -24,7 +24,7 @@ impl Rect {
         Rect { x, y, w, h }
     }
 
-    /// Creates a new `Rect` a la Love2D's `love.graphics.newQuad`,
+    /// Creates a new `Rect` a la `Love2D`'s `love.graphics.newQuad`,
     /// as a fraction of the reference rect's size.
     pub fn fraction(x: f32, y: f32, w: f32, h: f32, reference: &Rect) -> Rect {
         Rect {
@@ -545,10 +545,10 @@ impl From<LinearColor> for [f32; 4] {
 impl From<LinearColor> for wgpu::Color {
     fn from(color: LinearColor) -> Self {
         wgpu::Color {
-            r: color.r as f64,
-            g: color.g as f64,
-            b: color.b as f64,
-            a: color.a as f64,
+            r: f64::from(color.r),
+            g: f64::from(color.g),
+            b: f64::from(color.b),
+            a: f64::from(color.a),
         }
     }
 }
@@ -564,12 +564,12 @@ pub enum DrawMode {
 }
 
 impl DrawMode {
-    /// Constructs a DrawMode that draws a stroke with the given width
+    /// Constructs a `DrawMode` that draws a stroke with the given width
     pub fn stroke(width: f32) -> DrawMode {
         DrawMode::Stroke(StrokeOptions::default().with_line_width(width))
     }
 
-    /// Constructs a DrawMode that fills shapes with default fill options.
+    /// Constructs a `DrawMode` that fills shapes with default fill options.
     pub fn fill() -> DrawMode {
         DrawMode::Fill(FillOptions::default())
     }

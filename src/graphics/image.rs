@@ -85,7 +85,7 @@ impl Image {
             wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(
-                    NonZeroU32::new(format.describe().block_size as u32 * width).unwrap(),
+                    NonZeroU32::new(u32::from(format.describe().block_size) * width).unwrap(),
                 ),
                 rows_per_image: None,
             },
@@ -210,11 +210,11 @@ impl Image {
             )));
         }
 
-        let block_size = self.format.describe().block_size as u64;
+        let block_size = u64::from(self.format.describe().block_size);
 
         let buffer = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: block_size * self.width as u64 * self.height as u64,
+            size: block_size * u64::from(self.width) * u64::from(self.height),
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
@@ -368,7 +368,7 @@ pub struct ScreenImage {
 }
 
 impl ScreenImage {
-    /// Creates a new [ScreenImage] with the given parameters.
+    /// Creates a new [`ScreenImage`] with the given parameters.
     ///
     /// `width` and `height` specify the fraction of the framebuffer width and height that the [Image] will have.
     /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.

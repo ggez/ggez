@@ -148,7 +148,7 @@ impl event::EventHandler<ggez::GameError> for App {
         );
 
         let mut height = 0.0;
-        for (key, text) in self.texts.iter() {
+        for (key, text) in &self.texts {
             let x = match *key {
                 // (bounds position) + 20
                 "1_demo_text_3" => 500.0 + 20.0,

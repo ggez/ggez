@@ -45,11 +45,13 @@ impl Default for Transform {
 
 impl Transform {
     /// Crunches the transform down to a single matrix, if it's not one already.
+    #[must_use]
     pub fn to_matrix(self) -> Self {
         Transform::Matrix(self.to_bare_matrix())
     }
 
     /// Same as `to_matrix()` but just returns a bare `mint` matrix.
+    #[must_use]
     pub fn to_bare_matrix(self) -> mint::ColumnMatrix4<f32> {
         match self {
             Transform::Matrix(m) => m,
@@ -146,12 +148,13 @@ impl Default for DrawParam {
 }
 
 impl DrawParam {
-    /// Create a new DrawParam with default values.
+    /// Create a new `DrawParam` with default values.
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Set the source rect.
+    #[must_use]
     pub fn src(mut self, src: Rect) -> Self {
         self.src = src;
         self
@@ -183,6 +186,7 @@ impl DrawParam {
     /// # Panics
     ///
     /// Panics if `Transform` is of the `Matrix` variant.
+    #[must_use]
     pub fn dest_rect(self, rect: Rect) -> Self {
         self.dest(rect.point()).scale(rect.size())
     }
@@ -199,6 +203,7 @@ impl DrawParam {
     /// # Panics
     ///
     /// Panics if `Transform` is of the `Matrix` variant.
+    #[must_use]
     pub fn rotation(mut self, rot: f32) -> Self {
         if let Transform::Values {
             ref mut rotation, ..

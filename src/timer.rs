@@ -119,6 +119,7 @@ impl TimeContext {
     /// over the last 200 frames.
     pub fn average_delta(&self) -> time::Duration {
         let sum: time::Duration = self.frame_durations.contents().iter().sum();
+
         // If our buffer is actually full, divide by its size.
         // Otherwise divide by the number of samples we've added
         if self.frame_durations.samples > self.frame_durations.size {
@@ -147,7 +148,7 @@ impl TimeContext {
     /// Returns the time since the game was initialized,
     /// as reported by the system clock.
     pub fn time_since_start(&self) -> time::Duration {
-        time::Instant::now() - self.init_instant
+        self.init_instant.elapsed()
     }
 
     /// Check whether or not the desired amount of time has elapsed
@@ -254,7 +255,7 @@ pub fn fps(ctx: &Context) -> f64 {
 #[deprecated(note = "Use `ctx.time.time_since_start` instead")]
 pub fn time_since_start(ctx: &Context) -> time::Duration {
     let tc = &ctx.time;
-    time::Instant::now() - tc.init_instant
+    tc.init_instant.elapsed()
 }
 
 /// Check whether or not the desired amount of time has elapsed

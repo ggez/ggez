@@ -11,12 +11,12 @@ use crevice::std140::AsStd140;
 use std::{
     collections::BTreeMap,
     sync::{
-        atomic::{AtomicBool, AtomicU32, Ordering::SeqCst},
+        atomic::{AtomicBool, AtomicUsize, Ordering::SeqCst},
         Mutex,
     },
 };
 
-const DEFAULT_CAPACITY: u32 = 16;
+const DEFAULT_CAPACITY: usize = 16;
 
 /// Array of instances for fast rendering of many meshes.
 ///
@@ -30,13 +30,13 @@ pub struct InstanceArray {
     pub(crate) image: Image,
     pub(crate) ordered: bool,
     dirty: AtomicBool,
-    capacity: AtomicU32,
+    capacity: AtomicUsize,
     uniforms: Vec<Std140DrawUniforms>,
     params: Vec<DrawParam>,
 }
 
 impl InstanceArray {
-    /// Creates a new [InstanceArray] capable of storing up to n-`capacity` instances
+    /// Creates a new [`InstanceArray`] capable of storing up to n-`capacity` instances
     /// (this can be changed and is resized automatically when needed).
     ///
     /// If `image` is `None`, a 1x1 white image will be used which can be used to draw solid rectangles.
@@ -71,7 +71,7 @@ impl InstanceArray {
         wgpu: &WgpuContext,
         bind_layout: ArcBindGroupLayout,
         image: Image,
-        capacity: u32,
+        capacity: usize,
         ordered: bool,
     ) -> Self {
         assert!(capacity > 0);
@@ -133,7 +133,7 @@ impl InstanceArray {
             image,
             ordered,
             dirty: AtomicBool::new(false),
-            capacity: AtomicU32::new(capacity),
+            capacity: AtomicUsize::new(capacity),
             uniforms,
             params,
         }
@@ -199,7 +199,7 @@ impl InstanceArray {
             self.dirty.store(false, SeqCst);
         }
 
-        let len = self.uniforms.len() as u32;
+        let len = self.uniforms.len();
         //if len > self.capacity.load(SeqCst) {
         let mut resized = InstanceArray::new_wgpu(
             wgpu,
@@ -245,7 +245,7 @@ impl InstanceArray {
     ///
     /// # Panics
     /// Panics if `new_capacity` is 0.
-    pub fn resize(&mut self, gfx: &impl Has<GraphicsContext>, new_capacity: u32) {
+    pub fn resize(&mut self, gfx: &impl Has<GraphicsContext>, new_capacity: usize) {
         assert!(new_capacity > 0);
 
         let gfx: &GraphicsContext = gfx.retrieve();
@@ -276,8 +276,8 @@ impl InstanceArray {
         self.image.clone()
     }
 
-    /// Returns the number of instances this [InstanceArray] is capable of holding.
-    /// This number was specified when creating the [InstanceArray], or if the [InstanceArray]
+    /// Returns the number of instances this [`InstanceArray`] is capable of holding.
+    /// This number was specified when creating the [`InstanceArray`], or if the [`InstanceArray`]
     /// was automatically resized, the greatest length of instances.
     #[inline]
     pub fn capacity(&self) -> usize {

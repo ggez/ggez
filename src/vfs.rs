@@ -47,7 +47,7 @@ pub struct OpenOptions {
 impl OpenOptions {
     /// Create a new instance
     pub fn new() -> OpenOptions {
-        Default::default()
+        Self::default()
     }
 
     /// Open for reading
@@ -205,7 +205,7 @@ fn sanitize_path(path: &path::Path) -> Option<PathBuf> {
     let mut accm = PathBuf::new();
     for component in c {
         if let Some(s) = is_normal_component(component) {
-            accm.push(s)
+            accm.push(s);
         } else {
             return None;
         }
@@ -254,7 +254,7 @@ impl PhysicalFS {
     }
 
     /// Takes a given path (&str) and returns
-    /// a new PathBuf containing the canonical
+    /// a new `PathBuf` containing the canonical
     /// absolute path you get when appending it
     /// to this filesystem's root.
     fn to_absolute(&self, p: &Path) -> GameResult<PathBuf> {
@@ -272,7 +272,7 @@ impl PhysicalFS {
         }
     }
 
-    /// Creates the PhysicalFS's root directory if necessary.
+    /// Creates the `PhysicalFS`'s root directory if necessary.
     /// Idempotent.
     /// This way we can not create the directory until it's
     /// actually used, though it IS a tiny bit of a performance
@@ -549,7 +549,7 @@ impl VFS for OverlayFS {
         let mut v = Vec::new();
         for fs in &self.roots {
             if let Ok(rddir) = fs.read_dir(path) {
-                v.extend(rddir)
+                v.extend(rddir);
             }
         }
         Ok(Box::new(v.into_iter()))
@@ -705,7 +705,7 @@ struct ZipMetadata {
 }
 
 impl ZipMetadata {
-    /// Returns a ZipMetadata, or None if the file does not exist or such.
+    /// Returns a `ZipMetadata`, or None if the file does not exist or such.
     /// This is not QUITE correct; since zip archives don't actually have
     /// directories (just long filenames), we can't get a directory's metadata
     /// this way without basically just faking it.

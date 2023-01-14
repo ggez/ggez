@@ -20,20 +20,19 @@ struct MainState {
 }
 
 impl MainState {
-    fn new(ctx: &mut Context) -> GameResult<MainState> {
+    fn new(ctx: &mut Context) -> MainState {
         let image = graphics::Image::from_path(ctx, "/tile.png").unwrap();
         let mut instances = graphics::InstanceArray::new(ctx, image);
         instances.resize(ctx, 150 * 150);
         let canvas_image = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
         let draw_pt = Point2::new(0.0, 0.0);
         let draw_vec = Vector2::new(1.0, 1.0);
-        let s = MainState {
+        MainState {
             instances,
             canvas_image,
             draw_pt,
             draw_vec,
-        };
-        Ok(s)
+        }
     }
 }
 
@@ -139,6 +138,6 @@ pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("canvas_subframe", "ggez").add_resource_path(resource_dir);
 
     let (mut ctx, events_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx)?;
+    let state = MainState::new(&mut ctx);
     event::run(ctx, events_loop, state)
 }

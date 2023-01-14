@@ -63,7 +63,7 @@ struct MainState {
 }
 
 impl MainState {
-    fn new(ctx: &mut Context) -> GameResult<Self> {
+    fn new(ctx: &mut Context) -> Self {
         // Shaders.
         let shader = ctx
             .gfx
@@ -251,7 +251,7 @@ impl MainState {
         let proj = Mat4::perspective_rh(f32::consts::PI / 4.0, 4.0 / 3.0, 1.0, 10.0);
         let transform = proj * default_view();
 
-        Ok(MainState {
+        MainState {
             frames: 0,
             transform: transform.into(),
             rotation: 0.0,
@@ -262,7 +262,7 @@ impl MainState {
             locals,
             bind_group,
             depth,
-        })
+        }
     }
 }
 
@@ -354,6 +354,6 @@ pub fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("cube", "ggez").add_resource_path(resource_dir);
 
     let (mut ctx, events_loop) = cb.build()?;
-    let state = MainState::new(&mut ctx)?;
+    let state = MainState::new(&mut ctx);
     event::run(ctx, events_loop, state)
 }

@@ -34,7 +34,9 @@ pub use crate::input::gamepad::GamepadId;
 use crate::input::keyboard::{KeyCode, KeyInput, KeyMods};
 use crate::GameError;
 
-use self::winit_event::*;
+use self::winit_event::{
+    ElementState, Event, KeyboardInput, MouseScrollDelta, TouchPhase, WindowEvent,
+};
 /// `winit` event loop.
 pub use winit::event_loop::{ControlFlow, EventLoop};
 

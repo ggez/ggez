@@ -45,7 +45,7 @@ impl Canvas {
     ///
     /// `clear` will set the image initially to the given color, if a color is provided, or keep it as is, if it's `None`.
     ///
-    /// The image must be created for Canvas usage, i.e. [Image::new_canvas_image()], or [ScreenImage], and must only have a sample count of 1.
+    /// The image must be created for Canvas usage, i.e. [`Image::new_canvas_image`()], or [`ScreenImage`], and must only have a sample count of 1.
     #[inline]
     pub fn from_image(
         gfx: &impl Has<GraphicsContext>,
@@ -69,7 +69,7 @@ impl Canvas {
 
     /// Create a new [Canvas] from an MSAA image and a resolve target. This will allow for drawing with MSAA to a color image, then resolving the samples into a secondary target.
     ///
-    /// Both images must be created for Canvas usage (see [Canvas::from_image]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
+    /// Both images must be created for Canvas usage (see [`Canvas::from_image`]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
     #[inline]
     pub fn from_msaa(
         gfx: &impl Has<GraphicsContext>,

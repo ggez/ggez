@@ -90,7 +90,7 @@ pub fn main() -> GameResult {
             // directory tried and what error it got from it.
             println!("Got the error: {:#?}", e);
         } else {
-            println!("Wait, it does exist?  Weird.")
+            println!("Wait, it does exist?  Weird.");
         }
     }
     Ok(())

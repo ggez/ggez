@@ -38,7 +38,24 @@ impl<'a> ShaderBuilder<'a> {
         }
     }
 
+    /// Use this wgsl code as both a vertex and fragment shader.
+    pub fn new_with_code(source: &'a str) -> Self {
+        ShaderBuilder {
+            fs: ShaderSource::Code(source),
+            vs: ShaderSource::Code(source),
+        }
+    }
+
+    /// Use a single wgsl resource as both a vertex and fragment shader.
+    pub fn new_with_path(self, path: &'a str) -> Self {
+        ShaderBuilder {
+            fs: ShaderSource::Path(path),
+            vs: ShaderSource::Path(path),
+        }
+    }
+
     /// Use this wgsl shader code for the fragment shader.
+    #[must_use]
     pub fn fragment_code(self, source: &'a str) -> Self {
         ShaderBuilder {
             fs: ShaderSource::Code(source),
@@ -46,6 +63,7 @@ impl<'a> ShaderBuilder<'a> {
         }
     }
     /// Use this wgsl code resource path for the fragment shader.
+    #[must_use]
     pub fn fragment_path(self, path: &'a str) -> Self {
         ShaderBuilder {
             fs: ShaderSource::Path(path),
@@ -54,6 +72,7 @@ impl<'a> ShaderBuilder<'a> {
     }
 
     /// Use this wgsl shader code for the vertex shader.
+    #[must_use]
     pub fn vertex_code(self, source: &'a str) -> Self {
         ShaderBuilder {
             fs: self.vs,
@@ -62,25 +81,10 @@ impl<'a> ShaderBuilder<'a> {
     }
 
     /// Use this wgsl code resource path for the vertex shader.
+    #[must_use]
     pub fn vertex_path(self, path: &'a str) -> Self {
         ShaderBuilder {
             fs: self.vs,
-            vs: ShaderSource::Path(path),
-        }
-    }
-
-    /// Use this wgsl code as both a vertex and fragment shader.
-    pub fn combined_code(self, source: &'a str) -> Self {
-        ShaderBuilder {
-            fs: ShaderSource::Code(source),
-            vs: ShaderSource::Code(source),
-        }
-    }
-
-    /// Use a single wgsl resource as both a vertex and fragment shader.
-    pub fn combined_path(self, path: &'a str) -> Self {
-        ShaderBuilder {
-            fs: ShaderSource::Path(path),
             vs: ShaderSource::Path(path),
         }
     }
@@ -128,8 +132,8 @@ impl<'a> ShaderBuilder<'a> {
 /// A custom shader that can be used to render with shader effects.
 ///
 /// The shader may have a user specified vertex module, fragment module, both,
-/// or neither. The fragment module entry point must be named fs_main. The
-/// vertex module entry point must be named vs_main. The vertex module must
+/// or neither. The fragment module entry point must be named `fs_main`. The
+/// vertex module entry point must be named `vs_main`. The vertex module must
 /// have an output of type
 /// ```wgsl
 /// struct VertexOutput {
@@ -140,12 +144,14 @@ impl<'a> ShaderBuilder<'a> {
 /// ```
 /// if the fragment module is left unspecified (default).
 ///
-/// Produce a Shader using [ShaderBuilder].
+/// Produce a Shader using [`ShaderBuilder`].
 ///
 /// Adapted from the `shader.rs` example:
 /// ```rust
-/// # use ggez::*;
-/// # use ggez::graphics::*;
+/// use ggez::*;
+/// use ggez::graphics::*;
+/// use crevice::std140::AsStd140;
+///
 /// #[derive(AsStd140)]
 /// struct Dim {
 ///     rate: f32,
@@ -163,11 +169,11 @@ impl<'a> ShaderBuilder<'a> {
 ///         let shader = ShaderBuilder::new_wgsl()
 ///             .fragment_code(include_str!("../../resources/dimmer.wgsl"))
 ///             .build(&mut ctx.gfx)?;
-///         let params = ShaderParamsBuilder::new(&dim).build(&mut ctx.gfx);
+///         let params = ShaderParamsBuilder::new(&dim).build(&mut ctx);
 ///         params.set_uniforms(ctx, &dim);
 ///
-///         canvas.set_shader(shader);
-///         canvas.set_shader_params(params);
+///         canvas.set_shader(&shader);
+///         canvas.set_shader_params(&params);
 ///         // draw something...
 ///         canvas.finish(ctx)
 ///     }
@@ -183,7 +189,7 @@ pub struct Shader {
 
 use crevice::std140::AsStd140;
 
-/// A builder for [ShaderParams]
+/// A builder for [`ShaderParams`]
 #[derive(Debug)]
 pub struct ShaderParamsBuilder<'a, Uniforms: AsStd140> {
     uniforms: &'a Uniforms,
@@ -193,7 +199,7 @@ pub struct ShaderParamsBuilder<'a, Uniforms: AsStd140> {
 }
 
 impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
-    /// Creates a new builder for [ShaderParams].
+    /// Creates a new builder for [`ShaderParams`].
     ///
     /// # Arguments
     ///
@@ -213,6 +219,7 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
     ///
     /// * `vs_visible` - If the images should also be visible to the vertex shader, rather
     ///    than just the fragment shader.
+    #[must_use]
     pub fn images(
         self,
         images: &'a [&'a Image],
@@ -227,7 +234,7 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
         }
     }
 
-    /// Produce a [ShaderParams] from the builder.
+    /// Produce a [`ShaderParams`] from the builder.
     pub fn build(self, ctx: &mut Context) -> ShaderParams<Uniforms> {
         let images = self.images.iter().map(|image| image.view.clone()).collect();
         let samplers = self
@@ -239,11 +246,13 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
         let mut params = ShaderParams {
             uniform_arena: GrowingBufferArena::new(
                 &ctx.gfx.wgpu.device,
-                ctx.gfx
-                    .wgpu
-                    .device
-                    .limits()
-                    .min_uniform_buffer_offset_alignment as u64,
+                u64::from(
+                    ctx.gfx
+                        .wgpu
+                        .device
+                        .limits()
+                        .min_uniform_buffer_offset_alignment,
+                ),
                 wgpu::BufferDescriptor {
                     label: None,
                     size: ShaderParams::<Uniforms>::UPDATES_PER_ARENA
@@ -268,7 +277,7 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
 
 /// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
 ///
-/// Create with [ShaderParamsBuilder].
+/// Create with [`ShaderParamsBuilder`].
 ///
 /// These parameters are bound to group 3. With WGSL, for example,
 /// ```rust,ignore

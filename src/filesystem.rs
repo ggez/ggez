@@ -26,7 +26,7 @@
 //! [`resources_dir_name`](../struct.ContextBuilder.html#method.resources_dir_name)
 //! and
 //! [`resources_zip_name`](../struct.ContextBuilder.html#method.resources_zip_name)
-//!  of ContextBuilder.
+//!  of `ContextBuilder`.
 //!
 //! Note that the file lookups WILL follow symlinks!  This module's
 //! directory isolation is intended for convenience, not security, so
@@ -557,8 +557,8 @@ pub fn write_config(ctx: &Context, conf: &conf::Conf) -> GameResult {
 #[cfg(test)]
 mod tests {
     use crate::conf;
-    use crate::error::*;
-    use crate::filesystem::*;
+    use crate::error::GameError;
+    use crate::filesystem::{env, vfs, Arc, Filesystem, Mutex, CONFIG_NAME};
     use std::io::{Read, Write};
     use std::path;
 

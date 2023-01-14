@@ -6,7 +6,7 @@ use crate::{context::Has, filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
 use std::{collections::HashMap, io::Read, path::Path};
 
-/// Font data that can be used to create a new font in [super::context::GraphicsContext].
+/// Font data that can be used to create a new font in [`GraphicsContext`].
 #[derive(Debug)]
 pub struct FontData {
     pub(crate) font: ab_glyph::FontArc,
@@ -43,7 +43,7 @@ impl FontData {
 pub use glyph_brush::ab_glyph::PxScale;
 
 /// Parameters of a single piece ("fragment") of text, including font, color, and size.
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct TextFragment {
     /// The text itself.
     pub text: String,
@@ -53,17 +53,6 @@ pub struct TextFragment {
     pub scale: Option<PxScale>,
     /// Color of the text fragment, defaults to the text's color.
     pub color: Option<Color>,
-}
-
-impl Default for TextFragment {
-    fn default() -> Self {
-        TextFragment {
-            text: "".into(),
-            font: None,
-            scale: None,
-            color: None,
-        }
-    }
 }
 
 impl TextFragment {

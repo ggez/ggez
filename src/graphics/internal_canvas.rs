@@ -373,11 +373,12 @@ impl<'a> InternalCanvas<'a> {
             ordered: instances.ordered,
         });
 
-        let alloc_size = self
-            .wgpu
-            .device
-            .limits()
-            .min_uniform_buffer_offset_alignment as u64;
+        let alloc_size = u64::from(
+            self.wgpu
+                .device
+                .limits()
+                .min_uniform_buffer_offset_alignment,
+        );
         let uniform_alloc = self.uniform_arena.allocate(&self.wgpu.device, alloc_size);
 
         let (uniform_bind_group, _) = BindGroupBuilder::new()
@@ -639,8 +640,7 @@ impl<'a> InternalCanvas<'a> {
             || self
                 .curr_image
                 .as_ref()
-                .map(|curr| curr.id() != view.id())
-                .unwrap_or(true)
+                .map_or(true, |curr| curr.id() != view.id())
         {
             self.curr_sampler = self.next_sampler;
 
