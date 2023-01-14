@@ -56,9 +56,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
             &ShaderUniforms {
                 rotation: Mat4::from_rotation_z(ctx.time.time_since_start().as_secs_f32()).into(),
             },
-        )?;
-        canvas.set_shader(self.shader.clone());
-        canvas.set_shader_params(self.shader_params.clone())?;
+        );
+        canvas.set_shader(&self.shader);
+        canvas.set_shader_params(&self.shader_params);
         canvas.draw(
             &self.square_mesh,
             DrawParam::default().dest(Vec2::new(200.0, 100.0)),

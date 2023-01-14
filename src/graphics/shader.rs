@@ -1,8 +1,5 @@
-use std::{
-    io::Read,
-    sync::{Arc, Mutex},
-};
-use std::{marker::PhantomData, sync::MutexGuard};
+use std::io::Read;
+use std::marker::PhantomData;
 
 use crate::{context::Has, Context, GameError, GameResult};
 
@@ -239,7 +236,7 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
             .map(|&sampler| ctx.gfx.sampler_cache.get(&ctx.gfx.wgpu.device, sampler))
             .collect();
 
-        let mut params = ShaderParamsInner {
+        let mut params = ShaderParams {
             uniform_arena: GrowingBufferArena::new(
                 &ctx.gfx.wgpu.device,
                 ctx.gfx
@@ -249,7 +246,7 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
                     .min_uniform_buffer_offset_alignment as u64,
                 wgpu::BufferDescriptor {
                     label: None,
-                    size: ShaderParamsInner::<Uniforms>::UPDATES_PER_ARENA
+                    size: ShaderParams::<Uniforms>::UPDATES_PER_ARENA
                         * Uniforms::std140_size_static() as u64,
                     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                     mapped_at_creation: false,
@@ -265,14 +262,33 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
             _marker: PhantomData,
         };
         params.set_uniforms(ctx, self.uniforms);
-        ShaderParams {
-            inner: Arc::new(Mutex::new(params)),
-        }
+        params
     }
 }
 
+/// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
+///
+/// Create with [ShaderParamsBuilder].
+///
+/// These parameters are bound to group 3. With WGSL, for example,
+/// ```rust,ignore
+/// ggez::graphics::ShaderParamsBuilder::new(&my_uniforms)
+///     .images(&[&image1, &image2], &[sampler1], false)
+///     .build(&mut ctx.gfx)
+/// ```
+/// Corresponds to...
+/// ```ignore
+/// @group(3) @binding(0)
+/// var<uniform> my_uniforms: MyUniforms;
+/// @group(3) @binding(1)
+/// var image1: texture_2d<f32>;
+/// @group(3) @binding(2)
+/// var image2: texture_2d<f32>;
+/// @group(3) @binding(3)
+/// var sampler1: sampler;
+/// ```
 #[derive(Debug)]
-pub(crate) struct ShaderParamsInner<Uniforms: AsStd140> {
+pub struct ShaderParams<Uniforms: AsStd140> {
     uniform_arena: GrowingBufferArena,
     // layout and bind_group always Some after construction
     pub(crate) layout: Option<ArcBindGroupLayout>,
@@ -285,12 +301,15 @@ pub(crate) struct ShaderParamsInner<Uniforms: AsStd140> {
     _marker: PhantomData<Uniforms>,
 }
 
-impl<Uniforms: AsStd140> ShaderParamsInner<Uniforms> {
+impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
     // this is how many times the uniforms can be updated in one frame before a new buffer needs to be allocated.
     // this is preemptive - if the user never updates then this is a waste, but if the user updates very often in any given frame then we'll have too many buffers + bind groups
     // therefore, TODO: make this number user customizable?
     const UPDATES_PER_ARENA: u64 = 16;
 
+    /// Updates the uniform data.
+    ///
+    /// When called, [`Canvas::set_shader_params`] (or [`Canvas::set_text_shader_params`]) **needs to be called again** for the new uniforms to take effect.
     pub fn set_uniforms(&mut self, ctx: &mut Context, uniforms: &Uniforms) {
         if ctx.time.ticks() != self.last_tick {
             self.uniform_arena.free();
@@ -335,54 +354,6 @@ impl<Uniforms: AsStd140> ShaderParamsInner<Uniforms> {
             builder.create(&ctx.gfx.wgpu.device, &mut ctx.gfx.bind_group_cache);
         self.layout = Some(layout);
         self.bind_group = Some(bind_group);
-    }
-}
-
-/// Parameters that can be passed to a custom shader, including uniforms, images, and samplers.
-///
-/// Create with [ShaderParamsBuilder].
-///
-/// These parameters are bound to group 3. With WGSL, for example,
-/// ```rust,ignore
-/// ggez::graphics::ShaderParamsBuilder::new(&my_uniforms)
-///     .images(&[&image1, &image2], &[sampler1], false)
-///     .build(&mut ctx.gfx)
-/// ```
-/// Corresponds to...
-/// ```ignore
-/// @group(3) @binding(0)
-/// var<uniform> my_uniforms: MyUniforms;
-/// @group(3) @binding(1)
-/// var image1: texture_2d<f32>;
-/// @group(3) @binding(2)
-/// var image2: texture_2d<f32>;
-/// @group(3) @binding(3)
-/// var sampler1: sampler;
-/// ```
-#[derive(Debug)]
-pub struct ShaderParams<Uniforms: AsStd140> {
-    inner: Arc<Mutex<ShaderParamsInner<Uniforms>>>,
-}
-
-impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
-    /// Updates the uniform data.
-    ///
-    /// When called, [super::Canvas::set_shader_params] (or [super::Canvas::set_text_shader_params]) **needs to be called again** for the new uniforms to take effect.
-    pub fn set_uniforms(&self, ctx: &mut Context, uniforms: &Uniforms) -> GameResult {
-        self.lock()
-            .map(|mut inner| inner.set_uniforms(ctx, uniforms))
-    }
-
-    pub(crate) fn lock(&self) -> GameResult<MutexGuard<'_, ShaderParamsInner<Uniforms>>> {
-        self.inner.lock().map_err(|_| GameError::LockError)
-    }
-}
-
-impl<Uniforms: AsStd140> Clone for ShaderParams<Uniforms> {
-    fn clone(&self) -> Self {
-        Self {
-            inner: Arc::clone(&self.inner),
-        }
     }
 }
 
