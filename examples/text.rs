@@ -157,7 +157,7 @@ impl event::EventHandler<ggez::GameError> for App {
             };
             canvas.draw(text, Vec2::new(x, 20.0 + height));
             //height += 20.0 + text.height(ctx) as f32;
-            height += 20.0 + text.dimensions(ctx).unwrap().h as f32;
+            height += 20.0 + text.dimensions(ctx).unwrap().h
         }
 
         // Individual fragments within the `Text` can be replaced;

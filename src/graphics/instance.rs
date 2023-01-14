@@ -122,8 +122,8 @@ impl InstanceArray {
                 entries: bind_group.entries(),
             }));
 
-        let uniforms = Vec::with_capacity(capacity as usize);
-        let params = Vec::with_capacity(capacity as usize);
+        let uniforms = Vec::with_capacity(capacity);
+        let params = Vec::with_capacity(capacity);
 
         InstanceArray {
             buffer: Mutex::new(buffer),
@@ -262,12 +262,10 @@ impl InstanceArray {
 
         self.capacity.store(new_capacity, SeqCst);
         self.dirty.store(true, SeqCst);
-        self.uniforms.truncate(new_capacity as usize);
-        self.params.truncate(new_capacity as usize);
-        self.uniforms
-            .reserve(new_capacity as usize - self.uniforms.len());
-        self.params
-            .reserve(new_capacity as usize - self.params.len());
+        self.uniforms.truncate(new_capacity);
+        self.params.truncate(new_capacity);
+        self.uniforms.reserve(new_capacity - self.uniforms.len());
+        self.params.reserve(new_capacity - self.params.len());
     }
 
     /// Returns this `InstanceArray`'s associated `image`.
@@ -281,7 +279,7 @@ impl InstanceArray {
     /// was automatically resized, the greatest length of instances.
     #[inline]
     pub fn capacity(&self) -> usize {
-        self.capacity.load(SeqCst) as usize
+        self.capacity.load(SeqCst)
     }
 
     /// This is equivalent to `<InstanceArray as Drawable>::dimensions()` (see [`Drawable::dimensions()`]), but with a mesh taken into account.

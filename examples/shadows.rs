@@ -86,7 +86,7 @@ impl MainState {
 
         let screen_size = {
             let size = ctx.gfx.drawable_size();
-            [size.0 as f32, size.1 as f32]
+            [size.0, size.1]
         };
 
         let torch = Light {
@@ -100,7 +100,7 @@ impl MainState {
         let torch_params = ShaderParamsBuilder::new(&torch).build(ctx);
 
         let (w, h) = ctx.gfx.size();
-        let (x, y) = (100.0 / w as f32, 75.0 / h as f32);
+        let (x, y) = (100.0 / w, 75.0 / h);
 
         let static_light = Light {
             pos: [x, y].into(),
@@ -284,7 +284,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         _yrel: f32,
     ) -> GameResult {
         let (w, h) = ctx.gfx.drawable_size();
-        let (x, y) = (x / w as f32, y / h as f32);
+        let (x, y) = (x / w, y / h);
         self.light_list[0].0.pos = [x, y].into();
         Ok(())
     }

@@ -99,7 +99,7 @@ impl MouseContext {
         // `last_delta` is not cumulative.
         // It represents only the change between the last mouse event and the current one.
         self.set_last_delta(diff);
-        self.set_last_position(glam::Vec2::new(new_x as f32, new_y as f32));
+        self.set_last_position(glam::Vec2::new(new_x, new_y));
     }
 
     /// Resets the value returned by [`mouse::delta`](fn.delta.html) to zero.
