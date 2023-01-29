@@ -583,7 +583,6 @@ impl GraphicsContext {
         });
 
         self.uniform_arena.free();
-        self.text.free();
 
         Ok(())
     }
