@@ -2,13 +2,29 @@
 
 ## Added
 
+None, just minor but breaking changes.
+
 ## Changed
+
+`InstanceArray::resize` takes a `usize` instead of a `u32`.
+
+`Canvas::set_shader`, `Canvas::set_shader_params`, and `Canvas::set_text_shader_params` now take a reference.
+
+`ShaderParams::set_uniforms` now takes self and ctx mutably.
+
+`ShaderParams::set_uniforms` and `ShaderParamsBuilder::build` now take the full context.
+
+`ShaderBuilder::new_wgsl` is now called `ShaderBuilder::new`.
+
+`ShaderBuilder::combined_code` and `ShaderBuilder::combined_path` have become associated functions called `ShaderBuilder::from_code` and `ShaderBuilder::from_path` respectively.
 
 ## Removed
 
+`ShaderParams` no longer implements Clone, PartialEq, Eq, or ToOwned.
+
 ## Fixed
 
-Things not rendering
+Things not rendering.
 
 # 0.8.1
 

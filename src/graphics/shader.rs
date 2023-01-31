@@ -31,7 +31,7 @@ pub struct ShaderBuilder<'a> {
 
 impl<'a> ShaderBuilder<'a> {
     /// Create a new builder with no associated shader code.
-    pub fn new_wgsl() -> Self {
+    pub fn new() -> Self {
         ShaderBuilder {
             fs: ShaderSource::None,
             vs: ShaderSource::None,
@@ -39,7 +39,7 @@ impl<'a> ShaderBuilder<'a> {
     }
 
     /// Use this wgsl code as both a vertex and fragment shader.
-    pub fn new_with_code(source: &'a str) -> Self {
+    pub fn from_code(source: &'a str) -> Self {
         ShaderBuilder {
             fs: ShaderSource::Code(source),
             vs: ShaderSource::Code(source),
@@ -47,7 +47,7 @@ impl<'a> ShaderBuilder<'a> {
     }
 
     /// Use a single wgsl resource as both a vertex and fragment shader.
-    pub fn new_with_path(self, path: &'a str) -> Self {
+    pub fn from_path(path: &'a str) -> Self {
         ShaderBuilder {
             fs: ShaderSource::Path(path),
             vs: ShaderSource::Path(path),
