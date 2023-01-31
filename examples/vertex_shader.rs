@@ -26,7 +26,7 @@ impl MainState {
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
             Color::WHITE,
         )?;
-        let shader = graphics::ShaderBuilder::new_wgsl()
+        let shader = graphics::ShaderBuilder::new()
             .vertex_path("/vertex.wgsl")
             .build(ctx)?;
         let shader_params = graphics::ShaderParamsBuilder::new(&ShaderUniforms {
