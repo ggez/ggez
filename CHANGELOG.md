@@ -1,3 +1,15 @@
+# 0.9.0
+
+## Added
+
+## Changed
+
+## Removed
+
+## Fixed
+
+Things not rendering
+
 # 0.8.1
 
 ## Fixed
@@ -76,7 +88,7 @@ If you didn't split it then you can comfortably hand around and pass the context
 * Added the ability to build your own `BlendMode`s built from the components offered through wgpu's `BlendComponent` struct
 * Exposed rodio API for skipping the first part of a sample
 * Added `audio` and `gamepad` as crate features, allowing you to disable them if not necessary
-* Added the `zip-compression` feature (as part of the default features), now allowing the use of zip-files with compression 
+* Added the `zip-compression` feature (as part of the default features), now allowing the use of zip-files with compression
 * Added `Rect::overlaps_circle`
 * Added `Context::request_quit` as a replacement for `event::quit`
   * `Context::request_quit` works like `event::quit` did before, except that instead of directly breaking the game loop it
@@ -114,7 +126,7 @@ The following list doesn't repeat the changes already mentioned above.
 * Removed `From<tuple>` implementations for `DrawParam`, as they're non-transparent and weird
 * Removed `event::quit`, as it was replaced by `Context::request_quit`
 * Removed the ability to update only parts of the `DrawParams` inside a `MeshBatch` (now `InstanceArray`)
-  * If you want that ability back let us know! Atm it's staged as "maybe in `0.8.1`" 
+  * If you want that ability back let us know! Atm it's staged as "maybe in `0.8.1`"
 
 ## Fixed
 Many graphics bugs that were caused by the use of the discontinued `gfx-rs` were fixed by the switch to `wgpu`. The
