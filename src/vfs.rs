@@ -964,7 +964,7 @@ mod tests {
             zip_archive.finish().unwrap()
         };
 
-        let _bytes = finished_zip_bytes.rewind().unwrap();
+        finished_zip_bytes.rewind().unwrap();
         let zfs = ZipFS::from_read(finished_zip_bytes).unwrap();
 
         assert!(zfs.exists(Path::new("/fake_file_name.txt")));

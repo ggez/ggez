@@ -168,6 +168,7 @@ impl Image {
             dimension: wgpu::TextureDimension::D2,
             format,
             usage,
+            view_formats: &[],
         }));
 
         let view =
