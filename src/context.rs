@@ -160,7 +160,7 @@ impl HasMut<GraphicsContext> for Context {
 
 impl fmt::Debug for Context {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<Context: {:p}>", self)
+        write!(f, "<Context: {self:p}>")
     }
 }
 

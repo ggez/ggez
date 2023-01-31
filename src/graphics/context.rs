@@ -780,7 +780,7 @@ pub(crate) fn load_icon(
     let i = imgcrate::load_from_memory(&buf)?;
     let image_data = i.to_rgba8();
     Icon::from_rgba(image_data.to_vec(), i.width(), i.height()).map_err(|e| {
-        let msg = format!("Could not load icon: {:?}", e);
+        let msg = format!("Could not load icon: {e:?}");
         GameError::ResourceLoadError(msg)
     })
 }

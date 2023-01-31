@@ -24,7 +24,7 @@ pub struct GamepadContext {
 
 impl fmt::Debug for GamepadContext {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<GilrsGamepadContext: {:p}>", self)
+        write!(f, "<GilrsGamepadContext: {self:p}>")
     }
 }
 
@@ -68,7 +68,7 @@ pub struct GamepadsIterator<'a> {
 
 impl<'a> fmt::Debug for GamepadsIterator<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<GamepadsIterator: {:p}>", self)
+        write!(f, "<GamepadsIterator: {self:p}>")
     }
 }
 

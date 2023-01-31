@@ -129,6 +129,12 @@ impl<'a> ShaderBuilder<'a> {
     }
 }
 
+impl Default for ShaderBuilder<'_> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// A custom shader that can be used to render with shader effects.
 ///
 /// The shader may have a user specified vertex module, fragment module, both,

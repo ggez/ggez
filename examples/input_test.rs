@@ -67,7 +67,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         y: f32,
     ) -> GameResult {
         self.mouse_down = true;
-        println!("Mouse button pressed: {:?}, x: {}, y: {}", button, x, y);
+        println!("Mouse button pressed: {button:?}, x: {x}, y: {y}");
         Ok(())
     }
 
@@ -79,7 +79,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         y: f32,
     ) -> GameResult {
         self.mouse_down = false;
-        println!("Mouse button released: {:?}, x: {}, y: {}", button, x, y);
+        println!("Mouse button released: {button:?}, x: {x}, y: {y}");
         Ok(())
     }
 
@@ -108,15 +108,12 @@ impl event::EventHandler<ggez::GameError> for MainState {
             self.pos_y = (y / (size.height as f32)) * screen_rect.h + screen_rect.y;
             */
         }
-        println!(
-            "Mouse motion, x: {}, y: {}, relative x: {}, relative y: {}",
-            x, y, xrel, yrel
-        );
+        println!("Mouse motion, x: {x}, y: {y}, relative x: {xrel}, relative y: {yrel}");
         Ok(())
     }
 
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) -> GameResult {
-        println!("Mousewheel event, x: {}, y: {}", x, y);
+        println!("Mousewheel event, x: {x}, y: {y}");
         Ok(())
     }
 
@@ -137,7 +134,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn text_input_event(&mut self, _ctx: &mut Context, ch: char) -> GameResult {
-        println!("Text input: {}", ch);
+        println!("Text input: {ch}");
         Ok(())
     }
 
@@ -147,7 +144,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         btn: Button,
         id: GamepadId,
     ) -> GameResult {
-        println!("Gamepad button pressed: {:?} Gamepad_Id: {:?}", btn, id);
+        println!("Gamepad button pressed: {btn:?} Gamepad_Id: {id:?}");
         Ok(())
     }
 
@@ -157,7 +154,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         btn: Button,
         id: GamepadId,
     ) -> GameResult {
-        println!("Gamepad button released: {:?} Gamepad_Id: {:?}", btn, id);
+        println!("Gamepad button released: {btn:?} Gamepad_Id: {id:?}");
         Ok(())
     }
 
@@ -168,10 +165,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         value: f32,
         id: GamepadId,
     ) -> GameResult {
-        println!(
-            "Axis Event: {:?} Value: {} Gamepad_Id: {:?}",
-            axis, value, id
-        );
+        println!("Axis Event: {axis:?} Value: {value} Gamepad_Id: {id:?}");
         Ok(())
     }
 

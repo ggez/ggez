@@ -277,8 +277,7 @@ impl Image {
             ImageFormat::R16Unorm => ::image::ColorType::L16,
             format => {
                 return Err(GameError::RenderError(format!(
-                    "cannot ImageView::encode for the {:#?} GPU image format",
-                    format
+                    "cannot ImageView::encode for the {format:#?} GPU image format"
                 )))
             }
         };

@@ -517,14 +517,14 @@ where
                 };
 
                 if let Err(e) = ctx.gfx.begin_frame() {
-                    error!("Error on GraphicsContext::begin_frame(): {:?}", e);
-                    eprintln!("Error on GraphicsContext::begin_frame(): {:?}", e);
+                    error!("Error on GraphicsContext::begin_frame(): {e:?}");
+                    eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
                     *control_flow = ControlFlow::Exit;
                 }
 
                 if let Err(e) = state.draw(ctx) {
-                    error!("Error on EventHandler::draw(): {:?}", e);
-                    eprintln!("Error on EventHandler::draw(): {:?}", e);
+                    error!("Error on EventHandler::draw(): {e:?}");
+                    eprintln!("Error on EventHandler::draw(): {e:?}");
                     if state.on_error(ctx, ErrorOrigin::Draw, e) {
                         *control_flow = ControlFlow::Exit;
                         return;
@@ -532,8 +532,8 @@ where
                 }
 
                 if let Err(e) = ctx.gfx.end_frame() {
-                    error!("Error on GraphicsContext::end_frame(): {:?}", e);
-                    eprintln!("Error on GraphicsContext::end_frame(): {:?}", e);
+                    error!("Error on GraphicsContext::end_frame(): {e:?}");
+                    eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
                     *control_flow = ControlFlow::Exit;
                 }
 
@@ -565,8 +565,8 @@ where
     E: std::fmt::Debug,
 {
     if let Err(e) = event_result {
-        error!("Error on EventHandler {:?}: {:?}", origin, e);
-        eprintln!("Error on EventHandler {:?}: {:?}", origin, e);
+        error!("Error on EventHandler {origin:?}: {e:?}");
+        eprintln!("Error on EventHandler {origin:?}: {e:?}");
         if state.on_error(ctx, origin, e) {
             *control_flow = ControlFlow::Exit;
             return true;

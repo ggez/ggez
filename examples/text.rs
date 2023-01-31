@@ -140,7 +140,7 @@ impl event::EventHandler<ggez::GameError> for App {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
 
         let fps = ctx.time.fps();
-        let fps_display = Text::new(format!("FPS: {}", fps));
+        let fps_display = Text::new(format!("FPS: {fps}"));
         // When drawing through these calls, `DrawParam` will work as they are documented.
         canvas.draw(
             &fps_display,

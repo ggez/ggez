@@ -20,7 +20,7 @@ use crate::error::{GameError, GameResult};
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     path.to_str().ok_or_else(|| {
-        let errmessage = format!("Invalid path format for resource: {:?}", path);
+        let errmessage = format!("Invalid path format for resource: {path:?}");
         GameError::FilesystemError(errmessage)
     })
 }
@@ -264,9 +264,8 @@ impl PhysicalFS {
             Ok(root_path)
         } else {
             let msg = format!(
-                "Path {:?} is not valid: must be an absolute path with no \
-                 references to parent directories",
-                p
+                "Path {p:?} is not valid: must be an absolute path with no \
+                 references to parent directories"
             );
             Err(GameError::FilesystemError(msg))
         }
@@ -301,10 +300,7 @@ impl VFS for PhysicalFS {
                 || open_options.append
                 || open_options.truncate)
         {
-            let msg = format!(
-                "Cannot alter file {:?} in root {:?}, filesystem read-only",
-                path, self
-            );
+            let msg = format!("Cannot alter file {path:?} in root {self:?}, filesystem read-only");
             return Err(GameError::FilesystemError(msg));
         }
 
@@ -484,8 +480,7 @@ impl VFS for OverlayFS {
             }
         }
         Err(GameError::FilesystemError(format!(
-            "Could not find anywhere writeable to make dir {:?}",
-            path
+            "Could not find anywhere writeable to make dir {path:?}"
         )))
     }
 
@@ -498,8 +493,7 @@ impl VFS for OverlayFS {
             }
         }
         Err(GameError::FilesystemError(format!(
-            "Could not remove file {:?}",
-            path
+            "Could not remove file {path:?}"
         )))
     }
 
@@ -512,8 +506,7 @@ impl VFS for OverlayFS {
             }
         }
         Err(GameError::FilesystemError(format!(
-            "Could not remove file/dir {:?}",
-            path
+            "Could not remove file/dir {path:?}"
         )))
     }
 
@@ -537,8 +530,7 @@ impl VFS for OverlayFS {
             }
         }
         Err(GameError::FilesystemError(format!(
-            "Could not get metadata for file/dir {:?}",
-            path
+            "Could not get metadata for file/dir {path:?}"
         )))
     }
 
@@ -744,10 +736,8 @@ impl VFS for ZipFS {
         let path = convenient_path_to_str(path)?;
         if open_options.write || open_options.create || open_options.append || open_options.truncate
         {
-            let msg = format!(
-                "Cannot alter file {:?} in zipfile {:?}, filesystem read-only",
-                path, self
-            );
+            let msg =
+                format!("Cannot alter file {path:?} in zipfile {self:?}, filesystem read-only");
             return Err(GameError::FilesystemError(msg));
         }
         let mut stupid_archive_borrow = self.archive
@@ -759,26 +749,17 @@ impl VFS for ZipFS {
     }
 
     fn mkdir(&self, path: &Path) -> GameResult {
-        let msg = format!(
-            "Cannot mkdir {:?} in zipfile {:?}, filesystem read-only",
-            path, self
-        );
+        let msg = format!("Cannot mkdir {path:?} in zipfile {self:?}, filesystem read-only");
         Err(GameError::FilesystemError(msg))
     }
 
     fn rm(&self, path: &Path) -> GameResult {
-        let msg = format!(
-            "Cannot rm {:?} in zipfile {:?}, filesystem read-only",
-            path, self
-        );
+        let msg = format!("Cannot rm {path:?} in zipfile {self:?}, filesystem read-only");
         Err(GameError::FilesystemError(msg))
     }
 
     fn rmrf(&self, path: &Path) -> GameResult {
-        let msg = format!(
-            "Cannot rmrf {:?} in zipfile {:?}, filesystem read-only",
-            path, self
-        );
+        let msg = format!("Cannot rmrf {path:?} in zipfile {self:?}, filesystem read-only");
         Err(GameError::FilesystemError(msg))
     }
 
@@ -800,8 +781,7 @@ impl VFS for ZipFS {
             .expect("Couldn't borrow ZipArchive in ZipFS::metadata(); should never happen! Report a bug at https://github.com/ggez/ggez/");
         match ZipMetadata::new(path, &mut **stupid_archive_borrow) {
             None => Err(GameError::FilesystemError(format!(
-                "Metadata not found in zip file for {}",
-                path
+                "Metadata not found in zip file for {path}"
             ))),
             Some(md) => Ok(Box::new(md) as Box<dyn VMetadata>),
         }
@@ -812,7 +792,7 @@ impl VFS for ZipFS {
     /// just looking for a path prefix for now.
     fn read_dir(&self, path: &Path) -> GameResult<Box<dyn Iterator<Item = GameResult<PathBuf>>>> {
         let path = sanitize_path_for_zip(path).ok_or_else(|| {
-            let errmessage = format!("Invalid path format for resource: {:?}", path);
+            let errmessage = format!("Invalid path format for resource: {path:?}");
             GameError::FilesystemError(errmessage)
         })? + "/";
         let itr = self
@@ -984,7 +964,7 @@ mod tests {
             zip_archive.finish().unwrap()
         };
 
-        let _bytes = finished_zip_bytes.seek(io::SeekFrom::Start(0)).unwrap();
+        let _bytes = finished_zip_bytes.rewind().unwrap();
         let zfs = ZipFS::from_read(finished_zip_bytes).unwrap();
 
         assert!(zfs.exists(Path::new("/fake_file_name.txt")));

@@ -55,7 +55,7 @@ pub fn main() -> GameResult {
                     }
                 }
                 // `CloseRequested` and `KeyboardInput` events won't appear here.
-                x => println!("Other window event fired: {:?}", x),
+                x => println!("Other window event fired: {x:?}"),
             },
             Event::MainEventsCleared => {
                 // Tell the timer stuff a frame has happened.
@@ -100,7 +100,7 @@ pub fn main() -> GameResult {
                 ggez::timer::yield_now();
             }
 
-            x => println!("Device event fired: {:?}", x),
+            x => println!("Device event fired: {x:?}"),
         }
     });
 }
