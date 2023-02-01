@@ -1,7 +1,6 @@
 use super::{
-    arc::{ArcBindGroup, ArcBindGroupLayout, ArcTexture, ArcTextureView},
+    arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcTexture, ArcTextureView},
     bind_group::BindGroupBuilder,
-    growing::GrowingBufferArena,
 };
 use crate::graphics::{context::FrameArenas, LinearColor};
 use crevice::std140::AsStd140;
@@ -17,7 +16,9 @@ pub(crate) struct TextRenderer {
     pub cache_bind: ArcBindGroup,
     pub cache_bind_layout: ArcBindGroupLayout,
     pub cache_size: (u32, u32),
-    pub verts: GrowingBufferArena,
+
+    pub verts: ArcBuffer,
+    pub verts_capacity: usize,
 }
 
 impl TextRenderer {
@@ -53,16 +54,8 @@ impl TextRenderer {
             entries: cache_bind.entries(),
         }));
 
-        let verts = GrowingBufferArena::new(
-            device,
-            1,
-            wgpu::BufferDescriptor {
-                label: None,
-                size: 2048 * std::mem::size_of::<TextVertex>() as u64,
-                usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::VERTEX,
-                mapped_at_creation: false,
-            },
-        );
+        let verts_capacity = 2048;
+        let verts = Self::create_verts_buffer(device, verts_capacity);
 
         TextRenderer {
             glyph_brush: RefCell::new(glyph_brush),
@@ -71,8 +64,19 @@ impl TextRenderer {
             cache_bind,
             cache_bind_layout,
             cache_size,
+
             verts,
+            verts_capacity,
         }
+    }
+
+    fn create_verts_buffer(device: &wgpu::Device, num_verts: usize) -> ArcBuffer {
+        ArcBuffer::new(device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (num_verts * std::mem::size_of::<TextVertex>()) as u64,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::VERTEX,
+            mapped_at_creation: false,
+        }))
     }
 
     pub fn queue(&self, section: glyph_brush::Section<'_, Extra>) {
@@ -137,16 +141,18 @@ impl TextRenderer {
         match res {
             Ok(glyph_brush::BrushAction::Draw(verts)) => {
                 let verts_size = verts.len() * std::mem::size_of::<TextVertex>();
-                let verts_alloc = self.verts.allocate(device, verts_size as u64);
 
-                queue.write_buffer(
-                    &verts_alloc.buffer,
-                    verts_alloc.offset,
-                    bytemuck::cast_slice(verts.as_slice()),
-                );
+                let new_verts_capacity = verts_size.next_power_of_two();
+                if new_verts_capacity > self.verts_capacity {
+                    // need to resize vertex buf to fit text
+                    self.verts = Self::create_verts_buffer(device, new_verts_capacity);
+                    self.verts_capacity = new_verts_capacity;
+                }
 
-                let verts_buf = arenas.buffers.alloc(verts_alloc.buffer);
-                pass.set_vertex_buffer(0, verts_buf.slice(verts_alloc.offset..));
+                queue.write_buffer(&self.verts, 0, bytemuck::cast_slice(verts.as_slice()));
+
+                let verts_buf = arenas.buffers.alloc(self.verts.clone());
+                pass.set_vertex_buffer(0, verts_buf.slice(..));
 
                 // N.B.: 1 glyph = 4 verts, then n glyphs = n instances.
                 // Also note that vertex data is stepped PER INSTANCE.
@@ -193,10 +199,6 @@ impl TextRenderer {
             }
             _ => unreachable!(),
         }
-    }
-
-    pub fn free(&mut self) {
-        self.verts.free();
     }
 }
 
