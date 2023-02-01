@@ -121,13 +121,13 @@ impl MainState {
         let shadows = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
         let lights = graphics::ScreenImage::new(ctx, None, 1., 1., 1);
 
-        let occlusions_shader = ShaderBuilder::new_wgsl()
+        let occlusions_shader = ShaderBuilder::new()
             .fragment_code(OCCLUSIONS_SHADER_SOURCE)
             .build(&ctx.gfx)?;
-        let shadows_shader = ShaderBuilder::new_wgsl()
+        let shadows_shader = ShaderBuilder::new()
             .fragment_code(SHADOWS_SHADER_SOURCE)
             .build(&ctx.gfx)?;
-        let lights_shader = ShaderBuilder::new_wgsl()
+        let lights_shader = ShaderBuilder::new()
             .fragment_code(LIGHTS_SHADER_SOURCE)
             .build(&ctx.gfx)?;
 

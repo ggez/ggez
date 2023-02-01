@@ -21,7 +21,7 @@ pub fn main() -> GameResult {
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        println!("Adding path {:?}", path);
+        println!("Adding path {path:?}");
         cb = cb.add_resource_path(path);
     }
 
@@ -35,7 +35,7 @@ pub fn main() -> GameResult {
     let dir_contents: Vec<_> = ctx.fs.read_dir("/")?.collect();
     println!("Directory has {} things in it:", dir_contents.len());
     for itm in dir_contents {
-        println!("   {:?}", itm);
+        println!("   {itm:?}");
     }
 
     println!();
@@ -88,7 +88,7 @@ pub fn main() -> GameResult {
         if let Err(e) = ctx.fs.open("/jfkdlasfjdsa") {
             // The error message contains a big hairy list of each
             // directory tried and what error it got from it.
-            println!("Got the error: {:#?}", e);
+            println!("Got the error: {e:#?}");
         } else {
             println!("Wait, it does exist?  Weird.");
         }

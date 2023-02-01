@@ -56,7 +56,7 @@ impl AudioContext {
 
 impl fmt::Debug for AudioContext {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<AudioContext: {:p}>", self)
+        write!(f, "<AudioContext: {self:p}>")
     }
 }
 
@@ -437,7 +437,7 @@ impl SoundSource for Source {
 
 impl fmt::Debug for Source {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<Audio source: {:p}>", self)
+        write!(f, "<Audio source: {self:p}>")
     }
 }
 
@@ -657,6 +657,6 @@ impl SpatialSource {
 
 impl fmt::Debug for SpatialSource {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<Spatial audio source: {:p}>", self)
+        write!(f, "<Spatial audio source: {self:p}>")
     }
 }

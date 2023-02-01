@@ -299,15 +299,15 @@ impl Filesystem {
         use std::fmt::Write;
         let mut s = String::new();
         for vfs in self.vfs().roots() {
-            write!(s, "Source {:?}", vfs).expect("Could not write to string; should never happen?");
+            write!(s, "Source {vfs:?}").expect("Could not write to string; should never happen?");
             match vfs.read_dir(path::Path::new("/")) {
                 Ok(files) => {
                     for itm in files {
-                        write!(s, "  {:?}", itm)
+                        write!(s, "  {itm:?}")
                             .expect("Could not write to string; should never happen?");
                     }
                 }
-                Err(e) => write!(s, " Could not read source: {:?}", e)
+                Err(e) => write!(s, " Could not read source: {e:?}")
                     .expect("Could not write to string; should never happen?"),
             }
         }
@@ -627,8 +627,8 @@ mod tests {
             let rel_file = "testfile.txt";
             match fs.open(rel_file) {
                 Err(GameError::ResourceNotFound(_, _)) => (),
-                Err(e) => panic!("Invalid error for opening file with relative path: {:?}", e),
-                Ok(f) => panic!("Should have gotten an error but instead got {:?}!", f),
+                Err(e) => panic!("Invalid error for opening file with relative path: {e:?}"),
+                Ok(f) => panic!("Should have gotten an error but instead got {f:?}!"),
             }
         }
 
@@ -637,8 +637,8 @@ mod tests {
             // completely remove filesystem roots.
             match fs.open("/ooglebooglebarg.txt") {
                 Err(GameError::ResourceNotFound(_, _)) => (),
-                Err(e) => panic!("Invalid error for opening nonexistent file: {}", e),
-                Ok(f) => panic!("Should have gotten an error but instead got {:?}", f),
+                Err(e) => panic!("Invalid error for opening nonexistent file: {e}"),
+                Ok(f) => panic!("Should have gotten an error but instead got {f:?}"),
             }
         }
     }
@@ -651,7 +651,7 @@ mod tests {
         // the resources directory with this
         match f.write_config(&conf) {
             Ok(_) => (),
-            Err(e) => panic!("{:?}", e),
+            Err(e) => panic!("{e:?}"),
         }
         // Remove the config file!
         f.delete(CONFIG_NAME).unwrap();
