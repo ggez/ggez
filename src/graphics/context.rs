@@ -100,10 +100,17 @@ impl GraphicsContext {
         conf: &Conf,
         filesystem: &Filesystem,
     ) -> GameResult<Self> {
+        let new_instance = |backends| {
+            wgpu::Instance::new(wgpu::InstanceDescriptor {
+                backends,
+                dx12_shader_compiler: Default::default(),
+            })
+        };
+
         if conf.backend == Backend::All {
             match Self::new_from_instance(
                 game_id,
-                wgpu::Instance::new(wgpu::Backends::PRIMARY),
+                new_instance(wgpu::Backends::PRIMARY),
                 event_loop,
                 conf,
                 filesystem,
@@ -119,7 +126,7 @@ impl GraphicsContext {
 
                     Self::new_from_instance(
                         game_id,
-                        wgpu::Instance::new(wgpu::Backends::SECONDARY),
+                        new_instance(wgpu::Backends::SECONDARY),
                         event_loop,
                         conf,
                         filesystem,
@@ -128,7 +135,7 @@ impl GraphicsContext {
                 Err(e) => Err(e),
             }
         } else {
-            let instance = wgpu::Instance::new(match conf.backend {
+            let instance = new_instance(match conf.backend {
                 Backend::All => unreachable!(),
                 Backend::OnlyPrimary => wgpu::Backends::PRIMARY,
                 Backend::Vulkan => wgpu::Backends::VULKAN,
@@ -184,7 +191,8 @@ impl GraphicsContext {
         };
 
         let window = window_builder.build(event_loop)?;
-        let surface = unsafe { instance.create_surface(&window) };
+        let surface = unsafe { instance.create_surface(&window) }
+            .map_err(|_| GameError::GraphicsInitializationError)?;
 
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
@@ -225,10 +233,12 @@ impl GraphicsContext {
             queue,
         });
 
+        let capabilities = wgpu.surface.get_capabilities(&adapter);
+
         let size = window.inner_size();
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu.surface.get_supported_formats(&adapter)[0],
+            format: capabilities.formats[0],
             width: size.width,
             height: size.height,
             present_mode: if conf.window_setup.vsync {
@@ -237,6 +247,7 @@ impl GraphicsContext {
                 wgpu::PresentMode::AutoNoVsync
             },
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
+            view_formats: vec![],
         };
 
         wgpu.surface.configure(&wgpu.device, &surface_config);
