@@ -225,6 +225,8 @@ impl Canvas {
     }
 
     /// Sets the active sampler used to sample images.
+    ///
+    /// Use `set_sampler(Sampler::nearest_clamp())` for drawing pixel art graphics without blurring them.
     #[inline]
     pub fn set_sampler(&mut self, sampler: impl Into<Sampler>) {
         self.state.sampler = sampler.into();
