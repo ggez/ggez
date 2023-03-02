@@ -184,7 +184,7 @@ impl Text {
         self
     }
 
-    /// Specifies the text's font scael for fragments that don't specify their own scale.
+    /// Specifies the text's font scale for fragments that don't specify their own scale.
     pub fn set_scale(&mut self, scale: impl Into<PxScale>) -> &mut Self {
         self.scale = scale.into();
         self
