@@ -35,10 +35,10 @@ gamepad = ["gilrs"]
 [dependencies]
 bitflags = "1.3"
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
-directories = "4.0"
+directories = "5.0"
 wgpu = "0.15"
 glyph_brush = "0.7"
-winit = { version = "0.27.3", features = ["serde"] }
+winit = { version = "0.28.3", features = ["serde"] }
 image = { version = "0.24", default-features = false, features = [
    "gif",
    "png",
@@ -49,7 +49,7 @@ image = { version = "0.24", default-features = false, features = [
    "bmp",
    "dxt",
 ] }
-rodio = { version = "0.16", optional = true, default-features = false, features = [
+rodio = { version = "0.17", optional = true, default-features = false, features = [
    "flac",
    "vorbis",
    "wav",
@@ -59,15 +59,15 @@ toml = "0.5"
 log = "0.4"
 lyon = "1.0"
 smart-default = "0.6"
-glam = { version = "0.22", features = ["mint"] }
+glam = { version = "0.23", features = ["mint"] }
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5.9"
 gilrs = { version = "0.10", optional = true }
 approx = "0.5"
 bytemuck = { version = "1.12", features = ["derive"] }
-pollster = "0.2"
+pollster = "0.3"
 memoffset = "0.8"
-crevice = "0.12"
+crevice = "0.13"
 typed-arena = "2.0"
 ordered-float = "3.3"
 
