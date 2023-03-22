@@ -172,10 +172,10 @@ impl Default for ShaderBuilder<'_> {
 ///         let dim = Dim { rate: 0.5 };
 ///         // NOTE: This is for simplicity; do not recreate your shader every frame like this!
 ///         //       For more info look at the full example.
-///         let shader = ShaderBuilder::new_wgsl()
+///         let shader = ShaderBuilder::new()
 ///             .fragment_code(include_str!("../../resources/dimmer.wgsl"))
 ///             .build(&mut ctx.gfx)?;
-///         let params = ShaderParamsBuilder::new(&dim).build(&mut ctx);
+///         let mut params = ShaderParamsBuilder::new(&dim).build(ctx);
 ///         params.set_uniforms(ctx, &dim);
 ///
 ///         canvas.set_shader(&shader);
