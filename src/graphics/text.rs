@@ -146,6 +146,11 @@ impl Text {
         self
     }
 
+    /// Clear all `TextFragment` from the `Text`
+    pub fn clear(&mut self) {
+        self.fragments.clear();
+    }
+
     /// Returns an immutable slice of all `TextFragment`s.
     #[inline]
     pub fn fragments(&self) -> &[TextFragment] {
