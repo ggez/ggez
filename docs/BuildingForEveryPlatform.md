@@ -68,6 +68,12 @@ least you can install them with:
 yum install alsa-lib-devel
 ```
 
+### Fedora
+
+```sh
+dnf install rust-libudev-devel rust-libudev-sys-devel alsa-lib-devel pkgconf-pkg-config
+```
+
 ## Distributing
 
 You should be able to just copy-paste the executable file and the `resources` directory to wherever you want.
