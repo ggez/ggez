@@ -117,7 +117,7 @@ pub use winit::event::VirtualKeyCode as KeyCode;
 
 bitflags::bitflags! {
     /// Bitflags describing the state of keyboard modifiers, such as `Control` or `Shift`.
-    #[derive(Default)]
+    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
     pub struct KeyMods: u8 {
         /// No modifiers; equivalent to `KeyMods::default()` and
         /// [`KeyMods::empty()`](struct.KeyMods.html#method.empty).
