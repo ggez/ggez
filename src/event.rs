@@ -451,6 +451,30 @@ where
                         return;
                     };
                 }
+                WindowEvent::CursorEntered { device_id: _ } => {
+                    let res = state.mouse_enter_or_leave(ctx, true);
+                    if catch_error(
+                        ctx,
+                        res,
+                        state,
+                        control_flow,
+                        ErrorOrigin::MouseEnterOrLeave,
+                    ) {
+                        return;
+                    }
+                }
+                WindowEvent::CursorLeft { device_id: _ } => {
+                    let res = state.mouse_enter_or_leave(ctx, false);
+                    if catch_error(
+                        ctx,
+                        res,
+                        state,
+                        control_flow,
+                        ErrorOrigin::MouseEnterOrLeave,
+                    ) {
+                        return;
+                    }
+                }
                 _x => {
                     // trace!("ignoring window event {:?}", x);
                 }
