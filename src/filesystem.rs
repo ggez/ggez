@@ -127,8 +127,8 @@ impl Filesystem {
     pub fn new(
         id: &str,
         author: &str,
-        resources_dir_name: &str,
-        resources_zip_name: &str,
+        resources_dir_name: &path::Path,
+        resources_zip_name: &path::Path,
     ) -> GameResult<Filesystem> {
         let mut root_path = env::current_exe()?;
 
