@@ -18,6 +18,8 @@ None, just minor but breaking changes.
 
 `ShaderBuilder::combined_code` and `ShaderBuilder::combined_path` have become associated functions called `ShaderBuilder::from_code` and `ShaderBuilder::from_path` respectively.
 
+Some `ContextBuilder` options now take paths instead of strings.
+
 ## Removed
 
 `ShaderParams` no longer implements Clone, PartialEq, Eq, or ToOwned.
