@@ -58,7 +58,7 @@ serde = { version = "1.0", features = ["derive"] }
 toml = "0.5"
 log = "0.4"
 lyon = "1.0"
-smart-default = "0.6"
+smart-default = "0.7"
 glam = { version = "0.24", features = ["mint"] }
 # Has to be the same version of mint that our math lib uses here.
 mint = "0.5.9"
