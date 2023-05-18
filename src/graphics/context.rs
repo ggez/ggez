@@ -173,8 +173,14 @@ impl GraphicsContext {
             target_os = "openbsd"
         ))]
         {
-            use winit::platform::unix::WindowBuilderExtUnix;
-            window_builder = window_builder.with_name(game_id, game_id);
+            {
+                use winit::platform::x11::WindowBuilderExtX11;
+                window_builder = window_builder.with_name(game_id, game_id);
+            }
+            {
+                use winit::platform::wayland::WindowBuilderExtWayland;
+                window_builder = window_builder.with_name(game_id, game_id);
+            }
         }
 
         #[cfg(target_os = "windows")]

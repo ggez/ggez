@@ -6,7 +6,7 @@ use crate::graphics::{context::FrameArenas, LinearColor};
 use crevice::std140::AsStd140;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
 use ordered_float::OrderedFloat;
-use std::{cell::RefCell, num::NonZeroU32};
+use std::cell::RefCell;
 
 pub(crate) struct TextRenderer {
     // RefCell to make various getter not take &mut.
@@ -108,7 +108,7 @@ impl TextRenderer {
                     pixels,
                     wgpu::ImageDataLayout {
                         offset: 0,
-                        bytes_per_row: Some(NonZeroU32::new(rect.width()).unwrap()),
+                        bytes_per_row: Some(rect.width()),
                         rows_per_image: None,
                     },
                     wgpu::Extent3d {

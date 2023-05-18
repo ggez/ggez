@@ -5,8 +5,7 @@ use super::{
 };
 use crate::{context::Has, Context, GameError, GameResult};
 use image::ImageEncoder;
-use std::path::Path;
-use std::{io::Read, num::NonZeroU32};
+use std::{io::Read, path::Path};
 
 // maintaing a massive enum of all possible texture formats?
 // screw that.
@@ -84,9 +83,7 @@ impl Image {
             pixels,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(
-                    NonZeroU32::new(u32::from(format.describe().block_size) * width).unwrap(),
-                ),
+                bytes_per_row: Some(format.block_size(None).unwrap() * width),
                 rows_per_image: None,
             },
             wgpu::Extent3d {
@@ -178,9 +175,9 @@ impl Image {
                 dimension: Some(wgpu::TextureViewDimension::D2),
                 aspect: wgpu::TextureAspect::All,
                 base_mip_level: 0,
-                mip_level_count: Some(NonZeroU32::new(1).unwrap()),
+                mip_level_count: Some(1),
                 base_array_layer: 0,
-                array_layer_count: Some(NonZeroU32::new(1).unwrap()),
+                array_layer_count: Some(1),
             }));
 
         Image {
@@ -211,7 +208,7 @@ impl Image {
             )));
         }
 
-        let block_size = u64::from(self.format.describe().block_size);
+        let block_size = u64::from(self.format.block_size(None).unwrap());
 
         let buffer = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
@@ -231,9 +228,7 @@ impl Image {
                     buffer: &buffer,
                     layout: wgpu::ImageDataLayout {
                         offset: 0,
-                        bytes_per_row: Some(
-                            NonZeroU32::new(block_size as u32 * self.width).unwrap(),
-                        ),
+                        bytes_per_row: Some(block_size as u32 * self.width),
                         rows_per_image: None,
                     },
                 },
