@@ -50,7 +50,7 @@ impl Image {
     }
 
     /// A little helper function that creates a blank [`Image`] that is of the given width and height and optional color.
-    /// 
+    ///
     /// The default color is [`Color::WHITE`].
     /// Mainly useful for debugging.
     pub fn new_blank_canvas_image(
