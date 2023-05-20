@@ -2,7 +2,7 @@
 name = "ggez"
 description = "A lightweight game framework for making 2D games with minimum friction, inspired by Love2D."
 version = "0.9.0-rc0"
-homepage = "http://ggez.rs"
+homepage = "https://ggez.rs"
 repository = "https://github.com/ggez/ggez"
 documentation = "https://docs.rs/ggez"
 keywords = ["ggez", "graphics", "2D", "game", "engine"]
