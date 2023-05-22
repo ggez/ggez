@@ -48,6 +48,31 @@ impl Image {
         )
     }
 
+    /// A little helper function that creates a blank [`Image`] that is of the given width and height and optional color.
+    ///
+    /// The default color is [`Color::WHITE`].
+    /// Mainly useful for debugging.
+    pub fn new_blank_canvas_image(
+        gfx: &impl Has<GraphicsContext>,
+        width: u32,
+        height: u32,
+        color: Option<Color>,
+    ) -> Self {
+        let pixels = (0..(width * height))
+            .flat_map(|_| {
+                let (r, g, b, a) = color.unwrap_or(Color::WHITE).to_rgba();
+                [r, g, b, a]
+            })
+            .collect::<Vec<_>>();
+        Self::from_pixels(
+            gfx,
+            &pixels,
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+            width,
+            height,
+        )
+    }
+
     /// Creates a new image initialized with given pixel data.
     pub fn from_pixels(
         gfx: &impl Has<GraphicsContext>,
