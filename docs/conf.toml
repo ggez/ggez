@@ -7,9 +7,9 @@
 [window_mode]
 width = 800
 height = 600
-borderless = false
-fullscreen_type = "Off"
 maximized = false
+fullscreen_type = "Windowed"
+borderless = false
 transparent = false
 min_width = 0
 min_height = 0
@@ -21,9 +21,9 @@ resize_on_scale_factor_change = false
 
 [window_setup]
 title = "An easy, good game"
-icon = ""
 samples = "One"
 vsync = true
+icon = ""
 srgb = true
 
 [backend]
