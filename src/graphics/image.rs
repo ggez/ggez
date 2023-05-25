@@ -52,7 +52,7 @@ impl Image {
     ///
     /// The default color is [`Color::WHITE`].
     /// Mainly useful for debugging.
-    pub fn new_blank_canvas_image(
+    pub fn from_color(
         gfx: &impl Has<GraphicsContext>,
         width: u32,
         height: u32,
@@ -119,23 +119,6 @@ impl Image {
         );
 
         image
-    }
-
-    /// A little helper function that creates a new `Image` that is just a solid square of the given size and color. Mainly useful for debugging.
-    pub fn from_solid(gfx: &impl Has<GraphicsContext>, size: u32, color: Color) -> Self {
-        let pixels = (0..(size * size))
-            .flat_map(|_| {
-                let (r, g, b, a) = color.to_rgba();
-                [r, g, b, a]
-            })
-            .collect::<Vec<_>>();
-        Self::from_pixels(
-            gfx,
-            &pixels,
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-            size,
-            size,
-        )
     }
 
     /// Creates a new image initialized with pixel data loaded from a given path as an
