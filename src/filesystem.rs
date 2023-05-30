@@ -124,11 +124,26 @@ impl Filesystem {
     /// some platforms) the `author` as a portion of the user
     /// directory path.  This function is called automatically by
     /// ggez, the end user should never need to call it.
-    pub fn new(
+    pub fn new<P: AsRef<path::Path>, Q: AsRef<path::Path>>(
         id: &str,
         author: &str,
-        resources_dir_name: &str,
-        resources_zip_name: &str,
+        resources_dir_name: P,
+        resources_zip_name: Q,
+    ) -> GameResult<Filesystem> {
+        Self::_new(
+            id,
+            author,
+            resources_dir_name.as_ref(),
+            resources_zip_name.as_ref(),
+        )
+    }
+
+    /// Actual implementation of `new`, without generics.
+    fn _new(
+        id: &str,
+        author: &str,
+        resources_dir_name: &path::Path,
+        resources_zip_name: &path::Path,
     ) -> GameResult<Filesystem> {
         let mut root_path = env::current_exe()?;
 
