@@ -191,8 +191,8 @@
 #[macro_use]
 extern crate log;
 
-pub extern crate glam;
-pub extern crate mint;
+pub use glam;
+pub use mint;
 
 pub mod audio;
 pub mod conf;
