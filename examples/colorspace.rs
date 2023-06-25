@@ -99,7 +99,7 @@ impl MainState {
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
             Color::WHITE,
         )?;
-        let demo_image = graphics::Image::from_solid(ctx, 200, AQUA);
+        let demo_image = graphics::Image::from_color(ctx, 200, 200, Some(AQUA));
 
         let mut demo_instances = graphics::InstanceArray::new(ctx, demo_image.clone());
         demo_instances.push(
