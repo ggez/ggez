@@ -95,13 +95,22 @@ pub struct GraphicsContext {
 impl GraphicsContext {
     #[allow(unsafe_code)]
     pub(crate) fn new(
+        game_id: &str,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
         filesystem: &Filesystem,
     ) -> GameResult<Self> {
+        let new_instance = |backends| {
+            wgpu::Instance::new(wgpu::InstanceDescriptor {
+                backends,
+                dx12_shader_compiler: Default::default(),
+            })
+        };
+
         if conf.backend == Backend::All {
             match Self::new_from_instance(
-                wgpu::Instance::new(wgpu::Backends::PRIMARY),
+                game_id,
+                new_instance(wgpu::Backends::PRIMARY),
                 event_loop,
                 conf,
                 filesystem,
@@ -116,7 +125,8 @@ impl GraphicsContext {
                     );
 
                     Self::new_from_instance(
-                        wgpu::Instance::new(wgpu::Backends::SECONDARY),
+                        game_id,
+                        new_instance(wgpu::Backends::SECONDARY),
                         event_loop,
                         conf,
                         filesystem,
@@ -125,7 +135,7 @@ impl GraphicsContext {
                 Err(e) => Err(e),
             }
         } else {
-            let instance = wgpu::Instance::new(match conf.backend {
+            let instance = new_instance(match conf.backend {
                 Backend::All => unreachable!(),
                 Backend::OnlyPrimary => wgpu::Backends::PRIMARY,
                 Backend::Vulkan => wgpu::Backends::VULKAN,
@@ -136,12 +146,13 @@ impl GraphicsContext {
                 Backend::BrowserWebGpu => wgpu::Backends::BROWSER_WEBGPU,
             });
 
-            Self::new_from_instance(instance, event_loop, conf, filesystem)
+            Self::new_from_instance(game_id, instance, event_loop, conf, filesystem)
         }
     }
 
     #[allow(unsafe_code)]
     pub(crate) fn new_from_instance(
+        #[allow(unused_variables)] game_id: &str,
         instance: wgpu::Instance,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
@@ -149,10 +160,28 @@ impl GraphicsContext {
     ) -> GameResult<Self> {
         let mut window_builder = winit::window::WindowBuilder::new()
             .with_title(conf.window_setup.title.clone())
-            .with_inner_size(conf.window_mode.actual_size().unwrap())
+            .with_inner_size(conf.window_mode.actual_size().unwrap()) // Unwrap since actual_size only fails if one of the window dimensions is less than 1
             .with_resizable(conf.window_mode.resizable)
             .with_visible(conf.window_mode.visible)
             .with_transparent(conf.window_mode.transparent);
+
+        #[cfg(any(
+            target_os = "linux",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
+        ))]
+        {
+            {
+                use winit::platform::x11::WindowBuilderExtX11;
+                window_builder = window_builder.with_name(game_id, game_id);
+            }
+            {
+                use winit::platform::wayland::WindowBuilderExtWayland;
+                window_builder = window_builder.with_name(game_id, game_id);
+            }
+        }
 
         #[cfg(target_os = "windows")]
         {
@@ -168,7 +197,8 @@ impl GraphicsContext {
         };
 
         let window = window_builder.build(event_loop)?;
-        let surface = unsafe { instance.create_surface(&window) };
+        let surface = unsafe { instance.create_surface(&window) }
+            .map_err(|_| GameError::GraphicsInitializationError)?;
 
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
@@ -209,18 +239,21 @@ impl GraphicsContext {
             queue,
         });
 
+        let capabilities = wgpu.surface.get_capabilities(&adapter);
+
         let size = window.inner_size();
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu.surface.get_supported_formats(&adapter)[0],
+            format: capabilities.formats[0],
             width: size.width,
             height: size.height,
             present_mode: if conf.window_setup.vsync {
-                wgpu::PresentMode::Fifo
+                wgpu::PresentMode::AutoVsync
             } else {
-                wgpu::PresentMode::Mailbox
+                wgpu::PresentMode::AutoNoVsync
             },
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
+            view_formats: vec![],
         };
 
         wgpu.surface.configure(&wgpu.device, &surface_config);
@@ -238,7 +271,7 @@ impl GraphicsContext {
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let uniform_arena = GrowingBufferArena::new(
             &wgpu.device,
-            wgpu.device.limits().min_uniform_buffer_offset_alignment as u64,
+            u64::from(wgpu.device.limits().min_uniform_buffer_offset_alignment),
             wgpu::BufferDescriptor {
                 label: None,
                 size: 4096 * DrawUniforms::std140_size_static() as u64,
@@ -451,7 +484,7 @@ impl GraphicsContext {
     pub fn supported_resolutions(&self) -> impl Iterator<Item = winit::dpi::PhysicalSize<u32>> {
         self.window
             .current_monitor()
-            .unwrap()
+            .unwrap() // Unwrap is fine current monitor should always exist
             .video_modes()
             .map(|vm| vm.size())
     }
@@ -567,7 +600,6 @@ impl GraphicsContext {
         });
 
         self.uniform_arena.free();
-        self.text.free();
 
         Ok(())
     }
@@ -764,7 +796,7 @@ pub(crate) fn load_icon(
     let i = imgcrate::load_from_memory(&buf)?;
     let image_data = i.to_rgba8();
     Icon::from_rgba(image_data.to_vec(), i.width(), i.height()).map_err(|e| {
-        let msg = format!("Could not load icon: {:?}", e);
+        let msg = format!("Could not load icon: {e:?}");
         GameError::ResourceLoadError(msg)
     })
 }

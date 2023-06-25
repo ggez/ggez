@@ -154,6 +154,7 @@ impl WindowMode {
     }
 
     /// Set whether a window should be transparent.
+    #[must_use]
     pub fn transparent(mut self, transparent: bool) -> Self {
         self.transparent = transparent;
         self
@@ -291,7 +292,7 @@ impl WindowSetup {
         self
     }
 
-    /// Set sRGB color mode.
+    /// Set `sRGB` color mode.
     #[must_use]
     pub fn srgb(mut self, active: bool) -> Self {
         self.srgb = active;

@@ -42,27 +42,24 @@ impl MainState {
     /// Fades the sound in over a second
     /// Which isn't really ideal 'cause the sound is barely a second long, but still.
     fn play_fadein(&mut self, ctx: &mut Context) {
-        let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
-        sound.set_fade_in(Duration::from_millis(1000));
-        sound.play_detached(ctx).unwrap();
+        self.sound.set_fade_in(Duration::from_millis(1000));
+        self.sound.play_detached(ctx).unwrap();
     }
 
     fn play_highpitch(&mut self, ctx: &mut Context) {
-        let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
-        sound.set_pitch(2.0);
-        sound.play_detached(ctx).unwrap();
+        self.sound.set_pitch(2.0);
+        self.sound.play_detached(ctx).unwrap();
     }
     fn play_lowpitch(&mut self, ctx: &mut Context) {
-        let mut sound = audio::Source::new(ctx, "/sound.ogg").unwrap();
-        sound.set_pitch(0.5);
-        sound.play_detached(ctx).unwrap();
+        self.sound.set_pitch(0.5);
+        self.sound.play_detached(ctx).unwrap();
     }
 
     /// Plays the sound and prints out stats until it's done.
     fn play_stats(&mut self, ctx: &mut Context) {
         let _ = self.sound.play(ctx);
         while self.sound.playing() {
-            println!("Elapsed time: {:?}", self.sound.elapsed())
+            println!("Elapsed time: {:?}", self.sound.elapsed());
         }
     }
 }

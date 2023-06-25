@@ -67,7 +67,7 @@ struct App {
 
 impl App {
     #[allow(clippy::new_ret_no_self, clippy::unnecessary_wraps)]
-    /// Creates an instance, takes ownership of passed FileLogger.
+    /// Creates an instance, takes ownership of passed `FileLogger`.
     fn new(_ctx: &mut Context, logger: FileLogger) -> GameResult<App> {
         Ok(App {
             file_logger: logger,
@@ -130,7 +130,7 @@ pub fn main() -> GameResult {
                 record.level(),
                 record.target(),
                 message
-            ))
+            ));
         })
         // `gfx_device_gl` is very chatty on info loglevel, so
         // filter that a bit more strictly.

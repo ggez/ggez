@@ -99,7 +99,7 @@ impl MouseContext {
         // `last_delta` is not cumulative.
         // It represents only the change between the last mouse event and the current one.
         self.set_last_delta(diff);
-        self.set_last_position(glam::Vec2::new(new_x as f32, new_y as f32));
+        self.set_last_position(glam::Vec2::new(new_x, new_y));
     }
 
     /// Resets the value returned by [`mouse::delta`](fn.delta.html) to zero.
@@ -136,7 +136,7 @@ impl MouseContext {
         }
     }
 
-    /// Get the distance the cursor was moved between the latest two mouse_motion_events.
+    /// Get the distance the cursor was moved between the latest two `mouse_motion_events`.
     /// Really useful only if you are writing your own event loop
     pub fn last_delta(&self) -> mint::Point2<f32> {
         self.last_delta.into()
@@ -207,14 +207,14 @@ pub fn button_just_released(ctx: &Context, button: MouseButton) -> bool {
 /// it does so by invoking it on the `EventHandler` manually.)
 #[deprecated(since = "0.8.0", note = "Use `ctx.mouse.handle_move` instead")]
 pub fn handle_move(ctx: &mut Context, new_x: f32, new_y: f32) {
-    ctx.mouse.handle_move(new_x, new_y)
+    ctx.mouse.handle_move(new_x, new_y);
 }
 
 /// Set whether or not the mouse is hidden (invisible).
 // TODO: Move to graphics context (This isn't input)
 pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
     ctx.mouse.cursor_hidden = hidden;
-    ctx.gfx.window.set_cursor_visible(!hidden)
+    ctx.gfx.window.set_cursor_visible(!hidden);
 }
 
 /// Modifies the mouse cursor type of the window.
@@ -234,6 +234,7 @@ pub fn cursor_grabbed(ctx: &Context) -> bool {
 ///
 /// **Note**: macOS locks the cursor rather than confining it.
 // TODO: Move to graphics context (This isn't input)
+#[allow(clippy::missing_errors_doc)]
 pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult {
     ctx.mouse.cursor_grabbed = grabbed;
     ctx.gfx
@@ -252,6 +253,9 @@ pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult {
 
 /// Set the current position of the mouse cursor, in pixels.
 /// Uses strictly window-only coordinates.
+/// ### Errors
+///
+/// Will return `GameError::WindowError` if platform doesn't support this.
 // TODO: Move to graphics context (This isn't input)
 pub fn set_position<P>(ctx: &mut Context, point: P) -> GameResult
 where

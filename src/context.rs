@@ -160,7 +160,7 @@ impl HasMut<GraphicsContext> for Context {
 
 impl fmt::Debug for Context {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<Context: {:p}>", self)
+        write!(f, "<Context: {self:p}>")
     }
 }
 
@@ -168,6 +168,7 @@ impl Context {
     /// Tries to create a new Context using settings from the given [`Conf`](../conf/struct.Conf.html) object.
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
     fn from_conf(
+        game_id: &str,
         conf: conf::Conf,
         fs: Filesystem,
     ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
@@ -175,7 +176,8 @@ impl Context {
         let audio_context = audio::AudioContext::new(&fs)?;
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
-        let graphics_context = graphics::context::GraphicsContext::new(&events_loop, &conf, &fs)?;
+        let graphics_context =
+            graphics::context::GraphicsContext::new(game_id, &events_loop, &conf, &fs)?;
 
         let ctx = Context {
             conf,
@@ -205,8 +207,8 @@ pub struct ContextBuilder {
     pub(crate) game_id: String,
     pub(crate) author: String,
     pub(crate) conf: conf::Conf,
-    pub(crate) resources_dir_name: String,
-    pub(crate) resources_zip_name: String,
+    pub(crate) resources_dir_name: path::PathBuf,
+    pub(crate) resources_zip_name: path::PathBuf,
     pub(crate) paths: Vec<path::PathBuf>,
     pub(crate) memory_zip_files: Vec<Cow<'static, [u8]>>,
     pub(crate) load_conf_file: bool,
@@ -219,8 +221,8 @@ impl ContextBuilder {
             game_id: game_id.to_string(),
             author: author.to_string(),
             conf: conf::Conf::default(),
-            resources_dir_name: "resources".to_string(),
-            resources_zip_name: "resources.zip".to_string(),
+            resources_dir_name: "resources".into(),
+            resources_zip_name: "resources.zip".into(),
             paths: vec![],
             memory_zip_files: vec![],
             load_conf_file: true,
@@ -263,16 +265,16 @@ impl ContextBuilder {
     /// Sets resources dir name.
     /// Default resources dir name is `resources`.
     #[must_use]
-    pub fn resources_dir_name(mut self, new_name: impl ToString) -> Self {
-        self.resources_dir_name = new_name.to_string();
+    pub fn resources_dir_name(mut self, new_name: impl Into<path::PathBuf>) -> Self {
+        self.resources_dir_name = new_name.into();
         self
     }
 
     /// Sets resources zip name.
     /// Default resources dir name is `resources.zip`.
     #[must_use]
-    pub fn resources_zip_name(mut self, new_name: impl ToString) -> Self {
-        self.resources_zip_name = new_name.to_string();
+    pub fn resources_zip_name(mut self, new_name: impl Into<path::PathBuf>) -> Self {
+        self.resources_zip_name = new_name.into();
         self
     }
 
@@ -340,7 +342,7 @@ impl ContextBuilder {
             self.conf
         };
 
-        Context::from_conf(config, fs)
+        Context::from_conf(self.game_id.as_ref(), config, fs)
     }
 }
 
@@ -363,6 +365,7 @@ mod tests {
         ContextBuilder,
     };
 
+    // This will fail when testing if not running using one thread but is actually fine
     #[test]
     fn has_traits() {
         let (mut ctx, _event_loop) = ContextBuilder::new("test", "ggez").build().unwrap();

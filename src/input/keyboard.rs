@@ -21,7 +21,7 @@
 //! In general, keycodes should be used when the meaning of the typed
 //! character is important (e.g. "I" to open the inventory), and scancodes
 //! for when the location is important (e.g. the WASD key block). The
-//! text_input_event handler should be used to collect raw text.
+//! `text_input_event` handler should be used to collect raw text.
 //!
 //! The keycode is optional because not all inputs can be matched to a
 //! specific key code. This will happen on non-English keyboards, for
@@ -34,7 +34,7 @@
 //! ```rust, compile
 //! use ggez::event::{self, EventHandler};
 //! use ggez::input::keyboard::{KeyCode, KeyMods, KeyInput};
-//! use ggez::{graphics, timer};
+//! use ggez::{graphics::{self, Color}, timer};
 //! use ggez::{Context, GameResult};
 //!
 //! struct MainState {
@@ -117,7 +117,7 @@ pub use winit::event::VirtualKeyCode as KeyCode;
 
 bitflags::bitflags! {
     /// Bitflags describing the state of keyboard modifiers, such as `Control` or `Shift`.
-    #[derive(Default)]
+    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
     pub struct KeyMods: u8 {
         /// No modifiers; equivalent to `KeyMods::default()` and
         /// [`KeyMods::empty()`](struct.KeyMods.html#method.empty).
@@ -299,7 +299,7 @@ impl KeyboardContext {
     ///
     /// Double check that this edge handling is necessary;
     /// winit sounds like it should do this for us,
-    /// see https://docs.rs/winit/0.18.0/winit/struct.KeyboardInput.html#structfield.modifiers
+    /// see <https://docs.rs/winit/0.18.0/winit/struct.KeyboardInput.html#structfield.modifiers>
     ///
     /// ...more specifically, we should refactor all this to consistant-ify events a bit and
     /// make winit do more of the work.
@@ -411,84 +411,84 @@ mod tests {
     #[test]
     fn pressed_keys_tracking() {
         let mut keyboard = KeyboardContext::new();
-        assert_eq!(keyboard.pressed_keys(), &[].iter().cloned().collect());
+        assert_eq!(keyboard.pressed_keys(), &[].iter().copied().collect());
         assert!(!keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
         assert_eq!(
             keyboard.pressed_keys(),
-            &[KeyCode::A].iter().cloned().collect()
+            &[KeyCode::A].iter().copied().collect()
         );
         assert!(keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, false);
-        assert_eq!(keyboard.pressed_keys(), &[].iter().cloned().collect());
+        assert_eq!(keyboard.pressed_keys(), &[].iter().copied().collect());
         assert!(!keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
         assert_eq!(
             keyboard.pressed_keys(),
-            &[KeyCode::A].iter().cloned().collect()
+            &[KeyCode::A].iter().copied().collect()
         );
         assert!(keyboard.is_key_pressed(KeyCode::A));
         keyboard.set_key(KeyCode::A, true);
         assert_eq!(
             keyboard.pressed_keys(),
-            &[KeyCode::A].iter().cloned().collect()
+            &[KeyCode::A].iter().copied().collect()
         );
         keyboard.set_key(KeyCode::B, true);
         assert_eq!(
             keyboard.pressed_keys(),
-            &[KeyCode::A, KeyCode::B].iter().cloned().collect()
+            &[KeyCode::A, KeyCode::B].iter().copied().collect()
         );
         keyboard.set_key(KeyCode::B, true);
         assert_eq!(
             keyboard.pressed_keys(),
-            &[KeyCode::A, KeyCode::B].iter().cloned().collect()
+            &[KeyCode::A, KeyCode::B].iter().copied().collect()
         );
         keyboard.set_key(KeyCode::A, false);
         assert_eq!(
             keyboard.pressed_keys(),
-            &[KeyCode::B].iter().cloned().collect()
+            &[KeyCode::B].iter().copied().collect()
         );
         keyboard.set_key(KeyCode::A, false);
         assert_eq!(
             keyboard.pressed_keys(),
-            &[KeyCode::B].iter().cloned().collect()
+            &[KeyCode::B].iter().copied().collect()
         );
         keyboard.set_key(KeyCode::B, false);
-        assert_eq!(keyboard.pressed_keys(), &[].iter().cloned().collect());
+        assert_eq!(keyboard.pressed_keys(), &[].iter().copied().collect());
     }
 
     #[test]
     fn pressed_scancodes_tracking() {
         let mut keyboard = KeyboardContext::new();
-        assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
+        assert_eq!(keyboard.pressed_scancodes(), &[].iter().copied().collect());
         assert!(!keyboard.is_scancode_pressed(3));
         keyboard.set_scancode(3, true);
-        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().cloned().collect());
+        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().copied().collect());
         assert!(keyboard.is_scancode_pressed(3));
         keyboard.set_scancode(3, false);
-        assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
+        assert_eq!(keyboard.pressed_scancodes(), &[].iter().copied().collect());
         assert!(!keyboard.is_scancode_pressed(3));
         keyboard.set_scancode(3, true);
-        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().cloned().collect());
+        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().copied().collect());
         assert!(keyboard.is_scancode_pressed(3));
         keyboard.set_scancode(3, true);
-        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().cloned().collect());
+        assert_eq!(keyboard.pressed_scancodes(), &[3].iter().copied().collect());
         keyboard.set_scancode(4, true);
         assert_eq!(
             keyboard.pressed_scancodes(),
-            &[3, 4].iter().cloned().collect()
+            &[3, 4].iter().copied().collect()
         );
         keyboard.set_scancode(4, true);
         assert_eq!(
             keyboard.pressed_scancodes(),
-            &[3, 4].iter().cloned().collect()
+            &[3, 4].iter().copied().collect()
         );
         keyboard.set_scancode(3, false);
-        assert_eq!(keyboard.pressed_scancodes(), &[4].iter().cloned().collect());
+        assert_eq!(keyboard.pressed_scancodes(), &[4].iter().copied().collect());
         keyboard.set_scancode(3, false);
-        assert_eq!(keyboard.pressed_scancodes(), &[4].iter().cloned().collect());
+        assert_eq!(keyboard.pressed_scancodes(), &[4].iter().copied().collect());
         keyboard.set_scancode(4, false);
-        assert_eq!(keyboard.pressed_scancodes(), &[].iter().cloned().collect());
+        assert_eq!(keyboard.pressed_scancodes(), &[].iter().copied().collect());
     }
 
     #[test]

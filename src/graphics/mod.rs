@@ -41,6 +41,7 @@ pub use {
 };
 
 /// Applies `DrawParam` to `Rect`.
+#[must_use]
 pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
     match param.transform {
         Transform::Values {
@@ -137,7 +138,7 @@ pub fn queue_text(
         .push((text.clone(), relative_dest.into(), color));
 }
 
-/// Draws all of the Texts added via queue_text().
+/// Draws all of the Texts added via `queue_text`.
 #[deprecated(
     since = "0.8.0",
     note = "Don't use the `queue_text` and `draw_queued_text` system. Instead draw the texts directly."
@@ -163,7 +164,7 @@ pub fn draw_queued_text(
                 x: param_dest.x + queued_text.1.x,
                 y: param_dest.y + queued_text.1.y,
             }),
-        )
+        );
     }
 
     Ok(())

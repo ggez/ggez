@@ -1,5 +1,5 @@
 use super::{
-    arc::{ArcBindGroup, ArcBindGroupLayout, ArcTexture, ArcTextureView},
+    arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcTexture, ArcTextureView},
     bind_group::BindGroupBuilder,
     growing::GrowingBufferArena,
 };
@@ -7,7 +7,7 @@ use crate::graphics::{context::FrameArenas, LinearColor};
 use crevice::std140::AsStd140;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
 use ordered_float::OrderedFloat;
-use std::{cell::RefCell, num::NonZeroU32};
+use std::cell::RefCell;
 
 pub(crate) struct TextRenderer {
     // RefCell to make various getter not take &mut.
@@ -17,10 +17,14 @@ pub(crate) struct TextRenderer {
     pub cache_bind: ArcBindGroup,
     pub cache_bind_layout: ArcBindGroupLayout,
     pub cache_size: (u32, u32),
+
     pub verts: GrowingBufferArena,
 }
 
 impl TextRenderer {
+    // if the number of chars goes over this, a dedicated buffer is allocated for the text
+    const MAX_TEXT_VERTEX_ARENA: u64 = 2048;
+
     pub fn new(device: &wgpu::Device, cache_bind_layout: ArcBindGroupLayout) -> Self {
         let cache_size = (1024, 1024);
 
@@ -41,6 +45,7 @@ impl TextRenderer {
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::R8Unorm,
             usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
         }));
 
         let cache_view =
@@ -58,7 +63,7 @@ impl TextRenderer {
             1,
             wgpu::BufferDescriptor {
                 label: None,
-                size: 2048 * std::mem::size_of::<TextVertex>() as u64,
+                size: Self::MAX_TEXT_VERTEX_ARENA * std::mem::size_of::<TextVertex>() as u64,
                 usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::VERTEX,
                 mapped_at_creation: false,
             },
@@ -71,8 +76,18 @@ impl TextRenderer {
             cache_bind,
             cache_bind_layout,
             cache_size,
+
             verts,
         }
+    }
+
+    fn create_verts_buffer(device: &wgpu::Device, num_verts: usize) -> ArcBuffer {
+        ArcBuffer::new(device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (num_verts * std::mem::size_of::<TextVertex>()) as u64,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::VERTEX,
+            mapped_at_creation: false,
+        }))
     }
 
     pub fn queue(&self, section: glyph_brush::Section<'_, Extra>) {
@@ -103,7 +118,7 @@ impl TextRenderer {
                     pixels,
                     wgpu::ImageDataLayout {
                         offset: 0,
-                        bytes_per_row: Some(NonZeroU32::new(rect.width()).unwrap()),
+                        bytes_per_row: Some(rect.width()),
                         rows_per_image: None,
                     },
                     wgpu::Extent3d {
@@ -137,16 +152,17 @@ impl TextRenderer {
         match res {
             Ok(glyph_brush::BrushAction::Draw(verts)) => {
                 let verts_size = verts.len() * std::mem::size_of::<TextVertex>();
-                let verts_alloc = self.verts.allocate(device, verts_size as u64);
+                let (buffer, offset) = if verts.len() as u64 > Self::MAX_TEXT_VERTEX_ARENA {
+                    (Self::create_verts_buffer(device, verts.len()), 0)
+                } else {
+                    let verts_alloc = self.verts.allocate(device, verts_size as u64);
+                    (verts_alloc.buffer, verts_alloc.offset)
+                };
 
-                queue.write_buffer(
-                    &verts_alloc.buffer,
-                    verts_alloc.offset,
-                    bytemuck::cast_slice(verts.as_slice()),
-                );
+                queue.write_buffer(&buffer, offset, bytemuck::cast_slice(verts.as_slice()));
 
-                let verts_buf = arenas.buffers.alloc(verts_alloc.buffer);
-                pass.set_vertex_buffer(0, verts_buf.slice(verts_alloc.offset..));
+                let verts_buf = arenas.buffers.alloc(buffer);
+                pass.set_vertex_buffer(0, verts_buf.slice(offset..));
 
                 // N.B.: 1 glyph = 4 verts, then n glyphs = n instances.
                 // Also note that vertex data is stepped PER INSTANCE.
@@ -173,6 +189,7 @@ impl TextRenderer {
                     dimension: wgpu::TextureDimension::D2,
                     format: wgpu::TextureFormat::R8Unorm,
                     usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,
+                    view_formats: &[],
                 }));
 
                 self.cache_view = ArcTextureView::new(
@@ -194,10 +211,6 @@ impl TextRenderer {
             _ => unreachable!(),
         }
     }
-
-    pub fn free(&mut self) {
-        self.verts.free();
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -207,7 +220,7 @@ pub(crate) struct Extra {
 }
 
 // hash is impl'd via OrderedFloat, but we still want to preserve the types
-#[allow(clippy::derive_hash_xor_eq)]
+#[allow(clippy::derived_hash_with_manual_eq)]
 impl std::hash::Hash for Extra {
     #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {

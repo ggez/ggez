@@ -45,7 +45,7 @@ impl Canvas {
     ///
     /// `clear` will set the image initially to the given color, if a color is provided, or keep it as is, if it's `None`.
     ///
-    /// The image must be created for Canvas usage, i.e. [Image::new_canvas_image()], or [ScreenImage], and must only have a sample count of 1.
+    /// The image must be created for Canvas usage, i.e. [`Image::new_canvas_image`()], or [`ScreenImage`], and must only have a sample count of 1.
     #[inline]
     pub fn from_image(
         gfx: &impl Has<GraphicsContext>,
@@ -69,7 +69,7 @@ impl Canvas {
 
     /// Create a new [Canvas] from an MSAA image and a resolve target. This will allow for drawing with MSAA to a color image, then resolving the samples into a secondary target.
     ///
-    /// Both images must be created for Canvas usage (see [Canvas::from_image]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
+    /// Both images must be created for Canvas usage (see [`Canvas::from_image`]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
     #[inline]
     pub fn from_msaa(
         gfx: &impl Has<GraphicsContext>,
@@ -162,8 +162,8 @@ impl Canvas {
 
     /// Sets the shader to use when drawing meshes.
     #[inline]
-    pub fn set_shader(&mut self, shader: Shader) {
-        self.state.shader = shader;
+    pub fn set_shader(&mut self, shader: &Shader) {
+        self.state.shader = shader.clone();
     }
 
     /// Returns the current shader being used when drawing meshes.
@@ -176,8 +176,12 @@ impl Canvas {
     ///
     /// **Bound to bind group 3.**
     #[inline]
-    pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
-        self.state.params = Some((params.bind_group.clone(), params.layout));
+    pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: &ShaderParams<Uniforms>) {
+        self.state.params = Some((
+            params.bind_group.clone().unwrap(/* always Some */),
+            params.layout.clone().unwrap(/* always Some */),
+            params.buffer_offset,
+        ));
     }
 
     /// Sets the shader to use when drawing text.
@@ -196,8 +200,16 @@ impl Canvas {
     ///
     /// **Bound to bind group 3.**
     #[inline]
-    pub fn set_text_shader_params<Uniforms: AsStd140>(&mut self, params: ShaderParams<Uniforms>) {
-        self.state.text_params = Some((params.bind_group.clone(), params.layout));
+    pub fn set_text_shader_params<Uniforms: AsStd140>(
+        &mut self,
+        params: &ShaderParams<Uniforms>,
+    ) -> GameResult {
+        self.state.text_params = Some((
+            params.bind_group.clone().unwrap(/* always Some */),
+            params.layout.clone().unwrap(/* always Some */),
+            params.buffer_offset,
+        ));
+        Ok(())
     }
 
     /// Resets the active mesh shader to the default.
@@ -213,6 +225,8 @@ impl Canvas {
     }
 
     /// Sets the active sampler used to sample images.
+    ///
+    /// Use `set_sampler(Sampler::nearest_clamp())` for drawing pixel art graphics without blurring them.
     #[inline]
     pub fn set_sampler(&mut self, sampler: impl Into<Sampler>) {
         self.state.sampler = sampler.into();
@@ -375,7 +389,7 @@ impl Canvas {
         instances: &InstanceArray,
         param: impl Into<DrawParam>,
     ) {
-        instances.flush_wgpu(&self.wgpu).unwrap();
+        instances.flush_wgpu(&self.wgpu).unwrap(); // Will only fail if you can't lock the buffers shouldn't happen
         self.push_draw(
             Draw::MeshInstances {
                 mesh,
@@ -418,13 +432,13 @@ impl Canvas {
 
         // apply initial state
         canvas.set_shader(state.shader.clone());
-        if let Some((bind_group, layout)) = &state.params {
-            canvas.set_shader_params(bind_group.clone(), layout.clone());
+        if let Some((bind_group, layout, offset)) = &state.params {
+            canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
         }
 
         canvas.set_text_shader(state.text_shader.clone());
-        if let Some((bind_group, layout)) = &state.text_params {
-            canvas.set_text_shader_params(bind_group.clone(), layout.clone());
+        if let Some((bind_group, layout, offset)) = &state.text_params {
+            canvas.set_text_shader_params(bind_group.clone(), layout.clone(), *offset);
         }
 
         canvas.set_sampler(state.sampler);
@@ -444,8 +458,8 @@ impl Canvas {
                 }
 
                 if draw.state.params != state.params {
-                    if let Some((bind_group, layout)) = &draw.state.params {
-                        canvas.set_shader_params(bind_group.clone(), layout.clone());
+                    if let Some((bind_group, layout, offset)) = &draw.state.params {
+                        canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
                     }
                 }
 
@@ -454,8 +468,8 @@ impl Canvas {
                 }
 
                 if draw.state.text_params != state.text_params {
-                    if let Some((bind_group, layout)) = &draw.state.text_params {
-                        canvas.set_text_shader_params(bind_group.clone(), layout.clone());
+                    if let Some((bind_group, layout, offset)) = &draw.state.text_params {
+                        canvas.set_text_shader_params(bind_group.clone(), layout.clone(), *offset);
                     }
                 }
 
@@ -504,9 +518,9 @@ impl Canvas {
 #[derive(Debug, Clone)]
 struct DrawState {
     shader: Shader,
-    params: Option<(ArcBindGroup, ArcBindGroupLayout)>,
+    params: Option<(ArcBindGroup, ArcBindGroupLayout, u32)>,
     text_shader: Shader,
-    text_params: Option<(ArcBindGroup, ArcBindGroupLayout)>,
+    text_params: Option<(ArcBindGroup, ArcBindGroupLayout, u32)>,
     sampler: Sampler,
     blend_mode: BlendMode,
     premul_text: bool,

@@ -22,10 +22,10 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let dim = Dim { rate: 0.5 };
-        let shader = graphics::ShaderBuilder::new_wgsl()
+        let shader = graphics::ShaderBuilder::new()
             .fragment_path("/dimmer.wgsl")
             .build(&ctx.gfx)?;
-        let params = graphics::ShaderParamsBuilder::new(&dim).build(&mut ctx.gfx);
+        let params = graphics::ShaderParamsBuilder::new(&dim).build(ctx);
         Ok(MainState {
             dim,
             shader,
@@ -54,8 +54,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
         canvas.draw(&circle, Vec2::new(0.0, 0.0));
 
         self.params.set_uniforms(ctx, &self.dim);
-        canvas.set_shader(self.shader.clone());
-        canvas.set_shader_params(self.params.clone());
+        canvas.set_shader(&self.shader);
+        canvas.set_shader_params(&self.params);
         let circle = graphics::Mesh::new_circle(
             ctx,
             DrawMode::fill(),

@@ -11,12 +11,12 @@ use crevice::std140::AsStd140;
 use std::{
     collections::BTreeMap,
     sync::{
-        atomic::{AtomicBool, AtomicU32, Ordering::SeqCst},
+        atomic::{AtomicBool, AtomicUsize, Ordering::SeqCst},
         Mutex,
     },
 };
 
-const DEFAULT_CAPACITY: u32 = 16;
+const DEFAULT_CAPACITY: usize = 16;
 
 /// Array of instances for fast rendering of many meshes.
 ///
@@ -30,13 +30,13 @@ pub struct InstanceArray {
     pub(crate) image: Image,
     pub(crate) ordered: bool,
     dirty: AtomicBool,
-    capacity: AtomicU32,
+    capacity: AtomicUsize,
     uniforms: Vec<Std140DrawUniforms>,
     params: Vec<DrawParam>,
 }
 
 impl InstanceArray {
-    /// Creates a new [InstanceArray] capable of storing up to n-`capacity` instances
+    /// Creates a new [`InstanceArray`] capable of storing up to n-`capacity` instances
     /// (this can be changed and is resized automatically when needed).
     ///
     /// If `image` is `None`, a 1x1 white image will be used which can be used to draw solid rectangles.
@@ -71,7 +71,7 @@ impl InstanceArray {
         wgpu: &WgpuContext,
         bind_layout: ArcBindGroupLayout,
         image: Image,
-        capacity: u32,
+        capacity: usize,
         ordered: bool,
     ) -> Self {
         assert!(capacity > 0);
@@ -122,8 +122,8 @@ impl InstanceArray {
                 entries: bind_group.entries(),
             }));
 
-        let uniforms = Vec::with_capacity(capacity as usize);
-        let params = Vec::with_capacity(capacity as usize);
+        let uniforms = Vec::with_capacity(capacity);
+        let params = Vec::with_capacity(capacity);
 
         InstanceArray {
             buffer: Mutex::new(buffer),
@@ -133,7 +133,7 @@ impl InstanceArray {
             image,
             ordered,
             dirty: AtomicBool::new(false),
-            capacity: AtomicU32::new(capacity),
+            capacity: AtomicUsize::new(capacity),
             uniforms,
             params,
         }
@@ -199,23 +199,23 @@ impl InstanceArray {
             self.dirty.store(false, SeqCst);
         }
 
-        let len = self.uniforms.len() as u32;
-        if len > self.capacity.load(SeqCst) {
-            let mut resized = InstanceArray::new_wgpu(
-                wgpu,
-                self.bind_layout.clone(),
-                self.image.clone(),
-                len,
-                self.ordered,
-            );
-            *self.buffer.lock().map_err(|_| GameError::LockError)? =
-                resized.buffer.get_mut().unwrap().clone();
-            *self.indices.lock().map_err(|_| GameError::LockError)? =
-                resized.indices.get_mut().unwrap().clone();
-            *self.bind_group.lock().map_err(|_| GameError::LockError)? =
-                resized.bind_group.get_mut().unwrap().clone();
-            self.capacity.store(len, SeqCst);
-        }
+        let len = self.uniforms.len();
+        //if len > self.capacity.load(SeqCst) {
+        let mut resized = InstanceArray::new_wgpu(
+            wgpu,
+            self.bind_layout.clone(),
+            self.image.clone(),
+            len,
+            self.ordered,
+        );
+        *self.buffer.lock().map_err(|_| GameError::LockError)? =
+            resized.buffer.get_mut().unwrap().clone();
+        *self.indices.lock().map_err(|_| GameError::LockError)? =
+            resized.indices.get_mut().unwrap().clone();
+        *self.bind_group.lock().map_err(|_| GameError::LockError)? =
+            resized.bind_group.get_mut().unwrap().clone();
+        self.capacity.store(len, SeqCst);
+        //}
 
         wgpu.queue.write_buffer(
             &self.buffer.lock().unwrap(),
@@ -245,7 +245,7 @@ impl InstanceArray {
     ///
     /// # Panics
     /// Panics if `new_capacity` is 0.
-    pub fn resize(&mut self, gfx: &impl Has<GraphicsContext>, new_capacity: u32) {
+    pub fn resize(&mut self, gfx: &impl Has<GraphicsContext>, new_capacity: usize) {
         assert!(new_capacity > 0);
 
         let gfx: &GraphicsContext = gfx.retrieve();
@@ -262,12 +262,10 @@ impl InstanceArray {
 
         self.capacity.store(new_capacity, SeqCst);
         self.dirty.store(true, SeqCst);
-        self.uniforms.truncate(new_capacity as usize);
-        self.params.truncate(new_capacity as usize);
-        self.uniforms
-            .reserve(new_capacity as usize - self.uniforms.len());
-        self.params
-            .reserve(new_capacity as usize - self.params.len());
+        self.uniforms.truncate(new_capacity);
+        self.params.truncate(new_capacity);
+        self.uniforms.reserve(new_capacity - self.uniforms.len());
+        self.params.reserve(new_capacity - self.params.len());
     }
 
     /// Returns this `InstanceArray`'s associated `image`.
@@ -276,12 +274,12 @@ impl InstanceArray {
         self.image.clone()
     }
 
-    /// Returns the number of instances this [InstanceArray] is capable of holding.
-    /// This number was specified when creating the [InstanceArray], or if the [InstanceArray]
+    /// Returns the number of instances this [`InstanceArray`] is capable of holding.
+    /// This number was specified when creating the [`InstanceArray`], or if the [`InstanceArray`]
     /// was automatically resized, the greatest length of instances.
     #[inline]
     pub fn capacity(&self) -> usize {
-        self.capacity.load(SeqCst) as usize
+        self.capacity.load(SeqCst)
     }
 
     /// This is equivalent to `<InstanceArray as Drawable>::dimensions()` (see [`Drawable::dimensions()`]), but with a mesh taken into account.
@@ -308,6 +306,11 @@ impl InstanceArray {
 
 impl Drawable for InstanceArray {
     fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
+        // Only flush (and then push a draw) if there are any instances to draw.
+        // This guards against attempts to create empty buffers in `new_wgpu`, see #1168.
+        if self.instances().is_empty() {
+            return;
+        }
         self.flush_wgpu(&canvas.wgpu).unwrap();
         canvas.push_draw(
             Draw::MeshInstances {

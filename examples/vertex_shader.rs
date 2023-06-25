@@ -26,13 +26,13 @@ impl MainState {
             graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
             Color::WHITE,
         )?;
-        let shader = graphics::ShaderBuilder::new_wgsl()
+        let shader = graphics::ShaderBuilder::new()
             .vertex_path("/vertex.wgsl")
-            .build(&ctx.gfx)?;
+            .build(ctx)?;
         let shader_params = graphics::ShaderParamsBuilder::new(&ShaderUniforms {
             rotation: Mat4::IDENTITY.into(),
         })
-        .build(&mut ctx.gfx);
+        .build(ctx);
 
         let s = MainState {
             square_mesh,
@@ -52,13 +52,13 @@ impl event::EventHandler<ggez::GameError> for MainState {
         let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
 
         self.shader_params.set_uniforms(
-            &ctx.gfx,
+            ctx,
             &ShaderUniforms {
                 rotation: Mat4::from_rotation_z(ctx.time.time_since_start().as_secs_f32()).into(),
             },
         );
-        canvas.set_shader(self.shader.clone());
-        canvas.set_shader_params(self.shader_params.clone());
+        canvas.set_shader(&self.shader);
+        canvas.set_shader_params(&self.shader_params);
         canvas.draw(
             &self.square_mesh,
             DrawParam::default().dest(Vec2::new(200.0, 100.0)),

@@ -37,7 +37,7 @@ wget https://raw.githubusercontent.com/ggez/ggez/master/resources/LiberationMono
 Then edit your `Cargo.toml` with your favorite super duper editor and under `[dependencies]` add:
 
 ```
-ggez = "0.8.1"
+ggez = "0.9.0"
 glam = { version = "0.21", features = ["mint"] }
 ```
 
@@ -66,6 +66,12 @@ least you can install them with:
 
 ```sh
 yum install alsa-lib-devel
+```
+
+### Fedora
+
+```sh
+dnf install rust-libudev-devel rust-libudev-sys-devel alsa-lib-devel pkgconf-pkg-config
 ```
 
 ## Distributing

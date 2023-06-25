@@ -6,7 +6,7 @@ use crate::{context::Has, filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
 use std::{collections::HashMap, io::Read, path::Path};
 
-/// Font data that can be used to create a new font in [super::context::GraphicsContext].
+/// Font data that can be used to create a new font in [`GraphicsContext`].
 #[derive(Debug)]
 pub struct FontData {
     pub(crate) font: ab_glyph::FontArc,
@@ -43,7 +43,7 @@ impl FontData {
 pub use glyph_brush::ab_glyph::PxScale;
 
 /// Parameters of a single piece ("fragment") of text, including font, color, and size.
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct TextFragment {
     /// The text itself.
     pub text: String,
@@ -53,17 +53,6 @@ pub struct TextFragment {
     pub scale: Option<PxScale>,
     /// Color of the text fragment, defaults to the text's color.
     pub color: Option<Color>,
-}
-
-impl Default for TextFragment {
-    fn default() -> Self {
-        TextFragment {
-            text: "".into(),
-            font: None,
-            scale: None,
-            color: None,
-        }
-    }
 }
 
 impl TextFragment {
@@ -157,6 +146,11 @@ impl Text {
         self
     }
 
+    /// Clear all `TextFragment` from the `Text`
+    pub fn clear(&mut self) {
+        self.fragments.clear();
+    }
+
     /// Returns an immutable slice of all `TextFragment`s.
     #[inline]
     pub fn fragments(&self) -> &[TextFragment] {
@@ -195,7 +189,7 @@ impl Text {
         self
     }
 
-    /// Specifies the text's font scael for fragments that don't specify their own scale.
+    /// Specifies the text's font scale for fragments that don't specify their own scale.
     pub fn set_scale(&mut self, scale: impl Into<PxScale>) -> &mut Self {
         self.scale = scale.into();
         self
@@ -255,7 +249,7 @@ impl Text {
         Ok(glyph_brush::Section {
             screen_position: (0., 0.),
 
-            bounds: (self.bounds.x, self.bounds.x),
+            bounds: (self.bounds.x, self.bounds.y),
             layout: if self.wrap {
                 glyph_brush::Layout::default_wrap()
             } else {

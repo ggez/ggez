@@ -11,7 +11,7 @@
 //!
 //! ggez is a Rust library to create a Good Game Easily.
 //!
-//! The current version is 0.8.1.
+//! The current version is 0.9.0.
 //!
 //! More specifically, ggez is a lightweight cross-platform game framework
 //! for making 2D games with minimum friction.  It aims to implement an
@@ -61,7 +61,7 @@
 //! line to your `Cargo.toml` file:
 //!
 //! ```text
-//! ggez = "0.8.1"
+//! ggez = "0.9.0"
 //! ```
 //!
 //! ggez consists of three main parts: A `Context` object which
@@ -183,8 +183,6 @@
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 #![deny(unused_results)]
-// This is not as strong a constraint as `#![forbid(unsafe_code)]` but is good enough.
-// It means the only place we use unsafe is then in the modules noted as allowing it.
 #![deny(unsafe_code)]
 #![warn(bare_trait_objects)]
 #![warn(missing_copy_implementations)]
@@ -193,8 +191,8 @@
 #[macro_use]
 extern crate log;
 
-pub extern crate glam;
-pub extern crate mint;
+pub use glam;
+pub use mint;
 
 pub mod audio;
 pub mod conf;

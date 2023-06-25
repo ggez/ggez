@@ -119,7 +119,7 @@ By default ggez uses a coordinate system corresponding to the window size
 in physical pixels, but you can change that by calling something like
 
 ```rust
-graphics::set_screen_coordinates(&mut context, Rect::new(0.0, 0.0, 1.0, 1.0)).unwrap();
+canvas.set_screen_coordinates(Rect::new(0.0, 0.0, 1.0, 1.0));
 ```
 
 and scaling your `Image`s with `graphics::DrawParam`.
@@ -191,7 +191,7 @@ The standard window mode configuration requests a window size in absolute pixels
         }
 ```
 
-This can be problematic on high DPI screens where a 800x600 window is very small. 
+This can be problematic on high DPI screens where a 800x600 window is very small.
 
 A new logical_size option will scale the requested window to be the same effective size on all screens by requesting a window with more pixels (1.5 or 2 times more for example).
 

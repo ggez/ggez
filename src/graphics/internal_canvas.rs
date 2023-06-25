@@ -4,7 +4,7 @@ use super::{
     gpu::{
         arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcShaderModule, ArcTextureView},
         bind_group::{BindGroupBuilder, BindGroupCache, BindGroupLayoutBuilder},
-        growing::GrowingBufferArena,
+        growing::{ArenaAllocation, GrowingBufferArena},
         pipeline::{PipelineCache, RenderPipelineInfo},
         text::{TextRenderer, TextVertex},
     },
@@ -15,7 +15,7 @@ use super::{
     BlendMode, Color, InstanceArray, LinearColor, Rect, Text, Transform, WgpuContext,
 };
 use crate::{GameError, GameResult};
-use crevice::std140::{AsStd140, Std140};
+use crevice::std140::AsStd140;
 use std::{collections::HashMap, hash::Hash};
 
 /// A canvas represents a render pass and is how you render primitives such as meshes and text onto images.
@@ -31,9 +31,9 @@ pub struct InternalCanvas<'a> {
     uniform_arena: &'a mut GrowingBufferArena,
 
     shader: Shader,
-    shader_bind_group: Option<(&'a wgpu::BindGroup, ArcBindGroupLayout)>,
+    shader_bind_group: Option<(&'a wgpu::BindGroup, ArcBindGroupLayout, u32)>,
     text_shader: Shader,
-    text_shader_bind_group: Option<(&'a wgpu::BindGroup, ArcBindGroupLayout)>,
+    text_shader_bind_group: Option<(&'a wgpu::BindGroup, ArcBindGroupLayout, u32)>,
 
     shader_ty: Option<ShaderType>,
     dirty_pipeline: bool,
@@ -42,8 +42,7 @@ pub struct InternalCanvas<'a> {
     pass: wgpu::RenderPass<'a>,
     samples: u32,
     format: wgpu::TextureFormat,
-    text_uniforms_buf: ArcBuffer,
-    text_uniforms: &'a wgpu::BindGroup,
+    text_uniforms: ArenaAllocation,
 
     draw_sm: ArcShaderModule,
     instance_sm: ArcShaderModule,
@@ -180,32 +179,18 @@ impl<'a> InternalCanvas<'a> {
             fs_module: None,
         };
 
-        let text_uniforms = uniform_arena.allocate(
-            &wgpu.device,
-            mint::ColumnMatrix4::<f32>::std140_size_static() as _,
-        );
+        let text_uniforms =
+            uniform_arena.allocate(&wgpu.device, TextUniforms::std140_size_static() as _);
 
         wgpu.queue.write_buffer(
             &text_uniforms.buffer,
             text_uniforms.offset,
-            (mint::ColumnMatrix4::<f32>::from(transform))
-                .as_std140()
-                .as_bytes(),
+            (TextUniforms {
+                transform: transform.into(),
+            })
+            .as_std140()
+            .as_bytes(),
         );
-        let text_uniforms_buf = text_uniforms.buffer;
-
-        let (text_uniforms, _) = BindGroupBuilder::new()
-            .buffer(
-                &text_uniforms_buf,
-                text_uniforms.offset,
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Uniform,
-                false,
-                Some(mint::ColumnMatrix4::<f32>::std140_size_static() as _),
-            )
-            .create(&wgpu.device, bind_group_cache);
-
-        let text_uniforms = arenas.bind_groups.alloc(text_uniforms);
 
         Ok(InternalCanvas {
             wgpu,
@@ -229,7 +214,6 @@ impl<'a> InternalCanvas<'a> {
             pass,
             samples,
             format,
-            text_uniforms_buf,
             text_uniforms,
 
             draw_sm: gfx.draw_shader.clone(),
@@ -245,9 +229,15 @@ impl<'a> InternalCanvas<'a> {
         })
     }
 
-    pub fn set_shader_params(&mut self, bind_group: ArcBindGroup, layout: ArcBindGroupLayout) {
+    pub fn set_shader_params(
+        &mut self,
+        bind_group: ArcBindGroup,
+        layout: ArcBindGroupLayout,
+        offset: u32,
+    ) {
         self.flush_text();
-        self.shader_bind_group = Some((self.arenas.bind_groups.alloc(bind_group), layout));
+        self.dirty_pipeline = true;
+        self.shader_bind_group = Some((self.arenas.bind_groups.alloc(bind_group), layout, offset));
     }
 
     pub fn set_shader(&mut self, shader: Shader) {
@@ -256,9 +246,16 @@ impl<'a> InternalCanvas<'a> {
         self.shader = shader;
     }
 
-    pub fn set_text_shader_params(&mut self, bind_group: ArcBindGroup, layout: ArcBindGroupLayout) {
+    pub fn set_text_shader_params(
+        &mut self,
+        bind_group: ArcBindGroup,
+        layout: ArcBindGroupLayout,
+        offset: u32,
+    ) {
         self.flush_text();
-        self.text_shader_bind_group = Some((self.arenas.bind_groups.alloc(bind_group), layout));
+        self.dirty_pipeline = true;
+        self.text_shader_bind_group =
+            Some((self.arenas.bind_groups.alloc(bind_group), layout, offset));
     }
 
     pub fn set_text_shader(&mut self, shader: Shader) {
@@ -286,12 +283,17 @@ impl<'a> InternalCanvas<'a> {
     pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
         self.flush_text();
         self.transform = proj.into().into();
+        self.text_uniforms = self
+            .uniform_arena
+            .allocate(&self.wgpu.device, TextUniforms::std140_size_static() as _);
         self.wgpu.queue.write_buffer(
-            &self.text_uniforms_buf,
-            0,
-            mint::ColumnMatrix4::<f32>::from(self.transform)
-                .as_std140()
-                .as_bytes(),
+            &self.text_uniforms.buffer,
+            self.text_uniforms.offset,
+            (TextUniforms {
+                transform: self.transform.into(),
+            })
+            .as_std140()
+            .as_bytes(),
         );
     }
 
@@ -305,11 +307,7 @@ impl<'a> InternalCanvas<'a> {
         self.flush_text();
         self.update_pipeline(ShaderType::Draw);
 
-        let alloc_size = self
-            .wgpu
-            .device
-            .limits()
-            .min_uniform_buffer_offset_alignment as u64;
+        let alloc_size = DrawUniforms::std140_size_static() as u64;
         let uniform_alloc = self.uniform_arena.allocate(&self.wgpu.device, alloc_size);
 
         let (uniform_bind_group, _) = BindGroupBuilder::new()
@@ -342,7 +340,7 @@ impl<'a> InternalCanvas<'a> {
         self.wgpu.queue.write_buffer(
             &uniform_alloc.buffer,
             uniform_alloc.offset,
-            bytemuck::bytes_of(&uniforms),
+            uniforms.as_std140().as_bytes(),
         );
 
         self.pass.set_bind_group(
@@ -375,11 +373,12 @@ impl<'a> InternalCanvas<'a> {
             ordered: instances.ordered,
         });
 
-        let alloc_size = self
-            .wgpu
-            .device
-            .limits()
-            .min_uniform_buffer_offset_alignment as u64;
+        let alloc_size = u64::from(
+            self.wgpu
+                .device
+                .limits()
+                .min_uniform_buffer_offset_alignment,
+        );
         let uniform_alloc = self.uniform_arena.allocate(&self.wgpu.device, alloc_size);
 
         let (uniform_bind_group, _) = BindGroupBuilder::new()
@@ -459,7 +458,23 @@ impl<'a> InternalCanvas<'a> {
             .queue(text.as_section(self.fonts, param)?);
 
         self.set_image(self.text_renderer.cache_view.clone());
-        self.pass.set_bind_group(0, self.text_uniforms, &[]);
+
+        let (text_uniforms_bind, _) = BindGroupBuilder::new()
+            .buffer(
+                &self.text_uniforms.buffer,
+                0,
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform,
+                true,
+                Some(TextUniforms::std140_size_static() as _),
+            )
+            .create(&self.wgpu.device, self.bind_group_cache);
+
+        self.pass.set_bind_group(
+            0,
+            self.arenas.bind_groups.alloc(text_uniforms_bind),
+            &[self.text_uniforms.offset as u32],
+        );
 
         self.queuing_text = true;
 
@@ -519,10 +534,11 @@ impl<'a> InternalCanvas<'a> {
                 .create(&self.wgpu.device, self.bind_group_cache);
 
             let uniform_layout = BindGroupLayoutBuilder::new()
+                .seed(ty)
                 .buffer(
                     wgpu::ShaderStages::VERTEX,
                     wgpu::BufferBindingType::Uniform,
-                    ty != ShaderType::Text,
+                    true,
                 )
                 .create(&self.wgpu.device, self.bind_group_cache);
 
@@ -542,16 +558,18 @@ impl<'a> InternalCanvas<'a> {
 
             let shader = match ty {
                 ShaderType::Draw | ShaderType::Instance { .. } => {
-                    if let Some((bind_group, bind_group_layout)) = &self.shader_bind_group {
-                        self.pass.set_bind_group(3, bind_group, &[]);
+                    if let Some((bind_group, bind_group_layout, offset)) = &self.shader_bind_group {
+                        self.pass.set_bind_group(3, bind_group, &[*offset]);
                         groups.push(bind_group_layout.clone());
                     }
 
                     &self.shader
                 }
                 ShaderType::Text => {
-                    if let Some((bind_group, bind_group_layout)) = &self.text_shader_bind_group {
-                        self.pass.set_bind_group(3, bind_group, &[]);
+                    if let Some((bind_group, bind_group_layout, offset)) =
+                        &self.text_shader_bind_group
+                    {
+                        self.pass.set_bind_group(3, bind_group, &[*offset]);
                         groups.push(bind_group_layout.clone());
                     }
 
@@ -622,9 +640,10 @@ impl<'a> InternalCanvas<'a> {
             || self
                 .curr_image
                 .as_ref()
-                .map(|curr| curr.id() != view.id())
-                .unwrap_or(true)
+                .map_or(true, |curr| curr.id() != view.id())
         {
+            self.curr_sampler = self.next_sampler;
+
             let (image_bind, _) = BindGroupBuilder::new()
                 .image(&view, wgpu::ShaderStages::FRAGMENT)
                 .sampler(
@@ -634,7 +653,6 @@ impl<'a> InternalCanvas<'a> {
                 .create(&self.wgpu.device, self.bind_group_cache);
 
             self.curr_image = Some(view);
-            self.curr_sampler = self.next_sampler;
 
             self.pass
                 .set_bind_group(1, self.arenas.bind_groups.alloc(image_bind), &[]);
@@ -687,6 +705,11 @@ struct InstanceUniforms {
     pub transform: mint::ColumnMatrix4<f32>,
     pub color: mint::Vector4<f32>,
     pub scale: mint::Vector2<f32>,
+}
+
+#[derive(crevice::std140::AsStd140)]
+struct TextUniforms {
+    transform: mint::ColumnMatrix4<f32>,
 }
 
 pub(crate) fn screen_to_mat(screen: Rect) -> glam::Mat4 {

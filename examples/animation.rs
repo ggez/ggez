@@ -316,9 +316,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 let new_easing_enum = new_enum_after_key(
                     &self.easing_enum,
                     &EasingEnum::EaseInOut3Point,
-                    &KeyCode::Down,
-                    &KeyCode::Up,
-                    &input.keycode.unwrap(),
+                    KeyCode::Down,
+                    KeyCode::Up,
+                    input.keycode.unwrap(),
                 );
 
                 if self.easing_enum != new_easing_enum {
@@ -330,9 +330,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 let new_animation_type = new_enum_after_key(
                     &self.animation_type,
                     &AnimationType::Crawl,
-                    &KeyCode::Left,
-                    &KeyCode::Right,
-                    &input.keycode.unwrap(),
+                    KeyCode::Left,
+                    KeyCode::Right,
+                    input.keycode.unwrap(),
                 );
 
                 if self.animation_type != new_animation_type {
@@ -361,14 +361,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
 fn new_enum_after_key<E: ToPrimitive + FromPrimitive>(
     old_enum: &E,
     max_enum: &E,
-    dec_key: &KeyCode,
-    inc_key: &KeyCode,
-    key: &KeyCode,
+    dec_key: KeyCode,
+    inc_key: KeyCode,
+    key: KeyCode,
 ) -> E {
     let mut new_val = ToPrimitive::to_i32(old_enum).unwrap();
     new_val += match key {
-        _ if *key == *dec_key => -1,
-        _ if *key == *inc_key => 1,
+        _ if key == dec_key => -1,
+        _ if key == inc_key => 1,
         _ => 0,
     };
 

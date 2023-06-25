@@ -10,7 +10,7 @@ use std::fmt;
 
 pub use gilrs::{self, Event, Gamepad, Gilrs};
 
-/// A unique identifier for a particular GamePad
+/// A unique identifier for a particular gamepad
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct GamepadId(pub(crate) gilrs::GamepadId);
 
@@ -24,7 +24,7 @@ pub struct GamepadContext {
 
 impl fmt::Debug for GamepadContext {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<GilrsGamepadContext: {:p}>", self)
+        write!(f, "<GilrsGamepadContext: {self:p}>")
     }
 }
 
@@ -68,7 +68,7 @@ pub struct GamepadsIterator<'a> {
 
 impl<'a> fmt::Debug for GamepadsIterator<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<GamepadsIterator: {:p}>", self)
+        write!(f, "<GamepadsIterator: {self:p}>")
     }
 }
 

@@ -7,6 +7,10 @@ use ggez::{Context, GameResult};
 use std::env;
 use std::path;
 
+const GRID_INTERVAL: f32 = 100.0;
+const GRID_SIZE: usize = 10;
+const GRID_POINT_RADIUS: f32 = 5.0;
+
 struct MainState {
     pos_x: f32,
     gridmesh: graphics::Mesh,
@@ -17,27 +21,17 @@ struct MainState {
 }
 
 impl MainState {
-    const GRID_INTERVAL: f32 = 100.0;
-    const GRID_SIZE: usize = 10;
-    const GRID_POINT_RADIUS: f32 = 5.0;
-
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let angle = graphics::Image::from_path(ctx, "/angle.png")?;
         let gridmesh_builder = &mut graphics::MeshBuilder::new();
-        for x in 0..Self::GRID_SIZE {
-            for y in 0..Self::GRID_SIZE {
+        for x in 0..GRID_SIZE {
+            for y in 0..GRID_SIZE {
                 let fx = x as f32;
                 let fy = y as f32;
-                let fsize = Self::GRID_SIZE as f32;
-                let point = Vec2::new(fx * Self::GRID_INTERVAL, fy * Self::GRID_INTERVAL);
+                let fsize = GRID_SIZE as f32;
+                let point = Vec2::new(fx * GRID_INTERVAL, fy * GRID_INTERVAL);
                 let color = graphics::Color::new(fx / fsize, 0.0, fy / fsize, 1.0);
-                gridmesh_builder.circle(
-                    DrawMode::fill(),
-                    point,
-                    Self::GRID_POINT_RADIUS,
-                    2.0,
-                    color,
-                )?;
+                gridmesh_builder.circle(DrawMode::fill(), point, GRID_POINT_RADIUS, 2.0, color)?;
             }
         }
         let gridmesh = graphics::Mesh::from_data(ctx, gridmesh_builder.build());
@@ -62,17 +56,14 @@ impl MainState {
         };
         Ok(s)
     }
+}
 
-    fn draw_coord_labels(&self, canvas: &mut graphics::Canvas) {
-        for x in 0..Self::GRID_SIZE {
-            for y in 0..Self::GRID_SIZE {
-                let point = Vec2::new(
-                    x as f32 * Self::GRID_INTERVAL,
-                    y as f32 * Self::GRID_INTERVAL,
-                );
-                let s = format!("({}, {})", point.x, point.y);
-                canvas.draw(&graphics::Text::new(s), point);
-            }
+fn draw_coord_labels(canvas: &mut graphics::Canvas) {
+    for x in 0..GRID_SIZE {
+        for y in 0..GRID_SIZE {
+            let point = Vec2::new(x as f32 * GRID_INTERVAL, y as f32 * GRID_INTERVAL);
+            let s = format!("({}, {})", point.x, point.y);
+            canvas.draw(&graphics::Text::new(s), point);
         }
     }
 }
@@ -93,15 +84,16 @@ impl event::EventHandler<ggez::GameError> for MainState {
             DrawParam::new().dest(origin).color(Color::WHITE),
         );
 
-        let param = graphics::DrawParam::new()
-            .dest(Vec2::new(400.0, 400.0))
-            .rotation(self.pos_x / 100.0)
-            .offset(Vec2::new(0.5, 0.5))
-            .scale(Vec2::new(1.0, 1.0));
+        draw_coord_labels(&mut canvas);
 
-        self.draw_coord_labels(&mut canvas);
-
-        canvas.draw(&self.angle, param);
+        canvas.draw(
+            &self.angle,
+            graphics::DrawParam::new()
+                .dest(Vec2::new(400.0, 400.0))
+                .rotation(self.pos_x / 100.0)
+                .offset(Vec2::new(0.5, 0.5))
+                .scale(Vec2::new(1.0, 1.0)),
+        );
 
         canvas.finish(ctx)
     }

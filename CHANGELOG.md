@@ -1,3 +1,37 @@
+# 0.9.0
+
+## Added
+
+None, just minor but breaking changes.
+
+## Changed
+
+`Image::new_blank_canvas_image` has been renamed to `Image::from_color`
+
+`InstanceArray::resize` takes a `usize` instead of a `u32`.
+
+`Canvas::set_shader`, `Canvas::set_shader_params`, and `Canvas::set_text_shader_params` now take a reference.
+
+`ShaderParams::set_uniforms` now takes self and ctx mutably.
+
+`ShaderParams::set_uniforms` and `ShaderParamsBuilder::build` now take the full context.
+
+`ShaderBuilder::new_wgsl` is now called `ShaderBuilder::new`.
+
+`ShaderBuilder::combined_code` and `ShaderBuilder::combined_path` have become associated functions called `ShaderBuilder::from_code` and `ShaderBuilder::from_path` respectively.
+
+Some `ContextBuilder` options now take paths instead of strings.
+
+## Removed
+
+`ShaderParams` no longer implements Clone, PartialEq, Eq, or ToOwned.
+
+`Image::from_solid` has been removed use `Image::from_color`
+
+## Fixed
+
+Things not rendering.
+
 # 0.8.1
 
 ## Fixed
@@ -76,7 +110,7 @@ If you didn't split it then you can comfortably hand around and pass the context
 * Added the ability to build your own `BlendMode`s built from the components offered through wgpu's `BlendComponent` struct
 * Exposed rodio API for skipping the first part of a sample
 * Added `audio` and `gamepad` as crate features, allowing you to disable them if not necessary
-* Added the `zip-compression` feature (as part of the default features), now allowing the use of zip-files with compression 
+* Added the `zip-compression` feature (as part of the default features), now allowing the use of zip-files with compression
 * Added `Rect::overlaps_circle`
 * Added `Context::request_quit` as a replacement for `event::quit`
   * `Context::request_quit` works like `event::quit` did before, except that instead of directly breaking the game loop it
@@ -114,7 +148,7 @@ The following list doesn't repeat the changes already mentioned above.
 * Removed `From<tuple>` implementations for `DrawParam`, as they're non-transparent and weird
 * Removed `event::quit`, as it was replaced by `Context::request_quit`
 * Removed the ability to update only parts of the `DrawParams` inside a `MeshBatch` (now `InstanceArray`)
-  * If you want that ability back let us know! Atm it's staged as "maybe in `0.8.1`" 
+  * If you want that ability back let us know! Atm it's staged as "maybe in `0.8.1`"
 
 ## Fixed
 Many graphics bugs that were caused by the use of the discontinued `gfx-rs` were fixed by the switch to `wgpu`. The

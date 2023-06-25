@@ -34,7 +34,9 @@ pub use crate::input::gamepad::GamepadId;
 use crate::input::keyboard::{KeyCode, KeyInput, KeyMods};
 use crate::GameError;
 
-use self::winit_event::*;
+use self::winit_event::{
+    ElementState, Event, KeyboardInput, MouseScrollDelta, TouchPhase, WindowEvent,
+};
 /// `winit` event loop.
 pub use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -103,9 +105,8 @@ where
 
     /// Called to do the drawing of your game.
     /// You probably want to start this with
-    /// [`graphics::clear()`](../graphics/fn.clear.html) and end it
-    /// with [`graphics::present()`](../graphics/fn.present.html) and
-    /// maybe [`timer::yield_now()`](../timer/fn.yield_now.html).
+    /// [`Canvas::from_frame`](../graphics/struct.Canvas.html#method.from_frame) and end it
+    /// with [`Canvas::finish`](../graphics/struct.Canvas.html#method.finish).
     fn draw(&mut self, _ctx: &mut Context) -> Result<(), E>;
 
     /// A mouse button was pressed
@@ -213,8 +214,6 @@ where
     }
 
     /// A gamepad button was pressed; `id` identifies which gamepad.
-    /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
-    /// the gamepad.
     #[cfg(feature = "gamepad")]
     fn gamepad_button_down_event(
         &mut self,
@@ -226,8 +225,6 @@ where
     }
 
     /// A gamepad button was released; `id` identifies which gamepad.
-    /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
-    /// the gamepad.
     #[cfg(feature = "gamepad")]
     fn gamepad_button_up_event(
         &mut self,
@@ -239,8 +236,6 @@ where
     }
 
     /// A gamepad axis moved; `id` identifies which gamepad.
-    /// Use [`input::gamepad()`](../input/fn.gamepad.html) to get more info about
-    /// the gamepad.
     #[cfg(feature = "gamepad")]
     fn gamepad_axis_event(
         &mut self,
@@ -265,7 +260,7 @@ where
     }
 
     /// Called when the user resizes the window, or when it is resized
-    /// via [`graphics::set_mode()`](../graphics/fn.set_mode.html).
+    /// via [`GraphicsContext::set_mode()`](../graphics/struct.GraphicsContext.html#method.set_mode).
     fn resize_event(&mut self, _ctx: &mut Context, _width: f32, _height: f32) -> Result<(), E> {
         Ok(())
     }
@@ -324,7 +319,7 @@ where
                 }
                 WindowEvent::CloseRequested => {
                     let res = state.quit_event(ctx);
-                    if let Ok(false) = state.quit_event(ctx) {
+                    if let Ok(false) = res {
                         ctx.continuing = false;
                     } else if catch_error(ctx, res, state, control_flow, ErrorOrigin::QuitEvent) {
                         return;
@@ -456,6 +451,30 @@ where
                         return;
                     };
                 }
+                WindowEvent::CursorEntered { device_id: _ } => {
+                    let res = state.mouse_enter_or_leave(ctx, true);
+                    if catch_error(
+                        ctx,
+                        res,
+                        state,
+                        control_flow,
+                        ErrorOrigin::MouseEnterOrLeave,
+                    ) {
+                        return;
+                    }
+                }
+                WindowEvent::CursorLeft { device_id: _ } => {
+                    let res = state.mouse_enter_or_leave(ctx, false);
+                    if catch_error(
+                        ctx,
+                        res,
+                        state,
+                        control_flow,
+                        ErrorOrigin::MouseEnterOrLeave,
+                    ) {
+                        return;
+                    }
+                }
                 _x => {
                     // trace!("ignoring window event {:?}", x);
                 }
@@ -522,14 +541,14 @@ where
                 };
 
                 if let Err(e) = ctx.gfx.begin_frame() {
-                    error!("Error on GraphicsContext::begin_frame(): {:?}", e);
-                    eprintln!("Error on GraphicsContext::begin_frame(): {:?}", e);
+                    error!("Error on GraphicsContext::begin_frame(): {e:?}");
+                    eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
                     *control_flow = ControlFlow::Exit;
                 }
 
                 if let Err(e) = state.draw(ctx) {
-                    error!("Error on EventHandler::draw(): {:?}", e);
-                    eprintln!("Error on EventHandler::draw(): {:?}", e);
+                    error!("Error on EventHandler::draw(): {e:?}");
+                    eprintln!("Error on EventHandler::draw(): {e:?}");
                     if state.on_error(ctx, ErrorOrigin::Draw, e) {
                         *control_flow = ControlFlow::Exit;
                         return;
@@ -537,8 +556,8 @@ where
                 }
 
                 if let Err(e) = ctx.gfx.end_frame() {
-                    error!("Error on GraphicsContext::end_frame(): {:?}", e);
-                    eprintln!("Error on GraphicsContext::end_frame(): {:?}", e);
+                    error!("Error on GraphicsContext::end_frame(): {e:?}");
+                    eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
                     *control_flow = ControlFlow::Exit;
                 }
 
@@ -570,8 +589,8 @@ where
     E: std::fmt::Debug,
 {
     if let Err(e) = event_result {
-        error!("Error on EventHandler {:?}: {:?}", origin, e);
-        eprintln!("Error on EventHandler {:?}: {:?}", origin, e);
+        error!("Error on EventHandler {origin:?}: {e:?}");
+        eprintln!("Error on EventHandler {origin:?}: {e:?}");
         if state.on_error(ctx, origin, e) {
             *control_flow = ControlFlow::Exit;
             return true;

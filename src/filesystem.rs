@@ -26,7 +26,7 @@
 //! [`resources_dir_name`](../struct.ContextBuilder.html#method.resources_dir_name)
 //! and
 //! [`resources_zip_name`](../struct.ContextBuilder.html#method.resources_zip_name)
-//!  of ContextBuilder.
+//!  of `ContextBuilder`.
 //!
 //! Note that the file lookups WILL follow symlinks!  This module's
 //! directory isolation is intended for convenience, not security, so
@@ -124,11 +124,26 @@ impl Filesystem {
     /// some platforms) the `author` as a portion of the user
     /// directory path.  This function is called automatically by
     /// ggez, the end user should never need to call it.
-    pub fn new(
+    pub fn new<P: AsRef<path::Path>, Q: AsRef<path::Path>>(
         id: &str,
         author: &str,
-        resources_dir_name: &str,
-        resources_zip_name: &str,
+        resources_dir_name: P,
+        resources_zip_name: Q,
+    ) -> GameResult<Filesystem> {
+        Self::_new(
+            id,
+            author,
+            resources_dir_name.as_ref(),
+            resources_zip_name.as_ref(),
+        )
+    }
+
+    /// Actual implementation of `new`, without generics.
+    fn _new(
+        id: &str,
+        author: &str,
+        resources_dir_name: &path::Path,
+        resources_zip_name: &path::Path,
     ) -> GameResult<Filesystem> {
         let mut root_path = env::current_exe()?;
 
@@ -299,15 +314,15 @@ impl Filesystem {
         use std::fmt::Write;
         let mut s = String::new();
         for vfs in self.vfs().roots() {
-            write!(s, "Source {:?}", vfs).expect("Could not write to string; should never happen?");
+            write!(s, "Source {vfs:?}").expect("Could not write to string; should never happen?");
             match vfs.read_dir(path::Path::new("/")) {
                 Ok(files) => {
                     for itm in files {
-                        write!(s, "  {:?}", itm)
+                        write!(s, "  {itm:?}")
                             .expect("Could not write to string; should never happen?");
                     }
                 }
-                Err(e) => write!(s, " Could not read source: {:?}", e)
+                Err(e) => write!(s, " Could not read source: {e:?}")
                     .expect("Could not write to string; should never happen?"),
             }
         }
@@ -557,8 +572,8 @@ pub fn write_config(ctx: &Context, conf: &conf::Conf) -> GameResult {
 #[cfg(test)]
 mod tests {
     use crate::conf;
-    use crate::error::*;
-    use crate::filesystem::*;
+    use crate::error::GameError;
+    use crate::filesystem::{env, vfs, Arc, Filesystem, Mutex, CONFIG_NAME};
     use std::io::{Read, Write};
     use std::path;
 
@@ -627,8 +642,8 @@ mod tests {
             let rel_file = "testfile.txt";
             match fs.open(rel_file) {
                 Err(GameError::ResourceNotFound(_, _)) => (),
-                Err(e) => panic!("Invalid error for opening file with relative path: {:?}", e),
-                Ok(f) => panic!("Should have gotten an error but instead got {:?}!", f),
+                Err(e) => panic!("Invalid error for opening file with relative path: {e:?}"),
+                Ok(f) => panic!("Should have gotten an error but instead got {f:?}!"),
             }
         }
 
@@ -637,8 +652,8 @@ mod tests {
             // completely remove filesystem roots.
             match fs.open("/ooglebooglebarg.txt") {
                 Err(GameError::ResourceNotFound(_, _)) => (),
-                Err(e) => panic!("Invalid error for opening nonexistent file: {}", e),
-                Ok(f) => panic!("Should have gotten an error but instead got {:?}", f),
+                Err(e) => panic!("Invalid error for opening nonexistent file: {e}"),
+                Ok(f) => panic!("Should have gotten an error but instead got {f:?}"),
             }
         }
     }
@@ -651,7 +666,7 @@ mod tests {
         // the resources directory with this
         match f.write_config(&conf) {
             Ok(_) => (),
-            Err(e) => panic!("{:?}", e),
+            Err(e) => panic!("{e:?}"),
         }
         // Remove the config file!
         f.delete(CONFIG_NAME).unwrap();

@@ -62,22 +62,20 @@ pub enum GameError {
 impl fmt::Display for GameError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            GameError::ConfigError(ref s) => write!(f, "Config error: {}", s),
-            GameError::ResourceLoadError(ref s) => write!(f, "Error loading resource: {}", s),
-            GameError::ResourceNotFound(ref s, ref paths) => write!(
-                f,
-                "Resource not found: {}, searched in paths {:?}",
-                s, paths
-            ),
-            GameError::WindowError(ref e) => write!(f, "Window creation error: {}", e),
-            GameError::CustomError(ref s) => write!(f, "Custom error: {}", s),
-            GameError::RequestDeviceError(ref e) => {
-                write!(f, "Failed to request logical device: {}", e)
+            GameError::ConfigError(ref s) => write!(f, "Config error: {s}"),
+            GameError::ResourceLoadError(ref s) => write!(f, "Error loading resource: {s}"),
+            GameError::ResourceNotFound(ref s, ref paths) => {
+                write!(f, "Resource not found: {s}, searched in paths {paths:?}")
             }
-            GameError::GlyphBrushError(ref e) => write!(f, "Text rendering error: {}", e),
-            GameError::FontSelectError(ref e) => write!(f, "No such font '{}'", e),
-            GameError::BufferAsyncError(ref e) => write!(f, "Async buffer map error: {}", e),
-            _ => write!(f, "GameError {:?}", self),
+            GameError::WindowError(ref e) => write!(f, "Window creation error: {e}"),
+            GameError::CustomError(ref s) => write!(f, "Custom error: {s}"),
+            GameError::RequestDeviceError(ref e) => {
+                write!(f, "Failed to request logical device: {e}")
+            }
+            GameError::GlyphBrushError(ref e) => write!(f, "Text rendering error: {e}"),
+            GameError::FontSelectError(ref e) => write!(f, "No such font '{e}'"),
+            GameError::BufferAsyncError(ref e) => write!(f, "Async buffer map error: {e}"),
+            _ => write!(f, "GameError {self:?}"),
         }
     }
 }
@@ -107,7 +105,7 @@ impl From<std::io::Error> for GameError {
 
 impl From<toml::de::Error> for GameError {
     fn from(e: toml::de::Error) -> GameError {
-        let errstr = format!("TOML decode error: {}", e);
+        let errstr = format!("TOML decode error: {e}");
 
         GameError::ConfigError(errstr)
     }
@@ -115,14 +113,14 @@ impl From<toml::de::Error> for GameError {
 
 impl From<toml::ser::Error> for GameError {
     fn from(e: toml::ser::Error) -> GameError {
-        let errstr = format!("TOML error (possibly encoding?): {}", e);
+        let errstr = format!("TOML error (possibly encoding?): {e}");
         GameError::ConfigError(errstr)
     }
 }
 
 impl From<zip::result::ZipError> for GameError {
     fn from(e: zip::result::ZipError) -> GameError {
-        let errstr = format!("Zip error: {}", e);
+        let errstr = format!("Zip error: {e}");
         GameError::ResourceLoadError(errstr)
     }
 }
@@ -130,7 +128,7 @@ impl From<zip::result::ZipError> for GameError {
 #[cfg(feature = "audio")]
 impl From<rodio::decoder::DecoderError> for GameError {
     fn from(e: rodio::decoder::DecoderError) -> GameError {
-        let errstr = format!("Audio decoder error: {:?}", e);
+        let errstr = format!("Audio decoder error: {e:?}");
         GameError::AudioError(errstr)
     }
 }
@@ -138,14 +136,14 @@ impl From<rodio::decoder::DecoderError> for GameError {
 #[cfg(feature = "audio")]
 impl From<rodio::PlayError> for GameError {
     fn from(e: rodio::PlayError) -> GameError {
-        let errstr = format!("Audio playing error: {:?}", e);
+        let errstr = format!("Audio playing error: {e:?}");
         GameError::AudioError(errstr)
     }
 }
 
 impl From<image::ImageError> for GameError {
     fn from(e: image::ImageError) -> GameError {
-        let errstr = format!("Image load error: {}", e);
+        let errstr = format!("Image load error: {e}");
         GameError::ResourceLoadError(errstr)
     }
 }
@@ -158,27 +156,23 @@ impl From<winit::error::OsError> for GameError {
 #[cfg(feature = "gamepad")]
 impl From<gilrs::Error> for GameError {
     fn from(s: gilrs::Error) -> GameError {
-        let errstr = format!("Gamepad error: {}", s);
+        let errstr = format!("Gamepad error: {s}");
         GameError::GamepadError(errstr)
     }
 }
 
 impl From<lyon::lyon_tessellation::TessellationError> for GameError {
     fn from(s: lyon::lyon_tessellation::TessellationError) -> GameError {
-        let errstr = format!(
-            "Error while tesselating shape (did you give it an infinity or NaN?): {:?}",
-            s
-        );
+        let errstr =
+            format!("Error while tesselating shape (did you give it an infinity or NaN?): {s:?}");
         GameError::LyonError(errstr)
     }
 }
 
 impl From<lyon::lyon_tessellation::geometry_builder::GeometryBuilderError> for GameError {
     fn from(s: lyon::lyon_tessellation::geometry_builder::GeometryBuilderError) -> GameError {
-        let errstr = format!(
-            "Error while building geometry (did you give it too many vertices?): {:?}",
-            s
-        );
+        let errstr =
+            format!("Error while building geometry (did you give it too many vertices?): {s:?}");
         GameError::LyonError(errstr)
     }
 }

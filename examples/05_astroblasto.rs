@@ -432,7 +432,7 @@ fn draw_actor(
     let image = assets.actor_image(actor);
     let drawparams = graphics::DrawParam::new()
         .dest(pos)
-        .rotation(actor.facing as f32)
+        .rotation(actor.facing)
         .offset(Point2::new(0.5, 0.5));
     canvas.draw(image, drawparams);
 }
@@ -459,23 +459,19 @@ impl EventHandler for MainState {
             // Update the physics for all actors.
             // First the player...
             update_actor_position(&mut self.player, seconds);
-            wrap_actor_position(
-                &mut self.player,
-                self.screen_width as f32,
-                self.screen_height as f32,
-            );
+            wrap_actor_position(&mut self.player, self.screen_width, self.screen_height);
 
             // Then the shots...
             for act in &mut self.shots {
                 update_actor_position(act, seconds);
-                wrap_actor_position(act, self.screen_width as f32, self.screen_height as f32);
+                wrap_actor_position(act, self.screen_width, self.screen_height);
                 handle_timed_life(act, seconds);
             }
 
             // And finally the rocks.
             for act in &mut self.rocks {
                 update_actor_position(act, seconds);
-                wrap_actor_position(act, self.screen_width as f32, self.screen_height as f32);
+                wrap_actor_position(act, self.screen_width, self.screen_height);
             }
 
             // Handle the results of things moving:

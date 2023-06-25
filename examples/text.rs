@@ -140,7 +140,7 @@ impl event::EventHandler<ggez::GameError> for App {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::from([0.1, 0.2, 0.3, 1.0]));
 
         let fps = ctx.time.fps();
-        let fps_display = Text::new(format!("FPS: {}", fps));
+        let fps_display = Text::new(format!("FPS: {fps}"));
         // When drawing through these calls, `DrawParam` will work as they are documented.
         canvas.draw(
             &fps_display,
@@ -148,7 +148,7 @@ impl event::EventHandler<ggez::GameError> for App {
         );
 
         let mut height = 0.0;
-        for (key, text) in self.texts.iter() {
+        for (key, text) in &self.texts {
             let x = match *key {
                 // (bounds position) + 20
                 "1_demo_text_3" => 500.0 + 20.0,
@@ -157,7 +157,7 @@ impl event::EventHandler<ggez::GameError> for App {
             };
             canvas.draw(text, Vec2::new(x, 20.0 + height));
             //height += 20.0 + text.height(ctx) as f32;
-            height += 20.0 + text.dimensions(ctx).unwrap().h as f32;
+            height += 20.0 + text.dimensions(ctx).unwrap().h
         }
 
         // Individual fragments within the `Text` can be replaced;

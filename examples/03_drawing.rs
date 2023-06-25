@@ -33,7 +33,7 @@ impl MainState {
 
         let meshes = vec![
             (None, build_mesh(ctx)?),
-            (Some(rock), build_textured_triangle(ctx)?),
+            (Some(rock), build_textured_triangle(ctx)),
         ];
 
         let rect = graphics::Mesh::from_data(ctx, mb.build());
@@ -85,7 +85,7 @@ fn build_mesh(ctx: &mut Context) -> GameResult<graphics::Mesh> {
     Ok(graphics::Mesh::from_data(ctx, mb.build()))
 }
 
-fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
+fn build_textured_triangle(ctx: &mut Context) -> graphics::Mesh {
     let triangle_verts = vec![
         graphics::Vertex {
             position: [100.0, 100.0],
@@ -106,13 +106,13 @@ fn build_textured_triangle(ctx: &mut Context) -> GameResult<graphics::Mesh> {
 
     let triangle_indices = vec![0, 1, 2];
 
-    Ok(graphics::Mesh::from_data(
+    graphics::Mesh::from_data(
         ctx,
         graphics::MeshData {
             vertices: &triangle_verts,
             indices: &triangle_indices,
         },
-    ))
+    )
 }
 
 impl event::EventHandler<ggez::GameError> for MainState {

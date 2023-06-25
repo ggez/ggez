@@ -143,7 +143,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         x: f32,
         y: f32,
     ) -> GameResult {
-        println!("Button clicked at: {} {}", x, y);
+        println!("Button clicked at: {x} {y}");
         Ok(())
     }
 
@@ -157,16 +157,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 self.zoom += 0.1;
                 println!("Zoom is now {}", self.zoom);
                 let (w, h) = ctx.gfx.drawable_size();
-                let new_rect =
-                    graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
+                let new_rect = graphics::Rect::new(0.0, 0.0, w * self.zoom, h * self.zoom);
                 self.screen_coords = new_rect;
             }
             Some(KeyCode::Down) => {
                 self.zoom -= 0.1;
                 println!("Zoom is now {}", self.zoom);
                 let (w, h) = ctx.gfx.drawable_size();
-                let new_rect =
-                    graphics::Rect::new(0.0, 0.0, w as f32 * self.zoom, h as f32 * self.zoom);
+                let new_rect = graphics::Rect::new(0.0, 0.0, w * self.zoom, h * self.zoom);
                 self.screen_coords = new_rect;
             }
             Some(KeyCode::Space) => {
@@ -182,14 +180,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) -> GameResult {
-        println!("Resized screen to {}, {}", width, height);
+        println!("Resized screen to {width}, {height}");
         if self.window_settings.resize_projection {
-            let new_rect = graphics::Rect::new(
-                0.0,
-                0.0,
-                width as f32 * self.zoom,
-                height as f32 * self.zoom,
-            );
+            let new_rect = graphics::Rect::new(0.0, 0.0, width * self.zoom, height * self.zoom);
             self.screen_coords = new_rect;
         }
         Ok(())

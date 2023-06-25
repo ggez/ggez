@@ -5,8 +5,7 @@ use super::{
 };
 use crate::{context::Has, Context, GameError, GameResult};
 use image::ImageEncoder;
-use std::path::Path;
-use std::{io::Read, num::NonZeroU32};
+use std::{io::Read, path::Path};
 
 // maintaing a massive enum of all possible texture formats?
 // screw that.
@@ -49,6 +48,31 @@ impl Image {
         )
     }
 
+    /// A little helper function that creates a blank [`Image`] that is of the given width and height and optional color.
+    ///
+    /// The default color is [`Color::WHITE`].
+    /// Mainly useful for debugging.
+    pub fn from_color(
+        gfx: &impl Has<GraphicsContext>,
+        width: u32,
+        height: u32,
+        color: Option<Color>,
+    ) -> Self {
+        let pixels = (0..(width * height))
+            .flat_map(|_| {
+                let (r, g, b, a) = color.unwrap_or(Color::WHITE).to_rgba();
+                [r, g, b, a]
+            })
+            .collect::<Vec<_>>();
+        Self::from_pixels(
+            gfx,
+            &pixels,
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+            width,
+            height,
+        )
+    }
+
     /// Creates a new image initialized with given pixel data.
     pub fn from_pixels(
         gfx: &impl Has<GraphicsContext>,
@@ -84,9 +108,7 @@ impl Image {
             pixels,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(
-                    NonZeroU32::new(format.describe().block_size as u32 * width).unwrap(),
-                ),
+                bytes_per_row: Some(format.block_size(None).unwrap() * width), // Unwrap since it only fails with depth formats.
                 rows_per_image: None,
             },
             wgpu::Extent3d {
@@ -97,23 +119,6 @@ impl Image {
         );
 
         image
-    }
-
-    /// A little helper function that creates a new `Image` that is just a solid square of the given size and color. Mainly useful for debugging.
-    pub fn from_solid(gfx: &impl Has<GraphicsContext>, size: u32, color: Color) -> Self {
-        let pixels = (0..(size * size))
-            .flat_map(|_| {
-                let (r, g, b, a) = color.to_rgba();
-                [r, g, b, a]
-            })
-            .collect::<Vec<_>>();
-        Self::from_pixels(
-            gfx,
-            &pixels,
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-            size,
-            size,
-        )
     }
 
     /// Creates a new image initialized with pixel data loaded from a given path as an
@@ -168,6 +173,7 @@ impl Image {
             dimension: wgpu::TextureDimension::D2,
             format,
             usage,
+            view_formats: &[],
         }));
 
         let view =
@@ -177,9 +183,9 @@ impl Image {
                 dimension: Some(wgpu::TextureViewDimension::D2),
                 aspect: wgpu::TextureAspect::All,
                 base_mip_level: 0,
-                mip_level_count: Some(NonZeroU32::new(1).unwrap()),
+                mip_level_count: Some(1),
                 base_array_layer: 0,
-                array_layer_count: Some(NonZeroU32::new(1).unwrap()),
+                array_layer_count: Some(1),
             }));
 
         Image {
@@ -210,11 +216,11 @@ impl Image {
             )));
         }
 
-        let block_size = self.format.describe().block_size as u64;
+        let block_size = u64::from(self.format.block_size(None).unwrap()); // Unwrap since it only fails with depth formats.
 
         let buffer = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: block_size * self.width as u64 * self.height as u64,
+            size: block_size * u64::from(self.width) * u64::from(self.height),
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
@@ -230,9 +236,7 @@ impl Image {
                     buffer: &buffer,
                     layout: wgpu::ImageDataLayout {
                         offset: 0,
-                        bytes_per_row: Some(
-                            NonZeroU32::new(block_size as u32 * self.width).unwrap(),
-                        ),
+                        bytes_per_row: Some(block_size as u32 * self.width),
                         rows_per_image: None,
                     },
                 },
@@ -251,7 +255,7 @@ impl Image {
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
         buffer
             .slice(..)
-            .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap());
+            .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap()); // Unwrap is fine as this should never fail
         let _ = gfx.wgpu.device.poll(wgpu::Maintain::Wait);
         let map_result = rx
             .recv()
@@ -277,8 +281,7 @@ impl Image {
             ImageFormat::R16Unorm => ::image::ColorType::L16,
             format => {
                 return Err(GameError::RenderError(format!(
-                    "cannot ImageView::encode for the {:#?} GPU image format",
-                    format
+                    "cannot ImageView::encode for the {format:#?} GPU image format"
                 )))
             }
         };
@@ -368,7 +371,7 @@ pub struct ScreenImage {
 }
 
 impl ScreenImage {
-    /// Creates a new [ScreenImage] with the given parameters.
+    /// Creates a new [`ScreenImage`] with the given parameters.
     ///
     /// `width` and `height` specify the fraction of the framebuffer width and height that the [Image] will have.
     /// For example, `width = 1.0` and `height = 1.0` means the image will be the same size as the framebuffer.
