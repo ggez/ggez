@@ -389,7 +389,7 @@ impl Canvas {
         instances: &InstanceArray,
         param: impl Into<DrawParam>,
     ) {
-        instances.flush_wgpu(&self.wgpu).unwrap();
+        instances.flush_wgpu(&self.wgpu).unwrap(); // Will only fail if you can't lock the buffers shouldn't happen
         self.push_draw(
             Draw::MeshInstances {
                 mesh,

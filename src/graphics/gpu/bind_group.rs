@@ -132,7 +132,7 @@ impl<'a> BindGroupBuilder<'a> {
             resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
                 buffer: buffer.as_ref(),
                 offset,
-                size: size.map(|x| NonZeroU64::new(x).unwrap()),
+                size: size.map(|x| NonZeroU64::new(x).unwrap()), // Unwrap should always be nonzero
             }),
         });
 
