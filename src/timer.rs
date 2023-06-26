@@ -122,6 +122,7 @@ impl TimeContext {
 
         // If our buffer is actually full, divide by its size.
         // Otherwise divide by the number of samples we've added
+        // Both these unwraps should be fine as frame_durations should always fit in a u32
         if self.frame_durations.samples > self.frame_durations.size {
             sum / u32::try_from(self.frame_durations.size).unwrap()
         } else {

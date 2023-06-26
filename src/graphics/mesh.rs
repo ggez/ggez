@@ -634,7 +634,7 @@ impl MeshBuilder {
             for tri in tris {
                 // Ideally this assert makes bounds-checks only happen once.
                 assert!(tri.len() == 3);
-                let first_index: u32 = self.buffer.vertices.len().try_into().unwrap();
+                let first_index: u32 = self.buffer.vertices.len().try_into().unwrap(); // This shouldn't fail as the amount of vertices shouldn't ever be high enough to not fit into a u32
                 self.buffer.vertices.push(vb.new_vertex(tri[0]));
                 self.buffer.vertices.push(vb.new_vertex(tri[1]));
                 self.buffer.vertices.push(vb.new_vertex(tri[2]));

@@ -365,6 +365,7 @@ mod tests {
         ContextBuilder,
     };
 
+    // This will fail when testing if not running using one thread but is actually fine
     #[test]
     fn has_traits() {
         let (mut ctx, _event_loop) = ContextBuilder::new("test", "ggez").build().unwrap();

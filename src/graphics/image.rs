@@ -108,7 +108,7 @@ impl Image {
             pixels,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(format.block_size(None).unwrap() * width),
+                bytes_per_row: Some(format.block_size(None).unwrap() * width), // Unwrap since it only fails with depth formats.
                 rows_per_image: None,
             },
             wgpu::Extent3d {
@@ -216,7 +216,7 @@ impl Image {
             )));
         }
 
-        let block_size = u64::from(self.format.block_size(None).unwrap());
+        let block_size = u64::from(self.format.block_size(None).unwrap()); // Unwrap since it only fails with depth formats.
 
         let buffer = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
@@ -255,7 +255,7 @@ impl Image {
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
         buffer
             .slice(..)
-            .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap());
+            .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap()); // Unwrap is fine as this should never fail
         let _ = gfx.wgpu.device.poll(wgpu::Maintain::Wait);
         let map_result = rx
             .recv()
