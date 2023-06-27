@@ -193,6 +193,18 @@ pub struct Shader {
     pub(crate) fs_module: Option<ArcShaderModule>,
 }
 
+impl Shader {
+    /// Get the underlying vertex shader module for wgpu
+    pub fn vs_module(&self) -> Option<ArcShaderModule> {
+        self.vs_module.clone()
+    }
+
+    /// Get the underlying fragment shader module for wgpu
+    pub fn fs_module(&self) -> Option<ArcShaderModule> {
+        self.fs_module.clone()
+    }
+}
+
 use crevice::std140::AsStd140;
 
 /// A builder for [`ShaderParams`]
