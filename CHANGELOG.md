@@ -1,3 +1,16 @@
+# 0.10.0
+
+## Added
+
+You are now able to add your own custom contexts! Using the new `ContextFields` type and implementing `HasMut<KeyboardContext>, HasMut<MouseContext>, HasMut<TimeContext>, HasMut<GraphicsContext>, and HasMut<GamepadContext>` if gamepad is enabled
+
+## Changed
+
+`EventHandler` now takes another generic in form of whatever context implementation you are using whether that be the default one of a custom one
+
+## Removed
+
+
 # 0.9.0
 
 ## Added
