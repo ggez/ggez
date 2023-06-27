@@ -22,7 +22,8 @@
 //! [blend mode]:Canvas::set_blend_mode
 
 pub(crate) mod canvas;
-pub(crate) mod context;
+/// Module for the graphics context dealing with wgpu
+pub mod context;
 pub(crate) mod draw;
 pub(crate) mod gpu;
 pub(crate) mod image;

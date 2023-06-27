@@ -94,7 +94,8 @@ pub struct GraphicsContext {
 
 impl GraphicsContext {
     #[allow(unsafe_code)]
-    pub(crate) fn new(
+    /// Create a new graphics context
+    pub fn new(
         game_id: &str,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,

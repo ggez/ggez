@@ -26,10 +26,10 @@ pub fn main() -> GameResult {
     events_loop.run(move |mut event, _window_target, control_flow| {
         let ctx = &mut ctx;
 
-        if ctx.quit_requested {
-            ctx.continuing = false;
+        if ctx.fields.quit_requested {
+            ctx.fields.continuing = false;
         }
-        if !ctx.continuing {
+        if !ctx.fields.continuing {
             *control_flow = ControlFlow::Exit;
             return;
         }
