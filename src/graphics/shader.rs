@@ -197,7 +197,7 @@ impl Shader {
     /// Get the underlying vertex shader module for wgpu
     pub fn vs_module(&self) -> Option<&wgpu::ShaderModule> {
         if let Some(vs_module) = &self.vs_module {
-            Some(&*vs_module)
+            Some(vs_module)
         } else {
             None
         }
@@ -206,7 +206,7 @@ impl Shader {
     /// Get the underlying fragment shader module for wgpu
     pub fn fs_module(&self) -> Option<&wgpu::ShaderModule> {
         if let Some(fs_module) = &self.fs_module {
-            Some(&*fs_module)
+            Some(fs_module)
         } else {
             None
         }
