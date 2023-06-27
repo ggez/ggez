@@ -66,7 +66,7 @@ gilrs = { version = "0.10", optional = true }
 approx = "0.5"
 bytemuck = { version = "1.12", features = ["derive"] }
 pollster = "0.3"
-memoffset = "0.8"
+memoffset = "0.9"
 crevice = "0.13"
 typed-arena = "2.0"
 ordered-float = "3.3"
