@@ -4,6 +4,29 @@
 
 You are now able to add your own custom contexts! Using the new `ContextFields` type and implementing `HasMut<KeyboardContext>, HasMut<MouseContext>, HasMut<TimeContext>, HasMut<GraphicsContext>, and HasMut<GamepadContext>` if gamepad is enabled
 
+### Coroutines
+You can create a new coroutine by doing
+```rust
+slow_coroutine: Coroutine::new(async move {
+    // wait 100 frames
+    for _ in 0..100 {
+        yield_now().await
+    }
+
+    String::from("I came from a coroutine!")
+})
+```
+and then in the update handler you can poll it and wait for the value
+```rust
+fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    if let Some(val) = self.slow_coroutine.poll() {
+        println!("Coroutine says: \"{val}\"");
+    }
+    Ok(())
+}
+```
+This will print `Coroutine says: "I came from a coroutine!"` after 100 frames.
+
 ## Changed
 
 `EventHandler` now takes another generic in form of whatever context implementation you are using whether that be the default one of a custom one
