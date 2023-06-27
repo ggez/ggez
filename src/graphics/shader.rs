@@ -195,13 +195,21 @@ pub struct Shader {
 
 impl Shader {
     /// Get the underlying vertex shader module for wgpu
-    pub fn vs_module(&self) -> Option<ArcShaderModule> {
-        self.vs_module.clone()
+    pub fn vs_module(&self) -> Option<&wgpu::ShaderModule> {
+        if let Some(vs_module) = &self.vs_module {
+            Some(&*vs_module)
+        } else {
+            None
+        }
     }
 
     /// Get the underlying fragment shader module for wgpu
-    pub fn fs_module(&self) -> Option<ArcShaderModule> {
-        self.fs_module.clone()
+    pub fn fs_module(&self) -> Option<&wgpu::ShaderModule> {
+        if let Some(fs_module) = &self.fs_module {
+            Some(&*fs_module)
+        } else {
+            None
+        }
     }
 }
 
