@@ -24,7 +24,8 @@ pub struct MouseContext {
 }
 
 impl MouseContext {
-    pub(crate) fn new() -> Self {
+    /// Create a new MouseContext
+    pub fn new() -> Self {
         Self {
             last_position: glam::Vec2::ZERO,
             last_delta: glam::Vec2::ZERO,

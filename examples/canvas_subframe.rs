@@ -79,7 +79,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler<ggez::GameError> for MainState {
+impl event::EventHandler<Context, ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         if ctx.time.ticks() % 100 == 0 {
             println!("Delta frame time: {:?} ", ctx.time.delta());

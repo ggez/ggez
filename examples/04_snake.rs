@@ -378,7 +378,7 @@ impl GameState {
 
 /// Now we implement `EventHandler` for `GameState`. This provides an interface
 /// that ggez will call automatically when different events happen.
-impl event::EventHandler<ggez::GameError> for GameState {
+impl event::EventHandler<Context, ggez::GameError> for GameState {
     /// Update will happen on every frame before it is drawn. This is where we update
     /// our game state to react to whatever is happening in the game world.
     fn update(&mut self, ctx: &mut Context) -> GameResult {

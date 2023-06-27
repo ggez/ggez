@@ -85,7 +85,7 @@ pub struct ContextFields {
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
     /// updating it will have no effect.
-    pub(crate) conf: conf::Conf,
+    pub conf: conf::Conf,
     /// Controls whether or not the event loop should be running.
     /// This is internally controlled by the outcome of [`quit_event`](crate::event::EventHandler::quit_event),
     /// requested through [`event::request_quit()`](crate::Context::request_quit).
@@ -401,12 +401,15 @@ impl ContextBuilder {
     }
 
     /// Build a Custom `Context`.
-    pub fn custom_build<C, F>(
+    pub fn custom_build<C>(
         self,
-        from_conf: F,
+        from_conf: impl Fn(
+            String,
+            conf::Conf,
+            Filesystem,
+        ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>,
     ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>
     where
-        F: Fn(String, conf::Conf, Filesystem) -> GameResult<(C, winit::event_loop::EventLoop<()>)>,
         C: std::any::Any
             + HasMut<ContextFields>
             + HasMut<timer::TimeContext>
