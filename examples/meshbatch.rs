@@ -60,7 +60,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler<Context, ggez::GameError> for MainState {
+impl event::EventHandler for MainState {
     #[allow(clippy::needless_range_loop)]
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         if ctx.time.ticks() % 100 == 0 {

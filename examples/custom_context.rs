@@ -99,7 +99,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler<MyContext, ggez::GameError> for MainState {
+impl event::EventHandler<MyContext> for MainState {
     fn update(&mut self, _ctx: &mut MyContext) -> GameResult {
         self.pos_x = self.pos_x % 800.0 + 1.0;
         Ok(())

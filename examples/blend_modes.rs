@@ -132,7 +132,7 @@ impl MainState {
     }
 }
 
-impl EventHandler<Context> for MainState {
+impl EventHandler for MainState {
     fn update(&mut self, _: &mut Context) -> GameResult {
         Ok(())
     }

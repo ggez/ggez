@@ -270,7 +270,7 @@ impl MainState {
     }
 }
 
-impl event::EventHandler<Context, ggez::GameError> for MainState {
+impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         self.rotation += 0.01;
         Ok(())

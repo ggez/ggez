@@ -40,6 +40,7 @@ use crate::input::gamepad::GamepadContext;
 #[cfg(feature = "gamepad")]
 pub use crate::input::gamepad::GamepadId;
 use crate::input::keyboard::{KeyCode, KeyInput, KeyMods};
+use crate::Context;
 use crate::GameError;
 
 use self::winit_event::{
@@ -101,10 +102,10 @@ pub enum ErrorOrigin {
 ///
 /// For the error type simply choose the default [`GameError`](../error/enum.GameError.html),
 /// or something more generic, if your situation requires it.
-pub trait EventHandler<C, E = GameError>
+pub trait EventHandler<C = Context, E = GameError>
 where
     E: std::fmt::Debug,
-    C: std::any::Any + HasMut<ContextFields> + HasMut<input::mouse::MouseContext>,
+    C: HasMut<ContextFields> + HasMut<input::mouse::MouseContext>,
 {
     /// Called upon each logic update to the game.
     /// This should be where the game's logic takes place.
@@ -279,7 +280,7 @@ pub fn run<S: 'static, C, E>(mut ctx: C, event_loop: EventLoop<()>, mut state: S
 where
     S: EventHandler<C, E>,
     E: std::fmt::Debug,
-    C: std::any::Any
+    C: 'static
         + HasMut<ContextFields>
         + HasMut<GraphicsContext>
         + HasMut<input::keyboard::KeyboardContext>
@@ -610,7 +611,7 @@ fn catch_error<T, C, E, S: 'static>(
 where
     S: EventHandler<C, E>,
     E: std::fmt::Debug,
-    C: std::any::Any + HasMut<ContextFields> + HasMut<input::mouse::MouseContext>,
+    C: HasMut<ContextFields> + HasMut<input::mouse::MouseContext>,
 {
     if let Err(e) = event_result {
         error!("Error on EventHandler {origin:?}: {e:?}");
@@ -629,8 +630,7 @@ where
 /// you receive before processing them yourself.
 pub fn process_event<C>(ctx: &mut C, event: &mut winit::event::Event<()>)
 where
-    C: std::any::Any
-        + HasMut<ContextFields>
+    C: HasMut<ContextFields>
         + HasMut<GraphicsContext>
         + HasMut<input::keyboard::KeyboardContext>
         + HasMut<input::mouse::MouseContext>,

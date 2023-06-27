@@ -410,8 +410,7 @@ impl ContextBuilder {
         ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>,
     ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>
     where
-        C: std::any::Any
-            + HasMut<ContextFields>
+        C: HasMut<ContextFields>
             + HasMut<timer::TimeContext>
             + HasMut<input::keyboard::KeyboardContext>
             + HasMut<input::mouse::MouseContext>
