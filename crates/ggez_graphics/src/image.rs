@@ -4,6 +4,7 @@ use super::{
     Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
 use ggez_error::prelude::*;
+use ggez_filesystem::prelude::Filesystem;
 use ggez_traits::prelude::*;
 use image::ImageEncoder;
 use std::{io::Read, path::Path};
@@ -270,12 +271,15 @@ impl Image {
     /// Encodes the `ImageView` to the given file format and return the encoded bytes.
     ///
     /// **This is a very expensive operation - call sparingly.**
-    pub fn encode(
+    pub fn encode<C>(
         &self,
-        ctx: &Context,
+        ctx: &mut C,
         format: ImageEncodingFormat,
         path: impl AsRef<std::path::Path>,
-    ) -> GameResult {
+    ) -> GameResult
+    where
+        C: HasMut<Filesystem> + Has<GraphicsContext>,
+    {
         let color = match self.format {
             ImageFormat::Rgba8Unorm | ImageFormat::Rgba8UnormSrgb => ::image::ColorType::Rgba8,
             ImageFormat::R8Unorm => ::image::ColorType::L8,
@@ -288,7 +292,7 @@ impl Image {
         };
 
         let pixels = self.to_pixels(ctx)?;
-        let f = ctx.fs.create(path)?;
+        let f = HasMut::<Filesystem>::retrieve_mut(ctx).create(path)?;
         let writer = &mut std::io::BufWriter::new(f);
 
         match format {
