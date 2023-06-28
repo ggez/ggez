@@ -1,0 +1,31 @@
+[package]
+name = "ggez_error"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+winit.workspace = true
+wgpu.workspace = true
+toml.workspace = true
+glyph_brush.workspace = true
+lyon.workspace = true
+zip = { version = "0.6", default-features = false, features = ["deflate"] }
+image = { version = "0.24", default-features = false, features = [
+   "gif",
+   "png",
+   "pnm",
+   "tga",
+   "tiff",
+   "webp",
+   "bmp",
+   "dxt",
+] }
+
+[lib]
+name = "ggez_error"
+path = "src/lib.rs"
+
+[features]
+zip-compression = ["zip/bzip2", "zip/zstd"]

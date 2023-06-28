@@ -1,7 +1,8 @@
 use std::io::Read;
 use std::marker::PhantomData;
 
-use crate::{context::Has, Context, GameError, GameResult};
+use ggez_error::prelude::*;
+use ggez_traits::prelude::*;
 
 use super::{
     context::GraphicsContext,

@@ -1,10 +1,12 @@
 use super::{
     gpu::text::{Extra, TextRenderer},
-    Canvas, Color, Draw, DrawParam, Drawable, GraphicsContext, Rect,
+    Color, DrawParam, Drawable, GraphicsContext, Rect,
 };
-use crate::{context::Has, filesystem::Filesystem, GameError, GameResult};
 use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
 use std::{collections::HashMap, io::Read, path::Path};
+
+use ggez_error::prelude::*;
+use ggez_traits::prelude::*;
 
 /// Font data that can be used to create a new font in [`GraphicsContext`].
 #[derive(Debug)]

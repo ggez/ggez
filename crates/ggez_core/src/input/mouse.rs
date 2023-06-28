@@ -1,8 +1,7 @@
 //! Mouse utility functions.
 
 use crate::context::Context;
-use crate::error::GameError;
-use crate::error::GameResult;
+use ggez_error::prelude::*;
 use std::collections::HashSet;
 use winit::dpi;
 pub use winit::event::MouseButton;

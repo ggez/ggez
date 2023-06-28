@@ -19,57 +19,47 @@ categories = ["game-engines"]
 build = "build.rs"
 exclude = ["docs", "resources", "!LiberationMono-Regular.ttf"]
 
+[workspace]
+members = [
+  "crates/*"
+]
+
+[workspace.dependencies]
+lyon = "1.0"
+glyph_brush = "0.7"
+crevice = "0.13"
+mint = "0.5.9"
+wgpu = "0.16"
+log = "0.4"
+toml = "0.5"
+smart-default = "0.7"
+serde = { version = "1.0", features = ["derive"] }
+bytemuck = { version = "1.12", features = ["derive"] }
+winit = { version = "0.28.3", features = ["serde"] }
+glam = { version = "0.24", features = ["mint"] }
+
 [lib]
 name = "ggez"
 path = "src/lib.rs"
 
 [features]
 default = ["c_dependencies", "audio", "gamepad"]
-zip-compression = ["zip/bzip2", "zip/zstd"]
-mp3 = ["rodio/mp3"]
-multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
+zip-compression = ["ggez_core/zip-compression", "ggez_error/zip-compression"]
+mp3 = ["ggez_audio/mp3"]
+multithread-image-decoding = ["ggez_core/multithread-image-decoding"]
 c_dependencies = ["zip-compression", "mp3"]
-audio = ["rodio"]
-gamepad = ["gilrs"]
+audio = ["ggez_audio", "ggez_core/audio"]
+gamepad = ["ggez_core/gamepad"]
 
 [dependencies]
-bitflags = "2.1"
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
-directories = "5.0"
-wgpu = "0.16"
-glyph_brush = "0.7"
-winit = { version = "0.28.3", features = ["serde"] }
-image = { version = "0.24", default-features = false, features = [
-   "gif",
-   "png",
-   "pnm",
-   "tga",
-   "tiff",
-   "webp",
-   "bmp",
-   "dxt",
-] }
-rodio = { version = "0.17", optional = true, default-features = false, features = [
-   "flac",
-   "vorbis",
-   "wav",
-] }
-serde = { version = "1.0", features = ["derive"] }
-toml = "0.5"
-log = "0.4"
-lyon = "1.0"
-smart-default = "0.7"
-glam = { version = "0.24", features = ["mint"] }
-# Has to be the same version of mint that our math lib uses here.
-mint = "0.5.9"
+ggez_core = { path = "crates/ggez_core" }
+ggez_error = { path = "crates/ggez_error" }
+ggez_audio = { path = "crates/ggez_audio", optional = true }
+ggez_3d = { path = "crates/ggez_3d", optional = true }
+ggez_2d = { path = "crates/ggez_2d", optional = true }
+
 gilrs = { version = "0.10", optional = true }
-approx = "0.5"
-bytemuck = { version = "1.12", features = ["derive"] }
-pollster = "0.3"
 memoffset = "0.9"
-crevice = "0.13"
-typed-arena = "2.0"
-ordered-float = "3.3"
 
 [dev-dependencies]
 chrono = "0.4"

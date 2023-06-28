@@ -35,8 +35,10 @@
 use crate::{
     conf,
     vfs::{self, OverlayFS, VFS},
-    Context, GameError, GameResult,
+    Context,
 };
+use ggez_error::prelude::*;
+
 use directories::ProjectDirs;
 use std::{
     env, io,

@@ -15,7 +15,7 @@ pub use gilrs::{self, Event, Gamepad, Gilrs};
 pub struct GamepadId(pub(crate) gilrs::GamepadId);
 
 use crate::context::Context;
-use crate::error::GameResult;
+use ggez_error::prelude::*;
 
 /// A structure that contains gamepad state using `gilrs`.
 pub struct GamepadContext {

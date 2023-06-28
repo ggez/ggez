@@ -3,7 +3,8 @@ use super::{
     gpu::arc::{ArcTexture, ArcTextureView},
     Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
-use crate::{context::Has, Context, GameError, GameResult};
+use ggez_error::prelude::*;
+use ggez_traits::prelude::*;
 use image::ImageEncoder;
 use std::{io::Read, path::Path};
 

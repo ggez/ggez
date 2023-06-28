@@ -15,11 +15,11 @@ use std::time;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use crate::context::Has;
-use crate::error::GameError;
-use crate::error::GameResult;
-use crate::filesystem::Filesystem;
-use crate::filesystem::InternalClone;
+use ggez_core::context::Has;
+use ggez_core::error::GameError;
+use ggez_core::error::GameResult;
+use ggez_core::filesystem::Filesystem;
+use ggez_core::filesystem::InternalClone;
 
 /// A struct that contains all information for tracking sound info.
 ///

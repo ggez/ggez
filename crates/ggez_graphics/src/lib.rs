@@ -21,24 +21,22 @@
 //! [custom shader]:Canvas::set_shader
 //! [blend mode]:Canvas::set_blend_mode
 
-pub(crate) mod canvas;
 /// Module for the graphics context dealing with wgpu
 pub mod context;
-pub(crate) mod draw;
-pub(crate) mod gpu;
-pub(crate) mod image;
-pub(crate) mod instance;
-pub(crate) mod internal_canvas;
-pub(crate) mod mesh;
-pub(crate) mod sampler;
-pub(crate) mod shader;
-pub(crate) mod text;
-mod types;
+pub mod draw;
+pub mod gpu;
+pub mod image;
+pub mod instance;
+pub mod mesh;
+pub mod sampler;
+pub mod shader;
+pub mod text;
+pub mod types;
 
 pub use lyon::tessellation::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 pub use {
-    self::image::*, canvas::*, context::*, draw::*, instance::*, mesh::*, sampler::*, shader::*,
-    text::*, types::*,
+    self::image::*, context::*, draw::*, instance::*, mesh::*, sampler::*, shader::*, text::*,
+    types::*,
 };
 
 /// Applies `DrawParam` to `Rect`.
@@ -76,18 +74,9 @@ pub fn transform_rect(rect: Rect, param: DrawParam) -> Rect {
     }
 }
 
-use crate::{context::Has, GameResult};
-use mint::Point2;
+use ggez_error::prelude::*;
+use ggez_traits::prelude::*;
 use std::path::Path;
-
-/// Draws the given Drawable object to the screen by calling its draw() method.
-#[deprecated(
-    since = "0.8.0",
-    note = "Use `drawable.draw` or `canvas.draw` instead."
-)]
-pub fn draw(canvas: &mut Canvas, drawable: &impl Drawable, param: impl Into<DrawParam>) {
-    drawable.draw(canvas, param);
-}
 
 /// Sets the window icon. `None` for path removes the icon.
 #[deprecated(since = "0.8.0", note = "Use `ctx.gfx.set_window_icon` instead.")]
@@ -123,50 +112,4 @@ pub fn set_window_title(ctx: &impl Has<GraphicsContext>, title: &str) {
     gfx.set_window_title(title);
 }
 
-/// Draws text.
-#[deprecated(
-    since = "0.8.0",
-    note = "Don't use the `queue_text` and `draw_queued_text` system. Instead draw the texts directly."
-)]
-pub fn queue_text(
-    canvas: &mut Canvas,
-    text: &Text,
-    relative_dest: impl Into<Point2<f32>>,
-    color: Option<Color>,
-) {
-    canvas
-        .queued_texts
-        .push((text.clone(), relative_dest.into(), color));
-}
-
-/// Draws all of the Texts added via `queue_text`.
-#[deprecated(
-    since = "0.8.0",
-    note = "Don't use the `queue_text` and `draw_queued_text` system. Instead draw the texts directly."
-)]
-pub fn draw_queued_text(
-    canvas: &mut Canvas,
-    param: impl Into<DrawParam>,
-    blend: Option<BlendMode>,
-    filter: FilterMode,
-) -> GameResult {
-    let mut param = param.into();
-    let param_dest = *param.get_dest_mut();
-
-    canvas.set_sampler(filter);
-    if let Some(blend) = blend {
-        canvas.set_blend_mode(blend);
-    }
-
-    for queued_text in std::mem::take(&mut canvas.queued_texts) {
-        queued_text.0.draw(
-            canvas,
-            param.dest(mint::Point2 {
-                x: param_dest.x + queued_text.1.x,
-                y: param_dest.y + queued_text.1.y,
-            }),
-        );
-    }
-
-    Ok(())
-}
+pub mod prelude {}

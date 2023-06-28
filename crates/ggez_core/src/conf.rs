@@ -17,22 +17,7 @@ use std::io;
 
 use winit::dpi::PhysicalSize;
 
-use crate::error::{GameError, GameResult};
-
-/// Possible fullscreen modes.
-#[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
-pub enum FullscreenType {
-    /// Windowed mode.
-    Windowed,
-    /// True fullscreen, which used to be preferred 'cause it can have
-    /// small performance benefits over windowed fullscreen.
-    ///
-    /// Also it allows us to set different resolutions.
-    True,
-    /// Windowed fullscreen, generally preferred over real fullscreen
-    /// these days 'cause it plays nicer with multiple monitors.
-    Desktop,
-}
+use ggez_error::prelude::*;
 
 /// A builder structure containing window settings
 /// that can be set at runtime and changed with [`graphics::set_mode()`](../graphics/fn.set_mode.html).

@@ -1,3 +1,5 @@
+use crate::FullscreenType;
+
 use super::{
     draw::DrawUniforms,
     gpu::{
@@ -13,16 +15,10 @@ use super::{
     text::FontData,
     MeshData, ScreenImage,
 };
-use crate::{
-    conf::{self, Backend, Conf, FullscreenType, WindowMode},
-    context::Has,
-    error::GameResult,
-    filesystem::{Filesystem, InternalClone},
-    graphics::gpu::{bind_group::BindGroupLayoutBuilder, pipeline::RenderPipelineInfo},
-    GameError,
-};
 use ::image as imgcrate;
 use crevice::std140::AsStd140;
+use ggez_error::prelude::*;
+use ggez_traits::prelude::*;
 use glyph_brush::FontId;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
@@ -512,7 +508,7 @@ impl GraphicsContext {
     }
 
     /// Sets the window to fullscreen or back.
-    pub fn set_fullscreen(&mut self, fullscreen: conf::FullscreenType) -> GameResult {
+    pub fn set_fullscreen(&mut self, fullscreen: FullscreenType) -> GameResult {
         let window_mode = self.window_mode.fullscreen_type(fullscreen);
         self.set_mode(window_mode)
     }

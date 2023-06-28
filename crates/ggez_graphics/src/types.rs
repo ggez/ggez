@@ -1,6 +1,21 @@
 use mint::Point2;
 
-use crate::graphics::{FillOptions, StrokeOptions};
+use crate::{FillOptions, StrokeOptions};
+
+/// Possible fullscreen modes.
+#[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+pub enum FullscreenType {
+    /// Windowed mode.
+    Windowed,
+    /// True fullscreen, which used to be preferred 'cause it can have
+    /// small performance benefits over windowed fullscreen.
+    ///
+    /// Also it allows us to set different resolutions.
+    True,
+    /// Windowed fullscreen, generally preferred over real fullscreen
+    /// these days 'cause it plays nicer with multiple monitors.
+    Desktop,
+}
 
 /// A simple 2D rectangle.
 ///

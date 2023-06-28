@@ -1,0 +1,48 @@
+[package]
+name = "ggez_core"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+# Workspace depends come first for organization
+# mint.workspace = true
+# wgpu.workspace = true
+# winit.workspace = true
+# glam.workspace = true
+# crevice.workspace = true
+# bytemuck.workspace = true
+# serde.workspace = true
+log.workspace = true
+toml.workspace = true
+# lyon.workspace = true
+# glyph_brush.workspace = true
+smart-default.workspace = true
+# Path's depends next
+ggez_error = { path = "../ggez_error" }
+ggez_graphics = { path = "../ggez_graphics" }
+ggez_traits = { path = "../ggez_traits" }
+directories = "5.0"
+# typed-arena = "2.0"
+ordered-float = "3.3"
+bitflags = "2.1"
+# approx = "0.5"
+pollster = "0.3"
+zip = { version = "0.6", default-features = false, features = ["deflate"] }
+image = { version = "0.24", default-features = false, features = [
+   "gif",
+   "png",
+   "pnm",
+   "tga",
+   "tiff",
+   "webp",
+   "bmp",
+   "dxt",
+] }
+gilrs = { version = "0.10", optional = true }
+
+[features]
+multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
+zip-compression = ["zip/bzip2", "zip/zstd"]
+audio = []
+gamepad = ["gilrs"]

@@ -16,7 +16,7 @@ use std::fs;
 use std::io::{self, Read, Seek, Write};
 use std::path::{self, Path, PathBuf};
 
-use crate::error::{GameError, GameResult};
+use ggez_error::prelude::*;
 
 fn convenient_path_to_str(path: &path::Path) -> GameResult<&str> {
     path.to_str().ok_or_else(|| {

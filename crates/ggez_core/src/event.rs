@@ -33,7 +33,6 @@ use crate::context::ContextFields;
 #[cfg(not(feature = "gamepad"))]
 use crate::context::GamepadContext;
 use crate::context::HasMut;
-use crate::graphics::GraphicsContext;
 use crate::input;
 #[cfg(feature = "gamepad")]
 use crate::input::gamepad::GamepadContext;
@@ -41,7 +40,10 @@ use crate::input::gamepad::GamepadContext;
 pub use crate::input::gamepad::GamepadId;
 use crate::input::keyboard::{KeyCode, KeyInput, KeyMods};
 use crate::Context;
-use crate::GameError;
+
+use ggez_error::prelude::*;
+use ggez_graphics::prelude::*;
+use ggez_traits::prelude::*;
 
 use self::winit_event::{
     ElementState, Event, KeyboardInput, MouseScrollDelta, TouchPhase, WindowEvent,

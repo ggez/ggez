@@ -6,14 +6,15 @@ use std::fmt;
 pub use winit;
 
 #[cfg(feature = "audio")]
-use crate::audio;
+use ggez_audio::prelude::*;
+
 use crate::conf;
-use crate::error::GameResult;
 use crate::filesystem::Filesystem;
-use crate::graphics;
-use crate::graphics::GraphicsContext;
 use crate::input;
 use crate::timer;
+use ggez_error::prelude::*;
+use ggez_graphics::prelude::*;
+use ggez_traits::prelude::*;
 
 #[cfg(feature = "gamepad")]
 use crate::input::gamepad::GamepadContext;
@@ -97,41 +98,6 @@ pub struct ContextFields {
     pub quit_requested: bool,
 }
 
-// This is ugly and hacky but greatly improves ergonomics.
-
-/// Used to represent types that can provide a certain context type.
-///
-/// If you don't know what this is, you most likely want to pass `ctx`.
-///
-/// This trait is basically syntactical sugar, saving you from having
-/// to split contexts when you don't need to and also shortening calls like
-/// ```rust
-/// # use ggez::GameResult;
-/// # fn t(ctx: &mut ggez::Context, canvas: ggez::graphics::Canvas) -> GameResult {
-/// canvas.finish(&mut ctx.gfx)?;
-/// # Ok(())
-/// # }
-/// ```
-/// into just
-/// ```rust
-/// # use ggez::GameResult;
-/// # fn t(ctx: &mut ggez::Context, canvas: ggez::graphics::Canvas) -> GameResult {
-/// canvas.finish(ctx)?;
-/// # Ok(())
-/// # }
-/// ```
-pub trait Has<T> {
-    /// Method to retrieve the context type.
-    fn retrieve(&self) -> &T;
-}
-
-impl<T> Has<T> for T {
-    #[inline]
-    fn retrieve(&self) -> &T {
-        self
-    }
-}
-
 impl Has<Filesystem> for Context {
     #[inline]
     fn retrieve(&self) -> &Filesystem {
@@ -147,26 +113,10 @@ impl Has<GraphicsContext> for Context {
 }
 
 #[cfg(feature = "audio")]
-impl Has<audio::AudioContext> for Context {
+impl Has<AudioContext> for Context {
     #[inline]
-    fn retrieve(&self) -> &audio::AudioContext {
+    fn retrieve(&self) -> &AudioContext {
         &self.audio
-    }
-}
-
-/// Used to represent types that can provide a certain context type in a mutable form.
-/// See also [`Has<T>`].
-///
-/// If you don't know what this is, you most likely want to pass `ctx`.
-pub trait HasMut<T> {
-    /// Method to retrieve the context type as mutable.
-    fn retrieve_mut(&mut self) -> &mut T;
-}
-
-impl<T> HasMut<T> for T {
-    #[inline]
-    fn retrieve_mut(&mut self) -> &mut T {
-        self
     }
 }
 
@@ -227,11 +177,10 @@ impl Context {
         fs: Filesystem,
     ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         #[cfg(feature = "audio")]
-        let audio_context = audio::AudioContext::new(&fs)?;
+        let audio_context = AudioContext::new(&fs)?;
         let events_loop = winit::event_loop::EventLoop::new();
         let timer_context = timer::TimeContext::new();
-        let graphics_context =
-            graphics::context::GraphicsContext::new(game_id, &events_loop, &conf, &fs)?;
+        let graphics_context = GraphicsContext::new(game_id, &events_loop, &conf, &fs)?;
 
         let ctx = Context {
             fs,
@@ -445,9 +394,9 @@ impl ContextBuilder {
 mod tests {
     use crate::{
         context::{Has, HasMut},
-        graphics::GraphicsContext,
         ContextBuilder,
     };
+    use ggez_graphics::prelude::*;
 
     // This will fail when testing if not running using one thread but is actually fine
     #[test]

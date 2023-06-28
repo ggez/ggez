@@ -1,16 +1,10 @@
 use crevice::std140::AsStd140;
 
-use crate::{
-    context::{Has, HasMut},
-    GameError, GameResult,
-};
+use ggez_core::prelude::*;
+use ggez_error::prelude::*;
+use ggez_graphics::prelude::*;
 
-use super::{
-    gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
-    internal_canvas::{screen_to_mat, InstanceArrayView, InternalCanvas},
-    BlendMode, Color, DrawParam, Drawable, GraphicsContext, Image, InstanceArray, Mesh, Rect,
-    Sampler, ScreenImage, Shader, ShaderParams, Text, WgpuContext, ZIndex,
-};
+use super::internal_canvas::{screen_to_mat, InstanceArrayView, InternalCanvas};
 use std::{collections::BTreeMap, sync::Arc};
 
 /// Canvases are the main method of drawing meshes and text to images in ggez.
@@ -526,23 +520,6 @@ struct DrawState {
     premul_text: bool,
     projection: mint::ColumnMatrix4<f32>,
     scissor_rect: (u32, u32, u32, u32),
-}
-
-#[derive(Debug)]
-pub(crate) enum Draw {
-    Mesh {
-        mesh: Mesh,
-        image: Image,
-        scale: bool,
-    },
-    MeshInstances {
-        mesh: Mesh,
-        instances: InstanceArrayView,
-        scale: bool,
-    },
-    BoundedText {
-        text: Text,
-    },
 }
 
 // Stores *everything* you need to know to draw something.

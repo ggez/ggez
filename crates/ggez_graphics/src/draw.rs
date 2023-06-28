@@ -1,5 +1,59 @@
-use super::{Canvas, Color, GraphicsContext, LinearColor, Rect};
-use crate::context::Has;
+use crate::gpu::arc::ArcBindGroup;
+use crate::gpu::arc::ArcBuffer;
+use crate::Image;
+use crate::InstanceArray;
+use crate::Mesh;
+use crate::Text;
+
+use super::{Color, GraphicsContext, LinearColor, Rect};
+use ggez_error::prelude::*;
+use ggez_traits::prelude::*;
+
+/// InstanceArray buffers and bind group
+#[derive(Debug)]
+pub struct InstanceArrayView {
+    pub buffer: ArcBuffer,
+    pub indices: ArcBuffer,
+    pub bind_group: ArcBindGroup,
+    pub image: Image,
+    pub len: u32,
+    pub ordered: bool,
+}
+
+impl InstanceArrayView {
+    pub fn from_instances(ia: &InstanceArray) -> GameResult<Self> {
+        Ok(InstanceArrayView {
+            buffer: ia.buffer.lock().map_err(|_| GameError::LockError)?.clone(),
+            indices: ia.indices.lock().map_err(|_| GameError::LockError)?.clone(),
+            bind_group: ia
+                .bind_group
+                .lock()
+                .map_err(|_| GameError::LockError)?
+                .clone(),
+            image: ia.image.clone(),
+            len: ia.instances().len() as u32,
+            ordered: ia.ordered,
+        })
+    }
+}
+
+/// A type to store the different draw types
+#[derive(Debug)]
+pub enum Draw {
+    Mesh {
+        mesh: Mesh,
+        image: Image,
+        scale: bool,
+    },
+    MeshInstances {
+        mesh: Mesh,
+        instances: InstanceArrayView,
+        scale: bool,
+    },
+    BoundedText {
+        text: Text,
+    },
+}
 
 /// A struct that represents where to put a drawable object.
 ///

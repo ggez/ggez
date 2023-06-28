@@ -1,0 +1,37 @@
+[package]
+name = "ggez_graphics"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+mint.workspace = true
+wgpu.workspace = true
+winit.workspace = true
+glam.workspace = true
+crevice.workspace = true
+bytemuck.workspace = true
+serde.workspace = true
+glyph_brush.workspace = true
+lyon.workspace = true
+log.workspace = true
+ggez_traits = { path = "../ggez_traits" }
+ggez_error = { path = "../ggez_error" }
+typed-arena = "2.0"
+approx = "0.5"
+pollster = "0.3"
+image = { version = "0.24", default-features = false, features = [
+   "gif",
+   "png",
+   "pnm",
+   "tga",
+   "tiff",
+   "webp",
+   "bmp",
+   "dxt",
+] }
+
+[lib]
+name = "ggez_graphics"
+path = "src/lib.rs"

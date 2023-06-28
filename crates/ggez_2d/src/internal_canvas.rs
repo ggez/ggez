@@ -666,33 +666,6 @@ impl<'a> Drop for InternalCanvas<'a> {
     }
 }
 
-#[derive(Debug)]
-pub struct InstanceArrayView {
-    pub buffer: ArcBuffer,
-    pub indices: ArcBuffer,
-    pub bind_group: ArcBindGroup,
-    pub image: Image,
-    pub len: u32,
-    pub ordered: bool,
-}
-
-impl InstanceArrayView {
-    pub fn from_instances(ia: &InstanceArray) -> GameResult<Self> {
-        Ok(InstanceArrayView {
-            buffer: ia.buffer.lock().map_err(|_| GameError::LockError)?.clone(),
-            indices: ia.indices.lock().map_err(|_| GameError::LockError)?.clone(),
-            bind_group: ia
-                .bind_group
-                .lock()
-                .map_err(|_| GameError::LockError)?
-                .clone(),
-            image: ia.image.clone(),
-            len: ia.instances().len() as u32,
-            ordered: ia.ordered,
-        })
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum ShaderType {
     Draw,

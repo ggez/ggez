@@ -1,0 +1,21 @@
+[package]
+name = "ggez_audio"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rodio = { version = "0.17", optional = true, default-features = false, features = [
+   "flac",
+   "vorbis",
+   "wav",
+] }
+
+[features]
+mp3 = ["rodio/mp3"]
+
+[lib]
+name = "ggez_audio"
+path = "src/lib.rs"
+
