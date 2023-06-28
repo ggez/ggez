@@ -194,20 +194,11 @@ extern crate log;
 pub use glam;
 pub use mint;
 
-pub mod conf;
 pub mod context;
 pub mod event;
-pub mod filesystem;
 pub mod input;
-pub mod timer;
-mod vfs;
 
 pub mod coroutine;
 pub use crate::coroutine::Coroutine;
 
 pub use crate::context::{winit, Context, ContextBuilder};
-pub use crate::error::*;
-
-pub mod prelude {
-    pub use crate::context::{Context, ContextBuilder};
-}

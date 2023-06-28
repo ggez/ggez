@@ -4,8 +4,8 @@ use super::{
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer},
     transform_rect, Draw, Drawable, Image, Mesh, Rect, WgpuContext,
 };
-use crate::gpu::bind_group::BindGroupBuilder;
 use crate::InstanceArrayView;
+use crate::{canvas::Canvas, gpu::bind_group::BindGroupBuilder};
 use crevice::std140::AsStd140;
 use ggez_error::prelude::*;
 use ggez_traits::prelude::*;

@@ -3,8 +3,6 @@
 //! It consists of two main types: [`SoundData`](struct.SoundData.html)
 //! is just an array of raw sound data bytes, and a [`Source`](struct.Source.html) is a
 //! `SoundData` connected to a particular sound channel ready to be played.
-#![cfg(feature = "audio")]
-
 use std::fmt;
 use std::io;
 use std::io::Read;
@@ -15,11 +13,9 @@ use std::time;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use ggez_core::context::Has;
-use ggez_core::error::GameError;
-use ggez_core::error::GameResult;
-use ggez_core::filesystem::Filesystem;
-use ggez_core::filesystem::InternalClone;
+use ggez_error::prelude::*;
+use ggez_filesystem::prelude::*;
+use ggez_traits::prelude::*;
 
 /// A struct that contains all information for tracking sound info.
 ///
@@ -40,7 +36,7 @@ impl AudioContext {
             ))
         })?;
         Ok(Self {
-            fs: InternalClone::clone(fs),
+            fs: fs.clone(),
             _stream: stream,
             stream_handle,
         })

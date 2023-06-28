@@ -12,6 +12,12 @@ toml.workspace = true
 glyph_brush.workspace = true
 lyon.workspace = true
 zip.workspace = true
+gilrs = { version = "0.10", optional = true }
+rodio = { version = "0.17", optional = true, default-features = false, features = [
+   "flac",
+   "vorbis",
+   "wav",
+] }
 image = { version = "0.24", default-features = false, features = [
    "gif",
    "png",
@@ -28,3 +34,6 @@ name = "ggez_error"
 path = "src/lib.rs"
 
 [features]
+audio = ["rodio"]
+mp3 = ["audio", "rodio/mp3"]
+gamepad = ["gilrs"]

@@ -1,10 +1,29 @@
+use crate::gpu::arc::ArcBindGroup;
+use crate::gpu::arc::ArcBindGroupLayout;
+use crate::BlendMode;
+use crate::Color;
+use crate::Draw;
+use crate::DrawParam;
+use crate::Drawable;
+use crate::GraphicsContext;
+use crate::Image;
+use crate::InstanceArray;
+use crate::InstanceArrayView;
+use crate::Mesh;
+use crate::Rect;
+use crate::Sampler;
+use crate::ScreenImage;
+use crate::Shader;
+use crate::ShaderParams;
+use crate::WgpuContext;
+use crate::ZIndex;
 use crevice::std140::AsStd140;
+use ggez_traits::Has;
+use ggez_traits::HasMut;
 
-use ggez_core::prelude::*;
 use ggez_error::prelude::*;
-use ggez_graphics::prelude::*;
 
-use super::internal_canvas::{screen_to_mat, InstanceArrayView, InternalCanvas};
+use super::internal_canvas::{screen_to_mat, InternalCanvas};
 use std::{collections::BTreeMap, sync::Arc};
 
 /// Canvases are the main method of drawing meshes and text to images in ggez.
@@ -29,9 +48,6 @@ pub struct Canvas {
     target: Image,
     resolve: Option<Image>,
     clear: Option<Color>,
-
-    // This will be removed after queue_text and draw_queued_text have been removed.
-    pub(crate) queued_texts: Vec<(Text, mint::Point2<f32>, Option<Color>)>,
 }
 
 impl Canvas {
@@ -145,8 +161,6 @@ impl Canvas {
             target,
             resolve,
             clear,
-
-            queued_texts: Vec::new(),
         };
 
         this.set_screen_coordinates(screen);

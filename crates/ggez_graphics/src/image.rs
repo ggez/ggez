@@ -1,3 +1,5 @@
+use crate::canvas::Canvas;
+
 use super::{
     context::GraphicsContext,
     gpu::arc::{ArcTexture, ArcTextureView},

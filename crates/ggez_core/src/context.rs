@@ -8,12 +8,12 @@ pub use winit;
 #[cfg(feature = "audio")]
 use ggez_audio::prelude::*;
 
-use crate::conf;
-use crate::filesystem::Filesystem;
 use crate::input;
-use crate::timer;
+use ggez_conf::prelude::*;
 use ggez_error::prelude::*;
-use ggez_graphics::prelude::*;
+use ggez_filesystem::prelude::*;
+use ggez_graphics::GraphicsContext;
+use ggez_time::prelude::*;
 use ggez_traits::prelude::*;
 
 #[cfg(feature = "gamepad")]
@@ -21,7 +21,7 @@ use crate::input::gamepad::GamepadContext;
 
 #[cfg(not(feature = "gamepad"))]
 /// Dummy gamepad context
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct GamepadContext;
 
 #[cfg(not(feature = "gamepad"))]
@@ -56,10 +56,10 @@ pub struct Context {
     /// Graphics state.
     pub gfx: GraphicsContext,
     /// Timer state.
-    pub time: timer::TimeContext,
+    pub time: TimeContext,
     /// Audio context.
     #[cfg(feature = "audio")]
-    pub audio: audio::AudioContext,
+    pub audio: AudioContext,
     /// Keyboard input context.
     pub keyboard: input::keyboard::KeyboardContext,
     /// Mouse input context.
@@ -86,7 +86,7 @@ pub struct ContextFields {
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
     /// updating it will have no effect.
-    pub conf: conf::Conf,
+    pub conf: Conf,
     /// Controls whether or not the event loop should be running.
     /// This is internally controlled by the outcome of [`quit_event`](crate::event::EventHandler::quit_event),
     /// requested through [`event::request_quit()`](crate::Context::request_quit).
@@ -134,9 +134,9 @@ impl HasMut<GraphicsContext> for Context {
     }
 }
 
-impl HasMut<timer::TimeContext> for Context {
+impl HasMut<TimeContext> for Context {
     #[inline]
-    fn retrieve_mut(&mut self) -> &mut timer::TimeContext {
+    fn retrieve_mut(&mut self) -> &mut TimeContext {
         &mut self.time
     }
 }
@@ -173,13 +173,13 @@ impl Context {
     /// Usually called by [`ContextBuilder::build()`](struct.ContextBuilder.html#method.build).
     fn from_conf(
         game_id: &str,
-        conf: conf::Conf,
+        conf: Conf,
         fs: Filesystem,
     ) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         #[cfg(feature = "audio")]
         let audio_context = AudioContext::new(&fs)?;
         let events_loop = winit::event_loop::EventLoop::new();
-        let timer_context = timer::TimeContext::new();
+        let timer_context = TimeContext::new();
         let graphics_context = GraphicsContext::new(game_id, &events_loop, &conf, &fs)?;
 
         let ctx = Context {
@@ -210,7 +210,7 @@ use std::path;
 pub struct ContextBuilder {
     pub(crate) game_id: String,
     pub(crate) author: String,
-    pub(crate) conf: conf::Conf,
+    pub(crate) conf: Conf,
     pub(crate) resources_dir_name: path::PathBuf,
     pub(crate) resources_zip_name: path::PathBuf,
     pub(crate) paths: Vec<path::PathBuf>,
@@ -224,7 +224,7 @@ impl ContextBuilder {
         Self {
             game_id: game_id.to_string(),
             author: author.to_string(),
-            conf: conf::Conf::default(),
+            conf: Conf::default(),
             resources_dir_name: "resources".into(),
             resources_zip_name: "resources.zip".into(),
             paths: vec![],
@@ -235,21 +235,21 @@ impl ContextBuilder {
 
     /// Sets the window setup settings.
     #[must_use]
-    pub fn window_setup(mut self, setup: conf::WindowSetup) -> Self {
+    pub fn window_setup(mut self, setup: WindowSetup) -> Self {
         self.conf.window_setup = setup;
         self
     }
 
     /// Sets the window mode settings.
     #[must_use]
-    pub fn window_mode(mut self, mode: conf::WindowMode) -> Self {
+    pub fn window_mode(mut self, mode: WindowMode) -> Self {
         self.conf.window_mode = mode;
         self
     }
 
     /// Sets the graphics backend.
     #[must_use]
-    pub fn backend(mut self, backend: conf::Backend) -> Self {
+    pub fn backend(mut self, backend: Backend) -> Self {
         self.conf.backend = backend;
         self
     }
@@ -261,7 +261,7 @@ impl ContextBuilder {
     /// defaults and are overridden by any external config
     /// file found.
     #[must_use]
-    pub fn default_conf(mut self, conf: conf::Conf) -> Self {
+    pub fn default_conf(mut self, conf: Conf) -> Self {
         self.conf = conf;
         self
     }
@@ -354,13 +354,13 @@ impl ContextBuilder {
         self,
         from_conf: impl Fn(
             String,
-            conf::Conf,
+            Conf,
             Filesystem,
         ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>,
     ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>
     where
         C: HasMut<ContextFields>
-            + HasMut<timer::TimeContext>
+            + HasMut<TimeContext>
             + HasMut<input::keyboard::KeyboardContext>
             + HasMut<input::mouse::MouseContext>
             + HasMut<GamepadContext>,

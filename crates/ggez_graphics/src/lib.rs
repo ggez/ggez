@@ -22,11 +22,13 @@
 //! [blend mode]:Canvas::set_blend_mode
 
 /// Module for the graphics context dealing with wgpu
+pub mod canvas;
 pub mod context;
 pub mod draw;
 pub mod gpu;
 pub mod image;
 pub mod instance;
+pub mod internal_canvas;
 pub mod mesh;
 pub mod sampler;
 pub mod shader;
@@ -111,5 +113,3 @@ pub fn set_window_title(ctx: &impl Has<GraphicsContext>, title: &str) {
     let gfx: &GraphicsContext = ctx.retrieve();
     gfx.set_window_title(title);
 }
-
-pub mod prelude {}

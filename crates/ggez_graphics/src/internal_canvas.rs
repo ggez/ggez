@@ -2,7 +2,7 @@ use super::{
     context::{FrameArenas, GraphicsContext},
     draw::{DrawParam, DrawUniforms},
     gpu::{
-        arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcShaderModule, ArcTextureView},
+        arc::{ArcBindGroup, ArcBindGroupLayout, ArcShaderModule, ArcTextureView},
         bind_group::{BindGroupBuilder, BindGroupCache, BindGroupLayoutBuilder},
         growing::{ArenaAllocation, GrowingBufferArena},
         pipeline::{PipelineCache, RenderPipelineInfo},
@@ -12,8 +12,9 @@ use super::{
     mesh::{Mesh, Vertex},
     sampler::{Sampler, SamplerCache},
     shader::Shader,
-    BlendMode, Color, InstanceArray, LinearColor, Rect, Text, Transform, WgpuContext,
+    BlendMode, Color, LinearColor, Rect, Text, Transform, WgpuContext,
 };
+use crate::InstanceArrayView;
 use crate::{GameError, GameResult};
 use crevice::std140::AsStd140;
 use std::{collections::HashMap, hash::Hash};

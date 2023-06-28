@@ -10,6 +10,7 @@
 //! source code for this module, or the [`eventloop`
 //! example](https://github.com/ggez/ggez/blob/master/examples/eventloop.rs).
 
+use ggez_graphics::GraphicsContext;
 use winit::{self, dpi};
 
 /// A mouse button.
@@ -32,17 +33,20 @@ pub mod winit_event {
 use crate::context::ContextFields;
 #[cfg(not(feature = "gamepad"))]
 use crate::context::GamepadContext;
-use crate::context::HasMut;
+
 use crate::input;
+
 #[cfg(feature = "gamepad")]
 use crate::input::gamepad::GamepadContext;
+
 #[cfg(feature = "gamepad")]
 pub use crate::input::gamepad::GamepadId;
+
 use crate::input::keyboard::{KeyCode, KeyInput, KeyMods};
 use crate::Context;
 
 use ggez_error::prelude::*;
-use ggez_graphics::prelude::*;
+use ggez_time::prelude::*;
 use ggez_traits::prelude::*;
 
 use self::winit_event::{
@@ -288,7 +292,7 @@ where
         + HasMut<input::keyboard::KeyboardContext>
         + HasMut<input::mouse::MouseContext>
         + HasMut<GamepadContext>
-        + HasMut<crate::timer::TimeContext>,
+        + HasMut<TimeContext>,
 {
     event_loop.run(move |mut event, _, control_flow| {
         let ctx = &mut ctx;
@@ -512,7 +516,7 @@ where
                 // you include `timer_context.tick()` and
                 // `ctx.process_event()` calls.  These update ggez's
                 // internal state however necessary.
-                let time = HasMut::<crate::timer::TimeContext>::retrieve_mut(ctx);
+                let time = HasMut::<TimeContext>::retrieve_mut(ctx);
                 time.tick();
 
                 // Handle gamepad events if necessary.

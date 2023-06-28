@@ -1,3 +1,4 @@
+use crate::canvas::Canvas;
 use crate::gpu::arc::ArcBindGroup;
 use crate::gpu::arc::ArcBuffer;
 use crate::Image;

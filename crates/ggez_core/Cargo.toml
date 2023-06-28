@@ -6,28 +6,21 @@ edition = "2021"
 
 [dependencies]
 # Workspace depends come first for organization
-# mint.workspace = true
-# wgpu.workspace = true
-# winit.workspace = true
-# glam.workspace = true
-# crevice.workspace = true
-# bytemuck.workspace = true
-# serde.workspace = true
+mint.workspace = true
+winit.workspace = true
+glam.workspace = true
 log.workspace = true
 toml.workspace = true
 zip.workspace = true
-# lyon.workspace = true
-# glyph_brush.workspace = true
 smart-default.workspace = true
-# Path's depends next
 ggez_error = { path = "../ggez_error" }
 ggez_graphics = { path = "../ggez_graphics" }
 ggez_traits = { path = "../ggez_traits" }
-# directories = "5.0"
-# typed-arena = "2.0"
-# ordered-float = "3.3"
+ggez_time = { path = "../ggez_time" }
+ggez_conf = { path = "../ggez_conf" }
+ggez_audio = { path = "../ggez_audio", optional = true }
+ggez_filesystem = { path = "../ggez_filesystem" }
 bitflags = "2.1"
-# approx = "0.5"
 pollster = "0.3"
 image = { version = "0.24", default-features = false, features = [
    "gif",
@@ -40,8 +33,19 @@ image = { version = "0.24", default-features = false, features = [
    "dxt",
 ] }
 gilrs = { version = "0.10", optional = true }
+# wgpu.workspace = true
+# crevice.workspace = true
+# bytemuck.workspace = true
+# serde.workspace = true
+# lyon.workspace = true
+# glyph_brush.workspace = true
+# Path's depends next
+# directories = "5.0"
+# typed-arena = "2.0"
+# ordered-float = "3.3"
+# approx = "0.5"
 
 [features]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
-audio = []
-gamepad = ["gilrs"]
+audio = ["ggez_audio"]
+gamepad = ["gilrs", "ggez_error/gamepad"]

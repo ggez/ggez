@@ -6,7 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rodio = { version = "0.17", optional = true, default-features = false, features = [
+mint.workspace = true
+ggez_error = { path = "../ggez_error", features = ["audio"]}
+ggez_filesystem = { path = "../ggez_filesystem" }
+ggez_traits = { path = "../ggez_traits" }
+
+rodio = { version = "0.17", default-features = false, features = [
    "flac",
    "vorbis",
    "wav",

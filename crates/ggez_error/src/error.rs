@@ -125,6 +125,18 @@ impl From<zip::result::ZipError> for GameError {
     }
 }
 
+impl From<image::ImageError> for GameError {
+    fn from(e: image::ImageError) -> GameError {
+        let errstr = format!("Image load error: {e}");
+        GameError::ResourceLoadError(errstr)
+    }
+}
+impl From<winit::error::OsError> for GameError {
+    fn from(s: winit::error::OsError) -> GameError {
+        GameError::WindowCreationError(Arc::new(s))
+    }
+}
+
 #[cfg(feature = "audio")]
 impl From<rodio::decoder::DecoderError> for GameError {
     fn from(e: rodio::decoder::DecoderError) -> GameError {
@@ -138,18 +150,6 @@ impl From<rodio::PlayError> for GameError {
     fn from(e: rodio::PlayError) -> GameError {
         let errstr = format!("Audio playing error: {e:?}");
         GameError::AudioError(errstr)
-    }
-}
-
-impl From<image::ImageError> for GameError {
-    fn from(e: image::ImageError) -> GameError {
-        let errstr = format!("Image load error: {e}");
-        GameError::ResourceLoadError(errstr)
-    }
-}
-impl From<winit::error::OsError> for GameError {
-    fn from(s: winit::error::OsError) -> GameError {
-        GameError::WindowCreationError(Arc::new(s))
     }
 }
 

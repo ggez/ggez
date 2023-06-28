@@ -55,9 +55,13 @@ gamepad = ["ggez_core/gamepad"]
 [dependencies]
 ggez_core = { path = "crates/ggez_core" }
 ggez_error = { path = "crates/ggez_error" }
+ggez_conf = { path = "crates/ggez_conf" }
+ggez_time = { path = "crates/ggez_time" }
+ggez_filesystem = { path = "crates/ggez_filesystem" }
+ggez_traits = { path = "crates/ggez_traits" }
+ggez_graphics = { path = "crates/ggez_graphics" }
 ggez_audio = { path = "crates/ggez_audio", optional = true }
 ggez_3d = { path = "crates/ggez_3d", optional = true }
-ggez_2d = { path = "crates/ggez_2d", optional = true }
 
 gilrs = { version = "0.10", optional = true }
 memoffset = "0.9"

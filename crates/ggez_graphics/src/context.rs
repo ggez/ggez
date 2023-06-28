@@ -60,7 +60,7 @@ pub struct WgpuContext {
 pub struct GraphicsContext {
     pub(crate) wgpu: Arc<WgpuContext>,
 
-    pub(crate) window: winit::window::Window,
+    pub window: winit::window::Window,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
 
     pub(crate) bind_group_cache: BindGroupCache,
@@ -675,7 +675,7 @@ impl GraphicsContext {
         }
     }
 
-    pub(crate) fn resize(&mut self, _new_size: dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, _new_size: dpi::PhysicalSize<u32>) {
         let size = self.window.inner_size();
         let _ = self.wgpu.device.poll(wgpu::Maintain::Wait);
         self.surface_config.width = size.width.max(1);

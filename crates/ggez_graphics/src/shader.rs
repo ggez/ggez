@@ -272,25 +272,16 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
             .samplers
             .iter()
             .map(|&sampler| {
-                HasMut::<GraphicsContext>::retrieve_mut(ctx)
-                    .sampler_cache
-                    .get(
-                        &HasMut::<GraphicsContext>::retrieve_mut(ctx).wgpu.device,
-                        sampler,
-                    )
+                let gfx = HasMut::<GraphicsContext>::retrieve_mut(ctx);
+                gfx.sampler_cache.get(&gfx.wgpu.device, sampler)
             })
             .collect();
 
+        let gfx = HasMut::<GraphicsContext>::retrieve_mut(ctx);
         let mut params = ShaderParams {
             uniform_arena: GrowingBufferArena::new(
-                &&HasMut::<GraphicsContext>::retrieve_mut(ctx).wgpu.device,
-                u64::from(
-                    HasMut::<GraphicsContext>::retrieve_mut(ctx)
-                        .wgpu
-                        .device
-                        .limits()
-                        .min_uniform_buffer_offset_alignment,
-                ),
+                &gfx.wgpu.device,
+                u64::from(gfx.wgpu.device.limits().min_uniform_buffer_offset_alignment),
                 wgpu::BufferDescriptor {
                     label: None,
                     size: ShaderParams::<Uniforms>::UPDATES_PER_ARENA
@@ -369,7 +360,8 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
             &HasMut::<GraphicsContext>::retrieve_mut(ctx).wgpu.device,
             Uniforms::std140_size_static() as u64,
         );
-        &HasMut::<GraphicsContext>::retrieve_mut(ctx)
+
+        HasMut::<GraphicsContext>::retrieve_mut(ctx)
             .wgpu
             .queue
             .write_buffer(&alloc.buffer, alloc.offset, uniforms.as_std140().as_bytes());
@@ -399,11 +391,8 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
         for sampler in &self.samplers {
             builder = builder.sampler(sampler, vis);
         }
-
-        let (bind_group, layout) = builder.create(
-            &&HasMut::<GraphicsContext>::retrieve_mut(ctx).wgpu.device,
-            &mut &&HasMut::<GraphicsContext>::retrieve_mut(ctx).bind_group_cache,
-        );
+        let gfx = HasMut::<GraphicsContext>::retrieve_mut(ctx);
+        let (bind_group, layout) = builder.create(&gfx.wgpu.device, &mut gfx.bind_group_cache);
         self.layout = Some(layout);
         self.bind_group = Some(bind_group);
     }
