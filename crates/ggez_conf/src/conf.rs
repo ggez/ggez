@@ -188,7 +188,8 @@ impl WindowMode {
     }
 
     // Use logical_size if set, else convert width/height to PhysicalSize
-    pub(crate) fn actual_size(&self) -> GameResult<winit::dpi::Size> {
+    #[must_use]
+    pub fn actual_size(&self) -> GameResult<winit::dpi::Size> {
         let actual_size: winit::dpi::Size = if let Some(logical_size) = self.logical_size {
             logical_size.into()
         } else {
@@ -205,6 +206,21 @@ impl WindowMode {
             )))
         }
     }
+}
+
+/// Possible fullscreen modes.
+#[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+pub enum FullscreenType {
+    /// Windowed mode.
+    Windowed,
+    /// True fullscreen, which used to be preferred 'cause it can have
+    /// small performance benefits over windowed fullscreen.
+    ///
+    /// Also it allows us to set different resolutions.
+    True,
+    /// Windowed fullscreen, generally preferred over real fullscreen
+    /// these days 'cause it plays nicer with multiple monitors.
+    Desktop,
 }
 
 /// A builder structure containing window settings

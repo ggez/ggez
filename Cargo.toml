@@ -25,6 +25,7 @@ members = [
 ]
 
 [workspace.dependencies]
+zip = { version = "0.6", default-features = false, features = ["deflate", "zstd", "bzip2"] }
 lyon = "1.0"
 glyph_brush = "0.7"
 crevice = "0.13"
@@ -44,10 +45,10 @@ path = "src/lib.rs"
 
 [features]
 default = ["c_dependencies", "audio", "gamepad"]
-zip-compression = ["ggez_core/zip-compression", "ggez_error/zip-compression"]
+# zip-compression = ["ggez_core/zip-compression", "ggez_error/zip-compression"]
 mp3 = ["ggez_audio/mp3"]
 multithread-image-decoding = ["ggez_core/multithread-image-decoding"]
-c_dependencies = ["zip-compression", "mp3"]
+c_dependencies = ["mp3"]
 audio = ["ggez_audio", "ggez_core/audio"]
 gamepad = ["ggez_core/gamepad"]
 

@@ -1,8 +1,9 @@
 use super::{
-    context::GraphicsContext, gpu::arc::ArcBuffer, Canvas, Color, Draw, DrawMode, DrawParam,
-    Drawable, LinearColor, Rect, WgpuContext,
+    context::GraphicsContext, gpu::arc::ArcBuffer, Color, Draw, DrawMode, DrawParam, Drawable,
+    LinearColor, Rect, WgpuContext,
 };
-use crate::{context::Has, GameError, GameResult};
+use ggez_error::prelude::*;
+use ggez_traits::prelude::*;
 use lyon::{math::Point as LPoint, path::Polygon, tessellation as tess};
 use wgpu::util::DeviceExt;
 

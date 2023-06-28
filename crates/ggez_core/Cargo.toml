@@ -15,6 +15,7 @@ edition = "2021"
 # serde.workspace = true
 log.workspace = true
 toml.workspace = true
+zip.workspace = true
 # lyon.workspace = true
 # glyph_brush.workspace = true
 smart-default.workspace = true
@@ -22,13 +23,12 @@ smart-default.workspace = true
 ggez_error = { path = "../ggez_error" }
 ggez_graphics = { path = "../ggez_graphics" }
 ggez_traits = { path = "../ggez_traits" }
-directories = "5.0"
+# directories = "5.0"
 # typed-arena = "2.0"
-ordered-float = "3.3"
+# ordered-float = "3.3"
 bitflags = "2.1"
 # approx = "0.5"
 pollster = "0.3"
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
 image = { version = "0.24", default-features = false, features = [
    "gif",
    "png",
@@ -43,6 +43,5 @@ gilrs = { version = "0.10", optional = true }
 
 [features]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
-zip-compression = ["zip/bzip2", "zip/zstd"]
 audio = []
 gamepad = ["gilrs"]

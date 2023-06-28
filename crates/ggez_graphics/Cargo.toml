@@ -18,7 +18,11 @@ lyon.workspace = true
 log.workspace = true
 ggez_traits = { path = "../ggez_traits" }
 ggez_error = { path = "../ggez_error" }
+ggez_conf = { path = "../ggez_conf" }
+ggez_filesystem = { path = "../ggez_filesystem" }
+ggez_time = { path = "../ggez_time" }
 typed-arena = "2.0"
+ordered-float = "3.3"
 approx = "0.5"
 pollster = "0.3"
 image = { version = "0.24", default-features = false, features = [

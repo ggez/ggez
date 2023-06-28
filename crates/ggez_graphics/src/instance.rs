@@ -1,13 +1,14 @@
-use crate::{context::Has, graphics::gpu::bind_group::BindGroupBuilder, GameError, GameResult};
-
 use super::{
     context::GraphicsContext,
     draw::{DrawParam, DrawUniforms, Std140DrawUniforms},
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer},
-    internal_canvas::InstanceArrayView,
-    transform_rect, Canvas, Draw, Drawable, Image, Mesh, Rect, WgpuContext,
+    transform_rect, Draw, Drawable, Image, Mesh, Rect, WgpuContext,
 };
+use crate::gpu::bind_group::BindGroupBuilder;
+use crate::InstanceArrayView;
 use crevice::std140::AsStd140;
+use ggez_error::prelude::*;
+use ggez_traits::prelude::*;
 use std::{
     collections::BTreeMap,
     sync::{

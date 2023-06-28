@@ -3,7 +3,7 @@ use super::{
     bind_group::BindGroupBuilder,
     growing::GrowingBufferArena,
 };
-use crate::graphics::{context::FrameArenas, LinearColor};
+use crate::{context::FrameArenas, LinearColor};
 use crevice::std140::AsStd140;
 use glyph_brush::{GlyphBrush, GlyphBrushBuilder};
 use ordered_float::OrderedFloat;

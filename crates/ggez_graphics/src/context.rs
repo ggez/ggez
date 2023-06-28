@@ -1,5 +1,3 @@
-use crate::FullscreenType;
-
 use super::{
     draw::DrawUniforms,
     gpu::{
@@ -15,11 +13,16 @@ use super::{
     text::FontData,
     MeshData, ScreenImage,
 };
+use crate::gpu::bind_group::BindGroupLayoutBuilder;
+use crate::gpu::pipeline::RenderPipelineInfo;
 use ::image as imgcrate;
 use crevice::std140::AsStd140;
+use ggez_conf::prelude::*;
 use ggez_error::prelude::*;
+use ggez_filesystem::prelude::*;
 use ggez_traits::prelude::*;
 use glyph_brush::FontId;
+use log::*;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
 use winit::{
@@ -389,7 +392,7 @@ impl GraphicsContext {
             white_image,
             instance_bind_layout,
 
-            fs: InternalClone::clone(filesystem),
+            fs: filesystem.clone(),
         };
 
         this.set_window_mode(&conf.window_mode)?;
@@ -406,7 +409,9 @@ impl GraphicsContext {
 
         this.add_font(
             "LiberationMono-Regular",
-            FontData::from_slice(include_bytes!("../../resources/LiberationMono-Regular.ttf"))?,
+            FontData::from_slice(include_bytes!(
+                "../../../resources/LiberationMono-Regular.ttf"
+            ))?,
         );
 
         Ok(this)

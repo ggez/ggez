@@ -1,0 +1,17 @@
+[package]
+name = "ggez_filesystem"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+zip.workspace = true
+log.workspace = true
+ggez_error = { path = "../ggez_error" }
+ggez_conf = { path = "../ggez_conf" }
+directories = "5.0"
+
+[lib]
+name = "ggez_filesystem"
+path = "src/lib.rs"

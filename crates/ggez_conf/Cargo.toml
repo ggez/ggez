@@ -1,0 +1,17 @@
+[package]
+name = "ggez_conf"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+toml.workspace = true
+serde.workspace = true
+winit.workspace = true
+smart-default.workspace = true
+ggez_error = { path = "../ggez_error" }
+
+[lib]
+name = "ggez_conf"
+path = "src/lib.rs"

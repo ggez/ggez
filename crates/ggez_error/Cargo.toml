@@ -11,7 +11,7 @@ wgpu.workspace = true
 toml.workspace = true
 glyph_brush.workspace = true
 lyon.workspace = true
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
+zip.workspace = true
 image = { version = "0.24", default-features = false, features = [
    "gif",
    "png",
@@ -28,4 +28,3 @@ name = "ggez_error"
 path = "src/lib.rs"
 
 [features]
-zip-compression = ["zip/bzip2", "zip/zstd"]

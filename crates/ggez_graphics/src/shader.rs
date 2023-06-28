@@ -2,6 +2,7 @@ use std::io::Read;
 use std::marker::PhantomData;
 
 use ggez_error::prelude::*;
+use ggez_time::prelude::*;
 use ggez_traits::prelude::*;
 
 use super::{
@@ -262,19 +263,29 @@ impl<'a, Uniforms: AsStd140> ShaderParamsBuilder<'a, Uniforms> {
     }
 
     /// Produce a [`ShaderParams`] from the builder.
-    pub fn build(self, ctx: &mut Context) -> ShaderParams<Uniforms> {
+    pub fn build<C>(self, ctx: &mut C) -> ShaderParams<Uniforms>
+    where
+        C: HasMut<GraphicsContext> + HasMut<TimeContext>,
+    {
         let images = self.images.iter().map(|image| image.view.clone()).collect();
         let samplers = self
             .samplers
             .iter()
-            .map(|&sampler| ctx.gfx.sampler_cache.get(&ctx.gfx.wgpu.device, sampler))
+            .map(|&sampler| {
+                HasMut::<GraphicsContext>::retrieve_mut(ctx)
+                    .sampler_cache
+                    .get(
+                        &HasMut::<GraphicsContext>::retrieve_mut(ctx).wgpu.device,
+                        sampler,
+                    )
+            })
             .collect();
 
         let mut params = ShaderParams {
             uniform_arena: GrowingBufferArena::new(
-                &ctx.gfx.wgpu.device,
+                &&HasMut::<GraphicsContext>::retrieve_mut(ctx).wgpu.device,
                 u64::from(
-                    ctx.gfx
+                    HasMut::<GraphicsContext>::retrieve_mut(ctx)
                         .wgpu
                         .device
                         .limits()
@@ -346,19 +357,22 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
     /// Updates the uniform data.
     ///
     /// When called, [`Canvas::set_shader_params`] (or [`Canvas::set_text_shader_params`]) **needs to be called again** for the new uniforms to take effect.
-    pub fn set_uniforms(&mut self, ctx: &mut Context, uniforms: &Uniforms) {
-        if ctx.time.ticks() != self.last_tick {
+    pub fn set_uniforms<C>(&mut self, ctx: &mut C, uniforms: &Uniforms)
+    where
+        C: HasMut<GraphicsContext> + HasMut<TimeContext>,
+    {
+        if HasMut::<TimeContext>::retrieve_mut(ctx).ticks() != self.last_tick {
             self.uniform_arena.free();
-            self.last_tick = ctx.time.ticks();
+            self.last_tick = HasMut::<TimeContext>::retrieve_mut(ctx).ticks()
         }
-        let alloc = self
-            .uniform_arena
-            .allocate(&ctx.gfx.wgpu.device, Uniforms::std140_size_static() as u64);
-        ctx.gfx.wgpu.queue.write_buffer(
-            &alloc.buffer,
-            alloc.offset,
-            uniforms.as_std140().as_bytes(),
+        let alloc = self.uniform_arena.allocate(
+            &HasMut::<GraphicsContext>::retrieve_mut(ctx).wgpu.device,
+            Uniforms::std140_size_static() as u64,
         );
+        &HasMut::<GraphicsContext>::retrieve_mut(ctx)
+            .wgpu
+            .queue
+            .write_buffer(&alloc.buffer, alloc.offset, uniforms.as_std140().as_bytes());
 
         self.buffer_offset = alloc.offset as u32;
 
@@ -386,8 +400,10 @@ impl<Uniforms: AsStd140> ShaderParams<Uniforms> {
             builder = builder.sampler(sampler, vis);
         }
 
-        let (bind_group, layout) =
-            builder.create(&ctx.gfx.wgpu.device, &mut ctx.gfx.bind_group_cache);
+        let (bind_group, layout) = builder.create(
+            &&HasMut::<GraphicsContext>::retrieve_mut(ctx).wgpu.device,
+            &mut &&HasMut::<GraphicsContext>::retrieve_mut(ctx).bind_group_cache,
+        );
         self.layout = Some(layout);
         self.bind_group = Some(bind_group);
     }

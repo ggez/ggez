@@ -1,7 +1,7 @@
 use super::{
     context::GraphicsContext,
     gpu::arc::{ArcTexture, ArcTextureView},
-    Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
+    Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
 use ggez_error::prelude::*;
 use ggez_traits::prelude::*;
