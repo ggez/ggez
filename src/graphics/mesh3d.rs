@@ -279,7 +279,7 @@ pub struct Mesh3d {
 }
 
 impl Mesh3d {
-    pub(crate) fn gen_bind_group(&mut self, canvas: &Canvas3d) {
+    pub(crate) fn gen_bind_group(&mut self, canvas: &Canvas3d, pipeline_id: usize) {
         // Allow custom one set through mesh
         let sampler = canvas
             .wgpu
@@ -291,7 +291,7 @@ impl Mesh3d {
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
                 label: None,
-                layout: &canvas.pipeline.get_bind_group_layout(0),
+                layout: &canvas.pipelines[pipeline_id].0.get_bind_group_layout(0),
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,

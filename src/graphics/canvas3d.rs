@@ -72,7 +72,7 @@ impl Default for DrawParam3d {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct DrawState3d {
     pub(crate) shader: Shader,
 }
@@ -80,8 +80,8 @@ pub(crate) struct DrawState3d {
 #[derive(Clone, Debug)]
 pub(crate) struct DrawCommand3d {
     pub(crate) mesh: Mesh3d, // Maybe take a reference instead
-    pub(crate) state: DrawState3d,
     pub(crate) param: DrawParam3d,
+    pub(crate) pipeline_id: usize,
 }
 
 /// A 3d Canvas for rendering 3d objects
@@ -91,10 +91,9 @@ pub struct Canvas3d {
     pub(crate) default_shader: Shader,
     pub(crate) default_image: graphics::Image,
     pub(crate) draws: Vec<DrawCommand3d>,
-    pub(crate) dirty_pipeline: bool,
     pub(crate) state: DrawState3d,
     pub(crate) original_state: DrawState3d,
-    pub(crate) pipeline: wgpu::RenderPipeline,
+    pub(crate) pipelines: Vec<(wgpu::RenderPipeline, DrawState3d)>,
     pub(crate) depth: graphics::ScreenImage,
     pub(crate) camera_uniform: CameraUniform,
     pub(crate) instance_buffer: wgpu::Buffer,
@@ -220,9 +219,8 @@ impl Canvas3d {
 
         let depth = graphics::ScreenImage::new(ctx, graphics::ImageFormat::Depth32Float, 1., 1., 1);
 
-        let pipeline3d = Canvas3d {
+        Canvas3d {
             depth,
-            dirty_pipeline: false,
             camera_uniform,
             camera_buffer,
             camera_bind_group,
@@ -233,71 +231,73 @@ impl Canvas3d {
                 shader: shader.clone(),
             },
             draws: Vec::default(),
-            pipeline: ctx.gfx.wgpu().device.create_render_pipeline(
-                &wgpu::RenderPipelineDescriptor {
-                    label: Some("Render Pipeline 3d"),
-                    layout: Some(&render_pipeline_layout),
-                    vertex: wgpu::VertexState {
-                        module: shader.vs_module().unwrap(), // Should never fail since it's already built
-                        entry_point: "vs_main",
-                        buffers: &[Vertex3d::desc(), Instance3d::desc()],
-                    },
-                    primitive: wgpu::PrimitiveState {
-                        topology: wgpu::PrimitiveTopology::TriangleList,
-                        strip_index_format: None,
-                        front_face: wgpu::FrontFace::Ccw,
-                        cull_mode: Some(wgpu::Face::Back),
-                        unclipped_depth: false,
-                        polygon_mode: wgpu::PolygonMode::Fill,
-                        conservative: false,
-                    },
-                    depth_stencil: Some(wgpu::DepthStencilState {
-                        format: wgpu::TextureFormat::Depth32Float,
-                        depth_write_enabled: true,
-                        depth_compare: wgpu::CompareFunction::Less,
-                        stencil: wgpu::StencilState::default(),
-                        bias: wgpu::DepthBiasState::default(),
+            pipelines: vec![(
+                ctx.gfx
+                    .wgpu()
+                    .device
+                    .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                        label: Some("Render Pipeline 3d"),
+                        layout: Some(&render_pipeline_layout),
+                        vertex: wgpu::VertexState {
+                            module: shader.vs_module().unwrap(), // Should never fail since it's already built
+                            entry_point: "vs_main",
+                            buffers: &[Vertex3d::desc(), Instance3d::desc()],
+                        },
+                        primitive: wgpu::PrimitiveState {
+                            topology: wgpu::PrimitiveTopology::TriangleList,
+                            strip_index_format: None,
+                            front_face: wgpu::FrontFace::Ccw,
+                            cull_mode: Some(wgpu::Face::Back),
+                            unclipped_depth: false,
+                            polygon_mode: wgpu::PolygonMode::Fill,
+                            conservative: false,
+                        },
+                        depth_stencil: Some(wgpu::DepthStencilState {
+                            format: wgpu::TextureFormat::Depth32Float,
+                            depth_write_enabled: true,
+                            depth_compare: wgpu::CompareFunction::Less,
+                            stencil: wgpu::StencilState::default(),
+                            bias: wgpu::DepthBiasState::default(),
+                        }),
+                        multisample: wgpu::MultisampleState {
+                            count: 1,
+                            mask: !0,
+                            alpha_to_coverage_enabled: false,
+                        },
+                        fragment: Some(wgpu::FragmentState {
+                            module: shader.fs_module().unwrap(), // Should never fail since already built
+                            entry_point: "fs_main",
+                            targets: &[Some(wgpu::ColorTargetState {
+                                format: ctx.gfx.surface_format(),
+                                blend: Some(wgpu::BlendState {
+                                    color: wgpu::BlendComponent::REPLACE,
+                                    alpha: wgpu::BlendComponent::REPLACE,
+                                }),
+                                write_mask: wgpu::ColorWrites::ALL,
+                            })],
+                        }),
+                        multiview: None,
                     }),
-                    multisample: wgpu::MultisampleState {
-                        count: 1,
-                        mask: !0,
-                        alpha_to_coverage_enabled: false,
-                    },
-                    fragment: Some(wgpu::FragmentState {
-                        module: shader.fs_module().unwrap(), // Should never fail since already built
-                        entry_point: "fs_main",
-                        targets: &[Some(wgpu::ColorTargetState {
-                            format: ctx.gfx.surface_format(),
-                            blend: Some(wgpu::BlendState {
-                                color: wgpu::BlendComponent::REPLACE,
-                                alpha: wgpu::BlendComponent::REPLACE,
-                            }),
-                            write_mask: wgpu::ColorWrites::ALL,
-                        })],
-                    }),
-                    multiview: None,
+                DrawState3d {
+                    shader: shader.clone(),
                 },
-            ),
+            )],
             instance_buffer,
             target,
             wgpu: ctx.gfx.wgpu.clone(),
             default_shader: shader,
             default_image: graphics::Image::from_color(ctx, 1, 1, Some(Color::WHITE)),
-        };
-
-        pipeline3d
+        }
     }
 
     /// Set the `Shader` back to the default shader
     pub fn set_default_shader(&mut self) {
         self.state.shader = self.default_shader.clone();
-        self.dirty_pipeline = true;
     }
 
     /// Set a custom `Shader`
     pub fn set_shader(&mut self, shader: Shader) {
         self.state.shader = shader;
-        self.dirty_pipeline = true;
     }
 
     pub(crate) fn update_pipeline(&mut self, ctx: &mut Context) {
@@ -353,7 +353,7 @@ impl Canvas3d {
                     push_constant_ranges: &[],
                 });
 
-        self.pipeline =
+        self.pipelines.push((
             ctx.gfx
                 .wgpu()
                 .device
@@ -361,7 +361,7 @@ impl Canvas3d {
                     label: Some("Render Pipeline"),
                     layout: Some(&render_pipeline_layout),
                     vertex: wgpu::VertexState {
-                        module: self.state.shader.vs_module().as_ref().unwrap_or(
+                        module: self.state.shader.vs_module().clone().as_ref().unwrap_or(
                             self.original_state.shader.vs_module().as_ref().unwrap_or(
                                 self.original_state.shader.vs_module().as_ref().unwrap(),
                             ), // Should always exist
@@ -394,6 +394,7 @@ impl Canvas3d {
                         module: self
                             .state
                             .shader
+                            .clone()
                             .fs_module()
                             .as_ref()
                             .unwrap_or(self.original_state.shader.fs_module().as_ref().unwrap()), // Should always exist since we use original
@@ -408,15 +409,13 @@ impl Canvas3d {
                         })],
                     }),
                     multiview: None,
-                });
+                }),
+            self.state.clone(),
+        ));
     }
 
     /// Finish rendering this `Canvas3d`
     pub fn finish(&mut self, ctx: &mut Context, clear_color: Color) -> GameResult {
-        if self.dirty_pipeline {
-            self.update_pipeline(ctx);
-        }
-
         self.update_instance_data(ctx);
 
         let draws: Vec<DrawCommand3d> = self.draws.drain(..).collect();
@@ -450,12 +449,7 @@ impl Canvas3d {
                     });
             for (i, draw) in draws.iter().enumerate() {
                 let i = i as u32;
-                if draw.state.shader != self.state.shader {
-                    // self.set_shader(draw.state.shader.clone());
-                    // self.update_pipeline(ctx);
-                }
-
-                pass.set_pipeline(&self.pipeline);
+                pass.set_pipeline(&self.pipelines[draw.pipeline_id].0);
                 pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
                 pass.set_bind_group(
                     0,
@@ -487,7 +481,6 @@ impl Canvas3d {
                 );
                 pass.draw_indexed(0..draw.mesh.indices.len() as u32, 0, i..i + 1);
             }
-            std::mem::drop(pass);
         }
         self.draws.clear();
         Ok(())
@@ -509,13 +502,26 @@ impl Canvas3d {
     }
 
     /// Draw the given `Mesh3d` to the `Canvas3d`
-    pub fn draw(&mut self, mesh: Mesh3d, param: DrawParam3d) {
+    pub fn draw(&mut self, ctx: &mut Context, mesh: Mesh3d, param: DrawParam3d) {
+        // This is pretty 'hacky' but I didn't have any better ideas that wouldn't require users to mess with lifetimes
+        let mut id = 0;
+        let states: Vec<DrawState3d> = self.pipelines.iter().map(|x| x.1.clone()).collect();
+        for (i, state) in states.iter().enumerate() {
+            if state.shader == self.state.shader {
+                id = i;
+            }
+
+            if i == self.pipelines.len() - 1 {
+                id = i + 1;
+                self.update_pipeline(ctx);
+            }
+        }
         let mut mesh = mesh;
-        mesh.gen_bind_group(self);
+        mesh.gen_bind_group(self, id);
         self.draws.push(DrawCommand3d {
             mesh,
-            state: self.state.clone(),
             param,
+            pipeline_id: id,
         });
     }
 

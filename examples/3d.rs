@@ -13,7 +13,6 @@ use ggez::{
 struct MainState {
     camera: Camera3dBundle,
     meshes: Vec<(Mesh3d, Vec3, Vec3)>,
-    default_shader: bool,
     custom_shader: Shader,
 }
 
@@ -111,7 +110,6 @@ impl MainState {
                 (mesh, Vec3::new(10.0, 1.0, 1.0), Vec3::new(0.0, 0.0, 0.0)),
                 (mesh_two, Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.0, 0.0, 0.0)),
             ],
-            default_shader: true,
             custom_shader: graphics::ShaderBuilder::from_path("/fancy.wgsl")
                 .build(&ctx.gfx)
                 .unwrap(),
@@ -131,9 +129,6 @@ impl event::EventHandler for MainState {
         }
         if k_ctx.is_key_pressed(KeyCode::E) {
             self.meshes[1].1 -= 0.1;
-        }
-        if k_ctx.is_key_just_pressed(KeyCode::K) {
-            self.default_shader = !self.default_shader;
         }
         if k_ctx.is_key_pressed(KeyCode::Space) {
             self.camera.camera.position.y += 1.0;
@@ -170,13 +165,14 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas3d = Canvas3d::from_frame(ctx, &mut self.camera);
-        if self.default_shader {
-            canvas3d.set_default_shader();
-        } else {
-            canvas3d.set_shader(self.custom_shader.clone());
-        }
-        for mesh in self.meshes.iter() {
+        for (i, mesh) in self.meshes.iter().enumerate() {
+            if i == 0 {
+                canvas3d.set_default_shader();
+            } else {
+                canvas3d.set_shader(self.custom_shader.clone());
+            }
             canvas3d.draw(
+                ctx,
                 mesh.0.clone(),
                 DrawParam3d::default()
                     .scale(mesh.1)
