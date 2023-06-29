@@ -164,7 +164,7 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas3d = Canvas3d::from_frame(ctx, &mut self.camera);
+        let mut canvas3d = Canvas3d::from_frame(ctx, &mut self.camera, Color::BLACK);
         for (i, mesh) in self.meshes.iter().enumerate() {
             if i == 0 {
                 canvas3d.set_default_shader();
@@ -179,7 +179,7 @@ impl event::EventHandler for MainState {
                     .color(Color::new(0.5, 0.0, 0.0, 0.5)),
             );
         }
-        canvas3d.finish(ctx, Color::BLACK)?;
+        canvas3d.finish(ctx)?;
         let mut canvas = graphics::Canvas::from_frame(ctx, None);
 
         // Do ggez drawing

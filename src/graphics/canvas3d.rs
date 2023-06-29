@@ -94,19 +94,20 @@ pub struct Canvas3d {
     pub(crate) state: DrawState3d,
     pub(crate) original_state: DrawState3d,
     pub(crate) pipelines: Vec<(wgpu::RenderPipeline, DrawState3d)>,
-    pub(crate) depth: graphics::ScreenImage,
+    pub(crate) depth: graphics::Image,
     pub(crate) camera_uniform: CameraUniform,
     pub(crate) instance_buffer: wgpu::Buffer,
     pub(crate) camera_buffer: wgpu::Buffer,
     pub(crate) camera_bind_group: wgpu::BindGroup,
     pub(crate) target: graphics::Image,
+    pub(crate) clear_color: graphics::Color,
     pub(crate) curr_sampler: graphics::Sampler,
 }
 
 impl Canvas3d {
     /// Create a `Canvas3d` from a frame. This will fill the whole window
-    pub fn from_frame(ctx: &mut Context, camera: &mut Camera3dBundle) -> Self {
-        Self::new(ctx, camera, ctx.gfx.frame().clone())
+    pub fn from_frame(ctx: &mut Context, camera: &mut Camera3dBundle, clear_color: Color) -> Self {
+        Self::new(ctx, camera, ctx.gfx.frame().clone(), clear_color)
     }
 
     /// Createa a `Canvas3d` from an image to render to
@@ -114,14 +115,16 @@ impl Canvas3d {
         ctx: &mut Context,
         camera: &mut Camera3dBundle,
         image: graphics::Image,
+        clear_color: Color,
     ) -> Self {
-        Self::new(ctx, camera, image)
+        Self::new(ctx, camera, image, clear_color)
     }
 
     pub(crate) fn new(
         ctx: &mut Context,
         camera: &mut Camera3dBundle,
         target: graphics::Image,
+        clear_color: Color,
     ) -> Self {
         let cube_code = include_str!("shader/draw3d.wgsl");
         let shader = graphics::ShaderBuilder::from_code(cube_code)
@@ -218,9 +221,16 @@ impl Canvas3d {
                     push_constant_ranges: &[],
                 });
 
-        let depth = graphics::ScreenImage::new(ctx, graphics::ImageFormat::Depth32Float, 1., 1., 1);
+        let depth = graphics::Image::new_canvas_image(
+            ctx,
+            graphics::ImageFormat::Depth32Float,
+            target.width(),
+            target.height(),
+            1,
+        );
 
         Canvas3d {
+            clear_color,
             curr_sampler: graphics::Sampler::default(),
             depth,
             camera_uniform,
@@ -417,13 +427,12 @@ impl Canvas3d {
     }
 
     /// Finish rendering this `Canvas3d`
-    pub fn finish(&mut self, ctx: &mut Context, clear_color: Color) -> GameResult {
+    pub fn finish(&mut self, ctx: &mut Context) -> GameResult {
         self.update_instance_data(ctx);
 
         let draws: Vec<DrawCommand3d> = self.draws.drain(..).collect();
 
         {
-            let depth = self.depth.image(ctx);
             let mut pass =
                 ctx.gfx
                     .commands()
@@ -435,13 +444,13 @@ impl Canvas3d {
                             resolve_target: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Clear(
-                                    graphics::LinearColor::from(clear_color).into(),
+                                    graphics::LinearColor::from(self.clear_color).into(),
                                 ),
                                 store: true,
                             },
                         })],
                         depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                            view: depth.wgpu().1,
+                            view: self.depth.wgpu().1,
                             depth_ops: Some(wgpu::Operations {
                                 load: wgpu::LoadOp::Clear(1.0),
                                 store: true,
