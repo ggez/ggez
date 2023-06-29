@@ -146,9 +146,9 @@ impl Vertex3d {
 
     pub(crate) fn desc() -> wgpu::VertexBufferLayout<'static> {
         const ATTRIBS: [wgpu::VertexAttribute; 3] = vertex_attr_array![
-            5 => Float32x3,
-            6 => Float32x2,
-            7 => Float32x4,
+            0 => Float32x3,
+            1 => Float32x2,
+            2 => Float32x4,
         ];
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex3d>() as _,
