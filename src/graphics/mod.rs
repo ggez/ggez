@@ -21,9 +21,12 @@
 //! [custom shader]:Canvas::set_shader
 //! [blend mode]:Canvas::set_blend_mode
 
+#[cfg(feature = "3d")]
 pub(crate) mod camera3d;
-pub(crate) mod canvas;
+#[cfg(feature = "3d")]
 pub(crate) mod canvas3d;
+
+pub(crate) mod canvas;
 /// Module for the graphics context dealing with wgpu
 pub mod context;
 pub(crate) mod draw;
@@ -32,6 +35,7 @@ pub(crate) mod image;
 pub(crate) mod instance;
 pub(crate) mod internal_canvas;
 pub(crate) mod mesh;
+#[cfg(feature = "3d")]
 pub(crate) mod mesh3d;
 pub(crate) mod sampler;
 pub(crate) mod shader;
@@ -40,9 +44,12 @@ mod types;
 
 pub use lyon::tessellation::{FillOptions, FillRule, LineCap, LineJoin, StrokeOptions};
 pub use {
-    self::image::*, camera3d::*, canvas::*, canvas3d::*, context::*, draw::*, instance::*, mesh::*,
-    mesh3d::*, sampler::*, shader::*, text::*, types::*,
+    self::image::*, canvas::*, context::*, draw::*, instance::*, mesh::*, sampler::*, shader::*,
+    text::*, types::*,
 };
+
+#[cfg(feature = "3d")]
+pub use {camera3d::*, canvas3d::*, mesh3d::*};
 
 /// Applies `DrawParam` to `Rect`.
 #[must_use]
