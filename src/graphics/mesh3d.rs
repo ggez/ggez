@@ -4,8 +4,8 @@ use crate::{
 };
 use glam::{Mat4, Vec3};
 use mint::{Vector2, Vector3};
-use std::sync::Arc;
-use wgpu::util::DeviceExt;
+use std::{mem, sync::Arc};
+use wgpu::{util::DeviceExt, vertex_attr_array};
 
 // Implementation tooken from bevy
 /// An aabb stands for axis aligned bounding box. This is basically a cube that can't rotate.
@@ -77,39 +77,17 @@ impl Default for Instance3d {
 
 impl Instance3d {
     pub(crate) fn desc() -> wgpu::VertexBufferLayout<'static> {
-        use std::mem;
+        const ATTRIBS: [wgpu::VertexAttribute; 5] = vertex_attr_array![
+            5 => Float32x4,
+            6 => Float32x4,
+            7 => Float32x4,
+            8 => Float32x4,
+            9 => Float32x4
+        ];
         wgpu::VertexBufferLayout {
             array_stride: mem::size_of::<Instance3d>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 5,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                // A mat4 takes up 4 vertex slots as it is technically 4 vec4s. We need to define a slot
-                // for each vec4. We don't have to do this in code though.
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
-                    shader_location: 6,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
-                    shader_location: 7,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
-                    shader_location: 8,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 16]>() as wgpu::BufferAddress,
-                    shader_location: 9,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-            ],
+            attributes: &ATTRIBS,
         }
     }
     pub(crate) fn from_param<V>(param: &DrawParam3d, center: V) -> Self
@@ -126,12 +104,7 @@ impl Instance3d {
                 );
 
         Self {
-            transform: [
-                transform.x_axis.into(),
-                transform.y_axis.into(),
-                transform.z_axis.into(),
-                transform.w_axis.into(),
-            ],
+            transform: transform.to_cols_array_2d(),
             color: param.color.into(),
         }
     }
@@ -172,29 +145,15 @@ impl Vertex3d {
     }
 
     pub(crate) fn desc() -> wgpu::VertexBufferLayout<'static> {
+        const ATTRIBS: [wgpu::VertexAttribute; 3] = vertex_attr_array![
+            5 => Float32x3,
+            6 => Float32x2,
+            7 => Float32x4,
+        ];
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex3d>() as _,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                // pos
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x3,
-                    offset: 0,
-                    shader_location: 0,
-                },
-                // tex_coord
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x2,
-                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                    shader_location: 1,
-                },
-                //color
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x4,
-                    offset: std::mem::size_of::<[f32; 5]>() as wgpu::BufferAddress,
-                    shader_location: 2,
-                },
-            ],
+            attributes: &ATTRIBS,
         }
     }
 }
