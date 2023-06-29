@@ -238,12 +238,14 @@ pub struct Mesh3d {
 }
 
 impl Mesh3d {
-    pub(crate) fn gen_bind_group(&mut self, canvas: &Canvas3d, pipeline_id: usize) {
+    pub(crate) fn gen_bind_group(
+        &mut self,
+        canvas: &Canvas3d,
+        pipeline_id: usize,
+        sampler: graphics::Sampler,
+    ) {
         // Allow custom one set through mesh
-        let sampler = canvas
-            .wgpu
-            .device
-            .create_sampler(&graphics::Sampler::default().into());
+        let sampler = canvas.wgpu.device.create_sampler(&sampler.into());
 
         let bind_group = canvas
             .wgpu

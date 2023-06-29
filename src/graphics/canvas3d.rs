@@ -100,6 +100,7 @@ pub struct Canvas3d {
     pub(crate) camera_buffer: wgpu::Buffer,
     pub(crate) camera_bind_group: wgpu::BindGroup,
     pub(crate) target: graphics::Image,
+    pub(crate) curr_sampler: graphics::Sampler,
 }
 
 impl Canvas3d {
@@ -220,6 +221,7 @@ impl Canvas3d {
         let depth = graphics::ScreenImage::new(ctx, graphics::ImageFormat::Depth32Float, 1., 1., 1);
 
         Canvas3d {
+            curr_sampler: graphics::Sampler::default(),
             depth,
             camera_uniform,
             camera_buffer,
@@ -517,7 +519,7 @@ impl Canvas3d {
             }
         }
         let mut mesh = mesh;
-        mesh.gen_bind_group(self, id);
+        mesh.gen_bind_group(self, id, self.curr_sampler);
         self.draws.push(DrawCommand3d {
             mesh,
             param,
@@ -550,5 +552,15 @@ impl Canvas3d {
             0,
             bytemuck::cast_slice(&[self.camera_uniform]),
         );
+    }
+
+    /// Set the sampler used for textures
+    pub fn set_sampler(&mut self, sampler: graphics::Sampler) {
+        self.curr_sampler = sampler;
+    }
+
+    /// Set the sampler back to the default for textures
+    pub fn set_default_sampler(&mut self) {
+        self.curr_sampler = graphics::Sampler::default();
     }
 }
