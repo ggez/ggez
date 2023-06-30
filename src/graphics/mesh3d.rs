@@ -71,7 +71,7 @@ pub(crate) struct Instance3d {
 
 impl Default for Instance3d {
     fn default() -> Self {
-        Self::from_param(&DrawParam3d::default(), Vec3::ZERO, false)
+        Self::from_param(&DrawParam3d::default(), Vec3::ZERO)
     }
 }
 
@@ -90,21 +90,21 @@ impl Instance3d {
             attributes: &ATTRIBS,
         }
     }
-    pub(crate) fn from_param<V>(param: &DrawParam3d, center: V, custom_pivot: bool) -> Self
+    pub(crate) fn from_param<V>(param: &DrawParam3d, center: V) -> Self
     where
         V: Into<mint::Vector3<f32>>,
     {
-        let mut pivot: mint::Vector3<f32> = center.into();
-        if !custom_pivot {
-            pivot = (Vec3::from(param.transform.position) + Vec3::from(pivot)).into();
-        }
-        let transform =
-            Mat4::from_translation(Vec3::from(param.transform.position) + Vec3::from(pivot))
-                * Mat4::from_scale(param.transform.scale.into())
-                * Mat4::from_quat(param.transform.rotation.into())
-                * Mat4::from_translation(
-                    (Vec3::from(param.transform.position) + Vec3::from(pivot)) * -1.0,
-                );
+        let offset: mint::Vector3<f32> = center.into();
+        let pivot = if let Some(piv) = param.pivot {
+            Vec3::from(piv) + Vec3::from(offset)
+        } else {
+            Vec3::from(param.transform.position) + Vec3::from(offset)
+        };
+        let transform = Mat4::from_translation(pivot)
+            * Mat4::from_scale(param.transform.scale.into())
+            * Mat4::from_quat(param.transform.rotation.into())
+            * Mat4::from_translation(-(pivot))
+            * Mat4::from_translation(Vec3::from(param.transform.position));
 
         Self {
             transform: transform.to_cols_array_2d(),

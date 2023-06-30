@@ -17,8 +17,10 @@ pub struct DrawParam3d {
     pub transform: Transform3d,
     /// The alpha component is used for intensity of blending instead of actual alpha
     pub color: Color,
-    /// Pivot point for the mesh rotation and scaling
+    /// Pivot point for the mesh rotation and scaling in world space
     pub pivot: Option<mint::Vector3<f32>>,
+    /// Pivot point for the mesh rotation and scaling relative to the position of the mesh
+    pub offset: Option<mint::Vector3<f32>>,
 }
 
 impl DrawParam3d {
@@ -52,6 +54,16 @@ impl DrawParam3d {
         self
     }
 
+    /// Change the offset of the `DrawParam3d`
+    pub fn offset<O>(mut self, offset_: O) -> Self
+    where
+        O: Into<mint::Vector3<f32>>,
+    {
+        let o: mint::Vector3<f32> = offset_.into();
+        self.offset = Some(o);
+        self
+    }
+
     /// Change the rotation of the `DrawParam3d`
     pub fn rotation<R>(mut self, rotation_: R) -> Self
     where
@@ -81,6 +93,7 @@ impl Default for DrawParam3d {
             transform: Transform3d::default(),
             color: Color::new(1.0, 1.0, 1.0, 0.0),
             pivot: None,
+            offset: None,
         }
     }
 }
@@ -505,13 +518,12 @@ impl Canvas3d {
             .draws
             .iter()
             .map(|x| {
-                if let Some(pivot) = x.param.pivot {
-                    Instance3d::from_param(&x.param, pivot, true)
+                if let Some(offset) = x.param.offset {
+                    Instance3d::from_param(&x.param, offset)
                 } else {
                     Instance3d::from_param(
                         &x.param,
                         x.mesh.to_aabb().unwrap_or(Aabb::default()).center,
-                        false,
                     )
                 }
             })
