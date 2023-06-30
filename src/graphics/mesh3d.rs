@@ -71,7 +71,7 @@ pub(crate) struct Instance3d {
 
 impl Default for Instance3d {
     fn default() -> Self {
-        Self::from_param(&DrawParam3d::default(), Vec3::ZERO)
+        Self::from_param(&DrawParam3d::default(), Vec3::ZERO, false)
     }
 }
 
@@ -90,11 +90,14 @@ impl Instance3d {
             attributes: &ATTRIBS,
         }
     }
-    pub(crate) fn from_param<V>(param: &DrawParam3d, center: V) -> Self
+    pub(crate) fn from_param<V>(param: &DrawParam3d, center: V, custom_pivot: bool) -> Self
     where
         V: Into<mint::Vector3<f32>>,
     {
-        let pivot: mint::Vector3<f32> = center.into();
+        let mut pivot: mint::Vector3<f32> = center.into();
+        if !custom_pivot {
+            pivot = (Vec3::from(param.transform.position) + Vec3::from(pivot)).into();
+        }
         let transform =
             Mat4::from_translation(Vec3::from(param.transform.position) + Vec3::from(pivot))
                 * Mat4::from_scale(param.transform.scale.into())

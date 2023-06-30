@@ -17,6 +17,8 @@ pub struct DrawParam3d {
     pub transform: Transform3d,
     /// The alpha component is used for intensity of blending instead of actual alpha
     pub color: Color,
+    /// Pivot point for the mesh rotation and scaling
+    pub pivot: Option<mint::Vector3<f32>>,
 }
 
 impl DrawParam3d {
@@ -68,6 +70,7 @@ impl Default for DrawParam3d {
         Self {
             transform: Transform3d::default(),
             color: Color::new(1.0, 1.0, 1.0, 0.0),
+            pivot: None,
         }
     }
 }
@@ -492,7 +495,15 @@ impl Canvas3d {
             .draws
             .iter()
             .map(|x| {
-                Instance3d::from_param(&x.param, x.mesh.to_aabb().unwrap_or(Aabb::default()).center)
+                if let Some(pivot) = x.param.pivot {
+                    Instance3d::from_param(&x.param, pivot, true)
+                } else {
+                    Instance3d::from_param(
+                        &x.param,
+                        x.mesh.to_aabb().unwrap_or(Aabb::default()).center,
+                        false,
+                    )
+                }
             })
             .collect::<Vec<_>>();
         self.instance_buffer = Some(ctx.gfx.wgpu().device.create_buffer_init(
