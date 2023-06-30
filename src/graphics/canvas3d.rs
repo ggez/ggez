@@ -42,6 +42,16 @@ impl DrawParam3d {
         self
     }
 
+    /// Change the pivot of the `DrawParam3d`
+    pub fn pivot<P>(mut self, pivot_: P) -> Self
+    where
+        P: Into<mint::Vector3<f32>>,
+    {
+        let p: mint::Vector3<f32> = pivot_.into();
+        self.pivot = Some(p);
+        self
+    }
+
     /// Change the rotation of the `DrawParam3d`
     pub fn rotation<R>(mut self, rotation_: R) -> Self
     where
