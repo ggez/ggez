@@ -96,7 +96,7 @@ pub struct Canvas3d {
     pub(crate) pipelines: Vec<(wgpu::RenderPipeline, DrawState3d)>,
     pub(crate) depth: graphics::Image,
     pub(crate) camera_uniform: CameraUniform,
-    pub(crate) instance_buffer: wgpu::Buffer,
+    pub(crate) instance_buffer: Option<wgpu::Buffer>,
     pub(crate) camera_buffer: wgpu::Buffer,
     pub(crate) camera_bind_group: wgpu::BindGroup,
     pub(crate) target: graphics::Image,
@@ -143,16 +143,6 @@ impl Canvas3d {
                     label: Some("Camera Buffer"),
                     contents: bytemuck::cast_slice(&[camera_uniform]),
                     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                });
-
-        let instance_buffer =
-            ctx.gfx
-                .wgpu()
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Instance Buffer"),
-                    contents: bytemuck::cast_slice(&[Instance3d::default(), Instance3d::default()]),
-                    usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 });
 
         let camera_bind_group_layout =
@@ -294,7 +284,7 @@ impl Canvas3d {
                     shader: shader.clone(),
                 },
             )],
-            instance_buffer,
+            instance_buffer: None,
             target,
             wgpu: ctx.gfx.wgpu.clone(),
             default_shader: shader,
@@ -461,7 +451,7 @@ impl Canvas3d {
             for (i, draw) in draws.iter().enumerate() {
                 let i = i as u32;
                 pass.set_pipeline(&self.pipelines[draw.pipeline_id].0);
-                pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+                pass.set_vertex_buffer(1, self.instance_buffer.as_ref().unwrap().slice(..)); // Will always exist because of update_instance_data
                 pass.set_bind_group(
                     0,
                     draw.mesh.bind_group.as_ref().ok_or(GameError::CustomError(
@@ -505,11 +495,13 @@ impl Canvas3d {
                 Instance3d::from_param(&x.param, x.mesh.to_aabb().unwrap_or(Aabb::default()).center)
             })
             .collect::<Vec<_>>();
-        ctx.gfx.wgpu().queue.write_buffer(
-            &self.instance_buffer,
-            0,
-            bytemuck::cast_slice(&instance_data),
-        );
+        self.instance_buffer = Some(ctx.gfx.wgpu().device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Instance Buffer"),
+                contents: bytemuck::cast_slice(&instance_data),
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            },
+        ));
     }
 
     /// Draw the given `Mesh3d` to the `Canvas3d`
