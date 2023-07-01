@@ -207,6 +207,147 @@ impl Mesh3dBuilder {
         self
     }
 
+    /// Create a cube mesh from `Vector3<f32>` size
+    pub fn cube(&mut self, size: impl Into<mint::Vector3<f32>>) -> &mut Self {
+        let size: mint::Vector3<f32> = size.into();
+        let min = -glam::Vec3::from(size) / 2.0;
+        let max = glam::Vec3::from(size) / 2.0;
+        self.vertices = vec![
+            // top (0, 0, 1)
+            Vertex3d::new([min.x, max.y, max.z], [0.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([max.x, max.y, max.z], [1.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([max.x, max.y, min.z], [1.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new([min.x, max.y, min.z], [0.0, 0.0], graphics::Color::WHITE),
+            // bottom (0.0, 0.0, -1.0, graphics::Color::WHITE)
+            Vertex3d::new([min.x, min.y, min.z], [1.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([max.x, min.y, min.z], [0.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([max.x, min.y, max.z], [0.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new([min.x, min.y, max.z], [1.0, 0.0], graphics::Color::WHITE),
+            // right (1.0, 0.0, 0.0, graphics::Color::WHITE)
+            Vertex3d::new([max.x, max.y, min.z], [0.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([max.x, max.y, max.z], [1.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([max.x, min.y, max.z], [1.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new([max.x, min.y, min.z], [0.0, 0.0], graphics::Color::WHITE),
+            // left (-1.0, 0.0, 0.0, graphics::Color::WHITE)
+            Vertex3d::new([min.x, min.y, min.z], [1.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([min.x, min.y, max.z], [0.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([min.x, max.y, max.y], [0.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new([min.x, max.y, min.z], [1.0, 0.0], graphics::Color::WHITE),
+            // front (0.0, 1.0, 0.0, graphics::Color::WHITE)
+            Vertex3d::new([max.x, max.y, max.z], [1.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([min.x, max.y, max.z], [0.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([min.x, min.y, max.z], [0.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new([max.x, min.y, max.z], [1.0, 0.0], graphics::Color::WHITE),
+            // back (0.0, -1.0, 0.0, graphics::Color::WHITE)
+            Vertex3d::new([max.x, min.y, min.z], [0.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([min.x, min.y, min.z], [1.0, 1.0], graphics::Color::WHITE),
+            Vertex3d::new([min.x, max.y, min.z], [1.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new([max.x, max.y, min.z], [0.0, 0.0], graphics::Color::WHITE),
+        ];
+
+        self.indices = vec![
+            0, 1, 2, 2, 3, 0, // top
+            4, 5, 6, 6, 7, 4, // bottom
+            8, 9, 10, 10, 11, 8, // right
+            12, 13, 14, 14, 15, 12, // left
+            16, 17, 18, 18, 19, 16, // front
+            20, 21, 22, 22, 23, 20, // back
+        ];
+
+        self
+    }
+    /// Creat a pyramid from a base_size and a height
+    pub fn pyramid(
+        &mut self,
+        base_size: impl Into<mint::Vector2<f32>>,
+        height: f32,
+        invert: bool,
+    ) -> &mut Self {
+        let base_size: mint::Vector2<f32> = base_size.into();
+        let min = -glam::Vec2::from(base_size) / 2.0;
+        let max = glam::Vec2::from(base_size) / 2.0;
+        if invert {
+            self.vertices = vec![
+                // Base
+                Vertex3d::new([min.x, 0.0, max.y], [0.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, min.y], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+                // Side 1
+                Vertex3d::new([max.x, 0.0, min.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+                // Side 2
+                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+                // Side 3
+                Vertex3d::new([min.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, max.y], [0.0, 0.0], graphics::Color::WHITE),
+                // Side 4
+                Vertex3d::new([min.x, 0.0, min.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([min.x, 0.0, max.y], [0.0, 0.0], graphics::Color::WHITE),
+            ];
+        } else {
+            self.vertices = vec![
+                // Base
+                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, min.y], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new([min.x, 0.0, max.y], [0.0, 1.0], graphics::Color::WHITE),
+                // Side 1
+                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, min.y], [1.0, 1.0], graphics::Color::WHITE),
+                // Side 2
+                Vertex3d::new([max.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
+                // Side 3
+                Vertex3d::new([max.x, 0.0, max.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([min.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
+                // Side 4
+                Vertex3d::new([min.x, 0.0, max.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([min.x, 0.0, min.y], [1.0, 1.0], graphics::Color::WHITE),
+            ];
+        }
+        self.indices = vec![0, 1, 2, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+        self
+    }
+    /// Create a plane mesh from `Vector2<f32>` size
+    pub fn plane(&mut self, size: impl Into<mint::Vector2<f32>>, invert: bool) -> &mut Self {
+        let size: mint::Vector2<f32> = size.into();
+        let min = -glam::Vec2::from(size) / 2.0;
+        let max = glam::Vec2::from(size) / 2.0;
+        if invert {
+            self.vertices = vec![
+                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, min.y], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new([min.x, 0.0, max.y], [0.0, 1.0], graphics::Color::WHITE),
+            ];
+        } else {
+            self.vertices = vec![
+                Vertex3d::new([min.x, 0.0, max.y], [0.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new([max.x, 0.0, min.y], [1.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+            ];
+        }
+        self.indices = vec![0, 1, 2, 0, 2, 3];
+
+        self
+    }
+    /// Set texture of the mesh
+    pub fn texture(&mut self, texture: Image) -> &mut Self {
+        self.texture = Some(texture);
+        self
+    }
+
     /// Make a `Mesh3d` from this builder
     pub fn build(&self, ctx: &mut Context) -> Mesh3d {
         let verts = ctx
@@ -440,7 +581,7 @@ impl<I: FromPrimitive> obj::FromRawVertex<I> for Vertex3d {
 #[derive(Debug, Default)]
 pub struct Model {
     /// The center of the model
-    pub center: Option<Vec3>,
+    pub center: Option<mint::Vector3<f32>>,
     /// The `Transform3d` of the model
     pub transform: Transform3d,
     /// The meshes that make up the model
@@ -448,6 +589,16 @@ pub struct Model {
 }
 
 impl Model {
+    /// Create a model from a mesh
+    pub fn from_mesh(mesh: Mesh3d) -> Self {
+        let mut model = Model {
+            meshes: vec![mesh],
+            center: None,
+            transform: Transform3d::default(),
+        };
+        model.center = Some(model.to_aabb().unwrap_or_default().center);
+        model
+    }
     /// Load gltf or obj depending on extension type
     #[cfg(all(feature = "obj", feature = "gltf"))]
     pub fn from_path(
@@ -495,7 +646,7 @@ impl Model {
                     meshes: vec![mesh],
                 };
 
-                model.center = Some(model.to_aabb().unwrap_or_default().center.into());
+                model.center = Some(model.to_aabb().unwrap_or_default().center);
                 Ok(model)
             }
             Err(f) => Err(GameError::CustomError(f.to_string())),
@@ -641,7 +792,7 @@ impl Model {
                 meshes,
             };
 
-            model.center = Some(model.to_aabb().unwrap_or_default().center.into());
+            model.center = Some(model.to_aabb().unwrap_or_default().center);
             return Ok(model);
         }
         Err(GameError::CustomError(

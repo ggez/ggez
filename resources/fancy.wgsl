@@ -57,7 +57,7 @@ var s_sampler: sampler;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var tex = textureSample(t_color, s_sampler, in.tex_coord);
-    let tex_col = mix(mix(tex, vec4<f32>(in.color.xyz, 1.0), in.color.w), vec4<f32>(in.vertex_color.xyz, 1.0), in.vertex_color.w);
+    let tex_col = mix(tex, vec4<f32>(in.color.xyz, 1.0), in.color.w) * in.vertex_color;
     var blend = dot(in.tex_coord - vec2<f32>(0.5, 0.5), in.tex_coord - vec2<f32>(0.5, 0.5));
     return mix(tex_col, vec4<f32>(0.0, 0.0, 0.0, 0.0), blend);
 }
