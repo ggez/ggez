@@ -24,7 +24,7 @@ name = "ggez"
 path = "src/lib.rs"
 
 [features]
-default = ["c_dependencies", "audio", "gamepad", "3d"]
+default = ["c_dependencies", "audio", "gamepad", "3d", "gltf"]
 zip-compression = ["zip/bzip2", "zip/zstd"]
 mp3 = ["rodio/mp3"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
@@ -32,6 +32,7 @@ c_dependencies = ["zip-compression", "mp3"]
 audio = ["rodio"]
 gamepad = ["gilrs"]
 3d = []
+gltf = ["dep:gltf", "base64", "percent-encoding", "3d"]
 
 [dependencies]
 bitflags = "2.1"
@@ -71,6 +72,9 @@ memoffset = "0.9"
 crevice = "0.13"
 typed-arena = "2.0"
 ordered-float = "3.3"
+percent-encoding = { version = "2.3.0", optional = true }
+base64 = { version = "0.21.2", optional = true }
+gltf = { version = "1.2.0", optional = true }
 
 [dev-dependencies]
 chrono = "0.4"

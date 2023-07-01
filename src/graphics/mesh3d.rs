@@ -2,6 +2,16 @@ use crate::{
     graphics::{self, Canvas3d, DrawParam3d, Image},
     Context,
 };
+
+#[cfg(feature = "gltf")]
+use crate::{GameError, GameResult};
+#[cfg(feature = "gltf")]
+use base64::Engine;
+#[cfg(feature = "gltf")]
+use image::EncodableLayout;
+#[cfg(feature = "gltf")]
+use std::path::Path;
+
 use glam::{Mat4, Vec3};
 use mint::{Vector2, Vector3};
 use std::{mem, sync::Arc};
@@ -284,6 +294,236 @@ impl Mesh3d {
         for p in self.vertices.iter() {
             minimum = minimum.min(Vec3::from_array(p.pos));
             maximum = maximum.max(Vec3::from_array(p.pos));
+        }
+        if minimum.x != std::f32::MAX
+            && minimum.y != std::f32::MAX
+            && minimum.z != std::f32::MAX
+            && maximum.x != std::f32::MIN
+            && maximum.y != std::f32::MIN
+            && maximum.z != std::f32::MIN
+        {
+            Some(Aabb::from_min_max(minimum, maximum))
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(feature = "gltf")]
+// This is needed to handle ascii gltf files
+struct DataUri<'a> {
+    mime_type: &'a str,
+    base64: bool,
+    data: &'a str,
+}
+
+#[cfg(feature = "gltf")]
+fn split_once(input: &str, delimiter: char) -> Option<(&str, &str)> {
+    let mut iter = input.splitn(2, delimiter);
+    Some((iter.next()?, iter.next()?))
+}
+
+#[cfg(feature = "gltf")]
+impl<'a> DataUri<'a> {
+    fn parse(uri: &'a str) -> Result<DataUri<'a>, ()> {
+        let uri = uri.strip_prefix("data:").ok_or(())?;
+        let (mime_type, data) = split_once(uri, ',').ok_or(())?;
+
+        let (mime_type, base64) = match mime_type.strip_suffix(";base64") {
+            Some(mime_type) => (mime_type, true),
+            None => (mime_type, false),
+        };
+
+        Ok(DataUri {
+            mime_type,
+            base64,
+            data,
+        })
+    }
+
+    fn decode(&self) -> GameResult<Vec<u8>> {
+        if self.base64 {
+            if let Ok(vec) = base64::engine::general_purpose::STANDARD_NO_PAD.decode(self.data) {
+                Ok(vec)
+            } else {
+                Err(GameError::CustomError(
+                    "Failed to decode base64".to_string(),
+                ))
+            }
+        } else {
+            Ok(self.data.as_bytes().to_owned())
+        }
+    }
+}
+
+/// Model is an abstracted type for holding things like obj, gltf, or anything that may be made up of multiple meshes
+#[derive(Debug)]
+pub struct Model {
+    /// The center of the model
+    pub center: Option<Vec3>,
+    /// The `Transform3d` of the model
+    pub transform: Transform3d,
+    /// The meshes that make up the model
+    pub meshes: Vec<Mesh3d>,
+}
+
+impl Model {
+    /// Load gltf file.
+    #[cfg(feature = "gltf")]
+    pub fn from_gltf(ctx: &mut Context, path: impl AsRef<Path>) -> GameResult<Self> {
+        const VALID_MIME_TYPES: &[&str] = &["application/octet-stream", "application/gltf-buffer"];
+        let file = ctx.fs.open(path)?;
+        let mut meshes = Vec::default();
+        if let Ok(gltf) = gltf::Gltf::from_reader(file) {
+            let mut buffer_data = Vec::new();
+            for buffer in gltf.buffers() {
+                match buffer.source() {
+                    gltf::buffer::Source::Uri(uri) => {
+                        let uri = percent_encoding::percent_decode_str(uri)
+                            .decode_utf8()
+                            .unwrap();
+                        let uri = uri.as_ref();
+                        let buffer_bytes = match DataUri::parse(uri) {
+                            Ok(data_uri) if VALID_MIME_TYPES.contains(&data_uri.mime_type) => {
+                                data_uri.decode()?
+                            }
+                            Ok(_) => {
+                                return Err(GameError::CustomError(
+                                    "Buffer Format Unsupported".to_string(),
+                                ))
+                            }
+                            Err(()) => {
+                                return Err(GameError::CustomError("Failed to decode".to_string()))
+                            }
+                        };
+                        buffer_data.push(buffer_bytes);
+                    }
+                    gltf::buffer::Source::Bin => {
+                        if let Some(blob) = gltf.blob.as_deref() {
+                            buffer_data.push(blob.into());
+                        } else {
+                            return Err(GameError::CustomError("MissingBlob".to_string()));
+                        }
+                    }
+                }
+            }
+            for mesh in gltf.meshes() {
+                for primitive in mesh.primitives() {
+                    let reader =
+                        primitive.reader(|buffer| Some(buffer_data[buffer.index()].as_slice()));
+                    let mut image = Image::from_color(ctx, 1, 1, Some(graphics::Color::WHITE));
+                    let texture_source = &primitive
+                        .material()
+                        .pbr_metallic_roughness()
+                        .base_color_texture()
+                        .map(|tex| tex.texture().source().source());
+                    if let Some(source) = texture_source {
+                        match source {
+                            gltf::image::Source::View { view, mime_type } => {
+                                let parent_buffer_data = &buffer_data[view.buffer().index()];
+                                let data = &parent_buffer_data
+                                    [view.offset()..view.offset() + view.length()];
+                                let mime_type = mime_type.replace('/', ".");
+                                let dynamic_img = image::load_from_memory_with_format(
+                                    data,
+                                    image::ImageFormat::from_path(mime_type)
+                                        .unwrap_or(image::ImageFormat::Png),
+                                )
+                                .unwrap_or_default()
+                                .into_rgba8();
+                                image = Image::from_pixels(
+                                    ctx,
+                                    dynamic_img.as_bytes(),
+                                    wgpu::TextureFormat::Rgba8UnormSrgb,
+                                    dynamic_img.width(),
+                                    dynamic_img.height(),
+                                );
+                            }
+                            gltf::image::Source::Uri { uri, mime_type } => {
+                                let uri = percent_encoding::percent_decode_str(uri)
+                                    .decode_utf8()
+                                    .unwrap();
+                                let uri = uri.as_ref();
+                                let bytes = match DataUri::parse(uri) {
+                                    Ok(data_uri) => data_uri.decode()?,
+                                    Err(()) => {
+                                        return Err(GameError::CustomError(
+                                            "Failed to decode".to_string(),
+                                        ))
+                                    }
+                                };
+                                let dynamic_img = image::load_from_memory_with_format(
+                                    bytes.as_bytes(),
+                                    image::ImageFormat::from_path(mime_type.unwrap_or_default())
+                                        .unwrap_or(image::ImageFormat::Png),
+                                )
+                                .unwrap_or_default()
+                                .into_rgba8();
+                                image = Image::from_pixels(
+                                    ctx,
+                                    dynamic_img.as_bytes(),
+                                    wgpu::TextureFormat::Rgba8UnormSrgb,
+                                    dynamic_img.width(),
+                                    dynamic_img.height(),
+                                );
+                            }
+                        };
+                    }
+                    let mut vertices = Vec::default();
+                    if let Some(vertices_read) = reader.read_positions() {
+                        vertices = vertices_read
+                            .map(|x| {
+                                let pos = Vec3::new(x[0], x[1], x[2]);
+                                Vertex3d::new(
+                                    pos,
+                                    glam::Vec2::ZERO,
+                                    graphics::Color::new(1.0, 1.0, 1.0, 0.0),
+                                )
+                            })
+                            .collect();
+                    }
+                    if let Some(tex_coords) = reader.read_tex_coords(0).map(|v| v.into_f32()) {
+                        let mut idx = 0;
+                        tex_coords.for_each(|tex_coord| {
+                            vertices[idx].tex_coord = tex_coord;
+
+                            idx += 1;
+                        });
+                    }
+                    let mut indices = Vec::new();
+                    if let Some(indices_raw) = reader.read_indices() {
+                        indices.append(&mut indices_raw.into_u32().collect::<Vec<u32>>());
+                    }
+
+                    let mesh = Mesh3dBuilder::new()
+                        .from_data(vertices, indices, Some(image))
+                        .build(ctx);
+                    meshes.push(mesh);
+                }
+            }
+
+            let mut model = Model {
+                center: None,
+                transform: Transform3d::default(),
+                meshes,
+            };
+
+            model.center = Some(model.to_aabb().unwrap_or_default().center.into());
+            return Ok(model);
+        }
+        Err(GameError::CustomError(
+            "Failed to load gltf model".to_string(),
+        ))
+    }
+    /// Generate an aabb for this Model
+    pub fn to_aabb(&self) -> Option<Aabb> {
+        let mut minimum = Vec3::MAX;
+        let mut maximum = Vec3::MIN;
+        for mesh in self.meshes.iter() {
+            for p in mesh.vertices.iter() {
+                minimum = minimum.min(Vec3::from_array(p.pos));
+                maximum = maximum.max(Vec3::from_array(p.pos));
+            }
         }
         if minimum.x != std::f32::MAX
             && minimum.y != std::f32::MAX
