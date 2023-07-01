@@ -9,6 +9,8 @@ use crate::{GameError, GameResult};
 use base64::Engine;
 #[cfg(feature = "gltf")]
 use image::EncodableLayout;
+#[cfg(feature = "obj")]
+use num_traits::FromPrimitive;
 #[cfg(feature = "gltf")]
 use std::path::Path;
 
@@ -356,8 +358,86 @@ impl<'a> DataUri<'a> {
     }
 }
 
-/// Model is an abstracted type for holding things like obj, gltf, or anything that may be made up of multiple meshes
-#[derive(Debug)]
+#[cfg(feature = "obj")]
+impl<I: FromPrimitive> obj::FromRawVertex<I> for Vertex3d {
+    fn process(
+        vertices: Vec<(f32, f32, f32, f32)>,
+        _normals: Vec<(f32, f32, f32)>,
+        tex_coords: Vec<(f32, f32, f32)>,
+        polygons: Vec<obj::raw::object::Polygon>,
+    ) -> obj::ObjResult<(Vec<Self>, Vec<I>)> {
+        let verts = if vertices.len() == tex_coords.len() {
+            std::iter::zip(vertices, tex_coords)
+                .map(|v| {
+                    println!("{:?}", v);
+                    Vertex3d {
+                        pos: [v.0 .0, v.0 .1, v.0 .2],
+                        // tex_coord: [0.0, 0.0],
+                        tex_coord: [v.1 .0, v.1 .1],
+                        color: [1.0, 1.0, 1.0, 1.0],
+                    }
+                })
+                .collect()
+        } else {
+            vertices
+                .iter()
+                .map(|v| Vertex3d {
+                    pos: [v.0, v.1, v.2],
+                    tex_coord: [0.0, 0.0],
+                    color: [1.0, 1.0, 1.0, 1.0],
+                })
+                .collect()
+        };
+        let mut inds = Vec::with_capacity(polygons.len() * 3);
+        {
+            let mut map = |pi: usize| -> obj::ObjResult<()> {
+                inds.push(match I::from_usize(pi) {
+                    Some(val) => val,
+                    None => {
+                        return obj::ObjResult::Err(obj::ObjError::Load(obj::LoadError::new(
+                            obj::LoadErrorKind::IndexOutOfRange,
+                            "Unable to convert the index from usize",
+                        )));
+                    }
+                });
+                Ok(())
+            };
+
+            for polygon in polygons {
+                match polygon {
+                    obj::raw::object::Polygon::P(ref vec) if vec.len() == 3 => {
+                        for &pi in vec {
+                            map(pi)?
+                        }
+                    }
+                    obj::raw::object::Polygon::PT(ref vec)
+                    | obj::raw::object::Polygon::PN(ref vec)
+                        if vec.len() == 3 =>
+                    {
+                        for &(pi, _) in vec {
+                            map(pi)?
+                        }
+                    }
+                    obj::raw::object::Polygon::PTN(ref vec) if vec.len() == 3 => {
+                        for &(pi, _, _) in vec {
+                            map(pi)?
+                        }
+                    }
+                    _ => {
+                        return Err(obj::ObjError::Load(obj::LoadError::new(
+                            obj::LoadErrorKind::UntriangulatedModel,
+                            "Meshes must be triangulated",
+                        )))
+                    }
+                }
+            }
+        }
+        Ok((verts, inds))
+    }
+}
+
+/// Model is an abstracted type for holding things like obj, gltf, or anything that may be made up of multiple meshes.
+#[derive(Debug, Default)]
 pub struct Model {
     /// The center of the model
     pub center: Option<Vec3>,
@@ -368,6 +448,59 @@ pub struct Model {
 }
 
 impl Model {
+    /// Load gltf or obj depending on extension type
+    #[cfg(all(feature = "obj", feature = "gltf"))]
+    pub fn from_path(
+        ctx: &mut Context,
+        path: impl AsRef<Path>,
+        image: impl Into<Option<Image>>,
+    ) -> GameResult<Self> {
+        if let Some(extension) = path.as_ref().extension() {
+            if extension == "obj" {
+                Model::from_obj(ctx, path, image)
+            } else if extension == "gltf" || extension == "glb" {
+                Model::from_gltf(ctx, path)
+            } else {
+                Err(GameError::CustomError("Not a obj or gltf file".to_string()))
+            }
+        } else {
+            Err(GameError::CustomError(
+                "Failed to get extension".to_string(),
+            ))
+        }
+    }
+
+    /// Load obj file. Only triangulated obj's are supported. Keep in mind mtl file's currently don't affect the obj's rendering
+    #[cfg(feature = "obj")]
+    pub fn from_obj(
+        ctx: &mut Context,
+        path: impl AsRef<Path>,
+        image: impl Into<Option<Image>>,
+    ) -> GameResult<Self> {
+        let file = ctx.fs.open(path)?;
+        let buf_reader = std::io::BufReader::new(file);
+        match obj::load_obj(buf_reader) {
+            Ok(obj) => {
+                let mut img = Image::from_color(ctx, 1, 1, Some(graphics::Color::WHITE));
+                let image: Option<Image> = image.into();
+                if let Some(image) = image {
+                    img = image;
+                }
+                let mesh = Mesh3dBuilder::new()
+                    .from_data(obj.vertices, obj.indices, Some(img))
+                    .build(ctx);
+                let mut model = Model {
+                    center: None,
+                    transform: Transform3d::default(),
+                    meshes: vec![mesh],
+                };
+
+                model.center = Some(model.to_aabb().unwrap_or_default().center.into());
+                Ok(model)
+            }
+            Err(f) => Err(GameError::CustomError(f.to_string())),
+        }
+    }
     /// Load gltf file.
     #[cfg(feature = "gltf")]
     pub fn from_gltf(ctx: &mut Context, path: impl AsRef<Path>) -> GameResult<Self> {
