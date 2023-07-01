@@ -1,4 +1,5 @@
 use crate::{
+    context::HasMut,
     graphics::{self, Canvas3d, DrawParam3d, Image},
     Context,
 };
@@ -18,6 +19,8 @@ use glam::{Mat4, Vec3};
 use mint::{Vector2, Vector3};
 use std::{mem, sync::Arc};
 use wgpu::{util::DeviceExt, vertex_attr_array};
+
+use crate::graphics::{Drawable3d, GraphicsContext};
 
 // Implementation tooken from bevy
 /// An aabb stands for axis aligned bounding box. This is basically a cube that can't rotate.
@@ -49,27 +52,6 @@ impl Aabb {
         Self {
             center: center.into(),
             half_extents: half_extents.into(),
-        }
-    }
-}
-
-/// Transform3d is used to transform 3d objects.
-#[derive(Debug, Copy, Clone)]
-pub struct Transform3d {
-    /// The position or translation of this `Transform3d`
-    pub position: mint::Vector3<f32>,
-    /// The rotation of this `Transform3d`
-    pub rotation: mint::Quaternion<f32>,
-    /// The scale of this `Transform3d`
-    pub scale: mint::Vector3<f32>,
-}
-
-impl Default for Transform3d {
-    fn default() -> Self {
-        Self {
-            position: Vec3::new(0.0, 0.0, 0.0).into(),
-            rotation: glam::Quat::IDENTITY.into(),
-            scale: Vec3::new(1.0, 1.0, 1.0).into(),
         }
     }
 }
@@ -393,6 +375,17 @@ pub struct Mesh3d {
     pub indices: Vec<u32>,
 }
 
+impl Drawable3d for Mesh3d {
+    fn draw(
+        &self,
+        gfx: &mut impl HasMut<GraphicsContext>,
+        canvas: &mut Canvas3d,
+        param: impl Into<DrawParam3d>,
+    ) {
+        canvas.draw_mesh(gfx, self.clone(), param.into());
+    }
+}
+
 impl Mesh3d {
     pub(crate) fn gen_bind_group(
         &mut self,
@@ -580,24 +573,29 @@ impl<I: FromPrimitive> obj::FromRawVertex<I> for Vertex3d {
 /// Model is an abstracted type for holding things like obj, gltf, or anything that may be made up of multiple meshes.
 #[derive(Debug, Default)]
 pub struct Model {
-    /// The center of the model
-    pub center: Option<mint::Vector3<f32>>,
-    /// The `Transform3d` of the model
-    pub transform: Transform3d,
     /// The meshes that make up the model
     pub meshes: Vec<Mesh3d>,
+}
+
+impl Drawable3d for Model {
+    fn draw(
+        &self,
+        gfx: &mut impl HasMut<GraphicsContext>,
+        canvas: &mut Canvas3d,
+        param: impl Into<DrawParam3d>,
+    ) {
+        // let gfx = gfx.retrieve_mut();
+        let param = param.into();
+        for mesh in self.meshes.iter() {
+            canvas.draw_mesh(gfx, mesh.clone(), param);
+        }
+    }
 }
 
 impl Model {
     /// Create a model from a mesh
     pub fn from_mesh(mesh: Mesh3d) -> Self {
-        let mut model = Model {
-            meshes: vec![mesh],
-            center: None,
-            transform: Transform3d::default(),
-        };
-        model.center = Some(model.to_aabb().unwrap_or_default().center);
-        model
+        Model { meshes: vec![mesh] }
     }
     /// Load gltf or obj depending on extension type
     #[cfg(all(feature = "obj", feature = "gltf"))]
@@ -640,14 +638,7 @@ impl Model {
                 let mesh = Mesh3dBuilder::new()
                     .from_data(obj.vertices, obj.indices, Some(img))
                     .build(ctx);
-                let mut model = Model {
-                    center: None,
-                    transform: Transform3d::default(),
-                    meshes: vec![mesh],
-                };
-
-                model.center = Some(model.to_aabb().unwrap_or_default().center);
-                Ok(model)
+                Ok(Model { meshes: vec![mesh] })
             }
             Err(f) => Err(GameError::CustomError(f.to_string())),
         }
@@ -786,14 +777,7 @@ impl Model {
                 }
             }
 
-            let mut model = Model {
-                center: None,
-                transform: Transform3d::default(),
-                meshes,
-            };
-
-            model.center = Some(model.to_aabb().unwrap_or_default().center);
-            return Ok(model);
+            return Ok(Model { meshes });
         }
         Err(GameError::CustomError(
             "Failed to load gltf model".to_string(),

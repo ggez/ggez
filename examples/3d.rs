@@ -173,7 +173,7 @@ impl event::EventHandler for MainState {
             }
             canvas3d.draw(
                 ctx,
-                mesh.0.clone(),
+                &mesh.0,
                 DrawParam3d::default()
                     .scale(mesh.1)
                     .color(Color::new(0.5, 0.0, 0.0, 0.5)),

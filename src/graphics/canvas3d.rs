@@ -1,8 +1,9 @@
 use crate::{
+    context::HasMut,
     glam::*,
     graphics::{
-        self, Aabb, Camera3dBundle, CameraUniform, Color, Instance3d, Mesh3d, Shader, Transform3d,
-        Vertex3d, WgpuContext,
+        self, Aabb, Camera3dBundle, CameraUniform, Color, DrawParam3d, DrawState3d, Instance3d,
+        Mesh3d, Shader, Vertex3d, WgpuContext,
     },
     Context, GameError, GameResult,
 };
@@ -10,98 +11,7 @@ use std::sync::Arc;
 
 use wgpu::util::DeviceExt;
 
-/// A 3d version of `DrawParam` used for transformation of 3d meshes
-#[derive(Clone, Copy, Debug)]
-pub struct DrawParam3d {
-    /// The transform of the mesh to draw see `Transform3d`
-    pub transform: Transform3d,
-    /// The alpha component is used for intensity of blending instead of actual alpha
-    pub color: Color,
-    /// Pivot point for the mesh rotation and scaling in world space
-    pub pivot: Option<mint::Vector3<f32>>,
-    /// Pivot point for the mesh rotation and scaling relative to the position of the mesh
-    pub offset: Option<mint::Vector3<f32>>,
-}
-
-impl DrawParam3d {
-    /// Change the scale of the `DrawParam3d`
-    pub fn scale<V>(mut self, scale_: V) -> Self
-    where
-        V: Into<mint::Vector3<f32>>,
-    {
-        let p: mint::Vector3<f32> = scale_.into();
-        self.transform.scale = p;
-        self
-    }
-
-    /// Change the position of the `DrawParam3d`
-    pub fn position<P>(mut self, position_: P) -> Self
-    where
-        P: Into<mint::Vector3<f32>>,
-    {
-        let p: mint::Vector3<f32> = position_.into();
-        self.transform.position = p;
-        self
-    }
-
-    /// Change the pivot of the `DrawParam3d`
-    pub fn pivot<P>(mut self, pivot_: P) -> Self
-    where
-        P: Into<mint::Vector3<f32>>,
-    {
-        let p: mint::Vector3<f32> = pivot_.into();
-        self.pivot = Some(p);
-        self
-    }
-
-    /// Change the offset of the `DrawParam3d`
-    pub fn offset<O>(mut self, offset_: O) -> Self
-    where
-        O: Into<mint::Vector3<f32>>,
-    {
-        let o: mint::Vector3<f32> = offset_.into();
-        self.offset = Some(o);
-        self
-    }
-
-    /// Change the rotation of the `DrawParam3d`
-    pub fn rotation<R>(mut self, rotation_: R) -> Self
-    where
-        R: Into<mint::Quaternion<f32>>,
-    {
-        let p: mint::Quaternion<f32> = rotation_.into();
-        self.transform.rotation = p;
-        self
-    }
-
-    /// Change the color of the `DrawParam3d`
-    pub fn color(mut self, color: Color) -> Self {
-        self.color = color;
-        self
-    }
-
-    /// Change the transform of the `DrawParam3d`
-    pub fn transform(mut self, transform: Transform3d) -> Self {
-        self.transform = transform;
-        self
-    }
-}
-
-impl Default for DrawParam3d {
-    fn default() -> Self {
-        Self {
-            transform: Transform3d::default(),
-            color: Color::new(1.0, 1.0, 1.0, 0.0),
-            pivot: None,
-            offset: None,
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct DrawState3d {
-    pub(crate) shader: Shader,
-}
+use super::{Drawable3d, GraphicsContext};
 
 #[derive(Clone, Debug)]
 pub(crate) struct DrawCommand3d {
@@ -328,10 +238,10 @@ impl Canvas3d {
         self.state.shader = shader;
     }
 
-    pub(crate) fn update_pipeline(&mut self, ctx: &mut Context) {
+    pub(crate) fn update_pipeline(&mut self, gfx: &mut impl HasMut<GraphicsContext>) {
+        let gfx = gfx.retrieve_mut();
         let camera_bind_group_layout =
-            ctx.gfx
-                .wgpu()
+            gfx.wgpu()
                 .device
                 .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                     entries: &[wgpu::BindGroupLayoutEntry {
@@ -347,8 +257,7 @@ impl Canvas3d {
                     label: Some("camera_bind_group_layout"),
                 });
         let texture_bind_group_layout =
-            ctx.gfx
-                .wgpu()
+            gfx.wgpu()
                 .device
                 .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                     entries: &[
@@ -372,8 +281,7 @@ impl Canvas3d {
                     label: Some("texture_bind_group_layout"),
                 });
         let render_pipeline_layout =
-            ctx.gfx
-                .wgpu()
+            gfx.wgpu()
                 .device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("Render Pipeline Layout"),
@@ -382,8 +290,7 @@ impl Canvas3d {
                 });
 
         self.pipelines.push((
-            ctx.gfx
-                .wgpu()
+            gfx.wgpu()
                 .device
                 .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                     label: Some("Render Pipeline"),
@@ -428,7 +335,7 @@ impl Canvas3d {
                             .unwrap_or(self.original_state.shader.fs_module().as_ref().unwrap()), // Should always exist since we use original
                         entry_point: "fs_main",
                         targets: &[Some(wgpu::ColorTargetState {
-                            format: ctx.gfx.surface_format(),
+                            format: gfx.surface_format(),
                             blend: Some(wgpu::BlendState {
                                 color: wgpu::BlendComponent::REPLACE,
                                 alpha: wgpu::BlendComponent::REPLACE,
@@ -443,37 +350,37 @@ impl Canvas3d {
     }
 
     /// Finish rendering this `Canvas3d`
-    pub fn finish(&mut self, ctx: &mut Context) -> GameResult {
-        self.update_instance_data(ctx);
+    pub fn finish(&mut self, gfx: &mut impl HasMut<GraphicsContext>) -> GameResult {
+        self.update_instance_data(gfx);
+        let gfx = gfx.retrieve_mut();
 
         let draws: Vec<DrawCommand3d> = self.draws.drain(..).collect();
 
         {
-            let mut pass =
-                ctx.gfx
-                    .commands()
-                    .unwrap()
-                    .begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: None,
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: self.target.wgpu().1,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(
-                                    graphics::LinearColor::from(self.clear_color).into(),
-                                ),
-                                store: true,
-                            },
-                        })],
-                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                            view: self.depth.wgpu().1,
-                            depth_ops: Some(wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(1.0),
-                                store: true,
-                            }),
-                            stencil_ops: None,
+            let mut pass = gfx
+                .commands()
+                .unwrap()
+                .begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: None,
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: self.target.wgpu().1,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(
+                                graphics::LinearColor::from(self.clear_color).into(),
+                            ),
+                            store: true,
+                        },
+                    })],
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: self.depth.wgpu().1,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: true,
                         }),
-                    });
+                        stencil_ops: None,
+                    }),
+                });
             for (i, draw) in draws.iter().enumerate() {
                 let i = i as u32;
                 pass.set_pipeline(&self.pipelines[draw.pipeline_id].0);
@@ -513,7 +420,8 @@ impl Canvas3d {
         Ok(())
     }
 
-    pub(crate) fn update_instance_data(&mut self, ctx: &mut Context) {
+    pub(crate) fn update_instance_data(&mut self, gfx: &mut impl HasMut<GraphicsContext>) {
+        let gfx = gfx.retrieve_mut();
         let instance_data = self
             .draws
             .iter()
@@ -528,7 +436,7 @@ impl Canvas3d {
                 }
             })
             .collect::<Vec<_>>();
-        self.instance_buffer = Some(ctx.gfx.wgpu().device.create_buffer_init(
+        self.instance_buffer = Some(gfx.wgpu().device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Instance Buffer"),
                 contents: bytemuck::cast_slice(&instance_data),
@@ -537,8 +445,22 @@ impl Canvas3d {
         ));
     }
 
+    /// Draw any thing that implements the `Drawable3d`
+    pub fn draw(
+        &mut self,
+        gfx: &mut impl HasMut<GraphicsContext>,
+        drawable: &impl Drawable3d,
+        param: impl Into<DrawParam3d>,
+    ) {
+        drawable.draw(gfx, self, param);
+    }
     /// Draw the given `Mesh3d` to the `Canvas3d`
-    pub fn draw(&mut self, ctx: &mut Context, mesh: Mesh3d, param: DrawParam3d) {
+    pub fn draw_mesh(
+        &mut self,
+        gfx: &mut impl HasMut<GraphicsContext>,
+        mesh: Mesh3d,
+        param: DrawParam3d,
+    ) {
         // This is pretty 'hacky' but I didn't have any better ideas that wouldn't require users to mess with lifetimes
         let mut id = 0;
         let states: Vec<DrawState3d> = self.pipelines.iter().map(|x| x.1.clone()).collect();
@@ -549,7 +471,7 @@ impl Canvas3d {
 
             if i == self.pipelines.len() - 1 {
                 id = i + 1;
-                self.update_pipeline(ctx);
+                self.update_pipeline(gfx);
             }
         }
         let mut mesh = mesh;

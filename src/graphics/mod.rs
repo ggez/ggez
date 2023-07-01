@@ -25,6 +25,8 @@
 pub(crate) mod camera3d;
 #[cfg(feature = "3d")]
 pub(crate) mod canvas3d;
+#[cfg(feature = "3d")]
+pub(crate) mod draw3d;
 
 pub(crate) mod canvas;
 /// Module for the graphics context dealing with wgpu
@@ -49,7 +51,7 @@ pub use {
 };
 
 #[cfg(feature = "3d")]
-pub use {camera3d::*, canvas3d::*, mesh3d::*};
+pub use {camera3d::*, canvas3d::*, draw3d::*, mesh3d::*};
 
 /// Applies `DrawParam` to `Rect`.
 #[must_use]

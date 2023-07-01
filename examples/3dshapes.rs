@@ -1,4 +1,4 @@
-use ggez::graphics::{Camera3dBundle, Canvas3d, DrawParam3d, Mesh3dBuilder, Model};
+use ggez::graphics::{Camera3dBundle, Canvas3d, DrawParam3d, Drawable3d, Mesh3d, Mesh3dBuilder};
 use std::{env, path};
 
 use ggez::input::keyboard::KeyCode;
@@ -9,36 +9,61 @@ use ggez::{
     Context, GameResult,
 };
 
+struct PosMesh {
+    mesh: Mesh3d,
+    pos: mint::Vector3<f32>,
+}
+
+impl Drawable3d for PosMesh {
+    fn draw(
+        &self,
+        gfx: &mut impl ggez::context::HasMut<graphics::GraphicsContext>,
+        canvas: &mut Canvas3d,
+        param: impl Into<DrawParam3d>,
+    ) {
+        let param = param.into();
+        canvas.draw(gfx, &self.mesh, param.position(self.pos));
+    }
+}
+
+impl PosMesh {
+    fn new(mesh: Mesh3d, position: impl Into<mint::Vector3<f32>>) -> Self {
+        Self {
+            mesh,
+            pos: position.into(),
+        }
+    }
+}
+
 struct MainState {
     camera: Camera3dBundle,
-    models: Vec<Model>,
+    meshes: Vec<PosMesh>,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<Self> {
         let mut camera = Camera3dBundle::default();
         camera.camera.yaw = 90.0;
-        let mut plane = Model::from_mesh(
+        let plane = PosMesh::new(
             Mesh3dBuilder::new()
                 .plane(Vec2::splat(25.0), false)
                 .build(ctx),
+            Vec3::new(50.0, -5.0, 0.0),
         );
-        plane.transform.position = Vec3::new(0.0, -5.0, 0.0).into();
-        let mut cube = Model::from_mesh(Mesh3dBuilder::new().cube(Vec3::splat(10.0)).build(ctx));
-        cube.transform.position = Vec3::new(0.0, -5.0, 0.0).into();
-        let mut pyramid = Model::from_mesh(
+        let cube = PosMesh::new(
+            Mesh3dBuilder::new().cube(Vec3::splat(10.0)).build(ctx),
+            Vec3::new(-50.0, -5.0, 0.0),
+        );
+        let pyramid = PosMesh::new(
             Mesh3dBuilder::new()
                 .pyramid(Vec2::splat(25.0), 50.0, true)
                 .build(ctx),
+            Vec3::new(0.0, -5.0, 0.0),
         );
-        pyramid.transform.position = Vec3::new(0.0, -5.0, 0.0).into();
 
         Ok(MainState {
             camera,
-            models: vec![
-                // plane, cube,
-                pyramid,
-            ],
+            meshes: vec![plane, cube, pyramid],
         })
     }
 }
@@ -85,14 +110,8 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas3d = Canvas3d::from_frame(ctx, &mut self.camera, Color::BLACK);
-        for model in self.models.iter() {
-            for mesh in model.meshes.iter() {
-                canvas3d.draw(
-                    ctx,
-                    mesh.clone(),
-                    DrawParam3d::default().transform(model.transform),
-                );
-            }
+        for mesh in self.meshes.iter() {
+            canvas3d.draw(ctx, mesh, DrawParam3d::default());
         }
         canvas3d.finish(ctx)?;
         let mut canvas = graphics::Canvas::from_frame(ctx, None);

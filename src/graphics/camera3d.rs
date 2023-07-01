@@ -57,7 +57,7 @@ pub struct Projection {
 
 impl Default for Projection {
     fn default() -> Self {
-        Self::new(1920, 1080, 70.0_f32.to_radians(), 0.1, 100.0)
+        Self::new(1920, 1080, 70.0_f32.to_radians(), 0.1, 1000.0)
     }
 }
 
