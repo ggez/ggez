@@ -42,38 +42,44 @@ pub struct Canvas3d {
 
 impl Canvas3d {
     /// Create a `Canvas3d` from a frame. This will fill the whole window
-    pub fn from_frame(ctx: &mut Context, camera: &mut Camera3dBundle, clear_color: Color) -> Self {
-        Self::new(ctx, camera, ctx.gfx.frame().clone(), clear_color)
+    pub fn from_frame(
+        gfx: &mut impl HasMut<GraphicsContext>,
+        camera: &mut Camera3dBundle,
+        clear_color: Color,
+    ) -> Self {
+        let gfx = gfx.retrieve_mut();
+        Self::new(gfx, camera, gfx.frame().clone(), clear_color)
     }
 
     /// Createa a `Canvas3d` from an image to render to
     pub fn from_image(
-        ctx: &mut Context,
+        gfx: &mut impl HasMut<GraphicsContext>,
         camera: &mut Camera3dBundle,
         image: graphics::Image,
         clear_color: Color,
     ) -> Self {
-        Self::new(ctx, camera, image, clear_color)
+        let gfx = gfx.retrieve_mut();
+        Self::new(gfx, camera, image, clear_color)
     }
 
     pub(crate) fn new(
-        ctx: &mut Context,
+        gfx: &mut impl HasMut<GraphicsContext>,
         camera: &mut Camera3dBundle,
         target: graphics::Image,
         clear_color: Color,
     ) -> Self {
+        let gfx = gfx.retrieve_mut();
         let cube_code = include_str!("shader/draw3d.wgsl");
         let shader = graphics::ShaderBuilder::from_code(cube_code)
-            .build(&ctx.gfx)
+            .build(gfx)
             .unwrap(); // Should never fail since draw3d.wgsl is unchanging
 
-        camera.projection.aspect = ctx.gfx.size().0 / ctx.gfx.size().1;
+        camera.projection.aspect = gfx.size().0 / gfx.size().1;
         let mut camera_uniform = CameraUniform::new();
         camera_uniform.update_view_proj(camera);
 
         let camera_buffer =
-            ctx.gfx
-                .wgpu()
+            gfx.wgpu()
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Camera Buffer"),
@@ -82,8 +88,7 @@ impl Canvas3d {
                 });
 
         let camera_bind_group_layout =
-            ctx.gfx
-                .wgpu()
+            gfx.wgpu()
                 .device
                 .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                     entries: &[wgpu::BindGroupLayoutEntry {
@@ -99,8 +104,7 @@ impl Canvas3d {
                     label: Some("camera_bind_group_layout"),
                 });
         let texture_bind_group_layout =
-            ctx.gfx
-                .wgpu()
+            gfx.wgpu()
                 .device
                 .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                     entries: &[
@@ -124,22 +128,20 @@ impl Canvas3d {
                     label: Some("texture_bind_group_layout"),
                 });
 
-        let camera_bind_group =
-            ctx.gfx
-                .wgpu()
-                .device
-                .create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &camera_bind_group_layout,
-                    entries: &[wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: camera_buffer.as_entire_binding(),
-                    }],
-                    label: Some("camera_bind_group"),
-                });
+        let camera_bind_group = gfx
+            .wgpu()
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &camera_bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: camera_buffer.as_entire_binding(),
+                }],
+                label: Some("camera_bind_group"),
+            });
 
         let render_pipeline_layout =
-            ctx.gfx
-                .wgpu()
+            gfx.wgpu()
                 .device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("Render Pipeline Layout"),
@@ -148,7 +150,7 @@ impl Canvas3d {
                 });
 
         let depth = graphics::Image::new_canvas_image(
-            ctx,
+            gfx,
             graphics::ImageFormat::Depth32Float,
             target.width(),
             target.height(),
@@ -170,8 +172,7 @@ impl Canvas3d {
             },
             draws: Vec::default(),
             pipelines: vec![(
-                ctx.gfx
-                    .wgpu()
+                gfx.wgpu()
                     .device
                     .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                         label: Some("Render Pipeline 3d"),
@@ -206,7 +207,7 @@ impl Canvas3d {
                             module: shader.fs_module().unwrap(), // Should never fail since already built
                             entry_point: "fs_main",
                             targets: &[Some(wgpu::ColorTargetState {
-                                format: ctx.gfx.surface_format(),
+                                format: gfx.surface_format(),
                                 blend: Some(wgpu::BlendState {
                                     color: wgpu::BlendComponent::REPLACE,
                                     alpha: wgpu::BlendComponent::REPLACE,
@@ -222,9 +223,9 @@ impl Canvas3d {
             )],
             instance_buffer: None,
             target,
-            wgpu: ctx.gfx.wgpu.clone(),
+            wgpu: gfx.wgpu.clone(),
             default_shader: shader,
-            default_image: graphics::Image::from_color(ctx, 1, 1, Some(Color::WHITE)),
+            default_image: graphics::Image::from_color(gfx, 1, 1, Some(Color::WHITE)),
         }
     }
 

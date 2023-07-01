@@ -1,7 +1,6 @@
 use crate::{
     context::HasMut,
     graphics::{self, Canvas3d, DrawParam3d, Image},
-    Context,
 };
 
 #[cfg(feature = "gltf")]
@@ -331,9 +330,9 @@ impl Mesh3dBuilder {
     }
 
     /// Make a `Mesh3d` from this builder
-    pub fn build(&self, ctx: &mut Context) -> Mesh3d {
-        let verts = ctx
-            .gfx
+    pub fn build(&self, gfx: &mut impl HasMut<GraphicsContext>) -> Mesh3d {
+        let gfx = gfx.retrieve_mut();
+        let verts = gfx
             .wgpu()
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -341,8 +340,7 @@ impl Mesh3dBuilder {
                 contents: bytemuck::cast_slice(self.vertices.as_slice()),
                 usage: wgpu::BufferUsages::VERTEX,
             });
-        let inds = ctx
-            .gfx
+        let inds = gfx
             .wgpu()
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -600,15 +598,15 @@ impl Model {
     /// Load gltf or obj depending on extension type
     #[cfg(all(feature = "obj", feature = "gltf"))]
     pub fn from_path(
-        ctx: &mut Context,
+        gfx: &mut impl HasMut<GraphicsContext>,
         path: impl AsRef<Path>,
         image: impl Into<Option<Image>>,
     ) -> GameResult<Self> {
         if let Some(extension) = path.as_ref().extension() {
             if extension == "obj" {
-                Model::from_obj(ctx, path, image)
+                Model::from_obj(gfx, path, image)
             } else if extension == "gltf" || extension == "glb" {
-                Model::from_gltf(ctx, path)
+                Model::from_gltf(gfx, path)
             } else {
                 Err(GameError::CustomError("Not a obj or gltf file".to_string()))
             }
@@ -622,22 +620,23 @@ impl Model {
     /// Load obj file. Only triangulated obj's are supported. Keep in mind mtl file's currently don't affect the obj's rendering
     #[cfg(feature = "obj")]
     pub fn from_obj(
-        ctx: &mut Context,
+        gfx: &mut impl HasMut<GraphicsContext>,
         path: impl AsRef<Path>,
         image: impl Into<Option<Image>>,
     ) -> GameResult<Self> {
-        let file = ctx.fs.open(path)?;
+        let gfx = gfx.retrieve_mut();
+        let file = gfx.fs.open(path)?;
         let buf_reader = std::io::BufReader::new(file);
         match obj::load_obj(buf_reader) {
             Ok(obj) => {
-                let mut img = Image::from_color(ctx, 1, 1, Some(graphics::Color::WHITE));
+                let mut img = Image::from_color(gfx, 1, 1, Some(graphics::Color::WHITE));
                 let image: Option<Image> = image.into();
                 if let Some(image) = image {
                     img = image;
                 }
                 let mesh = Mesh3dBuilder::new()
                     .from_data(obj.vertices, obj.indices, Some(img))
-                    .build(ctx);
+                    .build(gfx);
                 Ok(Model { meshes: vec![mesh] })
             }
             Err(f) => Err(GameError::CustomError(f.to_string())),
@@ -645,9 +644,13 @@ impl Model {
     }
     /// Load gltf file.
     #[cfg(feature = "gltf")]
-    pub fn from_gltf(ctx: &mut Context, path: impl AsRef<Path>) -> GameResult<Self> {
+    pub fn from_gltf(
+        gfx: &mut impl HasMut<GraphicsContext>,
+        path: impl AsRef<Path>,
+    ) -> GameResult<Self> {
         const VALID_MIME_TYPES: &[&str] = &["application/octet-stream", "application/gltf-buffer"];
-        let file = ctx.fs.open(path)?;
+        let gfx = gfx.retrieve_mut();
+        let file = gfx.fs.open(path)?;
         let mut meshes = Vec::default();
         if let Ok(gltf) = gltf::Gltf::from_reader(file) {
             let mut buffer_data = Vec::new();
@@ -686,7 +689,7 @@ impl Model {
                 for primitive in mesh.primitives() {
                     let reader =
                         primitive.reader(|buffer| Some(buffer_data[buffer.index()].as_slice()));
-                    let mut image = Image::from_color(ctx, 1, 1, Some(graphics::Color::WHITE));
+                    let mut image = Image::from_color(gfx, 1, 1, Some(graphics::Color::WHITE));
                     let texture_source = &primitive
                         .material()
                         .pbr_metallic_roughness()
@@ -707,7 +710,7 @@ impl Model {
                                 .unwrap_or_default()
                                 .into_rgba8();
                                 image = Image::from_pixels(
-                                    ctx,
+                                    gfx,
                                     dynamic_img.as_bytes(),
                                     wgpu::TextureFormat::Rgba8UnormSrgb,
                                     dynamic_img.width(),
@@ -735,7 +738,7 @@ impl Model {
                                 .unwrap_or_default()
                                 .into_rgba8();
                                 image = Image::from_pixels(
-                                    ctx,
+                                    gfx,
                                     dynamic_img.as_bytes(),
                                     wgpu::TextureFormat::Rgba8UnormSrgb,
                                     dynamic_img.width(),
@@ -772,7 +775,7 @@ impl Model {
 
                     let mesh = Mesh3dBuilder::new()
                         .from_data(vertices, indices, Some(image))
-                        .build(ctx);
+                        .build(gfx);
                     meshes.push(mesh);
                 }
             }
