@@ -199,8 +199,8 @@ impl<'a> InternalCanvas3d<'a> {
             format,
 
             draw_sm: gfx.draw_shader_3d.clone(),
-            instance_sm: gfx.instance_shader.clone(),
-            instance_unordered_sm: gfx.instance_unordered_shader.clone(),
+            instance_sm: gfx.instance_shader_3d.clone(),
+            instance_unordered_sm: gfx.instance_unordered_shader_3d.clone(),
 
             transform,
             curr_image: None,
