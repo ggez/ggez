@@ -17,10 +17,11 @@ ggez is a Rust library to create a Good Game Easily.
 The current version is 0.9.0.
 
 More specifically, ggez is a lightweight cross-platform game framework
-for making 2D games with minimum friction.  It aims to implement an
+for making 2D and 3D games with minimum friction.  It aims to implement an
 API based on (a Rustified version of) the [LÖVE](https://love2d.org/)
 game framework.  This means it contains basic and portable 2D
-drawing, sound, resource loading and event handling, but finer details
+drawing(in addition 3D which love doesn't have an API for), sound, 
+resource loading and event handling, but finer details
 and performance characteristics may be different than LÖVE.
 
 ggez is not meant to be everything to everyone, but rather a good
@@ -35,7 +36,7 @@ your own libraries atop ggez.
 ### Features
 
 * Filesystem abstraction that lets you load resources from folders or zip files
-* Hardware-accelerated 2D rendering built on the `wgpu` graphics API
+* Hardware-accelerated 2D and 3D rendering built on the `wgpu` graphics API
 * Loading and playing .ogg, .wav and .flac files via the `rodio` crate
 * TTF font rendering with `glyph_brush`.
 * Interface for handling keyboard and mouse events easily through callbacks
