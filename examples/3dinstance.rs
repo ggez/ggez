@@ -82,7 +82,7 @@ impl event::EventHandler for MainState {
             (0..150).map(move |y| {
                 let x = x as f32;
                 let y = y as f32;
-                *graphics::DrawParam3d::default()
+                graphics::DrawParam3d::default()
                     .position(Vec3::new(x * 10.0, y * 10.0, 0.0))
                     .scale(Vec3::new(
                         ((time % cycle * 2) as f32 / cycle as f32 * TAU).cos().abs() * 0.0625,
@@ -93,8 +93,9 @@ impl event::EventHandler for MainState {
         }));
 
         // These effect all instances. This is useful to for example scale up every instance by a given amount or offset them
-        let mut param = graphics::DrawParam3d::default();
-        let _ = param.position(Vec3::splat(10.0)).scale(Vec3::splat(10.0));
+        let param = graphics::DrawParam3d::default()
+            .position(Vec3::splat(10.0))
+            .scale(Vec3::splat(10.0));
         canvas3d.draw(&self.instances, param);
 
         canvas3d.finish(ctx)?;

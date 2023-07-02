@@ -16,8 +16,8 @@ struct PosMesh {
 
 impl Drawable3d for PosMesh {
     fn draw(&self, canvas: &mut Canvas3d, param: impl Into<DrawParam3d>) {
-        let mut param = param.into();
-        canvas.draw(&self.mesh, *param.position(self.pos));
+        let param = param.into();
+        canvas.draw(&self.mesh, param.position(self.pos));
     }
 }
 

@@ -100,7 +100,7 @@ impl event::EventHandler for MainState {
         canvas3d.set_shader(&self.fancy_shader);
         canvas3d.draw(
             &self.cube_one.0,
-            *DrawParam3d::default()
+            DrawParam3d::default()
                 .position(Vec3::new(-10.0, 0.0, 20.0))
                 .rotation(self.cube_one.1),
         );
@@ -110,7 +110,7 @@ impl event::EventHandler for MainState {
         canvas3d.set_shader(&self.fancy_shader);
         canvas3d.draw(
             &self.cube_two.0,
-            *DrawParam3d::default().rotation(self.cube_two.1),
+            DrawParam3d::default().rotation(self.cube_two.1),
         );
         canvas3d.finish(ctx)?;
         let mut canvas = graphics::Canvas::from_frame(ctx, None);

@@ -57,57 +57,6 @@ impl Aabb {
     }
 }
 
-// #[repr(C)]
-// #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-// pub(crate) struct Instance3d {
-//     transform: [[f32; 4]; 4],
-//     color: [f32; 4],
-// }
-
-// impl Default for Instance3d {
-//     fn default() -> Self {
-//         Self::from_param(&DrawParam3d::default(), Vec3::ZERO)
-//     }
-// }
-
-// impl Instance3d {
-//     pub(crate) fn desc() -> wgpu::VertexBufferLayout<'static> {
-//         const ATTRIBS: [wgpu::VertexAttribute; 5] = vertex_attr_array![
-//             5 => Float32x4,
-//             6 => Float32x4,
-//             7 => Float32x4,
-//             8 => Float32x4,
-//             9 => Float32x4
-//         ];
-//         wgpu::VertexBufferLayout {
-//             array_stride: mem::size_of::<Instance3d>() as wgpu::BufferAddress,
-//             step_mode: wgpu::VertexStepMode::Instance,
-//             attributes: &ATTRIBS,
-//         }
-//     }
-//     // pub(crate) fn from_param<V>(param: &DrawParam3d, center: V) -> Self
-//     // where
-//     //     V: Into<mint::Vector3<f32>>,
-//     // {
-//     //     let offset: mint::Vector3<f32> = center.into();
-//     //     let pivot = if let Some(piv) = param.pivot {
-//     //         Vec3::from(piv) + Vec3::from(offset)
-//     //     } else {
-//     //         Vec3::from(param.transform.position) + Vec3::from(offset)
-//     //     };
-//     //     let transform = Mat4::from_translation(pivot)
-//     //         * Mat4::from_scale(param.transform.scale.into())
-//     //         * Mat4::from_quat(param.transform.rotation.into())
-//     //         * Mat4::from_translation(-(pivot))
-//     //         * Mat4::from_translation(Vec3::from(param.transform.position));
-
-//     //     Self {
-//     //         transform: transform.to_cols_array_2d(),
-//     //         color: param.color.into(),
-//     //     }
-//     // }
-// }
-
 // TODO: Allow custom vertex formats
 /// The 3d Vertex format. Used for constructing meshes. At the moment it supports color, position, and texture coords
 #[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod, Debug)]
@@ -375,12 +324,16 @@ pub struct Mesh3d {
 
 impl Drawable3d for Mesh3d {
     fn draw(&self, canvas: &mut Canvas3d, param: impl Into<DrawParam3d>) {
-        let mut param = param.into();
-        if let Transform3d::Values { offset, .. } = param.transform {
+        let param = param.into();
+        let param = if let Transform3d::Values { offset, .. } = param.transform {
             if offset.is_none() {
-                let _ = param.offset(self.to_aabb().unwrap_or_default().center);
+                param.offset(self.to_aabb().unwrap_or_default().center)
+            } else {
+                param
             }
-        }
+        } else {
+            param
+        };
         canvas.push_draw(Draw3d::Mesh { mesh: self.clone() }, param);
     }
 }
@@ -542,13 +495,16 @@ pub struct Model {
 
 impl Drawable3d for Model {
     fn draw(&self, canvas: &mut Canvas3d, param: impl Into<DrawParam3d>) {
-        // let gfx = gfx.retrieve_mut();
-        let mut param = param.into();
-        if let Transform3d::Values { offset, .. } = param.transform {
+        let param = param.into();
+        let param = if let Transform3d::Values { offset, .. } = param.transform {
             if offset.is_none() {
-                let _ = param.offset(self.to_aabb().unwrap_or_default().center);
+                param.offset(self.to_aabb().unwrap_or_default().center)
+            } else {
+                param
             }
-        }
+        } else {
+            param
+        };
         for mesh in self.meshes.iter() {
             canvas.push_draw(Draw3d::Mesh { mesh: mesh.clone() }, param);
         }

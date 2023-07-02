@@ -17,7 +17,7 @@ pub struct DrawParam3d {
 
 impl DrawParam3d {
     /// Change the scale of the `Transform3d`
-    pub fn scale<V>(&mut self, scale_: V) -> &mut Self
+    pub fn scale<V>(mut self, scale_: V) -> Self
     where
         V: Into<mint::Vector3<f32>>,
     {
@@ -27,7 +27,7 @@ impl DrawParam3d {
     }
 
     /// Change the position of the `Transform3d`
-    pub fn position<P>(&mut self, position_: P) -> &mut Self
+    pub fn position<P>(mut self, position_: P) -> Self
     where
         P: Into<mint::Point3<f32>>,
     {
@@ -37,7 +37,7 @@ impl DrawParam3d {
     }
 
     /// Change the rotation of the `Transform3d`
-    pub fn rotation<R>(&mut self, rotation_: R) -> &mut Self
+    pub fn rotation<R>(mut self, rotation_: R) -> Self
     where
         R: Into<mint::Quaternion<f32>>,
     {
@@ -47,7 +47,7 @@ impl DrawParam3d {
     }
 
     /// Move the position by given amount
-    pub fn translate<T>(&mut self, translate_: T) -> &mut Self
+    pub fn translate<T>(mut self, translate_: T) -> Self
     where
         T: Into<mint::Vector3<f32>>,
     {
@@ -56,7 +56,7 @@ impl DrawParam3d {
         self
     }
     /// Change the pivot of the `DrawParam3d`
-    pub fn pivot<P>(&mut self, pivot_: P) -> &mut Self
+    pub fn pivot<P>(mut self, pivot_: P) -> Self
     where
         P: Into<mint::Point3<f32>>,
     {
@@ -66,7 +66,7 @@ impl DrawParam3d {
     }
 
     /// Change the offset of the `DrawParam3d`
-    pub fn offset<O>(&mut self, offset_: O) -> &mut Self
+    pub fn offset<O>(mut self, offset_: O) -> Self
     where
         O: Into<mint::Point3<f32>>,
     {
@@ -75,13 +75,13 @@ impl DrawParam3d {
         self
     }
     /// Change the color of the `DrawParam3d`
-    pub fn color(&mut self, color: Color) -> &mut Self {
+    pub fn color(mut self, color: Color) -> Self {
         self.color = color;
         self
     }
 
     /// Change the transform of the `DrawParam3d`
-    pub fn transform(&mut self, transform: Transform3d) -> &mut Self {
+    pub fn transform(mut self, transform: Transform3d) -> Self {
         self.transform = transform;
         self
     }
@@ -280,9 +280,9 @@ impl DrawUniforms3d {
     pub fn from_param(param: &DrawParam3d) -> Self {
         let param = match param.transform {
             Transform3d::Values { .. } => *param,
-            Transform3d::Matrix(m) => *param
-                .clone()
-                .transform(Transform3d::Matrix(glam::Mat4::from(m).into())),
+            Transform3d::Matrix(m) => {
+                param.transform(Transform3d::Matrix(glam::Mat4::from(m).into()))
+            }
         };
 
         let color = LinearColor::from(param.color);

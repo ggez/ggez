@@ -178,7 +178,7 @@ impl event::EventHandler for MainState {
             }
             canvas3d.draw(
                 &mesh.0,
-                *DrawParam3d::default()
+                DrawParam3d::default()
                     .scale(mesh.1)
                     .color(Color::new(0.5, 0.0, 0.0, 1.0)),
             );
