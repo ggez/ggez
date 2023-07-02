@@ -2,7 +2,7 @@ use crate::glam::*;
 
 /// Camera3d bundle that holds both the `Projection` and `Camera`
 #[derive(Default, Debug, Clone, Copy)]
-pub struct Camera3dBundle {
+pub struct Camera3d {
     /// The `Camera3d` part of this bundle
     pub transform: Camera3dTransform,
     /// The `Projection` part of this bundle
@@ -130,8 +130,8 @@ impl CameraUniform {
         }
     }
 
-    pub(crate) fn update_view_proj(&mut self, camera_bundle: &Camera3dBundle) {
-        let view = camera_bundle.projection.calc_matrix() * camera_bundle.transform.calc_matrix();
+    pub(crate) fn update_view_proj(&mut self, camera: &Camera3d) {
+        let view = camera.projection.calc_matrix() * camera.transform.calc_matrix();
         self.view_proj = view.to_cols_array_2d();
     }
 }

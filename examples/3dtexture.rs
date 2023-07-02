@@ -1,5 +1,6 @@
-use ggez::graphics::{Camera3d, Canvas3d, DrawParam3d, Drawable3d, Mesh3d, Mesh3dBuilder};
 use std::{env, path};
+
+use ggez::graphics::{Camera3d, Canvas3d, DrawParam3d, Image, ImageFormat, Mesh3d, Mesh3dBuilder};
 
 use ggez::input::keyboard::KeyCode;
 use ggez::{
@@ -9,61 +10,38 @@ use ggez::{
     Context, GameResult,
 };
 
-struct PosMesh {
-    mesh: Mesh3d,
-    pos: mint::Vector3<f32>,
-}
-
-impl Drawable3d for PosMesh {
-    fn draw(
-        &self,
-        gfx: &mut impl ggez::context::HasMut<graphics::GraphicsContext>,
-        canvas: &mut Canvas3d,
-        param: impl Into<DrawParam3d>,
-    ) {
-        let param = param.into();
-        canvas.draw(gfx, &self.mesh, param.position(self.pos));
-    }
-}
-
-impl PosMesh {
-    fn new(mesh: Mesh3d, position: impl Into<mint::Vector3<f32>>) -> Self {
-        Self {
-            mesh,
-            pos: position.into(),
-        }
-    }
-}
-
 struct MainState {
     camera: Camera3d,
-    meshes: Vec<PosMesh>,
+    static_camera: Camera3d,
+    cube_one: (Mesh3d, Quat),
+    cube_two: (Mesh3d, Quat),
+    canvas_image: Image,
+    fancy_shader: graphics::Shader,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<Self> {
         let mut camera = Camera3d::default();
-        camera.transform.yaw = 90.0;
-        let plane = PosMesh::new(
-            Mesh3dBuilder::new()
-                .plane(Vec2::splat(25.0), false)
-                .build(ctx),
-            Vec3::new(50.0, -5.0, 0.0),
-        );
-        let cube = PosMesh::new(
-            Mesh3dBuilder::new().cube(Vec3::splat(10.0)).build(ctx),
-            Vec3::new(-50.0, -5.0, 0.0),
-        );
-        let pyramid = PosMesh::new(
-            Mesh3dBuilder::new()
-                .pyramid(Vec2::splat(25.0), 50.0, true)
-                .build(ctx),
-            Vec3::new(0.0, -5.0, 0.0),
-        );
+        let mut static_camera = Camera3d::default();
 
+        let mesh = Mesh3dBuilder::new().cube(Vec3::splat(10.0)).build(ctx);
+        let canvas_image = Image::new_canvas_image(ctx, ImageFormat::Bgra8UnormSrgb, 320, 240, 1);
+        let mesh_two = Mesh3dBuilder::new()
+            .cube(Vec3::splat(10.0))
+            .texture(canvas_image.clone())
+            .build(ctx);
+
+        camera.transform.yaw = 90.0;
+        static_camera.transform.yaw = 90.0;
         Ok(MainState {
+            static_camera,
+            canvas_image,
             camera,
-            meshes: vec![plane, cube, pyramid],
+            cube_one: (mesh, Quat::IDENTITY),
+            cube_two: (mesh_two, Quat::IDENTITY),
+            fancy_shader: graphics::ShaderBuilder::from_path("/fancy.wgsl")
+                .build(&ctx.gfx)
+                .unwrap(),
         })
     }
 }
@@ -74,6 +52,10 @@ impl event::EventHandler for MainState {
         let (yaw_sin, yaw_cos) = self.camera.transform.yaw.sin_cos();
         let forward = Vec3::new(yaw_cos, 0.0, yaw_sin).normalize();
         let right = Vec3::new(-yaw_sin, 0.0, yaw_cos).normalize();
+        let dt = ctx.time.delta().as_secs_f32();
+        self.cube_one.1 *= Quat::from_rotation_x(50.0_f32.to_radians() * dt);
+        self.cube_one.1 *= Quat::from_rotation_y(50.0_f32.to_radians() * dt);
+        self.cube_two.1 *= Quat::from_rotation_y(-50.0_f32.to_radians() * dt);
 
         if k_ctx.is_key_pressed(KeyCode::Space) {
             self.camera.transform.position.y += 1.0;
@@ -109,25 +91,38 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        let mut canvas3d = Canvas3d::from_image(
+            ctx,
+            &mut self.static_camera,
+            self.canvas_image.clone(),
+            Color::RED,
+        );
+        canvas3d.set_shader(self.fancy_shader.clone());
+        canvas3d.draw(
+            ctx,
+            &self.cube_one.0,
+            DrawParam3d::default()
+                .position(Vec3::new(-10.0, 0.0, 20.0))
+                .rotation(self.cube_one.1),
+        );
+        canvas3d.finish(ctx)?;
         let mut canvas3d = Canvas3d::from_frame(ctx, &mut self.camera, Color::BLACK);
-        for mesh in self.meshes.iter() {
-            canvas3d.draw(ctx, mesh, DrawParam3d::default());
-        }
+        canvas3d.set_shader(self.fancy_shader.clone());
+        canvas3d.draw(
+            ctx,
+            &self.cube_two.0,
+            DrawParam3d::default().rotation(self.cube_two.1),
+        );
         canvas3d.finish(ctx)?;
         let mut canvas = graphics::Canvas::from_frame(ctx, None);
 
-        // Do ggez drawing
-        let dest_point1 = Vec2::new(10.0, 210.0);
         let dest_point2 = Vec2::new(10.0, 250.0);
-        canvas.draw(
-            &graphics::Text::new("You can mix 3d and 2d drawing;"),
-            dest_point1,
-        );
         canvas.draw(
             &graphics::Text::new(
                 "
                 WASD: Move
                 Arrow Keys: Look
+                K: Toggle default shader and custom shader
                 C/Space: Up and Down
                 ",
             ),
@@ -149,7 +144,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("3dshapes", "ggez")
+    let cb = ggez::ContextBuilder::new("3dtexture", "ggez")
         .window_mode(ggez::conf::WindowMode::default().resizable(true))
         .add_resource_path(resource_dir);
 

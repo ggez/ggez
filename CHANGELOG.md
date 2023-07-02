@@ -5,6 +5,7 @@
 You are now able to add your own custom contexts! Using the new `ContextFields` type and implementing `HasMut<KeyboardContext>, HasMut<MouseContext>, HasMut<TimeContext>, HasMut<GraphicsContext>, and HasMut<GamepadContext>` if gamepad is enabled
 
 ### Coroutines
+
 You can create a new coroutine by doing
 ```rust
 slow_coroutine: Coroutine::new(async move {
@@ -27,12 +28,60 @@ fn update(&mut self, _ctx: &mut Context) -> GameResult {
 ```
 This will print `Coroutine says: "I came from a coroutine!"` after 100 frames.
 
+### 3d
+
+You can now do 3d rendering with bevy. This entails a lot of new api ground to cover. Here are the main points.
+There is now a `Canvas3d` and `Drawable3d`. These are used to do any 3d rendering instead of `Canvas` a simple example of drawing may look like this:
+```rust
+fn draw(&mut self, ctx: &mut Context) -> GameResult {
+  let mut canvas3d = Canvas3d::from_frame(ctx, &mut self.camera, Color::BLACK);
+  canvas3d.draw(ctx, &drawable, draw_param);
+  canvas3d.finish(ctx)?;
+}
+```
+
+Some types that implement Drawable3d by default are `Mesh3d` and `Model`. `Mesh3d` is used for a singular mesh.
+`Model` us used for more complicated objects that may be made up of multiple meshes. `Model` also provides a way to load basic gltf/glb files and obj files.
+(Note not nearly all of gltf is supported and obj models must be triangulated in your software of choice and no material files will be read).
+
+Caveats:
+This is a new system so not everything is 100% there yet but we will slowly get there. The base is here to make games but there will be more to come such as follows:
+Custom Vertex Formats,
+InstanceArray3d,
+Shader Uniform support,
+Better system to handle pipeline switches(looking for help on this),
+and more to come.
+
+If you need advanced fast 3d rendering out of the box this isn't for you. We don't implement any fancy rendering features nor have plans to that is up to you to do in your projects!
+This is focused on a simple api that is good enough for simple games to medium sized games eventually. But the larger games won't look as good as say godot or even something like bevy without
+extra work. Just keep this in mind.
+
+### New event / Mouse data
+
+The `MouseContext` now has a function called raw_delta() this returns the devices motion not the cursor motion. This is great for implementing controls that aren't cursor based such as a 3d camera.
+With this a new event callback exist called `raw_mouse_motion_event()`
+
+### Shader
+
+`Shader::vs_module` and `Shader::fs_module` now exist to get the underlying wgpu shader modules.
+
+### Examples
+
+Added a few new exampels:
+`coroutine.rs`: Shows how to use Coroutines
+`3d.rs`: Shows various things to do with 3d
+`3dtexture.rs`: Renders a 3d scene to an image which then can be used on another 3d object or rendered to the screen
+`3dshapes.rs`: Shows off some simple primitives supported by the new `Mesh3dBuilder`
+`cpu_image.rs`: Shows how to copy an image to the cpu and back to the gpu
+
 ## Changed
 
 `EventHandler` now takes another generic in form of whatever context implementation you are using whether that be the default one of a custom one
 
 ## Removed
 
+## Fixed
+`Image::to_pixels` no longer crashes and works properly
 
 # 0.9.0
 

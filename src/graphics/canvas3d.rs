@@ -2,8 +2,8 @@ use crate::{
     context::HasMut,
     glam::*,
     graphics::{
-        self, Aabb, Camera3dBundle, CameraUniform, Color, DrawParam3d, DrawState3d, Instance3d,
-        Mesh3d, Shader, Vertex3d, WgpuContext,
+        self, Aabb, CameraUniform, Color, DrawParam3d, DrawState3d, Instance3d, Mesh3d, Shader,
+        Vertex3d, WgpuContext,
     },
     Context, GameError, GameResult,
 };
@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use wgpu::util::DeviceExt;
 
-use super::{Drawable3d, GraphicsContext};
+use super::{Camera3d, Drawable3d, GraphicsContext};
 
 #[derive(Clone, Debug)]
 pub(crate) struct DrawCommand3d {
@@ -44,7 +44,7 @@ impl Canvas3d {
     /// Create a `Canvas3d` from a frame. This will fill the whole window
     pub fn from_frame(
         gfx: &mut impl HasMut<GraphicsContext>,
-        camera: &mut Camera3dBundle,
+        camera: &mut Camera3d,
         clear_color: Color,
     ) -> Self {
         let gfx = gfx.retrieve_mut();
@@ -54,7 +54,7 @@ impl Canvas3d {
     /// Createa a `Canvas3d` from an image to render to
     pub fn from_image(
         gfx: &mut impl HasMut<GraphicsContext>,
-        camera: &mut Camera3dBundle,
+        camera: &mut Camera3d,
         image: graphics::Image,
         clear_color: Color,
     ) -> Self {
@@ -64,7 +64,7 @@ impl Canvas3d {
 
     pub(crate) fn new(
         gfx: &mut impl HasMut<GraphicsContext>,
-        camera: &mut Camera3dBundle,
+        camera: &mut Camera3d,
         target: graphics::Image,
         clear_color: Color,
     ) -> Self {
@@ -485,13 +485,7 @@ impl Canvas3d {
     }
 
     /// Resize this `Canvas3d` and the `Camera3d` `Projection`
-    pub fn resize(
-        &mut self,
-        width: f32,
-        height: f32,
-        ctx: &mut Context,
-        camera: &mut Camera3dBundle,
-    ) {
+    pub fn resize(&mut self, width: f32, height: f32, ctx: &mut Context, camera: &mut Camera3d) {
         camera.projection.resize(width as u32, height as u32);
         self.camera_uniform.update_view_proj(camera);
         ctx.gfx.wgpu().queue.write_buffer(
@@ -502,7 +496,7 @@ impl Canvas3d {
     }
 
     /// Force an `Camera3d` update
-    pub fn update_camera(&mut self, ctx: &mut Context, camera: &mut Camera3dBundle) {
+    pub fn update_camera(&mut self, ctx: &mut Context, camera: &mut Camera3d) {
         self.camera_uniform.update_view_proj(camera);
         ctx.gfx.wgpu().queue.write_buffer(
             &self.camera_buffer,

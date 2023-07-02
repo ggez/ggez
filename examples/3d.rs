@@ -1,4 +1,4 @@
-use ggez::graphics::{Camera3dBundle, Canvas3d, DrawParam3d, Mesh3d, Mesh3dBuilder, Vertex3d};
+use ggez::graphics::{Camera3d, Canvas3d, DrawParam3d, Mesh3d, Mesh3dBuilder, Vertex3d};
 use std::{env, path};
 
 use ggez::graphics::Shader;
@@ -11,14 +11,14 @@ use ggez::{
 };
 
 struct MainState {
-    camera: Camera3dBundle,
+    camera: Camera3d,
     meshes: Vec<(Mesh3d, Vec3, Vec3)>,
     custom_shader: Shader,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<Self> {
-        let mut camera = Camera3dBundle::default();
+        let mut camera = Camera3d::default();
         let vertex_data = vec![
             // top (0.0, 0.0, 1.0)
             Vertex3d::new([-1.0, -1.0, 1.0], [0.0, 0.0], Color::GREEN),
@@ -194,7 +194,6 @@ impl event::EventHandler for MainState {
                 "
                 WASD: Move
                 Arrow Keys: Look
-                K: Toggle default shader and custom shader
                 C/Space: Up and Down
                 Q/E: Scale cube up and Down
                 ",
@@ -217,7 +216,7 @@ pub fn main() -> GameResult {
         path::PathBuf::from("./resources")
     };
 
-    let cb = ggez::ContextBuilder::new("cube", "ggez")
+    let cb = ggez::ContextBuilder::new("3d", "ggez")
         .window_mode(ggez::conf::WindowMode::default().resizable(true))
         .add_resource_path(resource_dir);
 
