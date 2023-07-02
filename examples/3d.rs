@@ -24,7 +24,7 @@ impl MainState {
             Vertex3d::new([-1.0, -1.0, 1.0], [0.0, 0.0], Color::GREEN),
             Vertex3d::new([1.0, -1.0, 1.0], [1.0, 0.0], Color::GREEN),
             Vertex3d::new([1.0, 1.0, 1.0], [1.0, 1.0], Color::GREEN),
-            Vertex3d::new([-1.0, 1.0, 1.0], [0.0, 1.0], Color::new(0.0, 1.0, 0.0, 0.5)),
+            Vertex3d::new([-1.0, 1.0, 1.0], [0.0, 1.0], Color::new(0.0, 1.0, 0.0, 1.0)),
             // bottom (0.0, 0.0, -1.0)
             Vertex3d::new([-1.0, 1.0, -1.0], [1.0, 0.0], None),
             Vertex3d::new([1.0, 1.0, -1.0], [0.0, 0.0], None),
@@ -118,6 +118,10 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
+    fn resize_event(&mut self, _: &mut Context, width: f32, height: f32) -> GameResult {
+        self.camera.projection.resize(width as u32, height as u32);
+        Ok(())
+    }
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         let k_ctx = &ctx.keyboard.clone();
         let (yaw_sin, yaw_cos) = self.camera.transform.yaw.sin_cos();
@@ -164,19 +168,19 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas3d = Canvas3d::from_frame(ctx, &mut self.camera, Color::BLACK);
+        let mut canvas3d = Canvas3d::from_frame(ctx, Color::BLACK);
+        canvas3d.set_projection(self.camera.calc_matrix());
         for (i, mesh) in self.meshes.iter().enumerate() {
             if i == 0 {
                 canvas3d.set_default_shader();
             } else {
-                canvas3d.set_shader(self.custom_shader.clone());
+                canvas3d.set_shader(&self.custom_shader);
             }
             canvas3d.draw(
-                ctx,
                 &mesh.0,
-                DrawParam3d::default()
+                *DrawParam3d::default()
                     .scale(mesh.1)
-                    .color(Color::new(0.5, 0.0, 0.0, 0.5)),
+                    .color(Color::new(0.5, 0.0, 0.0, 1.0)),
             );
         }
         canvas3d.finish(ctx)?;

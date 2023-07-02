@@ -15,14 +15,9 @@ struct PosMesh {
 }
 
 impl Drawable3d for PosMesh {
-    fn draw(
-        &self,
-        gfx: &mut impl ggez::context::HasMut<graphics::GraphicsContext>,
-        canvas: &mut Canvas3d,
-        param: impl Into<DrawParam3d>,
-    ) {
-        let param = param.into();
-        canvas.draw(gfx, &self.mesh, param.position(self.pos));
+    fn draw(&self, canvas: &mut Canvas3d, param: impl Into<DrawParam3d>) {
+        let mut param = param.into();
+        canvas.draw(&self.mesh, *param.position(self.pos));
     }
 }
 
@@ -69,6 +64,10 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
+    fn resize_event(&mut self, _: &mut Context, width: f32, height: f32) -> GameResult {
+        self.camera.projection.resize(width as u32, height as u32);
+        Ok(())
+    }
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         let k_ctx = &ctx.keyboard.clone();
         let (yaw_sin, yaw_cos) = self.camera.transform.yaw.sin_cos();
@@ -109,9 +108,10 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas3d = Canvas3d::from_frame(ctx, &mut self.camera, Color::BLACK);
+        let mut canvas3d = Canvas3d::from_frame(ctx, Color::BLACK);
+        canvas3d.set_projection(self.camera.calc_matrix());
         for mesh in self.meshes.iter() {
-            canvas3d.draw(ctx, mesh, DrawParam3d::default());
+            canvas3d.draw(mesh, DrawParam3d::default());
         }
         canvas3d.finish(ctx)?;
         let mut canvas = graphics::Canvas::from_frame(ctx, None);

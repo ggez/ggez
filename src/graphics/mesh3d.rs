@@ -14,12 +14,14 @@ use num_traits::FromPrimitive;
 #[cfg(feature = "gltf")]
 use std::path::Path;
 
-use glam::{Mat4, Vec3};
+use glam::Vec3;
 use mint::{Vector2, Vector3};
-use std::{mem, sync::Arc};
+use std::sync::Arc;
 use wgpu::{util::DeviceExt, vertex_attr_array};
 
 use crate::graphics::{Drawable3d, GraphicsContext};
+
+use super::{Draw3d, Transform3d};
 
 // Implementation tooken from bevy
 /// An aabb stands for axis aligned bounding box. This is basically a cube that can't rotate.
@@ -55,56 +57,56 @@ impl Aabb {
     }
 }
 
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub(crate) struct Instance3d {
-    transform: [[f32; 4]; 4],
-    color: [f32; 4],
-}
+// #[repr(C)]
+// #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+// pub(crate) struct Instance3d {
+//     transform: [[f32; 4]; 4],
+//     color: [f32; 4],
+// }
 
-impl Default for Instance3d {
-    fn default() -> Self {
-        Self::from_param(&DrawParam3d::default(), Vec3::ZERO)
-    }
-}
+// impl Default for Instance3d {
+//     fn default() -> Self {
+//         Self::from_param(&DrawParam3d::default(), Vec3::ZERO)
+//     }
+// }
 
-impl Instance3d {
-    pub(crate) fn desc() -> wgpu::VertexBufferLayout<'static> {
-        const ATTRIBS: [wgpu::VertexAttribute; 5] = vertex_attr_array![
-            5 => Float32x4,
-            6 => Float32x4,
-            7 => Float32x4,
-            8 => Float32x4,
-            9 => Float32x4
-        ];
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<Instance3d>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &ATTRIBS,
-        }
-    }
-    pub(crate) fn from_param<V>(param: &DrawParam3d, center: V) -> Self
-    where
-        V: Into<mint::Vector3<f32>>,
-    {
-        let offset: mint::Vector3<f32> = center.into();
-        let pivot = if let Some(piv) = param.pivot {
-            Vec3::from(piv) + Vec3::from(offset)
-        } else {
-            Vec3::from(param.transform.position) + Vec3::from(offset)
-        };
-        let transform = Mat4::from_translation(pivot)
-            * Mat4::from_scale(param.transform.scale.into())
-            * Mat4::from_quat(param.transform.rotation.into())
-            * Mat4::from_translation(-(pivot))
-            * Mat4::from_translation(Vec3::from(param.transform.position));
+// impl Instance3d {
+//     pub(crate) fn desc() -> wgpu::VertexBufferLayout<'static> {
+//         const ATTRIBS: [wgpu::VertexAttribute; 5] = vertex_attr_array![
+//             5 => Float32x4,
+//             6 => Float32x4,
+//             7 => Float32x4,
+//             8 => Float32x4,
+//             9 => Float32x4
+//         ];
+//         wgpu::VertexBufferLayout {
+//             array_stride: mem::size_of::<Instance3d>() as wgpu::BufferAddress,
+//             step_mode: wgpu::VertexStepMode::Instance,
+//             attributes: &ATTRIBS,
+//         }
+//     }
+//     // pub(crate) fn from_param<V>(param: &DrawParam3d, center: V) -> Self
+//     // where
+//     //     V: Into<mint::Vector3<f32>>,
+//     // {
+//     //     let offset: mint::Vector3<f32> = center.into();
+//     //     let pivot = if let Some(piv) = param.pivot {
+//     //         Vec3::from(piv) + Vec3::from(offset)
+//     //     } else {
+//     //         Vec3::from(param.transform.position) + Vec3::from(offset)
+//     //     };
+//     //     let transform = Mat4::from_translation(pivot)
+//     //         * Mat4::from_scale(param.transform.scale.into())
+//     //         * Mat4::from_quat(param.transform.rotation.into())
+//     //         * Mat4::from_translation(-(pivot))
+//     //         * Mat4::from_translation(Vec3::from(param.transform.position));
 
-        Self {
-            transform: transform.to_cols_array_2d(),
-            color: param.color.into(),
-        }
-    }
-}
+//     //     Self {
+//     //         transform: transform.to_cols_array_2d(),
+//     //         color: param.color.into(),
+//     //     }
+//     // }
+// }
 
 // TODO: Allow custom vertex formats
 /// The 3d Vertex format. Used for constructing meshes. At the moment it supports color, position, and texture coords
@@ -131,7 +133,7 @@ impl Vertex3d {
         let uv: Vector2<f32> = uv.into();
         let color: Option<graphics::Color> = color.into();
         let color = color
-            .unwrap_or(graphics::Color::new(1.0, 1.0, 1.0, 0.0))
+            .unwrap_or(graphics::Color::new(1.0, 1.0, 1.0, 1.0))
             .into();
         Vertex3d {
             pos: position.into(),
@@ -349,11 +351,10 @@ impl Mesh3dBuilder {
                 usage: wgpu::BufferUsages::INDEX,
             });
         Mesh3d {
-            vert_buffer: Some(Arc::new(verts)),
+            vert_buffer: Arc::new(verts),
             vertices: self.vertices.clone(),
             indices: self.indices.clone(),
-            ind_buffer: Some(Arc::new(inds)),
-            bind_group: None,
+            ind_buffer: Arc::new(inds),
             texture: self.texture.clone(),
         }
     }
@@ -362,9 +363,8 @@ impl Mesh3dBuilder {
 /// A 3d Mesh that can be rendered to `Canvas3d`
 #[derive(Clone, Debug)]
 pub struct Mesh3d {
-    pub(crate) vert_buffer: Option<Arc<wgpu::Buffer>>,
-    pub(crate) ind_buffer: Option<Arc<wgpu::Buffer>>,
-    pub(crate) bind_group: Option<Arc<wgpu::BindGroup>>,
+    pub(crate) vert_buffer: Arc<wgpu::Buffer>,
+    pub(crate) ind_buffer: Arc<wgpu::Buffer>,
     /// The texture of this Mesh if any
     pub texture: Option<Image>,
     /// Vector of the vertices that make up this mesh
@@ -374,53 +374,18 @@ pub struct Mesh3d {
 }
 
 impl Drawable3d for Mesh3d {
-    fn draw(
-        &self,
-        gfx: &mut impl HasMut<GraphicsContext>,
-        canvas: &mut Canvas3d,
-        param: impl Into<DrawParam3d>,
-    ) {
-        canvas.draw_mesh(gfx, self.clone(), param.into());
+    fn draw(&self, canvas: &mut Canvas3d, param: impl Into<DrawParam3d>) {
+        let mut param = param.into();
+        if let Transform3d::Values { offset, .. } = param.transform {
+            if offset.is_none() {
+                let _ = param.offset(self.to_aabb().unwrap_or_default().center);
+            }
+        }
+        canvas.push_draw(Draw3d::Mesh { mesh: self.clone() }, param);
     }
 }
 
 impl Mesh3d {
-    pub(crate) fn gen_bind_group(
-        &mut self,
-        canvas: &Canvas3d,
-        pipeline_id: usize,
-        sampler: graphics::Sampler,
-    ) {
-        // Allow custom one set through mesh
-        let sampler = canvas.wgpu.device.create_sampler(&sampler.into());
-
-        let bind_group = canvas
-            .wgpu
-            .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                label: None,
-                layout: &canvas.pipelines[pipeline_id].0.get_bind_group_layout(0),
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(
-                            self.texture
-                                .as_ref()
-                                .unwrap_or(&canvas.default_image)
-                                .wgpu()
-                                .1,
-                        ),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&sampler),
-                    },
-                ],
-            });
-
-        self.bind_group = Some(Arc::new(bind_group));
-    }
-
     /// Get the bounding box of this mesh
     pub fn to_aabb(&self) -> Option<Aabb> {
         let mut minimum = Vec3::MAX;
@@ -576,16 +541,16 @@ pub struct Model {
 }
 
 impl Drawable3d for Model {
-    fn draw(
-        &self,
-        gfx: &mut impl HasMut<GraphicsContext>,
-        canvas: &mut Canvas3d,
-        param: impl Into<DrawParam3d>,
-    ) {
+    fn draw(&self, canvas: &mut Canvas3d, param: impl Into<DrawParam3d>) {
         // let gfx = gfx.retrieve_mut();
-        let param = param.into();
+        let mut param = param.into();
+        if let Transform3d::Values { offset, .. } = param.transform {
+            if offset.is_none() {
+                let _ = param.offset(self.to_aabb().unwrap_or_default().center);
+            }
+        }
         for mesh in self.meshes.iter() {
-            canvas.draw_mesh(gfx, mesh.clone(), param);
+            canvas.push_draw(Draw3d::Mesh { mesh: mesh.clone() }, param);
         }
     }
 }

@@ -1,517 +1,508 @@
+use crate::graphics::default_shader;
+use crevice::std140::AsStd140;
+
 use crate::{
-    context::HasMut,
-    glam::*,
-    graphics::{
-        self, Aabb, CameraUniform, Color, DrawParam3d, DrawState3d, Instance3d, Mesh3d, Shader,
-        Vertex3d, WgpuContext,
-    },
-    Context, GameError, GameResult,
+    context::{Has, HasMut},
+    GameError, GameResult,
 };
-use std::sync::Arc;
 
-use wgpu::util::DeviceExt;
+use super::{
+    gpu::arc::{ArcBindGroup, ArcBindGroupLayout},
+    internal_canvas3d::{screen_to_mat, InstanceArrayView3d, InternalCanvas3d},
+    BlendMode, Color, DrawParam3d, Drawable3d, GraphicsContext, Image, ImageFormat, Mesh3d, Rect,
+    Sampler, ScreenImage, Shader, ShaderParams, WgpuContext, ZIndex,
+};
+use std::{collections::BTreeMap, sync::Arc};
 
-use super::{Camera3d, Drawable3d, GraphicsContext};
-
-#[derive(Clone, Debug)]
-pub(crate) struct DrawCommand3d {
-    pub(crate) mesh: Mesh3d, // Maybe take a reference instead
-    pub(crate) param: DrawParam3d,
-    pub(crate) pipeline_id: usize,
+/// Alpha mode is how to render a given draw. Opaque has no transparency, discard discards transparent pixels under a certain value. Blend will blend them
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AlphaMode {
+    /// Render this mesh with no transparency
+    Opaque,
+    /// Render this mesh a transparency cutoff
+    Discard {
+        /// What transparency to start discarding at. This will be converted to floats so 0 would be 0.0 1 would be 0.1 and so on
+        cutoff: i8,
+    },
+    /// Render this mesh with transparency
+    Blend {
+        /// The blend mode used when the mesh is transparent
+        blend_mode: BlendMode,
+    },
 }
 
-/// A 3d Canvas for rendering 3d objects
+/// Canvas3d are the main method of drawing meshes and text to images in ggez.
+///
+/// They can draw to any image that is capable of being drawn to (i.e. has been created with [`Image::new_canvas_image()`] or [`ScreenImage`]),
+/// or they can draw directly to the screen.
+///
+/// Canvases are also where you can bind your own custom shaders and samplers to use while drawing.
+/// Canvases *do not* automatically batch draws. To used batched (instanced) drawing, refer to [`InstanceArray`].
+// note:
+//   Canvas does not draw anything itself. It is merely a state-tracking and draw-reordering wrapper around InternalCanvas, which does the actual
+// drawing.
 #[derive(Debug)]
 pub struct Canvas3d {
     pub(crate) wgpu: Arc<WgpuContext>,
-    pub(crate) default_shader: Shader,
-    pub(crate) default_image: graphics::Image,
-    pub(crate) draws: Vec<DrawCommand3d>,
-    pub(crate) state: DrawState3d,
-    pub(crate) original_state: DrawState3d,
-    pub(crate) pipelines: Vec<(wgpu::RenderPipeline, DrawState3d)>,
-    pub(crate) depth: graphics::Image,
-    pub(crate) camera_uniform: CameraUniform,
-    pub(crate) instance_buffer: Option<wgpu::Buffer>,
-    pub(crate) camera_buffer: wgpu::Buffer,
-    pub(crate) camera_bind_group: wgpu::BindGroup,
-    pub(crate) target: graphics::Image,
-    pub(crate) clear_color: graphics::Color,
-    pub(crate) curr_sampler: graphics::Sampler,
+    pub(crate) defaults: DefaultResources3d,
+    draws: BTreeMap<ZIndex, Vec<DrawCommand3d>>,
+    state: DrawState3d,
+    original_state: DrawState3d,
+    screen: Option<Rect>,
+
+    target: Image,
+    target_depth: Image,
+    resolve: Option<Image>,
+    clear: Option<Color>,
 }
 
 impl Canvas3d {
-    /// Create a `Canvas3d` from a frame. This will fill the whole window
-    pub fn from_frame(
-        gfx: &mut impl HasMut<GraphicsContext>,
-        camera: &mut Camera3d,
-        clear_color: Color,
-    ) -> Self {
-        let gfx = gfx.retrieve_mut();
-        Self::new(gfx, camera, gfx.frame().clone(), clear_color)
-    }
-
-    /// Createa a `Canvas3d` from an image to render to
+    /// Create a new [Canvas] from an image. This will allow for drawing to a single color image.
+    ///
+    /// `clear` will set the image initially to the given color, if a color is provided, or keep it as is, if it's `None`.
+    ///
+    /// The image must be created for Canvas usage, i.e. [`Image::new_canvas_image`()], or [`ScreenImage`], and must only have a sample count of 1.
+    #[inline]
     pub fn from_image(
-        gfx: &mut impl HasMut<GraphicsContext>,
-        camera: &mut Camera3d,
-        image: graphics::Image,
-        clear_color: Color,
+        gfx: &impl Has<GraphicsContext>,
+        image: Image,
+        clear: impl Into<Option<Color>>,
     ) -> Self {
-        let gfx = gfx.retrieve_mut();
-        Self::new(gfx, camera, image, clear_color)
+        Canvas3d::new(gfx, image, None, clear.into())
     }
 
-    pub(crate) fn new(
-        gfx: &mut impl HasMut<GraphicsContext>,
-        camera: &mut Camera3d,
-        target: graphics::Image,
-        clear_color: Color,
+    /// Helper for [`Canvas::from_image`] for construction of a [`Canvas`] from a [`ScreenImage`].
+    #[inline]
+    pub fn from_screen_image(
+        gfx: &impl Has<GraphicsContext>,
+        image: &mut ScreenImage,
+        clear: impl Into<Option<Color>>,
     ) -> Self {
-        let gfx = gfx.retrieve_mut();
-        let cube_code = include_str!("shader/draw3d.wgsl");
-        let shader = graphics::ShaderBuilder::from_code(cube_code)
-            .build(gfx)
-            .unwrap(); // Should never fail since draw3d.wgsl is unchanging
+        let gfx = gfx.retrieve();
+        let image = image.image(gfx);
+        Canvas3d::from_image(gfx, image, clear)
+    }
 
-        camera.projection.aspect = gfx.size().0 / gfx.size().1;
-        let mut camera_uniform = CameraUniform::new();
-        camera_uniform.update_view_proj(camera);
+    /// Create a new [Canvas] from an MSAA image and a resolve target. This will allow for drawing with MSAA to a color image, then resolving the samples into a secondary target.
+    ///
+    /// Both images must be created for Canvas usage (see [`Canvas::from_image`]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
+    #[inline]
+    pub fn from_msaa(
+        gfx: &impl Has<GraphicsContext>,
+        msaa_image: Image,
+        resolve: Image,
+        clear: impl Into<Option<Color>>,
+    ) -> Self {
+        Canvas3d::new(gfx, msaa_image, Some(resolve), clear.into())
+    }
 
-        let camera_buffer =
-            gfx.wgpu()
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Camera Buffer"),
-                    contents: bytemuck::cast_slice(&[camera_uniform]),
-                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                });
+    /// Helper for [`Canvas::from_msaa`] for construction of an MSAA [`Canvas`] from a [`ScreenImage`].
+    #[inline]
+    pub fn from_screen_msaa(
+        gfx: &impl Has<GraphicsContext>,
+        msaa_image: &mut ScreenImage,
+        resolve: &mut ScreenImage,
+        clear: impl Into<Option<Color>>,
+    ) -> Self {
+        let msaa = msaa_image.image(gfx);
+        let resolve = resolve.image(gfx);
+        Canvas3d::from_msaa(gfx, msaa, resolve, clear)
+    }
 
-        let camera_bind_group_layout =
-            gfx.wgpu()
-                .device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    entries: &[wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    }],
-                    label: Some("camera_bind_group_layout"),
-                });
-        let texture_bind_group_layout =
-            gfx.wgpu()
-                .device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Texture {
-                                multisampled: false,
-                                view_dimension: wgpu::TextureViewDimension::D2,
-                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            },
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 1,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                            count: None,
-                        },
-                    ],
-                    label: Some("texture_bind_group_layout"),
-                });
+    /// Create a new [Canvas] that renders directly to the window surface.
+    ///
+    /// `clear` will set the image initially to the given color, if a color is provided, or keep it as is, if it's `None`.
+    pub fn from_frame(gfx: &impl Has<GraphicsContext>, clear: impl Into<Option<Color>>) -> Self {
+        let gfx = gfx.retrieve();
+        // these unwraps will never fail
+        let samples = gfx.frame_msaa_image.as_ref().unwrap().samples();
+        let (target, resolve) = if samples > 1 {
+            (
+                gfx.frame_msaa_image.clone().unwrap(),
+                Some(gfx.frame_image.clone().unwrap()),
+            )
+        } else {
+            (gfx.frame_image.clone().unwrap(), None)
+        };
+        Canvas3d::new(gfx, target, resolve, clear.into())
+    }
 
-        let camera_bind_group = gfx
-            .wgpu()
-            .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &camera_bind_group_layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: camera_buffer.as_entire_binding(),
-                }],
-                label: Some("camera_bind_group"),
-            });
-
-        let render_pipeline_layout =
-            gfx.wgpu()
-                .device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("Render Pipeline Layout"),
-                    bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout],
-                    push_constant_ranges: &[],
-                });
-
-        let depth = graphics::Image::new_canvas_image(
+    fn new(
+        gfx: &impl Has<GraphicsContext>,
+        target: Image,
+        resolve: Option<Image>,
+        clear: Option<Color>,
+    ) -> Self {
+        let depth = Image::new_canvas_image(
             gfx,
-            graphics::ImageFormat::Depth32Float,
+            ImageFormat::Depth32Float,
             target.width(),
             target.height(),
             1,
         );
 
-        Canvas3d {
-            clear_color,
-            curr_sampler: graphics::Sampler::default(),
-            depth,
-            camera_uniform,
-            camera_buffer,
-            camera_bind_group,
-            state: DrawState3d {
-                shader: shader.clone(),
-            },
-            original_state: DrawState3d {
-                shader: shader.clone(),
-            },
-            draws: Vec::default(),
-            pipelines: vec![(
-                gfx.wgpu()
-                    .device
-                    .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                        label: Some("Render Pipeline 3d"),
-                        layout: Some(&render_pipeline_layout),
-                        vertex: wgpu::VertexState {
-                            module: shader.vs_module().unwrap(), // Should never fail since it's already built
-                            entry_point: "vs_main",
-                            buffers: &[Vertex3d::desc(), Instance3d::desc()],
-                        },
-                        primitive: wgpu::PrimitiveState {
-                            topology: wgpu::PrimitiveTopology::TriangleList,
-                            strip_index_format: None,
-                            front_face: wgpu::FrontFace::Ccw,
-                            cull_mode: Some(wgpu::Face::Back),
-                            unclipped_depth: false,
-                            polygon_mode: wgpu::PolygonMode::Fill,
-                            conservative: false,
-                        },
-                        depth_stencil: Some(wgpu::DepthStencilState {
-                            format: wgpu::TextureFormat::Depth32Float,
-                            depth_write_enabled: true,
-                            depth_compare: wgpu::CompareFunction::Less,
-                            stencil: wgpu::StencilState::default(),
-                            bias: wgpu::DepthBiasState::default(),
-                        }),
-                        multisample: wgpu::MultisampleState {
-                            count: 1,
-                            mask: !0,
-                            alpha_to_coverage_enabled: false,
-                        },
-                        fragment: Some(wgpu::FragmentState {
-                            module: shader.fs_module().unwrap(), // Should never fail since already built
-                            entry_point: "fs_main",
-                            targets: &[Some(wgpu::ColorTargetState {
-                                format: gfx.surface_format(),
-                                blend: Some(wgpu::BlendState {
-                                    color: wgpu::BlendComponent::REPLACE,
-                                    alpha: wgpu::BlendComponent::REPLACE,
-                                }),
-                                write_mask: wgpu::ColorWrites::ALL,
-                            })],
-                        }),
-                        multiview: None,
-                    }),
-                DrawState3d {
-                    shader: shader.clone(),
-                },
-            )],
-            instance_buffer: None,
-            target,
+        let gfx = gfx.retrieve();
+
+        let state = DrawState3d {
+            shader: default_shader(),
+            params: None,
+            sampler: Sampler::default(),
+            projection: glam::Mat4::IDENTITY.into(),
+            alpha_mode: AlphaMode::Discard { cutoff: 5 },
+            scissor_rect: (0, 0, target.width(), target.height()),
+        };
+
+        let screen = Rect {
+            x: 0.,
+            y: 0.,
+            w: target.width() as _,
+            h: target.height() as _,
+        };
+
+        let mut this = Canvas3d {
             wgpu: gfx.wgpu.clone(),
-            default_shader: shader,
-            default_image: graphics::Image::from_color(gfx, 1, 1, Some(Color::WHITE)),
-        }
+            draws: BTreeMap::new(),
+            state: state.clone(),
+            original_state: state,
+            screen: Some(screen),
+
+            target,
+            target_depth: depth,
+            resolve,
+            clear,
+            defaults: DefaultResources3d::new(gfx),
+        };
+
+        this.set_screen_coordinates(screen);
+
+        this
     }
 
-    /// Set the `Shader` back to the default shader
-    pub fn set_default_shader(&mut self) {
-        self.state.shader = self.default_shader.clone();
+    /// Sets the shader to use when drawing meshes.
+    #[inline]
+    pub fn set_shader(&mut self, shader: &Shader) {
+        self.state.shader = shader.clone();
     }
 
-    /// Set a custom `Shader`
-    pub fn set_shader(&mut self, shader: Shader) {
-        self.state.shader = shader;
+    /// Returns the current shader being used when drawing meshes.
+    #[inline]
+    pub fn shader(&self) -> Shader {
+        self.state.shader.clone()
     }
 
-    pub(crate) fn update_pipeline(&mut self, gfx: &mut impl HasMut<GraphicsContext>) {
-        let gfx = gfx.retrieve_mut();
-        let camera_bind_group_layout =
-            gfx.wgpu()
-                .device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    entries: &[wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    }],
-                    label: Some("camera_bind_group_layout"),
-                });
-        let texture_bind_group_layout =
-            gfx.wgpu()
-                .device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Texture {
-                                multisampled: false,
-                                view_dimension: wgpu::TextureViewDimension::D2,
-                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            },
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 1,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                            count: None,
-                        },
-                    ],
-                    label: Some("texture_bind_group_layout"),
-                });
-        let render_pipeline_layout =
-            gfx.wgpu()
-                .device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("Render Pipeline Layout"),
-                    bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout],
-                    push_constant_ranges: &[],
-                });
-
-        self.pipelines.push((
-            gfx.wgpu()
-                .device
-                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                    label: Some("Render Pipeline"),
-                    layout: Some(&render_pipeline_layout),
-                    vertex: wgpu::VertexState {
-                        module: self.state.shader.vs_module().clone().as_ref().unwrap_or(
-                            self.original_state.shader.vs_module().as_ref().unwrap_or(
-                                self.original_state.shader.vs_module().as_ref().unwrap(),
-                            ), // Should always exist
-                        ),
-                        entry_point: "vs_main",
-                        buffers: &[Vertex3d::desc(), Instance3d::desc()],
-                    },
-                    primitive: wgpu::PrimitiveState {
-                        topology: wgpu::PrimitiveTopology::TriangleList,
-                        strip_index_format: None,
-                        front_face: wgpu::FrontFace::Ccw,
-                        cull_mode: Some(wgpu::Face::Back),
-                        unclipped_depth: false,
-                        polygon_mode: wgpu::PolygonMode::Fill,
-                        conservative: false,
-                    },
-                    depth_stencil: Some(wgpu::DepthStencilState {
-                        format: wgpu::TextureFormat::Depth32Float,
-                        depth_write_enabled: true,
-                        depth_compare: wgpu::CompareFunction::Less,
-                        stencil: wgpu::StencilState::default(),
-                        bias: wgpu::DepthBiasState::default(),
-                    }),
-                    multisample: wgpu::MultisampleState {
-                        count: 1,
-                        mask: !0,
-                        alpha_to_coverage_enabled: false,
-                    },
-                    fragment: Some(wgpu::FragmentState {
-                        module: self
-                            .state
-                            .shader
-                            .clone()
-                            .fs_module()
-                            .as_ref()
-                            .unwrap_or(self.original_state.shader.fs_module().as_ref().unwrap()), // Should always exist since we use original
-                        entry_point: "fs_main",
-                        targets: &[Some(wgpu::ColorTargetState {
-                            format: gfx.surface_format(),
-                            blend: Some(wgpu::BlendState {
-                                color: wgpu::BlendComponent::REPLACE,
-                                alpha: wgpu::BlendComponent::REPLACE,
-                            }),
-                            write_mask: wgpu::ColorWrites::ALL,
-                        })],
-                    }),
-                    multiview: None,
-                }),
-            self.state.clone(),
+    /// Sets the shader parameters to use when drawing meshes.
+    ///
+    /// **Bound to bind group 3.**
+    #[inline]
+    pub fn set_shader_params<Uniforms: AsStd140>(&mut self, params: &ShaderParams<Uniforms>) {
+        self.state.params = Some((
+            params.bind_group.clone().unwrap(/* always Some */),
+            params.layout.clone().unwrap(/* always Some */),
+            params.buffer_offset,
         ));
     }
 
-    /// Finish rendering this `Canvas3d`
-    pub fn finish(&mut self, gfx: &mut impl HasMut<GraphicsContext>) -> GameResult {
-        self.update_instance_data(gfx);
-        let gfx = gfx.retrieve_mut();
+    /// Resets the active mesh shader to the default.
+    #[inline]
+    pub fn set_default_shader(&mut self) {
+        self.state.shader = default_shader();
+    }
 
-        let draws: Vec<DrawCommand3d> = self.draws.drain(..).collect();
+    /// Sets the active sampler used to sample images.
+    ///
+    /// Use `set_sampler(Sampler::nearest_clamp())` for drawing pixel art graphics without blurring them.
+    #[inline]
+    pub fn set_sampler(&mut self, sampler: impl Into<Sampler>) {
+        self.state.sampler = sampler.into();
+    }
 
-        {
-            let mut pass = gfx
-                .commands()
-                .unwrap()
-                .begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: None,
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: self.target.wgpu().1,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(
-                                graphics::LinearColor::from(self.clear_color).into(),
-                            ),
-                            store: true,
-                        },
-                    })],
-                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                        view: self.depth.wgpu().1,
-                        depth_ops: Some(wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(1.0),
-                            store: true,
-                        }),
-                        stencil_ops: None,
-                    }),
-                });
-            for (i, draw) in draws.iter().enumerate() {
-                let i = i as u32;
-                pass.set_pipeline(&self.pipelines[draw.pipeline_id].0);
-                pass.set_vertex_buffer(1, self.instance_buffer.as_ref().unwrap().slice(..)); // Will always exist because of update_instance_data
-                pass.set_bind_group(
-                    0,
-                    draw.mesh.bind_group.as_ref().ok_or(GameError::CustomError(
-                        "Bind Group not generated for mesh".to_string(),
-                    ))?,
-                    &[],
-                );
-                pass.set_bind_group(1, &self.camera_bind_group, &[]);
-                pass.set_vertex_buffer(
-                    0,
-                    draw.mesh
-                        .vert_buffer
-                        .as_ref()
-                        .ok_or(GameError::CustomError(
-                            "Vert Buffer not generated for mesh".to_string(),
-                        ))?
-                        .slice(..),
-                );
-                pass.set_index_buffer(
-                    draw.mesh
-                        .ind_buffer
-                        .as_ref()
-                        .ok_or(GameError::CustomError(
-                            "Ind Buffer not generated for mesh".to_string(),
-                        ))?
-                        .slice(..),
-                    wgpu::IndexFormat::Uint32,
-                );
-                pass.draw_indexed(0..draw.mesh.indices.len() as u32, 0, i..i + 1);
-            }
+    /// Returns the currently active sampler used to sample images.
+    #[inline]
+    pub fn sampler(&self) -> Sampler {
+        self.state.sampler
+    }
+
+    /// Resets the active sampler to the default.
+    ///
+    /// This is equivalent to `set_sampler(Sampler::linear_clamp())`.
+    #[inline]
+    pub fn set_default_sampler(&mut self) {
+        self.set_sampler(Sampler::default());
+    }
+
+    /// Sets the active blend mode used when drawing meshes.
+    #[inline]
+    pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
+        self.state.alpha_mode = AlphaMode::Blend { blend_mode };
+    }
+    /// Sets the active blend mode used when drawing meshes.
+    #[inline]
+    pub fn set_alpha_mode(&mut self, alpha_mode: AlphaMode) {
+        self.state.alpha_mode = alpha_mode;
+    }
+
+    /// Returns the currently active blend mode used when drawing images.
+    #[inline]
+    pub fn alpha_mode(&self) -> AlphaMode {
+        self.state.alpha_mode
+    }
+
+    /// Sets the raw projection matrix to the given homogeneous
+    /// transformation matrix.  For an introduction to graphics matrices,
+    /// a good source is this: <http://ncase.me/matrix/>
+    #[inline]
+    pub fn set_projection(&mut self, proj: impl Into<mint::ColumnMatrix4<f32>>) {
+        self.state.projection = proj.into();
+        self.screen = None;
+    }
+
+    /// Gets a copy of the canvas's raw projection matrix.
+    #[inline]
+    pub fn projection(&self) -> mint::ColumnMatrix4<f32> {
+        self.state.projection
+    }
+
+    /// Premultiplies the given transformation matrix with the current projection matrix.
+    pub fn mul_projection(&mut self, transform: impl Into<mint::ColumnMatrix4<f32>>) {
+        self.set_projection(
+            glam::Mat4::from(transform.into()) * glam::Mat4::from(self.state.projection),
+        );
+        self.screen = None;
+    }
+
+    /// Sets the bounds of the screen viewport. This is a shortcut for `set_projection`
+    /// and thus will override any previous projection matrix set.
+    ///
+    /// The default coordinate system has \[0.0, 0.0\] at the top-left corner
+    /// with X increasing to the right and Y increasing down, with the
+    /// viewport scaled such that one coordinate unit is one pixel on the
+    /// screen.  This function lets you change this coordinate system to
+    /// be whatever you prefer.
+    ///
+    /// The `Rect`'s x and y will define the top-left corner of the screen,
+    /// and that plus its w and h will define the bottom-right corner.
+    #[inline]
+    pub fn set_screen_coordinates(&mut self, rect: Rect) {
+        self.set_projection(screen_to_mat(rect));
+        self.screen = Some(rect);
+    }
+
+    /// Returns the boudns of the screen viewport, iff the projection was last set with
+    /// `set_screen_coordinates`. If the last projection was set with `set_projection` or
+    /// `mul_projection`, `None` will be returned.
+    #[inline]
+    pub fn screen_coordinates(&self) -> Option<Rect> {
+        self.screen
+    }
+
+    /// Sets the scissor rectangle used when drawing. Nothing will be drawn to the canvas
+    /// that falls outside of this region.
+    ///
+    /// Note: The rectangle is in pixel coordinates, and therefore the values will be rounded towards zero.
+    #[inline]
+    pub fn set_scissor_rect(&mut self, rect: Rect) -> GameResult {
+        if rect.w as u32 == 0 || rect.h as u32 == 0 {
+            return Err(GameError::RenderError(String::from(
+                "the scissor rectangle size must be larger than zero.",
+            )));
         }
-        self.draws.clear();
+
+        let image_size = (self.target.width(), self.target.height());
+        if rect.x as u32 >= image_size.0 || rect.y as u32 >= image_size.1 {
+            return Err(GameError::RenderError(String::from(
+                "the scissor rectangle cannot start outside the canvas image.",
+            )));
+        }
+
+        // clamp the scissor rectangle to the target image size
+        let rect_width = u32::min(image_size.0 - rect.x as u32, rect.w as u32);
+        let rect_height = u32::min(image_size.1 - rect.y as u32, rect.h as u32);
+
+        self.state.scissor_rect = (rect.x as u32, rect.y as u32, rect_width, rect_height);
+
         Ok(())
     }
 
-    pub(crate) fn update_instance_data(&mut self, gfx: &mut impl HasMut<GraphicsContext>) {
+    /// Returns the scissor rectangle as set by [`Canvas::set_scissor_rect`].
+    #[inline]
+    pub fn scissor_rect(&self) -> Rect {
+        Rect::new(
+            self.state.scissor_rect.0 as f32,
+            self.state.scissor_rect.1 as f32,
+            self.state.scissor_rect.2 as f32,
+            self.state.scissor_rect.3 as f32,
+        )
+    }
+
+    /// Resets the scissorr rectangle back to the original value. This will effectively disable any
+    /// scissoring.
+    #[inline]
+    pub fn set_default_scissor_rect(&mut self) {
+        self.state.scissor_rect = self.original_state.scissor_rect;
+    }
+
+    /// Draws the given `Drawable` to the canvas with a given `DrawParam`.
+    #[inline]
+    pub fn draw(&mut self, drawable: &impl Drawable3d, param: impl Into<DrawParam3d>) {
+        drawable.draw(self, param)
+    }
+
+    /// Draws an `InstanceArray` textured with a `Mesh`.
+    ///
+    /// This differs from `canvas.draw(instances, param)` as in that case, the instances are
+    /// drawn as quads.
+    // pub fn draw_instanced_mesh(
+    //     &mut self,
+    //     mesh: Mesh3d,
+    //     instances: &InstanceArray,
+    //     param: impl Into<DrawParam3d>,
+    // ) {
+    //     instances.flush_wgpu(&self.wgpu).unwrap(); // Will only fail if you can't lock the buffers shouldn't happen
+    //     self.push_draw(
+    //         Draw3d::MeshInstances {
+    //             mesh,
+    //             instances: InstanceArrayView::from_instances(instances).unwrap(),
+    //             scale: false,
+    //         },
+    //         param.into(),
+    //     );
+    // }
+
+    /// Finish drawing with this canvas and submit all the draw calls.
+    #[inline]
+    pub fn finish(mut self, gfx: &mut impl HasMut<GraphicsContext>) -> GameResult {
         let gfx = gfx.retrieve_mut();
-        let instance_data = self
-            .draws
-            .iter()
-            .map(|x| {
-                if let Some(offset) = x.param.offset {
-                    Instance3d::from_param(&x.param, offset)
-                } else {
-                    Instance3d::from_param(
-                        &x.param,
-                        x.mesh.to_aabb().unwrap_or(Aabb::default()).center,
-                    )
-                }
-            })
-            .collect::<Vec<_>>();
-        self.instance_buffer = Some(gfx.wgpu().device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Instance Buffer"),
-                contents: bytemuck::cast_slice(&instance_data),
-                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-            },
-        ));
+        self.finalize(gfx)
     }
 
-    /// Draw any thing that implements the `Drawable3d`
-    pub fn draw(
-        &mut self,
-        gfx: &mut impl HasMut<GraphicsContext>,
-        drawable: &impl Drawable3d,
-        param: impl Into<DrawParam3d>,
-    ) {
-        drawable.draw(gfx, self, param);
-    }
-    /// Draw the given `Mesh3d` to the `Canvas3d`
-    pub fn draw_mesh(
-        &mut self,
-        gfx: &mut impl HasMut<GraphicsContext>,
-        mesh: Mesh3d,
-        param: DrawParam3d,
-    ) {
-        // This is pretty 'hacky' but I didn't have any better ideas that wouldn't require users to mess with lifetimes
-        let mut id = 0;
-        let states: Vec<DrawState3d> = self.pipelines.iter().map(|x| x.1.clone()).collect();
-        for (i, state) in states.iter().enumerate() {
-            if state.shader == self.state.shader {
-                id = i;
-            }
-
-            if i == self.pipelines.len() - 1 {
-                id = i + 1;
-                self.update_pipeline(gfx);
-            }
-        }
-        let mut mesh = mesh;
-        mesh.gen_bind_group(self, id, self.curr_sampler);
-        self.draws.push(DrawCommand3d {
-            mesh,
+    #[inline]
+    pub(crate) fn push_draw(&mut self, draw: Draw3d, param: DrawParam3d) {
+        self.draws.entry(param.z).or_default().push(DrawCommand3d {
+            state: self.state.clone(),
+            draw,
             param,
-            pipeline_id: id,
         });
     }
 
-    /// Resize this `Canvas3d` and the `Camera3d` `Projection`
-    pub fn resize(&mut self, width: f32, height: f32, ctx: &mut Context, camera: &mut Camera3d) {
-        camera.projection.resize(width as u32, height as u32);
-        self.camera_uniform.update_view_proj(camera);
-        ctx.gfx.wgpu().queue.write_buffer(
-            &self.camera_buffer,
-            0,
-            bytemuck::cast_slice(&[self.camera_uniform]),
-        );
+    #[inline]
+    pub(crate) fn default_resources(&self) -> &DefaultResources3d {
+        &self.defaults
     }
 
-    /// Force an `Camera3d` update
-    pub fn update_camera(&mut self, ctx: &mut Context, camera: &mut Camera3d) {
-        self.camera_uniform.update_view_proj(camera);
-        ctx.gfx.wgpu().queue.write_buffer(
-            &self.camera_buffer,
-            0,
-            bytemuck::cast_slice(&[self.camera_uniform]),
-        );
-    }
+    fn finalize(&mut self, gfx: &mut GraphicsContext) -> GameResult {
+        let mut canvas = if let Some(resolve) = &self.resolve {
+            InternalCanvas3d::from_msaa(gfx, self.clear, &self.target, &self.target_depth, resolve)?
+        } else {
+            InternalCanvas3d::from_image(gfx, self.clear, &self.target, &self.target_depth)?
+        };
 
-    /// Set the sampler used for textures
-    pub fn set_sampler(&mut self, sampler: graphics::Sampler) {
-        self.curr_sampler = sampler;
-    }
+        let mut state = self.state.clone();
 
-    /// Set the sampler back to the default for textures
-    pub fn set_default_sampler(&mut self) {
-        self.curr_sampler = graphics::Sampler::default();
+        // apply initial state
+        canvas.set_shader(state.shader.clone());
+        if let Some((bind_group, layout, offset)) = &state.params {
+            canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
+        }
+
+        canvas.set_sampler(state.sampler);
+        canvas.set_alpha_mode(state.alpha_mode);
+        canvas.set_projection(state.projection);
+
+        if state.scissor_rect.2 > 0 && state.scissor_rect.3 > 0 {
+            canvas.set_scissor_rect(state.scissor_rect);
+        }
+
+        for draws in self.draws.values() {
+            for draw in draws {
+                // track state and apply to InternalCanvas if changed
+
+                if draw.state.shader != state.shader {
+                    canvas.set_shader(draw.state.shader.clone());
+                }
+
+                if draw.state.params != state.params {
+                    if let Some((bind_group, layout, offset)) = &draw.state.params {
+                        canvas.set_shader_params(bind_group.clone(), layout.clone(), *offset);
+                    }
+                }
+
+                if draw.state.sampler != state.sampler {
+                    canvas.set_sampler(draw.state.sampler);
+                }
+
+                if draw.state.alpha_mode != state.alpha_mode {
+                    canvas.set_alpha_mode(draw.state.alpha_mode);
+                }
+
+                if draw.state.projection != state.projection {
+                    canvas.set_projection(draw.state.projection);
+                }
+
+                if draw.state.scissor_rect != state.scissor_rect {
+                    canvas.set_scissor_rect(draw.state.scissor_rect);
+                }
+
+                state = draw.state.clone();
+
+                match &draw.draw {
+                    Draw3d::Mesh { mesh } => {
+                        if let Some(image) = mesh.texture.clone() {
+                            canvas.draw_mesh(mesh, &image, draw.param)
+                        } else {
+                            canvas.draw_mesh(mesh, &self.default_resources().image, draw.param)
+                        }
+                    }
+                    Draw3d::MeshInstances { mesh, instances } => {
+                        canvas.draw_mesh_instances(mesh, instances, draw.param)?
+                    }
+                }
+            }
+        }
+
+        canvas.finish();
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+struct DrawState3d {
+    shader: Shader,
+    params: Option<(ArcBindGroup, ArcBindGroupLayout, u32)>,
+    sampler: Sampler,
+    projection: mint::ColumnMatrix4<f32>,
+    alpha_mode: AlphaMode,
+    scissor_rect: (u32, u32, u32, u32),
+}
+
+#[derive(Debug)]
+pub(crate) enum Draw3d {
+    Mesh {
+        mesh: Mesh3d,
+    },
+    MeshInstances {
+        mesh: Mesh3d,
+        instances: InstanceArrayView3d,
+    },
+}
+
+// Stores *everything* you need to know to draw something.
+#[derive(Debug)]
+struct DrawCommand3d {
+    state: DrawState3d,
+    param: DrawParam3d,
+    draw: Draw3d,
+}
+
+#[derive(Debug)]
+pub(crate) struct DefaultResources3d {
+    pub image: Image,
+}
+
+impl DefaultResources3d {
+    fn new(gfx: &GraphicsContext) -> Self {
+        let image = gfx.white_image.clone();
+
+        DefaultResources3d { image }
     }
 }

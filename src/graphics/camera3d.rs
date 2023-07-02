@@ -9,6 +9,13 @@ pub struct Camera3d {
     pub projection: Projection,
 }
 
+impl Camera3d {
+    /// Calculate the matrix for your camera
+    pub fn calc_matrix(&self) -> mint::ColumnMatrix4<f32> {
+        (self.projection.calc_matrix() * self.transform.calc_matrix()).into()
+    }
+}
+
 /// A 3d Camera
 #[derive(Debug, Clone, Copy)]
 pub struct Camera3dTransform {
@@ -108,30 +115,5 @@ impl Projection {
 
     pub(crate) fn calc_matrix(&self) -> Mat4 {
         Mat4::perspective_rh(self.fovy, self.aspect, self.znear, self.zfar)
-    }
-}
-#[repr(C)]
-// This is so we can store this in a buffer
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub(crate) struct CameraUniform {
-    pub view_proj: [[f32; 4]; 4],
-}
-
-impl Default for CameraUniform {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl CameraUniform {
-    pub(crate) fn new() -> Self {
-        Self {
-            view_proj: Mat4::IDENTITY.to_cols_array_2d(),
-        }
-    }
-
-    pub(crate) fn update_view_proj(&mut self, camera: &Camera3d) {
-        let view = camera.projection.calc_matrix() * camera.transform.calc_matrix();
-        self.view_proj = view.to_cols_array_2d();
     }
 }

@@ -47,6 +47,10 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
+    fn resize_event(&mut self, _: &mut Context, width: f32, height: f32) -> GameResult {
+        self.camera.projection.resize(width as u32, height as u32);
+        Ok(())
+    }
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         let k_ctx = &ctx.keyboard.clone();
         let (yaw_sin, yaw_cos) = self.camera.transform.yaw.sin_cos();
@@ -91,27 +95,22 @@ impl event::EventHandler for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas3d = Canvas3d::from_image(
-            ctx,
-            &mut self.static_camera,
-            self.canvas_image.clone(),
-            Color::RED,
-        );
-        canvas3d.set_shader(self.fancy_shader.clone());
+        let mut canvas3d = Canvas3d::from_image(ctx, self.canvas_image.clone(), Color::RED);
+        canvas3d.set_projection(self.static_camera.calc_matrix());
+        canvas3d.set_shader(&self.fancy_shader);
         canvas3d.draw(
-            ctx,
             &self.cube_one.0,
-            DrawParam3d::default()
+            *DrawParam3d::default()
                 .position(Vec3::new(-10.0, 0.0, 20.0))
                 .rotation(self.cube_one.1),
         );
         canvas3d.finish(ctx)?;
-        let mut canvas3d = Canvas3d::from_frame(ctx, &mut self.camera, Color::BLACK);
-        canvas3d.set_shader(self.fancy_shader.clone());
+        let mut canvas3d = Canvas3d::from_frame(ctx, Color::BLACK);
+        canvas3d.set_projection(self.camera.calc_matrix());
+        canvas3d.set_shader(&self.fancy_shader);
         canvas3d.draw(
-            ctx,
             &self.cube_two.0,
-            DrawParam3d::default().rotation(self.cube_two.1),
+            *DrawParam3d::default().rotation(self.cube_two.1),
         );
         canvas3d.finish(ctx)?;
         let mut canvas = graphics::Canvas::from_frame(ctx, None);

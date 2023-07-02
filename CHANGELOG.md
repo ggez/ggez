@@ -47,9 +47,6 @@ Some types that implement Drawable3d by default are `Mesh3d` and `Model`. `Mesh3
 Caveats:
 This is a new system so not everything is 100% there yet but we will slowly get there. The base is here to make games but there will be more to come such as follows:
 Custom Vertex Formats,
-InstanceArray3d,
-Shader Uniform support,
-Better system to handle pipeline switches(looking for help on this),
 and more to come.
 
 If you need advanced fast 3d rendering out of the box this isn't for you. We don't implement any fancy rendering features nor have plans to that is up to you to do in your projects!
