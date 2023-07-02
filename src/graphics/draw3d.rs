@@ -13,9 +13,9 @@ pub struct DrawParam3d {
     /// The alpha component is used for intensity of blending instead of actual alpha
     pub color: Color,
     /// Pivot point for the mesh rotation and scaling in world space
-    pub pivot: Option<mint::Vector3<f32>>,
+    pub pivot: Option<mint::Point3<f32>>,
     /// Pivot point for the mesh rotation and scaling relative to the position of the mesh
-    pub offset: Option<mint::Vector3<f32>>,
+    pub offset: Option<mint::Point3<f32>>,
 }
 
 impl DrawParam3d {
@@ -32,9 +32,9 @@ impl DrawParam3d {
     /// Change the position of the `DrawParam3d`
     pub fn position<P>(mut self, position_: P) -> Self
     where
-        P: Into<mint::Vector3<f32>>,
+        P: Into<mint::Point3<f32>>,
     {
-        let p: mint::Vector3<f32> = position_.into();
+        let p: mint::Point3<f32> = position_.into();
         self.transform.position = p;
         self
     }
@@ -42,9 +42,9 @@ impl DrawParam3d {
     /// Change the pivot of the `DrawParam3d`
     pub fn pivot<P>(mut self, pivot_: P) -> Self
     where
-        P: Into<mint::Vector3<f32>>,
+        P: Into<mint::Point3<f32>>,
     {
-        let p: mint::Vector3<f32> = pivot_.into();
+        let p: mint::Point3<f32> = pivot_.into();
         self.pivot = Some(p);
         self
     }
@@ -52,9 +52,9 @@ impl DrawParam3d {
     /// Change the offset of the `DrawParam3d`
     pub fn offset<O>(mut self, offset_: O) -> Self
     where
-        O: Into<mint::Vector3<f32>>,
+        O: Into<mint::Point3<f32>>,
     {
-        let o: mint::Vector3<f32> = offset_.into();
+        let o: mint::Point3<f32> = offset_.into();
         self.offset = Some(o);
         self
     }
@@ -102,7 +102,7 @@ pub(crate) struct DrawState3d {
 #[derive(Debug, Copy, Clone)]
 pub struct Transform3d {
     /// The position or translation of this `Transform3d`
-    pub position: mint::Vector3<f32>,
+    pub position: mint::Point3<f32>,
     /// The rotation of this `Transform3d`
     pub rotation: mint::Quaternion<f32>,
     /// The scale of this `Transform3d`
@@ -116,6 +116,47 @@ impl Default for Transform3d {
             rotation: glam::Quat::IDENTITY.into(),
             scale: glam::Vec3::new(1.0, 1.0, 1.0).into(),
         }
+    }
+}
+
+impl Transform3d {
+    /// Change the scale of the `Transform3d`
+    pub fn scale<V>(&mut self, scale_: V) -> &mut Self
+    where
+        V: Into<mint::Vector3<f32>>,
+    {
+        let p: mint::Vector3<f32> = scale_.into();
+        self.scale = p;
+        self
+    }
+
+    /// Change the position of the `Transform3d`
+    pub fn position<P>(&mut self, position_: P) -> &mut Self
+    where
+        P: Into<mint::Point3<f32>>,
+    {
+        let p: mint::Point3<f32> = position_.into();
+        self.position = p;
+        self
+    }
+
+    /// Change the rotation of the `Transform3d`
+    pub fn rotation<R>(&mut self, rotation_: R) -> &mut Self
+    where
+        R: Into<mint::Quaternion<f32>>,
+    {
+        let p: mint::Quaternion<f32> = rotation_.into();
+        self.rotation = p;
+        self
+    }
+
+    /// Move the position by given amount
+    pub fn translate<T>(&mut self, translate_: T) -> &mut Self
+    where
+        T: Into<mint::Vector3<f32>>,
+    {
+        let t: mint::Vector3<f32> = translate_.into();
+        self.position(glam::Vec3::from(self.position) + glam::Vec3::from(t))
     }
 }
 

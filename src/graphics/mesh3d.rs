@@ -26,9 +26,9 @@ use crate::graphics::{Drawable3d, GraphicsContext};
 #[derive(Debug, Copy, Clone)]
 pub struct Aabb {
     /// The center of this `Aabb`
-    pub center: mint::Vector3<f32>,
+    pub center: mint::Point3<f32>,
     /// The half_extents or half the size of this `Aabb` for each axis
-    pub half_extents: mint::Vector3<f32>,
+    pub half_extents: mint::Point3<f32>,
 }
 
 impl Default for Aabb {

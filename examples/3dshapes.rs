@@ -43,7 +43,7 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<Self> {
         let mut camera = Camera3dBundle::default();
-        camera.camera.yaw = 90.0;
+        camera.transform.yaw = 90.0;
         let plane = PosMesh::new(
             Mesh3dBuilder::new()
                 .plane(Vec2::splat(25.0), false)
@@ -71,39 +71,39 @@ impl MainState {
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         let k_ctx = &ctx.keyboard.clone();
-        let (yaw_sin, yaw_cos) = self.camera.camera.yaw.sin_cos();
+        let (yaw_sin, yaw_cos) = self.camera.transform.yaw.sin_cos();
         let forward = Vec3::new(yaw_cos, 0.0, yaw_sin).normalize();
         let right = Vec3::new(-yaw_sin, 0.0, yaw_cos).normalize();
 
         if k_ctx.is_key_pressed(KeyCode::Space) {
-            self.camera.camera.position.y += 1.0;
+            self.camera.transform.position.y += 1.0;
         }
         if k_ctx.is_key_pressed(KeyCode::C) {
-            self.camera.camera.position.y -= 1.0;
+            self.camera.transform.position.y -= 1.0;
         }
         if k_ctx.is_key_pressed(KeyCode::W) {
-            self.camera.camera.position += forward;
+            self.camera.transform.translate(forward);
         }
         if k_ctx.is_key_pressed(KeyCode::S) {
-            self.camera.camera.position -= forward;
+            self.camera.transform.translate(-forward);
         }
         if k_ctx.is_key_pressed(KeyCode::D) {
-            self.camera.camera.position += right;
+            self.camera.transform.translate(right);
         }
         if k_ctx.is_key_pressed(KeyCode::A) {
-            self.camera.camera.position -= right;
+            self.camera.transform.translate(-right);
         }
         if k_ctx.is_key_pressed(KeyCode::Right) {
-            self.camera.camera.yaw += 1.0_f32.to_radians();
+            self.camera.transform.yaw += 1.0_f32.to_radians();
         }
         if k_ctx.is_key_pressed(KeyCode::Left) {
-            self.camera.camera.yaw -= 1.0_f32.to_radians();
+            self.camera.transform.yaw -= 1.0_f32.to_radians();
         }
         if k_ctx.is_key_pressed(KeyCode::Up) {
-            self.camera.camera.pitch += 1.0_f32.to_radians();
+            self.camera.transform.pitch += 1.0_f32.to_radians();
         }
         if k_ctx.is_key_pressed(KeyCode::Down) {
-            self.camera.camera.pitch -= 1.0_f32.to_radians();
+            self.camera.transform.pitch -= 1.0_f32.to_radians();
         }
         Ok(())
     }
