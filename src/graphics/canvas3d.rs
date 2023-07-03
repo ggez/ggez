@@ -31,15 +31,13 @@ pub enum AlphaMode {
     },
 }
 
-/// Canvas3d are the main method of drawing meshes and text to images in ggez.
+/// Canvas3d are the main method of drawing 3d meshes in ggez.
 ///
 /// They can draw to any image that is capable of being drawn to (i.e. has been created with [`Image::new_canvas_image()`] or [`ScreenImage`]),
 /// or they can draw directly to the screen.
 ///
-/// Canvases are also where you can bind your own custom shaders and samplers to use while drawing.
-/// Canvases *do not* automatically batch draws. To used batched (instanced) drawing, refer to [`InstanceArray`].
 // note:
-//   Canvas does not draw anything itself. It is merely a state-tracking and draw-reordering wrapper around InternalCanvas, which does the actual
+//   Canvas3d does not draw anything itself. It is merely a state-tracking and draw-reordering wrapper around InternalCanvas3d, which does the actual
 // drawing.
 #[derive(Debug)]
 pub struct Canvas3d {
@@ -57,11 +55,11 @@ pub struct Canvas3d {
 }
 
 impl Canvas3d {
-    /// Create a new [Canvas] from an image. This will allow for drawing to a single color image.
+    /// Create a new [Canvas3d] from an image. This will allow for drawing to a single color image.
     ///
     /// `clear` will set the image initially to the given color, if a color is provided, or keep it as is, if it's `None`.
     ///
-    /// The image must be created for Canvas usage, i.e. [`Image::new_canvas_image`()], or [`ScreenImage`], and must only have a sample count of 1.
+    /// The image must be created for Canvas3d usage, i.e. [`Image::new_canvas_image`()], or [`ScreenImage`], and must only have a sample count of 1.
     #[inline]
     pub fn from_image(
         gfx: &impl Has<GraphicsContext>,
@@ -71,7 +69,7 @@ impl Canvas3d {
         Canvas3d::new(gfx, image, None, clear.into())
     }
 
-    /// Helper for [`Canvas::from_image`] for construction of a [`Canvas`] from a [`ScreenImage`].
+    /// Helper for [`Canvas3d::from_image`] for construction of a [`Canvas3d`] from a [`ScreenImage`].
     #[inline]
     pub fn from_screen_image(
         gfx: &impl Has<GraphicsContext>,
@@ -83,9 +81,9 @@ impl Canvas3d {
         Canvas3d::from_image(gfx, image, clear)
     }
 
-    /// Create a new [Canvas] from an MSAA image and a resolve target. This will allow for drawing with MSAA to a color image, then resolving the samples into a secondary target.
+    /// Create a new [Canvas3d] from an MSAA image and a resolve target. This will allow for drawing with MSAA to a color image, then resolving the samples into a secondary target.
     ///
-    /// Both images must be created for Canvas usage (see [`Canvas::from_image`]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
+    /// Both images must be created for Canvas3d usage (see [`Canvas3d::from_image`]). `msaa_image` must have a sample count > 1 and `resolve_image` must strictly have a sample count of 1.
     #[inline]
     pub fn from_msaa(
         gfx: &impl Has<GraphicsContext>,
@@ -96,7 +94,7 @@ impl Canvas3d {
         Canvas3d::new(gfx, msaa_image, Some(resolve), clear.into())
     }
 
-    /// Helper for [`Canvas::from_msaa`] for construction of an MSAA [`Canvas`] from a [`ScreenImage`].
+    /// Helper for [`Canvas3d::from_msaa`] for construction of an MSAA [`Canvas3d`] from a [`ScreenImage`].
     #[inline]
     pub fn from_screen_msaa(
         gfx: &impl Has<GraphicsContext>,
@@ -109,7 +107,7 @@ impl Canvas3d {
         Canvas3d::from_msaa(gfx, msaa, resolve, clear)
     }
 
-    /// Create a new [Canvas] that renders directly to the window surface.
+    /// Create a new [Canvas3d] that renders directly to the window surface.
     ///
     /// `clear` will set the image initially to the given color, if a color is provided, or keep it as is, if it's `None`.
     pub fn from_frame(gfx: &impl Has<GraphicsContext>, clear: impl Into<Option<Color>>) -> Self {
@@ -235,19 +233,20 @@ impl Canvas3d {
     pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
         self.state.alpha_mode = AlphaMode::Blend { blend_mode };
     }
-    /// Sets the active blend mode used when drawing meshes.
+    /// Sets the active blend mode used when drawing meshes. NOTE: This does not currently affect the shader code or pipeline outside of AlphaMode::Depth
     #[inline]
     pub fn set_alpha_mode(&mut self, alpha_mode: AlphaMode) {
         self.state.alpha_mode = alpha_mode;
     }
 
-    /// Returns the currently active blend mode used when drawing images.
+    /// Returns the currently active blend mode used when drawing meshes.
     #[inline]
     pub fn alpha_mode(&self) -> AlphaMode {
         self.state.alpha_mode
     }
 
     /// Sets the raw projection matrix to the given homogeneous
+    /// This is where you should set your camera matrix at using `Camera3d::calc_matrix()`
     /// transformation matrix.  For an introduction to graphics matrices,
     /// a good source is this: <http://ncase.me/matrix/>
     #[inline]
@@ -256,7 +255,7 @@ impl Canvas3d {
         self.screen = None;
     }
 
-    /// Gets a copy of the canvas's raw projection matrix.
+    /// Gets a copy of the canvas3d's raw projection matrix.
     #[inline]
     pub fn projection(&self) -> mint::ColumnMatrix4<f32> {
         self.state.projection
@@ -341,32 +340,11 @@ impl Canvas3d {
         self.state.scissor_rect = self.original_state.scissor_rect;
     }
 
-    /// Draws the given `Drawable` to the canvas with a given `DrawParam`.
+    /// Draws the given `Drawable3d` to the canvas with a given `DrawParam3d`.
     #[inline]
     pub fn draw(&mut self, drawable: &impl Drawable3d, param: impl Into<DrawParam3d>) {
         drawable.draw(self, param)
     }
-
-    /// Draws an `InstanceArray` textured with a `Mesh`.
-    ///
-    /// This differs from `canvas.draw(instances, param)` as in that case, the instances are
-    /// drawn as quads.
-    // pub fn draw_instanced_mesh(
-    //     &mut self,
-    //     mesh: Mesh3d,
-    //     instances: &InstanceArray,
-    //     param: impl Into<DrawParam3d>,
-    // ) {
-    //     instances.flush_wgpu(&self.wgpu).unwrap(); // Will only fail if you can't lock the buffers shouldn't happen
-    //     self.push_draw(
-    //         Draw3d::MeshInstances {
-    //             mesh,
-    //             instances: InstanceArrayView::from_instances(instances).unwrap(),
-    //             scale: false,
-    //         },
-    //         param.into(),
-    //     );
-    // }
 
     /// Finish drawing with this canvas and submit all the draw calls.
     #[inline]

@@ -17,7 +17,7 @@ use crate::{GameError, GameResult};
 use crevice::std140::AsStd140;
 use std::hash::Hash;
 
-/// A canvas represents a render pass and is how you render primitives such as meshes and text onto images.
+/// A canvas represents a render pass and is how you render meshes .
 #[allow(missing_debug_implementations)]
 pub struct InternalCanvas3d<'a> {
     wgpu: &'a WgpuContext,

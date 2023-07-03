@@ -19,8 +19,6 @@ use std::{
 const DEFAULT_CAPACITY: usize = 16;
 
 /// Array of instances for fast rendering of many meshes.
-///
-/// Traditionally known as a "batch".
 #[derive(Debug)]
 pub struct InstanceArray3d {
     pub(crate) buffer: Mutex<ArcBuffer>,
@@ -37,10 +35,10 @@ pub struct InstanceArray3d {
 }
 
 impl InstanceArray3d {
-    /// Creates a new [`InstanceArray`] capable of storing up to n-`capacity` instances
+    /// Creates a new [`InstanceArray3d`] capable of storing up to n-`capacity` instances
     /// (this can be changed and is resized automatically when needed).
     ///
-    /// If `image` is `None`, a 1x1 white image will be used which can be used to draw solid rectangles.
+    /// If `image` is `None`, a 1x1 white image will be used to texture meshes.
     ///
     /// This constructor is `unordered` meaning instances will be drawn by their push/index order. Use [`InstanceArray::new_ordered`] to order by z-value.
     pub fn new(
@@ -59,9 +57,9 @@ impl InstanceArray3d {
         )
     }
 
-    /// See [`InstanceArray::new`] for details.
+    /// See [`InstanceArray3d::new`] for details.
     ///
-    /// This constructor is `ordered` meaning instances will be drawn by their z-value at a slight performance cost. Use [`InstanceArray::new`] to order by index.
+    /// This constructor is `ordered` meaning instances will be drawn by their z-value at a slight performance cost. Use [`InstanceArray3d::new`] to order by index.
     pub fn new_ordered(
         gfx: &impl Has<GraphicsContext>,
         image: impl Into<Option<Image>>,
@@ -152,7 +150,7 @@ impl InstanceArray3d {
         }
     }
 
-    /// Resets all the instance data to a set of `DrawParam`.
+    /// Resets all the instance data to a set of `DrawParam3d`.
     pub fn set(&mut self, instances: impl IntoIterator<Item = DrawParam3d>) {
         self.dirty.store(true, SeqCst);
         self.params.clear();
@@ -199,7 +197,7 @@ impl InstanceArray3d {
         self.dirty.load(SeqCst)
     }
 
-    /// Returns an immutable slice of all the instance data in this [`InstanceArray`].
+    /// Returns an immutable slice of all the instance data in this [`InstanceArray3d`].
     #[inline]
     pub fn instances(&self) -> &[DrawParam3d] {
         &self.params
@@ -253,7 +251,7 @@ impl InstanceArray3d {
         Ok(())
     }
 
-    /// Changes the capacity of this `InstanceArray` while preserving instances.
+    /// Changes the capacity of this `InstanceArray3d` while preserving instances.
     ///
     /// If `new_capacity` is less than the `len`, the instances will be truncated.
     ///
@@ -283,14 +281,20 @@ impl InstanceArray3d {
         self.params.reserve(new_capacity - self.params.len());
     }
 
-    /// Returns this `InstanceArray`'s associated `image`.
+    /// Returns this `InstanceArray3d`'s associated `image`.
     #[inline]
     pub fn image(&self) -> Image {
         self.image.clone()
     }
 
-    /// Returns the number of instances this [`InstanceArray`] is capable of holding.
-    /// This number was specified when creating the [`InstanceArray`], or if the [`InstanceArray`]
+    /// Returns this `InstanceArray3d`'s associated `mesh`.
+    #[inline]
+    pub fn mesh(&self) -> Mesh3d {
+        self.mesh.clone()
+    }
+
+    /// Returns the number of instances this [`InstanceArray3d`] is capable of holding.
+    /// This number was specified when creating the [`InstanceArray3d`], or if the [`InstanceArray3d`]
     /// was automatically resized, the greatest length of instances.
     #[inline]
     pub fn capacity(&self) -> usize {

@@ -102,18 +102,13 @@ impl Default for DrawParam3d {
 pub enum Transform3d {
     /// Transform made of individual values
     Values {
-        /// The position to draw the graphic expressed as a `Point2`.
+        /// The position to draw the graphic expressed as a `Point3`.
         pos: mint::Point3<f32>,
-        /// The orientation of the graphic in radians.
+        /// The orientation of the graphic as a Quaternion.
         rotation: mint::Quaternion<f32>,
-        /// The x/y scale factors expressed as a `Vector2`.
+        /// The x/y scale factors expressed as a `Vector3`.
         scale: mint::Vector3<f32>,
         /// An offset, which is applied before scaling and rotation happen.
-        ///
-        /// For most objects this works as a relative offset (meaning `[0.5,0.5]` is an offset which
-        /// centers the object on the destination). These objects are:
-        /// * `Image`, `Canvas`, `Text` and the sprites inside an `InstanceArray` (as long as you're
-        /// not making an instanced mesh-draw)
         offset: Option<mint::Point3<f32>>,
         /// The pivot point or origin of the transform3d
         pivot: Option<mint::Point3<f32>>,
@@ -195,6 +190,7 @@ impl Transform3d {
         }
         self
     }
+
     /// Sets the pivot point basically the origin of the mesh
     pub fn pivot<P>(&mut self, pivot_: P) -> &mut Self
     where
@@ -218,6 +214,7 @@ impl Transform3d {
         }
         self
     }
+
     /// Crunches the transform down to a single matrix, if it's not one already.
     #[must_use]
     pub fn to_matrix(self) -> Self {
@@ -260,7 +257,7 @@ impl Transform3d {
 
 /// All types that can be drawn onto a canvas3d implement the `Drawable3d` trait.
 pub trait Drawable3d {
-    /// Draws the drawable onto the canvas.
+    /// Draws the drawable3d onto the canvas3d.
     fn draw(&self, canvas: &mut Canvas3d, param: impl Into<DrawParam3d>);
 }
 

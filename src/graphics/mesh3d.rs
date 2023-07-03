@@ -68,7 +68,7 @@ impl Aabb {
 }
 
 // TODO: Allow custom vertex formats
-/// The 3d Vertex format. Used for constructing meshes. At the moment it supports color, position, and texture coords
+/// The 3d Vertex format. Used for constructing meshes. At the moment it supports color, position, normals, and texture coords
 #[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod, Debug)]
 #[repr(C)]
 pub struct Vertex3d {
@@ -83,7 +83,7 @@ pub struct Vertex3d {
 }
 
 impl Vertex3d {
-    /// Create a new vertex from a position, uv, and color
+    /// Create a new vertex from a position, uv, normals, and color
     pub fn new<V, T, C, N>(position: V, uv: T, color: C, normals: N) -> Vertex3d
     where
         V: Into<Vector3<f32>>,
@@ -1026,7 +1026,7 @@ impl Model {
         Ok(())
     }
 
-    /// Load gltf file. Keep in mind rn the whole gltf will be loaded as one model. So multiple models won't be made in more complex scenes. This either has to be implemneted yourself or possibly will come later.
+    /// Load gltf file. Keep in mind right now the whole gltf will be loaded as one model. So multiple models won't be made in more complex scenes. This either has to be implemneted yourself or possibly will come later.
     #[cfg(feature = "gltf")]
     pub fn from_gltf(
         gfx: &mut impl HasMut<GraphicsContext>,

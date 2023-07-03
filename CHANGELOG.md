@@ -30,33 +30,46 @@ This will print `Coroutine says: "I came from a coroutine!"` after 100 frames.
 
 ### 3d
 
-You can now do 3d rendering with bevy. This entails a lot of new api ground to cover. Here are the main points.
-There is now a `Canvas3d` and `Drawable3d`. These are used to do any 3d rendering instead of `Canvas` a simple example of drawing may look like this:
+ggez is capable of basic 3d rendering. The APIs and types differ from 2d in the following ways.
+`Canvas3d` and `Drawable3d` are the 3d equivalents of Canvas and Drawable. A simple example of drawing might look like this:
 ```rust
 fn draw(&mut self, ctx: &mut Context) -> GameResult {
-  let mut canvas3d = Canvas3d::from_frame(ctx, &mut self.camera, Color::BLACK);
-  canvas3d.draw(ctx, &drawable, draw_param);
+  let mut canvas3d = Canvas3d::from_frame(ctx, Color::BLACK);
+  canvas3d.set_projection(self.camera.calc_matrix());
+  canvas3d.draw(&drawable, draw_param);
   canvas3d.finish(ctx)?;
 }
 ```
 
-Some types that implement Drawable3d by default are `Mesh3d` and `Model`. `Mesh3d` is used for a singular mesh.
-`Model` us used for more complicated objects that may be made up of multiple meshes. `Model` also provides a way to load basic gltf/glb files and obj files.
-(Note not nearly all of gltf is supported and obj models must be triangulated in your software of choice and no material files will be read).
+Some types that implement `Drawable3d` by default are `Mesh3d` and `Model`. `Mesh3d` is used for a singular mesh.
+`Model` is used for more complicated objects that may be made up of multiple meshes. `Model` also provides a way to load basic gltf/glb files and obj files.
+(Note: not all of gltf is supported. obj models must be triangulated in your software of choice, and no material files will be read).
+
+There is a huge list of gltf features right now we only support the very basics of loading mesh data with any transforms applied directly to the vertices.
+Here are some limitations:
+
+Gltf Caveats:
+Complicated scenes are loaded as a singular `Model` even if there is multiple nodes in the gltf scene. It will load all of them but just as a `Model`
+- No animation support
+- No PBR
+- No tangents
+- And more
 
 Caveats:
-This is a new system so not everything is 100% there yet but we will slowly get there. The base is here to make games but there will be more to come such as follows:
-Custom Vertex Formats,
-and more to come.
+This is a new system so not everything is 100% complete. The base features needed to make games are available, but there is more coming soon:
 
-If you need advanced fast 3d rendering out of the box this isn't for you. We don't implement any fancy rendering features nor have plans to that is up to you to do in your projects!
-This is focused on a simple api that is good enough for simple games to medium sized games eventually. But the larger games won't look as good as say godot or even something like bevy without
-extra work. Just keep this in mind.
+- Custom Vertex Formats
+- More examples on how to do common 3d task.
+- API may change 
+
+If you need advanced fast 3d rendering out of the box this isn't for you. We don't have plans to implement any fancy rendering features, that is up to you (or 3rd party crates).
+
+ggez provides a simple 3d API that is good enough for simple to medium sized games. Keep in mind that larger games will require extra work, compared to e.g. godot or bevy.
 
 ### New event / Mouse data
 
-The `MouseContext` now has a function called raw_delta() this returns the devices motion not the cursor motion. This is great for implementing controls that aren't cursor based such as a 3d camera.
-With this a new event callback exist called `raw_mouse_motion_event()`
+`MouseContext` now has a function called raw_delta() this returns device motion, rather than cursor motion. This is great for implementing controls that aren't cursor based, such as a 3d camera.
+A new event callback exists for this called `raw_mouse_motion_event()`
 
 ### Shader
 
@@ -64,12 +77,18 @@ With this a new event callback exist called `raw_mouse_motion_event()`
 
 ### Examples
 
-Added a few new exampels:
-`coroutine.rs`: Shows how to use Coroutines
-`3d.rs`: Shows various things to do with 3d
-`3dtexture.rs`: Renders a 3d scene to an image which then can be used on another 3d object or rendered to the screen
-`3dshapes.rs`: Shows off some simple primitives supported by the new `Mesh3dBuilder`
-`cpu_image.rs`: Shows how to copy an image to the cpu and back to the gpu
+General examples:
+
+- `coroutine.rs`: How to use Coroutines
+- `cpu_image.rs`: Copies an image to the cpu and back to the gpu
+
+
+3d related examples:
+
+- `3d.rs`: Various 3d related things
+- `3dtexture.rs`: Renders a 3d scene to an image that can be used on another 3d object, or rendered to the screen
+- `3dshapes.rs`: Simple primitives supported by the new `Mesh3dBuilder`
+- `3dinstance.rs`: Shows off how to use instancing in 3d
 
 ## Changed
 
