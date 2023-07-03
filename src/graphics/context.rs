@@ -84,7 +84,9 @@ pub struct GraphicsContext {
 
     #[cfg(feature = "3d")]
     pub(crate) draw_shader_3d: ArcShaderModule,
+    #[cfg(feature = "3d")]
     pub(crate) instance_shader_3d: ArcShaderModule,
+    #[cfg(feature = "3d")]
     pub(crate) instance_unordered_shader_3d: ArcShaderModule,
 
     pub(crate) instance_shader: ArcShaderModule,
@@ -420,7 +422,9 @@ impl GraphicsContext {
 
             #[cfg(feature = "3d")]
             draw_shader_3d,
+            #[cfg(feature = "3d")]
             instance_shader_3d,
+            #[cfg(feature = "3d")]
             instance_unordered_shader_3d,
 
             instance_shader,

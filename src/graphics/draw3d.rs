@@ -17,70 +17,102 @@ pub struct DrawParam3d {
 
 impl DrawParam3d {
     /// Change the scale of the `Transform3d`
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
     pub fn scale<V>(mut self, scale_: V) -> Self
     where
         V: Into<mint::Vector3<f32>>,
     {
         let p: mint::Vector3<f32> = scale_.into();
-        let _ = self.transform.scale(p);
+        self.transform = self.transform.scale(p);
         self
     }
 
     /// Change the position of the `Transform3d`
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
     pub fn position<P>(mut self, position_: P) -> Self
     where
         P: Into<mint::Point3<f32>>,
     {
         let p: mint::Point3<f32> = position_.into();
-        let _ = self.transform.position(p);
+        self.transform = self.transform.position(p);
         self
     }
 
     /// Change the rotation of the `Transform3d`
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
     pub fn rotation<R>(mut self, rotation_: R) -> Self
     where
         R: Into<mint::Quaternion<f32>>,
     {
         let p: mint::Quaternion<f32> = rotation_.into();
-        let _ = self.transform.rotation(p);
+        self.transform = self.transform.rotation(p);
         self
     }
 
     /// Move the position by given amount
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
     pub fn translate<T>(mut self, translate_: T) -> Self
     where
         T: Into<mint::Vector3<f32>>,
     {
         let t: mint::Vector3<f32> = translate_.into();
-        let _ = self.transform.translate(t);
+        self.transform = self.transform.translate(t);
         self
     }
     /// Change the pivot of the `DrawParam3d`
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
     pub fn pivot<P>(mut self, pivot_: P) -> Self
     where
         P: Into<mint::Point3<f32>>,
     {
         let p: mint::Point3<f32> = pivot_.into();
-        let _ = self.transform.pivot(p);
+        self.transform = self.transform.pivot(p);
         self
     }
 
     /// Change the offset of the `DrawParam3d`
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
     pub fn offset<O>(mut self, offset_: O) -> Self
     where
         O: Into<mint::Point3<f32>>,
     {
         let o: mint::Point3<f32> = offset_.into();
-        let _ = self.transform.offset(o);
+        self.transform = self.transform.offset(o);
         self
     }
     /// Change the color of the `DrawParam3d`
+    #[must_use]
     pub fn color(mut self, color: Color) -> Self {
         self.color = color;
         self
     }
 
     /// Change the transform of the `DrawParam3d`
+    #[must_use]
     pub fn transform(mut self, transform: Transform3d) -> Self {
         self.transform = transform;
         self
@@ -108,9 +140,9 @@ pub enum Transform3d {
         rotation: mint::Quaternion<f32>,
         /// The x/y scale factors expressed as a `Vector3`.
         scale: mint::Vector3<f32>,
-        /// An offset, which is applied before scaling and rotation happen.
+        /// An offset, which is applied before scaling and rotation happen. By default this will be the distance to the center of the given mesh or model
         offset: Option<mint::Point3<f32>>,
-        /// The pivot point or origin of the transform3d
+        /// The pivot point or origin of the transform3d. By default this will be the center of the mesh/model in world space.
         pivot: Option<mint::Point3<f32>>,
     },
     /// Transform made of an arbitrary matrix.
@@ -144,73 +176,118 @@ impl Default for Transform3d {
 
 impl Transform3d {
     /// Change the scale of the `Transform3d`
-    pub fn scale<V>(&mut self, scale_: V) -> &mut Self
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
+    pub fn scale<V>(mut self, scale_: V) -> Self
     where
         V: Into<mint::Vector3<f32>>,
     {
         let p: mint::Vector3<f32> = scale_.into();
-        if let Self::Values { scale, .. } = self {
+        if let Self::Values { ref mut scale, .. } = self {
             *scale = p;
+        } else {
+            panic!("Setting values of a Transform3d when it is a Matrix doesn't work!");
         }
         self
     }
 
     /// Change the position of the `Transform3d`
-    pub fn position<P>(&mut self, position_: P) -> &mut Self
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
+    pub fn position<P>(mut self, position_: P) -> Self
     where
         P: Into<mint::Point3<f32>>,
     {
         let p: mint::Point3<f32> = position_.into();
-        if let Self::Values { pos, .. } = self {
+        if let Self::Values { ref mut pos, .. } = self {
             *pos = p;
+        } else {
+            panic!("Setting values of a Transform3d when it is a Matrix doesn't work!");
         }
         self
     }
 
     /// Change the rotation of the `Transform3d`
-    pub fn rotation<R>(&mut self, rotation_: R) -> &mut Self
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
+    pub fn rotation<R>(mut self, rotation_: R) -> Self
     where
         R: Into<mint::Quaternion<f32>>,
     {
         let p: mint::Quaternion<f32> = rotation_.into();
-        if let Self::Values { rotation, .. } = self {
+        if let Self::Values {
+            ref mut rotation, ..
+        } = self
+        {
             *rotation = p;
+        } else {
+            panic!("Setting values of a Transform3d when it is a Matrix doesn't work!");
         }
         self
     }
 
     /// Move the position by given amount
-    pub fn translate<T>(&mut self, translate_: T) -> &mut Self
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
+    pub fn translate<T>(mut self, translate_: T) -> Self
     where
         T: Into<mint::Vector3<f32>>,
     {
         let t: mint::Vector3<f32> = translate_.into();
-        if let Self::Values { pos, .. } = self {
+        if let Self::Values { ref mut pos, .. } = self {
             *pos = (glam::Vec3::from(*pos) + glam::Vec3::from(t)).into();
+        } else {
+            panic!("Setting values of a Transform3d when it is a Matrix doesn't work!");
         }
         self
     }
 
     /// Sets the pivot point basically the origin of the mesh
-    pub fn pivot<P>(&mut self, pivot_: P) -> &mut Self
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
+    pub fn pivot<P>(mut self, pivot_: P) -> Self
     where
         P: Into<mint::Point3<f32>>,
     {
         let p: mint::Point3<f32> = pivot_.into();
-        if let Self::Values { pivot, .. } = self {
+        if let Self::Values { ref mut pivot, .. } = self {
             *pivot = Some(p)
+        } else {
+            panic!("Setting values of a Transform3d when it is a Matrix doesn't work!");
         }
         self
     }
 
     /// Change the offset of the `DrawParam3d`
-    pub fn offset<O>(&mut self, offset_: O) -> &mut Self
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Transform3d` is of the `Matrix` variant.
+    #[must_use]
+    pub fn offset<O>(mut self, offset_: O) -> Self
     where
         O: Into<mint::Point3<f32>>,
     {
         let o: mint::Point3<f32> = offset_.into();
-        if let Self::Values { offset, .. } = self {
+        if let Self::Values { ref mut offset, .. } = self {
             *offset = Some(o);
+        } else {
+            panic!("Setting values of a Transform3d when it is a Matrix doesn't work!");
         }
         self
     }

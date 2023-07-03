@@ -45,10 +45,8 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // To texture the sample use var tex instead of normal but this is to show off vertex normals
-    // var tex = textureSample(t, s, in.tex_coord) * vec4<f32>(in.normal, 1.0);
-    let normal = vec4<f32>((in.normal + 1.0) / 2.0, 1.0);
-    let tex_col = mix(normal, vec4<f32>(in.color.xyz, 1.0), 0.5) * in.vertex_color;
+    var tex = textureSample(t, s, in.tex_coord) *  vec4<f32>((in.normal + 1.0) / 2.0, 1.0);
+    let tex_col = mix(tex, vec4<f32>(in.color.xyz, 1.0), 0.5) * in.vertex_color;
     var blend = dot(in.tex_coord - vec2<f32>(0.5, 0.5), in.tex_coord - vec2<f32>(0.5, 0.5));
     return mix(tex_col, vec4<f32>(0.0, 0.0, 0.0, 1.0), blend);
 }

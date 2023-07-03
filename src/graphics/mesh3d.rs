@@ -27,10 +27,7 @@ use gltf::scene::Transform;
 
 fn transform_to_matrix(transform: Transform) -> Mat4 {
     let tr = transform.matrix();
-    Mat4::from_cols_array(&[
-        tr[0][0], tr[0][1], tr[0][2], tr[0][3], tr[1][0], tr[1][1], tr[1][2], tr[1][3], tr[2][0],
-        tr[2][1], tr[2][2], tr[2][3], tr[3][0], tr[3][1], tr[3][2], tr[3][3],
-    ])
+    Mat4::from_cols_array_2d(&tr)
 }
 
 // Implementation tooken from bevy
@@ -856,28 +853,47 @@ impl Model {
         Model { meshes: vec![mesh] }
     }
     /// Load gltf or obj depending on extension type
-    #[cfg(all(feature = "obj", feature = "gltf"))]
+    #[cfg(any(feature = "obj", feature = "gltf"))]
     pub fn from_path(
         gfx: &mut impl HasMut<GraphicsContext>,
         path: impl AsRef<Path>,
         image: impl Into<Option<Image>>,
     ) -> GameResult<Self> {
-        if let Some(extension) = path.as_ref().extension() {
-            if extension == "obj" {
-                Model::from_obj(gfx, path, image)
-            } else if extension == "gltf" || extension == "glb" {
-                Model::from_gltf(gfx, path)
-            } else {
-                Err(GameError::CustomError("Not a obj or gltf file".to_string()))
-            }
-        } else {
-            Err(GameError::CustomError(
-                "Failed to get extension".to_string(),
-            ))
+        match path.as_ref().extension() {
+            Some(os_string) => match os_string.to_str() {
+                #[cfg(feature = "obj")]
+                Some("obj") => Model::from_obj(gfx, path, image),
+                #[cfg(feature = "gltf")]
+                Some("gltf" | "glb") => Model::from_gltf(gfx, path),
+
+                Some(ext) => Err(GameError::MeshError(format!("Unknown extension {ext}"))),
+                None => Err(GameError::MeshError(
+                    "Failed to convert OsStr to &str".to_string(),
+                )),
+            },
+            None => Err(GameError::MeshError("Missing extension".to_string())),
         }
     }
 
-    /// Load obj file. Only triangulated obj's are supported. Keep in mind mtl file's currently don't affect the obj's rendering
+    /// Load a model from the given bytes. Either gltf or obj
+    #[cfg(any(feature = "obj", feature = "gltf"))]
+    pub fn from_bytes(
+        gfx: &mut impl HasMut<GraphicsContext>,
+        bytes: &[u8],
+        image: impl Into<Option<Image>>,
+    ) -> GameResult<Self> {
+        match Model::from_obj_bytes(gfx, bytes, image) {
+            Ok(model) => Ok(model),
+            Err(..) => match Model::from_gltf_bytes(gfx, bytes) {
+                Ok(model) => Ok(model),
+                Err(..) => Err(GameError::MeshError(
+                    "Bytes aren't an obj file or gltf file".to_string(),
+                )),
+            },
+        }
+    }
+
+    /// Load obj file from a path.
     #[cfg(feature = "obj")]
     pub fn from_obj(
         gfx: &mut impl HasMut<GraphicsContext>,
@@ -888,19 +904,43 @@ impl Model {
         let file = gfx.fs.open(path)?;
         let buf_reader = std::io::BufReader::new(file);
         match obj::load_obj(buf_reader) {
-            Ok(obj) => {
-                let mut img = Image::from_color(gfx, 1, 1, Some(graphics::Color::WHITE));
-                let image: Option<Image> = image.into();
-                if let Some(image) = image {
-                    img = image;
-                }
-                let mesh = Mesh3dBuilder::new()
-                    .from_data(obj.vertices, obj.indices, Some(img))
-                    .build(gfx);
-                Ok(Model { meshes: vec![mesh] })
-            }
-            Err(f) => Err(GameError::CustomError(f.to_string())),
+            Ok(obj) => Model::from_obj_raw(gfx, obj, image),
+            Err(f) => Err(GameError::MeshError(f.to_string())),
         }
+    }
+
+    /// Load obj file from a slice of bytes.
+    #[cfg(feature = "obj")]
+    pub fn from_obj_bytes(
+        gfx: &mut impl HasMut<GraphicsContext>,
+        bytes: &[u8],
+        image: impl Into<Option<Image>>,
+    ) -> GameResult<Self> {
+        let gfx = gfx.retrieve_mut();
+        let buf_reader = std::io::BufReader::new(bytes);
+        match obj::load_obj(buf_reader) {
+            Ok(obj) => Model::from_obj_raw(gfx, obj, image),
+            Err(f) => Err(GameError::MeshError(f.to_string())),
+        }
+    }
+
+    /// Load obj file. Only triangulated obj's are supported. Keep in mind mtl file's currently don't affect the obj's rendering
+    #[cfg(feature = "obj")]
+    pub fn from_obj_raw(
+        gfx: &mut impl HasMut<GraphicsContext>,
+        obj: obj::Obj<Vertex3d, u32>,
+        image: impl Into<Option<Image>>,
+    ) -> GameResult<Self> {
+        let gfx = gfx.retrieve_mut();
+        let mut img = Image::from_color(gfx, 1, 1, Some(graphics::Color::WHITE));
+        let image: Option<Image> = image.into();
+        if let Some(image) = image {
+            img = image;
+        }
+        let mesh = Mesh3dBuilder::new()
+            .from_data(obj.vertices, obj.indices, Some(img))
+            .build(gfx);
+        Ok(Model { meshes: vec![mesh] })
     }
 
     fn read_node(
@@ -918,13 +958,12 @@ impl Model {
             for primitive in mesh.primitives() {
                 let reader =
                     primitive.reader(|buffer| Some(buffer_data[buffer.index()].as_slice()));
-                let mut image = Image::from_color(gfx, 1, 1, Some(graphics::Color::WHITE));
                 let texture_source = &primitive
                     .material()
                     .pbr_metallic_roughness()
                     .base_color_texture()
                     .map(|tex| tex.texture().source().source());
-                if let Some(source) = texture_source {
+                let image = if let Some(source) = texture_source {
                     match source {
                         gltf::image::Source::View { view, mime_type } => {
                             let parent_buffer_data = &buffer_data[view.buffer().index()];
@@ -938,13 +977,13 @@ impl Model {
                             )
                             .unwrap_or_default()
                             .into_rgba8();
-                            image = Image::from_pixels(
+                            Image::from_pixels(
                                 gfx,
                                 dynamic_img.as_bytes(),
                                 wgpu::TextureFormat::Rgba8UnormSrgb,
                                 dynamic_img.width(),
                                 dynamic_img.height(),
-                            );
+                            )
                         }
                         gltf::image::Source::Uri { uri, mime_type } => {
                             let uri = percent_encoding::percent_decode_str(uri)
@@ -966,16 +1005,18 @@ impl Model {
                             )
                             .unwrap_or_default()
                             .into_rgba8();
-                            image = Image::from_pixels(
+                            Image::from_pixels(
                                 gfx,
                                 dynamic_img.as_bytes(),
                                 wgpu::TextureFormat::Rgba8UnormSrgb,
                                 dynamic_img.width(),
                                 dynamic_img.height(),
-                            );
+                            )
                         }
-                    };
-                }
+                    }
+                } else {
+                    Image::from_color(gfx, 1, 1, Some(graphics::Color::WHITE))
+                };
                 let mut vertices = Vec::default();
                 if let Some(vertices_read) = reader.read_positions() {
                     vertices = vertices_read
@@ -1026,60 +1067,79 @@ impl Model {
         Ok(())
     }
 
-    /// Load gltf file. Keep in mind right now the whole gltf will be loaded as one model. So multiple models won't be made in more complex scenes. This either has to be implemneted yourself or possibly will come later.
+    /// Load gltf from path
     #[cfg(feature = "gltf")]
     pub fn from_gltf(
         gfx: &mut impl HasMut<GraphicsContext>,
         path: impl AsRef<Path>,
     ) -> GameResult<Self> {
-        const VALID_MIME_TYPES: &[&str] = &["application/octet-stream", "application/gltf-buffer"];
         let gfx = gfx.retrieve_mut();
         let file = gfx.fs.open(path)?;
-        let mut meshes = Vec::default();
         if let Ok(gltf) = gltf::Gltf::from_reader(file) {
-            let mut buffer_data = Vec::new();
-            for buffer in gltf.buffers() {
-                match buffer.source() {
-                    gltf::buffer::Source::Uri(uri) => {
-                        let uri = percent_encoding::percent_decode_str(uri)
-                            .decode_utf8()
-                            .unwrap();
-                        let uri = uri.as_ref();
-                        let buffer_bytes = match DataUri::parse(uri) {
-                            Ok(data_uri) if VALID_MIME_TYPES.contains(&data_uri.mime_type) => {
-                                data_uri.decode()?
-                            }
-                            Ok(_) => {
-                                return Err(GameError::CustomError(
-                                    "Buffer Format Unsupported".to_string(),
-                                ))
-                            }
-                            Err(()) => {
-                                return Err(GameError::CustomError("Failed to decode".to_string()))
-                            }
-                        };
-                        buffer_data.push(buffer_bytes);
-                    }
-                    gltf::buffer::Source::Bin => {
-                        if let Some(blob) = gltf.blob.as_deref() {
-                            buffer_data.push(blob.into());
-                        } else {
-                            return Err(GameError::CustomError("MissingBlob".to_string()));
-                        }
-                    }
-                }
-            }
-            for scene in gltf.scenes() {
-                for node in scene.nodes() {
-                    Model::read_node(&mut meshes, &node, Mat4::IDENTITY, &mut buffer_data, gfx)?;
-                }
-            }
-            return Ok(Model { meshes });
+            return Model::from_raw_gltf(gfx, gltf);
         }
+        Err(GameError::MeshError("Failed to load gltf file".to_string()))
+    }
 
-        Err(GameError::CustomError(
-            "Failed to load gltf model".to_string(),
-        ))
+    /// Load gltf from bytes
+    #[cfg(feature = "gltf")]
+    pub fn from_gltf_bytes(
+        gfx: &mut impl HasMut<GraphicsContext>,
+        bytes: &[u8],
+    ) -> GameResult<Self> {
+        if let Ok(gltf) = gltf::Gltf::from_slice(bytes) {
+            return Model::from_raw_gltf(gfx, gltf);
+        }
+        Err(GameError::MeshError("Invalid gltf bytes".to_string()))
+    }
+
+    /// Load gltf file from a GLTF. Keep in mind right now the whole gltf will be loaded as one model. So multiple models won't be made in more complex scenes. This either has to be implemneted yourself or possibly will come later.
+    #[cfg(feature = "gltf")]
+    pub fn from_raw_gltf(
+        gfx: &mut impl HasMut<GraphicsContext>,
+        gltf: gltf::Gltf,
+    ) -> GameResult<Self> {
+        let gfx = gfx.retrieve_mut();
+        const VALID_MIME_TYPES: &[&str] = &["application/octet-stream", "application/gltf-buffer"];
+        let mut meshes = Vec::default();
+        let mut buffer_data = Vec::new();
+        for buffer in gltf.buffers() {
+            match buffer.source() {
+                gltf::buffer::Source::Uri(uri) => {
+                    let uri = percent_encoding::percent_decode_str(uri)
+                        .decode_utf8()
+                        .unwrap();
+                    let uri = uri.as_ref();
+                    let buffer_bytes = match DataUri::parse(uri) {
+                        Ok(data_uri) if VALID_MIME_TYPES.contains(&data_uri.mime_type) => {
+                            data_uri.decode()?
+                        }
+                        Ok(_) => {
+                            return Err(GameError::CustomError(
+                                "Buffer Format Unsupported".to_string(),
+                            ))
+                        }
+                        Err(()) => {
+                            return Err(GameError::CustomError("Failed to decode".to_string()))
+                        }
+                    };
+                    buffer_data.push(buffer_bytes);
+                }
+                gltf::buffer::Source::Bin => {
+                    if let Some(blob) = gltf.blob.as_deref() {
+                        buffer_data.push(blob.into());
+                    } else {
+                        return Err(GameError::CustomError("MissingBlob".to_string()));
+                    }
+                }
+            }
+        }
+        for scene in gltf.scenes() {
+            for node in scene.nodes() {
+                Model::read_node(&mut meshes, &node, Mat4::IDENTITY, &mut buffer_data, gfx)?;
+            }
+        }
+        Ok(Model { meshes })
     }
     /// Generate an aabb for this Model
     pub fn to_aabb(&self) -> Option<Aabb> {

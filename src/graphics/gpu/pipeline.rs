@@ -61,17 +61,13 @@ impl PipelineCache {
                             polygon_mode: wgpu::PolygonMode::Fill,
                             conservative: false,
                         },
-                        depth_stencil: if info.depth.is_some() {
-                            Some(wgpu::DepthStencilState {
-                                format: wgpu::TextureFormat::Depth32Float,
-                                depth_write_enabled: true,
-                                depth_compare: info.depth.unwrap(), // Fine since we checked if some
-                                stencil: Default::default(),
-                                bias: Default::default(),
-                            })
-                        } else {
-                            None
-                        },
+                        depth_stencil: info.depth.map(|depth_compare| wgpu::DepthStencilState {
+                            format: wgpu::TextureFormat::Depth32Float,
+                            depth_write_enabled: true,
+                            depth_compare,
+                            stencil: Default::default(),
+                            bias: Default::default(),
+                        }),
                         multisample: wgpu::MultisampleState {
                             count: info.samples,
                             mask: !0,

@@ -68,16 +68,16 @@ impl event::EventHandler for MainState {
             self.camera.transform.position.y -= 1.0;
         }
         if k_ctx.is_key_pressed(KeyCode::W) {
-            self.camera.transform.translate(forward);
+            self.camera.transform = self.camera.transform.translate(forward);
         }
         if k_ctx.is_key_pressed(KeyCode::S) {
-            self.camera.transform.translate(-forward);
+            self.camera.transform = self.camera.transform.translate(-forward);
         }
         if k_ctx.is_key_pressed(KeyCode::D) {
-            self.camera.transform.translate(right);
+            self.camera.transform = self.camera.transform.translate(right);
         }
         if k_ctx.is_key_pressed(KeyCode::A) {
-            self.camera.transform.translate(-right);
+            self.camera.transform = self.camera.transform.translate(-right);
         }
         if k_ctx.is_key_pressed(KeyCode::Right) {
             self.camera.transform.yaw += 1.0_f32.to_radians();
@@ -96,7 +96,7 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas3d = Canvas3d::from_image(ctx, self.canvas_image.clone(), Color::RED);
-        canvas3d.set_projection(self.static_camera.calc_matrix());
+        canvas3d.set_projection(self.static_camera.to_matrix());
         canvas3d.set_shader(&self.fancy_shader);
         canvas3d.draw(
             &self.cube_one.0,
@@ -106,7 +106,7 @@ impl event::EventHandler for MainState {
         );
         canvas3d.finish(ctx)?;
         let mut canvas3d = Canvas3d::from_frame(ctx, Color::BLACK);
-        canvas3d.set_projection(self.camera.calc_matrix());
+        canvas3d.set_projection(self.camera.to_matrix());
         canvas3d.set_shader(&self.fancy_shader);
         canvas3d.draw(
             &self.cube_two.0,

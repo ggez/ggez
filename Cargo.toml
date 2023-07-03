@@ -75,7 +75,7 @@ typed-arena = "2.0"
 ordered-float = "3.3"
 percent-encoding = { version = "2.3.0", optional = true }
 base64 = { version = "0.21.2", optional = true }
-gltf = { version = "1.2.0", optional = true }
+gltf = { version = "1.2.0", optional = true, default-features = false, features = ["utils"] }
 obj-rs = { version = "0.7.1", optional = true }
 num-traits = "0.2"
 

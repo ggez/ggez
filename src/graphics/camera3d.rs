@@ -11,8 +11,8 @@ pub struct Camera3d {
 
 impl Camera3d {
     /// Calculate the matrix for your camera
-    pub fn calc_matrix(&self) -> mint::ColumnMatrix4<f32> {
-        (self.projection.calc_matrix() * self.transform.calc_matrix()).into()
+    pub fn to_matrix(self) -> mint::ColumnMatrix4<f32> {
+        (self.projection.to_matrix() * self.transform.to_matrix()).into()
     }
 }
 
@@ -48,7 +48,8 @@ impl Camera3dTransform {
     }
 
     /// Change the position of the `Camera3d`
-    pub fn position<P>(&mut self, position_: P) -> &mut Self
+    #[must_use]
+    pub fn position<P>(mut self, position_: P) -> Self
     where
         P: Into<mint::Point3<f32>>,
     {
@@ -58,7 +59,8 @@ impl Camera3dTransform {
     }
 
     /// Move the position by given amount
-    pub fn translate<T>(&mut self, translate_: T) -> &mut Self
+    #[must_use]
+    pub fn translate<T>(self, translate_: T) -> Self
     where
         T: Into<mint::Vector3<f32>>,
     {
@@ -66,7 +68,7 @@ impl Camera3dTransform {
         self.position(glam::Vec3::from(self.position) + glam::Vec3::from(t))
     }
 
-    pub(crate) fn calc_matrix(&self) -> Mat4 {
+    pub(crate) fn to_matrix(self) -> Mat4 {
         let (sin_pitch, cos_pitch) = self.pitch.sin_cos();
         let (sin_yaw, cos_yaw) = self.yaw.sin_cos();
 
@@ -113,7 +115,7 @@ impl Projection {
         self.aspect = width as f32 / height as f32;
     }
 
-    pub(crate) fn calc_matrix(&self) -> Mat4 {
+    pub(crate) fn to_matrix(self) -> Mat4 {
         Mat4::perspective_rh(self.fovy, self.aspect, self.znear, self.zfar)
     }
 }
