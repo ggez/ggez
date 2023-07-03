@@ -78,17 +78,21 @@ pub struct Vertex3d {
     pub tex_coord: [f32; 2],
     /// The color of this vertex
     pub color: [f32; 4],
+    /// Normal of this vertex (the direction it faces)
+    pub normals: [f32; 3],
 }
 
 impl Vertex3d {
     /// Create a new vertex from a position, uv, and color
-    pub fn new<V, T, C>(position: V, uv: T, color: C) -> Vertex3d
+    pub fn new<V, T, C, N>(position: V, uv: T, color: C, normals: N) -> Vertex3d
     where
         V: Into<Vector3<f32>>,
         T: Into<Vector2<f32>>,
         C: Into<Option<graphics::Color>>,
+        N: Into<Vector3<f32>>,
     {
         let position: Vector3<f32> = position.into();
+        let normals: Vector3<f32> = normals.into();
         let uv: Vector2<f32> = uv.into();
         let color: Option<graphics::Color> = color.into();
         let color = color
@@ -98,14 +102,16 @@ impl Vertex3d {
             pos: position.into(),
             tex_coord: uv.into(),
             color,
+            normals: normals.into(),
         }
     }
 
     pub(crate) fn desc() -> wgpu::VertexBufferLayout<'static> {
-        const ATTRIBS: [wgpu::VertexAttribute; 3] = vertex_attr_array![
+        const ATTRIBS: [wgpu::VertexAttribute; 4] = vertex_attr_array![
             0 => Float32x3,
             1 => Float32x2,
             2 => Float32x4,
+            3 => Float32x3,
         ];
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex3d>() as _,
@@ -156,35 +162,155 @@ impl Mesh3dBuilder {
         let max = glam::Vec3::from(size) / 2.0;
         self.vertices = vec![
             // top (0, 0, 1)
-            Vertex3d::new([min.x, max.y, max.z], [0.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([max.x, max.y, max.z], [1.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([max.x, max.y, min.z], [1.0, 0.0], graphics::Color::WHITE),
-            Vertex3d::new([min.x, max.y, min.z], [0.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new(
+                [min.x, max.y, max.z],
+                [0.0, 1.0],
+                graphics::Color::WHITE,
+                [0.0, 1.0, 0.0],
+            ),
+            Vertex3d::new(
+                [max.x, max.y, max.z],
+                [1.0, 1.0],
+                graphics::Color::WHITE,
+                [0.0, 1.0, 0.0],
+            ),
+            Vertex3d::new(
+                [max.x, max.y, min.z],
+                [1.0, 0.0],
+                graphics::Color::WHITE,
+                [0.0, 1.0, 0.0],
+            ),
+            Vertex3d::new(
+                [min.x, max.y, min.z],
+                [0.0, 0.0],
+                graphics::Color::WHITE,
+                [0.0, 1.0, 0.0],
+            ),
             // bottom (0.0, 0.0, -1.0, graphics::Color::WHITE)
-            Vertex3d::new([min.x, min.y, min.z], [1.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([max.x, min.y, min.z], [0.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([max.x, min.y, max.z], [0.0, 0.0], graphics::Color::WHITE),
-            Vertex3d::new([min.x, min.y, max.z], [1.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new(
+                [min.x, min.y, min.z],
+                [1.0, 1.0],
+                graphics::Color::WHITE,
+                [0.0, -1.0, 0.0],
+            ),
+            Vertex3d::new(
+                [max.x, min.y, min.z],
+                [0.0, 1.0],
+                graphics::Color::WHITE,
+                [0.0, -1.0, 0.0],
+            ),
+            Vertex3d::new(
+                [max.x, min.y, max.z],
+                [0.0, 0.0],
+                graphics::Color::WHITE,
+                [0.0, -1.0, 0.0],
+            ),
+            Vertex3d::new(
+                [min.x, min.y, max.z],
+                [1.0, 0.0],
+                graphics::Color::WHITE,
+                [0.0, -1.0, 0.0],
+            ),
             // right (1.0, 0.0, 0.0, graphics::Color::WHITE)
-            Vertex3d::new([max.x, max.y, min.z], [0.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([max.x, max.y, max.z], [1.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([max.x, min.y, max.z], [1.0, 0.0], graphics::Color::WHITE),
-            Vertex3d::new([max.x, min.y, min.z], [0.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new(
+                [max.x, max.y, min.z],
+                [0.0, 1.0],
+                graphics::Color::WHITE,
+                [1.0, 0.0, 0.0],
+            ),
+            Vertex3d::new(
+                [max.x, max.y, max.z],
+                [1.0, 1.0],
+                graphics::Color::WHITE,
+                [1.0, 0.0, 0.0],
+            ),
+            Vertex3d::new(
+                [max.x, min.y, max.z],
+                [1.0, 0.0],
+                graphics::Color::WHITE,
+                [1.0, 0.0, 0.0],
+            ),
+            Vertex3d::new(
+                [max.x, min.y, min.z],
+                [0.0, 0.0],
+                graphics::Color::WHITE,
+                [1.0, 0.0, 0.0],
+            ),
             // left (-1.0, 0.0, 0.0, graphics::Color::WHITE)
-            Vertex3d::new([min.x, min.y, min.z], [1.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([min.x, min.y, max.z], [0.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([min.x, max.y, max.y], [0.0, 0.0], graphics::Color::WHITE),
-            Vertex3d::new([min.x, max.y, min.z], [1.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new(
+                [min.x, min.y, min.z],
+                [1.0, 1.0],
+                graphics::Color::WHITE,
+                [-1.0, 0.0, 0.0],
+            ),
+            Vertex3d::new(
+                [min.x, min.y, max.z],
+                [0.0, 1.0],
+                graphics::Color::WHITE,
+                [-1.0, 0.0, 0.0],
+            ),
+            Vertex3d::new(
+                [min.x, max.y, max.y],
+                [0.0, 0.0],
+                graphics::Color::WHITE,
+                [-1.0, 0.0, 0.0],
+            ),
+            Vertex3d::new(
+                [min.x, max.y, min.z],
+                [1.0, 0.0],
+                graphics::Color::WHITE,
+                [-1.0, 0.0, 0.0],
+            ),
             // front (0.0, 1.0, 0.0, graphics::Color::WHITE)
-            Vertex3d::new([max.x, max.y, max.z], [1.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([min.x, max.y, max.z], [0.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([min.x, min.y, max.z], [0.0, 0.0], graphics::Color::WHITE),
-            Vertex3d::new([max.x, min.y, max.z], [1.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new(
+                [max.x, max.y, max.z],
+                [1.0, 1.0],
+                graphics::Color::WHITE,
+                [0.0, 0.0, 1.0],
+            ),
+            Vertex3d::new(
+                [min.x, max.y, max.z],
+                [0.0, 1.0],
+                graphics::Color::WHITE,
+                [0.0, 0.0, 1.0],
+            ),
+            Vertex3d::new(
+                [min.x, min.y, max.z],
+                [0.0, 0.0],
+                graphics::Color::WHITE,
+                [0.0, 0.0, 1.0],
+            ),
+            Vertex3d::new(
+                [max.x, min.y, max.z],
+                [1.0, 0.0],
+                graphics::Color::WHITE,
+                [0.0, 0.0, 1.0],
+            ),
             // back (0.0, -1.0, 0.0, graphics::Color::WHITE)
-            Vertex3d::new([max.x, min.y, min.z], [0.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([min.x, min.y, min.z], [1.0, 1.0], graphics::Color::WHITE),
-            Vertex3d::new([min.x, max.y, min.z], [1.0, 0.0], graphics::Color::WHITE),
-            Vertex3d::new([max.x, max.y, min.z], [0.0, 0.0], graphics::Color::WHITE),
+            Vertex3d::new(
+                [max.x, min.y, min.z],
+                [0.0, 1.0],
+                graphics::Color::WHITE,
+                [0.0, 0.0, -1.0],
+            ),
+            Vertex3d::new(
+                [min.x, min.y, min.z],
+                [1.0, 1.0],
+                graphics::Color::WHITE,
+                [0.0, 0.0, -1.0],
+            ),
+            Vertex3d::new(
+                [min.x, max.y, min.z],
+                [1.0, 0.0],
+                graphics::Color::WHITE,
+                [0.0, 0.0, -1.0],
+            ),
+            Vertex3d::new(
+                [max.x, max.y, min.z],
+                [0.0, 0.0],
+                graphics::Color::WHITE,
+                [0.0, 0.0, -1.0],
+            ),
         ];
 
         self.indices = vec![
@@ -211,50 +337,211 @@ impl Mesh3dBuilder {
         if invert {
             self.vertices = vec![
                 // Base
-                Vertex3d::new([min.x, 0.0, max.y], [0.0, 1.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, min.y], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [min.x, 0.0, max.y],
+                    [0.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, max.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, min.y],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [min.x, 0.0, min.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 1.0, 0.0],
+                ),
+                // TODO: Make these normals correct angles as well
                 // Side 1
-                Vertex3d::new([max.x, 0.0, min.y], [1.0, 1.0], graphics::Color::WHITE),
-                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [max.x, 0.0, min.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [0.0, height, 0.0],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [min.x, 0.0, min.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
                 // Side 2
-                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
-                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [max.x, 0.0, max.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [0.0, height, 0.0],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, min.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
                 // Side 3
-                Vertex3d::new([min.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
-                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, max.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [min.x, 0.0, max.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [0.0, height, 0.0],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, max.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
                 // Side 4
-                Vertex3d::new([min.x, 0.0, min.y], [1.0, 1.0], graphics::Color::WHITE),
-                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([min.x, 0.0, max.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [min.x, 0.0, min.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [0.0, height, 0.0],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [min.x, 0.0, max.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
             ];
         } else {
             self.vertices = vec![
                 // Base
-                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, min.y], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
-                Vertex3d::new([min.x, 0.0, max.y], [0.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [min.x, 0.0, min.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, -1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, min.y],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, -1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, max.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, -1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [min.x, 0.0, max.y],
+                    [0.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, -1.0, 0.0],
+                ),
                 // Side 1
-                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, min.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [min.x, 0.0, min.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [0.0, height, 0.0],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, min.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
                 // Side 2
-                Vertex3d::new([max.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [max.x, 0.0, min.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [0.0, height, 0.0],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, max.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
                 // Side 3
-                Vertex3d::new([max.x, 0.0, max.y], [0.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([min.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [max.x, 0.0, max.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [0.0, height, 0.0],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [min.x, 0.0, max.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
                 // Side 4
-                Vertex3d::new([min.x, 0.0, max.y], [0.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([0.0, height, 0.0], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([min.x, 0.0, min.y], [1.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [min.x, 0.0, max.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [0.0, height, 0.0],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [min.x, 0.0, min.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 0.0, 0.0],
+                ),
             ];
         }
         self.indices = vec![0, 1, 2, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
@@ -267,17 +554,57 @@ impl Mesh3dBuilder {
         let max = glam::Vec2::from(size) / 2.0;
         if invert {
             self.vertices = vec![
-                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, min.y], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
-                Vertex3d::new([min.x, 0.0, max.y], [0.0, 1.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [min.x, 0.0, min.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, -1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, min.y],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, -1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, max.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, -1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [min.x, 0.0, max.y],
+                    [0.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, -1.0, 0.0],
+                ),
             ];
         } else {
             self.vertices = vec![
-                Vertex3d::new([min.x, 0.0, max.y], [0.0, 1.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, max.y], [1.0, 1.0], graphics::Color::WHITE),
-                Vertex3d::new([max.x, 0.0, min.y], [1.0, 0.0], graphics::Color::WHITE),
-                Vertex3d::new([min.x, 0.0, min.y], [0.0, 0.0], graphics::Color::WHITE),
+                Vertex3d::new(
+                    [min.x, 0.0, max.y],
+                    [0.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, max.y],
+                    [1.0, 1.0],
+                    graphics::Color::WHITE,
+                    [0.0, 1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [max.x, 0.0, min.y],
+                    [1.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 1.0, 0.0],
+                ),
+                Vertex3d::new(
+                    [min.x, 0.0, min.y],
+                    [0.0, 0.0],
+                    graphics::Color::WHITE,
+                    [0.0, 1.0, 0.0],
+                ),
             ];
         }
         self.indices = vec![0, 1, 2, 0, 2, 3];
@@ -422,19 +749,20 @@ impl<'a> DataUri<'a> {
 impl<I: FromPrimitive> obj::FromRawVertex<I> for Vertex3d {
     fn process(
         vertices: Vec<(f32, f32, f32, f32)>,
-        _normals: Vec<(f32, f32, f32)>,
+        normals: Vec<(f32, f32, f32)>,
         tex_coords: Vec<(f32, f32, f32)>,
         polygons: Vec<obj::raw::object::Polygon>,
     ) -> obj::ObjResult<(Vec<Self>, Vec<I>)> {
-        let verts = if vertices.len() == tex_coords.len() {
+        let verts = if vertices.len() == tex_coords.len() && vertices.len() == normals.len() {
             std::iter::zip(vertices, tex_coords)
+                .zip(normals)
                 .map(|v| {
                     println!("{:?}", v);
                     Vertex3d {
-                        pos: [v.0 .0, v.0 .1, v.0 .2],
-                        // tex_coord: [0.0, 0.0],
-                        tex_coord: [v.1 .0, v.1 .1],
+                        pos: [v.0 .0 .0, v.0 .0 .1, v.0 .0 .2],
+                        tex_coord: [v.0 .1 .0, v.0 .1 .1],
                         color: [1.0, 1.0, 1.0, 1.0],
+                        normals: [v.1 .0, v.1 .1, v.1 .2],
                     }
                 })
                 .collect()
@@ -445,6 +773,7 @@ impl<I: FromPrimitive> obj::FromRawVertex<I> for Vertex3d {
                     pos: [v.0, v.1, v.2],
                     tex_coord: [0.0, 0.0],
                     color: [1.0, 1.0, 1.0, 1.0],
+                    normals: [0.0, 0.0, 0.0],
                 })
                 .collect()
         };
@@ -658,10 +987,12 @@ impl Model {
                                 pos,
                                 glam::Vec2::ZERO,
                                 graphics::Color::new(1.0, 1.0, 1.0, 0.0),
+                                [0.0, 0.0, 0.0],
                             )
                         })
                         .collect();
                 }
+
                 if let Some(tex_coords) = reader.read_tex_coords(0).map(|v| v.into_f32()) {
                     let mut idx = 0;
                     tex_coords.for_each(|tex_coord| {
@@ -670,6 +1001,16 @@ impl Model {
                         idx += 1;
                     });
                 }
+
+                if let Some(normals) = reader.read_normals() {
+                    let mut idx = 0;
+                    normals.for_each(|normals| {
+                        vertices[idx].normals = normals;
+
+                        idx += 1;
+                    });
+                }
+
                 let mut indices = Vec::new();
                 if let Some(indices_raw) = reader.read_indices() {
                     indices.append(&mut indices_raw.into_u32().collect::<Vec<u32>>());

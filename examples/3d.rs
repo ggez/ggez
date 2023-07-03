@@ -20,70 +20,42 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<Self> {
         let mut camera = Camera3d::default();
         let vertex_data = vec![
-            // top (0.0, 0.0, 1.0)
-            Vertex3d::new([-1.0, -1.0, 1.0], [0.0, 0.0], Color::GREEN),
-            Vertex3d::new([1.0, -1.0, 1.0], [1.0, 0.0], Color::GREEN),
-            Vertex3d::new([1.0, 1.0, 1.0], [1.0, 1.0], Color::GREEN),
-            Vertex3d::new([-1.0, 1.0, 1.0], [0.0, 1.0], Color::new(0.0, 1.0, 0.0, 1.0)),
-            // bottom (0.0, 0.0, -1.0)
-            Vertex3d::new([-1.0, 1.0, -1.0], [1.0, 0.0], None),
-            Vertex3d::new([1.0, 1.0, -1.0], [0.0, 0.0], None),
-            Vertex3d::new([1.0, -1.0, -1.0], [0.0, 1.0], None),
-            Vertex3d::new([-1.0, -1.0, -1.0], [1.0, 1.0], None),
+            // front (0.0, 0.0, 1.0)
+            Vertex3d::new([-1.0, -1.0, 1.0], [0.0, 0.0], Color::GREEN, [0.0, 1.0, 0.0]),
+            Vertex3d::new([1.0, -1.0, 1.0], [1.0, 0.0], Color::GREEN, [0.0, 1.0, 0.0]),
+            Vertex3d::new([1.0, 1.0, 1.0], [1.0, 1.0], Color::GREEN, [0.0, 1.0, 0.0]),
+            Vertex3d::new(
+                [-1.0, 1.0, 1.0],
+                [0.0, 1.0],
+                Color::new(0.0, 1.0, 0.0, 1.0),
+                [0.0, 0.0, 1.0],
+            ),
+            // back (0.0, 0.0, -1.0)
+            Vertex3d::new([-1.0, 1.0, -1.0], [1.0, 0.0], None, [0.0, 0.0, -1.0]),
+            Vertex3d::new([1.0, 1.0, -1.0], [0.0, 0.0], None, [0.0, 0.0, -1.0]),
+            Vertex3d::new([1.0, -1.0, -1.0], [0.0, 1.0], None, [0.0, 0.0, -1.0]),
+            Vertex3d::new([-1.0, -1.0, -1.0], [1.0, 1.0], None, [0.0, 0.0, -1.0]),
             // right (1.0, 0.0, 0.0)
-            Vertex3d::new([1.0, -1.0, -1.0], [0.0, 0.0], None),
-            Vertex3d::new([1.0, 1.0, -1.0], [1.0, 0.0], None),
-            Vertex3d::new([1.0, 1.0, 1.0], [1.0, 1.0], None),
-            Vertex3d::new([1.0, -1.0, 1.0], [0.0, 1.0], None),
+            Vertex3d::new([1.0, -1.0, -1.0], [0.0, 0.0], None, [1.0, 0.0, 0.0]),
+            Vertex3d::new([1.0, 1.0, -1.0], [1.0, 0.0], None, [1.0, 0.0, 0.0]),
+            Vertex3d::new([1.0, 1.0, 1.0], [1.0, 1.0], None, [1.0, 0.0, 0.0]),
+            Vertex3d::new([1.0, -1.0, 1.0], [0.0, 1.0], None, [1.0, 0.0, 0.0]),
             // left (-1.0, 0.0, 0.0)
-            Vertex3d::new([-1.0, -1.0, 1.0], [1.0, 0.0], None),
-            Vertex3d::new([-1.0, 1.0, 1.0], [0.0, 0.0], None),
-            Vertex3d::new([-1.0, 1.0, -1.0], [0.0, 1.0], None),
-            Vertex3d::new([-1.0, -1.0, -1.0], [1.0, 1.0], None),
-            // front (0.0, 1.0, 0.0)
-            Vertex3d::new([1.0, 1.0, -1.0], [1.0, 0.0], None),
-            Vertex3d::new([-1.0, 1.0, -1.0], [0.0, 0.0], None),
-            Vertex3d::new([-1.0, 1.0, 1.0], [0.0, 1.0], None),
-            Vertex3d::new([1.0, 1.0, 1.0], [1.0, 1.0], None),
-            // back (0.0, -1.0, 0.0)
-            Vertex3d::new([1.0, -1.0, 1.0], [0.0, 0.0], None),
-            Vertex3d::new([-1.0, -1.0, 1.0], [1.0, 0.0], None),
-            Vertex3d::new([-1.0, -1.0, -1.0], [1.0, 1.0], None),
-            Vertex3d::new([1.0, -1.0, -1.0], [0.0, 1.0], None),
+            Vertex3d::new([-1.0, -1.0, 1.0], [1.0, 0.0], None, [-1.0, 0.0, 0.0]),
+            Vertex3d::new([-1.0, 1.0, 1.0], [0.0, 0.0], None, [-1.0, 0.0, 0.0]),
+            Vertex3d::new([-1.0, 1.0, -1.0], [0.0, 1.0], None, [-1.0, 0.0, 0.0]),
+            Vertex3d::new([-1.0, -1.0, -1.0], [1.0, 1.0], None, [-1.0, 0.0, 0.0]),
+            // top (0.0, 1.0, 0.0)
+            Vertex3d::new([1.0, 1.0, -1.0], [1.0, 0.0], None, [0.0, 1.0, 0.0]),
+            Vertex3d::new([-1.0, 1.0, -1.0], [0.0, 0.0], None, [0.0, 1.0, 0.0]),
+            Vertex3d::new([-1.0, 1.0, 1.0], [0.0, 1.0], None, [0.0, 1.0, 0.0]),
+            Vertex3d::new([1.0, 1.0, 1.0], [1.0, 1.0], None, [0.0, 1.0, 0.0]),
+            // bottom (0.0, -1.0, 0.0)
+            Vertex3d::new([1.0, -1.0, 1.0], [0.0, 0.0], None, [0.0, -1.0, 0.0]),
+            Vertex3d::new([-1.0, -1.0, 1.0], [1.0, 0.0], None, [0.0, -1.0, 0.0]),
+            Vertex3d::new([-1.0, -1.0, -1.0], [1.0, 1.0], None, [0.0, -1.0, 0.0]),
+            Vertex3d::new([1.0, -1.0, -1.0], [0.0, 1.0], None, [0.0, -1.0, 0.0]),
         ];
-        let vertex_data_two = vec![
-            // top (0.0, 0.0, 1.0)
-            Vertex3d::new([2.0, 2.0, 2.0], [0.0, 0.0], None),
-            Vertex3d::new([4.0, 2.0, 2.0], [1.0, 0.0], None),
-            Vertex3d::new([4.0, 4.0, 2.0], [1.0, 1.0], None),
-            Vertex3d::new([2.0, 4.0, 2.0], [0.0, 1.0], None),
-            // bottom (0.0, 0.0, -1.0)
-            Vertex3d::new([2.0, 4.0, -1.0], [1.0, 0.0], None),
-            Vertex3d::new([4.0, 4.0, -1.0], [0.0, 0.0], None),
-            Vertex3d::new([4.0, 2.0, -1.0], [0.0, 1.0], None),
-            Vertex3d::new([2.0, 2.0, -1.0], [1.0, 1.0], None),
-            // right (1.0, 0.0, 0.0)
-            Vertex3d::new([4.0, 2.0, -1.0], [0.0, 0.0], None),
-            Vertex3d::new([4.0, 4.0, -1.0], [1.0, 0.0], None),
-            Vertex3d::new([4.0, 4.0, 2.0], [1.0, 1.0], None),
-            Vertex3d::new([4.0, 2.0, 2.0], [0.0, 1.0], None),
-            // left (-1.0, 0.0, 0.0)
-            Vertex3d::new([2.0, 2.0, 2.0], [1.0, 0.0], None),
-            Vertex3d::new([2.0, 4.0, 2.0], [0.0, 0.0], None),
-            Vertex3d::new([2.0, 4.0, -1.0], [0.0, 1.0], None),
-            Vertex3d::new([2.0, 2.0, -1.0], [1.0, 1.0], None),
-            // front (0.0, 1.0, 0.0)
-            Vertex3d::new([4.0, 4.0, -1.0], [1.0, 0.0], None),
-            Vertex3d::new([2.0, 4.0, -1.0], [0.0, 0.0], None),
-            Vertex3d::new([2.0, 4.0, 2.0], [0.0, 1.0], None),
-            Vertex3d::new([4.0, 4.0, 2.0], [1.0, 1.0], None),
-            // back (0.0, -1.0, 0.0)
-            Vertex3d::new([4.0, 2.0, 2.0], [0.0, 0.0], None),
-            Vertex3d::new([2.0, 2.0, 2.0], [1.0, 0.0], None),
-            Vertex3d::new([2.0, 2.0, -1.0], [1.0, 1.0], None),
-            Vertex3d::new([4.0, 2.0, -1.0], [0.0, 1.0], None),
-        ];
-
         #[rustfmt::skip]
         let index_data: Vec<u32> = vec![
              0,  1,  2,  2,  3,  0, // top
@@ -97,10 +69,11 @@ impl MainState {
         let image_two =
             graphics::Image::from_color(ctx, 1, 1, Some(graphics::Color::from_rgb(50, 10, 50)));
         let mesh = Mesh3dBuilder::new()
-            .from_data(vertex_data, index_data.clone(), None)
+            .from_data(vertex_data, index_data, None)
             .build(ctx);
         let mesh_two = Mesh3dBuilder::new()
-            .from_data(vertex_data_two, index_data, Some(image_two))
+            .cube(Vec3::splat(5.0))
+            .texture(image_two)
             .build(ctx);
 
         camera.transform.yaw = 90.0;

@@ -18,6 +18,7 @@ struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) tex_coords: vec2<f32>,
     @location(2) color: vec4<f32>,
+    @location(3) normal: vec3<f32> // Ggez doesn't use this by default
 }
 
 
@@ -25,7 +26,8 @@ struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coord: vec2<f32>,
     @location(1) color: vec4<f32>,
-    @location(2) vertex_color: vec4<f32>
+    @location(2) vertex_color: vec4<f32>,
+    @location(3) normal: vec3<f32>
 }
 
 @vertex
@@ -37,13 +39,16 @@ fn vs_main(
     out.clip_position = uniforms.camera_transform * uniforms.model_transform * vec4<f32>(model.position, 1.0);
     out.color = uniforms.color;
     out.vertex_color = model.color;
+    out.normal = model.normal;
     return out;
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var tex = textureSample(t, s, in.tex_coord);
-    let tex_col = mix(tex, vec4<f32>(in.color.xyz, 1.0), in.color.w) * in.vertex_color;
+    // To texture the sample use var tex instead of normal but this is to show off vertex normals
+    // var tex = textureSample(t, s, in.tex_coord) * vec4<f32>(in.normal, 1.0);
+    let normal = vec4<f32>((in.normal + 1.0) / 2.0, 1.0);
+    let tex_col = mix(normal, vec4<f32>(in.color.xyz, 1.0), 0.5) * in.vertex_color;
     var blend = dot(in.tex_coord - vec2<f32>(0.5, 0.5), in.tex_coord - vec2<f32>(0.5, 0.5));
     return mix(tex_col, vec4<f32>(0.0, 0.0, 0.0, 1.0), blend);
 }
