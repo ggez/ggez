@@ -14,7 +14,7 @@ use num_traits::FromPrimitive;
 #[cfg(feature = "gltf")]
 use std::path::Path;
 
-use glam::Vec3;
+use glam::{Mat4, Vec3};
 use mint::{Vector2, Vector3};
 use std::sync::Arc;
 use wgpu::{util::DeviceExt, vertex_attr_array};
@@ -22,6 +22,16 @@ use wgpu::{util::DeviceExt, vertex_attr_array};
 use crate::graphics::{Drawable3d, GraphicsContext};
 
 use super::{Draw3d, Transform3d};
+
+use gltf::scene::Transform;
+
+fn transform_to_matrix(transform: Transform) -> Mat4 {
+    let tr = transform.matrix();
+    Mat4::from_cols_array(&[
+        tr[0][0], tr[0][1], tr[0][2], tr[0][3], tr[1][0], tr[1][1], tr[1][2], tr[1][3], tr[2][0],
+        tr[2][1], tr[2][2], tr[2][3], tr[3][0], tr[3][1], tr[3][2], tr[3][3],
+    ])
+}
 
 // Implementation tooken from bevy
 /// An aabb stands for axis aligned bounding box. This is basically a cube that can't rotate.
@@ -563,7 +573,119 @@ impl Model {
             Err(f) => Err(GameError::CustomError(f.to_string())),
         }
     }
-    /// Load gltf file.
+
+    fn read_node(
+        meshes: &mut Vec<Mesh3d>,
+        node: &gltf::Node,
+        parent_transform: Mat4,
+        buffer_data: &mut Vec<Vec<u8>>,
+        gfx: &mut GraphicsContext,
+    ) -> GameResult {
+        let transform = parent_transform * transform_to_matrix(node.transform());
+        for child in node.children() {
+            Model::read_node(meshes, &child, transform, buffer_data, gfx)?;
+        }
+        if let Some(mesh) = node.mesh() {
+            for primitive in mesh.primitives() {
+                let reader =
+                    primitive.reader(|buffer| Some(buffer_data[buffer.index()].as_slice()));
+                let mut image = Image::from_color(gfx, 1, 1, Some(graphics::Color::WHITE));
+                let texture_source = &primitive
+                    .material()
+                    .pbr_metallic_roughness()
+                    .base_color_texture()
+                    .map(|tex| tex.texture().source().source());
+                if let Some(source) = texture_source {
+                    match source {
+                        gltf::image::Source::View { view, mime_type } => {
+                            let parent_buffer_data = &buffer_data[view.buffer().index()];
+                            let data =
+                                &parent_buffer_data[view.offset()..view.offset() + view.length()];
+                            let mime_type = mime_type.replace('/', ".");
+                            let dynamic_img = image::load_from_memory_with_format(
+                                data,
+                                image::ImageFormat::from_path(mime_type)
+                                    .unwrap_or(image::ImageFormat::Png),
+                            )
+                            .unwrap_or_default()
+                            .into_rgba8();
+                            image = Image::from_pixels(
+                                gfx,
+                                dynamic_img.as_bytes(),
+                                wgpu::TextureFormat::Rgba8UnormSrgb,
+                                dynamic_img.width(),
+                                dynamic_img.height(),
+                            );
+                        }
+                        gltf::image::Source::Uri { uri, mime_type } => {
+                            let uri = percent_encoding::percent_decode_str(uri)
+                                .decode_utf8()
+                                .unwrap();
+                            let uri = uri.as_ref();
+                            let bytes = match DataUri::parse(uri) {
+                                Ok(data_uri) => data_uri.decode()?,
+                                Err(()) => {
+                                    return Err(GameError::CustomError(
+                                        "Failed to decode".to_string(),
+                                    ))
+                                }
+                            };
+                            let dynamic_img = image::load_from_memory_with_format(
+                                bytes.as_bytes(),
+                                image::ImageFormat::from_path(mime_type.unwrap_or_default())
+                                    .unwrap_or(image::ImageFormat::Png),
+                            )
+                            .unwrap_or_default()
+                            .into_rgba8();
+                            image = Image::from_pixels(
+                                gfx,
+                                dynamic_img.as_bytes(),
+                                wgpu::TextureFormat::Rgba8UnormSrgb,
+                                dynamic_img.width(),
+                                dynamic_img.height(),
+                            );
+                        }
+                    };
+                }
+                let mut vertices = Vec::default();
+                if let Some(vertices_read) = reader.read_positions() {
+                    vertices = vertices_read
+                        .map(|x| {
+                            let pos = glam::Vec4::new(x[0], x[1], x[2], 1.);
+                            let res = transform * pos;
+                            let pos = Vec3::new(res.x / res.w, res.y / res.w, res.z / res.w);
+                            Vertex3d::new(
+                                pos,
+                                glam::Vec2::ZERO,
+                                graphics::Color::new(1.0, 1.0, 1.0, 0.0),
+                            )
+                        })
+                        .collect();
+                }
+                if let Some(tex_coords) = reader.read_tex_coords(0).map(|v| v.into_f32()) {
+                    let mut idx = 0;
+                    tex_coords.for_each(|tex_coord| {
+                        vertices[idx].tex_coord = tex_coord;
+
+                        idx += 1;
+                    });
+                }
+                let mut indices = Vec::new();
+                if let Some(indices_raw) = reader.read_indices() {
+                    indices.append(&mut indices_raw.into_u32().collect::<Vec<u32>>());
+                }
+
+                let mesh = Mesh3dBuilder::new()
+                    .from_data(vertices, indices, Some(image))
+                    .build(gfx);
+                meshes.push(mesh);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Load gltf file. Keep in mind rn the whole gltf will be loaded as one model. So multiple models won't be made in more complex scenes. This either has to be implemneted yourself or possibly will come later.
     #[cfg(feature = "gltf")]
     pub fn from_gltf(
         gfx: &mut impl HasMut<GraphicsContext>,
@@ -606,103 +728,14 @@ impl Model {
                     }
                 }
             }
-            for mesh in gltf.meshes() {
-                for primitive in mesh.primitives() {
-                    let reader =
-                        primitive.reader(|buffer| Some(buffer_data[buffer.index()].as_slice()));
-                    let mut image = Image::from_color(gfx, 1, 1, Some(graphics::Color::WHITE));
-                    let texture_source = &primitive
-                        .material()
-                        .pbr_metallic_roughness()
-                        .base_color_texture()
-                        .map(|tex| tex.texture().source().source());
-                    if let Some(source) = texture_source {
-                        match source {
-                            gltf::image::Source::View { view, mime_type } => {
-                                let parent_buffer_data = &buffer_data[view.buffer().index()];
-                                let data = &parent_buffer_data
-                                    [view.offset()..view.offset() + view.length()];
-                                let mime_type = mime_type.replace('/', ".");
-                                let dynamic_img = image::load_from_memory_with_format(
-                                    data,
-                                    image::ImageFormat::from_path(mime_type)
-                                        .unwrap_or(image::ImageFormat::Png),
-                                )
-                                .unwrap_or_default()
-                                .into_rgba8();
-                                image = Image::from_pixels(
-                                    gfx,
-                                    dynamic_img.as_bytes(),
-                                    wgpu::TextureFormat::Rgba8UnormSrgb,
-                                    dynamic_img.width(),
-                                    dynamic_img.height(),
-                                );
-                            }
-                            gltf::image::Source::Uri { uri, mime_type } => {
-                                let uri = percent_encoding::percent_decode_str(uri)
-                                    .decode_utf8()
-                                    .unwrap();
-                                let uri = uri.as_ref();
-                                let bytes = match DataUri::parse(uri) {
-                                    Ok(data_uri) => data_uri.decode()?,
-                                    Err(()) => {
-                                        return Err(GameError::CustomError(
-                                            "Failed to decode".to_string(),
-                                        ))
-                                    }
-                                };
-                                let dynamic_img = image::load_from_memory_with_format(
-                                    bytes.as_bytes(),
-                                    image::ImageFormat::from_path(mime_type.unwrap_or_default())
-                                        .unwrap_or(image::ImageFormat::Png),
-                                )
-                                .unwrap_or_default()
-                                .into_rgba8();
-                                image = Image::from_pixels(
-                                    gfx,
-                                    dynamic_img.as_bytes(),
-                                    wgpu::TextureFormat::Rgba8UnormSrgb,
-                                    dynamic_img.width(),
-                                    dynamic_img.height(),
-                                );
-                            }
-                        };
-                    }
-                    let mut vertices = Vec::default();
-                    if let Some(vertices_read) = reader.read_positions() {
-                        vertices = vertices_read
-                            .map(|x| {
-                                let pos = Vec3::new(x[0], x[1], x[2]);
-                                Vertex3d::new(
-                                    pos,
-                                    glam::Vec2::ZERO,
-                                    graphics::Color::new(1.0, 1.0, 1.0, 0.0),
-                                )
-                            })
-                            .collect();
-                    }
-                    if let Some(tex_coords) = reader.read_tex_coords(0).map(|v| v.into_f32()) {
-                        let mut idx = 0;
-                        tex_coords.for_each(|tex_coord| {
-                            vertices[idx].tex_coord = tex_coord;
-
-                            idx += 1;
-                        });
-                    }
-                    let mut indices = Vec::new();
-                    if let Some(indices_raw) = reader.read_indices() {
-                        indices.append(&mut indices_raw.into_u32().collect::<Vec<u32>>());
-                    }
-
-                    let mesh = Mesh3dBuilder::new()
-                        .from_data(vertices, indices, Some(image))
-                        .build(gfx);
-                    meshes.push(mesh);
+            for scene in gltf.scenes() {
+                for node in scene.nodes() {
+                    Model::read_node(&mut meshes, &node, Mat4::IDENTITY, &mut buffer_data, gfx)?;
                 }
             }
-
             return Ok(Model { meshes });
         }
+
         Err(GameError::CustomError(
             "Failed to load gltf model".to_string(),
         ))
