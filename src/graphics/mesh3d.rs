@@ -8,13 +8,17 @@ use crate::{GameError, GameResult};
 #[cfg(feature = "gltf")]
 use base64::Engine;
 #[cfg(feature = "gltf")]
+use glam::Mat4;
+#[cfg(feature = "gltf")]
+use gltf::scene::Transform;
+#[cfg(feature = "gltf")]
 use image::EncodableLayout;
 #[cfg(feature = "obj")]
 use num_traits::FromPrimitive;
 #[cfg(feature = "gltf")]
 use std::path::Path;
 
-use glam::{Mat4, Vec3};
+use glam::Vec3;
 use mint::{Vector2, Vector3};
 use std::sync::Arc;
 use wgpu::{util::DeviceExt, vertex_attr_array};
@@ -23,8 +27,7 @@ use crate::graphics::{Drawable3d, GraphicsContext};
 
 use super::{Draw3d, Transform3d};
 
-use gltf::scene::Transform;
-
+#[cfg(feature = "gltf")]
 fn transform_to_matrix(transform: Transform) -> Mat4 {
     let tr = transform.matrix();
     Mat4::from_cols_array_2d(&tr)
@@ -943,6 +946,7 @@ impl Model {
         Ok(Model { meshes: vec![mesh] })
     }
 
+    #[cfg(feature = "gltf")]
     fn read_node(
         meshes: &mut Vec<Mesh3d>,
         node: &gltf::Node,
