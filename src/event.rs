@@ -63,6 +63,8 @@ pub enum ErrorOrigin {
     MouseButtonUpEvent,
     /// error originated in `mouse_motion_event()`
     MouseMotionEvent,
+    /// error originated in `raw_mouse_motion_event()`
+    RawMouseMotionEvent,
     /// error originated in `mouse_enter_or_leave()`
     MouseEnterOrLeave,
     /// error originated in `mouse_wheel_event()`
@@ -149,6 +151,11 @@ where
         _dx: f32,
         _dy: f32,
     ) -> Result<(), E> {
+        Ok(())
+    }
+
+    /// Returns the raw mouse emotion from DeviceEvent::MouseMotion. This is just the raw device movement of the mouse
+    fn raw_mouse_motion_event(&mut self, _ctx: &mut C, _dx: f64, _dy: f64) -> Result<(), E> {
         Ok(())
     }
 
@@ -500,7 +507,23 @@ where
                     // trace!("ignoring window event {:?}", x);
                 }
             },
-            Event::DeviceEvent { .. } => (),
+            Event::DeviceEvent {
+                device_id: _,
+                event,
+            } => {
+                if let winit::event::DeviceEvent::MouseMotion { delta } = event {
+                    let res = state.raw_mouse_motion_event(ctx, delta.0, delta.0);
+                    if catch_error(
+                        ctx,
+                        res,
+                        state,
+                        control_flow,
+                        ErrorOrigin::RawMouseMotionEvent,
+                    ) {
+                        return;
+                    }
+                }
+            }
             Event::Resumed => (),
             Event::Suspended => (),
             Event::NewEvents(_) => (),
@@ -635,6 +658,14 @@ where
         + HasMut<input::keyboard::KeyboardContext>
         + HasMut<input::mouse::MouseContext>,
 {
+    if let winit_event::Event::DeviceEvent {
+        event: winit::event::DeviceEvent::MouseMotion { delta },
+        ..
+    } = event
+    {
+        let mouse = HasMut::<input::mouse::MouseContext>::retrieve_mut(ctx);
+        mouse.handle_motion(delta.0, delta.1);
+    }
     if let winit_event::Event::WindowEvent { event, .. } = event {
         match event {
             winit_event::WindowEvent::Resized(physical_size) => {
