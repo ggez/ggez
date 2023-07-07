@@ -1,3 +1,8 @@
+# 0.9.1
+
+## Fixed
+- Fixed memory leak caused by drawing `Image`
+
 # 0.9.0
 
 ## Added
