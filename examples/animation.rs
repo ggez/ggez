@@ -255,7 +255,7 @@ fn draw_info(canvas: &mut graphics::Canvas, info: String, position: Point2<f32>)
     );
 }
 
-impl event::EventHandler<ggez::GameError> for MainState {
+impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         let secs = ctx.time.delta().as_secs_f64();
         // advance the ball animation and reverse it once it reaches its end

@@ -15,6 +15,20 @@ use crate::graphics::GraphicsContext;
 use crate::input;
 use crate::timer;
 
+#[cfg(feature = "gamepad")]
+use crate::input::gamepad::GamepadContext;
+
+#[cfg(not(feature = "gamepad"))]
+/// Dummy gamepad context
+#[derive(Debug)]
+pub struct GamepadContext;
+
+#[cfg(not(feature = "gamepad"))]
+impl GamepadContext {
+    fn new() -> GameResult<Self> {
+        Ok(Self)
+    }
+}
 /// A `Context` is an object that holds on to global resources.
 /// It basically tracks hardware state such as the screen, audio
 /// system, timers, and so on.  Generally this type can **not**
@@ -50,13 +64,28 @@ pub struct Context {
     /// Mouse input context.
     pub mouse: input::mouse::MouseContext,
     /// Gamepad input context.
-    #[cfg(feature = "gamepad")]
-    pub gamepad: input::gamepad::GamepadContext,
+    pub gamepad: GamepadContext,
+    /// Fields used by all contexts
+    pub fields: ContextFields,
+}
 
+impl Context {
+    /// Attempts to terminate the [`ggez::event::run()`](crate::event::run) loop by requesting a
+    /// [`quit_event`](crate::event::EventHandler::quit_event) at the very start of the next frame. If this event
+    /// returns `Ok(false)`, then [`Context.continuing`](struct.Context.html#structfield.continuing)
+    /// is set to `false` and the loop breaks.
+    pub fn request_quit(&mut self) {
+        HasMut::<ContextFields>::retrieve_mut(self).quit_requested = true;
+    }
+}
+
+/// Common fields that any context require
+#[derive(Clone, Debug)]
+pub struct ContextFields {
     /// The Conf object the Context was created with.
     /// It's here just so that we can see the original settings,
     /// updating it will have no effect.
-    pub(crate) conf: conf::Conf,
+    pub conf: conf::Conf,
     /// Controls whether or not the event loop should be running.
     /// This is internally controlled by the outcome of [`quit_event`](crate::event::EventHandler::quit_event),
     /// requested through [`event::request_quit()`](crate::Context::request_quit).
@@ -66,16 +95,6 @@ pub struct Context {
     ///
     /// It's exposed here for people who want to roll their own event loop.
     pub quit_requested: bool,
-}
-
-impl Context {
-    /// Attempts to terminate the [`ggez::event::run()`](crate::event::run) loop by requesting a
-    /// [`quit_event`](crate::event::EventHandler::quit_event) at the very start of the next frame. If this event
-    /// returns `Ok(false)`, then [`Context.continuing`](struct.Context.html#structfield.continuing)
-    /// is set to `false` and the loop breaks.
-    pub fn request_quit(&mut self) {
-        self.quit_requested = true;
-    }
 }
 
 // This is ugly and hacky but greatly improves ergonomics.
@@ -151,10 +170,45 @@ impl<T> HasMut<T> for T {
     }
 }
 
+impl HasMut<ContextFields> for Context {
+    #[inline]
+    fn retrieve_mut(&mut self) -> &mut ContextFields {
+        &mut self.fields
+    }
+}
+
 impl HasMut<GraphicsContext> for Context {
     #[inline]
     fn retrieve_mut(&mut self) -> &mut GraphicsContext {
         &mut self.gfx
+    }
+}
+
+impl HasMut<timer::TimeContext> for Context {
+    #[inline]
+    fn retrieve_mut(&mut self) -> &mut timer::TimeContext {
+        &mut self.time
+    }
+}
+
+impl HasMut<input::keyboard::KeyboardContext> for Context {
+    #[inline]
+    fn retrieve_mut(&mut self) -> &mut input::keyboard::KeyboardContext {
+        &mut self.keyboard
+    }
+}
+
+impl HasMut<input::mouse::MouseContext> for Context {
+    #[inline]
+    fn retrieve_mut(&mut self) -> &mut input::mouse::MouseContext {
+        &mut self.mouse
+    }
+}
+
+impl HasMut<GamepadContext> for Context {
+    #[inline]
+    fn retrieve_mut(&mut self) -> &mut GamepadContext {
+        &mut self.gamepad
     }
 }
 
@@ -180,18 +234,19 @@ impl Context {
             graphics::context::GraphicsContext::new(game_id, &events_loop, &conf, &fs)?;
 
         let ctx = Context {
-            conf,
             fs,
             gfx: graphics_context,
-            continuing: true,
-            quit_requested: false,
             time: timer_context,
             #[cfg(feature = "audio")]
             audio: audio_context,
             keyboard: input::keyboard::KeyboardContext::new(),
             mouse: input::mouse::MouseContext::new(),
-            #[cfg(feature = "gamepad")]
-            gamepad: input::gamepad::GamepadContext::new()?,
+            gamepad: GamepadContext::new()?,
+            fields: ContextFields {
+                conf,
+                continuing: true,
+                quit_requested: false,
+            },
         };
 
         Ok((ctx, events_loop))
@@ -319,7 +374,7 @@ impl ContextBuilder {
         self
     }
 
-    /// Build the `Context`.
+    /// Build a `Context`
     pub fn build(self) -> GameResult<(Context, winit::event_loop::EventLoop<()>)> {
         let fs = Filesystem::new(
             self.game_id.as_ref(),
@@ -344,17 +399,46 @@ impl ContextBuilder {
 
         Context::from_conf(self.game_id.as_ref(), config, fs)
     }
-}
 
-/// Terminates the [`ggez::event::run()`](crate::event::run) loop _without_ requesting a
-/// [`quit_event`](crate::event::EventHandler::quit_event). [`Context.continuing`](struct.Context.html#structfield.continuing)
-/// is set to `false` and the loop breaks.
-#[deprecated(
-    since = "0.8.0",
-    note = "Use [`ctx.request_quit`](struct.Context.html#method.request_quit) instead."
-)]
-pub fn quit(ctx: &mut Context) {
-    ctx.continuing = false;
+    /// Build a Custom `Context`.
+    pub fn custom_build<C>(
+        self,
+        from_conf: impl Fn(
+            String,
+            conf::Conf,
+            Filesystem,
+        ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>,
+    ) -> GameResult<(C, winit::event_loop::EventLoop<()>)>
+    where
+        C: HasMut<ContextFields>
+            + HasMut<timer::TimeContext>
+            + HasMut<input::keyboard::KeyboardContext>
+            + HasMut<input::mouse::MouseContext>
+            + HasMut<GamepadContext>,
+    {
+        let fs = Filesystem::new(
+            self.game_id.as_ref(),
+            self.author.as_ref(),
+            &self.resources_dir_name,
+            &self.resources_zip_name,
+        )?;
+
+        for path in &self.paths {
+            fs.mount(path, true);
+        }
+
+        for zipfile_bytes in self.memory_zip_files {
+            fs.add_zip_file(std::io::Cursor::new(zipfile_bytes))?;
+        }
+
+        let config = if self.load_conf_file {
+            fs.read_config().unwrap_or(self.conf)
+        } else {
+            self.conf
+        };
+
+        from_conf(self.game_id, config, fs)
+    }
 }
 
 #[cfg(test)]

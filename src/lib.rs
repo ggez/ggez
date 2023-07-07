@@ -205,5 +205,8 @@ pub mod input;
 pub mod timer;
 mod vfs;
 
+pub mod coroutine;
+pub use crate::coroutine::Coroutine;
+
 pub use crate::context::{winit, Context, ContextBuilder};
 pub use crate::error::*;

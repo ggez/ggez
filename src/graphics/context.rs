@@ -81,6 +81,14 @@ pub struct GraphicsContext {
     pub(crate) uniform_arena: GrowingBufferArena,
 
     pub(crate) draw_shader: ArcShaderModule,
+
+    #[cfg(feature = "3d")]
+    pub(crate) draw_shader_3d: ArcShaderModule,
+    #[cfg(feature = "3d")]
+    pub(crate) instance_shader_3d: ArcShaderModule,
+    #[cfg(feature = "3d")]
+    pub(crate) instance_unordered_shader_3d: ArcShaderModule,
+
     pub(crate) instance_shader: ArcShaderModule,
     pub(crate) instance_unordered_shader: ArcShaderModule,
     pub(crate) text_shader: ArcShaderModule,
@@ -94,7 +102,8 @@ pub struct GraphicsContext {
 
 impl GraphicsContext {
     #[allow(unsafe_code)]
-    pub(crate) fn new(
+    /// Create a new graphics context
+    pub fn new(
         game_id: &str,
         event_loop: &winit::event_loop::EventLoop<()>,
         conf: &Conf,
@@ -287,6 +296,32 @@ impl GraphicsContext {
             },
         ));
 
+        #[cfg(feature = "3d")]
+        let draw_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/draw3d.wgsl").into()),
+            },
+        ));
+
+        #[cfg(feature = "3d")]
+        let instance_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance3d.wgsl").into()),
+            },
+        ));
+
+        #[cfg(feature = "3d")]
+        let instance_unordered_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(
+                    include_str!("shader/instance_unordered3d.wgsl").into(),
+                ),
+            },
+        ));
+
         let instance_shader = ArcShaderModule::new(wgpu.device.create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: None,
@@ -384,6 +419,14 @@ impl GraphicsContext {
             staging_belt,
             uniform_arena,
             draw_shader,
+
+            #[cfg(feature = "3d")]
+            draw_shader_3d,
+            #[cfg(feature = "3d")]
+            instance_shader_3d,
+            #[cfg(feature = "3d")]
+            instance_unordered_shader_3d,
+
             instance_shader,
             instance_unordered_shader,
             text_shader,
@@ -643,7 +686,7 @@ impl GraphicsContext {
                     samples: 1,
                     format: self.surface_config.format,
                     blend: None,
-                    depth: false,
+                    depth: None,
                     vertices: false,
                     topology: wgpu::PrimitiveTopology::TriangleList,
                     vertex_layout: Vertex::layout(),
