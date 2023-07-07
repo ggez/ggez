@@ -232,4 +232,10 @@ impl BindGroupCache {
             groups: HashMap::new(),
         }
     }
+
+    // This may or may not be a proper solution. I'm unsure if BindGroupCache was intended to cache between frames or only within a given frame.
+    pub(crate) fn clear(&mut self) {
+        self.layouts.clear();
+        self.groups.clear();
+    }
 }
