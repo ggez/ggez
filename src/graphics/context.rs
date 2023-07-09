@@ -708,8 +708,6 @@ impl GraphicsContext {
 
             self.staging_belt.recall();
 
-            self.bind_group_cache.clear();
-
             Ok(())
         } else {
             Err(GameError::RenderError(String::from(
