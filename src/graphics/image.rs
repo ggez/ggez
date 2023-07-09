@@ -228,9 +228,15 @@ impl Image {
 
         let block_size = u64::from(self.format.block_size(None).unwrap()); // Unwrap since it only fails with depth formats.
 
+        let bytes_per_pixel = block_size;
+        let unpadded_bytes_per_row = self.width as usize * bytes_per_pixel as usize;
+        let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
+        let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;
+        let padded_bytes_per_row = unpadded_bytes_per_row + padded_bytes_per_row_padding;
+
         let buffer = gfx.wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: block_size * u64::from(self.width) * u64::from(self.height),
+            size: (padded_bytes_per_row * self.height as usize) as u64,
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
@@ -246,7 +252,7 @@ impl Image {
                     buffer: &buffer,
                     layout: wgpu::ImageDataLayout {
                         offset: 0,
-                        bytes_per_row: Some(block_size as u32 * self.width),
+                        bytes_per_row: Some(padded_bytes_per_row as u32),
                         rows_per_image: None,
                     },
                 },
@@ -272,7 +278,14 @@ impl Image {
             .expect("All senders dropped, this should not be possible.");
         map_result?;
 
-        let out = buffer.slice(..).get_mapped_range().to_vec();
+        let mut out = Vec::new();
+        for chunk in buffer
+            .slice(..)
+            .get_mapped_range()
+            .chunks(padded_bytes_per_row)
+        {
+            out.extend_from_slice(&chunk[..unpadded_bytes_per_row]);
+        }
         Ok(out)
     }
 

@@ -29,7 +29,8 @@ impl fmt::Debug for GamepadContext {
 }
 
 impl GamepadContext {
-    pub(crate) fn new() -> GameResult<Self> {
+    /// Create a new GamepadContext
+    pub fn new() -> GameResult<Self> {
         let gilrs = Gilrs::new()?;
         Ok(GamepadContext { gilrs })
     }

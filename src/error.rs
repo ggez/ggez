@@ -20,6 +20,8 @@ pub enum GameError {
     ResourceLoadError(String),
     /// Unable to find a resource; the `Vec` is the paths it searched for and associated errors
     ResourceNotFound(String, Vec<(std::path::PathBuf, GameError)>),
+    /// Something went wrong with the mesh
+    MeshError(String),
     /// Something went wrong in the renderer
     RenderError(String),
     /// Something went wrong when requesting a logical device from the graphics API.

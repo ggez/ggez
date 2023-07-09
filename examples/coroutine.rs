@@ -1,16 +1,21 @@
 //! The simplest possible example that does something.
 #![allow(clippy::unnecessary_wraps)]
 
+use std::{cell::Cell, sync::Arc};
+
 use ggez::{
+    coroutine::yield_now,
     event,
     glam::*,
     graphics::{self, Color},
-    Context, GameResult,
+    Context, Coroutine, GameResult,
 };
 
 struct MainState {
-    pos_x: f32,
+    pos_x: Arc<Cell<f32>>,
     circle: graphics::Mesh,
+    coroutine: Coroutine,
+    slow_coroutine: Coroutine<String>,
 }
 
 impl MainState {
@@ -24,13 +29,35 @@ impl MainState {
             Color::WHITE,
         )?;
 
-        Ok(MainState { pos_x: 0.0, circle })
+        let pos_x = Arc::new(Cell::new(0.0));
+
+        Ok(MainState {
+            pos_x: Arc::clone(&pos_x),
+            circle,
+            coroutine: Coroutine::new(async move {
+                loop {
+                    pos_x.set(pos_x.get() % 800.0 + 1.0);
+                    yield_now().await
+                }
+            }),
+            slow_coroutine: Coroutine::new(async move {
+                // wait 100 frames
+                for _ in 0..100 {
+                    yield_now().await
+                }
+
+                String::from("I came from a coroutine!")
+            }),
+        })
     }
 }
 
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        self.pos_x = self.pos_x % 800.0 + 1.0;
+        self.coroutine.poll();
+        if let Some(val) = self.slow_coroutine.poll() {
+            println!("Coroutine says: \"{val}\"");
+        }
         Ok(())
     }
 
@@ -38,7 +65,7 @@ impl event::EventHandler for MainState {
         let mut canvas =
             graphics::Canvas::from_frame(ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
 
-        canvas.draw(&self.circle, Vec2::new(self.pos_x, 380.0));
+        canvas.draw(&self.circle, Vec2::new(self.pos_x.get(), 380.0));
 
         canvas.finish(ctx)?;
 
