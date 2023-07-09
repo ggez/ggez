@@ -51,6 +51,7 @@ image = { version = "0.24", default-features = false, features = [
    "webp",
    "bmp",
    "dxt",
+   "jpeg",
 ] }
 rodio = { version = "0.17", optional = true, default-features = false, features = [
    "flac",

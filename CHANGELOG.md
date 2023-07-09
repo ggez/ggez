@@ -98,6 +98,7 @@ General examples:
 
 ## Fixed
 `Image::to_pixels` no longer crashes and works properly
+`Image` can now be loaded from jpg/jpeg files 
 
 # 0.9.2
 
