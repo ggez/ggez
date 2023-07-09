@@ -94,7 +94,7 @@ impl OpenOptions {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-pub trait VFS: Debug {
+pub trait VFS: Debug + Send {
     /// Open the file at this path with the given options
     fn open_options(&self, path: &Path, open_options: OpenOptions) -> GameResult<Box<dyn VFile>>;
     /// Open the file at this path for reading
@@ -553,13 +553,13 @@ impl VFS for OverlayFS {
     }
 }
 
-trait ZipArchiveAccess {
+trait ZipArchiveAccess: Send {
     fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile<'_>>;
     fn by_index(&mut self, file_number: usize) -> zip::result::ZipResult<zip::read::ZipFile<'_>>;
     fn len(&self) -> usize;
 }
 
-impl<T: Read + Seek> ZipArchiveAccess for zip::ZipArchive<T> {
+impl<T: Read + Seek + Send> ZipArchiveAccess for zip::ZipArchive<T> {
     fn by_name(&mut self, name: &str) -> zip::result::ZipResult<zip::read::ZipFile> {
         let filename =
             sanitize_path_for_zip(Path::new(name)).ok_or(zip::result::ZipError::FileNotFound)?;
@@ -609,11 +609,11 @@ impl ZipFS {
         Ok(ZipFS::from_boxed_archive(archive, Some(filename.into())))
     }
 
-    /// Creates a `ZipFS` from any `Read+Seek` object, most useful with an
+    /// Creates a `ZipFS` from any `Read+Seek+Send` object, most useful with an
     /// in-memory `std::io::Cursor`.
     pub fn from_read<R>(reader: R) -> GameResult<Self>
     where
-        R: Read + Seek + 'static,
+        R: Read + Seek + Send + 'static,
     {
         let archive = Box::new(zip::ZipArchive::new(reader)?);
         Ok(ZipFS::from_boxed_archive(archive, None))
