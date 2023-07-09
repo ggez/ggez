@@ -2,11 +2,11 @@ use super::{
     context::GraphicsContext, gpu::bind_group::BindGroupBuilder, Canvas, Color, Draw, DrawParam,
     Drawable, Rect, WgpuContext,
 };
-use crate::{context::Has, Context, GameError, GameResult};
+use crate::{context::Has, coroutine::yield_now, Context, Coroutine, GameError, GameResult};
 use image::ImageEncoder;
 use std::{
     collections::BTreeMap,
-    path::Path,
+    path::{Path, PathBuf},
     sync::{Arc, RwLock},
 };
 
@@ -154,6 +154,23 @@ impl Image {
         let gfx = gfx.retrieve();
 
         Self::from_bytes(gfx, &gfx.fs.read(path)?)
+    }
+
+    /// Creates a coroutine that returns an image initialized with pixel data loaded from a path as an
+    /// encoded image `Read` (e.g. PNG or JPEG).
+    pub fn from_path_async(path: impl Into<PathBuf>) -> Coroutine<GameResult<Self>> {
+        let path = path.into();
+        Coroutine::new(move |mut ctx| async move {
+            let mut bytes_coroutine = ctx.fs.read_to_end_async(path);
+            let bytes = loop {
+                if let Some(bytes) = bytes_coroutine.poll(&mut ctx) {
+                    break bytes;
+                }
+                yield_now().await;
+            }?;
+
+            Self::from_bytes(&ctx.gfx, &bytes)
+        })
     }
 
     /// Creates a new image initialized with pixel data from a given encoded image (e.g. PNG or JPEG)

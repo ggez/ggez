@@ -34,15 +34,19 @@
 
 use crate::{
     conf,
+    coroutine::yield_now,
     vfs::{self, OverlayFS, VFS},
-    GameError, GameResult,
+    Coroutine, GameError, GameResult,
 };
 use directories::ProjectDirs;
 use std::{
     env,
     io::{self, Read},
-    path,
-    sync::{Arc, RwLock},
+    path::{self, PathBuf},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, RwLock,
+    },
 };
 
 pub use crate::vfs::OpenOptions;
@@ -263,6 +267,27 @@ impl Filesystem {
         let mut buf = Vec::new();
         let _ = file.read_to_end(&mut buf)?;
         Ok(buf)
+    }
+
+    /// Creates a coroutine that reads the whole content of a file to a `Vec`.
+    pub fn read_to_end_async(&self, path: impl Into<PathBuf>) -> Coroutine<GameResult<Vec<u8>>> {
+        let path = path.into();
+        let fs = self.clone();
+        Coroutine::new(move |_| async move {
+            let finished = Arc::new(AtomicBool::new(false));
+            let handle = std::thread::spawn({
+                let finished = Arc::clone(&finished);
+                move || {
+                    let result = fs.read(path);
+                    finished.store(true, Ordering::Relaxed);
+                    result
+                }
+            });
+            while !finished.load(Ordering::Relaxed) {
+                yield_now().await;
+            }
+            handle.join().unwrap()
+        })
     }
 
     /// Reads the whole content of a file to a `String`.
