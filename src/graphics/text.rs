@@ -7,7 +7,7 @@ use glyph_brush::{ab_glyph, FontId, GlyphCruncher};
 use std::{collections::HashMap, path::Path};
 
 /// Font data that can be used to create a new font in [`GraphicsContext`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FontData {
     pub(crate) font: ab_glyph::FontArc,
 }

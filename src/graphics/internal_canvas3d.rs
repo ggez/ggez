@@ -398,6 +398,21 @@ impl<'a> InternalCanvas3d<'a> {
                 .sampler(wgpu::ShaderStages::FRAGMENT)
                 .create(&self.wgpu.device, self.bind_group_cache);
 
+            #[cfg(target_arch = "wasm32")]
+            let instance_layout = BindGroupLayoutBuilder::new()
+                .buffer(
+                    wgpu::ShaderStages::VERTEX,
+                    wgpu::BufferBindingType::Uniform {},
+                    false,
+                )
+                .buffer(
+                    wgpu::ShaderStages::VERTEX,
+                    wgpu::BufferBindingType::Uniform {},
+                    false,
+                )
+                .create(&self.wgpu.device, self.bind_group_cache);
+
+            #[cfg(not(target_arch = "wasm32"))]
             let instance_layout = BindGroupLayoutBuilder::new()
                 .buffer(
                     wgpu::ShaderStages::VERTEX,
@@ -482,7 +497,7 @@ impl<'a> InternalCanvas3d<'a> {
                     depth: Some(wgpu::CompareFunction::Less),
                     vertices: true,
                     topology: wgpu::PrimitiveTopology::TriangleList,
-                    vertex_layout: Vertex3d::desc(),
+                    vertex_layouts: vec![Vertex3d::desc()],
                     cull_mode: Some(wgpu::Face::Back),
                 },
             );

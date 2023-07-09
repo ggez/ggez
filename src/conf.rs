@@ -240,6 +240,7 @@ impl WindowMode {
 ///     vsync: true,
 ///     icon: "".to_owned(),
 ///     srgb: true,
+///     web_canvas_parent_id: None,
 /// }
 /// # , WindowSetup::default()); }
 /// ```
@@ -258,6 +259,10 @@ pub struct WindowSetup {
     /// Whether or not to enable sRGB (gamma corrected color)
     /// handling on the display.
     pub srgb: bool,
+    /// Web only: id of an existing DOM element to append the rendering canvas to.
+    /// When `None` (default), the canvas is appended to `<body>`.
+    #[serde(default)]
+    pub web_canvas_parent_id: Option<String>,
 }
 
 impl Default for WindowSetup {
@@ -268,6 +273,7 @@ impl Default for WindowSetup {
             vsync: true,
             icon: String::new(),
             srgb: true,
+            web_canvas_parent_id: None,
         }
     }
 }
@@ -305,6 +311,13 @@ impl WindowSetup {
     #[must_use]
     pub fn srgb(mut self, active: bool) -> Self {
         self.srgb = active;
+        self
+    }
+
+    /// Set the DOM element id the canvas will be appended to on web.
+    #[must_use]
+    pub fn web_canvas_parent_id(mut self, id: impl Into<String>) -> Self {
+        self.web_canvas_parent_id = Some(id.into());
         self
     }
 }

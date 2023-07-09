@@ -1,0 +1,16 @@
+{
+  "name": "ggez-examples-web",
+  "private": true,
+  "type": "module",
+  "description": "Browser playground for the ggez examples (wasm32 target).",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && vite",
+    "serve": "vite",
+    "preview": "vite preview",
+    "build:static": "node build.mjs --release && vite build"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

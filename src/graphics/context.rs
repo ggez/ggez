@@ -78,6 +78,9 @@ pub struct GraphicsContext {
     pub(crate) copy_shader: wgpu::ShaderModule,
     pub(crate) rect_mesh: Mesh,
     pub(crate) white_image: Image,
+    // Used by native InstanceArray and by 3D InstanceArray3d on web.
+    // The 2D web path feeds instances through a vertex buffer instead of a bind group.
+    #[cfg(any(not(target_arch = "wasm32"), feature = "3d"))]
     pub(crate) instance_bind_layout: wgpu::BindGroupLayout,
 
     pub(crate) fs: Filesystem,
@@ -101,9 +104,19 @@ impl GraphicsContext {
         };
 
         if conf.backend == Backend::All {
+            // On the web we always use WebGL (`Backends::GL`). WebGPU request_adapter`
+            // returns a `JsFuture` that can only be driven by JS, but ggez uses
+            // `pollster::block_on`, which calls `Condvar::wait` on `Pending` and traps on
+            // `wasm32-unknown-unknown`. WebGL goes through `wgpu-core`, whose adapter/device
+            // requests resolve synchronously, so blocking on them is fine.
+            #[cfg(target_arch = "wasm32")]
+            let primary = wgpu::Backends::GL;
+            #[cfg(not(target_arch = "wasm32"))]
+            let primary = wgpu::Backends::PRIMARY;
+
             match Self::new_from_instance(
                 game_id,
-                new_instance(wgpu::Backends::PRIMARY),
+                new_instance(primary),
                 event_loop,
                 conf,
                 filesystem,
@@ -235,6 +248,33 @@ impl GraphicsContext {
         // In order to do this, we need to switch window creation to a point inside the active event loop instead of before.
         #[allow(deprecated)]
         let window = Arc::new(event_loop.create_window(window_builder)?);
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            use winit::platform::web::WindowExtWebSys;
+
+            if let Some(canvas) = window.canvas() {
+                let parent_id = conf.window_setup.web_canvas_parent_id.as_deref();
+                web_sys::window()
+                    .and_then(|win| win.document())
+                    .and_then(|doc| {
+                        if let Some(element) = doc.get_element_by_id("ggez-body") {
+                            element.remove();
+                        }
+
+                        let dst: web_sys::Node = match parent_id {
+                            Some(id) => doc.get_element_by_id(id)?.into(),
+                            None => doc.body()?.into(),
+                        };
+                        let canvas = web_sys::Element::from(canvas);
+                        canvas.set_id("ggez-body");
+                        let _ = dst.append_child(&canvas).ok()?;
+                        Some(())
+                    })
+                    .expect("could not append canvas to document body");
+            }
+        }
+
         let surface = instance
             .create_surface(window.clone())
             .map_err(|_| GameError::GraphicsInitializationError)?;
@@ -247,10 +287,6 @@ impl GraphicsContext {
         }))
         .or(Err(GameError::GraphicsInitializationError))?;
 
-        // One instance is 96 bytes, and we allow 1 million of them, for a total of 96MB (default being 128MB).
-        const MAX_INSTANCES: u64 = 1_000_000;
-        const INSTANCE_BUFFER_SIZE: u64 = 96 * MAX_INSTANCES;
-
         let (device, queue) =
             pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
                 required_limits: wgpu::Limits {
@@ -258,12 +294,9 @@ impl GraphicsContext {
                     // 2nd: Texture + Sampler
                     // 3rd: InstanceArray
                     // 4th: ShaderParams
-                    max_bind_groups: 4,
                     // InstanceArray uses 2 storage buffers.
-                    max_storage_buffers_per_shader_stage: 2,
-                    max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
-                    max_texture_dimension_1d: 8192,
-                    max_texture_dimension_2d: 8192,
+                    // max_storage_buffers_per_shader_stage: 2,
+                    // max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
                     ..wgpu::Limits::downlevel_webgl2_defaults()
                 },
                 ..wgpu::DeviceDescriptor::default()
@@ -277,12 +310,25 @@ impl GraphicsContext {
 
         let capabilities = surface.get_capabilities(&adapter);
 
+        // On web, `window.inner_size()` comes from a ResizeObserver that hasn't fired at
+        // this point, and reports `(0, 0)`. Configure the surface against the window mode instead,
+        // once the observer fires, `on_resize` updates the surface to the actual canvas size.
         let size = window.inner_size();
+        let (width, height) = if size.width == 0 || size.height == 0 {
+            let physical = conf
+                .window_mode
+                .actual_size()
+                .map(|s| s.to_physical::<u32>(window.scale_factor()))
+                .unwrap_or_else(|_| winit::dpi::PhysicalSize::new(800, 600));
+            (physical.width.max(1), physical.height.max(1))
+        } else {
+            (size.width, size.height)
+        };
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: capabilities.formats[0],
-            width: size.width,
-            height: size.height,
+            width,
+            height,
             present_mode: if conf.window_setup.vsync {
                 wgpu::PresentMode::AutoVsync
             } else {
@@ -330,13 +376,29 @@ impl GraphicsContext {
         #[cfg(feature = "3d")]
         let draw_shader_3d = load_shader(include_str!("shader/draw3d.wgsl"));
         #[cfg(feature = "3d")]
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_shader_3d = load_shader(include_str!("shader/instance3d.wgsl"));
         #[cfg(feature = "3d")]
+        #[cfg(target_arch = "wasm32")]
+        let instance_shader_3d = load_shader(include_str!("shader/instance3d_web.wgsl"));
+        #[cfg(feature = "3d")]
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_unordered_shader_3d =
             load_shader(include_str!("shader/instance_unordered3d.wgsl"));
+        #[cfg(feature = "3d")]
+        #[cfg(target_arch = "wasm32")]
+        let instance_unordered_shader_3d =
+            load_shader(include_str!("shader/instance_unordered3d_web.wgsl"));
 
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_shader = load_shader(include_str!("shader/instance.wgsl"));
+        #[cfg(target_arch = "wasm32")]
+        let instance_shader = load_shader(include_str!("shader/instance_web.wgsl"));
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_unordered_shader = load_shader(include_str!("shader/instance_unordered.wgsl"));
+        #[cfg(target_arch = "wasm32")]
+        let instance_unordered_shader =
+            load_shader(include_str!("shader/instance_unordered_web.wgsl"));
         let text_shader = load_shader(include_str!("shader/text.wgsl"));
         let copy_shader = load_shader(include_str!("shader/copy.wgsl"));
 
@@ -369,6 +431,21 @@ impl GraphicsContext {
             },
         );
 
+        #[cfg(all(target_arch = "wasm32", feature = "3d"))]
+        let instance_bind_layout = BindGroupLayoutBuilder::new()
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform {},
+                false,
+            )
+            .buffer(
+                wgpu::ShaderStages::VERTEX,
+                wgpu::BufferBindingType::Uniform {},
+                false,
+            )
+            .create(&wgpu.device, &mut bind_group_cache);
+
+        #[cfg(not(target_arch = "wasm32"))]
         let instance_bind_layout = BindGroupLayoutBuilder::new()
             .buffer(
                 wgpu::ShaderStages::VERTEX,
@@ -421,6 +498,7 @@ impl GraphicsContext {
             copy_shader,
             rect_mesh,
             white_image,
+            #[cfg(any(not(target_arch = "wasm32"), feature = "3d"))]
             instance_bind_layout,
 
             fs: filesystem.clone(),
@@ -701,7 +779,7 @@ impl GraphicsContext {
                     depth: None,
                     vertices: false,
                     topology: wgpu::PrimitiveTopology::TriangleList,
-                    vertex_layout: Vertex::layout(),
+                    vertex_layouts: vec![Vertex::layout()],
                     cull_mode: None,
                 },
             );
@@ -780,7 +858,10 @@ impl GraphicsContext {
 
         match mode.fullscreen_type {
             FullscreenType::Windowed => {
-                window.set_fullscreen(None);
+                // Avoid calling set_fullscreen(None) when already windowed (avoids web crash)
+                if window.fullscreen().is_some() {
+                    window.set_fullscreen(None);
+                }
                 window.set_decorations(!mode.borderless);
                 let _ = window.request_inner_size(mode.actual_size()?);
                 window.set_resizable(mode.resizable);
@@ -814,9 +895,19 @@ impl GraphicsContext {
         }
 
         let size = window.inner_size();
-        assert!(size.width > 0 && size.height > 0);
-        self.surface_config.width = size.width.max(1);
-        self.surface_config.height = size.height.max(1);
+        let (width, height) = if size.width == 0 || size.height == 0 {
+            // On web, canvas `ResizeObserver` may not have fired, so `inner_size` is `(0, 0)`.
+            // Fall back to the configured size and let the resize event handler reconfigure.
+            let physical = mode
+                .actual_size()
+                .map(|s| s.to_physical::<u32>(window.scale_factor()))
+                .unwrap_or_else(|_| winit::dpi::PhysicalSize::new(800, 600));
+            (physical.width.max(1), physical.height.max(1))
+        } else {
+            (size.width, size.height)
+        };
+        self.surface_config.width = width;
+        self.surface_config.height = height;
 
         self.surface
             .configure(&self.wgpu.device, &self.surface_config);

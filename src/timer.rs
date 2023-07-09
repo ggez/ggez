@@ -86,8 +86,8 @@ where
 /// A structure that contains our time-tracking state.
 #[derive(Debug)]
 pub struct TimeContext {
-    init_instant: time::Instant,
-    last_instant: time::Instant,
+    init_instant: instant::Instant,
+    last_instant: instant::Instant,
     frame_durations: LogBuffer<time::Duration>,
     residual_update_dt: time::Duration,
     frame_count: usize,
@@ -101,8 +101,8 @@ impl TimeContext {
     pub fn new() -> TimeContext {
         let initial_dt = time::Duration::from_millis(16);
         TimeContext {
-            init_instant: time::Instant::now(),
-            last_instant: time::Instant::now(),
+            init_instant: instant::Instant::now(),
+            last_instant: instant::Instant::now(),
             frame_durations: LogBuffer::new(TIME_LOG_FRAMES, initial_dt),
             residual_update_dt: time::Duration::from_secs(0),
             frame_count: 0,
@@ -205,7 +205,7 @@ impl TimeContext {
     /// You only need to call this function if you're writing your
     /// own custom event loop.
     pub fn tick(&mut self) {
-        let now = time::Instant::now();
+        let now = instant::Instant::now();
         let time_since_last = now - self.last_instant;
         self.frame_durations.push(time_since_last);
         self.last_instant = now;
