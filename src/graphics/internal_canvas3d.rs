@@ -260,7 +260,7 @@ impl<'a> InternalCanvas3d<'a> {
             )
             .create(&self.wgpu.device, self.bind_group_cache);
 
-        self.set_image(image.view.clone());
+        self.set_image(image.clone());
 
         let uniforms = DrawUniforms3d::from_param(&param).projection(self.transform);
 
@@ -320,7 +320,7 @@ impl<'a> InternalCanvas3d<'a> {
             )
             .create(&self.wgpu.device, self.bind_group_cache);
 
-        self.set_image(instances.image.view.clone());
+        self.set_image(instances.image.clone());
         let draw_uniforms = DrawUniforms3d::from_param(&param).projection(self.transform);
         let uniforms = InstanceUniforms3d {
             model_transform: draw_uniforms.model_transform,
@@ -469,24 +469,18 @@ impl<'a> InternalCanvas3d<'a> {
         }
     }
 
-    fn set_image(&mut self, view: ArcTextureView) {
+    fn set_image(&mut self, image: Image) {
         if self.curr_sampler != self.next_sampler
             || self
                 .curr_image
                 .as_ref()
-                .map_or(true, |curr| curr.id() != view.id())
+                .map_or(true, |curr| curr.id() != image.view.id())
         {
             self.curr_sampler = self.next_sampler;
+            let sample = self.sampler_cache.get(&self.wgpu.device, self.curr_sampler);
+            let image_bind = image.fetch_buffer(sample.id(), sample, &self.wgpu.device);
 
-            let (image_bind, _) = BindGroupBuilder::new()
-                .image(&view, wgpu::ShaderStages::FRAGMENT)
-                .sampler(
-                    &self.sampler_cache.get(&self.wgpu.device, self.curr_sampler),
-                    wgpu::ShaderStages::FRAGMENT,
-                )
-                .create(&self.wgpu.device, self.bind_group_cache);
-
-            self.curr_image = Some(view);
+            self.curr_image = Some(image.view);
 
             self.pass
                 .set_bind_group(1, self.arenas.bind_groups.alloc(image_bind), &[]);

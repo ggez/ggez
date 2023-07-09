@@ -99,6 +99,12 @@ General examples:
 ## Fixed
 `Image::to_pixels` no longer crashes and works properly
 
+# 0.9.2
+
+## Fixed
+- Fixed memory leak caused by previous `Image` fix.
+- Fixed memory leak caused by `Text` rendering and creation
+
 # 0.9.1
 
 ## Fixed

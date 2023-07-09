@@ -1,11 +1,19 @@
 use super::{
     context::GraphicsContext,
-    gpu::arc::{ArcTexture, ArcTextureView},
+    gpu::{
+        arc::{ArcBindGroup, ArcSampler, ArcTexture, ArcTextureView},
+        bind_group::BindGroupBuilder,
+    },
     Canvas, Color, Draw, DrawParam, Drawable, Rect, WgpuContext,
 };
 use crate::{context::Has, Context, GameError, GameResult};
 use image::ImageEncoder;
-use std::{io::Read, path::Path};
+use std::{
+    collections::BTreeMap,
+    io::Read,
+    path::Path,
+    sync::{Arc, RwLock},
+};
 
 // maintaing a massive enum of all possible texture formats?
 // screw that.
@@ -24,6 +32,7 @@ pub struct Image {
     pub(crate) width: u32,
     pub(crate) height: u32,
     pub(crate) samples: u32,
+    pub(crate) cache: Arc<RwLock<BTreeMap<u64, ArcBindGroup>>>,
 }
 
 impl Image {
@@ -195,6 +204,7 @@ impl Image {
             width,
             height,
             samples,
+            cache: Arc::new(RwLock::new(BTreeMap::default())),
         }
     }
 
@@ -347,6 +357,29 @@ impl Image {
             y: y as f32 / self.height as f32,
             w: w as f32 / self.width as f32,
             h: h as f32 / self.height as f32,
+        }
+    }
+
+    pub(crate) fn fetch_buffer(
+        &self,
+        sample_id: u64,
+        sampler: ArcSampler,
+        device: &wgpu::Device,
+    ) -> ArcBindGroup {
+        if self.cache.read().is_ok_and(|x| x.contains_key(&sample_id)) {
+            self.cache.read().unwrap().get(&sample_id).unwrap().clone() // Should be fine since we already checked if it's ok and contains key
+        } else {
+            let mut cache = self.cache.write().unwrap(); // Should be fine since ggez doesn't do any async stuff atm
+            cache
+                .insert(
+                    sample_id,
+                    BindGroupBuilder::new()
+                        .image(&self.view, wgpu::ShaderStages::FRAGMENT)
+                        .sampler(&sampler, wgpu::ShaderStages::FRAGMENT)
+                        .create_uncached(device)
+                        .0,
+                )
+                .unwrap_or(cache.get(&sample_id).unwrap().clone()) // Should be fine since we just inserted the key into the btree
         }
     }
 }

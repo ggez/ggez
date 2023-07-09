@@ -321,7 +321,7 @@ impl<'a> InternalCanvas<'a> {
             )
             .create(&self.wgpu.device, self.bind_group_cache);
 
-        self.set_image(image.view.clone());
+        self.set_image(image.clone());
 
         let mut uniforms = DrawUniforms::from_param(
             &param,
@@ -392,7 +392,7 @@ impl<'a> InternalCanvas<'a> {
             )
             .create(&self.wgpu.device, self.bind_group_cache);
 
-        self.set_image(instances.image.view.clone());
+        self.set_image(instances.image.clone());
 
         let uniforms = InstanceUniforms {
             transform: (self.transform
@@ -457,7 +457,7 @@ impl<'a> InternalCanvas<'a> {
         self.text_renderer
             .queue(text.as_section(self.fonts, param)?);
 
-        self.set_image(self.text_renderer.cache_view.clone());
+        self.set_text_image(self.text_renderer.cache_view.clone());
 
         let (text_uniforms_bind, _) = BindGroupBuilder::new()
             .buffer(
@@ -635,7 +635,25 @@ impl<'a> InternalCanvas<'a> {
         }
     }
 
-    fn set_image(&mut self, view: ArcTextureView) {
+    fn set_image(&mut self, image: Image) {
+        if self.curr_sampler != self.next_sampler
+            || self
+                .curr_image
+                .as_ref()
+                .map_or(true, |curr| curr.id() != image.view.id())
+        {
+            self.curr_sampler = self.next_sampler;
+            let sample = self.sampler_cache.get(&self.wgpu.device, self.curr_sampler);
+            let image_bind = image.fetch_buffer(sample.id(), sample, &self.wgpu.device);
+
+            self.curr_image = Some(image.view);
+
+            self.pass
+                .set_bind_group(1, self.arenas.bind_groups.alloc(image_bind), &[]);
+        }
+    }
+
+    fn set_text_image(&mut self, view: ArcTextureView) {
         if self.curr_sampler != self.next_sampler
             || self
                 .curr_image

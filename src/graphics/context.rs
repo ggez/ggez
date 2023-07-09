@@ -644,6 +644,8 @@ impl GraphicsContext {
 
         self.uniform_arena.free();
 
+        self.text.verts.free();
+
         Ok(())
     }
 
@@ -707,8 +709,6 @@ impl GraphicsContext {
             fcx.frame.present();
 
             self.staging_belt.recall();
-
-            self.bind_group_cache.clear();
 
             Ok(())
         } else {
