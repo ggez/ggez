@@ -354,9 +354,9 @@ impl Image {
         device: &wgpu::Device,
     ) -> ArcBindGroup {
         if self.cache.read().is_ok_and(|x| x.contains_key(&sample_id)) {
-            self.cache.read().unwrap().get(&sample_id).unwrap().clone()
+            self.cache.read().unwrap().get(&sample_id).unwrap().clone() // Should be fine since we already checked if it's ok and contains key
         } else {
-            let mut cache = self.cache.write().unwrap();
+            let mut cache = self.cache.write().unwrap(); // Should be fine since ggez doesn't do any async stuff atm
             cache
                 .insert(
                     sample_id,
@@ -366,7 +366,7 @@ impl Image {
                         .create_uncached(device)
                         .0,
                 )
-                .unwrap_or(cache.get(&sample_id).unwrap().clone())
+                .unwrap_or(cache.get(&sample_id).unwrap().clone()) // Should be fine since we just inserted the key into the btree
         }
     }
 }
