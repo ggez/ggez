@@ -1,8 +1,11 @@
 use super::{
     draw::DrawUniforms,
     gpu::{
-        arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcRenderPipeline, ArcShaderModule},
-        bind_group::{BindGroupBuilder, BindGroupCache},
+        arc::{
+            ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcRenderPipeline, ArcSampler,
+            ArcShaderModule, ArcTextureView,
+        },
+        bind_group::{BindGroupCache, BindGroupEntryKey},
         growing::GrowingBufferArena,
         pipeline::PipelineCache,
         text::TextRenderer,
@@ -98,6 +101,8 @@ pub struct GraphicsContext {
     pub(crate) instance_bind_layout: ArcBindGroupLayout,
 
     pub(crate) fs: Filesystem,
+
+    bind_group: Option<(Vec<BindGroupEntryKey>, ArcBindGroup)>,
 }
 
 impl GraphicsContext {
@@ -156,6 +161,77 @@ impl GraphicsContext {
             });
 
             Self::new_from_instance(game_id, instance, event_loop, conf, filesystem)
+        }
+    }
+
+    fn bind_group(
+        &mut self,
+        view: ArcTextureView,
+        sampler: ArcSampler,
+    ) -> (ArcBindGroup, ArcBindGroupLayout) {
+        let key = vec![
+            BindGroupEntryKey::Image { id: view.id() },
+            BindGroupEntryKey::Sampler { id: sampler.id() },
+        ];
+        if let Some(bind_group) = self.bind_group.as_mut() {
+            if key == bind_group.0 {
+                let layout = BindGroupLayoutBuilder::new()
+                    .image(wgpu::ShaderStages::FRAGMENT)
+                    .sampler(wgpu::ShaderStages::FRAGMENT)
+                    .create(&self.wgpu.device, &mut self.bind_group_cache);
+                (bind_group.1.clone(), layout)
+            } else {
+                let layout = BindGroupLayoutBuilder::new()
+                    .image(wgpu::ShaderStages::FRAGMENT)
+                    .sampler(wgpu::ShaderStages::FRAGMENT)
+                    .create(&self.wgpu.device, &mut self.bind_group_cache);
+                *bind_group = (
+                    key,
+                    ArcBindGroup::new(self.wgpu.device.create_bind_group(
+                        &wgpu::BindGroupDescriptor {
+                            label: None,
+                            layout: layout.as_ref(),
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    resource: wgpu::BindingResource::TextureView(view.as_ref()),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: wgpu::BindingResource::Sampler(sampler.as_ref()),
+                                },
+                            ],
+                        },
+                    )),
+                );
+                (bind_group.1.clone(), layout)
+            }
+        } else {
+            let layout = BindGroupLayoutBuilder::new()
+                .image(wgpu::ShaderStages::FRAGMENT)
+                .sampler(wgpu::ShaderStages::FRAGMENT)
+                .create(&self.wgpu.device, &mut self.bind_group_cache);
+            self.bind_group =
+                Some((
+                    key,
+                    ArcBindGroup::new(self.wgpu.device.create_bind_group(
+                        &wgpu::BindGroupDescriptor {
+                            label: None,
+                            layout: layout.as_ref(),
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    resource: wgpu::BindingResource::TextureView(view.as_ref()),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: wgpu::BindingResource::Sampler(sampler.as_ref()),
+                                },
+                            ],
+                        },
+                    )),
+                ));
+            (self.bind_group.as_ref().unwrap().1.clone(), layout)
         }
     }
 
@@ -436,6 +512,8 @@ impl GraphicsContext {
             instance_bind_layout,
 
             fs: InternalClone::clone(filesystem),
+
+            bind_group: None,
         };
 
         this.set_window_mode(&conf.window_mode)?;
@@ -627,6 +705,7 @@ impl GraphicsContext {
                 })
             }
         }?;
+
         let frame_view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -671,10 +750,7 @@ impl GraphicsContext {
                 .sampler_cache
                 .get(&self.wgpu.device, Sampler::default());
 
-            let (bind, layout) = BindGroupBuilder::new()
-                .image(&fcx.present.view, wgpu::ShaderStages::FRAGMENT)
-                .sampler(sampler, wgpu::ShaderStages::FRAGMENT)
-                .create(&self.wgpu.device, &mut self.bind_group_cache);
+            let (bind, layout) = self.bind_group(fcx.present.view, sampler.clone());
 
             let layout = self.pipeline_cache.layout(&self.wgpu.device, &[layout]);
             let copy = self.pipeline_cache.render_pipeline(

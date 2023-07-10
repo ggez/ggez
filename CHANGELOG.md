@@ -100,6 +100,12 @@ General examples:
 `Image::to_pixels` no longer crashes and works properly
 `Image` can now be loaded from jpg/jpeg files 
 
+# 0.9.3
+
+## Fixed
+- `Image` can now be loaded from jpg/jpeg files
+- Fixed memory leak caused by resizing
+
 # 0.9.2
 
 ## Fixed
