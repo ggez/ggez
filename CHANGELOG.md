@@ -1,3 +1,9 @@
+# 0.9.3
+
+## Fixed
+- `Image` can now be loaded from jpg/jpeg files
+- Fixed memory leak caused by resizing
+
 # 0.9.2
 
 ## Fixed

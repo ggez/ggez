@@ -89,7 +89,7 @@ impl BindGroupLayoutBuilder {
 
 /// This is used as a key into the HashMap cache to uniquely identify a bind group.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum BindGroupEntryKey {
+pub(crate) enum BindGroupEntryKey {
     Buffer {
         id: u64,
         offset: u64,
