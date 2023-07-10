@@ -11,7 +11,7 @@ pub struct RenderPipelineInfo {
     pub samples: u32,
     pub format: wgpu::TextureFormat,
     pub blend: Option<wgpu::BlendState>,
-    pub depth: bool,
+    pub depth: Option<wgpu::CompareFunction>,
     pub vertices: bool,
     pub topology: wgpu::PrimitiveTopology,
     pub vertex_layout: wgpu::VertexBufferLayout<'static>,
@@ -61,17 +61,13 @@ impl PipelineCache {
                             polygon_mode: wgpu::PolygonMode::Fill,
                             conservative: false,
                         },
-                        depth_stencil: if info.depth {
-                            Some(wgpu::DepthStencilState {
-                                format: wgpu::TextureFormat::Depth32Float,
-                                depth_write_enabled: true,
-                                depth_compare: wgpu::CompareFunction::Always,
-                                stencil: Default::default(),
-                                bias: Default::default(),
-                            })
-                        } else {
-                            None
-                        },
+                        depth_stencil: info.depth.map(|depth_compare| wgpu::DepthStencilState {
+                            format: wgpu::TextureFormat::Depth32Float,
+                            depth_write_enabled: true,
+                            depth_compare,
+                            stencil: Default::default(),
+                            bias: Default::default(),
+                        }),
                         multisample: wgpu::MultisampleState {
                             count: info.samples,
                             mask: !0,

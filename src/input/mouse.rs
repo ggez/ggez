@@ -16,6 +16,7 @@ pub struct MouseContext {
     last_position: glam::Vec2,
     last_delta: glam::Vec2,
     delta: glam::Vec2,
+    raw_delta: glam::DVec2,
     buttons_pressed: HashSet<MouseButton>,
     cursor_type: CursorIcon,
     cursor_grabbed: bool,
@@ -24,11 +25,13 @@ pub struct MouseContext {
 }
 
 impl MouseContext {
-    pub(crate) fn new() -> Self {
+    /// Create a new MouseContext
+    pub fn new() -> Self {
         Self {
             last_position: glam::Vec2::ZERO,
             last_delta: glam::Vec2::ZERO,
             delta: glam::Vec2::ZERO,
+            raw_delta: glam::DVec2::ZERO,
             cursor_type: CursorIcon::Default,
             buttons_pressed: HashSet::new(),
             cursor_grabbed: false,
@@ -102,11 +105,22 @@ impl MouseContext {
         self.set_last_position(glam::Vec2::new(new_x, new_y));
     }
 
+    /// Handles the raw motion of the mouse to be able to provide the raw delta
+    pub fn handle_motion(&mut self, x: f64, y: f64) {
+        self.raw_delta = glam::DVec2::new(x, y);
+    }
+
+    /// Returns the raw delta or mouse motion of the device moving the cursor
+    pub fn raw_delta(&self) -> mint::Vector2<f64> {
+        self.raw_delta.into()
+    }
+
     /// Resets the value returned by [`mouse::delta`](fn.delta.html) to zero.
     /// You shouldn't need to call this, except when you're running your own event loop.
     /// In this case call it right at the end, after `draw` and `update` have finished.
     pub fn reset_delta(&mut self) {
         self.delta = glam::Vec2::ZERO;
+        self.raw_delta = glam::DVec2::ZERO;
     }
 
     /// Copies the current state of the mouse buttons into the context. If you are writing your own event loop

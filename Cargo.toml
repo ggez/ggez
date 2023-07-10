@@ -24,13 +24,16 @@ name = "ggez"
 path = "src/lib.rs"
 
 [features]
-default = ["c_dependencies", "audio", "gamepad"]
+default = ["c_dependencies", "audio", "gamepad", "3d", "gltf", "obj"]
 zip-compression = ["zip/bzip2", "zip/zstd"]
 mp3 = ["rodio/mp3"]
 multithread-image-decoding = ["image/hdr", "image/jpeg_rayon"]
 c_dependencies = ["zip-compression", "mp3"]
 audio = ["rodio"]
 gamepad = ["gilrs"]
+3d = []
+gltf = ["dep:gltf", "base64", "percent-encoding", "3d"]
+obj = ["obj-rs", "3d"]
 
 [dependencies]
 bitflags = "2.1"
@@ -48,7 +51,7 @@ image = { version = "0.24", default-features = false, features = [
    "webp",
    "bmp",
    "dxt",
-   "jpeg"
+   "jpeg",
 ] }
 rodio = { version = "0.17", optional = true, default-features = false, features = [
    "flac",
@@ -67,10 +70,15 @@ gilrs = { version = "0.10", optional = true }
 approx = "0.5"
 bytemuck = { version = "1.12", features = ["derive"] }
 pollster = "0.3"
-memoffset = "0.8"
+memoffset = "0.9"
 crevice = "0.13"
 typed-arena = "2.0"
 ordered-float = "3.3"
+percent-encoding = { version = "2.3.0", optional = true }
+base64 = { version = "0.21.2", optional = true }
+gltf = { version = "1.2.0", optional = true, default-features = false, features = ["utils"] }
+obj-rs = { version = "0.7.1", optional = true }
+num-traits = "0.2"
 
 [dev-dependencies]
 chrono = "0.4"
@@ -80,7 +88,6 @@ argh = "0.1"
 rand = "0.8"
 keyframe = "1"
 keyframe_derive = "1"
-num-traits = "0.2"
 num-derive = "0.3"
 
 skeptic = "0.13"
