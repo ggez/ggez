@@ -260,8 +260,8 @@ impl Drawable for Mesh {
         );
     }
 
-    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
-        Some(self.bounds)
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Rect {
+        self.bounds
     }
 }
 
@@ -284,8 +284,8 @@ impl Drawable for Quad {
         canvas.default_resources().mesh.clone().draw(canvas, param);
     }
 
-    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
-        Some(Rect::one())
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Rect {
+        Rect::one()
     }
 }
 
