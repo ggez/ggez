@@ -67,7 +67,7 @@ impl MainState {
         ];
 
         let image_two =
-            graphics::Image::from_color(ctx, 1, 1, Some(graphics::Color::from_rgb(50, 50, 50)));
+            graphics::Image::from_color(ctx, 1, 1, graphics::Color::from_rgb(50, 50, 50));
         let mesh = Mesh3dBuilder::new()
             .from_data(vertex_data, index_data, None)
             .build(ctx);
