@@ -3,19 +3,19 @@ use super::{
     gpu::{
         arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcShaderModule, ArcTextureView},
         bind_group::{BindGroupBuilder, BindGroupCache, BindGroupLayoutBuilder},
-        growing::GrowingBufferArena,
+        growing::{ArenaAllocation, GrowingBufferArena},
         pipeline::{PipelineCache, RenderPipelineInfo},
     },
     image::Image,
     instance3d::InstanceArray3d,
     sampler::{Sampler, SamplerCache},
     shader::Shader,
-    AlphaMode, BlendMode, Color, DrawParam3d, DrawUniforms3d, LinearColor, Rect, RenderedMesh3d,
-    Vertex3d, WgpuContext,
+    AlphaMode, BlendMode, Color, Draw3d, DrawCommand3d, DrawParam3d, DrawUniforms3d, LinearColor,
+    Rect, RenderedMesh3d, Vertex3d, WgpuContext, ZIndex,
 };
 use crate::{GameError, GameResult};
 use crevice::std140::AsStd140;
-use std::hash::Hash;
+use std::{collections::BTreeMap, hash::Hash};
 
 /// A canvas represents a render pass and is how you render meshes .
 #[allow(missing_debug_implementations)]
@@ -46,6 +46,8 @@ pub struct InternalCanvas3d<'a> {
     curr_image: Option<ArcTextureView>,
     curr_sampler: Sampler,
     next_sampler: Sampler,
+
+    uniform_alloc: Option<ArenaAllocation>,
 }
 
 impl<'a> InternalCanvas3d<'a> {
@@ -207,6 +209,8 @@ impl<'a> InternalCanvas3d<'a> {
             curr_sampler: Sampler::default(),
             next_sampler: Sampler::default(),
             blend_mode: BlendMode::ALPHA,
+
+            uniform_alloc: None,
         })
     }
 
@@ -242,42 +246,65 @@ impl<'a> InternalCanvas3d<'a> {
         self.pass.set_scissor_rect(x, y, w, h);
     }
 
-    #[allow(unsafe_code)]
-    pub fn draw_mesh(&mut self, mesh: &'a RenderedMesh3d, image: &Image, param: DrawParam3d) {
-        self.update_pipeline(ShaderType3d::Draw);
+    pub(crate) fn update_uniform(&mut self, draws: &BTreeMap<ZIndex, Vec<DrawCommand3d>>) {
+        let alignment = self
+            .wgpu
+            .device
+            .limits()
+            .min_uniform_buffer_offset_alignment as u64;
+        let mut alloc_size = 0;
+        let mut uniforms = Vec::new();
+        for draws in draws.values() {
+            for draw in draws {
+                if let Draw3d::Mesh { .. } = &draw.draw {
+                    alloc_size += alignment;
+                    let draw_uniform =
+                        DrawUniforms3d::from_param(&draw.param).projection(self.transform);
+                    let mut bytes = draw_uniform.as_std140().as_bytes().to_vec();
+                    let needed_padding = alignment - (bytes.len() as u64 % alignment); // Pad the uniforms so we can index properly
+                    bytes.resize(bytes.len() + needed_padding as usize, 0);
+                    uniforms.extend_from_slice(bytes.as_slice());
+                }
+            }
+        }
 
-        let alloc_size = DrawUniforms3d::std140_size_static() as u64;
         let uniform_alloc = self.uniform_arena.allocate(&self.wgpu.device, alloc_size);
+        self.wgpu.queue.write_buffer(
+            &uniform_alloc.buffer,
+            uniform_alloc.offset,
+            uniforms.as_slice(),
+        );
+
+        self.uniform_alloc = Some(uniform_alloc);
+    }
+
+    #[allow(unsafe_code)]
+    pub fn draw_mesh(&mut self, mesh: &'a RenderedMesh3d, image: &Image, idx: usize) {
+        self.update_pipeline(ShaderType3d::Draw);
 
         let (uniform_bind_group, _) = BindGroupBuilder::new()
             .buffer(
-                &uniform_alloc.buffer,
+                &self.uniform_alloc.as_ref().unwrap().buffer,
                 0,
                 wgpu::ShaderStages::VERTEX,
                 wgpu::BufferBindingType::Uniform,
                 true,
-                Some(alloc_size),
+                Some(DrawUniforms3d::std140_size_static() as u64),
             )
             .create(&self.wgpu.device, self.bind_group_cache);
 
         self.set_image(image.clone());
 
-        let uniforms = DrawUniforms3d::from_param(&param).projection(self.transform);
-
         // 1. allocate some uniform buffer memory from GrowingBufferArena.
         // 2. write the uniform data to that memory
         // 3. use a "dynamic offset" to offset into the memory
 
-        self.wgpu.queue.write_buffer(
-            &uniform_alloc.buffer,
-            uniform_alloc.offset,
-            uniforms.as_std140().as_bytes(),
-        );
+        let offset = self.uniform_alloc.as_ref().unwrap().offset + (idx as u64 * 256);
 
         self.pass.set_bind_group(
             0,
             self.arenas.bind_groups.alloc(uniform_bind_group),
-            &[uniform_alloc.offset as u32], // <- the dynamic offset
+            &[offset as u32], // <- the dynamic offset
         );
 
         self.pass.set_vertex_buffer(0, mesh.vert_buffer.slice(..));

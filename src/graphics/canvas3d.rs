@@ -390,10 +390,11 @@ impl Canvas3d {
             canvas.set_scissor_rect(state.scissor_rect);
         }
 
-        for draws in self.draws.values() {
-            for draw in draws {
-                // track state and apply to InternalCanvas if changed
+        // track state and apply to InternalCanvas if changed. Not sure the best way to handle this yet
+        canvas.update_uniform(&self.draws);
 
+        for draws in self.draws.values() {
+            for (idx, draw) in draws.iter().enumerate() {
                 if draw.state.shader != state.shader {
                     canvas.set_shader(draw.state.shader.clone());
                 }
@@ -425,9 +426,9 @@ impl Canvas3d {
                 match &draw.draw {
                     Draw3d::Mesh { mesh } => {
                         if let Some(image) = mesh.texture.clone() {
-                            canvas.draw_mesh(mesh, &image, draw.param)
+                            canvas.draw_mesh(mesh, &image, idx)
                         } else {
-                            canvas.draw_mesh(mesh, &self.default_resources().image, draw.param)
+                            canvas.draw_mesh(mesh, &self.default_resources().image, idx)
                         }
                     }
                     Draw3d::MeshInstances { mesh, instances } => {
@@ -444,7 +445,7 @@ impl Canvas3d {
 }
 
 #[derive(Debug, Clone)]
-struct DrawState3d {
+pub(crate) struct DrawState3d {
     shader: Shader,
     params: Option<(ArcBindGroup, ArcBindGroupLayout, u32)>,
     sampler: Sampler,
@@ -486,10 +487,10 @@ pub(crate) enum Draw3d {
 
 // Stores *everything* you need to know to draw something.
 #[derive(Debug)]
-struct DrawCommand3d {
-    state: DrawState3d,
-    param: DrawParam3d,
-    draw: Draw3d,
+pub(crate) struct DrawCommand3d {
+    pub(crate) state: DrawState3d,
+    pub(crate) param: DrawParam3d,
+    pub(crate) draw: Draw3d,
 }
 
 #[derive(Debug)]
