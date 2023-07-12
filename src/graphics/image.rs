@@ -65,8 +65,9 @@ impl Image {
         gfx: &impl Has<GraphicsContext>,
         width: u32,
         height: u32,
-        color: Option<Color>,
+        color: impl Into<Option<Color>>,
     ) -> Self {
+        let color = color.into();
         let pixels = (0..(width * height))
             .flat_map(|_| {
                 let (r, g, b, a) = color.unwrap_or(Color::WHITE).to_rgba();
