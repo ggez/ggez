@@ -396,13 +396,13 @@ impl Drawable for Image {
         );
     }
 
-    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
-        Some(Rect {
+    fn dimensions(&self, _gfx: &impl Has<GraphicsContext>) -> Rect {
+        Rect {
             x: 0.,
             y: 0.,
             w: self.width() as _,
             h: self.height() as _,
-        })
+        }
     }
 }
 

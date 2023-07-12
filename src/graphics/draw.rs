@@ -296,7 +296,7 @@ pub trait Drawable {
     ///
     /// It returns `Option` because some `Drawable`s may have no bounding box,
     /// namely `InstanceArray` (as there is no true bounds for the instances given the instanced mesh can differ).
-    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Option<Rect>;
+    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Rect;
 }
 
 #[derive(Debug, Copy, Clone, crevice::std140::AsStd140)]

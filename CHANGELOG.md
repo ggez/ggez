@@ -93,6 +93,7 @@ General examples:
 ## Changed
 
 `EventHandler` now takes another generic in form of whatever context implementation you are using whether that be the default one of a custom one
+`Drawable::dimensions` now returns a `Rect` instead of an `Option<Rect>`
 
 ## Removed
 

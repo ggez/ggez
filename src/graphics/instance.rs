@@ -286,21 +286,15 @@ impl InstanceArray {
     ///
     /// Essentially, consider `<InstanceArray as Drawable>::dimensions()` to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw()`,
     /// and consider [`InstanceArray::dimensions_meshed()`] to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw_instanced_mesh()`.
-    pub fn dimensions_meshed(&self, gfx: &impl Has<GraphicsContext>, mesh: &Mesh) -> Option<Rect> {
+    pub fn dimensions_meshed(&self, gfx: &impl Has<GraphicsContext>, mesh: &Mesh) -> Rect {
         if self.params.is_empty() {
-            return None;
+            return Rect::new(0.0, 0.0, 1.0, 1.0);
         }
-        let dimensions = mesh.dimensions(gfx)?;
+        let dimensions = mesh.dimensions(gfx);
         self.params
             .iter()
             .map(|&param| transform_rect(dimensions, param))
-            .fold(None, |acc: Option<Rect>, rect| {
-                Some(if let Some(acc) = acc {
-                    acc.combine_with(rect)
-                } else {
-                    rect
-                })
-            })
+            .fold(Rect::zero(), |acc: Rect, rect| acc.combine_with(rect))
     }
 }
 
@@ -322,21 +316,15 @@ impl Drawable for InstanceArray {
         );
     }
 
-    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
+    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Rect {
         let gfx = gfx.retrieve();
         if self.params.is_empty() {
-            return None;
+            return Rect::new(0.0, 0.0, 1.0, 1.0);
         }
-        let dimensions = self.image.dimensions(gfx)?;
+        let dimensions = self.image.dimensions(gfx);
         self.params
             .iter()
             .map(|&param| transform_rect(dimensions, param))
-            .fold(None, |acc: Option<Rect>, rect| {
-                Some(if let Some(acc) = acc {
-                    acc.combine_with(rect)
-                } else {
-                    rect
-                })
-            })
+            .fold(Rect::zero(), |acc: Rect, rect| acc.combine_with(rect))
     }
 }
