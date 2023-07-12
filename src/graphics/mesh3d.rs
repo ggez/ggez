@@ -636,13 +636,16 @@ impl Mesh3dBuilder {
                 contents: bytemuck::cast_slice(self.indices.as_slice()),
                 usage: wgpu::BufferUsages::INDEX,
             });
-        Mesh3d {
+        let mut mesh = Mesh3d {
             vert_buffer: Arc::new(verts),
             vertices: self.vertices.clone(),
             indices: self.indices.clone(),
             ind_buffer: Arc::new(inds),
             texture: self.texture.clone(),
-        }
+            aabb: None,
+        };
+        mesh.calculate_aabb();
+        mesh
     }
 }
 
@@ -657,6 +660,8 @@ pub struct Mesh3d {
     pub vertices: Vec<Vertex3d>,
     /// Vector of the indices used to index into the vertices of this mesh
     pub indices: Vec<u32>,
+    /// The bounding box of the mesh
+    pub aabb: Option<Aabb>,
 }
 
 impl Drawable3d for Mesh3d {
@@ -664,7 +669,7 @@ impl Drawable3d for Mesh3d {
         let param = param.into();
         let param = if let Transform3d::Values { offset, .. } = param.transform {
             if offset.is_none() {
-                param.offset(self.to_aabb().unwrap_or_default().center)
+                param.offset(self.aabb.unwrap_or_default().center)
             } else {
                 param
             }
@@ -677,7 +682,7 @@ impl Drawable3d for Mesh3d {
 
 impl Mesh3d {
     /// Get the bounding box of this mesh
-    pub fn to_aabb(&self) -> Option<Aabb> {
+    pub fn calculate_aabb(&mut self) {
         let mut minimum = Vec3::MAX;
         let mut maximum = Vec3::MIN;
         for p in self.vertices.iter() {
@@ -691,9 +696,9 @@ impl Mesh3d {
             && maximum.y != std::f32::MIN
             && maximum.z != std::f32::MIN
         {
-            Some(Aabb::from_min_max(minimum, maximum))
+            self.aabb = Some(Aabb::from_min_max(minimum, maximum))
         } else {
-            None
+            self.aabb = None
         }
     }
 }
@@ -830,6 +835,8 @@ impl<I: FromPrimitive> obj::FromRawVertex<I> for Vertex3d {
 pub struct Model {
     /// The meshes that make up the model
     pub meshes: Vec<Mesh3d>,
+    /// The bounding box of the model
+    pub aabb: Option<Aabb>,
 }
 
 impl Drawable3d for Model {
@@ -837,7 +844,7 @@ impl Drawable3d for Model {
         let param = param.into();
         let param = if let Transform3d::Values { offset, .. } = param.transform {
             if offset.is_none() {
-                param.offset(self.to_aabb().unwrap_or_default().center)
+                param.offset(self.aabb.unwrap_or_default().center)
             } else {
                 param
             }
@@ -853,7 +860,12 @@ impl Drawable3d for Model {
 impl Model {
     /// Create a model from a mesh
     pub fn from_mesh(mesh: Mesh3d) -> Self {
-        Model { meshes: vec![mesh] }
+        let mut model = Model {
+            meshes: vec![mesh],
+            aabb: None,
+        };
+        model.calculate_aabb();
+        model
     }
     /// Load gltf or obj depending on extension type
     #[cfg(any(feature = "obj", feature = "gltf"))]
@@ -943,7 +955,12 @@ impl Model {
         let mesh = Mesh3dBuilder::new()
             .from_data(obj.vertices, obj.indices, Some(img))
             .build(gfx);
-        Ok(Model { meshes: vec![mesh] })
+        let mut model = Model {
+            meshes: vec![mesh],
+            aabb: None,
+        };
+        model.calculate_aabb();
+        Ok(model)
     }
 
     #[cfg(feature = "gltf")]
@@ -1143,10 +1160,13 @@ impl Model {
                 Model::read_node(&mut meshes, &node, Mat4::IDENTITY, &mut buffer_data, gfx)?;
             }
         }
-        Ok(Model { meshes })
+        let mut model = Model { meshes, aabb: None };
+        model.calculate_aabb();
+
+        Ok(model)
     }
     /// Generate an aabb for this Model
-    pub fn to_aabb(&self) -> Option<Aabb> {
+    pub fn calculate_aabb(&mut self) {
         let mut minimum = Vec3::MAX;
         let mut maximum = Vec3::MIN;
         for mesh in self.meshes.iter() {
@@ -1162,9 +1182,9 @@ impl Model {
             && maximum.y != std::f32::MIN
             && maximum.z != std::f32::MIN
         {
-            Some(Aabb::from_min_max(minimum, maximum))
+            self.aabb = Some(Aabb::from_min_max(minimum, maximum))
         } else {
-            None
+            self.aabb = None
         }
     }
 }
