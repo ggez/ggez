@@ -676,7 +676,7 @@ impl Drawable3d for Mesh3d {
         } else {
             param
         };
-        canvas.push_draw(Draw3d::Mesh { mesh: self.clone() }, param);
+        canvas.push_draw(Draw3d::Mesh { mesh: self.into() }, param);
     }
 }
 
@@ -852,7 +852,7 @@ impl Drawable3d for Model {
             param
         };
         for mesh in self.meshes.iter() {
-            canvas.push_draw(Draw3d::Mesh { mesh: mesh.clone() }, param);
+            canvas.push_draw(Draw3d::Mesh { mesh: mesh.into() }, param);
         }
     }
 }

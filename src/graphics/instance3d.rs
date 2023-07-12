@@ -312,7 +312,7 @@ impl Drawable3d for InstanceArray3d {
         self.flush_wgpu(&canvas.wgpu).unwrap();
         canvas.push_draw(
             Draw3d::MeshInstances {
-                mesh: self.mesh.clone(),
+                mesh: (&self.mesh).into(),
                 instances: InstanceArrayView3d::from_instances(self).unwrap(),
             },
             param.into(),

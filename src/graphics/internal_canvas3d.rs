@@ -10,8 +10,8 @@ use super::{
     instance3d::InstanceArray3d,
     sampler::{Sampler, SamplerCache},
     shader::Shader,
-    AlphaMode, BlendMode, Color, DrawParam3d, DrawUniforms3d, LinearColor, Mesh3d, Rect, Vertex3d,
-    WgpuContext,
+    AlphaMode, BlendMode, Color, DrawParam3d, DrawUniforms3d, LinearColor, Rect, RenderedMesh3d,
+    Vertex3d, WgpuContext,
 };
 use crate::{GameError, GameResult};
 use crevice::std140::AsStd140;
@@ -243,7 +243,7 @@ impl<'a> InternalCanvas3d<'a> {
     }
 
     #[allow(unsafe_code)]
-    pub fn draw_mesh(&mut self, mesh: &'a Mesh3d, image: &Image, param: DrawParam3d) {
+    pub fn draw_mesh(&mut self, mesh: &'a RenderedMesh3d, image: &Image, param: DrawParam3d) {
         self.update_pipeline(ShaderType3d::Draw);
 
         let alloc_size = DrawUniforms3d::std140_size_static() as u64;
@@ -284,12 +284,12 @@ impl<'a> InternalCanvas3d<'a> {
         self.pass
             .set_index_buffer(mesh.ind_buffer.slice(..), wgpu::IndexFormat::Uint32);
 
-        self.pass.draw_indexed(0..mesh.indices.len() as _, 0, 0..1);
+        self.pass.draw_indexed(0..mesh.ind_len as _, 0, 0..1);
     }
 
     pub fn draw_mesh_instances(
         &mut self,
-        mesh: &'a Mesh3d,
+        mesh: &'a RenderedMesh3d,
         instances: &'a InstanceArrayView3d,
         param: DrawParam3d,
     ) -> GameResult {
@@ -351,7 +351,7 @@ impl<'a> InternalCanvas3d<'a> {
             .set_index_buffer(mesh.ind_buffer.slice(..), wgpu::IndexFormat::Uint32);
 
         self.pass
-            .draw_indexed(0..mesh.indices.len() as _, 0, 0..instances.len as _);
+            .draw_indexed(0..mesh.ind_len as _, 0, 0..instances.len as _);
 
         Ok(())
     }

@@ -453,13 +453,33 @@ struct DrawState3d {
     scissor_rect: (u32, u32, u32, u32),
 }
 
+/// Rendered version of mesh slimmed down
+#[derive(Clone, Debug)]
+pub struct RenderedMesh3d {
+    pub(crate) vert_buffer: Arc<wgpu::Buffer>,
+    pub(crate) ind_buffer: Arc<wgpu::Buffer>,
+    pub(crate) texture: Option<Image>,
+    pub(crate) ind_len: usize,
+}
+
+impl From<&Mesh3d> for RenderedMesh3d {
+    fn from(item: &Mesh3d) -> Self {
+        Self {
+            vert_buffer: item.vert_buffer.clone(),
+            ind_buffer: item.ind_buffer.clone(),
+            texture: item.texture.clone(),
+            ind_len: item.indices.len(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) enum Draw3d {
     Mesh {
-        mesh: Mesh3d,
+        mesh: RenderedMesh3d,
     },
     MeshInstances {
-        mesh: Mesh3d,
+        mesh: RenderedMesh3d,
         instances: InstanceArrayView3d,
     },
 }
