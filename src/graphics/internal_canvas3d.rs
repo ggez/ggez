@@ -492,6 +492,7 @@ impl<'a> InternalCanvas3d<'a> {
                         vertices: true,
                         topology: wgpu::PrimitiveTopology::TriangleList,
                         vertex_layout: Vertex3d::desc(),
+                        cull_mode: Some(wgpu::Face::Back),
                     },
                 ));
 

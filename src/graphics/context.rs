@@ -766,6 +766,7 @@ impl GraphicsContext {
                     vertices: false,
                     topology: wgpu::PrimitiveTopology::TriangleList,
                     vertex_layout: Vertex::layout(),
+                    cull_mode: None,
                 },
             );
 

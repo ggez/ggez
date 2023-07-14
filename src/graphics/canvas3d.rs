@@ -390,7 +390,6 @@ impl Canvas3d {
             canvas.set_scissor_rect(state.scissor_rect);
         }
 
-        // track state and apply to InternalCanvas if changed. Not sure the best way to handle this yet
         canvas.update_uniform(&self.draws);
 
         for draws in self.draws.values() {

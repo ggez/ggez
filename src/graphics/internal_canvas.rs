@@ -628,6 +628,7 @@ impl<'a> InternalCanvas<'a> {
                             ShaderType::Text => TextVertex::layout(),
                             _ => Vertex::layout(),
                         },
+                        cull_mode: None,
                     },
                 ));
 
