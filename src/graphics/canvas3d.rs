@@ -449,7 +449,7 @@ pub(crate) struct DrawState3d {
     shader: Shader,
     params: Option<(ArcBindGroup, ArcBindGroupLayout, u32)>,
     sampler: Sampler,
-    projection: mint::ColumnMatrix4<f32>,
+    pub(crate) projection: mint::ColumnMatrix4<f32>,
     alpha_mode: AlphaMode,
     scissor_rect: (u32, u32, u32, u32),
 }

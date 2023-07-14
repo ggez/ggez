@@ -256,6 +256,9 @@ impl<'a> InternalCanvas3d<'a> {
         let mut uniforms = Vec::new();
         for draws in draws.values() {
             for draw in draws {
+                if draw.state.projection != self.transform.into() {
+                    self.set_projection(draw.state.projection);
+                }
                 if let Draw3d::Mesh { .. } = &draw.draw {
                     alloc_size += alignment;
                     let draw_uniform =
