@@ -390,10 +390,10 @@ impl Canvas3d {
             canvas.set_scissor_rect(state.scissor_rect);
         }
 
-        for draws in self.draws.values() {
-            for draw in draws {
-                // track state and apply to InternalCanvas if changed
+        canvas.update_uniform(&self.draws);
 
+        for draws in self.draws.values() {
+            for (idx, draw) in draws.iter().enumerate() {
                 if draw.state.shader != state.shader {
                     canvas.set_shader(draw.state.shader.clone());
                 }
@@ -425,9 +425,9 @@ impl Canvas3d {
                 match &draw.draw {
                     Draw3d::Mesh { mesh } => {
                         if let Some(image) = mesh.texture.clone() {
-                            canvas.draw_mesh(mesh, &image, draw.param)
+                            canvas.draw_mesh(mesh, &image, idx)
                         } else {
-                            canvas.draw_mesh(mesh, &self.default_resources().image, draw.param)
+                            canvas.draw_mesh(mesh, &self.default_resources().image, idx)
                         }
                     }
                     Draw3d::MeshInstances { mesh, instances } => {
@@ -444,32 +444,52 @@ impl Canvas3d {
 }
 
 #[derive(Debug, Clone)]
-struct DrawState3d {
+pub(crate) struct DrawState3d {
     shader: Shader,
     params: Option<(ArcBindGroup, ArcBindGroupLayout, u32)>,
     sampler: Sampler,
-    projection: mint::ColumnMatrix4<f32>,
+    pub(crate) projection: mint::ColumnMatrix4<f32>,
     alpha_mode: AlphaMode,
     scissor_rect: (u32, u32, u32, u32),
+}
+
+/// Rendered version of mesh slimmed down
+#[derive(Clone, Debug)]
+pub struct RenderedMesh3d {
+    pub(crate) vert_buffer: Arc<wgpu::Buffer>,
+    pub(crate) ind_buffer: Arc<wgpu::Buffer>,
+    pub(crate) texture: Option<Image>,
+    pub(crate) ind_len: usize,
+}
+
+impl From<&Mesh3d> for RenderedMesh3d {
+    fn from(item: &Mesh3d) -> Self {
+        Self {
+            vert_buffer: item.vert_buffer.clone(),
+            ind_buffer: item.ind_buffer.clone(),
+            texture: item.texture.clone(),
+            ind_len: item.indices.len(),
+        }
+    }
 }
 
 #[derive(Debug)]
 pub(crate) enum Draw3d {
     Mesh {
-        mesh: Mesh3d,
+        mesh: RenderedMesh3d,
     },
     MeshInstances {
-        mesh: Mesh3d,
+        mesh: RenderedMesh3d,
         instances: InstanceArrayView3d,
     },
 }
 
 // Stores *everything* you need to know to draw something.
 #[derive(Debug)]
-struct DrawCommand3d {
-    state: DrawState3d,
-    param: DrawParam3d,
-    draw: Draw3d,
+pub(crate) struct DrawCommand3d {
+    pub(crate) state: DrawState3d,
+    pub(crate) param: DrawParam3d,
+    pub(crate) draw: Draw3d,
 }
 
 #[derive(Debug)]

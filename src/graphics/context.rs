@@ -1,5 +1,4 @@
 use super::{
-    draw::DrawUniforms,
     gpu::{
         arc::{
             ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcRenderPipeline, ArcSampler,
@@ -25,7 +24,6 @@ use crate::{
     GameError,
 };
 use ::image as imgcrate;
-use crevice::std140::AsStd140;
 use glyph_brush::FontId;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
@@ -359,7 +357,7 @@ impl GraphicsContext {
             u64::from(wgpu.device.limits().min_uniform_buffer_offset_alignment),
             wgpu::BufferDescriptor {
                 label: None,
-                size: 4096 * DrawUniforms::std140_size_static() as u64,
+                size: 4096 * wgpu.device.limits().min_uniform_buffer_offset_alignment as u64, // Set to min buffer alignment so we can upload all uniform data at once
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             },
@@ -768,6 +766,7 @@ impl GraphicsContext {
                     vertices: false,
                     topology: wgpu::PrimitiveTopology::TriangleList,
                     vertex_layout: Vertex::layout(),
+                    cull_mode: None,
                 },
             );
 
