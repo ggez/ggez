@@ -184,6 +184,9 @@ impl Text {
     }
 
     /// Specifies the text's font for fragments that don't specify their own font.
+    ///
+    /// Note: [`Canvas::finish`] will return a [`GameError::FontSelectError`] if the given font is not loaded.
+    /// See [`GraphicsContext::add_font`] and [`GraphicsContext::has_font`]
     pub fn set_font(&mut self, font: impl Into<String>) -> &mut Self {
         self.font = font.into();
         self
