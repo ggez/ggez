@@ -1,9 +1,15 @@
 This is a place for people to pimp their stuff that is built with ggez.  If you want your project listed here, add it and
 submit a PR, please!
 
+# 0.9.x
+
+## Games!
+
+* <https://github.com/Linus-Mussmaecher/Project_Radish>: An arcade-style wave-defense game.
+
 # 0.8.x
 
-## Games
+## Games!
 
 * <https://github.com/tihusky/rustoban>: A simple Sokoban clone, written in an attempt to learn Rust.
 
