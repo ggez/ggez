@@ -139,11 +139,11 @@ impl Filesystem {
     }
 
     /// Web new fs
-    pub fn new_web() -> Filesystem {
+    pub fn new_web(resources_dir_name: &path::Path) -> Filesystem {
         let overlay = vfs::OverlayFS::new();
         Filesystem {
             vfs: Arc::new(Mutex::new(overlay)),
-            resources_dir: Default::default(),
+            resources_dir: resources_dir_name.to_path_buf(),
             zip_dir: Default::default(),
             user_config_dir: Default::default(),
             user_data_dir: Default::default(),
@@ -286,19 +286,37 @@ impl Filesystem {
         let path = path.into();
         let fs = self.clone();
         Coroutine::new(move |_| async move {
-            let finished = Arc::new(AtomicBool::new(false));
-            let handle = std::thread::spawn({
-                let finished = Arc::clone(&finished);
-                move || {
-                    let result = fs.read(path);
-                    finished.store(true, Ordering::Relaxed);
-                    result
-                }
-            });
-            while !finished.load(Ordering::Relaxed) {
-                yield_now().await;
+            #[cfg(target_arch = "wasm32")]
+            {
+                let bytes = reqwest::get(format!(
+                    "http://127.0.0.1:1334/{}{}",
+                    fs.resources_dir.to_string_lossy(),
+                    path.to_string_lossy()
+                ))
+                .await
+                .map_err(|err| GameError::FilesystemError(err.to_string()))?
+                .bytes()
+                .await
+                .map_err(|err| GameError::FilesystemError(err.to_string()))?;
+                Ok(bytes.into())
             }
-            handle.join().unwrap()
+
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let finished = Arc::new(AtomicBool::new(false));
+                let handle = std::thread::spawn({
+                    let finished = Arc::clone(&finished);
+                    move || {
+                        let result = fs.read(path);
+                        finished.store(true, Ordering::Relaxed);
+                        result
+                    }
+                });
+                while !finished.load(Ordering::Relaxed) {
+                    yield_now().await;
+                }
+                handle.join().unwrap()
+            }
         })
     }
 
