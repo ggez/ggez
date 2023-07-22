@@ -143,6 +143,18 @@ impl Filesystem {
         )
     }
 
+    /// Web new fs
+    pub fn new_web() -> Filesystem {
+        let overlay = vfs::OverlayFS::new();
+        Filesystem {
+            vfs: Arc::new(Mutex::new(overlay)),
+            resources_dir: Default::default(),
+            zip_dir: Default::default(),
+            user_config_dir: Default::default(),
+            user_data_dir: Default::default(),
+        }
+    }
+
     /// Actual implementation of `new`, without generics.
     fn _new(
         id: &str,

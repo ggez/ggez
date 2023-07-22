@@ -285,14 +285,14 @@ impl Drawable for Text {
         canvas.push_draw(Draw::BoundedText { text: self.clone() }, param.into());
     }
 
-    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Option<Rect> {
-        let bounds = self.measure(gfx).ok()?;
-        Some(Rect {
+    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Rect {
+        let bounds = self.measure(gfx).unwrap_or(glam::Vec2::splat(1.0).into());
+        Rect {
             x: 0.,
             y: 0.,
             w: bounds.x,
             h: bounds.y,
-        })
+        }
     }
 }
 

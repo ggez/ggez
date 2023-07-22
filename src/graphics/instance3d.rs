@@ -2,10 +2,10 @@ use crate::{context::Has, graphics::gpu::bind_group::BindGroupBuilder, GameError
 
 use super::{
     context::GraphicsContext,
-    draw::{DrawParam, DrawUniforms, Std140DrawUniforms},
     gpu::arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer},
-    internal_canvas::InstanceArrayView,
-    transform_rect, Canvas, Draw, Drawable, Image, Mesh, Rect, WgpuContext,
+    internal_canvas3d::InstanceArrayView3d,
+    Canvas3d, Draw3d, DrawParam3d, DrawUniforms3d, Drawable3d, Image, Mesh3d, Std140DrawUniforms3d,
+    WgpuContext,
 };
 use crevice::std140::AsStd140;
 use std::{
@@ -19,51 +19,60 @@ use std::{
 const DEFAULT_CAPACITY: usize = 16;
 
 /// Array of instances for fast rendering of many meshes.
-///
-/// Traditionally known as a "batch".
 #[derive(Debug)]
-pub struct InstanceArray {
+pub struct InstanceArray3d {
     pub(crate) buffer: Mutex<ArcBuffer>,
     pub(crate) indices: Mutex<ArcBuffer>,
     pub(crate) bind_group: Mutex<ArcBindGroup>,
     pub(crate) bind_layout: ArcBindGroupLayout,
     pub(crate) image: Image,
+    pub(crate) mesh: Mesh3d,
     pub(crate) ordered: bool,
     dirty: AtomicBool,
     capacity: AtomicUsize,
-    uniforms: Vec<Std140DrawUniforms>,
-    params: Vec<DrawParam>,
+    uniforms: Vec<Std140DrawUniforms3d>,
+    params: Vec<DrawParam3d>,
 }
 
-impl InstanceArray {
-    /// Creates a new [`InstanceArray`] capable of storing up to n-`capacity` instances
+impl InstanceArray3d {
+    /// Creates a new [`InstanceArray3d`] capable of storing up to n-`capacity` instances
     /// (this can be changed and is resized automatically when needed).
     ///
-    /// If `image` is `None`, a 1x1 white image will be used which can be used to draw solid rectangles.
+    /// If `image` is `None`, a 1x1 white image will be used to texture meshes.
     ///
     /// This constructor is `unordered` meaning instances will be drawn by their push/index order. Use [`InstanceArray::new_ordered`] to order by z-value.
-    pub fn new(gfx: &impl Has<GraphicsContext>, image: impl Into<Option<Image>>) -> Self {
+    pub fn new(
+        gfx: &impl Has<GraphicsContext>,
+        image: impl Into<Option<Image>>,
+        mesh: Mesh3d,
+    ) -> Self {
         let gfx = gfx.retrieve();
-        InstanceArray::new_wgpu(
+        InstanceArray3d::new_wgpu(
             &gfx.wgpu,
             gfx.instance_bind_layout.clone(),
             image.into().unwrap_or_else(|| gfx.white_image.clone()),
             DEFAULT_CAPACITY,
             false,
+            mesh,
         )
     }
 
-    /// See [`InstanceArray::new`] for details.
+    /// See [`InstanceArray3d::new`] for details.
     ///
-    /// This constructor is `ordered` meaning instances will be drawn by their z-value at a slight performance cost. Use [`InstanceArray::new`] to order by index.
-    pub fn new_ordered(gfx: &impl Has<GraphicsContext>, image: impl Into<Option<Image>>) -> Self {
+    /// This constructor is `ordered` meaning instances will be drawn by their z-value at a slight performance cost. Use [`InstanceArray3d::new`] to order by index.
+    pub fn new_ordered(
+        gfx: &impl Has<GraphicsContext>,
+        image: impl Into<Option<Image>>,
+        mesh: Mesh3d,
+    ) -> Self {
         let gfx = gfx.retrieve();
-        InstanceArray::new_wgpu(
+        InstanceArray3d::new_wgpu(
             &gfx.wgpu,
             gfx.instance_bind_layout.clone(),
             image.into().unwrap_or_else(|| gfx.white_image.clone()),
             DEFAULT_CAPACITY,
             true,
+            mesh,
         )
     }
 
@@ -73,12 +82,13 @@ impl InstanceArray {
         image: Image,
         capacity: usize,
         ordered: bool,
+        mesh: Mesh3d,
     ) -> Self {
         assert!(capacity > 0);
 
         let buffer = ArcBuffer::new(wgpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: DrawUniforms::std140_size_static() as u64 * capacity as u64,
+            size: DrawUniforms3d::std140_size_static() as u64 * capacity as u64,
             usage: wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST
                 | wgpu::BufferUsages::COPY_SRC,
@@ -125,7 +135,7 @@ impl InstanceArray {
         let uniforms = Vec::with_capacity(capacity);
         let params = Vec::with_capacity(capacity);
 
-        InstanceArray {
+        InstanceArray3d {
             buffer: Mutex::new(buffer),
             indices: Mutex::new(indices),
             bind_group: Mutex::new(bind_group),
@@ -136,11 +146,12 @@ impl InstanceArray {
             capacity: AtomicUsize::new(capacity),
             uniforms,
             params,
+            mesh,
         }
     }
 
-    /// Resets all the instance data to a set of `DrawParam`.
-    pub fn set(&mut self, instances: impl IntoIterator<Item = DrawParam>) {
+    /// Resets all the instance data to a set of `DrawParam3d`.
+    pub fn set(&mut self, instances: impl IntoIterator<Item = DrawParam3d>) {
         self.dirty.store(true, SeqCst);
         self.params.clear();
         self.params.extend(instances);
@@ -148,27 +159,27 @@ impl InstanceArray {
         self.uniforms.extend(
             self.params
                 .iter()
-                .map(|x| DrawUniforms::from_param(x, None).as_std140()),
+                .map(|x| DrawUniforms3d::from_param(x).as_std140()),
         );
     }
 
     /// Pushes a new instance onto the end.
-    pub fn push(&mut self, instance: DrawParam) {
+    pub fn push(&mut self, instance: DrawParam3d) {
         self.dirty.store(true, SeqCst);
         self.uniforms
-            .push(DrawUniforms::from_param(&instance, None).as_std140());
+            .push(DrawUniforms3d::from_param(&instance).as_std140());
         self.params.push(instance);
     }
 
     /// Updates an existing instance at a given index, if it is valid.
-    pub fn update(&mut self, index: u32, instance: DrawParam) {
+    pub fn update(&mut self, index: u32, instance: DrawParam3d) {
         if let Some((uniform, param)) = self
             .uniforms
             .get_mut(index as usize)
             .and_then(|x| Some((x, self.params.get_mut(index as usize)?)))
         {
             self.dirty.store(true, SeqCst);
-            *uniform = DrawUniforms::from_param(&instance, None).as_std140();
+            *uniform = DrawUniforms3d::from_param(&instance).as_std140();
             *param = instance;
         }
     }
@@ -186,9 +197,9 @@ impl InstanceArray {
         self.dirty.load(SeqCst)
     }
 
-    /// Returns an immutable slice of all the instance data in this [`InstanceArray`].
+    /// Returns an immutable slice of all the instance data in this [`InstanceArray3d`].
     #[inline]
-    pub fn instances(&self) -> &[DrawParam] {
+    pub fn instances(&self) -> &[DrawParam3d] {
         &self.params
     }
 
@@ -201,12 +212,13 @@ impl InstanceArray {
 
         let len = self.uniforms.len();
         //if len > self.capacity.load(SeqCst) {
-        let mut resized = InstanceArray::new_wgpu(
+        let mut resized = InstanceArray3d::new_wgpu(
             wgpu,
             self.bind_layout.clone(),
             self.image.clone(),
             len,
             self.ordered,
+            self.mesh.clone(),
         );
         *self.buffer.lock().map_err(|_| GameError::LockError)? =
             resized.buffer.get_mut().unwrap().clone();
@@ -239,7 +251,7 @@ impl InstanceArray {
         Ok(())
     }
 
-    /// Changes the capacity of this `InstanceArray` while preserving instances.
+    /// Changes the capacity of this `InstanceArray3d` while preserving instances.
     ///
     /// If `new_capacity` is less than the `len`, the instances will be truncated.
     ///
@@ -249,12 +261,13 @@ impl InstanceArray {
         assert!(new_capacity > 0);
 
         let gfx: &GraphicsContext = gfx.retrieve();
-        let resized = InstanceArray::new_wgpu(
+        let resized = InstanceArray3d::new_wgpu(
             &gfx.wgpu,
             self.bind_layout.clone(),
             self.image.clone(),
             new_capacity,
             self.ordered,
+            self.mesh.clone(),
         );
         self.buffer = resized.buffer;
         self.indices = resized.indices;
@@ -268,38 +281,29 @@ impl InstanceArray {
         self.params.reserve(new_capacity - self.params.len());
     }
 
-    /// Returns this `InstanceArray`'s associated `image`.
+    /// Returns this `InstanceArray3d`'s associated `image`.
     #[inline]
     pub fn image(&self) -> Image {
         self.image.clone()
     }
 
-    /// Returns the number of instances this [`InstanceArray`] is capable of holding.
-    /// This number was specified when creating the [`InstanceArray`], or if the [`InstanceArray`]
+    /// Returns this `InstanceArray3d`'s associated `mesh`.
+    #[inline]
+    pub fn mesh(&self) -> Mesh3d {
+        self.mesh.clone()
+    }
+
+    /// Returns the number of instances this [`InstanceArray3d`] is capable of holding.
+    /// This number was specified when creating the [`InstanceArray3d`], or if the [`InstanceArray3d`]
     /// was automatically resized, the greatest length of instances.
     #[inline]
     pub fn capacity(&self) -> usize {
         self.capacity.load(SeqCst)
     }
-
-    /// This is equivalent to `<InstanceArray as Drawable>::dimensions()` (see [`Drawable::dimensions()`]), but with a mesh taken into account.
-    ///
-    /// Essentially, consider `<InstanceArray as Drawable>::dimensions()` to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw()`,
-    /// and consider [`InstanceArray::dimensions_meshed()`] to be the bounds when the [`InstanceArray`] is drawn with `canvas.draw_instanced_mesh()`.
-    pub fn dimensions_meshed(&self, gfx: &impl Has<GraphicsContext>, mesh: &Mesh) -> Rect {
-        if self.params.is_empty() {
-            return Rect::new(0.0, 0.0, 1.0, 1.0);
-        }
-        let dimensions = mesh.dimensions(gfx);
-        self.params
-            .iter()
-            .map(|&param| transform_rect(dimensions, param))
-            .fold(Rect::zero(), |acc: Rect, rect| acc.combine_with(rect))
-    }
 }
 
-impl Drawable for InstanceArray {
-    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
+impl Drawable3d for InstanceArray3d {
+    fn draw(&self, canvas: &mut Canvas3d, param: impl Into<DrawParam3d>) {
         // Only flush (and then push a draw) if there are any instances to draw.
         // This guards against attempts to create empty buffers in `new_wgpu`, see #1168.
         if self.instances().is_empty() {
@@ -307,24 +311,11 @@ impl Drawable for InstanceArray {
         }
         self.flush_wgpu(&canvas.wgpu).unwrap();
         canvas.push_draw(
-            Draw::MeshInstances {
-                mesh: canvas.default_resources().mesh.clone(),
-                instances: InstanceArrayView::from_instances(self).unwrap(),
-                scale: true,
+            Draw3d::MeshInstances {
+                mesh: (&self.mesh).into(),
+                instances: InstanceArrayView3d::from_instances(self).unwrap(),
             },
             param.into(),
         );
-    }
-
-    fn dimensions(&self, gfx: &impl Has<GraphicsContext>) -> Rect {
-        let gfx = gfx.retrieve();
-        if self.params.is_empty() {
-            return Rect::new(0.0, 0.0, 1.0, 1.0);
-        }
-        let dimensions = self.image.dimensions(gfx);
-        self.params
-            .iter()
-            .map(|&param| transform_rect(dimensions, param))
-            .fold(Rect::zero(), |acc: Rect, rect| acc.combine_with(rect))
     }
 }

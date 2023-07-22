@@ -92,9 +92,9 @@ will work.
 
 ## Can I do 3D stuff?
 
-Yes; ggez uses `wgpu` for its drawing, and you can access the underlying `wgpu` drawing functions to draw whatever you want without disrupting ggez's drawing state.  See the `cube` example.
+Yes; ggez has a basic 3D api that is good enough for simple games graphics wise. We hope to improve performance and flexibility in the future so you are able to make more advanced 3D for your project.
 
-In general, ggez is designed to focus on 2D graphics.  We want it to be possible for you to create a 3D engine using ggez for everything EXCEPT drawing, but we don't really want to make a full 3D drawing engine.
+However the focus is on simple 3D and we don't want to overcomplicate the codebase. If you don't like 3D you can disable the feature and make your own 3D using `wgpu` directly without disrupting ggez's drawing state. See the `cube` example.
 
 <a name="gfx_gui">
 

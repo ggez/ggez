@@ -1,8 +1,10 @@
 use super::{
-    draw::DrawUniforms,
     gpu::{
-        arc::{ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcRenderPipeline, ArcShaderModule},
-        bind_group::{BindGroupBuilder, BindGroupCache},
+        arc::{
+            ArcBindGroup, ArcBindGroupLayout, ArcBuffer, ArcRenderPipeline, ArcSampler,
+            ArcShaderModule, ArcTextureView,
+        },
+        bind_group::{BindGroupCache, BindGroupEntryKey},
         growing::GrowingBufferArena,
         pipeline::PipelineCache,
         text::TextRenderer,
@@ -22,7 +24,6 @@ use crate::{
     GameError,
 };
 use ::image as imgcrate;
-use crevice::std140::AsStd140;
 use glyph_brush::FontId;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use typed_arena::Arena as TypedArena;
@@ -81,6 +82,14 @@ pub struct GraphicsContext {
     pub(crate) uniform_arena: GrowingBufferArena,
 
     pub(crate) draw_shader: ArcShaderModule,
+
+    #[cfg(feature = "3d")]
+    pub(crate) draw_shader_3d: ArcShaderModule,
+    #[cfg(feature = "3d")]
+    pub(crate) instance_shader_3d: ArcShaderModule,
+    #[cfg(feature = "3d")]
+    pub(crate) instance_unordered_shader_3d: ArcShaderModule,
+
     pub(crate) instance_shader: ArcShaderModule,
     pub(crate) instance_unordered_shader: ArcShaderModule,
     pub(crate) text_shader: ArcShaderModule,
@@ -90,6 +99,8 @@ pub struct GraphicsContext {
     pub(crate) instance_bind_layout: ArcBindGroupLayout,
 
     pub(crate) fs: Filesystem,
+
+    bind_group: Option<(Vec<BindGroupEntryKey>, ArcBindGroup)>,
 }
 
 impl GraphicsContext {
@@ -151,6 +162,77 @@ impl GraphicsContext {
         }
     }
 
+    fn bind_group(
+        &mut self,
+        view: ArcTextureView,
+        sampler: ArcSampler,
+    ) -> (ArcBindGroup, ArcBindGroupLayout) {
+        let key = vec![
+            BindGroupEntryKey::Image { id: view.id() },
+            BindGroupEntryKey::Sampler { id: sampler.id() },
+        ];
+        if let Some(bind_group) = self.bind_group.as_mut() {
+            if key == bind_group.0 {
+                let layout = BindGroupLayoutBuilder::new()
+                    .image(wgpu::ShaderStages::FRAGMENT)
+                    .sampler(wgpu::ShaderStages::FRAGMENT)
+                    .create(&self.wgpu.device, &mut self.bind_group_cache);
+                (bind_group.1.clone(), layout)
+            } else {
+                let layout = BindGroupLayoutBuilder::new()
+                    .image(wgpu::ShaderStages::FRAGMENT)
+                    .sampler(wgpu::ShaderStages::FRAGMENT)
+                    .create(&self.wgpu.device, &mut self.bind_group_cache);
+                *bind_group = (
+                    key,
+                    ArcBindGroup::new(self.wgpu.device.create_bind_group(
+                        &wgpu::BindGroupDescriptor {
+                            label: None,
+                            layout: layout.as_ref(),
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    resource: wgpu::BindingResource::TextureView(view.as_ref()),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: wgpu::BindingResource::Sampler(sampler.as_ref()),
+                                },
+                            ],
+                        },
+                    )),
+                );
+                (bind_group.1.clone(), layout)
+            }
+        } else {
+            let layout = BindGroupLayoutBuilder::new()
+                .image(wgpu::ShaderStages::FRAGMENT)
+                .sampler(wgpu::ShaderStages::FRAGMENT)
+                .create(&self.wgpu.device, &mut self.bind_group_cache);
+            self.bind_group =
+                Some((
+                    key,
+                    ArcBindGroup::new(self.wgpu.device.create_bind_group(
+                        &wgpu::BindGroupDescriptor {
+                            label: None,
+                            layout: layout.as_ref(),
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    resource: wgpu::BindingResource::TextureView(view.as_ref()),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: wgpu::BindingResource::Sampler(sampler.as_ref()),
+                                },
+                            ],
+                        },
+                    )),
+                ));
+            (self.bind_group.as_ref().unwrap().1.clone(), layout)
+        }
+    }
+
     #[allow(unsafe_code)]
     pub(crate) fn new_from_instance(
         #[allow(unused_variables)] game_id: &str,
@@ -198,6 +280,27 @@ impl GraphicsContext {
         };
 
         let window = window_builder.build(event_loop)?;
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            web_sys::console::log_1(&"Init web".into());
+            use winit::platform::web::WindowExtWebSys;
+            web_sys::window()
+                .and_then(|win| win.document())
+                .and_then(|doc| {
+                    if let Some(element) = doc.get_element_by_id("ggez-body") {
+                        element.remove()
+                    }
+
+                    let dst = doc.body()?;
+                    let mut canvas = web_sys::Element::from(window.canvas());
+                    canvas.set_id("ggez-body");
+                    let _ = dst.append_child(&canvas).ok()?;
+                    Some(())
+                })
+                .expect("Couldn't append canvas to document body.");
+        }
+
         let surface = unsafe { instance.create_surface(&window) }
             .map_err(|_| GameError::GraphicsInitializationError)?;
 
@@ -212,16 +315,33 @@ impl GraphicsContext {
         const MAX_INSTANCES: u32 = 1_000_000;
         const INSTANCE_BUFFER_SIZE: u32 = 96 * MAX_INSTANCES;
 
+        #[cfg(target_arch = "wasm32")]
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
                 features: wgpu::Features::default(),
                 limits: wgpu::Limits {
-                    // 1st: DrawParams
                     // 2nd: Texture + Sampler
                     // 3rd: InstanceArray
                     // 4th: ShaderParams
-                    max_bind_groups: 4,
+                    // InstanceArray uses 2 storage buffers.
+                    // max_storage_buffers_per_shader_stage: 2,
+                    // max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
+                    ..wgpu::Limits::downlevel_webgl2_defaults()
+                },
+            },
+            None,
+        ))?;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let (device, queue) = pollster::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: wgpu::Features::default(),
+                limits: wgpu::Limits {
+                    // 1st: Texture + Sampler
+                    // 2nd: InstanceArray
+                    // 3rd: ShaderParams
                     // InstanceArray uses 2 storage buffers.
                     max_storage_buffers_per_shader_stage: 2,
                     max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
@@ -275,7 +395,7 @@ impl GraphicsContext {
             u64::from(wgpu.device.limits().min_uniform_buffer_offset_alignment),
             wgpu::BufferDescriptor {
                 label: None,
-                size: 4096 * DrawUniforms::std140_size_static() as u64,
+                size: 4096 * wgpu.device.limits().min_uniform_buffer_offset_alignment as u64, // Set to min buffer alignment so we can upload all uniform data at once
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             },
@@ -285,6 +405,32 @@ impl GraphicsContext {
             wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(include_str!("shader/draw.wgsl").into()),
+            },
+        ));
+
+        #[cfg(feature = "3d")]
+        let draw_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/draw3d.wgsl").into()),
+            },
+        ));
+
+        #[cfg(feature = "3d")]
+        let instance_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader/instance3d.wgsl").into()),
+            },
+        ));
+
+        #[cfg(feature = "3d")]
+        let instance_unordered_shader_3d = ArcShaderModule::new(wgpu.device.create_shader_module(
+            wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(
+                    include_str!("shader/instance_unordered3d.wgsl").into(),
+                ),
             },
         ));
 
@@ -348,16 +494,16 @@ impl GraphicsContext {
         );
 
         let instance_bind_layout = BindGroupLayoutBuilder::new()
-            .buffer(
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-            )
-            .buffer(
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-            )
+            // .buffer(
+            //     wgpu::ShaderStages::VERTEX,
+            //     wgpu::BufferBindingType::Storage { read_only: true },
+            //     false,
+            // )
+            // .buffer(
+            //     wgpu::ShaderStages::VERTEX,
+            //     wgpu::BufferBindingType::Storage { read_only: true },
+            //     false,
+            // )
             .create(&wgpu.device, &mut bind_group_cache);
 
         let white_image =
@@ -385,6 +531,14 @@ impl GraphicsContext {
             staging_belt,
             uniform_arena,
             draw_shader,
+
+            #[cfg(feature = "3d")]
+            draw_shader_3d,
+            #[cfg(feature = "3d")]
+            instance_shader_3d,
+            #[cfg(feature = "3d")]
+            instance_unordered_shader_3d,
+
             instance_shader,
             instance_unordered_shader,
             text_shader,
@@ -394,6 +548,8 @@ impl GraphicsContext {
             instance_bind_layout,
 
             fs: InternalClone::clone(filesystem),
+
+            bind_group: None,
         };
 
         this.set_window_mode(&conf.window_mode)?;
@@ -585,6 +741,7 @@ impl GraphicsContext {
                 })
             }
         }?;
+
         let frame_view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -601,6 +758,8 @@ impl GraphicsContext {
         });
 
         self.uniform_arena.free();
+
+        self.text.verts.free();
 
         Ok(())
     }
@@ -627,10 +786,7 @@ impl GraphicsContext {
                 .sampler_cache
                 .get(&self.wgpu.device, Sampler::default());
 
-            let (bind, layout) = BindGroupBuilder::new()
-                .image(&fcx.present.view, wgpu::ShaderStages::FRAGMENT)
-                .sampler(sampler, wgpu::ShaderStages::FRAGMENT)
-                .create(&self.wgpu.device, &mut self.bind_group_cache);
+            let (bind, layout) = self.bind_group(fcx.present.view, sampler.clone());
 
             let layout = self.pipeline_cache.layout(&self.wgpu.device, &[layout]);
             let copy = self.pipeline_cache.render_pipeline(
@@ -644,10 +800,11 @@ impl GraphicsContext {
                     samples: 1,
                     format: self.surface_config.format,
                     blend: None,
-                    depth: false,
+                    depth: None,
                     vertices: false,
                     topology: wgpu::PrimitiveTopology::TriangleList,
                     vertex_layout: Vertex::layout(),
+                    cull_mode: None,
                 },
             );
 
