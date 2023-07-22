@@ -401,18 +401,17 @@ impl<'a> InternalCanvas3d<'a> {
                 .image(wgpu::ShaderStages::FRAGMENT)
                 .sampler(wgpu::ShaderStages::FRAGMENT)
                 .create(&self.wgpu.device, self.bind_group_cache);
-
             let instance_layout = BindGroupLayoutBuilder::new()
-                .buffer(
-                    wgpu::ShaderStages::VERTEX,
-                    wgpu::BufferBindingType::Storage { read_only: true },
-                    false,
-                )
-                .buffer(
-                    wgpu::ShaderStages::VERTEX,
-                    wgpu::BufferBindingType::Storage { read_only: true },
-                    false,
-                )
+                // .buffer(
+                //     wgpu::ShaderStages::VERTEX,
+                //     wgpu::BufferBindingType::Storage { read_only: true },
+                //     false,
+                // )
+                // .buffer(
+                //     wgpu::ShaderStages::VERTEX,
+                //     wgpu::BufferBindingType::Storage { read_only: true },
+                //     false,
+                // )
                 .create(&self.wgpu.device, self.bind_group_cache);
 
             let uniform_layout = BindGroupLayoutBuilder::new()
