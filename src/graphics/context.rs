@@ -235,6 +235,24 @@ impl GraphicsContext {
         // In order to do this, we need to switch window creation to a point inside the active event loop instead of before.
         #[allow(deprecated)]
         let window = Arc::new(event_loop.create_window(window_builder)?);
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            use winit::platform::web::WindowExtWebSys;
+
+            if let Some(canvas) = window.canvas() {
+                web_sys::window()
+                    .and_then(|win| win.document())
+                    .and_then(|doc| {
+                        let dst = doc.body()?;
+                        let canvas = web_sys::Element::from(canvas);
+                        let _ = dst.append_child(&canvas).ok()?;
+                        Some(())
+                    })
+                    .expect("could not append canvas to document body");
+            }
+        }
+
         let surface = instance
             .create_surface(window.clone())
             .map_err(|_| GameError::GraphicsInitializationError)?;
@@ -257,12 +275,12 @@ impl GraphicsContext {
                     // 2nd: Texture + Sampler
                     // 3rd: InstanceArray
                     // 4th: ShaderParams
-                    max_bind_groups: 4,
+                    // max_bind_groups: 4,
                     // InstanceArray uses 2 storage buffers.
-                    max_storage_buffers_per_shader_stage: 2,
-                    max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
-                    max_texture_dimension_1d: 8192,
-                    max_texture_dimension_2d: 8192,
+                    // max_storage_buffers_per_shader_stage: 2,
+                    // max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
+                    // max_texture_dimension_1d: 8192,
+                    // max_texture_dimension_2d: 8192,
                     ..wgpu::Limits::downlevel_webgl2_defaults()
                 },
                 ..wgpu::DeviceDescriptor::default()
@@ -368,16 +386,16 @@ impl GraphicsContext {
         );
 
         let instance_bind_layout = BindGroupLayoutBuilder::new()
-            .buffer(
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-            )
-            .buffer(
-                wgpu::ShaderStages::VERTEX,
-                wgpu::BufferBindingType::Storage { read_only: true },
-                false,
-            )
+            // .buffer(
+            //     wgpu::ShaderStages::VERTEX,
+            //     wgpu::BufferBindingType::Storage { read_only: true },
+            //     false,
+            // )
+            // .buffer(
+            //     wgpu::ShaderStages::VERTEX,
+            //     wgpu::BufferBindingType::Storage { read_only: true },
+            //     false,
+            // )
             .create(&wgpu.device, &mut bind_group_cache);
 
         let white_image =
