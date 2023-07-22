@@ -244,8 +244,13 @@ impl GraphicsContext {
                 web_sys::window()
                     .and_then(|win| win.document())
                     .and_then(|doc| {
+                        if let Some(element) = doc.get_element_by_id("ggez-body") {
+                            element.remove();
+                        }
+
                         let dst = doc.body()?;
                         let canvas = web_sys::Element::from(canvas);
+                        canvas.set_id("ggez-body");
                         let _ = dst.append_child(&canvas).ok()?;
                         Some(())
                     })
@@ -264,10 +269,6 @@ impl GraphicsContext {
         }))
         .or(Err(GameError::GraphicsInitializationError))?;
 
-        // One instance is 96 bytes, and we allow 1 million of them, for a total of 96MB (default being 128MB).
-        const MAX_INSTANCES: u64 = 1_000_000;
-        const INSTANCE_BUFFER_SIZE: u64 = 96 * MAX_INSTANCES;
-
         let (device, queue) =
             pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
                 required_limits: wgpu::Limits {
@@ -275,12 +276,9 @@ impl GraphicsContext {
                     // 2nd: Texture + Sampler
                     // 3rd: InstanceArray
                     // 4th: ShaderParams
-                    // max_bind_groups: 4,
                     // InstanceArray uses 2 storage buffers.
                     // max_storage_buffers_per_shader_stage: 2,
                     // max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
-                    // max_texture_dimension_1d: 8192,
-                    // max_texture_dimension_2d: 8192,
                     ..wgpu::Limits::downlevel_webgl2_defaults()
                 },
                 ..wgpu::DeviceDescriptor::default()
