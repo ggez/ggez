@@ -34,16 +34,21 @@
 
 use crate::{
     conf,
+    coroutine::yield_now,
     vfs::{self, OverlayFS, VFS},
-    Context, GameError, GameResult,
+    Context, Coroutine, GameError, GameResult,
 };
 use directories::ProjectDirs;
 use std::{
-    env, io,
+    env,
     io::SeekFrom,
+    io::{self, Read},
     ops::DerefMut,
-    path,
-    sync::{Arc, Mutex},
+    path::{self, PathBuf},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
 };
 
 pub use crate::vfs::OpenOptions;
@@ -242,6 +247,38 @@ impl Filesystem {
         self.vfs().open(path.as_ref()).map(|f| File::VfsFile(f))
     }
 
+    /// Opens the given `path` and returns the resulting bytes
+    /// in read-only mode.
+    pub fn read_to_end<P: AsRef<path::Path>>(&self, path: P) -> GameResult<Vec<u8>> {
+        let mut bytes = Vec::new();
+        let _ = self.open(path)?.read_to_end(&mut bytes)?;
+        Ok(bytes)
+    }
+
+    /// Creates a coroutine that opens the given `path` and returns the resulting bytes
+    /// in read-only mode.
+    pub fn read_to_end_async(&self, path: impl Into<PathBuf>) -> Coroutine<GameResult<Vec<u8>>> {
+        let path = path.into();
+        let fs = InternalClone::clone(self);
+        Coroutine::new(move |_| async move {
+            let finished = Arc::new(AtomicBool::new(false));
+            // TODO 1 thread only, not spawning a new one every time.
+            let handle = std::thread::spawn({
+                let finished = Arc::clone(&finished);
+                move || {
+                    std::thread::sleep(std::time::Duration::from_millis(1200));
+                    let result = fs.read_to_end(path);
+                    finished.store(true, Ordering::Relaxed);
+                    result
+                }
+            });
+            while !finished.load(Ordering::Relaxed) {
+                yield_now().await;
+            }
+            handle.join().unwrap()
+        })
+    }
+
     /// Opens a file in the user directory with the given
     /// [`filesystem::OpenOptions`](struct.OpenOptions.html).
     /// Note that even if you open a file read-write, it can only
@@ -373,7 +410,7 @@ impl Filesystem {
     /// for `.mount()`. Rather, it can be used to read zip files from sources
     /// such as `std::io::Cursor::new(includes_bytes!(...))` in order to embed
     /// resources into the game's executable.
-    pub fn add_zip_file<R: io::Read + io::Seek + 'static>(&self, reader: R) -> GameResult {
+    pub fn add_zip_file<R: io::Read + io::Seek + Send + 'static>(&self, reader: R) -> GameResult {
         let zipfs = vfs::ZipFS::from_read(reader)?;
         trace!("Adding zip file from reader");
         self.vfs().push_back(Box::new(zipfs));
