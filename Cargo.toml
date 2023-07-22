@@ -49,7 +49,7 @@ wasm-bindgen-futures = "0.4"
 bitflags = "2.1"
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
 directories = "5.0"
-wgpu = { version = "0.16", features = ["webgl"] }
+wgpu = { version = "0.17", features = ["webgl"] }
 glyph_brush = "0.7"
 winit = { version = "0.28.3", features = ["serde"] }
 image = { version = "0.24", default-features = false, features = [

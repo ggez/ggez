@@ -283,18 +283,18 @@ impl GraphicsContext {
 
         #[cfg(target_arch = "wasm32")]
         {
-            // Winit prevents sizing with CSS, so we have to set
-            // the size manually when on web.
-            use winit::dpi::PhysicalSize;
-            window.set_inner_size(PhysicalSize::new(450, 400));
             web_sys::console::log_1(&"Init web".into());
             use winit::platform::web::WindowExtWebSys;
             web_sys::window()
                 .and_then(|win| win.document())
                 .and_then(|doc| {
+                    if let Some(element) = doc.get_element_by_id("ggez-body") {
+                        element.remove()
+                    }
+
                     let dst = doc.body()?;
-                    // let dst = doc.get_element_by_id("body")?;
-                    let canvas = web_sys::Element::from(window.canvas());
+                    let mut canvas = web_sys::Element::from(window.canvas());
+                    canvas.set_id("ggez-body");
                     let _ = dst.append_child(&canvas).ok()?;
                     Some(())
                 })
@@ -315,21 +315,38 @@ impl GraphicsContext {
         const MAX_INSTANCES: u32 = 1_000_000;
         const INSTANCE_BUFFER_SIZE: u32 = 96 * MAX_INSTANCES;
 
+        #[cfg(target_arch = "wasm32")]
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
                 features: wgpu::Features::default(),
                 limits: wgpu::Limits {
-                    // 1st: DrawParams
                     // 2nd: Texture + Sampler
                     // 3rd: InstanceArray
                     // 4th: ShaderParams
-                    // max_bind_groups: 4,
                     // InstanceArray uses 2 storage buffers.
                     // max_storage_buffers_per_shader_stage: 2,
                     // max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
-                    // max_texture_dimension_1d: 8192,
-                    // max_texture_dimension_2d: 8192,
+                    ..wgpu::Limits::downlevel_webgl2_defaults()
+                },
+            },
+            None,
+        ))?;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let (device, queue) = pollster::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: wgpu::Features::default(),
+                limits: wgpu::Limits {
+                    // 1st: Texture + Sampler
+                    // 2nd: InstanceArray
+                    // 3rd: ShaderParams
+                    // InstanceArray uses 2 storage buffers.
+                    max_storage_buffers_per_shader_stage: 2,
+                    max_storage_buffer_binding_size: INSTANCE_BUFFER_SIZE,
+                    max_texture_dimension_1d: 8192,
+                    max_texture_dimension_2d: 8192,
                     ..wgpu::Limits::downlevel_webgl2_defaults()
                 },
             },
